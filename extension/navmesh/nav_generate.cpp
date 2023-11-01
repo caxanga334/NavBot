@@ -20,6 +20,8 @@
 #include <worldsize.h>
 #include <KeyValues.h>
 
+#include "nav_macros.h"
+
 //#include "terror/TerrorShared.h"
 #include "fmtstr.h"
 
@@ -51,7 +53,7 @@ Vector NavTraceMaxs( 0.45, 0.45, HumanCrouchHeight );
 
 const float MaxTraversableHeight = StepHeight;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 const float MinObstacleAreaWidth = 10.0f;			// min width of a nav area we will generate on top of an obstacle
-static CUtlVector<edict_t*> ladders;
+static std::vector<edict_t*> ladders;
 
 extern IVEngineServer* engine;
 extern CGlobalVars *gpGlobals;
@@ -138,16 +140,19 @@ inline CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType dir,
  * For each ladder in the map, create a navigation representation of it.
  */
 void CNavMesh::BuildLadders(void) {
+
+	// TO-DO: Rewrite me!
+
 	// remove any left-over ladders
 	DestroyLadders();
-	ladders.RemoveAll();
+	ladders.clear();
 	CUtlLinkedList<edict_t*> ladder;
 	findEntWithPatternInName("*ladder*", ladder);
 	FOR_EACH_VEC(ladder, i)
 	{
 		ICollideable* coll = ladder[i]->GetCollideable();
 		if (coll != nullptr) {
-			ladders.AddToTail(ladder[i]);
+			ladders.push_back(ladder[i]);
 			Vector mins, maxs;
 			coll->WorldSpaceTriggerBounds(&mins, &maxs);
 			TheNavMesh->CreateLadder(mins, maxs, 0.0f);
@@ -254,7 +259,7 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
 
 	// add ladder to global list
-	m_ladders.AddToTail( ladder );		
+	m_ladders.push_back(ladder);
 }
 
 
@@ -334,7 +339,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
 
 	// add ladder to global list
-	m_ladders.AddToTail( ladder );
+	m_ladders.push_back( ladder );
 }
 
 
@@ -497,36 +502,36 @@ private:
 
 	void TryToConnect( CNavArea *jumpArea, const NavConnectVector *source, const NavConnectVector *dest, NavDirType outgoingDir )
 	{
-		FOR_EACH_VEC( (*source), sourceIt )
+		for (auto& navconn : *source)
 		{
-			CNavArea *sourceArea = const_cast< CNavArea * >( (*source)[ sourceIt ].area );
-			if ( !sourceArea->IsConnected( jumpArea, outgoingDir ) )
+			CNavArea* sourceArea = navconn.area;
+			if (!sourceArea->IsConnected(jumpArea, outgoingDir))
 			{
 				continue;
 			}
 
-			if ( sourceArea->HasAttributes( NAV_MESH_JUMP ) )
+			if (sourceArea->HasAttributes(NAV_MESH_JUMP))
 			{
-				NavDirType incomingDir = OppositeDirection( outgoingDir );
-				const NavConnectVector *in1 = sourceArea->GetIncomingConnections( incomingDir );
-				const NavConnectVector *in2 = sourceArea->GetAdjacentAreas( incomingDir );
+				NavDirType incomingDir = OppositeDirection(outgoingDir);
+				const NavConnectVector* in1 = sourceArea->GetIncomingConnections(incomingDir);
+				const NavConnectVector* in2 = sourceArea->GetAdjacentAreas(incomingDir);
 
-				TryToConnect( jumpArea, in1, dest, outgoingDir );
-				TryToConnect( jumpArea, in2, dest, outgoingDir );
+				TryToConnect(jumpArea, in1, dest, outgoingDir);
+				TryToConnect(jumpArea, in2, dest, outgoingDir);
 
 				continue;
 			}
 
-			TryToConnect( jumpArea, sourceArea, dest, outgoingDir );
+			TryToConnect(jumpArea, sourceArea, dest, outgoingDir);
 		}
 	}
 
 	void TryToConnect( CNavArea *jumpArea, CNavArea *sourceArea, const NavConnectVector *dest, NavDirType outgoingDir )
 	{
-		FOR_EACH_VEC( (*dest), destIt )
+		for (auto& navconn : *dest)
 		{
-			CNavArea *destArea = const_cast< CNavArea * >( (*dest)[ destIt ].area );
-			if ( destArea->HasAttributes( NAV_MESH_JUMP ) )
+			CNavArea* destArea = navconn.area;
+			if (destArea->HasAttributes(NAV_MESH_JUMP))
 			{
 				// Don't connect areas across 2 jump areas.  This means we'll have some missing links due to sampling errors.
 				// This is preferable to generating incorrect links across multiple jump areas, which is far more common.
@@ -535,34 +540,34 @@ private:
 
 			Vector center;
 			float halfWidth;
-			sourceArea->ComputePortal( destArea, outgoingDir, &center, &halfWidth );
+			sourceArea->ComputePortal(destArea, outgoingDir, &center, &halfWidth);
 
 			// Don't create corner-to-corner connections
-			if ( halfWidth <= 0.0f )
+			if (halfWidth <= 0.0f)
 			{
 				continue;
 			}
 
-			Vector dir( vec3_origin );
-			AddDirectionVector( &dir, outgoingDir, 5.0f );
+			Vector dir(vec3_origin);
+			AddDirectionVector(&dir, outgoingDir, 5.0f);
 
-			if ( halfWidth > 0.0f )
+			if (halfWidth > 0.0f)
 			{
 				Vector sourcePos, destPos;
-				sourceArea->GetClosestPointOnArea( center, &sourcePos );
-				destArea->GetClosestPointOnArea( center, &destPos );
+				sourceArea->GetClosestPointOnArea(center, &sourcePos);
+				destArea->GetClosestPointOnArea(center, &destPos);
 
 				// No jumping up from stairs.
-				if ( sourceArea->HasAttributes( NAV_MESH_STAIRS ) && sourcePos.z + StepHeight < destPos.z )
+				if (sourceArea->HasAttributes(NAV_MESH_STAIRS) && sourcePos.z + StepHeight < destPos.z)
 				{
 					continue;
 				}
 
-				if ( (sourcePos-destPos).AsVector2D().IsLengthLessThan( GenerationStepSize * 3 ) )
+				if ((sourcePos - destPos).AsVector2D().IsLengthLessThan(GenerationStepSize * 3))
 				{
-					sourceArea->ConnectTo( destArea, outgoingDir );
-//					DevMsg( "Connected %d->%d via %d (len %f)\n",
-//						sourceArea->GetID(), destArea->GetID(), jumpArea->GetID(), sourcePos.DistTo( destPos ) );
+					sourceArea->ConnectTo(destArea, outgoingDir);
+					//					DevMsg( "Connected %d->%d via %d (len %f)\n",
+					//						sourceArea->GetID(), destArea->GetID(), jumpArea->GetID(), sourcePos.DistTo( destPos ) );
 				}
 			}
 		}
@@ -598,37 +603,36 @@ void CNavMesh::MarkPlayerClipAreas( void )
  */
 void CNavMesh::MarkJumpAreas( void )
 {
-	FOR_EACH_VEC( TheNavAreas, it )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-		if ( !area->HasNodes() )
+		if (!area->HasNodes())
 			continue;
 
 		Vector normal, otherNormal;
-		area->ComputeNormal( &normal );
-		area->ComputeNormal( &otherNormal, true );
+		area->ComputeNormal(&normal);
+		area->ComputeNormal(&otherNormal, true);
 
-		float lowestNormalZ = MIN( normal.z, otherNormal.z );
+		float lowestNormalZ = MIN(normal.z, otherNormal.z);
 		if (lowestNormalZ < nav_slope_limit.GetFloat())
 		{
 			// The area is a jump area, and we don't merge jump areas together
-			area->SetAttributes( area->GetAttributes() | NAV_MESH_JUMP | NAV_MESH_NO_MERGE );
+			area->SetAttributes(area->GetAttributes() | NAV_MESH_JUMP | NAV_MESH_NO_MERGE);
 		}
-		else if ( lowestNormalZ < nav_slope_limit.GetFloat() + nav_slope_tolerance.GetFloat() )
+		else if (lowestNormalZ < nav_slope_limit.GetFloat() + nav_slope_tolerance.GetFloat())
 		{
 			Vector testPos = area->GetCenter();
 			testPos.z += HalfHumanHeight;
 			Vector groundNormal;
 			float dummy;
-			if ( GetSimpleGroundHeight( testPos, &dummy, &groundNormal ) )
+			if (GetSimpleGroundHeight(testPos, &dummy, &groundNormal))
 			{
 				// If the ground normal is divergent from the area's normal, mark it as a jump area - it's not
 				// really representative of the ground.
-				float deltaNormalZ = fabs( groundNormal.z - lowestNormalZ );
-				if ( deltaNormalZ > nav_slope_tolerance.GetFloat() )
+				float deltaNormalZ = fabs(groundNormal.z - lowestNormalZ);
+				if (deltaNormalZ > nav_slope_tolerance.GetFloat())
 				{
 					// The area is a jump area, and we don't merge jump areas together
-					area->SetAttributes( area->GetAttributes() | NAV_MESH_JUMP | NAV_MESH_NO_MERGE );
+					area->SetAttributes(area->GetAttributes() | NAV_MESH_JUMP | NAV_MESH_NO_MERGE);
 				}
 			}
 		}
@@ -704,15 +708,13 @@ void CNavMesh::HandleObstacleTopAreas( void )
 void CNavMesh::RaiseAreasWithInternalObstacles()
 {
 	// obstacle areas next to stairs are bad - delete them
-	CUtlVector< CNavArea * > areasToDelete;
+	std::vector<CNavArea*> areasToDelete;
 
-	FOR_EACH_VEC( TheNavAreas, it )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-
 		// any nav area with internal obstacles will be 1x1 (width and height = GenerationStepSize), so
 		// only need to consider areas of that size
-		if ( ( area->GetSizeX() != GenerationStepSize ) || (area->GetSizeY() != GenerationStepSize ) )
+		if ((area->GetSizeX() != GenerationStepSize) || (area->GetSizeY() != GenerationStepSize))
 			continue;
 
 		float obstacleZ[2] = { -FLT_MAX, -FLT_MAX };
@@ -724,54 +726,55 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 		bool isStairNeighbor = false;
 
 		// Look at all 4 directions and determine if there are obstacles in that direction.  Find the direction with the highest obstacle, if any.
-		for ( int i = 0; i < NUM_DIRECTIONS; i++ )
+		for (int i = 0; i < NUM_DIRECTIONS; i++)
 		{
-			NavDirType dir = (NavDirType) i;
+			NavDirType dir = (NavDirType)i;
 
 			// For this direction, look at the left and right edges of the nav area relative to this direction and determined if they are both blocked
 			// by obstacles.  We only consider this area obstructed if both edges are blocked (e.g. fence runs all the way through it).
 
 			NavCornerType corner[2];
 			int iEdgesBlocked = 0;
-			corner[0] = (NavCornerType) ( ( i + 3 ) % NUM_CORNERS );					// lower left-hand corner relative to current direction
-			corner[1] = (NavCornerType) ( ( i + 2 ) % NUM_CORNERS );				// lower right-hand corner relative to current direction			
+			corner[0] = (NavCornerType)((i + 3) % NUM_CORNERS);					// lower left-hand corner relative to current direction
+			corner[1] = (NavCornerType)((i + 2) % NUM_CORNERS);				// lower right-hand corner relative to current direction			
 			float obstacleZThisDir[2] = { -FLT_MAX, -FLT_MAX };						// absolute Z pos of obstacle for left and right edge in this direction
 			float obstacleStartDistThisDir = GenerationStepSize;					// closest obstacle start distance in this direction
 			float obstacleEndDistThisDir = 0;										// farthest obstacle end distance in this direction
 
 			// consider left and right edges of nav area relative to current direction
-			for ( int iEdge = 0; iEdge < 2; iEdge++ )
+			for (int iEdge = 0; iEdge < 2; iEdge++)
 			{
 				NavCornerType cornerType = corner[iEdge];
-				CNavNode *nodeFrom = area->m_node[cornerType];
-				if ( nodeFrom )
+				CNavNode* nodeFrom = area->m_node[cornerType];
+				if (nodeFrom)
 				{
 					// is there an obstacle going from corner to corner along this edge?
 					float obstacleHeight = nodeFrom->m_obstacleHeight[dir];
-					if ( obstacleHeight > MaxTraversableHeight )
+					if (obstacleHeight > MaxTraversableHeight)
 					{
 						// yes, this edge is blocked
 						iEdgesBlocked++;
 						// keep track of obstacle height and start and end distance for this edge
 						float obstacleZ = nodeFrom->GetPosition()->z + obstacleHeight;
-						if ( obstacleZ > obstacleZThisDir[iEdge] )
-						{							
+						if (obstacleZ > obstacleZThisDir[iEdge])
+						{
 							obstacleZThisDir[iEdge] = obstacleZ;
 						}
-						obstacleStartDistThisDir = MIN( nodeFrom->m_obstacleStartDist[dir], obstacleStartDistThisDir );
-						obstacleEndDistThisDir = MAX( nodeFrom->m_obstacleEndDist[dir], obstacleEndDistThisDir );
+						obstacleStartDistThisDir = MIN(nodeFrom->m_obstacleStartDist[dir], obstacleStartDistThisDir);
+						obstacleEndDistThisDir = MAX(nodeFrom->m_obstacleEndDist[dir], obstacleEndDistThisDir);
 					}
 				}
 			}
 
 			int BlockedEdgeCutoff = 2;
-			const NavConnectVector *connections = area->GetAdjacentAreas( dir );
-			if ( connections )
+			const NavConnectVector* connections = area->GetAdjacentAreas(dir);
+			if (connections)
 			{
-				for ( int conIndex=0; conIndex<connections->Count(); ++conIndex )
+				for (auto& conn : *connections)
 				{
-					const CNavArea *connectedArea = connections->Element( conIndex ).area;
-					if ( connectedArea && connectedArea->HasAttributes( NAV_MESH_STAIRS ) )
+					auto connectedArea = conn.area;
+
+					if (connectedArea && connectedArea->HasAttributes(NAV_MESH_STAIRS))
 					{
 						isStairNeighbor = true;
 						BlockedEdgeCutoff = 1;	// one blocked edge is already too much when we're next to a stair
@@ -781,66 +784,66 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 			}
 
 			// are both edged blocked in this direction, and is the obstacle height in this direction the tallest we've seen?
-			if ( (iEdgesBlocked >= BlockedEdgeCutoff ) && ( MAX( obstacleZThisDir[0], obstacleZThisDir[1] ) ) > obstacleZMax )
+			if ((iEdgesBlocked >= BlockedEdgeCutoff) && (MAX(obstacleZThisDir[0], obstacleZThisDir[1])) > obstacleZMax)
 			{
 				// this is the tallest obstacle we've encountered so far, remember its details
 				obstacleZ[0] = obstacleZThisDir[0];
 				obstacleZ[1] = obstacleZThisDir[1];
-				obstacleZMax = MAX( obstacleZ[0], obstacleZ[1] );
+				obstacleZMax = MAX(obstacleZ[0], obstacleZ[1]);
 				obstacleDir = dir;
 				obstacleStartDist = obstacleStartDistThisDir;
 				obstacleEndDist = obstacleStartDistThisDir;
 			}
 		}
 
-		if ( isStairNeighbor && obstacleZMax > -FLT_MAX )
+		if (isStairNeighbor && obstacleZMax > -FLT_MAX)
 		{
-			areasToDelete.AddToTail( area );
+			areasToDelete.push_back(area);
 			continue;
 		}
 
 		// if we found an obstacle, raise this nav areas and size it to fit
-		if ( obstacleZMax > -FLT_MAX )
+		if (obstacleZMax > -FLT_MAX)
 		{
 			// enforce minimum obstacle width so we don't shrink to become a teensy nav area
-			AdjustObstacleDistances( &obstacleStartDist, &obstacleEndDist, GenerationStepSize );
-			Assert( obstacleEndDist - obstacleStartDist >= MinObstacleAreaWidth );
+			AdjustObstacleDistances(&obstacleStartDist, &obstacleEndDist, GenerationStepSize);
+			Assert(obstacleEndDist - obstacleStartDist >= MinObstacleAreaWidth);
 
 			// get current corner coords
 			Vector corner[4];
-			for ( int i = NORTH_WEST; i < NUM_CORNERS; i++ )
+			for (int i = NORTH_WEST; i < NUM_CORNERS; i++)
 			{
-				corner[i] = area->GetCorner( (NavCornerType) i );
+				corner[i] = area->GetCorner((NavCornerType)i);
 			}
 
 			// adjust our size to fit the obstacle
-			switch ( obstacleDir )
+			switch (obstacleDir)
 			{
 			case NORTH:
 				corner[NORTH_WEST].y = corner[SOUTH_WEST].y - obstacleEndDist;
-				corner[NORTH_EAST].y = corner[SOUTH_EAST].y - obstacleEndDist;				
+				corner[NORTH_EAST].y = corner[SOUTH_EAST].y - obstacleEndDist;
 				corner[SOUTH_WEST].y -= obstacleStartDist;
-				corner[SOUTH_EAST].y -= obstacleStartDist;				
+				corner[SOUTH_EAST].y -= obstacleStartDist;
 				break;
 			case SOUTH:
 				corner[SOUTH_WEST].y = corner[NORTH_WEST].y + obstacleEndDist;
 				corner[SOUTH_EAST].y = corner[NORTH_EAST].y + obstacleEndDist;
 				corner[NORTH_WEST].y += obstacleStartDist;
 				corner[NORTH_EAST].y += obstacleStartDist;
-				::V_swap( obstacleZ[0], obstacleZ[1] );			// swap left and right Z heights for obstacle so we can run common code below
+				::V_swap(obstacleZ[0], obstacleZ[1]);			// swap left and right Z heights for obstacle so we can run common code below
 				break;
 			case EAST:
 				corner[NORTH_EAST].x = corner[NORTH_WEST].x + obstacleEndDist;
-				corner[SOUTH_EAST].x = corner[SOUTH_WEST].x + obstacleEndDist;				
+				corner[SOUTH_EAST].x = corner[SOUTH_WEST].x + obstacleEndDist;
 				corner[NORTH_WEST].x += obstacleStartDist;
 				corner[SOUTH_WEST].x += obstacleStartDist;
 				break;
 			case WEST:
 				corner[NORTH_WEST].x = corner[NORTH_EAST].x - obstacleEndDist;
-				corner[SOUTH_WEST].x = corner[SOUTH_EAST].x - obstacleEndDist;				
+				corner[SOUTH_WEST].x = corner[SOUTH_EAST].x - obstacleEndDist;
 				corner[NORTH_EAST].x -= obstacleStartDist;
 				corner[SOUTH_EAST].x -= obstacleStartDist;
-				::V_swap( obstacleZ[0], obstacleZ[1] );			// swap left and right Z heights for obstacle so we can run common code below
+				::V_swap(obstacleZ[0], obstacleZ[1]);			// swap left and right Z heights for obstacle so we can run common code below
 				break;
 			}
 
@@ -849,29 +852,28 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 			corner[NORTH_EAST].z = obstacleZ[1];
 			corner[SOUTH_EAST].z = obstacleZ[1];
 			corner[SOUTH_WEST].z = obstacleZ[0];
-			
+
 			// move the area
-			RemoveNavArea( area );
-			area->Build( corner[NORTH_WEST], corner[NORTH_EAST], corner[SOUTH_EAST], corner[SOUTH_WEST] );
-			Assert( !area->IsDegenerate() );
-			AddNavArea( area );
+			RemoveNavArea(area);
+			area->Build(corner[NORTH_WEST], corner[NORTH_EAST], corner[SOUTH_EAST], corner[SOUTH_WEST]);
+			Assert(!area->IsDegenerate());
+			AddNavArea(area);
 
 			// remove side-to-side connections if there are any so AI does try to do things like run along fencetops
-			area->RemoveOrthogonalConnections( obstacleDir );
-			area->SetAttributes( area->GetAttributes() | NAV_MESH_NO_MERGE | NAV_MESH_OBSTACLE_TOP );
-			area->SetAttributes( area->GetAttributes() & ( ~NAV_MESH_JUMP ) );
+			area->RemoveOrthogonalConnections(obstacleDir);
+			area->SetAttributes(area->GetAttributes() | NAV_MESH_NO_MERGE | NAV_MESH_OBSTACLE_TOP);
+			area->SetAttributes(area->GetAttributes() & (~NAV_MESH_JUMP));
 			// clear out the nodes associated with this area's corners -- corners don't match the node positions any more
-			for ( int i = 0; i < NUM_CORNERS; i++ )
+			for (int i = 0; i < NUM_CORNERS; i++)
 			{
-				area->m_node[i] = NULL;		
+				area->m_node[i] = NULL;
 			}
 		}
 	}
 
-	for ( int i=0; i<areasToDelete.Count(); ++i )
+	for (auto area : areasToDelete)
 	{
-		TheNavAreas.FindAndRemove( areasToDelete[i] );
-		DestroyArea( areasToDelete[i] );
+		DestroyArea(area);
 	}
 }
 
@@ -883,32 +885,31 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 void CNavMesh::CreateObstacleTopAreas()
 {
 	// enumerate all areas
-	FOR_EACH_VEC( TheNavAreas, it )
-	{
-		CNavArea *area = TheNavAreas[ it ];
 
+	for (auto area : TheNavAreas)
+	{
 		// if this is a jump node (which will ultimately get removed) or is an obstacle top, ignore it
-		if ( area->GetAttributes() & ( NAV_MESH_JUMP | NAV_MESH_OBSTACLE_TOP ) )
+		if (area->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_OBSTACLE_TOP))
 			return;
 
 		// Look in all directions
-		for ( int i = NORTH; i < NUM_DIRECTIONS; i++ )
+		for (int i = NORTH; i < NUM_DIRECTIONS; i++)
 		{
-			NavDirType dir = (NavDirType) i;
+			NavDirType dir = (NavDirType)i;
 
 			// Look at all adjacent areas in this direction
-			int iConnections = area->GetAdjacentCount( dir );
-			for ( int j = 0; j < iConnections; j++ )
+			int iConnections = area->GetAdjacentCount(dir);
+			for (int j = 0; j < iConnections; j++)
 			{
-				CNavArea *areaOther = area->GetAdjacentArea( dir, j );
+				CNavArea* areaOther = area->GetAdjacentArea(dir, j);
 				// if this is a jump node (which will ultimately get removed) or is an obstacle top, ignore it
-				if (!( areaOther->GetAttributes() & ( NAV_MESH_JUMP | NAV_MESH_OBSTACLE_TOP ) )
-				// create an obstacle top if there is a one-node separation between the areas and there is an intra-node obstacle within that separation
-						&& !CreateObstacleTopAreaIfNecessary( area, areaOther, dir, false ) )
+				if (!(areaOther->GetAttributes() & (NAV_MESH_JUMP | NAV_MESH_OBSTACLE_TOP))
+					// create an obstacle top if there is a one-node separation between the areas and there is an intra-node obstacle within that separation
+					&& !CreateObstacleTopAreaIfNecessary(area, areaOther, dir, false))
 				{
 					// if not, create an obstacle top if there is a two-node separation between the areas and the intermediate node is significantly
 					// higher than the two areas, which means there's some geometry there that causes the middle node to be higher
-					CreateObstacleTopAreaIfNecessary( area, areaOther, dir, true );
+					CreateObstacleTopAreaIfNecessary(area, areaOther, dir, true);
 				}
 			}
 		}
@@ -1071,7 +1072,7 @@ bool CNavMesh::CreateObstacleTopAreaIfNecessary( CNavArea *area, CNavArea *areaO
 			areaNew->Build( cornerNW, cornerNE, cornerSE, cornerSW );
 
 			// add it to the nav area list
-			TheNavAreas.AddToTail( areaNew );
+			TheNavAreas.push_back( areaNew );
 			AddNavArea( areaNew );
 
 			Assert( !areaNew->IsDegenerate() );
@@ -1110,71 +1111,67 @@ void CNavMesh::RemoveOverlappingObstacleTopAreas()
 	// them so there is generally a path to get over any obstacle.
 
 	// make a list of just the obstacle top areas to reduce the N of the N squared operation we're about to do
-	CUtlVector<CNavArea *> vecObstacleTopAreas;
-	FOR_EACH_VEC( TheNavAreas, it )
+	std::vector<CNavArea *> vecObstacleTopAreas;
+
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-		if ( area->GetAttributes() & NAV_MESH_OBSTACLE_TOP ) 
+		if (area->GetAttributes() & NAV_MESH_OBSTACLE_TOP)
 		{
-			vecObstacleTopAreas.AddToTail( area );
+			vecObstacleTopAreas.push_back(area);
 		}
 	}
 
 	// look at every pair of obstacle top areas
-	CUtlVector<CNavArea *> vecAreasToRemove;
-	FOR_EACH_VEC( vecObstacleTopAreas, it )
-	{
-		CNavArea *area = vecObstacleTopAreas[it];
+	std::vector<CNavArea *> vecAreasToRemove;
 
+	for (size_t it = 0; it < vecObstacleTopAreas.size(); it++)
+	{
+		auto area = vecObstacleTopAreas[it];
 		Vector normal, otherNormal;
-		area->ComputeNormal( &normal );
-		area->ComputeNormal( &otherNormal, true );
+		area->ComputeNormal(&normal);
+		area->ComputeNormal(&otherNormal, true);
 
 		// Remove any obstacle areas that are steep enough to be jump areas
-		float lowestNormalZ = MIN( normal.z, otherNormal.z );
-		if ( lowestNormalZ < nav_slope_limit.GetFloat() )
+		float lowestNormalZ = MIN(normal.z, otherNormal.z);
+		if (lowestNormalZ < nav_slope_limit.GetFloat())
 		{
-			vecAreasToRemove.AddToTail( area );
+			vecAreasToRemove.push_back(area);
 		}
 
-		for ( int it2 = it+1; it2 < vecObstacleTopAreas.Count(); it2++ )
+		for (size_t it2 = it + 1; it2 < vecObstacleTopAreas.size(); it2++)
 		{
-			CNavArea *areaOther = vecObstacleTopAreas[it2];
-			if ( area->IsOverlapping( areaOther ) )
-			{		
-				if ( area->Contains( areaOther ) )
+			CNavArea* areaOther = vecObstacleTopAreas[it2];
+			if (area->IsOverlapping(areaOther))
+			{
+				if (area->Contains(areaOther))
 				{
 					// if one entirely contains the other, mark the other for removal
-					vecAreasToRemove.AddToTail( areaOther );					
+					vecAreasToRemove.push_back(areaOther);
 				}
-				else if ( areaOther->Contains( area ) )
+				else if (areaOther->Contains(area))
 				{
 					// if one entirely contains the other, mark the other for removal
-					vecAreasToRemove.AddToTail( area );
+					vecAreasToRemove.push_back(area);
 				}
 				else
 				{
 					// if they overlap without one being a superset of the other, just remove the smaller area
-					vecAreasToRemove.AddToTail( ( area->GetSizeX() * area->GetSizeY() > areaOther->GetSizeX()
-							* areaOther->GetSizeY() ? areaOther : area ) );
+					vecAreasToRemove.push_back((area->GetSizeX() * area->GetSizeY() > areaOther->GetSizeX()
+						* areaOther->GetSizeY() ? areaOther : area));
 				}
 			}
 		}
 	}
 
-	// now go delete all the areas we want to remove
-	while ( vecAreasToRemove.Count() > 0 )
+	for (auto areaToDelete : vecAreasToRemove)
 	{
-		CNavArea *areaToDelete = vecAreasToRemove[0];
-		RemoveFromSelectedSet( areaToDelete );
-		TheNavMesh->OnEditDestroyNotify( areaToDelete );
-		TheNavAreas.FindAndRemove( areaToDelete );
-		TheNavMesh->DestroyArea( areaToDelete );
+		RemoveFromSelectedSet(areaToDelete);
+		TheNavMesh->OnEditDestroyNotify(areaToDelete);
+		
+		NAV_VEC_REMOVE_NO_DELETE(TheNavAreas, areaToDelete);
 
-		// remove duplicates so we don't double-delete
-		while ( vecAreasToRemove.FindAndRemove( areaToDelete ) );
+		TheNavMesh->DestroyArea(areaToDelete);
 	}
-
 }
 
 static void CommandNavCheckStairs( void )
@@ -1192,9 +1189,9 @@ static ConCommand nav_check_stairs( "nav_check_stairs", CommandNavCheckStairs, "
  */
 void CNavMesh::MarkStairAreas( void )
 {
-	FOR_EACH_VEC( TheNavAreas, it )
+	for (auto area : TheNavAreas)
 	{
-		TheNavAreas[ it ]->TestStairs();
+		area->TestStairs();
 	}
 }
 
@@ -1396,9 +1393,10 @@ CON_COMMAND_F( nav_test_stairs, "Test the selected set for being on stairs", FCV
 	int count = 0;
 
 	const NavAreaVector &selectedSet = TheNavMesh->GetSelectedSet();
-	for ( int i=0; i<selectedSet.Count(); ++i )
+
+	for (auto area : selectedSet)
 	{
-		if ( selectedSet[i]->TestStairs() )
+		if (area->TestStairs())
 		{
 			++count;
 		}
@@ -1419,29 +1417,26 @@ void CNavMesh::RemoveJumpAreas( void )
 		return;
 	}
 
-	CUtlVector< CNavArea * > unusedAreas;
+	std::vector< CNavArea * > unusedAreas;
 
-	int i;
-	for ( i=0; i<TheNavAreas.Count(); ++i )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *testArea = TheNavAreas[i];
-		if ( (testArea->GetAttributes() & NAV_MESH_JUMP) )
+		if (area->GetAttributes() & NAV_MESH_JUMP)
 		{
-			unusedAreas.AddToTail( testArea );
+			unusedAreas.push_back(area);
 		}
 	}
 
-	for ( i=0; i<unusedAreas.Count(); ++i )
+	for (auto areaToDelete : unusedAreas)
 	{
-		CNavArea *areaToDelete = unusedAreas[i];
-		TheNavMesh->OnEditDestroyNotify( areaToDelete );
-		TheNavAreas.FindAndRemove( areaToDelete );
-		TheNavMesh->DestroyArea( areaToDelete );
+		TheNavMesh->OnEditDestroyNotify(areaToDelete);
+		NAV_VEC_REMOVE_NO_DELETE(TheNavAreas, areaToDelete);
+		TheNavMesh->DestroyArea(areaToDelete);
 	}
 
 	StripNavigationAreas();
 
-	SetMarkedArea( NULL );			// unmark the mark area
+	SetMarkedArea( nullptr );			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
@@ -1452,9 +1447,9 @@ void CNavMesh::CommandNavRemoveJumpAreas( void )
 	JumpConnector connector;
 	ForAllAreas( connector );
 
-	int before = TheNavAreas.Count();
+	auto before = TheNavAreas.size();
 	RemoveJumpAreas();
-	int after = TheNavAreas.Count();
+	auto after = TheNavAreas.size();
 
 	Msg( "Removed %d jump areas\n", before - after );
 }
@@ -1532,20 +1527,15 @@ void CNavMesh::SquareUpAreas( void )
 {
 	int it = 0;
 
-	while( it < TheNavAreas.Count() )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-
-		// move the iterator in case the current area is split and deleted
-		++it;
-
 		if (area->HasNodes() && !area->IsRoughlySquare())
 		{
 			// chop this area into square pieces
 			if (area->GetSizeX() > area->GetSizeY())
-				splitX( area );
+				splitX(area);
 			else
-				splitY( area );
+				splitY(area);
 		}
 	}
 }
@@ -1640,18 +1630,22 @@ void CNavMesh::StitchGeneratedAreas( void )
 class AreaSet
 {
 public:
-	AreaSet( CUtlVector< CNavArea * > *areas )
+	AreaSet(std::vector<CNavArea*> *areas)
 	{
 		m_areas = areas;
 	}
 
 	bool operator()( CNavArea *area )
 	{
-		return ( m_areas->HasElement( area ) );
+		auto start = m_areas->begin();
+		auto end = m_areas->end();
+		auto pos = std::find(start, end, area);
+
+		return pos != end;
 	}
 
 private:
-	CUtlVector< CNavArea * > *m_areas;
+	std::vector<CNavArea*> *m_areas;
 };
 
 
@@ -1659,7 +1653,7 @@ private:
 /**
  * Stitches an arbitrary set of areas (newly-merged, for example) into the existing mesh
  */
-void CNavMesh::StitchAreaSet( CUtlVector< CNavArea * > *areas )
+void CNavMesh::StitchAreaSet( std::vector<CNavArea*> *areas )
 {
 	AreaSet areaSet( areas );
 	StitchMesh( areaSet );
@@ -1825,144 +1819,142 @@ void CNavMesh::ConnectGeneratedAreas( void )
 {
 	Msg( "Connecting navigation areas...\n" );
 
-	FOR_EACH_VEC( TheNavAreas, it )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-
 		// scan along edge nodes, stepping one node over into the next area
 		// for now, only use bi-directional connections
 
 		// north edge
-		CNavNode *node;
-		for( node = area->m_node[ NORTH_WEST ]; node != area->m_node[ NORTH_EAST ]; node = node->GetConnectedNode( EAST ) )
+		CNavNode* node;
+		for (node = area->m_node[NORTH_WEST]; node != area->m_node[NORTH_EAST]; node = node->GetConnectedNode(EAST))
 		{
-			CNavNode *adj = node->GetConnectedNode( NORTH );
+			CNavNode* adj = node->GetConnectedNode(NORTH);
 
-			if (adj && adj->GetArea() && adj->GetConnectedNode( SOUTH ) == node )
+			if (adj && adj->GetArea() && adj->GetConnectedNode(SOUTH) == node)
 			{
-				area->ConnectTo( adj->GetArea(), NORTH );
+				area->ConnectTo(adj->GetArea(), NORTH);
 			}
 			else
 			{
-				CNavArea *downArea = findJumpDownArea( node->GetPosition(), NORTH );
+				CNavArea* downArea = findJumpDownArea(node->GetPosition(), NORTH);
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, NORTH );
+					area->ConnectTo(downArea, NORTH);
 			}
 		}
 
 		// west edge
-		for( node = area->m_node[ NORTH_WEST ]; node != area->m_node[ SOUTH_WEST ]; node = node->GetConnectedNode( SOUTH ) )
+		for (node = area->m_node[NORTH_WEST]; node != area->m_node[SOUTH_WEST]; node = node->GetConnectedNode(SOUTH))
 		{
-			CNavNode *adj = node->GetConnectedNode( WEST );
-			
-			if (adj && adj->GetArea() && adj->GetConnectedNode( EAST ) == node )
+			CNavNode* adj = node->GetConnectedNode(WEST);
+
+			if (adj && adj->GetArea() && adj->GetConnectedNode(EAST) == node)
 			{
-				area->ConnectTo( adj->GetArea(), WEST );
+				area->ConnectTo(adj->GetArea(), WEST);
 			}
 			else
 			{
-				CNavArea *downArea = findJumpDownArea( node->GetPosition(), WEST );
+				CNavArea* downArea = findJumpDownArea(node->GetPosition(), WEST);
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, WEST );
+					area->ConnectTo(downArea, WEST);
 			}
 		}
 
 		// south edge - this edge's nodes are actually part of adjacent areas
 		// move one node north, and scan west to east
 		/// @todo This allows one-node-wide areas - do we want this?
-		node = area->m_node[ SOUTH_WEST ];
-		if ( node ) // pre-existing areas in incremental generates won't have nodes
+		node = area->m_node[SOUTH_WEST];
+		if (node) // pre-existing areas in incremental generates won't have nodes
 		{
-			node = node->GetConnectedNode( NORTH );
+			node = node->GetConnectedNode(NORTH);
 		}
 		if (node)
 		{
-			CNavNode *end = area->m_node[ SOUTH_EAST ]->GetConnectedNode( NORTH );
+			CNavNode* end = area->m_node[SOUTH_EAST]->GetConnectedNode(NORTH);
 			/// @todo Figure out why cs_backalley gets a NULL node in here...
-			for( ; node && node != end; node = node->GetConnectedNode( EAST ) )
+			for (; node && node != end; node = node->GetConnectedNode(EAST))
 			{
-				CNavNode *adj = node->GetConnectedNode( SOUTH );
-				
-				if (adj && adj->GetArea() && adj->GetConnectedNode( NORTH ) == node )
+				CNavNode* adj = node->GetConnectedNode(SOUTH);
+
+				if (adj && adj->GetArea() && adj->GetConnectedNode(NORTH) == node)
 				{
-					area->ConnectTo( adj->GetArea(), SOUTH );
+					area->ConnectTo(adj->GetArea(), SOUTH);
 				}
 				else
 				{
-					CNavArea *downArea = findJumpDownArea( node->GetPosition(), SOUTH );
+					CNavArea* downArea = findJumpDownArea(node->GetPosition(), SOUTH);
 					if (downArea && downArea != area)
-						area->ConnectTo( downArea, SOUTH );
+						area->ConnectTo(downArea, SOUTH);
 				}
 			}
 		}
 
 		// south edge part 2 - scan the actual south edge.  If the node is not part of an adjacent area, then it
 		// really belongs to us.  This will happen if our area runs right up against a ledge.
-		for( node = area->m_node[ SOUTH_WEST ]; node != area->m_node[ SOUTH_EAST ]; node = node->GetConnectedNode( EAST ) )
+		for (node = area->m_node[SOUTH_WEST]; node != area->m_node[SOUTH_EAST]; node = node->GetConnectedNode(EAST))
 		{
-			if ( node->GetArea() )
+			if (node->GetArea())
 				continue;	// some other area owns this node, pay no attention to it
 
-			CNavNode *adj = node->GetConnectedNode( SOUTH );
+			CNavNode* adj = node->GetConnectedNode(SOUTH);
 
-			if ( node->IsBlockedInAnyDirection() || (adj && adj->IsBlockedInAnyDirection()) )
+			if (node->IsBlockedInAnyDirection() || (adj && adj->IsBlockedInAnyDirection()))
 				continue;	// The space around this node is blocked, so don't connect across it
 
 			// Don't directly connect to adj's area, since it's already 1 cell removed from our area.
 			// There was no area in between, presumably for good reason.  Only look for jump down links.
-			if ( !adj || !adj->GetArea() )
+			if (!adj || !adj->GetArea())
 			{
-				CNavArea *downArea = findJumpDownArea( node->GetPosition(), SOUTH );
+				CNavArea* downArea = findJumpDownArea(node->GetPosition(), SOUTH);
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, SOUTH );
+					area->ConnectTo(downArea, SOUTH);
 			}
 		}
 
 		// east edge - this edge's nodes are actually part of adjacent areas
-		node = area->m_node[ NORTH_EAST ];
-		if ( node ) // pre-existing areas in incremental generates won't have nodes
+		node = area->m_node[NORTH_EAST];
+		if (node) // pre-existing areas in incremental generates won't have nodes
 		{
-			node = node->GetConnectedNode( WEST );
+			node = node->GetConnectedNode(WEST);
 		}
 		if (node)
 		{
-			CNavNode *end = area->m_node[ SOUTH_EAST ]->GetConnectedNode( WEST );
-			for( ; node && node != end; node = node->GetConnectedNode( SOUTH ) )
+			CNavNode* end = area->m_node[SOUTH_EAST]->GetConnectedNode(WEST);
+			for (; node && node != end; node = node->GetConnectedNode(SOUTH))
 			{
-				CNavNode *adj = node->GetConnectedNode( EAST );			
+				CNavNode* adj = node->GetConnectedNode(EAST);
 
-				if (adj && adj->GetArea() && adj->GetConnectedNode( WEST ) == node )
+				if (adj && adj->GetArea() && adj->GetConnectedNode(WEST) == node)
 				{
-					area->ConnectTo( adj->GetArea(), EAST );
+					area->ConnectTo(adj->GetArea(), EAST);
 				}
 				else
 				{
-					CNavArea *downArea = findJumpDownArea( node->GetPosition(), EAST );
+					CNavArea* downArea = findJumpDownArea(node->GetPosition(), EAST);
 					if (downArea && downArea != area)
-						area->ConnectTo( downArea, EAST );
+						area->ConnectTo(downArea, EAST);
 				}
 			}
 		}
 
 		// east edge part 2 - scan the actual east edge.  If the node is not part of an adjacent area, then it
 		// really belongs to us.  This will happen if our area runs right up against a ledge.
-		for( node = area->m_node[ NORTH_EAST ]; node != area->m_node[ SOUTH_EAST ]; node = node->GetConnectedNode( SOUTH ) )
+		for (node = area->m_node[NORTH_EAST]; node != area->m_node[SOUTH_EAST]; node = node->GetConnectedNode(SOUTH))
 		{
-			if ( node->GetArea() )
+			if (node->GetArea())
 				continue;	// some other area owns this node, pay no attention to it
 
-			CNavNode *adj = node->GetConnectedNode( EAST );
+			CNavNode* adj = node->GetConnectedNode(EAST);
 
-			if ( node->IsBlockedInAnyDirection() || (adj && adj->IsBlockedInAnyDirection()) )
+			if (node->IsBlockedInAnyDirection() || (adj && adj->IsBlockedInAnyDirection()))
 				continue;	// The space around this node is blocked, so don't connect across it
 
 			// Don't directly connect to adj's area, since it's already 1 cell removed from our area.
 			// There was no area in between, presumably for good reason.  Only look for jump down links.
-			if ( !adj || !adj->GetArea() )
+			if (!adj || !adj->GetArea())
 			{
-				CNavArea *downArea = findJumpDownArea( node->GetPosition(), EAST );
+				CNavArea* downArea = findJumpDownArea(node->GetPosition(), EAST);
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, EAST );
+					area->ConnectTo(downArea, EAST);
 			}
 		}
 	}
@@ -1992,33 +1984,33 @@ void CNavMesh::MergeGeneratedAreas( void )
 	{
 		merged = false;
 
-		FOR_EACH_VEC( TheNavAreas, it )
+		for (auto area : TheNavAreas)
 		{
-			CNavArea *area = TheNavAreas[ it ];
-			if ( !area->HasNodes() || ( area->GetAttributes() & NAV_MESH_NO_MERGE ) ) 
+			if (!area->HasNodes() || (area->GetAttributes() & NAV_MESH_NO_MERGE))
 				continue;
 
 			// north edge
-			FOR_EACH_VEC( area->m_connect[ NORTH ], nit )
+
+			for (auto& navconn : area->m_connect[NORTH])
 			{
-				CNavArea *adjArea = area->m_connect[ NORTH ][ nit ].area;
-				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * nav_area_max_size.GetInt() )
+				CNavArea* adjArea = navconn.area;
+				if (!area->IsAbleToMergeWith(adjArea)  // pre-existing areas in incremental generates won't have nodes
+					|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * nav_area_max_size.GetInt())
 					continue;
 
-				if (area->m_node[ NORTH_WEST ] == adjArea->m_node[ SOUTH_WEST ] &&
-					area->m_node[ NORTH_EAST ] == adjArea->m_node[ SOUTH_EAST ] &&
+				if (area->m_node[NORTH_WEST] == adjArea->m_node[SOUTH_WEST] &&
+					area->m_node[NORTH_EAST] == adjArea->m_node[SOUTH_EAST] &&
 					area->GetAttributes() == adjArea->GetAttributes() &&
-					area->IsCoplanar( adjArea ))
+					area->IsCoplanar(adjArea))
 				{
 					// merge vertical
-					area->m_node[ NORTH_WEST ] = adjArea->m_node[ NORTH_WEST ];
-					area->m_node[ NORTH_EAST ] = adjArea->m_node[ NORTH_EAST ];
+					area->m_node[NORTH_WEST] = adjArea->m_node[NORTH_WEST];
+					area->m_node[NORTH_EAST] = adjArea->m_node[NORTH_EAST];
 
 					merged = true;
 					//CONSOLE_ECHO( "  Merged (north) areas #%d and #%d\n", area->m_id, adjArea->m_id );
 
-					area->FinishMerge( this, adjArea );
+					area->FinishMerge(this, adjArea);
 
 					// restart scan - iterator is invalidated
 					break;
@@ -2028,90 +2020,84 @@ void CNavMesh::MergeGeneratedAreas( void )
 			if (merged)
 				break;
 
-			// south edge
-			FOR_EACH_VEC( area->m_connect[ SOUTH ], sit )
+			for (auto& navconn : area->m_connect[SOUTH])
 			{
-				CNavArea *adjArea = area->m_connect[ SOUTH ][ sit ].area;
-				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * nav_area_max_size.GetInt() )
+				CNavArea* adjArea = navconn.area;
+				if (!area->IsAbleToMergeWith(adjArea)  // pre-existing areas in incremental generates won't have nodes
+					|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * nav_area_max_size.GetInt())
 					continue;
 
-				if (adjArea->m_node[ NORTH_WEST ] == area->m_node[ SOUTH_WEST ] &&
-					adjArea->m_node[ NORTH_EAST ] == area->m_node[ SOUTH_EAST ] &&
+				if (adjArea->m_node[NORTH_WEST] == area->m_node[SOUTH_WEST] &&
+					adjArea->m_node[NORTH_EAST] == area->m_node[SOUTH_EAST] &&
 					area->GetAttributes() == adjArea->GetAttributes() &&
-					area->IsCoplanar( adjArea ))
+					area->IsCoplanar(adjArea))
 				{
 					// merge vertical
-					area->m_node[ SOUTH_WEST ] = adjArea->m_node[ SOUTH_WEST ];
-					area->m_node[ SOUTH_EAST ] = adjArea->m_node[ SOUTH_EAST ];
+					area->m_node[SOUTH_WEST] = adjArea->m_node[SOUTH_WEST];
+					area->m_node[SOUTH_EAST] = adjArea->m_node[SOUTH_EAST];
 
 					merged = true;
 					//CONSOLE_ECHO( "  Merged (south) areas #%d and #%d\n", area->m_id, adjArea->m_id );
 
-					area->FinishMerge( this, adjArea );
+					area->FinishMerge(this, adjArea);
 
 					// restart scan - iterator is invalidated
 					break;
 				}
-
 			}
 
 			if (merged)
 				break;
 
-
-			// west edge
-			FOR_EACH_VEC( area->m_connect[ WEST ], wit )
+			for (auto& navconn : area->m_connect[WEST])
 			{
-				CNavArea *adjArea = area->m_connect[ WEST ][ wit ].area;
-				if ( !area->IsAbleToMergeWith( adjArea ) // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * nav_area_max_size.GetInt() )
+				CNavArea* adjArea = navconn.area;
+				if (!area->IsAbleToMergeWith(adjArea) // pre-existing areas in incremental generates won't have nodes
+					|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * nav_area_max_size.GetInt())
 					continue;
 
-				if (area->m_node[ NORTH_WEST ] == adjArea->m_node[ NORTH_EAST ] &&
-						area->m_node[ SOUTH_WEST ] == adjArea->m_node[ SOUTH_EAST ] &&
-						area->GetAttributes() == adjArea->GetAttributes() &&
-						area->IsCoplanar( adjArea ))
+				if (area->m_node[NORTH_WEST] == adjArea->m_node[NORTH_EAST] &&
+					area->m_node[SOUTH_WEST] == adjArea->m_node[SOUTH_EAST] &&
+					area->GetAttributes() == adjArea->GetAttributes() &&
+					area->IsCoplanar(adjArea))
 				{
 					// merge horizontal
-					area->m_node[ NORTH_WEST ] = adjArea->m_node[ NORTH_WEST ];
-					area->m_node[ SOUTH_WEST ] = adjArea->m_node[ SOUTH_WEST ];
+					area->m_node[NORTH_WEST] = adjArea->m_node[NORTH_WEST];
+					area->m_node[SOUTH_WEST] = adjArea->m_node[SOUTH_WEST];
 
 					merged = true;
 					//CONSOLE_ECHO( "  Merged (west) areas #%d and #%d\n", area->m_id, adjArea->m_id );
 
-					area->FinishMerge( this, adjArea );
+					area->FinishMerge(this, adjArea);
 
 					// restart scan - iterator is invalidated
 					break;
 				}
-
 			}
 
 			if (merged)
 				break;
 
-			// east edge
-			FOR_EACH_VEC( area->m_connect[ EAST ], eit )
+			for (auto& navconn : area->m_connect[EAST])
 			{
-				CNavArea *adjArea = area->m_connect[ EAST ][ eit ].area;
-				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-					|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * nav_area_max_size.GetInt() )
+				CNavArea* adjArea = navconn.area;
+				if (!area->IsAbleToMergeWith(adjArea)  // pre-existing areas in incremental generates won't have nodes
+					|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * nav_area_max_size.GetInt())
 					continue;
 
-				if (adjArea->m_node[ NORTH_WEST ] == area->m_node[ NORTH_EAST ] &&
-					adjArea->m_node[ SOUTH_WEST ] == area->m_node[ SOUTH_EAST ] &&
+				if (adjArea->m_node[NORTH_WEST] == area->m_node[NORTH_EAST] &&
+					adjArea->m_node[SOUTH_WEST] == area->m_node[SOUTH_EAST] &&
 					area->GetAttributes() == adjArea->GetAttributes() &&
-					area->IsCoplanar( adjArea ))
+					area->IsCoplanar(adjArea))
 				{
 					// merge horizontal
-					area->m_node[ NORTH_EAST ] = adjArea->m_node[ NORTH_EAST ];
-					area->m_node[ SOUTH_EAST ] = adjArea->m_node[ SOUTH_EAST ];
+					area->m_node[NORTH_EAST] = adjArea->m_node[NORTH_EAST];
+					area->m_node[SOUTH_EAST] = adjArea->m_node[SOUTH_EAST];
 
 					merged = true;
 					//CONSOLE_ECHO( "  Merged (east) areas #%d and #%d\n", area->m_id, adjArea->m_id );
 
-					area->FinishMerge( this, adjArea );
+					area->FinishMerge(this, adjArea);
 
 					// restart scan - iterator is invalidated
 					break;
@@ -2172,104 +2158,110 @@ void CNavMesh::FixUpGeneratedAreas( void )
 void CNavMesh::FixConnections( void )
 {
 	// Test the steep sides of stairs for any outgoing links that cross nodes that were partially obstructed.
-	FOR_EACH_VEC( TheNavAreas, it )
+
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-		if ( !area->HasAttributes( NAV_MESH_STAIRS )
-				|| !area->HasNodes() )
+		if (!area->HasAttributes(NAV_MESH_STAIRS)
+			|| !area->HasNodes())
 			continue;
 
-		for ( int dir=0; dir<NUM_DIRECTIONS; ++dir )
+		for (int dir = 0; dir < NUM_DIRECTIONS; ++dir)
 		{
 			NavCornerType cornerType[2];
-			GetCornerTypesInDirection( (NavDirType)dir, &cornerType[0], &cornerType[1] );
+			GetCornerTypesInDirection((NavDirType)dir, &cornerType[0], &cornerType[1]);
 
 			// Flat edges of stairs need to connect.  It's the slopes we don't want to climb over things for.
-			float cornerDeltaZ = fabs( area->GetCorner( cornerType[0] ).z - area->GetCorner( cornerType[1] ).z );
-			if ( cornerDeltaZ < StepHeight )
+			float cornerDeltaZ = fabs(area->GetCorner(cornerType[0]).z - area->GetCorner(cornerType[1]).z);
+			if (cornerDeltaZ < StepHeight)
 				continue;
 
-			const NavConnectVector *connectedAreas = area->GetAdjacentAreas( (NavDirType)dir );
-			CUtlVector< CNavArea * > areasToDisconnect;
-			for ( int i=0; i<connectedAreas->Count(); ++i )
+			const NavConnectVector* connectedAreas = area->GetAdjacentAreas((NavDirType)dir);
+			std::vector< CNavArea* > areasToDisconnect;
+
+			for (auto& navconn : *connectedAreas)
 			{
-				CNavArea *adjArea = connectedAreas->Element(i).area;
-				if ( !adjArea->HasNodes() )
-					continue;
+				auto adjArea = navconn.area;
 
 				Vector pos, adjPos;
 				float width;
-				area->ComputePortal( adjArea, (NavDirType)dir, &pos, &width );
-				adjArea->GetClosestPointOnArea( pos, &adjPos );
+				area->ComputePortal(adjArea, (NavDirType)dir, &pos, &width);
+				adjArea->GetClosestPointOnArea(pos, &adjPos);
 
-				CNavNode *node = area->FindClosestNode( pos, (NavDirType)dir );
-				CNavNode *adjNode = adjArea->FindClosestNode( adjPos, OppositeDirection( (NavDirType)dir ) );
+				CNavNode* node = area->FindClosestNode(pos, (NavDirType)dir);
+				CNavNode* adjNode = adjArea->FindClosestNode(adjPos, OppositeDirection((NavDirType)dir));
 				pos = *node->GetPosition();
 				adjPos = *adjNode->GetPosition();
 
-				if ( !node || !adjNode )
+				if (!node || !adjNode)
 					continue;
 
 				NavCornerType adjCornerType[2];
-				GetCornerTypesInDirection( OppositeDirection((NavDirType)dir), &adjCornerType[0], &adjCornerType[1] );
+				GetCornerTypesInDirection(OppositeDirection((NavDirType)dir), &adjCornerType[0], &adjCornerType[1]);
 
 				// From the stair's perspective, we can't go up more than step height to reach the adjacent area.
 				// Also, if the adjacent area has to jump up higher than StepHeight above the stair area to reach the stairs,
 				// there's an obstruction close to the adjacent area that could prevent walking from the stairs down.
-				if ( node->GetGroundHeightAboveNode( cornerType[0] ) > StepHeight )
+				if (node->GetGroundHeightAboveNode(cornerType[0]) > StepHeight)
 				{
-					areasToDisconnect.AddToTail( adjArea );
+					areasToDisconnect.push_back(adjArea);
 				}
-				else if ( node->GetGroundHeightAboveNode( cornerType[1] ) > StepHeight )
+				else if (node->GetGroundHeightAboveNode(cornerType[1]) > StepHeight)
 				{
-					areasToDisconnect.AddToTail( adjArea );
+					areasToDisconnect.push_back(adjArea);
 				}
-				else if ( adjPos.z + adjNode->GetGroundHeightAboveNode( adjCornerType[0] ) > pos.z + StepHeight )
+				else if (adjPos.z + adjNode->GetGroundHeightAboveNode(adjCornerType[0]) > pos.z + StepHeight)
 				{
-					areasToDisconnect.AddToTail( adjArea );
+					areasToDisconnect.push_back(adjArea);
 				}
-				else if ( adjPos.z + adjNode->GetGroundHeightAboveNode( adjCornerType[1] ) > pos.z + StepHeight )
+				else if (adjPos.z + adjNode->GetGroundHeightAboveNode(adjCornerType[1]) > pos.z + StepHeight)
 				{
-					areasToDisconnect.AddToTail( adjArea );
+					areasToDisconnect.push_back(adjArea);
 				}
 			}
 
-			for ( int i=0; i<areasToDisconnect.Count(); ++i )
+			for (auto todisconnect : areasToDisconnect)
 			{
-				area->Disconnect( areasToDisconnect[i] );
+				area->Disconnect(todisconnect);
 			}
 		}
 	}
 
 	// Test to prevent A->C if A->B->C.  This can happen in doorways and dropdowns from rooftops.
 	// @TODO: find the root cause of A->C links.
-	FOR_EACH_VEC( TheNavAreas, it )
-	{
-		CNavArea *area = TheNavAreas[ it ];
-		CUtlVector< CNavArea * > areasToDisconnect;
-		for ( int dir=0; dir<NUM_DIRECTIONS; ++dir )
-		{
-			const NavConnectVector *connectedAreas = area->GetAdjacentAreas( (NavDirType)dir );
-			for ( int i=0; i<connectedAreas->Count(); ++i )
-			{
-				CNavArea *adjArea = connectedAreas->Element(i).area;
-				const NavConnectVector *adjConnectedAreas = adjArea->GetAdjacentAreas( (NavDirType)dir );
-				for ( int j=0; j<adjConnectedAreas->Count(); ++j )
-				{
-					CNavArea *farArea = adjConnectedAreas->Element(j).area;
 
-					if ( area->IsConnected( farArea, (NavDirType)dir ) )
+	std::vector<CNavArea*> areasToDisconnect;
+	areasToDisconnect.reserve(64);
+
+	for (auto area : TheNavAreas)
+	{
+		for (int dir = 0; dir < NUM_DIRECTIONS; ++dir)
+		{
+			const NavConnectVector* connectedAreas = area->GetAdjacentAreas((NavDirType)dir);
+
+			for (auto& navconn : *connectedAreas)
+			{
+				CNavArea* adjArea = navconn.area;
+				const NavConnectVector* adjConnectedAreas = adjArea->GetAdjacentAreas((NavDirType)dir);
+
+				for (auto& adjnavconn : *adjConnectedAreas)
+				{
+					CNavArea* farArea = adjnavconn.area;
+
+					if (area->IsConnected(farArea, (NavDirType)dir))
 					{
-						areasToDisconnect.AddToTail( farArea );
+						areasToDisconnect.push_back(farArea);
 					}
 				}
+
 			}
 		}
 
-		for ( int i=0; i<areasToDisconnect.Count(); ++i )
+		for (auto otherarea : areasToDisconnect)
 		{
-			area->Disconnect( areasToDisconnect[i] );
+			area->Disconnect(otherarea);
 		}
+
+		areasToDisconnect.clear();
 	}
 }
 
@@ -2282,9 +2274,8 @@ void CNavMesh::FixCornerOnCornerAreas( void )
 {
 	const float MaxDrop = StepHeight;	// don't make corner on corner areas that are too steep
 
-	FOR_EACH_VEC( TheNavAreas, it )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
 
 		// determine if we have any corners where the only nav area we touch is diagonally corner-to-corner.
 		// if there are, generate additional small (0.5 x 0.5 grid size) nav areas in the corners between
@@ -2304,100 +2295,100 @@ void CNavMesh::FixCornerOnCornerAreas( void )
 //
 
 		// check each corner
-		for ( int iCorner = NORTH_WEST; iCorner < NUM_CORNERS; iCorner++ )
+		for (int iCorner = NORTH_WEST; iCorner < NUM_CORNERS; iCorner++)
 		{
 			// get cardinal direction to right and left of this corner
-			NavDirType dirToRight = (NavDirType) iCorner;			
-			NavDirType dirToLeft = (NavDirType) ( ( iCorner+3 ) % NUM_DIRECTIONS );
-					
+			NavDirType dirToRight = (NavDirType)iCorner;
+			NavDirType dirToLeft = (NavDirType)((iCorner + 3) % NUM_DIRECTIONS);
+
 			// if we have any connections on cardinal compass directions on edge on either side of corner we're OK, skip this nav area
-			if ( area->GetAdjacentCount( dirToLeft ) > 0 || area->GetAdjacentCount( dirToRight ) > 0 ||
-				area->GetIncomingConnections( dirToLeft )->Count() > 0 || area->GetIncomingConnections( dirToRight )->Count() > 0 )
+			if (area->GetAdjacentCount(dirToLeft) > 0 || area->GetAdjacentCount(dirToRight) > 0 ||
+				area->GetIncomingConnections(dirToLeft)->size() > 0 || area->GetIncomingConnections(dirToRight)->size() > 0)
 				continue;
 
-			Vector cornerPos = area->GetCorner( (NavCornerType) iCorner );
-			NavDirType dirToRightTwice = DirectionRight( dirToRight );
-			NavDirType dirToLeftTwice = DirectionLeft( dirToLeft );
+			Vector cornerPos = area->GetCorner((NavCornerType)iCorner);
+			NavDirType dirToRightTwice = DirectionRight(dirToRight);
+			NavDirType dirToLeftTwice = DirectionLeft(dirToLeft);
 			NavDirType dirsAlongOtherEdge[2] = { dirToLeft, dirToRight };
 			NavDirType dirsAlongOurEdge[2] = { dirToLeftTwice, dirToRightTwice };
 
 			// consider 2 potential new nav areas, to left and right of the corner we're considering
-			for ( int iDir = 0; iDir < ARRAYSIZE( dirsAlongOtherEdge ); iDir++ )
+			for (int iDir = 0; iDir < ARRAYSIZE(dirsAlongOtherEdge); iDir++)
 			{
 				NavDirType dirAlongOtherEdge = dirsAlongOtherEdge[iDir];
 				NavDirType dirAlongOurEdge = dirsAlongOurEdge[iDir];
 
 				// look at the point 0.5 grid units along edge of other nav area
 				Vector vecDeltaOtherEdge;
-				DirectionToVector2D( dirAlongOtherEdge, (Vector2D *) &vecDeltaOtherEdge );
+				DirectionToVector2D(dirAlongOtherEdge, (Vector2D*)&vecDeltaOtherEdge);
 				vecDeltaOtherEdge.z = 0;
 				vecDeltaOtherEdge *= GenerationStepSize * 0.5;
 				Vector vecOtherEdgePos = cornerPos + vecDeltaOtherEdge;
 
 				// see if there is a nav area at that location
-				CNavArea *areaOther = GetNavArea( vecOtherEdgePos );
-				Assert( areaOther != area );
+				CNavArea* areaOther = GetNavArea(vecOtherEdgePos);
+				Assert(areaOther != area);
 				trace_t result;
-				if ( !areaOther
+				if (!areaOther
 					// no other area in that location, we're not touching on corner
 						// see if we can move from our corner in that direction
-					|| !TraceAdjacentNode( 0, cornerPos, vecOtherEdgePos, &result, MaxDrop )
+					|| !TraceAdjacentNode(0, cornerPos, vecOtherEdgePos, &result, MaxDrop)
 					// something is blocking movement, don't create additional nodes to aid movement
 					// get the corner of the other nav area that might touch our corner
-						|| cornerPos != areaOther->GetCorner( (NavCornerType) ( ( iCorner + 2 ) % NUM_CORNERS ) ) )
+					|| cornerPos != areaOther->GetCorner((NavCornerType)((iCorner + 2) % NUM_CORNERS)))
 					continue;		// that nav area does not touch us on corner
-				
+
 				// we are touching corner-to-corner with the other nav area and don't have connections in cardinal directions around
 				// the corner that touches, this is a candidate to generate new small helper nav areas.
 
 				// calculate the corners of the 0.5 x 0.5 nav area we would consider building between us and the other nav area whose corner we touch
 				Vector vecDeltaOurEdge;
-				DirectionToVector2D( dirAlongOurEdge, (Vector2D *) &vecDeltaOurEdge );
+				DirectionToVector2D(dirAlongOurEdge, (Vector2D*)&vecDeltaOurEdge);
 				vecDeltaOurEdge.z = 0;
 				vecDeltaOurEdge *= GenerationStepSize * 0.5;
 				Vector vecOurEdgePos = cornerPos + vecDeltaOurEdge;
-				Vector vecCorner[4];					
+				Vector vecCorner[4];
 				vecCorner[0] = cornerPos + vecDeltaOtherEdge + vecDeltaOurEdge;		// far corner of new nav area
 				vecCorner[1] = cornerPos + vecDeltaOtherEdge;						// intersection of far edge of new nav area with other nav area we touch
 				vecCorner[2] = cornerPos;											// common corner of this nav area, nav area we touch, and new nav area
 				vecCorner[3] = cornerPos + vecDeltaOurEdge;							// intersection of far edge of new nav area with this nav area
-			
-				CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
-				if ( !TraceAdjacentNode( 0, vecCorner[1], vecCorner[0], &result, MaxDrop ) ||	// can we move from edge of other area to far corner of new node
-					!TraceAdjacentNode( 0, vecCorner[3], vecCorner[0], &result, MaxDrop ) )		// can we move from edge of this area to far corner of new node
+
+				CTraceFilterWalkableEntities filter(NULL, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
+				if (!TraceAdjacentNode(0, vecCorner[1], vecCorner[0], &result, MaxDrop) ||	// can we move from edge of other area to far corner of new node
+					!TraceAdjacentNode(0, vecCorner[3], vecCorner[0], &result, MaxDrop))		// can we move from edge of this area to far corner of new node
 					continue;	// new node would not fit
 
 				// as sanity check, make sure there's not already a nav area there, shouldn't be
-				CNavArea *areaTest = GetNavArea( vecCorner[0] );
-				Assert ( !areaTest );
-				if ( areaTest )
+				CNavArea* areaTest = GetNavArea(vecCorner[0]);
+				Assert(!areaTest);
+				if (areaTest)
 					continue;
 
 				vecCorner[0] = result.endpos;
 
 				// create a new nav area
-				CNavArea *areaNew = CreateArea();
+				CNavArea* areaNew = CreateArea();
 
 				// arrange the corners of the new nav area by compass direction
 				Vector vecNW, vecNE, vecSE, vecSW;
-				ClassifyCorners( vecCorner, vecNW, vecNE, vecSE, vecSW );
-				areaNew->Build( vecNW, vecNE, vecSE, vecSW );
+				ClassifyCorners(vecCorner, vecNW, vecNE, vecSE, vecSW);
+				areaNew->Build(vecNW, vecNE, vecSE, vecSW);
 
 				// add it to the nav area list
-				TheNavAreas.AddToTail( areaNew );
-				AddNavArea( areaNew );
-				
-				areaNew->SetAttributes( area->GetAttributes() );
+				TheNavAreas.push_back(areaNew);
+				AddNavArea(areaNew);
+
+				areaNew->SetAttributes(area->GetAttributes());
 
 				// reciprocally connect between this area and new area
-				area->ConnectTo( areaNew, dirAlongOtherEdge );
-				areaNew->ConnectTo( area, OppositeDirection( dirAlongOtherEdge ) );
+				area->ConnectTo(areaNew, dirAlongOtherEdge);
+				areaNew->ConnectTo(area, OppositeDirection(dirAlongOtherEdge));
 
 				// reciprocally connect between other area and new area
-				areaOther->ConnectTo( areaNew, dirAlongOurEdge );
-				areaNew->ConnectTo( areaOther, OppositeDirection( dirAlongOurEdge ) );
+				areaOther->ConnectTo(areaNew, dirAlongOurEdge);
+				areaNew->ConnectTo(areaOther, OppositeDirection(dirAlongOurEdge));
 			}
-		}	
+		}
 	}
 }
 
@@ -2416,7 +2407,7 @@ void CNavMesh::SplitAreasUnderOverhangs( void )
 		bRestartProcessing = false;
 
 		// iterate all nav areas
-		for ( int it = 0; it < TheNavAreas.Count() && !bRestartProcessing; it++ )
+		for ( size_t it = 0; it < TheNavAreas.size() && !bRestartProcessing; it++)
 		{
 			CNavArea *area = TheNavAreas[ it ];
 			Extent areaExtent;
@@ -2427,7 +2418,7 @@ void CNavMesh::SplitAreasUnderOverhangs( void )
 			{
 				// iterate all connections in that direction
 				const NavConnectVector *pConnections = area->GetAdjacentAreas( (NavDirType) dir );
-				for ( int iConnection = 0; iConnection < pConnections->Count() && !bRestartProcessing; iConnection++ )
+				for ( int iConnection = 0; iConnection < pConnections->size() && !bRestartProcessing; iConnection++)
 				{
 					CNavArea *otherArea = (*pConnections)[iConnection].area;
 					Extent otherAreaExtent;
@@ -3055,7 +3046,7 @@ int CNavMesh::BuildArea( CNavNode *node, int width, int height )
 	
 	area->Build( nwNode, neNode, seNode, swNode );
 		
-	TheNavAreas.AddToTail( area );
+	TheNavAreas.push_back( area );
 	// since all internal nodes have the same attributes, set this area's attributes
 
 	area->SetAttributes( node->GetAttributes() );
@@ -3130,7 +3121,7 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 			break;
 	}
 
-	if ( !TheNavAreas.Count() )
+	if ( TheNavAreas.size() == 0 )
 	{
 		// If we somehow have no areas, don't try to create an impossibly-large grid
 		AllocateGrid( 0, 0, 0, 0 );
@@ -3144,11 +3135,11 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 	extent.hi.y = -9999999999.9f;
 
 	// compute total extent
-	FOR_EACH_VEC( TheNavAreas, it )
+
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
 		Extent areaExtent;
-		area->GetExtent( &areaExtent );
+		area->GetExtent(&areaExtent);
 
 		if (areaExtent.lo.x < extent.lo.x)
 			extent.lo.x = areaExtent.lo.x;
@@ -3163,11 +3154,10 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 	// add the areas to the grid
 	AllocateGrid( extent.lo.x, extent.hi.x, extent.lo.y, extent.hi.y );
 
-	FOR_EACH_VEC( TheNavAreas, git )
+	for (auto area : TheNavAreas)
 	{
-		AddNavArea( TheNavAreas[ git ] );
+		AddNavArea(area);
 	}
-
 	
 	ConnectGeneratedAreas();
 	MarkPlayerClipAreas();
@@ -3183,9 +3173,9 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 	/// @TODO: incremental generation doesn't create ladders yet
 	if ( m_generationMode != GENERATE_INCREMENTAL )
 	{
-		for ( int i=0; i<m_ladders.Count(); ++i )
+		for (auto ladder : m_ladders)
 		{
-			m_ladders[i]->ConnectGeneratedLadder( 0.0f );
+			ladder->ConnectGeneratedLadder(0.0f);
 		}
 	}
 }
@@ -3195,23 +3185,25 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 // adds walkable positions for any/all positions a mod specifies
 void CNavMesh::AddWalkableSeeds( void )
 {
-	CUtlLinkedList<edict_t*> spawns;
-	FOR_EACH_VEC(this->m_spawnNames, i) {
-		findEntWithMatchingName(m_spawnNames[i], spawns);
-	}
-	FOR_EACH_LL(spawns, i)
-	{
-		// snap it to the sampling grid
-		Vector pos = spawns[i]->GetCollideable()->GetCollisionOrigin();
-		pos.x = TheNavMesh->SnapToGrid( pos.x );
-		pos.y = TheNavMesh->SnapToGrid( pos.y );
+	// TO-DO: rewrite me!
 
-		Vector normal;
-		if ( FindGroundForNode( &pos, &normal ) )
-		{
-			AddWalkableSeed( pos, normal );
-		}
-	}
+	//CUtlLinkedList<edict_t*> spawns;
+	//FOR_EACH_VEC(this->m_spawnNames, i) {
+	//	findEntWithMatchingName(m_spawnNames[i], spawns);
+	//}
+	//FOR_EACH_LL(spawns, i)
+	//{
+	//	// snap it to the sampling grid
+	//	Vector pos = spawns[i]->GetCollideable()->GetCollisionOrigin();
+	//	pos.x = TheNavMesh->SnapToGrid( pos.x );
+	//	pos.y = TheNavMesh->SnapToGrid( pos.y );
+
+	//	Vector normal;
+	//	if ( FindGroundForNode( &pos, &normal ) )
+	//	{
+	//		AddWalkableSeed( pos, normal );
+	//	}
+	//}
 }
 
 
@@ -3276,7 +3268,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 	m_currentNode = NULL;
 
 	// if there are no seed points, we can't generate
-	if (m_walkableSeeds.Count() == 0)
+	if (m_walkableSeeds.size() == 0)
 	{
 		m_generationMode = GENERATE_NONE;
 		Msg( "No valid walkable seed positions.  Cannot generate Navigation Mesh.\n" );
@@ -3333,18 +3325,22 @@ void CNavMesh::BeginAnalysis( bool quitWhenFinished )
 #endif
 
 	// Remove and re-add elements in TheNavAreas, to ensure indices are useful for progress feedback
+
+	// TO-DO: Is this needed?
+	// Does it do anything since the switch to std::vector?
+
 	NavAreaVector tmpSet;
 	{
-		FOR_EACH_VEC( TheNavAreas, it )
+		for (auto area : TheNavAreas)
 		{
-			tmpSet.AddToTail( TheNavAreas[it] );
+			tmpSet.push_back(area);
 		}
 	}
-	TheNavAreas.RemoveAll();
+	TheNavAreas.clear();
 	{
-		FOR_EACH_VEC( tmpSet, it )
+		for (auto area : tmpSet)
 		{
-			TheNavAreas.AddToTail( tmpSet[it] );
+			TheNavAreas.push_back(area);
 		}
 	}
 
@@ -3465,8 +3461,8 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 	double startTime = Plat_FloatTime();
 	static unsigned int s_movedPlayerToArea = 0;	// Last area we moved a player to for lighting calcs
 	static CountdownTimer s_playerSettleTimer;		// Settle time after moving the player for lighting calcs
-	static CUtlVector<CNavArea *> s_unlitAreas;
-	static CUtlVector<CNavArea *> s_unlitSeedAreas;
+	// static CUtlVector<CNavArea *> s_unlitAreas;
+	// static CUtlVector<CNavArea *> s_unlitSeedAreas;
 
 	static ConVarRef host_thread_mode( "host_thread_mode" );
 
@@ -3501,9 +3497,10 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			if ( m_generationMode == GENERATE_INCREMENTAL )
 			{
 				ClearSelectedSet();
-				FOR_EACH_VEC( TheNavAreas, nit )
+
+				for (auto area : TheNavAreas)
 				{
-					AddToSelectedSet( TheNavAreas[nit] );
+					AddToSelectedSet(area);
 				}
 			}
 
@@ -3518,19 +3515,21 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 
 			DestroyHidingSpots();
 
-			// Remove and re-add elements in TheNavAreas, to ensure indices are useful for progress feedback
+			// TO-DO: Is this needed?
+			// Does it do anything since the switch to std::vector?
+
 			NavAreaVector tmpSet;
 			{
-				FOR_EACH_VEC( TheNavAreas, it )
+				for (auto area : TheNavAreas)
 				{
-					tmpSet.AddToTail( TheNavAreas[it] );
+					tmpSet.push_back(area);
 				}
 			}
-			TheNavAreas.RemoveAll();
+			TheNavAreas.clear();
 			{
-				FOR_EACH_VEC( tmpSet, it )
+				for (auto area : tmpSet)
 				{
-					TheNavAreas.AddToTail( tmpSet[it] );
+					TheNavAreas.push_back(area);
 				}
 			}
 
@@ -3542,14 +3541,15 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_HIDING_SPOTS:
 		{
-			while( m_generationIndex < TheNavAreas.Count() )
+
+			while( m_generationIndex < TheNavAreas.size() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeHidingSpots();
 
 				// don't go over our time allotment
 				if( Plat_FloatTime() - startTime > maxTime )
 				{
-					AnalysisProgress( "Finding hiding spots...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					AnalysisProgress( "Finding hiding spots...", 100, 100 * m_generationIndex / TheNavAreas.size() );
 					return true;
 				}
 			}
@@ -3564,14 +3564,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_ENCOUNTER_SPOTS:
 		{
-			while( m_generationIndex < TheNavAreas.Count() )
+			while( m_generationIndex < TheNavAreas.size() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeSpotEncounters();
 
 				// don't go over our time allotment
 				if( Plat_FloatTime() - startTime > maxTime )
 				{
-					AnalysisProgress( "Finding encounter spots...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					AnalysisProgress( "Finding encounter spots...", 100, 100 * m_generationIndex / TheNavAreas.size() );
 					return true;
 				}
 			}
@@ -3586,14 +3586,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_SNIPER_SPOTS:
 		{
-			while( m_generationIndex < TheNavAreas.Count() )
+			while( m_generationIndex < TheNavAreas.size() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeSniperSpots();
 
 				// don't go over our time allotment
 				if( Plat_FloatTime() - startTime > maxTime )
 				{
-					AnalysisProgress( "Finding sniper spots...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					AnalysisProgress( "Finding sniper spots...", 100, 100 * m_generationIndex / TheNavAreas.size() );
 					return true;
 				}
 			}
@@ -3611,14 +3611,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case COMPUTE_MESH_VISIBILITY:
 		{
-			while( m_generationIndex < TheNavAreas.Count() )
+			while( m_generationIndex < TheNavAreas.size() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeVisibilityToMesh();
 
 				// don't go over our time allotment
 				if ( Plat_FloatTime() - startTime > maxTime )
 				{
-					AnalysisProgress( "Computing mesh visibility...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					AnalysisProgress( "Computing mesh visibility...", 100, 100 * m_generationIndex / TheNavAreas.size() );
 					return true;
 				}
 			}
@@ -3637,14 +3637,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_EARLIEST_OCCUPY_TIMES:
 		{
-			while( m_generationIndex < TheNavAreas.Count() )
+			while( m_generationIndex < TheNavAreas.size() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeEarliestOccupyTimes();
 
 				// don't go over our time allotment
 				if( Plat_FloatTime() - startTime > maxTime )
 				{
-					AnalysisProgress( "Finding earliest occupy times...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					AnalysisProgress( "Finding earliest occupy times...", 100, 100 * m_generationIndex / TheNavAreas.size() );
 					return true;
 				}
 			}
@@ -3663,15 +3663,16 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			}
 			else
 			{
-				m_generationState = FIND_LIGHT_INTENSITY;
-				s_playerSettleTimer.Invalidate();
-				CNavArea::MakeNewMarker();
-				s_unlitAreas.RemoveAll();
-				FOR_EACH_VEC( TheNavAreas, nit )
-				{
-					s_unlitAreas.AddToTail( TheNavAreas[nit] );
-					s_unlitSeedAreas.AddToTail( TheNavAreas[nit] );
-				}
+				m_generationState = CUSTOM; // light intensity requires some engine functions that are only available on the L4D engine
+				//m_generationState = FIND_LIGHT_INTENSITY;
+				//s_playerSettleTimer.Invalidate();
+				//CNavArea::MakeNewMarker();
+				//s_unlitAreas.RemoveAll();
+				//FOR_EACH_VEC( TheNavAreas, nit )
+				//{
+				//	s_unlitAreas.AddToTail( TheNavAreas[nit] );
+				//	s_unlitSeedAreas.AddToTail( TheNavAreas[nit] );
+				//}
 			}
 
 			m_generationIndex = 0;
@@ -3681,79 +3682,80 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_LIGHT_INTENSITY:
 		{
-			host_thread_mode.SetValue( 0 );	// need non-threaded server for light calcs
-			if ( !s_unlitAreas.Count() || !UTIL_GetListenServerEnt() )
-			{
-				Msg( "Finding light intensity...DONE\n" );
+			//host_thread_mode.SetValue( 0 );	// need non-threaded server for light calcs
+			//if ( !s_unlitAreas.Count() || !UTIL_GetListenServerEnt() )
+			//{
+			//	Msg( "Finding light intensity...DONE\n" );
 
-				m_generationState = CUSTOM;
-				m_generationIndex = 0;
-				return true;
-			}
+			//	m_generationState = CUSTOM;
+			//	m_generationIndex = 0;
+			//	return true;
+			//}
 
-			if ( !s_playerSettleTimer.IsElapsed() )
-				return true; // wait for eyePos to settle
+			//if ( !s_playerSettleTimer.IsElapsed() )
+			//	return true; // wait for eyePos to settle
 
-			// Now try to compute lighting for remaining areas
-			int sit = 0;
-			while( sit < s_unlitAreas.Count() )
-			{
-				CNavArea *area = s_unlitAreas[sit];
-				if ( area->ComputeLighting() )
-				{
-					s_unlitSeedAreas.FindAndRemove( area );
-					s_unlitAreas.Remove( sit );
+			//// Now try to compute lighting for remaining areas
+			//int sit = 0;
+			//while( sit < s_unlitAreas.Count() )
+			//{
+			//	CNavArea *area = s_unlitAreas[sit];
+			//	if ( area->ComputeLighting() )
+			//	{
+			//		s_unlitSeedAreas.FindAndRemove( area );
+			//		s_unlitAreas.Remove( sit );
 
-					continue;
-				}
-				++sit;
-			}
+			//		continue;
+			//	}
+			//	++sit;
+			//}
 
-			if ( s_unlitAreas.Count() )
-			{
-				if ( s_unlitSeedAreas.Count() )
-				{
-					CNavArea *moveArea = s_unlitSeedAreas[0];
-					s_unlitSeedAreas.FastRemove( 0 );
+			//if ( s_unlitAreas.Count() )
+			//{
+			//	if ( s_unlitSeedAreas.Count() )
+			//	{
+			//		CNavArea *moveArea = s_unlitSeedAreas[0];
+			//		s_unlitSeedAreas.FastRemove( 0 );
 
-					//Msg( "Moving to new area %d to compute lighting for %d/%d areas\n", moveArea->GetID(), s_unlitAreas.Count(), TheNavAreas.Count() );
+			//		//Msg( "Moving to new area %d to compute lighting for %d/%d areas\n", moveArea->GetID(), s_unlitAreas.Count(), TheNavAreas.Count() );
 
-					Vector eyePos = moveArea->GetCenter();
-					float height;
-					if ( GetGroundHeight( eyePos, &height ) )
-					{
-						eyePos.z = height + HalfHumanHeight - StepHeight;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
-					}
-					else
-					{
-						eyePos.z += HalfHumanHeight - StepHeight;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
-					}
+			//		Vector eyePos = moveArea->GetCenter();
+			//		float height;
+			//		if ( GetGroundHeight( eyePos, &height ) )
+			//		{
+			//			eyePos.z = height + HalfHumanHeight - StepHeight;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
+			//		}
+			//		else
+			//		{
+			//			eyePos.z += HalfHumanHeight - StepHeight;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
+			//		}
 
-					// TODO: host->SetAbsOrigin( eyePos );
-					AnalysisProgress( "Finding light intensity...", 100, 100 * (TheNavAreas.Count() - s_unlitAreas.Count()) / TheNavAreas.Count() );
-					s_movedPlayerToArea = moveArea->GetID();
-					s_playerSettleTimer.Start( 0.1f );
-					return true;
-				}
-				else
-				{
-					Msg( "Finding light intensity...DONE (%d unlit areas)\n", s_unlitAreas.Count() );
-					if ( s_unlitAreas.Count() )
-					{
-						Warning( "To see unlit areas:\n" );
-						for ( int sit=0; sit<s_unlitAreas.Count(); ++sit )
-						{
-							CNavArea *area = s_unlitAreas[ sit ];
-							Warning( "nav_unmark; nav_mark %d; nav_warp_to_mark;\n", area->GetID() );
-						}
-					}
+			//		// TODO: host->SetAbsOrigin( eyePos );
+			//		AnalysisProgress( "Finding light intensity...", 100, 100 * (TheNavAreas.Count() - s_unlitAreas.Count()) / TheNavAreas.Count() );
+			//		s_movedPlayerToArea = moveArea->GetID();
+			//		s_playerSettleTimer.Start( 0.1f );
+			//		return true;
+			//	}
+			//	else
+			//	{
+			//		Msg( "Finding light intensity...DONE (%d unlit areas)\n", s_unlitAreas.Count() );
+			//		if ( s_unlitAreas.Count() )
+			//		{
+			//			Warning( "To see unlit areas:\n" );
+			//			for ( int sit=0; sit<s_unlitAreas.Count(); ++sit )
+			//			{
+			//				CNavArea *area = s_unlitAreas[ sit ];
+			//				Warning( "nav_unmark; nav_mark %d; nav_warp_to_mark;\n", area->GetID() );
+			//			}
+			//		}
 
-					m_generationState = CUSTOM;
-					m_generationIndex = 0;
-				}
-			}
+			//		m_generationState = CUSTOM;
+			//		m_generationIndex = 0;
+			//	}
+			//}
 
-			Msg( "Finding light intensity...DONE\n" );
+			//Msg( "Finding light intensity...DONE\n" );
+			Msg("Finding light intensity...SKIPPED\n");
 
 			m_generationState = CUSTOM;
 			m_generationIndex = 0;
@@ -3768,14 +3770,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 				BeginCustomAnalysis( m_generationMode == GENERATE_INCREMENTAL );
 				Msg( "Start custom...\n ");
 			}
-			while( m_generationIndex < TheNavAreas.Count() )
+			while( m_generationIndex < TheNavAreas.size() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->CustomAnalysis( m_generationMode == GENERATE_INCREMENTAL );
 
 				// don't go over our time allotment
 				if( Plat_FloatTime() - startTime > maxTime )
 				{
-					AnalysisProgress( "Custom game-specific analysis...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
+					AnalysisProgress( "Custom game-specific analysis...", 100, 100 * m_generationIndex / TheNavAreas.size() );
 					return true;
 				}
 			}
@@ -3833,9 +3835,9 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			}
 			else
 			{
-				FOR_EACH_VEC( TheNavAreas, it )
+				for (auto area : TheNavAreas)
 				{
-					TheNavAreas[ it ]->ResetNodes();
+					area->ResetNodes();
 				}
 
 #if !(DEBUG_NAV_NODES)
@@ -4111,14 +4113,13 @@ bool CNavMesh::SampleStep( void )
 				}
 
 				// search is exhausted - continue search from ends of ladders
-				for ( int i=0; i<m_ladders.Count(); ++i )
-				{
-					CNavLadder *ladder = m_ladders[i];
 
+				for (auto ladder : m_ladders)
+				{
 					// check ladder bottom
-					if ((m_currentNode = LadderEndSearch( &ladder->m_bottom, ladder->GetDir() )) != 0
-							// check ladder top
-							|| (m_currentNode = LadderEndSearch( &ladder->m_top, ladder->GetDir() )) != 0)
+					if ((m_currentNode = LadderEndSearch(&ladder->m_bottom, ladder->GetDir())) != 0
+						// check ladder top
+						|| (m_currentNode = LadderEndSearch(&ladder->m_top, ladder->GetDir())) != 0)
 						break;
 				}
 
@@ -4165,12 +4166,13 @@ bool CNavMesh::SampleStep( void )
 
 				// sanity check to not generate across the world for incremental generation
 				const float incrementalRange = nav_generate_incremental_range.GetFloat();
-				if ( m_generationMode == GENERATE_INCREMENTAL && incrementalRange > 0 )
+				if (m_generationMode == GENERATE_INCREMENTAL && incrementalRange > 0)
 				{
 					bool inRange = false;
-					for ( int i=0; i<m_walkableSeeds.Count(); ++i )
+
+					for (auto& seeds : m_walkableSeeds)
 					{
-						if ( (m_walkableSeeds[i].pos - pos).IsLengthLessThan( incrementalRange ) )
+						if ((seeds.pos - pos).IsLengthLessThan(incrementalRange))
 						{
 							inRange = true;
 							break;
@@ -4295,13 +4297,15 @@ bool CNavMesh::SampleStep( void )
 				{
 					bool bValid = false;
 					int zPos = to.z;
-					for ( int i=0; i<m_walkableSeeds.Count(); ++i )
+
+					for (auto& seeds : m_walkableSeeds)
 					{
-						const Vector &seedPos = m_walkableSeeds[i].pos;
+						auto& seedPos = seeds.pos;
+
 						int zMin = seedPos.z - nTolerance;
 						int zMax = seedPos.z + nTolerance;
 
-						if ( zPos >= zMin && zPos <= zMax )
+						if (zPos >= zMin && zPos <= zMax)
 						{
 							bValid = true;
 							break;
@@ -4375,7 +4379,7 @@ void CNavMesh::AddWalkableSeed( const Vector &pos, const Vector &normal )
 	seed.pos.z = pos.z;
 	seed.normal = normal;
 
-	m_walkableSeeds.AddToTail( seed );
+	m_walkableSeeds.push_back( seed );
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -4383,7 +4387,7 @@ void CNavMesh::AddWalkableSeed( const Vector &pos, const Vector &normal )
  * Return the next walkable seed as a node
  */
 CNavNode* CNavMesh::GetNextWalkableSeedNode(void) {
-	for (;m_seedIdx < m_walkableSeeds.Count(); ++m_seedIdx) {
+	for (;m_seedIdx < m_walkableSeeds.size(); ++m_seedIdx) {
 		const auto& spot = m_walkableSeeds[m_seedIdx];
 		// check if a node exists at this location
 		if (CNavNode::GetNode(spot.pos) == nullptr) {
@@ -4540,74 +4544,75 @@ void CNavMesh::ValidateNavAreaConnections( void )
 	// iterate all nav areas
 	NavConnect connect;
 
-	for ( int it = 0; it < TheNavAreas.Count(); it++ )
+	for (auto area : TheNavAreas)
 	{
-		CNavArea *area = TheNavAreas[ it ];
-
-		for ( NavDirType dir = NORTH; dir < NUM_DIRECTIONS; dir = (NavDirType) ( ( (int) dir ) +1 ) )
+		for (NavDirType dir = NORTH; dir < NUM_DIRECTIONS; dir = (NavDirType)(((int)dir) + 1))
 		{
-			const NavConnectVector *pOutgoing = area->GetAdjacentAreas(  dir );
-			const NavConnectVector *pIncoming = area->GetIncomingConnections( dir );
+			const NavConnectVector* pOutgoing = area->GetAdjacentAreas(dir);
+			const NavConnectVector* pIncoming = area->GetIncomingConnections(dir);
 
-			for ( int iConnect = 0; iConnect < pOutgoing->Count(); iConnect++ )
+			for (auto& navconn : *pOutgoing)
 			{
-				// make sure no area is on both the connection and incoming list
-				CNavArea *areaOther = (*pOutgoing)[iConnect].area;
+				CNavArea* areaOther = navconn.area;
 				connect.area = areaOther;
-				if ( pIncoming->Find( connect ) != pIncoming->InvalidIndex() )
+
+				auto otherpos = std::find(pIncoming->begin(), pIncoming->end(), connect);
+
+				if (otherpos != pIncoming->end())
 				{
-					Msg( "Area %d has area %d on both 2-way and incoming list, should only be on one\n", area->GetID(), areaOther->GetID() );
-					Assert( false );
+					Msg("Area %d has area %d on both 2-way and incoming list, should only be on one\n", area->GetID(), areaOther->GetID());
+					Assert(false);
 				}
 
-				// make sure there are no duplicate connections on the list
-				for ( int iConnectCheck = iConnect+1; iConnectCheck < pOutgoing->Count(); iConnectCheck++ )
+				for (auto& conncheck : *pOutgoing)
 				{
-					if ( areaOther == (*pOutgoing)[iConnectCheck].area )
+					if (areaOther == conncheck.area)
 					{
-						Msg( "Area %d has multiple outgoing connections to area %d in direction %d\n", area->GetID(), areaOther->GetID(), dir );
-						Assert( false );
+						Msg("Area %d has multiple outgoing connections to area %d in direction %d\n", area->GetID(), areaOther->GetID(), dir);
+						Assert(false);
 					}
 				}
 
-				const NavConnectVector *pOutgoingOther = areaOther->GetAdjacentAreas( OppositeDirection( dir ) );
-				const NavConnectVector *pIncomingOther = areaOther->GetIncomingConnections( OppositeDirection( dir ) );
+				const NavConnectVector* pOutgoingOther = areaOther->GetAdjacentAreas(OppositeDirection(dir));
+				const NavConnectVector* pIncomingOther = areaOther->GetIncomingConnections(OppositeDirection(dir));
 
-				// if we have a one-way outgoing connection, make sure we are on the other area's incoming list
 				connect.area = area;
-				if ( pOutgoingOther->Find( connect ) == pOutgoingOther->InvalidIndex() )
-				{				
-					connect.area = area;
-					bool bOnOthersIncomingList = pIncomingOther->Find( connect ) != pIncomingOther->InvalidIndex();
-					if ( !bOnOthersIncomingList )
+				auto outgoingpos = std::find(pOutgoingOther->begin(), pOutgoingOther->end(), connect);
+
+				if (outgoingpos == pOutgoingOther->end())
+				{
+					auto incomingpos = std::find(pIncomingOther->begin(), pIncomingOther->end(), connect);
+
+					if (incomingpos != pIncomingOther->end())
 					{
-						Msg( "Area %d has one-way connect to area %d but does not appear on the latter's incoming list\n", area->GetID(), areaOther->GetID() );
-					}					
+						Msg("Area %d has one-way connect to area %d but does not appear on the latter's incoming list\n", area->GetID(), areaOther->GetID());
+					}
 				}
 			}
 
-			for ( int iConnect = 0; iConnect < pIncoming->Count(); iConnect++ )
+			for (auto& inconn : *pIncoming)
 			{
-				CNavArea *areaOther = (*pIncoming)[iConnect].area;
+				CNavArea* areaOther = inconn.area;
 
-				// make sure there are not duplicate areas on the incoming list
-				for ( int iConnectCheck = iConnect+1; iConnectCheck < pIncoming->Count(); iConnectCheck++ )
+				for (auto& incheck : *pIncoming)
 				{
-					CNavArea *areaCheck = (*pIncoming)[iConnectCheck].area;
-					if ( areaOther == areaCheck )
+					CNavArea* areaCheck = incheck.area;
+
+					if (areaOther == areaCheck)
 					{
-						Msg( "Area %d has multiple incoming connections to area %d in direction %d\n", area->GetID(), areaOther->GetID(), dir );
-						Assert( false );
+						Msg("Area %d has multiple incoming connections to area %d in direction %d\n", area->GetID(), areaOther->GetID(), dir);
+						Assert(false);
 					}
 				}
 
-				const NavConnectVector *pOutgoingOther = areaOther->GetAdjacentAreas( OppositeDirection( dir ) );
+				const NavConnectVector* pOutgoingOther = areaOther->GetAdjacentAreas(OppositeDirection(dir));
 				connect.area = area;
-				bool bOnOthersOutgoingList = pOutgoingOther->Find( connect ) != pOutgoingOther->InvalidIndex();
-				if ( !bOnOthersOutgoingList )
+				auto outpos = std::find(pOutgoingOther->begin(), pOutgoingOther->end(), connect);
+
+				if (outpos == pOutgoingOther->end())
 				{
-					Msg( "Area %d has incoming connection from area %d but does not appear on latter's outgoing connection list\n", area->GetID(), areaOther->GetID() );
-					Assert( false );
+					Msg("Area %d has incoming connection from area %d but does not appear on latter's outgoing connection list\n", area->GetID(), areaOther->GetID());
+					Assert(false);
 				}
 			}
 		}

@@ -4,16 +4,16 @@
 
 // Finds a value from an std::vector and removes it from the vector. The object is NOT deleted!
 #define NAV_VEC_REMOVE_NO_DELETE(vector, value) \
-		auto start = vector.begin(); \
+		auto __start = vector.begin(); \
 									\
-		auto end = vector.end(); \
+		auto __end = vector.end(); \
 									\
-		auto pos = std::find(start, end, value); \
+		auto __pos = std::find(__start, __end, value); \
 													\
-		if (pos != end) \
+		if (__pos != __end) \
 		{ \
 			\
-			vector.erase(pos); \
+			vector.erase(__pos); \
 			\
 		} \
 

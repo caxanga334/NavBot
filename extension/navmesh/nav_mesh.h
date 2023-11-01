@@ -780,7 +780,7 @@ private:
 	void SplitAreasUnderOverhangs( void );
 	void ValidateNavAreaConnections( void );
 	void StitchGeneratedAreas( void );							// Stitches incrementally-generated areas into the existing mesh
-	void StitchAreaSet( CUtlVector< CNavArea * > *areas );		// Stitches an arbitrary set of areas into the existing mesh
+	void StitchAreaSet(std::vector<CNavArea*> *areas);		// Stitches an arbitrary set of areas into the existing mesh
 	void HandleObstacleTopAreas( void );						// Handles fixing/generating areas on top of slim obstacles such as fences and railings
 	void RaiseAreasWithInternalObstacles();
 	void CreateObstacleTopAreas();
