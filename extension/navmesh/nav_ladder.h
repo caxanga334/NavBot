@@ -43,8 +43,8 @@ public:
 
 	void OnRoundRestart( void );			///< invoked when a game round restarts
 
-	void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;
-	void Load( CNavMesh* TheNavMesh, CUtlBuffer &fileBuffer, unsigned int version );
+	void Save(std::fstream& file, unsigned int version) const;
+	void Load(CNavMesh* TheNavMesh, std::fstream& file, unsigned int version);
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							///<re-orders ladder ID's so they are continuous

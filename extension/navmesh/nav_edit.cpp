@@ -3692,7 +3692,7 @@ template bool CNavMesh::ForAllAreasOverlappingExtent(CFuncNavObstruction&, const
 template bool CNavMesh::ForAllAreasOverlappingExtent(COverlapCheck&, const Extent&);
 
 template< typename NavAreaType >
-void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< NavAreaType * > *outVector )
+void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector< NavAreaType * > *outVector )
 {
 	if ( m_grid.size() == 0 )
 	{
@@ -3740,7 +3740,7 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< 
 
 				if (extent.IsOverlapping(areaExtent))
 				{
-					outVector->AddToTail((NavAreaType*)area);
+					outVector->push_back((NavAreaType*)area);
 				}
 			}
 		}
@@ -3748,7 +3748,7 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< 
 }
 
 template void CNavMesh::CollectAreasOverlappingExtent(const Extent&,
-		CUtlVector<CNavArea*>*);
+		std::vector<CNavArea*>*);
 
 template < typename Functor >
 bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radius )

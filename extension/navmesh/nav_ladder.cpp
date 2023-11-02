@@ -464,7 +464,7 @@ void CNavLadder::FindLadderEntity( void )
 /**
  * Save a navigation ladder to the opened binary stream
  */
-void CNavLadder::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
+void CNavLadder::Save(std::fstream& file, unsigned int version) const
 {
 	// save ID
 	fileBuffer.PutUnsignedInt( m_id );
@@ -501,7 +501,7 @@ void CNavLadder::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
 /**
  * Load a navigation ladder from the opened binary stream
  */
-void CNavLadder::Load( CNavMesh* TheNavMesh, CUtlBuffer &fileBuffer, unsigned int version )
+void CNavLadder::Load( CNavMesh* TheNavMesh, std::fstream& file, unsigned int version )
 {
 	// load ID
 	m_id = fileBuffer.GetUnsignedInt();

@@ -29,6 +29,8 @@
  * Version: $Id$
  */
 
+#include <filesystem>
+
 #include "extension.h"
 #include <eiface.h>
 #include <engine/ivdebugoverlay.h>
@@ -37,6 +39,7 @@
 #include <vphysics_interface.h>
 #include <filesystem.h>
 #include <datacache/imdlcache.h>
+#include <igameevents.h>
 
 
 #include "navmesh/nav_mesh.h"
@@ -64,7 +67,41 @@ IFileSystem* filesystem = nullptr;
 
 SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 
+static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
+
 SMEXT_LINK(&g_SMNavExt);
+
+bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
+{
+	// Create the directory
+
+	auto mod = smutils->GetGameFolderName();
+	char fullpath[PLATFORM_MAX_PATH + 1];
+	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s", mod);
+
+	auto exists = std::filesystem::exists(fullpath);
+
+	if (!exists)
+	{
+		auto result = std::filesystem::create_directories(fullpath);
+
+		if (!result)
+		{
+			smutils->LogError(myself, "Failed to create data directory!");
+		}
+		else
+		{
+			smutils->LogMessage(myself, "Data directory created!");
+		}
+	}
+
+	return true;
+}
+
+void SMNavExt::SDK_OnAllLoaded()
+{
+	//TheNavMesh = new CNavMesh();
+}
 
 bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
@@ -76,6 +113,7 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 	GET_V_IFACE_ANY(GetEngineFactory, modelinfo, IVModelInfo, VMODELINFO_SERVER_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, filesystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, mdlcache, IMDLCache, MDLCACHE_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetEngineFactory, g_pCVar, ICvar, CVAR_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetServerFactory, servergamedll, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
 	GET_V_IFACE_ANY(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
@@ -85,11 +123,15 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 		GET_V_IFACE_ANY(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
 	}
 
-	
-
 	gpGlobals = ismm->GetCGlobals();
 
-	//TheNavMesh = new CNavMesh();
-
 	return true;
+}
+
+void SMNavExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
+{
+}
+
+void SMNavExt::OnCoreMapEnd()
+{
 }

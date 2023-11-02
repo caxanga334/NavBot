@@ -269,9 +269,9 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea ) { }		// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder ) { }	// invoked when given ladder has just been deleted from the mesh in edit mode
 
-	virtual void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;	// (EXTEND)
-	virtual NavErrorType Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int subVersion );		// (EXTEND)
-	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
+	virtual void Save(std::fstream& file, unsigned int version);	// (EXTEND)
+	virtual NavErrorType Load(std::fstream& file, unsigned int version, unsigned int subVersion);		// (EXTEND)
+	virtual NavErrorType PostLoad(void);								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 
 	virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
 	virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues

@@ -225,6 +225,8 @@ public:
 	unsigned int operator()( const NavVisPair_t &item ) const;
 };
 
+// Size of the char array to write the nav mesh place
+constexpr int PLACE_DIRECTORY_SAVE_BUFFER_SIZE = 64;
 
 //--------------------------------------------------------------------------------------------------------------
 //
@@ -241,7 +243,8 @@ public:
 class PlaceDirectory
 {
 public:
-	typedef unsigned short IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
+	typedef unsigned int IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
+	
 
 	PlaceDirectory( void );
 	void Reset( void );
@@ -249,9 +252,9 @@ public:
 	IndexType GetIndex( Place place ) const;				/// return the directory index corresponding to this Place (0 = no entry)
 	void AddPlace( Place place );							/// add the place to the directory if not already known
 	Place IndexToPlace( IndexType entry ) const;			/// given an index, return the Place
-	void Save( CUtlBuffer &fileBuffer );					/// store the directory
-	void Load( CUtlBuffer &fileBuffer, int version );		/// load the directory
-	const CUtlVector< Place > *GetPlaces( void ) const
+	void Save(std::fstream& file);					/// store the directory
+	void Load(std::fstream& file, const int version );		/// load the directory
+	const std::vector< Place > *GetPlaces( void ) const
 	{
 		return &m_directory;
 	}
@@ -263,7 +266,7 @@ public:
 
 
 private:
-	CUtlVector< Place > m_directory;
+	std::vector< Place > m_directory;
 	bool m_hasUnnamedAreas;
 };
 
@@ -303,16 +306,16 @@ public:
 	 */
 	virtual bool IsAuthoritative( void ) const { return false; }		
 
-	const CUtlVector< Place > *GetPlacesFromNavFile( bool *hasUnnamedPlaces );	// Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
+	const std::vector< Place > *GetPlacesFromNavFile( bool *hasUnnamedPlaces );	// Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
 
-	virtual bool Save( void ) const;									// store Navigation Mesh to a file
+	virtual bool Save(void);									// store Navigation Mesh to a file
 	bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
 
 	virtual unsigned int GetSubVersionNumber( void ) const;										// returns sub-version number of data format used by derived classes
-	virtual void SaveCustomData( CUtlBuffer &fileBuffer ) const { }								// store custom mesh data for derived classes
-	virtual void LoadCustomData( CUtlBuffer &fileBuffer, unsigned int subVersion ) { }			// load custom mesh data for derived classes
-	virtual void SaveCustomDataPreArea( CUtlBuffer &fileBuffer ) const { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
-	virtual void LoadCustomDataPreArea( CUtlBuffer &fileBuffer, unsigned int subVersion ) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
+	virtual void SaveCustomData(std::fstream& file) const { }								// store custom mesh data for derived classes
+	virtual void LoadCustomData(std::fstream& file, unsigned int subVersion) { }			// load custom mesh data for derived classes
+	virtual void SaveCustomDataPreArea(std::fstream& file) const { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
+	virtual void LoadCustomDataPreArea(std::fstream& file, unsigned int subVersion) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
 
 	// events
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
@@ -548,7 +551,7 @@ public:
 	 * Populate the given vector with all navigation areas that overlap the given extent.
 	 */
 	template< typename NavAreaType >
-	void CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< NavAreaType * > *outVector );
+	void CollectAreasOverlappingExtent( const Extent &extent, std::vector< NavAreaType * > *outVector );
 
 	template < typename Functor >
 	bool ForAllAreasInRadius( Functor &func, const Vector &pos, float radius );

@@ -54,7 +54,7 @@ public:
 	 * @param late		Whether or not the module was loaded after map load.
 	 * @return			True to succeed loading, false to fail.
 	 */
-	//virtual bool SDK_OnLoad(char *error, size_t maxlen, bool late);
+	virtual bool SDK_OnLoad(char *error, size_t maxlen, bool late);
 	
 	/**
 	 * @brief This is called right before the extension is unloaded.
@@ -65,7 +65,7 @@ public:
 	 * @brief This is called once all known extensions have been loaded.
 	 * Note: It is is a good idea to add natives here, if any are provided.
 	 */
-	//virtual void SDK_OnAllLoaded();
+	virtual void SDK_OnAllLoaded();
 
 	/**
 	 * @brief Called when the pause state is changed.
@@ -113,6 +113,22 @@ public:
 	 */
 	//virtual bool SDK_OnMetamodPauseChange(bool paused, char *error, size_t maxlen);
 #endif
+
+public:
+	/**
+	 * @brief Called on server activation before plugins receive the OnServerLoad forward.
+	 *
+	 * @param pEdictList		Edicts list.
+	 * @param edictCount		Number of edicts in the list.
+	 * @param clientMax			Maximum number of clients allowed in the server.
+	 */
+	virtual void OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax);
+
+	/**
+	 * @brief Called on level shutdown
+	 *
+	 */
+	virtual void OnCoreMapEnd();
 };
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_

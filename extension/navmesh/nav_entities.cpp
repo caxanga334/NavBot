@@ -255,12 +255,12 @@ void CFuncNavCost::UpdateAllNavCostDecoration( CNavMesh* TheNavMesh )
 		Extent extent;
 		extent.Init(pEnt);
 
-		CUtlVector< CNavArea* > overlapVector;
+		std::vector< CNavArea* > overlapVector;
 		TheNavMesh->CollectAreasOverlappingExtent(extent, &overlapVector);
 
 		Ray_t ray;
 		trace_t tr;
-		for (int j = 0; j < overlapVector.Count(); ++j)
+		for (size_t j = 0; j < overlapVector.size(); ++j)
 		{
 			ray.Init(overlapVector[j]->GetCenter(), overlapVector[j]->GetCenter());
 			extern IEngineTrace* enginetrace;
