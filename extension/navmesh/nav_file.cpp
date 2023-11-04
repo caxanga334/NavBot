@@ -244,61 +244,61 @@ char *GetBspFilename( const char *navFilename )
 /**
  * Save a navigation area to the opened binary stream
  */
-void CNavArea::Save(std::fstream& file, unsigned int version ) const
+void CNavArea::Save(std::fstream& file, unsigned int version)
 {
 	// save ID
-	fileBuffer.PutUnsignedInt( m_id );
+	file.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
 
 	// save attribute flags
-	fileBuffer.PutInt( m_attributeFlags );
+	file.write(reinterpret_cast<char*>(m_attributeFlags), sizeof(int));
 
 	// save extent of area
-	fileBuffer.Put( &m_nwCorner, 3*sizeof(float) );
-	fileBuffer.Put( &m_seCorner, 3*sizeof(float) );
+	// TO-DO: VALVE uses 3 * sizeof float instead of sizeof Vector. Why?
+	file.write(reinterpret_cast<char*>(&m_nwCorner), sizeof(Vector));
+	file.write(reinterpret_cast<char*>(&m_seCorner), sizeof(Vector));
 
 	// save heights of implicit corners
-	fileBuffer.PutFloat( m_neZ );
-	fileBuffer.PutFloat( m_swZ );
+	file.write(reinterpret_cast<char*>(&m_neZ), sizeof(float));
+	file.write(reinterpret_cast<char*>(&m_swZ), sizeof(float));
 
 	// save connections to adjacent areas
 	// in the enum order NORTH, EAST, SOUTH, WEST
 	for( int d=0; d<NUM_DIRECTIONS; d++ )
 	{
 		// save number of connections for this direction
-		unsigned int count = m_connect[d].Count();
-		fileBuffer.PutUnsignedInt( count );
+		size_t count = m_connect[d].size();
+		file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
 
-		FOR_EACH_VEC( m_connect[d], it )
+		for (auto& connect : m_connect[d])
 		{
-			NavConnect connect = m_connect[d][ it ];
-			fileBuffer.PutUnsignedInt( connect.area->m_id );
+			auto id = connect.area->m_id;
+			file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
 		}
 	}
 
 	//
 	// Store hiding spots for this area
 	//
-	unsigned char count;
-	if (m_hidingSpots.Count() > 255)
+	size_t count;
+	if (m_hidingSpots.size() > 255)
 	{
 		count = 255;
-		Warning( "Warning: NavArea #%d: Truncated hiding spot list to 255\n", m_id );
+		smutils->LogError(myself, "Warning: NavArea #%d: Truncated hiding spot list to 255", m_id);
 	}
 	else
 	{
-		count = (unsigned char)m_hidingSpots.Count();
+		count = m_hidingSpots.size();
 	}
-	fileBuffer.PutUnsignedChar( count );
+
+	file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
 
 	// store HidingSpot objects
 	unsigned int saveCount = 0;
-	FOR_EACH_VEC( m_hidingSpots, hit )
-	{
-		HidingSpot *spot = m_hidingSpots[ hit ];
-		
-		spot->Save( fileBuffer, version );
 
-		// overflow check
+	for (auto spot : m_hidingSpots)
+	{
+		spot->Save(file, version);
+
 		if (++saveCount == count)
 			break;
 	}
@@ -308,56 +308,58 @@ void CNavArea::Save(std::fstream& file, unsigned int version ) const
 	//
 	{
 		// save number of encounter paths for this area
-		unsigned int count = m_spotEncounters.Count();
-		fileBuffer.PutUnsignedInt( count );
+		size_t count = m_spotEncounters.size();
+		file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
 
-		SpotEncounter *e;
-		FOR_EACH_VEC( m_spotEncounters, it )
+		for (auto e : m_spotEncounters)
 		{
-			e = m_spotEncounters[ it ];
-
 			if (e->from.area)
-				fileBuffer.PutUnsignedInt( e->from.area->m_id );
+			{
+				auto id = e->from.area->m_id;
+				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			}
 			else
-				fileBuffer.PutUnsignedInt( 0 );
+			{
+				unsigned int id = 0;
+				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			}
 
-			unsigned char dir = (unsigned char)e->fromDir;
-			fileBuffer.PutUnsignedChar( dir );
+			uint8 dir = static_cast<uint8>(e->fromDir);
+			file.write(reinterpret_cast<char*>(&dir), sizeof(uint8));
 
 			if (e->to.area)
-				fileBuffer.PutUnsignedInt( e->to.area->m_id );
+			{
+				auto id = e->to.area->m_id;
+				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			}
 			else
-				fileBuffer.PutUnsignedInt( 0 );
+			{
+				unsigned int id = 0;
+				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			}
 
-			dir = (unsigned char)e->toDir;
-			fileBuffer.PutUnsignedChar( dir );
+			dir = static_cast<uint8>(e->toDir);
+			file.write(reinterpret_cast<char*>(&dir), sizeof(uint8));
 
-			// write list of spots along this path
-			unsigned char spotCount;
-			if (e->spots.Count() > 255)
+			size_t spotCount = e->spots.size();
+
+			if (spotCount > 255)
 			{
 				spotCount = 255;
-				Warning( "Warning: NavArea #%d: Truncated encounter spot list to 255\n", m_id );
+				smutils->LogError(myself, "Warning: NavArea #%d: Truncated encounter spot list to 255", m_id);
 			}
-			else
-			{
-				spotCount = (unsigned char)e->spots.Count();
-			}
-			fileBuffer.PutUnsignedChar( spotCount );
-		
+
+			file.write(reinterpret_cast<char*>(&spotCount), sizeof(size_t));
+
 			saveCount = 0;
-			FOR_EACH_VEC( e->spots, sit )
+			for (auto& order : e->spots)
 			{
-				SpotOrder *order = &e->spots[ sit ];
-
 				// order->spot may be NULL if we've loaded a nav mesh that has been edited but not re-analyzed
-				unsigned int id = (order->spot) ? order->spot->GetID() : 0;
-				fileBuffer.PutUnsignedInt( id );
+				unsigned int id = order.spot ? order.spot->GetID() : 0;
+				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+				float t = order.t;
+				file.write(reinterpret_cast<char*>(&t), sizeof(float));
 
-				unsigned char t = (unsigned char)(255 * order->t);
-				fileBuffer.PutUnsignedChar( t );
-
-				// overflow check
 				if (++saveCount == spotCount)
 					break;
 			}
@@ -366,56 +368,44 @@ void CNavArea::Save(std::fstream& file, unsigned int version ) const
 
 	// store place dictionary entry
 	PlaceDirectory::IndexType entry = placeDirectory.GetIndex( GetPlace() );
-	fileBuffer.Put( &entry, sizeof(entry) );
+	file.write(reinterpret_cast<char*>(&entry), sizeof(entry));
 
 	// write out ladder info
 	int i;
 	for ( i=0; i<CNavLadder::NUM_LADDER_DIRECTIONS; ++i )
 	{
 		// save number of encounter paths for this area
-		unsigned int count = m_ladder[i].Count();
-		fileBuffer.PutUnsignedInt( count );
+		size_t count = m_ladder[i].size();
+		file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
 
-		NavLadderConnect ladder;
-		FOR_EACH_VEC( m_ladder[i], it )
+		for (const auto& ladder : m_ladder[i])
 		{
-			ladder = m_ladder[i][it];
-
-			unsigned int id = ladder.ladder->GetID();
-			fileBuffer.PutUnsignedInt( id );
+			auto id = ladder.ladder->GetID();
+			file.write(reinterpret_cast<char*>(&id), sizeof(id));
 		}
 	}
 
-	// save earliest occupy times
-	for( i=0; i<MAX_NAV_TEAMS; ++i )
-	{
-		// no spot in the map should take longer than this to reach
-		fileBuffer.Put( &m_earliestOccupyTime[i], sizeof(m_earliestOccupyTime[i]) );
-	}
-
-	// save light intensity
-	for ( i=0; i<NUM_CORNERS; ++i )
-	{
-		fileBuffer.PutFloat( m_lightIntensity[i] );
-	}
+	file.write(reinterpret_cast<char*>(m_earliestOccupyTime), sizeof(m_earliestOccupyTime));
+	file.write(reinterpret_cast<char*>(m_lightIntensity), sizeof(m_lightIntensity));
 
 	// save visible area set
-	unsigned int visibleAreaCount = m_potentiallyVisibleAreas.Count();
-	fileBuffer.PutUnsignedInt( visibleAreaCount );
+	size_t visibleAreaCount = m_potentiallyVisibleAreas.size();
+	file.write(reinterpret_cast<char*>(visibleAreaCount), sizeof(size_t));
 
-	for ( int vit=0; vit<m_potentiallyVisibleAreas.Count(); ++vit )
+	for (auto& vit : m_potentiallyVisibleAreas)
 	{
-		CNavArea *area = m_potentiallyVisibleAreas[ vit ].area;
+		CNavArea* area = vit.area;
+		unsigned int id = 0;
 
-		unsigned int id = area ? area->GetID() : 0;
+		if (area) { id = area->GetID(); }
 
-		fileBuffer.PutUnsignedInt( id );
-		fileBuffer.PutUnsignedChar( m_potentiallyVisibleAreas[ vit ].attributes );
+		file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+		file.write(reinterpret_cast<char*>(&vit.attributes), sizeof(unsigned char));
 	}
 
 	// store area we inherit visibility from
 	unsigned int id = ( m_inheritVisibilityFrom.area ) ? m_inheritVisibilityFrom.area->GetID() : 0;
-	fileBuffer.PutUnsignedInt( id );
+	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
 }
 
 
@@ -423,32 +413,20 @@ void CNavArea::Save(std::fstream& file, unsigned int version ) const
 /**
  * Load a navigation area from the file
  */
-NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int subVersion )
+NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned int subVersion)
 {
 	// load ID
-	m_id = fileBuffer.GetUnsignedInt();
+	file.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
 
 	// update nextID to avoid collisions
 	if (m_id >= m_nextID)
 		m_nextID = m_id+1;
 
-	// load attribute flags
-	if ( version <= 8 )
-	{
-		m_attributeFlags = fileBuffer.GetUnsignedChar();
-	}
-	else if ( version < 13 )
-	{
-		m_attributeFlags = fileBuffer.GetUnsignedShort();
-	}
-	else
-	{
-		m_attributeFlags = fileBuffer.GetInt();
-	}
+	file.read(reinterpret_cast<char*>(&m_attributeFlags), sizeof(int));
 
 	// load extent of area
-	fileBuffer.Get( &m_nwCorner, 3*sizeof(float) );
-	fileBuffer.Get( &m_seCorner, 3*sizeof(float) );
+	file.read(reinterpret_cast<char*>(&m_nwCorner), sizeof(Vector));
+	file.read(reinterpret_cast<char*>(&m_seCorner), sizeof(Vector));
 
 	m_center.x = (m_nwCorner.x + m_seCorner.x)/2.0f;
 	m_center.y = (m_nwCorner.y + m_seCorner.y)/2.0f;
@@ -462,14 +440,13 @@ NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsig
 	else
 	{
 		m_invDxCorners = m_invDyCorners = 0;
-
-		DevWarning( "Degenerate Navigation Area #%d at setpos %g %g %g\n", 
-			m_id, m_center.x, m_center.y, m_center.z );
+		smutils->LogError(myself, "Degenerate Navigation Area #%d at setpos %3.2f %3.2f %3.2f", m_id, m_center.x, m_center.y, m_center.z);
 	}
 
 	// load heights of implicit corners
-	m_neZ = fileBuffer.GetFloat();
-	m_swZ = fileBuffer.GetFloat();
+
+	file.read(reinterpret_cast<char*>(&m_neZ), sizeof(float));
+	file.read(reinterpret_cast<char*>(&m_swZ), sizeof(float));
 
 	CheckWaterLevel();
 
@@ -478,20 +455,21 @@ NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsig
 	for( int d=0; d<NUM_DIRECTIONS; d++ )
 	{
 		// load number of connections for this direction
-		unsigned int count = fileBuffer.GetUnsignedInt();
-		Assert( fileBuffer.IsValid() );
+		size_t count = 0;
+		file.read(reinterpret_cast<char*>(&count), sizeof(size_t));
 
-		m_connect[d].EnsureCapacity( count );
-		for( unsigned int i=0; i<count; ++i )
+		m_connect[d].reserve(count);
+		for(size_t i = 0; i < count; ++i)
 		{
 			NavConnect connect;
-			connect.id = fileBuffer.GetUnsignedInt();
-			Assert( fileBuffer.IsValid() );
+			unsigned int id = 0;
+			file.read(reinterpret_cast<char*>(id), sizeof(unsigned int));
+			connect.id = id;
 
 			// don't allow self-referential connections
 			if ( connect.id != m_id )
 			{
-				m_connect[d].AddToTail( connect );
+				m_connect[d].push_back(connect);
 			}
 		}
 	}
@@ -501,146 +479,75 @@ NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsig
 	//
 
 	// load number of hiding spots
-	unsigned char hidingSpotCount = fileBuffer.GetUnsignedChar();
+	size_t hidingSpotCount = 0;
+	file.read(reinterpret_cast<char*>(&hidingSpotCount), sizeof(size_t));
 
-	if (version == 1)
+	// load HidingSpot objects for this area
+	for( int h=0; h<hidingSpotCount; ++h )
 	{
-		// load simple vector array
-		Vector pos;
-		for( int h=0; h<hidingSpotCount; ++h )
-		{
-			fileBuffer.Get( &pos, 3 * sizeof(float) );
+		// create new hiding spot and put on master list
+		HidingSpot *spot = TheNavMesh->CreateHidingSpot();
 
-			// create new hiding spot and put on master list
-			HidingSpot *spot = TheNavMesh->CreateHidingSpot();
-			spot->SetPosition( pos );
-			spot->SetFlags( HidingSpot::IN_COVER );
-			m_hidingSpots.AddToTail( spot );
-		}
-	}
-	else
-	{
-		// load HidingSpot objects for this area
-		for( int h=0; h<hidingSpotCount; ++h )
-		{
-			// create new hiding spot and put on master list
-			HidingSpot *spot = TheNavMesh->CreateHidingSpot();
-
-			spot->Load( fileBuffer, version );
+		spot->Load(file, version);
 			
-			m_hidingSpots.AddToTail( spot );
-		}
+		m_hidingSpots.push_back(spot);
 	}
-
-	if ( version < 15 )
-	{
-		//
-		// Eat the approach areas
-		//
-		int nToEat = fileBuffer.GetUnsignedChar();
-
-		// load approach area info (IDs)
-		for( int a=0; a<nToEat; ++a )
-		{
-			fileBuffer.GetUnsignedInt();
-			fileBuffer.GetUnsignedInt();
-			fileBuffer.GetUnsignedChar();
-			fileBuffer.GetUnsignedInt();
-			fileBuffer.GetUnsignedChar();
-		}
-	}
-
 
 	//
 	// Load encounter paths for this area
 	//
-	unsigned int count = fileBuffer.GetUnsignedInt();
+	size_t count = 0;
+	file.read(reinterpret_cast<char*>(&count), sizeof(size_t));
 
-	if (version < 3)
-	{
-		// old data, read and discard
-		for( unsigned int e=0; e<count; ++e )
-		{
-			SpotEncounter encounter;
-
-			encounter.from.id = fileBuffer.GetUnsignedInt();
-			encounter.to.id = fileBuffer.GetUnsignedInt();
-
-			fileBuffer.Get( &encounter.path.from.x, 3 * sizeof(float) );
-			fileBuffer.Get( &encounter.path.to.x, 3 * sizeof(float) );
-
-			// read list of spots along this path
-			unsigned char spotCount = fileBuffer.GetUnsignedChar();
-		
-			for( int s=0; s<spotCount; ++s )
-			{
-				for (int i = 0; i < 4; i++) {
-					fileBuffer.GetFloat();
-				}
-			}
-		}
-		return NAV_OK;
-	}
-
-	for( unsigned int e=0; e<count; ++e )
+	for(size_t e = 0; e < count; ++e)
 	{
 		SpotEncounter *encounter = new SpotEncounter;
 
-		encounter->from.id = fileBuffer.GetUnsignedInt();
-
-		unsigned char dir = fileBuffer.GetUnsignedChar();
-		encounter->fromDir = static_cast<NavDirType>( dir );
-
-		encounter->to.id = fileBuffer.GetUnsignedInt();
-
-		dir = fileBuffer.GetUnsignedChar();
-		encounter->toDir = static_cast<NavDirType>( dir );
+		file.read(reinterpret_cast<char*>(&encounter->from.id), sizeof(unsigned int));
+		file.read(reinterpret_cast<char*>(&encounter->fromDir), sizeof(uint8));
+		file.read(reinterpret_cast<char*>(&encounter->to.id), sizeof(unsigned int));
+		file.read(reinterpret_cast<char*>(&encounter->toDir), sizeof(uint8));
 
 		// read list of spots along this path
-		unsigned char spotCount = fileBuffer.GetUnsignedChar();
+		size_t spotCount = 0;
+		file.read(reinterpret_cast<char*>(spotCount), sizeof(size_t));
 	
 		SpotOrder order;
-		for( int s=0; s<spotCount; ++s )
+		for(size_t s = 0; s < spotCount; ++s)
 		{
-			order.id = fileBuffer.GetUnsignedInt();
-
-			unsigned char t = fileBuffer.GetUnsignedChar();
-
-			order.t = (float)t/255.0f;
-
-			encounter->spots.AddToTail( order );
+			file.read(reinterpret_cast<char*>(&order.id), sizeof(unsigned int));
+			file.read(reinterpret_cast<char*>(&order.t), sizeof(float));
+			encounter->spots.push_back(order);
 		}
 
-		m_spotEncounters.AddToTail( encounter );
+		m_spotEncounters.push_back(encounter);
 	}
-
-	if (version < 5)
-		return NAV_OK;
 
 	//
 	// Load Place data
 	//
-	PlaceDirectory::IndexType entry = fileBuffer.GetUnsignedShort();
+	PlaceDirectory::IndexType entry = 0;
+	file.read(reinterpret_cast<char*>(&entry), sizeof(entry));
 
 	// convert entry to actual Place
-	SetPlace( placeDirectory.IndexToPlace( entry ) );
-
-	if ( version < 7 )
-		return NAV_OK;
+	SetPlace(placeDirectory.IndexToPlace(entry));
 
 	// load ladder data
 	for ( int dir=0; dir<CNavLadder::NUM_LADDER_DIRECTIONS; ++dir )
 	{
-		count = fileBuffer.GetUnsignedInt();
-		for( unsigned int i=0; i<count; ++i )
+		count = 0;
+		file.read(reinterpret_cast<char*>(&count), sizeof(size_t));
+
+		for(size_t i = 0; i < count; ++i)
 		{
 			NavLadderConnect connect;
-			connect.id = fileBuffer.GetUnsignedInt();
+			file.read(reinterpret_cast<char*>(&connect.id), sizeof(unsigned int));
 
 			bool alreadyConnected = false;
-			FOR_EACH_VEC( m_ladder[dir], j )
+
+			for (auto& ladder : m_ladder[dir])
 			{
-				if ( m_ladder[dir][j].id == connect.id )
+				if (ladder.id == connect.id)
 				{
 					alreadyConnected = true;
 					break;
@@ -649,59 +556,30 @@ NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsig
 
 			if ( !alreadyConnected )
 			{
-				m_ladder[dir].AddToTail( connect );
+				m_ladder[dir].push_back(connect);
 			}
 		}
 	}
 
-	if ( version < 8 )
-		return NAV_OK;
-
-	// load earliest occupy times
-	for( int i=0; i<MAX_NAV_TEAMS; ++i )
-	{
-		// no spot in the map should take longer than this to reach
-		m_earliestOccupyTime[i] = fileBuffer.GetFloat();
-	}
-
-	if ( version < 11 )
-		return NAV_OK;
-
-	// load light intensity
-	for ( int i=0; i<NUM_CORNERS; ++i )
-	{
-		m_lightIntensity[i] = fileBuffer.GetFloat();
-	}
-
-	if ( version < 16 )
-		return NAV_OK;
+	file.read(reinterpret_cast<char*>(m_earliestOccupyTime), sizeof(m_earliestOccupyTime));
+	file.read(reinterpret_cast<char*>(m_lightIntensity), sizeof(m_lightIntensity));
 
 	// load visibility information
-	unsigned int visibleAreaCount = fileBuffer.GetUnsignedInt();
-	if ( !IsX360() )
-	{
-		m_potentiallyVisibleAreas.EnsureCapacity( visibleAreaCount );
-	}
-	else
-	{
-/* TODO: Re-enable when latest 360 code gets integrated (MSB 5/5/09)
-		size_t nBytes = visibleAreaCount * sizeof( AreaBindInfo ); 
-		m_potentiallyVisibleAreas.~CAreaBindInfoArray();
-		new ( &m_potentiallyVisibleAreas ) CAreaBindInfoArray( (AreaBindInfo *)engine->AllocLevelStaticData( nBytes ), visibleAreaCount );
-*/
-	}
+	size_t visibleAreaCount = 0;
+	file.read(reinterpret_cast<char*>(&visibleAreaCount), sizeof(size_t));
 
-	for( unsigned int j=0; j<visibleAreaCount; ++j )
+	m_potentiallyVisibleAreas.reserve(visibleAreaCount);
+
+	for (size_t i = 0; i < visibleAreaCount; i++)
 	{
 		AreaBindInfo info;
-		info.id = fileBuffer.GetUnsignedInt();
-		info.attributes = fileBuffer.GetUnsignedChar();
-
-		m_potentiallyVisibleAreas.AddToTail( info );
+		file.read(reinterpret_cast<char*>(&info.id), sizeof(unsigned int));
+		file.read(reinterpret_cast<char*>(&info.attributes), sizeof(unsigned char));
+		m_potentiallyVisibleAreas.push_back(info);
 	}
 
 	// read area from which we inherit visibility
-	m_inheritVisibilityFrom.id = fileBuffer.GetUnsignedInt();
+	file.read(reinterpret_cast<char*>(&m_inheritVisibilityFrom.id), sizeof(unsigned int));
 
 	return NAV_OK;
 }

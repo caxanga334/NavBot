@@ -9,6 +9,8 @@
 // Implementation of Navigation Mesh interface
 // Author: Michael S. Booth, 2003-2004
 
+#include <filesystem>
+#include <fstream>
 
 #include "nav_mesh.h"
 
@@ -3048,24 +3050,20 @@ HidingSpot::HidingSpot( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-void HidingSpot::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
+void HidingSpot::Save( std::fstream& file, unsigned int version )
 {
-	fileBuffer.PutUnsignedInt( m_id );
-	fileBuffer.PutFloat( m_pos.x );
-	fileBuffer.PutFloat( m_pos.y );
-	fileBuffer.PutFloat( m_pos.z );
-	fileBuffer.PutUnsignedChar( m_flags );
+	file.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+	file.write(reinterpret_cast<char*>(&m_pos), sizeof(Vector));
+	file.write(reinterpret_cast<char*>(&m_flags), sizeof(unsigned char));
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
-void HidingSpot::Load( CUtlBuffer &fileBuffer, unsigned int version )
+void HidingSpot::Load(std::fstream& file, unsigned int version )
 {
-	m_id = fileBuffer.GetUnsignedInt();
-	m_pos.x = fileBuffer.GetFloat();
-	m_pos.y = fileBuffer.GetFloat();
-	m_pos.z = fileBuffer.GetFloat();
-	m_flags = fileBuffer.GetUnsignedChar();
+	file.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+	file.read(reinterpret_cast<char*>(&m_pos), sizeof(Vector));
+	file.read(reinterpret_cast<char*>(&m_flags), sizeof(unsigned char));
 
 	// update next ID to avoid ID collisions by later spots
 	if (m_id >= m_nextID)

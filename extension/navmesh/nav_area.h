@@ -128,8 +128,8 @@ public:
 
 	int GetFlags( void ) const		{ return m_flags; }
 
-	void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;
-	void Load( CUtlBuffer &fileBuffer, unsigned int version );
+	void Save(std::fstream& file, unsigned int version);
+	void Load(std::fstream& file, unsigned int version);
 	NavErrorType PostLoad( void );
 
 	const Vector &GetPosition( void ) const		{ return m_pos; }	// get the position of the hiding spot
