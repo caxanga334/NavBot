@@ -493,7 +493,7 @@ public:
 
 	const Vector &GetEditCursorPosition( void ) const	{ return m_editCursorPos; }	// return position of edit cursor
 	void StripNavigationAreas( void );
-	static const char *GetFilename( void );								// return the filename for this map's "nav" file
+	static std::string GetFilename( void );								// return the filename for this map's "nav" file
 
 	/// @todo Remove old select code and make all commands use this selected set
 	void AddToSelectedSet( CNavArea *area );							// add area to the currently selected set
@@ -588,7 +588,7 @@ public:
 
 	template <typename Functor, typename T>
 	static bool forAll(Functor& func, std::vector<T>& vec) {
-		for ( int i=0; i<vec.size(); ++i )
+		for ( size_t i=0; i<vec.size(); ++i )
 		{
 			if (!func( vec[i] ))
 				return false;
@@ -816,7 +816,7 @@ private:
 		GENERATE_ANALYSIS_ONLY,
 	}
 	m_generationMode;											// true while a Navigation Mesh is being generated
-	int m_generationIndex;										// used for iterating nav areas during generation process
+	size_t m_generationIndex;										// used for iterating nav areas during generation process
 	int m_sampleTick;											// counter for displaying pseudo-progress while sampling walkable space
 	bool m_bQuitWhenFinished;
 	float m_generationStartTime;
@@ -831,7 +831,7 @@ private:
 	std::vector<WalkableSeedSpot> m_walkableSeeds;				// list of walkable seed spots for sampling
 
 	CNavNode *GetNextWalkableSeedNode( void );					// return the next walkable seed as a node
-	int m_seedIdx;
+	size_t m_seedIdx;
 	int m_hostThreadModeRestoreValue;							// stores the value of host_threadmode before we changed it
 
 	void BuildTransientAreaList( void );

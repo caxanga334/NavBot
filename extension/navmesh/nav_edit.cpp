@@ -3655,7 +3655,7 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 	{
 		for( int y = startY; y <= endY; ++y )
 		{
-			int iGrid = x + y*m_gridSizeX;
+			size_t iGrid = x + y*m_gridSizeX;
 			if ( iGrid >= m_grid.size() )
 			{
 				ExecuteNTimes( 10, Warning( "** Walked off of the CNavMesh::m_grid in ForAllAreasOverlappingExtent()\n" ) );
@@ -3717,7 +3717,7 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector<
 	{
 		for( int y = startY; y <= endY; ++y )
 		{
-			int iGrid = x + y*m_gridSizeX;
+			size_t iGrid = x + y*m_gridSizeX;
 			if ( iGrid >= m_grid.size() )
 			{
 				ExecuteNTimes( 10, Warning( "** Walked off of the CNavMesh::m_grid in CollectAreasOverlappingExtent()\n" ) );

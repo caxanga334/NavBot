@@ -53,9 +53,11 @@ void CNavLadder::Shift( const Vector &shift )
 
 	if ( TheNavMesh )
 	{
-		for ( int i=0; i<TheNavMesh->GetLadders().size(); ++i )
+		auto& vecladders = TheNavMesh->GetLadders();
+
+		for (auto ladder : vecladders)
 		{
-			TheNavMesh->GetLadders()[i]->m_id = m_nextID++;
+			ladder->m_id = m_nextID++;
 		}
 	}
 }

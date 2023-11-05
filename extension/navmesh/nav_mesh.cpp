@@ -2315,12 +2315,12 @@ void CommandNavSave( void )
 
 	if (TheNavMesh->Save())
 	{
-		Msg( "Navigation map '%s' saved.\n", TheNavMesh->GetFilename() );
+		Msg( "Navigation map '%s' saved.\n", TheNavMesh->GetFilename().c_str() );
 	}
 	else
 	{
-		const char *filename = TheNavMesh->GetFilename();
-		Msg( "ERROR: Cannot save navigation map '%s'.\n", (filename) ? filename : "(null)" );
+		auto filename = TheNavMesh->GetFilename();
+		Msg( "ERROR: Cannot save navigation map '%s'.\n", filename.c_str() );
 	}
 }
 static ConCommand nav_save( "nav_save", CommandNavSave, "Saves the current Navigation Mesh to disk.", FCVAR_GAMEDLL | FCVAR_CHEAT );
@@ -3307,7 +3307,7 @@ void CNavMesh::EndVisibilityComputations( void )
 		}
 
 		// if best delta is small enough, inherit our data from this anchor
-		if (anchor && bestDelta.size() <= nav_max_vis_delta_list_length.GetInt() && anchor != area)
+		if (anchor && bestDelta.size() <= static_cast<size_t>(nav_max_vis_delta_list_length.GetInt()) && anchor != area)
 		{
 			// inherit from anchor area's visibility list
 			area->m_inheritVisibilityFrom.area = anchor;

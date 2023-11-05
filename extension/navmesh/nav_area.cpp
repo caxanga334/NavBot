@@ -4236,7 +4236,6 @@ void CNavArea::AddSpotEncounters( const CNavArea *from, NavDirType fromDir, cons
 	trace_t result;
 
 	Vector eye, delta;
-	HidingSpot *spot;
 	SpotOrder spotOrder;
 
 	// step along path thru this area
@@ -5223,7 +5222,7 @@ void CNavArea::UpdateAvoidanceObstacles( void )
 	maxs.z = MAX( m_nwCorner.z, m_seCorner.z ) + HumanCrouchHeight;
 
 	float obstructionHeight = 0.0f;
-	for ( int i=0; i<TheNavMesh->GetObstructions().size(); ++i )
+	for ( size_t i=0; i<TheNavMesh->GetObstructions().size(); ++i )
 	{
 		INavAvoidanceObstacle *obstruction = TheNavMesh->GetObstructions()[i];
 		edict_t *obstructingEntity = obstruction->GetObstructingEntity();
@@ -5654,7 +5653,7 @@ const CNavArea::CAreaBindInfoArray &CNavArea::ComputeVisibilityDelta( const CNav
 	}
 
 	// add any visible areas in my list that are not in 'others' list into the delta
-	int i, j;
+	size_t i, j;
 	for( i=0; i<m_potentiallyVisibleAreas.size(); ++i )
 	{
 		if ( m_potentiallyVisibleAreas[i].area )
@@ -5723,6 +5722,7 @@ void CNavArea::ResetPotentiallyVisibleAreas()
  */
 
 CNavArea *g_pCurVisArea;
+// TO-DO: Might need to switch to vector and use areabindinfo's operator ==
 std::unordered_set<CNavArea::AreaBindInfo> g_ComputedVis;
 //CTSListWithFreeList< CNavArea::AreaBindInfo > g_ComputedVis;
 
@@ -5943,7 +5943,7 @@ bool CNavArea::IsPotentiallyVisible( const CNavArea *viewedArea ) const
 	}
 
 	// normal visibility check
-	for ( int i=0; i<m_potentiallyVisibleAreas.size(); ++i )
+	for ( size_t i=0; i<m_potentiallyVisibleAreas.size(); ++i )
 	{
 		if ( m_potentiallyVisibleAreas[i].area == viewedArea )
 		{
@@ -5958,7 +5958,7 @@ bool CNavArea::IsPotentiallyVisible( const CNavArea *viewedArea ) const
 	{
 		CAreaBindInfoArray &inherited = m_inheritVisibilityFrom.area->m_potentiallyVisibleAreas;
 
-		for ( int i=0; i<inherited.size(); ++i )
+		for ( size_t i=0; i<inherited.size(); ++i )
 		{
 			if ( inherited[i].area == viewedArea )
 			{
@@ -5986,7 +5986,7 @@ bool CNavArea::IsCompletelyVisible( const CNavArea *viewedArea ) const
 	}
 
 	// normal visibility check
-	for ( int i=0; i<m_potentiallyVisibleAreas.size(); ++i )
+	for ( size_t i=0; i<m_potentiallyVisibleAreas.size(); ++i )
 	{
 		if ( m_potentiallyVisibleAreas[i].area == viewedArea )
 		{
@@ -6000,7 +6000,7 @@ bool CNavArea::IsCompletelyVisible( const CNavArea *viewedArea ) const
 	{
 		CAreaBindInfoArray &inherited = m_inheritVisibilityFrom.area->m_potentiallyVisibleAreas;
 
-		for ( int i=0; i<inherited.size(); ++i )
+		for ( size_t i=0; i<inherited.size(); ++i )
 		{
 			if ( inherited[i].area == viewedArea )
 			{

@@ -2418,7 +2418,7 @@ void CNavMesh::SplitAreasUnderOverhangs( void )
 			{
 				// iterate all connections in that direction
 				const NavConnectVector *pConnections = area->GetAdjacentAreas( (NavDirType) dir );
-				for ( int iConnection = 0; iConnection < pConnections->size() && !bRestartProcessing; iConnection++)
+				for ( size_t iConnection = 0; iConnection < pConnections->size() && !bRestartProcessing; iConnection++)
 				{
 					CNavArea *otherArea = (*pConnections)[iConnection].area;
 					Extent otherAreaExtent;
@@ -3817,12 +3817,12 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			// save the mesh
 			if (Save())
 			{
-				Msg( "Navigation map '%s' saved.\n", GetFilename() );
+				Msg( "Navigation map '%s' saved.\n", GetFilename().c_str() );
 			}
 			else
 			{
-				const char *filename = GetFilename();
-				Msg( "ERROR: Cannot save navigation map '%s'.\n", (filename) ? filename : "(null)" );
+				auto filename = GetFilename();
+				Msg( "ERROR: Cannot save navigation map '%s'.\n", filename.c_str() );
 			}
 
 			if ( m_bQuitWhenFinished )

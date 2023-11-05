@@ -145,7 +145,7 @@ Place PlaceDirectory::IndexToPlace( IndexType entry ) const
 	if (entry == 0)
 		return UNDEFINED_PLACE;
 
-	int i = entry-1;
+	size_t i = entry-1;
 
 	if (i >= m_directory.size())
 	{
@@ -483,7 +483,7 @@ NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned i
 	file.read(reinterpret_cast<char*>(&hidingSpotCount), sizeof(size_t));
 
 	// load HidingSpot objects for this area
-	for( int h=0; h<hidingSpotCount; ++h )
+	for( size_t h=0; h<hidingSpotCount; ++h )
 	{
 		// create new hiding spot and put on master list
 		HidingSpot *spot = TheNavMesh->CreateHidingSpot();
@@ -894,7 +894,7 @@ void CNavMesh::ComputeBattlefrontAreas( void )
 /**
  * Return the filename for this map's "nav map" file
  */
-const char *CNavMesh::GetFilename( void )
+std::string CNavMesh::GetFilename( void )
 {
 	// TO-DO: implement proper support for workshop maps
 	// gpGlobals->mapname::workshop/ctf_harbine.ugc3067683041
@@ -902,7 +902,7 @@ const char *CNavMesh::GetFilename( void )
 	char filename[MAX_MAP_NAME + 1];
 	auto map = gpGlobals->mapname.ToCStr();
 	std::snprintf(filename, sizeof(filename), "%s.smnav", map);
-	return filename;
+	return std::string(filename);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -960,8 +960,8 @@ bool CNavMesh::Save( void )
 {
 	WarnIfMeshNeedsAnalysis( NavCurrentVersion );
 
-	const char *filename = GetFilename();
-	if (filename == nullptr)
+	auto filename = GetFilename();
+	if (filename.length() < 2)
 		return false;
 
 	//
@@ -1275,7 +1275,7 @@ NavErrorType CNavMesh::Load( void )
 	char fullpath[PLATFORM_MAX_PATH + 1];
 	auto modfolder = g_pSM->GetGameFolderName();
 
-	g_pSM->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s/%s", modfolder, mapname);
+	g_pSM->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s/%s", modfolder, mapname.c_str());
 
 	//if ( IsX360()
 	//	// 360 has compressed NAVs
@@ -1371,7 +1371,7 @@ NavErrorType CNavMesh::Load( void )
 	// load the areas and compute total extent
 	TheNavMesh->PreLoadAreas(header.number_of_areas);
 	Extent areaExtent;
-	for(int i = 0; i < header.number_of_areas; ++i)
+	for(unsigned int i = 0; i < header.number_of_areas; ++i)
 	{
 		CNavArea *area = TheNavMesh->CreateArea();
 		area->Load(file, header.version, header.subversion);
@@ -1397,7 +1397,7 @@ NavErrorType CNavMesh::Load( void )
 		AddNavArea(area);
 	}
 
-	for (int i = 0; i < header.number_of_ladders; i++)
+	for (unsigned int i = 0; i < header.number_of_ladders; i++)
 	{
 		CNavLadder* ladder = new CNavLadder;
 		ladder->Load(this, file, header.version);
