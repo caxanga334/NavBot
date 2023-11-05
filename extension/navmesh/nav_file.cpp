@@ -174,7 +174,7 @@ void PlaceDirectory::Save(std::fstream& file)
 		file.write(buffer, PLACE_DIRECTORY_SAVE_BUFFER_SIZE);
 	}
 
-	file.write(reinterpret_cast<char*>(m_hasUnnamedAreas), sizeof(bool));
+	file.write(reinterpret_cast<char*>(&m_hasUnnamedAreas), sizeof(bool));
 }
 
 /// load the directory
@@ -203,7 +203,7 @@ void PlaceDirectory::Load(std::fstream& file, const int version)
 		AddPlace(place);
 	}
 
-	file.read(reinterpret_cast<char*>(m_hasUnnamedAreas), sizeof(bool));
+	file.read(reinterpret_cast<char*>(&m_hasUnnamedAreas), sizeof(bool));
 }
 
 
@@ -250,7 +250,7 @@ void CNavArea::Save(std::fstream& file, unsigned int version)
 	file.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
 
 	// save attribute flags
-	file.write(reinterpret_cast<char*>(m_attributeFlags), sizeof(int));
+	file.write(reinterpret_cast<char*>(&m_attributeFlags), sizeof(int));
 
 	// save extent of area
 	// TO-DO: VALVE uses 3 * sizeof float instead of sizeof Vector. Why?
@@ -390,7 +390,7 @@ void CNavArea::Save(std::fstream& file, unsigned int version)
 
 	// save visible area set
 	size_t visibleAreaCount = m_potentiallyVisibleAreas.size();
-	file.write(reinterpret_cast<char*>(visibleAreaCount), sizeof(size_t));
+	file.write(reinterpret_cast<char*>(&visibleAreaCount), sizeof(size_t));
 
 	for (auto& vit : m_potentiallyVisibleAreas)
 	{
@@ -1067,7 +1067,7 @@ bool CNavMesh::Save( void )
 
 	auto navSize = std::filesystem::file_size(fullpath);
 
-	smutils->LogMessage(myself, "Saved nav mesh file \"%s\", size %u", navSize);
+	smutils->LogMessage(myself, "Saved nav mesh file \"%s\", size %u", fullpath, navSize);
 
 	return true;
 }

@@ -29,7 +29,9 @@
  * Version: $Id$
  */
 
-#include "extension.h"
+#include <filesystem>
+
+#include "extension.h"	
 #include <eiface.h>
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineTrace.h>
@@ -40,8 +42,6 @@
 #include <igameevents.h>
 
 #include "navmesh/nav_mesh.h"
-
-#include <filesystem>
 
 /**
  * @file extension.cpp
@@ -75,7 +75,6 @@ SMEXT_LINK(&g_SMNavExt);
 bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	// Create the directory
-
 	auto mod = smutils->GetGameFolderName();
 	char fullpath[PLATFORM_MAX_PATH + 1];
 	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s", mod);
@@ -96,22 +95,25 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		}
 	}
 
+	ConVar_Register(0, this);
+
 	return true;
 }
 
 void SMNavExt::SDK_OnUnload()
 {
-	ConVar_Unregister();
-
-	delete TheNavMesh;
+	// delete TheNavMesh;
 	TheNavMesh = nullptr;
+
+	ConVar_Unregister();
 }
 
 void SMNavExt::SDK_OnAllLoaded()
 {
-	ConVar_Register(0, this);
-
-	TheNavMesh = new CNavMesh();
+	if (TheNavMesh == nullptr)
+	{
+		TheNavMesh = new CNavMesh;
+	}
 }
 
 bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
@@ -133,9 +135,9 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 	GET_V_IFACE_ANY(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
 #endif
 
-	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, servergamedll, this, &SMNavExt::Hook_GameFrame, true);
-
 	gpGlobals = ismm->GetCGlobals();
+
+	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, servergamedll, this, &SMNavExt::Hook_GameFrame, true);
 
 	return true;
 }

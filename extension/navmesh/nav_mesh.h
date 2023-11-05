@@ -260,6 +260,7 @@ private:
 extern PlaceDirectory placeDirectory;
 
 
+// TO-DO: Remove gameeventlistener, crashes with sourcemod, listen for game events using other methods
 
 //--------------------------------------------------------------------------------------------------------
 /**

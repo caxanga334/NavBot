@@ -9,6 +9,8 @@
 // Auto-generate a Navigation Mesh by sampling the current map
 // Author: Michael S. Booth (mike@turtlerockstudios.com), 2003
 
+#include "extension.h"
+
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_pathfind.h"
@@ -18,12 +20,12 @@
 #include <eiface.h>
 #include <irecipientfilter.h>
 #include <worldsize.h>
-#include <KeyValues.h>
+// #include <KeyValues.h>
 
 #include "nav_macros.h"
 
 //#include "terror/TerrorShared.h"
-#include "fmtstr.h"
+// #include "fmtstr.h"
 
 #ifdef TERROR
 #include "func_simpleladder.h"
@@ -3878,6 +3880,7 @@ CNavNode *CNavMesh::AddNode( const Vector &destPos, const Vector &normal, NavDir
 	{
 		node = new CNavNode( destPos, normal, source, isOnDisplacement );
 		OnNodeAdded( node );
+		// rootconsole->ConsolePrint("New CNavNode at %3.2f %3.2f %3.2f \n", destPos.x, destPos.y, destPos.z);
 		useNew = true;
 	}
 	float deltaZ = source->GetPosition()->z - destPos.z;

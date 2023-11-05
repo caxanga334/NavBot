@@ -830,8 +830,8 @@ void CNavArea::OnDestroyNotify( CNavArea *dead )
 	con.area = dead;
 	for( int d=0; d<NUM_DIRECTIONS; ++d )
 	{
-		m_connect[d].erase(std::remove(m_connect[d].begin(), m_connect[d].end(), con));
-		m_incomingConnect[d].erase(std::remove(m_incomingConnect[d].begin(), m_incomingConnect[d].end(), con));
+		m_connect[d].erase(std::remove(m_connect[d].begin(), m_connect[d].end(), con), m_connect[d].end());
+		m_incomingConnect[d].erase(std::remove(m_incomingConnect[d].begin(), m_incomingConnect[d].end(), con), m_incomingConnect[d].end());
 	}
 
 	// remove all visibility info, since we're editing the mesh anyways
@@ -874,7 +874,8 @@ void CNavArea::ConnectTo( CNavArea *area, NavDirType dir )
 	con.area = area;
 	con.length = ( area->GetCenter() - GetCenter() ).Length();
 	m_connect[dir].push_back(con);
-	m_incomingConnect[dir].erase(std::remove(m_incomingConnect[dir].begin(), m_incomingConnect[dir].end(), con));
+	auto toremove = std::remove(m_incomingConnect[dir].begin(), m_incomingConnect[dir].end(), con);
+	m_incomingConnect[dir].erase(toremove, m_incomingConnect[dir].end());
 
 	NavDirType dirOpposite = OppositeDirection( dir );
 	con.area = this;

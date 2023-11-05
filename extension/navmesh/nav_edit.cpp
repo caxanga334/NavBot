@@ -880,7 +880,7 @@ void CNavMesh::DrawEditMode( void )
 				m_showAreaInfoTimer.Start( nav_show_area_info.GetFloat() );
 				m_lastSelectedArea = m_selectedArea;
 			}
-
+/*
 			if (m_showAreaInfoTimer.HasStarted() && !m_showAreaInfoTimer.IsElapsed() )
 			{
 				char buffer[80];
@@ -952,6 +952,7 @@ void CNavMesh::DrawEditMode( void )
 					EmitSound(ent, "Bot.EditSwitchOn");
 				}
 			}
+			*/
 			
 
 			// do continuous selecting into selected set
