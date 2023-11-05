@@ -676,7 +676,7 @@ void CNavMesh::DrawEditMode( void )
 	if ( player == nullptr || IsGenerating() )
 		return;
 
-	// TODO: remove this when host_thread_mode 1 stops breaking NDEBUG_PERSIST_TILL_NEXT_SERVER overlays
+	// TODO: remove this when host_thread_mode 1 stops breaking NDEBUG_SMNAV_DRAW_TIME overlays
 	static ConVarRef host_thread_mode( "host_thread_mode" );
 	host_thread_mode.SetValue( 0 );
 
@@ -753,7 +753,7 @@ void CNavMesh::DrawEditMode( void )
 
 		if ( m_climbableSurface )
 		{
-			Cross3D( m_editCursorPos, cursorSize, 0, 255, 0, true, NDEBUG_PERSIST_TILL_NEXT_SERVER );
+			Cross3D( m_editCursorPos, cursorSize, 0, 255, 0, true, NDEBUG_SMNAV_DRAW_TIME );
 		}
 		else
 		{
@@ -766,19 +766,19 @@ void CNavMesh::DrawEditMode( void )
 				const float offset = cursorSize * 1.5f;
 				Vector pos = m_editCursorPos;
 				AddDirectionVector( &pos, NORTH, offset );
-				Text( pos, "N", false, NDEBUG_PERSIST_TILL_NEXT_SERVER );
+				Text( pos, "N", false, NDEBUG_SMNAV_DRAW_TIME );
 
 				pos = m_editCursorPos;
 				AddDirectionVector( &pos, SOUTH, offset );
-				Text( pos, "S", false, NDEBUG_PERSIST_TILL_NEXT_SERVER );
+				Text( pos, "S", false, NDEBUG_SMNAV_DRAW_TIME );
 
 				pos = m_editCursorPos;
 				AddDirectionVector( &pos, EAST, offset );
-				Text( pos, "E", false, NDEBUG_PERSIST_TILL_NEXT_SERVER );
+				Text( pos, "E", false, NDEBUG_SMNAV_DRAW_TIME );
 
 				pos = m_editCursorPos;
 				AddDirectionVector( &pos, WEST, offset );
-				Text( pos, "W", false, NDEBUG_PERSIST_TILL_NEXT_SERVER );
+				Text( pos, "W", false, NDEBUG_SMNAV_DRAW_TIME );
 			}
 		}
 
@@ -846,7 +846,7 @@ void CNavMesh::DrawEditMode( void )
 				{
 					V_snprintf( buffer, sizeof( buffer ), "Ladder #%d\n", m_selectedLadder->GetID() );
 				}
-				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_PERSIST_TILL_NEXT_SERVER, 255, 255,
+				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_SMNAV_DRAW_TIME, 255, 255,
 						0, 128, buffer);
 			}
 
@@ -941,7 +941,7 @@ void CNavMesh::DrawEditMode( void )
 				}
 
 				Q_snprintf( buffer, sizeof( buffer ), "Area #%d %s %s\n", m_selectedArea->GetID(), locName, attrib );
-				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_PERSIST_TILL_NEXT_SERVER, 255, 255,
+				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_SMNAV_DRAW_TIME, 255, 255,
 						0, 128, buffer);
 
 				// do "place painting"

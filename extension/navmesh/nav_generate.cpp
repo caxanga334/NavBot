@@ -3213,12 +3213,12 @@ void CNavMesh::AddWalkableSeeds( void )
  */
 void CNavMesh::BeginGeneration( bool incremental )
 {
-	extern IGameEventManager2 *gameeventmanager;
-	IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
-	if ( event )
-	{
-		gameeventmanager->FireEvent( event );
-	}
+	//extern IGameEventManager2 *gameeventmanager;
+	//IGameEvent *event = gameeventmanager->CreateEvent( "nav_generate" );
+	//if ( event )
+	//{
+	//	gameeventmanager->FireEvent( event );
+	//}
 
 #ifdef TERROR
 	engine->ServerCommand( "director_stop\nnb_delete_all\n" );

@@ -31,22 +31,22 @@
 #include <algorithm>
 
 
-#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_PERSIST_TILL_NEXT_SERVER )
+#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_SMNAV_DRAW_TIME )
 
 /**
  * The singleton for accessing the navigation mesh
  */
 extern CNavMesh *TheNavMesh;
 
-ConVar nav_edit( "nav_edit", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode." );
-ConVar nav_quicksave( "nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing." );	// TERROR: defaulting to 1, since we don't need the other data
-ConVar nav_show_approach_points( "nav_show_approach_points", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show Approach Points in the Navigation Mesh." );
-ConVar nav_show_danger( "nav_show_danger", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show current 'danger' levels." );
-ConVar nav_show_player_counts( "nav_show_player_counts", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show current player counts in each area." );
-ConVar nav_show_func_nav_avoid( "nav_show_func_nav_avoid", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot avoidance due to func_nav_avoid entities" );
-ConVar nav_show_func_nav_prefer( "nav_show_func_nav_prefer", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prefer entities" );
-ConVar nav_show_func_nav_prerequisite( "nav_show_func_nav_prerequisite", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prerequisite entities" );
-ConVar nav_max_vis_delta_list_length( "nav_max_vis_delta_list_length", "64", FCVAR_CHEAT );
+ConVar nav_edit( "nav_edit", "0", 0, "Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode." );
+ConVar nav_quicksave( "nav_quicksave", "1", 0, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing." );	// TERROR: defaulting to 1, since we don't need the other data
+ConVar nav_show_approach_points( "nav_show_approach_points", "0", 0, "Show Approach Points in the Navigation Mesh." );
+ConVar nav_show_danger( "nav_show_danger", "0", 0, "Show current 'danger' levels." );
+ConVar nav_show_player_counts( "nav_show_player_counts", "0", 0, "Show current player counts in each area." );
+ConVar nav_show_func_nav_avoid( "nav_show_func_nav_avoid", "0", 0, "Show areas of designer-placed bot avoidance due to func_nav_avoid entities" );
+ConVar nav_show_func_nav_prefer( "nav_show_func_nav_prefer", "0", 0, "Show areas of designer-placed bot preference due to func_nav_prefer entities" );
+ConVar nav_show_func_nav_prerequisite( "nav_show_func_nav_prerequisite", "0", 0, "Show areas of designer-placed bot preference due to func_nav_prerequisite entities" );
+ConVar nav_max_vis_delta_list_length( "nav_max_vis_delta_list_length", "64", 0 );
 
 extern ConVar nav_edit;
 extern ConVar nav_quicksave;
@@ -1457,7 +1457,7 @@ void CNavMesh::DrawPlayerCounts( void ) const
 			Text(area->GetCenter(),
 					msg.sprintf("%d (%d/%d)", area->GetPlayerCount(),
 							area->GetPlayerCount(1), area->GetPlayerCount(2)),
-					false, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+					false, NDEBUG_SMNAV_DRAW_TIME);
 		}
 	}
 */

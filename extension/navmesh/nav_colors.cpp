@@ -77,9 +77,9 @@ void NavDrawLine(const Vector& from, const Vector& to, NavEditColor navColor) {
 
 	Color color = NavColors[navColor];
 	debugoverlay->AddLineOverlay(from + offset, to + offset, color[0], color[1],
-			color[2], false, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+			color[2], false, NDEBUG_SMNAV_DRAW_TIME);
 	debugoverlay->AddLineOverlay(from + offset, to + offset, color[0] / 2,
-			color[1] / 2, color[2] / 2, true, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+			color[1] / 2, color[2] / 2, true, NDEBUG_SMNAV_DRAW_TIME);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ void NavDrawFilledTriangle(const Vector& point1, const Vector& point2,
 		}
 	}
 	debugoverlay->AddTriangleOverlay(point1, point2, point3, color[0], color[1],
-			color[2], 255, true, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+			color[2], 255, true, NDEBUG_SMNAV_DRAW_TIME);
 }
 
 void HorzArrow(const Vector &startPos, const Vector &endPos, float width, int r,
@@ -140,9 +140,9 @@ void NavDrawHorizontalArrow(const Vector& from, const Vector& to, float width,
 
 	Color color = NavColors[navColor];
 	HorzArrow(from + offset, to + offset, width, color[0], color[1], color[2],
-			255, false, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+			255, false, NDEBUG_SMNAV_DRAW_TIME);
 	HorzArrow(from + offset, to + offset, width, color[0] / 2, color[1] / 2,
-			color[2] / 2, 255, true, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+			color[2] / 2, 255, true, NDEBUG_SMNAV_DRAW_TIME);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -169,10 +169,10 @@ void NavDrawDashedLine(const Vector& from, const Vector& to,
 		distance += solidLen + gapLen;
 
 		debugoverlay->AddLineOverlay(start + offset, end + offset, color[0],
-				color[1], color[2], false, NDEBUG_PERSIST_TILL_NEXT_SERVER);
+				color[1], color[2], false, NDEBUG_SMNAV_DRAW_TIME);
 		debugoverlay->AddLineOverlay(start + offset, end + offset, color[0] / 2,
 				color[1] / 2, color[2] / 2, true,
-				NDEBUG_PERSIST_TILL_NEXT_SERVER);
+				NDEBUG_SMNAV_DRAW_TIME);
 	}
 }
 

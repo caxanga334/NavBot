@@ -43,7 +43,7 @@
  * @brief Sample implementation of the SDK Extension.
  * Note: Uncomment one of the pre-defined virtual functions in order to use it.
  */
-class SMNavExt : public SDKExtension
+class SMNavExt : public SDKExtension, IConCommandBaseAccessor
 {
 public:
 	/**
@@ -59,7 +59,7 @@ public:
 	/**
 	 * @brief This is called right before the extension is unloaded.
 	 */
-	//virtual void SDK_OnUnload();
+	virtual void SDK_OnUnload();
 
 	/**
 	 * @brief This is called once all known extensions have been loaded.
@@ -100,7 +100,7 @@ public:
 	 * @param maxlen		Maximum size of error buffer.
 	 * @return				True to succeed, false to fail.
 	 */
-	//virtual bool SDK_OnMetamodUnload(char *error, size_t maxlen);
+	virtual bool SDK_OnMetamodUnload(char *error, size_t maxlen);
 
 	/**
 	 * @brief Called when Metamod's pause state is changing.
@@ -129,6 +129,10 @@ public:
 	 *
 	 */
 	virtual void OnCoreMapEnd();
+
+	virtual bool RegisterConCommandBase(ConCommandBase* pVar);
+
+	void Hook_GameFrame(bool simulating);
 };
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_

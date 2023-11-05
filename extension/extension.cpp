@@ -29,8 +29,6 @@
  * Version: $Id$
  */
 
-#include <filesystem>
-
 #include "extension.h"
 #include <eiface.h>
 #include <engine/ivdebugoverlay.h>
@@ -41,8 +39,9 @@
 #include <datacache/imdlcache.h>
 #include <igameevents.h>
 
-
 #include "navmesh/nav_mesh.h"
+
+#include <filesystem>
 
 /**
  * @file extension.cpp
@@ -68,6 +67,8 @@ IFileSystem* filesystem = nullptr;
 SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
+
+SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 
 SMEXT_LINK(&g_SMNavExt);
 
@@ -98,9 +99,19 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	return true;
 }
 
+void SMNavExt::SDK_OnUnload()
+{
+	ConVar_Unregister();
+
+	delete TheNavMesh;
+	TheNavMesh = nullptr;
+}
+
 void SMNavExt::SDK_OnAllLoaded()
 {
-	//TheNavMesh = new CNavMesh();
+	ConVar_Register(0, this);
+
+	TheNavMesh = new CNavMesh();
 }
 
 bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
@@ -118,20 +129,47 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 	GET_V_IFACE_ANY(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 
-	if (!engine->IsDedicatedServer())
-	{
-		GET_V_IFACE_ANY(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
-	}
+#ifndef __linux__
+	GET_V_IFACE_ANY(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
+#endif
+
+	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, servergamedll, this, &SMNavExt::Hook_GameFrame, true);
 
 	gpGlobals = ismm->GetCGlobals();
 
 	return true;
 }
 
+bool SMNavExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
+{
+	SH_REMOVE_HOOK_MEMFUNC(IServerGameDLL, GameFrame, servergamedll, this, &SMNavExt::Hook_GameFrame, true);
+
+	return true;
+}
+
 void SMNavExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
 {
+	auto error = TheNavMesh->Load();
+
+	if (error != NAV_OK)
+	{
+		rootconsole->ConsolePrint("Nav Mesh failed to load!");
+	}
 }
 
 void SMNavExt::OnCoreMapEnd()
 {
+}
+
+bool SMNavExt::RegisterConCommandBase(ConCommandBase* pVar)
+{
+	return META_REGCVAR(pVar);
+}
+
+void SMNavExt::Hook_GameFrame(bool simulating)
+{
+	if (TheNavMesh)
+	{
+		TheNavMesh->Update();
+	}
 }

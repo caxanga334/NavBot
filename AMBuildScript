@@ -312,6 +312,11 @@ class ExtensionConfig(object):
 
     defines = ['SE_' + PossibleSDKs[i].define + '=' + PossibleSDKs[i].code for i in PossibleSDKs]
     compiler.defines += defines
+	
+    # Not all SDKs have this
+    compiler.defines += ['TEAM_ANY=-2']
+    # NDEBUG_PERSIST_TILL_NEXT_SERVER doesn't work, probably due to how CNavMesh::Update is called
+    compiler.defines += ['NDEBUG_SMNAV_DRAW_TIME=0.1f']
 
     paths = [
       ['public'],

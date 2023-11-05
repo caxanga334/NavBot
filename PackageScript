@@ -28,6 +28,12 @@ def CopyFiles(src, dest, files):
     source_path = os.path.join(builder.sourcePath, src, source_file)
     builder.AddCopy(source_path, dest_entry)
 
+
+# Copy autoload file
+CopyFiles('extension', 'addons/sourcemod/extensions',
+  [ 'smnav.autoload', ]
+)
+
 # Include files 
 #CopyFiles('include', 'addons/sourcemod/scripting/include',
 #  [ 'sample.inc', ]
