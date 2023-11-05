@@ -337,7 +337,7 @@ bool CNavMesh::FindActiveNavArea( void )
 		{
 			float closestDistSqr = 200.0f * 200.0f;
 
-			for ( int i=0; i<m_ladders.size(); ++i )
+			for ( size_t i=0; i<m_ladders.size(); ++i )
 			{
 				CNavLadder *ladder = m_ladders[i];
 
@@ -1018,7 +1018,7 @@ void CNavMesh::DrawEditMode( void )
 			DrawSelectedSet draw( shift );
 
 			// if the selected set is small, just blast it out
-			if (m_selectedSet.size() < nav_draw_limit.GetInt())
+			if (m_selectedSet.size() < static_cast<size_t>(nav_draw_limit.GetInt()))
 			{
 				for (auto area : m_selectedSet)
 				{
@@ -1332,9 +1332,9 @@ void CNavMesh::CommandNavRecallSelectedSet( void )
 
 	ClearSelectedSet();
 
-	for ( int i=0; i<m_storedSelectedSet.size(); ++i )
+	for (auto i : m_storedSelectedSet)
 	{
-		AddToSelectedSet( GetNavAreaByID( m_storedSelectedSet[i] ) );
+		AddToSelectedSet(GetNavAreaByID(i));
 	}
 
 	Msg( "Selected %d areas.\n", m_selectedSet.size() );
@@ -2694,7 +2694,7 @@ void CNavMesh::CommandNavConnect( void )
 	if ( m_selectedSet.size() > 1)
 	{
 		bool bValid = true;
-		for ( int i = 1; i < m_selectedSet.size(); ++i )
+		for ( size_t i = 1; i < m_selectedSet.size(); ++i )
 		{
 			// Make sure all connections are valid
 			CNavArea *first = m_selectedSet[0];
@@ -2719,7 +2719,7 @@ void CNavMesh::CommandNavConnect( void )
 
 		if ( bValid )
 		{
-			for ( int i = 1; i < m_selectedSet.size(); ++i )
+			for ( size_t i = 1; i < m_selectedSet.size(); ++i )
 			{
 				CNavArea *first = m_selectedSet[0];
 				CNavArea *second = m_selectedSet[i];
@@ -2808,7 +2808,7 @@ void CNavMesh::CommandNavDisconnect( void )
 	if ( m_selectedSet.size() > 1)
 	{
 		bool bValid = true;
-		for ( int i = 1; i < m_selectedSet.size(); ++i )
+		for ( size_t i = 1; i < m_selectedSet.size(); ++i )
 		{
 			// 2 areas are selected, so connect them bi-directionally
 			CNavArea *first = m_selectedSet[0];
@@ -2823,7 +2823,7 @@ void CNavMesh::CommandNavDisconnect( void )
 
 		if ( bValid )
 		{
-			for ( int i = 1; i < m_selectedSet.size(); ++i )
+			for ( size_t i = 1; i < m_selectedSet.size(); ++i )
 			{
 				// 2 areas are selected, so connect them bi-directionally
 				CNavArea *first = m_selectedSet[0];
@@ -2910,14 +2910,14 @@ void CNavMesh::CommandNavDisconnectOutgoingOneWays( void )
 		m_selectedSet.push_back( m_selectedArea );
 	}
 
-	for ( int i = 0; i < m_selectedSet.size(); ++i )
+	for ( size_t i = 0; i < m_selectedSet.size(); ++i )
 	{
 		CNavArea *area = m_selectedSet[i];
 
 		NavAreaVector adjVector;
 		area->CollectAdjacentAreas( adjVector );
 
-		for( int j=0; j<adjVector.size(); ++j )
+		for( size_t j=0; j<adjVector.size(); ++j )
 		{
 			CNavArea *adj = adjVector[j];
 

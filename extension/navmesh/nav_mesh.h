@@ -190,7 +190,7 @@ struct NavVisibilityPair_s
 	}
 };
 
-bool operator==(const NavVisibilityPair_s& lhs, const NavVisibilityPair_s& rhs)
+inline bool operator==(const NavVisibilityPair_s& lhs, const NavVisibilityPair_s& rhs)
 {
 	return lhs.first == rhs.first && lhs.second == rhs.second;
 }

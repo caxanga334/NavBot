@@ -43,7 +43,7 @@ public:
 
 	void OnRoundRestart( void );			///< invoked when a game round restarts
 
-	void Save(std::fstream& file, unsigned int version) const;
+	void Save(std::fstream& file, unsigned int version);
 	void Load(CNavMesh* TheNavMesh, std::fstream& file, unsigned int version);
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID

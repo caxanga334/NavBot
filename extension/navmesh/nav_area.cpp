@@ -66,6 +66,29 @@ Color s_selectedSetColor( 255, 255, 200, 96 );
 Color s_selectedSetBorderColor( 100, 100, 0, 255 );
 Color s_dragSelectionSetBorderColor( 50, 50, 50, 255 );
 
+template<>
+struct std::hash<CNavArea::AreaBindInfo>
+{
+	std::size_t operator()(const CNavArea::AreaBindInfo& info) const noexcept
+	{
+		unsigned int id = 0;
+
+		if (info.area)
+		{
+			id = info.area->GetID();
+		}
+		else
+		{
+			id = info.id;
+		}
+
+		std::size_t h1 = static_cast<std::size_t>(id);
+		std::size_t h2 = static_cast<std::size_t>(info.attributes);
+		return h1 ^ (h2 << 1);
+	}
+};
+
+
 bool UTIL_IsCommandIssuedByServerAdmin() {
 	if (engine->IsDedicatedServer()) {
 		return false;
@@ -4733,12 +4756,13 @@ static void CommandNavUpdateBlocked( void )
 	{
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->UpdateBlocked( true );
-		if ( area->IsBlocked( TEAM_ANY ) )
+
+		/* if (area->IsBlocked(TEAM_ANY))
 		{
 			DevMsg("Area #%d %s is blocked\n", area->GetID(),
 					VecToString(
 							area->GetCenter() + Vector( 0, 0, HalfHumanHeight )));
-		}
+		} */
 	}
 	else
 	{
@@ -4751,9 +4775,9 @@ static void CommandNavUpdateBlocked( void )
 
 			if (area->IsBlocked(TEAM_ANY))
 			{
-				DevMsg("Area #%d %s is blocked\n", area->GetID(),
+				/* DevMsg("Area #%d %s is blocked\n", area->GetID(),
 					VecToString(
-						area->GetCenter() + Vector(0, 0, HalfHumanHeight)));
+						area->GetCenter() + Vector(0, 0, HalfHumanHeight))); */
 				if (!blockedArea)
 				{
 					blockedArea = area;
@@ -5322,10 +5346,12 @@ static void CommandNavCheckFloor( void )
 	{
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->CheckFloor(nullptr);
+		/*
 		if ( area->IsBlocked( TEAM_ANY ) )
 		{
 			DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, HalfHumanHeight ) ) );
 		}
+		*/
 	}
 	else
 	{
@@ -5335,10 +5361,12 @@ static void CommandNavCheckFloor( void )
 		{
 			area->CheckFloor(nullptr);
 
+			/*
 			if (area->IsBlocked(TEAM_ANY))
 			{
 				DevMsg("Area #%d %s is blocked\n", area->GetID(), VecToString(area->GetCenter() + Vector(0, 0, HalfHumanHeight)));
 			}
+			*/
 		}
 
 		float end = Plat_FloatTime();

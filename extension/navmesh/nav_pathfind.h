@@ -542,9 +542,10 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 				for( int dir=0; dir<NUM_DIRECTIONS; ++dir )
 				{
 					const NavConnectVector *list = area->GetIncomingConnections( (NavDirType)dir );
-					FOR_EACH_VEC( (*list), it )
+
+					for (const auto& conn : *list)
 					{
-						AddAreaToOpenList( (*list)[ it ].area, area, startPos, maxRange );
+						AddAreaToOpenList(conn.area, area, startPos, maxRange);
 					}
 				}
 			}
@@ -555,14 +556,14 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 			const NavLadderConnectVector *ladderList = area->GetLadders( CNavLadder::LADDER_UP );
 			if (ladderList)
 			{
-				FOR_EACH_VEC( (*ladderList), it )
+				for (const auto& conn : *ladderList)
 				{
-					const CNavLadder *ladder = (*ladderList)[ it ].ladder;
+					const CNavLadder* ladder = conn.ladder;
 
 					// do not use BEHIND connection, as its very hard to get to when going up a ladder
-					AddAreaToOpenList( ladder->m_topForwardArea, area, startPos, maxRange );
-					AddAreaToOpenList( ladder->m_topLeftArea, area, startPos, maxRange );
-					AddAreaToOpenList( ladder->m_topRightArea, area, startPos, maxRange );
+					AddAreaToOpenList(ladder->m_topForwardArea, area, startPos, maxRange);
+					AddAreaToOpenList(ladder->m_topLeftArea, area, startPos, maxRange);
+					AddAreaToOpenList(ladder->m_topRightArea, area, startPos, maxRange);
 				}
 			}
 
@@ -570,19 +571,19 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 			ladderList = area->GetLadders( CNavLadder::LADDER_DOWN );
 			if (ladderList)
 			{
-				FOR_EACH_VEC( (*ladderList), it )
+				for (const auto& conn : *ladderList)
 				{
-					AddAreaToOpenList( (*ladderList)[ it ].ladder->m_bottomArea, area,
-							startPos, maxRange );
+					AddAreaToOpenList(conn.ladder->m_bottomArea, area, startPos, maxRange);
 				}
 			}
 
 			if ( (options & EXCLUDE_ELEVATORS) == 0 )
 			{
 				const NavConnectVector &elevatorList = area->GetElevatorAreas();
-				FOR_EACH_VEC( elevatorList, it )
+
+				for (const auto& conn : elevatorList)
 				{
-					AddAreaToOpenList( elevatorList[ it ].area, area, startPos, maxRange );
+					AddAreaToOpenList(conn.area, area, startPos, maxRange);
 				}
 			}
 		}

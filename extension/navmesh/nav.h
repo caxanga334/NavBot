@@ -407,9 +407,11 @@ typedef CNavVectorNoEditAllocator CNavVectorAllocator;
 #endif
 
 // typedef CUtlVectorUltraConservative<NavLadderConnect, CNavVectorAllocator> NavLadderConnectVector;
+
 typedef std::vector<NavLadderConnect> NavLadderConnectVector;
 
 // typedef CUtlVectorUltraConservative<NavConnect, CNavVectorAllocator> NavConnectVector;
+
 typedef std::vector<NavConnect> NavConnectVector;
 
 #endif // _NAV_H_
