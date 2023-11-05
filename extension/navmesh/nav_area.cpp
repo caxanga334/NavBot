@@ -318,7 +318,7 @@ CNavArea::CNavArea( unsigned int place )
 	m_inheritVisibilityFrom.area = NULL;
 	m_isInheritedFrom = false;
 
-	m_funcNavCostVector.RemoveAll();
+	m_funcNavCostVector.clear();
 
 	m_nVisTestCounter = (uint32)-1;
 }
@@ -1800,8 +1800,10 @@ void CNavArea::CalcDebugID()
 	if ( m_debugid == 0 )
 	{
 		// calculate a debug ID which will be constant for this nav area across generation runs
-		int coord[6] = { (int) m_nwCorner.x, (int) m_nwCorner.x, (int) m_nwCorner.z, (int) m_seCorner.x, (int) m_seCorner.y, (int) m_seCorner.z };
-		m_debugid = CRC32_ProcessSingleBuffer( &coord, sizeof( coord ) );
+		// int coord[6] = { (int) m_nwCorner.x, (int) m_nwCorner.x, (int) m_nwCorner.z, (int) m_seCorner.x, (int) m_seCorner.y, (int) m_seCorner.z };
+		// m_debugid = CRC32_ProcessSingleBuffer( &coord, sizeof( coord ) );
+		// TO-DO: Only used in 3 console prints
+		m_debugid = 1;
 	}
 }
 
@@ -5231,7 +5233,7 @@ void CNavArea::UpdateAvoidanceObstacles( void )
 void CNavArea::ClearAllNavCostEntities( void )
 {
 	RemoveAttributes( NAV_MESH_FUNC_COST );
-	m_funcNavCostVector.RemoveAll();
+	m_funcNavCostVector.clear();
 }
 
 
@@ -5240,7 +5242,7 @@ void CNavArea::ClearAllNavCostEntities( void )
 void CNavArea::AddFuncNavCostEntity( CFuncNavCost *cost )
 {
 	SetAttributes( NAV_MESH_FUNC_COST );
-	m_funcNavCostVector.AddToTail( cost );
+	m_funcNavCostVector.push_back(cost);
 }
 
 
@@ -5250,11 +5252,11 @@ float CNavArea::ComputeFuncNavCost( edict_t *who ) const
 {
 	float funcCost = 1.0f;
 
-	for( int i=0; i<m_funcNavCostVector.Count(); ++i )
+	for (auto& navcost : m_funcNavCostVector)
 	{
-		if ( m_funcNavCostVector[i] != NULL )
+		if (navcost != nullptr)
 		{
-			funcCost *= m_funcNavCostVector[i]->GetCostMultiplier( who );
+			funcCost *= navcost->GetCostMultiplier(who);
 		}
 	}
 
@@ -5265,7 +5267,7 @@ float CNavArea::ComputeFuncNavCost( edict_t *who ) const
 //--------------------------------------------------------------------------------------------------------------
 bool CNavArea::HasFuncNavAvoid( void ) const
 {
-	for( int i=0; i<m_funcNavCostVector.Count(); ++i )
+	for( size_t i=0; i<m_funcNavCostVector.size(); ++i )
 	{
 		CFuncNavAvoid *avoid = dynamic_cast< CFuncNavAvoid * >( m_funcNavCostVector[i].Get() );
 		if ( avoid )
@@ -5281,7 +5283,7 @@ bool CNavArea::HasFuncNavAvoid( void ) const
 //--------------------------------------------------------------------------------------------------------------
 bool CNavArea::HasFuncNavPrefer( void ) const
 {
-	for( int i=0; i<m_funcNavCostVector.Count(); ++i )
+	for( size_t i=0; i<m_funcNavCostVector.size(); ++i )
 	{
 		CFuncNavPrefer *prefer = dynamic_cast< CFuncNavPrefer * >( m_funcNavCostVector[i].Get() );
 		if ( prefer )

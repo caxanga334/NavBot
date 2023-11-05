@@ -750,7 +750,7 @@ private:
 	uint32 m_nVisTestCounter;
 	static uint32 s_nCurrVisTestCounter;
 
-	CUtlVector< CHandle< CFuncNavCost > > m_funcNavCostVector;	// active, overlapping cost entities
+	std::vector< CHandle< CFuncNavCost > > m_funcNavCostVector;	// active, overlapping cost entities
 };
 
 typedef std::vector<CNavArea*> NavAreaVector;

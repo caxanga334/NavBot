@@ -596,20 +596,23 @@ NavErrorType CNavArea::PostLoad( void )
 
 	for ( int dir=0; dir<CNavLadder::NUM_LADDER_DIRECTIONS; ++dir )
 	{
-		FOR_EACH_VEC( m_ladder[dir], it )
+		for (auto& connect : m_ladder[dir])
 		{
-			NavLadderConnect& connect = m_ladder[dir][it];
-
 			unsigned int id = connect.id;
+			auto& vecladders = TheNavMesh->GetLadders();
 
-			if ( TheNavMesh->GetLadders().Find( connect.ladder ) == TheNavMesh->GetLadders().InvalidIndex() )
+			auto start = vecladders.begin();
+			auto end = vecladders.end();
+			auto pos = std::find(start, end, connect.ladder);
+
+			if (pos == end)
 			{
-				connect.ladder = TheNavMesh->GetLadderByID( id );
+				connect.ladder = TheNavMesh->GetLadderByID(id);
 			}
 
-			if (id && connect.ladder == NULL)
+			if (id && connect.ladder == nullptr)
 			{
-				Msg( "CNavArea::PostLoad: Corrupt navigation ladder data. Cannot connect Navigation Areas.\n" );
+				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation ladder data. Cannot connect Navigation Areas.");
 				error = NAV_CORRUPT_DATA;
 			}
 		}
@@ -618,87 +621,84 @@ NavErrorType CNavArea::PostLoad( void )
 	// connect areas together
 	for( int d=0; d<NUM_DIRECTIONS; d++ )
 	{
-		FOR_EACH_VEC( m_connect[d], it )
+		for (auto& connect : m_connect[d])
 		{
-			NavConnect *connect = &m_connect[ d ][ it ];
+			unsigned int id = connect.id;
+			connect.area = TheNavMesh->GetNavAreaByID(id);
 
-			// convert connect ID into an actual area
-			unsigned int id = connect->id;
-			connect->area = TheNavMesh->GetNavAreaByID( id );
-			if (id && connect->area == NULL)
+			if (id && connect.area == nullptr)
 			{
-				Msg( "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas.\n" );
+				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas.");
 				error = NAV_CORRUPT_DATA;
 			}
-			connect->length = ( connect->area->GetCenter() - GetCenter() ).Length();
+
+			connect.length = (connect.area->GetCenter() - GetCenter()).Length();
 		}
 	}
 
 	// resolve spot encounter IDs
-	SpotEncounter *e;
-	FOR_EACH_VEC( m_spotEncounters, it )
+
+	for (auto spot : m_spotEncounters)
 	{
-		e = m_spotEncounters[ it ];
+		spot->from.area = TheNavMesh->GetNavAreaByID(spot->from.id);
 
-		e->from.area = TheNavMesh->GetNavAreaByID( e->from.id );
-		if (e->from.area == NULL)
+		if (spot->from.area == nullptr)
 		{
-			Msg( "CNavArea::PostLoad: Corrupt navigation data. Missing \"from\" Navigation Area for Encounter Spot.\n" );
+			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing \"from\" Navigation Area for Encounter Spot.");
 			error = NAV_CORRUPT_DATA;
 		}
 
-		e->to.area = TheNavMesh->GetNavAreaByID( e->to.id );
-		if (e->to.area == NULL)
+		spot->to.area = TheNavMesh->GetNavAreaByID(spot->to.id);
+
+		if (spot->to.area == nullptr)
 		{
-			Msg( "CNavArea::PostLoad: Corrupt navigation data. Missing \"to\" Navigation Area for Encounter Spot.\n" );
+			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing \"to\" Navigation Area for Encounter Spot.");
 			error = NAV_CORRUPT_DATA;
 		}
 
-		if (e->from.area && e->to.area)
+		if (spot->from.area && spot->to.area)
 		{
-			// compute path
-			float halfWidth;
-			ComputePortal( e->to.area, e->toDir, &e->path.to, &halfWidth );
-			ComputePortal( e->from.area, e->fromDir, &e->path.from, &halfWidth );
+			float halfWidth = 0.0f;
+			ComputePortal(spot->to.area, spot->toDir, &spot->path.to, &halfWidth);
+			ComputePortal(spot->from.area, spot->fromDir, &spot->path.from, &halfWidth);
 
-			const float eyeHeight = HalfHumanHeight;
-			e->path.from.z = e->from.area->GetZ( e->path.from ) + eyeHeight;
-			e->path.to.z = e->to.area->GetZ( e->path.to ) + eyeHeight;
+			constexpr float eyeHeight = HalfHumanHeight;
+			spot->path.from.z = spot->from.area->GetZ(spot->path.from) + eyeHeight;
+			spot->path.to.z = spot->to.area->GetZ(spot->path.to) + eyeHeight;
 		}
 
-		// resolve HidingSpot IDs
-		FOR_EACH_VEC( e->spots, sit )
+		for (auto& order : spot->spots)
 		{
-			SpotOrder *order = &e->spots[ sit ];
+			order.spot = GetHidingSpotByID(order.id);
 
-			order->spot = GetHidingSpotByID( order->id );
-			if (order->spot == NULL)
+			if (order.spot == nullptr)
 			{
-				Msg( "CNavArea::PostLoad: Corrupt navigation data. Missing Hiding Spot\n" );
+				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing Hiding Spot");
 				error = NAV_CORRUPT_DATA;
 			}
 		}
 	}
 
-	// convert visible ID's to pointers to actual areas
-	for ( int it=0; it<m_potentiallyVisibleAreas.Count(); ++it )
+	for (auto& info : m_potentiallyVisibleAreas)
 	{
-		AreaBindInfo &info = m_potentiallyVisibleAreas[ it ];
+		info.area = TheNavMesh->GetNavAreaByID(info.id);
 
-		info.area = TheNavMesh->GetNavAreaByID( info.id );
-		if ( info.area == NULL )
+		if (info.area == nullptr)
 		{
-			Warning( "Invalid area in visible set for area #%d\n", GetID() );
-		}		
+			smutils->LogError(myself, "Invalid area in visible set for area #%d", GetID());
+		}
 	}
 
 	m_inheritVisibilityFrom.area = TheNavMesh->GetNavAreaByID( m_inheritVisibilityFrom.id );
-	Assert( m_inheritVisibilityFrom.area != this );
 
 	// remove any invalid areas from the list
-	AreaBindInfo bad;
-	bad.area = NULL;
-	while( m_potentiallyVisibleAreas.FindAndRemove( bad ) );
+	//AreaBindInfo bad;
+	//bad.area = nullptr;
+	//while( m_potentiallyVisibleAreas.FindAndRemove( bad ) );
+
+	m_potentiallyVisibleAreas.erase(std::remove_if(m_potentiallyVisibleAreas.begin(), m_potentiallyVisibleAreas.end(),
+		[](const AreaBindInfo& object) { return object.area == nullptr; }),
+		m_potentiallyVisibleAreas.end());
 
 	// func avoid/prefer attributes are controlled by func_nav_cost entities
 	ClearAllNavCostEntities();
