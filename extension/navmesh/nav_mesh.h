@@ -27,7 +27,8 @@
 #include "CountDownTimer.h"
 #include <shareddefs.h>
 #include <convar.h>
-#include <GameEventListener.h>
+// #include <GameEventListener.h>
+#include "nav_eventlistener.h"
 
 class HidingSpot;
 class CUtlBuffer;
@@ -211,20 +212,6 @@ struct std::hash<NavVisibilityPair_s>
 	}
 };
 
-// for nav mesh visibilty computation
-class CVisPairHashFuncs
-{
-public:
-	CVisPairHashFuncs( int ) {}
-
-	bool operator()( const NavVisPair_t &lhs, const NavVisPair_t &rhs ) const
-	{
-		return ( lhs.pAreas[0] == rhs.pAreas[0] && lhs.pAreas[1] == rhs.pAreas[1] );
-	}
-
-	unsigned int operator()( const NavVisPair_t &item ) const;
-};
-
 // Size of the char array to write the nav mesh place
 constexpr int PLACE_DIRECTORY_SAVE_BUFFER_SIZE = 64;
 
@@ -279,7 +266,7 @@ extern PlaceDirectory placeDirectory;
  * The CNavMesh is the global interface to the Navigation Mesh.
  * @todo Make this an abstract base class interface, and derive mod-specific implementations.
  */
-class CNavMesh : public CGameEventListener
+class CNavMesh : public CNavGameEventListener
 {
 public:
 	CNavMesh( void );

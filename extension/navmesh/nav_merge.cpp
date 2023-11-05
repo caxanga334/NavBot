@@ -6,8 +6,8 @@
 #include "nav_area.h"
 #include <edict.h>
 #include <iplayerinfo.h>
-#include "fmtstr.h"
-#include "utldict.h"
+// #include "fmtstr.h"
+// #include "utldict.h"
 #include <KeyValues.h>
 #include <filesystem.h>
 
@@ -34,81 +34,84 @@ void CNavArea::RestoreFromSelectedSet( KeyValues *areaKey )
 
 
 //--------------------------------------------------------------------------------------------------------
-class BuildSelectedSet
-{
-public:
-	BuildSelectedSet( KeyValues *kv )
-	{
-		m_kv = kv;
-		m_areaCount = 0;
-	}
-
-	bool operator() ( CNavArea *area )
-	{
-		CFmtStrN<32> name( "%d", area->GetID() );
-		KeyValues *areaKey = m_kv->FindKey( name.Access(), true );
-		if ( areaKey )
-		{
-			++m_areaCount;
-
-			WriteCorner( area, areaKey, NORTH_WEST, "NorthWest" );
-			WriteCorner( area, areaKey, NORTH_EAST, "NorthEast" );
-			WriteCorner( area, areaKey, SOUTH_WEST, "SouthWest" );
-			WriteCorner( area, areaKey, SOUTH_EAST, "SouthEast" );
-
-			WriteConnections( area, areaKey, NORTH, "North" );
-			WriteConnections( area, areaKey, SOUTH, "South" );
-			WriteConnections( area, areaKey, EAST, "East" );
-			WriteConnections( area, areaKey, WEST, "West" );
-
-			area->SaveToSelectedSet( areaKey );
-		}
-		return true;
-	}
-
-	int Count( void ) const
-	{
-		return m_areaCount;
-	}
-
-private:
-	void WriteCorner( CNavArea *area, KeyValues *areaKey, NavCornerType corner, const char *cornerName )
-	{
-		KeyValues *cornerKey = areaKey->FindKey( cornerName, true );
-		if ( cornerKey )
-		{
-			Vector pos = area->GetCorner( corner );
-			cornerKey->SetFloat( "x", pos.x );
-			cornerKey->SetFloat( "y", pos.y );
-			cornerKey->SetFloat( "z", pos.z );
-		}
-	}
-
-	void WriteConnections( CNavArea *area, KeyValues *areaKey, NavDirType dir, const char *dirName )
-	{
-		KeyValues *dirKey = areaKey->FindKey( dirName, true );
-		if ( dirKey )
-		{
-			for ( int i=0; i<area->GetAdjacentCount( dir ); ++i )
-			{
-				CNavArea *other = area->GetAdjacentArea( dir, i );
-				if ( other && TheNavMesh->IsInSelectedSet( other ) )
-				{
-					CFmtStrN<32> name( "%d", i );
-					dirKey->SetInt( name.Access(), other->GetID() );
-				}
-			}
-		}
-	}
-
-	int m_areaCount;
-	KeyValues *m_kv;
-};
+//class BuildSelectedSet
+//{
+//public:
+//	BuildSelectedSet( KeyValues *kv )
+//	{
+//		m_kv = kv;
+//		m_areaCount = 0;
+//	}
+//
+//	bool operator() ( CNavArea *area )
+//	{
+//		CFmtStrN<32> name( "%d", area->GetID() );
+//		KeyValues *areaKey = m_kv->FindKey( name.Access(), true );
+//		if ( areaKey )
+//		{
+//			++m_areaCount;
+//
+//			WriteCorner( area, areaKey, NORTH_WEST, "NorthWest" );
+//			WriteCorner( area, areaKey, NORTH_EAST, "NorthEast" );
+//			WriteCorner( area, areaKey, SOUTH_WEST, "SouthWest" );
+//			WriteCorner( area, areaKey, SOUTH_EAST, "SouthEast" );
+//
+//			WriteConnections( area, areaKey, NORTH, "North" );
+//			WriteConnections( area, areaKey, SOUTH, "South" );
+//			WriteConnections( area, areaKey, EAST, "East" );
+//			WriteConnections( area, areaKey, WEST, "West" );
+//
+//			area->SaveToSelectedSet( areaKey );
+//		}
+//		return true;
+//	}
+//
+//	int Count( void ) const
+//	{
+//		return m_areaCount;
+//	}
+//
+//private:
+//	void WriteCorner( CNavArea *area, KeyValues *areaKey, NavCornerType corner, const char *cornerName )
+//	{
+//		KeyValues *cornerKey = areaKey->FindKey( cornerName, true );
+//		if ( cornerKey )
+//		{
+//			Vector pos = area->GetCorner( corner );
+//			cornerKey->SetFloat( "x", pos.x );
+//			cornerKey->SetFloat( "y", pos.y );
+//			cornerKey->SetFloat( "z", pos.z );
+//		}
+//	}
+//
+//	void WriteConnections( CNavArea *area, KeyValues *areaKey, NavDirType dir, const char *dirName )
+//	{
+//		KeyValues *dirKey = areaKey->FindKey( dirName, true );
+//		if ( dirKey )
+//		{
+//			for ( int i=0; i<area->GetAdjacentCount( dir ); ++i )
+//			{
+//				CNavArea *other = area->GetAdjacentArea( dir, i );
+//				if ( other && TheNavMesh->IsInSelectedSet( other ) )
+//				{
+//					CFmtStrN<32> name( "%d", i );
+//					dirKey->SetInt( name.Access(), other->GetID() );
+//				}
+//			}
+//		}
+//	}
+//
+//	int m_areaCount;
+//	KeyValues *m_kv;
+//};
 
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::CommandNavSaveSelected( const CCommand &args )
 {
+	// TO-DO: Rewrite me!
+
+	/*
 	KeyValues *data = new KeyValues( "Selected Nav Areas" );
 	data->SetInt( "version", 1 );
 
@@ -158,6 +161,7 @@ void CNavMesh::CommandNavSaveSelected( const CCommand &args )
 
 	Msg( "Selected set saved to %s.  Use 'nav_merge_mesh %s_selected_%4.4d' to merge it into another mesh.\n", path, fname, i );
 	data->deleteThis();
+	*/
 }
 
 
@@ -188,37 +192,39 @@ Vector ReadCorner( KeyValues *areaKey, const char *cornerName )
 
 
 //--------------------------------------------------------------------------------------------------------
-void ReconnectMergedArea( CUtlDict< CNavArea *, int > &newAreas, KeyValues *areaKey, NavDirType dir, const char *dirName )
-{
-	int index = newAreas.Find( areaKey->GetName() );
-	if ( index == newAreas.InvalidIndex() )
-	{
-		Assert( false );
-		return;
-	}
+// Not used?
 
-	CNavArea *area = newAreas[index];
-
-	KeyValues *dirKey = areaKey->FindKey( dirName, true );
-	if ( dirKey )
-	{
-		KeyValues *connection = dirKey->GetFirstValue();
-		while ( connection )
-		{
-			const char *otherID = connection->GetString();
-			int otherIndex = newAreas.Find( otherID );
-			Assert( otherIndex != newAreas.InvalidIndex() );
-			if ( otherIndex != newAreas.InvalidIndex() )
-			{
-				CNavArea *other = newAreas[otherIndex];
-
-				area->ConnectTo( other, dir );	// only a 1-way connection.  the other area will connect back to us.
-			}
-
-			connection = connection->GetNextValue();
-		}
-	}
-}
+//void ReconnectMergedArea( CUtlDict< CNavArea *, int > &newAreas, KeyValues *areaKey, NavDirType dir, const char *dirName )
+//{
+//	int index = newAreas.Find( areaKey->GetName() );
+//	if ( index == newAreas.InvalidIndex() )
+//	{
+//		Assert( false );
+//		return;
+//	}
+//
+//	CNavArea *area = newAreas[index];
+//
+//	KeyValues *dirKey = areaKey->FindKey( dirName, true );
+//	if ( dirKey )
+//	{
+//		KeyValues *connection = dirKey->GetFirstValue();
+//		while ( connection )
+//		{
+//			const char *otherID = connection->GetString();
+//			int otherIndex = newAreas.Find( otherID );
+//			Assert( otherIndex != newAreas.InvalidIndex() );
+//			if ( otherIndex != newAreas.InvalidIndex() )
+//			{
+//				CNavArea *other = newAreas[otherIndex];
+//
+//				area->ConnectTo( other, dir );	// only a 1-way connection.  the other area will connect back to us.
+//			}
+//
+//			connection = connection->GetNextValue();
+//		}
+//	}
+//}
 
 
 //--------------------------------------------------------------------------------------------------------

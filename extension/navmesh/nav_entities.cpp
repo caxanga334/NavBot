@@ -62,7 +62,12 @@ CFuncNavCost::CFuncNavCost( edict_t* pEnt ): NavEntity(pEnt), m_isDisabled(true)
 	// chop space-delimited string into individual tokens
 	if ( tags )
 	{
-		char *buffer = V_strdup ( tags );
+		// char *buffer = V_strdup ( tags );
+		// Manual reimplementation of V_strdup since it's only available on SDK 2013
+
+		auto size = std::strlen(tags);
+		char* buffer = new char[size + 1];
+		std::memcpy(buffer, tags, size + 1);
 
 		for( char *token = strtok( buffer, " " ); token; token = strtok( NULL, " " ) )
 		{

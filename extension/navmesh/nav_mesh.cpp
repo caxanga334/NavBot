@@ -22,9 +22,13 @@
 #include <eiface.h>
 #include <iplayerinfo.h>
 #include <filesystem.h>
-#include <utlbuffer.h>
-#include <generichash.h>
-#include <fmtstr.h>
+// #include <utlbuffer.h>
+// #include <generichash.h>
+// #include <fmtstr.h>
+
+#include <util/UtilRandom.h>
+
+#include <algorithm>
 
 
 #define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_PERSIST_TILL_NEXT_SERVER )
@@ -77,14 +81,6 @@ bool NavAttributeSetter::operator() ( CNavArea *area )
 	area->SetAttributes( area->GetAttributes() | m_attribute );
 
 	return true;
-}
-
-unsigned int CVisPairHashFuncs::operator()( const NavVisPair_t &item ) const
-{
-	COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
-	int key[2] = { (int)item.pAreas[0] + (int)item.pAreas[1]->GetID(),
-			(int)item.pAreas[1] + (int)item.pAreas[0]->GetID() };
-	return Hash8( key );
 }
 
 extern CGlobalVars *gpGlobals;
@@ -819,7 +815,13 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	Vector testPos = pEntity->GetCollideable()->GetCollisionOrigin();
 
 	float flStepHeight = 1e-3;
+
+#if SOURCE_ENGINE == SE_SDK2013
 	bool isPlayer = pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients;
+#else
+	bool isPlayer = pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients;
+#endif
+
 	if ( isPlayer )
 	{
 		/**
@@ -930,7 +932,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 	// find closest nav area
 
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = RandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024);
 
 	++searchMarker;
 
@@ -1061,6 +1063,9 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 
 	// quick check
 	CNavArea *pClose = GetNavArea( pEntity, nFlags );
+
+#if SOURCE_ENGINE == SE_SDK2013
+
 	return pClose ? pClose
 			: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
 			maxDist,
@@ -1068,6 +1073,18 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 			( nFlags & GETNAVAREA_CHECK_GROUND ) != 0,
 			pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients
 				? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
+
+#else
+
+	return pClose ? pClose
+		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
+			maxDist,
+			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
+			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
+			pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients
+			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
+
+#endif
 }
 
 

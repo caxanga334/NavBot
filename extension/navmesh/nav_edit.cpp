@@ -9,6 +9,8 @@
 // Implementation of Navigation Mesh edit mode
 // Author: Michael Booth, 2003-2004
 
+#include "extension.h"
+
 #include "nav_mesh.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
@@ -31,6 +33,8 @@
 #include "dota_npc_base.h"
 #include "dota_player.h"
 #endif
+
+#include <util/UtilRandom.h>
 
 #include "nav_macros.h"
 
@@ -886,7 +890,8 @@ void CNavMesh::DrawEditMode( void )
 				if (m_selectedArea->GetPlace())
 				{
 					const char *name = TheNavMesh->PlaceToName( m_selectedArea->GetPlace() );
-					V_strcpy_safe( locName, name != nullptr ? name: "ERROR" );
+					// V_strcpy_safe( locName, name != nullptr ? name: "ERROR" ); // SDK 2013 only?
+					Q_strcpy(locName, name != nullptr ? name : "ERROR");
 				}
 				else
 				{
@@ -3637,7 +3642,7 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 #endif
 		return true;
 	}
-	static unsigned int searchMarker = RandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024); // RandomInt(0, 1024*1024 );
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3699,7 +3704,7 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector<
 		return;
 	}
 
-	static unsigned int searchMarker = RandomInt( 0, 1024*1024 );
+	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024);
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3754,7 +3759,7 @@ template < typename Functor >
 bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radius )
 {
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = RandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024);
 
 	++searchMarker;
 

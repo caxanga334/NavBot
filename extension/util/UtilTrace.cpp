@@ -183,11 +183,11 @@ bool CTraceFilterNoNPCsOrPlayer::ShouldHitEntity(IHandleEntity *pHandleEntity,
 		extern CGlobalVars *gpGlobals;
 		extern IVEngineServer* engine;
 
-#if SOURCE_ENGINE == SE_TF2
-		return pEntity->m_iIndex > 0
+#if SOURCE_ENGINE == SE_SDK2013
+		return pEntity->m_EdictIndex > 0
 			&& engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
 #else
-		return pEntity->m_EdictIndex > 0
+		return pEntity->m_iIndex > 0
 			&& engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
 #endif
 

@@ -4,6 +4,8 @@
  *  Created on: Apr 15, 2017
  */
 
+#include <string>
+
 #include "EntityUtils.h"
 
 #include "BasePlayer.h"
@@ -13,6 +15,162 @@
 
 extern IVEngineServer *engine;
 extern CGlobalVars *gpGlobals;
+
+constexpr int PATTERN_DIRECTORY = 0x00000001;
+
+static bool StringMatchesPattern(const char* source, const char* pattern, int nFlags)
+{
+	const char* pszSource = source;
+	const char* pszPattern = pattern;
+	bool bExact = true;
+
+	while (1)
+	{
+		if ((*pszPattern) == 0)
+		{
+			return ((*pszSource) == 0);
+		}
+
+		if ((*pszPattern) == '*')
+		{
+			pszPattern++;
+
+			if ((*pszPattern) == 0)
+			{
+				return true;
+			}
+
+			bExact = false;
+			continue;
+		}
+
+		int nLength = 0;
+
+		while ((*pszPattern) != '*' && (*pszPattern) != 0)
+		{
+			nLength++;
+			pszPattern++;
+		}
+
+		while (1)
+		{
+			const char* pszStartPattern = pszPattern - nLength;
+			const char* pszSearch = pszSource;
+
+			for (int i = 0; i < nLength; i++, pszSearch++, pszStartPattern++)
+			{
+				if ((*pszSearch) == 0)
+				{
+					return false;
+				}
+
+				if ((*pszSearch) != (*pszStartPattern))
+				{
+					break;
+				}
+			}
+
+			if (pszSearch - pszSource == nLength)
+			{
+				break;
+			}
+
+			if (bExact == true)
+			{
+				return false;
+			}
+
+			if ((nFlags & PATTERN_DIRECTORY) != 0)
+			{
+				if ((*pszPattern) != '/' && (*pszSource) == '/')
+				{
+					return false;
+				}
+			}
+
+			pszSource++;
+		}
+
+		pszSource += nLength;
+	}
+}
+
+static bool StringMatchesPattern(const std::string& source, const std::string& pattern, int nFlags)
+{
+	const char* pszSource = source.c_str();
+	const char* pszPattern = pattern.c_str();
+	bool bExact = true;
+
+	while (1)
+	{
+		if ((*pszPattern) == 0)
+		{
+			return ((*pszSource) == 0);
+		}
+
+		if ((*pszPattern) == '*')
+		{
+			pszPattern++;
+
+			if ((*pszPattern) == 0)
+			{
+				return true;
+			}
+
+			bExact = false;
+			continue;
+		}
+
+		int nLength = 0;
+
+		while ((*pszPattern) != '*' && (*pszPattern) != 0)
+		{
+			nLength++;
+			pszPattern++;
+		}
+
+		while (1)
+		{
+			const char* pszStartPattern = pszPattern - nLength;
+			const char* pszSearch = pszSource;
+
+			for (int i = 0; i < nLength; i++, pszSearch++, pszStartPattern++)
+			{
+				if ((*pszSearch) == 0)
+				{
+					return false;
+				}
+
+				if ((*pszSearch) != (*pszStartPattern))
+				{
+					break;
+				}
+			}
+
+			if (pszSearch - pszSource == nLength)
+			{
+				break;
+			}
+
+			if (bExact == true)
+			{
+				return false;
+			}
+
+			if ((nFlags & PATTERN_DIRECTORY) != 0)
+			{
+				if ((*pszPattern) != '/' && (*pszSource) == '/')
+				{
+					return false;
+				}
+			}
+
+			pszSource++;
+		}
+
+		pszSource += nLength;
+	}
+}
 
 template<typename Func>
 void forAllEntities(const Func& func,
@@ -48,7 +206,7 @@ void findEntWithPatternInName(const char* name,
 		CUtlLinkedList<edict_t*>& result) {
 	findEntWithName(name,
 			[name, &result] (const char* targetName, const char* className) -> bool {
-				return CUtlString(className).MatchesPattern(targetName);
+				return StringMatchesPattern(className, targetName, 0);
 			}, result);
 }
 
@@ -73,11 +231,23 @@ edict_t * findNearestEntity(const CUtlLinkedList<edict_t*>& ent,
 	return ret;
 }
 
-bool FClassnameIs(edict_t *pEntity, const char *szClassname) {
-	Assert(pEntity);
-	castable_string_t className(pEntity->GetClassName());
-	return IDENT_STRINGS(className, szClassname)
-			|| CUtlString(className.ToCStr()).MatchesPattern(szClassname);
+// MatchesPattern is exclusive to SDK 2013
+//bool FClassnameIs(edict_t *pEntity, const char *szClassname) {
+//	Assert(pEntity);
+//	castable_string_t className(pEntity->GetClassName());
+//	return IDENT_STRINGS(className, szClassname)
+//			|| CUtlString(className.ToCStr()).MatchesPattern(szClassname);
+//}
+
+bool FClassnameIs(edict_t* pEntity, const char* szClassname) {
+	auto classname = pEntity->GetClassName();
+
+	if (Q_strcmp(classname, szClassname) == 0) { return true; }
+
+	std::string s1(classname);
+	std::string s2(szClassname);
+
+	return StringMatchesPattern(s1, s2, 0);
 }
 
 bool isBreakable(edict_t* target) {

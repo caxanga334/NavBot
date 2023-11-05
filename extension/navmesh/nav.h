@@ -400,11 +400,13 @@ typedef std::vector<CNavArea*> NavAreaVector;
 // typedef CUtlVector< CNavLadder * > NavLadderVector;
 typedef std::vector<CNavLadder*> NavLadderVector;
 
+/*
 #if !defined(_X360)
 typedef CUtlVectorUltraConservativeAllocator CNavVectorAllocator;
 #else
 typedef CNavVectorNoEditAllocator CNavVectorAllocator;
 #endif
+*/
 
 // typedef CUtlVectorUltraConservative<NavLadderConnect, CNavVectorAllocator> NavLadderConnectVector;
 

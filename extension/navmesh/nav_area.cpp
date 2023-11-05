@@ -29,6 +29,7 @@
 
 #include <tslist.h>
 #include "util/UtilTrace.h"
+#include "util/UtilRandom.h"
 
 extern IVDebugOverlay* debugoverlay;
 extern ConVar nav_quicksave;
@@ -232,7 +233,7 @@ float IntersectRayWithTriangle(const Ray_t& ray,
 	if ((t < -boxt) || (t > 1.0f + boxt))
 		return -1.0f;
 
-	return clamp(t, 0, 1);
+	return clamp(t, 0.0f, 1.0f);
 }
 
 //-----------------------------------------------------------------------------
@@ -1934,7 +1935,7 @@ void CNavArea::InheritAttributes( CNavArea *first, CNavArea *second )
 		else
 		{
 			// both have valid, but different places - pick on at random
-			if ( RandomInt( 0, 100 ) < 50 )
+			if ( UTIL_GetRandomInt(0, 100) < 50 )
 				SetPlace( first->GetPlace() );
 			else
 				SetPlace( second->GetPlace() );
@@ -2363,7 +2364,7 @@ float CNavArea::GetDistanceSquaredToPoint( const Vector &pos ) const
 CNavArea *CNavArea::GetRandomAdjacentArea( NavDirType dir ) const
 {
 	int count = m_connect[dir].size();
-	int which = RandomInt( 0, count-1 ); // TO-DO: Maybe replace with C++ random
+	int which = UTIL_GetRandomInt( 0, count-1 ); // TO-DO: Maybe replace with C++ random
 
 	int i = 0;
 
@@ -3921,7 +3922,7 @@ static Vector FindPositionInArea( CNavArea *area, NavCornerType corner )
 				pos = cornerPos + Vector(  area->GetSizeX()*0.5f*multX,  area->GetSizeY()*0.5f*multY, 0.0f );
 				if ( !area->IsOverlapping( pos ) )
 				{
-					AssertMsg( false, "A Hiding Spot can't be placed on its area at (%.0f %.0f %.0f)", cornerPos.x, cornerPos.y, cornerPos.z );
+					// AssertMsg( false, "A Hiding Spot can't be placed on its area at (%.0f %.0f %.0f)", cornerPos.x, cornerPos.y, cornerPos.z );
 
 					// Just pull the position to a small offset
 					pos = cornerPos + Vector(  1.0f*multX,  1.0f*multY, 0.0f );
@@ -6070,8 +6071,8 @@ Vector CNavArea::GetRandomPoint( void ) const
 	GetExtent( &extent );
 
 	Vector spot;
-	spot.x = RandomFloat( extent.lo.x, extent.hi.x ); 
-	spot.y = RandomFloat( extent.lo.y, extent.hi.y );
+	spot.x = UTIL_GetRandomFloat( extent.lo.x, extent.hi.x ); 
+	spot.y = UTIL_GetRandomFloat( extent.lo.y, extent.hi.y );
 	spot.z = GetZ( spot.x, spot.y );
 
 	return spot;
