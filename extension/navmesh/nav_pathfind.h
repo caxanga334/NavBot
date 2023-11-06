@@ -12,6 +12,7 @@
 #ifndef _NAV_PATHFIND_H_
 #define _NAV_PATHFIND_H_
 
+#include "tier0/vprof.h"
 #include "mathlib/ssemath.h"
 #include "nav_area.h"
 
@@ -103,6 +104,7 @@ template< typename CostFunctor >
 bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *goalPos,
 		const CostFunctor &costFunc, CNavArea **closestArea = NULL, float maxPathLength = 0.0f, int teamID = TEAM_ANY, bool ignoreNavBlockers = false )
 {
+	VPROF_BUDGET( "NavAreaBuildPath", "NextBotSpiky" );
 
 	if ( closestArea )
 	{
@@ -542,10 +544,9 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 				for( int dir=0; dir<NUM_DIRECTIONS; ++dir )
 				{
 					const NavConnectVector *list = area->GetIncomingConnections( (NavDirType)dir );
-
-					for (const auto& conn : *list)
+					FOR_EACH_VEC( (*list), it )
 					{
-						AddAreaToOpenList(conn.area, area, startPos, maxRange);
+						AddAreaToOpenList( (*list)[ it ].area, area, startPos, maxRange );
 					}
 				}
 			}
@@ -556,14 +557,14 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 			const NavLadderConnectVector *ladderList = area->GetLadders( CNavLadder::LADDER_UP );
 			if (ladderList)
 			{
-				for (const auto& conn : *ladderList)
+				FOR_EACH_VEC( (*ladderList), it )
 				{
-					const CNavLadder* ladder = conn.ladder;
+					const CNavLadder *ladder = (*ladderList)[ it ].ladder;
 
 					// do not use BEHIND connection, as its very hard to get to when going up a ladder
-					AddAreaToOpenList(ladder->m_topForwardArea, area, startPos, maxRange);
-					AddAreaToOpenList(ladder->m_topLeftArea, area, startPos, maxRange);
-					AddAreaToOpenList(ladder->m_topRightArea, area, startPos, maxRange);
+					AddAreaToOpenList( ladder->m_topForwardArea, area, startPos, maxRange );
+					AddAreaToOpenList( ladder->m_topLeftArea, area, startPos, maxRange );
+					AddAreaToOpenList( ladder->m_topRightArea, area, startPos, maxRange );
 				}
 			}
 
@@ -571,19 +572,19 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 			ladderList = area->GetLadders( CNavLadder::LADDER_DOWN );
 			if (ladderList)
 			{
-				for (const auto& conn : *ladderList)
+				FOR_EACH_VEC( (*ladderList), it )
 				{
-					AddAreaToOpenList(conn.ladder->m_bottomArea, area, startPos, maxRange);
+					AddAreaToOpenList( (*ladderList)[ it ].ladder->m_bottomArea, area,
+							startPos, maxRange );
 				}
 			}
 
 			if ( (options & EXCLUDE_ELEVATORS) == 0 )
 			{
 				const NavConnectVector &elevatorList = area->GetElevatorAreas();
-
-				for (const auto& conn : elevatorList)
+				FOR_EACH_VEC( elevatorList, it )
 				{
-					AddAreaToOpenList(conn.area, area, startPos, maxRange);
+					AddAreaToOpenList( elevatorList[ it ].area, area, startPos, maxRange );
 				}
 			}
 		}

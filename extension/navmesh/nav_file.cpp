@@ -9,12 +9,6 @@
 // Reading and writing nav files
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January-September 2003
 
-#include <string>
-#include <filesystem>
-#include <fstream>
-
-#include "extension.h"
-
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "datacache/imdlcache.h"
@@ -33,6 +27,8 @@
 #include <utlbuffer.h>
 #include <filesystem.h>
 #include <eiface.h>
+// NOTE: This has to be the last file included!
+#include "tier0/memdbgon.h"
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -41,27 +37,12 @@
 /// IMPORTANT: If this version changes, the swap function in makegamedata 
 /// must be updated to match. If not, this will break the Xbox 360.
 // TODO: Was changed from 15, update when latest 360 code is integrated (MSB 5/5/09)
-
-// Reset to 1 for SMNav
-constexpr int NavCurrentVersion = 1;
+const int NavCurrentVersion = 16;
 
 extern IFileSystem *filesystem;
 extern IVEngineServer* engine;
 extern CGlobalVars *gpGlobals;
 extern NavAreaVector TheNavAreas;
-
-// Header for nav mesh files, changing this will break loading of nav files
-class CSMNavFileHeader
-{
-public:
-	unsigned int magic_number;
-	unsigned int version;
-	unsigned int subversion;
-	unsigned int number_of_areas;
-	unsigned int number_of_ladders;
-};
-
-static_assert(sizeof(CSMNavFileHeader) == 20U, "CSMNavFileHeader size changed! Do we really want this?");
 
 //--------------------------------------------------------------------------------------------------------------
 //
@@ -82,18 +63,14 @@ PlaceDirectory::PlaceDirectory( void )
 
 void PlaceDirectory::Reset( void )
 {
-	m_directory.clear();
+	m_directory.RemoveAll();
 	m_hasUnnamedAreas = false;
 }
 
 /// return true if this place is already in the directory
 bool PlaceDirectory::IsKnown( Place place ) const
 {
-	auto start = m_directory.begin();
-	auto end = m_directory.end();
-	auto pos = std::find(start, end, place);
-
-	return pos != end;
+	return m_directory.HasElement( place );
 }
 
 /// return the directory index corresponding to this Place (0 = no entry)
@@ -102,16 +79,7 @@ PlaceDirectory::IndexType PlaceDirectory::GetIndex( Place place ) const
 	if (place == UNDEFINED_PLACE)
 		return 0;
 
-	auto start = m_directory.begin();
-	auto end = m_directory.end();
-	auto pos = std::find(start, end, place);
-
-	if (pos == end)
-	{
-		return 0;
-	}
-
-	auto i = *pos;
+	int i = m_directory.Find( place );
 
 	if (i < 0)
 	{
@@ -136,7 +104,7 @@ void PlaceDirectory::AddPlace( Place place )
 	if (IsKnown( place ))
 		return;
 
-	m_directory.push_back( place );
+	m_directory.AddToTail( place );
 }
 
 /// given an index, return the Place
@@ -145,9 +113,9 @@ Place PlaceDirectory::IndexToPlace( IndexType entry ) const
 	if (entry == 0)
 		return UNDEFINED_PLACE;
 
-	size_t i = entry-1;
+	int i = entry-1;
 
-	if (i >= m_directory.size())
+	if (i >= m_directory.Count())
 	{
 		AssertMsg( false, "PlaceDirectory::IndexToPlace: Invalid entry" );
 		return UNDEFINED_PLACE;
@@ -157,53 +125,54 @@ Place PlaceDirectory::IndexToPlace( IndexType entry ) const
 }
 
 /// store the directory
-void PlaceDirectory::Save(std::fstream& file)
+void PlaceDirectory::Save( CUtlBuffer &fileBuffer )
 {
 	// store number of entries in directory
-	size_t count = m_directory.size();
-	file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
+	IndexType count = (IndexType)m_directory.Count();
+	fileBuffer.PutUnsignedShort( count );
 
-	// store entries
-
-	for (auto& place : m_directory)
+	// store entries		
+	for( int i=0; i<m_directory.Count(); ++i )
 	{
-		char buffer[PLACE_DIRECTORY_SAVE_BUFFER_SIZE]; // fixed size buffer, should be enough
-		const char* placeName = TheNavMesh->PlaceToName(place);
-		std::snprintf(buffer, PLACE_DIRECTORY_SAVE_BUFFER_SIZE, "%s", placeName);
+		const char *placeName = TheNavMesh->PlaceToName( m_directory[i] );
 
-		file.write(buffer, PLACE_DIRECTORY_SAVE_BUFFER_SIZE);
+		// store string length followed by string itself
+		unsigned short len = (unsigned short)(strlen( placeName ) + 1);
+		fileBuffer.PutUnsignedShort( len );
+		fileBuffer.Put( placeName, len );
 	}
 
-	file.write(reinterpret_cast<char*>(&m_hasUnnamedAreas), sizeof(bool));
+	fileBuffer.PutUnsignedChar( m_hasUnnamedAreas );
 }
 
 /// load the directory
-void PlaceDirectory::Load(std::fstream& file, const int version)
+void PlaceDirectory::Load( CUtlBuffer &fileBuffer, int version )
 {
 	// read number of entries
-	size_t count = 0;
-	file.read(reinterpret_cast<char*>(count), sizeof(size_t));
+	IndexType count = fileBuffer.GetUnsignedShort();
 
-	m_directory.clear();
+	m_directory.RemoveAll();
 
 	// read each entry
-	char placeName[PLACE_DIRECTORY_SAVE_BUFFER_SIZE];
-
-	for (size_t i = 0; i < count; i++)
+	char placeName[256];
+	unsigned short len;
+	for( int i=0; i<count; ++i )
 	{
-		file.read(placeName, PLACE_DIRECTORY_SAVE_BUFFER_SIZE);
+		len = fileBuffer.GetUnsignedShort();
+		fileBuffer.Get( placeName, MIN( sizeof( placeName ), len ) );
 
-		Place place = TheNavMesh->NameToPlace(placeName);
-
+		Place place = TheNavMesh->NameToPlace( placeName );
 		if (place == UNDEFINED_PLACE)
 		{
-			smutils->LogMessage(myself, "Warning: NavMesh place %s is undefined?", placeName);
+			Warning( "Warning: NavMesh place %s is undefined?\n", placeName );
 		}
-
-		AddPlace(place);
+		AddPlace( place );
 	}
 
-	file.read(reinterpret_cast<char*>(&m_hasUnnamedAreas), sizeof(bool));
+	if ( version > 11 )
+	{
+		m_hasUnnamedAreas = fileBuffer.GetUnsignedChar() != 0;
+	}
 }
 
 
@@ -244,61 +213,61 @@ char *GetBspFilename( const char *navFilename )
 /**
  * Save a navigation area to the opened binary stream
  */
-void CNavArea::Save(std::fstream& file, unsigned int version)
+void CNavArea::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
 {
 	// save ID
-	file.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+	fileBuffer.PutUnsignedInt( m_id );
 
 	// save attribute flags
-	file.write(reinterpret_cast<char*>(&m_attributeFlags), sizeof(int));
+	fileBuffer.PutInt( m_attributeFlags );
 
 	// save extent of area
-	// TO-DO: VALVE uses 3 * sizeof float instead of sizeof Vector. Why?
-	file.write(reinterpret_cast<char*>(&m_nwCorner), sizeof(Vector));
-	file.write(reinterpret_cast<char*>(&m_seCorner), sizeof(Vector));
+	fileBuffer.Put( &m_nwCorner, 3*sizeof(float) );
+	fileBuffer.Put( &m_seCorner, 3*sizeof(float) );
 
 	// save heights of implicit corners
-	file.write(reinterpret_cast<char*>(&m_neZ), sizeof(float));
-	file.write(reinterpret_cast<char*>(&m_swZ), sizeof(float));
+	fileBuffer.PutFloat( m_neZ );
+	fileBuffer.PutFloat( m_swZ );
 
 	// save connections to adjacent areas
 	// in the enum order NORTH, EAST, SOUTH, WEST
 	for( int d=0; d<NUM_DIRECTIONS; d++ )
 	{
 		// save number of connections for this direction
-		size_t count = m_connect[d].size();
-		file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
+		unsigned int count = m_connect[d].Count();
+		fileBuffer.PutUnsignedInt( count );
 
-		for (auto& connect : m_connect[d])
+		FOR_EACH_VEC( m_connect[d], it )
 		{
-			auto id = connect.area->m_id;
-			file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			NavConnect connect = m_connect[d][ it ];
+			fileBuffer.PutUnsignedInt( connect.area->m_id );
 		}
 	}
 
 	//
 	// Store hiding spots for this area
 	//
-	size_t count;
-	if (m_hidingSpots.size() > 255)
+	unsigned char count;
+	if (m_hidingSpots.Count() > 255)
 	{
 		count = 255;
-		smutils->LogError(myself, "Warning: NavArea #%d: Truncated hiding spot list to 255", m_id);
+		Warning( "Warning: NavArea #%d: Truncated hiding spot list to 255\n", m_id );
 	}
 	else
 	{
-		count = m_hidingSpots.size();
+		count = (unsigned char)m_hidingSpots.Count();
 	}
-
-	file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
+	fileBuffer.PutUnsignedChar( count );
 
 	// store HidingSpot objects
 	unsigned int saveCount = 0;
-
-	for (auto spot : m_hidingSpots)
+	FOR_EACH_VEC( m_hidingSpots, hit )
 	{
-		spot->Save(file, version);
+		HidingSpot *spot = m_hidingSpots[ hit ];
+		
+		spot->Save( fileBuffer, version );
 
+		// overflow check
 		if (++saveCount == count)
 			break;
 	}
@@ -308,58 +277,56 @@ void CNavArea::Save(std::fstream& file, unsigned int version)
 	//
 	{
 		// save number of encounter paths for this area
-		size_t count = m_spotEncounters.size();
-		file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
+		unsigned int count = m_spotEncounters.Count();
+		fileBuffer.PutUnsignedInt( count );
 
-		for (auto e : m_spotEncounters)
+		SpotEncounter *e;
+		FOR_EACH_VEC( m_spotEncounters, it )
 		{
-			if (e->from.area)
-			{
-				auto id = e->from.area->m_id;
-				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-			}
-			else
-			{
-				unsigned int id = 0;
-				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-			}
+			e = m_spotEncounters[ it ];
 
-			uint8 dir = static_cast<uint8>(e->fromDir);
-			file.write(reinterpret_cast<char*>(&dir), sizeof(uint8));
+			if (e->from.area)
+				fileBuffer.PutUnsignedInt( e->from.area->m_id );
+			else
+				fileBuffer.PutUnsignedInt( 0 );
+
+			unsigned char dir = (unsigned char)e->fromDir;
+			fileBuffer.PutUnsignedChar( dir );
 
 			if (e->to.area)
+				fileBuffer.PutUnsignedInt( e->to.area->m_id );
+			else
+				fileBuffer.PutUnsignedInt( 0 );
+
+			dir = (unsigned char)e->toDir;
+			fileBuffer.PutUnsignedChar( dir );
+
+			// write list of spots along this path
+			unsigned char spotCount;
+			if (e->spots.Count() > 255)
 			{
-				auto id = e->to.area->m_id;
-				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+				spotCount = 255;
+				Warning( "Warning: NavArea #%d: Truncated encounter spot list to 255\n", m_id );
 			}
 			else
 			{
-				unsigned int id = 0;
-				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+				spotCount = (unsigned char)e->spots.Count();
 			}
-
-			dir = static_cast<uint8>(e->toDir);
-			file.write(reinterpret_cast<char*>(&dir), sizeof(uint8));
-
-			size_t spotCount = e->spots.size();
-
-			if (spotCount > 255)
-			{
-				spotCount = 255;
-				smutils->LogError(myself, "Warning: NavArea #%d: Truncated encounter spot list to 255", m_id);
-			}
-
-			file.write(reinterpret_cast<char*>(&spotCount), sizeof(size_t));
-
+			fileBuffer.PutUnsignedChar( spotCount );
+		
 			saveCount = 0;
-			for (auto& order : e->spots)
+			FOR_EACH_VEC( e->spots, sit )
 			{
-				// order->spot may be NULL if we've loaded a nav mesh that has been edited but not re-analyzed
-				unsigned int id = order.spot ? order.spot->GetID() : 0;
-				file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-				float t = order.t;
-				file.write(reinterpret_cast<char*>(&t), sizeof(float));
+				SpotOrder *order = &e->spots[ sit ];
 
+				// order->spot may be NULL if we've loaded a nav mesh that has been edited but not re-analyzed
+				unsigned int id = (order->spot) ? order->spot->GetID() : 0;
+				fileBuffer.PutUnsignedInt( id );
+
+				unsigned char t = (unsigned char)(255 * order->t);
+				fileBuffer.PutUnsignedChar( t );
+
+				// overflow check
 				if (++saveCount == spotCount)
 					break;
 			}
@@ -368,44 +335,56 @@ void CNavArea::Save(std::fstream& file, unsigned int version)
 
 	// store place dictionary entry
 	PlaceDirectory::IndexType entry = placeDirectory.GetIndex( GetPlace() );
-	file.write(reinterpret_cast<char*>(&entry), sizeof(entry));
+	fileBuffer.Put( &entry, sizeof(entry) );
 
 	// write out ladder info
 	int i;
 	for ( i=0; i<CNavLadder::NUM_LADDER_DIRECTIONS; ++i )
 	{
 		// save number of encounter paths for this area
-		size_t count = m_ladder[i].size();
-		file.write(reinterpret_cast<char*>(&count), sizeof(size_t));
+		unsigned int count = m_ladder[i].Count();
+		fileBuffer.PutUnsignedInt( count );
 
-		for (const auto& ladder : m_ladder[i])
+		NavLadderConnect ladder;
+		FOR_EACH_VEC( m_ladder[i], it )
 		{
-			auto id = ladder.ladder->GetID();
-			file.write(reinterpret_cast<char*>(&id), sizeof(id));
+			ladder = m_ladder[i][it];
+
+			unsigned int id = ladder.ladder->GetID();
+			fileBuffer.PutUnsignedInt( id );
 		}
 	}
 
-	file.write(reinterpret_cast<char*>(m_earliestOccupyTime), sizeof(m_earliestOccupyTime));
-	file.write(reinterpret_cast<char*>(m_lightIntensity), sizeof(m_lightIntensity));
+	// save earliest occupy times
+	for( i=0; i<MAX_NAV_TEAMS; ++i )
+	{
+		// no spot in the map should take longer than this to reach
+		fileBuffer.Put( &m_earliestOccupyTime[i], sizeof(m_earliestOccupyTime[i]) );
+	}
+
+	// save light intensity
+	for ( i=0; i<NUM_CORNERS; ++i )
+	{
+		fileBuffer.PutFloat( m_lightIntensity[i] );
+	}
 
 	// save visible area set
-	size_t visibleAreaCount = m_potentiallyVisibleAreas.size();
-	file.write(reinterpret_cast<char*>(&visibleAreaCount), sizeof(size_t));
+	unsigned int visibleAreaCount = m_potentiallyVisibleAreas.Count();
+	fileBuffer.PutUnsignedInt( visibleAreaCount );
 
-	for (auto& vit : m_potentiallyVisibleAreas)
+	for ( int vit=0; vit<m_potentiallyVisibleAreas.Count(); ++vit )
 	{
-		CNavArea* area = vit.area;
-		unsigned int id = 0;
+		CNavArea *area = m_potentiallyVisibleAreas[ vit ].area;
 
-		if (area) { id = area->GetID(); }
+		unsigned int id = area ? area->GetID() : 0;
 
-		file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-		file.write(reinterpret_cast<char*>(&vit.attributes), sizeof(unsigned char));
+		fileBuffer.PutUnsignedInt( id );
+		fileBuffer.PutUnsignedChar( m_potentiallyVisibleAreas[ vit ].attributes );
 	}
 
 	// store area we inherit visibility from
 	unsigned int id = ( m_inheritVisibilityFrom.area ) ? m_inheritVisibilityFrom.area->GetID() : 0;
-	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	fileBuffer.PutUnsignedInt( id );
 }
 
 
@@ -413,20 +392,32 @@ void CNavArea::Save(std::fstream& file, unsigned int version)
 /**
  * Load a navigation area from the file
  */
-NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned int subVersion)
+NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int subVersion )
 {
 	// load ID
-	file.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+	m_id = fileBuffer.GetUnsignedInt();
 
 	// update nextID to avoid collisions
 	if (m_id >= m_nextID)
 		m_nextID = m_id+1;
 
-	file.read(reinterpret_cast<char*>(&m_attributeFlags), sizeof(int));
+	// load attribute flags
+	if ( version <= 8 )
+	{
+		m_attributeFlags = fileBuffer.GetUnsignedChar();
+	}
+	else if ( version < 13 )
+	{
+		m_attributeFlags = fileBuffer.GetUnsignedShort();
+	}
+	else
+	{
+		m_attributeFlags = fileBuffer.GetInt();
+	}
 
 	// load extent of area
-	file.read(reinterpret_cast<char*>(&m_nwCorner), sizeof(Vector));
-	file.read(reinterpret_cast<char*>(&m_seCorner), sizeof(Vector));
+	fileBuffer.Get( &m_nwCorner, 3*sizeof(float) );
+	fileBuffer.Get( &m_seCorner, 3*sizeof(float) );
 
 	m_center.x = (m_nwCorner.x + m_seCorner.x)/2.0f;
 	m_center.y = (m_nwCorner.y + m_seCorner.y)/2.0f;
@@ -440,13 +431,14 @@ NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned i
 	else
 	{
 		m_invDxCorners = m_invDyCorners = 0;
-		smutils->LogError(myself, "Degenerate Navigation Area #%d at setpos %3.2f %3.2f %3.2f", m_id, m_center.x, m_center.y, m_center.z);
+
+		DevWarning( "Degenerate Navigation Area #%d at setpos %g %g %g\n", 
+			m_id, m_center.x, m_center.y, m_center.z );
 	}
 
 	// load heights of implicit corners
-
-	file.read(reinterpret_cast<char*>(&m_neZ), sizeof(float));
-	file.read(reinterpret_cast<char*>(&m_swZ), sizeof(float));
+	m_neZ = fileBuffer.GetFloat();
+	m_swZ = fileBuffer.GetFloat();
 
 	CheckWaterLevel();
 
@@ -455,21 +447,20 @@ NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned i
 	for( int d=0; d<NUM_DIRECTIONS; d++ )
 	{
 		// load number of connections for this direction
-		size_t count = 0;
-		file.read(reinterpret_cast<char*>(&count), sizeof(size_t));
+		unsigned int count = fileBuffer.GetUnsignedInt();
+		Assert( fileBuffer.IsValid() );
 
-		m_connect[d].reserve(count);
-		for(size_t i = 0; i < count; ++i)
+		m_connect[d].EnsureCapacity( count );
+		for( unsigned int i=0; i<count; ++i )
 		{
 			NavConnect connect;
-			unsigned int id = 0;
-			file.read(reinterpret_cast<char*>(id), sizeof(unsigned int));
-			connect.id = id;
+			connect.id = fileBuffer.GetUnsignedInt();
+			Assert( fileBuffer.IsValid() );
 
 			// don't allow self-referential connections
 			if ( connect.id != m_id )
 			{
-				m_connect[d].push_back(connect);
+				m_connect[d].AddToTail( connect );
 			}
 		}
 	}
@@ -479,75 +470,146 @@ NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned i
 	//
 
 	// load number of hiding spots
-	size_t hidingSpotCount = 0;
-	file.read(reinterpret_cast<char*>(&hidingSpotCount), sizeof(size_t));
+	unsigned char hidingSpotCount = fileBuffer.GetUnsignedChar();
 
-	// load HidingSpot objects for this area
-	for( size_t h=0; h<hidingSpotCount; ++h )
+	if (version == 1)
 	{
-		// create new hiding spot and put on master list
-		HidingSpot *spot = TheNavMesh->CreateHidingSpot();
+		// load simple vector array
+		Vector pos;
+		for( int h=0; h<hidingSpotCount; ++h )
+		{
+			fileBuffer.Get( &pos, 3 * sizeof(float) );
 
-		spot->Load(file, version);
-			
-		m_hidingSpots.push_back(spot);
+			// create new hiding spot and put on master list
+			HidingSpot *spot = TheNavMesh->CreateHidingSpot();
+			spot->SetPosition( pos );
+			spot->SetFlags( HidingSpot::IN_COVER );
+			m_hidingSpots.AddToTail( spot );
+		}
 	}
+	else
+	{
+		// load HidingSpot objects for this area
+		for( int h=0; h<hidingSpotCount; ++h )
+		{
+			// create new hiding spot and put on master list
+			HidingSpot *spot = TheNavMesh->CreateHidingSpot();
+
+			spot->Load( fileBuffer, version );
+			
+			m_hidingSpots.AddToTail( spot );
+		}
+	}
+
+	if ( version < 15 )
+	{
+		//
+		// Eat the approach areas
+		//
+		int nToEat = fileBuffer.GetUnsignedChar();
+
+		// load approach area info (IDs)
+		for( int a=0; a<nToEat; ++a )
+		{
+			fileBuffer.GetUnsignedInt();
+			fileBuffer.GetUnsignedInt();
+			fileBuffer.GetUnsignedChar();
+			fileBuffer.GetUnsignedInt();
+			fileBuffer.GetUnsignedChar();
+		}
+	}
+
 
 	//
 	// Load encounter paths for this area
 	//
-	size_t count = 0;
-	file.read(reinterpret_cast<char*>(&count), sizeof(size_t));
+	unsigned int count = fileBuffer.GetUnsignedInt();
 
-	for(size_t e = 0; e < count; ++e)
+	if (version < 3)
+	{
+		// old data, read and discard
+		for( unsigned int e=0; e<count; ++e )
+		{
+			SpotEncounter encounter;
+
+			encounter.from.id = fileBuffer.GetUnsignedInt();
+			encounter.to.id = fileBuffer.GetUnsignedInt();
+
+			fileBuffer.Get( &encounter.path.from.x, 3 * sizeof(float) );
+			fileBuffer.Get( &encounter.path.to.x, 3 * sizeof(float) );
+
+			// read list of spots along this path
+			unsigned char spotCount = fileBuffer.GetUnsignedChar();
+		
+			for( int s=0; s<spotCount; ++s )
+			{
+				for (int i = 0; i < 4; i++) {
+					fileBuffer.GetFloat();
+				}
+			}
+		}
+		return NAV_OK;
+	}
+
+	for( unsigned int e=0; e<count; ++e )
 	{
 		SpotEncounter *encounter = new SpotEncounter;
 
-		file.read(reinterpret_cast<char*>(&encounter->from.id), sizeof(unsigned int));
-		file.read(reinterpret_cast<char*>(&encounter->fromDir), sizeof(uint8));
-		file.read(reinterpret_cast<char*>(&encounter->to.id), sizeof(unsigned int));
-		file.read(reinterpret_cast<char*>(&encounter->toDir), sizeof(uint8));
+		encounter->from.id = fileBuffer.GetUnsignedInt();
+
+		unsigned char dir = fileBuffer.GetUnsignedChar();
+		encounter->fromDir = static_cast<NavDirType>( dir );
+
+		encounter->to.id = fileBuffer.GetUnsignedInt();
+
+		dir = fileBuffer.GetUnsignedChar();
+		encounter->toDir = static_cast<NavDirType>( dir );
 
 		// read list of spots along this path
-		size_t spotCount = 0;
-		file.read(reinterpret_cast<char*>(spotCount), sizeof(size_t));
+		unsigned char spotCount = fileBuffer.GetUnsignedChar();
 	
 		SpotOrder order;
-		for(size_t s = 0; s < spotCount; ++s)
+		for( int s=0; s<spotCount; ++s )
 		{
-			file.read(reinterpret_cast<char*>(&order.id), sizeof(unsigned int));
-			file.read(reinterpret_cast<char*>(&order.t), sizeof(float));
-			encounter->spots.push_back(order);
+			order.id = fileBuffer.GetUnsignedInt();
+
+			unsigned char t = fileBuffer.GetUnsignedChar();
+
+			order.t = (float)t/255.0f;
+
+			encounter->spots.AddToTail( order );
 		}
 
-		m_spotEncounters.push_back(encounter);
+		m_spotEncounters.AddToTail( encounter );
 	}
+
+	if (version < 5)
+		return NAV_OK;
 
 	//
 	// Load Place data
 	//
-	PlaceDirectory::IndexType entry = 0;
-	file.read(reinterpret_cast<char*>(&entry), sizeof(entry));
+	PlaceDirectory::IndexType entry = fileBuffer.GetUnsignedShort();
 
 	// convert entry to actual Place
-	SetPlace(placeDirectory.IndexToPlace(entry));
+	SetPlace( placeDirectory.IndexToPlace( entry ) );
+
+	if ( version < 7 )
+		return NAV_OK;
 
 	// load ladder data
 	for ( int dir=0; dir<CNavLadder::NUM_LADDER_DIRECTIONS; ++dir )
 	{
-		count = 0;
-		file.read(reinterpret_cast<char*>(&count), sizeof(size_t));
-
-		for(size_t i = 0; i < count; ++i)
+		count = fileBuffer.GetUnsignedInt();
+		for( unsigned int i=0; i<count; ++i )
 		{
 			NavLadderConnect connect;
-			file.read(reinterpret_cast<char*>(&connect.id), sizeof(unsigned int));
+			connect.id = fileBuffer.GetUnsignedInt();
 
 			bool alreadyConnected = false;
-
-			for (auto& ladder : m_ladder[dir])
+			FOR_EACH_VEC( m_ladder[dir], j )
 			{
-				if (ladder.id == connect.id)
+				if ( m_ladder[dir][j].id == connect.id )
 				{
 					alreadyConnected = true;
 					break;
@@ -556,30 +618,59 @@ NavErrorType CNavArea::Load(std::fstream& file, unsigned int version, unsigned i
 
 			if ( !alreadyConnected )
 			{
-				m_ladder[dir].push_back(connect);
+				m_ladder[dir].AddToTail( connect );
 			}
 		}
 	}
 
-	file.read(reinterpret_cast<char*>(m_earliestOccupyTime), sizeof(m_earliestOccupyTime));
-	file.read(reinterpret_cast<char*>(m_lightIntensity), sizeof(m_lightIntensity));
+	if ( version < 8 )
+		return NAV_OK;
+
+	// load earliest occupy times
+	for( int i=0; i<MAX_NAV_TEAMS; ++i )
+	{
+		// no spot in the map should take longer than this to reach
+		m_earliestOccupyTime[i] = fileBuffer.GetFloat();
+	}
+
+	if ( version < 11 )
+		return NAV_OK;
+
+	// load light intensity
+	for ( int i=0; i<NUM_CORNERS; ++i )
+	{
+		m_lightIntensity[i] = fileBuffer.GetFloat();
+	}
+
+	if ( version < 16 )
+		return NAV_OK;
 
 	// load visibility information
-	size_t visibleAreaCount = 0;
-	file.read(reinterpret_cast<char*>(&visibleAreaCount), sizeof(size_t));
+	unsigned int visibleAreaCount = fileBuffer.GetUnsignedInt();
+	if ( !IsX360() )
+	{
+		m_potentiallyVisibleAreas.EnsureCapacity( visibleAreaCount );
+	}
+	else
+	{
+/* TODO: Re-enable when latest 360 code gets integrated (MSB 5/5/09)
+		size_t nBytes = visibleAreaCount * sizeof( AreaBindInfo ); 
+		m_potentiallyVisibleAreas.~CAreaBindInfoArray();
+		new ( &m_potentiallyVisibleAreas ) CAreaBindInfoArray( (AreaBindInfo *)engine->AllocLevelStaticData( nBytes ), visibleAreaCount );
+*/
+	}
 
-	m_potentiallyVisibleAreas.reserve(visibleAreaCount);
-
-	for (size_t i = 0; i < visibleAreaCount; i++)
+	for( unsigned int j=0; j<visibleAreaCount; ++j )
 	{
 		AreaBindInfo info;
-		file.read(reinterpret_cast<char*>(&info.id), sizeof(unsigned int));
-		file.read(reinterpret_cast<char*>(&info.attributes), sizeof(unsigned char));
-		m_potentiallyVisibleAreas.push_back(info);
+		info.id = fileBuffer.GetUnsignedInt();
+		info.attributes = fileBuffer.GetUnsignedChar();
+
+		m_potentiallyVisibleAreas.AddToTail( info );
 	}
 
 	// read area from which we inherit visibility
-	file.read(reinterpret_cast<char*>(&m_inheritVisibilityFrom.id), sizeof(unsigned int));
+	m_inheritVisibilityFrom.id = fileBuffer.GetUnsignedInt();
 
 	return NAV_OK;
 }
@@ -596,23 +687,20 @@ NavErrorType CNavArea::PostLoad( void )
 
 	for ( int dir=0; dir<CNavLadder::NUM_LADDER_DIRECTIONS; ++dir )
 	{
-		for (auto& connect : m_ladder[dir])
+		FOR_EACH_VEC( m_ladder[dir], it )
 		{
+			NavLadderConnect& connect = m_ladder[dir][it];
+
 			unsigned int id = connect.id;
-			auto& vecladders = TheNavMesh->GetLadders();
 
-			auto start = vecladders.begin();
-			auto end = vecladders.end();
-			auto pos = std::find(start, end, connect.ladder);
-
-			if (pos == end)
+			if ( TheNavMesh->GetLadders().Find( connect.ladder ) == TheNavMesh->GetLadders().InvalidIndex() )
 			{
-				connect.ladder = TheNavMesh->GetLadderByID(id);
+				connect.ladder = TheNavMesh->GetLadderByID( id );
 			}
 
-			if (id && connect.ladder == nullptr)
+			if (id && connect.ladder == NULL)
 			{
-				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation ladder data. Cannot connect Navigation Areas.");
+				Msg( "CNavArea::PostLoad: Corrupt navigation ladder data. Cannot connect Navigation Areas.\n" );
 				error = NAV_CORRUPT_DATA;
 			}
 		}
@@ -621,84 +709,87 @@ NavErrorType CNavArea::PostLoad( void )
 	// connect areas together
 	for( int d=0; d<NUM_DIRECTIONS; d++ )
 	{
-		for (auto& connect : m_connect[d])
+		FOR_EACH_VEC( m_connect[d], it )
 		{
-			unsigned int id = connect.id;
-			connect.area = TheNavMesh->GetNavAreaByID(id);
+			NavConnect *connect = &m_connect[ d ][ it ];
 
-			if (id && connect.area == nullptr)
+			// convert connect ID into an actual area
+			unsigned int id = connect->id;
+			connect->area = TheNavMesh->GetNavAreaByID( id );
+			if (id && connect->area == NULL)
 			{
-				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas.");
+				Msg( "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas.\n" );
 				error = NAV_CORRUPT_DATA;
 			}
-
-			connect.length = (connect.area->GetCenter() - GetCenter()).Length();
+			connect->length = ( connect->area->GetCenter() - GetCenter() ).Length();
 		}
 	}
 
 	// resolve spot encounter IDs
-
-	for (auto spot : m_spotEncounters)
+	SpotEncounter *e;
+	FOR_EACH_VEC( m_spotEncounters, it )
 	{
-		spot->from.area = TheNavMesh->GetNavAreaByID(spot->from.id);
+		e = m_spotEncounters[ it ];
 
-		if (spot->from.area == nullptr)
+		e->from.area = TheNavMesh->GetNavAreaByID( e->from.id );
+		if (e->from.area == NULL)
 		{
-			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing \"from\" Navigation Area for Encounter Spot.");
+			Msg( "CNavArea::PostLoad: Corrupt navigation data. Missing \"from\" Navigation Area for Encounter Spot.\n" );
 			error = NAV_CORRUPT_DATA;
 		}
 
-		spot->to.area = TheNavMesh->GetNavAreaByID(spot->to.id);
-
-		if (spot->to.area == nullptr)
+		e->to.area = TheNavMesh->GetNavAreaByID( e->to.id );
+		if (e->to.area == NULL)
 		{
-			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing \"to\" Navigation Area for Encounter Spot.");
+			Msg( "CNavArea::PostLoad: Corrupt navigation data. Missing \"to\" Navigation Area for Encounter Spot.\n" );
 			error = NAV_CORRUPT_DATA;
 		}
 
-		if (spot->from.area && spot->to.area)
+		if (e->from.area && e->to.area)
 		{
-			float halfWidth = 0.0f;
-			ComputePortal(spot->to.area, spot->toDir, &spot->path.to, &halfWidth);
-			ComputePortal(spot->from.area, spot->fromDir, &spot->path.from, &halfWidth);
+			// compute path
+			float halfWidth;
+			ComputePortal( e->to.area, e->toDir, &e->path.to, &halfWidth );
+			ComputePortal( e->from.area, e->fromDir, &e->path.from, &halfWidth );
 
-			constexpr float eyeHeight = HalfHumanHeight;
-			spot->path.from.z = spot->from.area->GetZ(spot->path.from) + eyeHeight;
-			spot->path.to.z = spot->to.area->GetZ(spot->path.to) + eyeHeight;
+			const float eyeHeight = HalfHumanHeight;
+			e->path.from.z = e->from.area->GetZ( e->path.from ) + eyeHeight;
+			e->path.to.z = e->to.area->GetZ( e->path.to ) + eyeHeight;
 		}
 
-		for (auto& order : spot->spots)
+		// resolve HidingSpot IDs
+		FOR_EACH_VEC( e->spots, sit )
 		{
-			order.spot = GetHidingSpotByID(order.id);
+			SpotOrder *order = &e->spots[ sit ];
 
-			if (order.spot == nullptr)
+			order->spot = GetHidingSpotByID( order->id );
+			if (order->spot == NULL)
 			{
-				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing Hiding Spot");
+				Msg( "CNavArea::PostLoad: Corrupt navigation data. Missing Hiding Spot\n" );
 				error = NAV_CORRUPT_DATA;
 			}
 		}
 	}
 
-	for (auto& info : m_potentiallyVisibleAreas)
+	// convert visible ID's to pointers to actual areas
+	for ( int it=0; it<m_potentiallyVisibleAreas.Count(); ++it )
 	{
-		info.area = TheNavMesh->GetNavAreaByID(info.id);
+		AreaBindInfo &info = m_potentiallyVisibleAreas[ it ];
 
-		if (info.area == nullptr)
+		info.area = TheNavMesh->GetNavAreaByID( info.id );
+		if ( info.area == NULL )
 		{
-			smutils->LogError(myself, "Invalid area in visible set for area #%d", GetID());
-		}
+			Warning( "Invalid area in visible set for area #%d\n", GetID() );
+		}		
 	}
 
 	m_inheritVisibilityFrom.area = TheNavMesh->GetNavAreaByID( m_inheritVisibilityFrom.id );
+	Assert( m_inheritVisibilityFrom.area != this );
 
 	// remove any invalid areas from the list
-	//AreaBindInfo bad;
-	//bad.area = nullptr;
-	//while( m_potentiallyVisibleAreas.FindAndRemove( bad ) );
-
-	m_potentiallyVisibleAreas.erase(std::remove_if(m_potentiallyVisibleAreas.begin(), m_potentiallyVisibleAreas.end(),
-		[](const AreaBindInfo& object) { return object.area == nullptr; }),
-		m_potentiallyVisibleAreas.end());
+	AreaBindInfo bad;
+	bad.area = NULL;
+	while( m_potentiallyVisibleAreas.FindAndRemove( bad ) );
 
 	// func avoid/prefer attributes are controlled by func_nav_cost entities
 	ClearAllNavCostEntities();
@@ -894,19 +985,45 @@ void CNavMesh::ComputeBattlefrontAreas( void )
 /**
  * Return the filename for this map's "nav map" file
  */
-std::string CNavMesh::GetFilename( void )
+const char *CNavMesh::GetFilename( void )
 {
-	// TO-DO: implement proper support for workshop maps
-	// gpGlobals->mapname::workshop/ctf_harbine.ugc3067683041
+	// filename is local to game dir for Steam, so we need to prepend game dir for regular file save
+	char gamePath[256];
+	engine->GetGameDir( gamePath, 256 );
 
-	char filename[MAX_MAP_NAME + 1];
-	auto map = gpGlobals->mapname.ToCStr();
-	std::snprintf(filename, sizeof(filename), "%s.smnav", map);
-	return std::string(filename);
+	// persistant return value
+	static char filename[256];
+	Q_snprintf( filename, sizeof( filename ), "%s\\" FORMAT_NAVFILE, gamePath, STRING( gpGlobals->mapname ) );
+
+	return filename;
 }
 
 //--------------------------------------------------------------------------------------------------------------
+/*
+============
+COM_FixSlashes
 
+Changes all '/' characters into '\' characters, in place.
+============
+*/
+inline void COM_FixSlashes( char *pname )
+{
+#ifdef _WIN32
+	while ( *pname ) 
+	{
+		if ( *pname == '/' )
+			*pname = '\\';
+		pname++;
+	}
+#else
+	while ( *pname ) 
+	{
+		if ( *pname == '\\' )
+			*pname = '/';
+		pname++;
+	}
+#endif
+}
 
 static void WarnIfMeshNeedsAnalysis( int version )
 {
@@ -914,11 +1031,11 @@ static void WarnIfMeshNeedsAnalysis( int version )
 	// every CNavArea's m_approachCount to 0, and delete their m_spotEncounterList.
 	// So, if no area has either, odds are good we need an analyze.
 
-	if ( version >= 1 )
+	if ( version >= 14 )
 	{
 		if ( !TheNavMesh->IsAnalyzed() )
 		{
-			rootconsole->ConsolePrint("[SMNAV] The nav mesh needs a full nav_analyze\n");
+			Warning( "The nav mesh needs a full nav_analyze\n" );
 			return;
 		}
 	}
@@ -956,42 +1073,32 @@ static void WarnIfMeshNeedsAnalysis( int version )
 /**
  * Store Navigation Mesh to a file
  */
-bool CNavMesh::Save( void )
+bool CNavMesh::Save( void ) const
 {
 	WarnIfMeshNeedsAnalysis( NavCurrentVersion );
 
-	auto filename = GetFilename();
-	if (filename.length() < 2)
+	const char *filename = GetFilename();
+	if (filename == NULL)
 		return false;
 
 	//
 	// Store the NAV file
 	//
+	COM_FixSlashes( const_cast<char *>(filename) );
 
 	// get size of source bsp file for later (before we open the nav file for writing, in
 	// case of failure)
-	// TO-DO
+	char *bspFilename = GetBspFilename( filename );
+	if (bspFilename == NULL)
+	{
+		return false;
+	}
 
-	char fullpath[PLATFORM_MAX_PATH + 1];
-	auto mod = smutils->GetGameFolderName();
-
-	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s/%s", mod, filename);
-
-	std::fstream file;
-
-	// Open file for writing in binary mode and overwrite existing content
-	file.open(fullpath, std::fstream::out | std::fstream::binary | std::fstream::trunc);
-
-	CSMNavFileHeader header{};
-	header.magic_number = NAV_MAGIC_NUMBER;
-	header.version = NavCurrentVersion;
-	header.subversion = GetSubVersionNumber();
-	header.number_of_areas = static_cast<unsigned int>(TheNavAreas.size());
-	header.number_of_ladders = static_cast<unsigned int>(m_ladders.size());
-
-	file.write(reinterpret_cast<char*>(&header), sizeof(CSMNavFileHeader));
+	CUtlBuffer fileBuffer( 4096, 1024*1024 );
 
 	// store "magic number" to help identify this kind of file
+	unsigned int magic = NAV_MAGIC_NUMBER;
+	fileBuffer.PutUnsignedInt( magic );
 
 	// store version number of file
 	// 1 = hiding spots as plain vector array
@@ -1012,62 +1119,85 @@ bool CNavMesh::Save( void )
 	// 14 - Added a bool for if the nav needs analysis
 	// 15 - removed approach areas
 	// 16 - Added visibility data to the base mesh
+	fileBuffer.PutUnsignedInt( NavCurrentVersion );
 
 	// The sub-version number is maintained and owned by classes derived from CNavMesh and CNavArea
 	// and allows them to track their custom data just as we do at this top level
+	fileBuffer.PutUnsignedInt( GetSubVersionNumber() );
 	
 	// store the size of source bsp file in the nav file
 	// so we can test if the bsp changed since the nav file was made
-	// unsigned int bspSize = filesystem->Size( bspFilename );
-	// DevMsg( "Size of bsp file '%s' is %u bytes.\n", bspFilename, bspSize );
-	// TO-DO!
-	// fileBuffer.PutUnsignedInt( bspSize );
+	unsigned int bspSize = filesystem->Size( bspFilename );
+	DevMsg( "Size of bsp file '%s' is %u bytes.\n", bspFilename, bspSize );
+
+	fileBuffer.PutUnsignedInt( bspSize );
 
 	// Store the analysis state
-
-	file.write(reinterpret_cast<char*>(&m_isAnalyzed), sizeof(bool));
+	fileBuffer.PutUnsignedChar( m_isAnalyzed );
 
 	//
 	// Build a directory of the Places in this map
 	//
 	placeDirectory.Reset();
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, nit )
 	{
+		CNavArea *area = TheNavAreas[ nit ];
+
 		Place place = area->GetPlace();
-		placeDirectory.AddPlace(place);
+		placeDirectory.AddPlace( place );
 	}
 
-	placeDirectory.Save(file);
+	placeDirectory.Save( fileBuffer );
 
-	SaveCustomDataPreArea(file);
+	SaveCustomDataPreArea( fileBuffer );
 
 	//
 	// Store navigation areas
 	//
-
-	// Vector size moved to header
-
-	for (auto area : TheNavAreas)
 	{
-		area->Save(file, NavCurrentVersion);
+		// store number of areas
+		unsigned int count = TheNavAreas.Count();
+		fileBuffer.PutUnsignedInt( count );
+
+		// store each area
+		FOR_EACH_VEC( TheNavAreas, it )
+		{
+			CNavArea *area = TheNavAreas[ it ];
+
+			area->Save( fileBuffer, NavCurrentVersion );
+		}
 	}
 
-	for (auto ladder : m_ladders)
+	//
+	// Store ladders
+	//
 	{
-		ladder->Save(file, NavCurrentVersion);
+		// store number of ladders
+		unsigned int count = m_ladders.Count();
+		fileBuffer.PutUnsignedInt( count );
+
+		// store each ladder
+		for ( int i=0; i<m_ladders.Count(); ++i )
+		{
+			CNavLadder *ladder = m_ladders[i];
+			ladder->Save( fileBuffer, NavCurrentVersion );
+		}
 	}
 	
 	//
 	// Store derived class mesh info
 	//
-	SaveCustomData(file);
+	SaveCustomData( fileBuffer );
 
-	file.close();
+	if ( !filesystem->WriteFile( filename, "MOD", fileBuffer ) )
+	{
+		Warning( "Unable to save %d bytes to %s\n", fileBuffer.Size(), filename );
+		return false;
+	}
 
-	auto navSize = std::filesystem::file_size(fullpath);
-
-	smutils->LogMessage(myself, "Saved nav mesh file \"%s\", size %u", fullpath, navSize);
+	unsigned int navSize = filesystem->Size( filename );
+	DevMsg( "Size of nav file '%s' is %u bytes.\n", filename, navSize );
 
 	return true;
 }
@@ -1140,34 +1270,32 @@ void CommandNavCheckFileConsistency( void )
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
-	rootconsole->ConsolePrint("Command not implemented!\n");
+	FileFindHandle_t findHandle;
+	const char *bspFilename = filesystem->FindFirstEx( "maps/*.bsp", "MOD", &findHandle );
+	while ( bspFilename )
+	{
+		switch ( CheckNavFile( bspFilename ) )
+		{
+		case NAV_CANT_ACCESS_FILE:
+			Warning( "Missing nav file for %s\n", bspFilename );
+			break;
+		case NAV_INVALID_FILE:
+			Warning( "Invalid nav file for %s\n", bspFilename );
+			break;
+		case NAV_BAD_FILE_VERSION:
+			Warning( "Old nav file for %s\n", bspFilename );
+			break;
+		case NAV_FILE_OUT_OF_DATE:
+			Warning( "The nav file for %s is built from an old version of the map\n", bspFilename );
+			break;
+		case NAV_OK:
+			Msg( "The nav file for %s is up-to-date\n", bspFilename );
+			break;
+		}
 
-	//FileFindHandle_t findHandle;
-	//const char *bspFilename = filesystem->FindFirstEx( "maps/*.bsp", "MOD", &findHandle );
-	//while ( bspFilename )
-	//{
-	//	switch ( CheckNavFile( bspFilename ) )
-	//	{
-	//	case NAV_CANT_ACCESS_FILE:
-	//		Warning( "Missing nav file for %s\n", bspFilename );
-	//		break;
-	//	case NAV_INVALID_FILE:
-	//		Warning( "Invalid nav file for %s\n", bspFilename );
-	//		break;
-	//	case NAV_BAD_FILE_VERSION:
-	//		Warning( "Old nav file for %s\n", bspFilename );
-	//		break;
-	//	case NAV_FILE_OUT_OF_DATE:
-	//		Warning( "The nav file for %s is built from an old version of the map\n", bspFilename );
-	//		break;
-	//	case NAV_OK:
-	//		Msg( "The nav file for %s is up-to-date\n", bspFilename );
-	//		break;
-	//	}
-
-	//	bspFilename = filesystem->FindNext( findHandle );
-	//}
-	//filesystem->FindClose( findHandle );
+		bspFilename = filesystem->FindNext( findHandle );
+	}
+	filesystem->FindClose( findHandle );
 }
 static ConCommand nav_check_file_consistency( "nav_check_file_consistency", CommandNavCheckFileConsistency, "Scans the maps directory and reports any missing/out-of-date navigation files.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
@@ -1176,13 +1304,8 @@ static ConCommand nav_check_file_consistency( "nav_check_file_consistency", Comm
 /**
  * Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
  */
-const std::vector<Place> *CNavMesh::GetPlacesFromNavFile( bool *hasUnnamedPlaces )
+const CUtlVector< Place > *CNavMesh::GetPlacesFromNavFile( bool *hasUnnamedPlaces )
 {
-	return nullptr;
-
-	/*
-	* Not used by anything, not converting for now
-
 	placeDirectory.Reset();
 	// nav filename is derived from map filename
 	char filename[256];
@@ -1193,16 +1316,6 @@ const std::vector<Place> *CNavMesh::GetPlacesFromNavFile( bool *hasUnnamedPlaces
 		&& !filesystem->ReadFile( filename, "BSP", fileBuffer ) )	// ... and this looks for one if it's the only one around.
 	{
 		return NULL;
-	}
-	
-	if ( IsX360()
-		// 360 has compressed NAVs
-		&& CLZMA::IsCompressed( (unsigned char *)fileBuffer.Base() ) )
-	{
-		int originalSize = CLZMA::GetActualSize( (unsigned char *)fileBuffer.Base() );
-		unsigned char *pOriginalData = new unsigned char[originalSize];
-		CLZMA::Uncompress( (unsigned char *)fileBuffer.Base(), pOriginalData );
-		fileBuffer.AssumeMemory( pOriginalData, originalSize, originalSize, CUtlBuffer::READ_ONLY );
 	}
 
 	// check magic number
@@ -1246,8 +1359,6 @@ const std::vector<Place> *CNavMesh::GetPlacesFromNavFile( bool *hasUnnamedPlaces
 	}
 
 	return placeDirectory.GetPlaces();
-
-	*/
 }
 
 
@@ -1258,107 +1369,102 @@ const std::vector<Place> *CNavMesh::GetPlacesFromNavFile( bool *hasUnnamedPlaces
 NavErrorType CNavMesh::Load( void )
 {
 	extern IMDLCache *mdlcache;
-	MDLCACHE_CRITICAL_SECTION(); // TO-DO: Is this needed?
+	MDLCACHE_CRITICAL_SECTION();
 
 	// free previous navigation mesh data
 	Reset();
 	placeDirectory.Reset();
-	// CNavVectorNoEditAllocator::Reset();
+	CNavVectorNoEditAllocator::Reset();
 
 	// TODO: GameRules()->OnNavMeshLoad();
 
 	CNavArea::m_nextID = 1;
 
 	// nav filename is derived from map filename
+	char filename[256];
+	Q_snprintf( filename, sizeof( filename ), FORMAT_NAVFILE, STRING( gpGlobals->mapname ) );
 
-	auto mapname = GetFilename();
-	char fullpath[PLATFORM_MAX_PATH + 1];
-	auto modfolder = g_pSM->GetGameFolderName();
-
-	g_pSM->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s/%s", modfolder, mapname.c_str());
-
-	//if ( IsX360()
-	//	// 360 has compressed NAVs
-	//	&&  CLZMA::IsCompressed( (unsigned char *)fileBuffer.Base() ) )
-	//{
-	//	int originalSize = CLZMA::GetActualSize( (unsigned char *)fileBuffer.Base() );
-	//	unsigned char *pOriginalData = new unsigned char[originalSize];
-	//	CLZMA::Uncompress( (unsigned char *)fileBuffer.Base(), pOriginalData );
-	//	fileBuffer.AssumeMemory( pOriginalData, originalSize, originalSize, CUtlBuffer::READ_ONLY );
-	//}
-
-	if (std::filesystem::exists(fullpath) == false)
+	bool navIsInBsp = false;
+	CUtlBuffer fileBuffer( 4096, 1024*1024, CUtlBuffer::READ_ONLY );
+	if ( !filesystem->ReadFile( filename, "MOD", fileBuffer ) )	// this ignores .nav files embedded in the .bsp ...
 	{
-		smutils->LogMessage(myself, "Failed to load navigation mesh file \"%s\". File does not exists!", fullpath);
-		return NAV_CANT_ACCESS_FILE;
+		navIsInBsp = true;
+		if ( !filesystem->ReadFile( filename, "BSP", fileBuffer ) )	// ... and this looks for one if it's the only one around.
+		{
+			return NAV_CANT_ACCESS_FILE;
+		}
 	}
 
-	std::fstream file;
-
-	file.open(fullpath, std::fstream::in | std::fstream::binary);
-
-	if (file.is_open() == false)
+	// check magic number
+	unsigned int magic = fileBuffer.GetUnsignedInt();
+	if ( !fileBuffer.IsValid() || magic != NAV_MAGIC_NUMBER )
 	{
-		smutils->LogError(myself, "Failed to load navigation mesh file \"%s\"!", fullpath);
-		return NAV_CANT_ACCESS_FILE;
-	}
-
-	CSMNavFileHeader header{};
-
-	file.read(reinterpret_cast<char*>(&header), sizeof(CSMNavFileHeader));
-
-	if (header.magic_number != NAV_MAGIC_NUMBER)
-	{
-		file.close();
-		smutils->LogError(myself, "Invalid navigation mesh file \"%s\"!", fullpath);
+		Msg( "Invalid navigation file '%s'.\n", filename );
 		return NAV_INVALID_FILE;
 	}
 
-	if (header.version > NavCurrentVersion)
+	// read file version number
+	unsigned int version = fileBuffer.GetUnsignedInt();
+	if ( !fileBuffer.IsValid() || version > NavCurrentVersion )
 	{
-		file.close();
-		smutils->LogError(myself, "Unknown navigation mesh file version \"%i\"!", header.version);
-		return NAV_INVALID_FILE;
+		Msg( "Unknown navigation file version.\n" );
+		return NAV_BAD_FILE_VERSION;
+	}
+	
+	unsigned int subVersion = 0;
+	if ( version >= 10 )
+	{
+		subVersion = fileBuffer.GetUnsignedInt();
+		if ( !fileBuffer.IsValid() )
+		{
+			Msg( "Error reading sub-version number.\n" );
+			return NAV_INVALID_FILE;
+		}
 	}
 
-	// TO-DO
-	//if ( version >= 4 )
-	//{
-	//	// get size of source bsp file and verify that the bsp hasn't changed
-	//	unsigned int saveBspSize = fileBuffer.GetUnsignedInt();
-
-	//	// verify size
-	//	char *bspFilename = GetBspFilename( filename );
-	//	if ( bspFilename == NULL )
-	//	{
-	//		return NAV_INVALID_FILE;
-	//	}
-
-	//	if ( filesystem->Size( bspFilename ) != saveBspSize && !navIsInBsp )
-	//	{
-	//		if ( engine->IsDedicatedServer() )
-	//		{
-	//			// Warning doesn't print to the dedicated server console, so we'll use Msg instead
-	//			DevMsg( "The Navigation Mesh was built using a different version of this map.\n" );
-	//		}
-	//		else
-	//		{
-	//			DevWarning( "The Navigation Mesh was built using a different version of this map.\n" );
-	//		}
-	//		m_isOutOfDate = true;
-	//	}
-	//}
-
-	file.read(reinterpret_cast<char*>(&m_isAnalyzed), sizeof(bool));
-
-	placeDirectory.Load(file, header.version);
-
-
-	LoadCustomDataPreArea(file, header.subversion);
-
-	if (header.number_of_areas == 0)
+	if ( version >= 4 )
 	{
-		file.close();
+		// get size of source bsp file and verify that the bsp hasn't changed
+		unsigned int saveBspSize = fileBuffer.GetUnsignedInt();
+
+		// verify size
+		char *bspFilename = GetBspFilename( filename );
+		if ( bspFilename == NULL )
+		{
+			return NAV_INVALID_FILE;
+		}
+
+		if ( filesystem->Size( bspFilename ) != saveBspSize && !navIsInBsp )
+		{
+			if ( engine->IsDedicatedServer() )
+			{
+				// Warning doesn't print to the dedicated server console, so we'll use Msg instead
+				DevMsg( "The Navigation Mesh was built using a different version of this map.\n" );
+			}
+			else
+			{
+				DevWarning( "The Navigation Mesh was built using a different version of this map.\n" );
+			}
+			m_isOutOfDate = true;
+		}
+	}
+
+	m_isAnalyzed = version >= 14 && fileBuffer.GetUnsignedChar() != 0;
+
+	// load Place directory
+	if ( version >= 5 )
+	{
+		placeDirectory.Load( fileBuffer, version );
+	}
+
+	LoadCustomDataPreArea( fileBuffer, subVersion );
+
+	// get number of areas
+	unsigned int count = fileBuffer.GetUnsignedInt();
+	unsigned int i;
+
+	if ( count == 0 )
+	{
 		return NAV_INVALID_FILE;
 	}
 
@@ -1369,13 +1475,13 @@ NavErrorType CNavMesh::Load( void )
 	extent.hi.y = -9999999999.9f;
 
 	// load the areas and compute total extent
-	TheNavMesh->PreLoadAreas(header.number_of_areas);
+	TheNavMesh->PreLoadAreas( count );
 	Extent areaExtent;
-	for(unsigned int i = 0; i < header.number_of_areas; ++i)
+	for( i=0; i<count; ++i )
 	{
 		CNavArea *area = TheNavMesh->CreateArea();
-		area->Load(file, header.version, header.subversion);
-		TheNavAreas.push_back(area);
+		area->Load( fileBuffer, version, subVersion );
+		TheNavAreas.AddToTail( area );
 
 		area->GetExtent( &areaExtent );
 
@@ -1392,16 +1498,31 @@ NavErrorType CNavMesh::Load( void )
 	// add the areas to the grid
 	AllocateGrid( extent.lo.x, extent.hi.x, extent.lo.y, extent.hi.y );
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		AddNavArea(area);
+		AddNavArea( TheNavAreas[ it ] );
 	}
 
-	for (unsigned int i = 0; i < header.number_of_ladders; i++)
+
+	//
+	// Set up all the ladders
+	//
+	if (version >= 6)
 	{
-		CNavLadder* ladder = new CNavLadder;
-		ladder->Load(this, file, header.version);
-		m_ladders.push_back(ladder);
+		count = fileBuffer.GetUnsignedInt();
+		m_ladders.EnsureCapacity( count );
+
+		// load the ladders
+		for( i=0; i<count; ++i )
+		{
+			CNavLadder *ladder = new CNavLadder;
+			ladder->Load( this, fileBuffer, version );
+			m_ladders.AddToTail( ladder );
+		}
+	}
+	else
+	{
+		BuildLadders();
 	}
 
 	// mark stairways (TODO: this can be removed once all maps are re-saved with this attribute in them)
@@ -1410,16 +1531,15 @@ NavErrorType CNavMesh::Load( void )
 	//
 	// Load derived class mesh info
 	//
-	LoadCustomData(file, header.subversion);
+	LoadCustomData( fileBuffer, subVersion );
 
 	//
 	// Bind pointers, etc
 	//
-	NavErrorType loadResult = PostLoad(header.version);
+	NavErrorType loadResult = PostLoad( version );
 
-	WarnIfMeshNeedsAnalysis(header.version);
+	WarnIfMeshNeedsAnalysis( version );
 
-	file.close();
 	return loadResult;
 }
 
@@ -1444,22 +1564,31 @@ struct OneWayLink_t
 NavErrorType CNavMesh::PostLoad( unsigned int version )
 {
 	// allow areas to connect to each other, etc
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, pit )
 	{
+		CNavArea *area = TheNavAreas[ pit ];
 		area->PostLoad();
 	}
 
 	extern HidingSpotVector TheHidingSpots;
 	// allow hiding spots to compute information
-
-	for (auto spot : TheHidingSpots)
+	FOR_EACH_VEC( TheHidingSpots, hit )
 	{
+		HidingSpot *spot = TheHidingSpots[ hit ];
 		spot->PostLoad();
 	}
 
-	// CSTRIKE stuff
-	// ComputeBattlefrontAreas();
+	if ( version < 8 )
+	{
+		// Old nav meshes need to compute earliest occupy times
+		FOR_EACH_VEC( TheNavAreas, nit )
+		{
+			CNavArea *area = TheNavAreas[ nit ];
+			area->ComputeEarliestOccupyTimes();
+		}
+	}
+
+	ComputeBattlefrontAreas();
 	
 	//
 	// Allow each nav area to know what other areas have one-way connections to it. Need to gather
@@ -1468,67 +1597,58 @@ NavErrorType CNavMesh::PostLoad( unsigned int version )
 
 
 	OneWayLink_t oneWayLink;
-	std::vector<OneWayLink_t> oneWayLinks;
-	oneWayLinks.reserve(512);
+	CUtlVectorFixedGrowable<OneWayLink_t, 512> oneWayLinks;
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, oit )
 	{
-		oneWayLink.area = area;
-
-		for (int dir = 0; dir < NUM_DIRECTIONS; dir++)
+		oneWayLink.area = TheNavAreas[ oit ];
+	
+		for( int d=0; d<NUM_DIRECTIONS; d++ )
 		{
-			auto connectList = oneWayLink.area->GetAdjacentAreas(static_cast<NavDirType>(dir));
+			const NavConnectVector *connectList = oneWayLink.area->GetAdjacentAreas( (NavDirType)d );
 
-			for (auto& navconn : *connectList)
+			FOR_EACH_VEC( (*connectList), it )
 			{
-				oneWayLink.destArea = navconn.area;
-
+				NavConnect connect = (*connectList)[ it ];
+				oneWayLink.destArea = connect.area;
+			
 				// if the area we connect to has no connection back to us, allow that area to remember us as an incoming connection
-				oneWayLink.backD = OppositeDirection(static_cast<NavDirType>(dir));
-
-				auto backConnectList = oneWayLink.destArea->GetAdjacentAreas(static_cast<NavDirType>(oneWayLink.backD));
+				oneWayLink.backD = OppositeDirection( (NavDirType)d );		
+				const NavConnectVector *backConnectList = oneWayLink.destArea->GetAdjacentAreas( (NavDirType)oneWayLink.backD );
 				bool isOneWay = true;
-
-				for (auto& backconn : *backConnectList)
+				FOR_EACH_VEC( (*backConnectList), bit )
 				{
-					if (backconn.area->GetID() == oneWayLink.area->GetID())
+					NavConnect backConnect = (*backConnectList)[ bit ];
+					if (backConnect.area->GetID() == oneWayLink.area->GetID())
 					{
 						isOneWay = false;
 						break;
 					}
 				}
-
+				
 				if (isOneWay)
 				{
-					oneWayLinks.push_back(oneWayLink);
+					oneWayLinks.AddToTail( oneWayLink );
 				}
 			}
 		}
 	}
 
-	// TO-DO:
-	// 
-	//auto start = oneWayLinks.begin();
-	//auto end = oneWayLinks.end();
-	//std::sort(start, end, [](const OneWayLink_t& lhs, const OneWayLink_t& rhs) {
-	//	
-	//});
+	oneWayLinks.Sort( &OneWayLink_t::Compare );
 
-	//oneWayLinks.Sort( &OneWayLink_t::Compare );
-
-	for (auto& owl : oneWayLinks)
+	for ( int i = 0; i < oneWayLinks.Count(); i++ )
 	{
-		owl.destArea->AddIncomingConnection(owl.area, static_cast<NavDirType>(owl.backD));
+		// add this one-way connection
+		oneWayLinks[i].destArea->AddIncomingConnection( oneWayLinks[i].area, (NavDirType)oneWayLinks[i].backD );	
 	}
 
 	ValidateNavAreaConnections();
 
 	// TERROR: loading into a map directly creates entities before the mesh is loaded.  Tell the preexisting
 	// entities now that the mesh is loaded so they can update areas.
-
-	for (auto it : m_avoidanceObstacles)
+	for ( int i=0; i<m_avoidanceObstacles.Count(); ++i )
 	{
-		it->OnNavMeshLoaded();
+		m_avoidanceObstacles[i]->OnNavMeshLoaded();
 	}
 
 	// the Navigation Mesh has been successfully loaded

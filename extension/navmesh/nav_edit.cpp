@@ -9,8 +9,6 @@
 // Implementation of Navigation Mesh edit mode
 // Author: Michael Booth, 2003-2004
 
-#include "extension.h"
-
 #include "nav_mesh.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
@@ -20,6 +18,7 @@
 #include <util/BaseEntity.h>
 #include <util/EntityUtils.h>
 #include "Color.h"
+#include "tier0/vprof.h"
 #include "collisionutils.h"
 #include <vphysics_interface.h>
 #include <ivdebugoverlay.h>
@@ -36,7 +35,8 @@
 
 #include <util/UtilRandom.h>
 
-#include "nav_macros.h"
+// NOTE: This has to be the last file included!
+#include "tier0/memdbgon.h"
 
 
 ConVar nav_show_area_info( "nav_show_area_info", "0.5", FCVAR_CHEAT, "Duration in seconds to show nav area ID and attributes while editing" );
@@ -64,7 +64,6 @@ Color s_dragSelectionSetDeleteColor( 255, 100, 100, 96 );
 #if DEBUG_NAV_NODES
 extern ConVar nav_show_nodes;
 #endif // DEBUG_NAV_NODES
-
 
 //--------------------------------------------------------------------------------------------------------------
 int GetGridSize( bool forceGrid = false )
@@ -201,34 +200,37 @@ void CNavMesh::SetEditMode( EditModeType mode )
 //--------------------------------------------------------------------------------------------------------------
 bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &end, CNavArea **bestArea, CNavLadder **bestLadder, CNavArea *ignore )
 {
-	if ( m_grid.size() == 0 )
+	if ( !m_grid.Count() )
 		return false;
 
 	Ray_t ray;
 	ray.Init( start, end, vec3_origin, vec3_origin );
 
-	*bestArea = nullptr;
-	*bestLadder = nullptr;
+	*bestArea = NULL;
+	*bestLadder = NULL;
 
 	float bestDist = 1.0f; // 0..1 fraction
 
-	for (auto ladder : m_ladders)
+	for ( int i=0; i<m_ladders.Count(); ++i )
 	{
-		Vector left(0, 0, 0), right(0, 0, 0), up(0, 0, 0);
-		VectorVectors(ladder->GetNormal(), right, up);
+		CNavLadder *ladder = m_ladders[i];
+
+		Vector left( 0, 0, 0), right(0, 0, 0), up( 0, 0, 0);
+		VectorVectors( ladder->GetNormal(), right, up );
 		right *= ladder->m_width * 0.5f;
 		left = -right;
 
 		Vector c4 = ladder->m_bottom + left;
 		for (int i = 0; i < 2; i++) {
-			float dist = IntersectRayWithTriangle(ray, ladder->m_top + right,
-				i > 0 ? c4 : (ladder->m_top + left),
-				i > 0 ? (ladder->m_bottom + right) : c4, false);
-			if (dist > 0 && dist < bestDist)
+			float dist = IntersectRayWithTriangle( ray, ladder->m_top + right,
+					i > 0 ? c4 : (ladder->m_top + left),
+					i > 0 ? (ladder->m_bottom + right) : c4, false );
+			if ( dist > 0 && dist < bestDist )
 			{
 				*bestLadder = ladder;
 				bestDist = dist;
 			}
+
 		}
 	}
 
@@ -247,9 +249,10 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 		{
 			NavAreaVector &areaGrid = m_grid[ x + y*m_gridSizeX ];
 
-			for (auto area : areaGrid)
+			FOR_EACH_VEC( areaGrid, it )
 			{
-				if (area == ignore)
+				CNavArea *area = areaGrid[ it ];
+				if ( area == ignore )
 					continue;
 
 				Vector nw = area->m_nwCorner;
@@ -262,15 +265,15 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 				sw.y = se.y;
 				sw.z = area->m_swZ;
 
-				float dist = IntersectRayWithTriangle(ray, nw, ne, se, false);
-				if (dist > 0 && dist < bestDist)
+				float dist = IntersectRayWithTriangle( ray, nw, ne, se, false );
+				if ( dist > 0 && dist < bestDist )
 				{
 					*bestArea = area;
 					bestDist = dist;
 				}
 
-				dist = IntersectRayWithTriangle(ray, se, sw, nw, false);
-				if (dist > 0 && dist < bestDist)
+				dist = IntersectRayWithTriangle( ray, se, sw, nw, false );
+				if ( dist > 0 && dist < bestDist )
 				{
 					*bestArea = area;
 					bestDist = dist;
@@ -281,7 +284,7 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 
 	if ( *bestArea )
 	{
-		*bestLadder = nullptr;
+		*bestLadder = NULL;
 	}
 
 	return bestDist < 1.0f;
@@ -294,6 +297,8 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
  */
 bool CNavMesh::FindActiveNavArea( void )
 {
+	VPROF( "CNavMesh::FindActiveNavArea" );
+
 	m_splitAlongX = false;
 	m_splitEdge = 0.0f;
 	m_selectedArea = NULL;
@@ -341,7 +346,7 @@ bool CNavMesh::FindActiveNavArea( void )
 		{
 			float closestDistSqr = 200.0f * 200.0f;
 
-			for ( size_t i=0; i<m_ladders.size(); ++i )
+			for ( int i=0; i<m_ladders.Count(); ++i )
 			{
 				CNavLadder *ladder = m_ladders[i];
 
@@ -669,6 +674,7 @@ ConVar nav_show_compass( "nav_show_compass", "0", FCVAR_CHEAT );
 void CNavMesh::DrawEditMode( void )
 {
 	extern IVDebugOverlay* debugoverlay;
+	VPROF( "CNavMesh::DrawEditMode" );
 	edict_t* ent = UTIL_GetListenServerEnt();
 	if (ent == NULL)
 		return;
@@ -800,9 +806,10 @@ void CNavMesh::DrawEditMode( void )
 
 			UpdateDragSelectionSet();
 			// Draw the drag selection set
-			for (auto area : m_dragSelectionSet)
+			FOR_EACH_VEC( m_dragSelectionSet, it )
 			{
-				area->DrawDragSelectionSet(m_bIsDragDeselecting ? s_dragSelectionSetDeleteColor : s_dragSelectionSetAddColor);
+				m_dragSelectionSet[ it ]->DrawDragSelectionSet( m_bIsDragDeselecting ?
+						s_dragSelectionSetDeleteColor : s_dragSelectionSetAddColor );
 			}
 		}
 		else if ( IsEditMode( CREATING_LADDER ) )
@@ -880,7 +887,7 @@ void CNavMesh::DrawEditMode( void )
 				m_showAreaInfoTimer.Start( nav_show_area_info.GetFloat() );
 				m_lastSelectedArea = m_selectedArea;
 			}
-/*
+
 			if (m_showAreaInfoTimer.HasStarted() && !m_showAreaInfoTimer.IsElapsed() )
 			{
 				char buffer[80];
@@ -890,8 +897,11 @@ void CNavMesh::DrawEditMode( void )
 				if (m_selectedArea->GetPlace())
 				{
 					const char *name = TheNavMesh->PlaceToName( m_selectedArea->GetPlace() );
-					// V_strcpy_safe( locName, name != nullptr ? name: "ERROR" ); // SDK 2013 only?
+#if SOURCE_ENGINE == SE_SDK2013
+					V_strcpy_safe( locName, name != nullptr ? name: "ERROR" );
+#else
 					Q_strcpy(locName, name != nullptr ? name : "ERROR");
+#endif
 				}
 				else
 				{
@@ -952,7 +962,6 @@ void CNavMesh::DrawEditMode( void )
 					EmitSound(ent, "Bot.EditSwitchOn");
 				}
 			}
-			*/
 			
 
 			// do continuous selecting into selected set
@@ -1024,21 +1033,23 @@ void CNavMesh::DrawEditMode( void )
 			DrawSelectedSet draw( shift );
 
 			// if the selected set is small, just blast it out
-			if (m_selectedSet.size() < static_cast<size_t>(nav_draw_limit.GetInt()))
+			if (m_selectedSet.Count() < nav_draw_limit.GetInt())
 			{
-				for (auto area : m_selectedSet)
+				FOR_EACH_VEC( m_selectedSet, it )
 				{
-					draw(area);
+					draw( m_selectedSet[ it ] );
 				}
 			}
 			else
 			{
 				// draw the part nearest the player
-				CNavArea *nearest = nullptr;
+				CNavArea *nearest = NULL;
 				float nearRange = 9999999999.9f;
 
-				for (auto area : m_selectedSet)
+				FOR_EACH_VEC( m_selectedSet, it )
 				{
+					CNavArea *area = m_selectedSet[ it ];
+
 					float range = (player->GetAbsOrigin() - area->GetCenter()).LengthSqr();
 					if (range < nearRange)
 					{
@@ -1046,7 +1057,6 @@ void CNavMesh::DrawEditMode( void )
 						nearest = area;
 					}
 				}
-
 				SearchSurroundingAreas(nearest, nearest->GetCenter(), draw, -1,
 						INCLUDE_INCOMING_CONNECTIONS | INCLUDE_BLOCKED_AREAS);
 			}
@@ -1059,7 +1069,7 @@ void CNavMesh::DrawEditMode( void )
 void CNavMesh::SetMarkedLadder( CNavLadder *ladder )
 {
 	m_markedLadder = ladder;
-	m_markedArea = nullptr;
+	m_markedArea = NULL;
 	m_markedCorner = NUM_CORNERS;
 }
 
@@ -1090,39 +1100,28 @@ void CNavMesh::CommandNavDelete( void )
 		if( markedArea )
 		{
 			EmitSound(player, "EDIT_DELETE" );
-
-			NAV_VEC_REMOVE_NO_DELETE(TheNavAreas, markedArea);
-
+			TheNavAreas.FindAndRemove( markedArea );
 			TheNavMesh->OnEditDestroyNotify( markedArea );
 			TheNavMesh->DestroyArea( markedArea );
 		}
 		else if( markedLadder )
 		{
 			EmitSound(player, "EDIT_DELETE" );
-
-			NAV_VEC_REMOVE_NO_DELETE(m_ladders, markedLadder);
-
-			// m_ladders.FindAndRemove( markedLadder );
+			m_ladders.FindAndRemove( markedLadder );
 			OnEditDestroyNotify( markedLadder );
 			delete markedLadder;
 		} 
 		else if ( m_selectedArea )
 		{
 			EmitSound(player, "EDIT_DELETE" );
-
-			NAV_VEC_REMOVE_NO_DELETE(TheNavAreas, m_selectedArea);
-
-			// TheNavAreas.FindAndRemove( m_selectedArea );
+			TheNavAreas.FindAndRemove( m_selectedArea );
 			OnEditDestroyNotify( m_selectedArea );
 			TheNavMesh->DestroyArea( m_selectedArea );
 		}
 		else if ( m_selectedLadder )
 		{
 			EmitSound(player, "EDIT_DELETE" );
-
-			NAV_VEC_REMOVE_NO_DELETE(m_ladders, m_selectedLadder);
-
-			// m_ladders.FindAndRemove( m_selectedLadder );
+			m_ladders.FindAndRemove( m_selectedLadder );
 			OnEditDestroyNotify( m_selectedLadder );
 			delete m_selectedLadder;
 		}
@@ -1131,24 +1130,26 @@ void CNavMesh::CommandNavDelete( void )
 	{
 		// delete all areas in the selected set
 		EmitSound(player, "EDIT_DELETE" );
-
-		for (auto area : m_selectedSet)
+		
+		FOR_EACH_VEC( m_selectedSet, it )
 		{
-			NAV_VEC_REMOVE_NO_DELETE(TheNavAreas, area);
-
-			OnEditDestroyNotify(area);
-
-			TheNavMesh->DestroyArea(area);
+			CNavArea *area = m_selectedSet[ it ];
+			
+			TheNavAreas.FindAndRemove( area );
+			
+			OnEditDestroyNotify( area );
+			
+			TheNavMesh->DestroyArea( area );
 		}
 		
-		Msg("Deleted %d areas\n", m_selectedSet.size() );
+		Msg( "Deleted %d areas\n", m_selectedSet.Count() );
 		
 		ClearSelectedSet();		
 	}
 	
 	StripNavigationAreas();
 
-	SetMarkedArea( nullptr );			// unmark the mark area
+	SetMarkedArea( NULL );			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
@@ -1190,10 +1191,7 @@ void CNavMesh::CommandNavDeleteMarked( void )
 	{ 
 		EmitSound(player, "EDIT_DELETE" );
 		TheNavMesh->OnEditDestroyNotify( markedArea );
-
-		NAV_VEC_REMOVE_NO_DELETE(TheNavAreas, markedArea);
-
-		// TheNavAreas.FindAndRemove( markedArea ); 
+		TheNavAreas.FindAndRemove( markedArea ); 
 		TheNavMesh->DestroyArea( markedArea ); 
 	} 
 
@@ -1201,10 +1199,7 @@ void CNavMesh::CommandNavDeleteMarked( void )
 	if( markedLadder ) 
 	{ 
 		EmitSound(player, "EDIT_DELETE" );
-
-		NAV_VEC_REMOVE_NO_DELETE(m_ladders, markedLadder);
-
-		// m_ladders.FindAndRemove( markedLadder );
+		m_ladders.FindAndRemove( markedLadder );
 		delete markedLadder; 
 	} 
 
@@ -1277,12 +1272,12 @@ void CNavMesh::CommandNavToggleSelectedSet( void )
 	NavAreaVector notInSelectedSet;
 
 	// Build a list of all areas not in the selected set
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (!IsInSelectedSet(area))
+		CNavArea *area = TheNavAreas[it];
+		if ( !IsInSelectedSet( area ) )
 		{
-			notInSelectedSet.push_back(area);
+			notInSelectedSet.AddToTail( area );
 		}
 	}
 
@@ -1290,13 +1285,12 @@ void CNavMesh::CommandNavToggleSelectedSet( void )
 	ClearSelectedSet();
 
 	// Add areas back into the selected set
-
-	for (auto area : notInSelectedSet)
+	FOR_EACH_VEC( notInSelectedSet, nit )
 	{
-		AddToSelectedSet(area);
+		AddToSelectedSet( notInSelectedSet[nit] );
 	}
 
-	Msg( "Selected %d areas.\n", notInSelectedSet.size() );
+	Msg( "Selected %d areas.\n", notInSelectedSet.Count() );
 
 	SetMarkedArea( NULL );			// unmark the mark area
 }
@@ -1314,11 +1308,10 @@ void CNavMesh::CommandNavStoreSelectedSet( void )
 
 	EmitSound(player, "EDIT_DELETE" );
 
-	m_storedSelectedSet.clear();
-
-	for (auto area : m_selectedSet)
+	m_storedSelectedSet.RemoveAll();
+	FOR_EACH_VEC( m_selectedSet, it )
 	{
-		m_storedSelectedSet.push_back(area->GetID());
+		m_storedSelectedSet.AddToTail( m_selectedSet[it]->GetID() );
 	}
 }
 
@@ -1338,12 +1331,12 @@ void CNavMesh::CommandNavRecallSelectedSet( void )
 
 	ClearSelectedSet();
 
-	for (auto i : m_storedSelectedSet)
+	for ( int i=0; i<m_storedSelectedSet.Count(); ++i )
 	{
-		AddToSelectedSet(GetNavAreaByID(i));
+		AddToSelectedSet( GetNavAreaByID( m_storedSelectedSet[i] ) );
 	}
 
-	Msg( "Selected %d areas.\n", m_selectedSet.size() );
+	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
 }
 
 
@@ -1527,12 +1520,10 @@ void CNavMesh::CommandNavEndDragSelecting( void )
 	if ( IsEditMode( DRAG_SELECTING ) )
 	{
 		// Transfer drag selected areas to the selected set
-
-		for (auto area : m_dragSelectionSet)
+		FOR_EACH_VEC( m_dragSelectionSet, it )
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( m_dragSelectionSet[it] );
 		}
-
 		SetEditMode( NORMAL );
 	}
 	else
@@ -1589,12 +1580,10 @@ void CNavMesh::CommandNavEndDragDeselecting( void )
 	if ( IsEditMode( DRAG_SELECTING ) )
 	{
 		// Remove drag selected areas from the selected set
-
-		for (auto area : m_dragSelectionSet)
+		FOR_EACH_VEC( m_dragSelectionSet, it )
 		{
-			RemoveFromSelectedSet(area);
+			RemoveFromSelectedSet( m_dragSelectionSet[it] );
 		}
-
 		SetEditMode( NORMAL );
 	}
 	else
@@ -1784,64 +1773,64 @@ void CNavMesh::CommandNavSelectHalfSpace( const CCommand &args )
 	float value = atof( args[2] );
 	
 	Extent extent;
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		area->GetExtent(&extent);
-
-		switch (halfSpace)
+		CNavArea *area = TheNavAreas[it];
+		area->GetExtent( &extent );
+		
+		switch( halfSpace )
 		{
-		case PLUS_X:
-			if (extent.lo.x < value && extent.hi.x < value)
-			{
-				continue;
-			}
-			break;
+			case PLUS_X:
+				if (extent.lo.x < value && extent.hi.x < value)
+				{
+					continue;
+				}
+				break;
 
-		case PLUS_Y:
-			if (extent.lo.y < value && extent.hi.y < value)
-			{
-				continue;
-			}
-			break;
+			case PLUS_Y:
+				if (extent.lo.y < value && extent.hi.y < value)
+				{
+					continue;
+				}
+				break;
 
-		case PLUS_Z:
-			if (extent.lo.z < value && extent.hi.z < value)
-			{
-				continue;
-			}
-			break;
+			case PLUS_Z:
+				if (extent.lo.z < value && extent.hi.z < value)
+				{
+					continue;
+				}
+				break;
 
-		case MINUS_X:
-			if (extent.lo.x > value && extent.hi.x > value)
-			{
-				continue;
-			}
-			break;
+			case MINUS_X:
+				if (extent.lo.x > value && extent.hi.x > value)
+				{
+					continue;
+				}
+				break;
 
-		case MINUS_Y:
-			if (extent.lo.y > value && extent.hi.y > value)
-			{
-				continue;
-			}
-			break;
+			case MINUS_Y:
+				if (extent.lo.y > value && extent.hi.y > value)
+				{
+					continue;
+				}
+				break;
 
-		case MINUS_Z:
-			if (extent.lo.z > value && extent.hi.z > value)
-			{
-				continue;
-			}
-			break;
+			case MINUS_Z:
+				if (extent.lo.z > value && extent.hi.z > value)
+				{
+					continue;
+				}
+				break;
 		}
 
 		// toggle membership		
-		if (IsInSelectedSet(area))
+		if ( IsInSelectedSet( area ) )
 		{
-			RemoveFromSelectedSet(area);
+			RemoveFromSelectedSet( area );
 		}
 		else
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( area );	
 		}
 	}
 
@@ -1890,29 +1879,25 @@ public:
 		area->Shift( m_shift );
 
 		const NavLadderConnectVector *ladders = area->GetLadders( CNavLadder::LADDER_UP );
-
-		for (auto& ladderconn : *ladders)
+		int it;
+		for( it = 0; it < ladders->Count(); ++it )
 		{
-			auto ladder = ladderconn.ladder;
-
-			if (m_ladders.find(ladder) == m_ladders.end())
+			CNavLadder *ladder = (*ladders)[ it ].ladder;
+			if ( !m_ladders.HasElement( ladder ) )
 			{
-				ladder->Shift(m_shift);
-				m_ladders.insert(ladder);
+				ladder->Shift( m_shift );
+				m_ladders.AddToTail( ladder );
 			}
 		}
 
-
 		ladders = area->GetLadders( CNavLadder::LADDER_DOWN );
-
-		for (auto& ladderconn : *ladders)
+		for( it = 0; it < ladders->Count(); ++it )
 		{
-			auto ladder = ladderconn.ladder;
-
-			if (m_ladders.find(ladder) == m_ladders.end())
+			CNavLadder *ladder = (*ladders)[ it ].ladder;
+			if ( !m_ladders.HasElement( ladder ) )
 			{
-				ladder->Shift(m_shift);
-				m_ladders.insert(ladder);
+				ladder->Shift( m_shift );
+				m_ladders.AddToTail( ladder );
 			}
 		}
 
@@ -1920,7 +1905,7 @@ public:
 	}
 
 private:
-	std::unordered_set<CNavLadder*> m_ladders;
+	CUtlVector< CNavLadder * > m_ladders;
 	Vector m_shift;
 };
 
@@ -2002,29 +1987,26 @@ void CommandNavCenterInWorld( void )
 	// Build the nav mesh's extent
 	Extent navExtent;
 	bool first = true;
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (first)
+		CNavArea *area = TheNavAreas[it];
+		if ( first )
 		{
-			area->GetExtent(&navExtent);
+			area->GetExtent( &navExtent );
 			first = false;
 		}
 		else
 		{
-			navExtent.Encompass(area->GetCorner(NORTH_WEST));
-			navExtent.Encompass(area->GetCorner(NORTH_EAST));
-			navExtent.Encompass(area->GetCorner(SOUTH_WEST));
-			navExtent.Encompass(area->GetCorner(SOUTH_EAST));
+			navExtent.Encompass( area->GetCorner( NORTH_WEST ) );
+			navExtent.Encompass( area->GetCorner( NORTH_EAST ) );
+			navExtent.Encompass( area->GetCorner( SOUTH_WEST ) );
+			navExtent.Encompass( area->GetCorner( SOUTH_EAST ) );
 		}
 	}
-
 	edict_t* worldEnt = engine->PEntityOfEntIndex(0);
-
 	// Get the world's extent
 	if ( worldEnt == nullptr )
 		return;
-
 	Extent worldExtent;
 	BaseEntity world(worldEnt);
 	worldExtent.lo = *world.getPtr<Vector>("m_WorldMins");
@@ -2035,10 +2017,9 @@ void CommandNavCenterInWorld( void )
 	shift.z = 0.0f;
 
 	// update the position of all areas
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		area->Shift(shift);
+		TheNavAreas[ it ]->Shift( shift );
 	}
 
 	EmitSound(player, "EDIT_END_AREA.Creating" );
@@ -2061,35 +2042,36 @@ void CNavMesh::CommandNavSelectInvalidAreas( void )
 	ClearSelectedSet();
 
 	Extent areaExtent;
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (area)
-		{
-			area->GetExtent(&areaExtent);
-			for (float x = areaExtent.lo.x; x + GenerationStepSize <= areaExtent.hi.x; x += GenerationStepSize)
-			{
-				for (float y = areaExtent.lo.y; y + GenerationStepSize <= areaExtent.hi.y; y += GenerationStepSize)
-				{
-					float nw = area->GetZ(x, y);
-					float ne = area->GetZ(x + GenerationStepSize, y);
-					float sw = area->GetZ(x, y + GenerationStepSize);
-					float se = area->GetZ(x + GenerationStepSize, y + GenerationStepSize);
+		CNavArea *area = TheNavAreas[ it ];
 
-					if (!IsHeightDifferenceValid(nw, ne, sw, se) ||
-						!IsHeightDifferenceValid(ne, nw, sw, se) ||
-						!IsHeightDifferenceValid(sw, ne, nw, se) ||
-						!IsHeightDifferenceValid(se, ne, sw, nw))
+		if ( area )
+		{
+			area->GetExtent( &areaExtent );
+			for ( float x = areaExtent.lo.x; x + GenerationStepSize <= areaExtent.hi.x; x += GenerationStepSize )
+			{
+				for ( float y = areaExtent.lo.y; y + GenerationStepSize <= areaExtent.hi.y; y += GenerationStepSize )
+				{
+					float nw = area->GetZ( x, y );
+					float ne = area->GetZ( x + GenerationStepSize, y );
+					float sw = area->GetZ( x, y + GenerationStepSize );
+					float se = area->GetZ( x + GenerationStepSize, y + GenerationStepSize );
+
+					if ( !IsHeightDifferenceValid( nw, ne, sw, se ) ||
+						!IsHeightDifferenceValid( ne, nw, sw, se ) ||
+						!IsHeightDifferenceValid( sw, ne, nw, se ) ||
+						!IsHeightDifferenceValid( se, ne, sw, nw ) )
 					{
-						AddToSelectedSet(area);
+						AddToSelectedSet( area );
 					}
 				}
 			}
 		}
 	}
 
-	Msg( "Selected %d areas.\n", m_selectedSet.size() );
-	EmitSound(player,  m_selectedSet.size() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable");
+	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
+	EmitSound(player,  m_selectedSet.Count() ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
 }
 
 
@@ -2105,16 +2087,18 @@ void CNavMesh::CommandNavSelectBlockedAreas( void )
 
 	ClearSelectedSet();
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (area && area->IsBlocked(TEAM_ANY))
+		CNavArea *area = TheNavAreas[ it ];
+
+		if ( area && area->IsBlocked( TEAM_ANY ) )
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( area );
 		}
 	}
 
-	Msg( "Selected %d areas.\n", m_selectedSet.size() );
-	EmitSound(player, m_selectedSet.size() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable");
+	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
+	EmitSound(player, m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
 }
 
 
@@ -2130,16 +2114,18 @@ void CNavMesh::CommandNavSelectObstructedAreas( void )
 
 	ClearSelectedSet();
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (area && area->HasAvoidanceObstacle())
+		CNavArea *area = TheNavAreas[ it ];
+
+		if ( area && area->HasAvoidanceObstacle() )
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( area );
 		}
 	}
 
-	Msg( "Selected %d areas.\n", m_selectedSet.size() );
-	EmitSound(player,  m_selectedSet.size() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable");
+	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
+	EmitSound(player,  m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
 }
 
 
@@ -2155,16 +2141,18 @@ void CNavMesh::CommandNavSelectDamagingAreas( void )
 
 	ClearSelectedSet();
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (area && area->IsDamaging())
+		CNavArea *area = TheNavAreas[ it ];
+
+		if ( area && area->IsDamaging() )
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( area );
 		}
 	}
 
-	Msg( "Selected %d areas.\n", m_selectedSet.size() );
-	EmitSound(player, m_selectedSet.size() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable");
+	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
+	EmitSound(player, m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
 }
 
 
@@ -2180,16 +2168,18 @@ void CNavMesh::CommandNavSelectStairs( void )
 
 	ClearSelectedSet();
 
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		if (area && area->HasAttributes(NAV_MESH_STAIRS))
+		CNavArea *area = TheNavAreas[ it ];
+
+		if ( area && area->HasAttributes( NAV_MESH_STAIRS ) )
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( area );
 		}
 	}
 
-	Msg( "Selected %d areas.\n", m_selectedSet.size() );
-	EmitSound(player, m_selectedSet.size() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable");
+	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
+	EmitSound(player, m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
 }
 
 
@@ -2330,7 +2320,7 @@ void CNavMesh::CommandNavMerge( void )
 	if ( m_selectedArea )
 	{
 		CNavArea *other = m_markedArea;
-		if ( !m_markedArea && m_selectedSet.size() == 1)
+		if ( !m_markedArea && m_selectedSet.Count() == 1 )
 		{
 			other = m_selectedSet[0];
 		}
@@ -2427,18 +2417,15 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 				unsigned int areaIDToMark = atoi(areaIDNameToMark);
 				if( areaIDToMark != 0 )
 				{
-					CNavArea *areaToMark = nullptr;
-
-					for (auto area : TheNavAreas)
+					CNavArea *areaToMark = NULL;
+					FOR_EACH_VEC( TheNavAreas, nit )
 					{
-						if (area->GetID() == areaIDToMark)
+						if( TheNavAreas[nit]->GetID() == areaIDToMark )
 						{
-							areaToMark = area;
+							areaToMark = TheNavAreas[nit];
 							break;
 						}
 					}
-
-
 					if( areaToMark )
 					{
 						EmitSound(player, "EDIT_MARK.Disable" );
@@ -2609,7 +2596,7 @@ void CNavMesh::CommandNavEndArea( void )
 			newArea->InheritAttributes( nearby );	// inherit from the nearby area
 		}
 
-		TheNavAreas.push_back(newArea);
+		TheNavAreas.AddToTail( newArea );
 		TheNavMesh->AddNavArea( newArea );
 		EmitSound(player, "EDIT_END_AREA.Creating" );
 
@@ -2697,10 +2684,10 @@ void CNavMesh::CommandNavConnect( void )
 
 	Vector center;
 	float halfWidth;
-	if ( m_selectedSet.size() > 1)
+	if ( m_selectedSet.Count() > 1 )
 	{
 		bool bValid = true;
-		for ( size_t i = 1; i < m_selectedSet.size(); ++i )
+		for ( int i = 1; i < m_selectedSet.Count(); ++i )
 		{
 			// Make sure all connections are valid
 			CNavArea *first = m_selectedSet[0];
@@ -2725,7 +2712,7 @@ void CNavMesh::CommandNavConnect( void )
 
 		if ( bValid )
 		{
-			for ( size_t i = 1; i < m_selectedSet.size(); ++i )
+			for ( int i = 1; i < m_selectedSet.Count(); ++i )
 			{
 				CNavArea *first = m_selectedSet[0];
 				CNavArea *second = m_selectedSet[i];
@@ -2761,7 +2748,7 @@ void CNavMesh::CommandNavConnect( void )
 		}
 		else
 		{
-			if ( m_selectedSet.size() == 1)
+			if ( m_selectedSet.Count() == 1 )
 			{
 				CNavArea *area = m_selectedSet[0];
 				NavDirType dir = area->ComputeLargestPortal( m_selectedArea, &center, &halfWidth );
@@ -2811,10 +2798,10 @@ void CNavMesh::CommandNavDisconnect( void )
 
 	FindActiveNavArea();
 
-	if ( m_selectedSet.size() > 1)
+	if ( m_selectedSet.Count() > 1 )
 	{
 		bool bValid = true;
-		for ( size_t i = 1; i < m_selectedSet.size(); ++i )
+		for ( int i = 1; i < m_selectedSet.Count(); ++i )
 		{
 			// 2 areas are selected, so connect them bi-directionally
 			CNavArea *first = m_selectedSet[0];
@@ -2829,7 +2816,7 @@ void CNavMesh::CommandNavDisconnect( void )
 
 		if ( bValid )
 		{
-			for ( size_t i = 1; i < m_selectedSet.size(); ++i )
+			for ( int i = 1; i < m_selectedSet.Count(); ++i )
 			{
 				// 2 areas are selected, so connect them bi-directionally
 				CNavArea *first = m_selectedSet[0];
@@ -2848,7 +2835,7 @@ void CNavMesh::CommandNavDisconnect( void )
 			m_selectedArea->Disconnect( m_markedArea );
 			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
 		}
-		else if ( m_selectedSet.size() == 1)
+		else if ( m_selectedSet.Count() == 1 )
 		{
 			m_selectedSet[0]->Disconnect( m_selectedArea );
 			m_selectedArea->Disconnect( m_selectedSet[0] );
@@ -2877,7 +2864,7 @@ void CNavMesh::CommandNavDisconnect( void )
 			m_selectedLadder->Disconnect( m_markedArea );
 			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
 		}
-		if ( m_selectedSet.size() == 1 )
+		if ( m_selectedSet.Count() == 1 )
 		{
 			m_selectedSet[0]->Disconnect( m_selectedLadder );
 			m_selectedLadder->Disconnect( m_selectedSet[0] );
@@ -2904,7 +2891,7 @@ void CNavMesh::CommandNavDisconnectOutgoingOneWays( void )
 	if ( !player || !IsEditMode( NORMAL ) )
 		return;
 
-	if ( m_selectedSet.size() == 0)
+	if ( m_selectedSet.Count() == 0 )
 	{
 		FindActiveNavArea();
 
@@ -2913,17 +2900,17 @@ void CNavMesh::CommandNavDisconnectOutgoingOneWays( void )
 			return;
 		}
 
-		m_selectedSet.push_back( m_selectedArea );
+		m_selectedSet.AddToTail( m_selectedArea );
 	}
 
-	for ( size_t i = 0; i < m_selectedSet.size(); ++i )
+	for ( int i = 0; i < m_selectedSet.Count(); ++i )
 	{
 		CNavArea *area = m_selectedSet[i];
 
-		NavAreaVector adjVector;
-		area->CollectAdjacentAreas( adjVector );
+		CUtlVector< CNavArea * > adjVector;
+		area->CollectAdjacentAreas( &adjVector );
 
-		for( size_t j=0; j<adjVector.size(); ++j )
+		for( int j=0; j<adjVector.Count(); ++j )
 		{
 			CNavArea *adj = adjVector[j];
 
@@ -2984,12 +2971,11 @@ void CNavMesh::DoToggleAttribute( CNavArea *area, NavAttributeType attribute )
 	{
 		if ( area->GetAttributes() & NAV_MESH_TRANSIENT )
 		{
-			m_transientAreas.push_back(area);
+			m_transientAreas.AddToTail( area );
 		}
 		else
 		{
-			NAV_VEC_REMOVE_NO_DELETE(m_transientAreas, area);
-			// m_transientAreas.FindAndRemove( area );
+			m_transientAreas.FindAndRemove( area );
 		}
 	}
 }
@@ -3018,12 +3004,12 @@ void CNavMesh::CommandNavToggleAttribute( NavAttributeType attribute )
 		// toggle the attribute in all areas in the selected set
 		EmitSound(player, "EDIT.ToggleAttribute" );
 
-		for (auto area : m_selectedSet)
+		FOR_EACH_VEC( m_selectedSet, it )
 		{
-			DoToggleAttribute(area, attribute);
+			DoToggleAttribute( m_selectedSet[ it ], attribute );
 		}
 
-		Msg( "Changed attribute in %d areas\n", m_selectedSet.size() );
+		Msg( "Changed attribute in %d areas\n", m_selectedSet.Count() );
 
 		ClearSelectedSet();		
 	}
@@ -3074,9 +3060,9 @@ void CNavMesh::CommandNavPlaceSet( void )
 
 	if ( !IsSelectedSetEmpty() )
 	{
-		for (auto area : m_selectedSet)
+		FOR_EACH_VEC( m_selectedSet, it )
 		{
-			area->SetPlace(TheNavMesh->GetNavPlace());
+			m_selectedSet[ it ]->SetPlace( TheNavMesh->GetNavPlace() );
 		}
 	}
 }
@@ -3148,21 +3134,21 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 		if (GetMarkedArea())
 		{
 			EmitSound(player, "EDIT_MARK_UNNAMED.Enable" );
-			SetMarkedArea( nullptr );
+			SetMarkedArea( NULL );
 		}
 		else
 		{
-			SetMarkedArea( nullptr );
-
-			for (auto area : TheNavAreas)
+			SetMarkedArea( NULL );
+			FOR_EACH_VEC( TheNavAreas, it )
 			{
-				if (area->GetPlace() == UNDEFINED_PLACE)
+				CNavArea *area = TheNavAreas[ it ];
+
+				if ( area->GetPlace() == 0 )
 				{
-					SetMarkedArea(area);
+					SetMarkedArea( area );
 					break;
 				}
 			}
-
 			if ( !GetMarkedArea() )
 			{
 				EmitSound(player, "EDIT_MARK_UNNAMED.NoMarkedArea" );
@@ -3178,10 +3164,9 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 				connected += GetMarkedArea()->GetAdjacentCount( WEST );
 
 				int totalUnnamedAreas = 0;
-
-				for (auto area : TheNavAreas)
+				FOR_EACH_VEC( TheNavAreas, it )
 				{
-					if (area->GetPlace() == UNDEFINED_PLACE)
+					if ( TheNavAreas[ it ]->GetPlace() == 0 )
 					{
 						++totalUnnamedAreas;
 					}
@@ -3257,12 +3242,12 @@ void CNavMesh::CommandNavCornerRaise( const CCommand &args )
 		// raise all areas in the selected set
 		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
 
-		for (auto area : m_selectedSet)
+		FOR_EACH_VEC( m_selectedSet, it )
 		{
-			area->RaiseCorner(NUM_CORNERS, amount, false);
+			m_selectedSet[ it ]->RaiseCorner( NUM_CORNERS, amount, false );
 		}
 
-		Msg( "Raised %d areas\n", m_selectedSet.size() );
+		Msg( "Raised %d areas\n", m_selectedSet.Count() );
 	}
 }
 
@@ -3303,12 +3288,12 @@ void CNavMesh::CommandNavCornerLower( const CCommand &args )
 		// raise all areas in the selected set
 		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
 
-		for (auto area : m_selectedSet)
+		FOR_EACH_VEC( m_selectedSet, it )
 		{
-			area->RaiseCorner(NUM_CORNERS, amount, false);
+			 m_selectedSet[ it ]->RaiseCorner( NUM_CORNERS, amount, false );
 		}
 
-		Msg( "Lowered %d areas\n", m_selectedSet.size() );
+		Msg( "Lowered %d areas\n", m_selectedSet.Count() );
 	}
 }
 
@@ -3353,12 +3338,12 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 		// snap all areas in the selected set to the ground
 		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
 
-		for (auto area : m_selectedSet)
+		FOR_EACH_VEC( m_selectedSet, it )
 		{
-			area->PlaceOnGround(NUM_CORNERS, inset);
+			m_selectedSet[ it ]->PlaceOnGround( NUM_CORNERS, inset );
 		}
 
-		Msg( "Placed %d areas on the ground\n", m_selectedSet.size() );
+		Msg( "Placed %d areas on the ground\n", m_selectedSet.Count() );
 	}
 }
 
@@ -3366,9 +3351,6 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::CommandNavWarpToMark( void )
 {
-	Warning("Error: Command not implemented! \n");
-	return;
-
 	/**
 	  TODO
 	edict_t* ent = UTIL_GetListenServerEnt();
@@ -3523,19 +3505,12 @@ CON_COMMAND_F( nav_select_radius, "Adds all areas in a radius to the selection s
  */
 void CNavMesh::AddToSelectedSet( CNavArea *area )
 {
-	if (!area)
+	if ( !area
+	// make sure area is not already in list
+			|| m_selectedSet.Find( area ) != m_selectedSet.InvalidIndex())
 		return;
-
-	auto start = m_selectedSet.begin();
-	auto end = m_selectedSet.end();
-	auto pos = std::find(start, end, area);
-
-	if (pos != end)
-	{
-		return; // make sure area is not already in list
-	}
-
-	m_selectedSet.push_back(area);
+		
+	m_selectedSet.AddToTail( area );
 }
 
 
@@ -3545,9 +3520,7 @@ void CNavMesh::AddToSelectedSet( CNavArea *area )
  */
 void CNavMesh::RemoveFromSelectedSet( CNavArea *area )
 {
-	NAV_VEC_REMOVE_NO_DELETE(m_selectedSet, area);
-
-	// m_selectedSet.FindAndRemove( area );
+	m_selectedSet.FindAndRemove( area );
 }
 
 
@@ -3557,19 +3530,11 @@ void CNavMesh::RemoveFromSelectedSet( CNavArea *area )
  */
 void CNavMesh::AddToDragSelectionSet( CNavArea *area )
 {
-	if (!area)
+	if ( !area 	// make sure area is not already in list
+			|| m_dragSelectionSet.Find( area ) != m_dragSelectionSet.InvalidIndex())
 		return;
-
-	auto start = m_dragSelectionSet.begin();
-	auto end = m_dragSelectionSet.end();
-	auto pos = std::find(start, end, area);
-
-	if (pos != end)
-	{
-		return; // make sure area is not already in list
-	}
 		
-	m_dragSelectionSet.push_back(area);
+	m_dragSelectionSet.AddToTail( area );
 }
 
 
@@ -3579,7 +3544,7 @@ void CNavMesh::AddToDragSelectionSet( CNavArea *area )
  */
 void CNavMesh::RemoveFromDragSelectionSet( CNavArea *area )
 {
-	NAV_VEC_REMOVE_NO_DELETE(m_dragSelectionSet, area);
+	m_dragSelectionSet.FindAndRemove( area );
 }
 
 
@@ -3589,7 +3554,7 @@ void CNavMesh::RemoveFromDragSelectionSet( CNavArea *area )
  */
 void CNavMesh::ClearDragSelectionSet( void )
 {
-	m_dragSelectionSet.clear();
+	m_dragSelectionSet.RemoveAll();
 }
 
 
@@ -3599,7 +3564,7 @@ void CNavMesh::ClearDragSelectionSet( void )
  */
 void CNavMesh::ClearSelectedSet( void )
 {
-	m_selectedSet.clear();
+	m_selectedSet.RemoveAll();
 }
 
 
@@ -3609,7 +3574,7 @@ void CNavMesh::ClearSelectedSet( void )
  */
 bool CNavMesh::IsSelectedSetEmpty( void ) const
 {
-	return (m_selectedSet.size() == 0);
+	return (m_selectedSet.Count() == 0);
 }
 
 
@@ -3619,7 +3584,7 @@ bool CNavMesh::IsSelectedSetEmpty( void ) const
  */
 int CNavMesh::GetSelecteSetSize( void ) const
 {
-	return static_cast<int>(m_selectedSet.size());
+	return m_selectedSet.Count();
 }
 
 
@@ -3635,7 +3600,7 @@ const NavAreaVector &CNavMesh::GetSelectedSet( void ) const
 template < typename Functor >
 bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent )
 {
-	if ( m_grid.size() == 0 )
+	if ( !m_grid.Count() )
 	{
 #if _DEBUG
 		extern NavAreaVector TheNavAreas;
@@ -3643,7 +3608,7 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 #endif
 		return true;
 	}
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024); // RandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3661,8 +3626,8 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 	{
 		for( int y = startY; y <= endY; ++y )
 		{
-			size_t iGrid = x + y*m_gridSizeX;
-			if ( iGrid >= m_grid.size() )
+			int iGrid = x + y*m_gridSizeX;
+			if ( iGrid >= m_grid.Count() )
 			{
 				ExecuteNTimes( 10, Warning( "** Walked off of the CNavMesh::m_grid in ForAllAreasOverlappingExtent()\n" ) );
 				return true;
@@ -3671,19 +3636,20 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 			NavAreaVector *areaVector = &m_grid[ iGrid ];
 
 			// find closest area in this cell
-
-			for (auto area : *areaVector)
+			FOR_EACH_VEC( (*areaVector), it )
 			{
+				CNavArea *area = (*areaVector)[ it ];
+
 				// skip if we've already visited this area
-				if (area->m_nearNavSearchMarker == searchMarker)
+				if ( area->m_nearNavSearchMarker == searchMarker )
 					continue;
 
 				// mark as visited
 				area->m_nearNavSearchMarker = searchMarker;
-				area->GetExtent(&areaExtent);
+				area->GetExtent( &areaExtent );
 
-				if (extent.IsOverlapping(areaExtent)
-					&& !func(area)) {
+				if ( extent.IsOverlapping( areaExtent )
+						&& !func( area ) ) {
 					return false;
 				}
 			}
@@ -3698,14 +3664,14 @@ template bool CNavMesh::ForAllAreasOverlappingExtent(CFuncNavObstruction&, const
 template bool CNavMesh::ForAllAreasOverlappingExtent(COverlapCheck&, const Extent&);
 
 template< typename NavAreaType >
-void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector< NavAreaType * > *outVector )
+void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< NavAreaType * > *outVector )
 {
-	if ( m_grid.size() == 0 )
+	if ( !m_grid.Count() )
 	{
 		return;
 	}
 
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024);
+	static unsigned int searchMarker = UTIL_GetRandomInt( 0, 1024*1024 );
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3723,8 +3689,8 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector<
 	{
 		for( int y = startY; y <= endY; ++y )
 		{
-			size_t iGrid = x + y*m_gridSizeX;
-			if ( iGrid >= m_grid.size() )
+			int iGrid = x + y*m_gridSizeX;
+			if ( iGrid >= m_grid.Count() )
 			{
 				ExecuteNTimes( 10, Warning( "** Walked off of the CNavMesh::m_grid in CollectAreasOverlappingExtent()\n" ) );
 				return;
@@ -3733,20 +3699,21 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector<
 			NavAreaVector *areaVector = &m_grid[ iGrid ];
 
 			// find closest area in this cell
-
-			for (auto area : *areaVector)
+			for( int v=0; v<areaVector->Count(); ++v )
 			{
+				CNavArea *area = areaVector->Element( v );
+
 				// skip if we've already visited this area
-				if (area->m_nearNavSearchMarker == searchMarker)
+				if ( area->m_nearNavSearchMarker == searchMarker )
 					continue;
 
 				// mark as visited
 				area->m_nearNavSearchMarker = searchMarker;
-				area->GetExtent(&areaExtent);
+				area->GetExtent( &areaExtent );
 
-				if (extent.IsOverlapping(areaExtent))
+				if ( extent.IsOverlapping( areaExtent ) )
 				{
-					outVector->push_back((NavAreaType*)area);
+					outVector->AddToTail( (NavAreaType *)area );
 				}
 			}
 		}
@@ -3754,13 +3721,13 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, std::vector<
 }
 
 template void CNavMesh::CollectAreasOverlappingExtent(const Extent&,
-		std::vector<CNavArea*>*);
+		CUtlVector<CNavArea*>*);
 
 template < typename Functor >
 bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radius )
 {
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024 * 1024);
+	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
 
 	++searchMarker;
 
@@ -3793,18 +3760,19 @@ bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radi
 			NavAreaVector *areaVector = &m_grid[ x + y*m_gridSizeX ];
 
 			// find closest area in this cell
-
-			for (auto area : *areaVector)
+			FOR_EACH_VEC( (*areaVector), it )
 			{
+				CNavArea *area = (*areaVector)[ it ];
+
 				// skip if we've already visited this area
-				if (area->m_nearNavSearchMarker == searchMarker)
+				if ( area->m_nearNavSearchMarker == searchMarker )
 					continue;
 
 				// mark as visited
 				area->m_nearNavSearchMarker = searchMarker;
 
-				if (((area->GetCenter() - pos).LengthSqr() <= radiusSq || radiusSq == 0)
-					&& !func(area)) {
+				if ( (( area->GetCenter() - pos ).LengthSqr() <= radiusSq || radiusSq == 0 )
+						&& !func( area ) ) {
 					return false;
 				}
 			}
@@ -3854,15 +3822,15 @@ bool CNavMesh::ForAllAreasAlongLine( Functor &func, CNavArea *startArea, CNavAre
 
 			const NavConnectVector *adjVector = area->GetAdjacentAreas( dir );
 
-			area = nullptr;
+			area = NULL;
 
-			for (auto& navconn : *adjVector)
+			for( int i=0; i<adjVector->Count(); ++i )
 			{
-				CNavArea* adjArea = navconn.area;
+				CNavArea *adjArea = adjVector->Element(i).area;
 
-				const Vector& adjOrigin = adjArea->GetCorner(NORTH_WEST);
+				const Vector &adjOrigin = adjArea->GetCorner( NORTH_WEST );
 
-				if (adjOrigin.x <= start.x && adjOrigin.x + adjArea->GetSizeX() >= start.x)
+				if ( adjOrigin.x <= start.x && adjOrigin.x + adjArea->GetSizeX() >= start.x )
 				{
 					area = adjArea;
 					break;
@@ -3886,15 +3854,15 @@ bool CNavMesh::ForAllAreasAlongLine( Functor &func, CNavArea *startArea, CNavAre
 
 			const NavConnectVector *adjVector = area->GetAdjacentAreas( dir );
 
-			area = nullptr;
+			area = NULL;
 
-			for (auto& navconn : *adjVector)
+			for( int i=0; i<adjVector->Count(); ++i )
 			{
-				CNavArea* adjArea = navconn.area;
+				CNavArea *adjArea = adjVector->Element(i).area;
 
-				const Vector& adjOrigin = adjArea->GetCorner(NORTH_WEST);
+				const Vector &adjOrigin = adjArea->GetCorner( NORTH_WEST );
 
-				if (adjOrigin.y <= start.y && adjOrigin.y + adjArea->GetSizeY() >= start.y)
+				if ( adjOrigin.y <= start.y && adjOrigin.y + adjArea->GetSizeY() >= start.y )
 				{
 					area = adjArea;
 					break;
@@ -3904,6 +3872,7 @@ bool CNavMesh::ForAllAreasAlongLine( Functor &func, CNavArea *startArea, CNavAre
 
 		return false;
 	}
+
 
 	CNavArea *area = startArea;
 
@@ -3998,23 +3967,23 @@ bool CNavMesh::ForAllAreasAlongLine( Functor &func, CNavArea *startArea, CNavAre
 
 		const NavConnectVector *adjVector = area->GetAdjacentAreas( edge );
 
-		area = nullptr;
+		area = NULL;
 
-		for (auto& navconn : *adjVector)
+		for( int i=0; i<adjVector->Count(); ++i )
 		{
-			CNavArea* adjArea = navconn.area;
+			CNavArea *adjArea = adjVector->Element(i).area;
 
-			const Vector& adjOrigin = adjArea->GetCorner(NORTH_WEST);
+			const Vector &adjOrigin = adjArea->GetCorner( NORTH_WEST );
 
-			if (edge == NORTH || edge == SOUTH)
+			if ( edge == NORTH || edge == SOUTH )
 			{
-				if (adjOrigin.x <= exit.x && adjOrigin.x + adjArea->GetSizeX() >= exit.x)
+				if ( adjOrigin.x <= exit.x && adjOrigin.x + adjArea->GetSizeX() >= exit.x )
 				{
 					area = adjArea;
 					break;
 				}
 			}
-			else if (adjOrigin.y <= exit.y && adjOrigin.y + adjArea->GetSizeY() >= exit.y)
+			else if ( adjOrigin.y <= exit.y && adjOrigin.y + adjArea->GetSizeY() >= exit.y )
 			{
 				area = adjArea;
 				break;
@@ -4032,13 +4001,10 @@ bool CNavMesh::ForAllAreasAlongLine( Functor &func, CNavArea *startArea, CNavAre
  */
 bool CNavMesh::IsInSelectedSet( const CNavArea *area ) const
 {
-	auto start = m_selectedSet.begin();
-	auto end = m_selectedSet.end();
-	auto position = std::find(start, end, area);
-
-	if (position != end)
+	FOR_EACH_VEC( m_selectedSet, it )
 	{
-		return true;
+		if (m_selectedSet[ it ] == area)
+			return true;
 	}
 	
 	return false;
@@ -4051,9 +4017,9 @@ bool CNavMesh::IsInSelectedSet( const CNavArea *area ) const
  */
 void CNavMesh::OnEditCreateNotify( CNavArea *newArea )
 {
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		area->OnEditCreateNotify(newArea);
+		TheNavAreas[ it ]->OnEditCreateNotify( newArea );
 	}
 }
 
@@ -4065,29 +4031,19 @@ void CNavMesh::OnEditCreateNotify( CNavArea *newArea )
 void CNavMesh::OnEditDestroyNotify( CNavArea *deadArea )
 {
 	// clean up any edit hooks
-	m_markedArea = nullptr;
-	m_selectedArea = nullptr;
-	m_lastSelectedArea = nullptr;
-	m_selectedLadder = nullptr;
-	m_lastSelectedLadder = nullptr;
-	m_markedLadder = nullptr;
+	m_markedArea = NULL;
+	m_selectedArea = NULL;
+	m_lastSelectedArea = NULL;
+	m_selectedLadder = NULL;
+	m_lastSelectedLadder = NULL;
+	m_markedLadder = NULL;
 
-	auto obstart = m_avoidanceObstacleAreas.begin();
-	auto obend = m_avoidanceObstacleAreas.end();
-	auto obpos = std::find(obstart, obend, deadArea);
+	m_avoidanceObstacleAreas.FindAndRemove( deadArea );
+	m_blockedAreas.FindAndRemove( deadArea );
 
-	if (obpos != obend)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		m_avoidanceObstacleAreas.erase(obpos);
-	}
-
-	auto blstart = m_blockedAreas.begin();
-	auto blend = m_blockedAreas.end();
-	auto blpos = std::find(blstart, blend, deadArea);
-
-	for (auto area : TheNavAreas)
-	{
-		area->OnEditDestroyNotify(deadArea);
+		TheNavAreas[ it ]->OnEditDestroyNotify( deadArea );
 	}
 
 	EditDestroyNotification notification( deadArea );

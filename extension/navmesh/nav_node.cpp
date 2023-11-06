@@ -16,9 +16,13 @@
 #include "nav.h"
 #include <util/UtilTrace.h>
 #include <util/EntityUtils.h>
+#include "tier1/utlhash.h"
+#include "tier1/generichash.h"
 #include <eiface.h>
 #include <ivdebugoverlay.h>
 #include <iplayerinfo.h>
+// NOTE: This has to be the last file included!
+#include "tier0/memdbgon.h"
 
 NavDirType Opposite[ NUM_DIRECTIONS ] = { SOUTH, WEST, NORTH, EAST };
 
@@ -33,50 +37,24 @@ extern IVDebugOverlay* debugoverlay;
 //--------------------------------------------------------------------------------------------------------------
 // Node hash
 
-//class CNodeHashFuncs
-//{
-//public:
-//	CNodeHashFuncs( int ) {}
-//
-//	bool operator()( const CNavNode *pLhs, const CNavNode *pRhs ) const
-//	{
-//		return pRhs->GetPosition()->AsVector2D() == pLhs->GetPosition()->AsVector2D();
-//	}
-//
-//	unsigned int operator()( const CNavNode *pItem ) const
-//	{
-//		return Hash8( &pItem->GetPosition()->AsVector2D() );	
-//	}
-//};
-
-template<>
-struct std::hash<CNavNode>
+class CNodeHashFuncs
 {
-	std::size_t operator()(const CNavNode& vis) const noexcept
-	{
-		auto& vec2 = vis.GetPosition()->AsVector2D();
+public:
+	CNodeHashFuncs( int ) {}
 
-		std::size_t h1 = static_cast<std::size_t>(vec2.x);
-		std::size_t h2 = static_cast<std::size_t>(vec2.y);
-		return h1 ^ (h2 << 1);
+	bool operator()( const CNavNode *pLhs, const CNavNode *pRhs ) const
+	{
+		return pRhs->GetPosition()->AsVector2D() == pLhs->GetPosition()->AsVector2D();
+	}
+
+	unsigned int operator()( const CNavNode *pItem ) const
+	{
+		return Hash8( &pItem->GetPosition()->AsVector2D() );	
 	}
 };
 
-template<>
-struct std::equal_to<CNavNode>
-{
-	bool operator()(const CNavNode& lhs, const CNavNode& rhs) const
-	{
-		return lhs.GetPosition()->AsVector2D() == rhs.GetPosition()->AsVector2D();
-	}
-};
+CUtlHash<CNavNode *, CNodeHashFuncs, CNodeHashFuncs> *g_pNavNodeHash;
 
-// CUtlHash<CNavNode *, CNodeHashFuncs, CNodeHashFuncs> *g_pNavNodeHash;
-std::unordered_set<CNavNode> g_pNavNodeHash;
-
-
-// unordered_set won't work the way this needs with pointers.
-// TO-DO: Maybe refactor node list to store values instead of pointers
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -118,46 +96,22 @@ CNavNode::CNavNode( const Vector &pos, const Vector &normal, CNavNode *parent, b
 
 	m_isOnDisplacement = isOnDisplacement;
 
-	//if ( !g_pNavNodeHash )
-	//{
-	//	g_pNavNodeHash = new CUtlHash<CNavNode *, CNodeHashFuncs, CNodeHashFuncs>( 16*1024 );
-	//}
-
-	//bool bDidInsert;
-	//UtlHashHandle_t hHash = g_pNavNodeHash->Insert( this, &bDidInsert );
-	//if ( !bDidInsert ) == false
-	//{
-	//	CNavNode *pExistingNode = g_pNavNodeHash->Element( hHash );
-	//	m_nextAtXY = pExistingNode;
-	//	g_pNavNodeHash->Element( hHash ) = this;
-	//}
-
-	bool insert = false;
-	auto it = g_pNavNodeHash.find(*this);
-	auto end = g_pNavNodeHash.end();
-
-	// Node not found on the list, insert it
-	if (it == end)
+	if ( !g_pNavNodeHash )
 	{
-		insert = true;
-		g_pNavNodeHash.insert(*this);
+		g_pNavNodeHash = new CUtlHash<CNavNode *, CNodeHashFuncs, CNodeHashFuncs>( 16*1024 );
 	}
 
-	if (insert == false)
+	bool bDidInsert;
+	UtlHashHandle_t hHash = g_pNavNodeHash->Insert( this, &bDidInsert );
+	if ( !bDidInsert )
 	{
-		auto existingNode = g_pNavNodeHash.find(*this);
-		CNavNode* other = const_cast<CNavNode*>(&*existingNode);
-		m_nextAtXY = other;
+		CNavNode *pExistingNode = g_pNavNodeHash->Element( hHash );
+		m_nextAtXY = pExistingNode;
+		g_pNavNodeHash->Element( hHash ) = this;
 	}
 	else
 	{
-		m_nextAtXY = nullptr;
-	}
-
-	if (m_nextAtXY == this)
-	{
-		m_nextAtXY = nullptr;
-		Warning("m_nextAtXY == this! \n");
+		m_nextAtXY = NULL;
 	}
 }
 
@@ -169,12 +123,10 @@ CNavNode::~CNavNode()
 //--------------------------------------------------------------------------------------------------------------
 void CNavNode::CleanupGeneration()
 {
-	// delete g_pNavNodeHash;
-	// g_pNavNodeHash = NULL;
+	delete g_pNavNodeHash;
+	g_pNavNodeHash = NULL;
 
-	g_pNavNodeHash.clear();
-
-	CNavNode* node, * next = nullptr;
+	CNavNode *node, *next;
 	for( node = CNavNode::m_list; node; node = next )
 	{
 		next = node->m_next;
@@ -541,44 +493,24 @@ void CNavNode::ConnectTo( CNavNode *node, NavDirType dir, float obstacleHeight, 
 CNavNode *CNavNode::GetNode( const Vector &pos )
 {
 	const float tolerance = 0.45f * GenerationStepSize;			// 1.0f
-	CNavNode *pNode = nullptr;
-
-	if (g_pNavNodeHash.size() > 0)
+	CNavNode *pNode = NULL;
+	if ( g_pNavNodeHash )
 	{
 		static CNavNode lookup;
 		lookup.m_pos = pos;
-		auto nodeit = g_pNavNodeHash.find(lookup);
+		UtlHashHandle_t hNode = g_pNavNodeHash->Find( &lookup );
 
-		if (nodeit != g_pNavNodeHash.end())
+		if ( hNode != g_pNavNodeHash->InvalidHandle() )
 		{
-			for (pNode = const_cast<CNavNode*>(&*nodeit); pNode; pNode = pNode->m_nextAtXY)
+			for( pNode = g_pNavNodeHash->Element( hNode ); pNode; pNode = pNode->m_nextAtXY )
 			{
-				if (fabs(pNode->m_pos.z - pos.z) < tolerance)
+				if (fabs( pNode->m_pos.z - pos.z ) < tolerance)
 				{
 					break;
 				}
 			}
 		}
 	}
-
-
-	//if ( g_pNavNodeHash )
-	//{
-	//	static CNavNode lookup;
-	//	lookup.m_pos = pos;
-	//	UtlHashHandle_t hNode = g_pNavNodeHash->Find( &lookup );
-
-	//	if ( hNode != g_pNavNodeHash->InvalidHandle() )
-	//	{
-	//		for( pNode = g_pNavNodeHash->Element( hNode ); pNode; pNode = pNode->m_nextAtXY )
-	//		{
-	//			if (fabs( pNode->m_pos.z - pos.z ) < tolerance)
-	//			{
-	//				break;
-	//			}
-	//		}
-	//	}
-	//}
 
 #ifdef DEBUG_NODE_HASH
 	CNavNode *pTestNode = NULL;
@@ -605,7 +537,7 @@ CNavNode *CNavNode::GetNode( const Vector &pos )
  * Return true if this node is bidirectionally linked to 
  * another node in the given direction
  */
-bool CNavNode::IsBiLinked( NavDirType dir ) const
+BOOL CNavNode::IsBiLinked( NavDirType dir ) const
 {
 	return m_to[ dir ] && m_to[ dir ]->m_to[ Opposite[dir] ] == this;
 }
@@ -615,7 +547,7 @@ bool CNavNode::IsBiLinked( NavDirType dir ) const
  * Return true if this node is the NW corner of a quad of nodes
  * that are all bidirectionally linked.
  */
-bool CNavNode::IsClosedCell( void ) const
+BOOL CNavNode::IsClosedCell( void ) const
 {
 	return IsBiLinked( SOUTH ) &&
 		IsBiLinked( EAST ) &&

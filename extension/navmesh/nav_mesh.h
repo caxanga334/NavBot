@@ -19,11 +19,7 @@
 #ifndef _NAV_MESH_H_
 #define _NAV_MESH_H_
 
-#include <set>
-#include <string>
-
 #include "nav.h"
-#include "nav_area.h"
 #include "CountDownTimer.h"
 #include <shareddefs.h>
 #include <convar.h>
@@ -42,26 +38,17 @@ public:
 	NavAreaCollector( bool checkForDuplicates = false )
 	{
 		m_checkForDuplicates = checkForDuplicates;
-		m_area.reserve(512);
 	}
 
 	bool operator() ( CNavArea *area )
 	{
-		if (m_checkForDuplicates)
-		{
-			auto search = m_area.find(area);
+		if ( m_checkForDuplicates && m_area.HasElement( area ) )
+			return true;
 
-			if (search != m_area.end())
-			{
-				return true;
-			}
-		}
-
-
-		m_area.insert(area);
+		m_area.AddToTail( area );
 		return true;
 	}
-	std::unordered_set<CNavArea*> m_area;
+	CUtlVector< CNavArea * > m_area;
 };
 
 
@@ -179,41 +166,21 @@ struct NavVisPair_t
 	CNavArea *pAreas[2];
 };
 
-struct NavVisibilityPair_s
-{
-	CNavArea* first;
-	CNavArea* second;
 
-	inline void SetPair(CNavArea* first, CNavArea* second)
+// for nav mesh visibilty computation
+class CVisPairHashFuncs
+{
+public:
+	CVisPairHashFuncs( int ) {}
+
+	bool operator()( const NavVisPair_t &lhs, const NavVisPair_t &rhs ) const
 	{
-		this->first = first;
-		this->second = second;
+		return ( lhs.pAreas[0] == rhs.pAreas[0] && lhs.pAreas[1] == rhs.pAreas[1] );
 	}
+
+	unsigned int operator()( const NavVisPair_t &item ) const;
 };
 
-inline bool operator==(const NavVisibilityPair_s& lhs, const NavVisibilityPair_s& rhs)
-{
-	return lhs.first == rhs.first && lhs.second == rhs.second;
-}
-
-/* struct NavVisibilityHash
-{
-
-}; */
-
-template<>
-struct std::hash<NavVisibilityPair_s>
-{
-	std::size_t operator()(const NavVisibilityPair_s& vis) const noexcept
-	{
-		std::size_t h1 = static_cast<std::size_t>(vis.first->GetID());
-		std::size_t h2 = static_cast<std::size_t>(vis.second->GetID());
-		return h1 ^ (h2 << 1);
-	}
-};
-
-// Size of the char array to write the nav mesh place
-constexpr int PLACE_DIRECTORY_SAVE_BUFFER_SIZE = 64;
 
 //--------------------------------------------------------------------------------------------------------------
 //
@@ -230,8 +197,7 @@ constexpr int PLACE_DIRECTORY_SAVE_BUFFER_SIZE = 64;
 class PlaceDirectory
 {
 public:
-	typedef unsigned int IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
-	
+	typedef unsigned short IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
 
 	PlaceDirectory( void );
 	void Reset( void );
@@ -239,9 +205,9 @@ public:
 	IndexType GetIndex( Place place ) const;				/// return the directory index corresponding to this Place (0 = no entry)
 	void AddPlace( Place place );							/// add the place to the directory if not already known
 	Place IndexToPlace( IndexType entry ) const;			/// given an index, return the Place
-	void Save(std::fstream& file);					/// store the directory
-	void Load(std::fstream& file, const int version );		/// load the directory
-	const std::vector< Place > *GetPlaces( void ) const
+	void Save( CUtlBuffer &fileBuffer );					/// store the directory
+	void Load( CUtlBuffer &fileBuffer, int version );		/// load the directory
+	const CUtlVector< Place > *GetPlaces( void ) const
 	{
 		return &m_directory;
 	}
@@ -253,14 +219,13 @@ public:
 
 
 private:
-	std::vector< Place > m_directory;
+	CUtlVector< Place > m_directory;
 	bool m_hasUnnamedAreas;
 };
 
 extern PlaceDirectory placeDirectory;
 
 
-// TO-DO: Remove gameeventlistener, crashes with sourcemod, listen for game events using other methods
 
 //--------------------------------------------------------------------------------------------------------
 /**
@@ -294,16 +259,16 @@ public:
 	 */
 	virtual bool IsAuthoritative( void ) const { return false; }		
 
-	const std::vector< Place > *GetPlacesFromNavFile( bool *hasUnnamedPlaces );	// Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
+	const CUtlVector< Place > *GetPlacesFromNavFile( bool *hasUnnamedPlaces );	// Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
 
-	virtual bool Save(void);									// store Navigation Mesh to a file
+	virtual bool Save( void ) const;									// store Navigation Mesh to a file
 	bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
 
 	virtual unsigned int GetSubVersionNumber( void ) const;										// returns sub-version number of data format used by derived classes
-	virtual void SaveCustomData(std::fstream& file) const { }								// store custom mesh data for derived classes
-	virtual void LoadCustomData(std::fstream& file, unsigned int subVersion) { }			// load custom mesh data for derived classes
-	virtual void SaveCustomDataPreArea(std::fstream& file) const { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
-	virtual void LoadCustomDataPreArea(std::fstream& file, unsigned int subVersion) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
+	virtual void SaveCustomData( CUtlBuffer &fileBuffer ) const { }								// store custom mesh data for derived classes
+	virtual void LoadCustomData( CUtlBuffer &fileBuffer, unsigned int subVersion ) { }			// load custom mesh data for derived classes
+	virtual void SaveCustomDataPreArea( CUtlBuffer &fileBuffer ) const { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
+	virtual void LoadCustomDataPreArea( CUtlBuffer &fileBuffer, unsigned int subVersion ) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
 
 	// events
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
@@ -324,7 +289,7 @@ public:
 	// Obstructions
 	void RegisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction );
 	void UnregisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction );
-	const std::vector<INavAvoidanceObstacle*> &GetObstructions( void ) const { return m_avoidanceObstacles; }
+	const CUtlVector< INavAvoidanceObstacle * > &GetObstructions( void ) const { return m_avoidanceObstacles; }
 
 	unsigned int GetNavAreaCount( void ) const	{ return m_areaCount; }	// return total number of nav areas
 
@@ -363,10 +328,10 @@ public:
 	void BeginAnalysis( bool quitWhenFinished = false );						// re-analyze an existing Mesh.  Determine Hiding Spots, Encounter Spots, etc.
 
 	bool IsGenerating( void ) const		{ return m_generationMode != GENERATE_NONE; }	// return true while a Navigation Mesh is being generated
-	void addPlayerSpawnName(const char* name) { std::string str(name); m_spawnNames.push_back(str); }		// adds the name of a spawn entitie
+	void addPlayerSpawnName(const char *name) {	m_spawnNames.AddToTail(name); }		// adds the name of a spawn entitie
 	void AddWalkableSeed( const Vector &pos, const Vector &normal );	// add given walkable position to list of seed positions for map sampling
 	virtual void AddWalkableSeeds( void );								// adds walkable positions for any/all positions a mod specifies
-	void ClearWalkableSeeds(void) { m_walkableSeeds.clear(); }	// erase all walkable seed positions
+	void ClearWalkableSeeds( void )		{ m_walkableSeeds.RemoveAll(); }	// erase all walkable seed positions
 	void MarkStairAreas( void );
 
 	virtual unsigned int GetGenerationTraceMask( void ) const;			// return the mask used by traces when generating the mesh
@@ -481,7 +446,7 @@ public:
 
 	const Vector &GetEditCursorPosition( void ) const	{ return m_editCursorPos; }	// return position of edit cursor
 	void StripNavigationAreas( void );
-	static std::string GetFilename( void );								// return the filename for this map's "nav" file
+	static const char *GetFilename( void );								// return the filename for this map's "nav" file
 
 	/// @todo Remove old select code and make all commands use this selected set
 	void AddToSelectedSet( CNavArea *area );							// add area to the currently selected set
@@ -539,7 +504,7 @@ public:
 	 * Populate the given vector with all navigation areas that overlap the given extent.
 	 */
 	template< typename NavAreaType >
-	void CollectAreasOverlappingExtent( const Extent &extent, std::vector< NavAreaType * > *outVector );
+	void CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< NavAreaType * > *outVector );
 
 	template < typename Functor >
 	bool ForAllAreasInRadius( Functor &func, const Vector &pos, float radius );
@@ -575,8 +540,8 @@ public:
 	}
 
 	template <typename Functor, typename T>
-	static bool forAll(Functor& func, std::vector<T>& vec) {
-		for ( size_t i=0; i<vec.size(); ++i )
+	static bool forAll(Functor& func, CUtlVector<T>& vec) {
+		for ( int i=0; i<vec.Count(); ++i )
 		{
 			if (!func( vec[i] ))
 				return false;
@@ -602,15 +567,16 @@ public:
 		bool StitchMesh( Functor &func )
 	{
 		extern NavAreaVector TheNavAreas;
-
-		for (auto area : TheNavAreas)
+		FOR_EACH_VEC( TheNavAreas, it )
 		{
-			if (func(area))
+			CNavArea *area = TheNavAreas[ it ];
+
+			if ( func( area ) )
 			{
-				StitchAreaIntoMesh(area, NORTH, func);
-				StitchAreaIntoMesh(area, SOUTH, func);
-				StitchAreaIntoMesh(area, EAST, func);
-				StitchAreaIntoMesh(area, WEST, func);
+				StitchAreaIntoMesh( area, NORTH, func );
+				StitchAreaIntoMesh( area, SOUTH, func );
+				StitchAreaIntoMesh( area, EAST, func );
+				StitchAreaIntoMesh( area, WEST, func );
 			}
 		}
 
@@ -620,7 +586,7 @@ public:
 	NavLadderVector& GetLadders( void ) { return m_ladders; }	// Returns the list of ladders
 	CNavLadder *GetLadderByID( unsigned int id ) const;
 
-	std::vector<CNavArea*>& GetTransientAreas( void ) { return m_transientAreas; }
+	CUtlVector< CNavArea * >& GetTransientAreas( void ) { return m_transientAreas; }
 
 	enum EditModeType
 	{
@@ -653,7 +619,7 @@ private:
 	friend class CNavNode;
 	friend class CNavUIBasePanel;
 
-	mutable std::vector<NavAreaVector> m_grid;
+	mutable CUtlVector<NavAreaVector> m_grid;
 	float m_gridCellSize;										// the width/height of a grid cell for spatially partitioning nav areas for fast access
 	int m_gridSizeX;
 	int m_gridSizeY;
@@ -771,7 +737,7 @@ private:
 	void SplitAreasUnderOverhangs( void );
 	void ValidateNavAreaConnections( void );
 	void StitchGeneratedAreas( void );							// Stitches incrementally-generated areas into the existing mesh
-	void StitchAreaSet(std::vector<CNavArea*> *areas);		// Stitches an arbitrary set of areas into the existing mesh
+	void StitchAreaSet( CUtlVector< CNavArea * > *areas );		// Stitches an arbitrary set of areas into the existing mesh
 	void HandleObstacleTopAreas( void );						// Handles fixing/generating areas on top of slim obstacles such as fences and railings
 	void RaiseAreasWithInternalObstacles();
 	void CreateObstacleTopAreas();
@@ -804,35 +770,35 @@ private:
 		GENERATE_ANALYSIS_ONLY,
 	}
 	m_generationMode;											// true while a Navigation Mesh is being generated
-	size_t m_generationIndex;										// used for iterating nav areas during generation process
+	int m_generationIndex;										// used for iterating nav areas during generation process
 	int m_sampleTick;											// counter for displaying pseudo-progress while sampling walkable space
 	bool m_bQuitWhenFinished;
 	float m_generationStartTime;
 	Extent m_simplifyGenerationExtent;
 
-	std::vector<std::string> m_spawnNames;						// list of spawn names
+	CUtlVector<CUtlString> m_spawnNames;						// list of spawn names
 	struct WalkableSeedSpot
 	{
 		Vector pos;
 		Vector normal;
 	};
-	std::vector<WalkableSeedSpot> m_walkableSeeds;				// list of walkable seed spots for sampling
+	CUtlVector< WalkableSeedSpot > m_walkableSeeds;				// list of walkable seed spots for sampling
 
 	CNavNode *GetNextWalkableSeedNode( void );					// return the next walkable seed as a node
-	size_t m_seedIdx;
+	int m_seedIdx;
 	int m_hostThreadModeRestoreValue;							// stores the value of host_threadmode before we changed it
 
 	void BuildTransientAreaList( void );
-	std::vector<CNavArea*> m_transientAreas;
+	CUtlVector< CNavArea * > m_transientAreas;
 
 	void UpdateAvoidanceObstacleAreas( void );
-	std::vector<CNavArea*> m_avoidanceObstacleAreas;
-	std::vector<INavAvoidanceObstacle*> m_avoidanceObstacles;
+	CUtlVector< CNavArea * > m_avoidanceObstacleAreas;
+	CUtlVector< INavAvoidanceObstacle * > m_avoidanceObstacles;
 
 	void UpdateBlockedAreas( void );
-	std::vector<CNavArea*> m_blockedAreas;
+	CUtlVector< CNavArea * > m_blockedAreas;
 
-	std::vector<int> m_storedSelectedSet;						// "Stored" selected set, so we can do some editing and then restore the old selected set.  Done by ID, so we don't have to worry about split/delete/etc.
+	CUtlVector< int > m_storedSelectedSet;						// "Stored" selected set, so we can do some editing and then restore the old selected set.  Done by ID, so we don't have to worry about split/delete/etc.
 
 	void BeginVisibilityComputations( void );
 	void EndVisibilityComputations( void );

@@ -11,6 +11,8 @@
 #include "nav_area.h"
 #include "nav_node.h"
 #include <eiface.h>
+// NOTE: This has to be the last file included!
+#include "tier0/memdbgon.h"
 
 extern ConVar nav_snap_to_grid;
 extern ConVar nav_split_place_on_ground;
@@ -95,27 +97,26 @@ CON_COMMAND_F( nav_chop_selected, "Chops all selected areas into their component
 		return;
 
 	TheNavMesh->StripNavigationAreas();
-	TheNavMesh->SetMarkedArea(nullptr);
+	TheNavMesh->SetMarkedArea( NULL );
 
 	NavAreaCollector collector;
 	TheNavMesh->ForAllSelectedAreas( collector );
 
-	for (auto area : collector.m_area)
+	for ( int i=0; i<collector.m_area.Count(); ++i )
 	{
-		ReduceToComponentAreas(area, true);
+		ReduceToComponentAreas( collector.m_area[i], true );
 	}
 
-	Msg( "%d areas chopped into %d\n", collector.m_area.size(), TheNavMesh->GetSelecteSetSize());
+	Msg( "%d areas chopped into %d\n", collector.m_area.Count(), TheNavMesh->GetSelecteSetSize() );
 }
 
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::RemoveNodes( void )
 {
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		area->ResetNodes();
+		TheNavAreas[ it ]->ResetNodes();
 	}
 
 	// destroy navigation nodes created during map generation
@@ -167,72 +168,69 @@ void CNavMesh::SimplifySelectedAreas( void )
 	Extent bounds;
 	bounds.lo.Init( FLT_MAX, FLT_MAX, FLT_MAX );
 	bounds.hi.Init( -FLT_MAX, -FLT_MAX, -FLT_MAX );
-
-	for (auto area : collector.m_area)
+	for ( int i=0; i<collector.m_area.Count(); ++i )
 	{
 		Extent areaExtent;
-		area->GetExtent(&areaExtent);
+		CNavArea *area = collector.m_area[i];
+		area->GetExtent( &areaExtent );
 		areaExtent.lo.z -= HalfHumanHeight;
 		areaExtent.hi.z += 2 * HumanHeight;
-		bounds.Encompass(areaExtent);
+		bounds.Encompass( areaExtent );
 
 		Vector center = area->GetCenter();
-		center.x = SnapToGrid(center.x);
-		center.y = SnapToGrid(center.y);
+		center.x = SnapToGrid( center.x );
+		center.y = SnapToGrid( center.y );
 
 		Vector normal;
-		if (FindGroundForNode(&center, &normal))
+		if ( FindGroundForNode( &center, &normal ) )
 		{
-			AddWalkableSeed(center, normal);
+			AddWalkableSeed( center, normal );
 
 			center.z += HumanHeight;
-			bounds.Encompass(center);
+			bounds.Encompass( center );
 		}
 	}
-
 	RemoveNodes();
 	GenerateNodes( bounds );
 	ClearWalkableSeeds();
 
 	// Split nav areas up into 1x1 component areas
-	for (auto area : collector.m_area)
+	for ( int i=0; i<collector.m_area.Count(); ++i )
 	{
-		ReduceToComponentAreas(area, true);
+		ReduceToComponentAreas( collector.m_area[i], true );
 	}
 
 	// Assign nodes to each component area
-
-	for (auto it : m_selectedSet)
+	FOR_EACH_VEC( m_selectedSet, it )
 	{
-		CNavArea* area = it;
+		CNavArea *area = m_selectedSet[ it ];
 
-		Vector corner = area->GetCorner(NORTH_EAST);
+		Vector corner = area->GetCorner( NORTH_EAST );
 		Vector normal;
-		if (FindGroundForNode(&corner, &normal))
+		if ( FindGroundForNode( &corner, &normal ) )
 		{
-			area->m_node[NORTH_EAST] = CNavNode::GetNode(corner);
-			if (area->m_node[NORTH_EAST])
+			area->m_node[ NORTH_EAST ] = CNavNode::GetNode( corner );
+			if ( area->m_node[ NORTH_EAST ] )
 			{
-				area->m_node[NORTH_WEST] = area->m_node[NORTH_EAST]->GetConnectedNode(WEST);
-				area->m_node[SOUTH_EAST] = area->m_node[NORTH_EAST]->GetConnectedNode(SOUTH);
-				if (area->m_node[SOUTH_EAST])
+				area->m_node[ NORTH_WEST ] = area->m_node[ NORTH_EAST ]->GetConnectedNode( WEST );
+				area->m_node[ SOUTH_EAST ] = area->m_node[ NORTH_EAST ]->GetConnectedNode( SOUTH );
+				if ( area->m_node[ SOUTH_EAST ] )
 				{
-					area->m_node[SOUTH_WEST] = area->m_node[SOUTH_EAST]->GetConnectedNode(WEST);
+					area->m_node[ SOUTH_WEST ] = area->m_node[ SOUTH_EAST ]->GetConnectedNode( WEST );
 
-					if (area->m_node[NORTH_WEST] && area->m_node[SOUTH_WEST])
+					if ( area->m_node[ NORTH_WEST ] && area->m_node[ SOUTH_WEST ] )
 					{
-						area->AssignNodes(area);
+						area->AssignNodes( area );
 					}
 				}
 			}
 		}
 
-		// Assert(area->m_node[NORTH_EAST] && area->m_node[NORTH_WEST] && area->m_node[SOUTH_EAST] && area->m_node[SOUTH_WEST]);
-		if (!(area->m_node[NORTH_EAST] && area->m_node[NORTH_WEST] && area->m_node[SOUTH_EAST] && area->m_node[SOUTH_WEST]))
+		Assert ( area->m_node[ NORTH_EAST ] && area->m_node[ NORTH_WEST ] && area->m_node[ SOUTH_EAST ] && area->m_node[ SOUTH_WEST ] );
+		if ( !( area->m_node[ NORTH_EAST ] && area->m_node[ NORTH_WEST ] && area->m_node[ SOUTH_EAST ] && area->m_node[ SOUTH_WEST ] ) )
 		{
-			Warning("Area %d didn't get any nodes!\n", area->GetID());
+			Warning( "Area %d didn't get any nodes!\n", area->GetID() );
 		}
-
 	}
 
 	// Run a subset of incremental generation on the component areas
@@ -247,12 +245,12 @@ void CNavMesh::SimplifySelectedAreas( void )
 
 	// Re-select the new areas
 	ClearSelectedSet();
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, i )
 	{
-		if (area->HasNodes())
+		CNavArea *area = TheNavAreas[i];
+		if ( area->HasNodes() )
 		{
-			AddToSelectedSet(area);
+			AddToSelectedSet( area );
 		}
 	}
 

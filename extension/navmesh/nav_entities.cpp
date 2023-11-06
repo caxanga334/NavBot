@@ -17,8 +17,8 @@
 #include <iplayerinfo.h>
 #include <collisionutils.h>
 #include <ivdebugoverlay.h>
-
-#include "nav_macros.h"
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 // the global singleton interface
 extern CNavMesh *TheNavMesh;
@@ -26,10 +26,22 @@ extern IPlayerInfoManager* playerinfomanager;
 extern NavAreaVector TheNavAreas;
 extern IVDebugOverlay* debugoverlay;
 
+#if SOURCE_ENGINE == SE_DODS
+
+inline char* V_strdup(const char* pSrc)
+{
+	int nLen = V_strlen(pSrc);
+	char* pResult = new char[nLen + 1];
+	V_memcpy(pResult, pSrc, nLen + 1);
+	return pResult;
+}
+
+#endif
+
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 
-std::vector< CHandle< CFuncNavCost > > CFuncNavCost::gm_masterCostVector;
+CUtlVector< CHandle< CFuncNavCost > > CFuncNavCost::gm_masterCostVector;
 CountdownTimer CFuncNavCost::gm_dirtyTimer;
 
 #define UPDATE_DIRTY_TIME 0.2f
@@ -38,7 +50,7 @@ CountdownTimer CFuncNavCost::gm_dirtyTimer;
 CFuncNavCost::CFuncNavCost( edict_t* pEnt ): NavEntity(pEnt), m_isDisabled(true),
 		m_team(0)
 {
-	gm_masterCostVector.push_back(this);
+	gm_masterCostVector.AddToTail( this );
 	gm_dirtyTimer.Start( UPDATE_DIRTY_TIME );
 /**TODO
 	SetSolid( SOLID_BSP );	
@@ -55,37 +67,33 @@ CFuncNavCost::CFuncNavCost( edict_t* pEnt ): NavEntity(pEnt), m_isDisabled(true)
 	SetNextThink( playerinfomanager->GetGlobalVars()->curtime + UPDATE_DIRTY_TIME );
 */
 
-	m_tags.clear();
+	/*
+
+	m_tags.RemoveAll();
 
 	const char *tags = STRING( m_iszTags );
 
 	// chop space-delimited string into individual tokens
 	if ( tags )
 	{
-		// char *buffer = V_strdup ( tags );
-		// Manual reimplementation of V_strdup since it's only available on SDK 2013
-
-		auto size = std::strlen(tags);
-		char* buffer = new char[size + 1];
-		std::memcpy(buffer, tags, size + 1);
+		char *buffer = V_strdup ( tags );
 
 		for( char *token = strtok( buffer, " " ); token; token = strtok( NULL, " " ) )
 		{
-			m_tags.emplace_back(token);
-			// m_tags.AddToTail( CFmtStr( "%s", token ) );
+			m_tags.AddToTail( CFmtStr( "%s", token ) );
 		}
 
 		delete [] buffer;
 	}
+
+	*/
 }
 
 
 //--------------------------------------------------------------------------------------------------------
 void CFuncNavCost::UpdateOnRemove( void )
 {
-	NAV_VEC_REMOVE_NO_DELETE(gm_masterCostVector, this);
-
-	// gm_masterCostVector.FindAndFastRemove( this );
+	gm_masterCostVector.FindAndRemove( this );
 
 	gm_dirtyTimer.Start( UPDATE_DIRTY_TIME );
 }
@@ -125,15 +133,13 @@ void CFuncNavCost::CostThink( CNavMesh* TheNavMesh )
 //--------------------------------------------------------------------------------------------------------
 bool CFuncNavCost::HasTag( const char *groupname ) const
 {
-	for (auto& string : m_tags)
-	{
-		auto tag = string.c_str();
-
-		if (strcmp(tag, groupname) == 0)
-		{
-			return true;
-		}
-	}
+	//for( int i=0; i<m_tags.Count(); ++i )
+	//{
+	//	if ( strcmp( m_tags[i], groupname ) == 0)
+	//	{
+	//		return true;
+	//	}
+	//}
 
 	return false;
 }
@@ -242,38 +248,38 @@ bool CFuncNavCost::IsApplicableTo( edict_t *who ) const
 void CFuncNavCost::UpdateAllNavCostDecoration( CNavMesh* TheNavMesh )
 {
 	// first, clear all avoid decoration from the mesh
-
-	for (auto area : TheNavAreas)
+	for(int i=0; i<TheNavAreas.Count(); ++i )
 	{
-		area->ClearAllNavCostEntities();
+		TheNavAreas[i]->ClearAllNavCostEntities();
 	}
 
-	for (auto& funccost : gm_masterCostVector)
+	// now, mark all areas with active cost entities overlapping them
+	for(int i=0; i<gm_masterCostVector.Count(); ++i )
 	{
-		CFuncNavCost* cost = funccost.Get();
+		CFuncNavCost *cost = gm_masterCostVector[i];
 
-		if (!cost || !cost->IsEnabled())
+		if ( !cost || !cost->IsEnabled() )
 		{
 			continue;
 		}
 
 		Extent extent;
-		extent.Init(pEnt);
+		extent.Init( pEnt );
 
-		std::vector< CNavArea* > overlapVector;
-		TheNavMesh->CollectAreasOverlappingExtent(extent, &overlapVector);
+		CUtlVector< CNavArea * > overlapVector;
+		TheNavMesh->CollectAreasOverlappingExtent( extent, &overlapVector );
 
 		Ray_t ray;
 		trace_t tr;
-		for (size_t j = 0; j < overlapVector.size(); ++j)
+		for( int j=0; j<overlapVector.Count(); ++j )
 		{
-			ray.Init(overlapVector[j]->GetCenter(), overlapVector[j]->GetCenter());
-			extern IEngineTrace* enginetrace;
-			enginetrace->ClipRayToCollideable(ray, MASK_ALL, pEnt->GetCollideable(), &tr);
-
-			if (tr.startsolid)
+			ray.Init( overlapVector[j]->GetCenter(), overlapVector[j]->GetCenter() );
+			extern IEngineTrace *enginetrace;
+			enginetrace->ClipRayToCollideable( ray, MASK_ALL, pEnt->GetCollideable(), &tr );
+			
+			if ( tr.startsolid )
 			{
-				overlapVector[j]->AddFuncNavCostEntity(cost);
+				overlapVector[j]->AddFuncNavCostEntity( cost );
 			}
 		}
 	}
@@ -299,7 +305,7 @@ float CFuncNavPrefer::GetCostMultiplier( edict_t *who ) const
 }
 
 
-std::unordered_set<CFuncNavBlocker *> CFuncNavBlocker::gm_NavBlockers;
+CUtlLinkedList<CFuncNavBlocker *> CFuncNavBlocker::gm_NavBlockers;
 
 inline bool CFuncNavBlocker::IsBlockingNav( int teamNumber ) const
 {
@@ -377,32 +383,34 @@ int NavEntity::DrawDebugTextOverlays() {
 int CFuncNavBlocker::DrawDebugTextOverlays( void )
 {
 	int offset = NavEntity::DrawDebugTextOverlays();
-	// CFmtStr str;
+
+	/*
+
+	CFmtStr str;
 
 	// FIRST_GAME_TEAM skips TEAM_SPECTATOR and TEAM_UNASSIGNED, so we can print
 	// useful team names in a non-game-specific fashion.
-
-	// TO-DO
-	/* for (int i = FIRST_GAME_TEAM; i<FIRST_GAME_TEAM + MAX_NAV_TEAMS; ++i)
+	for ( int i=FIRST_GAME_TEAM; i<FIRST_GAME_TEAM + MAX_NAV_TEAMS; ++i )
 	{
 		if ( IsBlockingNav( i ) )
 		{		
 			EntityText( pEnt->GetCollideable(), offset++, str.sprintf( "blocking team %d", i ), 0 );
 		}
-	} */
+	}
 
 	NavAreaCollector collector( true );
 	Extent extent;
 	extent.Init( this->pEnt );
 	TheNavMesh->ForAllAreasOverlappingExtent( collector, extent );
 
-	for (auto area : collector.m_area)
+	for ( int i=0; i<collector.m_area.Count(); ++i )
 	{
 		Extent areaExtent;
-		area->GetExtent(&areaExtent);
-		debugoverlay->AddBoxOverlay(vec3_origin, areaExtent.lo, areaExtent.hi, vec3_angle, 0, 255, 0, 10, NDEBUG_SMNAV_DRAW_TIME);
+		collector.m_area[i]->GetExtent( &areaExtent );
+		debugoverlay->AddBoxOverlay( vec3_origin, areaExtent.lo, areaExtent.hi, vec3_angle, 0, 255, 0, 10, NDEBUG_SMNAV_DRAW_TIME );
 	}
 
+	*/
 	return offset;
 }
 
@@ -416,10 +424,11 @@ void CFuncNavBlocker::UpdateBlocked()
 	extent.hi = m_CachedMaxs;
 	TheNavMesh->ForAllAreasOverlappingExtent( collector, extent );
 
-	for (auto area : collector.m_area)
+	for ( int i=0; i<collector.m_area.Count(); ++i )
 	{
-		area->UpdateBlocked(true);
+		collector.m_area[i]->UpdateBlocked( true );
 	}
+
 }
 
 
@@ -429,16 +438,7 @@ void CFuncNavBlocker::UpdateOnRemove( void )
 {
 	UnblockNav();
 
-	auto start = gm_NavBlockers.begin();
-	auto end = gm_NavBlockers.end();
-	auto pos = gm_NavBlockers.find(this);
-
-	if (pos != end)
-	{
-		gm_NavBlockers.erase(this);
-	}
-
-	// gm_NavBlockers.FindAndRemove( this );
+	gm_NavBlockers.FindAndRemove( this );
 
 	// TODO: BaseClass::UpdateOnRemove();
 }
@@ -447,7 +447,7 @@ void CFuncNavBlocker::UpdateOnRemove( void )
 CFuncNavBlocker::CFuncNavBlocker( edict_t* pEnt ) : NavEntity(pEnt),
 		m_bDisabled(false), m_blockedTeamNumber(0)
 {
-	gm_NavBlockers.insert(this);
+	gm_NavBlockers.AddToTail( this );
 
 	if ( !m_blockedTeamNumber )
 		m_blockedTeamNumber = TEAM_ANY;
@@ -524,30 +524,29 @@ bool CFuncNavBlocker::CalculateBlocked( bool *pResultByTeam, const Vector &vecMi
 	{
 		pResultByTeam[i] = false;
 	}
-
-	for (auto pBlocker : gm_NavBlockers)
+	FOR_EACH_LL( gm_NavBlockers, iBlocker )
 	{
+		CFuncNavBlocker *pBlocker = gm_NavBlockers[iBlocker];
 		bool bIsIntersecting = false;
 
-		for (i = 0; i < MAX_NAV_TEAMS; ++i)
+		for ( i=0; i<MAX_NAV_TEAMS; ++i )
 		{
 			if (pBlocker->m_isBlockingNav[i] && !pResultByTeam[i]
-				&& (bIsIntersecting
-					|| !(bIsIntersecting = IsBoxIntersectingBox(
-						pBlocker->m_CachedMins,
-						pBlocker->m_CachedMaxs, vecMins, vecMaxs)))) {
+					&& (bIsIntersecting
+							|| !(bIsIntersecting = IsBoxIntersectingBox(
+									pBlocker->m_CachedMins,
+									pBlocker->m_CachedMaxs, vecMins, vecMaxs)))) {
 				bBlocked = true;
 				pResultByTeam[i] = true;
 				nTeamsBlocked++;
 			}
 		}
 
-		if (nTeamsBlocked == MAX_NAV_TEAMS)
+		if ( nTeamsBlocked == MAX_NAV_TEAMS )
 		{
 			break;
 		}
 	}
-
 	return bBlocked;
 }
 
