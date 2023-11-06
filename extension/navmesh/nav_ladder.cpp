@@ -30,6 +30,7 @@ extern ConVar nav_area_bgcolor;
 extern IPlayerInfoManager* playerinfomanager;
 extern IVDebugOverlay* debugoverlay;
 extern IVEngineServer *engine;
+extern CGlobalVars* gpGlobals;
 
 unsigned int CNavLadder::m_nextID = 1;
 
@@ -599,7 +600,7 @@ public:
 template < typename Functor >
 bool ForEachPlayer( Functor &func )
 {
-	for( int i=1; i<=playerinfomanager->GetGlobalVars()->maxClients; ++i )
+	for( int i=1; i<=gpGlobals->maxClients; ++i )
 	{
 		edict_t *ent = engine->PEntityOfEntIndex(i);
 		IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);

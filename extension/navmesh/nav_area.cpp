@@ -3659,26 +3659,22 @@ void CNavArea::RemoveFromOpenList( void )
 //--------------------------------------------------------------------------------------------------------------
 inline void CNavArea::SetClearedTimestamp( int teamID )
 {
-	m_clearedTimestamp[ teamID % MAX_NAV_TEAMS ] = playerinfomanager->GetGlobalVars()->curtime;
+	m_clearedTimestamp[ teamID % MAX_NAV_TEAMS ] = gpGlobals->curtime;
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
 bool CNavArea::IsDamaging( void ) const
 {
-	return ( playerinfomanager->GetGlobalVars()->tickcount <= m_damagingTickCount );
+	return (gpGlobals->tickcount <= m_damagingTickCount);	
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
 inline void CNavArea::MarkAsDamaging( float duration )
 {
-	CGlobalVars *gpGlobals = playerinfomanager->GetGlobalVars();
-	m_damagingTickCount = gpGlobals->tickcount
-			+ TIME_TO_TICKS(duration);
+	m_damagingTickCount = gpGlobals->tickcount + TIME_TO_TICKS(duration);
 }
-
-
 
 //--------------------------------------------------------------------------------------------------------------
 inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
@@ -3886,8 +3882,6 @@ static Vector FindPositionInArea( CNavArea *area, NavCornerType corner )
 				pos = cornerPos + Vector(  area->GetSizeX()*0.5f*multX,  area->GetSizeY()*0.5f*multY, 0.0f );
 				if ( !area->IsOverlapping( pos ) )
 				{
-					AssertMsg( false, "A Hiding Spot can't be placed on its area at (%.0f %.0f %.0f)", cornerPos.x, cornerPos.y, cornerPos.z );
-
 					// Just pull the position to a small offset
 					pos = cornerPos + Vector(  1.0f*multX,  1.0f*multY, 0.0f );
 					if ( !area->IsOverlapping( pos ) )

@@ -1765,7 +1765,7 @@ CON_COMMAND_F( nav_dump_selected_set_positions, "Write the (x,y,z) coordinates o
 
 	char filename[256];
 	Q_snprintf(filename, sizeof(filename), "%s\\maps\\%s_xyz.txt", gamePath,
-			STRING(playerinfomanager->GetGlobalVars()->mapname));
+			STRING(gpGlobals->mapname));
 
 	if ( !filesystem->WriteFile( filename, "MOD", fileBuffer ) )
 	{
@@ -1792,7 +1792,7 @@ CON_COMMAND_F( nav_show_dumped_positions, "Show the (x,y,z) coordinate positions
 
 	char filename[256];
 	Q_snprintf(filename, sizeof(filename), "%s\\maps\\%s_xyz.txt", gamePath,
-			STRING(playerinfomanager->GetGlobalVars()->mapname));
+			STRING(gpGlobals->mapname));
 
 	if ( !filesystem->ReadFile( filename, "MOD", fileBuffer ) )
 	{
