@@ -12,13 +12,11 @@
 #ifndef _NAV_AREA_H_
 #define _NAV_AREA_H_
 
-#include <vector>
-
 #include "nav_ladder.h"
 #include "CountDownTimer.h"
 #include <shareddefs.h>
-// #include <networkvar.h>
-// #include <tier1/memstack.h>
+#include <networkvar.h>
+#include <tier1/memstack.h>
 
 // BOTPORT: Clean up relationship between team index and danger storage in nav areas
 enum { MAX_NAV_TEAMS = 2 };
@@ -49,6 +47,23 @@ bool ForEachActor( Functor &func );
 bool UTIL_IsCommandIssuedByServerAdmin();
 
 const char *UTIL_VarArgs( const char *format, ... );
+
+class CNavVectorNoEditAllocator
+{
+public:
+	CNavVectorNoEditAllocator();
+
+	static void Reset();
+	static void *Alloc( size_t nSize );
+	static void *Realloc( void *pMem, size_t nSize );
+	static void Free( void *pMem );
+	static size_t GetSize( void *pMem );
+
+private:
+	static CMemoryStack m_memory;
+	static void *m_pCurrent;
+	static int m_nBytesCurrent;
+};
 
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -128,8 +143,8 @@ public:
 
 	int GetFlags( void ) const		{ return m_flags; }
 
-	void Save(std::fstream& file, unsigned int version);
-	void Load(std::fstream& file, unsigned int version);
+	void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;
+	void Load( CUtlBuffer &fileBuffer, unsigned int version );
 	NavErrorType PostLoad( void );
 
 	const Vector &GetPosition( void ) const		{ return m_pos; }	// get the position of the hiding spot
@@ -161,8 +176,7 @@ private:
 	static unsigned int m_nextID;							// used when allocating spot ID's
 	static unsigned int m_masterMarker;						// used to mark spots
 };
-// typedef CUtlVectorUltraConservative< HidingSpot * > HidingSpotVector;
-typedef std::vector<HidingSpot*> HidingSpotVector;
+typedef CUtlVector< HidingSpot * > HidingSpotVector;
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -178,8 +192,7 @@ struct SpotOrder
 		unsigned int id;			// spot ID for save/load
 	};
 };
-// typedef CUtlVector< SpotOrder > SpotOrderVector;
-typedef std::vector<SpotOrder> SpotOrderVector;
+typedef CUtlVector< SpotOrder > SpotOrderVector;
 
 /**
  * This struct stores possible path segments thru a CNavArea, and the dangerous spots
@@ -194,8 +207,7 @@ struct SpotEncounter
 	Ray path;									// the path segment
 	SpotOrderVector spots;						// list of spots to look at, in order of occurrence
 };
-// typedef CUtlVectorUltraConservative< SpotEncounter * > SpotEncounterVector;
-typedef std::vector<SpotEncounter*> SpotEncounterVector;
+typedef CUtlVector< SpotEncounter * > SpotEncounterVector;
 
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -251,7 +263,7 @@ protected:
 class CNavArea : protected CNavAreaCriticalData
 {
 public:
-	// DECLARE_CLASS_NOBASE( CNavArea )
+	DECLARE_CLASS_NOBASE( CNavArea )
 
 	CNavArea( unsigned int place );
 	virtual ~CNavArea();
@@ -269,9 +281,9 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea ) { }		// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder ) { }	// invoked when given ladder has just been deleted from the mesh in edit mode
 
-	virtual void Save(std::fstream& file, unsigned int version);	// (EXTEND)
-	virtual NavErrorType Load(std::fstream& file, unsigned int version, unsigned int subVersion);		// (EXTEND)
-	virtual NavErrorType PostLoad(void);								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
+	virtual void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;	// (EXTEND)
+	virtual NavErrorType Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int subVersion );		// (EXTEND)
+	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 
 	virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
 	virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues
@@ -358,10 +370,10 @@ public:
 
 	bool IsVisible( const Vector &eye, Vector *visSpot = NULL ) const;	// return true if area is visible from the given eyepoint, return visible spot
 
-	int GetAdjacentCount( NavDirType dir ) const	{ return m_connect[ dir ].size(); }	// return number of connected areas in given direction
+	int GetAdjacentCount( NavDirType dir ) const	{ return m_connect[ dir ].Count(); }	// return number of connected areas in given direction
 	CNavArea *GetAdjacentArea( NavDirType dir, int i ) const;	// return the i'th adjacent area in the given direction
 	CNavArea *GetRandomAdjacentArea( NavDirType dir ) const;
-	void CollectAdjacentAreas(std::vector<CNavArea*>& adjVector) const;	// build a vector of all adjacent areas
+	void CollectAdjacentAreas( CUtlVector< CNavArea * > *adjVector ) const;	// build a vector of all adjacent areas
 
 	const NavConnectVector *GetAdjacentAreas( NavDirType dir ) const	{ return &m_connect[dir]; }
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
@@ -388,7 +400,7 @@ public:
 	const HidingSpotVector *GetHidingSpots( void ) const	{ return &m_hidingSpots; }
 
 	SpotEncounter *GetSpotEncounter( const CNavArea *from, const CNavArea *to );	// given the areas we are moving between, return the spots we will encounter
-	int GetSpotEncounterCount( void ) const				{ return m_spotEncounters.size(); }
+	int GetSpotEncounterCount( void ) const				{ return m_spotEncounters.Count(); }
 
 	//- "danger" ----------------------------------------------------------------------------------------
 	void IncreaseDanger( int teamID, float amount );			// increase the danger of this area for the given team
@@ -423,7 +435,7 @@ public:
 	//- A* pathfinding algorithm ------------------------------------------------------------------------
 	static void MakeNewMarker( void )	{ ++m_masterMarker; if (m_masterMarker == 0) m_masterMarker = 1; }
 	void Mark( void )					{ m_marker = m_masterMarker; }
-	bool IsMarked( void ) const			{ return (m_marker == m_masterMarker) ? true : false; }
+	BOOL IsMarked( void ) const			{ return (m_marker == m_masterMarker) ? true : false; }
 	
 	void SetParent( CNavArea *parent, NavTraverseType how = NUM_TRAVERSE_TYPES )	{ m_parent = parent; m_parentHow = how; }
 	CNavArea *GetParent( void ) const	{ return m_parent; }
@@ -735,8 +747,7 @@ private:
 	static void ComputeVisToArea( CNavArea *&pOtherArea );
 
 #ifndef _X360
-	// typedef CUtlVectorConservative<AreaBindInfo> CAreaBindInfoArray; // shaves 8 bytes off structure caused by need to support editing
-	typedef std::vector<AreaBindInfo> CAreaBindInfoArray;
+	typedef CUtlVector<AreaBindInfo> CAreaBindInfoArray; // shaves 8 bytes off structure caused by need to support editing
 #else
 	typedef CUtlVector<AreaBindInfo> CAreaBindInfoArray; // Need to use this on 360 to support external allocation pattern
 #endif
@@ -750,10 +761,10 @@ private:
 	uint32 m_nVisTestCounter;
 	static uint32 s_nCurrVisTestCounter;
 
-	std::vector< CHandle< CFuncNavCost > > m_funcNavCostVector;	// active, overlapping cost entities
+	CUtlVector< CHandle< CFuncNavCost > > m_funcNavCostVector;	// active, overlapping cost entities
 };
 
-typedef std::vector<CNavArea*> NavAreaVector;
+typedef CUtlVector< CNavArea * > NavAreaVector;
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -854,10 +865,8 @@ inline bool CNavArea::IsDegenerate( void ) const
 //--------------------------------------------------------------------------------------------------------------
 inline CNavArea *CNavArea::GetAdjacentArea( NavDirType dir, int i ) const
 {
-	if ((i < 0) || (static_cast<size_t>(i) >= m_connect[dir].size())) {
-		return nullptr;
-	}
-
+	if ( ( i < 0 ) || ( i >= m_connect[dir].Count() ) )
+		return NULL;
 	return m_connect[dir][i].area;
 }
 

@@ -12,9 +12,6 @@
 #ifndef _NAV_H_
 #define _NAV_H_
 
-#include <vector>
-#include <unordered_set>
-
 #include <vector.h>
 #include <utlvector.h>
 
@@ -394,26 +391,18 @@ class CNavLadder;
 struct NavConnect;
 union NavLadderConnect;
 
-// typedef CUtlVector< CNavArea * > NavAreaVector;
-typedef std::vector<CNavArea*> NavAreaVector;
+typedef CUtlVector< CNavArea * > NavAreaVector;
 
-// typedef CUtlVector< CNavLadder * > NavLadderVector;
-typedef std::vector<CNavLadder*> NavLadderVector;
+typedef CUtlVector< CNavLadder * > NavLadderVector;
 
-/*
 #if !defined(_X360)
-typedef CUtlVectorUltraConservativeAllocator CNavVectorAllocator;
+// typedef CUtlVector CNavVectorAllocator;
 #else
 typedef CNavVectorNoEditAllocator CNavVectorAllocator;
 #endif
-*/
 
-// typedef CUtlVectorUltraConservative<NavLadderConnect, CNavVectorAllocator> NavLadderConnectVector;
+typedef CUtlVector<NavLadderConnect> NavLadderConnectVector;
 
-typedef std::vector<NavLadderConnect> NavLadderConnectVector;
-
-// typedef CUtlVectorUltraConservative<NavConnect, CNavVectorAllocator> NavConnectVector;
-
-typedef std::vector<NavConnect> NavConnectVector;
+typedef CUtlVector<NavConnect> NavConnectVector;
 
 #endif // _NAV_H_

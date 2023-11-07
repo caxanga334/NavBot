@@ -8,10 +8,6 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
-#include <fstream>
-
-#include "extension.h"
-
 #include "nav_area.h"
 #include "nav_colors.h"
 #include "nav.h"
@@ -27,11 +23,14 @@
 #include <ivdebugoverlay.h>
 #include <vphysics_interface.h>
 #include <shareddefs.h>
+// memdbgon must be the last include file in a .cpp file!!!
+#include "tier0/memdbgon.h"
 
 extern ConVar nav_area_bgcolor;
 extern IPlayerInfoManager* playerinfomanager;
 extern IVDebugOverlay* debugoverlay;
 extern IVEngineServer *engine;
+extern CGlobalVars* gpGlobals;
 
 unsigned int CNavLadder::m_nextID = 1;
 
@@ -53,11 +52,9 @@ void CNavLadder::Shift( const Vector &shift )
 
 	if ( TheNavMesh )
 	{
-		auto& vecladders = TheNavMesh->GetLadders();
-
-		for (auto ladder : vecladders)
+		for ( int i=0; i<TheNavMesh->GetLadders().Count(); ++i )
 		{
-			ladder->m_id = m_nextID++;
+			TheNavMesh->GetLadders()[i]->m_id = m_nextID++;
 		}
 	}
 }
@@ -127,7 +124,7 @@ void CNavLadder::ConnectTo( CNavArea *area )
 
 		if ( m_dir == dir )
 		{
-			rootconsole->ConsolePrint("Bots may not be able to find exit path to \"behind areas\" when climbing ladders.\n");
+			Warning("Bots may not be able to find exit path to \"behind areas\" when climbing ladders.\n");
 			m_topBehindArea = area;
 		}
 		else if ( OppositeDirection( m_dir ) == dir )
@@ -157,10 +154,9 @@ CNavLadder::~CNavLadder()
 {
 	// tell the other areas we are going away
 	extern NavAreaVector TheNavAreas;
-
-	for (auto area : TheNavAreas)
+	FOR_EACH_VEC( TheNavAreas, it )
 	{
-		area->OnDestroyNotify(this);
+		TheNavAreas[ it ]->OnDestroyNotify( this );
 	}
 }
 
@@ -470,41 +466,36 @@ void CNavLadder::FindLadderEntity( void )
 /**
  * Save a navigation ladder to the opened binary stream
  */
-void CNavLadder::Save(std::fstream& file, unsigned int version)
+void CNavLadder::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
 {
 	// save ID
-	file.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+	fileBuffer.PutUnsignedInt( m_id );
 
 	// save extent of ladder
-	file.write(reinterpret_cast<char*>(&m_width), sizeof(float));
+	fileBuffer.PutFloat( m_width );
 
 	// save top endpoint of ladder
-	file.write(reinterpret_cast<char*>(&m_top), sizeof(Vector));
+	fileBuffer.PutFloat( m_top.x );
+	fileBuffer.PutFloat( m_top.y );
+	fileBuffer.PutFloat( m_top.z );
 
 	// save bottom endpoint of ladder
-	file.write(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
+	fileBuffer.PutFloat( m_bottom.x );
+	fileBuffer.PutFloat( m_bottom.y );
+	fileBuffer.PutFloat( m_bottom.z );
 
 	// save ladder length
-	file.write(reinterpret_cast<char*>(&m_length), sizeof(float));
+	fileBuffer.PutFloat( m_length );
 
 	// save direction
-	file.write(reinterpret_cast<char*>(&m_dir), sizeof(unsigned int));
+	fileBuffer.PutUnsignedInt( m_dir );
 
 	// save IDs of connecting areas
-	unsigned int id = m_topForwardArea ? m_topForwardArea->GetID() : 0;
-	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-
-	id = m_topLeftArea ? m_topLeftArea->GetID() : 0;
-	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-
-	id = m_topRightArea ? m_topRightArea->GetID() : 0;
-	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-
-	id = m_topBehindArea ? m_topBehindArea->GetID() : 0;
-	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-
-	id = m_bottomArea ? m_bottomArea->GetID() : 0;
-	file.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	fileBuffer.PutUnsignedInt( m_topForwardArea ? m_topForwardArea->GetID() : 0 );
+	fileBuffer.PutUnsignedInt( m_topLeftArea ? m_topLeftArea->GetID() : 0 );
+	fileBuffer.PutUnsignedInt( m_topRightArea ? m_topRightArea->GetID() : 0 );
+	fileBuffer.PutUnsignedInt( m_topBehindArea ? m_topBehindArea->GetID() : 0 );
+	fileBuffer.PutUnsignedInt( m_bottomArea ? m_bottomArea->GetID() : 0 );
 }
 
 
@@ -512,60 +503,57 @@ void CNavLadder::Save(std::fstream& file, unsigned int version)
 /**
  * Load a navigation ladder from the opened binary stream
  */
-void CNavLadder::Load( CNavMesh* TheNavMesh, std::fstream& file, unsigned int version )
+void CNavLadder::Load( CNavMesh* TheNavMesh, CUtlBuffer &fileBuffer, unsigned int version )
 {
 	// load ID
-	file.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+	m_id = fileBuffer.GetUnsignedInt();
 
 	// update nextID to avoid collisions
 	if (m_id >= m_nextID)
 		m_nextID = m_id+1;
 
 	// load extent of ladder
-	file.read(reinterpret_cast<char*>(&m_width), sizeof(float));
+	m_width = fileBuffer.GetFloat();
 
 	// load top endpoint of ladder
-	file.read(reinterpret_cast<char*>(&m_top), sizeof(Vector));
-
+	m_top.x = fileBuffer.GetFloat();
+	m_top.y = fileBuffer.GetFloat();
+	m_top.z = fileBuffer.GetFloat();
 
 	// load bottom endpoint of ladder
-	file.read(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
+	m_bottom.x = fileBuffer.GetFloat();
+	m_bottom.y = fileBuffer.GetFloat();
+	m_bottom.z = fileBuffer.GetFloat();
 
 	// load ladder length
-	file.read(reinterpret_cast<char*>(&m_length), sizeof(float));
+	m_length = fileBuffer.GetFloat();
 
 	// load direction
-	file.read(reinterpret_cast<char*>(&m_dir), sizeof(unsigned int));
+	m_dir = (NavDirType)fileBuffer.GetUnsignedInt();
 	SetDir( m_dir ); // regenerate the surface normal
 
+	// load dangling status
+	if ( version == 6 )
+	{
+		bool m_isDangling;
+		fileBuffer.Get( &m_isDangling, sizeof(m_isDangling) );
+	}
+
 	// load IDs of connecting areas
-
-	unsigned int id = 0;
-	file.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topForwardArea = TheNavMesh->GetNavAreaByID(id);
-
-	file.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topLeftArea = TheNavMesh->GetNavAreaByID(id);
-
-	file.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topRightArea = TheNavMesh->GetNavAreaByID(id);
-
-	file.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topBehindArea = TheNavMesh->GetNavAreaByID(id);
-
-	file.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_bottomArea = TheNavMesh->GetNavAreaByID(id);
-
-
+	m_topForwardArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
+	m_topLeftArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
+	m_topRightArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
+	m_topBehindArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
+	m_bottomArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
 	if ( !m_bottomArea )
 	{
-		rootconsole->ConsolePrint( "ERROR: Unconnected ladder #%d bottom at ( %g, %g, %g )\n", m_id, m_bottom.x, m_bottom.y, m_bottom.z );
-		rootconsole->ConsolePrint( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
+		DevMsg( "ERROR: Unconnected ladder #%d bottom at ( %g, %g, %g )\n", m_id, m_bottom.x, m_bottom.y, m_bottom.z );
+		DevWarning( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
 	}
 	else if (!m_topForwardArea && !m_topLeftArea && !m_topRightArea)	// can't include behind area, since it is not used when going up a ladder
 	{
-		rootconsole->ConsolePrint( "ERROR: Unconnected ladder #%d top at ( %g, %g, %g )\n", m_id, m_top.x, m_top.y, m_top.z );
-		rootconsole->ConsolePrint( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
+		DevMsg( "ERROR: Unconnected ladder #%d top at ( %g, %g, %g )\n", m_id, m_top.x, m_top.y, m_top.z );
+		DevWarning( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
 	}
 
 	FindLadderEntity();
@@ -612,7 +600,7 @@ public:
 template < typename Functor >
 bool ForEachPlayer( Functor &func )
 {
-	for( int i=1; i<=playerinfomanager->GetGlobalVars()->maxClients; ++i )
+	for( int i=1; i<=gpGlobals->maxClients; ++i )
 	{
 		edict_t *ent = engine->PEntityOfEntIndex(i);
 		IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);

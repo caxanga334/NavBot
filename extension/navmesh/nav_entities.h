@@ -14,6 +14,8 @@
 
 #include "nav_mesh.h"
 #include <util/Handle.h>
+#include <utllinkedlist.h>
+#include <fmtstr.h>
 #include <string_t.h>
 
 class NavEntity {
@@ -66,12 +68,12 @@ protected:
 	bool m_isDisabled;
 	string_t m_iszTags;
 
-	static std::vector< CHandle< CFuncNavCost > > gm_masterCostVector;
+	static CUtlVector< CHandle< CFuncNavCost > > gm_masterCostVector;
 	static CountdownTimer gm_dirtyTimer;
 	void UpdateAllNavCostDecoration( CNavMesh* TheNavMesh );
 
 
-	std::vector< std::string > m_tags;
+	// CUtlVector< CFmtStr > m_tags;
 	bool HasTag( const char *groupname ) const;
 };
 
@@ -134,7 +136,7 @@ public:
 private:
 	void UpdateBlocked();
 
-	static std::unordered_set<CFuncNavBlocker *> gm_NavBlockers;
+	static CUtlLinkedList<CFuncNavBlocker *> gm_NavBlockers;
 
 	void BlockNav( void );
 	void UnblockNav( void );

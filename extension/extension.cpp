@@ -137,14 +137,14 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 
 	gpGlobals = ismm->GetCGlobals();
 
-	SH_ADD_HOOK_MEMFUNC(IServerGameDLL, GameFrame, servergamedll, this, &SMNavExt::Hook_GameFrame, true);
+	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &SMNavExt::Hook_GameFrame), false);
 
 	return true;
 }
 
 bool SMNavExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 {
-	SH_REMOVE_HOOK_MEMFUNC(IServerGameDLL, GameFrame, servergamedll, this, &SMNavExt::Hook_GameFrame, true);
+	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &SMNavExt::Hook_GameFrame), false);
 
 	return true;
 }
@@ -174,4 +174,6 @@ void SMNavExt::Hook_GameFrame(bool simulating)
 	{
 		TheNavMesh->Update();
 	}
+
+	RETURN_META(MRES_IGNORED);
 }
