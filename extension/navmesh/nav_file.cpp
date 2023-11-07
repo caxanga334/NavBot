@@ -9,6 +9,8 @@
 // Reading and writing nav files
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January-September 2003
 
+#include "extension.h"
+
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "datacache/imdlcache.h"
@@ -987,13 +989,18 @@ void CNavMesh::ComputeBattlefrontAreas( void )
  */
 const char *CNavMesh::GetFilename( void )
 {
+	auto modfolder = smutils->GetGameFolderName();
+	auto mapname = STRING(gpGlobals->mapname); // TO-DO: Clean up workshop maps
+
 	// filename is local to game dir for Steam, so we need to prepend game dir for regular file save
 	char gamePath[256];
-	engine->GetGameDir( gamePath, 256 );
+	// engine->GetGameDir( gamePath, 256 );
+	smutils->BuildPath(SourceMod::Path_SM, gamePath, sizeof(gamePath), "data/smnav/%s/%s.smnav", modfolder, mapname);
 
 	// persistant return value
 	static char filename[256];
-	Q_snprintf( filename, sizeof( filename ), "%s\\" FORMAT_NAVFILE, gamePath, STRING( gpGlobals->mapname ) );
+	Q_strncpy(filename, gamePath, sizeof(gamePath));
+	// Q_snprintf( filename, sizeof( filename ), "%s\\" FORMAT_NAVFILE, gamePath, STRING( gpGlobals->mapname ) );
 
 	return filename;
 }
@@ -1381,25 +1388,26 @@ NavErrorType CNavMesh::Load( void )
 	CNavArea::m_nextID = 1;
 
 	// nav filename is derived from map filename
-	char filename[256];
-	Q_snprintf( filename, sizeof( filename ), FORMAT_NAVFILE, STRING( gpGlobals->mapname ) );
+	auto filename = GetFilename();
+	//Q_snprintf( filename, sizeof( filename ), FORMAT_NAVFILE, STRING( gpGlobals->mapname ) );
 
-	bool navIsInBsp = false;
+	// bool navIsInBsp = false;
 	CUtlBuffer fileBuffer( 4096, 1024*1024, CUtlBuffer::READ_ONLY );
 	if ( !filesystem->ReadFile( filename, "MOD", fileBuffer ) )	// this ignores .nav files embedded in the .bsp ...
 	{
-		navIsInBsp = true;
-		if ( !filesystem->ReadFile( filename, "BSP", fileBuffer ) )	// ... and this looks for one if it's the only one around.
-		{
-			return NAV_CANT_ACCESS_FILE;
-		}
+		return NAV_CANT_ACCESS_FILE;
+		//navIsInBsp = true;
+		//if ( !filesystem->ReadFile( filename, "BSP", fileBuffer ) )	// ... and this looks for one if it's the only one around.
+		//{
+		//	return NAV_CANT_ACCESS_FILE;
+		//}
 	}
 
 	// check magic number
 	unsigned int magic = fileBuffer.GetUnsignedInt();
 	if ( !fileBuffer.IsValid() || magic != NAV_MAGIC_NUMBER )
 	{
-		Msg( "Invalid navigation file '%s'.\n", filename );
+		smutils->LogError(myself, "Failed to read Navigation Mesh 'MAGIC' number. \"%s\"", filename);
 		return NAV_INVALID_FILE;
 	}
 
@@ -1407,7 +1415,7 @@ NavErrorType CNavMesh::Load( void )
 	unsigned int version = fileBuffer.GetUnsignedInt();
 	if ( !fileBuffer.IsValid() || version > NavCurrentVersion )
 	{
-		Msg( "Unknown navigation file version.\n" );
+		smutils->LogError(myself, "Unknown Navigation Mesh file version '%i'. Current version is '%i'. \"%s\"", version, NavCurrentVersion, filename);
 		return NAV_BAD_FILE_VERSION;
 	}
 	
@@ -1417,7 +1425,7 @@ NavErrorType CNavMesh::Load( void )
 		subVersion = fileBuffer.GetUnsignedInt();
 		if ( !fileBuffer.IsValid() )
 		{
-			Msg( "Error reading sub-version number.\n" );
+			smutils->LogError(myself, "Error reading sub-version number.");
 			return NAV_INVALID_FILE;
 		}
 	}
@@ -1434,17 +1442,9 @@ NavErrorType CNavMesh::Load( void )
 			return NAV_INVALID_FILE;
 		}
 
-		if ( filesystem->Size( bspFilename ) != saveBspSize && !navIsInBsp )
+		if ( filesystem->Size( bspFilename ) != saveBspSize )
 		{
-			if ( engine->IsDedicatedServer() )
-			{
-				// Warning doesn't print to the dedicated server console, so we'll use Msg instead
-				DevMsg( "The Navigation Mesh was built using a different version of this map.\n" );
-			}
-			else
-			{
-				DevWarning( "The Navigation Mesh was built using a different version of this map.\n" );
-			}
+			rootconsole->ConsolePrint("The Navigation Mesh was built using a different version of this map.");
 			m_isOutOfDate = true;
 		}
 	}
@@ -1539,6 +1539,11 @@ NavErrorType CNavMesh::Load( void )
 	NavErrorType loadResult = PostLoad( version );
 
 	WarnIfMeshNeedsAnalysis( version );
+
+	if (loadResult == NAV_OK)
+	{
+		smutils->LogMessage(myself, "Loaded Navigation Mesh file \"%s\".", filename);
+	}
 
 	return loadResult;
 }
