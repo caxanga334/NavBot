@@ -5,7 +5,7 @@ Compatibility table with game/mods.
 
 Any game/mod not listed is considered **Not Implemented**.
 
-| SDK Version | Status |
+| Mod | Status |
 |:-----------:|:------:|
 |Team Fortress 2|Planned|
 |Half-Life 2: Deathmatch|Planned|
