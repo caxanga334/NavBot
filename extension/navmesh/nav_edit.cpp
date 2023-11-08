@@ -39,19 +39,19 @@
 #include "tier0/memdbgon.h"
 
 
-ConVar nav_show_area_info( "nav_show_area_info", "0.5", FCVAR_CHEAT, "Duration in seconds to show nav area ID and attributes while editing" );
-ConVar nav_snap_to_grid( "nav_snap_to_grid", "0", FCVAR_CHEAT, "Snap to the nav generation grid when creating new nav areas" );
-ConVar nav_create_place_on_ground( "nav_create_place_on_ground", "0", FCVAR_CHEAT, "If true, nav areas will be placed flush with the ground when created by hand." );
+ConVar sm_nav_show_area_info( "sm_nav_show_area_info", "0.5", FCVAR_CHEAT, "Duration in seconds to show nav area ID and attributes while editing" );
+ConVar sm_nav_snap_to_grid( "sm_nav_snap_to_grid", "0", FCVAR_CHEAT, "Snap to the nav generation grid when creating new nav areas" );
+ConVar sm_nav_create_place_on_ground( "sm_nav_create_place_on_ground", "0", FCVAR_CHEAT, "If true, nav areas will be placed flush with the ground when created by hand." );
 #ifdef DEBUG
-ConVar nav_draw_limit( "nav_draw_limit", "50", FCVAR_CHEAT, "The maximum number of areas to draw in edit mode" );
+ConVar sm_nav_draw_limit( "sm_nav_draw_limit", "50", FCVAR_CHEAT, "The maximum number of areas to draw in edit mode" );
 #else
-ConVar nav_draw_limit( "nav_draw_limit", "500", FCVAR_CHEAT, "The maximum number of areas to draw in edit mode" );
+ConVar sm_nav_draw_limit( "sm_nav_draw_limit", "500", FCVAR_CHEAT, "The maximum number of areas to draw in edit mode" );
 #endif
-ConVar nav_solid_props( "nav_solid_props", "0", FCVAR_CHEAT, "Make props solid to nav generation/editing" );
-ConVar nav_create_area_at_feet( "nav_create_area_at_feet", "0", FCVAR_CHEAT, "Anchor nav_begin_area Z to editing player's feet" );
+ConVar sm_nav_solid_props( "sm_nav_solid_props", "0", FCVAR_CHEAT, "Make props solid to nav generation/editing" );
+ConVar sm_nav_create_area_at_feet( "sm_nav_create_area_at_feet", "0", FCVAR_CHEAT, "Anchor nav_begin_area Z to editing player's feet" );
 
-ConVar nav_drag_selection_volume_zmax_offset( "nav_drag_selection_volume_zmax_offset", "32", FCVAR_REPLICATED, "The offset of the nav drag volume top from center" );
-ConVar nav_drag_selection_volume_zmin_offset( "nav_drag_selection_volume_zmin_offset", "32", FCVAR_REPLICATED, "The offset of the nav drag volume bottom from center" );
+ConVar sm_nav_drag_selection_volume_zmax_offset( "sm_nav_drag_selection_volume_zmax_offset", "32", FCVAR_REPLICATED, "The offset of the nav drag volume top from center" );
+ConVar sm_nav_drag_selection_volume_zmin_offset( "sm_nav_drag_selection_volume_zmin_offset", "32", FCVAR_REPLICATED, "The offset of the nav drag volume bottom from center" );
 extern IPlayerInfoManager* playerinfomanager;
 extern IServerGameClients* gameclients;
 extern IVEngineServer *engine;
@@ -62,7 +62,7 @@ Color s_dragSelectionSetAddColor( 100, 255, 100, 96 );
 Color s_dragSelectionSetDeleteColor( 255, 100, 100, 96 );
 
 #if DEBUG_NAV_NODES
-extern ConVar nav_show_nodes;
+extern ConVar sm_nav_show_nodes;
 #endif // DEBUG_NAV_NODES
 
 //--------------------------------------------------------------------------------------------------------------
@@ -73,7 +73,7 @@ int GetGridSize( bool forceGrid = false )
 		return (int)GenerationStepSize;
 	}
 
-	int snapVal = nav_snap_to_grid.GetInt();
+	int snapVal = sm_nav_snap_to_grid.GetInt();
 	if ( forceGrid && !snapVal )
 	{
 		snapVal = 1;
@@ -313,7 +313,7 @@ bool CNavMesh::FindActiveNavArea( void )
 
 	float maxRange = 2000.0f;		// 500
 	bool isClippingRayAtFeet = false;
-	if ( nav_create_area_at_feet.GetBool() && dir.z < 0 )
+	if (sm_nav_create_area_at_feet.GetBool() && dir.z < 0 )
 	{
 		Vector earPos;
 		gameclients->ClientEarPosition(ent, &earPos);
@@ -328,7 +328,7 @@ bool CNavMesh::FindActiveNavArea( void )
 
 	trace_t result;
 	CTraceFilterWalkableEntities filter( ent->GetIServerEntity(), COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
-	UTIL_TraceLine( from, to, (nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, &result );
+	UTIL_TraceLine( from, to, (sm_nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, &result );
 
 	if (result.fraction != 1.0f)
 	{
@@ -600,7 +600,7 @@ public:
 			++m_count;
 		}
 		
-		return (m_count < nav_draw_limit.GetInt());
+		return (m_count < sm_nav_draw_limit.GetInt());
 	}
 	
 	int m_count;
@@ -670,7 +670,7 @@ void EmitSound(edict_t *player, const char* soundName) {
  * Draw navigation areas and edit them
  * @todo Clean the whole edit system up - its structure is legacy from peculiarities in GoldSrc.
  */
-ConVar nav_show_compass( "nav_show_compass", "0", FCVAR_CHEAT );
+ConVar sm_nav_show_compass( "sm_nav_show_compass", "0", FCVAR_CHEAT );
 void CNavMesh::DrawEditMode( void )
 {
 	extern IVDebugOverlay* debugoverlay;
@@ -689,7 +689,7 @@ void CNavMesh::DrawEditMode( void )
 	const float maxRange = 1000.0f;		// 500
 
 #if DEBUG_NAV_NODES
-	if ( nav_show_nodes.GetBool() )
+	if (sm_nav_show_nodes.GetBool())
 	{
 		for ( CNavNode *node = CNavNode::GetFirst(); node != NULL; node = node->GetNext() )
 		{
@@ -767,7 +767,7 @@ void CNavMesh::DrawEditMode( void )
 			NavDrawLine( m_editCursorPos + Vector( cursorSize, 0, 0 ), m_editCursorPos + Vector( -cursorSize, 0, 0 ),	NavCursorColor );
 			NavDrawLine( m_editCursorPos + Vector( 0, cursorSize, 0 ), m_editCursorPos + Vector( 0, -cursorSize, 0 ),	NavCursorColor );
 
-			if ( nav_show_compass.GetBool() )
+			if (sm_nav_show_compass.GetBool())
 			{
 				const float offset = cursorSize * 1.5f;
 				Vector pos = m_editCursorPos;
@@ -835,7 +835,7 @@ void CNavMesh::DrawEditMode( void )
 			m_lastSelectedArea = NULL;
 
 			// if ladder changed, print its ID
-			if (m_selectedLadder != m_lastSelectedLadder || nav_show_area_info.GetBool())
+			if (m_selectedLadder != m_lastSelectedLadder || sm_nav_show_area_info.GetBool())
 			{
 				m_lastSelectedLadder = m_selectedLadder;
 
@@ -884,7 +884,7 @@ void CNavMesh::DrawEditMode( void )
 			// if area changed, print its ID
 			if ( m_selectedArea != m_lastSelectedArea )
 			{
-				m_showAreaInfoTimer.Start( nav_show_area_info.GetFloat() );
+				m_showAreaInfoTimer.Start(sm_nav_show_area_info.GetFloat() );
 				m_lastSelectedArea = m_selectedArea;
 			}
 
@@ -1033,7 +1033,7 @@ void CNavMesh::DrawEditMode( void )
 			DrawSelectedSet draw( shift );
 
 			// if the selected set is small, just blast it out
-			if (m_selectedSet.Count() < nav_draw_limit.GetInt())
+			if (m_selectedSet.Count() < sm_nav_draw_limit.GetInt())
 			{
 				FOR_EACH_VEC( m_selectedSet, it )
 				{
@@ -1501,8 +1501,8 @@ void CNavMesh::CommandNavBeginDragSelecting( void )
 
 		// m_anchor starting corner
 		m_anchor = m_editCursorPos;
-		m_nDragSelectionVolumeZMax = nav_drag_selection_volume_zmax_offset.GetInt();
-		m_nDragSelectionVolumeZMin = nav_drag_selection_volume_zmin_offset.GetInt();
+		m_nDragSelectionVolumeZMax = sm_nav_drag_selection_volume_zmax_offset.GetInt();
+		m_nDragSelectionVolumeZMin = sm_nav_drag_selection_volume_zmin_offset.GetInt();
 	}
 	EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
 	SetMarkedArea( NULL );			// unmark the mark area
@@ -1560,8 +1560,8 @@ void CNavMesh::CommandNavBeginDragDeselecting( void )
 
 		// m_anchor starting corner
 		m_anchor = m_editCursorPos;
-		m_nDragSelectionVolumeZMax = nav_drag_selection_volume_zmax_offset.GetInt();
-		m_nDragSelectionVolumeZMin = nav_drag_selection_volume_zmin_offset.GetInt();
+		m_nDragSelectionVolumeZMax = sm_nav_drag_selection_volume_zmax_offset.GetInt();
+		m_nDragSelectionVolumeZMin = sm_nav_drag_selection_volume_zmin_offset.GetInt();
 	}
 	EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
 
@@ -1604,7 +1604,7 @@ void CNavMesh::CommandNavRaiseDragVolumeMax( void )
 		return;
 
 	m_nDragSelectionVolumeZMax += 32;
-	nav_drag_selection_volume_zmax_offset.SetValue( m_nDragSelectionVolumeZMax );
+	sm_nav_drag_selection_volume_zmax_offset.SetValue( m_nDragSelectionVolumeZMax );
 }
 
 
@@ -1615,7 +1615,7 @@ void CNavMesh::CommandNavLowerDragVolumeMax( void )
 		return;
 
 	m_nDragSelectionVolumeZMax = MAX( 0, m_nDragSelectionVolumeZMax - 32 );
-	nav_drag_selection_volume_zmax_offset.SetValue( m_nDragSelectionVolumeZMax );
+	sm_nav_drag_selection_volume_zmax_offset.SetValue( m_nDragSelectionVolumeZMax );
 }
 
 
@@ -1626,7 +1626,7 @@ void CNavMesh::CommandNavRaiseDragVolumeMin( void )
 		return;
 
 	m_nDragSelectionVolumeZMin = MAX( 0, m_nDragSelectionVolumeZMin - 32 );
-	nav_drag_selection_volume_zmin_offset.SetValue( m_nDragSelectionVolumeZMin );
+	sm_nav_drag_selection_volume_zmin_offset.SetValue( m_nDragSelectionVolumeZMin );
 }
 
 
@@ -1637,7 +1637,7 @@ void CNavMesh::CommandNavLowerDragVolumeMin( void )
 		return;
 
 	m_nDragSelectionVolumeZMin += 32;
-	nav_drag_selection_volume_zmin_offset.SetValue( m_nDragSelectionVolumeZMin );
+	sm_nav_drag_selection_volume_zmin_offset.SetValue( m_nDragSelectionVolumeZMin );
 }
 
 
@@ -1935,7 +1935,7 @@ void CNavMesh::CommandNavEndShiftXY( void )
 
 
 //--------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( nav_shift, "Shifts the selected areas by the specified amount", FCVAR_CHEAT )
+CON_COMMAND_F(sm_nav_shift, "Shifts the selected areas by the specified amount", FCVAR_CHEAT )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2026,7 +2026,7 @@ void CommandNavCenterInWorld( void )
 
 	Msg( "Shifting mesh by %f,%f\n", shift.x, shift.y );
 }
-ConCommand nav_world_center( "nav_world_center", CommandNavCenterInWorld, "Centers the nav mesh in the world", FCVAR_CHEAT );
+ConCommand sm_nav_world_center( "sm_nav_world_center", CommandNavCenterInWorld, "Centers the nav mesh in the world", FCVAR_CHEAT );
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -2600,7 +2600,7 @@ void CNavMesh::CommandNavEndArea( void )
 		TheNavMesh->AddNavArea( newArea );
 		EmitSound(player, "EDIT_END_AREA.Creating" );
 
-		if ( nav_create_place_on_ground.GetBool() )
+		if (sm_nav_create_place_on_ground.GetBool())
 		{
 			newArea->PlaceOnGround( NUM_CORNERS );
 		}
@@ -3476,7 +3476,7 @@ public:
 
 
 //--------------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( nav_select_radius, "Adds all areas in a radius to the selection set", FCVAR_CHEAT )
+CON_COMMAND_F(sm_nav_select_radius, "Adds all areas in a radius to the selection set", FCVAR_CHEAT )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;

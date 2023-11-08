@@ -72,28 +72,61 @@ SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 
 SMEXT_LINK(&g_SMNavExt);
 
+namespace Utils
+{
+	inline void CreateDataDirectory(const char* mod)
+	{
+		char fullpath[PLATFORM_MAX_PATH + 1];
+		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s", mod);
+
+		auto exists = std::filesystem::exists(fullpath);
+
+		if (!exists)
+		{
+			auto result = std::filesystem::create_directories(fullpath);
+
+			if (!result)
+			{
+				smutils->LogError(myself, "Failed to create data directory!");
+			}
+			else
+			{
+				smutils->LogMessage(myself, "Data directory created!");
+			}
+		}
+	}
+
+	inline void CreateConfigDirectory(const char* mod)
+	{
+		char fullpath[PLATFORM_MAX_PATH + 1];
+		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/smnav/%s", mod);
+
+		auto exists = std::filesystem::exists(fullpath);
+
+		if (!exists)
+		{
+			auto result = std::filesystem::create_directories(fullpath);
+
+			if (!result)
+			{
+				smutils->LogError(myself, "Failed to create configs directory!");
+			}
+			else
+			{
+				smutils->LogMessage(myself, "Configs directory created!");
+			}
+		}
+	}
+}
+
+
 bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();
-	char fullpath[PLATFORM_MAX_PATH + 1];
-	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s", mod);
 
-	auto exists = std::filesystem::exists(fullpath);
-
-	if (!exists)
-	{
-		auto result = std::filesystem::create_directories(fullpath);
-
-		if (!result)
-		{
-			smutils->LogError(myself, "Failed to create data directory!");
-		}
-		else
-		{
-			smutils->LogMessage(myself, "Data directory created!");
-		}
-	}
+	Utils::CreateDataDirectory(mod);
+	Utils::CreateConfigDirectory(mod);
 
 	ConVar_Register(0, this);
 

@@ -263,7 +263,7 @@ bool isBreakable(edict_t* target) {
  * Return true if given entity can be ignored when moving
  */
 bool IsEntityWalkable(edict_t *entity, unsigned int flags) {
-	extern ConVar nav_solid_props;
+	extern ConVar sm_nav_solid_props;
 	if (FClassnameIs(entity, "worldspawn") || FClassnameIs(entity, "player"))
 		return false;
 	// if we hit a door, assume its walkable because it will open when we touch it
@@ -298,7 +298,7 @@ bool IsEntityWalkable(edict_t *entity, unsigned int flags) {
 	return (((FClassnameIs( entity, "func_breakable" ) || FClassnameIs( entity, "func_breakable_surf" ))
 			&& *BaseEntity(entity).getHealth() > 0) && (flags & WALK_THRU_BREAKABLES))
 			|| FClassnameIs( entity, "func_playerinfected_clip" )
-			|| (nav_solid_props.GetBool() && FClassnameIs( entity, "prop_*" ));
+			|| (sm_nav_solid_props.GetBool() && FClassnameIs( entity, "prop_*" ));
 }
 
 edict_t* UTIL_GetListenServerEnt() {

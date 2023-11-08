@@ -32,7 +32,7 @@
 #include "util/UtilTrace.h"
 
 extern IVDebugOverlay* debugoverlay;
-extern ConVar nav_quicksave;
+extern ConVar sm_nav_quicksave;
 extern IVEngineServer* engine;
 extern IPlayerInfoManager *playerinfomanager;
 extern IGameEventManager2 *gameeventmanager;
@@ -48,20 +48,20 @@ CNavArea *CNavArea::m_openListTail = NULL;
 bool CNavArea::m_isReset = false;
 uint32 CNavArea::s_nCurrVisTestCounter = 0;
 
-ConVar nav_coplanar_slope_limit( "nav_coplanar_slope_limit", "0.99", FCVAR_CHEAT );
-ConVar nav_coplanar_slope_limit_displacement( "nav_coplanar_slope_limit_displacement", "0.7", FCVAR_CHEAT );
-ConVar nav_split_place_on_ground( "nav_split_place_on_ground", "0", FCVAR_CHEAT, "If true, nav areas will be placed flush with the ground when split." );
-ConVar nav_area_bgcolor( "nav_area_bgcolor", "0 0 0 30", FCVAR_CHEAT, "RGBA color to draw as the background color for nav areas while editing." );
-ConVar nav_corner_adjust_adjacent( "nav_corner_adjust_adjacent", "18", FCVAR_CHEAT, "radius used to raise/lower corners in nearby areas when raising/lowering corners." );
-ConVar nav_show_light_intensity( "nav_show_light_intensity", "0", FCVAR_CHEAT );
-ConVar nav_debug_blocked( "nav_debug_blocked", "0", FCVAR_CHEAT );
-ConVar nav_show_contiguous( "nav_show_continguous", "0", FCVAR_CHEAT, "Highlight non-contiguous connections" );
+ConVar sm_nav_coplanar_slope_limit( "sm_nav_coplanar_slope_limit", "0.99", FCVAR_CHEAT );
+ConVar sm_nav_coplanar_slope_limit_displacement( "sm_nav_coplanar_slope_limit_displacement", "0.7", FCVAR_CHEAT );
+ConVar sm_nav_split_place_on_ground( "sm_nav_split_place_on_ground", "0", FCVAR_CHEAT, "If true, nav areas will be placed flush with the ground when split." );
+ConVar sm_nav_area_bgcolor( "sm_nav_area_bgcolor", "0 0 0 30", FCVAR_CHEAT, "RGBA color to draw as the background color for nav areas while editing." );
+ConVar sm_nav_corner_adjust_adjacent( "sm_nav_corner_adjust_adjacent", "18", FCVAR_CHEAT, "radius used to raise/lower corners in nearby areas when raising/lowering corners." );
+ConVar sm_nav_show_light_intensity( "sm_nav_show_light_intensity", "0", FCVAR_CHEAT );
+ConVar sm_nav_debug_blocked( "sm_nav_debug_blocked", "0", FCVAR_CHEAT );
+ConVar sm_nav_show_contiguous( "sm_nav_show_continguous", "0", FCVAR_CHEAT, "Highlight non-contiguous connections" );
 
 const float DEF_NAV_VIEW_DISTANCE = 1500.0;
-ConVar nav_max_view_distance( "nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
-ConVar nav_update_visibility_on_edit( "nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
-ConVar nav_potentially_visible_dot_tolerance( "nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
-ConVar nav_show_potentially_visible( "nav_show_potentially_visible", "0", FCVAR_CHEAT, "Show areas that are potentially visible from the current nav area" );
+ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
+ConVar sm_nav_update_visibility_on_edit( "sm_nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
+ConVar sm_nav_potentially_visible_dot_tolerance( "sm_nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
+ConVar sm_nav_show_potentially_visible( "sm_nav_show_potentially_visible", "0", FCVAR_CHEAT, "Show areas that are potentially visible from the current nav area" );
 
 Color s_selectedSetColor( 255, 255, 200, 96 );
 Color s_selectedSetBorderColor( 100, 100, 0, 255 );
@@ -106,8 +106,8 @@ static void SelectedSetColorChaged(IConVar *var, const char *pOldValue,
 		(*color)[3] = a;
 	}
 }
-ConVar nav_selected_set_color( "nav_selected_set_color", "255 255 200 96", FCVAR_CHEAT, "Color used to draw the selected set background while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
-ConVar nav_selected_set_border_color( "nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
+ConVar sm_nav_selected_set_color( "sm_nav_selected_set_color", "255 255 200 96", FCVAR_CHEAT, "Color used to draw the selected set background while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
+ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 
 float CountdownTimer::Now(void) const {
 	// work-around since client header doesn't like inlined gpGlobals->curtime
@@ -1285,7 +1285,7 @@ bool CNavArea::SplitEdit( bool splitAlongX, float splitEdge, CNavArea **outAlpha
 		FinishSplitEdit( beta, WEST );
 	}
 
-	if ( !TheNavMesh->IsGenerating() && nav_split_place_on_ground.GetBool() )
+	if ( !TheNavMesh->IsGenerating() && sm_nav_split_place_on_ground.GetBool() )
 	{
 		alpha->PlaceOnGround( NUM_CORNERS );
 		beta->PlaceOnGround( NUM_CORNERS );
@@ -2121,13 +2121,13 @@ bool CNavArea::IsFlat( void ) const
 	ComputeNormal( &normal );
 	ComputeNormal( &otherNormal, true );
 
-	float tolerance = nav_coplanar_slope_limit.GetFloat();
+	float tolerance = sm_nav_coplanar_slope_limit.GetFloat();
 	if ( ( m_node[ NORTH_WEST ] && m_node[ NORTH_WEST ]->IsOnDisplacement() ) ||
 		( m_node[ NORTH_EAST ] && m_node[ NORTH_EAST ]->IsOnDisplacement() ) ||
 		( m_node[ SOUTH_EAST ] && m_node[ SOUTH_EAST ]->IsOnDisplacement() ) ||
 		( m_node[ SOUTH_WEST ] && m_node[ SOUTH_WEST ]->IsOnDisplacement() ) )
 	{
-		tolerance = nav_coplanar_slope_limit_displacement.GetFloat();
+		tolerance = sm_nav_coplanar_slope_limit_displacement.GetFloat();
 	}
 
 	if (DotProduct( normal, otherNormal ) > tolerance)
@@ -2167,13 +2167,13 @@ bool CNavArea::IsCoplanar( const CNavArea *area ) const
 	area->ComputeNormal( &otherNormal );
 
 	// can only merge areas that are nearly planar, to ensure areas do not differ from underlying geometry much
-	float tolerance = nav_coplanar_slope_limit.GetFloat();
+	float tolerance = sm_nav_coplanar_slope_limit.GetFloat();
 	if ( ( m_node[ NORTH_WEST ] && m_node[ NORTH_WEST ]->IsOnDisplacement() ) ||
 		( m_node[ NORTH_EAST ] && m_node[ NORTH_EAST ]->IsOnDisplacement() ) ||
 		( m_node[ SOUTH_EAST ] && m_node[ SOUTH_EAST ]->IsOnDisplacement() ) ||
 		( m_node[ SOUTH_WEST ] && m_node[ SOUTH_WEST ]->IsOnDisplacement() ) )
 	{
-		tolerance = nav_coplanar_slope_limit_displacement.GetFloat();
+		tolerance = sm_nav_coplanar_slope_limit_displacement.GetFloat();
 	}
 
 	if (DotProduct( normal, otherNormal ) > tolerance)
@@ -2971,7 +2971,7 @@ void CNavArea::Draw( void ) const
 	sw.y = se.y;
 	sw.z = m_swZ;
 
-	if ( nav_show_light_intensity.GetBool() )
+	if (sm_nav_show_light_intensity.GetBool())
 	{
 		for ( int i=0; i<NUM_CORNERS; ++i )
 		{
@@ -2985,7 +2985,7 @@ void CNavArea::Draw( void ) const
 	}
 
 	int bgcolor[4];
-	if ( 4 == sscanf( nav_area_bgcolor.GetString(), "%d %d %d %d", &(bgcolor[0]), &(bgcolor[1]), &(bgcolor[2]), &(bgcolor[3]) ) )
+	if ( 4 == sscanf(sm_nav_area_bgcolor.GetString(), "%d %d %d %d", &(bgcolor[0]), &(bgcolor[1]), &(bgcolor[2]), &(bgcolor[3]) ) )
 	{
 		for ( int i=0; i<4; ++i )
 			bgcolor[i] = clamp( bgcolor[i], 0, 255 );
@@ -3454,7 +3454,7 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 				Vector drawTo;
 				adj->GetClosestPointOnArea( to, &drawTo );
 
-				if ( nav_show_contiguous.GetBool() )
+				if (sm_nav_show_contiguous.GetBool())
 				{
 					if ( IsContiguous( adj ) )
 						NavDrawLine( from, drawTo, NavConnectedContiguous );
@@ -4128,7 +4128,7 @@ void ClassifySniperSpot( HidingSpot *spot )
  */
 void CNavArea::ComputeSniperSpots( void )
 {
-	if (nav_quicksave.GetBool())
+	if (sm_nav_quicksave.GetBool())
 		return;
 
 	FOR_EACH_VEC( m_hidingSpots, it )
@@ -4275,7 +4275,7 @@ void CNavArea::ComputeSpotEncounters( void )
 {
 	m_spotEncounters.RemoveAll();
 
-	if (nav_quicksave.GetBool())
+	if (sm_nav_quicksave.GetBool())
 		return;
 
 	// for each adjacent area
@@ -4439,7 +4439,7 @@ bool CNavArea::ComputeLighting( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( nav_update_lighting, "Recomputes lighting values", FCVAR_CHEAT )
+CON_COMMAND_F( sm_nav_update_lighting, "Recomputes lighting values", FCVAR_CHEAT )
 {
 
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
@@ -4513,7 +4513,7 @@ void CNavArea::RaiseCorner( NavCornerType corner, int amount, bool raiseAdjacent
 		m_invDxCorners = m_invDyCorners = 0;
 	}
 
-	if ( !raiseAdjacentCorners || nav_corner_adjust_adjacent.GetFloat() <= 0.0f )
+	if ( !raiseAdjacentCorners || sm_nav_corner_adjust_adjacent.GetFloat() <= 0.0f )
 	{
 		return;
 	}
@@ -4522,7 +4522,7 @@ void CNavArea::RaiseCorner( NavCornerType corner, int amount, bool raiseAdjacent
 	CNavArea::MakeNewMarker();
 	Mark();
 
-	const float tolerance = nav_corner_adjust_adjacent.GetFloat();
+	const float tolerance = sm_nav_corner_adjust_adjacent.GetFloat();
 
 	Vector cornerPos = GetCorner( corner );
 	cornerPos.z -= amount; // use the pre-adjustment corner for adjacency checks
@@ -4768,7 +4768,7 @@ static void CommandNavUpdateBlocked( void )
 	}
 
 }
-static ConCommand nav_update_blocked( "nav_update_blocked", CommandNavUpdateBlocked, "Updates the blocked/unblocked status for every nav area.", FCVAR_GAMEDLL );
+static ConCommand sm_nav_update_blocked( "sm_nav_update_blocked", CommandNavUpdateBlocked, "Updates the blocked/unblocked status for every nav area.", FCVAR_GAMEDLL );
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -4835,7 +4835,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 			}
 		}
 
-		if ( nav_debug_blocked.GetBool() )
+		if (sm_nav_debug_blocked.GetBool() )
 		{
 			if ( blocker )
 			{
@@ -4850,7 +4850,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 		}
 		TheNavMesh->OnAreaBlocked( this );
 	}
-	else if ( nav_debug_blocked.GetBool() )
+	else if (sm_nav_debug_blocked.GetBool())
 	{
 		if ( blocker )
 		{
@@ -4905,7 +4905,7 @@ void CNavArea::UpdateBlockedFromNavBlockers( void )
 
 		if ( isBlocked )
 		{
-			if ( nav_debug_blocked.GetBool() )
+			if (sm_nav_debug_blocked.GetBool())
 			{
 				ConColorMsg( Color( 0, 255, 128, 255 ), "area %d is blocked by a nav blocker\n", GetID() );
 			}
@@ -4913,7 +4913,7 @@ void CNavArea::UpdateBlockedFromNavBlockers( void )
 		}
 		else
 		{
-			if ( nav_debug_blocked.GetBool() )
+			if (sm_nav_debug_blocked.GetBool())
 			{
 				ConColorMsg( Color( 0, 128, 255, 255 ), "area %d is unblocked by a nav blocker\n", GetID() );
 			}
@@ -4951,7 +4951,7 @@ void CNavArea::UnblockArea( int teamID )
 			gameeventmanager->FireEvent( event );
 		}
 
-		if ( nav_debug_blocked.GetBool() )
+		if (sm_nav_debug_blocked.GetBool())
 		{
 			ConColorMsg( Color( 255, 0, 128, 255 ), "area %d is unblocked by UnblockArea\n", GetID() );
 		}
@@ -5336,7 +5336,7 @@ static void CommandNavCheckFloor( void )
 		DevMsg( "nav_check_floor took %2.2f ms\n", time );
 	}
 }
-static ConCommand nav_check_floor( "nav_check_floor", CommandNavCheckFloor, "Updates the blocked/unblocked status for every nav area.", FCVAR_GAMEDLL );
+static ConCommand sm_nav_check_floor( "sm_nav_check_floor", CommandNavCheckFloor, "Updates the blocked/unblocked status for every nav area.", FCVAR_GAMEDLL );
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -5390,7 +5390,7 @@ static void CommandNavSelectOverlapping( void )
 
 	Msg( "%d overlapping areas selected\n", TheNavMesh->GetSelecteSetSize() );
 }
-static ConCommand nav_select_overlapping( "nav_select_overlapping", CommandNavSelectOverlapping, "Selects nav areas that are overlapping others.", FCVAR_GAMEDLL );
+static ConCommand sm_nav_select_overlapping( "sm_nav_select_overlapping", CommandNavSelectOverlapping, "Selects nav areas that are overlapping others.", FCVAR_GAMEDLL );
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -5463,10 +5463,10 @@ CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool
 {
 	float distanceSq = area->GetCenter().DistToSqr( GetCenter() );
 
-	if ( nav_max_view_distance.GetFloat() > 0.00001f )
+	if (sm_nav_max_view_distance.GetFloat() > 0.00001f)
 	{
 		// limit range of visibility check
-		if ( distanceSq > Sqr( nav_max_view_distance.GetFloat() ) )
+		if (distanceSq > Sqr(sm_nav_max_view_distance.GetFloat()))
 		{
 			// too far to be visible
 			return NOT_VISIBLE;
@@ -5552,7 +5552,7 @@ CNavArea::VisibilityType CNavArea::ComputeVisibility( const CNavArea *area, bool
 
 	Vector eyeToCenter( GetCenter() - area->GetCenter() );
 	eyeToCenter.NormalizeInPlace();
-	float angleTolerance = nav_potentially_visible_dot_tolerance.GetFloat();	// if corner-to-eye angles are this close to center-to-eye angles, assume the same result and skip the trace
+	float angleTolerance = sm_nav_potentially_visible_dot_tolerance.GetFloat();	// if corner-to-eye angles are this close to center-to-eye angles, assume the same result and skip the trace
 
 	// step across area checking visibility to given area
 	for( shift.y = margin; shift.y <= GetSizeY() - margin; shift.y += GenerationStepSize )
@@ -5697,7 +5697,7 @@ void CNavArea::ComputeVisToArea( CNavArea *&pOtherArea )
 
 		visOtherToThis = g_pCurVisArea->ComputeVisibility( area, true, true, &bOutsidePVS ); // TODO: Hacky right now. Compute visibility for the "complete" case actually returns how completely visible the area is to the other. Should fix it to be more clear [1/30/2009 tom]
 
-		if ( !bOutsidePVS && ( visOtherToThis || ( g_pCurVisArea->GetCenter() - area->GetCenter() ).LengthSqr() < Sqr( nav_max_view_distance.GetFloat() ) ) )
+		if (!bOutsidePVS && ( visOtherToThis || ( g_pCurVisArea->GetCenter() - area->GetCenter() ).LengthSqr() < Sqr(sm_nav_max_view_distance.GetFloat())))
 		{
 			visThisToOther = area->ComputeVisibility( g_pCurVisArea, true, false );
 		}
@@ -5741,7 +5741,7 @@ void CNavArea::ComputeVisibilityToMesh( void )
 
 	// collect all possible nav areas that could be visible from this area
 	NavAreaCollector collector;
-	float radius = nav_max_view_distance.GetFloat();
+	float radius = sm_nav_max_view_distance.GetFloat();
 	if ( radius == 0.0f )
 	{
 		radius = DEF_NAV_VIEW_DISTANCE;
@@ -5838,7 +5838,7 @@ bool CNavArea::IsPartiallyVisible( const Vector &eye, const edict_t *ignore ) co
 
 	Vector eyeToCenter( GetCenter() + Vector( 0, 0, offset ) - eye );
 	eyeToCenter.NormalizeInPlace();
-	float angleTolerance = nav_potentially_visible_dot_tolerance.GetFloat();	// if corner-to-eye angles are this close to center-to-eye angles, assume the same result and skip the trace
+	float angleTolerance = sm_nav_potentially_visible_dot_tolerance.GetFloat();	// if corner-to-eye angles are this close to center-to-eye angles, assume the same result and skip the trace
 
 	for( int c=0; c<NUM_CORNERS; ++c )
 	{

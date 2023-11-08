@@ -139,12 +139,12 @@ void CNavNode::CleanupGeneration()
 
 //--------------------------------------------------------------------------------------------------------------
 #if DEBUG_NAV_NODES
-ConVar nav_show_nodes( "nav_show_nodes", "0", FCVAR_CHEAT );
-ConVar nav_show_node_id( "nav_show_node_id", "0", FCVAR_CHEAT );
-ConVar nav_test_node( "nav_test_node", "0", FCVAR_CHEAT );
-ConVar nav_test_node_crouch( "nav_test_node_crouch", "0", FCVAR_CHEAT );
-ConVar nav_test_node_crouch_dir( "nav_test_node_crouch_dir", "4", FCVAR_CHEAT );
-ConVar nav_show_node_grid( "nav_show_node_grid", "0", FCVAR_CHEAT );
+ConVar sm_nav_show_nodes( "sm_nav_show_nodes", "0", FCVAR_CHEAT );
+ConVar sm_nav_show_node_id( "sm_nav_show_node_id", "0", FCVAR_CHEAT );
+ConVar sm_nav_test_node( "sm_nav_test_node", "0", FCVAR_CHEAT );
+ConVar sm_nav_test_node_crouch( "sm_nav_test_node_crouch", "0", FCVAR_CHEAT );
+ConVar sm_nav_test_node_crouch_dir( "sm_nav_test_node_crouch_dir", "4", FCVAR_CHEAT );
+ConVar sm_nav_show_node_grid( "sm_nav_show_node_grid", "0", FCVAR_CHEAT );
 #endif // DEBUG_NAV_NODES
 
 
@@ -228,7 +228,7 @@ void CNavNode::Draw( void )
 {
 #if DEBUG_NAV_NODES
 
-	if ( !nav_show_nodes.GetBool() )
+	if ( !sm_nav_show_nodes.GetBool() )
 		return;
 
 	int r = 0, g = 0, b = 0;
@@ -255,23 +255,23 @@ void CNavNode::Draw( void )
 
 	Cross3D( m_pos, 2, r, g, b, true, 0.1f );
 
-	if ( (!m_isCovered && nav_show_node_id.GetBool()) || (m_isCovered && nav_show_node_id.GetInt() < 0) )
+	if ( (!m_isCovered && sm_nav_show_node_id.GetBool()) || (m_isCovered && sm_nav_show_node_id.GetInt() < 0) )
 	{
 		char text[16];
 		Q_snprintf( text, sizeof( text ), "%d", m_id );
 		Text( m_pos, text, true, 0.1f );
 	}
 
-	if ( (unsigned int)(nav_test_node.GetInt()) == m_id )
+	if ( (unsigned int)(sm_nav_test_node.GetInt()) == m_id )
 	{
 		TheNavMesh->TestArea( this, 1, 1 );
-		nav_test_node.SetValue( 0 );
+		sm_nav_test_node.SetValue( 0 );
 	}
 
-	if ( (unsigned int)(nav_test_node_crouch.GetInt()) == m_id )
+	if ( (unsigned int)(sm_nav_test_node_crouch.GetInt()) == m_id )
 	{
 		CheckCrouch();
-		nav_test_node_crouch.SetValue( 0 );
+		sm_nav_test_node_crouch.SetValue( 0 );
 	}
 
 	if ( GetAttributes() & NAV_MESH_CROUCH )
@@ -299,7 +299,7 @@ void CNavNode::Draw( void )
 		}
 	}
 
-	if ( nav_show_node_grid.GetBool() )
+	if (sm_nav_show_node_grid.GetBool() )
 	{
 		for ( int i = NORTH; i < NUM_DIRECTIONS; i++ )
 		{
@@ -387,7 +387,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 			{
 				// We found a crouch-sized space.  See if we can stand up.
 #if DEBUG_NAV_NODES
-				if ( (unsigned int)(nav_test_node_crouch.GetInt()) == GetID() )
+				if ( (unsigned int)(sm_nav_test_node_crouch.GetInt()) == GetID() )
 				{
 					debugoverlay->AddBoxOverlay(start, mins, maxs,
 							QAngle(0.0f, 0.0f, 0.0f), 0, 255, 255, 100, 100);
@@ -396,7 +396,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 				return true;
 			}
 #if DEBUG_NAV_NODES
-			if ( (unsigned int)(nav_test_node_crouch.GetInt()) == GetID() )
+			if ( (unsigned int)(sm_nav_test_node_crouch.GetInt()) == GetID() )
 			{
 				debugoverlay->AddBoxOverlay(start, mins, maxs,
 						QAngle(0.0f, 0.0f, 0.0f), 255, 0, 0, 100, 100);
@@ -420,7 +420,7 @@ void CNavNode::CheckCrouch( void )
 	for ( int i=0; i<NUM_CORNERS; ++i )
 	{
 #if DEBUG_NAV_NODES
-		if ( nav_test_node_crouch_dir.GetInt() != NUM_CORNERS && i != nav_test_node_crouch_dir.GetInt() )
+		if (sm_nav_test_node_crouch_dir.GetInt() != NUM_CORNERS && i != sm_nav_test_node_crouch_dir.GetInt() )
 			continue;
 #endif // DEBUG_NAV_NODES
 

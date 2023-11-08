@@ -14,10 +14,10 @@
 // NOTE: This has to be the last file included!
 #include "tier0/memdbgon.h"
 
-extern ConVar nav_snap_to_grid;
-extern ConVar nav_split_place_on_ground;
-extern ConVar nav_coplanar_slope_limit;
-extern ConVar nav_coplanar_slope_limit_displacement;
+extern ConVar sm_nav_snap_to_grid;
+extern ConVar sm_nav_split_place_on_ground;
+extern ConVar sm_nav_coplanar_slope_limit;
+extern ConVar sm_nav_coplanar_slope_limit_displacement;
 extern IVEngineServer* engine;
 extern NavAreaVector TheNavAreas;
 
@@ -91,7 +91,7 @@ static bool ReduceToComponentAreas( CNavArea *area, bool addToSelectedSet )
 
 
 //--------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( nav_chop_selected, "Chops all selected areas into their component 1x1 areas", FCVAR_CHEAT )
+CON_COMMAND_F(sm_nav_chop_selected, "Chops all selected areas into their component 1x1 areas", FCVAR_CHEAT )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;
@@ -144,17 +144,17 @@ void CNavMesh::SimplifySelectedAreas( void )
 {
 	// Save off somve cvars: we need to place nodes on ground, we need snap to grid set, and we loosen slope tolerances
 	m_generationMode = GENERATE_SIMPLIFY;
-	bool savedSplitPlaceOnGround = nav_split_place_on_ground.GetBool();
-	nav_split_place_on_ground.SetValue( 1 );
+	bool savedSplitPlaceOnGround = sm_nav_split_place_on_ground.GetBool();
+	sm_nav_split_place_on_ground.SetValue( 1 );
 
-	float savedCoplanarSlopeDisplacementLimit = nav_coplanar_slope_limit_displacement.GetFloat();
-	nav_coplanar_slope_limit_displacement.SetValue( MIN( 0.5f, savedCoplanarSlopeDisplacementLimit ) );
+	float savedCoplanarSlopeDisplacementLimit = sm_nav_coplanar_slope_limit_displacement.GetFloat();
+	sm_nav_coplanar_slope_limit_displacement.SetValue( MIN( 0.5f, savedCoplanarSlopeDisplacementLimit ) );
 
-	float savedCoplanarSlopeLimit = nav_coplanar_slope_limit.GetFloat();
-	nav_coplanar_slope_limit.SetValue( MIN( 0.5f, savedCoplanarSlopeLimit ) );
+	float savedCoplanarSlopeLimit = sm_nav_coplanar_slope_limit.GetFloat();
+	sm_nav_coplanar_slope_limit.SetValue( MIN( 0.5f, savedCoplanarSlopeLimit ) );
 
-	int savedGrid = nav_snap_to_grid.GetInt();
-	nav_snap_to_grid.SetValue( 1 );
+	int savedGrid = sm_nav_snap_to_grid.GetInt();
+	sm_nav_snap_to_grid.SetValue( 1 );
 
 	StripNavigationAreas();
 	SetMarkedArea( NULL );
@@ -260,15 +260,15 @@ void CNavMesh::SimplifySelectedAreas( void )
 #endif
 
 	m_generationMode = GENERATE_NONE;
-	nav_split_place_on_ground.SetValue( savedSplitPlaceOnGround );
-	nav_coplanar_slope_limit_displacement.SetValue( savedCoplanarSlopeDisplacementLimit );
-	nav_coplanar_slope_limit.SetValue( savedCoplanarSlopeLimit );
-	nav_snap_to_grid.SetValue( savedGrid );
+	sm_nav_split_place_on_ground.SetValue( savedSplitPlaceOnGround );
+	sm_nav_coplanar_slope_limit_displacement.SetValue( savedCoplanarSlopeDisplacementLimit );
+	sm_nav_coplanar_slope_limit.SetValue( savedCoplanarSlopeLimit );
+	sm_nav_snap_to_grid.SetValue( savedGrid );
 }
 
 
 //--------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( nav_simplify_selected, "Chops all selected areas into their component 1x1 areas and re-merges them together into larger areas", FCVAR_CHEAT )
+CON_COMMAND_F(sm_nav_simplify_selected, "Chops all selected areas into their component 1x1 areas and re-merges them together into larger areas", FCVAR_CHEAT )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;

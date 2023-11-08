@@ -39,14 +39,14 @@ static float lastMsgTime = 0.0f;
 bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace_t *trace, float zLimit = DeathDrop );
 bool StayOnFloor( trace_t *trace, float zLimit = DeathDrop );
 
-ConVar nav_slope_limit( "nav_slope_limit", "0.7", FCVAR_CHEAT, "The ground unit normal's Z component must be greater than this for nav areas to be generated." );
-ConVar nav_slope_tolerance( "nav_slope_tolerance", "0.1", FCVAR_CHEAT, "The ground unit normal's Z component must be this close to the nav area's Z component to be generated." );
-ConVar nav_displacement_test( "nav_displacement_test", "10000", FCVAR_CHEAT, "Checks for nodes embedded in displacements (useful for in-development maps)" );
-ConVar nav_generate_fencetops( "nav_generate_fencetops", "1", FCVAR_CHEAT, "Autogenerate nav areas on fence and obstacle tops" );
-ConVar nav_generate_fixup_jump_areas( "nav_generate_fixup_jump_areas", "1", FCVAR_CHEAT, "Convert obsolete jump areas into 2-way connections" );
-ConVar nav_generate_incremental_range( "nav_generate_incremental_range", "2000", FCVAR_CHEAT );
-ConVar nav_generate_incremental_tolerance( "nav_generate_incremental_tolerance", "0", FCVAR_CHEAT, "Z tolerance for adding new nav areas." );
-ConVar nav_area_max_size( "nav_area_max_size", "50", FCVAR_CHEAT, "Max area size created in nav generation" );
+ConVar sm_nav_slope_limit( "sm_nav_slope_limit", "0.7", FCVAR_CHEAT, "The ground unit normal's Z component must be greater than this for nav areas to be generated." );
+ConVar sm_nav_slope_tolerance( "sm_nav_slope_tolerance", "0.1", FCVAR_CHEAT, "The ground unit normal's Z component must be this close to the nav area's Z component to be generated." );
+ConVar sm_nav_displacement_test( "sm_nav_displacement_test", "10000", FCVAR_CHEAT, "Checks for nodes embedded in displacements (useful for in-development maps)" );
+ConVar sm_nav_generate_fencetops( "sm_nav_generate_fencetops", "1", FCVAR_CHEAT, "Autogenerate nav areas on fence and obstacle tops" );
+ConVar sm_nav_generate_fixup_jump_areas( "sm_nav_generate_fixup_jump_areas", "1", FCVAR_CHEAT, "Convert obsolete jump areas into 2-way connections" );
+ConVar sm_nav_generate_incremental_range( "sm_nav_generate_incremental_range", "2000", FCVAR_CHEAT );
+ConVar sm_nav_generate_incremental_tolerance( "sm_nav_generate_incremental_tolerance", "0", FCVAR_CHEAT, "Z tolerance for adding new nav areas." );
+ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "50", FCVAR_CHEAT, "Max area size created in nav generation" );
 
 // Common bounding box for traces
 Vector NavTraceMins( -0.45, -0.45, 0 );
@@ -612,12 +612,12 @@ void CNavMesh::MarkJumpAreas( void )
 		area->ComputeNormal( &otherNormal, true );
 
 		float lowestNormalZ = MIN( normal.z, otherNormal.z );
-		if (lowestNormalZ < nav_slope_limit.GetFloat())
+		if (lowestNormalZ < sm_nav_slope_limit.GetFloat())
 		{
 			// The area is a jump area, and we don't merge jump areas together
 			area->SetAttributes( area->GetAttributes() | NAV_MESH_JUMP | NAV_MESH_NO_MERGE );
 		}
-		else if ( lowestNormalZ < nav_slope_limit.GetFloat() + nav_slope_tolerance.GetFloat() )
+		else if ( lowestNormalZ < sm_nav_slope_limit.GetFloat() + sm_nav_slope_tolerance.GetFloat() )
 		{
 			Vector testPos = area->GetCenter();
 			testPos.z += HalfHumanHeight;
@@ -628,7 +628,7 @@ void CNavMesh::MarkJumpAreas( void )
 				// If the ground normal is divergent from the area's normal, mark it as a jump area - it's not
 				// really representative of the ground.
 				float deltaNormalZ = fabs( groundNormal.z - lowestNormalZ );
-				if ( deltaNormalZ > nav_slope_tolerance.GetFloat() )
+				if ( deltaNormalZ > sm_nav_slope_tolerance.GetFloat() )
 				{
 					// The area is a jump area, and we don't merge jump areas together
 					area->SetAttributes( area->GetAttributes() | NAV_MESH_JUMP | NAV_MESH_NO_MERGE );
@@ -685,7 +685,7 @@ void AdjustObstacleDistances( float *pObstacleStartDist, float *pObstacleEndDist
 */
 void CNavMesh::HandleObstacleTopAreas( void )
 {
-	if ( !nav_generate_fencetops.GetBool() )
+	if ( !sm_nav_generate_fencetops.GetBool() )
 		return;
 
 	// For any 1x1 area that is internally blocked by an obstacle, raise it on top of the obstacle and size to fit.
@@ -1135,7 +1135,7 @@ void CNavMesh::RemoveOverlappingObstacleTopAreas()
 
 		// Remove any obstacle areas that are steep enough to be jump areas
 		float lowestNormalZ = MIN( normal.z, otherNormal.z );
-		if ( lowestNormalZ < nav_slope_limit.GetFloat() )
+		if ( lowestNormalZ < sm_nav_slope_limit.GetFloat() )
 		{
 			vecAreasToRemove.AddToTail( area );
 		}
@@ -1187,7 +1187,7 @@ static void CommandNavCheckStairs( void )
 
 	TheNavMesh->MarkStairAreas();
 }
-static ConCommand nav_check_stairs( "nav_check_stairs", CommandNavCheckStairs, "Update the nav mesh STAIRS attribute", FCVAR_CHEAT );
+static ConCommand sm_nav_check_stairs( "sm_nav_check_stairs", CommandNavCheckStairs, "Update the nav mesh STAIRS attribute", FCVAR_CHEAT );
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1221,7 +1221,7 @@ StairTestType IsStairs( const Vector &start, const Vector &end, StairTestType re
 	const float inc = 5.0f;
 
 	// the minimum height change each step to be a step and not a slope
-	const float minStepZ = inc * tan( acos( nav_slope_limit.GetFloat() ) );
+	const float minStepZ = inc * tan( acos(sm_nav_slope_limit.GetFloat() ) );
 	const float MinStairNormal = 0.97f; // we don't care about ramps, just actual flat steps
 
 	float t;
@@ -1391,7 +1391,7 @@ bool CNavArea::TestStairs( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-CON_COMMAND_F( nav_test_stairs, "Test the selected set for being on stairs", FCVAR_CHEAT )
+CON_COMMAND_F(sm_nav_test_stairs, "Test the selected set for being on stairs", FCVAR_CHEAT )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -1417,7 +1417,7 @@ CON_COMMAND_F( nav_test_stairs, "Test the selected set for being on stairs", FCV
  */
 void CNavMesh::RemoveJumpAreas( void )
 {
-	if ( !nav_generate_fixup_jump_areas.GetBool() )
+	if ( !sm_nav_generate_fixup_jump_areas.GetBool() )
 	{
 		return;
 	}
@@ -2006,7 +2006,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ NORTH ][ nit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * nav_area_max_size.GetInt() )
+						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (area->m_node[ NORTH_WEST ] == adjArea->m_node[ SOUTH_WEST ] &&
@@ -2036,7 +2036,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ SOUTH ][ sit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * nav_area_max_size.GetInt() )
+						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (adjArea->m_node[ NORTH_WEST ] == area->m_node[ SOUTH_WEST ] &&
@@ -2068,7 +2068,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ WEST ][ wit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea ) // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * nav_area_max_size.GetInt() )
+						|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (area->m_node[ NORTH_WEST ] == adjArea->m_node[ NORTH_EAST ] &&
@@ -2099,7 +2099,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ EAST ][ eit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-					|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * nav_area_max_size.GetInt() )
+					|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (adjArea->m_node[ NORTH_WEST ] == area->m_node[ NORTH_EAST ] &&
@@ -3100,7 +3100,7 @@ int CNavMesh::BuildArea( CNavNode *node, int width, int height )
 void CNavMesh::CreateNavAreasFromNodes( void )
 {
 	// haven't yet seen a map use larger than 30...
-	int tryWidth = nav_area_max_size.GetInt();
+	int tryWidth = sm_nav_area_max_size.GetInt();
 	int tryHeight = tryWidth;
 	int uncoveredNodes = CNavNode::GetListLength();
 
@@ -3250,8 +3250,8 @@ void CNavMesh::BeginGeneration( bool incremental )
 	// Since this means hand-editing will be necessary, don't do a full analyze.
 	if ( incremental )
 	{
-		extern ConVar nav_quicksave;
-		nav_quicksave.SetValue( 1 );
+		extern ConVar sm_nav_quicksave;
+		sm_nav_quicksave.SetValue( 1 );
 	}
 
 	m_generationState = SAMPLE_WALKABLE_SPACE;
@@ -4007,7 +4007,7 @@ bool StayOnFloor( trace_t *trace, float zLimit /* = DeathDrop */ )
 					WALK_THRU_EVERYTHING), trace);
 	DrawTrace( trace );
 	return !trace->startsolid && trace->fraction < 1.0f
-			&& trace->plane.normal.z >= nav_slope_limit.GetFloat();
+			&& trace->plane.normal.z >= sm_nav_slope_limit.GetFloat();
 }
 
 
@@ -4168,7 +4168,7 @@ bool CNavMesh::SampleStep( void )
 				m_currentNode->MarkAsVisited( m_generationDir );
 
 				// sanity check to not generate across the world for incremental generation
-				const float incrementalRange = nav_generate_incremental_range.GetFloat();
+				const float incrementalRange = sm_nav_generate_incremental_range.GetFloat();
 				if ( m_generationMode == GENERATE_INCREMENTAL && incrementalRange > 0 )
 				{
 					bool inRange = false;
@@ -4294,7 +4294,7 @@ bool CNavMesh::SampleStep( void )
 					return true;
 				}
 
-				int nTolerance = nav_generate_incremental_tolerance.GetInt();
+				int nTolerance = sm_nav_generate_incremental_tolerance.GetInt();
 				if ( nTolerance > 0 && m_generationMode == GENERATE_INCREMENTAL )
 				{
 					bool bValid = false;
@@ -4319,12 +4319,12 @@ bool CNavMesh::SampleStep( void )
 
 				bool isOnDisplacement = result.IsDispSurface();
 
-				if ( nav_displacement_test.GetInt() > 0 )
+				if (sm_nav_displacement_test.GetInt() > 0 )
 				{
 					// Test for nodes under displacement surfaces.
 					// This happens during development, and is a pain because the space underneath a displacement
 					// is not 'solid'.
-					UTIL_TraceHull( to, to + Vector( 0, 0, nav_displacement_test.GetInt() ),
+					UTIL_TraceHull( to, to + Vector( 0, 0, sm_nav_displacement_test.GetInt() ),
 							NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), filter, &result );
 
 					if ( result.fraction > 0 )
@@ -4527,7 +4527,7 @@ void CNavMesh::CommandNavSubdivide( const CCommand &args )
 	TheNavMesh->ForAllSelectedAreas( chop );
 }
 
-CON_COMMAND_F( nav_subdivide, "Subdivides all selected areas.", FCVAR_GAMEDLL | FCVAR_CHEAT )
+CON_COMMAND_F(sm_nav_subdivide, "Subdivides all selected areas.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;

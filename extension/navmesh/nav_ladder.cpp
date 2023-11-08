@@ -26,7 +26,7 @@
 // memdbgon must be the last include file in a .cpp file!!!
 #include "tier0/memdbgon.h"
 
-extern ConVar nav_area_bgcolor;
+extern ConVar sm_nav_area_bgcolor;
 extern IPlayerInfoManager* playerinfomanager;
 extern IVDebugOverlay* debugoverlay;
 extern IVEngineServer *engine;
@@ -339,7 +339,7 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 	Vector topRight = m_top + right;
 
 	int bgcolor[4];
-	if ( 4 == sscanf( nav_area_bgcolor.GetString(), "%d %d %d %d", &(bgcolor[0]), &(bgcolor[1]), &(bgcolor[2]), &(bgcolor[3]) ) )
+	if ( 4 == sscanf(sm_nav_area_bgcolor.GetString(), "%d %d %d %d", &(bgcolor[0]), &(bgcolor[1]), &(bgcolor[2]), &(bgcolor[3]) ) )
 	{
 		for ( int i=0; i<4; ++i )
 			bgcolor[i] = clamp( bgcolor[i], 0, 255 );
