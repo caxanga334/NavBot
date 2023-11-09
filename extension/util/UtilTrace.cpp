@@ -186,6 +186,8 @@ bool CTraceFilterNoNPCsOrPlayer::ShouldHitEntity(IHandleEntity *pHandleEntity,
 #if SOURCE_ENGINE == SE_SDK2013
 		return pEntity->m_EdictIndex > 0
 			&& engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
+#elif SOURCE_ENGINE == SE_ORANGEBOX
+		return engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; // Orange box doesn't have CBaseEdict::m_EdictIndex
 #else
 		return pEntity->m_iIndex > 0
 			&& engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()

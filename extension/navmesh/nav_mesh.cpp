@@ -802,6 +802,9 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 
 #if SOURCE_ENGINE == SE_SDK2013
 	bool isPlayer = pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients;
+#elif SOURCE_ENGINE == SE_ORANGEBOX
+	int index = engine->IndexOfEdict(pEntity);
+	bool isPlayer = index > 0 && index <= gpGlobals->maxClients;
 #else
 	bool isPlayer = pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients;
 #endif
@@ -1062,6 +1065,18 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
 			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
 			pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients
+			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
+
+#elif SOURCE_ENGINE == SE_ORANGEBOX
+
+	int index = engine->IndexOfEdict(pEntity);
+
+	return pClose ? pClose
+		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
+			maxDist,
+			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
+			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
+			index > 0 && index <= gpGlobals->maxClients
 			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
 
 #else

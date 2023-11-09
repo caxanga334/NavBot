@@ -5743,7 +5743,13 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	// nav mesh editing is limited to windows only
 
 #ifdef WIN32
+
+#if SOURCE_ENGINE != SE_ORANGEBOX
 	ParallelProcess("CNavArea::ComputeVisibilityToMesh", collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
+#else
+	ParallelProcess(collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
+#endif // SOURCE_ENGINE != SE_ORANGEBOX
+
 #elif _LINUX
 	// Warn on linux until replaced with std::thread
 	Warning("Nav Mesh Fatal: Nav Mesh should only be edited/generated on a Windows Listen Server! \n");

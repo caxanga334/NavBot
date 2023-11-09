@@ -10,7 +10,7 @@ Any SDK version not listed is considered **Not Implemented**.
 | SDK Version | Status |
 |:-----------:|:------:|
 |Episode 1|Not Implemented|
-|Orange Box|Not Implemented|
+|Orange Box|Compiles|
 |Half-Life 2: Deathmatch|Compiles|
 |Day of Defeat: Source|Compiles|
 |Counter-Strike: Source|Compiles|

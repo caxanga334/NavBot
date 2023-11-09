@@ -17,7 +17,8 @@
 #include "nav_area.h"
 #include "vstdlib/random.h"
 
-#if defined(_LINUX) && (SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM)
+#if defined(_LINUX) && (SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || \
+ SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_ORANGEBOX)
 
 template< class T >
 T Max(T const& val1, T const& val2)
