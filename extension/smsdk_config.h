@@ -58,6 +58,9 @@
  */
 #define SMEXT_CONF_METAMOD		
 
+// Enables a workaround a linkage issue on Linux. (CreateInterface)
+#define SMEXT_CONF_IFACE_WORKAROUND
+
 /** Enable interfaces you want to use here by uncommenting lines */
 //#define SMEXT_ENABLE_FORWARDSYS
 //#define SMEXT_ENABLE_HANDLESYS
