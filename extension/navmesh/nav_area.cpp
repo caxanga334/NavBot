@@ -23,7 +23,11 @@
 #include <collisionutils.h>
 #include <ivdebugoverlay.h>
 #include <tier1/checksum_crc.h>
+
+#ifdef WIN32
 #include <vstdlib/jobthread.h>
+#endif // WIN32
+
 #include <tslist.h>
 #include <utlhash.h>
 #include <vprof.h>
@@ -5767,7 +5771,19 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	SetupPVS();
 
 	g_pCurVisArea = this;
-	ParallelProcess( "CNavArea::ComputeVisibilityToMesh", collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea );
+
+	// TO-DO: too many errors from jobthread.h on linux
+	// Replace this with std::thread in the future
+	// This function is only called during nav mesh generation, impact on linux should be limited since the debug overlay doesn't work on linux
+	// nav mesh editing is limited to windows only
+
+#ifdef WIN32
+	ParallelProcess("CNavArea::ComputeVisibilityToMesh", collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
+#elif _LINUX
+	// Warn on linux until replaced with std::thread
+	Warning("Nav Mesh Fatal: Nav Mesh should only be edited/generated on a Windows Listen Server! \n");
+#endif // WIN32
+
 
 	m_potentiallyVisibleAreas.EnsureCapacity( g_ComputedVis.Count() );
 	while ( g_ComputedVis.Count() )

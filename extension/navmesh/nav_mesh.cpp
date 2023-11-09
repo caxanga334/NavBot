@@ -865,7 +865,7 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	}
 
 	// Check LOS if necessary
-	if ( use && ( nFlags && GETNAVAREA_CHECK_LOS ) && ( useZ < testPos.z - flStepHeight ) )
+	if ( use && ( nFlags & GETNAVAREA_CHECK_LOS ) && ( useZ < testPos.z - flStepHeight ) )
 	{
 		// trace directly down to see if it's below us and unobstructed
 		trace_t result;
@@ -1269,7 +1269,7 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 	Place found = UNDEFINED_PLACE;
 	for( unsigned int i=0; i<m_placeCount; ++i )
 	{
-		if (!strnicmp( m_placeName[i], name, strlen( name ) ))
+		if (!strncasecmp( m_placeName[i], name, strlen( name ) ))
 		{
 			// check for exact match in case of subsets of other strings
 			if (!stricmp( m_placeName[i], name ))

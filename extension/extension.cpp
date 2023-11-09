@@ -31,8 +31,7 @@
 
 #include <filesystem>
 
-#include "extension.h"	
-#include <eiface.h>
+#include "extension.h"
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineTrace.h>
 #include <iplayerinfo.h>
@@ -63,6 +62,7 @@ IPhysicsSurfaceProps* physprops = nullptr;
 IVModelInfo* modelinfo = nullptr;
 IMDLCache* mdlcache = nullptr;
 IFileSystem* filesystem = nullptr;
+ICvar* icvar = nullptr;
 
 SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 
@@ -159,7 +159,7 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 	GET_V_IFACE_ANY(GetEngineFactory, modelinfo, IVModelInfo, VMODELINFO_SERVER_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, filesystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, mdlcache, IMDLCache, MDLCACHE_INTERFACE_VERSION);
-	GET_V_IFACE_ANY(GetEngineFactory, g_pCVar, ICvar, CVAR_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetEngineFactory, icvar, ICvar, CVAR_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetServerFactory, servergamedll, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
 	GET_V_IFACE_ANY(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
@@ -169,6 +169,8 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 #endif
 
 	gpGlobals = ismm->GetCGlobals();
+
+	g_pCVar = icvar; // TO-DO: add #if source engine here
 
 	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &SMNavExt::Hook_GameFrame), false);
 

@@ -15,6 +15,20 @@
 #include "tier0/vprof.h"
 #include "mathlib/ssemath.h"
 #include "nav_area.h"
+#include "vstdlib/random.h"
+
+#if defined(_LINUX) && (SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM)
+
+template< class T >
+T Max(T const& val1, T const& val2)
+{
+	return val1 > val2 ? val1 : val2;
+}
+
+#endif // _LINUX
+
+
+extern CUniformRandomStream g_NavRandom;
 
 #ifdef STAGING_ONLY
 extern int g_DebugPathfindCounter;
@@ -866,13 +880,13 @@ CNavArea *FindMinimumCostArea( CNavArea *startArea, CostFunctor &costFunc )
 	if (cheapAreaSetCount)
 	{
 		// pick one of the areas at random
-		return cheapAreaSet[ RandomInt( 0, cheapAreaSetCount-1 ) ].area;
+		return cheapAreaSet[ g_NavRandom.RandomInt( 0, cheapAreaSetCount-1 ) ].area;
 	}
 	else
 	{
 		// degenerate case - no decent sized areas - pick a random area
 		int numAreas = TheNavAreas.Count();
-		int which = RandomInt( 0, numAreas-1 );
+		int which = g_NavRandom.RandomInt( 0, numAreas-1 );
 
 		FOR_EACH_VEC( TheNavAreas, iter )
 		{
@@ -881,7 +895,7 @@ CNavArea *FindMinimumCostArea( CNavArea *startArea, CostFunctor &costFunc )
 		}
 
 	}
-	return cheapAreaSet[ RandomInt( 0, cheapAreaSetCount-1 ) ].area;
+	return cheapAreaSet[g_NavRandom.RandomInt( 0, cheapAreaSetCount-1 ) ].area;
 }
 
 
@@ -911,7 +925,7 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 	int n = shuffledVector.Count();
 	while( n > 1 )
 	{
-		int k = RandomInt( 0, n-1 );
+		int k = g_NavRandom.RandomInt( 0, n-1 );
 		n--;
 
 		T *tmp = shuffledVector[n];

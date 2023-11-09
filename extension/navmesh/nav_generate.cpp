@@ -21,7 +21,7 @@
 #include <KeyValues.h>
 
 //#include "terror/TerrorShared.h"
-#include "fmtstr.h"
+// #include "fmtstr.h"
 
 #ifdef TERROR
 #include "func_simpleladder.h"

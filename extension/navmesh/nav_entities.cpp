@@ -47,8 +47,7 @@ CountdownTimer CFuncNavCost::gm_dirtyTimer;
 #define UPDATE_DIRTY_TIME 0.2f
 
 //--------------------------------------------------------------------------------------------------------
-CFuncNavCost::CFuncNavCost( edict_t* pEnt ): NavEntity(pEnt), m_isDisabled(true),
-		m_team(0)
+CFuncNavCost::CFuncNavCost( edict_t* pEnt ): NavEntity(pEnt), m_team(0), m_isDisabled(true)
 {
 	gm_masterCostVector.AddToTail( this );
 	gm_dirtyTimer.Start( UPDATE_DIRTY_TIME );
@@ -445,7 +444,7 @@ void CFuncNavBlocker::UpdateOnRemove( void )
 
 //--------------------------------------------------------------------------------------------------------
 CFuncNavBlocker::CFuncNavBlocker( edict_t* pEnt ) : NavEntity(pEnt),
-		m_bDisabled(false), m_blockedTeamNumber(0)
+	m_blockedTeamNumber(0), m_bDisabled(false)
 {
 	gm_NavBlockers.AddToTail( this );
 

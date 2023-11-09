@@ -772,7 +772,7 @@ class COverlapCheck
 {
 public:
 	COverlapCheck(const CNavArea *me, const Vector &pos) :
-			m_pos(pos), m_me(me), m_myZ(me->GetZ(pos)) {
+		m_me(me), m_myZ(me->GetZ(pos)), m_pos(pos) {
 	}
 
 	bool operator() ( CNavArea *area )
@@ -1001,12 +1001,12 @@ inline unsigned char CNavArea::GetPlayerCount( int teamID ) const
 * Trilinear interpolation of Z values at quad edges.
 * NOTE: pos->z is not used.
 */
-inline float CNavArea::GetZ( const Vector * RESTRICT pos ) const RESTRICT
+inline float CNavArea::GetZ( const Vector * pos ) const
 {
 	return GetZ( pos->x, pos->y );
 }
 
-inline float CNavArea::GetZ( const Vector & pos ) const RESTRICT
+inline float CNavArea::GetZ( const Vector & pos ) const
 {
 	return GetZ( pos.x, pos.y );
 }

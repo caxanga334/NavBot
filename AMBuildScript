@@ -184,6 +184,13 @@ class ExtensionConfig(object):
       '-fno-threadsafe-statics',
       '-Wno-non-virtual-dtor',
       '-Wno-overloaded-virtual',
+	  '-Wno-implicit-const-int-float-conversion',
+	  '-Wno-expansion-to-defined',
+	  '-Wno-register',
+	  '-Wno-reorder-ctor',
+	  '-Wno-unknown-pragmas',
+	  '-Wno-undefined-bool-conversion',
+	  '-Wno-varargs',
       '-fvisibility-inlines-hidden',
     ]
     cxx.linkflags += ['-m32']
@@ -264,7 +271,7 @@ class ExtensionConfig(object):
     cxx.cflags += ['/Oy-']
 
   def configure_linux(self, cxx):
-    cxx.defines += ['_LINUX', 'POSIX']
+    cxx.defines += ['_LINUX', 'POSIX', 'RAD_TELEMETRY_DISABLED']
     cxx.linkflags += ['-Wl,--exclude-libs,ALL', '-lm']
     if cxx.vendor == 'gcc':
       cxx.linkflags += ['-static-libgcc']
