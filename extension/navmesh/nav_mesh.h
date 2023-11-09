@@ -23,8 +23,6 @@
 #include "CountDownTimer.h"
 #include <shareddefs.h>
 #include <convar.h>
-// #include <GameEventListener.h>
-#include "nav_eventlistener.h"
 
 class HidingSpot;
 class CUtlBuffer;
@@ -232,7 +230,7 @@ extern PlaceDirectory placeDirectory;
  * The CNavMesh is the global interface to the Navigation Mesh.
  * @todo Make this an abstract base class interface, and derive mod-specific implementations.
  */
-class CNavMesh : public CNavGameEventListener
+class CNavMesh
 {
 public:
 	CNavMesh( void );
@@ -246,7 +244,7 @@ public:
 	virtual void Reset( void );											// destroy Navigation Mesh data and revert to initial state
 	virtual void Update( void );										// invoked on each game frame
 
-	virtual void FireGameEvent( IGameEvent *event );					// incoming event processing
+	// virtual void FireGameEvent( IGameEvent *event );					// incoming event processing
 
 	virtual NavErrorType Load( void );									// load navigation data from a file
 	virtual NavErrorType PostLoad( unsigned int version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc

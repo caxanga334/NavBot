@@ -39,7 +39,6 @@ extern IVDebugOverlay* debugoverlay;
 extern ConVar sm_nav_quicksave;
 extern IVEngineServer* engine;
 extern IPlayerInfoManager *playerinfomanager;
-extern IGameEventManager2 *gameeventmanager;
 
 unsigned int CNavArea::m_nextID = 1;
 NavAreaVector TheNavAreas;
@@ -4828,17 +4827,6 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	}
 	if ( !wasBlocked )
 	{
-		if ( bGenerateEvent )
-		{
-			IGameEvent * event = gameeventmanager->CreateEvent( "nav_blocked" );
-			if ( event )
-			{
-				event->SetInt( "area", m_id );
-				event->SetInt( "blocked", 1 );
-				gameeventmanager->FireEvent( event );
-			}
-		}
-
 		if (sm_nav_debug_blocked.GetBool() )
 		{
 			if ( blocker )
@@ -4899,14 +4887,6 @@ void CNavArea::UpdateBlockedFromNavBlockers( void )
 	// If we're unblocked, fire a nav_blocked event.
 	if ( wasBlocked != isBlocked )
 	{
-		IGameEvent * event = gameeventmanager->CreateEvent( "nav_blocked" );
-		if ( event )
-		{
-			event->SetInt( "area", m_id );
-			event->SetInt( "blocked", isBlocked );
-			gameeventmanager->FireEvent( event );
-		}
-
 		if ( isBlocked )
 		{
 			if (sm_nav_debug_blocked.GetBool())
@@ -4947,14 +4927,6 @@ void CNavArea::UnblockArea( int teamID )
 
 	if ( wasBlocked )
 	{
-		IGameEvent * event = gameeventmanager->CreateEvent( "nav_blocked" );
-		if ( event )
-		{
-			event->SetInt( "area", m_id );
-			event->SetInt( "blocked", false );
-			gameeventmanager->FireEvent( event );
-		}
-
 		if (sm_nav_debug_blocked.GetBool())
 		{
 			ConColorMsg( Color( 255, 0, 128, 255 ), "area %d is unblocked by UnblockArea\n", GetID() );
@@ -5070,13 +5042,6 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	if ( wasBlocked != isBlocked )
 	{
 		VPROF( "CNavArea::UpdateBlocked-Event" );
-		IGameEvent * event = gameeventmanager->CreateEvent( "nav_blocked" );
-		if ( event )
-		{
-			event->SetInt( "area", m_id );
-			event->SetInt( "blocked", isBlocked );
-			gameeventmanager->FireEvent( event );
-		}
 
 		if ( isBlocked )
 		{

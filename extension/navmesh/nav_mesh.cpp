@@ -139,12 +139,6 @@ CNavMesh::CNavMesh( void )
 	m_placeName = NULL;
 
 	LoadPlaceDatabase();
-
-//	ListenForGameEvent( "round_start" );
-//	ListenForGameEvent( "round_start_pre_entity" );
-//	ListenForGameEvent( "break_prop" );
-//	ListenForGameEvent( "break_breakable" );
-//	ListenForGameEvent( "teamplay_round_start" );
 		
 	Reset();
 
@@ -471,36 +465,36 @@ public:
 /**
  * Invoked when the round restarts
  */
-void CNavMesh::FireGameEvent( IGameEvent *gameEvent )
-{
-	VPROF_BUDGET( "CNavMesh::FireGameEvent", VPROF_BUDGETGROUP_NPCS );
-
-	if ( FStrEq( gameEvent->GetName(), "break_prop" ) || FStrEq( gameEvent->GetName(), "break_breakable" ) )
-	{
-		CheckAreasOverlappingBreakable collector(
-				engine->PEntityOfEntIndex((gameEvent->GetInt("entindex"))));
-		ForAllAreas( collector );
-	}
-
-	if ( FStrEq( gameEvent->GetName(), "round_start" ) || FStrEq( gameEvent->GetName(), "teamplay_round_start" ) )
-	{
-		OnRoundRestart();
-		
-		NavRoundRestart restart;
-		ForAllAreas( restart );
-		ForAllLadders( restart );
-	}
-	else if ( FStrEq( gameEvent->GetName(), "round_start_pre_entity" ) )
-	{
-		OnRoundRestartPreEntity();
-
-		FOR_EACH_VEC( TheNavAreas, it )
-		{
-			CNavArea *area = TheNavAreas[ it ];
-			area->OnRoundRestartPreEntity();
-		}
-	}
-}
+//void CNavMesh::FireGameEvent( IGameEvent *gameEvent )
+//{
+//	VPROF_BUDGET( "CNavMesh::FireGameEvent", VPROF_BUDGETGROUP_NPCS );
+//
+//	if ( FStrEq( gameEvent->GetName(), "break_prop" ) || FStrEq( gameEvent->GetName(), "break_breakable" ) )
+//	{
+//		CheckAreasOverlappingBreakable collector(
+//				engine->PEntityOfEntIndex((gameEvent->GetInt("entindex"))));
+//		ForAllAreas( collector );
+//	}
+//
+//	if ( FStrEq( gameEvent->GetName(), "round_start" ) || FStrEq( gameEvent->GetName(), "teamplay_round_start" ) )
+//	{
+//		OnRoundRestart();
+//		
+//		NavRoundRestart restart;
+//		ForAllAreas( restart );
+//		ForAllLadders( restart );
+//	}
+//	else if ( FStrEq( gameEvent->GetName(), "round_start_pre_entity" ) )
+//	{
+//		OnRoundRestartPreEntity();
+//
+//		FOR_EACH_VEC( TheNavAreas, it )
+//		{
+//			CNavArea *area = TheNavAreas[ it ];
+//			area->OnRoundRestartPreEntity();
+//		}
+//	}
+//}
 
 
 //--------------------------------------------------------------------------------------------------------------
