@@ -13,7 +13,7 @@ CBaseMod* gamemod = nullptr;
 
 CExtManager::CExtManager()
 {
-	for (int i = 0; i < MAX_SUPPORTED_PLAYERS; i++)
+	for (int i = 0; i < SMNAV_MAX_PLAYERS; i++)
 	{
 		m_players[i] = nullptr;
 	}
@@ -21,7 +21,7 @@ CExtManager::CExtManager()
 
 CExtManager::~CExtManager()
 {
-	for (int i = 0; i < MAX_SUPPORTED_PLAYERS; i++)
+	for (int i = 0; i < SMNAV_MAX_PLAYERS; i++)
 	{
 		if (m_players[i])
 		{
@@ -41,17 +41,21 @@ CExtManager::~CExtManager()
 void CExtManager::OnAllLoaded()
 {
 	AllocateMod();
+
+	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, gamemod->GetModName());
 }
 
 void CExtManager::Frame()
 {
-	for (int i = 0; i < MAX_SUPPORTED_PLAYERS; i++)
+	for (int i = 0; i < SMNAV_MAX_PLAYERS; i++)
 	{
 		if (m_players[i])
 		{
 			m_players[i]->PlayerThink(); // Run player think
 		}
 	}
+
+	gamemod->Frame();
 }
 
 void CExtManager::OnClientPutInServer(int client)

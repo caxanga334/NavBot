@@ -22,6 +22,6 @@ builder.options.add_option('-s', '--sdks', default='all', dest='sdks',
 builder.options.add_option('--feature-bots', action='store_const', const='1', dest='featbots',
                        help='Enable the bot feature of the extension.')
 builder.options.add_option('--feature-avx', action='store_const', const='1', dest='featavx',
-                       help='Enable the bot feature of the extension.')
+                       help='Allows the compiler to make use of AVX2 instructions.')
 
 builder.Configure()

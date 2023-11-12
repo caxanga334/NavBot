@@ -195,6 +195,7 @@ class ExtensionConfig(object):
 	  '-Wno-unknown-pragmas',
 	  '-Wno-undefined-bool-conversion',
 	  '-Wno-varargs',
+	  '-Wno-null-dereference',
       '-fvisibility-inlines-hidden',
     ]
     cxx.linkflags += ['-m32']
@@ -334,6 +335,15 @@ class ExtensionConfig(object):
     compiler.defines += ['TEAM_ANY=-2']
     # NDEBUG_PERSIST_TILL_NEXT_SERVER doesn't work, probably due to how CNavMesh::Update is called
     compiler.defines += ['NDEBUG_SMNAV_DRAW_TIME=0.0f']
+	
+    if sdk.name == 'tf2':
+      compiler.defines += ['SMNAV_MAX_PLAYERS=102']
+    elif sdk.name == 'sdk2013':
+      compiler.defines += ['SMNAV_MAX_PLAYERS=130'] # Synergy support up to 128. Will be 130 until support for a mod with more players is needed
+    elif sdk.name in ['css', 'csgo']:
+      compiler.defines += ['SMNAV_MAX_PLAYERS=66']
+    else:
+      compiler.defines += ['SMNAV_MAX_PLAYERS=34']
 
     paths = [
       ['public'],

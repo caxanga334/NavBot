@@ -20,7 +20,7 @@
 #define _NAV_MESH_H_
 
 #include "nav.h"
-#include "CountDownTimer.h"
+#include <sdkports/sdk_timers.h>
 #include <shareddefs.h>
 #include <convar.h>
 

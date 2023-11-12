@@ -13,7 +13,7 @@
 #define _NAV_AREA_H_
 
 #include "nav_ladder.h"
-#include "CountDownTimer.h"
+#include <sdkports/sdk_timers.h>
 #include <shareddefs.h>
 #include <networkvar.h>
 #include <tier1/memstack.h>

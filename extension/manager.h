@@ -6,9 +6,6 @@ class CBaseMod;
 class CBaseExtPlayer;
 class CBaseBot;
 
-// Max players, TO-DO: Add per SDK
-constexpr auto MAX_SUPPORTED_PLAYERS = 130;
-
 // Primary Extension Manager
 class CExtManager
 {
@@ -35,7 +32,7 @@ public:
 
 private:
 	// Array to store players and bots
-	CBaseExtPlayer* m_players[MAX_SUPPORTED_PLAYERS];
+	CBaseExtPlayer* m_players[SMNAV_MAX_PLAYERS];
 };
 
 #endif // !SMNAV_EXT_MANAGER_H_

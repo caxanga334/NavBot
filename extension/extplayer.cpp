@@ -63,7 +63,30 @@ const QAngle CBaseExtPlayer::GetEyeAngles()
 	return cmd.viewangles;
 }
 
-CON_COMMAND(smnav_debug_vectors, "[LISTEN SERVER] Debug player vectors")
+void CBaseExtPlayer::EyeVectors(Vector* pForward)
 {
+	auto eyeangles = GetEyeAngles();
+	AngleVectors(eyeangles, pForward);
+}
 
+void CBaseExtPlayer::EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp)
+{
+	auto eyeangles = GetEyeAngles();
+	AngleVectors(eyeangles, pForward, pRight, pUp);
+}
+
+Vector CBaseExtPlayer::BodyDirection3D()
+{
+	auto angles = BodyAngles();
+	Vector bodydir;
+	AngleVectors(angles, &bodydir);
+	return bodydir;
+}
+
+Vector CBaseExtPlayer::BodyDirection2D()
+{
+	auto body2d = BodyDirection3D();
+	body2d.z = 0.0f;
+	body2d.AsVector2D().NormalizeInPlace();
+	return body2d;
 }

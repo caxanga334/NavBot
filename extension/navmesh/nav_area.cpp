@@ -112,11 +112,6 @@ static void SelectedSetColorChaged(IConVar *var, const char *pOldValue,
 ConVar sm_nav_selected_set_color( "sm_nav_selected_set_color", "255 255 200 96", FCVAR_CHEAT, "Color used to draw the selected set background while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 
-float CountdownTimer::Now(void) const {
-	// work-around since client header doesn't like inlined gpGlobals->curtime
-	return gpGlobals->curtime;
-}
-
 void Extent::Init(edict_t *entity) {
 	entity->GetCollideable()->WorldSpaceSurroundingBounds(&lo, &hi);
 }
@@ -2838,63 +2833,6 @@ const char *UTIL_VarArgs( const char *format, ... )
 
 	return string;
 }
-
-/**
- * Simple class for tracking intervals of game time.
- * Upon creation, the timer is invalidated.  To measure time intervals, start the timer via Start().
- */
-class IntervalTimer
-{
-public:
-	IntervalTimer( void )
-	{
-		m_timestamp = -1.0f;
-	}
-
-	void Reset( void )
-	{
-		m_timestamp = Now();
-	}
-
-	void Start( void )
-	{
-		m_timestamp = Now();
-	}
-
-	void Invalidate( void )
-	{
-		m_timestamp = -1.0f;
-	}
-
-	bool HasStarted( void ) const
-	{
-		return (m_timestamp > 0.0f);
-	}
-
-	/// if not started, elapsed time is very large
-	float GetElapsedTime( void ) const
-	{
-		return (HasStarted()) ? (Now() - m_timestamp) : 99999.9f;
-	}
-
-	bool IsLessThen( float duration ) const
-	{
-		return (Now() - m_timestamp < duration) ? true : false;
-	}
-
-	bool IsGreaterThen( float duration ) const
-	{
-		return (Now() - m_timestamp > duration) ? true : false;
-	}
-
-private:
-	float m_timestamp;
-	float Now( void ) const {
-		// work-around since client header doesn't like inlined gpGlobals->curtime
-		return gpGlobals->curtime;
-	}
-};
-
 
 //--------------------------------------------------------------------------------------------------------------
 /**

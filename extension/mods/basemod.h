@@ -11,6 +11,9 @@ public:
 	CBaseMod();
 	virtual ~CBaseMod();
 
+	// Called every server frame
+	virtual void Frame() {}
+
 	// Called by the manager when allocating a new player instance
 	virtual CBaseExtPlayer* AllocatePlayer(edict_t* edict);
 	// Called by the manager when allocating a new bot instance

@@ -9,6 +9,8 @@ sourceFiles = [
   'smsdk_ext.cpp',
   'manager.cpp',
   'extplayer.cpp',
+  'sdkports/sdk_timers.cpp',
+  'sdkports/debugoverlay_shared.cpp',
   'mods/basemod.cpp',
   'navmesh/nav_area.cpp',
   'navmesh/nav_colors.cpp',
@@ -27,6 +29,8 @@ sourceFiles = [
   'util/Handle.cpp',
   'util/SimpleException.cpp',
   'util/UtilTrace.cpp',
+  'util/entprops.cpp',
+  'util/helpers.cpp',
 ]
 
 # Source files for the bot feature

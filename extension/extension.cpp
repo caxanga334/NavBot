@@ -39,9 +39,15 @@
 #include <filesystem.h>
 #include <datacache/imdlcache.h>
 #include <igameevents.h>
+#include <toolframework/itoolentity.h>
+
+#include <ISDKTools.h>
+#include <IBinTools.h>
+#include <ISDKHooks.h>
 
 #include "navmesh/nav_mesh.h"
 #include "manager.h"
+#include <util/entprops.h>
 
 /**
  * @file extension.cpp
@@ -64,6 +70,11 @@ IVModelInfo* modelinfo = nullptr;
 IMDLCache* mdlcache = nullptr;
 IFileSystem* filesystem = nullptr;
 ICvar* icvar = nullptr;
+IServerTools* servertools = nullptr;
+
+IBinTools* g_pBinTools = nullptr;
+ISDKTools* g_pSDKTools = nullptr;
+ISDKHooks* g_pSDKHooks = nullptr;
 
 #ifdef SMNAV_FEAT_BOT
 IBotManager* botmanager = nullptr;
@@ -155,6 +166,10 @@ void SMNavExt::SDK_OnUnload()
 
 void SMNavExt::SDK_OnAllLoaded()
 {
+	SM_GET_LATE_IFACE(BINTOOLS, g_pBinTools);
+	SM_GET_LATE_IFACE(SDKTOOLS, g_pSDKTools);
+	SM_GET_LATE_IFACE(SDKHOOKS, g_pSDKHooks);
+
 	if (TheNavMesh == nullptr)
 	{
 		TheNavMesh = NavMeshFactory();
@@ -165,6 +180,8 @@ void SMNavExt::SDK_OnAllLoaded()
 		extmanager = new CExtManager;
 		extmanager->OnAllLoaded();
 	}
+
+	entprops->Init(true);
 }
 
 bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
@@ -181,6 +198,7 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 	GET_V_IFACE_ANY(GetServerFactory, servergamedll, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
 	GET_V_IFACE_ANY(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_ANY(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
+	GET_V_IFACE_ANY(GetServerFactory, servertools, IServerTools, VSERVERTOOLS_INTERFACE_VERSION);
 
 #ifndef __linux__
 	GET_V_IFACE_ANY(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
