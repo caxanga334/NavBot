@@ -143,6 +143,10 @@ class ExtensionConfig(object):
     # Debugging
     if builder.options.debug == '1':
       cxx.defines += ['DEBUG', '_DEBUG']
+	  
+    # Extension is being compiled with bot support enabled
+    if builder.options.featbots == '1':
+      cxx.defines += ['SMNAV_FEAT_BOT']  
 
     # Platform-specifics
     if builder.target_platform == 'linux':
@@ -194,6 +198,9 @@ class ExtensionConfig(object):
       '-fvisibility-inlines-hidden',
     ]
     cxx.linkflags += ['-m32']
+	
+    if builder.options.featavx == '1':
+      cxx.cxxflags += ['-mavx2']
 
     have_gcc = cxx.vendor == 'gcc'
     have_clang = cxx.vendor == 'clang'
@@ -258,6 +265,9 @@ class ExtensionConfig(object):
       'odbccp32.lib',
       'legacy_stdio_definitions.lib',
     ]
+	
+    if builder.options.featavx == '1':
+      cxx.cxxflags += ['/arch:AVX2']
 
     if builder.options.opt == '1':
       cxx.cflags += ['/O2', '/Zo']

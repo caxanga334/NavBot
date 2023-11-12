@@ -41,6 +41,7 @@
 #include <igameevents.h>
 
 #include "navmesh/nav_mesh.h"
+#include "manager.h"
 
 /**
  * @file extension.cpp
@@ -63,6 +64,12 @@ IVModelInfo* modelinfo = nullptr;
 IMDLCache* mdlcache = nullptr;
 IFileSystem* filesystem = nullptr;
 ICvar* icvar = nullptr;
+
+#ifdef SMNAV_FEAT_BOT
+IBotManager* botmanager = nullptr;
+#endif // SMNAV_FEAT_BOT
+
+CExtManager* extmanager = nullptr;
 
 SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 
@@ -130,13 +137,18 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	ConVar_Register(0, this);
 
+	playerhelpers->AddClientListener(this);
+
 	return true;
 }
 
 void SMNavExt::SDK_OnUnload()
 {
-	// delete TheNavMesh;
+	delete TheNavMesh;
 	TheNavMesh = nullptr;
+
+	delete extmanager;
+	extmanager = nullptr;
 
 	ConVar_Unregister();
 }
@@ -145,7 +157,13 @@ void SMNavExt::SDK_OnAllLoaded()
 {
 	if (TheNavMesh == nullptr)
 	{
-		TheNavMesh = new CNavMesh;
+		TheNavMesh = NavMeshFactory();
+	}
+
+	if (extmanager == nullptr)
+	{
+		extmanager = new CExtManager;
+		extmanager->OnAllLoaded();
 	}
 }
 
@@ -167,6 +185,10 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 #ifndef __linux__
 	GET_V_IFACE_ANY(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
 #endif
+
+#ifdef SMNAV_FEAT_BOT
+	GET_V_IFACE_ANY(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
+#endif // SMNAV_FEAT_BOT
 
 	gpGlobals = ismm->GetCGlobals();
 
@@ -203,11 +225,26 @@ bool SMNavExt::RegisterConCommandBase(ConCommandBase* pVar)
 	return META_REGCVAR(pVar);
 }
 
+void SMNavExt::OnClientPutInServer(int client)
+{
+	extmanager->OnClientPutInServer(client);
+}
+
+void SMNavExt::OnClientDisconnecting(int client)
+{
+	extmanager->OnClientDisconnect(client);
+}
+
 void SMNavExt::Hook_GameFrame(bool simulating)
 {
 	if (TheNavMesh)
 	{
 		TheNavMesh->Update();
+	}
+
+	if (extmanager)
+	{
+		extmanager->Frame();
 	}
 
 	RETURN_META(MRES_IGNORED);

@@ -43,7 +43,7 @@
  * @brief Sample implementation of the SDK Extension.
  * Note: Uncomment one of the pre-defined virtual functions in order to use it.
  */
-class SMNavExt : public SDKExtension, IConCommandBaseAccessor
+class SMNavExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
 {
 public:
 	/**
@@ -132,7 +132,137 @@ public:
 
 	virtual bool RegisterConCommandBase(ConCommandBase* pVar);
 
+	// IClientListener callbacks
+public:
+	/**
+	 * @brief Called when a client requests connection.
+	 *
+	 * @param client		Index of the client.
+	 * @param error			Error buffer for a disconnect reason.
+	 * @param maxlength		Maximum length of error buffer.
+	 * @return				True to allow client, false to reject.
+	 */
+	virtual bool InterceptClientConnect(int client, char* error, size_t maxlength)
+	{
+		return true;
+	}
+
+	/**
+	 * @brief Called when a client has connected.
+	 *
+	 * @param client		Index of the client.
+	 */
+	virtual void OnClientConnected(int client)
+	{
+	}
+
+	/**
+	 * @brief Called when a client is put in server.
+	 *
+	 * @param client		Index of the client.
+	 */
+	virtual void OnClientPutInServer(int client);
+
+	/**
+	 * @brief Called when a client is disconnecting (not fully disconnected yet).
+	 *
+	 * @param client		Index of the client.
+	 */
+	virtual void OnClientDisconnecting(int client);
+
+	/**
+	 * @brief Called when a client has fully disconnected.
+	 *
+	 * @param client		Index of the client.
+	 */
+	virtual void OnClientDisconnected(int client)
+	{
+	}
+
+	/**
+	 * @brief Called when a client has received authorization.
+	 *
+	 * @param client		Index of the client.
+	 * @param authstring	Client Steam2 id, if available, else engine auth id.
+	 */
+	virtual void OnClientAuthorized(int client, const char* authstring)
+	{
+	}
+
+	/**
+	 * @brief Called when the server is activated.
+	 */
+	virtual void OnServerActivated(int max_clients)
+	{
+	}
+
+	/**
+	 * @brief Called once a client is authorized and fully in-game, but
+	 * before admin checks are done.  This can be used to override the
+	 * default admin checks for a client.
+	 *
+	 * By default, this function allows the authentication process to
+	 * continue as normal.  If you need to delay the cache searching
+	 * process in order to get asynchronous data, then return false here.
+	 *
+	 * If you return false, you must call IPlayerManager::NotifyPostAdminCheck
+	 * for the same client, or else the OnClientPostAdminCheck callback will
+	 * never be called.
+	 *
+	 * @param client		Client index.
+	 * @return				True to continue normally, false to override
+	 *						the authentication process.
+	 */
+	virtual bool OnClientPreAdminCheck(int client)
+	{
+		return true;
+	}
+
+	/**
+	 * @brief Called once a client is authorized and fully in-game, and
+	 * after all post-connection authorizations have been passed.  If the
+	 * client does not have an AdminId by this stage, it means that no
+	 * admin entry was in the cache that matched, and the user could not
+	 * be authenticated as an admin.
+	 *
+	 * @param client		Client index.
+	 */
+	virtual void OnClientPostAdminCheck(int client)
+	{
+	}
+
+	/**
+	* @brief Notifies the extension that the maxplayers value has changed
+	*
+	* @param newvalue			New maxplayers value.
+	*/
+	virtual void OnMaxPlayersChanged(int newvalue)
+	{
+	}
+
+	/**
+	* @brief Notifies the extension that a clients settings changed
+	*
+	* @param client			Client index.
+	*/
+	virtual void OnClientSettingsChanged(int client)
+	{
+	}
+
 	void Hook_GameFrame(bool simulating);
+
+	/**
+	 * @brief Checks if the bot feature of the extension is enabled
+	 * @return true if the extension was compiled with bot support
+	*/
+	inline bool IsBotFeatureEnabled()
+	{
+#ifdef SMNAV_FEAT_BOT
+		return true;
+#else
+		return false;
+#endif // SMNAV_FEAT_BOT
+	}
 };
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_

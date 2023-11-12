@@ -7,6 +7,9 @@ projectName = 'smnav'
 sourceFiles = [
   'extension.cpp',
   'smsdk_ext.cpp',
+  'manager.cpp',
+  'extplayer.cpp',
+  'mods/basemod.cpp',
   'navmesh/nav_area.cpp',
   'navmesh/nav_colors.cpp',
   'navmesh/nav_edit.cpp',
@@ -16,7 +19,7 @@ sourceFiles = [
   'navmesh/nav_ladder.cpp',
   'navmesh/nav_merge.cpp',
   'navmesh/nav_mesh.cpp',
-#  'navmesh/nav_mesh_factory.cpp',
+  'navmesh/nav_mesh_factory.cpp',
   'navmesh/nav_node.cpp',
   'navmesh/nav_simplify.cpp',
   'util/BaseEntity.cpp',
@@ -24,6 +27,11 @@ sourceFiles = [
   'util/Handle.cpp',
   'util/SimpleException.cpp',
   'util/UtilTrace.cpp',
+]
+
+# Source files for the bot feature
+botFeatSrcFiles = [
+	'bot/basebot.cpp',
 ]
 
 ###############
@@ -40,7 +48,10 @@ project = Extension.HL2Project(builder, projectName + '.ext')
 #  project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
 
 project.sources += sourceFiles
-  
+
+if builder.options.featbots == '1':
+  project.sources += botFeatSrcFiles
+
 for sdk_name in Extension.sdks:
   sdk = Extension.sdks[sdk_name]
   
