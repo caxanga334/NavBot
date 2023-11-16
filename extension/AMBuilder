@@ -35,7 +35,10 @@ sourceFiles = [
 
 # Source files for the bot feature
 botFeatSrcFiles = [
-	'bot/basebot.cpp',
+  'bot/interfaces/base_interface.cpp',
+  'bot/interfaces/playercontrol.cpp',
+  'bot/interfaces/knownentity.cpp',
+  'bot/basebot.cpp',
 ]
 
 ###############

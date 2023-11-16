@@ -40,6 +40,7 @@
 #include <datacache/imdlcache.h>
 #include <igameevents.h>
 #include <toolframework/itoolentity.h>
+#include <entitylist_base.h>
 
 #include <ISDKTools.h>
 #include <IBinTools.h>
@@ -75,6 +76,8 @@ IServerTools* servertools = nullptr;
 IBinTools* g_pBinTools = nullptr;
 ISDKTools* g_pSDKTools = nullptr;
 ISDKHooks* g_pSDKHooks = nullptr;
+
+CBaseEntityList* g_EntList = nullptr;
 
 #ifdef SMNAV_FEAT_BOT
 IBotManager* botmanager = nullptr;
@@ -169,6 +172,8 @@ void SMNavExt::SDK_OnAllLoaded()
 	SM_GET_LATE_IFACE(BINTOOLS, g_pBinTools);
 	SM_GET_LATE_IFACE(SDKTOOLS, g_pSDKTools);
 	SM_GET_LATE_IFACE(SDKHOOKS, g_pSDKHooks);
+
+	g_EntList = reinterpret_cast<CBaseEntityList*>(gamehelpers->GetGlobalEntityList());
 
 	if (TheNavMesh == nullptr)
 	{

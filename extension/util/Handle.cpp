@@ -5,9 +5,11 @@
  */
 
 #include "Handle.h"
+#include <ifaces_extern.h>
 
 #include <eiface.h>
 
+/*
 IHandleEntity* CBaseHandle::Get() const
 {
 	extern CGlobalVars *gpGlobals;
@@ -19,4 +21,10 @@ IHandleEntity* CBaseHandle::Get() const
 		}
 	}
 	return nullptr;
+}
+*/
+
+IHandleEntity* CBaseHandle::Get() const
+{
+	return g_EntList->LookupEntity(*this);
 }

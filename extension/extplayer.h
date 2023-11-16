@@ -14,7 +14,10 @@ public:
 	CBaseExtPlayer(edict_t* edict);
 	virtual ~CBaseExtPlayer();
 
-	virtual edict_t* GetEdict() { return m_edict; }
+	// Gets the player edict_t
+	inline edict_t* GetEdict() { return m_edict; }
+	// Gets the player entity index
+	inline int GetIndex() { return m_index; }
 
 	// Function called every server frame by the manager
 	virtual void PlayerThink();
@@ -25,8 +28,8 @@ public:
 	 * @param current New nav area
 	*/
 	inline virtual void OnNavAreaChanged(CNavArea* old, CNavArea* current) {}
-	inline virtual CNavArea* GetLastKnownNavArea() { return m_lastnavarea; }
-	inline virtual IPlayerInfo* GetPlayerInfo() { return m_playerinfo; }
+	inline CNavArea* GetLastKnownNavArea() { return m_lastnavarea; }
+	inline IPlayerInfo* GetPlayerInfo() { return m_playerinfo; }
 	const Vector GetAbsOrigin();
 	const QAngle GetAbsAngles();
 	const Vector GetEyeOrigin();
@@ -36,6 +39,9 @@ public:
 	inline QAngle BodyAngles() { return GetAbsAngles(); }
 	Vector BodyDirection3D();
 	Vector BodyDirection2D();
+	// Changes the player team
+	virtual void ChangeTeam(int newTeam);
+	virtual int GetCurrentTeamIndex();
 	// true if this is a bot managed by this extension
 	inline virtual bool IsExtensionBot() { return false; }
 	// Pointer to the extension bot class
@@ -45,22 +51,11 @@ protected:
 
 private:
 	edict_t* m_edict;
+	int m_index; // Index of this player
 	IPlayerInfo* m_playerinfo;
 	CNavArea* m_lastnavarea;
 	int m_navupdatetimer;
 };
-
-inline CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
-{
-	m_edict = edict;
-	m_playerinfo = nullptr;
-	m_lastnavarea = nullptr;
-	m_navupdatetimer = 64;
-}
-
-inline CBaseExtPlayer::~CBaseExtPlayer()
-{
-}
 
 
 #endif // !EXT_PLAYER_INTERFACE_H_

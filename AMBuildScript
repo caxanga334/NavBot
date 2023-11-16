@@ -143,6 +143,10 @@ class ExtensionConfig(object):
     # Debugging
     if builder.options.debug == '1':
       cxx.defines += ['DEBUG', '_DEBUG']
+
+    # Custom debug macro since the default --enable-debug fails due to missing files in HL2-SDK
+    if builder.options.debugmode == '1':
+      cxx.defines += ['SMNAV_DEBUG']
 	  
     # Extension is being compiled with bot support enabled
     if builder.options.featbots == '1':

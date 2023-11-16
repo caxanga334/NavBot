@@ -1,7 +1,8 @@
-#include <ifaces_extern.h>
 #include <extension.h>
+#include <ifaces_extern.h>
 #include <server_class.h>
 #include "helpers.h"
+#include "entprops.h"
 
 edict_t* UtilHelpers::BaseEntityToEdict(CBaseEntity* pEntity)
 {
@@ -14,6 +15,18 @@ edict_t* UtilHelpers::BaseEntityToEdict(CBaseEntity* pEntity)
 	}
 
 	return pNet->GetEdict();
+}
+
+edict_t* UtilHelpers::GetEdict(int entity)
+{
+
+	edict_t* pEdict;
+	if (!IndexToAThings(entity, nullptr, &pEdict))
+	{
+		return nullptr;
+	}
+
+	return pEdict;
 }
 
 CBaseEntity* UtilHelpers::GetEntity(int entity)
@@ -128,18 +141,132 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(edict_t* pEntity)
 
 /// @brief Searches for entities by classname
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
-int UtilHelpers::FindEntityByClassname(int start, const char* classname)
+int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 {
-	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), classname);
+#if SOURCE_ENGINE > SE_ORANGEBOX
+	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
+#else
+
+	// from: https://cs.alliedmods.net/sourcemod/source/extensions/sdktools/vnatives.cpp#873
+
+	CBaseEntity* pEntity = nullptr;
+
+	if (start == -1)
+	{
+		pEntity = (CBaseEntity*)servertools->FirstEntity();
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(start);
+		if (!pEntity)
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+		pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
+	}
+
+	// it's tough to find a good ent these days
+	if (!pEntity)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	const char* classname = nullptr;
+	int lastletterpos;
+
+	static int offset = -1;
+	if (offset == -1)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(pEntity), "m_iClassname", &info))
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		offset = info.actual_offset;
+	}
+
+	string_t s;
+
+	while (pEntity)
+	{
+		if ((s = *(string_t*)((uint8_t*)pEntity + offset)) == NULL_STRING)
+		{
+			pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
+			continue;
+		}
+
+		classname = STRING(s);
+
+		lastletterpos = strlen(searchname) - 1;
+		if (searchname[lastletterpos] == '*')
+		{
+			if (strncasecmp(searchname, classname, lastletterpos) == 0)
+			{
+				return gamehelpers->EntityToBCompatRef(pEntity);
+			}
+		}
+		else if (strcasecmp(searchname, classname) == 0)
+		{
+			return gamehelpers->EntityToBCompatRef(pEntity);
+		}
+
+		pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
+	}
+
+	return INVALID_EHANDLE_INDEX;
+
+#endif // SOURCE_ENGINE > SE_ORANGEBOX
 }
 
 /// @brief Searches for entities in a sphere
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 {
+#if SOURCE_ENGINE > SE_ORANGEBOX
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
+#else
+	CBaseEntity* pEntity = nullptr;
+
+	if (start == -1)
+	{
+		pEntity = static_cast<CBaseEntity*>(servertools->FirstEntity());
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(start);
+
+		if (!pEntity)
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		pEntity = static_cast<CBaseEntity*>(servertools->NextEntity(pEntity));
+	}
+
+	if (!pEntity)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	while (pEntity)
+	{
+		int index = gamehelpers->EntityToBCompatRef(pEntity);
+		auto pos = entprops->GetEntPropVector(index, Prop_Data, "m_vecOrigin");
+		float distancesqr = (center - pos).LengthSqr();
+
+		if (distancesqr <= radius * radius)
+		{
+			return gamehelpers->EntityToBCompatRef(pEntity);
+		}
+
+		pEntity = static_cast<CBaseEntity*>(servertools->NextEntity(pEntity));
+	}
+
+	return INVALID_EHANDLE_INDEX;
+#endif // SOURCE_ENGINE > SE_ORANGEBOX
 }
 
 /// @brief Searches for entities by their networkable class

@@ -23,5 +23,7 @@ builder.options.add_option('--feature-bots', action='store_const', const='1', de
                        help='Enable the bot feature of the extension.')
 builder.options.add_option('--feature-avx', action='store_const', const='1', dest='featavx',
                        help='Allows the compiler to make use of AVX2 instructions.')
+builder.options.add_option('--debug-mode', action='store_const', const='1', dest='debugmode',
+                       help='Compile with debug code')
 
 builder.Configure()

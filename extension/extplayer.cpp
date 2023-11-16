@@ -10,19 +10,22 @@ extern CNavMesh* TheNavMesh;
 constexpr auto PLAYER_NAV_UPDATE_TIME = 0.6f; // Interval of nav mesh data updates
 constexpr auto NEAREST_AREA_MAX_DISTANCE = 128.0f;
 
+CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
+{
+	m_edict = edict;
+	m_index = gamehelpers->IndexOfEdict(edict);
+	m_playerinfo = playerinfomanager->GetPlayerInfo(edict);
+	m_lastnavarea = nullptr;
+	m_navupdatetimer = 64;
+}
+
+CBaseExtPlayer::~CBaseExtPlayer()
+{
+}
+
 void CBaseExtPlayer::PlayerThink()
 {
-	if (m_playerinfo == nullptr)
-	{
-		m_playerinfo = playerinfomanager->GetPlayerInfo(m_edict);
-		return;
-	}
-
-	if (m_navupdatetimer > 0)
-	{
-		m_navupdatetimer--;
-	}
-	else
+	if (--m_navupdatetimer <= 0)
 	{
 		m_navupdatetimer = TIME_TO_TICKS(PLAYER_NAV_UPDATE_TIME);
 		auto origin = GetAbsOrigin();
@@ -89,4 +92,14 @@ Vector CBaseExtPlayer::BodyDirection2D()
 	body2d.z = 0.0f;
 	body2d.AsVector2D().NormalizeInPlace();
 	return body2d;
+}
+
+void CBaseExtPlayer::ChangeTeam(int newTeam)
+{
+	m_playerinfo->ChangeTeam(newTeam);
+}
+
+int CBaseExtPlayer::GetCurrentTeamIndex()
+{
+	return m_playerinfo->GetTeamIndex();
 }

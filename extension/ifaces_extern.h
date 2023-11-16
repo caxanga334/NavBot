@@ -11,6 +11,7 @@
 #include <datacache/imdlcache.h>
 #include <igameevents.h>
 #include <toolframework/itoolentity.h>
+#include <entitylist_base.h>
 #include "navmesh/nav_mesh.h"
 #include "manager.h"
 #include <ISDKTools.h>
@@ -34,6 +35,7 @@ extern IMDLCache* mdlcache;
 extern IFileSystem* filesystem;
 extern ICvar* icvar;
 extern IServerTools* servertools;
+extern CBaseEntityList* g_EntList;
 
 extern IBinTools* g_pBinTools;
 extern ISDKTools* g_pSDKTools;

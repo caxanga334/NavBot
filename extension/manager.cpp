@@ -68,6 +68,18 @@ void CExtManager::OnClientPutInServer(int client)
 		return;
 	}
 
+#ifndef NDEBUG
+	auto gp = playerhelpers->GetGamePlayer(client);
+	auto auth = gp->GetAuthString(true);
+
+	if (auth == nullptr)
+	{
+		auth = "NULL";
+	}
+
+	smutils->LogMessage(myself, "OnClientPutInServer -- %i %p '%s'", client, edict, auth);
+#endif // !NDEBUG
+
 	m_players[client] = gamemod->AllocatePlayer(edict);
 }
 
@@ -80,6 +92,7 @@ void CExtManager::OnClientDisconnect(int client)
 	}
 }
 
+// Detect current mod and initializes it
 void CExtManager::AllocateMod()
 {
 	gamemod = new CBaseMod;
