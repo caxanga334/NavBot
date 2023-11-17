@@ -30,8 +30,6 @@ public:
 	// Called every server frame
 	virtual void Frame() {}
 
-	// Called by the manager when allocating a new player instance
-	virtual CBaseExtPlayer* AllocatePlayer(edict_t* edict);
 	// Called by the manager when allocating a new bot instance
 	virtual CBaseBot* AllocateBot(edict_t* edict);
 

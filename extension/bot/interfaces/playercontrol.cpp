@@ -63,7 +63,6 @@ void IPlayerController::RunLook()
 			// Look at entity is a player entity
 			if (index > 0 && index < gpGlobals->maxClients)
 			{
-				auto player = extmanager->GetPlayerByIndex(index);
 				// TO-DO
 			}
 			else

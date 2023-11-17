@@ -5,6 +5,7 @@
 struct edict_t;
 class CBaseEntity;
 class Vector;
+class CStudioHdr;
 
 namespace UtilHelpers
 {
@@ -22,6 +23,11 @@ namespace UtilHelpers
 	int FindEntityByNetClass(int start, const char* classname);
 	bool PointWithinViewAngle(Vector const& vecSrcPosition, Vector const& vecTargetPosition, Vector const& vecLookDirection, float flCosHalfFOV);
 	float GetForwardViewCone(float angle);
+	CStudioHdr* GetEntityModelPtr(edict_t* pEntity);
+	int LookupBone(CStudioHdr* hdr, const char* bonename);
+	// TO-DO: Investigate but the bone cache might complicate things
+	// bool GetBoneTransform(CStudioHdr* hdr, int iBone, matrix3x4_t& pBoneToWorld);
+	// bool GetBonePosition(CStudioHdr* hdr, int iBone, Vector& origin, QAngle& angles);
 }
 
 #endif // !UTIL_HELPERS_H_

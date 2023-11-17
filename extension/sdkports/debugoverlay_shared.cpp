@@ -17,17 +17,17 @@
 //-----------------------------------------------------------------------------
 // Purpose: Local player on the server or client
 //-----------------------------------------------------------------------------
-CBaseExtPlayer *GetLocalPlayer( void )
+inline static edict_t *GetLocalPlayer( void )
 {
-	return extmanager->GetPlayerByIndex(1);
+	return gamehelpers->EdictOfIndex(1);
 }
 
 //-----------------------------------------------------------------------------
 // Purpose: Debug player by index
 //-----------------------------------------------------------------------------
-CBaseExtPlayer *GetDebugPlayer( void )
+inline static edict_t *GetDebugPlayer( void )
 {
-	return extmanager->GetPlayerByIndex(1);
+	return gamehelpers->EdictOfIndex(1);
 }
 
 //-----------------------------------------------------------------------------
@@ -90,22 +90,19 @@ void NDebugOverlay::Line( const Vector &origin, const Vector &target, int r, int
 	// Clip the line before sending so we 
 	// don't overflow the client message buffer
 	// --------------------------------------------------------------
-	auto player = GetLocalPlayer();
-
-	if (player == nullptr)
-		return;
+	CBaseExtPlayer player(GetLocalPlayer());
 
 	// Clip line that is far away
-	if (((player->GetAbsOrigin() - origin).LengthSqr() > MAX_OVERLAY_DIST_SQR) &&
-		((player->GetAbsOrigin() - target).LengthSqr() > MAX_OVERLAY_DIST_SQR) ) 
+	if (((player.GetAbsOrigin() - origin).LengthSqr() > MAX_OVERLAY_DIST_SQR) &&
+		((player.GetAbsOrigin() - target).LengthSqr() > MAX_OVERLAY_DIST_SQR) ) 
 		return;
 
 	// Clip line that is behind the client 
 	Vector clientForward;
-	player->EyeVectors( &clientForward );
+	player.EyeVectors( &clientForward );
 
-	Vector toOrigin		= origin - player->GetAbsOrigin();
-	Vector toTarget		= target - player->GetAbsOrigin();
+	Vector toOrigin		= origin - player.GetAbsOrigin();
+	Vector toTarget		= target - player.GetAbsOrigin();
  	float  dotOrigin	= DotProduct(clientForward,toOrigin);
  	float  dotTarget	= DotProduct(clientForward,toTarget);
 	
@@ -124,14 +121,12 @@ void NDebugOverlay::Line( const Vector &origin, const Vector &target, int r, int
 //-----------------------------------------------------------------------------
 void NDebugOverlay::Triangle( const Vector &p1, const Vector &p2, const Vector &p3, int r, int g, int b, int a, bool noDepthTest, float duration )
 {
-	auto player = GetLocalPlayer();
-	if ( !player )
-		return;
+	CBaseExtPlayer player(GetLocalPlayer());
 
 	// Clip triangles that are far away
-	Vector to1 = p1 - player->GetAbsOrigin();
-	Vector to2 = p2 - player->GetAbsOrigin();
-	Vector to3 = p3 - player->GetAbsOrigin();
+	Vector to1 = p1 - player.GetAbsOrigin();
+	Vector to2 = p2 - player.GetAbsOrigin();
+	Vector to3 = p3 - player.GetAbsOrigin();
 
 	if ((to1.LengthSqr() > MAX_OVERLAY_DIST_SQR) && 
 		(to2.LengthSqr() > MAX_OVERLAY_DIST_SQR) && 
@@ -142,7 +137,7 @@ void NDebugOverlay::Triangle( const Vector &p1, const Vector &p2, const Vector &
 
 	// Clip triangles that are behind the client 
 	Vector clientForward;
-	player->EyeVectors( &clientForward );
+	player.EyeVectors( &clientForward );
 	
  	float  dot1 = DotProduct(clientForward, to1);
  	float  dot2 = DotProduct(clientForward, to2);
@@ -197,20 +192,17 @@ void NDebugOverlay::Grid( const Vector &vPosition )
 //-----------------------------------------------------------------------------
 void NDebugOverlay::Text( const Vector &origin, const char *text, bool bViewCheck, float duration )
 {
-	auto player = GetLocalPlayer();
-	
-	if ( !player )
-		return;
+	CBaseExtPlayer player(GetLocalPlayer());
 
 	// Clip text that is far away
-	if ( ( player->GetAbsOrigin() - origin ).LengthSqr() > MAX_OVERLAY_DIST_SQR ) 
+	if ( ( player.GetAbsOrigin() - origin ).LengthSqr() > MAX_OVERLAY_DIST_SQR ) 
 		return;
 
 	// Clip text that is behind the client 
 	Vector clientForward;
-	player->EyeVectors( &clientForward );
+	player.EyeVectors( &clientForward );
 
-	Vector toText	= origin - player->GetAbsOrigin();
+	Vector toText	= origin - player.GetAbsOrigin();
  	float  dotPr	= DotProduct(clientForward,toText);
 	
 	if (dotPr < 0) 
@@ -220,7 +212,7 @@ void NDebugOverlay::Text( const Vector &origin, const char *text, bool bViewChec
 	if (bViewCheck)
 	{
 		trace_t tr;
-		UTIL_TraceLine(player->GetAbsOrigin(), origin, MASK_OPAQUE, NULL, COLLISION_GROUP_NONE, &tr);
+		UTIL_TraceLine(player.GetAbsOrigin(), origin, MASK_OPAQUE, NULL, COLLISION_GROUP_NONE, &tr);
 		
 		if ((tr.endpos - origin).Length() > 10)
 			return;
@@ -319,17 +311,14 @@ void NDebugOverlay::Cross3DOriented( const matrix3x4_t &m, float size, int c, bo
 //--------------------------------------------------------------------------------
 void NDebugOverlay::DrawTickMarkedLine(const Vector &startPos, const Vector &endPos, float tickDist, int tickTextDist, int r, int g, int b, bool noDepthTest, float duration )
 {
-	auto pPlayer = GetDebugPlayer();
-
-	if ( !pPlayer ) 
-		return;
+	CBaseExtPlayer pPlayer(GetDebugPlayer());
 	
 	Vector	lineDir		= (endPos - startPos);
 	float	lineDist	= VectorNormalize( lineDir );
 	int		numTicks	= lineDist/tickDist;
 	Vector	vBodyDir;
 	
-	vBodyDir = pPlayer->BodyDirection2D( );
+	vBodyDir = pPlayer.BodyDirection2D( );
 
 	Vector  upVec		= 4*vBodyDir;
 	Vector	sideDir;
@@ -374,17 +363,14 @@ void NDebugOverlay::DrawTickMarkedLine(const Vector &startPos, const Vector &end
 //------------------------------------------------------------------------------
 void NDebugOverlay::DrawGroundCrossHairOverlay( void )
 {
-	auto pPlayer = GetDebugPlayer();
-
-	if ( !pPlayer ) 
-		return;
+	CBaseExtPlayer player(GetDebugPlayer());
 
 	// Trace a line to where player is looking
 	Vector vForward;
-	Vector vSource = pPlayer->GetEyeOrigin();
-	pPlayer->EyeVectors( &vForward );
+	Vector vSource = player.GetEyeOrigin();
+	player.EyeVectors( &vForward );
 
-	auto edict = pPlayer->GetEdict();
+	auto edict = player.GetEdict();
 	const auto handleentity = static_cast<IHandleEntity*>(edict->GetUnknown());
 	trace_t tr;
 	UTIL_TraceLine ( vSource, vSource + vForward * 2048, MASK_SOLID, handleentity, COLLISION_GROUP_NONE, &tr);
@@ -571,12 +557,10 @@ void NDebugOverlay::Sphere( const Vector &center, float radius, int r, int g, in
 //-----------------------------------------------------------------------------
 void NDebugOverlay::Circle( const Vector &position, float radius, int r, int g, int b, int a, bool bNoDepthTest, float flDuration )
 {
-	auto player = GetLocalPlayer();
-	if ( player == nullptr )
-		return;
+	CBaseExtPlayer player(GetDebugPlayer());
 
 	Vector clientForward;
-	player->EyeVectors( &clientForward );
+	player.EyeVectors( &clientForward );
 
 	QAngle vecAngles;
 	VectorAngles( clientForward, vecAngles );

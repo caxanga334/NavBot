@@ -7,7 +7,7 @@
 
 class CBaseBot;
 
-// Base interface for players and bots
+// Base player class, all code shared by players and bots goes here
 class CBaseExtPlayer
 {
 public:
@@ -17,7 +17,9 @@ public:
 	// Gets the player edict_t
 	inline edict_t* GetEdict() { return m_edict; }
 	// Gets the player entity index
-	inline int GetIndex() { return m_index; }
+	inline int GetIndex() const { return m_index; }
+
+	bool operator==(const CBaseExtPlayer& other);
 
 	// Function called every server frame by the manager
 	virtual void PlayerThink();

@@ -26,13 +26,10 @@ public:
 
 	virtual CBaseMod* GetMod();
 
-	CBaseExtPlayer* GetPlayerByIndex(int index) { return m_players[index]; }
-
 	CBaseBot* GetBotByIndex(int index);
 
 private:
-	// Array to store players and bots
-	CBaseExtPlayer* m_players[SMNAV_MAX_PLAYERS];
+	std::vector<CBaseBot*> m_bots; // Vector of bots
 };
 
 #endif // !SMNAV_EXT_MANAGER_H_

@@ -11,6 +11,7 @@ sourceFiles = [
   'extplayer.cpp',
   'sdkports/sdk_timers.cpp',
   'sdkports/debugoverlay_shared.cpp',
+  'sdkports/studio.cpp',
   'mods/basemod.cpp',
   'navmesh/nav_area.cpp',
   'navmesh/nav_colors.cpp',

@@ -1,5 +1,6 @@
 #include "extension.h"
 #include "navmesh/nav_mesh.h"
+#include <util/helpers.h>
 #include "extplayer.h"
 
 extern CGlobalVars* gpGlobals;
@@ -21,6 +22,12 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 
 CBaseExtPlayer::~CBaseExtPlayer()
 {
+}
+
+bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other)
+{
+	// Maybe also add something like a userid here?
+	return this->GetIndex() == other.GetIndex();
 }
 
 void CBaseExtPlayer::PlayerThink()
@@ -103,3 +110,29 @@ int CBaseExtPlayer::GetCurrentTeamIndex()
 {
 	return m_playerinfo->GetTeamIndex();
 }
+
+#ifdef SMNAV_DEBUG
+CON_COMMAND_F(smnav_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
+{
+	auto player = gamehelpers->EdictOfIndex(1); // Get listen server host
+
+	if (!player)
+	{
+		rootconsole->ConsolePrint("Listen Server host is NULL!");
+		return;
+	}
+
+	auto model = UtilHelpers::GetEntityModelPtr(player);
+
+	if (!model)
+	{
+		rootconsole->ConsolePrint("Failed to get a model pointer!");
+		return;
+	}
+
+	int bone = UtilHelpers::LookupBone(model, "ValveBiped.Bip01_Head1");
+
+	rootconsole->ConsolePrint("Bone Lookup result = %i", bone);
+	delete model;
+}
+#endif // SMNAV_DEBUG

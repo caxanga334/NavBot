@@ -1,3 +1,6 @@
+#include <vector>
+#include <stdexcept>
+
 #include "extension.h"
 
 #ifdef SMNAV_FEAT_BOT
@@ -13,23 +16,17 @@ CBaseMod* gamemod = nullptr;
 
 CExtManager::CExtManager()
 {
-	for (int i = 0; i < SMNAV_MAX_PLAYERS; i++)
-	{
-		m_players[i] = nullptr;
-	}
+	m_bots.reserve(128); // 128 should be good for most mods
 }
 
 CExtManager::~CExtManager()
 {
-	for (int i = 0; i < SMNAV_MAX_PLAYERS; i++)
+	for (auto bot : m_bots)
 	{
-		if (m_players[i])
-		{
-			delete m_players[i];
-		}
-
-		m_players[i] = nullptr;
+		delete bot;
 	}
+
+	m_bots.clear();
 
 	if (gamemod)
 	{
@@ -47,12 +44,9 @@ void CExtManager::OnAllLoaded()
 
 void CExtManager::Frame()
 {
-	for (int i = 0; i < SMNAV_MAX_PLAYERS; i++)
+	for (auto bot : m_bots)
 	{
-		if (m_players[i])
-		{
-			m_players[i]->PlayerThink(); // Run player think
-		}
+		bot->PlayerThink();
 	}
 
 	gamemod->Frame();
@@ -68,7 +62,7 @@ void CExtManager::OnClientPutInServer(int client)
 		return;
 	}
 
-#ifndef NDEBUG
+#ifdef SMNAV_DEBUG
 	auto gp = playerhelpers->GetGamePlayer(client);
 	auto auth = gp->GetAuthString(true);
 
@@ -78,18 +72,37 @@ void CExtManager::OnClientPutInServer(int client)
 	}
 
 	smutils->LogMessage(myself, "OnClientPutInServer -- %i %p '%s'", client, edict, auth);
-#endif // !NDEBUG
+#endif // SMNAV_DEBUG
 
-	m_players[client] = gamemod->AllocatePlayer(edict);
+	// TO-DO: if is ext bot, allocate bot
 }
 
 void CExtManager::OnClientDisconnect(int client)
 {
-	if (m_players[client])
+#ifdef SMNAV_FEAT_BOT
+
+	auto bot = GetBotByIndex(client);
+
+	if (bot != nullptr)
 	{
-		delete m_players[client];
-		m_players[client] = nullptr;
+		auto start = m_bots.begin();
+		auto end = m_bots.end();
+		auto it = std::find(start, end, bot);
+
+#ifdef SMNAV_DEBUG
+		if (it == end)
+		{
+			// something went very wrong if the code enters here
+			// throw and crash
+			throw std::runtime_error("Got valid CBaseBot pointer but end iterator on CExtManager::OnClientDisconnect!");
+		}
+#endif // SMNAV_DEBUG
+
+		delete bot; // Deallocate the bot
+		m_bots.erase(it); // Remove the bot from the vector
 	}
+
+#endif // SMNAV_FEAT_BOT
 }
 
 // Detect current mod and initializes it
@@ -105,25 +118,40 @@ CBaseMod* CExtManager::GetMod()
 
 CBaseBot* CExtManager::GetBotByIndex(int index)
 {
-	return m_players[index]->MyBotPointer();
+	for (auto bot : m_bots)
+	{
+		if (bot->GetIndex() == index)
+		{
+			return bot;
+		}
+	}
+
+	return nullptr;
 }
 
-// For debug stuff, NDEBUG is used since it's not possible to use DEBUG (compiler errors from the SDK)
-#ifndef NDEBUG
+#ifdef SMNAV_DEBUG
 CON_COMMAND(smnav_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 {
 	extern CExtManager* extmanager;
 	extern IVDebugOverlay* debugoverlay;
 
-	auto player = extmanager->GetPlayerByIndex(1);
+	auto edict = gamehelpers->EdictOfIndex(1);
+
+	if (edict == nullptr)
+	{
+		return;
+	}
+
+	// CBaseExtPlayer can be used for both players and bots
+	CBaseExtPlayer player(edict);
 
 	static Vector mins(-4.0f, -4.0f, -4.0f);
 	static Vector maxs(4.0f, 4.0f, 4.0f);
 
-	auto origin = player->GetAbsOrigin();
-	auto angles = player->GetAbsAngles();
-	auto eyepos = player->GetEyeOrigin();
-	auto eyeangles = player->GetEyeAngles();
+	auto origin = player.GetAbsOrigin();
+	auto angles = player.GetAbsAngles();
+	auto eyepos = player.GetEyeOrigin();
+	auto eyeangles = player.GetEyeAngles();
 
 	rootconsole->ConsolePrint("Origin: <%3.2f> <%3.2f> <%3.2f>", origin.x, origin.y, origin.z);
 	rootconsole->ConsolePrint("Angles: <%3.2f> <%3.2f> <%3.2f>", angles.x, angles.y, angles.z);
@@ -141,4 +169,9 @@ CON_COMMAND(smnav_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 
 	debugoverlay->AddLineOverlay(eyepos, eyepos + forward, 255, 0, 0, true, 15.0f);
 }
-#endif // !NDEBUG
+
+CON_COMMAND_F(smnav_debug_do_not_use, "Do not even think about executing this command.", FCVAR_CHEAT)
+{
+	throw std::runtime_error("Exception test!");
+}
+#endif

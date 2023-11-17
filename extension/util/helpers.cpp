@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <ifaces_extern.h>
 #include <server_class.h>
+#include <studio.h>
 #include "helpers.h"
 #include "entprops.h"
 
@@ -331,4 +332,70 @@ bool UtilHelpers::PointWithinViewAngle(Vector const& vecSrcPosition, Vector cons
 float UtilHelpers::GetForwardViewCone(float angle)
 {
 	return cosf(DEG2RAD(angle) / 2.0f);
+}
+
+/**
+ * @brief Allocates a new CStudioHdr object. 
+ * @param pEntity Entity to get the model from
+ * @return CStudioHdr pointer. IT MUST BE DELETED AFTER USE. Returns NULL on failure
+*/
+CStudioHdr* UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
+{
+	auto collide = pEntity->GetCollideable();
+
+	if (!collide)
+	{
+		return nullptr;
+	}
+
+	auto model = collide->GetCollisionModel();
+
+	if (!model)
+	{
+		return nullptr;
+	}
+
+	auto studiomodel = modelinfo->GetStudiomodel(model);
+
+	if (!studiomodel)
+	{
+		return nullptr;
+	}
+
+	// TO-DO: Smart Pointers
+	return new CStudioHdr(studiomodel, mdlcache);
+}
+
+/**
+ * @brief Gets the index of a bone from the given model.
+ * @param hdr CStudioHDR pointer of the model you want to get the bone from
+ * @param bonename Name of the bone
+ * @return Bone index or -1 on failure
+*/
+int UtilHelpers::LookupBone(CStudioHdr* hdr, const char* bonename)
+{
+	// binary search for the bone matching pName
+	int start = 0, end = hdr->numbones() - 1;
+	const byte* pBoneTable = hdr->GetBoneTableSortedByName();
+	mstudiobone_t* pbones = hdr->pBone(0);
+	while (start <= end)
+	{
+		int mid = (start + end) >> 1;
+		int cmp = Q_stricmp(pbones[pBoneTable[mid]].pszName(), bonename);
+
+		if (cmp < 0)
+		{
+			start = mid + 1;
+		}
+		else if (cmp > 0)
+		{
+			end = mid - 1;
+		}
+		else
+		{
+			return pBoneTable[mid];
+		}
+	}
+
+	return -1;
 }
