@@ -252,15 +252,20 @@ int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 		return INVALID_EHANDLE_INDEX;
 	}
 
+	Vector pos(0.0f, 0.0f, 0.0f);
+
 	while (pEntity)
 	{
 		int index = gamehelpers->EntityToBCompatRef(pEntity);
-		auto pos = entprops->GetEntPropVector(index, Prop_Data, "m_vecOrigin");
-		float distancesqr = (center - pos).LengthSqr();
 
-		if (distancesqr <= radius * radius)
+		if (entprops->GetEntPropVector(index, Prop_Data, "m_vecOrigin", pos) == true)
 		{
-			return gamehelpers->EntityToBCompatRef(pEntity);
+			float distancesqr = (center - pos).LengthSqr();
+
+			if (distancesqr <= radius * radius)
+			{
+				return gamehelpers->EntityToBCompatRef(pEntity);
+			}
 		}
 
 		pEntity = static_cast<CBaseEntity*>(servertools->NextEntity(pEntity));
@@ -398,4 +403,14 @@ int UtilHelpers::LookupBone(CStudioHdr* hdr, const char* bonename)
 	}
 
 	return -1;
+}
+
+/**
+ * @brief Tests if a given entity index is in the player entity index range
+ * @param index Entity index to check
+ * @return TRUE if the given entity index in inside the reserved player entity range
+*/
+bool UtilHelpers::IsPlayerIndex(const int index)
+{
+	return index > 0 && index <= gpGlobals->maxClients;
 }

@@ -38,8 +38,11 @@ sourceFiles = [
 botFeatSrcFiles = [
   'bot/interfaces/base_interface.cpp',
   'bot/interfaces/playercontrol.cpp',
+  'bot/interfaces/movement.cpp',
+  'bot/interfaces/sensor.cpp',
   'bot/interfaces/knownentity.cpp',
   'bot/basebot.cpp',
+  'concommands_bots.cpp',
 ]
 
 ###############

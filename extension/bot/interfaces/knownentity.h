@@ -19,6 +19,9 @@ public:
 
 	virtual ~CKnownEntity();
 
+	bool operator==(const CKnownEntity& other);
+	inline bool operator!=(const CKnownEntity& other) { return !(*this == other); }
+
 	// Returns true if the entity was completely visible to the bot at some point
 	inline bool WasEvenFullyVisible() const { return m_timelastvisible > 0.0f; }
 	// Returns true if the bot heard this entity at some point
@@ -54,6 +57,11 @@ public:
 	}
 	// Marks this entity as fully visible
 	inline void MarkAsFullyVisible() { m_timelastvisible = gpGlobals->curtime; }
+
+	// true if the given entity is stored on this handle
+	bool IsEntity(edict_t* entity);
+	// true if the given entity is stored on this handle
+	bool IsEntity(const int entity);
 private:
 	CBaseHandle m_handle; // Handle to the actual entity
 	Vector m_lastknownposition; // Last known position of this entity

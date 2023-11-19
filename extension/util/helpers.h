@@ -28,6 +28,8 @@ namespace UtilHelpers
 	// TO-DO: Investigate but the bone cache might complicate things
 	// bool GetBoneTransform(CStudioHdr* hdr, int iBone, matrix3x4_t& pBoneToWorld);
 	// bool GetBonePosition(CStudioHdr* hdr, int iBone, Vector& origin, QAngle& angles);
+
+	bool IsPlayerIndex(const int index);
 }
 
 #endif // !UTIL_HELPERS_H_

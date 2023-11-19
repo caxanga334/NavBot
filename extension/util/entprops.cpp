@@ -339,14 +339,17 @@ bool CEntPropUtils::IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pE
 	return true;
 }
 
-/// @brief Retrieves an integer value in an entity's property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param size Number of bytes to write (valid values are 1, 2, or 4). This value is auto-detected, and the size parameter is only used as a fallback in case detection fails.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Value at the given property offset.
-int CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, int size, int element)
+/**
+ * @brief Retrieves an integer value in an entity's property.
+ * @param entity Entity/edict index.
+ * @param proptype Property type.
+ * @param prop Property name.
+ * @param result The lookup result will be stored here
+ * @param size Number of bytes to write (valid values are 1, 2, or 4). This value is auto-detected, and the size parameter is only used as a fallback in case detection fails.
+ * @param element Element # (starting from 0) if property is an array.
+ * @return TRUE on success, FALSE on failure
+*/
+bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, int& result, int size, int element)
 {
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
@@ -358,7 +361,7 @@ int CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, i
 
 	if (!IndexToAThings(entity, &pEntity, &pEdict))
 	{
-		return 0;
+		return false;
 	}
 
 	switch (proptype)
@@ -369,31 +372,31 @@ int CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, i
 
 		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
 		{
-			return 0;
+			return false;
 		}
 
 		SourceMod::sm_datatable_info_t dinfo;
 
 		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
 		{
-			return 0;
+			return false;
 		}
 
 		td = dinfo.prop;
 
 		if ((bit_count = MatchTypeDescAsInteger(td->fieldType, td->flags)) == 0)
 		{
-			return 0;
+			return false;
 		}
 
-		CHECK_SET_PROP_DATA_OFFSET(0);
+		CHECK_SET_PROP_DATA_OFFSET(false);
 		
 		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
 		{
 			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
 			if ((bit_count = MatchTypeDescAsInteger(pVariant->fieldType, 0)) == 0)
 			{
-				return 0;
+				return false;
 			}
 		}
 
@@ -403,14 +406,14 @@ int CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, i
 		
 		if (!FindSendProp(&info, pEntity, prop, entity))
 		{
-			return 0;
+			return false;
 		}
 
 		offset = info.actual_offset;
 		pProp = info.prop;
 		bit_count = pProp->m_nBits;
 
-		PROP_TYPE_SWITCH(DPT_Int, "integer", 0);
+		PROP_TYPE_SWITCH(DPT_Int, "integer", false);
 
 		#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS \
 			|| SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_TF2 \
@@ -426,7 +429,7 @@ int CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, i
 		break;
 	
 	default:
-		return 0;
+		return false;
 		break;
 	}
 
@@ -437,279 +440,67 @@ int CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, i
 
 	if (bit_count >= 17)
 	{
-		return *(int32_t *)((uint8_t *)pEntity + offset);
+		result = *(int32_t*)((uint8_t*)pEntity + offset);
+		return true;
 	}
 	else if (bit_count >= 9)
 	{
 		if (is_unsigned)
 		{
-			return *(uint16_t *)((uint8_t *)pEntity + offset);
+			result = *(uint16_t*)((uint8_t*)pEntity + offset);
+			return true;
 		}
 		else
 		{
-			return *(int16_t *)((uint8_t *)pEntity + offset);
+			result = *(int16_t*)((uint8_t*)pEntity + offset);
+			return true;
 		}
 	}
 	else if (bit_count >= 2)
 	{
 		if (is_unsigned)
 		{
-			return *(uint8_t *)((uint8_t *)pEntity + offset);
+			result = *(uint8_t*)((uint8_t*)pEntity + offset);
+			return true;
 		}
 		else
 		{
-			return *(int8_t *)((uint8_t *)pEntity + offset);
+			result = *(int8_t*)((uint8_t*)pEntity + offset);
+			return true;
 		}
 	}
 	else
 	{
-		return (bool *)((uint8_t *)pEntity + offset) ? 1 : 0;
+		result = (bool*)((uint8_t*)pEntity + offset) ? 1 : 0;
+		return true;
 	}
 }
 
-/// @brief Retrieves an integer pointer in an entity's property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param size Number of bytes to write (valid values are 1, 2, or 4). This value is auto-detected, and the size parameter is only used as a fallback in case detection fails.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Pointer at the given property offset.
-int *CEntPropUtils::GetEntPropPointer(int entity, PropType proptype, const char *prop, int size, int element)
+/**
+ * @brief Retrieves a boolean value in an entity's property.
+ * @param entity Entity/edict index.
+ * @param proptype Property type.
+ * @param prop Property name.
+ * @param result The lookup result will be stored here
+ * @param element Element # (starting from 0) if property is an array.
+ * @return 
+*/
+bool CEntPropUtils::GetEntPropBool(int entity, PropType proptype, const char* prop, bool& result, int element)
 {
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
-	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
-	int bit_count;
-	int offset;
-	bool is_unsigned = false;
+	int iresult = 0;
+	bool retv = GetEntProp(entity, proptype, prop, iresult, 1, element);
 
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
+	switch (iresult)
 	{
-		return nullptr;
-	}
-
-	switch (proptype)
-	{
-	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return nullptr;
-		}
-
-		SourceMod::sm_datatable_info_t dinfo;
-
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
-		{
-			return nullptr;
-		}
-
-		td = dinfo.prop;
-
-		if ((bit_count = MatchTypeDescAsInteger(td->fieldType, td->flags)) == 0)
-		{
-			return nullptr;
-		}
-
-		CHECK_SET_PROP_DATA_OFFSET(0);
-		
-		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
-		{
-			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
-			if ((bit_count = MatchTypeDescAsInteger(pVariant->fieldType, 0)) == 0)
-			{
-				return nullptr;
-			}
-		}
-
+	case 0:
+		result = false;
 		break;
-
-	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
-		{
-			return nullptr;
-		}
-
-		offset = info.actual_offset;
-		pProp = info.prop;
-		bit_count = pProp->m_nBits;
-
-		PROP_TYPE_SWITCH(DPT_Int, "integer", nullptr);
-
-		#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS \
-			|| SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_TF2 \
-			|| SOURCE_ENGINE == SE_CSGO || SOURCE_ENGINE == SE_BLADE || SOURCE_ENGINE == SE_PVKII
-			if (pProp->GetFlags() & SPROP_VARINT)
-			{
-				bit_count = sizeof(int) * 8;
-			}
-		#endif
-
-		is_unsigned = ((pProp->GetFlags() & SPROP_UNSIGNED) == SPROP_UNSIGNED);
-
-		break;
-	
 	default:
+		result = true;
 		break;
 	}
 
-	if (bit_count < 1)
-	{
-		bit_count = size * 8;
-	}
-
-	if (bit_count >= 17)
-	{
-		return (int32_t *)((uint8_t *)pEntity + offset);
-	}
-	else if (bit_count >= 9)
-	{
-		if (is_unsigned)
-		{
-			return (int*)(uint16_t *)((uint8_t *)pEntity + offset);
-		}
-		else
-		{
-			return (int*)(int16_t *)((uint8_t *)pEntity + offset);
-		}
-	}
-	else if (bit_count >= 2)
-	{
-		if (is_unsigned)
-		{
-			return (int*)(uint8_t *)((uint8_t *)pEntity + offset);
-		}
-		else
-		{
-			return (int*)(int8_t *)((uint8_t *)pEntity + offset);
-		}
-	}
-	else
-	{
-		return (int*)((uint8_t *)pEntity + offset);
-	}
-}
-
-/// @brief Retrieves a boolean value in an entity's property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Value at the given property offset.
-bool CEntPropUtils::GetEntPropBool(int entity, PropType proptype, const char *prop, int element)
-{
-	return GetEntProp(entity, proptype, prop, 1, element) != 0;
-}
-
-/// @brief Retrieves a boolean pointer in an entity's property.
-/// @attention This will return nullptr if the property bit_count is higher than 1. Use SourceMod's sm_dump_netprops to double check the property
-/// you are accessing has a size of 1. Or just use GetEntPropPointer instead.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Pointer at the given property offset.
-bool *CEntPropUtils::GetEntPropBoolPointer(int entity, PropType proptype, const char *prop, int element)
-{
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
-	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
-	int bit_count;
-	int offset;
-	bool is_unsigned = false;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return nullptr;
-	}
-
-	switch (proptype)
-	{
-	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return nullptr;
-		}
-
-		SourceMod::sm_datatable_info_t dinfo;
-
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
-		{
-			return nullptr;
-		}
-
-		td = dinfo.prop;
-
-		if ((bit_count = MatchTypeDescAsInteger(td->fieldType, td->flags)) == 0)
-		{
-			return nullptr;
-		}
-
-		CHECK_SET_PROP_DATA_OFFSET(0);
-		
-		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
-		{
-			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
-			if ((bit_count = MatchTypeDescAsInteger(pVariant->fieldType, 0)) == 0)
-			{
-				return nullptr;
-			}
-		}
-
-		break;
-
-	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
-		{
-			return nullptr;
-		}
-
-		offset = info.actual_offset;
-		pProp = info.prop;
-		bit_count = pProp->m_nBits;
-
-		PROP_TYPE_SWITCH(DPT_Int, "integer", nullptr);
-
-		#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS \
-			|| SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_TF2 \
-			|| SOURCE_ENGINE == SE_CSGO || SOURCE_ENGINE == SE_BLADE || SOURCE_ENGINE == SE_PVKII
-			if (pProp->GetFlags() & SPROP_VARINT)
-			{
-				bit_count = sizeof(int) * 8;
-			}
-		#endif
-
-		is_unsigned = ((pProp->GetFlags() & SPROP_UNSIGNED) == SPROP_UNSIGNED);
-
-		break;
-	
-	default:
-		return nullptr;
-		break;
-	}
-
-	if (bit_count < 1)
-	{
-		bit_count = 1 * 8;
-	}
-
-	if (bit_count > 1)
-	{
-		return nullptr;
-	}
-	else
-	{
-		return (bool*)((uint8_t *)pEntity + offset);
-	}
+	return retv;
 }
 
 /// @brief Sets an integer value in an entity's property.
@@ -841,13 +632,16 @@ bool CEntPropUtils::SetEntProp(int entity, PropType proptype, const char *prop, 
 	return true;
 }
 
-/// @brief Sets a float value in an entity's property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Value at the given property offset.
-float CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char *prop, int element)
+/**
+ * @brief Gets a float value in an entity's property.
+ * @param entity Entity/edict index.
+ * @param proptype Property type.
+ * @param prop Property name.
+ * @param result The lookup result will be stored here
+ * @param element Element # (starting from 0) if property is an array.
+ * @return TRUE on success, FALSE on failure
+*/
+bool CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char* prop, float& result, int element)
 {
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
@@ -858,7 +652,7 @@ float CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char *
 
 	if (!IndexToAThings(entity, &pEntity, &pEdict))
 	{
-		return 0.0f;
+		return false;
 	}
 
 	switch (proptype)
@@ -869,22 +663,22 @@ float CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char *
 
 		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
 		{
-			return 0.0f;
+			return false;
 		}
 
 		SourceMod::sm_datatable_info_t dinfo;
 
 		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
 		{
-			const char *classname = gamehelpers->GetEntityClassname(pEntity);
-			return 0.0f;
+			// const char *classname = gamehelpers->GetEntityClassname(pEntity);
+			return false;
 		}
 
 		td = dinfo.prop;
 
-		CHECK_SET_PROP_DATA_OFFSET(0.0f);
+		CHECK_SET_PROP_DATA_OFFSET(false);
 		
-		CHECK_TYPE_VALID_IF_VARIANT(FIELD_FLOAT, "float", 0.0f);
+		CHECK_TYPE_VALID_IF_VARIANT(FIELD_FLOAT, "float", false);
 
 		break;
 
@@ -892,92 +686,24 @@ float CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char *
 		
 		if (!FindSendProp(&info, pEntity, prop, entity))
 		{
-			return 0.0f;
+			return false;
 		}
 
 		offset = info.actual_offset;
 		pProp = info.prop;
 		bit_count = pProp->m_nBits;
 
-		PROP_TYPE_SWITCH(DPT_Float, "float", 0.0f);
+		PROP_TYPE_SWITCH(DPT_Float, "float", false);
 
 		break;
 	
 	default:
-		return 0.0f;
+		return false;
 		break;
 	}
 
-	return *(float *)((uint8_t *)pEntity + offset);
-}
-
-/// @brief Retrieves a float pointer in an entity's property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Pointer at the given property offset.
-float *CEntPropUtils::GetEntPropFloatPointer(int entity, PropType proptype, const char *prop, int element)
-{
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
-	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
-	int bit_count;
-	int offset;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return nullptr;
-	}
-
-	switch (proptype)
-	{
-	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return nullptr;
-		}
-
-		SourceMod::sm_datatable_info_t dinfo;
-
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
-		{
-			return nullptr;
-		}
-
-		td = dinfo.prop;
-
-		CHECK_SET_PROP_DATA_OFFSET(nullptr);
-		
-		CHECK_TYPE_VALID_IF_VARIANT(FIELD_FLOAT, "float", nullptr);
-
-		break;
-
-	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
-		{
-			return nullptr;
-		}
-
-		offset = info.actual_offset;
-		pProp = info.prop;
-		bit_count = pProp->m_nBits;
-
-		PROP_TYPE_SWITCH(DPT_Float, "float", nullptr);
-
-		break;
-	
-	default:
-		return nullptr;
-		break;
-	}
-
-	return (float *)((uint8_t *)pEntity + offset);
+	result = *(float*)((uint8_t*)pEntity + offset);
+	return true;
 }
 
 /// @brief Sets a float value in an entity's property.
@@ -1064,13 +790,16 @@ bool CEntPropUtils::SetEntPropFloat(int entity, PropType proptype, const char *p
 	return true;
 }
 
-/// @brief Retrieves an entity index from an entity's property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Entity index at the given property. If there is no entity, or the entity is not valid, then -1 is returned.
-int CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char *prop, int element)
+/**
+ * @brief Retrieves an entity index from an entity's property.
+ * @param entity Entity/edict index.
+ * @param proptype Property type.
+ * @param prop Property name.
+ * @param result The lookup result will be stored here.
+ * @param element Element # (starting from 0) if property is an array.
+ * @return TRUE on success, FALSE on failure
+*/
+bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* prop, int& result, int element)
 {
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
@@ -1082,7 +811,7 @@ int CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char *prop
 
 	if (!IndexToAThings(entity, &pEntity, &pEdict))
 	{
-		return -1;
+		return false;
 	}
 
 	switch (proptype)
@@ -1093,14 +822,14 @@ int CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char *prop
 
 		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
 		{
-			return -1;
+			return false;
 		}
 
 		SourceMod::sm_datatable_info_t dinfo;
 
 		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
 		{
-			return -1;
+			return false;
 		}
 
 		td = dinfo.prop;
@@ -1129,9 +858,9 @@ int CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char *prop
 			return -1;
 		}
 
-		CHECK_SET_PROP_DATA_OFFSET(0);
+		CHECK_SET_PROP_DATA_OFFSET(false);
 
-		CHECK_TYPE_VALID_IF_VARIANT(FIELD_EHANDLE, "ehandle", 0);
+		CHECK_TYPE_VALID_IF_VARIANT(FIELD_EHANDLE, "ehandle", false);
 
 		break;
 
@@ -1141,19 +870,19 @@ int CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char *prop
 
 		if (!FindSendProp(&info, pEntity, prop, entity))
 		{
-			return -1;
+			return false;
 		}
 
 		offset = info.actual_offset;
 		pProp = info.prop;
 		bit_count = pProp->m_nBits;
 
-		PROP_TYPE_SWITCH(DPT_Int, "integer", -1);
+		PROP_TYPE_SWITCH(DPT_Int, "integer", false);
 
 		break;
 	
 	default:
-		return -1;
+		return false;
 		break;
 	}
 
@@ -1176,26 +905,30 @@ int CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char *prop
 			CBaseEntity *pHandleEntity = gamehelpers->ReferenceToEntity(hndl->GetEntryIndex());
 
 			if (!pHandleEntity || *hndl != reinterpret_cast<IHandleEntity *>(pHandleEntity)->GetRefEHandle())
-				return -1;
+				return false;
 
-			return gamehelpers->EntityToBCompatRef(pHandleEntity);
+			result = gamehelpers->EntityToBCompatRef(pHandleEntity);
+			return true;
 		}
 	case PropEnt_Entity:
 		{
 			CBaseEntity *pPropEntity = *(CBaseEntity **) ((uint8_t *) pEntity + offset);
-			return gamehelpers->EntityToBCompatRef(pPropEntity);
+			result = gamehelpers->EntityToBCompatRef(pPropEntity);
+			return true;
 		}
 	case PropEnt_Edict:
 		{
 			edict_t *_pEdict = *(edict_t **) ((uint8_t *) pEntity + offset);
-			if (!_pEdict || _pEdict->IsFree())
-				return -1;
+			if (!_pEdict || _pEdict->IsFree()) {
+				return false;
+			}
 
-			return  gamehelpers->IndexOfEdict(_pEdict);
+			result = gamehelpers->IndexOfEdict(_pEdict);
+			return true;
 		}
 	}
 
-	return -1;
+	return false;
 }
 
 /// @brief Sets an entity index in an entity's property.
@@ -1362,7 +1095,7 @@ bool CEntPropUtils::SetEntPropEnt(int entity, PropType proptype, const char *pro
 /// @param prop Property name.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-Vector CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char *prop, int element)
+bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* prop, Vector& result, int element)
 {
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
@@ -1374,7 +1107,7 @@ Vector CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char
 
 	if (!IndexToAThings(entity, &pEntity, &pEdict))
 	{
-		return Vector(0,0,0);
+		return false;
 	}
 
 	switch (proptype)
@@ -1385,31 +1118,31 @@ Vector CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char
 
 		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
 		{
-			return Vector(0,0,0);
+			return false;
 		}
 
 		SourceMod::sm_datatable_info_t dinfo;
 
 		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
 		{
-			return Vector(0,0,0);
+			return false;
 		}
 
 		td = dinfo.prop;
 
 		if (td->fieldType != FIELD_VECTOR && td->fieldType != FIELD_POSITION_VECTOR)
 		{
-			return Vector(0,0,0);
+			return false;
 		}
 
-		CHECK_SET_PROP_DATA_OFFSET(Vector(0,0,0));
+		CHECK_SET_PROP_DATA_OFFSET(false);
 		
 		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
 		{
 			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
 			if (pVariant->fieldType != FIELD_VECTOR && pVariant->fieldType != FIELD_POSITION_VECTOR)
 			{
-				return Vector(0,0,0);
+				return false;
 			}
 		}
 
@@ -1419,109 +1152,26 @@ Vector CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char
 		
 		if (!FindSendProp(&info, pEntity, prop, entity))
 		{
-			return Vector(0,0,0);
+			return false;
 		}
 
 		offset = info.actual_offset;
 		pProp = info.prop;
 		bit_count = pProp->m_nBits;
 
-		PROP_TYPE_SWITCH(DPT_Vector, "vector", Vector(0,0,0));
+		PROP_TYPE_SWITCH(DPT_Vector, "vector", false);
 
 		break;
 	
 	default:
-		return Vector(0,0,0);
+		return false;
 		break;
 	}
 
 	Vector *v = (Vector *)((uint8_t *)pEntity + offset);
+	result = *v;
 
-	return *v;
-}
-
-/// @brief Retrieves a vector from an entity, given a named network property.
-/// @param entity Entity/edict index.
-/// @param proptype Property type.
-/// @param prop Property name.
-/// @param element Element # (starting from 0) if property is an array.
-/// @return Vector pointer from the property
-Vector *CEntPropUtils::GetEntPropVectorPointer(int entity, PropType proptype, const char *prop, int element)
-{
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
-	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
-	int bit_count;
-	int offset;
-	bool is_unsigned = false;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return nullptr;
-	}
-
-	switch (proptype)
-	{
-	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return nullptr;
-		}
-
-		SourceMod::sm_datatable_info_t dinfo;
-
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
-		{
-			return nullptr;
-		}
-
-		td = dinfo.prop;
-
-		if (td->fieldType != FIELD_VECTOR && td->fieldType != FIELD_POSITION_VECTOR)
-		{
-			return nullptr;
-		}
-
-		CHECK_SET_PROP_DATA_OFFSET(nullptr);
-		
-		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
-		{
-			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
-			if (pVariant->fieldType != FIELD_VECTOR && pVariant->fieldType != FIELD_POSITION_VECTOR)
-			{
-				return nullptr;
-			}
-		}
-
-		break;
-
-	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
-		{
-			return nullptr;
-		}
-
-		offset = info.actual_offset;
-		pProp = info.prop;
-		bit_count = pProp->m_nBits;
-
-		PROP_TYPE_SWITCH(DPT_Vector, "vector", nullptr);
-
-		break;
-	
-	default:
-		return nullptr;
-		break;
-	}
-
-	Vector *v = (Vector *)((uint8_t *)pEntity + offset);
-
-	return v;
+	return true;
 }
 
 /// @brief Sets a vector of floats in an entity, given a named network property.
@@ -1626,7 +1276,7 @@ bool CEntPropUtils::SetEntPropVector(int entity, PropType proptype, const char *
 /// @param len 
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char *prop, int maxlen, int *len, int element)
+bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, int& len, int element)
 {
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
@@ -1635,12 +1285,11 @@ char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char 
 	int bit_count;
 	int offset;
 	const char *src = nullptr;
-	char *dest = nullptr;
 	bool bIsStringIndex = false;
 
 	if (!IndexToAThings(entity, &pEntity, &pEdict))
 	{
-		return nullptr;
+		return false;
 	}
 
 	switch (proptype)
@@ -1651,14 +1300,14 @@ char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char 
 
 		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
 		{
-			return nullptr;
+			return false;
 		}
 
 		SourceMod::sm_datatable_info_t dinfo;
 
 		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
 		{
-			return nullptr;
+			return false;
 		}
 
 		td = dinfo.prop;
@@ -1669,7 +1318,7 @@ char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char 
 			&& td->fieldType != FIELD_SOUNDNAME)
 			|| (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) != FTYPEDESC_OUTPUT))
 		{
-			return nullptr;
+			return false;
 		}
 
 		bIsStringIndex = (td->fieldType != FIELD_CHARACTER);
@@ -1680,12 +1329,12 @@ char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char 
 			{
 				if (element < 0 || element >= td->fieldSize)
 				{
-					return nullptr;
+					return false;
 				}
 			}
 			else
 			{
-				return nullptr;
+				return false;
 			}
 		}
 
@@ -1711,14 +1360,14 @@ char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char 
 		
 		if (!FindSendProp(&info, pEntity, prop, entity))
 		{
-			return nullptr;
+			return false;
 		}
 
 		offset = info.actual_offset;
 		pProp = info.prop;
 		bit_count = pProp->m_nBits;
 
-		PROP_TYPE_SWITCH(DPT_String, "string", nullptr);
+		PROP_TYPE_SWITCH(DPT_String, "string", false);
 
 		if (pProp->GetProxyFn())
 		{
@@ -1734,14 +1383,14 @@ char *CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char 
 		break;
 	
 	default:
-		return nullptr;
+		return false;
 		break;
 	}
 
-	size_t length = ke::SafeStrcpy(dest, maxlen, src);
-	*len = length;
+	size_t length = ke::SafeStrcpy(result, maxlen, src);
+	len = length;
 
-	return dest;
+	return true;
 }
 
 
@@ -1899,30 +1548,33 @@ bool CEntPropUtils::SetEntPropString(int entity, PropType proptype, const char *
 /// @param offset Offset to use.
 /// @param size Number of bytes to read (valid values are 1, 2, or 4).
 /// @return Value at the given memory location.
-int CEntPropUtils::GetEntData(int entity, int offset, int size)
+bool CEntPropUtils::GetEntData(int entity, int offset, int& result, int size)
 {
 	CBaseEntity *pEntity = GetEntity(entity);
 
 	if (!pEntity)
 	{
-		return 0;
+		return false;
 	}
 
 	if (offset <= 0 || offset > 32768)
 	{
-		return 0;
+		return false;
 	}
 
 	switch (size)
 	{
 	case 4:
-		return *(int *)((uint8_t *)pEntity + offset);
+		result = *(int*)((uint8_t*)pEntity + offset);
+		return true;
 	case 2:
-		return *(short *)((uint8_t *)pEntity + offset);
+		result = *(short*)((uint8_t*)pEntity + offset);
+		return true;
 	case 1:
-		return *((uint8_t *)pEntity + offset);
+		result = *((uint8_t*)pEntity + offset);
+		return true;
 	default:
-		return 0;
+		return false;
 	}
 }
 
@@ -1981,21 +1633,22 @@ bool CEntPropUtils::SetEntData(int entity, int offset, int value, int size, bool
 /// @param entity Edict index.
 /// @param offset Offset to use.
 /// @return Value at the given memory location.
-float CEntPropUtils::GetEntDataFloat(int entity, int offset)
+bool CEntPropUtils::GetEntDataFloat(int entity, int offset, float& result)
 {
 	CBaseEntity *pEntity = GetEntity(entity);
 
 	if (!pEntity)
 	{
-		return 0.0f;
+		return false;
 	}
 
 	if (offset <= 0 || offset > 32768)
 	{
-		return 0.0f;
+		return false;
 	}
 
-	return *(float *)((uint8_t *)pEntity + offset);
+	result = *(float*)((uint8_t*)pEntity + offset);
+	return true;
 }
 
 /// @brief Peeks into an entity's object data and sets the float value at the given offset.
@@ -2036,27 +1689,28 @@ bool CEntPropUtils::SetEntDataFloat(int entity, int offset, float value, bool ch
 /// @param entity Edict index.
 /// @param offset Offset to use.
 /// @return Entity index at the given location. If there is no entity, or the stored entity is invalid, then -1 is returned.
-int CEntPropUtils::GetEntDataEnt(int entity, int offset)
+bool CEntPropUtils::GetEntDataEnt(int entity, int offset, int& result)
 {
 	CBaseEntity *pEntity = GetEntity(entity);
 
 	if (!pEntity)
 	{
-		return -1;
+		return false;
 	}
 
 	if (offset <= 0 || offset > 32768)
 	{
-		return -1;
+		return false;
 	}
 
 	CBaseHandle &hndl = *(CBaseHandle *)((uint8_t *)pEntity + offset);
 	CBaseEntity *pHandleEntity = gamehelpers->ReferenceToEntity(hndl.GetEntryIndex());
 
 	if (!pHandleEntity || hndl != reinterpret_cast<IHandleEntity *>(pHandleEntity)->GetRefEHandle())
-		return -1;
+		return false;
 
-	return gamehelpers->EntityToBCompatRef(pHandleEntity);
+	result = gamehelpers->EntityToBCompatRef(pHandleEntity);
+	return true;
 }
 
 /// @brief Peeks into an entity's object data and sets the entity index at the given offset.
@@ -2114,23 +1768,23 @@ bool CEntPropUtils::SetEntDataEnt(int entity, int offset, int value, bool change
 /// @param entity Edict index.
 /// @param offset Offset to use.
 /// @return Vector value at the given memory location.
-Vector CEntPropUtils::GetEntDataVector(int entity, int offset)
+bool CEntPropUtils::GetEntDataVector(int entity, int offset, Vector& result)
 {
 	CBaseEntity *pEntity = GetEntity(entity);
 
 	if (!pEntity)
 	{
-		return Vector(0,0,0);
+		return false;
 	}
 
 	if (offset <= 0 || offset > 32768)
 	{
-		return Vector(0,0,0);
+		return false;
 	}
 
 	Vector *v = (Vector *)((uint8_t *)pEntity + offset);
-
-	return *v;
+	result = *v;
+	return true;
 }
 
 /// @brief Peeks into an entity's object data and sets the vector at the given offset.
@@ -2172,30 +1826,29 @@ bool CEntPropUtils::SetEntDataVector(int entity, int offset, Vector value, bool 
 /// @param maxlen Maximum length of output string buffer.
 /// @param len Number of non-null bytes written.
 /// @return String pointer at the given memory location.
-char *CEntPropUtils::GetEntDataString(int entity, int offset, int maxlen, int *len)
+bool CEntPropUtils::GetEntDataString(int entity, int offset, int maxlen, char* result, int& len)
 {
 	CBaseEntity *pEntity = GetEntity(entity);
 
 	if (!pEntity)
 	{
-		return nullptr;
+		return false;
 	}
 
 	if (offset <= 0 || offset > 32768)
 	{
-		return nullptr;
+		return false;
 	}
 
 	if (maxlen <= 0)
 	{
-		return nullptr;
+		return false;
 	}
 
 	char *src = (char *)((uint8_t *)pEntity + offset);
-	char *dest = nullptr;
-	size_t length = ke::SafeStrcpy(dest, maxlen, src);
-	*len = length;
-	return dest;
+	size_t length = ke::SafeStrcpy(result, maxlen, src);
+	len = length;
+	return true;
 }
 
 /// @brief 
@@ -2236,7 +1889,7 @@ bool CEntPropUtils::SetEntDataString(int entity, int offset, char *value, int ma
 CBaseEntity *CEntPropUtils::GetGameRulesProxyEntity()
 {
 	static int proxyEntRef = -1;
-	CBaseEntity *pProxy;
+	CBaseEntity *pProxy = nullptr;
 	if (proxyEntRef == -1 || (pProxy = gamehelpers->ReferenceToEntity(proxyEntRef)) == NULL)
 	{
 		pProxy = GetEntity(UtilHelpers::FindEntityByNetClass(playerhelpers->GetMaxClients(), grclassname));
@@ -2252,7 +1905,7 @@ CBaseEntity *CEntPropUtils::GetGameRulesProxyEntity()
 /// @param size Number of bytes to read (valid values are 1, 2, or 4). This value is auto-detected, and the size parameter is only used as a fallback in case detection fails.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-int CEntPropUtils::GameRules_GetProp(const char *prop, int size, int element)
+bool CEntPropUtils::GameRules_GetProp(const char *prop, int& result, int size, int element)
 {
 	int offset;
 	int bit_count;
@@ -2261,11 +1914,11 @@ int CEntPropUtils::GameRules_GetProp(const char *prop, int size, int element)
 
 	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
 	{
-		return -1;
+		return false;
 	}
 
 	int elementCount = 1;
-	GAMERULES_FIND_PROP_SEND(DPT_Int, "integer", -1);
+	GAMERULES_FIND_PROP_SEND(DPT_Int, "integer", false);
 	is_unsigned = ((pProp->GetFlags() & SPROP_UNSIGNED) == SPROP_UNSIGNED);
 
 	// This isn't in CS:S yet, but will be, doesn't hurt to add now, and will save us a build later
@@ -2284,43 +1937,49 @@ int CEntPropUtils::GameRules_GetProp(const char *prop, int size, int element)
 
 	if (bit_count >= 17)
 	{
-		return *(int32_t *)((intptr_t)pGameRules + offset);
+		result = *(int32_t*)((intptr_t)pGameRules + offset);
+		return true;
 	}
 	else if (bit_count >= 9)
 	{
 		if (is_unsigned)
 		{
-			return *(uint16_t *)((intptr_t)pGameRules + offset);
+			result = *(uint16_t*)((intptr_t)pGameRules + offset);
+			return true;
 		}
 		else
 		{
-			return *(int16_t *)((intptr_t)pGameRules + offset);
+			result = *(int16_t*)((intptr_t)pGameRules + offset);
+			return true;
 		}
 	}
 	else if (bit_count >= 2)
 	{
 		if (is_unsigned)
 		{
-			return *(uint8_t *)((intptr_t)pGameRules + offset);
+			result = *(uint8_t*)((intptr_t)pGameRules + offset);
+			return true;
 		}
 		else
 		{
-			return *(int8_t *)((intptr_t)pGameRules + offset);
+			result = *(int8_t*)((intptr_t)pGameRules + offset);
+			return true;
 		}
 	}
 	else
 	{
-		return *(bool *)((intptr_t)pGameRules + offset) ? 1 : 0;
+		result = *(bool*)((intptr_t)pGameRules + offset) ? 1 : 0;
+		return true;
 	}
 
-	return -1;
+	return false;
 }
 
 /// @brief Retrieves a float value from a property of the gamerules entity.
 /// @param prop Property name.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-float CEntPropUtils::GameRules_GetPropFloat(const char *prop, int element)
+bool CEntPropUtils::GameRules_GetPropFloat(const char *prop, float& result, int element)
 {
 	int offset;
 	int bit_count;
@@ -2328,20 +1987,21 @@ float CEntPropUtils::GameRules_GetPropFloat(const char *prop, int element)
 
 	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
 	{
-		return 0.0f;
+		return false;
 	}
 
 	int elementCount = 1;
-	GAMERULES_FIND_PROP_SEND(DPT_Float, "float", 0.0f);
+	GAMERULES_FIND_PROP_SEND(DPT_Float, "float", false);
 
-	return *(float *)((intptr_t)pGameRules + offset);
+	result = *(float*)((intptr_t)pGameRules + offset);
+	return true;
 }
 
 /// @brief Retrieves a entity index from a property of the gamerules entity.
 /// @param prop Property name.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Entity index at the given property. If there is no entity, or the entity is not valid, then -1 is returned.
-int CEntPropUtils::GameRules_GetPropEnt(const char *prop, int element)
+bool CEntPropUtils::GameRules_GetPropEnt(const char *prop, int& result, int element)
 {
 	int offset;
 	int bit_count;
@@ -2349,28 +2009,29 @@ int CEntPropUtils::GameRules_GetPropEnt(const char *prop, int element)
 
 	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
 	{
-		return 0.0f;
+		return false;
 	}
 
 	int elementCount = 1;
-	GAMERULES_FIND_PROP_SEND(DPT_Int, "Integer", 0.0f);
+	GAMERULES_FIND_PROP_SEND(DPT_Int, "Integer", false);
 
 	CBaseHandle &hndl = *(CBaseHandle *)((intptr_t)pGameRules + offset);
 	CBaseEntity *pEntity = gamehelpers->ReferenceToEntity(hndl.GetEntryIndex());
 
 	if (!pEntity || ((IServerEntity *)pEntity)->GetRefEHandle() != hndl)
 	{
-		return -1;
+		return false;
 	}
 
-	return gamehelpers->EntityToBCompatRef(pEntity);
+	result = gamehelpers->EntityToBCompatRef(pEntity);
+	return false;
 }
 
 /// @brief Retrieves a vector from the gamerules entity, given a named network property.
 /// @param prop Property name.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-Vector CEntPropUtils::GameRules_GetPropVector(const char *prop, int element)
+bool CEntPropUtils::GameRules_GetPropVector(const char *prop, Vector& result, int element)
 {
 	int offset;
 	int bit_count;
@@ -2378,13 +2039,15 @@ Vector CEntPropUtils::GameRules_GetPropVector(const char *prop, int element)
 
 	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
 	{
-		return Vector(0,0,0);
+		return false;
 	}
 
 	int elementCount = 1;
-	GAMERULES_FIND_PROP_SEND(DPT_Vector, "vector", Vector(0,0,0));
+	GAMERULES_FIND_PROP_SEND(DPT_Vector, "vector", false);
 
-	return *(Vector *)((intptr_t)pGameRules + offset);
+	Vector *v = (Vector*)((intptr_t)pGameRules + offset);
+	result = *v;
+	return true;
 }
 
 /// @brief Gets a gamerules property as a string.
@@ -2393,7 +2056,7 @@ Vector CEntPropUtils::GameRules_GetPropVector(const char *prop, int element)
 /// @param maxlen Maximum length of output string buffer.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-char *CEntPropUtils::GameRules_GetPropString(const char *prop, int *len, int maxlen, int element)
+bool CEntPropUtils::GameRules_GetPropString(const char* prop, char* result, int& len, int maxlen, int element)
 {
 	int offset;
 	int bit_count;
@@ -2401,15 +2064,13 @@ char *CEntPropUtils::GameRules_GetPropString(const char *prop, int *len, int max
 
 	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
 	{
-		return nullptr;
+		return false;
 	}
 
 	int elementCount = 1;
-	GAMERULES_FIND_PROP_SEND(DPT_String, "string", nullptr);
-
+	GAMERULES_FIND_PROP_SEND(DPT_String, "string", false);
 
 	const char *src;
-	char *dest = nullptr;
 	if (pProp->GetProxyFn())
 	{
 		DVariant var;
@@ -2423,14 +2084,17 @@ char *CEntPropUtils::GameRules_GetPropString(const char *prop, int *len, int max
 
 	if (src)
 	{
-		size_t length = ke::SafeStrcpy(dest, maxlen, src);
-		*len = length;
+		size_t length = ke::SafeStrcpy(result, maxlen, src);
+		len = length;
+		return true;
 	}
 
-	return dest;
+	return false;
 }
 
 RoundState CEntPropUtils::GameRules_GetRoundState()
 {
-	return static_cast<RoundState>(GameRules_GetProp("m_iRoundState"));
+	int roundstate = 0;
+	GameRules_GetProp("m_iRoundState", roundstate);
+	return static_cast<RoundState>(roundstate);
 }

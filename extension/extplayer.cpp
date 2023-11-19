@@ -1,5 +1,6 @@
 #include "extension.h"
 #include "navmesh/nav_mesh.h"
+#include <util/entprops.h>
 #include <util/helpers.h>
 #include "extplayer.h"
 
@@ -134,5 +135,45 @@ CON_COMMAND_F(smnav_debug_boners, "Debugs the CBaseAnimating::LookupBone port of
 
 	rootconsole->ConsolePrint("Bone Lookup result = %i", bone);
 	delete model;
+}
+
+CON_COMMAND(smnav_debug_entprops, "Tests the ent prop lib.")
+{
+	constexpr int LISTEN_SERVER_HOST_ENTITY = 1;
+
+	Vector vec_var;
+	int integer_var = 0;
+	int entity_var = 0;
+	float float_var = 0.0f;
+	char string_var[256]{};
+	int length = 0;
+	bool results[5]{};
+
+	// Missing string prop, players doesn't have a good one to test
+
+	results[0] = entprops->GetEntProp(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_iTeamNum", integer_var);
+	results[1] = entprops->GetEntPropFloat(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_flModelScale", float_var);
+	results[2] = entprops->GetEntPropEnt(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_hActiveWeapon", entity_var);
+	results[3] = entprops->GetEntPropVector(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_vecOrigin", vec_var);
+	results[4] = entprops->GetEntPropString(LISTEN_SERVER_HOST_ENTITY, Prop_Data, "m_iClassname", string_var, sizeof(string_var), length);
+
+	for (int i = 0; i < 5; i++)
+	{
+		rootconsole->ConsolePrint("Result #%i was %s.", i, results[i] ? "success" : "failure");
+	}
+
+	rootconsole->ConsolePrint("Integer: %i Float: %f Vector: <%3.4f, %3.4f, %3.4f>", integer_var, float_var, vec_var.x, vec_var.y, vec_var.z);
+
+	auto edict = gamehelpers->EdictOfIndex(entity_var);
+
+	if (edict == nullptr)
+	{
+		rootconsole->ConsolePrint("Entity Var is %i but failed to get an edict pointer!", entity_var);
+		return;
+	}
+	
+	rootconsole->ConsolePrint("Entity var: #%i %p", entity_var, edict);
+
+	rootconsole->ConsolePrint("String Var: '%s' Length: %i", string_var, length);
 }
 #endif // SMNAV_DEBUG

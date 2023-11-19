@@ -14,6 +14,10 @@
 
 CBaseMod* gamemod = nullptr;
 
+#ifdef SMNAV_FEAT_BOT
+extern IBotManager* botmanager;
+#endif // SMNAV_FEAT_BOT
+
 CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods
@@ -73,8 +77,6 @@ void CExtManager::OnClientPutInServer(int client)
 
 	smutils->LogMessage(myself, "OnClientPutInServer -- %i %p '%s'", client, edict, auth);
 #endif // SMNAV_DEBUG
-
-	// TO-DO: if is ext bot, allocate bot
 }
 
 void CExtManager::OnClientDisconnect(int client)
@@ -127,6 +129,34 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 	}
 
 	return nullptr;
+}
+
+void CExtManager::AddBot()
+{
+#ifdef SMNAV_FEAT_BOT
+	// Tell the bot manager to create a new bot. OnClientPutInServer is too late to catch the bot being created
+	auto edict = botmanager->CreateBot("SMBot++");
+
+	if (edict == nullptr)
+	{
+		smutils->LogError(myself, "Game bot manager failed to create a new bot!");
+		return;
+	}
+
+	// Create a new bot instance
+	CBaseBot* bot = gamemod->AllocateBot(edict);
+	m_bots.push_back(bot); // Add it to the bot list
+
+#ifdef SMNAV_DEBUG
+	// the base bot doesn't allocate these on the constructor
+	// to allow debugging these interface, we have to call these functions at least once to create them
+	bot->GetControlInterface();
+	bot->GetMovementInterface();
+#endif // SMNAV_DEBUG
+
+
+	rootconsole->ConsolePrint("Bot added to the game.");
+#endif // SMNAV_FEAT_BOT
 }
 
 #ifdef SMNAV_DEBUG

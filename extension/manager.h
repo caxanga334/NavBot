@@ -28,6 +28,11 @@ public:
 
 	CBaseBot* GetBotByIndex(int index);
 
+	void AddBot();
+
+	// Gets a vector of all bots currently in game
+	const std::vector<CBaseBot*> &GetAllBots() const { return m_bots; }
+
 private:
 	std::vector<CBaseBot*> m_bots; // Vector of bots
 };

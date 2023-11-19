@@ -3,10 +3,8 @@
 #include <extplayer.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
+#include <bot/interfaces/playerinput.h>
 #include "basebot.h"
-
-// TO-DO: Add a convar
-constexpr auto BOT_UPDATE_INTERVAL = 0.15f;
 
 extern CGlobalVars* gpGlobals;
 
@@ -17,6 +15,8 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_nextupdatetime = 64;
 	m_controller = botmanager->GetBotController(edict);
 	m_basecontrol = nullptr;
+	m_basemover = nullptr;
+	m_head = nullptr;
 	m_weaponselect = 0;
 }
 
@@ -26,6 +26,11 @@ CBaseBot::~CBaseBot()
 	{
 		delete m_basecontrol;
 	}
+
+	if (m_basemover)
+	{
+		delete m_basemover;
+	}
 }
 
 void CBaseBot::PlayerThink()
@@ -34,12 +39,26 @@ void CBaseBot::PlayerThink()
 
 	Frame(); // Call bot frame
 
+	int buttons = 0;
+	auto control = GetControlInterface();
+
 	if (--m_nextupdatetime <= 0)
 	{
 		m_nextupdatetime = TIME_TO_TICKS(BOT_UPDATE_INTERVAL);
 
 		Update(); // Run period update
+
+		// Process all buttons during updates
+		control->ProcessButtons(buttons);
 	}
+	else // Not running a full update
+	{
+		// Keep last cmd buttons pressed + any new button pressed
+		buttons = control->GetOldButtonsToSend();
+	}
+
+	// This needs to be the last call on a bot think cycle
+	BuildUserCommand(buttons);
 }
 
 CBaseBot* CBaseBot::MyBotPointer()
@@ -71,10 +90,6 @@ void CBaseBot::Frame()
 	{
 		current->Frame();
 	}
-
-	// This needs to be called after the interfaces frame function
-	// So any button changes are sent on the same frame
-	BuildUserCommand();
 }
 
 void CBaseBot::RegisterInterface(IBotInterface* iface)
@@ -86,7 +101,7 @@ void CBaseBot::RegisterInterface(IBotInterface* iface)
 	}
 
 	IBotInterface* next = m_head;
-	while (true)
+	while (next != nullptr)
 	{
 		if (next->GetNext() == nullptr)
 		{
@@ -98,9 +113,11 @@ void CBaseBot::RegisterInterface(IBotInterface* iface)
 	}
 }
 
-void CBaseBot::BuildUserCommand()
+void CBaseBot::BuildUserCommand(const int buttons)
 {
 	int commandnumber = m_cmd.command_number;
+	auto mover = GetMovementInterface();
+	auto control = GetControlInterface();
 
 	m_cmd.Reset();
 
@@ -108,11 +125,44 @@ void CBaseBot::BuildUserCommand()
 	m_cmd.command_number = commandnumber;
 	m_cmd.tick_count = gpGlobals->tickcount;
 	m_cmd.impulse = 0;
-	m_cmd.viewangles = m_viewangles;
-	m_cmd.weaponselect = m_weaponselect;
+	m_cmd.viewangles = m_viewangles; // set view angles
+	m_cmd.weaponselect = m_weaponselect; // send weapon select
+	// TO-DO: weaponsubtype
+	m_cmd.buttons = buttons; // send buttons
 
-	auto control = GetControlInterface();
-	control->ProcessButtons(&m_cmd);
+	float forwardspeed = 0.0f;
+	float sidespeed = 0.0f;
+
+	if (buttons & INPUT_FORWARD)
+	{
+		forwardspeed = mover->GetMovementSpeed();
+	}
+	else if (buttons & INPUT_BACK)
+	{
+		forwardspeed = -mover->GetMovementSpeed();
+	}
+
+	if (buttons & INPUT_MOVERIGHT)
+	{
+		sidespeed = mover->GetMovementSpeed();
+	}
+	else if (buttons & INPUT_MOVELEFT)
+	{
+		sidespeed = -mover->GetMovementSpeed();
+	}
+
+	// TO-DO: Up speed
+
+	if (control->ShouldApplyScale())
+	{
+		forwardspeed = forwardspeed * control->GetForwardScale();
+		sidespeed = sidespeed * control->GetSideScale();
+	}
+
+	m_cmd.forwardmove = forwardspeed;
+	m_cmd.sidemove = sidespeed;
+	m_cmd.upmove = 0.0f;
+
 	m_controller->RunPlayerMove(&m_cmd);
 
 	m_weaponselect = 0;
@@ -123,8 +173,17 @@ IPlayerController* CBaseBot::GetControlInterface()
 	if (m_basecontrol == nullptr)
 	{
 		m_basecontrol = new IPlayerController(this);
-		RegisterInterface(m_basecontrol);
 	}
 
 	return m_basecontrol;
+}
+
+IMovement* CBaseBot::GetMovementInterface()
+{
+	if (m_basemover == nullptr)
+	{
+		m_basemover = new IMovement(this);
+	}
+
+	return m_basemover;
 }

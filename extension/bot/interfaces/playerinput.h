@@ -44,6 +44,7 @@ public:
 	IPlayerInput();
 
 	void ReleaseAllButtons();
+	void ResetInputData();
 	void PressAttackButton(const float duration = -1.0f);
 	void ReleaseAttackButton();
 	void PressSecondaryAttackButton(const float duration = -1.0f);
@@ -66,9 +67,19 @@ public:
 	void ReleaseMoveRightButton();
 	void PressReloadButton(const float duration = -1.0f);
 	void ReleaseReloadButton();
-	void SetMovementScale(const float forward, const float side);
+	void SetMovementScale(const float forward, const float side, const float duration = 0.05f);
+	
+	inline const float GetForwardScale() const { return m_forwardscale; }
+	inline const float GetSideScale() const { return m_sidescale; }
+	inline bool ShouldApplyScale() const { return !m_buttonscaletimer.IsElapsed(); }
 
-	virtual void ProcessButtons(CBotCmd* cmd) = 0;
+	// Buttons that will be sent between update
+	inline int GetOldButtonsToSend() const
+	{
+		return m_oldbuttons | m_buttons;
+	}
+
+	virtual void ProcessButtons(int& buttons) = 0;
 
 protected:
 	int m_buttons; // Buttons to be sent in the next user command
@@ -86,6 +97,7 @@ protected:
 	CountdownTimer m_moveleftbuttontimer;
 	CountdownTimer m_moverightbuttontimer;
 	CountdownTimer m_reloadbuttontimer;
+	CountdownTimer m_buttonscaletimer;
 
 	// Updates m_buttons with a list of button currently held down
 	void CompileButtons();
@@ -113,6 +125,14 @@ inline void IPlayerInput::ReleaseAllButtons()
 	m_moveleftbuttontimer.Invalidate();
 	m_moverightbuttontimer.Invalidate();
 	m_reloadbuttontimer.Invalidate();
+}
+
+inline void IPlayerInput::ResetInputData()
+{
+	m_oldbuttons = 0;
+	m_forwardscale = 1.0f;
+	m_sidescale = 1.0f;
+	m_buttonscaletimer.Invalidate();
 }
 
 inline void IPlayerInput::PressAttackButton(const float duration)
@@ -247,10 +267,11 @@ inline void IPlayerInput::ReleaseReloadButton()
 	m_reloadbuttontimer.Invalidate();
 }
 
-inline void IPlayerInput::SetMovementScale(const float forward, const float side)
+inline void IPlayerInput::SetMovementScale(const float forward, const float side, const float duration)
 {
 	m_forwardscale = forward;
 	m_sidescale = side;
+	m_buttonscaletimer.Start(duration);
 }
 
 inline void IPlayerInput::CompileButtons()

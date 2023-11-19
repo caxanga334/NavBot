@@ -78,36 +78,32 @@ class CEntPropUtils
 {
 public:
 	void Init(bool reset = false);
-	int GetEntProp(int entity, PropType proptype, const char *prop, int size = 4, int element = 0);
-	int *GetEntPropPointer(int entity, PropType proptype, const char *prop, int size = 4, int element = 0);
-	bool GetEntPropBool(int entity, PropType proptype, const char *prop, int element = 0);
-	bool *GetEntPropBoolPointer(int entity, PropType proptype, const char *prop, int element = 0);
+	bool GetEntProp(int entity, PropType proptype, const char *prop, int &result, int size = 4, int element = 0);
+	bool GetEntPropBool(int entity, PropType proptype, const char *prop, bool& result, int element = 0);
 	bool SetEntProp(int entity, PropType proptype, const char *prop, int value, int size = 4, int element = 0);
-	float GetEntPropFloat(int entity, PropType proptype, const char *prop, int element = 0);
-	float *GetEntPropFloatPointer(int entity, PropType proptype, const char *prop, int element = 0);
+	bool GetEntPropFloat(int entity, PropType proptype, const char *prop, float &result, int element = 0);
 	bool SetEntPropFloat(int entity, PropType proptype, const char *prop, float value, int element = 0);
-	int GetEntPropEnt(int entity, PropType proptype, const char *prop, int element = 0);
+	bool GetEntPropEnt(int entity, PropType proptype, const char *prop, int &result, int element = 0);
 	bool SetEntPropEnt(int entity, PropType proptype, const char *prop, int other, int element = 0);
-	Vector GetEntPropVector(int entity, PropType proptype, const char *prop, int element = 0);
-	Vector *GetEntPropVectorPointer(int entity, PropType proptype, const char *prop, int element = 0);
+	bool GetEntPropVector(int entity, PropType proptype, const char *prop, Vector &result, int element = 0);
 	bool SetEntPropVector(int entity, PropType proptype, const char *prop, Vector value, int element = 0);
-	char *GetEntPropString(int entity, PropType proptype, const char *prop, int maxlen, int *len, int element = 0);
+	bool GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, int& len, int element = 0);
 	bool SetEntPropString(int entity, PropType proptype, const char *prop, char *value, int element = 0);
-	int GetEntData(int entity, int offset, int size = 4);
+	bool GetEntData(int entity, int offset, int &result, int size = 4);
 	bool SetEntData(int entity, int offset, int value, int size = 4, bool changeState = false);
-	float GetEntDataFloat(int entity, int offset);
+	bool GetEntDataFloat(int entity, int offset, float &result);
 	bool SetEntDataFloat(int entity, int offset, float value, bool changeState = false);
-	int GetEntDataEnt(int entity, int offset);
+	bool GetEntDataEnt(int entity, int offset, int &result);
 	bool SetEntDataEnt(int entity, int offset, int value, bool changeState = false);
-	Vector GetEntDataVector(int entity, int offset);
+	bool GetEntDataVector(int entity, int offset, Vector &result);
 	bool SetEntDataVector(int entity, int offset, Vector value, bool changeState = false);
-	char *GetEntDataString(int entity, int offset, int maxlen, int *len);
+	bool GetEntDataString(int entity, int offset, int maxlen, char* result, int &len);
 	bool SetEntDataString(int entity, int offset, char *value, int maxlen, bool changeState = false);
-	int GameRules_GetProp(const char *prop, int size = 4, int element = 0);
-	float GameRules_GetPropFloat(const char *prop, int element = 0);
-	int GameRules_GetPropEnt(const char *prop, int element = 0);
-	Vector GameRules_GetPropVector(const char *prop, int element = 0);
-	char *GameRules_GetPropString(const char *prop, int *len, int maxlen, int element = 0);
+	bool GameRules_GetProp(const char *prop, int &result, int size = 4, int element = 0);
+	bool GameRules_GetPropFloat(const char *prop, float &result, int element = 0);
+	bool GameRules_GetPropEnt(const char *prop, int &result, int element = 0);
+	bool GameRules_GetPropVector(const char *prop, Vector &result, int element = 0);
+	bool GameRules_GetPropString(const char *prop, char* result, int& len, int maxlen, int element = 0);
 	RoundState GameRules_GetRoundState();
 
 private:

@@ -2,9 +2,12 @@
 #define SMNAV_BOT_BASE_PLAYER_CONTROL_IFACE_H_
 #pragma once
 
+#include <mathlib/vector.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/playerinput.h>
 #include <basehandle.h>
+
+struct edict_t;
 
 // Interface responsible for controller the bot's input
 class IPlayerController : public IBotInterface, public IPlayerInput
@@ -21,7 +24,7 @@ public:
 		LOOK_INTERESTING, // Something interesting
 		LOOK_ALERT, // Something that alerts, gunfire, explosions
 		LOOK_DANGER, // Something dangerous
-		LOOK_OPERATE, // Operating a machine
+		LOOK_OPERATE, // Operating a machine, buttons, levers, etc
 		LOOK_COMBAT, // Enemies
 		LOOK_MOVEMENT, // Movement that requires looking in a specific direction (ie: ladders)
 		LOOK_CRITICAL, // Something of very high importance
@@ -37,7 +40,7 @@ public:
 	// Called every server frame
 	virtual void Frame() override;
 
-	virtual void ProcessButtons(CBotCmd* cmd) override;
+	virtual void ProcessButtons(int &buttons) override;
 
 	virtual void RunLook();
 	
@@ -45,7 +48,6 @@ public:
 	virtual void AimAt(edict_t* entity, const LookPriority priority, const float duration);
 	virtual void AimAt(const int entity, const LookPriority priority, const float duration);
 private:
-
 	LookPriority m_priority; // Current look priority
 	CountdownTimer m_looktimer; // Timer for the current look at task
 	Vector m_looktarget; // Look at target (Position Vector)

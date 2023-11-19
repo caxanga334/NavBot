@@ -3,6 +3,12 @@
 
 #include <extplayer.h>
 #include <bot/interfaces/playercontrol.h>
+#include <bot/interfaces/movement.h>
+
+// Interval between calls to Update()
+constexpr auto BOT_UPDATE_INTERVAL = 0.12f;
+
+// TO-DO: Add a convar to control update interval
 
 class IBotController;
 class IBotInterface;
@@ -32,10 +38,11 @@ public:
 	IBotController* GetController() const { return m_controller; }
 
 	void RegisterInterface(IBotInterface* iface);
-	void BuildUserCommand();
+	void BuildUserCommand(const int buttons);
 	inline CBotCmd* GetUserCommand() { return &m_cmd; }
 	inline void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
 	virtual IPlayerController* GetControlInterface();
+	virtual IMovement* GetMovementInterface();
 private:
 	int m_nextupdatetime;
 	IBotController* m_controller;
@@ -44,6 +51,7 @@ private:
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;
 	IPlayerController* m_basecontrol; // Base controller interface
+	IMovement* m_basemover; // Base movement interface
 };
 
 #endif // !EXT_BASE_BOT_H_

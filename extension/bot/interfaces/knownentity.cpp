@@ -30,3 +30,19 @@ CKnownEntity::CKnownEntity(int entity)
 CKnownEntity::~CKnownEntity()
 {
 }
+
+bool CKnownEntity::operator==(const CKnownEntity& other)
+{
+	return m_handle == other.m_handle;
+}
+
+bool CKnownEntity::IsEntity(edict_t* entity)
+{
+	auto me = gamehelpers->GetHandleEntity(m_handle);
+	return me == entity;
+}
+
+bool CKnownEntity::IsEntity(const int entity)
+{
+	return entity == m_handle.GetEntryIndex();
+}

@@ -20,6 +20,7 @@ IPlayerController::~IPlayerController()
 void IPlayerController::Reset()
 {
 	ReleaseAllButtons();
+	ResetInputData();
 	m_looktimer.Invalidate();
 	m_lookentity.Term();
 	m_looktarget.Init();
@@ -34,11 +35,11 @@ void IPlayerController::Frame()
 	RunLook();
 }
 
-void IPlayerController::ProcessButtons(CBotCmd* cmd) // this is called by the CBaseBot::Frame
+void IPlayerController::ProcessButtons(int& buttons)
 {
 	m_oldbuttons = m_buttons;
 	CompileButtons();
-	cmd->buttons = m_buttons;
+	buttons = m_buttons;
 	m_buttons = 0;
 }
 
@@ -64,6 +65,7 @@ void IPlayerController::RunLook()
 			if (index > 0 && index < gpGlobals->maxClients)
 			{
 				// TO-DO
+				m_looktarget = UtilHelpers::getWorldSpaceCenter(lookatentity); // temporary
 			}
 			else
 			{
@@ -103,6 +105,7 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 	m_priority = priority;
 	m_looktimer.Start(duration);
 	m_looktarget = pos;
+	m_lookentity.Set(nullptr);
 }
 
 void IPlayerController::AimAt(edict_t* entity, const LookPriority priority, const float duration)
