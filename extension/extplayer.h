@@ -32,6 +32,7 @@ public:
 	inline virtual void OnNavAreaChanged(CNavArea* old, CNavArea* current) {}
 	inline CNavArea* GetLastKnownNavArea() { return m_lastnavarea; }
 	inline IPlayerInfo* GetPlayerInfo() { return m_playerinfo; }
+	const Vector WorldSpaceCenter();
 	const Vector GetAbsOrigin();
 	const QAngle GetAbsAngles();
 	const Vector GetEyeOrigin();

@@ -27,11 +27,11 @@ public:
 	// Returns true if the bot heard this entity at some point
 	inline bool WasEverHeard() const { return m_volume > 0; }
 	// Returns how many seconds have passed since this entity became known to the bot
-	inline float GetTimeSinceBecomeKnown() const { return gpGlobals->curtime - m_timeknown; }
+	float GetTimeSinceBecomeKnown() const;
 	// Returns how many seconds have passed since this entity was completely visible
-	inline float GetTimeSinceLastVisible() const { return gpGlobals->curtime - m_timelastvisible; }
+	float GetTimeSinceLastVisible() const;
 	// Returns how many seconds have passed since some info about this entity was received
-	inline float GetTimeSinceLastInfo() const { return gpGlobals->curtime - m_timelastinfo; }
+	float GetTimeSinceLastInfo() const;
 	// Returns the volume of the last sound made by this entity
 	inline int GetVolume() const { return m_volume; }
 	// Gets the entity last known position
@@ -39,16 +39,10 @@ public:
 	// Gets the entity last known Nav Area
 	inline const CNavArea* GetLastKnownArea() const { return m_lastknownarea; }
 
-	inline bool IsObsolete() { return !m_handle.IsValid() || gamehelpers->GetHandleEntity(m_handle) == nullptr || GetTimeSinceLastInfo() > NKnownEntity::TIME_FOR_OBSOLETE; }
+	bool IsObsolete();
 	// Updates the last known position of this entity
-	inline void UpdatePosition(const Vector &newPos)
-	{
-		constexpr auto NAV_AREA_DIST = 128.0f;
-
-		m_timelastinfo = gpGlobals->curtime;
-		m_lastknownposition = newPos;
-		m_lastknownarea = TheNavMesh->GetNearestNavArea(newPos, NAV_AREA_DIST);
-	}
+	void UpdatePosition();
+	void UpdatePosition(const Vector& newPos);
 	// Notify this entity was heard
 	inline void NotifyHeard(const int volume, const Vector &soundOrigin)
 	{
@@ -56,7 +50,7 @@ public:
 		UpdatePosition(soundOrigin);
 	}
 	// Marks this entity as fully visible
-	inline void MarkAsFullyVisible() { m_timelastvisible = gpGlobals->curtime; }
+	void MarkAsFullyVisible();
 
 	// true if the given entity is stored on this handle
 	bool IsEntity(edict_t* entity);

@@ -152,6 +152,7 @@ void CExtManager::AddBot()
 	// to allow debugging these interface, we have to call these functions at least once to create them
 	bot->GetControlInterface();
 	bot->GetMovementInterface();
+	bot->GetSensorInterface();
 #endif // SMNAV_DEBUG
 
 

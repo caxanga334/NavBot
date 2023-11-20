@@ -1,9 +1,12 @@
 #ifndef EXT_BASE_BOT_H_
 #define EXT_BASE_BOT_H_
 
+#include <list>
+
 #include <extplayer.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
+#include <bot/interfaces/sensor.h>
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.12f;
@@ -43,15 +46,19 @@ public:
 	inline void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
 	virtual IPlayerController* GetControlInterface();
 	virtual IMovement* GetMovementInterface();
+	virtual ISensor* GetSensorInterface();
+
+	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 private:
 	int m_nextupdatetime;
 	IBotController* m_controller;
-	IBotInterface* m_head; // Interface linked list head. Used to be an std::list but that causes conflicts with the SDK code
+	std::list<IBotInterface*> m_interfaces;
 	CBotCmd m_cmd; // User command to send
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;
 	IPlayerController* m_basecontrol; // Base controller interface
 	IMovement* m_basemover; // Base movement interface
+	ISensor* m_basesensor; // Base vision and hearing interface
 };
 
 #endif // !EXT_BASE_BOT_H_

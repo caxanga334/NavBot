@@ -153,6 +153,10 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	playerhelpers->AddClientListener(this);
 
+	sharesys->AddDependency(myself, "bintools.ext", true, true);
+	sharesys->AddDependency(myself, "sdktools.ext", true, true);
+	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
+
 	return true;
 }
 

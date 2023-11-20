@@ -47,6 +47,11 @@ void CBaseExtPlayer::PlayerThink()
 	}
 }
 
+const Vector CBaseExtPlayer::WorldSpaceCenter()
+{
+	return UtilHelpers::getWorldSpaceCenter(GetEdict());
+}
+
 const Vector CBaseExtPlayer::GetAbsOrigin()
 {
 	return m_playerinfo->GetAbsOrigin();

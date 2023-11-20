@@ -16,7 +16,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_controller = botmanager->GetBotController(edict);
 	m_basecontrol = nullptr;
 	m_basemover = nullptr;
-	m_head = nullptr;
+	m_basesensor = nullptr;
 	m_weaponselect = 0;
 }
 
@@ -31,6 +31,13 @@ CBaseBot::~CBaseBot()
 	{
 		delete m_basemover;
 	}
+
+	if (m_basesensor)
+	{
+		delete m_basesensor;
+	}
+	
+	m_interfaces.clear();
 }
 
 void CBaseBot::PlayerThink()
@@ -70,47 +77,31 @@ void CBaseBot::Reset()
 {
 	m_nextupdatetime = 1;
 
-	for (IBotInterface* current = m_head; current != nullptr; current = current->GetNext())
+	for (auto iface : m_interfaces)
 	{
-		current->Reset();
+		iface->Reset();
 	}
 }
 
 void CBaseBot::Update()
 {
-	for (IBotInterface* current = m_head; current != nullptr; current = current->GetNext())
+	for (auto iface : m_interfaces)
 	{
-		current->Update();
+		iface->Update();
 	}
 }
 
 void CBaseBot::Frame()
 {
-	for (IBotInterface* current = m_head; current != nullptr; current = current->GetNext())
+	for (auto iface : m_interfaces)
 	{
-		current->Frame();
+		iface->Frame();
 	}
 }
 
 void CBaseBot::RegisterInterface(IBotInterface* iface)
 {
-	if (m_head == nullptr) // First on the list
-	{
-		m_head = iface;
-		return;
-	}
-
-	IBotInterface* next = m_head;
-	while (next != nullptr)
-	{
-		if (next->GetNext() == nullptr)
-		{
-			next->SetNext(iface);
-			return;
-		}
-
-		next = next->GetNext();
-	}
+	m_interfaces.push_back(iface);
 }
 
 void CBaseBot::BuildUserCommand(const int buttons)
@@ -186,4 +177,14 @@ IMovement* CBaseBot::GetMovementInterface()
 	}
 
 	return m_basemover;
+}
+
+ISensor* CBaseBot::GetSensorInterface()
+{
+	if (m_basesensor == nullptr)
+	{
+		m_basesensor = new ISensor(this);
+	}
+
+	return m_basesensor;
 }
