@@ -336,6 +336,10 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
+		if (edict->GetUnknown() == nullptr) {
+			continue;
+		}
+
 		if (IsIgnored(edict)) {
 			continue;
 		}

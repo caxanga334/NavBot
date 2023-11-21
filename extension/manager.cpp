@@ -153,6 +153,7 @@ void CExtManager::AddBot()
 	bot->GetControlInterface();
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();
+	bot->GetBehaviorInterface();
 #endif // SMNAV_DEBUG
 
 

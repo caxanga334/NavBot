@@ -4,10 +4,12 @@
 
 class CBaseBot;
 
+#include "event_listener.h"
+
 /**
  * @brief Base class for bot interfaces. A system that allows to expand the bot capabilities
 */
-class IBotInterface
+class IBotInterface : public IEventListener
 {
 public:
 	IBotInterface(CBaseBot* bot);

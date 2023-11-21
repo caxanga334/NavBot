@@ -56,6 +56,8 @@ public:
 	bool IsEntity(edict_t* entity);
 	// true if the given entity is stored on this handle
 	bool IsEntity(const int entity);
+
+	edict_t* GetEdict();
 private:
 	CBaseHandle m_handle; // Handle to the actual entity
 	Vector m_lastknownposition; // Last known position of this entity

@@ -89,3 +89,8 @@ bool CKnownEntity::IsEntity(const int entity)
 {
 	return entity == m_handle.GetEntryIndex();
 }
+
+edict_t* CKnownEntity::GetEdict()
+{
+	return gamehelpers->GetHandleEntity(m_handle);
+}

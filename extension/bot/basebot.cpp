@@ -4,9 +4,57 @@
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
+#include <bot/interfaces/tasks.h>
 #include "basebot.h"
 
 extern CGlobalVars* gpGlobals;
+
+class CBaseBotTestTask : public AITask<CBaseBot>
+{
+public:
+	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+};
+
+TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
+{
+	rootconsole->ConsolePrint("AI Task -- Update");
+	return Continue();
+}
+
+class CBaseBotBehavior : public IBehavior
+{
+public:
+	CBaseBotBehavior(CBaseBot* bot);
+	virtual ~CBaseBotBehavior();
+
+	virtual void Reset();
+	virtual void Update();
+
+	virtual IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
+
+private:
+	AITaskManager<CBaseBot>* m_manager;
+};
+
+CBaseBotBehavior::CBaseBotBehavior(CBaseBot* bot) : IBehavior(bot)
+{
+	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
+}
+
+CBaseBotBehavior::~CBaseBotBehavior()
+{
+	delete m_manager;
+}
+
+void CBaseBotBehavior::Reset()
+{
+}
+
+void CBaseBotBehavior::Update()
+{
+	m_manager->Update(GetBot());
+}
+
 
 CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
@@ -17,6 +65,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_basecontrol = nullptr;
 	m_basemover = nullptr;
 	m_basesensor = nullptr;
+	m_basebehavior = nullptr;
 	m_weaponselect = 0;
 }
 
@@ -37,7 +86,26 @@ CBaseBot::~CBaseBot()
 		delete m_basesensor;
 	}
 	
+	if (m_basebehavior)
+	{
+		delete m_basebehavior;
+	}
+
 	m_interfaces.clear();
+}
+
+std::vector<IEventListener*>* CBaseBot::GetListenerVector()
+{
+	static std::vector<IEventListener*> listeners;
+
+	listeners.clear();
+
+	for (auto iface : m_interfaces)
+	{
+		listeners.push_back(iface);
+	}
+
+	return &listeners;
 }
 
 void CBaseBot::PlayerThink()
@@ -68,11 +136,6 @@ void CBaseBot::PlayerThink()
 	BuildUserCommand(buttons);
 }
 
-CBaseBot* CBaseBot::MyBotPointer()
-{
-	return this;
-}
-
 void CBaseBot::Reset()
 {
 	m_nextupdatetime = 1;
@@ -97,6 +160,26 @@ void CBaseBot::Frame()
 	{
 		iface->Frame();
 	}
+}
+
+float CBaseBot::GetRangeTo(const Vector& pos) const
+{
+	return (GetAbsOrigin() - pos).Length();
+}
+
+float CBaseBot::GetRangeTo(edict_t* edict) const
+{
+	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).Length();
+}
+
+float CBaseBot::GetRangeToSqr(const Vector& pos) const
+{
+	return (GetAbsOrigin() - pos).LengthSqr();
+}
+
+float CBaseBot::GetRangetToSqr(edict_t* edict) const
+{
+	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).LengthSqr();
 }
 
 void CBaseBot::RegisterInterface(IBotInterface* iface)
@@ -187,4 +270,14 @@ ISensor* CBaseBot::GetSensorInterface()
 	}
 
 	return m_basesensor;
+}
+
+IBehavior* CBaseBot::GetBehaviorInterface()
+{
+	if (m_basebehavior == nullptr)
+	{
+		m_basebehavior = new CBaseBotBehavior(this);
+	}
+
+	return m_basebehavior;
 }

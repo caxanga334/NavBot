@@ -15,7 +15,7 @@ public:
 	virtual ~CBaseExtPlayer();
 
 	// Gets the player edict_t
-	inline edict_t* GetEdict() { return m_edict; }
+	inline edict_t* GetEdict() const { return m_edict; }
 	// Gets the player entity index
 	inline int GetIndex() const { return m_index; }
 
@@ -33,20 +33,20 @@ public:
 	inline CNavArea* GetLastKnownNavArea() { return m_lastnavarea; }
 	inline IPlayerInfo* GetPlayerInfo() { return m_playerinfo; }
 	const Vector WorldSpaceCenter();
-	const Vector GetAbsOrigin();
-	const QAngle GetAbsAngles();
-	const Vector GetEyeOrigin();
-	const QAngle GetEyeAngles();
-	void EyeVectors(Vector* pForward);
-	void EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp);
-	inline QAngle BodyAngles() { return GetAbsAngles(); }
-	Vector BodyDirection3D();
-	Vector BodyDirection2D();
+	const Vector GetAbsOrigin() const;
+	const QAngle GetAbsAngles() const;
+	const Vector GetEyeOrigin() const;
+	const QAngle GetEyeAngles() const;
+	void EyeVectors(Vector* pForward) const;
+	void EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const;
+	inline QAngle BodyAngles() const { return GetAbsAngles(); }
+	Vector BodyDirection3D() const;
+	Vector BodyDirection2D() const;
 	// Changes the player team
 	virtual void ChangeTeam(int newTeam);
-	virtual int GetCurrentTeamIndex();
+	virtual int GetCurrentTeamIndex() const;
 	// true if this is a bot managed by this extension
-	inline virtual bool IsExtensionBot() { return false; }
+	inline virtual bool IsExtensionBot() const { return false; }
 	// Pointer to the extension bot class
 	inline virtual CBaseBot* MyBotPointer() { return nullptr; }
 

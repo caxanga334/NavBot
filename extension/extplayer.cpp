@@ -52,24 +52,24 @@ const Vector CBaseExtPlayer::WorldSpaceCenter()
 	return UtilHelpers::getWorldSpaceCenter(GetEdict());
 }
 
-const Vector CBaseExtPlayer::GetAbsOrigin()
+const Vector CBaseExtPlayer::GetAbsOrigin() const
 {
 	return m_playerinfo->GetAbsOrigin();
 }
 
-const QAngle CBaseExtPlayer::GetAbsAngles()
+const QAngle CBaseExtPlayer::GetAbsAngles() const
 {
 	return m_playerinfo->GetAbsAngles();
 }
 
-const Vector CBaseExtPlayer::GetEyeOrigin()
+const Vector CBaseExtPlayer::GetEyeOrigin() const
 {
 	Vector ear;
 	gameclients->ClientEarPosition(m_edict, &ear);
 	return ear;
 }
 
-const QAngle CBaseExtPlayer::GetEyeAngles()
+const QAngle CBaseExtPlayer::GetEyeAngles() const
 {
 	// TO-DO: This is the 'RCBot' way of getting eye angles
 	// Sourcemod VCalls EyeAngles.
@@ -79,19 +79,19 @@ const QAngle CBaseExtPlayer::GetEyeAngles()
 	return cmd.viewangles;
 }
 
-void CBaseExtPlayer::EyeVectors(Vector* pForward)
+void CBaseExtPlayer::EyeVectors(Vector* pForward) const
 {
 	auto eyeangles = GetEyeAngles();
 	AngleVectors(eyeangles, pForward);
 }
 
-void CBaseExtPlayer::EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp)
+void CBaseExtPlayer::EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const
 {
 	auto eyeangles = GetEyeAngles();
 	AngleVectors(eyeangles, pForward, pRight, pUp);
 }
 
-Vector CBaseExtPlayer::BodyDirection3D()
+Vector CBaseExtPlayer::BodyDirection3D() const
 {
 	auto angles = BodyAngles();
 	Vector bodydir;
@@ -99,7 +99,7 @@ Vector CBaseExtPlayer::BodyDirection3D()
 	return bodydir;
 }
 
-Vector CBaseExtPlayer::BodyDirection2D()
+Vector CBaseExtPlayer::BodyDirection2D() const
 {
 	auto body2d = BodyDirection3D();
 	body2d.z = 0.0f;
@@ -112,7 +112,7 @@ void CBaseExtPlayer::ChangeTeam(int newTeam)
 	m_playerinfo->ChangeTeam(newTeam);
 }
 
-int CBaseExtPlayer::GetCurrentTeamIndex()
+int CBaseExtPlayer::GetCurrentTeamIndex() const
 {
 	return m_playerinfo->GetTeamIndex();
 }

@@ -62,10 +62,10 @@ void IPlayerController::RunLook()
 			auto index = gamehelpers->IndexOfEdict(lookatentity);
 
 			// Look at entity is a player entity
-			if (index > 0 && index < gpGlobals->maxClients)
+			if (UtilHelpers::IsPlayerIndex(index))
 			{
-				// TO-DO
-				m_looktarget = UtilHelpers::getWorldSpaceCenter(lookatentity); // temporary
+				CBaseExtPlayer player(lookatentity);
+				m_looktarget = GetBot()->GetBehaviorInterface()->GetTargetAimPos(GetBot(), lookatentity, &player);
 			}
 			else
 			{
