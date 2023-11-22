@@ -25,7 +25,7 @@ public:
 	virtual QueryAnswerType ShouldAttack(const CBaseBot* me, CKnownEntity* them) override;
 	virtual QueryAnswerType ShouldPickup(const CBaseBot* me, edict_t* item) override;
 	virtual QueryAnswerType ShouldHurry(const CBaseBot* me) override;
-	virtual QueryAnswerType ShouldRetreat(const CBaseBot* me);
+	virtual QueryAnswerType ShouldRetreat(const CBaseBot* me) override;
 	virtual QueryAnswerType ShouldUse(const CBaseBot* me, edict_t* object) override;
 	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
 	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override;

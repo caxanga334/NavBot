@@ -26,7 +26,8 @@ enum TaskResultType
 // Priorities for the AI Task event response results
 enum EventResultPriorityType
 {
-	PRIORITY_DONT_CARE = 0,
+	PRIORITY_IGNORED = -1, // This result is ignored and is considered invalid
+	PRIORITY_DONT_CARE = 0, // Use if possible but in the end don't care if it's not used
 	PRIORITY_LOW,
 	PRIORITY_MEDIUM,
 	PRIORITY_HIGH,
@@ -60,17 +61,14 @@ public:
 		{
 		case TASK_CONTINUE:
 			return false;
-			break;
 		case TASK_PAUSE:
 		case TASK_SWITCH:
 		case TASK_DONE:
 			return true;
-			break;
 		case TASK_MAINTAIN:
 		case MAX_TASK_TYPES:
 		default:
 			return false;
-			break;
 		}
 	}
 
@@ -84,23 +82,27 @@ public:
 		{
 		case TASK_CONTINUE:
 			return "CONTINUE";
-			break;
 		case TASK_PAUSE:
 			return "PAUSE";
-			break;
 		case TASK_SWITCH:
 			return "SWITCH";
-			break;
 		case TASK_DONE:
 			return "DONE"
-			break;
 		case TASK_MAINTAIN:
 			return "MAINTAIN";
-			break;
 		case MAX_TASK_TYPES:
 		default:
 			return "INVALID TASK TYPE";
-			break;
+		}
+	}
+
+	// Discard this result, deletes the stored task if any
+	void DiscardResult()
+	{
+		if (m_next)
+		{
+			delete m_next;
+			m_next = nullptr;
 		}
 	}
 
@@ -135,28 +137,23 @@ public:
 	{
 		switch (m_priority)
 		{
+		case PRIORITY_IGNORED:
+			return "IGNORED";
 		case PRIORITY_DONT_CARE:
 			return "DONT CARE";
-			break;
 		case PRIORITY_LOW:
 			return "LOW";
-			break;
 		case PRIORITY_MEDIUM:
 			return "MEDIUM";
-			break;
 		case PRIORITY_HIGH:
 			return "HIGH";
-			break;
 		case PRIORITY_CRITICAL:
 			return "CRITICAL";
-			break;
 		case PRIORITY_MANDATORY:
 			return "MANDATORY";
-			break;
 		case MAX_EVENT_RESULT_PRIORITY_TYPES:
 		default:
 			return "INVALID EVENT PRIORITY TYPE";
-			break;
 		}
 	}
 
@@ -176,6 +173,8 @@ public:
 	AITaskManager(AITask<BotClass>* initialTask);
 	virtual ~AITaskManager();
 
+	virtual IEventListener* GetNextListener() override { return m_task; }
+
 	bool IsRunningTasks() { return m_task != nullptr; }
 
 	void Reset(AITask<BotClass>* task);
@@ -183,6 +182,184 @@ public:
 
 	// Notify that a task has ended, add it to the list of tasks for deallocation
 	void NotifyTaskEnd(AITask<BotClass>* task) { m_taskbin.push_back(task); }
+
+	// Macros for propagating decision queries between AI Tasks
+
+#define PROPAGATE_DECISION_WITH_1ARG(DFUNC, ARG1)			\
+	QueryAnswerType __result = ANSWER_UNDEFINED;					\
+																\
+	if (m_task)													\
+	{															\
+		AITask<BotClass>* __respondingTask = nullptr; \
+		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
+																\
+		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+		{ \
+			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+			{ \
+				__result = __respondingTask->DFUNC(ARG1); \
+				__respondingTask = __respondingTask->GetTaskBelowMe(); \
+			} \
+																 \
+			__respondingTask = __previousTask; \
+		} \
+	} \
+		\
+	return __result; \
+	\
+
+#define PROPAGATE_DECISION_WITH_2ARGS(DFUNC, ARG1, ARG2)			\
+	QueryAnswerType __result = ANSWER_UNDEFINED;					\
+																\
+	if (m_task)													\
+	{															\
+		AITask<BotClass>* __respondingTask = nullptr; \
+		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
+																\
+		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+		{ \
+			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+			{ \
+				__result = __respondingTask->DFUNC(ARG1, ARG2); \
+				__respondingTask = __respondingTask->GetTaskBelowMe(); \
+			} \
+																 \
+			__respondingTask = __previousTask; \
+		} \
+	} \
+		\
+	return __result; \
+	\
+
+#define PROPAGATE_DECISION_WITH_3ARGS(DFUNC, ARG1, ARG2, ARG3)		\
+	QueryAnswerType __result = ANSWER_UNDEFINED;					\
+																\
+	if (m_task)													\
+	{															\
+		AITask<BotClass>* __respondingTask = nullptr; \
+		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
+																\
+		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+		{ \
+			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+			{ \
+				__result = __respondingTask->DFUNC(ARG1, ARG2, ARG3); \
+				__respondingTask = __respondingTask->GetTaskBelowMe(); \
+			} \
+																 \
+			__respondingTask = __previousTask; \
+		} \
+	} \
+		\
+	return __result; \
+	\
+
+#define PROPAGATE_DECISION_WITH_4ARGS(DFUNC, ARG1, ARG2, ARG3, ARG4)		\
+	QueryAnswerType __result = ANSWER_UNDEFINED;					\
+																\
+	if (m_task)													\
+	{															\
+		AITask<BotClass>* __respondingTask = nullptr; \
+		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
+																\
+		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+		{ \
+			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
+			{ \
+				__result = __respondingTask->DFUNC(ARG1, ARG2, ARG3, ARG4); \
+				__respondingTask = __respondingTask->GetTaskBelowMe(); \
+			} \
+																 \
+			__respondingTask = __previousTask; \
+		} \
+	} \
+			\
+	return __result; \
+			\
+
+	virtual QueryAnswerType ShouldAttack(const CBaseBot* me, CKnownEntity* them) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
+	}
+
+	virtual QueryAnswerType ShouldPickup(const CBaseBot* me, edict_t* item) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldPickup, me, item);
+	}
+
+	virtual QueryAnswerType ShouldHurry(const CBaseBot* me) override
+	{
+		PROPAGATE_DECISION_WITH_1ARG(ShouldHurry, me);
+	}
+
+	virtual QueryAnswerType ShouldRetreat(const CBaseBot* me) override
+	{
+		PROPAGATE_DECISION_WITH_1ARG(ShouldRetreat, me);
+	}
+
+	virtual QueryAnswerType ShouldUse(const CBaseBot* me, edict_t* object) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldUse, me, object);
+	}
+
+	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override
+	{
+		PROPAGATE_DECISION_WITH_1ARG(ShouldFreeRoam, me);
+	}
+
+	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override
+	{
+		CKnownEntity* result = nullptr;
+
+		if (m_task)
+		{
+			AITask<BotClass>* respondingTask = nullptr;
+			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
+
+			while (respondingTask != nullptr && result == nullptr)
+			{
+				AITask<BotClass>* previousTask = respondingTask->GetHeadTask();
+				while (respondingTask != nullptr && result == nullptr)
+				{
+					result = respondingTask->SelectTargetThreat(me, threat1, threat2);
+					respondingTask = respondingTask->GetTaskBelowMe();
+				}
+
+				respondingTask = previousTask;
+			}
+		}
+
+		return result;
+	}
+
+	virtual Vector GetTargetAimPos(const CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override
+	{
+		Vector result = vec3_origin;
+
+		if (m_task)
+		{
+			AITask<BotClass>* respondingTask = nullptr;
+			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
+
+			while (respondingTask != nullptr && result == vec3_origin)
+			{
+				AITask<BotClass>* previousTask = respondingTask->GetHeadTask();
+				while (respondingTask != nullptr && result == vec3_origin)
+				{
+					result = respondingTask->GetTargetAimPos(me, entity, player);
+					respondingTask = respondingTask->GetTaskBelowMe();
+				}
+
+				respondingTask = previousTask;
+			}
+		}
+
+		return result;
+	}
 
 private:
 	friend class AITask<BotClass>;
@@ -271,6 +448,13 @@ public:
 	TaskResult<BotClass> PauseFor(AITask<BotClass>* newTask, const char* reason) const;
 	TaskResult<BotClass> Done(const char* reason) const;
 
+	TaskEventResponseResult<BotClass> TryContinue(EventResultPriorityType priority = PRIORITY_DONT_CARE) const;
+	TaskEventResponseResult<BotClass> TrySwitchTo(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
+	TaskEventResponseResult<BotClass> TryPauseFor(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
+	TaskEventResponseResult<BotClass> TryDone(EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
+
+	virtual TaskEventResponseResult<BotClass> OnTestEventPropagation(BotClass* bot) { return TryContinue(); }
+
 	virtual AITask<BotClass>* InitialParallelTask() { return nullptr; }
 
 	AITask<BotClass>* GetHeadTask() const { return m_headTask; }
@@ -286,8 +470,88 @@ private:
 	AITask<BotClass>* m_aboveTask;
 	AITask<BotClass>* m_belowTask;
 	BotClass* m_bot;
+	mutable TaskEventResponseResult<BotClass> m_pendingEventResult;
 	bool m_hasStarted;
 	bool m_isPaused;
+
+	virtual IEventListener* GetNextListener() override final { return m_nextTask; }
+
+	// If any task below me is done or switching to another task, then I am obsolete.
+	bool IsObsolete()
+	{
+		for (AITask<BotClass>* task = GetTaskBelowMe(); task != nullptr; task = task->GetTaskBelowMe())
+		{
+			if (task->m_pendingEventResult.IsDone() || task->m_pendingEventResult.IsSwitch())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	void ClearPendingEventResult() const
+	{
+		m_pendingEventResult = TryContinue(PRIORITY_IGNORED);
+	}
+
+	TaskResult<BotClass> ProcessPendingEvent()
+	{
+		if (m_pendingEventResult.IsRequestingChange())
+		{
+			TaskResult<BotClass> result(m_pendingEventResult.GetType(), m_pendingEventResult.GetNextTask(), m_pendingEventResult.GetReason());
+
+			// clear event result
+			ClearPendingEventResult();
+
+			return result;
+		}
+
+		AITask<BotClass>* below = GetTaskBelowMe();
+
+		while (below != nullptr)
+		{
+			if (below->m_pendingEventResult.IsPause())
+			{
+				TaskResult<BotClass> result(below->m_pendingEventResult.GetType(), below->m_pendingEventResult.GetNextTask(), below->m_pendingEventResult.GetReason());
+				// clear the pending result of the task below me
+				below->ClearPendingEventResult();
+				return result;
+			}
+
+			below = below->GetTaskBelowMe();
+		}
+
+		return Continue();
+	}
+
+	void UpdatePendingEventResult(TaskEventResponseResult<BotClass>& result)
+	{
+		if (result.IsContinue() == true)
+		{
+			return;
+		}
+
+		if (result.GetPriority() >= m_pendingEventResult.GetPriority())
+		{
+			if (m_pendingEventResult.GetPriority() == PRIORITY_MANDATORY)
+			{
+				throw std::runtime_error("PRIORITY_MANDATORY collision!");
+			}
+
+			// We received a new result with higher priority, discard old result
+			if (m_pendingEventResult.GetNextTask() != nullptr)
+			{
+				m_pendingEventResult.DiscardResult();
+			}
+
+			m_pendingEventResult = result;
+		}
+		else // New result has lower priority than the current one, just discard it
+		{
+			m_pendingEventResult.DiscardResult();
+		}
+	}
 
 	AITask<BotClass>* RunTask(BotClass* bot, AITaskManager<BotClass>* manager, TaskResult<BotClass> result);
 
@@ -296,11 +560,13 @@ private:
 	void ProcessTaskEnd(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* nextTask);
 	AITask<BotClass>* ProcessTaskPause(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 	TaskResult<BotClass> ProcessTaskResume(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
+
+	virtual void OnTestEventPropagation() override final;
 };
 
 
 template<typename BotClass>
-inline AITask<BotClass>::AITask()
+inline AITask<BotClass>::AITask() : m_pendingEventResult(PRIORITY_IGNORED, TASK_CONTINUE, nullptr, nullptr)
 {
 	m_manager = nullptr;
 	m_headTask = nullptr;
@@ -343,6 +609,8 @@ inline AITask<BotClass>::~AITask()
 		// Any task above me is also going away
 		delete m_aboveTask;
 	}
+
+	m_pendingEventResult.DiscardResult();
 }
 
 template<typename BotClass>
@@ -360,6 +628,8 @@ inline TaskResult<BotClass> AITask<BotClass>::SwitchTo(AITask<BotClass>* newTask
 template<typename BotClass>
 inline TaskResult<BotClass> AITask<BotClass>::PauseFor(AITask<BotClass>* newTask, const char* reason) const
 {
+	// Clear any pending events when pausing
+	ClearPendingEventResult();
 	return TaskResult<BotClass>(TASK_PAUSE, newTask, reason);
 }
 
@@ -367,6 +637,30 @@ template<typename BotClass>
 inline TaskResult<BotClass> AITask<BotClass>::Done(const char* reason) const
 {
 	return TaskResult<BotClass>(TASK_DONE, nullptr, reason);
+}
+
+template<typename BotClass>
+inline TaskEventResponseResult<BotClass> AITask<BotClass>::TryContinue(EventResultPriorityType priority) const
+{
+	return TaskEventResponseResult<BotClass>(priority, TASK_CONTINUE, nullptr, nullptr);
+}
+
+template<typename BotClass>
+inline TaskEventResponseResult<BotClass> AITask<BotClass>::TrySwitchTo(AITask<BotClass>* task, EventResultPriorityType priority, const char* reason) const
+{
+	return TaskEventResponseResult<BotClass>(priority, TASK_SWITCH, task, reason);
+}
+
+template<typename BotClass>
+inline TaskEventResponseResult<BotClass> AITask<BotClass>::TryPauseFor(AITask<BotClass>* task, EventResultPriorityType priority, const char* reason) const
+{
+	return TaskEventResponseResult<BotClass>(priority, TASK_PAUSE, task, reason);
+}
+
+template<typename BotClass>
+inline TaskEventResponseResult<BotClass> AITask<BotClass>::TryDone(EventResultPriorityType priority, const char* reason) const
+{
+	return TaskEventResponseResult<BotClass>(priority, TASK_DONE, nullptr, reason);
 }
 
 template<typename BotClass>
@@ -483,13 +777,22 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskStart(BotClass* bot, AI
 template<typename BotClass>
 inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskUpdate(BotClass* bot, AITaskManager<BotClass>* manager)
 {
+	if (IsObsolete())
+	{
+		return Done("Current task is obsolete");
+	}
 
 	if (m_hasStarted == false)
 	{
 		return SwitchTo(this, "Starting Task");
 	}
 
-	// TO-DO: Handle events
+	TaskResult<BotClass> eventResult = ProcessPendingEvent();
+	// Answer to an event
+	if (eventResult.IsContinue() == false)
+	{
+		return eventResult;
+	}
 
 	// If we have a next task, call update on it first
 	if (m_nextTask)
@@ -570,7 +873,11 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskResume(BotClass* bot, A
 		return Continue(); // what?
 	}
 
-	// TO-DO: Handle events
+	if (m_pendingEventResult.IsRequestingChange())
+	{
+		// Don't resume since a pending event will make changes to us
+		return Continue();
+	}
 
 	m_isPaused = false;
 	m_aboveTask = nullptr;
@@ -591,6 +898,36 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskResume(BotClass* bot, A
 	TaskResult<BotClass> result = OnTaskResume(bot, task);
 
 	return result;
+}
+
+template<typename BotClass>
+inline void AITask<BotClass>::OnTestEventPropagation()
+{
+	if (m_hasStarted == false)
+	{
+		return;
+	}
+
+	AITask<BotClass>* task = this;
+	TaskEventResponseResult<BotClass> eventResult;
+
+	while (task != nullptr)
+	{
+		eventResult = task->OnTestEventPropagation(m_bot);
+
+		if (eventResult.IsContinue() == false) {
+			break;
+		}
+
+		task = task->GetTaskBelowMe();
+	}
+
+	if (task)
+	{
+		task->UpdatePendingEventResult(eventResult);
+	}
+
+	IEventListener::OnTestEventPropagation();
 }
 
 #endif // !SMNAV_BOT_TASK_SYSTEM_H_

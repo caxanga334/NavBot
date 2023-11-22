@@ -13,12 +13,26 @@ class CBaseBotTestTask : public AITask<CBaseBot>
 {
 public:
 	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	virtual TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
+	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
 };
 
 TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
 {
 	rootconsole->ConsolePrint("AI Task -- Update");
 	return Continue();
+}
+
+TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnTestEventPropagation(CBaseBot* bot)
+{
+	rootconsole->ConsolePrint("AI Event -- OnTestEventPropagation");
+	return TryContinue();
+}
+
+QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(const CBaseBot* me)
+{
+	rootconsole->ConsolePrint("AI Query -- ShouldFreeRoam");
+	return ANSWER_YES;
 }
 
 class CBaseBotBehavior : public IBehavior
@@ -31,6 +45,7 @@ public:
 	virtual void Update();
 
 	virtual IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
+	virtual IEventListener* GetNextListener() override { return m_manager; }
 
 private:
 	AITaskManager<CBaseBot>* m_manager;

@@ -206,4 +206,20 @@ CON_COMMAND_F(smnav_debug_do_not_use, "Do not even think about executing this co
 {
 	throw std::runtime_error("Exception test!");
 }
-#endif
+
+CON_COMMAND(smnav_debug_event_propagation, "Event propagation test")
+{
+	extern CExtManager* extmanager;
+	auto& bots = extmanager->GetAllBots();
+
+	for (auto bot : bots)
+	{
+		bot->OnTestEventPropagation();
+	}
+
+	for (auto bot : bots)
+	{
+		bot->GetBehaviorInterface()->ShouldFreeRoam(bot);
+	}
+}
+#endif // SMNAV_DEBUG
