@@ -27,7 +27,6 @@ extern IEngineTrace* enginetrace;
 extern CNavMesh* TheNavMesh;
 extern IPlayerInfoManager* playerinfomanager;
 extern IServerGameClients* gameclients;
-extern IGameEventManager* gameeventmanager1;
 extern IGameEventManager2* gameeventmanager;
 extern IPhysicsSurfaceProps* physprops;
 extern IVModelInfo* modelinfo;

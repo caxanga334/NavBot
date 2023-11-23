@@ -4,21 +4,7 @@
 class CBaseExtPlayer;
 class CBaseBot;
 
-namespace Mods
-{
-	// Game/Mod IDs
-	enum ModType
-	{
-		MOD_INVALID_ID = -1, // Invalid/Unknown mod
-		MOD_BASE = 0, // Generic mod
-		MOD_TF2, // Team Fortress 2
-		MOD_CSS, // Counter-Strike: Source
-		MOD_DODS, // Day of Defeat: Source
-		MOD_HL2DM, // Half-Life 2: Deathmatch
-
-		LAST_MOD_TYPE
-	};
-}
+#include "gamemods_shared.h"
 
 // Base game mod class
 class CBaseMod

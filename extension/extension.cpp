@@ -49,6 +49,7 @@
 #include "navmesh/nav_mesh.h"
 #include "manager.h"
 #include <util/entprops.h>
+#include <core/eventmanager.h>
 
 /**
  * @file extension.cpp
@@ -64,7 +65,6 @@ IEngineTrace* enginetrace = nullptr;
 CNavMesh* TheNavMesh = nullptr;
 IPlayerInfoManager* playerinfomanager = nullptr;
 IServerGameClients* gameclients = nullptr;
-IGameEventManager* gameeventmanager1 = nullptr;
 IGameEventManager2* gameeventmanager = nullptr;
 IPhysicsSurfaceProps* physprops = nullptr;
 IVModelInfo* modelinfo = nullptr;
@@ -169,6 +169,8 @@ void SMNavExt::SDK_OnUnload()
 	extmanager = nullptr;
 
 	ConVar_Unregister();
+
+	GetGameEventManager()->Unload();
 }
 
 void SMNavExt::SDK_OnAllLoaded()
@@ -191,14 +193,15 @@ void SMNavExt::SDK_OnAllLoaded()
 	}
 
 	entprops->Init(true);
+
+	GetGameEventManager()->Load();
 }
 
 bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
 	GET_V_IFACE_ANY(GetEngineFactory, enginetrace, IEngineTrace, INTERFACEVERSION_ENGINETRACE_SERVER);
 	// GET_V_IFACE_ANY(GetEngineFactory, engine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
-	GET_V_IFACE_ANY(GetEngineFactory, gameeventmanager1, IGameEventManager, INTERFACEVERSION_GAMEEVENTSMANAGER);
-	GET_V_IFACE_ANY(GetEngineFactory, gameeventmanager, IGameEventManager2, INTERFACEVERSION_GAMEEVENTSMANAGER2);
+	GET_V_IFACE_CURRENT(GetEngineFactory, gameeventmanager, IGameEventManager2, INTERFACEVERSION_GAMEEVENTSMANAGER2);
 	GET_V_IFACE_ANY(GetEngineFactory, physprops, IPhysicsSurfaceProps, VPHYSICS_SURFACEPROPS_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, modelinfo, IVModelInfo, VMODELINFO_SERVER_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, filesystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);

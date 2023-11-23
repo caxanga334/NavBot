@@ -65,6 +65,7 @@ private:
 	int m_nextupdatetime;
 	IBotController* m_controller;
 	std::list<IBotInterface*> m_interfaces;
+	std::vector<IEventListener*> m_listeners; // Event listeners vector
 	CBotCmd m_cmd; // User command to send
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;

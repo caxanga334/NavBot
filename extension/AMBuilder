@@ -9,6 +9,7 @@ sourceFiles = [
   'smsdk_ext.cpp',
   'manager.cpp',
   'extplayer.cpp',
+  'core/eventmanager.cpp',
   'sdkports/sdk_timers.cpp',
   'sdkports/debugoverlay_shared.cpp',
   'sdkports/studio.cpp',

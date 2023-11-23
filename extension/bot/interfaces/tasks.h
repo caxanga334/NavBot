@@ -173,7 +173,7 @@ public:
 	AITaskManager(AITask<BotClass>* initialTask);
 	virtual ~AITaskManager();
 
-	virtual IEventListener* GetNextListener() override { return m_task; }
+	virtual std::vector<IEventListener*>* GetListenerVector();
 
 	bool IsRunningTasks() { return m_task != nullptr; }
 
@@ -366,6 +366,7 @@ private:
 
 	AITask<BotClass>* m_task; // The first task in the list
 	std::vector<AITask<BotClass>*> m_taskbin; // Trash bin for dead tasks
+	std::vector<IEventListener*> m_listeners; // Event listeners
 	BotClass* m_bot;
 
 	void CleanUpDeadTasks();
@@ -376,7 +377,10 @@ inline AITaskManager<BotClass>::AITaskManager(AITask<BotClass>* initialTask)
 {
 	m_task = initialTask;
 	m_taskbin.reserve(16);
+	m_listeners.reserve(2);
 	m_bot = nullptr;
+
+	m_listeners.push_back(m_task);
 }
 
 template<typename BotClass>
@@ -390,11 +394,29 @@ inline AITaskManager<BotClass>::~AITaskManager()
 	}
 
 	m_taskbin.clear();
+	m_listeners.clear();
+}
+
+template<typename BotClass>
+inline std::vector<IEventListener*>* AITaskManager<BotClass>::GetListenerVector()
+{
+	return &m_listeners;
 }
 
 template<typename BotClass>
 inline void AITaskManager<BotClass>::Reset(AITask<BotClass>* task)
 {
+	delete m_task;
+	CleanUpDeadTasks();
+
+	m_task = task;
+
+	m_listeners.clear();
+
+	if (m_task != nullptr)
+	{
+		m_listeners.push_back(m_task);
+	}
 }
 
 template<typename BotClass>
@@ -470,11 +492,195 @@ private:
 	AITask<BotClass>* m_aboveTask;
 	AITask<BotClass>* m_belowTask;
 	BotClass* m_bot;
+	std::vector<IEventListener*> m_listener; // Event Listeners
 	mutable TaskEventResponseResult<BotClass> m_pendingEventResult;
 	bool m_hasStarted;
 	bool m_isPaused;
 
-	virtual IEventListener* GetNextListener() override final { return m_nextTask; }
+	// Macros to help with repetitive code for event propagation between tasks
+
+#define PROPAGATE_TASK_EVENT_WITH_NO_ARGS(EFUNC)						\
+	if (m_hasStarted == false)											\
+	{																	\
+		return;															\
+	}																	\
+																		\
+	AITask<BotClass>*__task = this;										\
+	TaskEventResponseResult<BotClass> __eventResult;					\
+																		\
+	while (__task != nullptr)											\
+	{																	\
+		__eventResult = __task->EFUNC(m_bot);							\
+																		\
+		if (__eventResult.IsContinue() == false) {						\
+																		\
+				break;													\
+		}																\
+																		\
+				__task = __task->GetTaskBelowMe();						\
+	}																	\
+																		\
+	if (__task)															\
+	{																	\
+		__task->UpdatePendingEventResult(__eventResult);				\
+	}																	\
+																		\
+	IEventListener::EFUNC();											\
+
+#define PROPAGATE_TASK_EVENT_WITH_1_ARGS(EFUNC, ARG1)					\
+	if (m_hasStarted == false)											\
+	{																	\
+		return;															\
+	}																	\
+																		\
+	AITask<BotClass>*__task = this;										\
+	TaskEventResponseResult<BotClass> __eventResult;					\
+																		\
+	while (__task != nullptr)											\
+	{																	\
+		__eventResult = __task->EFUNC(m_bot, ARG1);						\
+																		\
+		if (__eventResult.IsContinue() == false) {						\
+																		\
+				break;													\
+		}																\
+																		\
+				__task = __task->GetTaskBelowMe();						\
+	}																	\
+																		\
+	if (__task)															\
+	{																	\
+		__task->UpdatePendingEventResult(__eventResult);				\
+	}																	\
+																		\
+	IEventListener::EFUNC(ARG1);										\
+
+#define PROPAGATE_TASK_EVENT_WITH_2_ARGS(EFUNC, ARG1, ARG2)				\
+	if (m_hasStarted == false)											\
+	{																	\
+		return;															\
+	}																	\
+																		\
+	AITask<BotClass>*__task = this;										\
+	TaskEventResponseResult<BotClass> __eventResult;					\
+																		\
+	while (__task != nullptr)											\
+	{																	\
+		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2);				\
+																		\
+		if (__eventResult.IsContinue() == false) {						\
+																		\
+				break;													\
+		}																\
+																		\
+				__task = __task->GetTaskBelowMe();						\
+	}																	\
+																		\
+	if (__task)															\
+	{																	\
+		__task->UpdatePendingEventResult(__eventResult);				\
+	}																	\
+																		\
+	IEventListener::EFUNC(ARG1, ARG2);									\
+
+#define PROPAGATE_TASK_EVENT_WITH_3_ARGS(EFUNC, ARG1, ARG2, ARG3)		\
+	if (m_hasStarted == false)											\
+	{																	\
+		return;															\
+	}																	\
+																		\
+	AITask<BotClass>*__task = this;										\
+	TaskEventResponseResult<BotClass> __eventResult;					\
+																		\
+	while (__task != nullptr)											\
+	{																	\
+		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2, ARG3);			\
+																		\
+		if (__eventResult.IsContinue() == false) {						\
+																		\
+				break;													\
+		}																\
+																		\
+				__task = __task->GetTaskBelowMe();						\
+	}																	\
+																		\
+	if (__task)															\
+	{																	\
+		__task->UpdatePendingEventResult(__eventResult);				\
+	}																	\
+																		\
+	IEventListener::EFUNC(ARG1, ARG2, ARG3);							\
+
+#define PROPAGATE_TASK_EVENT_WITH_4_ARGS(EFUNC, ARG1, ARG2, ARG3, ARG4)	\
+	if (m_hasStarted == false)											\
+	{																	\
+		return;															\
+	}																	\
+																		\
+	AITask<BotClass>*__task = this;										\
+	TaskEventResponseResult<BotClass> __eventResult;					\
+																		\
+	while (__task != nullptr)											\
+	{																	\
+		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2, ARG3, ARG4);	\
+																		\
+		if (__eventResult.IsContinue() == false) {						\
+																		\
+				break;													\
+		}																\
+																		\
+				__task = __task->GetTaskBelowMe();						\
+	}																	\
+																		\
+	if (__task)															\
+	{																	\
+		__task->UpdatePendingEventResult(__eventResult);				\
+	}																	\
+																		\
+	IEventListener::EFUNC(ARG1, ARG2, ARG3, ARG4);						\
+
+#define PROPAGATE_TASK_EVENT_WITH_5_ARGS(EFUNC, ARG1, ARG2, ARG3, ARG4, ARG5)	\
+	if (m_hasStarted == false)											\
+	{																	\
+		return;															\
+	}																	\
+																		\
+	AITask<BotClass>*__task = this;										\
+	TaskEventResponseResult<BotClass> __eventResult;					\
+																		\
+	while (__task != nullptr)											\
+	{																	\
+		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2, ARG3, ARG4, ARG5);	\
+																		\
+		if (__eventResult.IsContinue() == false) {						\
+																		\
+				break;													\
+		}																\
+																		\
+				__task = __task->GetTaskBelowMe();						\
+	}																	\
+																		\
+	if (__task)															\
+	{																	\
+		__task->UpdatePendingEventResult(__eventResult);				\
+	}																	\
+																		\
+	IEventListener::EFUNC(ARG1, ARG2, ARG3, ARG4, ARG5);				\
+
+
+	virtual std::vector<IEventListener*>* GetListenerVector() override final
+	{
+		if (m_nextTask == nullptr)
+		{
+			return nullptr;
+		}
+
+		// Next task pointers might change so always refresh the list before sending
+		m_listener.clear();
+		m_listener.push_back(m_nextTask);
+
+		return &m_listener;
+	}
 
 	// If any task below me is done or switching to another task, then I am obsolete.
 	bool IsObsolete()
@@ -561,9 +767,11 @@ private:
 	AITask<BotClass>* ProcessTaskPause(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 	TaskResult<BotClass> ProcessTaskResume(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 
-	virtual void OnTestEventPropagation() override final;
+	virtual void OnTestEventPropagation() override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnTestEventPropagation);
+	}
 };
-
 
 template<typename BotClass>
 inline AITask<BotClass>::AITask() : m_pendingEventResult(PRIORITY_IGNORED, TASK_CONTINUE, nullptr, nullptr)
@@ -576,6 +784,7 @@ inline AITask<BotClass>::AITask() : m_pendingEventResult(PRIORITY_IGNORED, TASK_
 	m_bot = nullptr;
 	m_hasStarted = false;
 	m_isPaused = false;
+	m_listener.reserve(2);
 }
 
 template<typename BotClass>
@@ -611,6 +820,7 @@ inline AITask<BotClass>::~AITask()
 	}
 
 	m_pendingEventResult.DiscardResult();
+	m_listener.clear();
 }
 
 template<typename BotClass>
@@ -898,36 +1108,6 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskResume(BotClass* bot, A
 	TaskResult<BotClass> result = OnTaskResume(bot, task);
 
 	return result;
-}
-
-template<typename BotClass>
-inline void AITask<BotClass>::OnTestEventPropagation()
-{
-	if (m_hasStarted == false)
-	{
-		return;
-	}
-
-	AITask<BotClass>* task = this;
-	TaskEventResponseResult<BotClass> eventResult;
-
-	while (task != nullptr)
-	{
-		eventResult = task->OnTestEventPropagation(m_bot);
-
-		if (eventResult.IsContinue() == false) {
-			break;
-		}
-
-		task = task->GetTaskBelowMe();
-	}
-
-	if (task)
-	{
-		task->UpdatePendingEventResult(eventResult);
-	}
-
-	IEventListener::OnTestEventPropagation();
 }
 
 #endif // !SMNAV_BOT_TASK_SYSTEM_H_

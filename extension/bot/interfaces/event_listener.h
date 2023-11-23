@@ -11,8 +11,6 @@ public:
 
 	// Gets a vector containing all event listeners
 	virtual std::vector<IEventListener*> *GetListenerVector() { return nullptr; }
-	// For linked list event listeners
-	virtual IEventListener* GetNextListener() { return nullptr; }
 
 	virtual void OnTestEventPropagation();
 
@@ -28,13 +26,6 @@ inline void IEventListener::OnTestEventPropagation()
 		{
 			listener->OnTestEventPropagation();
 		}
-	}
-
-	auto next = GetNextListener();
-
-	if (next)
-	{
-		next->OnTestEventPropagation();
 	}
 }
 

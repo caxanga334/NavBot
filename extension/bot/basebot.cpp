@@ -45,15 +45,18 @@ public:
 	virtual void Update();
 
 	virtual IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
-	virtual IEventListener* GetNextListener() override { return m_manager; }
+	virtual std::vector<IEventListener*>* GetListenerVector();
 
 private:
 	AITaskManager<CBaseBot>* m_manager;
+	std::vector<IEventListener*> m_listeners;
 };
 
 CBaseBotBehavior::CBaseBotBehavior(CBaseBot* bot) : IBehavior(bot)
 {
 	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
+	m_listeners.reserve(2);
+	m_listeners.push_back(m_manager);
 }
 
 CBaseBotBehavior::~CBaseBotBehavior()
@@ -63,11 +66,30 @@ CBaseBotBehavior::~CBaseBotBehavior()
 
 void CBaseBotBehavior::Reset()
 {
+	m_listeners.clear();
+
+	delete m_manager;
+	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
+
+	m_listeners.push_back(m_manager);
 }
 
 void CBaseBotBehavior::Update()
 {
 	m_manager->Update(GetBot());
+}
+
+std::vector<IEventListener*>* CBaseBotBehavior::GetListenerVector()
+{
+	if (m_manager == nullptr)
+	{
+		return nullptr;
+	}
+
+	static std::vector<IEventListener*> listeners;
+	listeners.clear();
+	listeners.push_back(m_manager);
+	return &listeners;
 }
 
 
@@ -77,6 +99,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 {
 	m_nextupdatetime = 64;
 	m_controller = botmanager->GetBotController(edict);
+	m_listeners.reserve(8);
 	m_basecontrol = nullptr;
 	m_basemover = nullptr;
 	m_basesensor = nullptr;
@@ -107,20 +130,12 @@ CBaseBot::~CBaseBot()
 	}
 
 	m_interfaces.clear();
+	m_listeners.clear();
 }
 
 std::vector<IEventListener*>* CBaseBot::GetListenerVector()
 {
-	static std::vector<IEventListener*> listeners;
-
-	listeners.clear();
-
-	for (auto iface : m_interfaces)
-	{
-		listeners.push_back(iface);
-	}
-
-	return &listeners;
+	return &m_listeners;
 }
 
 void CBaseBot::PlayerThink()
@@ -200,6 +215,7 @@ float CBaseBot::GetRangetToSqr(edict_t* edict) const
 void CBaseBot::RegisterInterface(IBotInterface* iface)
 {
 	m_interfaces.push_back(iface);
+	m_listeners.push_back(iface);
 }
 
 void CBaseBot::BuildUserCommand(const int buttons)
