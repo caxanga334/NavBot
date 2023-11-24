@@ -61,7 +61,15 @@ public:
 	virtual IBehavior* GetBehaviorInterface();
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
+
+	virtual void Spawn();
+	virtual void FirstSpawn();
+
+protected:
+	bool m_isfirstspawn;
+
 private:
+	
 	int m_nextupdatetime;
 	IBotController* m_controller;
 	std::list<IBotInterface*> m_interfaces;

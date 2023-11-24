@@ -14,6 +14,7 @@ sourceFiles = [
   'sdkports/debugoverlay_shared.cpp',
   'sdkports/studio.cpp',
   'mods/basemod.cpp',
+  'mods/basemod_gameevents.cpp',
   'navmesh/nav_area.cpp',
   'navmesh/nav_colors.cpp',
   'navmesh/nav_edit.cpp',

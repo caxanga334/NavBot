@@ -143,6 +143,10 @@ CNavMesh::CNavMesh( void )
 	Reset();
 
 	g_NavRandom.SetSeed(0);
+
+	ListenForGameEvent("round_start");
+	ListenForGameEvent("dod_round_start");
+	ListenForGameEvent("teamplay_round_start");
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -465,36 +469,24 @@ public:
 /**
  * Invoked when the round restarts
  */
-//void CNavMesh::FireGameEvent( IGameEvent *gameEvent )
-//{
-//	VPROF_BUDGET( "CNavMesh::FireGameEvent", VPROF_BUDGETGROUP_NPCS );
-//
-//	if ( FStrEq( gameEvent->GetName(), "break_prop" ) || FStrEq( gameEvent->GetName(), "break_breakable" ) )
-//	{
-//		CheckAreasOverlappingBreakable collector(
-//				engine->PEntityOfEntIndex((gameEvent->GetInt("entindex"))));
-//		ForAllAreas( collector );
-//	}
-//
-//	if ( FStrEq( gameEvent->GetName(), "round_start" ) || FStrEq( gameEvent->GetName(), "teamplay_round_start" ) )
-//	{
-//		OnRoundRestart();
-//		
-//		NavRoundRestart restart;
-//		ForAllAreas( restart );
-//		ForAllLadders( restart );
-//	}
-//	else if ( FStrEq( gameEvent->GetName(), "round_start_pre_entity" ) )
-//	{
-//		OnRoundRestartPreEntity();
-//
-//		FOR_EACH_VEC( TheNavAreas, it )
-//		{
-//			CNavArea *area = TheNavAreas[ it ];
-//			area->OnRoundRestartPreEntity();
-//		}
-//	}
-//}
+
+void CNavMesh::FireGameEvent(IGameEvent* event)
+{
+	// For some reason the engine accepts null events
+	if (event == nullptr)
+		return;
+
+	auto name = event->GetName();
+
+	if (std::strncmp(name, "round_start", 11) == 0 || std::strncmp(name, "dod_round_start", 15) == 0 || std::strncmp(name, "teamplay_round_start", 20) == 0)
+	{
+		OnRoundRestart();
+
+		NavRoundRestart restart;
+		ForAllAreas(restart);
+		ForAllLadders(restart);
+	}
+}
 
 
 //--------------------------------------------------------------------------------------------------------------

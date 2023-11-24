@@ -46,7 +46,7 @@ EventManager::EventManager() :
 	m_loaded(false),
 	m_islistening(false)
 {
-	m_eventreceivers.reserve(64);
+	m_eventlisteners.reserve(64);
 }
 
 EventManager::~EventManager()
@@ -81,7 +81,7 @@ void EventManager::FireGameEvent(IGameEvent* gameevent)
 	std::string name(szEventName);
 	auto currentmod = extmanager->GetMod()->GetModType();
 
-	for (auto& receiver : m_eventreceivers)
+	for (auto& receiver : m_eventlisteners)
 	{
 		if (receiver->ShouldNotify(currentmod) && receiver->EventMatches(name))
 		{
@@ -97,6 +97,9 @@ void EventManager::Load()
 #ifdef SMNAV_DEBUG
 	RegisterEventReceiver(new CDebugEventReceiver("player_spawn", Mods::MOD_ALL));
 #endif // SMNAV_DEBUG
+
+	// tell manager we're ready for receiving game events
+	extmanager->NotifyRegisterGameEvents();
 }
 
 void EventManager::Unload()
@@ -106,19 +109,20 @@ void EventManager::Unload()
 	if (m_islistening == true)
 	{
 		gameeventmanager->RemoveListener(this);
+		m_islistening = false;
 	}
 
-	for (auto receiver : m_eventreceivers)
+	for (auto receiver : m_eventlisteners)
 	{
 		delete receiver;
 	}
 
-	m_eventreceivers.clear();
+	m_eventlisteners.clear();
 }
 
-void EventManager::RegisterEventReceiver(IEventReceiver* receiver)
+void EventManager::RegisterEventReceiver(IEventReceiver* listener)
 {
-	auto name = receiver->GetListeningName().c_str();
+	auto name = listener->GetListeningName().c_str();
 
 	if (gameeventmanager->FindListener(this, name) == false)
 	{
@@ -137,7 +141,7 @@ void EventManager::RegisterEventReceiver(IEventReceiver* receiver)
 	}
 
 	m_islistening = true;
-	m_eventreceivers.push_back(receiver);
+	m_eventlisteners.push_back(listener);
 }
 
 EventManager* GetGameEventManager()

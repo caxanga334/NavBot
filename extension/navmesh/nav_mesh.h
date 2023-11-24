@@ -21,6 +21,7 @@
 
 #include "nav.h"
 #include <sdkports/sdk_timers.h>
+#include <sdkports/eventlistenerhelper.h>
 #include <shareddefs.h>
 #include <convar.h>
 
@@ -230,11 +231,14 @@ extern PlaceDirectory placeDirectory;
  * The CNavMesh is the global interface to the Navigation Mesh.
  * @todo Make this an abstract base class interface, and derive mod-specific implementations.
  */
-class CNavMesh
+class CNavMesh : public CEventListenerHelper
 {
 public:
 	CNavMesh( void );
 	virtual ~CNavMesh();
+
+	// CEventListenerHelper
+	virtual void FireGameEvent(IGameEvent* event);
 	
 	virtual void PreLoadAreas( int nAreas ) {}
 	virtual CNavArea *CreateArea( void ) const;							// CNavArea factory

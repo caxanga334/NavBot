@@ -23,6 +23,9 @@ public:
 
 	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_BASE; }
 
+	// Called for mods to register event listeners
+	virtual void RegisterGameEvents();
+
 private:
 
 };

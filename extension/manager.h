@@ -26,6 +26,8 @@ public:
 
 	virtual CBaseMod* GetMod();
 
+	virtual void NotifyRegisterGameEvents();
+
 	CBaseBot* GetBotByIndex(int index);
 
 	void AddBot();

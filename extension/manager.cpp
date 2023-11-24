@@ -118,6 +118,11 @@ CBaseMod* CExtManager::GetMod()
 	return gamemod;
 }
 
+void CExtManager::NotifyRegisterGameEvents()
+{
+	gamemod->RegisterGameEvents();
+}
+
 CBaseBot* CExtManager::GetBotByIndex(int index)
 {
 	for (auto bot : m_bots)

@@ -11,6 +11,13 @@
 
 class IGameEvent;
 
+/*
+* Event Manager
+* 
+* RCBot2 style event listeners
+*/
+
+
 // Interface for received game events
 class IEventReceiver
 {
@@ -18,7 +25,7 @@ public:
 	IEventReceiver(const char* eventname, Mods::ModType mod);
 	virtual ~IEventReceiver();
 
-	// This function is called when the event this received is listening to is fired
+	// This function is called when the event this listener wants is fired
 	virtual void OnGameEvent(IGameEvent* gameevent);
 
 	// true if the event name matches with the event this receiver wants
@@ -49,7 +56,7 @@ public:
 private:
 	bool m_loaded;
 	bool m_islistening;
-	std::vector<IEventReceiver*> m_eventreceivers; // List of registered receivers
+	std::vector<IEventReceiver*> m_eventlisteners; // List of registered receivers
 };
 
 // Returns a pointer to the global game event manager

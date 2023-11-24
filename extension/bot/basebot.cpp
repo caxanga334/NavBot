@@ -97,6 +97,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
 {
+	m_isfirstspawn = false;
 	m_nextupdatetime = 64;
 	m_controller = botmanager->GetBotController(edict);
 	m_listeners.reserve(8);
@@ -311,4 +312,17 @@ IBehavior* CBaseBot::GetBehaviorInterface()
 	}
 
 	return m_basebehavior;
+}
+
+void CBaseBot::Spawn()
+{
+	if (m_isfirstspawn == false)
+	{
+		m_isfirstspawn = true;
+		FirstSpawn();
+	}
+}
+
+void CBaseBot::FirstSpawn()
+{
 }
