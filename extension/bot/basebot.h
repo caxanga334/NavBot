@@ -9,6 +9,7 @@
 #include <bot/interfaces/sensor.h>
 #include <bot/interfaces/event_listener.h>
 #include <bot/interfaces/behavior.h>
+#include <util/UtilTrace.h>
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.12f;

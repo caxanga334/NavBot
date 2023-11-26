@@ -4,6 +4,8 @@
 #include <bot/interfaces/base_interface.h>
 #include <sdkports/sdk_timers.h>
 
+class CNavLadder;
+
 // Interface responsible for managing the bot's momvement and sending proper inputs to IPlayerController
 class IMovement : public IBotInterface
 {
@@ -28,6 +30,22 @@ public:
 	virtual void Update() override;
 	// Called every server frame
 	virtual void Frame() override;
+
+	// Max height difference that a player is able to climb without jumping
+	virtual float GetStepHeight() { return 18.0f; }
+	// Max height a player can climb by jumping
+	virtual float GetMaxJumpHeight() { return 57.0f; }
+	// Max distance between a (horizontal) gap that the bot is able to jump
+	virtual float GetMaxGapJumpDistance() { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
+
+	// Bot collision hull width
+	virtual float GetHullWidth();
+	// Bot collision hull heigh
+	virtual float GetStandingHullHeigh();
+	virtual float GetCrouchedHullHeigh();
+	virtual float GetProneHullHeigh();
+	// Trace mask for collision detection
+	virtual unsigned int GetMovementTraceMask();
 
 	// Makes the bot walk/run towards the given position
 	virtual void MoveTowards(const Vector& pos);

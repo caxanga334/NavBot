@@ -26,6 +26,9 @@ public:
 	// Called for mods to register event listeners
 	virtual void RegisterGameEvents();
 
+	virtual const Vector& GetPlayerHullMins();
+	virtual const Vector& GetPlayerHullMaxs();
+
 private:
 
 };

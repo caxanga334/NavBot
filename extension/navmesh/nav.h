@@ -21,29 +21,29 @@ struct edict_t;
  * Below are several constants used by the navigation system.
  * @todo Move these into TheNavMesh singleton.
  */
-const float GenerationStepSize = 25.0f;			// (30) was 20, but bots can't fit always fit
-const float JumpHeight = 41.8f;					// if delta Z is less than this, we can jump up on it
+constexpr float GenerationStepSize = 25.0f;			// (30) was 20, but bots can't fit always fit
+constexpr float JumpHeight = 41.8f;					// if delta Z is less than this, we can jump up on it
 
 #if defined(CSTRIKE_DLL)
-const float JumpCrouchHeight = 58.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
+constexpr float JumpCrouchHeight = 58.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
 #else
-const float JumpCrouchHeight = 64.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
+constexpr float JumpCrouchHeight = 64.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
 #endif
 
 // There are 3 different definitions of StepHeight throughout the code, waiting to produce bugs if the 18.0 is ever changed.
-const float StepHeight = 18.0f;					// if delta Z is greater than this, we have to jump to get up
+constexpr float StepHeight = 18.0f;					// if delta Z is greater than this, we have to jump to get up
 
 // TERROR: Increased DeathDrop from 200, since zombies don't take falling damage
 #if defined(CSTRIKE_DLL)
-const float DeathDrop = 200.0f;					// (300) distance at which we will die if we fall - should be about 600, and pay attention to fall damage during pathfind
+constexpr float DeathDrop = 200.0f;					// (300) distance at which we will die if we fall - should be about 600, and pay attention to fall damage during pathfind
 #else
-const float DeathDrop = 400.0f;					// (300) distance at which we will die if we fall - should be about 600, and pay attention to fall damage during pathfind
+constexpr float DeathDrop = 400.0f;					// (300) distance at which we will die if we fall - should be about 600, and pay attention to fall damage during pathfind
 #endif
 
 #if defined(CSTRIKE_DLL)
-const float ClimbUpHeight = JumpCrouchHeight;	// CSBots assume all jump up links are reachable
+constexpr float ClimbUpHeight = JumpCrouchHeight;	// CSBots assume all jump up links are reachable
 #else
-const float ClimbUpHeight = JumpCrouchHeight; //200.0f;				// height to check for climbing up
+constexpr float ClimbUpHeight = JumpCrouchHeight; //200.0f;				// height to check for climbing up
 #endif
 
 // TERROR: Converted these values to use the same numbers as the player bounding boxes etc

@@ -28,3 +28,15 @@ void CBaseMod::RegisterGameEvents()
 
 	evmanager->RegisterEventReceiver(new CPlayerSpawnEvent);
 }
+
+const Vector& CBaseMod::GetPlayerHullMins()
+{
+	static Vector mins(-16.0f, -16.0f, 0.0f);
+	return mins;
+}
+
+const Vector& CBaseMod::GetPlayerHullMaxs()
+{
+	static Vector maxs(16.0f, 16.0f, 72.0f);
+	return maxs;
+}

@@ -29,10 +29,10 @@ public:
 	 * @param old Old nav area
 	 * @param current New nav area
 	*/
-	inline virtual void OnNavAreaChanged(CNavArea* old, CNavArea* current) {}
+	inline virtual void NavAreaChanged(CNavArea* old, CNavArea* current) {}
 	inline CNavArea* GetLastKnownNavArea() { return m_lastnavarea; }
 	inline IPlayerInfo* GetPlayerInfo() { return m_playerinfo; }
-	const Vector WorldSpaceCenter();
+	const Vector WorldSpaceCenter() const;
 	const Vector GetAbsOrigin() const;
 	const QAngle GetAbsAngles() const;
 	const Vector GetEyeOrigin() const;
@@ -42,6 +42,8 @@ public:
 	inline QAngle BodyAngles() const { return GetAbsAngles(); }
 	Vector BodyDirection3D() const;
 	Vector BodyDirection2D() const;
+	// Gets the player model scale, virtual in case a mod uses different scaling
+	virtual float GetModelScale() const;
 	// Changes the player team
 	virtual void ChangeTeam(int newTeam);
 	virtual int GetCurrentTeamIndex() const;

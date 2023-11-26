@@ -3,7 +3,15 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_ladder.h>
+#include <manager.h>
+#include <mods/basemod.h>
 #include "movement.h"
+
+extern CExtManager* extmanager;
+
+constexpr auto DEFAULT_PLAYER_STANDING_HEIGHT = 72.0f;
+constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
+constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
 
 IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 {
@@ -39,6 +47,34 @@ void IMovement::Frame()
 			GetBot()->GetControlInterface()->PressJumpButton(); 
 		}
 	}
+}
+
+float IMovement::GetHullWidth()
+{
+	float scale = GetBot()->GetModelScale();
+	return DEFAULT_PLAYER_HULL_WIDTH * scale;
+}
+
+float IMovement::GetStandingHullHeigh()
+{
+	float scale = GetBot()->GetModelScale();
+	return DEFAULT_PLAYER_STANDING_HEIGHT * scale;
+}
+
+float IMovement::GetCrouchedHullHeigh()
+{
+	float scale = GetBot()->GetModelScale();
+	return DEFAULT_PLAYER_DUCKING_HEIGHT * scale;
+}
+
+float IMovement::GetProneHullHeigh()
+{
+	return 0.0f; // implement if mod has prone support (IE: DoD:S)
+}
+
+unsigned int IMovement::GetMovementTraceMask()
+{
+	return MASK_PLAYERSOLID;
 }
 
 void IMovement::MoveTowards(const Vector& pos)

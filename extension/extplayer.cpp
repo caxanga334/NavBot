@@ -41,13 +41,13 @@ void CBaseExtPlayer::PlayerThink()
 
 		if (newarea != m_lastnavarea)
 		{
-			OnNavAreaChanged(m_lastnavarea, newarea);
+			NavAreaChanged(m_lastnavarea, newarea);
 			m_lastnavarea = newarea;
 		}
 	}
 }
 
-const Vector CBaseExtPlayer::WorldSpaceCenter()
+const Vector CBaseExtPlayer::WorldSpaceCenter() const
 {
 	return UtilHelpers::getWorldSpaceCenter(GetEdict());
 }
@@ -105,6 +105,13 @@ Vector CBaseExtPlayer::BodyDirection2D() const
 	body2d.z = 0.0f;
 	body2d.AsVector2D().NormalizeInPlace();
 	return body2d;
+}
+
+float CBaseExtPlayer::GetModelScale() const
+{
+	float result = 1.0f;
+	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flModelScale", result);
+	return result; // result won't be touched if getentpropfloat fails, so this will default to 1.0
 }
 
 void CBaseExtPlayer::ChangeTeam(int newTeam)

@@ -12,6 +12,18 @@
 #include <extplayer.h>
 #include "manager.h"
 
+#ifdef SMNAV_DEBUG
+#include <sdkports/debugoverlay_shared.h>
+#include <navmesh/nav.h>
+#include <navmesh/nav_area.h>
+#include <navmesh/nav_mesh.h>
+#include <navmesh/nav_pathfind.h>
+#endif // SMNAV_DEBUG
+
+#if SOURCE_ENGINE == SE_TF2
+#include <mods/tf2/teamfortress2mod.h>
+#endif // SOURCE_ENGINE == SE_TF2
+
 CBaseMod* gamemod = nullptr;
 
 #ifdef SMNAV_FEAT_BOT
@@ -110,7 +122,11 @@ void CExtManager::OnClientDisconnect(int client)
 // Detect current mod and initializes it
 void CExtManager::AllocateMod()
 {
+#if SOURCE_ENGINE == SE_TF2
+	gamemod = new CTeamFortress2Mod;
+#else
 	gamemod = new CBaseMod;
+#endif // SOURCE_ENGINE == SE_TF2
 }
 
 CBaseMod* CExtManager::GetMod()
@@ -225,6 +241,65 @@ CON_COMMAND(smnav_debug_event_propagation, "Event propagation test")
 	for (auto bot : bots)
 	{
 		bot->GetBehaviorInterface()->ShouldFreeRoam(bot);
+	}
+}
+
+CON_COMMAND(smnav_debug_pathfind, "Path finding debug.")
+{
+	static Vector start;
+	static Vector end;
+	static bool reset = false;
+
+	auto edict = gamehelpers->EdictOfIndex(1);
+
+	if (edict == nullptr)
+	{
+		return;
+	}
+
+	// CBaseExtPlayer can be used for both players and bots
+	CBaseExtPlayer player(edict);
+
+	if (reset == false)
+	{
+		start = player.GetAbsOrigin();
+		reset = true;
+		return;
+	}
+
+	reset = false;
+	end = player.GetAbsOrigin();
+
+	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, 256.0f, true, true);
+
+	if (startArea == nullptr)
+	{
+		rootconsole->ConsolePrint("Path find: Failed to get starting area!");
+		return;
+	}
+
+	CNavArea* goalArea = TheNavMesh->GetNearestNavArea(end, 256.0f, true, true);
+
+	ShortestPathCost cost;
+	CNavArea* closest = nullptr;
+	bool path = NavAreaBuildPath(startArea, goalArea, &end, cost, &closest, 10000.0f, -2);
+
+	CNavArea* from = nullptr;
+	CNavArea* to = nullptr;
+
+	for (CNavArea* area = closest; area != nullptr; area = area->GetParent())
+	{
+		if (from == nullptr) // set starting area;
+		{
+			from = area;
+			continue;
+		}
+
+		to = area;
+
+		NDebugOverlay::HorzArrow(from->GetCenter(), to->GetCenter(), 4.0f, 0, 255, 0, 255, true, 20.0f);
+		
+		from = to;
 	}
 }
 #endif // SMNAV_DEBUG
