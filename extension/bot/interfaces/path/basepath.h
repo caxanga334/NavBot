@@ -16,8 +16,6 @@ class CNavArea;
 class CNavLadder;
 class CFuncElevator;
 
-
-
 namespace AIPath
 {
 	enum SegmentType
@@ -116,6 +114,10 @@ public:
 	CBasePathSegment* newSeg; // new segment to be added
 };
 
+// good reference for valve nav mesh pathing
+// - https://github.com/ValveSoftware/halflife/blob/master/game_shared/bot/nav_path.cpp
+// - https://github.com/ValveSoftware/halflife/blob/master/game_shared/bot/nav_path.h
+
 // Base path
 class CPath
 {
@@ -138,7 +140,7 @@ public:
 	 * @return true if a path is found
 	*/
 	template <typename CostFunction>
-	bool ComputePathToPosition(CBaseBot* bot, const Vector& goal, CostFunction& costFunc, const float maxPathLength, const bool includeGoalOnFailure = false)
+	bool ComputePathToPosition(CBaseBot* bot, const Vector& goal, CostFunction& costFunc, const float maxPathLength = 0.0f, const bool includeGoalOnFailure = false)
 	{
 		Invalidate();
 
@@ -198,6 +200,17 @@ public:
 			return true;
 		}
 
+		// the path is built from end to start, include the end position first
+		if (pathBuildResult == true || includeGoalOnFailure == true)
+		{
+			CBasePathSegment* segment = CreateNewSegment();
+
+			segment->area = closestArea;
+			segment->goal = endPos;
+
+			m_segments.push_back(segment);
+		}
+
 		// construct the path segments
 		// Reminder: areas are added to the back of the segment vector, the first area is the goal area.
 		for (CNavArea* area = closestArea; area != nullptr; area = area->GetParent())
@@ -210,14 +223,6 @@ public:
 			m_segments.push_back(segment);
 		}
 
-		if (pathBuildResult == true || includeGoalOnFailure == true)
-		{
-			CBasePathSegment* segment = CreateNewSegment();
-
-			segment->area = closestArea;
-			segment->pos = endPos;
-		}
-
 		// Place the path start at the vector start
 		std::reverse(m_segments.begin(), m_segments.end());
 
@@ -225,12 +230,21 @@ public:
 		{
 			return false;
 		}
+
+		PostProcessPath();
+
+		return pathBuildResult;
 	}
+
+	virtual void DrawFullPath(const float duration = 0.01f);
 
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
-	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessLaddersInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
+	virtual void PostProcessPath();
 
 private:
 	std::vector<CBasePathSegment*> m_segments;

@@ -18,6 +18,7 @@
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
+#include <bot/interfaces/path/basepath.h>
 #endif // SMNAV_DEBUG
 
 #if SOURCE_ENGINE == SE_TF2
@@ -301,5 +302,46 @@ CON_COMMAND(smnav_debug_pathfind, "Path finding debug.")
 		
 		from = to;
 	}
+}
+
+CON_COMMAND(smnav_debug_botpath, "Debug bot path")
+{
+	CBaseBot* bot = nullptr;
+	extern CGlobalVars* gpGlobals;
+	extern CExtManager* extmanager;
+
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		bot = extmanager->GetBotByIndex(i);
+
+		if (bot != nullptr)
+		{
+			break;
+		}
+	}
+
+	if (bot == nullptr)
+	{
+		rootconsole->ConsolePrint("Add a bot to the game first!");
+		return;
+	}
+
+	auto edict = gamehelpers->EdictOfIndex(1);
+
+	if (edict == nullptr)
+	{
+		return;
+	}
+
+	// CBaseExtPlayer can be used for both players and bots
+	CBaseExtPlayer player(edict);
+	ShortestPathCost cost;
+	CPath path;
+	Vector start = player.GetAbsOrigin();
+
+	path.ComputePathToPosition(bot, start, cost, 0.0f, true);
+	path.DrawFullPath(30.0f);
+
+	rootconsole->ConsolePrint("Showing path from bot position to your position.");
 }
 #endif // SMNAV_DEBUG
