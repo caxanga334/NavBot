@@ -25,6 +25,11 @@
 #include <mods/tf2/teamfortress2mod.h>
 #endif // SOURCE_ENGINE == SE_TF2
 
+#if SOURCE_ENGINE == SE_DODS
+#include <mods/dods/dayofdefeatsourcemod.h>
+#endif // SOURCE_ENGINE == SE_DODS
+
+
 CBaseMod* gamemod = nullptr;
 
 #ifdef SMNAV_FEAT_BOT
@@ -123,8 +128,12 @@ void CExtManager::OnClientDisconnect(int client)
 // Detect current mod and initializes it
 void CExtManager::AllocateMod()
 {
+	// Don't check game folder name unless the SDK supports multiple mods (SDK2013, EP2 (Orange box), EP1 (Original))
+
 #if SOURCE_ENGINE == SE_TF2
 	gamemod = new CTeamFortress2Mod;
+#elif SOURCE_ENGINE == SE_DODS
+	gamemod = new CDayOfDefeatSourceMod;
 #else
 	gamemod = new CBaseMod;
 #endif // SOURCE_ENGINE == SE_TF2

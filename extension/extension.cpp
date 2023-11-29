@@ -51,6 +51,15 @@
 #include <util/entprops.h>
 #include <core/eventmanager.h>
 
+#ifdef SMNAV_FEAT_BOT
+#include <bot/basebot.h>
+#endif // SMNAV_FEAT_BOT
+
+// Need this for CUserCmd class definition
+#if HOOK_PLAYERRUNCMD
+#include <usercmd.h>
+#endif
+
 /**
  * @file extension.cpp
  * @brief Implement extension code here.
@@ -90,6 +99,12 @@ SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
+
+// SDKs that requires a runplayercommand hook
+#if HOOK_PLAYERRUNCMD
+SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*);
+#endif 
+
 
 SMEXT_LINK(&g_SMNavExt);
 
@@ -138,6 +153,22 @@ namespace Utils
 			}
 		}
 	}
+#ifdef HOOK_PLAYERRUNCMD
+	inline void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
+	{
+		ucmd->command_number = bcmd->command_number;
+		ucmd->tick_count = bcmd->tick_count;
+		ucmd->viewangles = bcmd->viewangles;
+		ucmd->forwardmove = bcmd->forwardmove;
+		ucmd->sidemove = bcmd->sidemove;
+		ucmd->upmove = bcmd->upmove;
+		ucmd->buttons = bcmd->buttons;
+		ucmd->impulse = bcmd->impulse;
+		ucmd->weaponselect = bcmd->weaponselect;
+		ucmd->weaponsubtype = bcmd->weaponsubtype;
+		ucmd->random_seed = bcmd->random_seed;
+	}
+#endif // HOOK_PLAYERRUNCMD
 }
 
 
@@ -156,6 +187,28 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
+
+#if HOOK_PLAYERRUNCMD
+	SourceMod::IGameConfig* gamedata = nullptr;
+
+	if (gameconfs->LoadGameConfigFile("sdktools.games", &gamedata, error, maxlen) == false)
+	{
+		return false;
+	}
+
+	int offset = 0;
+
+	if (gamedata->GetOffset("PlayerRunCmd", &offset) == false)
+	{
+		const char* message = "Failed to get PlayerRunCmd offset from SDK Tools gamedata. Mod not supported!";
+		maxlen = std::strlen(message);
+		std::strcpy(error, message);
+		return false;
+	}
+
+	gameconfs->CloseGameConfigFile(gamedata);
+	SH_MANUALHOOK_RECONFIGURE(MH_PlayerRunCommand, offset, 0, 0);
+#endif // HOOK_PLAYERRUNCMD
 
 	return true;
 }
@@ -259,11 +312,32 @@ bool SMNavExt::RegisterConCommandBase(ConCommandBase* pVar)
 void SMNavExt::OnClientPutInServer(int client)
 {
 	extmanager->OnClientPutInServer(client);
+
+#ifdef HOOK_PLAYERRUNCMD
+	CBaseEntity* baseent = nullptr;
+	UtilHelpers::IndexToAThings(client, &baseent, nullptr);
+
+	if (baseent != nullptr)
+	{
+		SH_ADD_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &SMNavExt::Hook_PlayerRunCommand, false);
+	}
+#endif // HOOK_PLAYERRUNCMD
+
 }
 
 void SMNavExt::OnClientDisconnecting(int client)
 {
 	extmanager->OnClientDisconnect(client);
+
+#ifdef HOOK_PLAYERRUNCMD
+	CBaseEntity* baseent = nullptr;
+	UtilHelpers::IndexToAThings(client, &baseent, nullptr);
+
+	if (baseent != nullptr)
+	{
+		SH_REMOVE_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &SMNavExt::Hook_PlayerRunCommand, false);
+	}
+#endif // HOOK_PLAYERRUNCMD
 }
 
 void SMNavExt::Hook_GameFrame(bool simulating)
@@ -277,6 +351,33 @@ void SMNavExt::Hook_GameFrame(bool simulating)
 	{
 		extmanager->Frame();
 	}
+
+	RETURN_META(MRES_IGNORED);
+}
+
+void SMNavExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
+{
+#if SMNAV_FEAT_BOT && HOOK_PLAYERRUNCMD // don't bother if bots are disabled
+	if (extmanager == nullptr) // TO-DO: This check might not be needed since the extension should load before any player is able to fully connect to the server
+	{
+		RETURN_META(MRES_IGNORED);
+	}
+
+	static CBaseBot* bot;
+	CBaseEntity* player = META_IFACEPTR(CBaseEntity);
+	int index = gamehelpers->EntityToBCompatRef(player);
+
+	bot = extmanager->GetBotByIndex(index);
+
+	if (bot != nullptr)
+	{
+		static CBotCmd* cmd;
+		cmd = bot->GetUserCommand();
+
+		Utils::CopyBotCmdtoUserCmd(usercmd, cmd);
+	}
+
+#endif // SMNAV_FEAT_BOT
 
 	RETURN_META(MRES_IGNORED);
 }

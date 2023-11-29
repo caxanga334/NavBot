@@ -29,6 +29,10 @@ public:
 	virtual const Vector& GetPlayerHullMins();
 	virtual const Vector& GetPlayerHullMaxs();
 
+	// if this is true, then we need to hook runplayercommand
+	// for example: DoDs already run player commands on bots
+	virtual bool UserCommandNeedsHook() { return false; }
+
 private:
 
 };

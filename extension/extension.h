@@ -32,6 +32,9 @@
 #ifndef _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_
 #define _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_
 
+class CUserCmd;
+class IMoveHelper;
+
 /**
  * @file extension.h
  * @brief Sample extension code header.
@@ -250,6 +253,8 @@ public:
 	}
 
 	void Hook_GameFrame(bool simulating);
+
+	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
 
 	/**
 	 * @brief Checks if the bot feature of the extension is enabled

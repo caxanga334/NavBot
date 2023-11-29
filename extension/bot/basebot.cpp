@@ -5,6 +5,7 @@
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
 #include <bot/interfaces/tasks.h>
+#include <mods/basemod.h>
 #include "basebot.h"
 
 extern CGlobalVars* gpGlobals;
@@ -269,9 +270,25 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	m_cmd.sidemove = sidespeed;
 	m_cmd.upmove = 0.0f;
 
-	m_controller->RunPlayerMove(&m_cmd);
+	RunUserCommand(&m_cmd);
 
 	m_weaponselect = 0;
+}
+
+void CBaseBot::RunUserCommand(CBotCmd* ucmd)
+{
+#if HOOK_PLAYERRUNCMD
+	if (extmanager->GetMod()->UserCommandNeedsHook() == true) // this mod already calls runplayermove on bots, just hook it
+	{
+		return;
+	}
+	else
+	{
+		m_controller->RunPlayerMove(ucmd);
+	}
+#else
+	m_controller->RunPlayerMove(ucmd);
+#endif // 
 }
 
 IPlayerController* CBaseBot::GetControlInterface()

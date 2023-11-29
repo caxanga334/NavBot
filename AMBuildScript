@@ -349,6 +349,11 @@ class ExtensionConfig(object):
     else:
       compiler.defines += ['SMNAV_MAX_PLAYERS=34']
 
+    # Some game/mods already calls playerruncommand on puppet bots, this will conflict with the extension bot
+    # This define enables the code to override and solve this conflict
+    if sdk.name in ['dods', 'sdk2013']: # Currently, dods does this, some sdk2013 mods also does this
+      compiler.defines += ['HOOK_PLAYERRUNCMD']
+
     paths = [
       ['public'],
       ['public', 'engine'],

@@ -53,6 +53,7 @@ public:
 
 	void RegisterInterface(IBotInterface* iface);
 	void BuildUserCommand(const int buttons);
+	void RunUserCommand(CBotCmd* ucmd);
 	inline CBotCmd* GetUserCommand() { return &m_cmd; }
 	// Sets the view angles to be sent on the next User Command
 	inline void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
