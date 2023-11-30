@@ -26,6 +26,39 @@ CPath::~CPath()
 	m_segments.clear();
 }
 
+bool CPath::BuildTrivialPath(const Vector& start, const Vector& goal)
+{
+	constexpr float NAV_MAX_DIST = 256.0f;
+
+	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, NAV_MAX_DIST, true, true);
+	CNavArea* goalArea = TheNavMesh->GetNearestNavArea(goal, NAV_MAX_DIST, true, true);
+
+	if (startArea == nullptr || goalArea == nullptr)
+		return false;
+
+	Invalidate(); // destroy any path that exists
+
+	CBasePathSegment* startSeg = CreateNewSegment();
+	CBasePathSegment* endSeg = CreateNewSegment();
+
+	startSeg->area = startArea;
+	startSeg->goal = start;
+	startSeg->type = AIPath::SegmentType::SEGMENT_GROUND;
+	startSeg->forward = goal - start;
+	startSeg->length = startSeg->forward.NormalizeInPlace();
+	endSeg->area = goalArea;
+	endSeg->goal = goal;
+	endSeg->type = AIPath::SegmentType::SEGMENT_GROUND;
+	endSeg->forward = startSeg->forward;
+	endSeg->distance = startSeg->length;
+
+	m_segments.push_back(startSeg);
+	m_segments.push_back(endSeg);
+	m_ageTimer.Start();
+
+	return true;
+}
+
 void CPath::DrawFullPath(const float duration)
 {
 #ifdef SMNAV_DEBUG // only draw path when debug is enabled
@@ -79,6 +112,19 @@ void CPath::DrawFullPath(const float duration)
 	}
 
 #endif // SMNAV_DEBUG // only draw path when debug is enabled
+}
+
+// Gets the total length of the current path.
+float CPath::GetPathLength() const
+{
+	float length = 0.0f;
+
+	for (auto segment : m_segments)
+	{
+		length += segment->length;
+	}
+
+	return length;
 }
 
 /**
@@ -476,4 +522,6 @@ void CPath::PostProcessPath()
 	seglast->length = 0.0f;
 	seglast->distance = currentDistance;
 	seglast->curvature = 0.0f;
+
+	m_ageTimer.Start();
 }

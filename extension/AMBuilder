@@ -34,6 +34,7 @@ sourceFiles = [
   'util/UtilTrace.cpp',
   'util/entprops.cpp',
   'util/helpers.cpp',
+  'util/librandom.cpp',
 ]
 
 # Source files for the bot feature

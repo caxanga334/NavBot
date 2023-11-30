@@ -19,6 +19,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
+#include <util/librandom.h>
 #endif // SMNAV_DEBUG
 
 #if SOURCE_ENGINE == SE_TF2
@@ -352,5 +353,14 @@ CON_COMMAND(smnav_debug_botpath, "Debug bot path")
 	path.DrawFullPath(30.0f);
 
 	rootconsole->ConsolePrint("Showing path from bot position to your position.");
+}
+
+CON_COMMAND(smnav_debug_rng, "Debug random number generator")
+{
+	for (int i = 0; i < 15; i++)
+	{
+		int n = random::generate_random_int(0, 100);
+		rootconsole->ConsolePrint("Random Number: %i", n);
+	}
 }
 #endif // SMNAV_DEBUG

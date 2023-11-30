@@ -18,6 +18,7 @@ class CFuncElevator;
 
 namespace AIPath
 {
+	// Path segment type, tell bots how they should traverse the segment
 	enum SegmentType
 	{
 		SEGMENT_GROUND = 0, // Walking over solid ground
@@ -149,7 +150,7 @@ public:
 
 		if (startArea == nullptr)
 		{
-			// to-do: notify path failure
+			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
 			return false;
 		}
 
@@ -158,7 +159,8 @@ public:
 
 		if (goalArea == startArea)
 		{
-			// to-do: build path from bot pos to goal pos
+			BuildTrivialPath(start, goal);
+			OnPathChanged(bot, AIPath::ResultType::COMPLETE_PATH);
 			return true;
 		}
 
@@ -191,12 +193,14 @@ public:
 
 		if (areaCount == 0)
 		{
+			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
 			return false; // no path
 		}
 
 		if (areaCount == 1)
 		{
-			// to-do: build path from bot pos to goal pos
+			BuildTrivialPath(start, goal);
+			OnPathChanged(bot, AIPath::ResultType::COMPLETE_PATH);
 			return true;
 		}
 
@@ -207,6 +211,7 @@ public:
 
 			segment->area = closestArea;
 			segment->goal = endPos;
+			segment->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 			m_segments.push_back(segment);
 		}
@@ -228,15 +233,38 @@ public:
 
 		if (ProcessCurrentPath(bot, start) == false)
 		{
+			Invalidate(); // destroy the path so IsValid returns false
+			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
 			return false;
 		}
 
 		PostProcessPath();
 
+		if (pathBuildResult == true)
+		{
+			OnPathChanged(bot, AIPath::ResultType::COMPLETE_PATH);
+		}
+		else
+		{
+			OnPathChanged(bot, AIPath::ResultType::PARTIAL_PATH);
+		}
+
 		return pathBuildResult;
 	}
 
+	bool BuildTrivialPath(const Vector& start, const Vector& goal);
+
 	virtual void DrawFullPath(const float duration = 0.01f);
+	virtual float GetPathLength() const;
+
+	// How many seconds since this path was built
+	virtual float GetAge() const { return m_ageTimer.GetElapsedTime(); }
+	// Checks if the path is valid.
+	// Note that a path can be valid but not reach the goal.
+	// To known if the goal can be reached, use the result of the ComputePath* functions.
+	virtual bool IsValid() const { return m_segments.size() > 0; }
+
+	virtual void OnPathChanged(CBaseBot* bot, AIPath::ResultType result) {}
 
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
