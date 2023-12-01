@@ -6,27 +6,31 @@ class CBaseMod;
 class CBaseExtPlayer;
 class CBaseBot;
 
+
 // Primary Extension Manager
 class CExtManager
 {
 public:
 	CExtManager();
-	virtual ~CExtManager();
+	~CExtManager();
 
 	// Called when all extensions have been loaded
-	virtual void OnAllLoaded();
+	void OnAllLoaded();
 
-	virtual void Frame();
+	void Frame();
 
-	virtual void OnClientPutInServer(int client);
+	void OnClientPutInServer(int client);
 
-	virtual void OnClientDisconnect(int client);
+	void OnClientDisconnect(int client);
 
-	virtual void AllocateMod();
+	void OnMapStart();
+	void OnMapEnd();
 
-	virtual CBaseMod* GetMod();
+	void AllocateMod();
 
-	virtual void NotifyRegisterGameEvents();
+	CBaseMod* GetMod();
+
+	void NotifyRegisterGameEvents();
 
 	CBaseBot* GetBotByIndex(int index);
 
@@ -35,8 +39,12 @@ public:
 	// Gets a vector of all bots currently in game
 	const std::vector<CBaseBot*> &GetAllBots() const { return m_bots; }
 
+	void LoadBotNames();
+
 private:
 	std::vector<CBaseBot*> m_bots; // Vector of bots
+	std::vector<std::string> m_botnames; // Vector of names to be used by bots
+	size_t m_nextbotname; // Index of the next bot name to use
 };
 
 #endif // !SMNAV_EXT_MANAGER_H_

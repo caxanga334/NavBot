@@ -525,3 +525,103 @@ void CPath::PostProcessPath()
 
 	m_ageTimer.Start();
 }
+
+const Vector& CPath::GetStartPosition() const
+{
+	if (IsValid())
+	{
+		return m_segments[0]->goal;
+	}
+	
+	return vec3_origin;
+}
+
+const Vector& CPath::GetEndPosition() const
+{
+	if (IsValid())
+	{
+		return m_segments[m_segments.size() - 1]->goal;
+	}
+
+	return vec3_origin;
+}
+
+const CBasePathSegment* CPath::GetFirstSegment() const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	return m_segments[0];
+}
+
+const CBasePathSegment* CPath::GetLastSegment() const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	return m_segments[m_segments.size() - 1];
+}
+
+const CBasePathSegment* CPath::GetNextSegment(CBasePathSegment* current) const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	for (size_t i = 0; i < m_segments.size(); i++)
+	{
+		CBasePathSegment* seg = m_segments[i];
+
+		if (seg == current)
+		{
+			int next = i + 1;
+
+			if (next >= m_segments.size())
+			{
+				return nullptr;
+			}
+
+			return m_segments[next];
+		}
+	}
+
+	return nullptr;
+}
+
+const CBasePathSegment* CPath::GetPriorSegment(CBasePathSegment* current) const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	for (size_t i = 0; i < m_segments.size(); i++)
+	{
+		CBasePathSegment* seg = m_segments[i];
+
+		if (seg == current)
+		{
+			int next = i + -1;
+
+			if (next < 0)
+			{
+				return nullptr;
+			}
+
+			return m_segments[next];
+		}
+	}
+
+	return nullptr;
+}
+
+// The segment the bot will try to reach.
+const CBasePathSegment* CPath::GetGoalSegment() const
+{
+	return nullptr;
+}

@@ -298,10 +298,13 @@ void SMNavExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax
 	{
 		rootconsole->ConsolePrint("Nav Mesh failed to load!");
 	}
+
+	extmanager->OnMapStart();
 }
 
 void SMNavExt::OnCoreMapEnd()
 {
+	extmanager->OnMapEnd();
 }
 
 bool SMNavExt::RegisterConCommandBase(ConCommandBase* pVar)

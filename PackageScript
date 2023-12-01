@@ -10,7 +10,8 @@ folder_list = [
   'addons/sourcemod/extensions',
   #'addons/sourcemod/scripting/include',
   #'addons/sourcemod/gamedata',
-  #'addons/sourcemod/configs',
+  'addons/sourcemod/configs',
+  'addons/sourcemod/configs/smnav',
 ]
 
 # Create the distribution folder hierarchy.
@@ -47,11 +48,9 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 #)
 
 # Config Files
-#CopyFiles('configs', 'addons/sourcemod/configs',
-#  [ 'configfile.cfg',
-#  'otherconfig.cfg,
-#  ]
-#)
+CopyFiles('configs', 'addons/sourcemod/configs/smnav',
+  [ 'bot_names.cfg', ]
+)
 
 # Copy binaries.
 for cxx_task in Extension.extensions:

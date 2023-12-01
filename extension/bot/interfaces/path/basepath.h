@@ -266,6 +266,15 @@ public:
 
 	virtual void OnPathChanged(CBaseBot* bot, AIPath::ResultType result) {}
 
+	virtual const Vector& GetStartPosition() const;
+	virtual const Vector& GetEndPosition() const;
+
+	virtual const CBasePathSegment* GetFirstSegment() const;
+	virtual const CBasePathSegment* GetLastSegment() const;
+	virtual const CBasePathSegment* GetNextSegment(CBasePathSegment* current) const;
+	virtual const CBasePathSegment* GetPriorSegment(CBasePathSegment* current) const;
+	virtual const CBasePathSegment* GetGoalSegment() const;
+
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
 	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);

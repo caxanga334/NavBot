@@ -1,5 +1,8 @@
 #include <vector>
 #include <stdexcept>
+#include <filesystem>
+#include <string>
+#include <fstream>
 
 #include "extension.h"
 
@@ -10,6 +13,7 @@
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
 #include <extplayer.h>
+#include <util/librandom.h>
 #include "manager.h"
 
 #ifdef SMNAV_DEBUG
@@ -19,7 +23,6 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
-#include <util/librandom.h>
 #endif // SMNAV_DEBUG
 
 #if SOURCE_ENGINE == SE_TF2
@@ -40,6 +43,8 @@ extern IBotManager* botmanager;
 CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods
+	m_botnames.reserve(256); // reserver space for 256 bot names, vector size will increase if needed
+	m_nextbotname = 0U;
 }
 
 CExtManager::~CExtManager()
@@ -61,6 +66,10 @@ CExtManager::~CExtManager()
 void CExtManager::OnAllLoaded()
 {
 	AllocateMod();
+
+#ifdef SMNAV_FEAT_BOT
+	LoadBotNames();
+#endif // SMNAV_FEAT_BOT
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, gamemod->GetModName());
 }
@@ -126,6 +135,24 @@ void CExtManager::OnClientDisconnect(int client)
 #endif // SMNAV_FEAT_BOT
 }
 
+void CExtManager::OnMapStart()
+{
+	gamemod->OnMapStart();
+
+#ifdef SMNAV_FEAT_BOT
+	if (m_botnames.size() != 0)
+	{
+		// get a new index on every map load
+		m_nextbotname = random::generate_random_uint(0, m_botnames.size() - 1);
+	}
+#endif // SMNAV_FEAT_BOT
+}
+
+void CExtManager::OnMapEnd()
+{
+	gamemod->OnMapEnd();
+}
+
 // Detect current mod and initializes it
 void CExtManager::AllocateMod()
 {
@@ -166,8 +193,29 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 void CExtManager::AddBot()
 {
 #ifdef SMNAV_FEAT_BOT
+	const char* name = nullptr;
+
+	if (m_botnames.size() == 0)
+	{
+		char botname[30]{};
+		std::sprintf(botname, "SMNav Bot #%04d", random::generate_random_int(0, 9999));
+		name = botname;
+	}
+	else
+	{
+		auto& botname = m_botnames[m_nextbotname];
+		m_nextbotname++;
+
+		if (m_nextbotname >= m_botnames.size())
+		{
+			m_nextbotname = 0; // go back to start
+		}
+
+		name = botname.c_str();
+	}
+
 	// Tell the bot manager to create a new bot. OnClientPutInServer is too late to catch the bot being created
-	auto edict = botmanager->CreateBot("SMBot++");
+	auto edict = botmanager->CreateBot(name);
 
 	if (edict == nullptr)
 	{
@@ -191,6 +239,74 @@ void CExtManager::AddBot()
 
 	rootconsole->ConsolePrint("Bot added to the game.");
 #endif // SMNAV_FEAT_BOT
+}
+
+void CExtManager::LoadBotNames()
+{
+	char path[PLATFORM_MAX_PATH]{};
+
+	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/smnav/bot_names.cfg");
+
+	if (std::filesystem::exists(path) == false)
+	{
+		smutils->LogError(myself, "Could not load bot name list, file \"%s\" doesn't exists!", path);
+		return;
+	}
+	
+	m_botnames.clear(); // clear vector if we're reloading the name list
+
+	std::fstream file;
+	std::string line;
+
+	constexpr size_t MAX_BOT_NAME_LENGTH = 31U;
+	file.open(path, std::fstream::in);
+	line.reserve(64);
+
+	while (std::getline(file, line))
+	{
+		if (line.find("//", 0, 2) != std::string::npos)
+		{
+			continue; // comment line, ignore
+		}
+
+		if (std::isspace(line[0]))
+		{
+			continue; // ignore lines that start with space
+		}
+
+		// we don't want these
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.cend());
+		line.erase(std::remove(line.begin(), line.end(), '\n'), line.cend());
+
+		if (line.length() == 0)
+		{
+			continue;
+		}
+
+		if (line.length() > MAX_BOT_NAME_LENGTH)
+		{
+			smutils->LogError(myself, "Bot name \"%s\" over character limit! skipping...", line.c_str());
+			continue;
+		}
+
+		m_botnames.emplace_back(line);
+	}
+
+#ifdef SMNAV_DEBUG
+	for (auto& name : m_botnames)
+	{
+		auto szname = name.c_str();
+		rootconsole->ConsolePrint("Bot name: %s", szname);
+	}
+#endif // SMNAV_DEBUG
+
+	rootconsole->ConsolePrint("[SMNav] Bot name list loaded with %i names.", m_botnames.size());
+}
+
+CON_COMMAND(smnav_reload_bot_names, "Reloads the bot name list")
+{
+	extern CExtManager* extmanager;
+	extmanager->LoadBotNames();
 }
 
 #ifdef SMNAV_DEBUG

@@ -16,6 +16,9 @@ public:
 	// Called every server frame
 	virtual void Frame() {}
 
+	virtual void OnMapStart() {}
+	virtual void OnMapEnd() {}
+
 	// Called by the manager when allocating a new bot instance
 	virtual CBaseBot* AllocateBot(edict_t* edict);
 
