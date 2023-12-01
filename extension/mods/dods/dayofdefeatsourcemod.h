@@ -10,6 +10,10 @@ public:
 	CDayOfDefeatSourceMod() : CBaseMod() {}
 	virtual ~CDayOfDefeatSourceMod() {}
 
+	virtual const char* GetModName() { return "Day of Defeat: Source"; }
+
+	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_DODS; }
+
 	virtual bool UserCommandNeedsHook() override { return true; }
 };
 

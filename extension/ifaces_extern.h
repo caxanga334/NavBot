@@ -34,6 +34,7 @@ extern IMDLCache* mdlcache;
 extern IFileSystem* filesystem;
 extern ICvar* icvar;
 extern IServerTools* servertools;
+extern IServerPluginHelpers* serverpluginhelpers;
 extern CBaseEntityList* g_EntList;
 
 extern IBinTools* g_pBinTools;

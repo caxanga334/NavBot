@@ -43,7 +43,7 @@ extern IBotManager* botmanager;
 CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods
-	m_botnames.reserve(256); // reserver space for 256 bot names, vector size will increase if needed
+	m_botnames.reserve(256); // reserve space for 256 bot names, vector size will increase if needed
 	m_nextbotname = 0U;
 }
 
