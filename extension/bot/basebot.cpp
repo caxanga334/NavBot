@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <ifaces_extern.h>
 #include <extplayer.h>
+#include <util/entprops.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
@@ -212,6 +213,61 @@ float CBaseBot::GetRangeToSqr(const Vector& pos) const
 float CBaseBot::GetRangetToSqr(edict_t* edict) const
 {
 	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).LengthSqr();
+}
+
+/**
+ * @brief Checks if the bot is able to break the given entity
+ * @param entity Entity the bot needs to break
+ * @return true if the bot can break this entity
+*/
+bool CBaseBot::IsAbleToBreak(edict_t* entity)
+{
+	int index = gamehelpers->IndexOfEdict(entity);
+
+	if (index == -1)
+	{
+		return false;
+	}
+
+	int takedamage = 0;
+
+	if (entprops->GetEntProp(index, Prop_Data, "m_takedamage", takedamage) == true)
+	{
+		switch (takedamage)
+		{
+		case DAMAGE_NO:
+		case DAMAGE_EVENTS_ONLY:
+		{
+			return false; // entity doesn't take damage
+		}
+		default:
+			break;
+		}
+	}
+
+	int health = 0;
+	constexpr auto MAX_HEALTH_TO_BREAK = 1000; // if the entity health is greater than this, don't bother trying to break it
+	
+	if (entprops->GetEntProp(index, Prop_Data, "m_iHealth", health) == true)
+	{
+		if (health > MAX_HEALTH_TO_BREAK)
+		{
+			return false; // don't bother
+		}
+	}
+
+	auto classname = gamehelpers->GetEntityClassname(entity);
+
+	if (std::strncmp(classname, "func_breakable", 14) == 0)
+	{
+		return true;
+	}
+	else if (std::strncmp(classname, "func_breakable_surf", 19) == 0)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void CBaseBot::RegisterInterface(IBotInterface* iface)

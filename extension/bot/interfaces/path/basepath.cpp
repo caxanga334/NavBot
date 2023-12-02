@@ -566,7 +566,7 @@ const CBasePathSegment* CPath::GetLastSegment() const
 	return m_segments[m_segments.size() - 1];
 }
 
-const CBasePathSegment* CPath::GetNextSegment(CBasePathSegment* current) const
+const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* current) const
 {
 	if (m_segments.size() == 0)
 	{
@@ -593,7 +593,7 @@ const CBasePathSegment* CPath::GetNextSegment(CBasePathSegment* current) const
 	return nullptr;
 }
 
-const CBasePathSegment* CPath::GetPriorSegment(CBasePathSegment* current) const
+const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* current) const
 {
 	if (m_segments.size() == 0)
 	{

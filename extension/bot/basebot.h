@@ -49,6 +49,8 @@ public:
 	virtual float GetRangeToSqr(const Vector& pos) const;
 	virtual float GetRangetToSqr(edict_t* edict) const;
 
+	virtual bool IsAbleToBreak(edict_t* entity);
+
 	IBotController* GetController() const { return m_controller; }
 
 	void RegisterInterface(IBotInterface* iface);

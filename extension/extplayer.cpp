@@ -124,6 +124,18 @@ int CBaseExtPlayer::GetCurrentTeamIndex() const
 	return m_playerinfo->GetTeamIndex();
 }
 
+MoveType_t CBaseExtPlayer::GetMoveType()
+{
+	int movetype = 0;
+	
+	if (entprops->GetEntProp(GetIndex(), Prop_Send, "movetype", movetype) == false)
+	{
+		return MOVETYPE_WALK; // if lookup fails, default to walk
+	}
+
+	return static_cast<MoveType_t>(movetype);
+}
+
 #ifdef SMNAV_DEBUG
 CON_COMMAND_F(smnav_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {

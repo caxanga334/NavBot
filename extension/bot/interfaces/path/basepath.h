@@ -126,7 +126,16 @@ public:
 	CPath();
 	virtual ~CPath();
 
-	void Invalidate();
+	class PathCursor
+	{
+	public:
+		Vector position;
+		Vector forward;
+		float curvature;
+		CBasePathSegment* segment;
+	};
+
+	virtual void Invalidate();
 
 	virtual CBasePathSegment* CreateNewSegment() { return new CBasePathSegment; }
 
@@ -271,9 +280,11 @@ public:
 
 	virtual const CBasePathSegment* GetFirstSegment() const;
 	virtual const CBasePathSegment* GetLastSegment() const;
-	virtual const CBasePathSegment* GetNextSegment(CBasePathSegment* current) const;
-	virtual const CBasePathSegment* GetPriorSegment(CBasePathSegment* current) const;
+	virtual const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
+	virtual const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
 	virtual const CBasePathSegment* GetGoalSegment() const;
+
+	virtual const PathCursor& GetCursorData() const { return m_cursor; }
 
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
@@ -282,10 +293,13 @@ protected:
 	virtual bool ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
 	virtual void PostProcessPath();
+	
+	inline std::vector<CBasePathSegment*>& GetAllSegments() { return m_segments; }
 
 private:
 	std::vector<CBasePathSegment*> m_segments;
 	IntervalTimer m_ageTimer;
+	PathCursor m_cursor;
 };
 
 inline void CPath::Invalidate()

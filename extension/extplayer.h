@@ -52,6 +52,8 @@ public:
 	// Pointer to the extension bot class
 	inline virtual CBaseBot* MyBotPointer() { return nullptr; }
 
+	virtual MoveType_t GetMoveType();
+
 protected:
 
 private:

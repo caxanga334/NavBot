@@ -38,6 +38,8 @@ public:
 	// Max distance between a (horizontal) gap that the bot is able to jump
 	virtual float GetMaxGapJumpDistance() { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
 
+	inline virtual float GetTraversableSlopeLimit() { return 0.6f; }
+
 	// Bot collision hull width
 	virtual float GetHullWidth();
 	// Bot collision hull heigh
@@ -58,8 +60,14 @@ public:
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return 500.0f; }
-
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
+	virtual bool IsOnLadder();
+	virtual bool IsGap(const Vector& pos, const Vector& forward);
+	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float &fraction, const bool now = true);
+	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
+	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float& fraction);
+
+	virtual bool IsEntityTraversable(edict_t* entity, const bool now = true);
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
