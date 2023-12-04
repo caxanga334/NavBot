@@ -6,7 +6,6 @@
 #include <navmesh/nav_ladder.h>
 #include <manager.h>
 #include <mods/basemod.h>
-#include <util/UtilTrace.h>
 #include <util/EntityUtils.h>
 #include <util/entprops.h>
 #include "movement.h"
@@ -16,19 +15,6 @@ extern CExtManager* extmanager;
 constexpr auto DEFAULT_PLAYER_STANDING_HEIGHT = 72.0f;
 constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
 constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
-
-class CMovementTraverseFilter : public CTraceFilterSimple
-{
-public:
-	CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now = true);
-
-	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
-
-private:
-	CBaseBot* m_me;
-	IMovement* m_mover;
-	bool m_now;
-};
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
 	CTraceFilterSimple(bot->GetEdict()->GetIServerEntity(), COLLISION_GROUP_PLAYER_MOVEMENT)
@@ -55,10 +41,38 @@ bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int 
 	return false;
 }
 
+CTraceFilterOnlyActors::CTraceFilterOnlyActors(const IHandleEntity* handleentity) :
+	CTraceFilterSimple(handleentity, COLLISION_GROUP_NONE, nullptr)
+{
+}
+
+bool CTraceFilterOnlyActors::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+{
+	if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+	{
+		edict_t* entity = entityFromEntityHandle(pHandleEntity);
+		int index = gamehelpers->IndexOfEdict(entity);
+
+		if (UtilHelpers::IsPlayerIndex(index))
+		{
+			return true; // hit players
+		}
+	}
+
+	return false;
+}
+
 IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 {
-	m_ladder = nullptr;
 	m_internal_jumptimer = -1;
+	m_jumptimer.Invalidate();
+	m_ladder = nullptr;
+	m_ladderExit = nullptr;
+	m_ladderState = NOT_USING_LADDER;
+	m_landingGoal = vec3_origin;
+	m_isClimbingObstacle = false;
+	m_isJumpingAcrossGap = false;
+	m_isAirborne = false;
 }
 
 IMovement::~IMovement()
@@ -70,11 +84,49 @@ void IMovement::Reset()
 	m_internal_jumptimer = -1;
 	m_jumptimer.Invalidate();
 	m_ladder = nullptr;
-	m_state = STATE_NONE;
+	m_ladderExit = nullptr;
+	m_ladderState = NOT_USING_LADDER;
+	m_landingGoal = vec3_origin;
+	m_isClimbingObstacle = false;
+	m_isJumpingAcrossGap = false;
+	m_isAirborne = false;
 }
 
 void IMovement::Update()
 {
+	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
+	{
+		Vector toLanding = m_landingGoal - GetBot()->GetAbsOrigin();
+		toLanding.z = 0.0f;
+		toLanding.NormalizeInPlace();
+
+		if (m_isAirborne)
+		{
+			GetBot()->GetControlInterface()->AimAt(GetBot()->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
+
+			if (IsOnGround())
+			{
+				// jump complete
+				m_isJumpingAcrossGap = false;
+				m_isClimbingObstacle = false;
+				m_isAirborne = false;
+			}
+		}
+		else // not airborne, jump!
+		{
+			if (!IsClimbingOrJumping())
+			{
+				Jump();
+			}
+
+			if (!IsOnGround())
+			{
+				m_isAirborne = true;
+			}
+		}
+
+		MoveTowards(m_landingGoal);
+	}
 }
 
 void IMovement::Frame()
@@ -159,11 +211,37 @@ void IMovement::MoveTowards(const Vector& pos)
 
 }
 
-void IMovement::ClimbLadder(CNavLadder* ladder)
+// makes the bot stop moving
+void IMovement::Stop()
 {
+	auto input = GetBot()->GetControlInterface();
+	input->ReleaseForwardButton();
+	input->ReleaseBackwardsButton();
+	input->ReleaseMoveLeftButton();
+	input->ReleaseMoveRightButton();
+}
+
+void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
+{
+	m_ladderState = LadderState::APPROACHING_LADDER_UP;
+	m_ladder = ladder;
+	m_ladderExit = dismount;
+}
+
+void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
+{
+	m_ladderState = LadderState::APPROACHING_LADDER_DOWN;
+	m_ladder = ladder;
+	m_ladderExit = dismount;
 }
 
 void IMovement::Jump()
+{
+	GetBot()->GetControlInterface()->PressJumpButton();
+	m_jumptimer.Start(0.8f);
+}
+
+void IMovement::CrouchJump()
 {
 	// Execute a crouch jump
 	// See shounic's video https://www.youtube.com/watch?v=7z_p_RqLhkA
@@ -174,6 +252,63 @@ void IMovement::Jump()
 	// This is a tick timer, the bot will jump when it reaches 0
 	m_internal_jumptimer = 5; // jump after 5 ticks
 	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
+}
+
+/**
+ * @brief Makes the bot jump over a hole on the ground
+ * @param landing jump landing target
+ * @param forward jump unit vector
+*/
+void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
+{
+	Jump();
+
+	// look towards the jump target
+	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
+
+	m_isJumpingAcrossGap = true;
+	m_landingGoal = landing;
+	m_isAirborne = false;
+}
+
+bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
+{
+	Jump();
+
+	m_isClimbingObstacle = true;
+	m_landingGoal = landingGoal;
+	m_isAirborne = false;
+
+	return true;
+}
+
+bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity)
+{
+	if (entity == nullptr)
+	{
+		return false;
+	}
+
+	if (FClassnameIs(entity, "func_door*") == true || FClassnameIs(entity, "prop_door*") == true)
+	{
+		return false; // never climb doors
+	}
+
+	return true;
+}
+
+bool IMovement::IsAscendingOrDescendingLadder()
+{
+	switch (m_ladderState)
+	{
+	case IMovement::EXITING_LADDER_UP:
+	case IMovement::USING_LADDER_UP:
+	case IMovement::EXITING_LADDER_DOWN:
+	case IMovement::USING_LADDER_DOWN:
+		return true;
+	default:
+		return false;
+	}
 }
 
 bool IMovement::IsOnLadder()
@@ -316,4 +451,91 @@ bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
 
 	return GetBot()->IsAbleToBreak(entity);
 }
+
+bool IMovement::IsOnGround()
+{
+	return GetBot()->GetGroundEntity() != nullptr;
+}
+
+/**
+ * @brief Checks if a request for movement has been made recently
+ * @param time Max time in seconds to consider a movement request
+ * @return true if a request was made, false otherwise
+*/
+bool IMovement::IsAttemptingToMove(const float time) const
+{
+	return m_stuck.movementrequesttimer.HasStarted() && m_stuck.movementrequesttimer.IsLessThen(time);
+}
+
+float IMovement::GetStuckDuration()
+{
+	if (m_stuck.isstuck)
+	{
+		return m_stuck.stucktimer.GetElapsedTime();
+	}
+
+	return 0.0f;
+}
+
+void IMovement::ClearStuckStatus()
+{
+	m_stuck.ClearStuck(GetBot()->GetAbsOrigin());
+}
+
+void IMovement::StuckMonitor()
+{
+	auto bot = GetBot();
+	auto origin = bot->GetAbsOrigin();
+	constexpr auto STUCK_RADIUS = 100.0f; // distance the bot has to move to consider not stuck
+
+	// bot hasn't moved in a while. A bot can't be stuck if it doesn't want to move
+	if (m_stuck.IsIdle())
+	{
+		m_stuck.UpdateNotStuck(origin);
+		return;
+	}
+
+	if (m_stuck.isstuck)
+	{
+		// bot is stuck
+		if (bot->IsRangeGreaterThan(m_stuck.GetStuckPos(), STUCK_RADIUS))
+		{
+			ClearStuckStatus();
+			bot->OnUnstuck();
+		}
+		else
+		{
+			if (m_stuck.stuckrechecktimer.IsElapsed())
+			{
+				m_stuck.stuckrechecktimer.Start(1.0f);
+
+				// resend stuck event
+				bot->OnStuck();
+			}
+		}
+	}
+	else // bot is NOT stuck
+	{
+		if (bot->IsRangeGreaterThan(m_stuck.GetStuckPos(), STUCK_RADIUS))
+		{
+			// bot moved, update position
+			m_stuck.UpdateNotStuck(origin);
+		}
+		else
+		{
+			float minspeed = 0.1f * GetMovementSpeed() * 0.1f;
+			float mintimeforstuck = STUCK_RADIUS / minspeed;
+
+			if (m_stuck.stucktimer.IsGreaterThen(mintimeforstuck))
+			{
+				// bot is taking too long to move, consider it stuck
+				m_stuck.Stuck(bot);
+				bot->OnStuck();
+			}
+		}
+	}
+
+
+}
+
 

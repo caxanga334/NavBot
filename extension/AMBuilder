@@ -13,6 +13,8 @@ sourceFiles = [
   'sdkports/sdk_timers.cpp',
   'sdkports/debugoverlay_shared.cpp',
   'sdkports/studio.cpp',
+  'sdkports/gametrace_server.cpp',
+  'entities/baseentity.cpp',
   'mods/basemod.cpp',
   'mods/basemod_gameevents.cpp',
   'navmesh/nav_area.cpp',

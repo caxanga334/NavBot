@@ -29,9 +29,22 @@ public:
 	inline virtual void SetSkipAheadDistance(const float distance) { m_skipAheadDistance = distance; }
 	inline virtual const float GetSkipAheadDistance() { return m_skipAheadDistance; }
 
+
+
+protected:
+	// true while the bot is using ladders
+	virtual bool LadderUpdate(CBaseBot* bot);
+	virtual bool Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
+	virtual bool JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
+	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
+	virtual edict_t* FindBlocker(CBaseBot* bot);
+
 private:
 	const CBasePathSegment* m_goal; // the segment the bot is currently trying to reach
 	CountdownTimer m_waitTimer; // timer for the bot to wait for stuff (lifts, doors, obstacles, ...)
+	CountdownTimer m_avoidTimer; // timer for collision avoidance
+	CBaseHandle m_blocker; // Entity blocking my path
+	bool m_didAvoidCheck;
 	float m_goalTolerance;
 	float m_skipAheadDistance;
 };

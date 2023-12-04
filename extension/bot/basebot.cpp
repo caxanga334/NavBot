@@ -215,6 +215,30 @@ float CBaseBot::GetRangetToSqr(edict_t* edict) const
 	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).LengthSqr();
 }
 
+bool CBaseBot::IsRangeGreaterThan(const Vector& pos, const float range) const
+{
+	Vector to = (pos - GetAbsOrigin());
+	return to.Length() > range;
+}
+
+bool CBaseBot::IsRangeGreaterThan(edict_t* edict, const float range) const
+{
+	Vector to = (edict->GetCollideable()->GetCollisionOrigin() - GetAbsOrigin());
+	return to.Length() > range;
+}
+
+bool CBaseBot::IsRangeLessThan(const Vector& pos, const float range) const
+{
+	Vector to = (pos - GetAbsOrigin());
+	return to.Length() < range;
+}
+
+bool CBaseBot::IsRangeLessThan(edict_t* edict, const float range) const
+{
+	Vector to = (edict->GetCollideable()->GetCollisionOrigin() - GetAbsOrigin());
+	return to.Length() < range;
+}
+
 /**
  * @brief Checks if the bot is able to break the given entity
  * @param entity Entity the bot needs to break
@@ -398,4 +422,26 @@ void CBaseBot::Spawn()
 
 void CBaseBot::FirstSpawn()
 {
+}
+
+/**
+ * @brief Selects weapon by using the IBotController::SetActiveWeapon function.
+ * This will call BCC's Weapon_Create, make sure the bot actually owns the weapon you want or the bot will magically get one.
+ * @param szclassname Weapon classname to select
+*/
+void CBaseBot::SelectWeaponByClassname(const char* szclassname)
+{
+	m_controller->SetActiveWeapon(szclassname);
+}
+
+/**
+ * @brief Safe version of 'CBaseBot::SelectWeaponByClassname'. Adds an addition check to see if the bot actually owns the weapon
+ * @param szclassname Weapon classname to select
+*/
+void CBaseBot::SafeWeaponSelectByClassname(const char* szclassname)
+{
+	if (Weapon_OwnsThisType(szclassname))
+	{
+		m_controller->SetActiveWeapon(szclassname);
+	}
 }

@@ -19,14 +19,14 @@ public:
 	// Priority for look calls
 	enum LookPriority
 	{
-		LOOK_NONE = 0, // Not looking at anything
+		LOOK_NONE = 0, // Look with the lowest priority
 		LOOK_AMBIENT, // Looking at the ambient
 		LOOK_INTERESTING, // Something interesting
 		LOOK_ALERT, // Something that alerts, gunfire, explosions
 		LOOK_DANGER, // Something dangerous
 		LOOK_OPERATE, // Operating a machine, buttons, levers, etc
 		LOOK_COMBAT, // Enemies
-		LOOK_MOVEMENT, // Movement that requires looking in a specific direction (ie: ladders)
+		LOOK_MOVEMENT, // Movement that requires looking in a specific direction (ie: ladders, jumps)
 		LOOK_CRITICAL, // Something of very high importance
 		LOOK_MANDATORY, // Nothing can interrupt this
 
@@ -47,6 +47,7 @@ public:
 	virtual void AimAt(const Vector& pos, const LookPriority priority, const float duration);
 	virtual void AimAt(edict_t* entity, const LookPriority priority, const float duration);
 	virtual void AimAt(const int entity, const LookPriority priority, const float duration);
+
 private:
 	LookPriority m_priority; // Current look priority
 	CountdownTimer m_looktimer; // Timer for the current look at task

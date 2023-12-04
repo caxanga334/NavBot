@@ -10,6 +10,7 @@
 
 // Forward declaration
 template <typename BotClass> class AITask;
+class CPath;
 
 // Types of results an AI Task can have
 enum TaskResultType
@@ -311,6 +312,11 @@ public:
 		PROPAGATE_DECISION_WITH_1ARG(ShouldFreeRoam, me);
 	}
 
+	virtual QueryAnswerType ShouldWaitForBlocker(const CBaseBot* me, edict_t* blocker) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldWaitForBlocker, me, blocker);
+	}
+
 	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override
 	{
 		CKnownEntity* result = nullptr;
@@ -476,6 +482,10 @@ public:
 	TaskEventResponseResult<BotClass> TryDone(EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
 
 	virtual TaskEventResponseResult<BotClass> OnTestEventPropagation(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnUnstuck(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnMoveToFailure(BotClass* bot, CPath* path, IEventListener::MovementFailureType reason) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnMoveToSuccess(BotClass* bot, CPath* path) { return TryContinue(); }
 
 	virtual AITask<BotClass>* InitialParallelTask() { return nullptr; }
 
@@ -770,6 +780,26 @@ private:
 	virtual void OnTestEventPropagation() override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnTestEventPropagation);
+	}
+
+	virtual void OnStuck() override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnStuck);
+	}
+
+	virtual void OnUnstuck() override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnUnstuck);
+	}
+
+	virtual void OnMoveToFailure(CPath* path, IEventListener::MovementFailureType reason) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnMoveToFailure, path, reason);
+	}
+
+	virtual void OnMoveToSuccess(CPath* path) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnMoveToSuccess, path);
 	}
 };
 

@@ -132,7 +132,17 @@ public:
 		Vector position;
 		Vector forward;
 		float curvature;
-		CBasePathSegment* segment;
+		const CBasePathSegment* segment; // segment before the cursor position
+		bool outdated; // true if the cursor was changed without updating
+
+		inline void Invalidate()
+		{
+			this->position = vec3_invalid;
+			this->forward = vec3_invalid;
+			this->curvature = 0.0f;
+			this->segment = nullptr;
+			this->outdated = true;
+		}
 	};
 
 	virtual void Invalidate();
@@ -284,7 +294,27 @@ public:
 	virtual const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
 	virtual const CBasePathSegment* GetGoalSegment() const;
 
-	virtual const PathCursor& GetCursorData() const { return m_cursor; }
+	enum SeekType
+	{
+		SEEK_ENTIRE_PATH = 0,
+		SEEK_AHEAD
+	};
+
+	virtual void MoveCursorToClosestPosition(const Vector& pos, SeekType type = SEEK_ENTIRE_PATH, float alongLimit = 0.0f);
+
+	virtual const PathCursor& GetCursorData();
+	virtual bool IsCursorOutdated() const { return m_cursor.outdated; }
+
+	enum MoveCursorType
+	{
+		PATH_ABSOLUTE_DISTANCE = 0,
+		PATH_RELATIVE_DISTANCE
+	};
+
+	virtual void MoveCursorToStart(void);
+	virtual void MoveCursorToEnd(void);
+	virtual void MoveCursor(float value, MoveCursorType type = PATH_ABSOLUTE_DISTANCE);
+	virtual float GetCursorPosition(void) const;
 
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
@@ -300,6 +330,7 @@ private:
 	std::vector<CBasePathSegment*> m_segments;
 	IntervalTimer m_ageTimer;
 	PathCursor m_cursor;
+	float m_cursorPos;
 };
 
 inline void CPath::Invalidate()
@@ -311,6 +342,48 @@ inline void CPath::Invalidate()
 
 	m_segments.clear();
 	m_ageTimer.Invalidate();
+	m_cursorPos = 0.0f;
+	m_cursor.Invalidate();
+}
+
+inline void CPath::MoveCursorToStart(void)
+{
+	m_cursorPos = 0.0f;
+	m_cursor.outdated = true;
+}
+
+inline void CPath::MoveCursorToEnd(void)
+{
+	m_cursorPos = GetPathLength();
+	m_cursor.outdated = true;
+}
+
+inline void CPath::MoveCursor(float value, MoveCursorType type)
+{
+	if (type == PATH_ABSOLUTE_DISTANCE)
+	{
+		m_cursorPos = value;
+	}
+	else
+	{
+		m_cursorPos += value;
+	}
+
+	if (m_cursorPos < 0.0f)
+	{
+		m_cursorPos = 0.0f;
+	}
+	else if (m_cursorPos > GetPathLength())
+	{
+		m_cursorPos = GetPathLength();
+	}
+
+	m_cursor.outdated = true;
+}
+
+inline float CPath::GetCursorPosition(void) const
+{
+	return m_cursorPos;
 }
 
 #endif // !SMNAV_BOT_BASE_PATH_H_

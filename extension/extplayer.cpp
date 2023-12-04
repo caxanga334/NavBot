@@ -136,6 +136,55 @@ MoveType_t CBaseExtPlayer::GetMoveType()
 	return static_cast<MoveType_t>(movetype);
 }
 
+edict_t* CBaseExtPlayer::GetGroundEntity()
+{
+	int groundent = -1;
+	edict_t* entity = nullptr;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hGroundEntity", groundent);
+
+	UtilHelpers::IndexToAThings(groundent, nullptr, &entity);
+
+	return entity;
+}
+
+/**
+ * @brief Given a weapon, return true if the player owns this weapon
+ * @param weapon Weapon classname
+ * @param result If found, the weapon edict will be stored here
+ * @return true if the player owns this weapon
+*/
+bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
+{
+	int weapon_entity = -1;
+	edict_t* entity = nullptr;
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", weapon_entity, i) == false)
+		{
+			return false; // lookup failed
+		}
+
+		entity = gamehelpers->EdictOfIndex(weapon_entity);
+
+		if (entity == nullptr)
+			continue;
+
+		const char* szclassname = gamehelpers->GetEntityClassname(entity);
+
+		if (std::strcmp(weapon, szclassname) == 0)
+		{
+			if (result)
+			{
+				*result = entity;
+			}
+
+			return true;
+		}
+	}
+
+	return false;
+}
+
 #ifdef SMNAV_DEBUG
 CON_COMMAND_F(smnav_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {

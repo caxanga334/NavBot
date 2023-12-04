@@ -9,6 +9,7 @@
 
 #include <utllinkedlist.h>
 
+class CBaseEntity;
 class IHandleEntity;
 class IPlayerInfo;
 class Vector;
@@ -51,6 +52,8 @@ bool IsEntityWalkable( edict_t *entity, unsigned int flags );
 bool isBreakable(edict_t* target);
 
 bool FClassnameIs(edict_t *pEntity, const char *szClassname);
+
+bool FClassnameIs(CBaseEntity* pEntity, const char* szClassname);
 
 IPlayerInfo *UTIL_GetListenServerHost( void );
 

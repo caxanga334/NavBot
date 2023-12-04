@@ -49,6 +49,11 @@ public:
 	virtual float GetRangeToSqr(const Vector& pos) const;
 	virtual float GetRangetToSqr(edict_t* edict) const;
 
+	virtual bool IsRangeGreaterThan(const Vector& pos, const float range) const;
+	virtual bool IsRangeGreaterThan(edict_t* edict, const float range) const;
+	virtual bool IsRangeLessThan(const Vector& pos, const float range) const;
+	virtual bool IsRangeLessThan(edict_t* edict, const float range) const;
+
 	virtual bool IsAbleToBreak(edict_t* entity);
 
 	IBotController* GetController() const { return m_controller; }
@@ -68,6 +73,16 @@ public:
 
 	virtual void Spawn();
 	virtual void FirstSpawn();
+	
+	/**
+	 * @brief Makes the bot switch weapons via user command.
+	 * Weapon switch will happen when the server receives the next user command.
+	 * Set to 0 to cancel a pending switch.
+	 * @param weapon_entity Entity index of the weapon the bot wants to switch to
+	*/
+	inline void SelectWeaponByUserCmd(int weapon_entity) { m_weaponselect = weapon_entity; }
+	void SelectWeaponByClassname(const char* szclassname);
+	virtual void SafeWeaponSelectByClassname(const char* szclassname);
 
 protected:
 	bool m_isfirstspawn;

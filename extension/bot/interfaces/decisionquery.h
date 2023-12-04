@@ -37,6 +37,14 @@ public:
 	virtual QueryAnswerType ShouldUse(const CBaseBot* me, edict_t* object);
 	// Should the bot ignore objetives and walk around the map
 	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me);
+	/**
+	 * @brief Should the bot wait for the entity blocking it's path?
+	 * @param me Bot
+	 * @param blocker Entity blocking the bot path. Can be NULL.
+	 * If 'blocker' is NULL, then it wants to known if the bot should wait for any kind of entity
+	 * @return Query answer result
+	*/
+	virtual QueryAnswerType ShouldWaitForBlocker(const CBaseBot* me, edict_t* blocker);
 	// Given two known entities, select which one the bot should target first
 	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2);
 	// Given a entity, returns a vector of where the bot should aim at. The player parameter may be NULL.
@@ -71,6 +79,11 @@ inline QueryAnswerType IDecisionQuery::ShouldUse(const CBaseBot* me, edict_t* ob
 }
 
 inline QueryAnswerType IDecisionQuery::ShouldFreeRoam(const CBaseBot* me)
+{
+	return ANSWER_UNDEFINED;
+}
+
+inline QueryAnswerType IDecisionQuery::ShouldWaitForBlocker(const CBaseBot* me, edict_t* blocker)
 {
 	return ANSWER_UNDEFINED;
 }

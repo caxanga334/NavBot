@@ -10,6 +10,7 @@
 #include <eiface.h>
 #include <server_class.h>
 #include <const.h>
+#include "baseentity.h"
 
 bool BaseEntity::isDestroyedOrUsed() const {
 	return (get<int>("m_fEffects", EF_NODRAW) & EF_NODRAW) > 0;

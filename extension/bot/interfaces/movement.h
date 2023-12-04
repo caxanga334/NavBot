@@ -3,8 +3,37 @@
 
 #include <bot/interfaces/base_interface.h>
 #include <sdkports/sdk_timers.h>
+#include <util/UtilTrace.h>
 
 class CNavLadder;
+class CNavArea;
+class IMovement;
+
+class CMovementTraverseFilter : public CTraceFilterSimple
+{
+public:
+	CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now = true);
+
+	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+
+private:
+	CBaseBot* m_me;
+	IMovement* m_mover;
+	bool m_now;
+};
+
+class CTraceFilterOnlyActors : public CTraceFilterSimple
+{
+public:
+	CTraceFilterOnlyActors(const IHandleEntity* handleentity);
+
+	virtual TraceType_t	GetTraceType() const override
+	{
+		return TRACE_ENTITIES_ONLY;
+	}
+
+	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+};
 
 // Interface responsible for managing the bot's momvement and sending proper inputs to IPlayerController
 class IMovement : public IBotInterface
@@ -13,15 +42,63 @@ public:
 	IMovement(CBaseBot* bot);
 	virtual ~IMovement();
 
-	
-	enum State // Internal state of the movement interface
+	class StuckStatus
 	{
-		STATE_NONE = 0, // No special movement states
-		STATE_CLIMBING, // Climbing something
-		STATE_JUMPING_OVER_GAP, // Jumping over a gap
-		// TO-DO: ladder states
+	public:
+		bool isstuck; // is the bot stuck
+		IntervalTimer stucktimer; // how long the bot has been stuck
+		CountdownTimer stuckrechecktimer; // for delays between stuck events
+		Vector stuckpos; // position where the bot got stuck
+		IntervalTimer movementrequesttimer; // Time since last request to move the bot
 
-		MAX_INTERNAL_STATES
+		inline void ClearStuck(const Vector& pos)
+		{
+			this->isstuck = false;
+			this->stucktimer.Invalidate();
+			this->stuckrechecktimer.Invalidate();
+			this->movementrequesttimer.Invalidate();
+			this->stuckpos = pos;
+		}
+
+		inline void Stuck(CBaseBot* bot)
+		{
+			this->isstuck = true;
+			this->stucktimer.Start();
+			this->stuckrechecktimer.Start(1.0f);
+		}
+
+		inline void UpdateNotStuck(const Vector& pos)
+		{
+			this->isstuck = false;
+			this->stucktimer.Start();
+			this->stuckrechecktimer.Start(1.0f);
+			this->stuckpos = pos;
+		}
+
+		inline bool IsIdle() const
+		{
+			constexpr auto IDLE_TIME = 0.25f;
+			return this->movementrequesttimer.IsGreaterThen(IDLE_TIME);
+		}
+
+		inline const Vector& GetStuckPos() const
+		{
+			return this->stuckpos;
+		}
+	};
+	
+	// Ladder usage state
+	enum LadderState
+	{
+		NOT_USING_LADDER = 0, // not using a ladder
+		APPROACHING_LADDER_UP, // moving towards a ladder the bot needs to go up
+		EXITING_LADDER_UP, // exiting/dismouting a ladder the bot needs to go up
+		USING_LADDER_UP, // moving up on a ladder
+		APPROACHING_LADDER_DOWN, // moving towards a ladder the bot needs to go down
+		EXITING_LADDER_DOWN, // exiting/dismouting a ladder the bot needs to go down
+		USING_LADDER_DOWN, // moving down on a ladder
+
+		MAX_LADDER_STATES
 	};
 
 	// Reset the interface to it's initial state
@@ -51,17 +128,29 @@ public:
 
 	// Makes the bot walk/run towards the given position
 	virtual void MoveTowards(const Vector& pos);
+	virtual void Stop();
 	// Makes the bot climb the given ladder
-	virtual void ClimbLadder(CNavLadder* ladder);
+	virtual void ClimbLadder(const CNavLadder* ladder, CNavArea* dismount);
+	// Makes the bot go down a ladder
+	virtual void DescendLadder(const CNavLadder* ladder, CNavArea* dismount);
 	// Makes the bot perform a simple jump
 	virtual void Jump();
+	// Makes the bot perform a crouch jump
+	virtual void CrouchJump();
+	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward);
+	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
 
-	// TO-DO: Climb over obstacles, jump over gap
+	virtual bool IsAbleToClimb() { return true; }
+	virtual bool IsAbleToJumpAcrossGap() { return true; }
+	virtual bool IsAbleToClimbOntoEntity(edict_t* entity);
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return 500.0f; }
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
-	virtual bool IsOnLadder();
+	virtual bool IsClimbingOrJumping();
+	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
+	virtual bool IsAscendingOrDescendingLadder();
+	virtual bool IsOnLadder(); // true if the bot is on a ladder right now
 	virtual bool IsGap(const Vector& pos, const Vector& forward);
 	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float &fraction, const bool now = true);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
@@ -69,14 +158,48 @@ public:
 
 	virtual bool IsEntityTraversable(edict_t* entity, const bool now = true);
 
+	virtual bool IsOnGround();
+
+	virtual bool IsAttemptingToMove(const float time = 0.25f) const;
+
+	virtual bool IsStuck() { return m_stuck.isstuck; }
+	virtual float GetStuckDuration();
+	virtual void ClearStuckStatus();
+
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
-	CNavLadder* m_ladder; // Ladder the bot is trying to climb
-	State m_state;
+	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
+	CNavArea* m_ladderExit; // Nav area after the ladder
+	CountdownTimer m_ladderTimer; // Max time to use a ladder
+	Vector m_landingGoal; // jump landing goal position
+	LadderState m_ladderState; // ladder operation state
+	bool m_isJumpingAcrossGap;
+	bool m_isClimbingObstacle;
+	bool m_isAirborne;
+
+	// stuck monitoring
+	StuckStatus m_stuck;
+
+	virtual void StuckMonitor();
 
 private:
 	int m_internal_jumptimer; // Tick based jump timer
 };
+
+inline bool IMovement::IsClimbingOrJumping()
+{
+	if (!m_jumptimer.IsElapsed())
+	{
+		return true;
+	}
+
+	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 #endif // !SMNAV_BOT_MOVEMENT_INTERFACE_H_
 

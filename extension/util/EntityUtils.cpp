@@ -6,6 +6,8 @@
 
 #include <string>
 
+#include <extension.h>
+
 #include "EntityUtils.h"
 
 #include "BasePlayer.h"
@@ -241,6 +243,18 @@ edict_t * findNearestEntity(const CUtlLinkedList<edict_t*>& ent,
 
 bool FClassnameIs(edict_t* pEntity, const char* szClassname) {
 	auto classname = pEntity->GetClassName();
+
+	if (Q_strcmp(classname, szClassname) == 0) { return true; }
+
+	std::string s1(classname);
+	std::string s2(szClassname);
+
+	return StringMatchesPattern(s1, s2, 0);
+}
+
+bool FClassnameIs(CBaseEntity* pEntity, const char* szClassname)
+{
+	auto classname = gamehelpers->GetEntityClassname(pEntity);
 
 	if (Q_strcmp(classname, szClassname) == 0) { return true; }
 

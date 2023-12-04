@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <extension.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
@@ -7,6 +9,9 @@
 #include <sdkports/debugoverlay_shared.h>
 
 #include "basepath.h"
+
+#undef min
+#undef max
 
 extern CExtManager* extmanager;
 
@@ -117,14 +122,181 @@ void CPath::DrawFullPath(const float duration)
 // Gets the total length of the current path.
 float CPath::GetPathLength() const
 {
-	float length = 0.0f;
-
-	for (auto segment : m_segments)
+	if (m_segments.size() == 0)
 	{
-		length += segment->length;
+		return 0.0f;
 	}
 
-	return length;
+	return m_segments[m_segments.size() - 1]->distance;
+}
+
+void CPath::MoveCursorToClosestPosition(const Vector& pos, SeekType type, float alongLimit)
+{
+	if (!IsValid())
+	{
+		return;
+	}
+
+	if (type == SEEK_ENTIRE_PATH || type == SEEK_AHEAD)
+	{
+		const CBasePathSegment* segment;
+
+		if (type == SEEK_AHEAD)
+		{
+			// continue search from existing data
+			if (m_cursor.segment != nullptr)
+			{
+				segment = m_cursor.segment;
+			}
+			else
+			{
+				// get start instead
+				segment = GetFirstSegment();
+			}
+		}
+		else
+		{
+			// search entire path from the start
+			segment = GetFirstSegment();
+		}
+
+		m_cursor.position = pos;
+		m_cursor.segment = segment;
+		float closeRangeSq = std::numeric_limits<float>::max();
+
+		float distanceSoFar = 0.0f;
+		while (alongLimit == 0.0f || distanceSoFar <= alongLimit)
+		{
+			auto next = GetNextSegment(segment);
+
+			if (next != nullptr)
+			{
+				Vector close;
+				CalcClosestPointOnLineSegment(pos, segment->goal, next->goal, close);
+
+				float rangeSq = (close - pos).LengthSqr();
+				if (rangeSq < closeRangeSq)
+				{
+					m_cursor.position = close;
+					m_cursor.segment = segment;
+
+					closeRangeSq = rangeSq;
+				}
+			}
+			else
+			{
+				break;
+			}
+
+			distanceSoFar += segment->length;
+			segment = next;
+		}
+
+		segment = m_cursor.segment;
+
+		float t = (m_cursor.position - segment->goal).Length() / segment->length;
+
+		m_cursorPos = segment->distance + t * segment->length;
+		m_cursor.outdated = true;
+	}
+}
+
+const CPath::PathCursor& CPath::GetCursorData()
+{
+	if (IsValid())
+	{
+		if (m_cursor.outdated == true)
+		{
+			constexpr auto error = 0.0001f;
+
+			if (m_cursorPos < error || m_segments.size() < 2)
+			{
+				// path start
+				auto seg = m_segments[0];
+				m_cursor.position = seg->goal;
+				m_cursor.forward = seg->forward;
+				m_cursor.curvature = seg->curvature;
+				m_cursor.segment = seg;
+			}
+			else if (m_cursorPos > GetPathLength() + error)
+			{
+				// path end
+				auto seg = m_segments[m_segments.size() - 1];
+				m_cursor.position = seg->goal;
+				m_cursor.forward = seg->forward;
+				m_cursor.curvature = seg->curvature;
+				m_cursor.segment = seg;
+			}
+			else
+			{
+				// find segment along the path
+				float lengthSoFar = 0.0f;
+				auto current = GetFirstSegment();
+				auto next = GetNextSegment(current);
+
+				while (next != nullptr)
+				{
+					float length = current->length;
+
+					if (lengthSoFar + length > m_cursorPos)
+					{
+						float overlap = m_cursorPos - lengthSoFar;
+						float t = 0.0f;
+
+						if (length > 0.0f)
+						{
+							t = overlap / length;
+						}
+
+						// apply interpolation
+						m_cursor.position = current->goal + t * (next->goal - current->goal);
+						m_cursor.forward = current->forward + t * (next->forward - current->forward);
+						m_cursor.segment = current;
+
+						constexpr float INFLUENCE_RADIUS = 100.0f;
+
+						if (overlap < INFLUENCE_RADIUS)
+						{
+							if (length - overlap < INFLUENCE_RADIUS)
+							{
+								// near both start and end, needs interpolation
+								float startCurvature = current->curvature * (1.0f - (overlap / INFLUENCE_RADIUS));
+								float endCurvature = next->curvature * (1.0f - ((length - overlap) / INFLUENCE_RADIUS));
+
+								m_cursor.curvature = (startCurvature + endCurvature) / 2.0f;
+							}
+							else
+							{
+								// near start
+								m_cursor.curvature = current->curvature * (1.0f - (overlap / INFLUENCE_RADIUS));
+							}
+						}
+						else if (length - overlap < INFLUENCE_RADIUS)
+						{
+							// near end
+							m_cursor.curvature = next->curvature * (1.0f - ((length - overlap) / INFLUENCE_RADIUS));
+						}
+
+						break;
+					}
+
+					lengthSoFar += length;
+
+					current = next;
+					next = GetNextSegment(next);
+				}
+			}
+
+			// cursor updated
+			m_cursor.outdated = false;
+		}
+	}
+	else // invalid path
+	{
+		m_cursor.Invalidate();
+	}
+
+	return m_cursor;
 }
 
 /**

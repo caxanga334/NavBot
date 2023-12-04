@@ -53,6 +53,8 @@ public:
 	inline virtual CBaseBot* MyBotPointer() { return nullptr; }
 
 	virtual MoveType_t GetMoveType();
+	virtual edict_t* GetGroundEntity();
+	virtual bool Weapon_OwnsThisType(const char* weapon, edict_t** result = nullptr);
 
 protected:
 
