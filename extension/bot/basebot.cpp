@@ -6,6 +6,7 @@
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
 #include <bot/interfaces/tasks.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include <mods/basemod.h>
 #include "basebot.h"
 
@@ -19,22 +20,69 @@ public:
 	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
 };
 
+class CBaseBotPathTestTask : public AITask<CBaseBot>
+{
+public:
+	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	virtual TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
+
+private:
+	CMeshNavigator m_nav;
+	Vector m_goal;
+};
+
 TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
 {
-	rootconsole->ConsolePrint("AI Task -- Update");
+	// rootconsole->ConsolePrint("AI Task -- Update");
 	return Continue();
 }
 
 TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnTestEventPropagation(CBaseBot* bot)
 {
 	rootconsole->ConsolePrint("AI Event -- OnTestEventPropagation");
-	return TryContinue();
+	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH);
 }
 
 QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(const CBaseBot* me)
 {
 	rootconsole->ConsolePrint("AI Query -- ShouldFreeRoam");
 	return ANSWER_YES;
+}
+
+TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1); // get listen server host
+	CBaseExtPlayer player(host);
+	ShortestPathCost cost;
+
+	m_goal = player.GetAbsOrigin();
+
+	bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
+
+	if (result == false)
+	{
+		rootconsole->ConsolePrint("CBaseBotPathTestTask::OnTaskStart path failed!");
+		return Done("Failed to find a path!");
+	}
+
+	return Continue();
+}
+
+TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
+{
+	if (m_nav.IsValid() == false)
+	{
+		return Done("My Path is invalid!");
+	}
+
+	m_nav.Update(bot);
+	return Continue();
+}
+
+TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnMoveToSuccess(CBaseBot* bot, CPath* path)
+{
+	return TryDone(PRIORITY_HIGH);
 }
 
 class CBaseBotBehavior : public IBehavior

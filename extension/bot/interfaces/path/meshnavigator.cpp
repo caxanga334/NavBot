@@ -67,6 +67,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // bot is using a ladder
 	}
 
+	if (CheckProgress(bot) == false)
+	{
+		return; // goal reached
+	}
+
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
 	auto mover = bot->GetMovementInterface();
@@ -176,6 +181,21 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	// move bot along path
 	mover->MoveTowards(goalPos);
+
+#ifdef SMNAV_DEBUG
+	auto start = GetGoalSegment();
+
+	if (start != nullptr)
+	{
+		start = GetPriorSegment(start);
+	}
+
+	if (start != nullptr)
+	{
+		Draw(start);
+	}
+#endif // SMNAV_DEBUG
+
 }
 
 bool CMeshNavigator::IsAtGoal(CBaseBot* bot)

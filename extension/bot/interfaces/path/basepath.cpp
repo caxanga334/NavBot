@@ -64,9 +64,37 @@ bool CPath::BuildTrivialPath(const Vector& start, const Vector& goal)
 	return true;
 }
 
+void CPath::Draw(const CBasePathSegment* start, const float duration)
+{
+	bool isstart = true;
+	Vector v1, v2;
+
+	constexpr float ARROW_WIDTH = 4.0f;
+
+	const CBasePathSegment* next = start;
+
+	while (next != nullptr)
+	{
+		if (isstart == true)
+		{
+			v1 = next->goal;
+			isstart = false;
+			next = GetNextSegment(next);
+			continue;
+		}
+
+		v2 = next->goal;
+
+		DrawSingleSegment(v1, v2, next->type, duration);
+
+		v1 = next->goal;
+
+		next = GetNextSegment(next);
+	}
+}
+
 void CPath::DrawFullPath(const float duration)
 {
-#ifdef SMNAV_DEBUG // only draw path when debug is enabled
 	bool isstart = true;
 	Vector v1, v2;
 
@@ -83,40 +111,10 @@ void CPath::DrawFullPath(const float duration)
 
 		v2 = segment->goal; // set second point before drawing
 
-		switch (segment->type)
-		{
-		case AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE:
-		{
-			NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 0, 0, 255, 255, true, duration);
-			break;
-		}
-		case AIPath::SegmentType::SEGMENT_CLIMB_UP:
-		{
-			NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 100, 255, true, duration);
-			break;
-		}
-		case AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP:
-		{
-			NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 0, 200, 255, 255, true, duration);
-			break;
-		}
-		case AIPath::SegmentType::SEGMENT_LADDER_UP:
-		case AIPath::SegmentType::SEGMENT_LADDER_DOWN:
-		{
-			NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 200, 255, 0, 255, true, duration);
-			break;
-		}
-		default:
-		{
-			NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 0, 255, 0, 255, true, duration);
-			break;
-		}
-		}
+		DrawSingleSegment(v1, v2, segment->type, duration);
 
 		v1 = segment->goal; // set v1 to the current segment position
 	}
-
-#endif // SMNAV_DEBUG // only draw path when debug is enabled
 }
 
 // Gets the total length of the current path.
@@ -696,6 +694,41 @@ void CPath::PostProcessPath()
 	seglast->curvature = 0.0f;
 
 	m_ageTimer.Start();
+}
+
+void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration)
+{
+	constexpr float ARROW_WIDTH = 4.0f;
+
+	switch (type)
+	{
+	case AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 0, 0, 255, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_CLIMB_UP:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 100, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP:
+	{
+		NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 0, 200, 255, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_LADDER_UP:
+	case AIPath::SegmentType::SEGMENT_LADDER_DOWN:
+	{
+		NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 200, 255, 0, 255, true, duration);
+		break;
+	}
+	default:
+	{
+		NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 0, 255, 0, 255, true, duration);
+		break;
+	}
+	}
 }
 
 const Vector& CPath::GetStartPosition() const

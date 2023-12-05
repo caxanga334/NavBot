@@ -273,7 +273,8 @@ public:
 
 	bool BuildTrivialPath(const Vector& start, const Vector& goal);
 
-	virtual void DrawFullPath(const float duration = 0.01f);
+	virtual void Draw(const CBasePathSegment* start, const float duration = 0.1f);
+	virtual void DrawFullPath(const float duration = 0.1f);
 	virtual float GetPathLength() const;
 
 	// How many seconds since this path was built
@@ -331,6 +332,8 @@ private:
 	IntervalTimer m_ageTimer;
 	PathCursor m_cursor;
 	float m_cursorPos;
+
+	void DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration);
 };
 
 inline void CPath::Invalidate()

@@ -28,8 +28,6 @@ public:
 	inline virtual void SetSkipAheadDistance(const float distance) { m_skipAheadDistance = distance; }
 	inline virtual const float GetSkipAheadDistance() { return m_skipAheadDistance; }
 
-
-
 protected:
 	// true while the bot is using ladders
 	virtual bool LadderUpdate(CBaseBot* bot);

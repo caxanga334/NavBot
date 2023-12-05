@@ -406,6 +406,15 @@ inline AITaskManager<BotClass>::~AITaskManager()
 template<typename BotClass>
 inline std::vector<IEventListener*>* AITaskManager<BotClass>::GetListenerVector()
 {
+	m_listeners.clear();
+	
+	if (m_task == nullptr)
+	{
+		return nullptr;
+	}
+
+	m_listeners.push_back(m_task); // always refresh before sending
+
 	return &m_listeners;
 }
 
@@ -765,7 +774,7 @@ private:
 		}
 		else // New result has lower priority than the current one, just discard it
 		{
-			m_pendingEventResult.DiscardResult();
+			result.DiscardResult();
 		}
 	}
 
@@ -913,7 +922,7 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 	case TASK_PAUSE:
 	{
 		AITask<BotClass>* topTask = this;
-		while (topTask != nullptr)
+		while (topTask->m_aboveTask != nullptr)
 		{
 			topTask = topTask->m_aboveTask;
 		}
@@ -1092,7 +1101,7 @@ inline AITask<BotClass>* AITask<BotClass>::ProcessTaskPause(BotClass* bot, AITas
 	bool shouldkeep = OnTaskPause(bot, task);
 
 	// If OnTaskPause returns false, destroy this task
-	if (shouldkeep == true)
+	if (shouldkeep == false)
 	{
 		// End me
 		ProcessTaskEnd(bot, manager, nullptr);
