@@ -91,6 +91,18 @@ void CBaseExtPlayer::EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) c
 	AngleVectors(eyeangles, pForward, pRight, pUp);
 }
 
+const Vector CBaseExtPlayer::GetAbsVelocity() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Data, "m_vecAbsVelocity", result) == false)
+	{
+		return vec3_origin;
+	}
+
+	return result;
+}
+
 Vector CBaseExtPlayer::BodyDirection3D() const
 {
 	auto angles = BodyAngles();

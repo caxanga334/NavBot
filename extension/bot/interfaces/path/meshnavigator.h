@@ -21,7 +21,6 @@ public:
 
 	virtual const CBasePathSegment* GetGoalSegment() const override { return m_goal; }
 
-	virtual bool IsAtGoal(CBaseBot* bot);
 	// Distance to consider the goal reached
 	inline virtual void SetGoalTolerance(const float tolerance) { m_goalTolerance = tolerance; }
 	inline virtual const float GetGoalTolerance() const { return m_goalTolerance; }
@@ -47,6 +46,10 @@ private:
 	bool m_didAvoidCheck;
 	float m_goalTolerance;
 	float m_skipAheadDistance;
+
+	bool IsAtGoal(CBaseBot* bot);
+	bool CheckProgress(CBaseBot* bot);
+	const CBasePathSegment* CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const;
 };
 
 #endif // !SMNAV_BOT_NAV_MESH_NAVIGATOR_H_

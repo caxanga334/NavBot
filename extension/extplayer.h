@@ -39,6 +39,7 @@ public:
 	const QAngle GetEyeAngles() const;
 	void EyeVectors(Vector* pForward) const;
 	void EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const;
+	const Vector GetAbsVelocity() const;
 	inline QAngle BodyAngles() const { return GetAbsAngles(); }
 	Vector BodyDirection3D() const;
 	Vector BodyDirection2D() const;

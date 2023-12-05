@@ -268,6 +268,104 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	return false;
 }
 
+/**
+ * @brief Checks if the bot has reached the current path goal. If yes, iterate to the next segment
+ * @return true if the bot still needs to move, false if the path goal was reached
+*/
+bool CMeshNavigator::CheckProgress(CBaseBot* bot)
+{
+	if (IsAtGoal(bot))
+	{
+		auto next = CheckSkipPath(bot, m_goal);
+		auto mover = bot->GetMovementInterface();
+
+		if (next == nullptr) // no segment to skip, move to next on the path
+		{
+			next = GetNextSegment(m_goal);
+		}
+
+		if (next == nullptr) // no next segment, only one segment remains on the path
+		{
+			if (mover->IsOnGround()) // must be on the ground to end the path
+			{
+				bot->OnMoveToSuccess(this); // Notify the path goal was reached
+
+				// The bot might calculate a new path as a result of the move to success event
+				// Only invalidate the current path if no new path was made
+				if (GetAge() > 0.0f)
+				{
+					Invalidate();
+				}
+
+				return false;
+			}
+		}
+		else // There are still some segments left to follow, move to the next
+		{
+			m_goal = next;
+		}
+	}
+
+	return true;
+}
+
+const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const
+{
+	auto mover = bot->GetMovementInterface();
+
+	const CBasePathSegment* skip = nullptr;
+
+	if (m_skipAheadDistance > 0.0f)
+	{
+		skip = from;
+		const Vector origin = bot->GetAbsOrigin();
+		const float squared_range = m_skipAheadDistance * m_skipAheadDistance;
+
+		while (skip != nullptr && skip->type == AIPath::SegmentType::SEGMENT_GROUND)
+		{
+			const float range = (skip->goal - origin).LengthSqr();
+
+			if (range < squared_range)
+			{
+				auto next = GetNextSegment(skip);
+
+				if (next == nullptr || next->type != AIPath::SegmentType::SEGMENT_GROUND)
+				{
+					break; // only skip ground segments
+				}
+
+				if (fabsf(skip->goal.z - origin.z) > mover->GetStepHeight())
+				{
+					break; // don't skip heights greater than the bot step height
+				}
+
+				float fraction;
+				if (mover->IsPotentiallyTraversable(origin, skip->goal, fraction, false) && mover->HasPotentialGap(origin, skip->goal, fraction) == false)
+				{
+					// only skip a segment if the bot is able to move directly to it from it's current position
+					// and there isn't any holes on the ground
+					skip = next;
+				}
+				else
+				{
+					break; // unreachable, just keep following the path
+				}
+			}
+			else
+			{
+				break; // max skip distance reached
+			}
+		}
+
+		if (skip == from) // no segment to skip, return NULL
+		{
+			return nullptr;
+		}
+	}
+
+	return skip;
+}
+
 bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
 {
 	auto mover = bot->GetMovementInterface();

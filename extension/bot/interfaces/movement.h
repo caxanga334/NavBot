@@ -85,6 +85,15 @@ public:
 		{
 			return this->stuckpos;
 		}
+
+		inline void Reset()
+		{
+			this->isstuck = false;
+			this->stucktimer.Invalidate();
+			this->stuckrechecktimer.Invalidate();
+			this->movementrequesttimer.Invalidate();
+			this->stuckpos = vec3_origin;
+		}
 	};
 	
 	// Ladder usage state
@@ -128,6 +137,12 @@ public:
 
 	// Makes the bot walk/run towards the given position
 	virtual void MoveTowards(const Vector& pos);
+	/**
+	 * @brief Makes the bot look at the given position (used for movement)
+	 * @param pos Position the bot will look at
+	 * @param important if true, send a high priority look request
+	*/
+	virtual void FaceTowards(const Vector& pos, const bool important = false);
 	virtual void Stop();
 	// Makes the bot climb the given ladder
 	virtual void ClimbLadder(const CNavLadder* ladder, CNavArea* dismount);
@@ -166,6 +181,11 @@ public:
 	virtual float GetStuckDuration();
 	virtual void ClearStuckStatus();
 
+	virtual float GetSpeed() const { return m_speed; }
+	virtual float GetGroundSpeed() const { return m_groundspeed; }
+	virtual const Vector& GetMotionVector() { return m_motionVector; }
+	virtual const Vector2D& GetGroundMotionVector() { return m_groundMotionVector; }
+
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
@@ -182,8 +202,21 @@ protected:
 
 	virtual void StuckMonitor();
 
+	virtual bool TraverseLadder();
+
 private:
+	float m_speed; // Bot current speed
+	float m_groundspeed; // Bot ground (2D) speed
+	Vector m_motionVector; // Unit vector of the bot current movement
+	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
 	int m_internal_jumptimer; // Tick based jump timer
+
+	LadderState ApproachUpLadder();
+	LadderState ApproachDownLadder();
+	LadderState UseLadderUp();
+	LadderState UseLadderDown();
+	LadderState DismountLadderTop();
+	LadderState DismountLadderBottom();
 };
 
 inline bool IMovement::IsClimbingOrJumping()
