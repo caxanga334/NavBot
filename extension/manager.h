@@ -6,7 +6,6 @@ class CBaseMod;
 class CBaseExtPlayer;
 class CBaseBot;
 
-
 // Primary Extension Manager
 class CExtManager
 {
@@ -37,13 +36,14 @@ public:
 	void AddBot();
 
 	// Gets a vector of all bots currently in game
-	const std::vector<CBaseBot*> &GetAllBots() const { return m_bots; }
+	const auto &GetAllBots() const { return m_bots; }
 
 	void LoadBotNames();
 
 private:
-	std::vector<CBaseBot*> m_bots; // Vector of bots
+	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
+	std::unique_ptr<CBaseMod> m_mod;
 	size_t m_nextbotname; // Index of the next bot name to use
 };
 

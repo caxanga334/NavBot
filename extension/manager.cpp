@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <string>
 #include <fstream>
+#include <memory>
 
 #include "extension.h"
 
@@ -33,9 +34,6 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #endif // SOURCE_ENGINE == SE_DODS
 
-
-CBaseMod* gamemod = nullptr;
-
 #ifdef SMNAV_FEAT_BOT
 extern IBotManager* botmanager;
 #endif // SMNAV_FEAT_BOT
@@ -49,18 +47,7 @@ CExtManager::CExtManager()
 
 CExtManager::~CExtManager()
 {
-	for (auto bot : m_bots)
-	{
-		delete bot;
-	}
-
 	m_bots.clear();
-
-	if (gamemod)
-	{
-		delete gamemod;
-		gamemod = nullptr;
-	}
 }
 
 void CExtManager::OnAllLoaded()
@@ -71,17 +58,18 @@ void CExtManager::OnAllLoaded()
 	LoadBotNames();
 #endif // SMNAV_FEAT_BOT
 
-	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, gamemod->GetModName());
+	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod.get()->GetModName());
 }
 
 void CExtManager::Frame()
 {
-	for (auto bot : m_bots)
+	for (auto& botptr : m_bots)
 	{
+		auto bot = botptr.get();
 		bot->PlayerThink();
 	}
 
-	gamemod->Frame();
+	m_mod.get()->Frame();
 }
 
 void CExtManager::OnClientPutInServer(int client)
@@ -111,25 +99,28 @@ void CExtManager::OnClientDisconnect(int client)
 {
 #ifdef SMNAV_FEAT_BOT
 
-	auto bot = GetBotByIndex(client);
+	bool isbot = GetBotByIndex(client) != nullptr;
 
-	if (bot != nullptr)
+	if (isbot == true)
 	{
-		auto start = m_bots.begin();
-		auto end = m_bots.end();
-		auto it = std::find(start, end, bot);
+		auto botit = m_bots.end();
 
-#ifdef SMNAV_DEBUG
-		if (it == end)
+		for (auto it = m_bots.begin(); it != m_bots.end(); it++)
 		{
-			// something went very wrong if the code enters here
-			// throw and crash
-			throw std::runtime_error("Got valid CBaseBot pointer but end iterator on CExtManager::OnClientDisconnect!");
-		}
-#endif // SMNAV_DEBUG
+			auto& botptr = *it;
+			auto bot = botptr.get();
 
-		delete bot; // Deallocate the bot
-		m_bots.erase(it); // Remove the bot from the vector
+			if (bot->GetIndex() == client)
+			{
+				botit = it;
+				break;
+			}
+		}
+
+		if (botit != m_bots.end())
+		{
+			m_bots.erase(botit);
+		}
 	}
 
 #endif // SMNAV_FEAT_BOT
@@ -137,20 +128,20 @@ void CExtManager::OnClientDisconnect(int client)
 
 void CExtManager::OnMapStart()
 {
-	gamemod->OnMapStart();
+	m_mod.get()->OnMapStart();
 
 #ifdef SMNAV_FEAT_BOT
 	if (m_botnames.size() != 0)
 	{
 		// get a new index on every map load
-		m_nextbotname = random::generate_random_uint(0, m_botnames.size() - 1);
+		m_nextbotname = librandom::generate_random_uint(0, m_botnames.size() - 1);
 	}
 #endif // SMNAV_FEAT_BOT
 }
 
 void CExtManager::OnMapEnd()
 {
-	gamemod->OnMapEnd();
+	m_mod.get()->OnMapEnd();
 }
 
 // Detect current mod and initializes it
@@ -159,31 +150,32 @@ void CExtManager::AllocateMod()
 	// Don't check game folder name unless the SDK supports multiple mods (SDK2013, EP2 (Orange box), EP1 (Original))
 
 #if SOURCE_ENGINE == SE_TF2
-	gamemod = new CTeamFortress2Mod;
+	m_mod = std::make_unique<CTeamFortress2Mod>();
 #elif SOURCE_ENGINE == SE_DODS
-	gamemod = new CDayOfDefeatSourceMod;
+	m_mod = std::make_unique<CDayOfDefeatSourceMod>();
 #else
-	gamemod = new CBaseMod;
+	m_mod = std::make_unique<CBaseMod>();
 #endif // SOURCE_ENGINE == SE_TF2
 }
 
 CBaseMod* CExtManager::GetMod()
 {
-	return gamemod;
+	return m_mod.get();
 }
 
 void CExtManager::NotifyRegisterGameEvents()
 {
-	gamemod->RegisterGameEvents();
+	m_mod.get()->RegisterGameEvents();
 }
 
 CBaseBot* CExtManager::GetBotByIndex(int index)
 {
-	for (auto bot : m_bots)
+	for (auto& botptr : m_bots)
 	{
+		auto bot = botptr.get();
 		if (bot->GetIndex() == index)
 		{
-			return bot;
+			return botptr.get();
 		}
 	}
 
@@ -198,7 +190,7 @@ void CExtManager::AddBot()
 	if (m_botnames.size() == 0)
 	{
 		char botname[30]{};
-		std::sprintf(botname, "SMNav Bot #%04d", random::generate_random_int(0, 9999));
+		std::sprintf(botname, "SMNav Bot #%04d", librandom::generate_random_int(0, 9999));
 		name = botname;
 	}
 	else
@@ -224,18 +216,18 @@ void CExtManager::AddBot()
 	}
 
 	// Create a new bot instance
-	CBaseBot* bot = gamemod->AllocateBot(edict);
-	m_bots.push_back(bot); // Add it to the bot list
+	auto mod = m_mod.get();
+	auto& botptr = m_bots.emplace_back(mod->AllocateBot(edict));
 
 #ifdef SMNAV_DEBUG
 	// the base bot doesn't allocate these on the constructor
 	// to allow debugging these interface, we have to call these functions at least once to create them
+	auto bot = botptr.get();
 	bot->GetControlInterface();
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();
 	bot->GetBehaviorInterface();
 #endif // SMNAV_DEBUG
-
 
 	rootconsole->ConsolePrint("Bot added to the game.");
 #endif // SMNAV_FEAT_BOT
@@ -360,13 +352,10 @@ CON_COMMAND(smnav_debug_event_propagation, "Event propagation test")
 	extern CExtManager* extmanager;
 	auto& bots = extmanager->GetAllBots();
 
-	for (auto bot : bots)
+	for (auto& botptr : bots)
 	{
+		auto bot = botptr.get();
 		bot->OnTestEventPropagation();
-	}
-
-	for (auto bot : bots)
-	{
 		bot->GetBehaviorInterface()->ShouldFreeRoam(bot);
 	}
 }
@@ -471,11 +460,11 @@ CON_COMMAND(smnav_debug_botpath, "Debug bot path")
 	rootconsole->ConsolePrint("Showing path from bot position to your position.");
 }
 
-CON_COMMAND(smnav_debug_rng, "Debug random number generator")
+CON_COMMAND(smnav_debug_rng, "Debug librandom number generator")
 {
 	for (int i = 0; i < 15; i++)
 	{
-		int n = random::generate_random_int(0, 100);
+		int n = librandom::generate_random_int(0, 100);
 		rootconsole->ConsolePrint("Random Number: %i", n);
 	}
 }

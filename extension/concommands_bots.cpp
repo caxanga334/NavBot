@@ -21,8 +21,9 @@ CON_COMMAND(smnav_debug_bot_look, "Debug the bot look functions.")
 	auto& bots = extmanager->GetAllBots();
 	auto edict = gamehelpers->EdictOfIndex(1); // get listen server host
 
-	for (auto bot : bots)
+	for (auto& botptr : bots)
 	{
+		auto bot = botptr.get();
 		bot->GetControlInterface()->AimAt(edict, IPlayerController::LOOK_CRITICAL, 10.0f);
 	}
 }

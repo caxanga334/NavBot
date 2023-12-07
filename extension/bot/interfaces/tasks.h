@@ -88,7 +88,7 @@ public:
 		case TASK_SWITCH:
 			return "SWITCH";
 		case TASK_DONE:
-			return "DONE"
+			return "DONE";
 		case TASK_MAINTAIN:
 			return "MAINTAIN";
 		case MAX_TASK_TYPES:

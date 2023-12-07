@@ -478,7 +478,7 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 
 	auto name = event->GetName();
 
-	if (std::strncmp(name, "round_start", 11) == 0 || std::strncmp(name, "dod_round_start", 15) == 0 || std::strncmp(name, "teamplay_round_start", 20) == 0)
+	if (strncmp(name, "round_start", 11) == 0 || strncmp(name, "dod_round_start", 15) == 0 || strncmp(name, "teamplay_round_start", 20) == 0)
 	{
 		OnRoundRestart();
 

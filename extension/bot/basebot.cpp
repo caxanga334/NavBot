@@ -16,6 +16,7 @@ class CBaseBotTestTask : public AITask<CBaseBot>
 {
 public:
 	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	virtual TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	virtual TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
 	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
 };
@@ -32,10 +33,24 @@ private:
 	Vector m_goal;
 };
 
+class CBaseBotSwitchTestTask : public AITask<CBaseBot>
+{
+public:
+	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+
+};
+
 TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
 {
 	// rootconsole->ConsolePrint("AI Task -- Update");
 	return Continue();
+}
+
+TaskResult<CBaseBot> CBaseBotTestTask::OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask)
+{
+	rootconsole->ConsolePrint("CBaseBotTestTask::OnTaskResume");
+	return SwitchTo(new CBaseBotSwitchTestTask, "Testing Task Switch!");
 }
 
 TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnTestEventPropagation(CBaseBot* bot)
@@ -82,7 +97,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 
 TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnMoveToSuccess(CBaseBot* bot, CPath* path)
 {
-	return TryDone(PRIORITY_HIGH);
+	return TryDone(PRIORITY_HIGH, "Returning to previous task!");
 }
 
 class CBaseBotBehavior : public IBehavior
@@ -101,6 +116,24 @@ private:
 	AITaskManager<CBaseBot>* m_manager;
 	std::vector<IEventListener*> m_listeners;
 };
+
+TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)
+{
+	rootconsole->ConsolePrint("CBaseBotSwitchTestTask::OnTaskStart");
+	
+	if (pastTask != nullptr)
+	{
+		rootconsole->ConsolePrint("%p", pastTask);
+	}
+
+	return Continue();
+}
+
+TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskUpdate(CBaseBot* bot)
+{
+	rootconsole->ConsolePrint("Hello from CBaseBotSwitchTestTask::OnTaskUpdate!");
+	return SwitchTo(new CBaseBotTestTask, "Returning back to main task!");
+}
 
 CBaseBotBehavior::CBaseBotBehavior(CBaseBot* bot) : IBehavior(bot)
 {
@@ -330,11 +363,11 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 
 	auto classname = gamehelpers->GetEntityClassname(entity);
 
-	if (std::strncmp(classname, "func_breakable", 14) == 0)
+	if (strncmp(classname, "func_breakable", 14) == 0)
 	{
 		return true;
 	}
-	else if (std::strncmp(classname, "func_breakable_surf", 19) == 0)
+	else if (strncmp(classname, "func_breakable_surf", 19) == 0)
 	{
 		return true;
 	}

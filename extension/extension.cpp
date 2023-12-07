@@ -202,8 +202,8 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	if (gamedata->GetOffset("PlayerRunCmd", &offset) == false)
 	{
 		const char* message = "Failed to get PlayerRunCmd offset from SDK Tools gamedata. Mod not supported!";
-		maxlen = std::strlen(message);
-		std::strcpy(error, message);
+		maxlen = strlen(message);
+		strcpy(error, message);
 		return false;
 	}
 

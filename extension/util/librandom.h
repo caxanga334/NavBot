@@ -2,7 +2,7 @@
 #define SMNAV_LIB_RANDOM_NUMBER_H_
 #pragma once
 
-namespace random
+namespace librandom
 {
 	int generate_random_int(int min, int max);
 	unsigned int generate_random_uint(unsigned int min, unsigned int max);

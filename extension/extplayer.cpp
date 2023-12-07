@@ -183,7 +183,7 @@ bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
 
 		const char* szclassname = gamehelpers->GetEntityClassname(entity);
 
-		if (std::strcmp(weapon, szclassname) == 0)
+		if (strcmp(weapon, szclassname) == 0)
 		{
 			if (result)
 			{
