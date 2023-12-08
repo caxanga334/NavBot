@@ -9,6 +9,7 @@
 #include <bot/interfaces/sensor.h>
 #include <bot/interfaces/event_listener.h>
 #include <bot/interfaces/behavior.h>
+#include <bot/interfaces/profile.h>
 #include <util/UtilTrace.h>
 
 // Interval between calls to Update()
@@ -84,11 +85,21 @@ public:
 	void SelectWeaponByClassname(const char* szclassname);
 	virtual void SafeWeaponSelectByClassname(const char* szclassname);
 
+	inline const DifficultyProfile& GetDifficultyProfile() const { return m_profile; }
+	inline void SetDifficultyProfile(DifficultyProfile profile)
+	{
+		m_profile = profile;
+
+		for (auto iface : m_interfaces)
+		{
+			iface->OnDifficultyProfileChanged();
+		}
+	}
+
 protected:
 	bool m_isfirstspawn;
 
 private:
-	
 	int m_nextupdatetime;
 	IBotController* m_controller;
 	std::list<IBotInterface*> m_interfaces;
@@ -100,6 +111,7 @@ private:
 	IMovement* m_basemover; // Base movement interface
 	ISensor* m_basesensor; // Base vision and hearing interface
 	IBehavior* m_basebehavior; // Base AI Behavior interface
+	DifficultyProfile m_profile;
 };
 
 #endif // !EXT_BASE_BOT_H_

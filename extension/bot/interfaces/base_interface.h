@@ -15,7 +15,9 @@ public:
 	IBotInterface(CBaseBot* bot);
 	virtual ~IBotInterface();
 
-	inline virtual CBaseBot* GetBot() { return m_bot; }
+	virtual CBaseBot* GetBot() const { return m_bot; }
+
+	virtual void OnDifficultyProfileChanged() {}
 
 	// Reset the interface to it's initial state
 	virtual void Reset() = 0;

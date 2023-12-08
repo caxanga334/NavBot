@@ -56,8 +56,8 @@ public:
 	virtual void SetFieldOfView(const float fov);
 	virtual float GetFieldOfView() const { return m_fieldofview; }
 	virtual const float GetDefaultFieldOfView() const { return 90.0f; }
-	virtual const float GetMaxVisionRange() const { return 4096.0f; }
-	virtual const float GetMaxHearingRange() const { return 1024.0f; }
+	virtual const float GetMaxVisionRange() const { return m_maxvisionrange; }
+	virtual const float GetMaxHearingRange() const { return m_maxhearingrange; }
 protected:
 	virtual void UpdateKnownEntities();
 	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);
@@ -66,10 +66,11 @@ protected:
 	virtual void CleanKnownEntities();
 
 private:
-	// TO-DO: Maybe move to unordered_set
 	std::vector<CKnownEntity> m_knownlist;
 	float m_fieldofview;
 	float m_coshalfFOV;
+	float m_maxvisionrange;
+	float m_maxhearingrange;
 };
 
 #endif // !SMNAV_BOT_SENSOR_INTERFACE_H_

@@ -80,9 +80,9 @@ void IPlayerController::RunLook()
 	VectorAngles(to, desiredAngles);
 	QAngle finalAngles;
 
-	constexpr auto APPROACH_ANGLE_SPEED = 30.0f; // to-do: add config or convar
-	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, APPROACH_ANGLE_SPEED);
-	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, APPROACH_ANGLE_SPEED);
+	const float aimspeed = me->GetDifficultyProfile().GetAimSpeed();
+	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, aimspeed);
+	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, aimspeed);
 
 	finalAngles.x = AngleNormalize(finalAngles.x);
 	finalAngles.y = AngleNormalize(finalAngles.y);

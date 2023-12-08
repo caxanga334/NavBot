@@ -34,8 +34,11 @@ bool BotSensorTraceFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int con
 ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 {
 	m_knownlist.reserve(256);
+	auto& profile = bot->GetDifficultyProfile();
 
-	SetFieldOfView(GetDefaultFieldOfView());
+	SetFieldOfView(profile.GetFOV());
+	m_maxvisionrange = static_cast<float>(profile.GetMaxVisionRange());
+	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
 }
 
 ISensor::~ISensor()

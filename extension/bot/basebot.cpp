@@ -8,9 +8,12 @@
 #include <bot/interfaces/tasks.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <mods/basemod.h>
+#include <tier1/convar.h>
 #include "basebot.h"
 
 extern CGlobalVars* gpGlobals;
+
+ConVar smnav_bot_difficulty("smnav_bot_difficulty", "0", FCVAR_NONE, "SMNav Bot difficulty level.");
 
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
@@ -180,6 +183,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
 {
+	m_profile = extmanager->GetBotDifficultyProfileManager().GetProfileForSkillLevel(smnav_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
 	m_nextupdatetime = 64;
 	m_controller = botmanager->GetBotController(edict);

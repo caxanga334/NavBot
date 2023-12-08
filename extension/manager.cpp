@@ -56,6 +56,7 @@ void CExtManager::OnAllLoaded()
 
 #ifdef SMNAV_FEAT_BOT
 	LoadBotNames();
+	m_bdm.LoadProfiles();
 #endif // SMNAV_FEAT_BOT
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod.get()->GetModName());
@@ -218,11 +219,12 @@ void CExtManager::AddBot()
 	// Create a new bot instance
 	auto mod = m_mod.get();
 	auto& botptr = m_bots.emplace_back(mod->AllocateBot(edict));
+	auto bot = botptr.get();
 
 #ifdef SMNAV_DEBUG
 	// the base bot doesn't allocate these on the constructor
 	// to allow debugging these interface, we have to call these functions at least once to create them
-	auto bot = botptr.get();
+	
 	bot->GetControlInterface();
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();

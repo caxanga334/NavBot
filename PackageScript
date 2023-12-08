@@ -49,7 +49,7 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 
 # Config Files
 CopyFiles('configs', 'addons/sourcemod/configs/smnav',
-  [ 'bot_names.cfg', ]
+  [ 'bot_names.cfg', 'bot_difficulty.cfg' ]
 )
 
 # Copy binaries.

@@ -6,6 +6,8 @@ class CBaseMod;
 class CBaseExtPlayer;
 class CBaseBot;
 
+#include <bot/interfaces/profile.h>
+
 // Primary Extension Manager
 class CExtManager
 {
@@ -40,11 +42,14 @@ public:
 
 	void LoadBotNames();
 
+	inline const CDifficultyManager& GetBotDifficultyProfileManager() const { return m_bdm; }
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod;
 	size_t m_nextbotname; // Index of the next bot name to use
+	CDifficultyManager m_bdm; // Bot Difficulty Profile Manager
 };
 
 #endif // !SMNAV_EXT_MANAGER_H_
