@@ -19,9 +19,7 @@ builder.options.add_option('--enable-optimize', action='store_const', const='1',
 builder.options.add_option('-s', '--sdks', default='all', dest='sdks',
                        help='Build against specified SDKs; valid args are "all", "present", or '
                             'comma-delimited list of engine names (default: %default)')
-builder.options.add_option('--feature-bots', action='store_const', const='1', dest='featbots',
-                       help='Enable the bot feature of the extension.')
-builder.options.add_option('--feature-avx', action='store_const', const='1', dest='featavx',
+builder.options.add_option('--enable-avx', action='store_const', const='1', dest='cpuavx',
                        help='Allows the compiler to make use of AVX2 instructions.')
 builder.options.add_option('--debug-mode', action='store_const', const='1', dest='debugmode',
                        help='Compile with debug code')

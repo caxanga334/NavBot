@@ -41,9 +41,7 @@ extern IBinTools* g_pBinTools;
 extern ISDKTools* g_pSDKTools;
 extern ISDKHooks* g_pSDKHooks;
 
-#ifdef SMNAV_FEAT_BOT
 extern IBotManager* botmanager;
-#endif // SMNAV_FEAT_BOT
 
 extern CExtManager* extmanager;
 

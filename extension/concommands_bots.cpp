@@ -7,8 +7,6 @@
 
 extern CExtManager* extmanager;
 
-// #ifdef SMNAV_FEAT_BOT is not needed in this file, it's not include to the source list by default
-
 CON_COMMAND(smnav_bot_add, "Adds a extenion bot to the game.")
 {
 	extmanager->AddBot();

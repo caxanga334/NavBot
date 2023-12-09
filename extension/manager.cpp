@@ -7,9 +7,7 @@
 
 #include "extension.h"
 
-#ifdef SMNAV_FEAT_BOT
 #include <bot/basebot.h>
-#endif // SMNAV_FEAT_BOT
 
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
@@ -34,9 +32,8 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #endif // SOURCE_ENGINE == SE_DODS
 
-#ifdef SMNAV_FEAT_BOT
 extern IBotManager* botmanager;
-#endif // SMNAV_FEAT_BOT
+
 
 CExtManager::CExtManager()
 {
@@ -54,23 +51,19 @@ void CExtManager::OnAllLoaded()
 {
 	AllocateMod();
 
-#ifdef SMNAV_FEAT_BOT
 	LoadBotNames();
 	m_bdm.LoadProfiles();
-#endif // SMNAV_FEAT_BOT
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod.get()->GetModName());
 }
 
 void CExtManager::Frame()
 {
-#ifdef SMNAV_FEAT_BOT
 	for (auto& botptr : m_bots)
 	{
 		auto bot = botptr.get();
 		bot->PlayerThink();
 	}
-#endif // SMNAV_FEAT_BOT
 
 	m_mod.get()->Frame();
 }
@@ -100,8 +93,6 @@ void CExtManager::OnClientPutInServer(int client)
 
 void CExtManager::OnClientDisconnect(int client)
 {
-#ifdef SMNAV_FEAT_BOT
-
 	bool isbot = GetBotByIndex(client) != nullptr;
 
 	if (isbot == true)
@@ -125,21 +116,17 @@ void CExtManager::OnClientDisconnect(int client)
 			m_bots.erase(botit);
 		}
 	}
-
-#endif // SMNAV_FEAT_BOT
 }
 
 void CExtManager::OnMapStart()
 {
 	m_mod.get()->OnMapStart();
 
-#ifdef SMNAV_FEAT_BOT
 	if (m_botnames.size() != 0)
 	{
 		// get a new index on every map load
 		m_nextbotname = librandom::generate_random_uint(0, m_botnames.size() - 1);
 	}
-#endif // SMNAV_FEAT_BOT
 }
 
 void CExtManager::OnMapEnd()
@@ -173,7 +160,6 @@ void CExtManager::NotifyRegisterGameEvents()
 
 CBaseBot* CExtManager::GetBotByIndex(int index)
 {
-#ifdef SMNAV_FEAT_BOT
 	for (auto& botptr : m_bots)
 	{
 		auto bot = botptr.get();
@@ -182,14 +168,12 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 			return botptr.get();
 		}
 	}
-#endif // SMNAV_FEAT_BOT
 
 	return nullptr;
 }
 
 void CExtManager::AddBot()
 {
-#ifdef SMNAV_FEAT_BOT
 	const char* name = nullptr;
 
 	if (m_botnames.size() == 0)
@@ -236,7 +220,6 @@ void CExtManager::AddBot()
 #endif // SMNAV_DEBUG
 
 	rootconsole->ConsolePrint("Bot added to the game.");
-#endif // SMNAV_FEAT_BOT
 }
 
 void CExtManager::LoadBotNames()

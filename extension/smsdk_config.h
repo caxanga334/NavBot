@@ -38,12 +38,12 @@
  */
 
 /* Basic information exposed publicly */
-#define SMEXT_CONF_NAME			"Navigation Mesh"
-#define SMEXT_CONF_DESCRIPTION	"Valve navigation mesh compiled as a SourceMod extension."
+#define SMEXT_CONF_NAME			"Nav Bot"
+#define SMEXT_CONF_DESCRIPTION	"Source Engine Bots that uses valve's navigation meshes for pathfinding."
 #define SMEXT_CONF_VERSION		"0.0.0.0"
 #define SMEXT_CONF_AUTHOR		"caxanga334"
 #define SMEXT_CONF_URL			"https://github.com/caxanga334/SMNav"
-#define SMEXT_CONF_LOGTAG		"SMNAVMESH"
+#define SMEXT_CONF_LOGTAG		"NavBot"
 #define SMEXT_CONF_LICENSE		"GPL"
 #define SMEXT_CONF_DATESTRING	__DATE__
 

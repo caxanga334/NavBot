@@ -15,11 +15,7 @@ CBaseMod::~CBaseMod()
 
 CBaseBot* CBaseMod::AllocateBot(edict_t* edict)
 {
-#ifndef SMNAV_FEAT_BOT
-	return nullptr;
-#else
 	return new CBaseBot(edict);
-#endif // !SMNAV_FEAT_BOT
 }
 
 void CBaseMod::RegisterGameEvents()

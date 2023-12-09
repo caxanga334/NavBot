@@ -49,11 +49,9 @@
 #include "navmesh/nav_mesh.h"
 #include "manager.h"
 #include <util/entprops.h>
+#include <util/helpers.h>
 #include <core/eventmanager.h>
-
-#ifdef SMNAV_FEAT_BOT
-#include <bot/basebot.h>
-#endif // SMNAV_FEAT_BOT
+#include <bot/basebot.h>T
 
 // Need this for CUserCmd class definition
 #if HOOK_PLAYERRUNCMD
@@ -89,9 +87,7 @@ ISDKHooks* g_pSDKHooks = nullptr;
 
 CBaseEntityList* g_EntList = nullptr;
 
-#ifdef SMNAV_FEAT_BOT
 IBotManager* botmanager = nullptr;
-#endif // SMNAV_FEAT_BOT
 
 CExtManager* extmanager = nullptr;
 
@@ -274,9 +270,7 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 	GET_V_IFACE_CURRENT(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
 #endif
 
-#ifdef SMNAV_FEAT_BOT
 	GET_V_IFACE_CURRENT(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
-#endif // SMNAV_FEAT_BOT
 
 	gpGlobals = ismm->GetCGlobals();
 
@@ -364,7 +358,7 @@ void SMNavExt::Hook_GameFrame(bool simulating)
 
 void SMNavExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 {
-#if SMNAV_FEAT_BOT && HOOK_PLAYERRUNCMD // don't bother if bots are disabled
+#if HOOK_PLAYERRUNCMD // don't bother if bots are disabled
 	if (extmanager == nullptr) // TO-DO: This check might not be needed since the extension should load before any player is able to fully connect to the server
 	{
 		RETURN_META(MRES_IGNORED);
@@ -384,7 +378,7 @@ void SMNavExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 		Utils::CopyBotCmdtoUserCmd(usercmd, cmd);
 	}
 
-#endif // SMNAV_FEAT_BOT
+#endif
 
 	RETURN_META(MRES_IGNORED);
 }

@@ -264,19 +264,6 @@ public:
 	void Hook_GameFrame(bool simulating);
 
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
-
-	/**
-	 * @brief Checks if the bot feature of the extension is enabled
-	 * @return true if the extension was compiled with bot support
-	*/
-	inline bool IsBotFeatureEnabled()
-	{
-#ifdef SMNAV_FEAT_BOT
-		return true;
-#else
-		return false;
-#endif // SMNAV_FEAT_BOT
-	}
 };
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_

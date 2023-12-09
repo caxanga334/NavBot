@@ -1,4 +1,4 @@
-SMNav
+Nav Bot
 ======
 
 [SourceMod]: https://www.sourcemod.net/
@@ -9,7 +9,7 @@ SMNav
 [Documentation]: docs/README.md
 [Discord]: https://discord.gg/bh9g8MebJn
 
-SMNav is a [SourceMod] extension that ports [Taiyungwang]'s [Nav Mesh VSP] to SourceMod.
+Nav Bot (formerly known as 'SMNav') is a [SourceMod] extension that provides bots for Source Engine games.
 
 ## Links
 
