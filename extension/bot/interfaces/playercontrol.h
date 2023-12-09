@@ -33,6 +33,8 @@ public:
 		MAX_LOOK_PRIORITY
 	};
 
+	virtual void OnDifficultyProfileChanged() override;
+
 	// Reset the interface to it's initial state
 	virtual void Reset() override;
 	// Called at intervals
@@ -41,18 +43,30 @@ public:
 	virtual void Frame() override;
 
 	virtual void ProcessButtons(int &buttons) override;
-
 	virtual void RunLook();
-	
 	virtual void AimAt(const Vector& pos, const LookPriority priority, const float duration);
 	virtual void AimAt(edict_t* entity, const LookPriority priority, const float duration);
 	virtual void AimAt(const int entity, const LookPriority priority, const float duration);
+	// True if the bot aim is Steady
+	virtual const bool IsAimSteady() const { return m_isSteady; }
+	// True if the bot aim is currently on target
+	virtual const bool IsAimOnTarget() const { return m_isOnTarget; }
+	// True if the bot aim at some point looked directly on it's target
+	virtual const bool DidLookAtTarget() const { return m_didLookAtTarget; }
+	// How long the bot aim has been steady
+	virtual const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
 
 private:
 	LookPriority m_priority; // Current look priority
 	CountdownTimer m_looktimer; // Timer for the current look at task
 	Vector m_looktarget; // Look at target (Position Vector)
 	CBaseHandle m_lookentity; // Look at target (Entity, overrides vector if present)
+	QAngle m_lastangles; // Last bot view angles
+	float m_aimspeed; // Look angle approach rate
+	bool m_isSteady; // Is the bot aim steady?
+	bool m_isOnTarget; // Is the bot looking at it's look timer
+	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
+	IntervalTimer m_steadyTimer; // Aim stability timer
 };
 
 #endif // !SMNAV_BOT_BASE_PLAYER_CONTROL_IFACE_H_

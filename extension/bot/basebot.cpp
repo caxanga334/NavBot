@@ -530,3 +530,14 @@ void CBaseBot::SafeWeaponSelectByClassname(const char* szclassname)
 		m_controller->SetActiveWeapon(szclassname);
 	}
 }
+
+/**
+ * @brief Makes the bot select a weapon via console command 'use'.
+ * @param szclassname Classname of the weapon to select
+*/
+void CBaseBot::SelectWeaponByCommand(const char* szclassname) const
+{
+	char command[128];
+	ke::SafeSprintf(command, sizeof(command), "use %s", szclassname);
+	serverpluginhelpers->ClientCommand(GetEdict(), command);
+}

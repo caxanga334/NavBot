@@ -22,6 +22,8 @@ public:
 	ISensor(CBaseBot* bot);
 	virtual ~ISensor();
 
+	virtual void OnDifficultyProfileChanged() override;
+
 	// Reset the interface to it's initial state
 	virtual void Reset();
 	// Called at intervals

@@ -45,6 +45,15 @@ ISensor::~ISensor()
 {
 }
 
+void ISensor::OnDifficultyProfileChanged()
+{
+	auto& profile = GetBot()->GetDifficultyProfile();
+
+	SetFieldOfView(profile.GetFOV());
+	m_maxvisionrange = static_cast<float>(profile.GetMaxVisionRange());
+	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
+}
+
 void ISensor::Reset()
 {
 	m_knownlist.clear();

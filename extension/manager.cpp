@@ -64,11 +64,13 @@ void CExtManager::OnAllLoaded()
 
 void CExtManager::Frame()
 {
+#ifdef SMNAV_FEAT_BOT
 	for (auto& botptr : m_bots)
 	{
 		auto bot = botptr.get();
 		bot->PlayerThink();
 	}
+#endif // SMNAV_FEAT_BOT
 
 	m_mod.get()->Frame();
 }
@@ -171,6 +173,7 @@ void CExtManager::NotifyRegisterGameEvents()
 
 CBaseBot* CExtManager::GetBotByIndex(int index)
 {
+#ifdef SMNAV_FEAT_BOT
 	for (auto& botptr : m_bots)
 	{
 		auto bot = botptr.get();
@@ -179,6 +182,7 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 			return botptr.get();
 		}
 	}
+#endif // SMNAV_FEAT_BOT
 
 	return nullptr;
 }

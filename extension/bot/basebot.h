@@ -84,6 +84,7 @@ public:
 	inline void SelectWeaponByUserCmd(int weapon_entity) { m_weaponselect = weapon_entity; }
 	void SelectWeaponByClassname(const char* szclassname);
 	virtual void SafeWeaponSelectByClassname(const char* szclassname);
+	void SelectWeaponByCommand(const char* szclassname) const;
 
 	inline const DifficultyProfile& GetDifficultyProfile() const { return m_profile; }
 	inline void SetDifficultyProfile(DifficultyProfile profile)

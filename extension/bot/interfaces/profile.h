@@ -39,9 +39,9 @@ public:
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetAimSpeed(const float speed) { aimspeed = speed; }
-	inline void SetFOV(const float v) { fov = v; }
-	inline void SetMaxVisionRange(const float range) { maxvisionrange = range; }
-	inline void SetMaxHearingRange(const float range) { maxhearingrange = range; }
+	inline void SetFOV(const int v) { fov = v; }
+	inline void SetMaxVisionRange(const int range) { maxvisionrange = range; }
+	inline void SetMaxHearingRange(const int range) { maxhearingrange = range; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -124,13 +124,14 @@ private:
 		int maxvisionrange; // maximum distance the bot is able to see
 		int maxhearingrange; // maximum distace the bot is able to hear
 
+		// Initialize the profile data
 		inline void OnNew()
 		{
 			skill_level = 0;
-			aimspeed = 0;
-			fov = 0;
-			maxvisionrange = 0;
-			maxhearingrange = 0;
+			aimspeed = 15;
+			fov = 75;
+			maxvisionrange = 1500;
+			maxhearingrange = 750;
 		}
 	};
 

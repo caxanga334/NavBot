@@ -259,11 +259,11 @@ void IMovement::MoveTowards(const Vector& pos)
 			input->PressBackwardsButton();
 		}
 
-		if (side > epsilon)
+		if (side <= -epsilon)
 		{
 			input->PressMoveLeftButton();
 		}
-		else if (side < -epsilon)
+		else if (side >= epsilon)
 		{
 			input->PressMoveRightButton();
 		}

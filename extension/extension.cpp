@@ -97,6 +97,8 @@ CExtManager* extmanager = nullptr;
 
 SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 
+ConVar smnav_version("smnav_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
+
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
