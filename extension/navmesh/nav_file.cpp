@@ -995,7 +995,7 @@ const char *CNavMesh::GetFilename( void )
 	// filename is local to game dir for Steam, so we need to prepend game dir for regular file save
 	char gamePath[256];
 	// engine->GetGameDir( gamePath, 256 );
-	smutils->BuildPath(SourceMod::Path_SM, gamePath, sizeof(gamePath), "data/smnav/%s/%s.smnav", modfolder, mapname);
+	smutils->BuildPath(SourceMod::Path_SM, gamePath, sizeof(gamePath), "data/navbot/%s/%s.smnav", modfolder, mapname);
 
 	// persistant return value
 	static char filename[256];

@@ -4,7 +4,11 @@
 
 #include <vector>
 
+class CBaseBot;
 class CPath;
+class CBaseEntity;
+struct edict_t;
+
 
 // Interface for receiving events
 class IEventListener
@@ -18,6 +22,16 @@ public:
 		FAIL_FELL_OFF_PATH // bot fell off the path
 	};
 
+	enum SoundType
+	{
+		SOUND_GENERIC = 0,
+		SOUND_WEAPON,
+		SOUND_PLAYER,
+		SOUND_WORLD,
+
+		MAX_SOUND_TYPES
+	};
+
 	// Gets a vector containing all event listeners
 	virtual std::vector<IEventListener*>* GetListenerVector() { return nullptr; }
 
@@ -26,7 +40,12 @@ public:
 	virtual void OnUnstuck(); // bot was stuck and is no longer stuck
 	virtual void OnMoveToFailure(CPath* path, MovementFailureType reason);
 	virtual void OnMoveToSuccess(CPath* path);
-
+	virtual void OnInjured(edict_t* attacker = nullptr); // when the bot takes damage
+	virtual void OnKilled(edict_t* attacker = nullptr); // when the bot is killed
+	virtual void OnOtherKilled(edict_t* victim, edict_t* attacker = nullptr); // when another player gets killed
+	virtual void OnSight(edict_t* subject); // when the bot spots an entity
+	virtual void OnLostSight(edict_t* subject); // when the bot loses sight of an entity
+	virtual void OnSound(edict_t* source, const Vector& position, SoundType type); // when the bot hears an entity
 };
 
 inline void IEventListener::OnTestEventPropagation()
@@ -90,6 +109,84 @@ inline void IEventListener::OnMoveToSuccess(CPath* path)
 		for (auto listener : *vec)
 		{
 			listener->OnMoveToSuccess(path);
+		}
+	}
+}
+
+inline void IEventListener::OnInjured(edict_t* attacker)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnInjured(attacker);
+		}
+	}
+}
+
+inline void IEventListener::OnKilled(edict_t* attacker)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnKilled(attacker);
+		}
+	}
+}
+
+inline void IEventListener::OnOtherKilled(edict_t* victim, edict_t* attacker)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnOtherKilled(victim, attacker);
+		}
+	}
+}
+
+inline void IEventListener::OnSight(edict_t* subject)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnSight(subject);
+		}
+	}
+}
+
+inline void IEventListener::OnLostSight(edict_t* subject)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnLostSight(subject);
+		}
+	}
+}
+
+inline void IEventListener::OnSound(edict_t* source, const Vector& position, SoundType type)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnSound(source, position, type);
 		}
 	}
 }

@@ -2,6 +2,8 @@
 #define EXT_BASE_BOT_H_
 
 #include <list>
+#include <queue>
+#include <string>
 
 #include <extplayer.h>
 #include <bot/interfaces/playercontrol.h>
@@ -72,8 +74,23 @@ public:
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 
+	// Called every the player_spawn event is fired for this bot
 	virtual void Spawn();
+	// Called on the first spawn call
 	virtual void FirstSpawn();
+	// Called to check if the bot can join the game
+	virtual bool CanJoinGame() { return true; }
+	// Called to check if the bot has joined a team and should be considerated as playing
+	virtual bool HasJoinedGame()
+	{
+		// for most games, team 0 is unassigned and team 1 is spectator
+		return GetCurrentTeamIndex() > 1;
+	}
+
+	// Do what is necessary to join the game
+	virtual void TryJoinGame() {}
+	// Don't update the bot when dead if this returns true
+	virtual bool SleepWhenDead() const { return true; }
 	
 	/**
 	 * @brief Makes the bot switch weapons via user command.
@@ -97,6 +114,15 @@ public:
 		}
 	}
 
+	/**
+	 * @brief Inserts a console command in the bot queue, prevents the bot flooding the server with commands
+	 * @param command command to send
+	*/
+	inline void DelayedFakeClientCommand(const char* command)
+	{
+		m_cmdqueue.emplace(command);
+	}
+
 protected:
 	bool m_isfirstspawn;
 
@@ -113,6 +139,10 @@ private:
 	ISensor* m_basesensor; // Base vision and hearing interface
 	IBehavior* m_basebehavior; // Base AI Behavior interface
 	DifficultyProfile m_profile;
+	CountdownTimer m_cmdtimer; // Delay between commands
+	std::queue<std::string> m_cmdqueue; // Queue of commands to send
+
+	void ExecuteQueuedCommands();
 };
 
 #endif // !EXT_BASE_BOT_H_

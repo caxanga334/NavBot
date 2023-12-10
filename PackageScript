@@ -11,7 +11,7 @@ folder_list = [
   #'addons/sourcemod/scripting/include',
   #'addons/sourcemod/gamedata',
   'addons/sourcemod/configs',
-  'addons/sourcemod/configs/smnav',
+  'addons/sourcemod/configs/navbot',
 ]
 
 # Create the distribution folder hierarchy.
@@ -32,7 +32,7 @@ def CopyFiles(src, dest, files):
 
 # Copy autoload file
 CopyFiles('extension', 'addons/sourcemod/extensions',
-  [ 'smnav.autoload', ]
+  [ 'navbot.autoload', ]
 )
 
 # Include files 
@@ -48,7 +48,7 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 #)
 
 # Config Files
-CopyFiles('configs', 'addons/sourcemod/configs/smnav',
+CopyFiles('configs', 'addons/sourcemod/configs/navbot',
   [ 'bot_names.cfg', 'bot_difficulty.cfg' ]
 )
 

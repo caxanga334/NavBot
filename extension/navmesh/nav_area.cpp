@@ -2843,7 +2843,7 @@ void CNavArea::Draw( void ) const
 	NavEditColor color;
 	bool useAttributeColors = true;
 
-	const float DebugDuration = NDEBUG_SMNAV_DRAW_TIME;
+	const float DebugDuration = EXT_DEBUG_DRAW_TIME;
 
 	if ( TheNavMesh->IsEditMode( CNavMesh::PLACE_PAINTING ) )
 	{
@@ -3207,7 +3207,7 @@ void CNavArea::DrawFilled( int r, int g, int b, int a, float deltaT, bool noDept
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::DrawSelectedSet( const Vector &shift ) const
 {
-	const float deltaT = NDEBUG_SMNAV_DRAW_TIME;
+	const float deltaT = EXT_DEBUG_DRAW_TIME;
 	int r = s_selectedSetColor.r();
 	int g = s_selectedSetColor.g();
 	int b = s_selectedSetColor.b();
@@ -3234,7 +3234,7 @@ void CNavArea::DrawSelectedSet( const Vector &shift ) const
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::DrawDragSelectionSet( Color &dragSelectionSetColor ) const
 {
-	const float deltaT = NDEBUG_SMNAV_DRAW_TIME;
+	const float deltaT = EXT_DEBUG_DRAW_TIME;
 	int r = dragSelectionSetColor.r();
 	int g = dragSelectionSetColor.g();
 	int b = dragSelectionSetColor.b();

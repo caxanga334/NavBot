@@ -15,14 +15,14 @@
 #include <util/librandom.h>
 #include "manager.h"
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 #include <sdkports/debugoverlay_shared.h>
 #include <navmesh/nav.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 #if SOURCE_ENGINE == SE_TF2
 #include <mods/tf2/teamfortress2mod.h>
@@ -78,7 +78,7 @@ void CExtManager::OnClientPutInServer(int client)
 		return;
 	}
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	auto gp = playerhelpers->GetGamePlayer(client);
 	auto auth = gp->GetAuthString(true);
 
@@ -88,7 +88,7 @@ void CExtManager::OnClientPutInServer(int client)
 	}
 
 	smutils->LogMessage(myself, "OnClientPutInServer -- %i %p '%s'", client, edict, auth);
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 }
 
 void CExtManager::OnClientDisconnect(int client)
@@ -209,7 +209,7 @@ void CExtManager::AddBot()
 	auto& botptr = m_bots.emplace_back(mod->AllocateBot(edict));
 	auto bot = botptr.get();
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	// the base bot doesn't allocate these on the constructor
 	// to allow debugging these interface, we have to call these functions at least once to create them
 	
@@ -217,7 +217,7 @@ void CExtManager::AddBot()
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();
 	bot->GetBehaviorInterface();
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 	rootconsole->ConsolePrint("Bot added to the game.");
 }
@@ -226,7 +226,7 @@ void CExtManager::LoadBotNames()
 {
 	char path[PLATFORM_MAX_PATH]{};
 
-	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/smnav/bot_names.cfg");
+	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.cfg");
 
 	if (std::filesystem::exists(path) == false)
 	{
@@ -273,25 +273,25 @@ void CExtManager::LoadBotNames()
 		m_botnames.emplace_back(line);
 	}
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	for (auto& name : m_botnames)
 	{
 		auto szname = name.c_str();
 		rootconsole->ConsolePrint("Bot name: %s", szname);
 	}
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 	rootconsole->ConsolePrint("[SMNav] Bot name list loaded with %i names.", m_botnames.size());
 }
 
-CON_COMMAND(smnav_reload_bot_names, "Reloads the bot name list")
+CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {
 	extern CExtManager* extmanager;
 	extmanager->LoadBotNames();
 }
 
-#ifdef SMNAV_DEBUG
-CON_COMMAND(smnav_debug_vectors, "[LISTEN SERVER] Debug player vectors")
+#ifdef EXT_DEBUG
+CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 {
 	extern CExtManager* extmanager;
 	extern IVDebugOverlay* debugoverlay;
@@ -331,12 +331,12 @@ CON_COMMAND(smnav_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 	debugoverlay->AddLineOverlay(eyepos, eyepos + forward, 255, 0, 0, true, 15.0f);
 }
 
-CON_COMMAND_F(smnav_debug_do_not_use, "Do not even think about executing this command.", FCVAR_CHEAT)
+CON_COMMAND_F(sm_navbot_debug_do_not_use, "Do not even think about executing this command.", FCVAR_CHEAT)
 {
 	throw std::runtime_error("Exception test!");
 }
 
-CON_COMMAND(smnav_debug_event_propagation, "Event propagation test")
+CON_COMMAND(sm_navbot_debug_event_propagation, "Event propagation test")
 {
 	extern CExtManager* extmanager;
 	auto& bots = extmanager->GetAllBots();
@@ -349,7 +349,7 @@ CON_COMMAND(smnav_debug_event_propagation, "Event propagation test")
 	}
 }
 
-CON_COMMAND(smnav_debug_pathfind, "Path finding debug.")
+CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 {
 	static Vector start;
 	static Vector end;
@@ -408,7 +408,7 @@ CON_COMMAND(smnav_debug_pathfind, "Path finding debug.")
 	}
 }
 
-CON_COMMAND(smnav_debug_botpath, "Debug bot path")
+CON_COMMAND(sm_navbot_debug_botpath, "Debug bot path")
 {
 	CBaseBot* bot = nullptr;
 	extern CGlobalVars* gpGlobals;
@@ -449,7 +449,7 @@ CON_COMMAND(smnav_debug_botpath, "Debug bot path")
 	rootconsole->ConsolePrint("Showing path from bot position to your position.");
 }
 
-CON_COMMAND(smnav_debug_rng, "Debug librandom number generator")
+CON_COMMAND(sm_navbot_debug_rng, "Debug random number generator")
 {
 	for (int i = 0; i < 15; i++)
 	{
@@ -457,4 +457,4 @@ CON_COMMAND(smnav_debug_rng, "Debug librandom number generator")
 		rootconsole->ConsolePrint("Random Number: %i", n);
 	}
 }
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG

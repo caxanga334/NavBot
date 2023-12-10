@@ -20,12 +20,12 @@ IEventReceiver::~IEventReceiver()
 
 void IEventReceiver::OnGameEvent(IGameEvent* gameevent)
 {
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	smutils->LogError(myself, "You forgot to override IEventReceiver::OnGameEvent for event \"%s\" mod '%i'", m_eventname.c_str(), static_cast<int>(m_mod));
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 }
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 class CDebugEventReceiver : public IEventReceiver
 {
 public:
@@ -40,7 +40,7 @@ void CDebugEventReceiver::OnGameEvent(IGameEvent* gameevent)
 	rootconsole->ConsolePrint("CDebugEventReceiver::OnGameEvent");
 }
 
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 EventManager::EventManager() :
 	m_loaded(false),
@@ -74,9 +74,9 @@ void EventManager::FireGameEvent(IGameEvent* gameevent)
 		return;
 	}
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	smutils->LogMessage(myself, "EventManager::FireGameEvent -- \"%s\"", szEventName);
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 	std::string name(szEventName);
 	auto currentmod = extmanager->GetMod()->GetModType();
@@ -94,9 +94,9 @@ void EventManager::Load()
 {
 	m_loaded = true;
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	RegisterEventReceiver(new CDebugEventReceiver("player_spawn", Mods::MOD_ALL));
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 	// tell manager we're ready for receiving game events
 	extmanager->NotifyRegisterGameEvents();
@@ -131,12 +131,12 @@ void EventManager::RegisterEventReceiver(IEventReceiver* listener)
 			smutils->LogError(myself, "Failed to listen for event \"%s\"!", name);
 			return;
 		}
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 		else
 		{
 			smutils->LogMessage(myself, "Added event receiver for \"%s\".", name);
 		}
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 	}
 

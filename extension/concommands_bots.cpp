@@ -7,14 +7,14 @@
 
 extern CExtManager* extmanager;
 
-CON_COMMAND(smnav_bot_add, "Adds a extenion bot to the game.")
+CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 {
 	extmanager->AddBot();
 }
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 
-CON_COMMAND(smnav_debug_bot_look, "Debug the bot look functions.")
+CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 {
 	auto& bots = extmanager->GetAllBots();
 	auto edict = gamehelpers->EdictOfIndex(1); // get listen server host
@@ -26,4 +26,4 @@ CON_COMMAND(smnav_debug_bot_look, "Debug the bot look functions.")
 	}
 }
 
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG

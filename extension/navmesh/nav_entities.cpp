@@ -349,7 +349,7 @@ void EntityText(ICollideable* collision, int text_offset, const char *text, floa
 	{
 		VectorTransform(vecLocalCenter, collision->CollisionToWorldTransform(), origin);
 	}
-	debugoverlay->AddTextOverlayRGB(origin, text_offset, NDEBUG_SMNAV_DRAW_TIME, r, g, b, a, "%s", text);
+	debugoverlay->AddTextOverlayRGB(origin, text_offset, EXT_DEBUG_DRAW_TIME, r, g, b, a, "%s", text);
 }
 
 int NavEntity::DrawDebugTextOverlays() {
@@ -406,7 +406,7 @@ int CFuncNavBlocker::DrawDebugTextOverlays( void )
 	{
 		Extent areaExtent;
 		collector.m_area[i]->GetExtent( &areaExtent );
-		debugoverlay->AddBoxOverlay( vec3_origin, areaExtent.lo, areaExtent.hi, vec3_angle, 0, 255, 0, 10, NDEBUG_SMNAV_DRAW_TIME );
+		debugoverlay->AddBoxOverlay( vec3_origin, areaExtent.lo, areaExtent.hi, vec3_angle, 0, 255, 0, 10, EXT_DEBUG_DRAW_TIME );
 	}
 
 	*/
@@ -554,7 +554,7 @@ int CFuncNavObstruction::DrawDebugTextOverlays( void )
 {
 	int offset = NavEntity::DrawDebugTextOverlays();
 	EntityText(pEnt->GetCollideable(), offset++, CanObstructNavAreas() ? "Obstructing nav" : "Not obstructing nav",
-		NDEBUG_SMNAV_DRAW_TIME);
+		EXT_DEBUG_DRAW_TIME);
 	return offset;
 }
 

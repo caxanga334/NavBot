@@ -35,6 +35,7 @@ public:
 	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
 	virtual bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
 	virtual bool IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV = true);
+	virtual bool IsAbleToSee(const Vector& pos, const bool checkFOV = true);
 	// Is the bot able to hear this entity
 	virtual bool IsAbleToHear(edict_t* entity);
 	// Checks if there are obstructions between the bot and the given position
@@ -43,6 +44,8 @@ public:
 	virtual bool IsInFieldOfView(const Vector& pos);
 	// Is the entity hidden by fog, smoke, etc?
 	virtual bool IsEntityHidden(edict_t* entity) { return false; }
+	// Is the given position obscured by fog, smoke, etc?
+	virtual bool IsPositionObscured(const Vector& pos) { return false; }
 	virtual bool AddKnownEntity(edict_t* entity);
 	virtual void ForgetKnownEntity(edict_t* entity);
 	virtual void ForgetAllKnownEntities();
@@ -60,6 +63,10 @@ public:
 	virtual const float GetDefaultFieldOfView() const { return 90.0f; }
 	virtual const float GetMaxVisionRange() const { return m_maxvisionrange; }
 	virtual const float GetMaxHearingRange() const { return m_maxhearingrange; }
+
+	// Events
+	virtual void OnSound(edict_t* source, const Vector& position, SoundType type) override;
+
 protected:
 	virtual void UpdateKnownEntities();
 	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);

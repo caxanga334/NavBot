@@ -784,7 +784,7 @@ const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* current) c
 
 		if (seg == current)
 		{
-			int next = i + 1;
+			size_t next = i + 1;
 
 			if (next >= m_segments.size())
 			{

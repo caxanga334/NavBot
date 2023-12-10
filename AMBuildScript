@@ -146,7 +146,9 @@ class ExtensionConfig(object):
 
     # Custom debug macro since the default --enable-debug fails due to missing files in HL2-SDK
     if builder.options.debugmode == '1':
-      cxx.defines += ['SMNAV_DEBUG']
+      cxx.defines += ['EXT_DEBUG']
+	  
+    cxx.defines += ['EXT_DEBUG_DRAW_TIME=0.0f']
 
     # Platform-specifics
     if builder.target_platform == 'linux':
@@ -332,17 +334,6 @@ class ExtensionConfig(object):
 	
     # Not all SDKs have this
     compiler.defines += ['TEAM_ANY=-2']
-    # NDEBUG_PERSIST_TILL_NEXT_SERVER doesn't work, probably due to how CNavMesh::Update is called
-    compiler.defines += ['NDEBUG_SMNAV_DRAW_TIME=0.0f']
-	
-    if sdk.name == 'tf2':
-      compiler.defines += ['SMNAV_MAX_PLAYERS=102']
-    elif sdk.name == 'sdk2013':
-      compiler.defines += ['SMNAV_MAX_PLAYERS=130'] # Synergy support up to 128. Will be 130 until support for a mod with more players is needed
-    elif sdk.name in ['css', 'csgo']:
-      compiler.defines += ['SMNAV_MAX_PLAYERS=66']
-    else:
-      compiler.defines += ['SMNAV_MAX_PLAYERS=34']
 
     # Some game/mods already calls playerruncommand on puppet bots, this will conflict with the extension bot
     # This define enables the code to override and solve this conflict

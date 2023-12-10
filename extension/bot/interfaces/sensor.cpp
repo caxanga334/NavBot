@@ -84,10 +84,15 @@ bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
 	// Check FOV
 	if (checkFOV)
 	{
-		if (!IsLineOfSightClear(pos))
+		if (IsInFieldOfView(pos) == false)
 		{
 			return false;
 		}
+	}
+
+	if (IsLineOfSightClear(pos) == false)
+	{
+		return false;
 	}
 
 	// Test for smoke, fog, ...
@@ -121,14 +126,58 @@ bool ISensor::IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV)
 	// Check FOV
 	if (checkFOV)
 	{
-		if (!IsLineOfSightClear(player))
+		if (IsInFieldOfView(pos) == false)
 		{
 			return false;
 		}
 	}
 
+	if (IsLineOfSightClear(player) == false)
+	{
+		return false;
+	}
+
 	// Test for smoke, fog, ...
 	if (IsEntityHidden(player.GetEdict()))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+/**
+ * @brief Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
+ * @param pos Position to test for visibility
+ * @param checkFOV if true, also check if the given position is in the bot field of view
+ * @return true if visible
+*/
+bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV)
+{
+	auto me = GetBot();
+	auto start = me->GetEyeOrigin();
+	const auto maxdist = GetMaxVisionRange() * GetMaxVisionRange();
+	float distance = (start - pos).LengthSqr();
+
+	if (distance > maxdist)
+	{
+		return false;
+	}
+
+	if (checkFOV == true)
+	{
+		if (IsInFieldOfView(pos) == false)
+		{
+			return false;
+		}
+	}
+
+	if (IsLineOfSightClear(pos) == false)
+	{
+		return false;
+	}
+
+	if (IsPositionObscured(pos) == true)
 	{
 		return false;
 	}
@@ -262,6 +311,33 @@ void ISensor::SetFieldOfView(const float fov)
 	m_coshalfFOV = cosf(0.5f * fov * M_PI / 180.0f);
 }
 
+void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type)
+{
+	Vector origin = GetBot()->GetAbsOrigin();
+	float distance = (origin - position).Length();
+	float maxdistance = GetMaxHearingRange();
+	constexpr auto GUNFIRE_MULTIPLIER = 1.5f;
+	
+	if (type == IEventListener::SoundType::SOUND_WEAPON)
+	{
+		maxdistance = maxdistance * GUNFIRE_MULTIPLIER; // weapons are loud
+	}
+
+	if (distance > maxdistance)
+	{
+		return; // outside hearing range
+	}
+
+	auto known = GetKnown(source);
+
+	if (known == nullptr)
+	{
+		AddKnownEntity(source);
+		known = GetKnown(source);
+		known->NotifyHeard(static_cast<int>(distance), position);
+	}
+}
+
 void ISensor::UpdateKnownEntities()
 {
 	std::vector<edict_t*> visibleVec;
@@ -281,21 +357,54 @@ void ISensor::UpdateKnownEntities()
 
 void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 {
+	auto me = GetBot();
+
 	for (auto edict : visibleVec)
 	{
+		// all entities inside visibleVec are visible to the bot RIGHT NOW!
 		auto known = GetKnown(edict);
 		auto pos = UtilHelpers::getWorldSpaceCenter(edict);
 
-		if (known == nullptr)
+		if (known == nullptr) // first time seening this entity
 		{
 			auto& entry = m_knownlist.emplace_back(edict);
 			entry.MarkAsFullyVisible();
+			me->OnSight(edict); // new entity spotted
 			continue;
 		}
+		else
+		{
+			known->UpdatePosition(); // we can see it, so update it's position
 
-		known->UpdatePosition();
+			if (known->IsVisibleNow() == false)
+			{
+				known->MarkAsFullyVisible();
+				me->OnSight(edict); // spotted again
+			}
+		}
 	}
 
+	for (auto& known : m_knownlist)
+	{
+		if (known.GetTimeSinceLastInfo() < 0.2f)
+		{
+			continue; // this known entity was updated recently
+		}
+		else
+		{
+			if (IsAbleToSee(known.GetLastKnownPosition()) == true)
+			{
+				known.MarkLastKnownPositionAsSeen();
+			}
+
+			// this entity was visible, mark as not visible and notify the bot lost sight of it
+			if (known.IsVisibleNow() == true)
+			{
+				known.MarkAsNotVisible();
+				me->OnLostSight(known.GetEdict());
+			}
+		}
+	}
 }
 
 void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)

@@ -46,7 +46,7 @@ class IMoveHelper;
  * @brief Sample implementation of the SDK Extension.
  * Note: Uncomment one of the pre-defined virtual functions in order to use it.
  */
-class SMNavExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
+class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
 {
 public:
 	/**

@@ -495,6 +495,12 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnUnstuck(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnMoveToFailure(BotClass* bot, CPath* path, IEventListener::MovementFailureType reason) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnMoveToSuccess(BotClass* bot, CPath* path) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnInjured(BotClass* bot, edict_t* attacker = nullptr) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnKilled(BotClass* bot, edict_t* attacker = nullptr) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnOtherKilled(BotClass* bot, edict_t* victim, edict_t* attacker = nullptr) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type) { return TryContinue(); }
 
 	virtual AITask<BotClass>* InitialParallelTask() { return nullptr; }
 
@@ -810,6 +816,36 @@ private:
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnMoveToSuccess, path);
 	}
+
+	virtual void OnInjured(edict_t* attacker = nullptr) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnInjured, attacker);
+	}
+
+	virtual void OnKilled(edict_t* attacker = nullptr) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnKilled, attacker);
+	}
+
+	virtual void OnOtherKilled(edict_t* victim, edict_t* attacker = nullptr) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnOtherKilled, victim, attacker);
+	}
+
+	virtual void OnSight(edict_t* subject) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSight, subject);
+	}
+
+	virtual void OnLostSight(edict_t* subject) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnLostSight, subject);
+	}
+
+	virtual void OnSound(edict_t* source, const Vector& position, SoundType type) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_3_ARGS(OnSound, source, position, type);
+	}
 };
 
 template<typename BotClass>
@@ -856,6 +892,7 @@ inline AITask<BotClass>::~AITask()
 	{
 		// Any task above me is also going away
 		delete m_aboveTask;
+		m_aboveTask = nullptr;
 	}
 
 	m_pendingEventResult.DiscardResult();

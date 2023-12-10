@@ -50,6 +50,11 @@ bool CKnownEntity::IsObsolete()
 	return !m_handle.IsValid() || gamehelpers->GetHandleEntity(m_handle) == nullptr || GetTimeSinceLastInfo() > NKnownEntity::TIME_FOR_OBSOLETE;
 }
 
+bool CKnownEntity::IsValid()
+{
+	return m_handle.IsValid() == true && gamehelpers->GetHandleEntity(m_handle) != nullptr;
+}
+
 void CKnownEntity::UpdatePosition()
 {
 	constexpr auto NAV_AREA_DIST = 128.0f;
@@ -77,6 +82,7 @@ void CKnownEntity::UpdatePosition(const Vector& newPos)
 void CKnownEntity::MarkAsFullyVisible()
 {
 	m_timelastvisible = gpGlobals->curtime;
+	m_visible = true;
 }
 
 bool CKnownEntity::IsEntity(edict_t* entity)

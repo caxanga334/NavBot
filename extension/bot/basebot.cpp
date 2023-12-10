@@ -13,7 +13,7 @@
 
 extern CGlobalVars* gpGlobals;
 
-ConVar smnav_bot_difficulty("smnav_bot_difficulty", "0", FCVAR_NONE, "SMNav Bot difficulty level.");
+ConVar cvar_bot_difficulty("sm_navbot_difficulty", "0", FCVAR_NONE, "NavBot difficulty level.");
 
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
@@ -92,6 +92,17 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 	if (m_nav.IsValid() == false)
 	{
 		return Done("My Path is invalid!");
+	}
+
+	if (m_nav.GetAge() > 1.0f)
+	{
+		ShortestPathCost cost;
+		bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
+
+		if (result == false)
+		{
+			return Done("No Path!");
+		}
 	}
 
 	m_nav.Update(bot);
@@ -183,7 +194,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
 {
-	m_profile = extmanager->GetBotDifficultyProfileManager().GetProfileForSkillLevel(smnav_bot_difficulty.GetInt());
+	m_profile = extmanager->GetBotDifficultyProfileManager().GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
 	m_nextupdatetime = 64;
 	m_controller = botmanager->GetBotController(edict);
@@ -193,6 +204,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_basesensor = nullptr;
 	m_basebehavior = nullptr;
 	m_weaponselect = 0;
+	m_cmdtimer.Invalidate();
 }
 
 CBaseBot::~CBaseBot()
@@ -230,6 +242,12 @@ void CBaseBot::PlayerThink()
 {
 	CBaseExtPlayer::PlayerThink(); // Call base class function first
 
+	if (SleepWhenDead() == true && GetPlayerInfo()->IsDead() == true)
+	{
+		return;
+	}
+
+	ExecuteQueuedCommands(); // Run queue commands
 	Frame(); // Call bot frame
 
 	int buttons = 0;
@@ -266,6 +284,11 @@ void CBaseBot::Reset()
 
 void CBaseBot::Update()
 {
+	if (HasJoinedGame() == false && CanJoinGame() == true)
+	{
+		TryJoinGame();
+	}
+
 	for (auto iface : m_interfaces)
 	{
 		iface->Update();
@@ -503,6 +526,8 @@ void CBaseBot::Spawn()
 		m_isfirstspawn = true;
 		FirstSpawn();
 	}
+
+	Reset();
 }
 
 void CBaseBot::FirstSpawn()
@@ -540,4 +565,26 @@ void CBaseBot::SelectWeaponByCommand(const char* szclassname) const
 	char command[128];
 	ke::SafeSprintf(command, sizeof(command), "use %s", szclassname);
 	serverpluginhelpers->ClientCommand(GetEdict(), command);
+}
+
+void CBaseBot::ExecuteQueuedCommands()
+{
+	if (m_cmdqueue.size() == 0)
+	{
+		return;
+	}
+
+	if (!m_cmdtimer.HasStarted() || m_cmdtimer.IsElapsed())
+	{
+		constexpr auto NEXT_COMMAND_DELAY = 0.25f;
+		
+		auto& next = m_cmdqueue.front();
+		serverpluginhelpers->ClientCommand(GetEdict(), next.c_str());
+		m_cmdqueue.pop();
+
+		if (m_cmdqueue.size() == 0)
+		{
+			m_cmdtimer.Invalidate();
+		}
+	}
 }

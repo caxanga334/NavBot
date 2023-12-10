@@ -182,7 +182,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	// move bot along path
 	mover->MoveTowards(goalPos);
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	auto start = GetGoalSegment();
 
 	if (start != nullptr)
@@ -194,7 +194,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	{
 		Draw(start);
 	}
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 
 }
 

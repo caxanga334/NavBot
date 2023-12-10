@@ -34,7 +34,7 @@
 #include "tier0/memdbgon.h"
 
 
-#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_SMNAV_DRAW_TIME )
+#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, EXT_DEBUG_DRAW_TIME )
 
 /**
  * The singleton for accessing the navigation mesh
@@ -1183,7 +1183,7 @@ void CNavMesh::LoadPlaceDatabase( void )
 
 	auto mod = smutils->GetGameFolderName();
 	char fullpath[256];
-	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/smnav/%s/navplace.db", mod);
+	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/navplace.db", mod);
 
 	CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
 	filesystem->ReadFile(fullpath, "MOD", buf);
@@ -1493,7 +1493,7 @@ void CNavMesh::DrawPlayerCounts( void ) const
 			Text(area->GetCenter(),
 					msg.sprintf("%d (%d/%d)", area->GetPlayerCount(),
 							area->GetPlayerCount(1), area->GetPlayerCount(2)),
-					false, NDEBUG_SMNAV_DRAW_TIME);
+					false, EXT_DEBUG_DRAW_TIME);
 		}
 	}
 	*/

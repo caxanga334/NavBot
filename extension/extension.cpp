@@ -51,7 +51,7 @@
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <core/eventmanager.h>
-#include <bot/basebot.h>T
+#include <bot/basebot.h>
 
 // Need this for CUserCmd class definition
 #if HOOK_PLAYERRUNCMD
@@ -91,7 +91,7 @@ IBotManager* botmanager = nullptr;
 
 CExtManager* extmanager = nullptr;
 
-SMNavExt g_SMNavExt;		/**< Global singleton for extension's main interface */
+NavBotExt g_SMNavExt;		/**< Global singleton for extension's main interface */
 
 ConVar smnav_version("smnav_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
 
@@ -112,7 +112,7 @@ namespace Utils
 	inline void CreateDataDirectory(const char* mod)
 	{
 		char fullpath[PLATFORM_MAX_PATH + 1];
-		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/smnav/%s", mod);
+		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s", mod);
 
 		auto exists = std::filesystem::exists(fullpath);
 
@@ -134,7 +134,7 @@ namespace Utils
 	inline void CreateConfigDirectory(const char* mod)
 	{
 		char fullpath[PLATFORM_MAX_PATH + 1];
-		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/smnav/%s", mod);
+		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s", mod);
 
 		auto exists = std::filesystem::exists(fullpath);
 
@@ -171,7 +171,7 @@ namespace Utils
 }
 
 
-bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
+bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();
@@ -212,7 +212,7 @@ bool SMNavExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	return true;
 }
 
-void SMNavExt::SDK_OnUnload()
+void NavBotExt::SDK_OnUnload()
 {
 	delete TheNavMesh;
 	TheNavMesh = nullptr;
@@ -225,7 +225,7 @@ void SMNavExt::SDK_OnUnload()
 	GetGameEventManager()->Unload();
 }
 
-void SMNavExt::SDK_OnAllLoaded()
+void NavBotExt::SDK_OnAllLoaded()
 {
 	SM_GET_LATE_IFACE(BINTOOLS, g_pBinTools);
 	SM_GET_LATE_IFACE(SDKTOOLS, g_pSDKTools);
@@ -249,7 +249,7 @@ void SMNavExt::SDK_OnAllLoaded()
 	GetGameEventManager()->Load();
 }
 
-bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
+bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
 	GET_V_IFACE_CURRENT(GetEngineFactory, enginetrace, IEngineTrace, INTERFACEVERSION_ENGINETRACE_SERVER);
 	// GET_V_IFACE_ANY(GetEngineFactory, engine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
@@ -276,19 +276,19 @@ bool SMNavExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool
 
 	g_pCVar = icvar; // TO-DO: add #if source engine here
 
-	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &SMNavExt::Hook_GameFrame), false);
+	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), false);
 
 	return true;
 }
 
-bool SMNavExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
+bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 {
-	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &SMNavExt::Hook_GameFrame), false);
+	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), false);
 
 	return true;
 }
 
-void SMNavExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
+void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
 {
 	auto error = TheNavMesh->Load();
 
@@ -300,17 +300,17 @@ void SMNavExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax
 	extmanager->OnMapStart();
 }
 
-void SMNavExt::OnCoreMapEnd()
+void NavBotExt::OnCoreMapEnd()
 {
 	extmanager->OnMapEnd();
 }
 
-bool SMNavExt::RegisterConCommandBase(ConCommandBase* pVar)
+bool NavBotExt::RegisterConCommandBase(ConCommandBase* pVar)
 {
 	return META_REGCVAR(pVar);
 }
 
-void SMNavExt::OnClientPutInServer(int client)
+void NavBotExt::OnClientPutInServer(int client)
 {
 	extmanager->OnClientPutInServer(client);
 
@@ -320,13 +320,13 @@ void SMNavExt::OnClientPutInServer(int client)
 
 	if (baseent != nullptr)
 	{
-		SH_ADD_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &SMNavExt::Hook_PlayerRunCommand, false);
+		SH_ADD_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &NavBotExt::Hook_PlayerRunCommand, false);
 	}
 #endif // HOOK_PLAYERRUNCMD
 
 }
 
-void SMNavExt::OnClientDisconnecting(int client)
+void NavBotExt::OnClientDisconnecting(int client)
 {
 	extmanager->OnClientDisconnect(client);
 
@@ -336,12 +336,12 @@ void SMNavExt::OnClientDisconnecting(int client)
 
 	if (baseent != nullptr)
 	{
-		SH_REMOVE_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &SMNavExt::Hook_PlayerRunCommand, false);
+		SH_REMOVE_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &NavBotExt::Hook_PlayerRunCommand, false);
 	}
 #endif // HOOK_PLAYERRUNCMD
 }
 
-void SMNavExt::Hook_GameFrame(bool simulating)
+void NavBotExt::Hook_GameFrame(bool simulating)
 {
 	if (TheNavMesh)
 	{
@@ -356,7 +356,7 @@ void SMNavExt::Hook_GameFrame(bool simulating)
 	RETURN_META(MRES_IGNORED);
 }
 
-void SMNavExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
+void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 {
 #if HOOK_PLAYERRUNCMD // don't bother if bots are disabled
 	if (extmanager == nullptr) // TO-DO: This check might not be needed since the extension should load before any player is able to fully connect to the server

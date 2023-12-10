@@ -197,8 +197,8 @@ bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
 	return false;
 }
 
-#ifdef SMNAV_DEBUG
-CON_COMMAND_F(smnav_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
+#ifdef EXT_DEBUG
+CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {
 	auto player = gamehelpers->EdictOfIndex(1); // Get listen server host
 
@@ -222,7 +222,7 @@ CON_COMMAND_F(smnav_debug_boners, "Debugs the CBaseAnimating::LookupBone port of
 	delete model;
 }
 
-CON_COMMAND(smnav_debug_entprops, "Tests the ent prop lib.")
+CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 {
 	constexpr int LISTEN_SERVER_HOST_ENTITY = 1;
 
@@ -261,4 +261,4 @@ CON_COMMAND(smnav_debug_entprops, "Tests the ent prop lib.")
 
 	rootconsole->ConsolePrint("String Var: '%s' Length: %i", string_var, length);
 }
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG

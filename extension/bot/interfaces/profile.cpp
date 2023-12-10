@@ -16,7 +16,7 @@ void CDifficultyManager::LoadProfiles()
 
 	char path[256]{};
 
-	smutils->BuildPath(SourceMod::Path_SM, path, sizeof(path), "configs/smnav/bot_difficulty.cfg");
+	smutils->BuildPath(SourceMod::Path_SM, path, sizeof(path), "configs/navbot/bot_difficulty.cfg");
 
 	if (std::filesystem::exists(path) == false)
 	{

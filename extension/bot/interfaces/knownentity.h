@@ -38,8 +38,10 @@ public:
 	inline const Vector& GetLastKnownPosition() const { return m_lastknownposition; }
 	// Gets the entity last known Nav Area
 	inline const CNavArea* GetLastKnownArea() const { return m_lastknownarea; }
-
+	// A known entity is obsolete if the stored entity is invalid or if enought time has passed
 	bool IsObsolete();
+	// checks if the actual entity is valid
+	bool IsValid();
 	// Updates the last known position of this entity
 	void UpdatePosition();
 	void UpdatePosition(const Vector& newPos);
@@ -57,6 +59,11 @@ public:
 	// true if the given entity is stored on this handle
 	bool IsEntity(const int entity);
 
+	inline bool WasLastKnownPositionSeen() const { return m_lkpwasseen; }
+	inline void MarkLastKnownPositionAsSeen() { m_lkpwasseen = true; }
+	inline bool IsVisibleNow() const { return m_visible; }
+	inline void MarkAsNotVisible() { m_visible = false; }
+
 	edict_t* GetEdict();
 private:
 	CBaseHandle m_handle; // Handle to the actual entity
@@ -66,6 +73,8 @@ private:
 	float m_timelastvisible; // Timestamp of when this entity was fully visible to the bot
 	float m_timelastinfo; // Timestamp of the last time the bot received some info about this
 	int m_volume; // How loud the sound made by this entity was
+	bool m_visible; // This entity is visible right now
+	bool m_lkpwasseen; // Last known position was seen by the bot
 };
 
 #endif // !SMNAV_BOT_KNOWN_ENTITY_H_

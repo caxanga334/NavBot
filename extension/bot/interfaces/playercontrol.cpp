@@ -5,8 +5,8 @@
 #include <util/helpers.h>
 #include "playercontrol.h"
 
-ConVar smnav_bot_aim_stability_max_rate("smnav_bot_aim_stability_max_rate", "100.0f", FCVAR_NONE, "Maximum angle change rate to consider the bot aim to be stable.");
-ConVar smnav_bot_aim_lookat_settle_duration("smnav_bot_aim_lookat_settle_duration", "0.3f", FCVAR_NONE, "Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.");
+ConVar smnav_bot_aim_stability_max_rate("sm_navbot_aim_stability_max_rate", "100.0", FCVAR_NONE, "Maximum angle change rate to consider the bot aim to be stable.");
+ConVar smnav_bot_aim_lookat_settle_duration("sm_navbot_aim_lookat_settle_duration", "0.3", FCVAR_NONE, "Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.");
 
 IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlayerInput()
 {
@@ -148,9 +148,9 @@ void IPlayerController::RunLook()
 		if (m_didLookAtTarget == false)
 		{
 			m_didLookAtTarget = true; // first time the bot aim was on target since the last AimAt call
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 			rootconsole->ConsolePrint("BOT#%i Look At ON_TARGET", GetBot()->GetIndex());
-#endif // SMNAV_DEBUG
+#endif // EXT_DEBUG
 		}
 	}
 	else
@@ -167,11 +167,11 @@ void IPlayerController::RunLook()
 	// Updates the bot view angle, this is later sent on the User Command
 	me->SetViewAngles(finalAngles);
 
-#ifdef SMNAV_DEBUG
+#ifdef EXT_DEBUG
 	float width = isSteady ? 4.0f : 2.0f;
 	int red = m_isOnTarget ? 255 : 0;
-	NDebugOverlay::HorzArrow(me->GetEyeOrigin(), m_looktarget, width, red, 0, 255, 200, false, NDEBUG_SMNAV_DRAW_TIME);
-#endif // SMNAV_DEBUG
+	NDebugOverlay::HorzArrow(me->GetEyeOrigin(), m_looktarget, width, red, 0, 255, 200, false, EXT_DEBUG_DRAW_TIME);
+#endif // EXT_DEBUG
 }
 
 void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration)
