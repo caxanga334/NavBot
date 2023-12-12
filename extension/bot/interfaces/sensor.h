@@ -63,6 +63,8 @@ public:
 	virtual const float GetDefaultFieldOfView() const { return 90.0f; }
 	virtual const float GetMaxVisionRange() const { return m_maxvisionrange; }
 	virtual const float GetMaxHearingRange() const { return m_maxhearingrange; }
+	// Time it takes for the bot to become aware of an entity
+	virtual const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
 
 	// Events
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type) override;
@@ -80,6 +82,13 @@ private:
 	float m_coshalfFOV;
 	float m_maxvisionrange;
 	float m_maxhearingrange;
+	float m_minrecognitiontime;
+	float m_lastupdatetime;
+
+	inline bool IsAwareOf(const CKnownEntity& known) const
+	{
+		return known.GetTimeSinceLastVisible() >= GetMinRecognitionTime();
+	}
 };
 
 #endif // !SMNAV_BOT_SENSOR_INTERFACE_H_

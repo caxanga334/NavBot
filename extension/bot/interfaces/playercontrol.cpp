@@ -3,6 +3,8 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <ifaces_extern.h>
 #include <util/helpers.h>
+#include <util/librandom.h>
+#include <entities/baseentity.h>
 #include "playercontrol.h"
 
 ConVar smnav_bot_aim_stability_max_rate("sm_navbot_aim_stability_max_rate", "100.0", FCVAR_NONE, "Maximum angle change rate to consider the bot aim to be stable.");

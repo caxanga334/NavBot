@@ -50,7 +50,7 @@ public:
 	virtual float GetRangeTo(const Vector& pos) const;
 	virtual float GetRangeTo(edict_t* edict) const;
 	virtual float GetRangeToSqr(const Vector& pos) const;
-	virtual float GetRangetToSqr(edict_t* edict) const;
+	virtual float GetRangeToSqr(edict_t* edict) const;
 
 	virtual bool IsRangeGreaterThan(const Vector& pos, const float range) const;
 	virtual bool IsRangeGreaterThan(edict_t* edict, const float range) const;

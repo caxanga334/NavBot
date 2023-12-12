@@ -11,7 +11,8 @@ class DifficultyProfile
 {
 public:
 	DifficultyProfile() :
-		skill_level(-1), aimspeed(25.0f), fov(90), maxvisionrange(2048), maxhearingrange(512) {}
+		skill_level(-1), aimspeed(25.0f), fov(90), maxvisionrange(2048), maxhearingrange(512),
+		minrecognitiontime(0.3f) {}
 
 	DifficultyProfile(const DifficultyProfile& other)
 	{
@@ -25,6 +26,7 @@ public:
 		this->fov = other.fov;
 		this->maxvisionrange = other.maxvisionrange;
 		this->maxhearingrange = other.maxhearingrange;
+		this->minrecognitiontime = other.minrecognitiontime;
 		return *this;
 	}
 
@@ -36,12 +38,14 @@ public:
 	inline const int GetFOV() const { return fov; }
 	inline const int GetMaxVisionRange() const { return maxvisionrange; }
 	inline const int GetMaxHearingRange() const { return maxhearingrange; }
+	inline const float GetMinRecognitionTime() const { return minrecognitiontime; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetAimSpeed(const float speed) { aimspeed = speed; }
 	inline void SetFOV(const int v) { fov = v; }
 	inline void SetMaxVisionRange(const int range) { maxvisionrange = range; }
 	inline void SetMaxHearingRange(const int range) { maxhearingrange = range; }
+	inline void SetMinRecognitionTime(const float time) { minrecognitiontime = time; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -49,6 +53,7 @@ private:
 	int fov; // field of view in degrees
 	int maxvisionrange; // maximum distance the bot is able to see
 	int maxhearingrange; // maximum distace the bot is able to hear
+	float minrecognitiontime; // minimum time for the bot to recognize an entity
 };
 
 // Bot difficulty profile manager
@@ -123,6 +128,7 @@ private:
 		int fov; // field of view in degrees
 		int maxvisionrange; // maximum distance the bot is able to see
 		int maxhearingrange; // maximum distace the bot is able to hear
+		float minrecognitiontime;
 
 		// Initialize the profile data
 		inline void OnNew()
@@ -132,6 +138,7 @@ private:
 			fov = 75;
 			maxvisionrange = 1500;
 			maxhearingrange = 750;
+			minrecognitiontime = 0.3f;
 		}
 	};
 

@@ -91,9 +91,9 @@ IBotManager* botmanager = nullptr;
 
 CExtManager* extmanager = nullptr;
 
-NavBotExt g_SMNavExt;		/**< Global singleton for extension's main interface */
+NavBotExt g_NavBotExt;		/**< Global singleton for extension's main interface */
 
-ConVar smnav_version("smnav_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
+ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
 
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
@@ -105,7 +105,7 @@ SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*);
 #endif 
 
 
-SMEXT_LINK(&g_SMNavExt);
+SMEXT_LINK(&g_NavBotExt);
 
 namespace Utils
 {

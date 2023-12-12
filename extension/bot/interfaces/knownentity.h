@@ -32,6 +32,8 @@ public:
 	float GetTimeSinceLastVisible() const;
 	// Returns how many seconds have passed since some info about this entity was received
 	float GetTimeSinceLastInfo() const;
+	// Returns the timestamp of the last time this entity was visible
+	inline float GetTimeWhenBecameVisible() const { return m_timelastvisible; }
 	// Returns the volume of the last sound made by this entity
 	inline int GetVolume() const { return m_volume; }
 	// Gets the entity last known position

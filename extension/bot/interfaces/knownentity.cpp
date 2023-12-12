@@ -11,8 +11,8 @@
 CKnownEntity::CKnownEntity(edict_t* entity)
 {
 	m_timeknown = gpGlobals->curtime;
-	m_timelastvisible = -1.0f;
-	m_timelastinfo = -1.0f;
+	m_timelastvisible = -9999.0f;
+	m_timelastinfo = -9999.0f;
 	m_volume = 0;
 	gamehelpers->SetHandleEntity(m_handle, entity);
 	UpdatePosition();
@@ -21,8 +21,8 @@ CKnownEntity::CKnownEntity(edict_t* entity)
 CKnownEntity::CKnownEntity(int entity)
 {
 	m_timeknown = gpGlobals->curtime;
-	m_timelastvisible = -1.0f;
-	m_timelastinfo = -1.0f;
+	m_timelastvisible = -9999.0f;
+	m_timelastinfo = -9999.0f;
 	m_volume = 0;
 	auto edict = gamehelpers->EdictOfIndex(entity);
 	gamehelpers->SetHandleEntity(m_handle, edict);
@@ -37,7 +37,6 @@ bool CKnownEntity::operator==(const CKnownEntity& other)
 {
 	return m_handle == other.m_handle;
 }
-
 
 float CKnownEntity::GetTimeSinceBecomeKnown() const { return gpGlobals->curtime - m_timeknown; }
 

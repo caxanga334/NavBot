@@ -39,6 +39,8 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	SetFieldOfView(profile.GetFOV());
 	m_maxvisionrange = static_cast<float>(profile.GetMaxVisionRange());
 	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
+	m_minrecognitiontime = profile.GetMinRecognitionTime();
+	m_lastupdatetime = 0.0f;
 }
 
 ISensor::~ISensor()
@@ -52,11 +54,13 @@ void ISensor::OnDifficultyProfileChanged()
 	SetFieldOfView(profile.GetFOV());
 	m_maxvisionrange = static_cast<float>(profile.GetMaxVisionRange());
 	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
+	m_minrecognitiontime = profile.GetMinRecognitionTime();
 }
 
 void ISensor::Reset()
 {
 	m_knownlist.clear();
+	m_lastupdatetime = 0.0f;
 }
 
 void ISensor::Update()
@@ -353,6 +357,7 @@ void ISensor::UpdateKnownEntities()
 	// Vision Update - Phase 3 - Update database
 	CollectVisibleEntities(visibleVec);
 
+	m_lastupdatetime = gpGlobals->curtime;
 }
 
 void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
@@ -369,7 +374,6 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 		{
 			auto& entry = m_knownlist.emplace_back(edict);
 			entry.MarkAsFullyVisible();
-			me->OnSight(edict); // new entity spotted
 			continue;
 		}
 		else
@@ -379,7 +383,6 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 			if (known->IsVisibleNow() == false)
 			{
 				known->MarkAsFullyVisible();
-				me->OnSight(edict); // spotted again
 			}
 		}
 	}
@@ -388,6 +391,12 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 	{
 		if (known.GetTimeSinceLastInfo() < 0.2f)
 		{
+			// reaction time check
+			if (known.GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
+			{
+				me->OnSight(known.GetEdict());
+			}
+
 			continue; // this known entity was updated recently
 		}
 		else

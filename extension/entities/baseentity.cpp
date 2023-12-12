@@ -45,3 +45,15 @@ QAngle entities::HBaseEntity::GetAbsAngles() const
 
 	return vec3_angle;
 }
+
+Vector entities::HBaseEntity::GetAbsVelocity() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Data, "m_vecAbsVelocity", result) == true)
+	{
+		return result;
+	}
+
+	return vec3_origin;
+}

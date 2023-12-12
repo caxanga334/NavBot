@@ -103,6 +103,10 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	{
 		m_data.maxhearingrange = atoi(value);
 	}
+	else if (strncasecmp(key, "minrecognitiontime", 18) == 0)
+	{
+		m_data.minrecognitiontime = atof(value);
+	}
 	else
 	{
 		smutils->LogError(myself, "Unknown key \"%s\" with value \"%s\" found while parsing bot difficulty profile!", key, value);
@@ -122,6 +126,7 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_LeavingSection(const SourceMod:
 		profile.SetFOV(m_data.fov);
 		profile.SetMaxVisionRange(m_data.maxvisionrange);
 		profile.SetMaxHearingRange(m_data.maxhearingrange);
+		profile.SetMinRecognitionTime(m_data.minrecognitiontime);
 
 		m_newprofile = false; // wait until the next section
 	}

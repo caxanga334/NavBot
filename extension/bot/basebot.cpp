@@ -13,7 +13,7 @@
 
 extern CGlobalVars* gpGlobals;
 
-ConVar cvar_bot_difficulty("sm_navbot_difficulty", "0", FCVAR_NONE, "NavBot difficulty level.");
+ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty.");
 
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
@@ -318,7 +318,7 @@ float CBaseBot::GetRangeToSqr(const Vector& pos) const
 	return (GetAbsOrigin() - pos).LengthSqr();
 }
 
-float CBaseBot::GetRangetToSqr(edict_t* edict) const
+float CBaseBot::GetRangeToSqr(edict_t* edict) const
 {
 	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).LengthSqr();
 }

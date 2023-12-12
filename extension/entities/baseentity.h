@@ -22,6 +22,7 @@ namespace entities
 		bool GetEntity(CBaseEntity** entity, edict_t** edict) const;
 		Vector GetAbsOrigin() const;
 		QAngle GetAbsAngles() const;
+		Vector GetAbsVelocity() const;
 
 	private:
 		int m_index; // entity index or reference
