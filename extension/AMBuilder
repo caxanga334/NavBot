@@ -26,7 +26,6 @@ sourceFiles = [
   'navmesh/nav_ladder.cpp',
   'navmesh/nav_merge.cpp',
   'navmesh/nav_mesh.cpp',
-  'navmesh/nav_mesh_factory.cpp',
   'navmesh/nav_node.cpp',
   'navmesh/nav_simplify.cpp',
   'util/BaseEntity.cpp',

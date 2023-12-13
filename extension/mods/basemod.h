@@ -3,6 +3,7 @@
 
 class CBaseExtPlayer;
 class CBaseBot;
+class CNavMesh;
 
 #include "gamemods_shared.h"
 
@@ -35,6 +36,9 @@ public:
 	// if this is true, then we need to hook runplayercommand
 	// for example: DoDs already run player commands on bots
 	virtual bool UserCommandNeedsHook() { return false; }
+
+	// Allocates the nav mesh class used by the mod
+	virtual CNavMesh* NavMeshFactory();
 
 private:
 

@@ -2,6 +2,7 @@
 #include <extplayer.h>
 #include <bot/basebot.h>
 #include <core/eventmanager.h>
+#include <navmesh/nav_mesh.h>
 #include "basemod_gameevents.h"
 #include "basemod.h"
 
@@ -35,4 +36,9 @@ const Vector& CBaseMod::GetPlayerHullMaxs()
 {
 	static Vector maxs(16.0f, 16.0f, 72.0f);
 	return maxs;
+}
+
+CNavMesh* CBaseMod::NavMeshFactory()
+{
+	return new CNavMesh;
 }

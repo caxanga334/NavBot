@@ -51,6 +51,7 @@
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <core/eventmanager.h>
+#include <mods/basemod.h>
 #include <bot/basebot.h>
 
 // Need this for CUserCmd class definition
@@ -233,15 +234,16 @@ void NavBotExt::SDK_OnAllLoaded()
 
 	g_EntList = reinterpret_cast<CBaseEntityList*>(gamehelpers->GetGlobalEntityList());
 
-	if (TheNavMesh == nullptr)
-	{
-		TheNavMesh = NavMeshFactory();
-	}
-
 	if (extmanager == nullptr)
 	{
 		extmanager = new CExtManager;
 		extmanager->OnAllLoaded();
+	}
+
+	if (TheNavMesh == nullptr)
+	{
+		auto mod = extmanager->GetMod();
+		TheNavMesh = mod->NavMeshFactory();
 	}
 
 	entprops->Init(true);
