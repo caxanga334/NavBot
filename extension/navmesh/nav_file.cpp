@@ -39,7 +39,10 @@
 /// IMPORTANT: If this version changes, the swap function in makegamedata 
 /// must be updated to match. If not, this will break the Xbox 360.
 // TODO: Was changed from 15, update when latest 360 code is integrated (MSB 5/5/09)
-const int NavCurrentVersion = 16;
+constexpr int NavCurrentVersion = 17;
+
+// Current version of the Sourcemod Nav Mesh
+constexpr int SMNavVersion = 1;
 
 extern IFileSystem *filesystem;
 extern IVEngineServer* engine;
@@ -215,7 +218,7 @@ char *GetBspFilename( const char *navFilename )
 /**
  * Save a navigation area to the opened binary stream
  */
-void CNavArea::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
+void CNavArea::Save(CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion) const
 {
 	// save ID
 	fileBuffer.PutUnsignedInt( m_id );
@@ -394,7 +397,7 @@ void CNavArea::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
 /**
  * Load a navigation area from the file
  */
-NavErrorType CNavArea::Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int subVersion )
+NavErrorType CNavArea::Load(CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion)
 {
 	// load ID
 	m_id = fileBuffer.GetUnsignedInt();
@@ -1126,7 +1129,11 @@ bool CNavMesh::Save( void ) const
 	// 14 - Added a bool for if the nav needs analysis
 	// 15 - removed approach areas
 	// 16 - Added visibility data to the base mesh
+	// 17 - Added SourceMod Port Version number
 	fileBuffer.PutUnsignedInt( NavCurrentVersion );
+
+	// store version number (Sourcemod Port) to the file
+	fileBuffer.PutUnsignedInt(SMNavVersion);
 
 	// The sub-version number is maintained and owned by classes derived from CNavMesh and CNavArea
 	// and allows them to track their custom data just as we do at this top level
@@ -1172,7 +1179,7 @@ bool CNavMesh::Save( void ) const
 		{
 			CNavArea *area = TheNavAreas[ it ];
 
-			area->Save( fileBuffer, NavCurrentVersion );
+			area->Save(fileBuffer, NavCurrentVersion, SMNavVersion);
 		}
 	}
 
@@ -1418,6 +1425,18 @@ NavErrorType CNavMesh::Load( void )
 		smutils->LogError(myself, "Unknown Navigation Mesh file version '%i'. Current version is '%i'. \"%s\"", version, NavCurrentVersion, filename);
 		return NAV_BAD_FILE_VERSION;
 	}
+
+	// Sourcemod port version was added at version 17
+	unsigned int smportversion = 0;
+	if (version >= 17)
+	{
+		smportversion = fileBuffer.GetUnsignedInt();
+		if (!fileBuffer.IsValid() || smportversion > SMNavVersion)
+		{
+			smutils->LogError(myself, "Unknown Navigation Mesh file Sourcemod Port version '%i'. Current version is '%i'. \"%s\"", smportversion, SMNavVersion, filename);
+			return NAV_BAD_FILE_VERSION;
+		}
+	}
 	
 	unsigned int subVersion = 0;
 	if ( version >= 10 )
@@ -1480,7 +1499,7 @@ NavErrorType CNavMesh::Load( void )
 	for( i=0; i<count; ++i )
 	{
 		CNavArea *area = TheNavMesh->CreateArea();
-		area->Load( fileBuffer, version, subVersion );
+		area->Load(fileBuffer, version, smportversion, subVersion);
 		TheNavAreas.AddToTail( area );
 
 		area->GetExtent( &areaExtent );

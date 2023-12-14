@@ -56,6 +56,8 @@ public:
 	virtual MoveType_t GetMoveType();
 	virtual edict_t* GetGroundEntity();
 	virtual bool Weapon_OwnsThisType(const char* weapon, edict_t** result = nullptr);
+	// Gets the current active weapon or NULL if none
+	virtual edict_t* GetActiveWeapon() const;
 
 protected:
 

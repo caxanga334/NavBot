@@ -368,33 +368,33 @@ void CNavMesh::Update( void )
 	}
 #endif
 
+#ifdef EXT_DEBUG
 	if (sm_nav_show_potentially_visible.GetBool())
 	{
-		/**
-		TODO:
-		CBasePlayer *player = UTIL_GetListenServerHost();
-		if ( player && player->GetLastKnownArea() )
+		edict_t* player = gamehelpers->EdictOfIndex(1); // get listen server host
+		if (player && player->GetIServerEntity())
 		{
-			CNavArea *eyepointArea = player->GetLastKnownArea();
-			if ( eyepointArea )
+			auto& origin = player->GetCollideable()->GetCollisionOrigin();
+			CNavArea* eyepointArea = TheNavMesh->GetNearestNavArea(origin, 512.0f, false, true);
+			if (eyepointArea)
 			{
-				FOR_EACH_VEC( TheNavAreas, it )
+				FOR_EACH_VEC(TheNavAreas, it)
 				{
-					CNavArea *area = TheNavAreas[it];
+					CNavArea* area = TheNavAreas[it];
 
-					if ( eyepointArea->IsCompletelyVisible( area ) )
+					if (eyepointArea->IsCompletelyVisible(area))
 					{
-						area->DrawFilled( 100, 100, 200, 255 );
+						area->DrawFilled(100, 100, 200, 255);
 					}
-					else if ( eyepointArea->IsPotentiallyVisible( area ) && nav_show_potentially_visible.GetInt() == 1 )
+					else if (eyepointArea->IsPotentiallyVisible(area) && sm_nav_show_potentially_visible.GetInt() == 1)
 					{
-						area->DrawFilled( 100, 200, 100, 255 );
+						area->DrawFilled(100, 200, 100, 255);
 					}
 				}
 			}
 		}
-		*/
 	}
+#endif // EXT_DEBUG
 
 	// draw any walkable seeds that have been marked
 	for ( int it=0; it < m_walkableSeeds.Count(); ++it )

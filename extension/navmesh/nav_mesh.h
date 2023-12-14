@@ -252,8 +252,8 @@ public:
 
 	virtual NavErrorType Load( void );									// load navigation data from a file
 	virtual NavErrorType PostLoad( unsigned int version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
-	bool IsLoaded( void ) const		{ return m_isLoaded; }				// return true if a Navigation Mesh has been loaded
-	bool IsAnalyzed( void ) const	{ return m_isAnalyzed; }			// return true if a Navigation Mesh has been analyzed
+	inline bool IsLoaded( void ) const		{ return m_isLoaded; }				// return true if a Navigation Mesh has been loaded
+	inline bool IsAnalyzed( void ) const	{ return m_isAnalyzed; }			// return true if a Navigation Mesh has been analyzed
 
 	/**
 	 * Return true if nav mesh can be trusted for all climbing/jumping decisions because game environment is fairly simple.
@@ -264,7 +264,7 @@ public:
 	const CUtlVector< Place > *GetPlacesFromNavFile( bool *hasUnnamedPlaces );	// Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
 
 	virtual bool Save( void ) const;									// store Navigation Mesh to a file
-	bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
+	inline bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
 
 	virtual unsigned int GetSubVersionNumber( void ) const;										// returns sub-version number of data format used by derived classes
 	virtual void SaveCustomData( CUtlBuffer &fileBuffer ) const { }								// store custom mesh data for derived classes

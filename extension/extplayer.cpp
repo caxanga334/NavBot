@@ -197,6 +197,19 @@ bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
 	return false;
 }
 
+edict_t* CBaseExtPlayer::GetActiveWeapon() const
+{
+	edict_t* weapon = nullptr;
+	int entity = -1;
+
+	if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hActiveWeapon", entity) == true)
+	{
+		weapon = gamehelpers->EdictOfIndex(entity);
+	}
+
+	return weapon;
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {

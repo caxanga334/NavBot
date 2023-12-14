@@ -307,7 +307,7 @@ void CNavArea::CompressIDs( CNavMesh *TheNavMesh  )
 /**
  * Constructor used during normal runtime.
  */
-CNavArea::CNavArea( unsigned int place )
+CNavArea::CNavArea(unsigned int place)
 {
 	m_marker = 0;
 	m_nearNavSearchMarker = 0;

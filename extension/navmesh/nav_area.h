@@ -265,7 +265,7 @@ class CNavArea : protected CNavAreaCriticalData
 public:
 	DECLARE_CLASS_NOBASE( CNavArea )
 
-	CNavArea( unsigned int place );
+	CNavArea(unsigned int place);
 	virtual ~CNavArea();
 	
 	virtual void OnServerActivate( void );						// (EXTEND) invoked when map is initially loaded
@@ -281,8 +281,8 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea ) { }		// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder ) { }	// invoked when given ladder has just been deleted from the mesh in edit mode
 
-	virtual void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;	// (EXTEND)
-	virtual NavErrorType Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int subVersion );		// (EXTEND)
+	virtual void Save( CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion ) const;	// (EXTEND)
+	virtual NavErrorType Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion );		// (EXTEND)
 	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 
 	virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues

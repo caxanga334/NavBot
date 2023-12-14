@@ -322,7 +322,7 @@ void NavBotExt::OnClientPutInServer(int client)
 
 	if (baseent != nullptr)
 	{
-		SH_ADD_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &NavBotExt::Hook_PlayerRunCommand, false);
+		SH_ADD_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
 	}
 #endif // HOOK_PLAYERRUNCMD
 
@@ -338,7 +338,7 @@ void NavBotExt::OnClientDisconnecting(int client)
 
 	if (baseent != nullptr)
 	{
-		SH_REMOVE_MANUALHOOK_MEMFUNC(MH_PlayerRunCommand, baseent, this, &NavBotExt::Hook_PlayerRunCommand, false);
+		SH_REMOVE_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
 	}
 #endif // HOOK_PLAYERRUNCMD
 }
