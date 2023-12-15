@@ -1,0 +1,69 @@
+#include <extension.h>
+#include <ifaces_extern.h>
+#include <sdkports/debugoverlay_shared.h>
+#include "basebot.h"
+
+ConVar cvar_bot_debug_filter("sm_navbot_debug_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Bot client index filter when debugging.");
+
+bool CBaseBot::IsDebugging(int bits)
+{
+	const int cvar = cvar_bot_debug_filter.GetInt();
+
+	if (cvar > 0 && cvar != GetIndex())
+	{
+		// A debug target is set and I am not it
+		return false;
+	}
+
+	return extmanager->IsDebugging(bits);
+}
+
+const char* CBaseBot::GetDebugIdentifier()
+{
+	static char debug[256];
+
+	auto player = playerhelpers->GetGamePlayer(GetIndex());
+
+	ke::SafeSprintf(debug, sizeof(debug), "%3.2f: %s#%i/%i", gpGlobals->curtime, player->GetName(), GetIndex(), player->GetUserId());
+
+	return debug;
+}
+
+void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...)
+{
+	if (!IsDebugging(bits))
+	{
+		return;
+	}
+
+
+	char buffer[512]{};
+	va_list vaargs = nullptr;
+	va_start(vaargs, fmt);
+	size_t len = ke::SafeVsprintf(buffer, sizeof(buffer), fmt, vaargs);
+
+	if (len >= sizeof(buffer) - 1)
+	{
+		buffer[511] = '\0';
+	}
+	else {
+		buffer[len] = '\0';
+	}
+
+	va_end(vaargs);
+
+	ConColorMsg(Color(red, green, blue, 255), buffer);
+}
+
+void CBaseBot::DebugDisplayText(const char* text)
+{
+	NDebugOverlay::EntityText(GetIndex(), m_debugtextoffset, text, 0.1f);
+	m_debugtextoffset++;
+}
+
+void CBaseBot::DebugFrame()
+{
+	char text[8];
+	ke::SafeSprintf(text, sizeof(text), "#%i", GetIndex());
+	DebugDisplayText(text);
+}

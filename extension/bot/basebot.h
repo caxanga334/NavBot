@@ -123,11 +123,19 @@ public:
 		m_cmdqueue.emplace(command);
 	}
 
+	void FakeClientCommand(const char* command) const;
+	bool IsDebugging(int bits);
+	virtual const char* GetDebugIdentifier();
+	void DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...);
+	void DebugDisplayText(const char* text);
+	void DebugFrame();
+
 protected:
 	bool m_isfirstspawn;
 
 private:
 	int m_nextupdatetime;
+	int m_joingametime; // delay between joingame attempts
 	IBotController* m_controller;
 	std::list<IBotInterface*> m_interfaces;
 	std::vector<IEventListener*> m_listeners; // Event listeners vector
@@ -141,6 +149,7 @@ private:
 	DifficultyProfile m_profile;
 	CountdownTimer m_cmdtimer; // Delay between commands
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
+	int m_debugtextoffset;
 
 	void ExecuteQueuedCommands();
 };

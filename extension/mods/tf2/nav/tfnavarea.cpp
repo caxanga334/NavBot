@@ -27,12 +27,15 @@ NavErrorType CTFNavArea::Load(CUtlBuffer& fileBuffer, unsigned int version, unsi
 		return base;
 	}
 
-	m_tfattributes = fileBuffer.GetInt();
-	m_tfpathattributes = fileBuffer.GetInt();
-
-	if (!fileBuffer.IsValid())
+	if (subVersion > 0)
 	{
-		return NAV_CORRUPT_DATA;
+		m_tfattributes = fileBuffer.GetInt();
+		m_tfpathattributes = fileBuffer.GetInt();
+
+		if (!fileBuffer.IsValid())
+		{
+			return NAV_CORRUPT_DATA;
+		}
 	}
 
 	return NAV_OK;

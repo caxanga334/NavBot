@@ -444,6 +444,11 @@ inline void AITaskManager<BotClass>::Update(BotClass* bot)
 
 	if (m_bot == nullptr) { m_bot = bot; }
 
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugDisplayText(m_task->DebugString());
+	}
+
 	m_task = m_task->RunTask(bot, this, m_task->ProcessTaskUpdate(bot, this));
 
 	CleanUpDeadTasks();
@@ -478,6 +483,11 @@ public:
 	virtual bool OnTaskPause(BotClass* bot, AITask<BotClass>* nextTask) { return true; }
 	virtual TaskResult<BotClass> OnTaskResume(BotClass* bot, AITask<BotClass>* pastTask) { return Continue(); }
 
+	virtual const char* GetName() const = 0;
+
+	const char* DebugString() const;
+	char* BuildDebugString(char* name, const AITask<BotClass>* task) const;
+
 	// These functions are used to trigger a state change on a Task.
 
 	TaskResult<BotClass> Continue() const;
@@ -500,9 +510,9 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnOtherKilled(BotClass* bot, edict_t* victim, edict_t* attacker = nullptr) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type, const int volume) { return TryContinue(); }
 
-	virtual AITask<BotClass>* InitialParallelTask() { return nullptr; }
+	virtual AITask<BotClass>* InitialNextTask() { return nullptr; }
 
 	AITask<BotClass>* GetHeadTask() const { return m_headTask; }
 	AITask<BotClass>* GetNextTask() const { return m_nextTask; }
@@ -535,6 +545,11 @@ private:
 																		\
 	while (__task != nullptr)											\
 	{																	\
+		if (m_bot && m_bot->IsDebugging(BOTDEBUG_EVENTS))				\
+		{																\
+			m_bot->DebugPrintToConsole(BOTDEBUG_EVENTS, 100, 100, 100, "%s (%s) RECEIVED EVENT %s \n", m_bot->GetDebugIdentifier(), __task->GetName(), #EFUNC); \
+		}																\
+																		\
 		__eventResult = __task->EFUNC(m_bot);							\
 																		\
 		if (__eventResult.IsContinue() == false) {						\
@@ -547,6 +562,18 @@ private:
 																		\
 	if (__task)															\
 	{																	\
+																		\
+		if (m_bot && __eventResult.IsRequestingChange() && m_bot->IsDebugging(BOTDEBUG_TASKS)) \
+		{																						\
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", m_bot->GetDebugIdentifier()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", __task->GetName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 0, "responded to EVENT %s with ", #EFUNC); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "%s %s ", __eventResult.GetTypeName(), __eventResult.GetNextTask() ? __eventResult.GetNextTask()->GetName() : ""); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 100, 255, 0, "result PRIORITY (%s) ", __eventResult.GetPriorityTypeName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 255, 0, "(%s) \n", __eventResult.GetReason() ? __eventResult.GetReason() : ""); \
+		}																\
+																		\
+																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
 	}																	\
 																		\
@@ -563,6 +590,10 @@ private:
 																		\
 	while (__task != nullptr)											\
 	{																	\
+		if (m_bot && m_bot->IsDebugging(BOTDEBUG_EVENTS))				\
+		{																\
+			m_bot->DebugPrintToConsole(BOTDEBUG_EVENTS, 100, 100, 100, "%s (%s) RECEIVED EVENT %s \n", m_bot->GetDebugIdentifier(), __task->GetName(), #EFUNC); \
+		}																\
 		__eventResult = __task->EFUNC(m_bot, ARG1);						\
 																		\
 		if (__eventResult.IsContinue() == false) {						\
@@ -575,6 +606,17 @@ private:
 																		\
 	if (__task)															\
 	{																	\
+																		\
+		if (m_bot && __eventResult.IsRequestingChange() && m_bot->IsDebugging(BOTDEBUG_TASKS)) \
+		{																						\
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", m_bot->GetDebugIdentifier()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", __task->GetName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 0, "responded to EVENT %s with ", #EFUNC); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "%s %s ", __eventResult.GetTypeName(), __eventResult.GetNextTask() ? __eventResult.GetNextTask()->GetName() : ""); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 100, 255, 0, "result PRIORITY (%s) ", __eventResult.GetPriorityTypeName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 255, 0, "(%s) \n", __eventResult.GetReason() ? __eventResult.GetReason() : ""); \
+		}																\
+																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
 	}																	\
 																		\
@@ -591,6 +633,10 @@ private:
 																		\
 	while (__task != nullptr)											\
 	{																	\
+		if (m_bot && m_bot->IsDebugging(BOTDEBUG_EVENTS))				\
+		{																\
+			m_bot->DebugPrintToConsole(BOTDEBUG_EVENTS, 100, 100, 100, "%s (%s) RECEIVED EVENT %s \n", m_bot->GetDebugIdentifier(), __task->GetName(), #EFUNC); \
+		}																\
 		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2);				\
 																		\
 		if (__eventResult.IsContinue() == false) {						\
@@ -603,6 +649,17 @@ private:
 																		\
 	if (__task)															\
 	{																	\
+																		\
+		if (m_bot && __eventResult.IsRequestingChange() && m_bot->IsDebugging(BOTDEBUG_TASKS)) \
+		{																						\
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", m_bot->GetDebugIdentifier()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", __task->GetName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 0, "responded to EVENT %s with ", #EFUNC); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "%s %s ", __eventResult.GetTypeName(), __eventResult.GetNextTask() ? __eventResult.GetNextTask()->GetName() : ""); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 100, 255, 0, "result PRIORITY (%s) ", __eventResult.GetPriorityTypeName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 255, 0, "(%s) \n", __eventResult.GetReason() ? __eventResult.GetReason() : ""); \
+		}																\
+																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
 	}																	\
 																		\
@@ -619,6 +676,10 @@ private:
 																		\
 	while (__task != nullptr)											\
 	{																	\
+		if (m_bot && m_bot->IsDebugging(BOTDEBUG_EVENTS))				\
+		{																\
+			m_bot->DebugPrintToConsole(BOTDEBUG_EVENTS, 100, 100, 100, "%s (%s) RECEIVED EVENT %s \n", m_bot->GetDebugIdentifier(), __task->GetName(), #EFUNC); \
+		}																\
 		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2, ARG3);			\
 																		\
 		if (__eventResult.IsContinue() == false) {						\
@@ -631,6 +692,17 @@ private:
 																		\
 	if (__task)															\
 	{																	\
+																		\
+		if (m_bot && __eventResult.IsRequestingChange() && m_bot->IsDebugging(BOTDEBUG_TASKS)) \
+		{																						\
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", m_bot->GetDebugIdentifier()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", __task->GetName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 0, "responded to EVENT %s with ", #EFUNC); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "%s %s ", __eventResult.GetTypeName(), __eventResult.GetNextTask() ? __eventResult.GetNextTask()->GetName() : ""); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 100, 255, 0, "result PRIORITY (%s) ", __eventResult.GetPriorityTypeName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 255, 0, "(%s) \n", __eventResult.GetReason() ? __eventResult.GetReason() : ""); \
+		}																\
+																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
 	}																	\
 																		\
@@ -647,6 +719,10 @@ private:
 																		\
 	while (__task != nullptr)											\
 	{																	\
+		if (m_bot && m_bot->IsDebugging(BOTDEBUG_EVENTS))				\
+		{																\
+			m_bot->DebugPrintToConsole(BOTDEBUG_EVENTS, 100, 100, 100, "%s (%s) RECEIVED EVENT %s \n", m_bot->GetDebugIdentifier(), __task->GetName(), #EFUNC); \
+		}																\
 		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2, ARG3, ARG4);	\
 																		\
 		if (__eventResult.IsContinue() == false) {						\
@@ -659,6 +735,17 @@ private:
 																		\
 	if (__task)															\
 	{																	\
+																		\
+		if (m_bot && __eventResult.IsRequestingChange() && m_bot->IsDebugging(BOTDEBUG_TASKS)) \
+		{																						\
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", m_bot->GetDebugIdentifier()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", __task->GetName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 0, "responded to EVENT %s with ", #EFUNC); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "%s %s ", __eventResult.GetTypeName(), __eventResult.GetNextTask() ? __eventResult.GetNextTask()->GetName() : ""); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 100, 255, 0, "result PRIORITY (%s) ", __eventResult.GetPriorityTypeName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 255, 0, "(%s) \n", __eventResult.GetReason() ? __eventResult.GetReason() : ""); \
+		}																\
+																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
 	}																	\
 																		\
@@ -675,6 +762,10 @@ private:
 																		\
 	while (__task != nullptr)											\
 	{																	\
+		if (m_bot && m_bot->IsDebugging(BOTDEBUG_EVENTS))				\
+		{																\
+			m_bot->DebugPrintToConsole(BOTDEBUG_EVENTS, 100, 100, 100, "%s (%s) RECEIVED EVENT %s \n", m_bot->GetDebugIdentifier(), __task->GetName(), #EFUNC); \
+		}																\
 		__eventResult = __task->EFUNC(m_bot, ARG1, ARG2, ARG3, ARG4, ARG5);	\
 																		\
 		if (__eventResult.IsContinue() == false) {						\
@@ -687,6 +778,17 @@ private:
 																		\
 	if (__task)															\
 	{																	\
+																		\
+		if (m_bot && __eventResult.IsRequestingChange() && m_bot->IsDebugging(BOTDEBUG_TASKS)) \
+		{																						\
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", m_bot->GetDebugIdentifier()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", __task->GetName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 0, "responded to EVENT %s with ", #EFUNC); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "%s %s ", __eventResult.GetTypeName(), __eventResult.GetNextTask() ? __eventResult.GetNextTask()->GetName() : ""); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 100, 255, 0, "result PRIORITY (%s) ", __eventResult.GetPriorityTypeName()); \
+			m_bot->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 255, 0, "(%s) \n", __eventResult.GetReason() ? __eventResult.GetReason() : ""); \
+		}																\
+																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
 	}																	\
 																		\
@@ -842,9 +944,9 @@ private:
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnLostSight, subject);
 	}
 
-	virtual void OnSound(edict_t* source, const Vector& position, SoundType type) override final
+	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_3_ARGS(OnSound, source, position, type);
+		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnSound, source, position, type, volume);
 	}
 };
 
@@ -897,6 +999,47 @@ inline AITask<BotClass>::~AITask()
 
 	m_pendingEventResult.DiscardResult();
 	m_listener.clear();
+}
+
+template<typename BotClass>
+inline const char* AITask<BotClass>::DebugString() const
+{
+	static char szdebug[256];
+
+	szdebug[0] = '\0';
+
+	auto root = this;
+	while (root->m_headTask)
+	{
+		root = root->m_headTask;
+	}
+
+	return BuildDebugString(szdebug, root);
+}
+
+template<typename BotClass>
+inline char* AITask<BotClass>::BuildDebugString(char* name, const AITask<BotClass>* task) const
+{
+	constexpr auto size = 256;
+
+	Q_strcat(name, task->GetName(), size);
+
+	auto next = task->GetNextTask();
+	if (next)
+	{
+		Q_strcat(name, "(", size);
+		BuildDebugString(name, next);
+		Q_strcat(name, ")", size);
+	}
+
+	auto below = task->GetTaskBelowMe();
+	if (below)
+	{
+		Q_strcat(name, "<<", size);
+		BuildDebugString(name, below);
+	}
+
+	return name;
 }
 
 template<typename BotClass>
@@ -964,6 +1107,25 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 			topTask = topTask->m_aboveTask;
 		}
 
+		if (bot->IsDebugging(BOTDEBUG_TASKS))
+		{
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", bot->GetDebugIdentifier());
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, this->GetName());
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 150, 200, " caused ");
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, topTask->GetName());
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 150, 200, " to PAUSE for ");
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, newTask->GetName());
+
+			if (result.GetReason())
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 255, 150, " (%s)\n", result.GetReason());
+			}
+			else
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "\n");
+			}
+		}
+
 		// Pause the task above us
 		topTask = topTask->ProcessTaskPause(bot, manager, newTask);
 
@@ -977,6 +1139,32 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 		if (newTask == nullptr)
 		{
 			throw std::runtime_error("TASK_SWITCH result with NULL new task!");
+		}
+
+		if (bot->IsDebugging(BOTDEBUG_TASKS))
+		{
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", bot->GetDebugIdentifier());
+
+			if (this == newTask)
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 254, 254, 51, "START TASK ");
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, this->GetName());
+			}
+			else
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, this->GetName());
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 150, 200, " SWITCH ");
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, newTask->GetName());
+			}	
+
+			if (result.GetReason())
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 255, 150, " (%s)\n", result.GetReason());
+			}
+			else
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "\n");
+			}
 		}
 
 		// We're changing tasks, end the current one
@@ -995,6 +1183,33 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 	{
 		AITask<BotClass>* taskToResume = this->m_belowTask;
 		this->ProcessTaskEnd(bot, manager, taskToResume);
+
+		if (bot->IsDebugging(BOTDEBUG_TASKS))
+		{
+			bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s ", bot->GetDebugIdentifier());
+
+			if (taskToResume)
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "TASK DONE ");
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, this->GetName());
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 165, 0, " RESUME ");
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, taskToResume->GetName());
+			}
+			else
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, "TASK DONE ");
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, this->GetName());
+			}
+
+			if (result.GetReason())
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 255, 150, " (%s)\n", result.GetReason());
+			}
+			else
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "\n");
+			}
+		}
 
 		// No task to resume, all tasks ended
 		if (taskToResume == nullptr)
@@ -1028,6 +1243,14 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskStart(BotClass* bot, AI
 	m_bot = bot;
 	m_manager = manager;
 
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s", bot->GetDebugIdentifier());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 165, 0, " STARTING ");
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, GetName());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, " \n");
+	}
+
 	// Maintain the task list
 	if (pastTask)
 	{
@@ -1047,7 +1270,7 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskStart(BotClass* bot, AI
 
 	m_aboveTask = nullptr;
 
-	m_nextTask = InitialParallelTask();
+	m_nextTask = InitialNextTask();
 	if (m_nextTask)
 	{
 		// Build Task list
@@ -1099,6 +1322,14 @@ inline void AITask<BotClass>::ProcessTaskEnd(BotClass* bot, AITaskManager<BotCla
 		return; // we never started anyways
 	}
 
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s", bot->GetDebugIdentifier());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 0, 0, " ENDING ");
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, GetName());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, " \n");
+	}
+
 	m_hasStarted = false;
 
 	// notify the other tasks on the list that we're ending
@@ -1127,6 +1358,14 @@ inline void AITask<BotClass>::ProcessTaskEnd(BotClass* bot, AITaskManager<BotCla
 template<typename BotClass>
 inline AITask<BotClass>* AITask<BotClass>::ProcessTaskPause(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task)
 {
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s", bot->GetDebugIdentifier());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 150, 150, 200, " PAUSING ");
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, GetName());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, " \n");
+	}
+
 	// Pause the next task on the list
 	if (m_nextTask)
 	{
@@ -1163,6 +1402,14 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskResume(BotClass* bot, A
 	{
 		// Don't resume since a pending event will make changes to us
 		return Continue();
+	}
+
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, "%s", bot->GetDebugIdentifier());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 165, 0, " RESUMING ");
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, GetName());
+		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 255, 255, 255, " \n");
 	}
 
 	m_isPaused = false;

@@ -133,7 +133,8 @@ void IPlayerController::RunLook()
 	}
 
 	constexpr auto tolerance = 0.98f;
-	auto to = m_looktarget - me->GetEyeOrigin();
+	auto eyepos = me->GetEyeOrigin();
+	auto to = m_looktarget - eyepos;
 	to.NormalizeInPlace();
 	QAngle desiredAngles;
 	VectorAngles(to, desiredAngles);
@@ -150,9 +151,6 @@ void IPlayerController::RunLook()
 		if (m_didLookAtTarget == false)
 		{
 			m_didLookAtTarget = true; // first time the bot aim was on target since the last AimAt call
-#ifdef EXT_DEBUG
-			rootconsole->ConsolePrint("BOT#%i Look At ON_TARGET", GetBot()->GetIndex());
-#endif // EXT_DEBUG
 		}
 	}
 	else
@@ -166,14 +164,20 @@ void IPlayerController::RunLook()
 	finalAngles.x = AngleNormalize(finalAngles.x);
 	finalAngles.y = AngleNormalize(finalAngles.y);
 
+	if (me->IsDebugging(BOTDEBUG_LOOK))
+	{
+		constexpr auto DRAW_TIME = 0.2f;
+		NDebugOverlay::Line(eyepos, eyepos + 256.0f * forward, 255, 255, 0, true, DRAW_TIME);
+
+		float width = isSteady ? 2.0f : 4.0f;
+		int red = m_isOnTarget ? 255 : 0;
+		int green = m_lookentity.IsValid() ? 255 : 0;
+
+		NDebugOverlay::HorzArrow(eyepos, m_looktarget, width, red, green, 255, 255, false, DRAW_TIME);
+	}
+
 	// Updates the bot view angle, this is later sent on the User Command
 	me->SetViewAngles(finalAngles);
-
-#ifdef EXT_DEBUG
-	float width = isSteady ? 4.0f : 2.0f;
-	int red = m_isOnTarget ? 255 : 0;
-	NDebugOverlay::HorzArrow(me->GetEyeOrigin(), m_looktarget, width, red, 0, 255, 200, false, EXT_DEBUG_DRAW_TIME);
-#endif // EXT_DEBUG
 }
 
 void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration)

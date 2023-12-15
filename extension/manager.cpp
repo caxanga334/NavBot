@@ -40,6 +40,7 @@ CExtManager::CExtManager()
 	m_bots.reserve(128); // 128 should be good for most mods
 	m_botnames.reserve(256); // reserve space for 256 bot names, vector size will increase if needed
 	m_nextbotname = 0U;
+	m_botdebugmode = BOTDEBUG_NONE;
 }
 
 CExtManager::~CExtManager()
@@ -288,6 +289,66 @@ CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {
 	extern CExtManager* extmanager;
 	extmanager->LoadBotNames();
+}
+
+CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 1 || args.ArgC() > 2)
+	{
+		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, LOCOMOTION, ERRORS");
+		rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTIONS>");
+		return;
+	}
+
+	extern CExtManager* extmanager;
+	auto option = args.Arg(1);
+
+	if (strncasecmp(option, "STOPALL", 6) == 0)
+	{
+		extmanager->StopAllDebugging();
+		rootconsole->ConsolePrint("Stopped debugging");
+	}
+	else if (strncasecmp(option, "SENSOR", 6) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_SENSOR);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Sensor Interface");
+	}
+	else if (strncasecmp(option, "TASKS", 5) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_TASKS);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Tasks");
+	}
+	else if (strncasecmp(option, "LOOK", 4) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_LOOK);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Look");
+	}
+	else if (strncasecmp(option, "PATH", 4) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_PATH);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Path");
+	}
+	else if (strncasecmp(option, "EVENTS", 6) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_EVENTS);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Events");
+	}
+	else if (strncasecmp(option, "LOCOMOTION", 10) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_LOCOMOTION);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Locomotion");
+	}
+	else if (strncasecmp(option, "ERRORS", 6) == 0)
+	{
+		extmanager->ToggleDebugOption(BOTDEBUG_ERRORS);
+		rootconsole->ConsolePrint("Toggle Debugging Bot Error");
+	}
+	else
+	{
+		rootconsole->ConsolePrint("Unknown option \"%s\".", option);
+		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, LOCOMOTION, ERRORS");
+		rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTIONS>");
+	}
 }
 
 #ifdef EXT_DEBUG

@@ -20,7 +20,8 @@ public:
 inline unsigned int CTFNavMesh::GetSubVersionNumber(void) const
 {
 	/*
-	* Sub version 1: Initial TF Nav Mesh implementation
+	* Sub version 
+	* 1: Initial TF Nav Mesh implementation
 	*/
 
 	return 1;

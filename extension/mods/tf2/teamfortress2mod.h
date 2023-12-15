@@ -16,6 +16,9 @@ public:
 	virtual const char* GetModName() { return "Team Fortress 2"; }
 
 	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_TF2; }
+
+	virtual CBaseBot* AllocateBot(edict_t* edict);
+	virtual CNavMesh* NavMeshFactory();
 };
 
 #endif // !SMNAV_TF2_MOD_H_

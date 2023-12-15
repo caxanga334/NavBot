@@ -67,7 +67,7 @@ public:
 	virtual const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
 
 	// Events
-	virtual void OnSound(edict_t* source, const Vector& position, SoundType type) override;
+	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
 
 protected:
 	virtual void UpdateKnownEntities();

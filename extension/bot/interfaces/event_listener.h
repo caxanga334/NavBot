@@ -45,7 +45,7 @@ public:
 	virtual void OnOtherKilled(edict_t* victim, edict_t* attacker = nullptr); // when another player gets killed
 	virtual void OnSight(edict_t* subject); // when the bot spots an entity
 	virtual void OnLostSight(edict_t* subject); // when the bot loses sight of an entity
-	virtual void OnSound(edict_t* source, const Vector& position, SoundType type); // when the bot hears an entity
+	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume); // when the bot hears an entity
 };
 
 inline void IEventListener::OnTestEventPropagation()
@@ -178,7 +178,7 @@ inline void IEventListener::OnLostSight(edict_t* subject)
 	}
 }
 
-inline void IEventListener::OnSound(edict_t* source, const Vector& position, SoundType type)
+inline void IEventListener::OnSound(edict_t* source, const Vector& position, SoundType type, const int volume)
 {
 	auto vec = GetListenerVector();
 
@@ -186,7 +186,7 @@ inline void IEventListener::OnSound(edict_t* source, const Vector& position, Sou
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnSound(source, position, type);
+			listener->OnSound(source, position, type, volume);
 		}
 	}
 }

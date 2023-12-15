@@ -47,8 +47,10 @@ sourceFiles = [
   'bot/interfaces/path/basepath.cpp',
   'bot/interfaces/path/meshnavigator.cpp',
   'bot/basebot.cpp',
+  'bot/basebot_debug.cpp',
   'concommands_bots.cpp',
   # TF2 Bot
+  'bot/tf2/tf2bot.cpp',
   'mods/tf2/teamfortress2mod.cpp',
   'mods/tf2/nav/tfnavarea.cpp',
   'mods/tf2/nav/tfnavmesh.cpp',

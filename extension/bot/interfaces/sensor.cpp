@@ -4,6 +4,7 @@
 #include <navmesh/nav_area.h>
 #include <ifaces_extern.h>
 #include <util/helpers.h>
+#include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"
 
 BotSensorTraceFilter::BotSensorTraceFilter(int collisionGroup) :
@@ -315,7 +316,7 @@ void ISensor::SetFieldOfView(const float fov)
 	m_coshalfFOV = cosf(0.5f * fov * M_PI / 180.0f);
 }
 
-void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type)
+void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type, const int volume)
 {
 	Vector origin = GetBot()->GetAbsOrigin();
 	float distance = (origin - position).Length();
@@ -338,7 +339,11 @@ void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type)
 	{
 		AddKnownEntity(source);
 		known = GetKnown(source);
-		known->NotifyHeard(static_cast<int>(distance), position);
+		known->NotifyHeard(volume, position);
+	}
+	else
+	{
+		known->NotifyHeard(volume, position);
 	}
 }
 
@@ -395,6 +400,15 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 			if (known.GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
 			{
 				me->OnSight(known.GetEdict());
+
+				if (me->IsDebugging(BOTDEBUG_SENSOR))
+				{
+					auto edict = known.GetEdict();
+					rootconsole->ConsolePrint("%s caught line of sight with entity %i (%s)", me->GetDebugIdentifier(), 
+						gamehelpers->IndexOfEdict(edict), gamehelpers->GetEntityClassname(edict));
+
+					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(edict), 4.0f, 0, 255, 0, 255, false, 5.0f);
+				}
 			}
 
 			continue; // this known entity was updated recently
@@ -411,6 +425,15 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 			{
 				known.MarkAsNotVisible();
 				me->OnLostSight(known.GetEdict());
+
+				if (me->IsDebugging(BOTDEBUG_SENSOR))
+				{
+					auto edict = known.GetEdict();
+					rootconsole->ConsolePrint("%s lost line of sight with entity %i (%s)", me->GetDebugIdentifier(),
+						gamehelpers->IndexOfEdict(edict), gamehelpers->GetEntityClassname(edict));
+
+					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(edict), 4.0f, 255, 0, 0, 255, false, 5.0f);
+				}
 			}
 		}
 	}

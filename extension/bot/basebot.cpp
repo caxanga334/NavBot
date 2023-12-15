@@ -2,6 +2,7 @@
 #include <ifaces_extern.h>
 #include <extplayer.h>
 #include <util/entprops.h>
+#include <util/librandom.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
@@ -22,6 +23,7 @@ public:
 	virtual TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	virtual TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
 	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
+	virtual const char* GetName() const { return "CBaseBotTestTask"; }
 };
 
 class CBaseBotPathTestTask : public AITask<CBaseBot>
@@ -30,6 +32,7 @@ public:
 	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
 	virtual TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
+	virtual const char* GetName() const { return "CBaseBotPathTestTask"; }
 
 private:
 	CMeshNavigator m_nav;
@@ -41,6 +44,7 @@ class CBaseBotSwitchTestTask : public AITask<CBaseBot>
 public:
 	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	virtual const char* GetName() const { return "CBaseBotSwitchTestTask"; }
 
 };
 
@@ -59,7 +63,7 @@ TaskResult<CBaseBot> CBaseBotTestTask::OnTaskResume(CBaseBot* bot, AITask<CBaseB
 TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnTestEventPropagation(CBaseBot* bot)
 {
 	rootconsole->ConsolePrint("AI Event -- OnTestEventPropagation");
-	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH);
+	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH, "Event pause test!");
 }
 
 QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(const CBaseBot* me)
@@ -197,6 +201,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_profile = extmanager->GetBotDifficultyProfileManager().GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
 	m_nextupdatetime = 64;
+	m_joingametime = 64;
 	m_controller = botmanager->GetBotController(edict);
 	m_listeners.reserve(8);
 	m_basecontrol = nullptr;
@@ -205,6 +210,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_basebehavior = nullptr;
 	m_weaponselect = 0;
 	m_cmdtimer.Invalidate();
+	m_debugtextoffset = 0;
 }
 
 CBaseBot::~CBaseBot()
@@ -242,7 +248,28 @@ void CBaseBot::PlayerThink()
 {
 	CBaseExtPlayer::PlayerThink(); // Call base class function first
 
-	if (SleepWhenDead() == true && GetPlayerInfo()->IsDead() == true)
+	m_debugtextoffset = 0;
+
+	if (IsDebugging(BOTDEBUG_TASKS))
+	{
+		DebugFrame();
+	}
+
+	// this needs to be before the sleep check since spectator players are dead
+	if (--m_joingametime <= 0)
+	{
+		if (!HasJoinedGame() && CanJoinGame())
+		{
+			TryJoinGame();
+			m_joingametime = TIME_TO_TICKS(librandom::generate_random_float(1.0f, 5.0f));
+		}
+		else if (HasJoinedGame())
+		{
+			m_joingametime = TIME_TO_TICKS(20.0f); // if the bot is in-game already, run this check every 20 seconds
+		}
+	}
+
+	if (SleepWhenDead() && GetPlayerInfo()->IsDead())
 	{
 		return;
 	}
@@ -284,11 +311,6 @@ void CBaseBot::Reset()
 
 void CBaseBot::Update()
 {
-	if (HasJoinedGame() == false && CanJoinGame() == true)
-	{
-		TryJoinGame();
-	}
-
 	for (auto iface : m_interfaces)
 	{
 		iface->Update();
@@ -564,6 +586,11 @@ void CBaseBot::SelectWeaponByCommand(const char* szclassname) const
 {
 	char command[128];
 	ke::SafeSprintf(command, sizeof(command), "use %s", szclassname);
+	serverpluginhelpers->ClientCommand(GetEdict(), command);
+}
+
+void CBaseBot::FakeClientCommand(const char* command) const
+{
 	serverpluginhelpers->ClientCommand(GetEdict(), command);
 }
 

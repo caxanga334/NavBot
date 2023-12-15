@@ -6,6 +6,7 @@
 #include <util/EntityUtils.h>
 #include <util/librandom.h>
 #include <entities/baseentity.h>
+#include <manager.h>
 #include "meshnavigator.h"
 
 #undef min
@@ -182,20 +183,21 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	// move bot along path
 	mover->MoveTowards(goalPos);
 
-#ifdef EXT_DEBUG
-	auto start = GetGoalSegment();
 
-	if (start != nullptr)
+	if (bot->IsDebugging(BOTDEBUG_PATH))
 	{
-		start = GetPriorSegment(start);
-	}
+		auto start = GetGoalSegment();
 
-	if (start != nullptr)
-	{
-		Draw(start);
-	}
-#endif // EXT_DEBUG
+		if (start != nullptr)
+		{
+			start = GetPriorSegment(start);
+		}
 
+		if (start != nullptr)
+		{
+			Draw(start, 0.2f);
+		}
+	}
 }
 
 bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
