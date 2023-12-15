@@ -3,15 +3,15 @@
 #include <ifaces_extern.h>
 #include "tf2bot.h"
 
-CTFBot::CTFBot(edict_t* edict) : CBaseBot(edict)
+CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 {
 }
 
-CTFBot::~CTFBot()
+CTF2Bot::~CTF2Bot()
 {
 }
 
-void CTFBot::TryJoinGame()
+void CTF2Bot::TryJoinGame()
 {
 	FakeClientCommand("jointeam auto");
 	FakeClientCommand("joinclass soldier");

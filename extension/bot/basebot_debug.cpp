@@ -3,15 +3,21 @@
 #include <sdkports/debugoverlay_shared.h>
 #include "basebot.h"
 
-ConVar cvar_bot_debug_filter("sm_navbot_debug_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Bot client index filter when debugging.");
+void OnBotDebugFilterChanged(IConVar* var, const char* pOldValue, float flOldValue);
 
-bool CBaseBot::IsDebugging(int bits)
+ConVar cvar_bot_debug_filter("sm_navbot_debug_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Bot client index filter when debugging.", OnBotDebugFilterChanged);
+
+static int s_bot_debug_filter;
+
+static void OnBotDebugFilterChanged(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	const int cvar = cvar_bot_debug_filter.GetInt();
+	s_bot_debug_filter = cvar_bot_debug_filter.GetInt();
+}
 
-	if (cvar > 0 && cvar != GetIndex())
+bool CBaseBot::IsDebugging(int bits) const
+{
+	if (s_bot_debug_filter > 0 && s_bot_debug_filter != GetIndex())
 	{
-		// A debug target is set and I am not it
 		return false;
 	}
 
@@ -29,13 +35,12 @@ const char* CBaseBot::GetDebugIdentifier()
 	return debug;
 }
 
-void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...)
+void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...) const
 {
 	if (!IsDebugging(bits))
 	{
 		return;
 	}
-
 
 	char buffer[512]{};
 	va_list vaargs = nullptr;

@@ -13,11 +13,11 @@
 
 struct edict_t;
 
-class CTFBot : public CBaseBot
+class CTF2Bot : public CBaseBot
 {
 public:
-	CTFBot(edict_t* edict);
-	virtual ~CTFBot();
+	CTF2Bot(edict_t* edict);
+	virtual ~CTF2Bot();
 
 	virtual void TryJoinGame() override;
 };

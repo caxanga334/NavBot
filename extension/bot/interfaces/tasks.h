@@ -477,22 +477,55 @@ public:
 	bool HasStarted() const { return m_hasStarted; }
 	bool IsPaused() const { return m_isPaused; }
 
+	/**
+	 * @brief Called when the task is starting
+	 * @param bot Bot performing this task
+	 * @param pastTask Previous task or NULL if none
+	 * @return Task result
+	*/
 	virtual TaskResult<BotClass> OnTaskStart(BotClass* bot, AITask<BotClass>* pastTask) { return Continue(); }
+	/**
+	 * @brief Called when running the task
+	 * @param bot Bot performing this task
+	 * @return Task result
+	*/
 	virtual TaskResult<BotClass> OnTaskUpdate(BotClass* bot) { return Continue(); }
+	/**
+	 * @brief Called when ending the task
+	 * @param bot Bot performing this task
+	 * @param nextTask Task that will replace this or NULL if none
+	*/
 	virtual void OnTaskEnd(BotClass* bot, AITask<BotClass>* nextTask) { return; }
+	/**
+	 * @brief Called when pausing this task for another task
+	 * @param bot Bot performing this task
+	 * @param nextTask Task that will run instead of the current task
+	 * @return true if this task should be kept, false if it should end and be destroyed
+	*/
 	virtual bool OnTaskPause(BotClass* bot, AITask<BotClass>* nextTask) { return true; }
+	/**
+	 * @brief Called when resuming a paused task
+	 * @param bot Bot performing this task
+	 * @param pastTask Task that was running in place of this one
+	 * @return Task result
+	*/
 	virtual TaskResult<BotClass> OnTaskResume(BotClass* bot, AITask<BotClass>* pastTask) { return Continue(); }
 
+	// Task display name for debugging
 	virtual const char* GetName() const = 0;
 
 	const char* DebugString() const;
 	char* BuildDebugString(char* name, const AITask<BotClass>* task) const;
 
 	// These functions are used to trigger a state change on a Task.
-
+	
+	// Keep the current task running
 	TaskResult<BotClass> Continue() const;
+	// Switch to a new task, the current task will be destroyed
 	TaskResult<BotClass> SwitchTo(AITask<BotClass>* newTask, const char* reason) const;
+	// Put the current task on pause and begin running another one on it's place, the current task will be kept and returned to when the new task ends
 	TaskResult<BotClass> PauseFor(AITask<BotClass>* newTask, const char* reason) const;
+	// Ends and destroy the current task
 	TaskResult<BotClass> Done(const char* reason) const;
 
 	TaskEventResponseResult<BotClass> TryContinue(EventResultPriorityType priority = PRIORITY_DONT_CARE) const;
@@ -512,6 +545,10 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type, const int volume) { return TryContinue(); }
 
+	/**
+	 * @brief The task that comes after this
+	 * @return NULL for none or pointer to a task that will be added after this task
+	*/
 	virtual AITask<BotClass>* InitialNextTask() { return nullptr; }
 
 	AITask<BotClass>* GetHeadTask() const { return m_headTask; }

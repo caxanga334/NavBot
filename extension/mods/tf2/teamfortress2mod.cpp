@@ -16,7 +16,7 @@ CTeamFortress2Mod::~CTeamFortress2Mod()
 
 CBaseBot* CTeamFortress2Mod::AllocateBot(edict_t* edict)
 {
-    return new CTFBot(edict);
+    return new CTF2Bot(edict);
 }
 
 CNavMesh* CTeamFortress2Mod::NavMeshFactory()
