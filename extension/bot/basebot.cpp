@@ -79,6 +79,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBa
 	ShortestPathCost cost;
 
 	m_goal = player.GetAbsOrigin();
+	m_nav.SetSkipAheadDistance(350.0f);
 
 	bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
 

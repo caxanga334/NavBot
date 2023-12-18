@@ -50,9 +50,9 @@ QueryAnswerType IBehavior::ShouldFreeRoam(const CBaseBot* me)
 	return GetDecisionQueryResponder()->ShouldFreeRoam(me);
 }
 
-QueryAnswerType IBehavior::ShouldWaitForBlocker(const CBaseBot* me, edict_t* blocker)
+QueryAnswerType IBehavior::IsBlocker(const CBaseBot* me, edict_t* blocker, const bool any)
 {
-	return GetDecisionQueryResponder()->ShouldWaitForBlocker(me, blocker);
+	return GetDecisionQueryResponder()->IsBlocker(me, blocker, any);
 }
 
 CKnownEntity* IBehavior::SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)

@@ -312,9 +312,9 @@ public:
 		PROPAGATE_DECISION_WITH_1ARG(ShouldFreeRoam, me);
 	}
 
-	virtual QueryAnswerType ShouldWaitForBlocker(const CBaseBot* me, edict_t* blocker) override
+	virtual QueryAnswerType IsBlocker(const CBaseBot* me, edict_t* blocker, const bool any = false) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldWaitForBlocker, me, blocker);
+		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
 	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override

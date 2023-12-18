@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <sdkports/debugoverlay_shared.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
@@ -159,7 +160,12 @@ void IMovement::Frame()
 
 		if (m_internal_jumptimer == 0)
 		{
-			GetBot()->GetControlInterface()->PressJumpButton(); 
+			GetBot()->GetControlInterface()->PressJumpButton();
+
+			if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+			{
+				GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (JUMP) \n", GetBot()->GetDebugIdentifier());
+			}
 		}
 	}
 }
@@ -199,6 +205,7 @@ void IMovement::MoveTowards(const Vector& pos)
 	auto origin = me->GetAbsOrigin();
 	Vector eyeforward;
 	me->EyeVectors(&eyeforward);
+	m_stuck.OnMovementRequested();
 
 	Vector2D forward(eyeforward.x, eyeforward.y);
 	forward.NormalizeInPlace();
@@ -212,6 +219,11 @@ void IMovement::MoveTowards(const Vector& pos)
 	float side = to.Dot(right);
 
 	constexpr float epsilon = 0.25f;
+
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		NDebugOverlay::Line(origin, pos, 0, 255, 0, false, 0.2f);
+	}
 
 	// handle ladder movement
 	if (IsOnLadder() && IsUsingLadder() && (m_ladderState == USING_LADDER_UP || m_ladderState == USING_LADDER_DOWN))
@@ -295,6 +307,16 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 	m_ladderState = LadderState::APPROACHING_LADDER_UP;
 	m_ladder = ladder;
 	m_ladderExit = dismount;
+
+	auto bot = GetBot();
+	
+	if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 0, 200, "%s CLIMBING LADDER! \n", bot->GetDebugIdentifier());
+
+		m_ladderExit->DrawFilled(255, 0, 255, 255, 5.0f, true);
+		NDebugOverlay::Text(m_ladderExit->GetCenter() + Vector(0.0f, 0.0f, StepHeight), "DISMOUNT AREA!", false, 5.0f);
+	}
 }
 
 void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
@@ -302,6 +324,16 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 	m_ladderState = LadderState::APPROACHING_LADDER_DOWN;
 	m_ladder = ladder;
 	m_ladderExit = dismount;
+
+	auto bot = GetBot();
+
+	if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 0, 200, "%s DESCENDING LADDER! \n", bot->GetDebugIdentifier());
+
+		m_ladderExit->DrawFilled(255, 0, 255, 255, 5.0f, true);
+		NDebugOverlay::Text(m_ladderExit->GetCenter() + Vector(0.0f, 0.0f, StepHeight), "DISMOUNT AREA!", false, 5.0f);
+	}
 }
 
 void IMovement::Jump()
@@ -321,6 +353,11 @@ void IMovement::CrouchJump()
 	// This is a tick timer, the bot will jump when it reaches 0
 	m_internal_jumptimer = 5; // jump after 5 ticks
 	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (CROUCH) \n", GetBot()->GetDebugIdentifier());
+	}
 }
 
 /**
@@ -338,6 +375,15 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 	m_isJumpingAcrossGap = true;
 	m_landingGoal = landing;
 	m_isAirborne = false;
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		Vector top = GetBot()->GetAbsOrigin();
+		top.z += GetMaxJumpHeight();
+
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
+		NDebugOverlay::HorzArrow(top, landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
+	}
 }
 
 bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
@@ -580,6 +626,12 @@ void IMovement::StuckMonitor()
 
 				// resend stuck event
 				bot->OnStuck();
+
+				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s STILL STUCK! \n", bot->GetDebugIdentifier());
+					NDebugOverlay::Circle(m_stuck.GetStuckPos() + Vector(0.0f, 0.0f, 5.0f), QAngle(-90.0f, 0.0f, 0.0f), 5.0f, 255, 0, 0, 255, true, 1.0f);
+				}
 			}
 		}
 	}
@@ -600,11 +652,15 @@ void IMovement::StuckMonitor()
 				// bot is taking too long to move, consider it stuck
 				m_stuck.Stuck(bot);
 				bot->OnStuck();
+
+				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s GOT STUCK! \n", bot->GetDebugIdentifier());
+					NDebugOverlay::Circle(origin + Vector(0.0f, 0.0f, 5.0f), QAngle(-90.0f, 0.0f, 0.0f), 5.0f, 255, 0, 0, 255, true, 1.0f);
+				}
 			}
 		}
 	}
-
-
 }
 
 bool IMovement::TraverseLadder()
@@ -647,6 +703,7 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 
 	auto origin = GetBot()->GetAbsOrigin();
 	const float z = origin.z;
+	const bool debug = GetBot()->IsDebugging(BOTDEBUG_MOVEMENT);
 
 	// sanity check in case the bot movement fails somehow and resets while being above the ladder already
 	if (z >= m_ladder->m_top.z - GetStepHeight())
@@ -663,8 +720,21 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	FaceTowards(m_ladder->m_bottom);
 	MoveTowards(m_ladder->m_bottom);
 
+	if (debug)
+	{
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), m_ladder->m_bottom, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::Cross3D(m_ladder->m_bottom, 12.0f, 0, 0, 255, false, 0.2f);
+	}
+
 	if (IsOnLadder()) // bot grabbed the ladder
 	{
+		if (debug)
+		{
+			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), extmanager->GetMod()->GetPlayerHullMins(), extmanager->GetMod()->GetPlayerHullMaxs(), 0, 0, 255, 255, 5.0f);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (UP DIR)! \n", GetBot()->GetDebugIdentifier());
+		}
+
+		GetBot()->GetControlInterface()->ReleaseMovementButtons();
 		return USING_LADDER_UP; // climb it
 	}
 
@@ -680,6 +750,7 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 
 	auto origin = GetBot()->GetAbsOrigin();
 	const float z = origin.z;
+	const bool debug = GetBot()->IsDebugging(BOTDEBUG_MOVEMENT);
 
 	if (z <= m_ladder->m_bottom.z + GetMaxJumpHeight())
 	{
@@ -716,8 +787,21 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 	FaceTowards(moveGoal);
 	MoveTowards(moveGoal);
 
+	if (debug)
+	{
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), moveGoal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::Cross3D(moveGoal, 12.0f, 0, 0, 255, false, 0.2f);
+	}
+
 	if (IsOnLadder())
 	{
+		if (debug)
+		{
+			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), extmanager->GetMod()->GetPlayerHullMins(), extmanager->GetMod()->GetPlayerHullMaxs(), 0, 0, 255, 255, 5.0f);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (DOWN DIR)! \n", GetBot()->GetDebugIdentifier());
+		}
+
+		GetBot()->GetControlInterface()->ReleaseMovementButtons();
 		return USING_LADDER_DOWN; // bot grabbed the ladder
 	}
 
@@ -739,6 +823,14 @@ IMovement::LadderState IMovement::UseLadderUp()
 	auto input = GetBot()->GetControlInterface();
 	auto origin = GetBot()->GetAbsOrigin();
 	const float z = origin.z;
+	const float landingz = m_ladderExit->GetZ(m_ladder->m_top) + GetStepHeight() * 1.5f;
+
+	// Bot is not at the top of the ladder but is above the landing nav area height plus some offset distance
+	if (z >= landingz)
+	{
+		m_ladderTimer.Start(2.0f);
+		return EXITING_LADDER_UP;
+	}
 
 	if (z >= m_ladder->m_top.z)
 	{
@@ -750,6 +842,13 @@ IMovement::LadderState IMovement::UseLadderUp()
 	Vector goal = origin + 100.0f * (-m_ladder->GetNormal() + Vector(0.0f, 0.0f, 2.0f));
 	input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f);
 	MoveTowards(goal);
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
+	}
+
 	return USING_LADDER_UP;
 }
 
@@ -778,6 +877,13 @@ IMovement::LadderState IMovement::UseLadderDown()
 	Vector goal = origin + 100.0f * (m_ladder->GetNormal() + Vector(0.0f, 0.0f, 2.0f));
 	input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f);
 	MoveTowards(goal);
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
+	}
+
 	return USING_LADDER_DOWN;
 }
 
@@ -797,9 +903,16 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	float range = toGoal.NormalizeInPlace();
 	toGoal.z = 1.0f;
 
-	input->AimAt(eyepos + 100.0f * toGoal, IPlayerController::LOOK_MOVEMENT, 0.1f);
+	Vector goalPos = eyepos + 100.0f * toGoal;
+	input->AimAt(goalPos, IPlayerController::LOOK_MOVEMENT, 0.1f);
 
-	MoveTowards(origin + 100.0f * toGoal);
+	MoveTowards(goalPos);
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goalPos, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::Cross3D(goalPos, 12.0f, 0, 0, 255, false, 0.2f);
+	}
 
 	constexpr auto tolerance = 10.0f;
 	if (GetBot()->GetLastKnownNavArea() == m_ladderExit && range < tolerance)

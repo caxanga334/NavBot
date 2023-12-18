@@ -94,6 +94,11 @@ public:
 			this->movementrequesttimer.Invalidate();
 			this->stuckpos = vec3_origin;
 		}
+
+		inline void OnMovementRequested()
+		{
+			this->movementrequesttimer.Start();
+		}
 	};
 	
 	// Ladder usage state

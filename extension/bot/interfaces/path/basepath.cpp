@@ -85,6 +85,11 @@ void CPath::Draw(const CBasePathSegment* start, const float duration)
 
 		v2 = next->goal;
 
+		if (next->ladder)
+		{
+			Drawladder(next->ladder, next->type, duration);
+		}
+
 		DrawSingleSegment(v1, v2, next->type, duration);
 
 		v1 = next->goal;
@@ -110,6 +115,11 @@ void CPath::DrawFullPath(const float duration)
 		}
 
 		v2 = segment->goal; // set second point before drawing
+
+		if (segment->ladder)
+		{
+			Drawladder(segment->ladder, segment->type, duration);
+		}
 
 		DrawSingleSegment(v1, v2, segment->type, duration);
 
@@ -597,6 +607,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 
 		CBasePathSegment* newSegment = CreateNewSegment();
 
+		newSegment->CopySegment(from);
 		newSegment->goal = jumpfrom - jumpforward * halfwidth;
 		newSegment->type = AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP;
 
@@ -612,6 +623,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 
 		CBasePathSegment* newSegment = CreateNewSegment();
 
+		newSegment->CopySegment(from);
 		newSegment->goal = jumppos;
 		newSegment->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
 
@@ -728,6 +740,20 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 		NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 0, 255, 0, 255, true, duration);
 		break;
 	}
+	}
+}
+
+void CPath::Drawladder(const CNavLadder* ladder, AIPath::SegmentType type, const float duration)
+{
+	constexpr auto LADDER_WIDTH = 8.0f;
+
+	if (type == AIPath::SegmentType::SEGMENT_LADDER_UP)
+	{
+		NDebugOverlay::VertArrow(ladder->m_bottom, ladder->m_top, LADDER_WIDTH, 0, 255, 0, 255, true, duration);
+	}
+	else
+	{
+		NDebugOverlay::VertArrow(ladder->m_top, ladder->m_bottom, LADDER_WIDTH, 0, 100, 0, 255, true, duration);
 	}
 }
 

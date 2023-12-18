@@ -16,7 +16,7 @@ enum BotDebugModes
 	BOTDEBUG_LOOK = (1 << 2),
 	BOTDEBUG_PATH = (1 << 3),
 	BOTDEBUG_EVENTS = (1 << 4),
-	BOTDEBUG_LOCOMOTION = (1 << 5),
+	BOTDEBUG_MOVEMENT = (1 << 5),
 	BOTDEBUG_ERRORS = (1 << 6),
 };
 

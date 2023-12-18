@@ -334,6 +334,7 @@ private:
 	float m_cursorPos;
 
 	void DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration);
+	void Drawladder(const CNavLadder* ladder, AIPath::SegmentType type, const float duration);
 };
 
 inline void CPath::Invalidate()

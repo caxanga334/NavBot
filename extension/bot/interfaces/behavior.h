@@ -28,7 +28,7 @@ public:
 	virtual QueryAnswerType ShouldRetreat(const CBaseBot* me) override;
 	virtual QueryAnswerType ShouldUse(const CBaseBot* me, edict_t* object) override;
 	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
-	virtual QueryAnswerType ShouldWaitForBlocker(const CBaseBot* me, edict_t* blocker) override;
+	virtual QueryAnswerType IsBlocker(const CBaseBot* me, edict_t* blocker, const bool any = false) override;
 	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override;
 	virtual Vector GetTargetAimPos(const CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 

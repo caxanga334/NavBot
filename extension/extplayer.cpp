@@ -9,7 +9,7 @@ extern IPlayerInfoManager* playerinfomanager;
 extern IServerGameClients* gameclients;
 extern CNavMesh* TheNavMesh;
 
-constexpr auto PLAYER_NAV_UPDATE_TIME = 0.6f; // Interval of nav mesh data updates
+constexpr auto PLAYER_NAV_UPDATE_TIME = 0.1f; // Interval of nav mesh data updates
 constexpr auto NEAREST_AREA_MAX_DISTANCE = 128.0f;
 
 CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)

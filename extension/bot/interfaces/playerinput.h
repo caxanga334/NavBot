@@ -44,6 +44,8 @@ public:
 	IPlayerInput();
 
 	void ReleaseAllButtons();
+	void ReleaseMovementButtons(const bool uncrouch = false);
+	void ReleaseAllAttackButtons();
 	void ResetInputData();
 	void PressAttackButton(const float duration = -1.0f);
 	void ReleaseAttackButton();
@@ -125,6 +127,27 @@ inline void IPlayerInput::ReleaseAllButtons()
 	m_moveleftbuttontimer.Invalidate();
 	m_moverightbuttontimer.Invalidate();
 	m_reloadbuttontimer.Invalidate();
+}
+
+inline void IPlayerInput::ReleaseMovementButtons(const bool uncrouch)
+{
+	ReleaseForwardButton();
+	ReleaseBackwardsButton();
+	ReleaseMoveLeftButton();
+	ReleaseMoveRightButton();
+	ReleaseJumpButton();
+
+	if (uncrouch)
+	{
+		ReleaseCrouchButton();
+	}
+}
+
+inline void IPlayerInput::ReleaseAllAttackButtons()
+{
+	ReleaseAttackButton();
+	ReleaseSecondaryAttackButton();
+	ReleaseSpecialAttackButton();
 }
 
 inline void IPlayerInput::ResetInputData()

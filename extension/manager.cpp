@@ -293,16 +293,16 @@ CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 
 CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 {
-	if (args.ArgC() < 1)
+	if (args.ArgC() <= 1)
 	{
-		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, LOCOMOTION, ERRORS");
+		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS");
 		rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTION1> <OPTION2> ...");
 		return;
 	}
 
 	extern CExtManager* extmanager;
 	
-	for (int i = 1; i > args.ArgC(); i++)
+	for (int i = 1; i < args.ArgC(); i++)
 	{
 		auto option = args.Arg(i);
 
@@ -337,10 +337,10 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 			extmanager->ToggleDebugOption(BOTDEBUG_EVENTS);
 			rootconsole->ConsolePrint("Toggle Debugging Bot Events");
 		}
-		else if (strncasecmp(option, "LOCOMOTION", 10) == 0)
+		else if (strncasecmp(option, "MOVEMENT", 8) == 0)
 		{
-			extmanager->ToggleDebugOption(BOTDEBUG_LOCOMOTION);
-			rootconsole->ConsolePrint("Toggle Debugging Bot Locomotion");
+			extmanager->ToggleDebugOption(BOTDEBUG_MOVEMENT);
+			rootconsole->ConsolePrint("Toggle Debugging Bot Movement");
 		}
 		else if (strncasecmp(option, "ERRORS", 6) == 0)
 		{
@@ -350,7 +350,7 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 		else
 		{
 			rootconsole->ConsolePrint("Unknown option \"%s\".", option);
-			rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, LOCOMOTION, ERRORS");
+			rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS");
 			rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTION1> <OPTION2> ...");
 		}
 	}

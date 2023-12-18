@@ -15,7 +15,7 @@
 #include <util/UtilTrace.h>
 
 // Interval between calls to Update()
-constexpr auto BOT_UPDATE_INTERVAL = 0.12f;
+constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
 
 // TO-DO: Add a convar to control update interval
 

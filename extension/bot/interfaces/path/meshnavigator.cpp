@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <sdkports/debugoverlay_shared.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/movement.h>
 #include <bot/interfaces/playercontrol.h>
@@ -11,6 +12,8 @@
 
 #undef min
 #undef max
+
+ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
 
 CMeshNavigator::CMeshNavigator() : CPath()
 {
@@ -197,6 +200,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		{
 			Draw(start, 0.2f);
 		}
+
+		NDebugOverlay::Sphere(goalPos, 5.0f, 255, 255, 0, true, 0.2f);
 	}
 }
 
@@ -394,10 +399,21 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	auto input = bot->GetControlInterface();
 	auto myarea = bot->GetLastKnownNavArea();
 	Vector origin = bot->GetAbsOrigin();
+	const bool debug = sm_navbot_path_debug_climbing.GetBool();
 
 	if (mover->IsAbleToClimb() == false)
 	{
 		return false;
+	}
+
+	if (mover->IsOnLadder())
+	{
+		return false; // Don't bother with climbing when using ladders
+	}
+
+	if (myarea && myarea->HasAttributes(NAV_MESH_NO_JUMP))
+	{
+		return false; // Don't try to climb on NO_JUMP areas.
 	}
 
 	Vector climbDir = forward;
@@ -558,10 +574,20 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 	UTIL_TraceHull(feet, feet + climbDir * ledgeLookAheadDist, skipStepHeightHullMin, climbHullMax, mask, filter, &result);
 
+	if (bot->IsDebugging(BOTDEBUG_PATH) && debug)
+	{
+		NDebugOverlay::SweptBox(feet, feet + climbDir * ledgeLookAheadDist, skipStepHeightHullMin, climbHullMax, vec3_angle, 255, 100, 0, 255, 0.2f);
+	}
+
 	bool wasPotentialLedgeFound = result.DidHit() && !result.startsolid;
 
 	if (wasPotentialLedgeFound)
 	{
+		if (bot->IsDebugging(BOTDEBUG_PATH) && debug)
+		{
+			NDebugOverlay::SweptBox(feet, feet + climbDir * ledgeLookAheadDist, skipStepHeightHullMin, climbHullMax, vec3_angle, 255, 100, 0, 255, 0.2f);
+		}
+
 		// what are we climbing over?
 		CBaseEntity* hitentity = result.m_pEnt;
 		int entindex = gamehelpers->EntityToBCompatRef(hitentity);
@@ -593,7 +619,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 					}
 
 					float areaDepth = depthVector.NormalizeInPlace();
-					minLedgeDepth = MIN(minLedgeDepth, areaDepth);
+					minLedgeDepth = std::min(minLedgeDepth, areaDepth);
 				}
 			}
 
@@ -665,6 +691,12 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 									backUpSoFar += edgeTolerance;
 
 									UTIL_TraceHull(testPos, Vector(0.0f, 0.0f, -ledgeHeightIncrement), climbHullMin, climbHullMax, mask, filter, &result);
+
+									if (bot->IsDebugging(BOTDEBUG_PATH) && debug)
+									{
+										NDebugOverlay::SweptBox(testPos, testPos + Vector(0, 0, -mover->GetStepHeight()),
+											climbHullMin, climbHullMax, vec3_angle, 255, 0, 0, 255, 5.0f);
+									}
 
 									if (result.DidHit() && result.plane.normal.z >= MinGroundNormal)
 									{
@@ -941,7 +973,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 			result.fraction = 0.0f;
 		}
 
-		leftAvoid = clamp(1.0f - result.fraction, 0.0f, 1.0f);
+		rightAvoid = clamp(1.0f - result.fraction, 0.0f, 1.0f);
 
 		isRightClear = false;
 
@@ -1011,6 +1043,21 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 		m_avoidTimer.Invalidate();
 	}
 
+	if (bot->IsDebugging(BOTDEBUG_PATH))
+	{
+		static QAngle dbgangles(0, 0, 0);
+
+		if (isLeftClear)
+			NDebugOverlay::SweptBox(leftFrom, leftTo, hullMin, hullMax, dbgangles, 0, 255, 0, 255, 0.2f);
+		else
+			NDebugOverlay::SweptBox(leftFrom, leftTo, hullMin, hullMax, dbgangles, 255, 0, 0, 255, 0.2f);
+
+		if (isRightClear)
+			NDebugOverlay::SweptBox(rightFrom, rightTo, hullMin, hullMax, dbgangles, 0, 255, 0, 255, 0.2f);
+		else
+			NDebugOverlay::SweptBox(rightFrom, rightTo, hullMin, hullMax, dbgangles, 255, 0, 0, 255, 0.2f);
+	}
+
 	return adjustedGoal;
 }
 
@@ -1019,7 +1066,7 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 	auto behavior = bot->GetBehaviorInterface();
 
 	// check if the bot cares about blockers
-	if (behavior->ShouldWaitForBlocker(bot, nullptr) != ANSWER_YES)
+	if (behavior->IsBlocker(bot, nullptr, true) != ANSWER_YES)
 		return nullptr;
 
 	auto mover = bot->GetMovementInterface();
@@ -1063,7 +1110,7 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 
 			if (DotProduct(toBlocker, alongPath) > 0.0f && hitent.GetEntity(nullptr, &blocker) == true)
 			{
-				if (behavior->ShouldWaitForBlocker(bot, blocker) == ANSWER_YES)
+				if (behavior->IsBlocker(bot, blocker) == ANSWER_YES)
 				{
 					return blocker; // found a blocker the bot cares about
 				}
