@@ -30,7 +30,9 @@ public:
 	 * @param current New nav area
 	*/
 	inline virtual void NavAreaChanged(CNavArea* old, CNavArea* current) {}
-	inline CNavArea* GetLastKnownNavArea() { return m_lastnavarea; }
+	inline CNavArea* GetLastKnownNavArea() const { return m_lastnavarea; }
+	void UpdateLastKnownNavArea(const bool forceupdate = false);
+	inline void ClearLastKnownNavArea() { m_lastnavarea = nullptr; }
 	inline IPlayerInfo* GetPlayerInfo() { return m_playerinfo; }
 	const Vector WorldSpaceCenter() const;
 	const Vector GetAbsOrigin() const;

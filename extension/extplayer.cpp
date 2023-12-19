@@ -18,7 +18,7 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 	m_index = gamehelpers->IndexOfEdict(edict);
 	m_playerinfo = playerinfomanager->GetPlayerInfo(edict);
 	m_lastnavarea = nullptr;
-	m_navupdatetimer = 64;
+	m_navupdatetimer = 6;
 }
 
 CBaseExtPlayer::~CBaseExtPlayer()
@@ -33,18 +33,45 @@ bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other)
 
 void CBaseExtPlayer::PlayerThink()
 {
-	if (--m_navupdatetimer <= 0)
-	{
-		m_navupdatetimer = TIME_TO_TICKS(PLAYER_NAV_UPDATE_TIME);
-		auto origin = GetAbsOrigin();
-		auto newarea = TheNavMesh->GetNearestNavArea(origin, NEAREST_AREA_MAX_DISTANCE, false, true, m_playerinfo->GetTeamIndex());
+	UpdateLastKnownNavArea();
+}
 
-		if (newarea != m_lastnavarea)
-		{
-			NavAreaChanged(m_lastnavarea, newarea);
-			m_lastnavarea = newarea;
-		}
+void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
+{
+	// https://cs.alliedmods.net/hl2sdk-csgo/source/game/server/basecombatcharacter.cpp#3351
+
+	if (forceupdate)
+	{
+		m_navupdatetimer = -1;
 	}
+
+	if (m_navupdatetimer > 0)
+	{
+		m_navupdatetimer--;
+		return;
+	}
+	
+	auto groundent = GetGroundEntity();
+
+	if (groundent == nullptr)
+	{
+		return; // don't update if the bot is midair
+	}
+
+	auto newarea = TheNavMesh->GetNearestNavArea(GetEdict(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, 50.0f);
+
+	if (!newarea)
+	{
+		return;
+	}
+
+	if (newarea != m_lastnavarea)
+	{
+		NavAreaChanged(m_lastnavarea, newarea);
+		m_lastnavarea = newarea;
+	}
+
+	m_navupdatetimer = TIME_TO_TICKS(PLAYER_NAV_UPDATE_TIME);
 }
 
 const Vector CBaseExtPlayer::WorldSpaceCenter() const

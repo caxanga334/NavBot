@@ -171,7 +171,24 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	constexpr auto nearLedgeRange = 50.0f;
 	if (rangeToGoal > nearLedgeRange || (m_goal && m_goal->type != AIPath::SegmentType::SEGMENT_CLIMB_UP))
 	{
-		goalPos = Avoid(bot, goalPos, forward, left);
+		auto next = GetNextSegment(m_goal);
+		bool shouldavoid = true;
+
+		constexpr auto nearLadderRange = 55.0f; // avoid range is 50.0f * model scale. Most of the time the model scale will be 1.0f
+
+		if (next && 
+			(next->type == AIPath::SegmentType::SEGMENT_LADDER_UP || next->type == AIPath::SegmentType::SEGMENT_LADDER_DOWN) &&
+			rangeToGoal < nearLadderRange)
+		{
+			// Ladders are generally placed against a wall
+			// Don't try to walk around it
+			shouldavoid = false;
+		}
+
+		if (shouldavoid)
+		{
+			goalPos = Avoid(bot, goalPos, forward, left);
+		}
 	}
 
 	if (mover->IsOnGround())
