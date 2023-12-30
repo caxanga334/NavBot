@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <bot/basebot.h>
@@ -9,17 +11,27 @@
 #include <entities/baseentity.h>
 #include <manager.h>
 #include "meshnavigator.h"
+#include <mathlib.h>
 
 #undef min
 #undef max
+#undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
 
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
+ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "20", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
+ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 
 CMeshNavigator::CMeshNavigator() : CPath()
 {
+	float goaltolerance = sm_navbot_path_goal_tolerance.GetFloat();
+	float skipahead = sm_navbot_path_skip_ahead_distance.GetFloat();
+
+	goaltolerance = std::clamp(goaltolerance, 5.0f, 40.0f);
+	skipahead = std::clamp(skipahead, -1.0f, 512.0f);
+
 	m_goal = nullptr;
-	m_goalTolerance = 20.0f;
-	m_skipAheadDistance = -1.0f;
+	m_goalTolerance = goaltolerance;
+	m_skipAheadDistance = skipahead;
 	m_waitTimer.Invalidate();
 	m_avoidTimer.Invalidate();
 	m_blocker.Term();
@@ -469,6 +481,8 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 					return true;
 			}
 		}
+
+		return false;
 	}
 
 	float heightDelta = -1.0f;

@@ -2,10 +2,10 @@
 #define SMNAV_TF2_MOD_H_
 #pragma once
 
-#include "teamfortress2_shareddefs.h"
-
+#include <bot/interfaces/weaponinfo.h>
 #include <mods/basemod.h>
 
+#include "teamfortress2_shareddefs.h"
 
 class CTeamFortress2Mod : public CBaseMod
 {
@@ -19,6 +19,11 @@ public:
 
 	virtual CBaseBot* AllocateBot(edict_t* edict);
 	virtual CNavMesh* NavMeshFactory();
+
+	inline const CWeaponInfoManager& GetWeaponInfoManager() { return m_wim; }
+
+private:
+	CWeaponInfoManager m_wim;
 };
 
 #endif // !SMNAV_TF2_MOD_H_

@@ -8,6 +8,7 @@
 
 CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 {
+    m_wim.LoadConfigFile();
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()

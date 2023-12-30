@@ -66,7 +66,6 @@ public:
 		return (m_botdebugmode & bits) ? true : false;
 	}
 
-
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots

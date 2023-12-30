@@ -44,6 +44,7 @@ sourceFiles = [
   'bot/interfaces/sensor.cpp',
   'bot/interfaces/knownentity.cpp',
   'bot/interfaces/profile.cpp',
+  'bot/interfaces/weaponinfo.cpp',
   'bot/interfaces/path/basepath.cpp',
   'bot/interfaces/path/meshnavigator.cpp',
   'bot/basebot.cpp',

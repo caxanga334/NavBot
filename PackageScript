@@ -12,6 +12,8 @@ folder_list = [
   #'addons/sourcemod/gamedata',
   'addons/sourcemod/configs',
   'addons/sourcemod/configs/navbot',
+  'addons/sourcemod/configs/navbot/tf',
+  'addons/sourcemod/configs/navbot/dod',
 ]
 
 # Create the distribution folder hierarchy.
@@ -50,6 +52,11 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 # Config Files
 CopyFiles('configs', 'addons/sourcemod/configs/navbot',
   [ 'bot_names.cfg', 'bot_difficulty.cfg' ]
+)
+
+# TF2 Config files
+CopyFiles('configs/tf', 'addons/sourcemod/configs/navbot/tf',
+  [ 'weapons.cfg' ]
 )
 
 # Copy binaries.
