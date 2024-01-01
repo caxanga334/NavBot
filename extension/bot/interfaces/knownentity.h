@@ -2,9 +2,6 @@
 #define SMNAV_BOT_KNOWN_ENTITY_H_
 #pragma once
 
-#include <basehandle.h>
-#include <util/helpers.h>
-
 namespace NKnownEntity
 {
 	constexpr auto TIME_FOR_OBSOLETE = 20.0f;
@@ -23,7 +20,7 @@ public:
 	inline bool operator!=(const CKnownEntity& other) { return !(*this == other); }
 
 	// Returns true if the entity was completely visible to the bot at some point
-	inline bool WasEvenFullyVisible() const { return m_timelastvisible > 0.0f; }
+	inline bool WasEverFullyVisible() const { return m_timelastvisible > 0.0f; }
 	// Returns true if the bot heard this entity at some point
 	inline bool WasEverHeard() const { return m_volume > 0; }
 	// Returns how many seconds have passed since this entity became known to the bot
@@ -65,6 +62,17 @@ public:
 	inline void MarkLastKnownPositionAsSeen() { m_lkpwasseen = true; }
 	inline bool IsVisibleNow() const { return m_visible; }
 	inline void MarkAsNotVisible() { m_visible = false; }
+	// Returns true if the entity was visible recently
+	inline bool WasRecentlyVisible(const float recenttime = 3.0f) const
+	{
+		if (m_visible)
+			return true;
+
+		if (WasEverFullyVisible() && GetTimeSinceLastVisible() < recenttime)
+			return true;
+
+		return false;
+	}
 
 	edict_t* GetEdict();
 private:

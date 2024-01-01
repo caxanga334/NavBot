@@ -6,6 +6,8 @@
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
+#include <basehandle.h>
+#include <util/helpers.h>
 #include "knownentity.h"
 
 CKnownEntity::CKnownEntity(edict_t* entity)

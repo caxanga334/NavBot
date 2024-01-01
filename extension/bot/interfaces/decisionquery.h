@@ -7,7 +7,11 @@ class CKnownEntity;
 class CBaseExtPlayer;
 class Vector;
 
-#include <mathlib/mathlib.h>
+#include "mathlib.h"
+
+#undef max
+#undef min
+#undef clamp // undef valve mathlib crap
 
 // An answer that can be given to a specific decision query
 enum QueryAnswerType

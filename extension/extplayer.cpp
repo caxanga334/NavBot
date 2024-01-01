@@ -1,5 +1,6 @@
 #include "extension.h"
 #include "navmesh/nav_mesh.h"
+#include "navmesh/nav_area.h"
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include "extplayer.h"

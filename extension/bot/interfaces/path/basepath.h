@@ -7,7 +7,6 @@
 
 #include <sdkports/sdk_timers.h>
 #include <bot/basebot.h>
-#include <mathlib/mathlib.h>
 #include <navmesh/nav.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>

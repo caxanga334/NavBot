@@ -1,5 +1,6 @@
 #ifndef SMNAV_BOT_BEHAVIOR_H_
 #define SMNAV_BOT_BEHAVIOR_H_
+#pragma once
 
 #include "tasks.h"
 #include "base_interface.h"

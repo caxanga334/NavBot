@@ -9,6 +9,7 @@
 #include <mods/basemod.h>
 #include <util/EntityUtils.h>
 #include <util/entprops.h>
+#include <util/helpers.h>
 #include "movement.h"
 
 extern CExtManager* extmanager;
@@ -644,7 +645,7 @@ void IMovement::StuckMonitor()
 		}
 		else
 		{
-			float minspeed = 0.1f * GetMovementSpeed() * 0.1f;
+			float minspeed = 0.1f * GetMovementSpeed() * 0.4f;
 			float mintimeforstuck = STUCK_RADIUS / minspeed;
 
 			if (m_stuck.stucktimer.IsGreaterThen(mintimeforstuck))

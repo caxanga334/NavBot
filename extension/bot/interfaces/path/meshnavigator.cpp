@@ -973,7 +973,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 			result.fraction = 0.0f;
 		}
 
-		leftAvoid = clamp(1.0f - result.fraction, 0.0f, 1.0f);
+		leftAvoid = std::clamp(1.0f - result.fraction, 0.0f, 1.0f);
 
 		isLeftClear = false;
 
@@ -1004,7 +1004,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 			result.fraction = 0.0f;
 		}
 
-		rightAvoid = clamp(1.0f - result.fraction, 0.0f, 1.0f);
+		rightAvoid = std::clamp(1.0f - result.fraction, 0.0f, 1.0f);
 
 		isRightClear = false;
 

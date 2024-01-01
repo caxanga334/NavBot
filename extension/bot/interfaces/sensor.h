@@ -32,6 +32,8 @@ public:
 	virtual void Frame();
 	// Is this entity ignored by the bot?
 	virtual bool IsIgnored(edict_t* entity) { return false; }
+	virtual bool IsFriendly(edict_t* entity) { return false; }
+	virtual bool IsEnemy(edict_t* entity) { return false; }
 	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
 	virtual bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
 	virtual bool IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV = true);
@@ -65,6 +67,19 @@ public:
 	virtual const float GetMaxHearingRange() const { return m_maxhearingrange; }
 	// Time it takes for the bot to become aware of an entity
 	virtual const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
+
+	// Gets the primary known threat to the bot or NULL if none
+	virtual CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
+	/**
+	 * @brief Gets the quantity of known entities
+	 * @param teamindex Filter known entities by team or negative number if don't care
+	 * @param onlyvisible Filter known entities by visibility status
+	 * @param rangelimit Filter known entities by distance
+	 * @return Quantity of known entities
+	*/
+	virtual int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
+	virtual int GetKnownEntityTeamIndex(CKnownEntity* known) { return 0; } // mods implement this
+	virtual CKnownEntity* GetNearestKnown(const int teamindex);
 
 	// Events
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;

@@ -8,6 +8,7 @@
 #include "extension.h"
 
 #include <bot/basebot.h>
+#include <bot/bot_debug_shared.h>
 
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>

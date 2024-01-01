@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <extension.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
@@ -6,6 +8,10 @@
 #include <util/helpers.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"
+
+#undef max
+#undef min
+#undef clamp
 
 BotSensorTraceFilter::BotSensorTraceFilter(int collisionGroup) :
 	CTraceFilterSimple(nullptr, collisionGroup, nullptr)
@@ -314,6 +320,138 @@ void ISensor::SetFieldOfView(const float fov)
 {
 	m_fieldofview = fov;
 	m_coshalfFOV = cosf(0.5f * fov * M_PI / 180.0f);
+}
+
+CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
+{
+	if (m_knownlist.empty())
+		return nullptr;
+
+	CKnownEntity* primarythreat = nullptr;
+
+	// get the first valid threat
+
+	for (auto& known : m_knownlist)
+	{
+		if (!IsAwareOf(known))
+			continue;
+
+		if (known.IsObsolete())
+			continue;
+
+		if (IsIgnored(known.GetEdict()))
+			continue;
+
+		if (!IsEnemy(known.GetEdict()))
+			continue;
+
+		if (onlyvisible && !known.WasRecentlyVisible())
+			continue;
+
+		primarythreat = &known;
+		break;
+	}
+
+	if (primarythreat == nullptr)
+	{
+		return nullptr;
+	}
+
+	// Selected best threat
+	for (auto& known : m_knownlist)
+	{
+		if (!IsAwareOf(known))
+			continue;
+
+		if (known.IsObsolete())
+			continue;
+
+		if (IsIgnored(known.GetEdict()))
+			continue;
+
+		if (!IsEnemy(known.GetEdict()))
+			continue;
+
+		if (onlyvisible && !known.WasRecentlyVisible())
+			continue;
+
+		// Ask behavior for the best threat
+		primarythreat = GetBot()->GetBehaviorInterface()->SelectTargetThreat(GetBot(), primarythreat, &known);
+	}
+
+	return primarythreat;
+}
+
+int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const float rangelimit)
+{
+	int quantity = 0;
+	auto origin = GetBot()->GetEyeOrigin();
+	const float limit = rangelimit * rangelimit; // use squared distances
+
+	for (auto& known : m_knownlist)
+	{
+		if (!IsAwareOf(known))
+			continue;
+
+		if (known.IsObsolete())
+			continue;
+
+		if (IsIgnored(known.GetEdict()))
+			continue;
+
+		if (!IsEnemy(known.GetEdict()))
+			continue;
+
+		if (teamindex >= 0 && GetKnownEntityTeamIndex(&known) != teamindex)
+			continue;
+
+		if (onlyvisible && !known.WasRecentlyVisible())
+			continue;
+
+		float dist = GetBot()->GetRangeToSqr(known.GetLastKnownPosition());
+
+		if (dist > limit)
+			continue;
+
+		quantity++;
+	}
+
+	return quantity;
+}
+
+CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
+{
+	CKnownEntity* nearest = nullptr;
+	float smallest = std::numeric_limits<float>::max();
+	auto origin = GetBot()->GetEyeOrigin();
+
+	for (auto& known : m_knownlist)
+	{
+		if (!IsAwareOf(known))
+			continue;
+
+		if (known.IsObsolete())
+			continue;
+
+		if (IsIgnored(known.GetEdict()))
+			continue;
+
+		if (!IsEnemy(known.GetEdict()))
+			continue;
+
+		if (teamindex >= 0 && GetKnownEntityTeamIndex(&known) != teamindex)
+			continue;
+
+		float distance = (origin - known.GetLastKnownPosition()).LengthSqr();
+
+		if (distance < smallest)
+		{
+			nearest = &known;
+			smallest = distance;
+		}
+	}
+
+	return nearest;
 }
 
 void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type, const int volume)

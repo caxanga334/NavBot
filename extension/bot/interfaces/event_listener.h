@@ -7,8 +7,8 @@
 class CBaseBot;
 class CPath;
 class CBaseEntity;
+class Vector;
 struct edict_t;
-
 
 // Interface for receiving events
 class IEventListener

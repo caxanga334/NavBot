@@ -1,11 +1,12 @@
 #ifndef EXT_PLAYER_INTERFACE_H_
 #define EXT_PLAYER_INTERFACE_H_
 
+class CNavArea;
+class CBaseBot;
+
 #include <eiface.h>
 #include <iplayerinfo.h>
-#include "navmesh/nav_area.h"
-
-class CBaseBot;
+#include <const.h>
 
 // Base player class, all code shared by players and bots goes here
 class CBaseExtPlayer
