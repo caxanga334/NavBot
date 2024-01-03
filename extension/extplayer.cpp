@@ -238,6 +238,18 @@ edict_t* CBaseExtPlayer::GetActiveWeapon() const
 	return weapon;
 }
 
+bool CBaseExtPlayer::IsActiveWeapon(const char* classname) const
+{
+	auto weapon = GetActiveWeapon();
+	
+	if (strcmp(gamehelpers->GetEntityClassname(weapon), classname) == 0)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {

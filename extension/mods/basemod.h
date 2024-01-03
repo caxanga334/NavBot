@@ -1,6 +1,8 @@
 #ifndef EXT_BASE_MOD_H_
 #define EXT_BASE_MOD_H_
 
+#include <optional>
+
 class CBaseExtPlayer;
 class CBaseBot;
 class CNavMesh;
@@ -17,7 +19,7 @@ public:
 	// Called every server frame
 	virtual void Frame() {}
 
-	virtual void OnMapStart() {}
+	virtual void OnMapStart();
 	virtual void OnMapEnd() {}
 
 	// Called by the manager when allocating a new bot instance
@@ -39,9 +41,12 @@ public:
 
 	// Allocates the nav mesh class used by the mod
 	virtual CNavMesh* NavMeshFactory();
-
+	// Returns the entity index of the player resource/manager entity.
+	virtual std::optional<int> GetPlayerResourceEntity();
 private:
+	CBaseHandle m_playerresourceentity;
 
+	void InternalFindPlayerResourceEntity();
 };
 
 #endif // !EXT_BASE_MOD_H_

@@ -24,6 +24,7 @@ public:
 	virtual IMovement* GetMovementInterface() override { return m_tf2movement.get(); }
 	virtual ISensor* GetSensorInterface() override { return m_tf2sensor.get(); }
 	virtual IBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
+	virtual int GetMaxHealth() const override;
 
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;

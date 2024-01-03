@@ -288,6 +288,11 @@ public:
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
 	}
 
+	virtual QueryAnswerType ShouldSeekAndDestroy(const CBaseBot* me, CKnownEntity* them) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
+	}
+
 	virtual QueryAnswerType ShouldPickup(const CBaseBot* me, edict_t* item) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldPickup, me, item);

@@ -1,5 +1,7 @@
 #include <extension.h>
+#include <manager.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include <mods/tf2/tf2lib.h>
 #include "tf2bot.h"
 
 #undef max
@@ -22,4 +24,9 @@ void CTF2Bot::TryJoinGame()
 {
 	FakeClientCommand("jointeam auto");
 	FakeClientCommand("joinclass soldier");
+}
+
+int CTF2Bot::GetMaxHealth() const
+{
+	return tf2lib::GetPlayerMaxHealth(GetIndex());
 }

@@ -24,6 +24,7 @@ public:
 	virtual IDecisionQuery* GetDecisionQueryResponder() = 0;
 
 	virtual QueryAnswerType ShouldAttack(const CBaseBot* me, CKnownEntity* them) override;
+	virtual QueryAnswerType ShouldSeekAndDestroy(const CBaseBot* me, CKnownEntity* them) override;
 	virtual QueryAnswerType ShouldPickup(const CBaseBot* me, edict_t* item) override;
 	virtual QueryAnswerType ShouldHurry(const CBaseBot* me) override;
 	virtual QueryAnswerType ShouldRetreat(const CBaseBot* me) override;

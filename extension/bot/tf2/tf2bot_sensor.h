@@ -21,6 +21,9 @@ public:
 private:
 	std::unordered_set<std::string> m_classname_filter;
 
+	bool IsPlayerIgnoredInternal(edict_t* entity);
+	bool IgnoredConditionsInternal(int player);
+
 	inline void AddClassnametoFilter(const char* classname)
 	{
 		m_classname_filter.emplace(classname);

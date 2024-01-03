@@ -63,5 +63,7 @@ private:
 	int m_botdebugmode;
 };
 
+extern CExtManager* extmanager;
+
 #endif // !SMNAV_EXT_MANAGER_H_
 

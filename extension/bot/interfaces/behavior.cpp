@@ -25,6 +25,11 @@ QueryAnswerType IBehavior::ShouldAttack(const CBaseBot* me, CKnownEntity* them)
 	return GetDecisionQueryResponder()->ShouldAttack(me, them);
 }
 
+QueryAnswerType IBehavior::ShouldSeekAndDestroy(const CBaseBot* me, CKnownEntity* them)
+{
+	return GetDecisionQueryResponder()->ShouldSeekAndDestroy(me, them);
+}
+
 QueryAnswerType IBehavior::ShouldPickup(const CBaseBot* me, edict_t* item)
 {
 	return GetDecisionQueryResponder()->ShouldPickup(me, item);

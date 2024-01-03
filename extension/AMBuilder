@@ -15,6 +15,7 @@ sourceFiles = [
   'sdkports/studio.cpp',
   'sdkports/gametrace_server.cpp',
   'entities/baseentity.cpp',
+  'entities/basecombatchar.cpp',
   'mods/basemod.cpp',
   'mods/basemod_gameevents.cpp',
   'navmesh/nav_area.cpp',
@@ -58,6 +59,7 @@ sourceFiles = [
   'bot/tf2/tf2bot_sensor.cpp',
   'bot/tf2/tasks/tf2bot_maintask.cpp',
   'mods/tf2/teamfortress2mod.cpp',
+  'mods/tf2/tf2lib.cpp',
   'mods/tf2/nav/tfnavarea.cpp',
   'mods/tf2/nav/tfnavmesh.cpp',
   # DoD:S Bot

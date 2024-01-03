@@ -61,6 +61,11 @@ public:
 	virtual bool Weapon_OwnsThisType(const char* weapon, edict_t** result = nullptr);
 	// Gets the current active weapon or NULL if none
 	virtual edict_t* GetActiveWeapon() const;
+	// True if the current active weapon matches the given classname
+	virtual bool IsActiveWeapon(const char* classname) const;
+	virtual int GetHealth() const { return m_playerinfo->GetHealth(); }
+	virtual int GetMaxHealth() const { return m_playerinfo->GetMaxHealth(); }
+	virtual float GetHealthPercentage() const { return static_cast<float>(GetHealth()) / static_cast<float>(GetMaxHealth()); }
 
 protected:
 

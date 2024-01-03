@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
+#include <mods/tf2/tf2lib.h>
 
 #include "tf2bot.h"
 #include "tf2bot_sensor.h"
@@ -39,7 +40,9 @@ bool CTF2BotSensor::IsIgnored(edict_t* entity)
 	int index = gamehelpers->IndexOfEdict(entity);
 
 	if (UtilHelpers::IsPlayerIndex(index))
-		return false; // don't ignore players
+	{
+		return IsPlayerIgnoredInternal(entity);
+	}
 
 	if (IsClassnameIgnored(classname))
 		return true;
@@ -88,4 +91,32 @@ int CTF2BotSensor::GetKnownEntityTeamIndex(CKnownEntity* known)
 	entprops->GetEntProp(index, Prop_Data, "m_iTeamNum", theirteam);
 
 	return theirteam;
+}
+
+bool CTF2BotSensor::IsPlayerIgnoredInternal(edict_t* entity)
+{
+	int player = gamehelpers->IndexOfEdict(entity);
+
+	if (IgnoredConditionsInternal(player))
+	{
+		return true;
+	}
+
+	if (IsEnemy(entity) && tf2lib::IsPlayerInvisible(player))
+	{
+		return true; // Don't see invisible enemies
+	}
+
+	return false;
+}
+
+// TFConds that the bots should always ignore
+bool CTF2BotSensor::IgnoredConditionsInternal(int player)
+{
+	if (tf2lib::IsPlayerInCondition(player, TeamFortress2::TFCond::TFCond_HalloweenGhostMode))
+	{
+		return true;
+	}
+
+	return false;
 }

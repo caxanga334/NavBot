@@ -13,6 +13,8 @@ public:
 	CTeamFortress2Mod();
 	virtual ~CTeamFortress2Mod();
 
+	static CTeamFortress2Mod* GetTF2Mod();
+
 	virtual const char* GetModName() { return "Team Fortress 2"; }
 
 	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_TF2; }

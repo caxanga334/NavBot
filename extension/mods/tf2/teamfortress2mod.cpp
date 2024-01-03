@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <manager.h>
 #include <extplayer.h>
 #include <bot/basebot.h>
 #include <bot/tf2/tf2bot.h>
@@ -13,6 +14,11 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
 {
+}
+
+CTeamFortress2Mod* CTeamFortress2Mod::GetTF2Mod()
+{
+    return static_cast<CTeamFortress2Mod*>(extmanager->GetMod());
 }
 
 CBaseBot* CTeamFortress2Mod::AllocateBot(edict_t* edict)

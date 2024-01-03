@@ -414,3 +414,28 @@ bool UtilHelpers::IsPlayerIndex(const int index)
 {
 	return index > 0 && index <= gpGlobals->maxClients;
 }
+
+bool UtilHelpers::FindNestedDataTable(SendTable* pTable, const char* name)
+{
+	if (strcmp(pTable->GetName(), name) == 0)
+	{
+		return true;
+	}
+
+	int props = pTable->GetNumProps();
+	SendProp* prop;
+
+	for (int i = 0; i < props; i++)
+	{
+		prop = pTable->GetProp(i);
+		if (prop->GetDataTable())
+		{
+			if (FindNestedDataTable(prop->GetDataTable(), name))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}

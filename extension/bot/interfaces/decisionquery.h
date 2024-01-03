@@ -31,6 +31,8 @@ public:
 
 	// Should the bot attack this threat?
 	virtual QueryAnswerType ShouldAttack(const CBaseBot* me, CKnownEntity* them);
+	// Should the bot seek and destroy this threat?
+	virtual QueryAnswerType ShouldSeekAndDestroy(const CBaseBot* me, CKnownEntity* them);
 	// Should the bot pick up this item/weapon?
 	virtual QueryAnswerType ShouldPickup(const CBaseBot* me, edict_t* item);
 	// Should the bot be in a hurry?
@@ -58,6 +60,11 @@ private:
 };
 
 inline QueryAnswerType IDecisionQuery::ShouldAttack(const CBaseBot* me, CKnownEntity* them)
+{
+	return ANSWER_UNDEFINED;
+}
+
+inline QueryAnswerType IDecisionQuery::ShouldSeekAndDestroy(const CBaseBot* me, CKnownEntity* them)
 {
 	return ANSWER_UNDEFINED;
 }

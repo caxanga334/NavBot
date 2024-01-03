@@ -6,6 +6,7 @@ struct edict_t;
 class CBaseEntity;
 class Vector;
 class CStudioHdr;
+class SendTable;
 
 namespace UtilHelpers
 {
@@ -30,6 +31,7 @@ namespace UtilHelpers
 	// bool GetBonePosition(CStudioHdr* hdr, int iBone, Vector& origin, QAngle& angles);
 
 	bool IsPlayerIndex(const int index);
+	bool FindNestedDataTable(SendTable* pTable, const char* name);
 }
 
 #endif // !UTIL_HELPERS_H_
