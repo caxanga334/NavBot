@@ -26,6 +26,16 @@ void CTF2Bot::TryJoinGame()
 	FakeClientCommand("joinclass soldier");
 }
 
+void CTF2Bot::Spawn()
+{
+	CBaseBot::Spawn();
+}
+
+void CTF2Bot::FirstSpawn()
+{
+	CBaseBot::FirstSpawn();
+}
+
 int CTF2Bot::GetMaxHealth() const
 {
 	return tf2lib::GetPlayerMaxHealth(GetIndex());

@@ -4,6 +4,8 @@
 
 #include <memory>
 
+#include <sdkports/sdk_timers.h>
+#include <mods/tf2/teamfortress2_shareddefs.h>
 #include <bot/basebot.h>
 #include "tf2bot_behavior.h"
 #include "tf2bot_controller.h"
@@ -19,6 +21,8 @@ public:
 	virtual ~CTF2Bot();
 
 	virtual void TryJoinGame() override;
+	virtual void Spawn() override;
+	virtual void FirstSpawn() override;
 
 	virtual IPlayerController* GetControlInterface() override { return m_tf2controller.get(); }
 	virtual IMovement* GetMovementInterface() override { return m_tf2movement.get(); }
@@ -31,6 +35,8 @@ private:
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
 	std::unique_ptr<CTF2BotSensor> m_tf2sensor;
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
+	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
+	IntervalTimer m_classswitchtimer;
 };
 
 #endif // !NAVBOT_TEAM_FORTRESS_2_BOT_H_

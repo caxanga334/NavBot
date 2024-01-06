@@ -17,6 +17,7 @@ namespace tf2lib
 	int GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass);
 	int GetPlayerMaxHealth(int player);
 	TeamFortress2::TFClassType GetClassTypeFromName(std::string name);
+	const char* GetClassNameFromType(TeamFortress2::TFClassType type);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
@@ -43,6 +44,34 @@ inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
 		return 125;
 	}
 }
+
+inline const char* tf2lib::GetClassNameFromType(TeamFortress2::TFClassType type)
+{
+	switch (type)
+	{
+	case TeamFortress2::TFClass_Scout:
+		return "scout";
+	case TeamFortress2::TFClass_Sniper:
+		return "sniper";
+	case TeamFortress2::TFClass_Soldier:
+		return "soldier";
+	case TeamFortress2::TFClass_DemoMan:
+		return "demoman";
+	case TeamFortress2::TFClass_Medic:
+		return "medic";
+	case TeamFortress2::TFClass_Heavy:
+		return "heavyweapons";
+	case TeamFortress2::TFClass_Pyro:
+		return "pyro";
+	case TeamFortress2::TFClass_Spy:
+		return "spy";
+	case TeamFortress2::TFClass_Engineer:
+		return "engineer";
+	default:
+		return "unknown";
+	}
+}
+
 
 #endif // !NAVBOT_TF2LIB_H_
 

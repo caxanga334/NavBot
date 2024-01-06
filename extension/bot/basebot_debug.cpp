@@ -3,7 +3,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include "basebot.h"
 
-void OnBotDebugFilterChanged(IConVar* var, const char* pOldValue, float flOldValue);
+static void OnBotDebugFilterChanged(IConVar* var, const char* pOldValue, float flOldValue);
 
 ConVar cvar_bot_debug_filter("sm_navbot_debug_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Bot client index filter when debugging.", OnBotDebugFilterChanged);
 
@@ -57,7 +57,7 @@ void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue,
 
 	va_end(vaargs);
 
-	ConColorMsg(Color(red, green, blue, 255), buffer);
+	ConColorMsg(Color(red, green, blue, 255), "%s", buffer);
 }
 
 void CBaseBot::DebugDisplayText(const char* text)

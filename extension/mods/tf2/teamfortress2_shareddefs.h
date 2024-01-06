@@ -433,6 +433,24 @@ namespace TeamFortress2
 		TF_FLAGEVENT_DROPPED,
 		TF_FLAGEVENT_RETURNED
 	};
+
+	enum class GameModeType
+	{
+		GM_NONE = 0, // No/generic mode
+		GM_CTF, // Capture The Flag
+		GM_CP, // Control Points
+		GM_ADCP, // Attack Defence Control Points
+		GM_KOTH, // King of The Hill
+		GM_MVM, // Mann vs Machine
+		GM_PL, // Payload
+		GM_PL_RACE, // Payload Race
+		GM_PD, // Player Destruction
+		GM_SD, // Special Delivery
+		GM_TC, // Territorial Control
+		GM_ARENA, // Arena
+
+		GM_MAX_GAMEMODE_TYPES
+	};
 }
 
 

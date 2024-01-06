@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdexcept>
 
+#include <tier1/strtools.h>
 #include <bot/bot_debug_shared.h>
 #include "decisionquery.h"
 #include "event_listener.h"
