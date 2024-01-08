@@ -22,7 +22,7 @@ public:
 	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
 	virtual TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	virtual TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
-	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override;
+	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
 	virtual const char* GetName() const { return "CBaseBotTestTask"; }
 };
 
@@ -66,7 +66,7 @@ TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnTestEventPropagation(CBase
 	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH, "Event pause test!");
 }
 
-QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(const CBaseBot* me)
+QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(CBaseBot* me)
 {
 	rootconsole->ConsolePrint("AI Query -- ShouldFreeRoam");
 	return ANSWER_YES;
@@ -272,6 +272,7 @@ void CBaseBot::PlayerThink()
 
 	if (SleepWhenDead() && GetPlayerInfo()->IsDead())
 	{
+		BuildUserCommand(0); // Still send empty usercommands while dead
 		return;
 	}
 

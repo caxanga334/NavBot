@@ -29,6 +29,7 @@ public:
 	virtual ISensor* GetSensorInterface() override { return m_tf2sensor.get(); }
 	virtual IBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
 	virtual int GetMaxHealth() const override;
+	TeamFortress2::TFClassType GetMyClassType() const;
 
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;

@@ -33,6 +33,7 @@ void CBaseMod::RegisterGameEvents()
 	auto evmanager = GetGameEventManager();
 
 	evmanager->RegisterEventReceiver(new CPlayerSpawnEvent);
+	evmanager->RegisterEventReceiver(new CPlayerHurtEvent);
 }
 
 const Vector& CBaseMod::GetPlayerHullMins()

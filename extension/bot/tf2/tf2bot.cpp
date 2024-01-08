@@ -40,3 +40,8 @@ int CTF2Bot::GetMaxHealth() const
 {
 	return tf2lib::GetPlayerMaxHealth(GetIndex());
 }
+
+TeamFortress2::TFClassType CTF2Bot::GetMyClassType() const
+{
+	return tf2lib::GetPlayerClassType(GetIndex());
+}

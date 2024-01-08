@@ -284,47 +284,47 @@ public:
 	return __result; \
 			\
 
-	virtual QueryAnswerType ShouldAttack(const CBaseBot* me, CKnownEntity* them) override
+	virtual QueryAnswerType ShouldAttack(CBaseBot* me, CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
 	}
 
-	virtual QueryAnswerType ShouldSeekAndDestroy(const CBaseBot* me, CKnownEntity* them) override
+	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
 	}
 
-	virtual QueryAnswerType ShouldPickup(const CBaseBot* me, edict_t* item) override
+	virtual QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldPickup, me, item);
 	}
 
-	virtual QueryAnswerType ShouldHurry(const CBaseBot* me) override
+	virtual QueryAnswerType ShouldHurry(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(ShouldHurry, me);
 	}
 
-	virtual QueryAnswerType ShouldRetreat(const CBaseBot* me) override
+	virtual QueryAnswerType ShouldRetreat(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(ShouldRetreat, me);
 	}
 
-	virtual QueryAnswerType ShouldUse(const CBaseBot* me, edict_t* object) override
+	virtual QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldUse, me, object);
 	}
 
-	virtual QueryAnswerType ShouldFreeRoam(const CBaseBot* me) override
+	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(ShouldFreeRoam, me);
 	}
 
-	virtual QueryAnswerType IsBlocker(const CBaseBot* me, edict_t* blocker, const bool any = false) override
+	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override
 	{
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
-	virtual CKnownEntity* SelectTargetThreat(const CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override
+	virtual CKnownEntity* SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override
 	{
 		CKnownEntity* result = nullptr;
 
@@ -349,7 +349,7 @@ public:
 		return result;
 	}
 
-	virtual Vector GetTargetAimPos(const CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override
+	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override
 	{
 		Vector result = vec3_origin;
 

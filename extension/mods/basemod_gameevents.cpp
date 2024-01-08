@@ -34,3 +34,28 @@ void CPlayerSpawnEvent::OnGameEvent(IGameEvent* gameevent)
 		}
 	}
 }
+
+void CPlayerHurtEvent::OnGameEvent(IGameEvent* gameevent)
+{
+	int victim = playerhelpers->GetClientOfUserId(gameevent->GetInt("userid"));
+	int attacker = playerhelpers->GetClientOfUserId(gameevent->GetInt("attacker"));
+
+	edict_t* pVictim = nullptr;
+	edict_t* pAttacker = nullptr;
+
+	if (victim > 0)
+	{
+		pVictim = gamehelpers->EdictOfIndex(victim);
+	}
+
+	if (attacker > 0)
+	{
+		pAttacker = gamehelpers->EdictOfIndex(attacker);
+	}
+
+	if (!pVictim)
+		return;
+
+	auto bot = extmanager->GetBotByIndex(victim);
+	bot->OnInjured(pAttacker);
+}

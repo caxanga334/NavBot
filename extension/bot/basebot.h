@@ -78,6 +78,8 @@ public:
 	virtual void Spawn();
 	// Called on the first spawn call
 	virtual void FirstSpawn();
+	// Called when the player_death event is fired for this bot
+	virtual void Killed() {}
 	// Called to check if the bot can join the game
 	virtual bool CanJoinGame() { return true; }
 	// Called to check if the bot has joined a team and should be considerated as playing

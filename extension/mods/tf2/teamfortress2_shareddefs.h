@@ -299,7 +299,7 @@ namespace TeamFortress2
 
 	// Weapon codes as used in some events, such as player_death
 	// (not to be confused with Item Definition Indexes)
-	enum TFWeaponID
+	enum class TFWeaponID
 	{
 		TF_WEAPON_NONE = 0,
 		TF_WEAPON_BAT,

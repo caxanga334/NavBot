@@ -58,8 +58,11 @@ sourceFiles = [
   'bot/tf2/tf2bot_movement.cpp',
   'bot/tf2/tf2bot_sensor.cpp',
   'bot/tf2/tasks/tf2bot_maintask.cpp',
+  'bot/tf2/tasks/tf2bot_tactical.cpp',
+  'bot/tf2/tasks/tf2bot_scenario.cpp',
   'mods/tf2/teamfortress2mod.cpp',
   'mods/tf2/tf2lib.cpp',
+  'mods/tf2/tf2mod_gameevents.cpp',
   'mods/tf2/nav/tfnavarea.cpp',
   'mods/tf2/nav/tfnavmesh.cpp',
   # DoD:S Bot
