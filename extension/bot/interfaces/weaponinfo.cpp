@@ -202,6 +202,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		{
 			m_tempweapinfo.GetAttackInfoForEditing(type)->SetProjectileSpeed(atof(value));
 		}
+		else if (strncmp(key, "gravity", 7) == 0)
+		{
+			m_tempweapinfo.GetAttackInfoForEditing(type)->SetGravity(atof(value));
+		}
 		else if (strncmp(key, "melee", 5) == 0)
 		{
 			if (strncmp(value, "true", 4) == 0)

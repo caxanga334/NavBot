@@ -439,3 +439,75 @@ bool UtilHelpers::FindNestedDataTable(SendTable* pTable, const char* name)
 
 	return false;
 }
+
+float UtilHelpers::GetEntityGravity(int entity)
+{
+	static bool gotconfig = false;
+	static char datamap[32];
+
+	if (!gotconfig)
+	{
+		SourceMod::IGameConfig* gamedata = nullptr;
+		gameconfs->LoadGameConfigFile("core.games", &gamedata, nullptr, 0);
+		auto key = gamedata->GetKeyValue("m_flGravity");
+		gameconfs->CloseGameConfigFile(gamedata);
+
+		if (key == nullptr)
+		{
+			ke::SafeSprintf(datamap, sizeof(datamap), "m_flGravity");
+		}
+		else
+		{
+#ifdef EXT_DEBUG
+			smutils->LogMessage(myself, "Loaded gamedata for GetEntityGravity! \"%s\".", key);
+#endif // EXT_DEBUG
+
+			ke::SafeSprintf(datamap, sizeof(datamap), "%s", key);
+		}
+
+		gotconfig = true;
+	}
+
+	float gravity = 0.0f;
+	entprops->GetEntPropFloat(entity, Prop_Data, datamap, gravity);
+	return gravity;
+}
+
+MoveType_t UtilHelpers::GetEntityMoveType(int entity)
+{
+	static bool gotconfig = false;
+	static char datamap[32];
+
+	if (!gotconfig)
+	{
+		SourceMod::IGameConfig* gamedata = nullptr;
+		gameconfs->LoadGameConfigFile("core.games", &gamedata, nullptr, 0);
+		auto key = gamedata->GetKeyValue("m_MoveType");
+		gameconfs->CloseGameConfigFile(gamedata);
+
+		if (key == nullptr)
+		{
+			ke::SafeSprintf(datamap, sizeof(datamap), "m_MoveType");
+		}
+		else
+		{
+#ifdef EXT_DEBUG
+			smutils->LogMessage(myself, "Loaded gamedata for GetEntityMoveType! \"%s\".", key);
+#endif // EXT_DEBUG
+			ke::SafeSprintf(datamap, sizeof(datamap), "%s", key);
+		}
+
+		gotconfig = true;
+	}
+
+	int movetype = 0;
+	entprops->GetEntProp(entity, Prop_Data, datamap, movetype);
+	return static_cast<MoveType_t>(movetype);
+}
+
+Vector UtilHelpers::GetNormalizedVector(const Vector& other)
+{
+	Vector norm = other;
+	VectorNormalize(norm);
+	return norm;
+}

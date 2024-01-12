@@ -65,7 +65,7 @@ public:
 	virtual bool IsActiveWeapon(const char* classname) const;
 	virtual int GetHealth() const { return m_playerinfo->GetHealth(); }
 	virtual int GetMaxHealth() const { return m_playerinfo->GetMaxHealth(); }
-	virtual float GetHealthPercentage() const { return static_cast<float>(GetHealth()) / static_cast<float>(GetMaxHealth()); }
+	inline float GetHealthPercentage() const { return static_cast<float>(GetHealth()) / static_cast<float>(GetMaxHealth()); }
 
 protected:
 

@@ -15,15 +15,17 @@ public:
 		maxrange = -10000.0f;
 		minrange = -1.0f;
 		projectilespeed = -1.0f;
+		gravity = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
 
-	inline WeaponAttackFunctionInfo(float max, float min = -1.0f, float spd = -1.0f, bool melee = false, bool exp = false)
+	inline WeaponAttackFunctionInfo(float max, float min = -1.0f, float spd = -1.0f, float grav = -1.0f, bool melee = false, bool exp = false)
 	{
 		maxrange = max;
 		minrange = min;
 		projectilespeed = spd;
+		gravity = grav;
 		ismelee = melee;
 		isexplosive = exp;
 	}
@@ -33,6 +35,7 @@ public:
 		this->maxrange = other.maxrange;
 		this->minrange = other.minrange;
 		this->projectilespeed = other.projectilespeed;
+		this->gravity = other.gravity;
 		this->ismelee = other.ismelee;
 		this->isexplosive = other.isexplosive;
 		return *this;
@@ -43,6 +46,7 @@ public:
 		maxrange = -10000.0f;
 		minrange = -1.0f;
 		projectilespeed = -1.0f;
+		gravity = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
@@ -50,6 +54,7 @@ public:
 	inline float GetMaxRange() const { return maxrange; }
 	inline float GetMinRange() const { return minrange; }
 	inline float GetProjectileSpeed() const { return projectilespeed; }
+	inline float GetGravity() const { return gravity; }
 	inline bool IsMelee() const { return ismelee; }
 	inline bool IsExplosive() const { return isexplosive; }
 	inline bool IsHitscan() const { return projectilespeed <= 0.0f; }
@@ -63,6 +68,7 @@ public:
 	inline void SetMaxRange(float v) { maxrange = v; }
 	inline void SetMinRange(float v) { minrange = v; }
 	inline void SetProjectileSpeed(float v) { projectilespeed = v; }
+	inline void SetGravity(float v) { gravity = v; }
 	inline void SetMelee(bool v) { ismelee = v; }
 	inline void SetExplosive(bool v) { isexplosive = v; }
 
@@ -70,6 +76,7 @@ private:
 	float maxrange;
 	float minrange;
 	float projectilespeed;
+	float gravity;
 	bool ismelee;
 	bool isexplosive;
 };
@@ -141,6 +148,11 @@ public:
 	WeaponAttackFunctionInfo* GetAttackInfoForEditing(AttackFunctionType type)
 	{
 		return &attacksinfo[type];
+	}
+
+	inline const WeaponAttackFunctionInfo& GetAttackInfo(AttackFunctionType type) const
+	{
+		return attacksinfo[type];
 	}
 
 	inline bool CanHeadShot() const { return can_headshot; }

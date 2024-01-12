@@ -24,10 +24,10 @@ public:
 	virtual void Spawn() override;
 	virtual void FirstSpawn() override;
 
-	virtual IPlayerController* GetControlInterface() override { return m_tf2controller.get(); }
-	virtual IMovement* GetMovementInterface() override { return m_tf2movement.get(); }
-	virtual ISensor* GetSensorInterface() override { return m_tf2sensor.get(); }
-	virtual IBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
+	virtual CTF2BotPlayerController* GetControlInterface() override { return m_tf2controller.get(); }
+	virtual CTF2BotMovement* GetMovementInterface() override { return m_tf2movement.get(); }
+	virtual CTF2BotSensor* GetSensorInterface() override { return m_tf2sensor.get(); }
+	virtual CTF2BotBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
 	virtual int GetMaxHealth() const override;
 	TeamFortress2::TFClassType GetMyClassType() const;
 

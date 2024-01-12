@@ -7,6 +7,7 @@ class CBaseEntity;
 class Vector;
 class CStudioHdr;
 class SendTable;
+enum MoveType_t : int; // forward declaration
 
 namespace UtilHelpers
 {
@@ -32,6 +33,10 @@ namespace UtilHelpers
 
 	bool IsPlayerIndex(const int index);
 	bool FindNestedDataTable(SendTable* pTable, const char* name);
+	float GetEntityGravity(int entity);
+	MoveType_t GetEntityMoveType(int entity);
+	// Vector::Normalized is not available in all SDK version
+	Vector GetNormalizedVector(const Vector& other);
 }
 
 #endif // !UTIL_HELPERS_H_

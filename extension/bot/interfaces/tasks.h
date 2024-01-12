@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <stdexcept>
+#include <memory>
 
 #include <tier1/strtools.h>
 #include <bot/bot_debug_shared.h>

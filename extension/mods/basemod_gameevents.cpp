@@ -57,5 +57,9 @@ void CPlayerHurtEvent::OnGameEvent(IGameEvent* gameevent)
 		return;
 
 	auto bot = extmanager->GetBotByIndex(victim);
-	bot->OnInjured(pAttacker);
+
+	if (bot != nullptr)
+	{
+		bot->OnInjured(pAttacker);
+	}
 }

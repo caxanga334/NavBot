@@ -31,7 +31,7 @@ public:
 	inline const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
-	TeamFortress2::TFWeaponID GetWeaponID(std::string classname);
+	TeamFortress2::TFWeaponID GetWeaponID(std::string& classname);
 private:
 	CWeaponInfoManager m_wim;
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
@@ -44,7 +44,7 @@ private:
 	bool DetectPlayerDestruction();
 };
 
-inline TeamFortress2::TFWeaponID CTeamFortress2Mod::GetWeaponID(std::string classname)
+inline TeamFortress2::TFWeaponID CTeamFortress2Mod::GetWeaponID(std::string& classname)
 {
 	auto it = m_weaponidmap.find(classname);
 

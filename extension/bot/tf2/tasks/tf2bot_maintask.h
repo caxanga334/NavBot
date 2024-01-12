@@ -3,6 +3,8 @@
 #pragma once
 
 class CTF2Bot;
+class WeaponInfo;
+class CTF2BotSensor;
 
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
@@ -17,6 +19,7 @@ public:
 
 private:
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
+	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
 };
 
 #endif // !NAVBOT_TF2BOT_MAIN_TASK_H_

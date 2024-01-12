@@ -37,6 +37,7 @@ sourceFiles = [
   'util/entprops.cpp',
   'util/helpers.cpp',
   'util/librandom.cpp',
+  'util/prediction.cpp',
   # Base Bot stuff
   'bot/interfaces/base_interface.cpp',
   'bot/interfaces/behavior.cpp',
