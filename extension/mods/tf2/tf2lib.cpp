@@ -182,3 +182,12 @@ TeamFortress2::TFClassType tf2lib::GetClassTypeFromName(std::string name)
 
 	return it->second;
 }
+
+int tf2lib::GetWeaponItemDefinitionIndex(edict_t* weapon)
+{
+	int entity = gamehelpers->IndexOfEdict(weapon);
+	int index = -1;
+	entprops->GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex", index);
+	return index;
+}
+

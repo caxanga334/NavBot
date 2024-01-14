@@ -68,6 +68,7 @@ void ISensor::Reset()
 {
 	m_knownlist.clear();
 	m_lastupdatetime = 0.0f;
+	m_threatvisibletimer.Invalidate();
 }
 
 void ISensor::Update()
@@ -322,6 +323,11 @@ void ISensor::SetFieldOfView(const float fov)
 	m_coshalfFOV = cosf(0.5f * fov * M_PI / 180.0f);
 }
 
+const float ISensor::GetTimeSinceVisibleThreat() const
+{
+	return m_threatvisibletimer.GetElapsedTime();
+}
+
 CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 {
 	if (m_knownlist.empty())
@@ -538,6 +544,7 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 			if (known.GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
 			{
 				me->OnSight(known.GetEdict());
+				m_threatvisibletimer.Start();
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{

@@ -13,6 +13,7 @@
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/profile.h>
 #include <util/UtilTrace.h>
+#include <sdkports/sdk_timers.h>
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
@@ -132,6 +133,20 @@ public:
 	void DebugDisplayText(const char* text);
 	void DebugFrame();
 
+	virtual bool WantsToShootAtEnemies()
+	{
+		if (m_holdfire_time.HasStarted() && !m_holdfire_time.IsElapsed())
+		{
+			return false;
+		}
+		
+		return true;
+	}
+
+	// makes the bot hold their fire for the given time in seconds
+	inline void DontAttackEnemies(const float time) { m_holdfire_time.Start(time); }
+	bool IsLineOfFireClear(const Vector& to) const;
+
 protected:
 	bool m_isfirstspawn;
 
@@ -152,6 +167,7 @@ private:
 	CountdownTimer m_cmdtimer; // Delay between commands
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
 	int m_debugtextoffset;
+	CountdownTimer m_holdfire_time; // Timer for the bot to not attack enemies
 
 	void ExecuteQueuedCommands();
 };

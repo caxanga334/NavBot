@@ -250,6 +250,36 @@ bool CBaseExtPlayer::IsActiveWeapon(const char* classname) const
 	return false;
 }
 
+int CBaseExtPlayer::GetAmmoOfIndex(int index) const
+{
+	int ammo = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmo", ammo);
+	return ammo;
+}
+
+std::vector<edict_t*> CBaseExtPlayer::GetAllWeapons() const
+{
+	std::vector<edict_t*> myweapons;
+	myweapons.reserve(MAX_WEAPONS);
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		int weapon = INVALID_EHANDLE_INDEX;
+		
+		if (!entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", weapon, i))
+			continue;
+
+		auto entity = gamehelpers->EdictOfIndex(weapon);
+
+		if (!entity)
+			continue;
+
+		myweapons.push_back(entity);
+	}
+
+	return myweapons;
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {

@@ -67,6 +67,8 @@ public:
 	virtual const float GetMaxHearingRange() const { return m_maxhearingrange; }
 	// Time it takes for the bot to become aware of an entity
 	virtual const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
+	// Time since a threat was visible
+	virtual const float GetTimeSinceVisibleThreat() const;
 
 	// Gets the primary known threat to the bot or NULL if none
 	virtual CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
@@ -99,6 +101,7 @@ private:
 	float m_maxhearingrange;
 	float m_minrecognitiontime;
 	float m_lastupdatetime;
+	IntervalTimer m_threatvisibletimer;
 
 	inline bool IsAwareOf(const CKnownEntity& known) const
 	{

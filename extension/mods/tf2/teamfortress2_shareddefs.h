@@ -19,6 +19,10 @@ namespace TeamFortress2
 	constexpr int STUNFLAGS_NORMALBONK = STUNFLAG_BONKSTUCK;
 	constexpr int STUNFLAGS_BIGBONK = (STUNFLAG_CHEERSOUND | STUNFLAG_BONKSTUCK);
 
+	constexpr int TF_AMMO_PRIMARY = 1;
+	constexpr int TF_AMMO_SECONDARY = 2;
+	constexpr int TF_AMMO_METAL = 3;
+
 	enum TFClassType
 	{
 		TFClass_Unknown = 0,

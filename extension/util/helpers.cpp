@@ -511,3 +511,57 @@ Vector UtilHelpers::GetNormalizedVector(const Vector& other)
 	VectorNormalize(norm);
 	return norm;
 }
+
+int UtilHelpers::GetEntityHealth(int entity)
+{
+	static bool gotconfig = false;
+	static char datamap[32];
+
+	if (!gotconfig)
+	{
+		SourceMod::IGameConfig* gamedata = nullptr;
+		gameconfs->LoadGameConfigFile("core.games", &gamedata, nullptr, 0);
+		auto key = gamedata->GetKeyValue("m_iHealth");
+		gameconfs->CloseGameConfigFile(gamedata);
+
+		if (key == nullptr)
+		{
+			ke::SafeSprintf(datamap, sizeof(datamap), "m_iHealth");
+		}
+		else
+		{
+#ifdef EXT_DEBUG
+			smutils->LogMessage(myself, "Loaded gamedata for GetEntityHealth! \"%s\".", key);
+#endif // EXT_DEBUG
+			ke::SafeSprintf(datamap, sizeof(datamap), "%s", key);
+		}
+
+		gotconfig = true;
+	}
+
+	int health = 0;
+	entprops->GetEntProp(entity, Prop_Data, datamap, health);
+	return health;
+}
+
+bool UtilHelpers::IsEntityAlive(const int entity)
+{
+	if (IsPlayerIndex(entity))
+	{
+		return IsPlayerAlive(entity);
+	}
+
+	return GetEntityHealth(entity) > 0;
+}
+
+bool UtilHelpers::IsPlayerAlive(const int player)
+{
+	auto gp = playerhelpers->GetGamePlayer(player);
+	
+	if (gp && gp->GetPlayerInfo()->IsDead())
+	{
+		return false;
+	}
+
+	return GetEntityHealth(player) > 0;
+}

@@ -44,9 +44,9 @@ public:
 
 	virtual void ProcessButtons(int &buttons) override;
 	virtual void RunLook();
-	virtual void AimAt(const Vector& pos, const LookPriority priority, const float duration);
-	virtual void AimAt(edict_t* entity, const LookPriority priority, const float duration);
-	virtual void AimAt(const int entity, const LookPriority priority, const float duration);
+	virtual void AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason = nullptr);
+	virtual void AimAt(edict_t* entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	virtual void AimAt(const int entity, const LookPriority priority, const float duration, const char* reason = nullptr);
 	// True if the bot aim is Steady
 	virtual const bool IsAimSteady() const { return m_isSteady; }
 	// True if the bot aim is currently on target
@@ -68,6 +68,37 @@ private:
 	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
 	IntervalTimer m_steadyTimer; // Aim stability timer
 };
+
+inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)
+{
+	switch (priority)
+	{
+	case IPlayerController::LOOK_NONE:
+		return "NONE";
+	case IPlayerController::LOOK_AMBIENT:
+		return "AMBIENT";
+	case IPlayerController::LOOK_INTERESTING:
+		return "INTERESTING";
+	case IPlayerController::LOOK_ALERT:
+		return "ALERT";
+	case IPlayerController::LOOK_DANGER:
+		return "DANGER";
+	case IPlayerController::LOOK_OPERATE:
+		return "OPERATE";
+	case IPlayerController::LOOK_COMBAT:
+		return "COMBAT";
+	case IPlayerController::LOOK_MOVEMENT:
+		return "MOVEMENT";
+	case IPlayerController::LOOK_CRITICAL:
+		return "CRITICAL";
+	case IPlayerController::LOOK_MANDATORY:
+		return "MANDATORY";
+	case IPlayerController::MAX_LOOK_PRIORITY:
+		return "ERROR PRIORITY == MAX_LOOK_PRIORITY";
+	default:
+		return "ERROR UNKNOWN PRIORITY";
+	}
+}
 
 #endif // !SMNAV_BOT_BASE_PLAYER_CONTROL_IFACE_H_
 

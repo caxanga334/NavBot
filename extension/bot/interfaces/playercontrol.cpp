@@ -180,7 +180,7 @@ void IPlayerController::RunLook()
 	me->SetViewAngles(finalAngles);
 }
 
-void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration)
+void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason)
 {
 	if (!m_looktimer.IsElapsed() && m_priority > priority)
 	{
@@ -194,6 +194,13 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 		{
 			return;
 		}
+	}
+
+	auto me = GetBot();
+	if (me->IsDebugging(BOTDEBUG_LOOK))
+	{
+		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt (%3.2f, %3.2f, %3.2f) for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+			pos.x, pos.y, pos.z, duration, GetLookPriorityName(priority), reason ? reason : "");
 	}
 
 	m_priority = priority;
@@ -203,7 +210,7 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 	m_didLookAtTarget = false;
 }
 
-void IPlayerController::AimAt(edict_t* entity, const LookPriority priority, const float duration)
+void IPlayerController::AimAt(edict_t* entity, const LookPriority priority, const float duration, const char* reason)
 {
 	if (!m_looktimer.IsElapsed() && m_priority > priority)
 	{
@@ -217,6 +224,13 @@ void IPlayerController::AimAt(edict_t* entity, const LookPriority priority, cons
 		{
 			return;
 		}
+	}
+
+	auto me = GetBot();
+	if (me->IsDebugging(BOTDEBUG_LOOK))
+	{
+		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"%s#%i\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+			gamehelpers->GetEntityClassname(entity), gamehelpers->IndexOfEdict(entity), duration, GetLookPriorityName(priority), reason ? reason : "");
 	}
 
 	m_priority = priority;
@@ -225,7 +239,7 @@ void IPlayerController::AimAt(edict_t* entity, const LookPriority priority, cons
 	m_didLookAtTarget = false;
 }
 
-void IPlayerController::AimAt(const int entity, const LookPriority priority, const float duration)
+void IPlayerController::AimAt(const int entity, const LookPriority priority, const float duration, const char* reason)
 {
 	if (!m_looktimer.IsElapsed() && m_priority > priority)
 	{
@@ -239,6 +253,13 @@ void IPlayerController::AimAt(const int entity, const LookPriority priority, con
 		{
 			return;
 		}
+	}
+
+	auto me = GetBot();
+	if (me->IsDebugging(BOTDEBUG_LOOK))
+	{
+		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"#%i\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+			entity, duration, GetLookPriorityName(priority), reason ? reason : "");
 	}
 
 	m_priority = priority;

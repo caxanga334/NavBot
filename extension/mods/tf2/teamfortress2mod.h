@@ -32,6 +32,7 @@ public:
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
 	TeamFortress2::TFWeaponID GetWeaponID(std::string& classname);
+	const WeaponInfo* GetWeaponInfo(edict_t* weapon);
 private:
 	CWeaponInfoManager m_wim;
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map

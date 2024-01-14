@@ -48,7 +48,8 @@ float CKnownEntity::GetTimeSinceLastInfo() const { return gpGlobals->curtime - m
 
 bool CKnownEntity::IsObsolete()
 {
-	return !m_handle.IsValid() || gamehelpers->GetHandleEntity(m_handle) == nullptr || GetTimeSinceLastInfo() > NKnownEntity::TIME_FOR_OBSOLETE;
+	return !m_handle.IsValid() || gamehelpers->GetHandleEntity(m_handle) == nullptr || 
+		GetTimeSinceLastInfo() > NKnownEntity::TIME_FOR_OBSOLETE || !UtilHelpers::IsEntityAlive(m_handle.GetEntryIndex());
 }
 
 bool CKnownEntity::IsValid()

@@ -7,6 +7,8 @@
 
 #include "teamfortress2_shareddefs.h"
 
+struct edict_t;
+
 namespace tf2lib
 {
 	bool IsPlayerInCondition(int player, TeamFortress2::TFCond cond);
@@ -18,6 +20,7 @@ namespace tf2lib
 	int GetPlayerMaxHealth(int player);
 	TeamFortress2::TFClassType GetClassTypeFromName(std::string name);
 	const char* GetClassNameFromType(TeamFortress2::TFClassType type);
+	int GetWeaponItemDefinitionIndex(edict_t* weapon);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
@@ -71,7 +74,6 @@ inline const char* tf2lib::GetClassNameFromType(TeamFortress2::TFClassType type)
 		return "unknown";
 	}
 }
-
 
 #endif // !NAVBOT_TF2LIB_H_
 

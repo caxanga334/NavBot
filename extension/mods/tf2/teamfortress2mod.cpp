@@ -9,6 +9,7 @@
 #include <core/eventmanager.h>
 #include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/basemod_gameevents.h>
+#include "tf2lib.h"
 #include "tf2mod_gameevents.h"
 #include "teamfortress2mod.h"
 
@@ -422,3 +423,17 @@ bool CTeamFortress2Mod::DetectPlayerDestruction()
 	return false;
 }
 
+const WeaponInfo* CTeamFortress2Mod::GetWeaponInfo(edict_t* weapon)
+{
+	const WeaponInfo* info = nullptr;
+
+	info = m_wim.GetWeaponInfoByEconIndex(tf2lib::GetWeaponItemDefinitionIndex(weapon));
+
+	if (info)
+	{
+		return info;
+	}
+
+	info = m_wim.GetWeaponInfoByClassname(gamehelpers->GetEntityClassname(weapon));
+	return info;
+}

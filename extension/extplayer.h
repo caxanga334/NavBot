@@ -1,6 +1,8 @@
 #ifndef EXT_PLAYER_INTERFACE_H_
 #define EXT_PLAYER_INTERFACE_H_
 
+#include <vector>
+
 class CNavArea;
 class CBaseBot;
 
@@ -66,6 +68,9 @@ public:
 	virtual int GetHealth() const { return m_playerinfo->GetHealth(); }
 	virtual int GetMaxHealth() const { return m_playerinfo->GetMaxHealth(); }
 	inline float GetHealthPercentage() const { return static_cast<float>(GetHealth()) / static_cast<float>(GetMaxHealth()); }
+	int GetAmmoOfIndex(int index) const;
+
+	std::vector<edict_t*> GetAllWeapons() const;
 
 protected:
 

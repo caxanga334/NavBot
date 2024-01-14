@@ -617,3 +617,11 @@ void CBaseBot::ExecuteQueuedCommands()
 		}
 	}
 }
+
+bool CBaseBot::IsLineOfFireClear(const Vector& to) const
+{
+	CTraceFilterNoNPCsOrPlayer filter(GetEdict()->GetIServerEntity(), COLLISION_GROUP_NONE);
+	trace_t result;
+	UTIL_TraceLine(GetEyeOrigin(), to, MASK_SHOT, &filter, &result);
+	return !result.DidHit();
+}

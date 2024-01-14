@@ -3,6 +3,7 @@
 #include <util/entprops.h>
 #include <util/prediction.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include <mods/tf2/tf2lib.h>
 #include "bot/tf2/tf2bot.h"
 #include "tf2bot_tactical.h"
 #include "tf2bot_maintask.h"
@@ -15,7 +16,37 @@ AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask()
 
 TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	auto sensor = bot->GetSensorInterface();
+	auto threat = sensor->GetPrimaryKnownThreat();
+
+	if (threat != nullptr) // I have an enemy
+	{
+		SelectBestWeaponForEnemy(bot, threat);
+		FireWeaponAtEnemy(bot, threat);
+	}
+
+	UpdateLook(bot, threat);
+
 	return Continue();
+}
+
+CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+{
+	// Handle cases where one of them is NULL
+	if (threat1 && !threat2)
+	{
+		return threat1;
+	}
+	else if (!threat1 && threat2)
+	{
+		return threat2;
+	}
+	else if (threat1 == threat2)
+	{
+		return threat1; // if both are the same, return threat1
+	}
+
+	return InternalSelectTargetThreat(static_cast<CTF2Bot*>(me), threat1, threat2);
 }
 
 Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player)
@@ -33,6 +64,192 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtP
 	}
 
 	return aimat;
+}
+
+void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
+{
+	if (me->GetPlayerInfo()->IsDead())
+		return;
+
+	if (!me->WantsToShootAtEnemies())
+		return;
+
+	if (tf2lib::IsPlayerInCondition(me->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
+		return;
+
+	if (me->GetActiveWeapon() == nullptr)
+		return;
+
+	if (me->GetBehaviorInterface()->ShouldAttack(me, threat) == ANSWER_NO)
+		return;
+
+	if (threat->GetEdict() == nullptr)
+		return;
+
+	auto mod = CTeamFortress2Mod::GetTF2Mod();
+
+	if (me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Medic)
+	{
+		std::string classname(gamehelpers->GetEntityClassname(me->GetActiveWeapon()));
+		auto id = mod->GetWeaponID(classname);
+
+		if (id == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
+		{
+			return; // medigun is handled in the medic behavior
+		}
+	}
+
+	if (me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Heavy && me->GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 50 &&
+		me->GetBehaviorInterface()->ShouldHurry(me) != ANSWER_YES)
+	{
+		constexpr auto THREAT_SPIN_TIME = 3.0f;
+		if (me->GetSensorInterface()->GetTimeSinceVisibleThreat() <= THREAT_SPIN_TIME)
+		{
+			me->GetControlInterface()->PressSecondaryAttackButton(0.25f); // spin the minigun
+		}
+	}
+
+	if (!threat->WasRecentlyVisible(1.0f)) // stop firing after losing LOS for more than 1 second
+		return;
+
+	auto& origin = threat->GetEdict()->GetCollideable()->GetCollisionOrigin();
+	auto center = UtilHelpers::getWorldSpaceCenter(threat->GetEdict());
+	auto& max = threat->GetEdict()->GetCollideable()->OBBMaxs();
+	Vector top = origin;
+	top.z += max.z - 1.0f;
+
+	if (!me->IsLineOfFireClear(origin))
+	{
+		if (!me->IsLineOfFireClear(center))
+		{
+			if (!me->IsLineOfFireClear(top))
+			{
+				return;
+			}
+		}
+	}
+
+	auto info = mod->GetWeaponInfo(me->GetActiveWeapon());
+	auto threat_range = me->GetRangeTo(origin);
+
+	if (threat_range < info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+	{
+		return; // Don't fire
+	}
+
+	if (threat_range > info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+	{
+		return; // Don't fire
+	}
+
+	if (me->GetControlInterface()->IsAimOnTarget())
+	{
+		me->GetControlInterface()->PressAttackButton();
+	}
+}
+
+void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, CKnownEntity* threat)
+{
+	if (!AllowedToSwitchWeapon())
+		return;
+
+	if (!threat->IsVisibleNow())
+		return; // Don't bother with weapon switches if we can't see it
+	
+	auto allweapons = me->GetAllWeapons();
+	auto mod = CTeamFortress2Mod::GetTF2Mod();
+	std::vector<std::pair<edict_t*, const WeaponInfo*>> infovec;
+	infovec.reserve(MAX_WEAPONS);
+
+	for (auto weaponedict : allweapons)
+	{
+		auto info = mod->GetWeaponInfoManager().GetWeaponInfoByEconIndex(tf2lib::GetWeaponItemDefinitionIndex(weaponedict));
+
+		if (info)
+		{
+			std::pair<edict_t*, const WeaponInfo*> pair(weaponedict, info);
+			infovec.push_back(pair);
+			continue;
+		}
+
+		info = mod->GetWeaponInfoManager().GetWeaponInfoByClassname(gamehelpers->GetEntityClassname(weaponedict));
+
+		if (info)
+		{
+			std::pair<edict_t*, const WeaponInfo*> pair(weaponedict, info);
+			infovec.push_back(pair);
+		}
+	}
+
+	if (infovec.size() == 0) // no weapons?
+		return;
+
+	const float threat_range = me->GetRangeTo(threat->GetEdict());
+
+	edict_t* best = [me, threat, &infovec, &threat_range]() -> edict_t* {
+		edict_t* current_best = nullptr;
+		int current_priority = -99999999;
+
+		for (auto& pair : infovec)
+		{
+			auto info = pair.second;
+			bool can_use = false;
+
+			if (!info->IsCombatWeapon())
+				continue; // Skip non-combat weapons
+
+			// most tf2 weapons only deals damage with the primary attack
+			if (info->HasPrimaryAttack())
+			{
+				auto& attack = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+
+				if (attack.InRangeTo(threat_range)) // in range to primary attrack
+				{
+					can_use = true;
+				}
+
+				// TO-DO: Ammo Check
+			}
+
+			if (!can_use)
+				continue;
+
+			if (info->GetPriority() > current_priority) // found usable weapon with a higher priority
+			{
+				current_priority = info->GetPriority();
+				current_best = pair.first;
+			}
+		}
+
+		return current_best;
+	}();
+
+	if (best != me->GetActiveWeapon())
+	{
+		me->SelectWeaponByCommand(gamehelpers->GetEntityClassname(best)); // switch!
+	}
+}
+
+void CTF2BotMainTask::UpdateLook(CTF2Bot* me, CKnownEntity* threat)
+{
+	if (threat)
+	{
+		if (threat->IsVisibleNow())
+		{
+			me->GetControlInterface()->AimAt(threat->GetEdict(), IPlayerController::LOOK_COMBAT, 1.0f, "Looking at current threat!"); // look at my enemies
+			return;
+		}
+
+		if (threat->WasRecentlyVisible(1.5f))
+		{
+			me->GetControlInterface()->AimAt(threat->GetLastKnownPosition(), IPlayerController::LOOK_ALERT, 1.0f, "Looking at current threat LKP!");
+			return;
+		}
+
+		// TO-DO: Handle look when the bot has a threat but it's not visible
+	}
+
+	// TO-DO: Handle look at potential enemy locations
 }
 
 void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result)
@@ -139,5 +356,21 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 	result = player->GetEyeOrigin();
 	return;
 
+}
+
+CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+{
+	// TO-DO: Add threat selection
+
+	auto range1 = me->GetRangeTo(threat1->GetEdict());
+	auto range2 = me->GetRangeTo(threat2->GetEdict());
+
+	// temporary distance based for testing
+	if (range1 < range2)
+	{
+		return threat1;
+	}
+
+	return threat2;
 }
 

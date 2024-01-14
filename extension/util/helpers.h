@@ -37,6 +37,9 @@ namespace UtilHelpers
 	MoveType_t GetEntityMoveType(int entity);
 	// Vector::Normalized is not available in all SDK version
 	Vector GetNormalizedVector(const Vector& other);
+	int GetEntityHealth(int entity);
+	bool IsEntityAlive(const int entity);
+	bool IsPlayerAlive(const int player);
 }
 
 #endif // !UTIL_HELPERS_H_
