@@ -191,3 +191,45 @@ int tf2lib::GetWeaponItemDefinitionIndex(edict_t* weapon)
 	return index;
 }
 
+TeamFortress2::TFTeam tf2lib::GetEntityTFTeam(int entity)
+{
+	int team = 0;
+	entprops->GetEntProp(entity, Prop_Send, "m_iTeamNum", team);
+	return static_cast<TeamFortress2::TFTeam>(team);
+}
+
+int tf2lib::GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team, const bool ignore_bots)
+{
+	int count = 0;
+
+	for (int client = 1; client <= gpGlobals->maxClients; client++)
+	{
+		auto player = playerhelpers->GetGamePlayer(client);
+
+		if (!player)
+			continue;
+
+		if (!player->IsInGame()) // must be in-game
+			continue;
+
+		if (player->IsReplay() || player->IsSourceTV())
+			continue; // always ignore STV bots
+
+		if (ignore_bots && player->IsFakeClient())
+			continue;
+
+		if (team > TeamFortress2::TFTeam::TFTeam_Spectator)
+		{
+			if (team != GetEntityTFTeam(client))
+				continue;
+		}
+
+		if (GetPlayerClassType(client) == tfclass)
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+

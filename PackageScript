@@ -56,7 +56,7 @@ CopyFiles('configs', 'addons/sourcemod/configs/navbot',
 
 # TF2 Config files
 CopyFiles('configs/tf', 'addons/sourcemod/configs/navbot/tf',
-  [ 'weapons.cfg' ]
+  [ 'weapons.cfg', 'class_selection.cfg' ]
 )
 
 # Copy binaries.

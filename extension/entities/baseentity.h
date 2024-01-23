@@ -23,6 +23,7 @@ namespace entities
 		Vector GetAbsOrigin() const;
 		QAngle GetAbsAngles() const;
 		Vector GetAbsVelocity() const;
+		void GetTargetName(char* result, std::size_t maxsize) const;
 
 	private:
 		int m_index; // entity index or reference

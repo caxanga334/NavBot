@@ -1,3 +1,5 @@
+#include <algorithm>
+
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
@@ -8,6 +10,9 @@
 #include "tf2bot_tactical.h"
 #include "tf2bot_maintask.h"
 
+#undef max
+#undef min
+#undef clamp
 
 AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask()
 {
@@ -87,12 +92,11 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 		return;
 
 	auto mod = CTeamFortress2Mod::GetTF2Mod();
+	std::string classname(gamehelpers->GetEntityClassname(me->GetActiveWeapon()));
+	auto id = mod->GetWeaponID(classname);
 
 	if (me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Medic)
 	{
-		std::string classname(gamehelpers->GetEntityClassname(me->GetActiveWeapon()));
-		auto id = mod->GetWeaponID(classname);
-
 		if (id == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
 		{
 			return; // medigun is handled in the medic behavior
@@ -145,6 +149,11 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 	if (me->GetControlInterface()->IsAimOnTarget())
 	{
 		me->GetControlInterface()->PressAttackButton();
+	}
+
+	if (id == TeamFortress2::TFWeaponID::TF_WEAPON_PIPEBOMBLAUNCHER)
+	{
+		me->GetControlInterface()->PressSecondaryAttackButton(); // make stickies detonate as soon as possible
 	}
 }
 
@@ -296,6 +305,22 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	{
 		InternalAimWithRocketLauncher(me, player, result, weaponinfo, sensor);
 		break;
+	}
+	case TeamFortress2::TFWeaponID::TF_WEAPON_GRENADELAUNCHER:
+	{
+		const float rangeTo = me->GetRangeTo(player->WorldSpaceCenter());
+		const float speed = weaponinfo->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
+		const float time = pred::GetProjectileTravelTime(speed, rangeTo);
+		Vector velocity = player->GetAbsVelocity();
+		const float velocitymod = RemapValClamped(rangeTo, 600.0f, 1500.0f, 1.0f, 1.5f);
+		velocity *= velocitymod;
+		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), velocity, speed, rangeTo);
+		const float gravmod = RemapValClamped(rangeTo, 600.0f, 1750.0f, 0.9f, 1.2f);
+		const float z = pred::SimpleGravityCompensation(time, gravmod);
+		targetPos.z += z;
+
+		result = std::move(targetPos);
+		return;
 	}
 	case TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE:
 	case TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE_DECAP:

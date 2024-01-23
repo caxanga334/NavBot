@@ -57,3 +57,10 @@ Vector entities::HBaseEntity::GetAbsVelocity() const
 
 	return vec3_origin;
 }
+
+void entities::HBaseEntity::GetTargetName(char* result, std::size_t maxsize) const
+{
+	int size = 0;
+	entprops->GetEntPropString(GetIndex(), Prop_Data, "m_iName", result, maxsize, size);
+}
+

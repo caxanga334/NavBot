@@ -23,6 +23,8 @@ namespace UtilHelpers
 	int FindEntityByClassname(int start, const char* searchname);
 	int FindEntityInSphere(int start, Vector center, float radius);
 	int FindEntityByNetClass(int start, const char* classname);
+	int FindEntityByTargetname(int start, const char* targetname);
+	int FindNamedEntityByClassname(int start, const char* targetname, const char* classname);
 	bool PointWithinViewAngle(Vector const& vecSrcPosition, Vector const& vecTargetPosition, Vector const& vecLookDirection, float flCosHalfFOV);
 	float GetForwardViewCone(float angle);
 	CStudioHdr* GetEntityModelPtr(edict_t* pEntity);
@@ -40,6 +42,7 @@ namespace UtilHelpers
 	int GetEntityHealth(int entity);
 	bool IsEntityAlive(const int entity);
 	bool IsPlayerAlive(const int player);
+	int GetNumberofPlayersOnTeam(const int team, const bool ignore_dead = false, const bool ignore_bots = false);
 }
 
 #endif // !UTIL_HELPERS_H_

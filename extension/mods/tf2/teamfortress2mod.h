@@ -8,7 +8,10 @@
 #include <bot/interfaces/weaponinfo.h>
 #include <mods/basemod.h>
 
+#include "tf2_class_selection.h"
 #include "teamfortress2_shareddefs.h"
+
+class CTF2Bot;
 
 class CTeamFortress2Mod : public CBaseMod
 {
@@ -33,10 +36,13 @@ public:
 	const char* GetCurrentGameModeName() const;
 	TeamFortress2::TFWeaponID GetWeaponID(std::string& classname);
 	const WeaponInfo* GetWeaponInfo(edict_t* weapon);
+	bool ShouldSwitchClass(CTF2Bot* bot) const;
+	TeamFortress2::TFClassType SelectAClassForBot(CTF2Bot* bot) const;
 private:
 	CWeaponInfoManager m_wim;
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
+	CTF2ClassSelection m_classselector;
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();

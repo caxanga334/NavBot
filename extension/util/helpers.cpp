@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include <extension.h>
 #include <ifaces_extern.h>
 #include <server_class.h>
@@ -309,6 +311,103 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 	return INVALID_EHANDLE_INDEX;
 }
 
+/**
+ * @brief Searches for an entity by their targetname (The entity name given by the level design for I/O purposes)
+ * @param start Search starting entity or -1 for the first entity.
+ * @param targetname Targetname to search for.
+ * @return Entity index if found or INVALID_EHANDLE_INDEX if not found.
+*/
+int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
+{
+#if SOURCE_ENGINE > SE_ORANGEBOX
+	auto result = servertools->FindEntityByName(UtilHelpers::GetEntity(start), targetname);
+	return gamehelpers->EntityToBCompatRef(result);
+#else
+
+	if (!targetname || targetname[0] == 0)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	if (targetname[0] == '!')
+	{
+		// I don't see a need to implement this, throw an exception to alert the programmer
+		throw std::runtime_error("Procedural entity search not supported!");
+	}
+
+	CBaseEntity* pEntity = UtilHelpers::GetEntity(start);
+
+	if (pEntity == nullptr)
+	{
+		pEntity = static_cast<CBaseEntity*>(servertools->FirstEntity());
+	}
+
+	const char* name = nullptr;
+	static int offset = -1;
+	if (offset == -1)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(pEntity), "m_iName", &info))
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		offset = info.actual_offset;
+	}
+
+	string_t s;
+
+	while (pEntity)
+	{
+		if ((s = *(string_t*)((uint8_t*)pEntity + offset)) == NULL_STRING)
+		{
+			pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
+			continue;
+		}
+
+		name = STRING(s);
+
+		if (strcasecmp(name, targetname) == 0)
+		{
+			return gamehelpers->EntityToBCompatRef(pEntity);
+		}
+
+		pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
+	}
+
+	return INVALID_EHANDLE_INDEX;
+
+#endif // SOURCE_ENGINE > SE_ORANGEBOX
+}
+
+/**
+ * @brief Searches for an entity by classname and targetname.
+ * @param start Search start entity.
+ * @param targetname Targetname to search for.
+ * @param classname Limit search to this classname.
+ * @return Entity index if found or INVALID_EHANDLE_INDEX if not found.
+*/
+int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, const char* classname)
+{
+	int i = start;
+
+	while ((i = FindEntityByClassname(i, classname)) != INVALID_EHANDLE_INDEX)
+	{
+		char name[64];
+		int length;
+		
+		if (entprops->GetEntPropString(i, Prop_Data, "m_iName", name, 64, length))
+		{
+			if (strcasecmp(name, targetname) == 0)
+			{
+				return i;
+			}
+		}
+	}
+
+	return INVALID_EHANDLE_INDEX;
+}
+
 /// @brief check if a point is in the field of a view of an object. supports up to 180 degree fov.
 /// @param vecSrcPosition Source position of the view.
 /// @param vecTargetPosition Point to check if within view angle.
@@ -565,3 +664,38 @@ bool UtilHelpers::IsPlayerAlive(const int player)
 
 	return GetEntityHealth(player) > 0;
 }
+
+int UtilHelpers::GetNumberofPlayersOnTeam(const int team, const bool ignore_dead, const bool ignore_bots)
+{
+	int count = 0;
+
+	for (int client = 1; client <= gpGlobals->maxClients; client++)
+	{
+		auto player = playerhelpers->GetGamePlayer(client);
+
+		if (!player)
+			continue;
+
+		if (!player->IsInGame())
+			continue;
+
+		if (ignore_bots && player->IsFakeClient())
+			continue;
+
+		auto info = player->GetPlayerInfo();
+
+		if (!info)
+			continue;
+
+		if (ignore_dead && info->IsDead())
+			continue;
+
+		if (info->GetTeamIndex() == team)
+		{
+			count++;
+		}
+	}
+
+	return count;
+}
+

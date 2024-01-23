@@ -13,6 +13,8 @@
 #include "tf2mod_gameevents.h"
 #include "teamfortress2mod.h"
 
+ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
+
 static const char* s_tf2gamemodenames[] = {
 	"NONE/DEFAULT",
 	"CAPTURE THE FLAG",
@@ -110,6 +112,8 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 		m_weaponidmap.emplace("tf_weapon_pda_spy", TeamFortress2::TFWeaponID::TF_WEAPON_PDA_SPY);
 		m_weaponidmap.emplace("tf_weapon_invis", TeamFortress2::TFWeaponID::TF_WEAPON_INVIS);
 	}();
+
+	m_classselector.LoadClassSelectionData();
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -436,4 +440,31 @@ const WeaponInfo* CTeamFortress2Mod::GetWeaponInfo(edict_t* weapon)
 
 	info = m_wim.GetWeaponInfoByClassname(gamehelpers->GetEntityClassname(weapon));
 	return info;
+}
+
+bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
+{
+	std::string classname(sm_navbot_tf_force_class.GetString());
+	auto forcedclass = tf2lib::GetClassTypeFromName(classname);
+
+	if (forcedclass != TeamFortress2::TFClassType::TFClass_Unknown)
+	{
+		return forcedclass != bot->GetMyClassType();
+	}
+
+	// TO-DO: Add roster selection
+	return m_classselector.IsClassAboveLimit(bot->GetMyClassType(), bot->GetMyTFTeam(), CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT);
+}
+
+TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) const
+{
+	std::string classname(sm_navbot_tf_force_class.GetString());
+	auto forcedclass = tf2lib::GetClassTypeFromName(classname);
+
+	if (forcedclass != TeamFortress2::TFClassType::TFClass_Unknown)
+	{
+		return forcedclass;
+	}
+
+	return m_classselector.SelectAClass(bot->GetMyTFTeam(), CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT);
 }

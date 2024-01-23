@@ -30,7 +30,9 @@ public:
 	virtual CTF2BotBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
 	virtual int GetMaxHealth() const override;
 	TeamFortress2::TFClassType GetMyClassType() const;
-
+	TeamFortress2::TFTeam GetMyTFTeam() const;
+	void JoinClass(TeamFortress2::TFClassType tfclass) const;
+	void JoinTeam() const;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;

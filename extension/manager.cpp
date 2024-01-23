@@ -4,8 +4,10 @@
 #include <string>
 #include <fstream>
 #include <memory>
+#include <algorithm>
 
 #include "extension.h"
+#include "ifaces_extern.h"
 
 #include <bot/basebot.h>
 #include <bot/bot_debug_shared.h>
@@ -33,8 +35,15 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #endif // SOURCE_ENGINE == SE_DODS
 
-extern IBotManager* botmanager;
+#undef max // valve mathlib conflict fix
+#undef min
+#undef clamp
 
+constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
+
+ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players");
+
+ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.");
 
 CExtManager::CExtManager() :
 	m_bdm()
@@ -43,6 +52,9 @@ CExtManager::CExtManager() :
 	m_botnames.reserve(256); // reserve space for 256 bot names, vector size will increase if needed
 	m_nextbotname = 0U;
 	m_botdebugmode = BOTDEBUG_NONE;
+	m_quotamode = BotQuotaMode::QUOTA_FIXED;
+	m_quotatarget = 0;
+	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
 }
 
 CExtManager::~CExtManager()
@@ -62,6 +74,13 @@ void CExtManager::OnAllLoaded()
 
 void CExtManager::Frame()
 {
+	if (--m_quotaupdatetime <= 0)
+	{
+		m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
+
+		UpdateBotQuota();
+	}
+
 	for (auto& botptr : m_bots)
 	{
 		auto bot = botptr.get();
@@ -125,6 +144,8 @@ void CExtManager::OnMapStart()
 {
 	m_mod.get()->OnMapStart();
 
+	CBaseMod* pointer = m_mod.get();
+
 	if (m_botnames.size() != 0)
 	{
 		// get a new index on every map load
@@ -175,6 +196,19 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 	return nullptr;
 }
 
+bool CExtManager::IsNavBot(const int client) const
+{
+	for (auto& botptr : m_bots)
+	{
+		if (botptr.get()->GetIndex() == client)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void CExtManager::AddBot()
 {
 	const char* name = nullptr;
@@ -223,6 +257,22 @@ void CExtManager::AddBot()
 #endif // EXT_DEBUG
 
 	rootconsole->ConsolePrint("Bot added to the game.");
+}
+
+void CExtManager::RemoveRandomBot()
+{
+	auto& botptr = m_bots[librandom::generate_random_uint(0, m_bots.size() - 1)];
+	auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
+	player->Kick("NavBot: Kicked by Bot Quota Manager.");
+}
+
+void CExtManager::RemoveAllBots(const char* message)
+{
+	for (auto& botptr : m_bots)
+	{
+		auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
+		player->Kick(message);
+	}
 }
 
 void CExtManager::LoadBotNames()
@@ -285,6 +335,122 @@ void CExtManager::LoadBotNames()
 #endif // EXT_DEBUG
 
 	rootconsole->ConsolePrint("[SMNav] Bot name list loaded with %i names.", m_botnames.size());
+}
+
+void CExtManager::UpdateBotQuota()
+{
+	auto mode = sm_navbot_quota_mode.GetString();
+
+	if (strncasecmp(mode, "normal", 6) == 0)
+	{
+		m_quotamode = BotQuotaMode::QUOTA_FIXED;
+	}
+	else if (strncasecmp(mode, "fill", 4) == 0)
+	{
+		m_quotamode = BotQuotaMode::QUOTA_FILL;
+	}
+	else
+	{
+		m_quotamode = BotQuotaMode::QUOTA_FIXED;
+		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
+	}
+
+	m_quotatarget = sm_navbot_quota_quantity.GetInt();
+
+	m_quotatarget = std::clamp(m_quotatarget, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
+
+	if (m_quotatarget == 0)
+		return;
+
+	int humans = 0;
+	int navbots = 0;
+	int otherbots = 0;
+
+	CountPlayers(humans, navbots, otherbots);
+
+	if (humans == 0) // server is empty of humans
+	{
+		if (navbots > 0)
+		{
+			// Remove all NavBots to save server CPU
+			// Some games will do this automatically for us
+			RemoveAllBots("NavBot: Server is Empty. Removing Bots.");
+		}
+
+		return;
+	}
+
+#ifdef EXT_DEBUG
+	rootconsole->ConsolePrint("[NavBot] Updating Bot Quota \n   %i humans %i navbots %i otherbots ", humans, navbots, otherbots);
+#endif // EXT_DEBUG
+
+	switch (m_quotamode)
+	{
+
+	case CExtManager::BotQuotaMode::QUOTA_FILL:
+	{
+		int target = m_quotatarget - (humans + otherbots);
+
+		if (target == 0 && navbots == 0)
+			return;
+
+		if (navbots < target)
+		{
+			AddBot();
+		}
+		else if (navbots > target)
+		{
+			RemoveRandomBot();
+		}
+
+		break;
+	}
+	case CExtManager::BotQuotaMode::QUOTA_FIXED:
+	default:
+		if (navbots < m_quotatarget) // number of bots is below desired quantity
+		{
+			AddBot();
+		}
+		else if (navbots > m_quotatarget) // number of bots is above desired quantity
+		{
+			RemoveRandomBot();
+		}
+
+		break;
+	}
+}
+
+void CExtManager::CountPlayers(int& humans, int& navbots, int& otherbots) const
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto player = playerhelpers->GetGamePlayer(i);
+
+		if (!player)
+			continue;
+
+		if (!player->IsInGame()) // must be in game
+			continue;
+
+		if (player->IsReplay() || player->IsSourceTV())
+			continue; // Ignore spectator bots
+
+		if (!player->IsFakeClient()) // human client
+		{
+			humans++;
+		}
+		else
+		{
+			if (IsNavBot(i))
+			{
+				navbots++;
+			}
+			else
+			{
+				otherbots++;
+			}
+		}
+	}
 }
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")

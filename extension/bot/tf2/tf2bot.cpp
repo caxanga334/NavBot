@@ -22,8 +22,9 @@ CTF2Bot::~CTF2Bot()
 
 void CTF2Bot::TryJoinGame()
 {
-	FakeClientCommand("jointeam auto");
-	FakeClientCommand("joinclass soldier");
+	JoinTeam();
+	auto tfclass = CTeamFortress2Mod::GetTF2Mod()->SelectAClassForBot(this);
+	JoinClass(tfclass);
 }
 
 void CTF2Bot::Spawn()
@@ -44,4 +45,22 @@ int CTF2Bot::GetMaxHealth() const
 TeamFortress2::TFClassType CTF2Bot::GetMyClassType() const
 {
 	return tf2lib::GetPlayerClassType(GetIndex());
+}
+
+TeamFortress2::TFTeam CTF2Bot::GetMyTFTeam() const
+{
+	return tf2lib::GetEntityTFTeam(GetIndex());
+}
+
+void CTF2Bot::JoinClass(TeamFortress2::TFClassType tfclass) const
+{
+	auto szclass = tf2lib::GetClassNameFromType(tfclass);
+	char command[128];
+	ke::SafeSprintf(command, sizeof(command), "joinclass %s", szclass);
+	FakeClientCommand(command);
+}
+
+void CTF2Bot::JoinTeam() const
+{
+	FakeClientCommand("jointeam auto");
 }
