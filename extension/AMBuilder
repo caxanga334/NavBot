@@ -71,24 +71,28 @@ sourceFiles = [
   'mods/dods/dayofdefeatsourcemod.cpp',
 ]
 
-###############
-# Make sure to edit PackageScript, which copies your files to their appropriate locations
-# Simple extensions do not need to modify past this point.
-
-project = Extension.HL2Project(builder, projectName + '.ext')
+project = builder.LibraryProject(EXT.my_name + '.ext')
+project.sources += sourceFiles
 
 if os.path.isfile(os.path.join(builder.currentSourcePath, 'sdk', 'smsdk_ext.cpp')):
   # Use the copy included in the project
   project.sources += [os.path.join('sdk', 'smsdk_ext.cpp')]
 else:
   # Use the copy included with SM 1.6 and newer
-  project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
+  project.sources += [os.path.join(EXT.sm_root, 'public', 'smsdk_ext.cpp')]
 
-project.sources += sourceFiles
+for sdk_name in EXT.sdks:
+  sdk = EXT.sdks[sdk_name]
+  if sdk['name'] in ['mock']:
+    continue
 
-for sdk_name in Extension.sdks:
-  sdk = Extension.sdks[sdk_name]
-  
-  binary = Extension.HL2Config(project, projectName + '.ext.' + sdk.ext, sdk)
+  for cxx in builder.targets:
+    if not cxx.target.arch in sdk['platforms'][cxx.target.platform]:
+      continue
 
-Extension.extensions = builder.Add(project)
+    binary = EXT.HL2ExtConfig(project, builder, cxx, EXT.my_name + '.ext.' + sdk['extension'], sdk)
+
+    if binary.compiler.behavior == 'gcc':
+      binary.compiler.cxxflags += ['-Wno-invalid-offsetof', '-Wno-reorder-ctor', '-Wno-varargs']
+
+EXT.extensions += builder.Add(project)
