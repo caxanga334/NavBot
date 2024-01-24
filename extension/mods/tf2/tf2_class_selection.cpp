@@ -91,6 +91,19 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		return TeamFortress2::TFClassType::TFClass_Unknown;
 	}
 
+#ifdef EXT_DEBUG
+	rootconsole->ConsolePrint("Available Classes");
+	rootconsole->ConsolePrint("Team %i Roster %i", static_cast<int>(team), static_cast<int>(roster));
+	rootconsole->ConsolePrint("-----------------");
+	for (auto& cls : available_classes)
+	{
+		auto name = tf2lib::GetClassNameFromType(cls);
+		rootconsole->ConsolePrint("%s", name);
+	}
+	rootconsole->ConsolePrint("-----------------");
+#endif // EXT_DEBUG
+
+
 	if (available_classes.size() == 1)
 	{
 		return available_classes[0];
@@ -265,7 +278,13 @@ void CTF2ClassSelection::StoreClassData(ClassRosterType roster, TeamFortress2::T
 		throw std::out_of_range("Out of Bounds write attempt at class type!");
 	}
 
-	m_classdata[r][classtype] = data;
+#ifdef EXT_DEBUG
+	rootconsole->ConsolePrint("Saving data for class \"%s\" roster %i ", tf2lib::GetClassNameFromType(classtype), r);
+	rootconsole->ConsolePrint("%i %i %i %i", data.minimum, data.maximum, data.rate, data.teamsize);
+#endif // EXT_DEBUG
+
+
+	m_classdata[r][c] = data;
 }
 
 CTF2ClassSelection::ClassData::ClassData()

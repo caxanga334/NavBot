@@ -699,3 +699,30 @@ int UtilHelpers::GetNumberofPlayersOnTeam(const int team, const bool ignore_dead
 	return count;
 }
 
+/**
+ * @brief Finds the team manager entity index
+ * @param team Team index to search
+ * @param classname classname of the team manager entity. (For example, in tf2 it's 'tf_team').
+ * Use sourcemod to dump a list of entity classnames.
+ * @return Entity index if found or NULL optional if not found.
+*/
+std::optional<int> UtilHelpers::GetTeamManagerEntity(const int team, const char* classname)
+{
+	int entity = INVALID_EHANDLE_INDEX;
+
+	while ((entity = FindEntityByClassname(entity, classname)) != INVALID_EHANDLE_INDEX)
+	{
+		int entityteam = -1;
+
+		if (!entprops->GetEntProp(entity, Prop_Send, "m_iTeamNum", entityteam)) // Entity lacks m_iTeamNum or it's not networked, fail
+			continue;
+
+		if (entityteam == team)
+		{
+			return entity;
+		}
+	}
+
+	return std::nullopt;
+}
+

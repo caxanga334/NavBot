@@ -3,6 +3,7 @@
 #pragma once
 
 #include <ITextParsers.h>
+#include "teamfortress2_shareddefs.h"
 
 class CTF2ClassSelection : public ITextListener_SMC
 {

@@ -45,6 +45,15 @@ namespace TeamFortress2
 		TFTeam_Blue = 3
 	};
 
+	enum TeamRoles
+	{
+		TEAM_ROLE_NONE = 0,
+		TEAM_ROLE_DEFENDERS,
+		TEAM_ROLE_ATTACKERS,
+
+		MAX_TEAM_ROLES
+	};
+
 	enum TFCond
 	{
 		TFCond_Slowed = 0, //0: Revving Minigun, Sniper Rifle. Gives zoomed/revved pose

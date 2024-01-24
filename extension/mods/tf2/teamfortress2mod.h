@@ -38,6 +38,8 @@ public:
 	const WeaponInfo* GetWeaponInfo(edict_t* weapon);
 	bool ShouldSwitchClass(CTF2Bot* bot) const;
 	TeamFortress2::TFClassType SelectAClassForBot(CTF2Bot* bot) const;
+	TeamFortress2::TeamRoles GetTeamRole(TeamFortress2::TFTeam team) const;
+	CTF2ClassSelection::ClassRosterType GetRosterForTeam(TeamFortress2::TFTeam team) const;
 private:
 	CWeaponInfoManager m_wim;
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map

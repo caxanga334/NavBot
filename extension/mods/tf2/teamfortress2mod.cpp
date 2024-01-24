@@ -452,8 +452,7 @@ bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 		return forcedclass != bot->GetMyClassType();
 	}
 
-	// TO-DO: Add roster selection
-	return m_classselector.IsClassAboveLimit(bot->GetMyClassType(), bot->GetMyTFTeam(), CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT);
+	return m_classselector.IsClassAboveLimit(bot->GetMyClassType(), bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam()));
 }
 
 TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) const
@@ -466,5 +465,65 @@ TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) c
 		return forcedclass;
 	}
 
-	return m_classselector.SelectAClass(bot->GetMyTFTeam(), CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT);
+	return m_classselector.SelectAClass(bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam()));
+}
+
+TeamFortress2::TeamRoles CTeamFortress2Mod::GetTeamRole(TeamFortress2::TFTeam team) const
+{
+	auto teamentity = UtilHelpers::GetTeamManagerEntity(static_cast<int>(team), "tf_team");
+
+	if (!teamentity.has_value()) // failed to find team manager entity
+		return TeamFortress2::TeamRoles::TEAM_ROLE_NONE;
+
+	int role = 0;
+
+	entprops->GetEntProp(teamentity.value(), Prop_Send, "m_iRole", role);
+
+	return static_cast<TeamFortress2::TeamRoles>(role);
+}
+
+CTF2ClassSelection::ClassRosterType CTeamFortress2Mod::GetRosterForTeam(TeamFortress2::TFTeam team) const
+{
+	switch (m_gamemode)
+	{
+	case TeamFortress2::GameModeType::GM_NONE:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_CTF:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_CP:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_ADCP:
+		break;
+	case TeamFortress2::GameModeType::GM_KOTH:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_MVM:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_MANNVSMACHINE;
+	case TeamFortress2::GameModeType::GM_PL:
+		break;
+	case TeamFortress2::GameModeType::GM_PL_RACE:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_PD:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_SD:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_TC:
+		break;
+	case TeamFortress2::GameModeType::GM_ARENA:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES:
+	default:
+		break;
+	}
+
+	auto role = GetTeamRole(team);
+
+	switch (role)
+	{
+	case TeamFortress2::TEAM_ROLE_DEFENDERS:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFENDERS;
+	case TeamFortress2::TEAM_ROLE_ATTACKERS:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_ATTACKERS;
+	default:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	}
 }

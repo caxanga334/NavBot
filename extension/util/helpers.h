@@ -2,6 +2,8 @@
 #define UTIL_HELPERS_H_
 #pragma once
 
+#include <optional>
+
 struct edict_t;
 class CBaseEntity;
 class Vector;
@@ -43,6 +45,7 @@ namespace UtilHelpers
 	bool IsEntityAlive(const int entity);
 	bool IsPlayerAlive(const int player);
 	int GetNumberofPlayersOnTeam(const int team, const bool ignore_dead = false, const bool ignore_bots = false);
+	std::optional<int> GetTeamManagerEntity(const int team, const char* classname);
 }
 
 #endif // !UTIL_HELPERS_H_
