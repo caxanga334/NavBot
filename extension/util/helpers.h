@@ -3,13 +3,13 @@
 #pragma once
 
 #include <optional>
+#include <const.h>
 
 struct edict_t;
 class CBaseEntity;
 class Vector;
 class CStudioHdr;
 class SendTable;
-enum MoveType_t : int; // forward declaration
 
 namespace UtilHelpers
 {
