@@ -435,7 +435,7 @@ public:
 	//- A* pathfinding algorithm ------------------------------------------------------------------------
 	static void MakeNewMarker( void )	{ ++m_masterMarker; if (m_masterMarker == 0) m_masterMarker = 1; }
 	void Mark( void )					{ m_marker = m_masterMarker; }
-	BOOL IsMarked( void ) const			{ return (m_marker == m_masterMarker) ? true : false; }
+	bool IsMarked( void ) const			{ return (m_marker == m_masterMarker) ? true : false; }
 	
 	void SetParent( CNavArea *parent, NavTraverseType how = NUM_TRAVERSE_TYPES )	{ m_parent = parent; m_parentHow = how; }
 	CNavArea *GetParent( void ) const	{ return m_parent; }

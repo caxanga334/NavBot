@@ -43,7 +43,7 @@ void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue,
 	}
 
 	char buffer[512]{};
-	va_list vaargs = nullptr;
+	va_list vaargs;
 	va_start(vaargs, fmt);
 	size_t len = ke::SafeVsprintf(buffer, sizeof(buffer), fmt, vaargs);
 

@@ -86,8 +86,11 @@ bool NavAttributeSetter::operator() ( CNavArea *area )
 unsigned int CVisPairHashFuncs::operator()( const NavVisPair_t &item ) const
 {
 	COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
-	int key[2] = { (int)item.pAreas[0] + (int)item.pAreas[1]->GetID(),
-			(int)item.pAreas[1] + (int)item.pAreas[0]->GetID() };
+
+	// TO-DO: Confirm ID only is enough for this
+	// int key[2] = { (int)item.pAreas[0] + (int)item.pAreas[1]->GetID(), (int)item.pAreas[1] + (int)item.pAreas[0]->GetID() };
+	int key[2] = { item.pAreas[1]->GetID(), item.pAreas[0]->GetID() };
+
 	return Hash8( key );
 }
 
