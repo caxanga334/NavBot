@@ -110,30 +110,32 @@ void CTFNavArea::Debug_ShowTFPathAttributes() const
 
 	if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM))
 	{
-		ke::SafeSprintf(message, TEXT_SIZE, "%s NO_RED_TEAM ", message);
+		ke::SafeStrcat(message, TEXT_SIZE, " NO_RED_TEAM");
 		DrawFilled(153, 204, 255, 255, EXT_DEBUG_DRAW_TIME, true);
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_NO_BLU_TEAM))
 	{
-		ke::SafeSprintf(message, TEXT_SIZE, "%s NO_BLU_TEAM ", message);
+		ke::SafeStrcat(message, TEXT_SIZE, " NO_BLU_TEAM");
 		DrawFilled(255, 64, 64, 255, EXT_DEBUG_DRAW_TIME, true);
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_NO_CARRIERS))
 	{
-		ke::SafeSprintf(message, TEXT_SIZE, "%s NO_FLAG_CARRIERS ", message);
+		ke::SafeStrcat(message, TEXT_SIZE, " NO_FLAG_CARRIERS");
 		DrawFilled(255, 69, 0, 255, EXT_DEBUG_DRAW_TIME, true);
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_CARRIERS_AVOID))
 	{
-		ke::SafeSprintf(message, TEXT_SIZE, "%s FLAG_CARRIERS_AVOID ", message);
+		ke::SafeStrcat(message, TEXT_SIZE, " FLAG_CARRIERS_AVOID");
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_DYNAMIC_SPAWNROOM))
 	{
-		ke::SafeSprintf(message, TEXT_SIZE, "%s DYNAMIC_SPAWNROOM -- TEAM = %i ", message, m_spawnroomteam);
+		char buffer[64]{};
+		ke::SafeSprintf(buffer, TEXT_SIZE, "DYNAMIC_SPAWNROOM -- TEAM = %i", m_spawnroomteam);
+		ke::SafeStrcat(message, TEXT_SIZE, buffer);
 		
 		if (m_spawnroomteam == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Blue))
 		{
