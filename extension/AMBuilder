@@ -67,6 +67,7 @@ sourceFiles = [
   'mods/tf2/tf2_class_selection.cpp',
   'mods/tf2/nav/tfnavarea.cpp',
   'mods/tf2/nav/tfnavmesh.cpp',
+  'mods/tf2/nav/tfnav_edit.cpp',
   # DoD:S Bot
   'mods/dods/dayofdefeatsourcemod.cpp',
 ]

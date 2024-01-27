@@ -616,6 +616,9 @@ protected:
 	void GenerateNodes( const Extent &bounds );
 	void RemoveNodes( void );
 
+	const NavAreaVector& GetSelectedAreaSet() const { return m_selectedSet; }
+	void SetMarkedCorner(NavCornerType corner) { m_markedCorner = corner; }
+
 private:
 	friend class CNavArea;
 	friend class CNavNode;
@@ -633,7 +636,7 @@ private:
 	bool m_isOutOfDate;											// true if the Navigation Mesh is older than the actual BSP
 	bool m_isAnalyzed;											// true if the Navigation Mesh needs analysis
 
-	enum { HASH_TABLE_SIZE = 256 };
+	static constexpr auto HASH_TABLE_SIZE = 256;
 	CNavArea *m_hashTable[ HASH_TABLE_SIZE ];					// hash table to optimize lookup by ID
 	int ComputeHashKey( unsigned int id ) const;				// returns a hash key for the given nav area ID
 
@@ -806,7 +809,9 @@ private:
 	void EndVisibilityComputations( void );
 
 	void TestAllAreasForBlockedStatus( void );					// Used to update blocked areas after a round restart. Need to delay so the map logic has all fired.
-	CountdownTimer m_updateBlockedAreasTimer;			
+	CountdownTimer m_updateBlockedAreasTimer;		
+	CountdownTimer m_invokeAreaUpdateTimer;
+	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
 };
 
 // the global singleton interface

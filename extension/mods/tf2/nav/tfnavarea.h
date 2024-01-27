@@ -17,10 +17,12 @@ public:
 
 	virtual void Save(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion) const override;
 	virtual NavErrorType Load(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion) override;
+	virtual bool IsBlocked(int teamID, bool ignoreNavBlockers = false) const override;
 
 	// Pathing flags
 	enum TFNavPathAttributes
 	{
+		TFNAV_PATH_INVALID = 0,
 		TFNAV_PATH_NO_RED_TEAM = (1 << 0), // Red team can't use this area
 		TFNAV_PATH_NO_BLU_TEAM = (1 << 1), // Blu team can't use this area
 		TFNAV_PATH_NO_CARRIERS = (1 << 2), // Flag/Objective carriers can't use this area
@@ -65,6 +67,8 @@ public:
 	}
 
 	void UpdateDynamicSpawnRoom();
+
+	void Debug_ShowTFPathAttributes() const;
 
 private:
 	int m_tfpathattributes;

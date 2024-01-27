@@ -1,14 +1,17 @@
+#include <limits>
+
 #include <extension.h>
 #include <utlbuffer.h>
 #include <filesystem.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
-#include <limits>
+#include <sdkports/debugoverlay_shared.h>
 #include "tfnavmesh.h"
 #include "tfnavarea.h"
 
 #undef max
 #undef min
+#undef clamp
 
 void CTFNavArea::Save(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion) const
 {
@@ -39,6 +42,30 @@ NavErrorType CTFNavArea::Load(CUtlBuffer& fileBuffer, unsigned int version, unsi
 	}
 
 	return NAV_OK;
+}
+
+bool CTFNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
+{
+	if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM) && teamID == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Red))
+	{
+		return true;
+	}
+
+	if (HasTFPathAttributes(TFNAV_PATH_NO_BLU_TEAM) && teamID == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Blue))
+	{
+		return true;
+	}
+
+	if (HasTFPathAttributes(TFNAV_PATH_DYNAMIC_SPAWNROOM))
+	{
+		// nav area is tagged as spawnroom and doesn't belong to the given team
+		if (m_spawnroomteam > TEAM_SPECTATOR && m_spawnroomteam != teamID)
+		{
+			return true;
+		}
+	}
+
+	return CNavArea::IsBlocked(teamID, ignoreNavBlockers);
 }
 
 void CTFNavArea::UpdateDynamicSpawnRoom()
@@ -74,4 +101,49 @@ void CTFNavArea::UpdateDynamicSpawnRoom()
 	}
 
 	m_spawnroomteam = nearest_team;
+}
+
+void CTFNavArea::Debug_ShowTFPathAttributes() const
+{
+	constexpr auto TEXT_SIZE = 256;
+	char message[TEXT_SIZE]{};
+
+	if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM))
+	{
+		ke::SafeSprintf(message, TEXT_SIZE, "%s NO_RED_TEAM ", message);
+		DrawFilled(153, 204, 255, 255, EXT_DEBUG_DRAW_TIME, true);
+	}
+
+	if (HasTFPathAttributes(TFNAV_PATH_NO_BLU_TEAM))
+	{
+		ke::SafeSprintf(message, TEXT_SIZE, "%s NO_BLU_TEAM ", message);
+		DrawFilled(255, 64, 64, 255, EXT_DEBUG_DRAW_TIME, true);
+	}
+
+	if (HasTFPathAttributes(TFNAV_PATH_NO_CARRIERS))
+	{
+		ke::SafeSprintf(message, TEXT_SIZE, "%s NO_FLAG_CARRIERS ", message);
+		DrawFilled(255, 69, 0, 255, EXT_DEBUG_DRAW_TIME, true);
+	}
+
+	if (HasTFPathAttributes(TFNAV_PATH_CARRIERS_AVOID))
+	{
+		ke::SafeSprintf(message, TEXT_SIZE, "%s FLAG_CARRIERS_AVOID ", message);
+	}
+
+	if (HasTFPathAttributes(TFNAV_PATH_DYNAMIC_SPAWNROOM))
+	{
+		ke::SafeSprintf(message, TEXT_SIZE, "%s DYNAMIC_SPAWNROOM -- TEAM = %i ", message, m_spawnroomteam);
+		
+		if (m_spawnroomteam == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Blue))
+		{
+			DrawFilled(153, 204, 255, 255, EXT_DEBUG_DRAW_TIME, true);
+		}
+		else if (m_spawnroomteam == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Red))
+		{
+			DrawFilled(255, 64, 64, 255, EXT_DEBUG_DRAW_TIME, true);
+		}
+	}
+
+	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, EXT_DEBUG_DRAW_TIME);
 }

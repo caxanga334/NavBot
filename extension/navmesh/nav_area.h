@@ -273,6 +273,8 @@ public:
 	virtual void OnRoundRestartPreEntity( void ) { }			// invoked for each area when the round restarts, but before entities are deleted and recreated
 	virtual void OnEnter( edict_t *who, CNavArea *areaJustLeft ) { }	// invoked when player enters this area
 	virtual void OnExit( edict_t *who, CNavArea *areaJustEntered ) { }	// invoked when player exits this area
+	virtual void OnFrame() {} // invoked every server frame
+	virtual void OnUpdate() {} // invoked at intervals
 
 	virtual void OnDestroyNotify( CNavArea *dead );				// invoked when given area is going away
 	virtual void OnDestroyNotify( CNavLadder *dead );			// invoked when given ladder is going away

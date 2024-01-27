@@ -138,6 +138,7 @@ CNavMesh::CNavMesh( void )
 	m_hostThreadModeRestoreValue = 0;
 	m_placeCount = 0;
 	m_placeName = NULL;
+	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 
 	LoadPlaceDatabase();
 		
@@ -360,6 +361,25 @@ void CNavMesh::Update( void )
 	if (sm_nav_show_func_nav_prefer.GetBool())
 	{
 		DrawFuncNavPrefer();
+	}
+
+	{
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			CNavArea* area = TheNavAreas[it];
+
+			area->OnFrame();
+
+			if (m_invokeAreaUpdateTimer.IsElapsed())
+			{
+				area->OnUpdate();
+			}
+		}
+
+		if (m_invokeAreaUpdateTimer.IsElapsed())
+		{
+			m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+		}
 	}
 
 #ifdef NEXT_BOT
@@ -670,6 +690,7 @@ void CNavMesh::TestAllAreasForBlockedStatus( void )
 void CNavMesh::OnRoundRestart( void )
 {
 	m_updateBlockedAreasTimer.Start( 1.0f );
+	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
