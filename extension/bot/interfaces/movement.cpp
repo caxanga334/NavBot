@@ -598,6 +598,18 @@ void IMovement::ClearStuckStatus()
 	m_stuck.ClearStuck(GetBot()->GetAbsOrigin());
 }
 
+bool IMovement::IsAreaTraversable(const CNavArea* area) const
+{
+	auto bot = GetBot();
+
+	if (area->IsBlocked(bot->GetCurrentTeamIndex()))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 void IMovement::StuckMonitor()
 {
 	auto bot = GetBot();

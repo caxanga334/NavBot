@@ -2,9 +2,12 @@
 #define SMNAV_ENTITIES_BASE_ENTITY_H_
 #pragma once
 
+#include <const.h>
+
 // Helper classes to access entity data
 
 struct edict_t;
+struct matrix3x4_t;
 class CBaseEntity;
 
 namespace entities
@@ -20,14 +23,42 @@ namespace entities
 		// returns an edict index or reference for non networked entities
 		inline int GetIndex() const { return m_index; }
 		bool GetEntity(CBaseEntity** entity, edict_t** edict) const;
+		bool IsBoundsDefinedInEntitySpace() const;
 		Vector GetAbsOrigin() const;
+		Vector WorldAlignMins() const;
+		Vector WorldAlignMaxs() const;
+		Vector OBBCenter() const;
+		Vector WorldSpaceCenter() const;
 		QAngle GetAbsAngles() const;
+		QAngle GetCollisionAngles() const;
 		Vector GetAbsVelocity() const;
+		void CalcNearestPoint(const Vector& worldPos, Vector& out) const;
 		void GetTargetName(char* result, std::size_t maxsize) const;
+		CBaseEntity* GetOwnerEntity() const;
+		CBaseEntity* GetMoveParent() const;
+		CBaseEntity* GetMoveChild() const;
+		CBaseEntity* GetMovePeer() const;
+		MoveType_t GetMoveType() const;
+		int GetTeam() const;
+		int GetEFlags() const;
+		int IsEFlagSet(const int nEFlagMask) const;
+		int GetSolidFlags() const;
+		SolidType_t GetSolidType() const;
+		matrix3x4_t CollisionToWorldTransform() const;
+		void CollisionToWorldSpace(const Vector& in, Vector& out) const;
+		void WorldToCollisionSpace(const Vector& in, Vector& out) const;
+		int GetParentAttachment() const;
+		matrix3x4_t GetParentToWorldTransform(matrix3x4_t& tempMatrix) const;
 
 	private:
+		void CalcAbsolutePosition(matrix3x4_t& result) const;
 		int m_index; // entity index or reference
 	};
+}
+
+inline bool entities::HBaseEntity::IsBoundsDefinedInEntitySpace() const
+{
+	return ((GetSolidFlags() & FSOLID_FORCE_WORLD_ALIGNED) == 0) && (GetSolidType() != SOLID_BBOX) && (GetSolidType() != SOLID_NONE);
 }
 
 #endif // !SMNAV_ENTITIES_BASE_ENTITY_H_

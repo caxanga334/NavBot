@@ -309,7 +309,7 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 		return true;
 	case TF2GR_GAMETYPE_PL:
 		// Payload race requires this entity
-		if (UtilHelpers::FindEntityByClassname(-1, "tf_logic_multiple_escort") != INVALID_EHANDLE_INDEX)
+		if (UtilHelpers::FindEntityByClassname(-1, "tf_logic_multiple_escort") != INVALID_ENT_REFERENCE)
 		{
 			rootconsole->ConsolePrint("[NavBot] Gamerules 'm_nGameType' == 3 and entity 'tf_logic_multiple_escort' exists, game mode is Payload Race.");
 			m_gamemode = TeamFortress2::GameModeType::GM_PL_RACE;
@@ -331,7 +331,7 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 		int restrictWinner = -1;
 		int restrictCount = 0;
 
-		while ((roundCP = UtilHelpers::FindEntityByClassname(roundCP, "team_control_point_round")) != INVALID_EHANDLE_INDEX)
+		while ((roundCP = UtilHelpers::FindEntityByClassname(roundCP, "team_control_point_round")) != INVALID_ENT_REFERENCE)
 		{
 			roundCount++;
 
@@ -376,7 +376,7 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 		// Now for single round maps... same check on control point master
 		int masterCP = UtilHelpers::FindEntityByClassname(-1, "team_control_point_master");
 
-		if (masterCP != INVALID_EHANDLE_INDEX)
+		if (masterCP != INVALID_ENT_REFERENCE)
 		{
 			// Single round restricted are always A/D (gorge, gravelpit)
 			entprops->GetEntProp(masterCP, Prop_Data, "m_iInvalidCapWinner", restrictWinner);
@@ -403,7 +403,7 @@ bool CTeamFortress2Mod::DetectKoth()
 {
 	int logic_koth = UtilHelpers::FindEntityByClassname(gpGlobals->maxClients + 1, "tf_logic_koth");
 
-	if (logic_koth != INVALID_EHANDLE_INDEX)
+	if (logic_koth != INVALID_ENT_REFERENCE)
 	{
 		rootconsole->ConsolePrint("[NavBot] Found 'tf_logic_koth', game mode is King Of The Hill.");
 		m_gamemode = TeamFortress2::GameModeType::GM_KOTH;
@@ -417,7 +417,7 @@ bool CTeamFortress2Mod::DetectPlayerDestruction()
 {
 	int logic_pd = UtilHelpers::FindEntityByClassname(gpGlobals->maxClients + 1, "tf_logic_player_destruction");
 
-	if (logic_pd != INVALID_EHANDLE_INDEX)
+	if (logic_pd != INVALID_ENT_REFERENCE)
 	{
 		rootconsole->ConsolePrint("[NavBot] Found 'tf_logic_player_destruction', game mode is Player Destruction.");
 		m_gamemode = TeamFortress2::GameModeType::GM_PD;
@@ -526,4 +526,38 @@ CTF2ClassSelection::ClassRosterType CTeamFortress2Mod::GetRosterForTeam(TeamFort
 	default:
 		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
 	}
+}
+
+edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
+{
+	int flag = INVALID_ENT_REFERENCE;
+
+	while ((flag = UtilHelpers::FindEntityByClassname(flag, "item_teamflag")) != INVALID_ENT_REFERENCE)
+	{
+		bool disabled = false;
+		entprops->GetEntPropBool(flag, Prop_Send, "m_bDisabled", disabled);
+
+		if (disabled)
+			continue;
+
+		auto entteam = tf2lib::GetEntityTFTeam(flag);
+
+		if (entteam != tf2lib::GetEnemyTFTeam(team))
+			continue;
+
+		auto owner = UtilHelpers::GetOwnerEntity(flag);
+
+		if (owner.value_or(INVALID_ENT_REFERENCE) != INVALID_ENT_REFERENCE)
+			continue; // only fetch dropped flags
+
+		// return the first flag
+		edict_t* pFlag = nullptr;
+
+		if (UtilHelpers::IndexToAThings(flag, nullptr, &pFlag))
+		{
+			return pFlag;
+		}
+	}
+
+	return nullptr;
 }

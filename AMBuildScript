@@ -181,9 +181,6 @@ class ExtensionConfig(object):
 
     self.configure_shared(cxx)
 
-    if builder.options.cpuavx == '1':
-      self.configure_avx(cxx)
-
     # Finish up.
     cxx.includes += [
       os.path.join(builder.sourcePath, 'public'),
@@ -208,8 +205,8 @@ class ExtensionConfig(object):
       '-Wno-array-bounds',
       '-fvisibility=hidden',
     ]
-    if cxx.target.arch in ['x86', 'x86_64']:
-      cxx.cflags += ['-msse']
+    # if cxx.target.arch in ['x86', 'x86_64']:
+    #   cxx.cflags += ['-msse']
 
     cxx.cxxflags += ['-std=c++17']
 
@@ -262,6 +259,8 @@ class ExtensionConfig(object):
     if have_gcc:
       cxx.cflags += ['-mfpmath=sse']
       cxx.cflags += ['-Wno-maybe-uninitialized']
+
+    self.configure_cpuarch_linux(cxx)
 
     if builder.options.opt == '1':
       if self.enable_asan:
@@ -316,8 +315,10 @@ class ExtensionConfig(object):
       'odbccp32.lib',
     ]
 
+    self.configure_cpuarch_windows(cxx)
+
     if builder.options.opt == '1':
-      cxx.cflags += ['/Ox', '/Zo']
+      cxx.cflags += ['/Ox', '/Zo', '/Ob3']
       cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
       
       if builder.options.enable_lto == '1':
@@ -354,13 +355,29 @@ class ExtensionConfig(object):
 
     self.asan_libs[cxx.target.arch] = os.path.dirname(output)
 
-  def configure_avx(self, cxx):
-    if cxx.target.platform == 'linux':
-      cxx.cxxflags += ['-mavx2']
-    elif cxx.target.platform == 'windows':
-      cxx.cxxflags += ['/arch:AVX2']
+  def configure_cpuarch_linux(self, cxx):
+    if builder.options.arch_feat:
+      if builder.options.arch_feat == -1:
+        cxx.cflags += ['-march=native']
+      elif builder.options.arch_feat == 1:
+        cxx.cflags += ['-msse4.2']
+      elif builder.options.arch_feat == 2:
+        cxx.cflags += ['-mavx2']
+      else:
+        cxx.cflags += ['-msse2']
     else:
-      raise Exception('AVX: Unsupported Platform')
+      cxx.cflags += ['-msse2']
+
+
+
+  def configure_cpuarch_windows(self, cxx):
+    if builder.options.arch_feat:
+      if builder.options.arch_feat == 2:
+        cxx.cflags += ['/arch:AVX2']
+      else:
+        cxx.cflags += ['/arch:SSE2']
+    else:
+      cxx.cflags += ['/arch:SSE2']
 
   def configure_linux(self, cxx):
     cxx.defines += ['LINUX', '_LINUX', 'POSIX', '_FILE_OFFSET_BITS=64']

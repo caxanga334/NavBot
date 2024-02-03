@@ -17,8 +17,11 @@ public:
 	virtual unsigned int GetSubVersionNumber(void) const override;
 	// Use nav mesh for climbing, players are limited when it comes to climbing
 	virtual bool IsAuthoritative(void) const override { return true; }
+	virtual unsigned int GetGenerationTraceMask(void) const;
 
 	virtual void Update() override;
+
+	virtual bool Save(void) const;
 
 private:
 	static constexpr auto NAV_SPAWNROOM_UPDATE_INTERVAL = 10.0f;

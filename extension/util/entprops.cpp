@@ -855,7 +855,7 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 
 		if (type == PropEnt_Unknown)
 		{
-			return -1;
+			return false;
 		}
 
 		CHECK_SET_PROP_DATA_OFFSET(false);
@@ -1739,7 +1739,7 @@ bool CEntPropUtils::SetEntDataEnt(int entity, int offset, int value, bool change
 
 	CBaseHandle &hndl = *(CBaseHandle *)((uint8_t *)pEntity + offset);
 
-	if ((unsigned)value == INVALID_EHANDLE_INDEX)
+	if ((unsigned)value == INVALID_ENT_REFERENCE)
 	{
 		hndl.Set(NULL);
 	}

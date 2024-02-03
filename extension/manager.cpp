@@ -25,6 +25,8 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
+#include <util/helpers.h>
+#include <entities/baseentity.h>
 #endif // EXT_DEBUG
 
 #if SOURCE_ENGINE == SE_TF2
@@ -690,5 +692,39 @@ CON_COMMAND(sm_navbot_debug_rng, "Debug random number generator")
 		int n = librandom::generate_random_int(0, 100);
 		rootconsole->ConsolePrint("Random Number: %i", n);
 	}
+}
+
+CON_COMMAND_F(free_nullptr_crash_for_everyone, "Crashes your game LMAO", FCVAR_CHEAT)
+{
+	auto edict = gamehelpers->EdictOfIndex(2040);
+	auto& origin = edict->GetCollideable()->GetCollisionOrigin();
+	Msg("%3.2f %3.2f %3.2f \n", origin.x, origin.y, origin.z);
+}
+
+CON_COMMAND_F(sm_navbot_debug_worldcenter, "Debugs the extension CBaseEntity::WorldSpaceCenter implementation.", FCVAR_GAMEDLL)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_navbot_debug_worldcenter <classname> \n");
+		return;
+	}
+
+	auto classname = args[1];
+	int index = UtilHelpers::FindEntityByClassname(-1, classname);
+	CBaseEntity* entity = nullptr;
+	edict_t* edict = nullptr;
+
+	if (!UtilHelpers::IndexToAThings(index, &entity, &edict))
+	{
+		Warning("Failed to obtain an entity pointer! \n");
+		return;
+	}
+
+	entities::HBaseEntity baseent(entity);
+	Vector method1 = UtilHelpers::getWorldSpaceCenter(edict);
+	Vector method2 = baseent.WorldSpaceCenter();
+
+	Msg("Method 1 (OLD): %3.4f %3.4f %3.4f \n", method1.x, method1.y, method1.z);
+	Msg("Method 2 (NEW): %3.4f %3.4f %3.4f \n", method2.x, method2.y, method2.z);
 }
 #endif // EXT_DEBUG

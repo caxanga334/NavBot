@@ -46,6 +46,8 @@ namespace UtilHelpers
 	bool IsPlayerAlive(const int player);
 	int GetNumberofPlayersOnTeam(const int team, const bool ignore_dead = false, const bool ignore_bots = false);
 	std::optional<int> GetTeamManagerEntity(const int team, const char* classname);
+	std::optional<int> GetOwnerEntity(const int entity);
+	void CalcClosestPointOnAABB(const Vector& mins, const Vector& maxs, const Vector& point, Vector& closestOut);
 }
 
 #endif // !UTIL_HELPERS_H_

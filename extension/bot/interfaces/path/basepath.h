@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <stack>
+#include <algorithm>
 
 #include <sdkports/sdk_timers.h>
 #include <bot/basebot.h>

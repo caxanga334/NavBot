@@ -23,6 +23,7 @@ namespace tf2lib
 	int GetWeaponItemDefinitionIndex(edict_t* weapon);
 	TeamFortress2::TFTeam GetEntityTFTeam(int entity);
 	int GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned, const bool ignore_bots = false);
+	TeamFortress2::TFTeam GetEnemyTFTeam(TeamFortress2::TFTeam team);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
@@ -74,6 +75,19 @@ inline const char* tf2lib::GetClassNameFromType(TeamFortress2::TFClassType type)
 		return "engineer";
 	default:
 		return "unknown";
+	}
+}
+
+inline TeamFortress2::TFTeam tf2lib::GetEnemyTFTeam(TeamFortress2::TFTeam team)
+{
+	switch (team)
+	{
+	case TeamFortress2::TFTeam_Red:
+		return TeamFortress2::TFTeam::TFTeam_Blue;
+	case TeamFortress2::TFTeam_Blue:
+		return TeamFortress2::TFTeam::TFTeam_Red;
+	default:
+		return TeamFortress2::TFTeam::TFTeam_Unassigned;
 	}
 }
 

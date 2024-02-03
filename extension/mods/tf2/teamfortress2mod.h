@@ -12,6 +12,7 @@
 #include "teamfortress2_shareddefs.h"
 
 class CTF2Bot;
+struct edict_t;
 
 class CTeamFortress2Mod : public CBaseMod
 {
@@ -40,6 +41,7 @@ public:
 	TeamFortress2::TFClassType SelectAClassForBot(CTF2Bot* bot) const;
 	TeamFortress2::TeamRoles GetTeamRole(TeamFortress2::TFTeam team) const;
 	CTF2ClassSelection::ClassRosterType GetRosterForTeam(TeamFortress2::TFTeam team) const;
+	edict_t* GetFlagToFetch(TeamFortress2::TFTeam team);
 private:
 	CWeaponInfoManager m_wim;
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map

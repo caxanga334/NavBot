@@ -19,7 +19,7 @@
 #include <tier1/memstack.h>
 
 // BOTPORT: Clean up relationship between team index and danger storage in nav areas
-enum { MAX_NAV_TEAMS = 2 };
+constexpr auto MAX_NAV_TEAMS = 2;
 
 
 #ifdef STAGING_ONLY

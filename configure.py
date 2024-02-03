@@ -19,8 +19,8 @@ parser.options.add_argument('--enable-optimize', action='store_const', const='1'
 parser.options.add_argument('-s', '--sdks', default='all', dest='sdks',
                        help='Build against specified SDKs; valid args are "all", "present", or '
                             'comma-delimited list of engine names (default: %default)')
-parser.options.add_argument('--enable-avx', action='store_const', const='1', dest='cpuavx',
-                       help='Allows the compiler to make use of AVX2 instructions.')
+parser.options.add_argument('--arch-features', type=int, dest='arch_feat', default=0,
+                       help='CPU Architecture Settings: -1 = native (gcc/clang), 0 = None, 1 = SSE4, 2 = AVX2')
 parser.options.add_argument('--debug-mode', action='store_const', const='1', dest='debugmode',
                        help='Compile with debug code')
 parser.options.add_argument('--targets', type=str, dest='targets', default=None,

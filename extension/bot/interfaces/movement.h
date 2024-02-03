@@ -128,6 +128,8 @@ public:
 	virtual float GetMaxJumpHeight() { return 57.0f; }
 	// Max distance between a (horizontal) gap that the bot is able to jump
 	virtual float GetMaxGapJumpDistance() { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
+	// Max height a player can safely fall
+	virtual float GetMaxDropHeight() { return 450.0f; }
 
 	inline virtual float GetTraversableSlopeLimit() { return 0.6f; }
 
@@ -190,6 +192,8 @@ public:
 	virtual float GetGroundSpeed() const { return m_groundspeed; }
 	virtual const Vector& GetMotionVector() { return m_motionVector; }
 	virtual const Vector2D& GetGroundMotionVector() { return m_groundMotionVector; }
+
+	virtual bool IsAreaTraversable(const CNavArea* area) const;
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer

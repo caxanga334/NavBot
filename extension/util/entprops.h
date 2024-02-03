@@ -35,7 +35,8 @@
 #include <dt_send.h>
 #include <server_class.h>
 
-#define INVALID_ENT_REFERENCE 0xFFFFFFFF
+// Indicates an invalid entity reference/index. Better compat between 32 bits integers and 64 bits integers than INVALID_EHANDLE_INDEX
+#define INVALID_ENT_REFERENCE -1
 
 enum PropType
 {

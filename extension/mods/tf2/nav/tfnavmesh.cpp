@@ -28,6 +28,11 @@ CNavArea* CTFNavMesh::CreateArea(void) const
 	return new CTFNavArea(GetNavPlace());
 }
 
+unsigned int CTFNavMesh::GetGenerationTraceMask(void) const
+{
+	return MASK_PLAYERSOLID_BRUSHONLY;
+}
+
 void CTFNavMesh::Update()
 {
 	CNavMesh::Update();
@@ -43,6 +48,13 @@ void CTFNavMesh::Update()
 			area->UpdateDynamicSpawnRoom();
 		}
 	}
+}
+
+bool CTFNavMesh::Save(void) const
+{
+	sm_nav_tf_show_path_attributes.SetValue(0); // disable rendering to avoid crashes during map change
+
+	return CNavMesh::Save();
 }
 
 void CTFNavMesh::UpdateDebugDraw()
