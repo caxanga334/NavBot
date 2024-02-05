@@ -230,6 +230,8 @@ bool IsBoxIntersectingBox(const Vector& boxMin1, const Vector& boxMax1,
 
 //--------------------------------------------------------------------------------------------------------------
 
+/*
+
 CMemoryStack CNavVectorNoEditAllocator::m_memory;
 void *CNavVectorNoEditAllocator::m_pCurrent;
 int CNavVectorNoEditAllocator::m_nBytesCurrent;
@@ -286,6 +288,8 @@ size_t CNavVectorNoEditAllocator::GetSize( void *pMem )
 	}
 	return m_nBytesCurrent;
 }
+
+*/
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavArea::CompressIDs( CNavMesh *TheNavMesh  )
@@ -4656,14 +4660,11 @@ static void CommandNavUpdateBlocked( void )
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->UpdateBlocked( true );
 
-#if SOURCE_ENGINE == SE_SDK2013
-		if ( area->IsBlocked( TEAM_ANY ) )
+		if (area->IsBlocked(TEAM_ANY))
 		{
-			DevMsg("Area #%d %s is blocked\n", area->GetID(),
-					VecToString(
-							area->GetCenter() + Vector( 0, 0, HalfHumanHeight )));
+			auto& center = area->GetCenter();
+			DevMsg("Area #%i <%3.2f, %3.2f %3.2f is blocked\n>", area->GetID(), center.x, center.y, center.z);
 		}
-#endif
 	}
 	else
 	{
@@ -4675,11 +4676,9 @@ static void CommandNavUpdateBlocked( void )
 			area->UpdateBlocked( true );
 			if ( area->IsBlocked( TEAM_ANY ) )
 			{
-#if SOURCE_ENGINE == SE_SDK2013
-				DevMsg("Area #%d %s is blocked\n", area->GetID(),
-						VecToString(
-								area->GetCenter() + Vector( 0, 0, HalfHumanHeight )));
-#endif
+				auto& center = area->GetCenter();
+				DevMsg("Area #%i <%3.2f, %3.2f %3.2f is blocked\n>", area->GetID(), center.x, center.y, center.z);
+
 				if ( !blockedArea )
 				{
 					blockedArea = area;

@@ -1388,7 +1388,7 @@ NavErrorType CNavMesh::Load( void )
 	// free previous navigation mesh data
 	Reset();
 	placeDirectory.Reset();
-	CNavVectorNoEditAllocator::Reset();
+	// CNavVectorNoEditAllocator::Reset();
 
 	// TODO: GameRules()->OnNavMeshLoad();
 

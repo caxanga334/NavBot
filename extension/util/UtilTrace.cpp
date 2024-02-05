@@ -4,6 +4,7 @@
  *  Created on: Apr 15, 2017
  */
 
+#include <extension.h>
 #include "UtilTrace.h"
 
 #include "EntityUtils.h"
@@ -183,14 +184,14 @@ bool CTraceFilterNoNPCsOrPlayer::ShouldHitEntity(IHandleEntity *pHandleEntity,
 		extern CGlobalVars *gpGlobals;
 		extern IVEngineServer* engine;
 
-#if SOURCE_ENGINE == SE_SDK2013
+#if SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 		return pEntity->m_EdictIndex > 0
-			&& engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
+			&& gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
 #elif SOURCE_ENGINE == SE_ORANGEBOX
-		return engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; // Orange box doesn't have CBaseEdict::m_EdictIndex
+		return gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; // Orange box doesn't have CBaseEdict::m_EdictIndex
 #else
 		return pEntity->m_iIndex > 0
-			&& engine->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
+			&& gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
 #endif
 
 	}

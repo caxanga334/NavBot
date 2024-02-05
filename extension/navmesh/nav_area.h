@@ -48,6 +48,7 @@ bool UTIL_IsCommandIssuedByServerAdmin();
 
 const char *UTIL_VarArgs( const char *format, ... );
 
+/* 
 class CNavVectorNoEditAllocator
 {
 public:
@@ -64,7 +65,7 @@ private:
 	static void *m_pCurrent;
 	static int m_nBytesCurrent;
 };
-
+*/
 
 //-------------------------------------------------------------------------------------------------------------------
 /**

@@ -814,7 +814,7 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 
 	float flStepHeight = 1e-3;
 
-#if SOURCE_ENGINE == SE_SDK2013
+#if SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 	bool isPlayer = pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients;
 #elif SOURCE_ENGINE == SE_ORANGEBOX
 	int index = engine->IndexOfEdict(pEntity);
@@ -1071,7 +1071,7 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 
 	// quick check
 	CNavArea *pClose = GetNavArea( pEntity, nFlags );
-#if SOURCE_ENGINE == SE_SDK2013
+#if SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 
 	return pClose ? pClose
 		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
