@@ -180,7 +180,7 @@ template<typename Func>
 void forAllEntities(const Func& func,
 		int startIndex = gpGlobals->maxClients + 1) {
 	for (int i = startIndex; i < gpGlobals->maxEntities; i++) {
-		edict_t *ent = engine->PEntityOfEntIndex(i);
+		edict_t* ent = gamehelpers->EdictOfIndex(i);
 		if (ent != nullptr && !ent->IsFree()) {
 			func(ent);
 		}
@@ -339,12 +339,11 @@ bool IsEntityWalkable(edict_t *entity, unsigned int flags) {
 edict_t* UTIL_GetListenServerEnt() {
 	// no "local player" if this is a dedicated server or a single player game
 	if (engine->IsDedicatedServer()) {
-		Assert(!"UTIL_GetListenServerHost");
-		Warning(
-				"UTIL_GetListenServerHost() called from a dedicated server or single-player game.\n");
-		return NULL;
+		Warning("UTIL_GetListenServerHost() called from a dedicated server or single-player game.\n");
+		return nullptr;
 	}
-	return engine->PEntityOfEntIndex(1);
+
+	return gamehelpers->EdictOfIndex(1);
 }
 
 IPlayerInfo *UTIL_GetListenServerHost(void) {

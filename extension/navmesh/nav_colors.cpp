@@ -8,14 +8,12 @@
 // Central point for defining colors and drawing routines for Navigation Mesh edit mode
 // Author: Matthew Campbell, 2004
 
+#include <extension.h>
 #include "nav_colors.h"
 
 #include "Color.h"
 #include <vector.h>
 #include <ivdebugoverlay.h>
-
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
 
 extern IVDebugOverlay* debugoverlay;
 

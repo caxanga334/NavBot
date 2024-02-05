@@ -402,7 +402,7 @@ class ExtensionConfig(object):
     cxx.defines += ['WIN32', '_WINDOWS']
 
   def configure_shared(self, cxx):
-    cxx.defines += ['TEAM_ANY=-2', 'EXT_DEBUG_DRAW_TIME=0.0f', 'RAD_TELEMETRY_DISABLED']
+    cxx.defines += ['EXT_DEBUG_DRAW_TIME=0.0f', 'RAD_TELEMETRY_DISABLED']
 
     if builder.options.debugmode == '1':
       cxx.defines += ['EXT_DEBUG']
@@ -477,6 +477,21 @@ class ExtensionConfig(object):
         os.path.join(self.sm_root, 'public', 'amtl', 'compat', 'stdcxx.cpp'),
       ]
 
+  def ConfigureSDKCompat(self, binary, sdk):
+    compiler = binary.compiler
+
+    # SDKs with support for the server tools interface version 'VSERVERTOOLS002'
+    if sdk['name'] in ['css', 'dods', 'tf2', 'hl2dm', 'bms', 'sdk2013']:
+      compiler.defines += ['SDKCOMPAT_HAS_SERVERTOOLSV2']
+
+    # SDKs with CBaseEdict::m_iIndex
+    if sdk['name'] in ['css', 'dods', 'hl2dm', 'tf2']:
+      compiler.defines += ['SDKCOMPAT_CBASEEDICT_MINDEX']
+
+    # SDKs with CBaseEdict::m_EdictIndex
+    if sdk['name'] in ['bms', 'sdk2013']:
+      compiler.defines += ['SDKCOMPAT_CBASEEDICT_MEDICTINDEX']
+
   def ConfigureForHL2(self, context, binary, sdk):
     compiler = binary.compiler
     SetArchFlags(compiler)
@@ -495,6 +510,8 @@ class ExtensionConfig(object):
       compiler.defines += ['HOOK_PLAYERRUNCMD']
 
     SdkHelpers.configureCxx(context, binary, sdk)
+
+    self.ConfigureSDKCompat(binary, sdk)
 
     return binary
 

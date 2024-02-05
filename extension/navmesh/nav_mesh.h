@@ -239,6 +239,10 @@ public:
 
 	// CEventListenerHelper
 	virtual void FireGameEvent(IGameEvent* event);
+
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+	virtual int	GetEventDebugID(void);
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
 	
 	virtual void PreLoadAreas( int nAreas ) {}
 	virtual CNavArea *CreateArea( void ) const;							// CNavArea factory
@@ -299,7 +303,7 @@ public:
 	CNavArea *GetNavArea( const Vector &pos, float beneathLimt = 120.0f ) const;	// given a position, return the nav area that IsOverlapping and is *immediately* beneath it
 	CNavArea *GetNavArea( edict_t *pEntity, int nGetNavAreaFlags, float flBeneathLimit = 120.0f ) const;
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
-	CNavArea *GetNearestNavArea( const Vector &pos, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = TEAM_ANY ) const;
+	CNavArea *GetNearestNavArea( const Vector &pos, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = NAV_TEAM_ANY ) const;
 	CNavArea *GetNearestNavArea( edict_t *pEntity, int nGetNavAreaFlags = GETNAVAREA_CHECK_GROUND, float maxDist = 10000.0f ) const;
 
 	Place GetPlace( const Vector &pos ) const;							// return Place at given coordinate

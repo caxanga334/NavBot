@@ -11,6 +11,7 @@
 
 
 #include "extension.h"
+#include <util/helpers.h>
 
 #include "nav_mesh.h"
 
@@ -98,7 +99,7 @@ template<typename Functor>
 bool ForEachActor(Functor &func) {
 	// iterate all non-bot players
 	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *ent = engine->PEntityOfEntIndex(i);
+		edict_t* ent = gamehelpers->EdictOfIndex(i);
 		if (ent == nullptr) {
 			continue;
 		}
@@ -509,6 +510,13 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 	}
 }
 
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+int CNavMesh::GetEventDebugID(void)
+{
+	return EVENT_DEBUG_ID_INIT;
+}
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -813,15 +821,7 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	Vector testPos = pEntity->GetCollideable()->GetCollisionOrigin();
 
 	float flStepHeight = 1e-3;
-
-#if SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
-	bool isPlayer = pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients;
-#elif SOURCE_ENGINE == SE_ORANGEBOX
-	int index = engine->IndexOfEdict(pEntity);
-	bool isPlayer = index > 0 && index <= gpGlobals->maxClients;
-#else
-	bool isPlayer = pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients;
-#endif
+	bool isPlayer = UtilHelpers::IsPlayerIndex(gamehelpers->IndexOfEdict(pEntity));
 
 	if ( isPlayer )
 	{
@@ -1071,39 +1071,14 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 
 	// quick check
 	CNavArea *pClose = GetNavArea( pEntity, nFlags );
-#if SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
-
-	return pClose ? pClose
-		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
-			maxDist,
-			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
-			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
-			pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients
-			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
-
-#elif SOURCE_ENGINE == SE_ORANGEBOX
-
-	int index = engine->IndexOfEdict(pEntity);
-
+	int index = gamehelpers->IndexOfEdict(pEntity);
 	return pClose ? pClose
 		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
 			maxDist,
 			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
 			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
 			index > 0 && index <= gpGlobals->maxClients
-			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
-
-#else
-
-	return pClose ? pClose
-		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
-			maxDist,
-			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
-			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
-			pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients
-			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
-
-#endif
+			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : NAV_TEAM_ANY);
 }
 
 

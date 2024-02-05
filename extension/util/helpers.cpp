@@ -150,7 +150,7 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(edict_t* pEntity)
 /// @return Entity index/reference or INVALID_ENT_REFERENCE if none is found
 int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 {
-#if SOURCE_ENGINE > SE_ORANGEBOX
+#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
 #else
@@ -231,7 +231,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 /// @return Entity index/reference or INVALID_ENT_REFERENCE if none is found
 int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 {
-#if SOURCE_ENGINE > SE_ORANGEBOX
+#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
 #else
@@ -289,7 +289,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 
 	for (int i = ((start != -1) ? start : 0); i < gpGlobals->maxEntities; i++)
 	{
-		current = engine->PEntityOfEntIndex(i);
+		current = gamehelpers->EdictOfIndex(i);
 		if (current == nullptr || current->IsFree())
 		{
 			continue;
@@ -323,7 +323,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 */
 int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 {
-#if SOURCE_ENGINE > SE_ORANGEBOX
+#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	auto result = servertools->FindEntityByName(UtilHelpers::GetEntity(start), targetname);
 	return gamehelpers->EntityToBCompatRef(result);
 #else
@@ -471,7 +471,7 @@ CStudioHdr* UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 	}
 
 	// TO-DO: Smart Pointers
-	return new CStudioHdr(studiomodel, mdlcache);
+	return new CStudioHdr(studiomodel, imdlcache);
 }
 
 /**

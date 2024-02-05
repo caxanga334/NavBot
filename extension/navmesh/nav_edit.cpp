@@ -9,6 +9,7 @@
 // Implementation of Navigation Mesh edit mode
 // Author: Michael Booth, 2003-2004
 
+#include <extension.h>
 #include "nav_mesh.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
@@ -936,7 +937,7 @@ void CNavMesh::DrawEditMode( void )
 					if ( m_selectedArea->IsBlocked( TEAM_SURVIVOR ) ) Q_strncat( attrib, "BLOCKED_SURVIVOR ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsBlocked( TEAM_ZOMBIE ) ) Q_strncat( attrib, "BLOCKED_ZOMBIE ", sizeof( attrib ), -1 );
 #else
-					if ( m_selectedArea->IsBlocked( TEAM_ANY ) ) Q_strncat( attrib, "BLOCKED ", sizeof( attrib ), -1 );
+					if ( m_selectedArea->IsBlocked( NAV_TEAM_ANY ) ) Q_strncat( attrib, "BLOCKED ", sizeof( attrib ), -1 );
 #endif
 					if ( m_selectedArea->HasAvoidanceObstacle() )	Q_strncat( attrib, "OBSTRUCTED ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsDamaging() )		Q_strncat( attrib, "DAMAGING ", sizeof( attrib ), -1 );
@@ -2003,7 +2004,7 @@ void CommandNavCenterInWorld( void )
 			navExtent.Encompass( area->GetCorner( SOUTH_EAST ) );
 		}
 	}
-	edict_t* worldEnt = engine->PEntityOfEntIndex(0);
+	edict_t* worldEnt = gamehelpers->EdictOfIndex(0);
 	// Get the world's extent
 	if ( worldEnt == nullptr )
 		return;
@@ -2091,7 +2092,7 @@ void CNavMesh::CommandNavSelectBlockedAreas( void )
 	{
 		CNavArea *area = TheNavAreas[ it ];
 
-		if ( area && area->IsBlocked( TEAM_ANY ) )
+		if ( area && area->IsBlocked( NAV_TEAM_ANY ) )
 		{
 			AddToSelectedSet( area );
 		}

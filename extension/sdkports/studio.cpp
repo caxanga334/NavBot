@@ -58,7 +58,7 @@ void CStudioHdr::Init(const studiohdr_t* pStudioHdr, IMDLCache* mdlcache)
 
 	if (m_pStudioHdr->numincludemodels == 0)
 	{
-#if STUDIO_SEQUENCE_ACTIVITY_LAZY_INITIALIZE
+#if STUDIO_SEQUENCE_ACTIVITY_LAZY_INITIALIZE || SOURCE_ENGINE == SE_CSGO
 #else
 		m_ActivityToSequence.Initialize(this);
 #endif
@@ -66,7 +66,7 @@ void CStudioHdr::Init(const studiohdr_t* pStudioHdr, IMDLCache* mdlcache)
 	else
 	{
 		ResetVModel(m_pStudioHdr->GetVirtualModel());
-#if STUDIO_SEQUENCE_ACTIVITY_LAZY_INITIALIZE
+#if STUDIO_SEQUENCE_ACTIVITY_LAZY_INITIALIZE || SOURCE_ENGINE == SE_CSGO
 #else
 		m_ActivityToSequence.Initialize(this);
 #endif

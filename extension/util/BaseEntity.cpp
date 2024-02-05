@@ -6,6 +6,7 @@
 
 #include "BaseEntity.h"
 
+#include <extension.h>
 #include "SimpleException.h"
 #include <eiface.h>
 #include <server_class.h>
@@ -19,7 +20,7 @@ edict_t* BaseEntity::getEntity(const char *varName) const {
 	CBaseHandle* out = getPtr<CBaseHandle>(varName);
 	extern IVEngineServer* engine;
 	return out == nullptr ?
-			nullptr : engine->PEntityOfEntIndex(out->GetEntryIndex());
+		nullptr : gamehelpers->EdictOfIndex(out->GetEntryIndex());
 }
 
 char *BaseEntity::getPointer(const char* varName) const {

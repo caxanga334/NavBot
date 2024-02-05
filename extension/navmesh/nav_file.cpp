@@ -13,7 +13,6 @@
 
 #include "nav_mesh.h"
 #include "nav_area.h"
-#include "datacache/imdlcache.h"
 
 #ifdef TERROR
 #include "func_elevator.h"
@@ -1382,9 +1381,6 @@ const CUtlVector< Place > *CNavMesh::GetPlacesFromNavFile( bool *hasUnnamedPlace
  */
 NavErrorType CNavMesh::Load( void )
 {
-	extern IMDLCache *mdlcache;
-	MDLCACHE_CRITICAL_SECTION();
-
 	// free previous navigation mesh data
 	Reset();
 	placeDirectory.Reset();

@@ -9,8 +9,8 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <extension.h>
 #include "nav_area.h"
-
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_entities.h"
@@ -75,7 +75,7 @@ bool UTIL_IsCommandIssuedByServerAdmin() {
 		return false;
 	}
 	for (int i = 2; i <= gpGlobals->maxClients; i++) {
-		edict_t* player = engine->PEntityOfEntIndex(i);
+		edict_t* player = gamehelpers->EdictOfIndex(i);
 		IPlayerInfo* info = playerinfomanager->GetPlayerInfo(player);
 		if (player != nullptr && !player->IsFree() && player->GetNetworkable() != nullptr
 				&& info != nullptr && !info->IsFakeClient()) {
@@ -3162,9 +3162,9 @@ void CNavArea::Draw( void ) const
 		NavDrawTriangle( m_center + Vector( 0, -bottomHeight, 0 ), m_center + Vector( -bottomWidth, -bottomHeight*2, 0 ), m_center + Vector( bottomWidth, -bottomHeight*2, 0 ), color );
 	}
 
-	if ( IsBlocked( TEAM_ANY ) || HasAvoidanceObstacle() || IsDamaging() )
+	if ( IsBlocked( NAV_TEAM_ANY ) || HasAvoidanceObstacle() || IsDamaging() )
 	{
-		NavEditColor color = (IsBlocked( TEAM_ANY ) && ( m_attributeFlags & NAV_MESH_NAV_BLOCKER ) ) ? NavBlockedByFuncNavBlockerColor : NavBlockedByDoorColor;
+		NavEditColor color = (IsBlocked( NAV_TEAM_ANY ) && ( m_attributeFlags & NAV_MESH_NAV_BLOCKER ) ) ? NavBlockedByFuncNavBlockerColor : NavBlockedByDoorColor;
 		const float blockedInset = 4.0f;
 		nw.x += blockedInset;
 		nw.y += blockedInset;
@@ -4660,7 +4660,7 @@ static void CommandNavUpdateBlocked( void )
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->UpdateBlocked( true );
 
-		if (area->IsBlocked(TEAM_ANY))
+		if (area->IsBlocked(NAV_TEAM_ANY))
 		{
 			auto& center = area->GetCenter();
 			DevMsg("Area #%i <%3.2f, %3.2f %3.2f is blocked\n>", area->GetID(), center.x, center.y, center.z);
@@ -4674,7 +4674,7 @@ static void CommandNavUpdateBlocked( void )
 		{
 			CNavArea *area = TheNavAreas[ nit ];
 			area->UpdateBlocked( true );
-			if ( area->IsBlocked( TEAM_ANY ) )
+			if ( area->IsBlocked( NAV_TEAM_ANY ) )
 			{
 				auto& center = area->GetCenter();
 				DevMsg("Area #%i <%3.2f, %3.2f %3.2f is blocked\n>", area->GetID(), center.x, center.y, center.z);
@@ -4724,7 +4724,7 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		return true;
 #endif
 
-	if ( teamID == TEAM_ANY )
+	if ( teamID == NAV_TEAM_ANY )
 	{
 		bool isBlocked = false;
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
@@ -4748,7 +4748,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	}
 
 	bool wasBlocked = false;
-	if ( teamID == TEAM_ANY )
+	if ( teamID == NAV_TEAM_ANY )
 	{
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 		{
@@ -4769,8 +4769,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 			if ( blocker )
 			{
 				ConColorMsg(Color(0, 255, 128, 255), "%s %d blocked area %d\n",
-						blocker->GetClassName(), engine->IndexOfEdict(blocker),
-						GetID());
+						blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
 			}
 			else
 			{
@@ -4783,9 +4782,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	{
 		if ( blocker )
 		{
-			ConColorMsg(Color(0, 255, 128, 255),
-					"DUPE: %s %d blocked area %d\n", blocker->GetClassName(), engine->IndexOfEdict(
-					blocker), GetID());
+			ConColorMsg(Color(0, 255, 128, 255), "DUPE: %s %d blocked area %d\n", blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
 		}
 		else
 		{
@@ -4849,7 +4846,7 @@ void CNavArea::UnblockArea( int teamID )
 {
 	bool wasBlocked = IsBlocked( teamID );
 
-	if ( teamID == TEAM_ANY )
+	if ( teamID == NAV_TEAM_ANY )
 	{
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 		{
@@ -4913,7 +4910,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	// duck height - halfhumanheight
 	bounds.hi.Init( sizeX, sizeY, 36.0f - HalfHumanHeight );
 
-	bool wasBlocked = IsBlocked( TEAM_ANY );
+	bool wasBlocked = IsBlocked( NAV_TEAM_ANY );
 
 	// See if spot is valid
 #ifdef TERROR
@@ -4960,7 +4957,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	}
 	else if ( force )
 	{
-		if ( teamID == TEAM_ANY )
+		if ( teamID == NAV_TEAM_ANY )
 		{
 			for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 			{
@@ -4974,7 +4971,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		}
 	}
 
-	bool isBlocked = IsBlocked( TEAM_ANY );
+	bool isBlocked = IsBlocked( NAV_TEAM_ANY );
 
 	if ( wasBlocked != isBlocked )
 	{
@@ -5011,7 +5008,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
  */
 void CNavArea::CheckFloor( edict_t* ignore )
 {
-	if ( IsBlocked( TEAM_ANY ) )
+	if ( IsBlocked( NAV_TEAM_ANY ) )
 		return;
 
 	Vector origin = GetCenter();
@@ -5036,11 +5033,11 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	// If the center is open space, we're effectively blocked
 	if ( !tr.startsolid )
 	{
-		MarkAsBlocked( TEAM_ANY, NULL );
+		MarkAsBlocked( NAV_TEAM_ANY, NULL );
 	}
 
 	/*
-	if ( IsBlocked( TEAM_ANY ) )
+	if ( IsBlocked( NAV_TEAM_ANY ) )
 	{
 		NDebugOverlay::Box( origin, mins, maxs, 255, 0, 0, 64, 3.0f );
 	}
@@ -5216,7 +5213,7 @@ static void CommandNavCheckFloor( void )
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->CheckFloor( NULL );
 #if SOURCE_ENGINE == SE_SDK2013
-		if ( area->IsBlocked( TEAM_ANY ) )
+		if ( area->IsBlocked( NAV_TEAM_ANY ) )
 		{
 			DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, HalfHumanHeight ) ) );
 		}
@@ -5230,7 +5227,7 @@ static void CommandNavCheckFloor( void )
 			CNavArea *area = TheNavAreas[ nit ];
 			area->CheckFloor( NULL );
 #if SOURCE_ENGINE == SE_SDK2013
-			if ( area->IsBlocked( TEAM_ANY ) )
+			if ( area->IsBlocked( NAV_TEAM_ANY ) )
 			{
 				DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, HalfHumanHeight ) ) );
 			}
@@ -5681,7 +5678,9 @@ void CNavArea::ComputeVisibilityToMesh( void )
 
 #ifdef WIN32
 
-#if SOURCE_ENGINE != SE_ORANGEBOX
+#if SOURCE_ENGINE != SE_ORANGEBOX && SOURCE_ENGINE != SE_EYE && SOURCE_ENGINE != SE_LEFT4DEAD && \
+	SOURCE_ENGINE != SE_LEFT4DEAD2 && SOURCE_ENGINE != SE_CSGO \
+
 	ParallelProcess("CNavArea::ComputeVisibilityToMesh", collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
 #else
 	ParallelProcess(collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
@@ -5885,7 +5884,7 @@ bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const {
 	VPROF_BUDGET("CNavArea::IsPotentiallyVisibleToTeam", "NextBot");
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *pEnt = engine->PEntityOfEntIndex(i);
+		edict_t* pEnt = gamehelpers->EdictOfIndex(i);
 		if (pEnt) {
 			IPlayerInfo* player = playerinfomanager->GetPlayerInfo(pEnt);
 			if (player->GetTeamIndex() == teamIndex
@@ -5911,7 +5910,7 @@ bool CNavArea::IsCompletelyVisibleToTeam(int teamIndex) const {
 	VPROF_BUDGET("CNavArea::IsCompletelyVisibleToTeam", "NextBot");
 
 	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *pEnt = engine->PEntityOfEntIndex(i);
+		edict_t *pEnt = gamehelpers->EdictOfIndex(i);
 		if (pEnt) {
 			IPlayerInfo* player = playerinfomanager->GetPlayerInfo(pEnt);
 			if (player->GetTeamIndex() == teamIndex

@@ -30,7 +30,7 @@ extern IServerGameClients* gameclients;
 extern IGameEventManager2* gameeventmanager;
 extern IPhysicsSurfaceProps* physprops;
 extern IVModelInfo* modelinfo;
-extern IMDLCache* mdlcache;
+extern IMDLCache* imdlcache;
 extern IFileSystem* filesystem;
 extern ICvar* icvar;
 extern IServerTools* servertools;

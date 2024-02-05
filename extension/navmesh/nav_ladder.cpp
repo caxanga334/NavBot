@@ -8,6 +8,7 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <extension.h>
 #include "nav_area.h"
 #include "nav_colors.h"
 #include "nav.h"
@@ -602,7 +603,7 @@ bool ForEachPlayer( Functor &func )
 {
 	for( int i=1; i<=gpGlobals->maxClients; ++i )
 	{
-		edict_t *ent = engine->PEntityOfEntIndex(i);
+		edict_t* ent = gamehelpers->EdictOfIndex(i);
 		IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
 		if (player == NULL || (!player->IsPlayer() && !player->IsConnected()) )
 			continue;

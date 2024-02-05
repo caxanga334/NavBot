@@ -12,22 +12,16 @@
 #ifndef _NAV_PATHFIND_H_
 #define _NAV_PATHFIND_H_
 
+#include <algorithm>
+
 #include "tier0/vprof.h"
 #include "mathlib/ssemath.h"
 #include "nav_area.h"
 #include "vstdlib/random.h"
 
-#if (SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || \
- SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_ORANGEBOX)
-
-template< class T >
-T Max(T const& val1, T const& val2)
-{
-	return val1 > val2 ? val1 : val2;
-}
-
-#endif
-
+#undef max
+#undef min
+#undef clamp
 
 extern CUniformRandomStream g_NavRandom;
 
@@ -117,7 +111,7 @@ public:
 #define IGNORE_NAV_BLOCKERS true
 template< typename CostFunctor >
 bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *goalPos,
-		const CostFunctor &costFunc, CNavArea **closestArea = NULL, float maxPathLength = 0.0f, int teamID = TEAM_ANY, bool ignoreNavBlockers = false )
+		const CostFunctor &costFunc, CNavArea **closestArea = NULL, float maxPathLength = 0.0f, int teamID = NAV_TEAM_ANY, bool ignoreNavBlockers = false )
 {
 	VPROF_BUDGET( "NavAreaBuildPath", "NextBotSpiky" );
 
@@ -367,7 +361,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 			// Make sure that any jump to a new area incurs some pathfinsing
 			// cost, to avoid us spinning our wheels over insignificant cost
 			// benefit, floating point precision bug, or busted cost functor.
-			newCostSoFar = Max( newCostSoFar, area->GetCostSoFar() * 1.00001f + 0.00001f );
+			newCostSoFar = std::max(newCostSoFar, area->GetCostSoFar() * 1.00001f + 0.00001f);
 				
 			// stop if path length limit reached
 			if ( bHaveMaxPathLength )
@@ -512,7 +506,7 @@ inline void AddAreaToOpenList( CNavArea *area, CNavArea *parent, const Vector &s
 #define EXCLUDE_OUTGOING_CONNECTIONS	0x4
 #define EXCLUDE_ELEVATORS				0x8
 template < typename Functor >
-void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functor &func, float maxRange = -1.0f, unsigned int options = 0, int teamID = TEAM_ANY )
+void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functor &func, float maxRange = -1.0f, unsigned int options = 0, int teamID = NAV_TEAM_ANY )
 {
 	if (startArea == NULL)
 		return;
@@ -625,7 +619,7 @@ public:
 	// return true if 'adjArea' should be included in the ongoing search
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) 
 	{
-		return !adjArea->IsBlocked( TEAM_ANY );
+		return !adjArea->IsBlocked( NAV_TEAM_ANY );
 	}
 
 	/**
@@ -772,7 +766,7 @@ inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector,
 				{
 					CNavArea *adjArea = area->GetAdjacentArea( (NavDirType)dir, i );
 
-					if ( adjArea->IsBlocked( TEAM_ANY )
+					if ( adjArea->IsBlocked( NAV_TEAM_ANY )
 							|| adjArea->IsMarked() ) {
 						continue;
 					}

@@ -12,6 +12,8 @@
 #ifndef _NAV_H_
 #define _NAV_H_
 
+#include "nav_consts.h"
+
 #include <vector.h>
 #include <utlvector.h>
 

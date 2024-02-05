@@ -184,14 +184,12 @@ bool CTraceFilterNoNPCsOrPlayer::ShouldHitEntity(IHandleEntity *pHandleEntity,
 		extern CGlobalVars *gpGlobals;
 		extern IVEngineServer* engine;
 
-#if SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
-		return pEntity->m_EdictIndex > 0
-			&& gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
-#elif SOURCE_ENGINE == SE_ORANGEBOX
-		return gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; // Orange box doesn't have CBaseEdict::m_EdictIndex
+#if defined SDKCOMPAT_CBASEEDICT_MEDICTINDEX
+		return pEntity->m_EdictIndex > 0 && gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
+#elif defined SDKCOMPAT_CBASEEDICT_MINDEX
+		return pEntity->m_iIndex > 0 && gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
 #else
-		return pEntity->m_iIndex > 0
-			&& gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; //TODO && !player->IsNPC()
+		return gamehelpers->IndexOfEdict(pEntity) > gpGlobals->maxClients; // Orange box doesn't have CBaseEdict::m_EdictIndex
 #endif
 
 	}
