@@ -40,5 +40,10 @@ inline unsigned int CTFNavMesh::GetSubVersionNumber(void) const
 	return 1;
 }
 
+inline CTFNavMesh* TheTFNavMesh()
+{
+	return reinterpret_cast<CTFNavMesh*>(TheNavMesh);
+}
+
 #endif // !SMNAV_TF_NAV_MESH_H_
 

@@ -53,6 +53,7 @@ sourceFiles = [
   'bot/basebot.cpp',
   'bot/basebot_debug.cpp',
   'concommands_bots.cpp',
+  'concommands_debug.cpp',
   # TF2 Bot
   'bot/tf2/tf2bot.cpp',
   'bot/tf2/tf2bot_behavior.cpp',

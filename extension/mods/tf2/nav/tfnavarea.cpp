@@ -44,6 +44,11 @@ NavErrorType CTFNavArea::Load(CUtlBuffer& fileBuffer, unsigned int version, unsi
 	return NAV_OK;
 }
 
+void CTFNavArea::UpdateBlocked(bool force, int teamID)
+{
+	// TO-DO: Implement for TF
+}
+
 bool CTFNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 {
 	if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM) && teamID == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Red))

@@ -43,6 +43,11 @@ public:
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
 	virtual std::optional<int> GetPlayerResourceEntity();
+
+	// return false to call NavIsEntityWalkable ir order to determine if the entity is walkable. Used for nav mesh editing and generation.
+	virtual bool NavIsEntityIgnored(edict_t* entity, unsigned int flags) { return true; }
+	// Returns true if the entity is walkable, false if it should block nav
+	virtual bool NavIsEntityWalkable(edict_t* entity, unsigned int flags) { return true; }
 private:
 	CBaseHandle m_playerresourceentity;
 

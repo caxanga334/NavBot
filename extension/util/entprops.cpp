@@ -471,7 +471,7 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 	}
 	else
 	{
-		result = (bool*)((uint8_t*)pEntity + offset) ? 1 : 0;
+		result = *(bool*)((uint8_t*)pEntity + offset) ? 1 : 0;
 		return true;
 	}
 }

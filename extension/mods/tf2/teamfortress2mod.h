@@ -4,10 +4,8 @@
 
 #include <unordered_map>
 #include <string>
-
 #include <bot/interfaces/weaponinfo.h>
 #include <mods/basemod.h>
-
 #include "tf2_class_selection.h"
 #include "teamfortress2_shareddefs.h"
 

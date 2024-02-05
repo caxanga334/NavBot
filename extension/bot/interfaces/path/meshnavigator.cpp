@@ -395,6 +395,16 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 					break; // don't skip heights greater than the bot step height
 				}
 
+				if (from->area->HasAttributes(NAV_MESH_PRECISE) || next->area->HasAttributes(NAV_MESH_PRECISE))
+				{
+					break; // don't skip precise areas
+				}
+
+				if (!mover->NavigatorAllowSkip(next->area))
+				{
+					break; // movement interface disallows skipping the next segment area
+				}
+
 				float fraction;
 				if (mover->IsPotentiallyTraversable(origin, skip->goal, fraction, false) && mover->HasPotentialGap(origin, skip->goal, fraction) == false)
 				{

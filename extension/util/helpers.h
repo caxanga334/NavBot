@@ -10,6 +10,7 @@ class CBaseEntity;
 class Vector;
 class CStudioHdr;
 class SendTable;
+class CBaseHandle;
 
 namespace UtilHelpers
 {

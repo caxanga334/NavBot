@@ -194,6 +194,7 @@ public:
 	virtual const Vector2D& GetGroundMotionVector() { return m_groundMotionVector; }
 
 	virtual bool IsAreaTraversable(const CNavArea* area) const;
+	virtual bool NavigatorAllowSkip(const CNavArea* area) const { return true; }
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
