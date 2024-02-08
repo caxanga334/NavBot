@@ -144,6 +144,7 @@ void CExtManager::OnClientDisconnect(int client)
 
 void CExtManager::OnMapStart()
 {
+	TheNavMesh->OnMapStart();
 	m_mod.get()->OnMapStart();
 
 	CBaseMod* pointer = m_mod.get();
@@ -157,6 +158,7 @@ void CExtManager::OnMapStart()
 
 void CExtManager::OnMapEnd()
 {
+	TheNavMesh->OnMapEnd();
 	m_mod.get()->OnMapEnd();
 }
 

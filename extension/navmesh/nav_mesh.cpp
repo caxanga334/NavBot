@@ -164,6 +164,38 @@ CNavMesh::~CNavMesh()
 
 }
 
+void CNavMesh::OnMapStart()
+{
+	auto error = Load();
+
+	switch (error)
+	{
+	case NAV_OK:
+		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
+		break;
+	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
+		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
+		break;
+	case NAV_INVALID_FILE:
+		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
+		break;
+	case NAV_BAD_FILE_VERSION:
+		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
+		break;
+	case NAV_FILE_OUT_OF_DATE:
+		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
+		break;
+	case NAV_CORRUPT_DATA:
+		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
+		break;
+	case NAV_OUT_OF_MEMORY:
+		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
+		break;
+	default:
+		break;
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Reset the Navigation Mesh to initial values
@@ -3105,24 +3137,20 @@ HidingSpot::HidingSpot( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-void HidingSpot::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
+void HidingSpot::Save(std::fstream& filestream, uint32_t version)
 {
-	fileBuffer.PutUnsignedInt( m_id );
-	fileBuffer.PutFloat( m_pos.x );
-	fileBuffer.PutFloat( m_pos.y );
-	fileBuffer.PutFloat( m_pos.z );
-	fileBuffer.PutUnsignedChar( m_flags );
+	filestream.write(reinterpret_cast<char*>(&m_id), sizeof(m_id));
+	filestream.write(reinterpret_cast<char*>(&m_pos), sizeof(Vector));
+	filestream.write(reinterpret_cast<char*>(&m_flags), sizeof(m_flags));
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
-void HidingSpot::Load( CUtlBuffer &fileBuffer, unsigned int version )
+void HidingSpot::Load(std::fstream& filestream, uint32_t version)
 {
-	m_id = fileBuffer.GetUnsignedInt();
-	m_pos.x = fileBuffer.GetFloat();
-	m_pos.y = fileBuffer.GetFloat();
-	m_pos.z = fileBuffer.GetFloat();
-	m_flags = fileBuffer.GetUnsignedChar();
+	filestream.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
+	filestream.read(reinterpret_cast<char*>(&m_pos), sizeof(Vector));
+	filestream.read(reinterpret_cast<char*>(&m_flags), sizeof(m_flags));
 
 	// update next ID to avoid ID collisions by later spots
 	if (m_id >= m_nextID)

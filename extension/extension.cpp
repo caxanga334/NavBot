@@ -292,13 +292,6 @@ bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 
 void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
 {
-	auto error = TheNavMesh->Load();
-
-	if (error != NAV_OK)
-	{
-		rootconsole->ConsolePrint("Nav Mesh failed to load!");
-	}
-
 	extmanager->OnMapStart();
 }
 

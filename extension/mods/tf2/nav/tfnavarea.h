@@ -15,8 +15,8 @@ public:
 		m_spawnroomteam = 0;
 	}
 
-	virtual void Save(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion) const override;
-	virtual NavErrorType Load(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion) override;
+	virtual void Save(std::fstream& filestream, uint32_t version) override;
+	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion) override;
 	virtual void UpdateBlocked(bool force = false, int teamID = NAV_TEAM_ANY) override;
 	virtual bool IsBlocked(int teamID, bool ignoreNavBlockers = false) const override;
 

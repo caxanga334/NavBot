@@ -467,36 +467,37 @@ void CNavLadder::FindLadderEntity( void )
 /**
  * Save a navigation ladder to the opened binary stream
  */
-void CNavLadder::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
+void CNavLadder::Save(std::fstream& filestream, uint32_t version)
 {
 	// save ID
-	fileBuffer.PutUnsignedInt( m_id );
+	filestream.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
 
 	// save extent of ladder
-	fileBuffer.PutFloat( m_width );
+	filestream.write(reinterpret_cast<char*>(&m_width), sizeof(float));
 
 	// save top endpoint of ladder
-	fileBuffer.PutFloat( m_top.x );
-	fileBuffer.PutFloat( m_top.y );
-	fileBuffer.PutFloat( m_top.z );
+	filestream.write(reinterpret_cast<char*>(&m_top), sizeof(Vector));
 
 	// save bottom endpoint of ladder
-	fileBuffer.PutFloat( m_bottom.x );
-	fileBuffer.PutFloat( m_bottom.y );
-	fileBuffer.PutFloat( m_bottom.z );
+	filestream.write(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
 
 	// save ladder length
-	fileBuffer.PutFloat( m_length );
+	filestream.write(reinterpret_cast<char*>(&m_length), sizeof(float));
 
 	// save direction
-	fileBuffer.PutUnsignedInt( m_dir );
+	filestream.write(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
 
 	// save IDs of connecting areas
-	fileBuffer.PutUnsignedInt( m_topForwardArea ? m_topForwardArea->GetID() : 0 );
-	fileBuffer.PutUnsignedInt( m_topLeftArea ? m_topLeftArea->GetID() : 0 );
-	fileBuffer.PutUnsignedInt( m_topRightArea ? m_topRightArea->GetID() : 0 );
-	fileBuffer.PutUnsignedInt( m_topBehindArea ? m_topBehindArea->GetID() : 0 );
-	fileBuffer.PutUnsignedInt( m_bottomArea ? m_bottomArea->GetID() : 0 );
+	unsigned int id = m_topForwardArea ? m_topForwardArea->GetID() : 0;
+	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	id = m_topLeftArea ? m_topLeftArea->GetID() : 0;
+	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	id = m_topRightArea ? m_topRightArea->GetID() : 0;
+	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	id = m_topBehindArea ? m_topBehindArea->GetID() : 0;
+	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	id = m_bottomArea ? m_bottomArea->GetID() : 0;
+	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
 }
 
 
@@ -504,48 +505,43 @@ void CNavLadder::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
 /**
  * Load a navigation ladder from the opened binary stream
  */
-void CNavLadder::Load( CNavMesh* TheNavMesh, CUtlBuffer &fileBuffer, unsigned int version )
+void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version)
 {
 	// load ID
-	m_id = fileBuffer.GetUnsignedInt();
-
-	// update nextID to avoid collisions
-	if (m_id >= m_nextID)
-		m_nextID = m_id+1;
+	filestream.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
 
 	// load extent of ladder
-	m_width = fileBuffer.GetFloat();
+	filestream.read(reinterpret_cast<char*>(&m_width), sizeof(float));
 
 	// load top endpoint of ladder
-	m_top.x = fileBuffer.GetFloat();
-	m_top.y = fileBuffer.GetFloat();
-	m_top.z = fileBuffer.GetFloat();
+	filestream.read(reinterpret_cast<char*>(&m_top), sizeof(Vector));
 
 	// load bottom endpoint of ladder
-	m_bottom.x = fileBuffer.GetFloat();
-	m_bottom.y = fileBuffer.GetFloat();
-	m_bottom.z = fileBuffer.GetFloat();
+	filestream.read(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
 
 	// load ladder length
-	m_length = fileBuffer.GetFloat();
+	filestream.read(reinterpret_cast<char*>(&m_length), sizeof(float));
 
 	// load direction
-	m_dir = (NavDirType)fileBuffer.GetUnsignedInt();
-	SetDir( m_dir ); // regenerate the surface normal
-
-	// load dangling status
-	if ( version == 6 )
-	{
-		bool m_isDangling;
-		fileBuffer.Get( &m_isDangling, sizeof(m_isDangling) );
-	}
+	filestream.read(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
 
 	// load IDs of connecting areas
-	m_topForwardArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
-	m_topLeftArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
-	m_topRightArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
-	m_topBehindArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
-	m_bottomArea = TheNavMesh->GetNavAreaByID( fileBuffer.GetUnsignedInt() );
+	unsigned int id = 0;
+	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	m_topForwardArea = TheNavMesh->GetNavAreaByID(id);
+	id = 0;
+	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	m_topLeftArea = TheNavMesh->GetNavAreaByID(id);
+	id = 0;
+	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	m_topRightArea = TheNavMesh->GetNavAreaByID(id);
+	id = 0;
+	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	m_topBehindArea = TheNavMesh->GetNavAreaByID(id);
+	id = 0;
+	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	m_bottomArea = TheNavMesh->GetNavAreaByID(id);
+
 	if ( !m_bottomArea )
 	{
 		DevMsg( "ERROR: Unconnected ladder #%d bottom at ( %g, %g, %g )\n", m_id, m_bottom.x, m_bottom.y, m_bottom.z );

@@ -11,6 +11,12 @@
 #ifndef _NAV_LADDER_H_
 #define _NAV_LADDER_H_
 
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <cstdint>
+#include <vector>
+
 #include "nav.h"
 #include <util/Handle.h>
 
@@ -43,8 +49,8 @@ public:
 
 	void OnRoundRestart( void );			///< invoked when a game round restarts
 
-	void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;
-	void Load( CNavMesh* TheNavMesh, CUtlBuffer &fileBuffer, unsigned int version );
+	void Save(std::fstream& filestream, uint32_t version);
+	void Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version);
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							///<re-orders ladder ID's so they are continuous

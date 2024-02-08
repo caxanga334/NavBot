@@ -4061,6 +4061,28 @@ void CNavMesh::OnEditDestroyNotify( CNavLadder *deadLadder )
 {
 }
 
+CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded nav mesh file")
+{
+	auto& authorinfo = TheNavMesh->GetAuthorInfo();
 
+	if (!authorinfo.HasCreatorBeenSet())
+	{
+		Msg("Author info not set! Author info is set when the nav mesh is saved to file. \n");
+		return;
+	}
 
+	auto& op = authorinfo.GetCreator();
+
+	Msg("Nav Mesh created by %s (%lli) \n", op.first.c_str(), op.second);
+
+	if (authorinfo.GetEditorCount() > 0)
+	{
+		Msg("Edited by: \n");
+	}
+
+	for (auto& naveditor : authorinfo.GetEditors())
+	{
+		Msg("%s (%lli) \n", naveditor.first.c_str(), naveditor.second);
+	}
+}
 

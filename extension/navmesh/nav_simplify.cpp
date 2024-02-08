@@ -266,7 +266,6 @@ void CNavMesh::SimplifySelectedAreas( void )
 	sm_nav_snap_to_grid.SetValue( savedGrid );
 }
 
-
 //--------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_simplify_selected, "Chops all selected areas into their component 1x1 areas and re-merges them together into larger areas", FCVAR_CHEAT )
 {

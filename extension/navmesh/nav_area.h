@@ -12,6 +12,12 @@
 #ifndef _NAV_AREA_H_
 #define _NAV_AREA_H_
 
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <cstdint>
+#include <vector>
+
 #include "nav_ladder.h"
 #include <sdkports/sdk_timers.h>
 #include <shareddefs.h>
@@ -144,8 +150,8 @@ public:
 
 	int GetFlags( void ) const		{ return m_flags; }
 
-	void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;
-	void Load( CUtlBuffer &fileBuffer, unsigned int version );
+	void Save(std::fstream& filestream, uint32_t version);
+	void Load(std::fstream& filestream, uint32_t version);
 	NavErrorType PostLoad( void );
 
 	const Vector &GetPosition( void ) const		{ return m_pos; }	// get the position of the hiding spot
@@ -284,8 +290,8 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea ) { }		// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder ) { }	// invoked when given ladder has just been deleted from the mesh in edit mode
 
-	virtual void Save( CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion ) const;	// (EXTEND)
-	virtual NavErrorType Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion );		// (EXTEND)
+	virtual void Save(std::fstream& filestream, uint32_t version);	// (EXTEND)
+	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);		// (EXTEND)
 	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 
 	virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues

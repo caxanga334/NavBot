@@ -13,17 +13,17 @@
 #undef min
 #undef clamp
 
-void CTFNavArea::Save(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion) const
+void CTFNavArea::Save(std::fstream& filestream, uint32_t version)
 {
-	CNavArea::Save(fileBuffer, version, portversion); // Save base first
+	CNavArea::Save(filestream, version); // Save base first
 
-	fileBuffer.PutInt(m_tfattributes);
-	fileBuffer.PutInt(m_tfpathattributes);
+	filestream.write(reinterpret_cast<char*>(&m_tfattributes), sizeof(m_tfattributes));
+	filestream.write(reinterpret_cast<char*>(&m_tfpathattributes), sizeof(m_tfpathattributes));
 }
 
-NavErrorType CTFNavArea::Load(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion)
+NavErrorType CTFNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
 {
-	auto base = CNavArea::Load(fileBuffer, version, portversion, subVersion); // Load base first
+	auto base = CNavArea::Load(filestream, version, subVersion); // Load base first
 
 	if (base != NAV_OK)
 	{
@@ -32,10 +32,10 @@ NavErrorType CTFNavArea::Load(CUtlBuffer& fileBuffer, unsigned int version, unsi
 
 	if (subVersion > 0)
 	{
-		m_tfattributes = fileBuffer.GetInt();
-		m_tfpathattributes = fileBuffer.GetInt();
+		filestream.read(reinterpret_cast<char*>(&m_tfattributes), sizeof(m_tfattributes));
+		filestream.read(reinterpret_cast<char*>(&m_tfpathattributes), sizeof(m_tfpathattributes));
 
-		if (!fileBuffer.IsValid())
+		if (!filestream.good())
 		{
 			return NAV_CORRUPT_DATA;
 		}

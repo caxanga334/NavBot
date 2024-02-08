@@ -14,14 +14,16 @@ public:
 
 	virtual void OnRoundRestart(void) override;
 	virtual CNavArea* CreateArea(void) const override;
-	virtual unsigned int GetSubVersionNumber(void) const override;
+	virtual uint32_t GetSubVersionNumber(void) const override;
 	// Use nav mesh for climbing, players are limited when it comes to climbing
 	virtual bool IsAuthoritative(void) const override { return true; }
-	virtual unsigned int GetGenerationTraceMask(void) const;
+	virtual unsigned int GetGenerationTraceMask(void) const override;
 
 	virtual void Update() override;
 
-	virtual bool Save(void) const;
+	virtual bool Save(void) override;
+
+	virtual std::string GetMapFileName() const override;
 
 private:
 	static constexpr auto NAV_SPAWNROOM_UPDATE_INTERVAL = 10.0f;
@@ -30,7 +32,7 @@ private:
 	void UpdateDebugDraw();
 };
 
-inline unsigned int CTFNavMesh::GetSubVersionNumber(void) const
+inline uint32_t CTFNavMesh::GetSubVersionNumber(void) const
 {
 	/*
 	* Sub version 
