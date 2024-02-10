@@ -34,6 +34,24 @@ void CTF2BotMovement::Frame()
 	IMovement::Frame();
 }
 
+float CTF2BotMovement::GetHullWidth()
+{
+	float scale = GetBot()->GetModelScale();
+	return PLAYER_HULL_WIDTH * scale;
+}
+
+float CTF2BotMovement::GetStandingHullHeigh()
+{
+	float scale = GetBot()->GetModelScale();
+	return PLAYER_HULL_STAND * scale;
+}
+
+float CTF2BotMovement::GetCrouchedHullHeigh()
+{
+	float scale = GetBot()->GetModelScale();
+	return PLAYER_HULL_CROUCH * scale;
+}
+
 bool CTF2BotMovement::CanDoubleJump() const
 {
 	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());

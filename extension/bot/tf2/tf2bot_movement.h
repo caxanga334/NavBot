@@ -10,8 +10,16 @@ public:
 	CTF2BotMovement(CBaseBot* bot);
 	virtual ~CTF2BotMovement();
 
+	static constexpr float PLAYER_HULL_WIDTH = 48.0f;
+	static constexpr float PLAYER_HULL_STAND = 82.0f;
+	static constexpr float PLAYER_HULL_CROUCH = 62.0f;
+
 	virtual void Reset() override;
 	virtual void Frame() override;
+
+	virtual float GetHullWidth() override;
+	virtual float GetStandingHullHeigh() override;
+	virtual float GetCrouchedHullHeigh() override;
 
 	virtual float GetMovementSpeed() override { return 750.0f; }
 	bool CanDoubleJump() const;

@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include <extension.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/prediction.h>
@@ -30,9 +31,27 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 		FireWeaponAtEnemy(bot, threat);
 	}
 
+	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
+	{
+		bot->GetMovementInterface()->ClearStuckStatus(); // players are frozen during pre-round, don't get stuck
+	}
+
 	UpdateLook(bot, threat);
 
 	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnTestEventPropagation(CTF2Bot* bot)
+{
+#ifdef EXT_DEBUG
+	auto host = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer player(host);
+	Vector goal = player.GetAbsOrigin();
+
+	return TryPauseFor(new CTF2BotDevTask(goal), PRIORITY_CRITICAL, "Move to Origin debug task!");
+#else
+	return TryContinue();
+#endif // EXT_DEBUG
 }
 
 CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)
@@ -399,3 +418,61 @@ CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, CKnownEnt
 	return threat2;
 }
 
+#ifdef EXT_DEBUG
+
+CTF2BotDevTask::CTF2BotDevTask(const Vector& moveTo)
+{
+	m_goal = moveTo;
+}
+
+TaskResult<CTF2Bot> CTF2BotDevTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	m_repathtimer.Start(0.5f);
+
+	CTF2BotPathCost cost(bot);
+	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+	{
+		return Done("Failed to compute path!");
+	}
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotDevTask::OnTaskUpdate(CTF2Bot* bot)
+{
+	if (m_repathtimer.IsElapsed())
+	{
+		m_repathtimer.Reset();
+
+		CTF2BotPathCost cost(bot);
+		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+		{
+			return Done("Failed to compute path!");
+		}
+	}
+
+	m_nav.Update(bot);
+
+	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	m_repathtimer.Reset();
+
+	CTF2BotPathCost cost(bot);
+	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+	{
+		return TryDone(PRIORITY_HIGH, "Failed to compute path!");
+	}
+
+	bot->GetMovementInterface()->ClearStuckStatus();
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
+{
+	return TryDone(PRIORITY_HIGH, "Goal reached!");
+}
+
+#endif // EXT_DEBUG

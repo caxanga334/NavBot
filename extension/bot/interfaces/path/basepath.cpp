@@ -352,14 +352,14 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		case GO_EAST:
 		case GO_SOUTH:
 		case GO_WEST:
-			if (ProcessGroundPath(bot, start, from, to, insertstack) == false)
+			if (!ProcessGroundPath(bot, start, from, to, insertstack))
 			{
 				failed = true;
 			}
 			break;
 		case GO_LADDER_UP:
 		case GO_LADDER_DOWN:
-			if (ProcessLaddersInPath(bot, from, to, insertstack) == false)
+			if (!ProcessLaddersInPath(bot, from, to, insertstack))
 			{
 				failed = true;
 			}
@@ -495,7 +495,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 			if (startDrop.z > ground + mover->GetStepHeight())
 			{
 				to->goal = startDrop;
-				to->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
+				to->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 				CBasePathSegment* newSegment = CreateNewSegment();
 				newSegment->CopySegment(to);
@@ -503,7 +503,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 				newSegment->goal.x = endDrop.x;
 				newSegment->goal.y = endDrop.y;
 				newSegment->goal.z = ground;
-				newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
+				newSegment->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
 
 				pathinsert.emplace(to, newSegment, true);
 			}
@@ -585,7 +585,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	// hull width used for calculations is the bot hull multiplied by this value
 	constexpr float HULL_WIDTH_SAFETY_MARGIN = 1.1f;
 
-	const float zdiff = fabsf(closeto.z - closefrom.z);
+	const float zdiff = closeto.z - closefrom.z;
 	const float gaplength = (closeto - closefrom).AsVector2D().Length();
 	const float fullstepsize = mover->GetStepHeight();
 	const float halfstepsize = fullstepsize * 0.5f;
@@ -593,7 +593,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	const float halfwidth = hullwidth * 0.5f;
 
 	// not too high and gap is greater than the bot hull (with some tolerance)
-	if (gaplength > hullwidth && zdiff < halfstepsize)
+	if (gaplength > hullwidth && fabsf(zdiff) < halfstepsize)
 	{
 		Vector landing;
 		to->area->GetClosestPointOnArea(to->goal, &landing);
@@ -617,15 +617,17 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	{
 		// when climbing, start from the area center
 		to->goal = to->area->GetCenter();
+		to->type = AIPath::SegmentType::SEGMENT_CLIMB_UP; // mark this segment for jumping
 
 		Vector jumppos;
 		from->area->GetClosestPointOnArea(to->goal, &jumppos);
-
+		
+		// Create a new ground segment towards the jump position
 		CBasePathSegment* newSegment = CreateNewSegment();
 
 		newSegment->CopySegment(from);
 		newSegment->goal = jumppos;
-		newSegment->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
+		newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 		pathinsert.emplace(from, newSegment, true);
 	}

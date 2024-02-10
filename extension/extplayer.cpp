@@ -131,6 +131,11 @@ const Vector CBaseExtPlayer::GetAbsVelocity() const
 	return result;
 }
 
+void CBaseExtPlayer::SetAbsVelocity(const Vector& velocity) const
+{
+	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_vecAbsVelocity", velocity);
+}
+
 Vector CBaseExtPlayer::BodyDirection3D() const
 {
 	auto angles = BodyAngles();

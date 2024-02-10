@@ -18,8 +18,8 @@
 #undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
 
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
-ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "20", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
-ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
+ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "25", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
+ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "100", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 
 CMeshNavigator::CMeshNavigator() : CPath()
 {
@@ -68,12 +68,12 @@ void CMeshNavigator::OnPathChanged(CBaseBot* bot, AIPath::ResultType result)
 
 void CMeshNavigator::Update(CBaseBot* bot)
 {
-	if (IsValid() == false || m_goal == nullptr)
+	if (!IsValid() || m_goal == nullptr)
 	{
 		return; // no path or goal
 	}
 
-	if (m_waitTimer.IsElapsed() == false)
+	if (!m_waitTimer.IsElapsed())
 	{
 		return; // wait for something to stop blocking our path (like a door opening)
 	}
@@ -83,7 +83,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // bot is using a ladder
 	}
 
-	if (CheckProgress(bot) == false)
+	if (!CheckProgress(bot))
 	{
 		return; // goal reached
 	}
@@ -124,7 +124,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	forward = CrossProduct(normal, forward);
 	left = CrossProduct(left, normal);
 
-	if (Climbing(bot, m_goal, forward, left, goalRange) == false)
+	if (!Climbing(bot, m_goal, forward, left, goalRange))
 	{
 		if (IsValid() == false)
 		{
@@ -144,7 +144,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	const bool isOnStairs = myarea->HasAttributes(NAV_MESH_STAIRS);
 	const float tooHighDistance = mover->GetMaxJumpHeight();
 
-	if (m_goal->ladder == nullptr && mover->IsClimbingOrJumping() == false && isOnStairs == false && m_goal->goal.z > origin.z + tooHighDistance)
+	if (m_goal->ladder == nullptr && !mover->IsClimbingOrJumping() && !isOnStairs && m_goal->goal.z > origin.z + tooHighDistance)
 	{
 		constexpr auto CLOSE_RANGE = 25.0f;
 		Vector2D to(origin.x - m_goal->goal.x, origin.y - m_goal->goal.y);
@@ -153,7 +153,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		{
 			float fraction;
 			auto next = GetNextSegment(m_goal);
-			if (mover->IsStuck() || next != nullptr || (next->goal.z - origin.z > mover->GetMaxJumpHeight()) || mover->IsPotentiallyTraversable(origin, next->goal, fraction) == false)
+			if (mover->IsStuck() || !next || (next->goal.z - origin.z > mover->GetMaxJumpHeight()) || !mover->IsPotentiallyTraversable(origin, next->goal, fraction))
 			{
 				bot->OnMoveToFailure(this, IEventListener::FAIL_FELL_OFF_PATH);
 
@@ -440,7 +440,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	Vector origin = bot->GetAbsOrigin();
 	const bool debug = sm_navbot_path_debug_climbing.GetBool();
 
-	if (mover->IsAbleToClimb() == false)
+	if (!mover->IsAbleToClimb())
 	{
 		return false;
 	}
@@ -461,7 +461,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 	const float ledgeLookAheadDist = mover->GetHullWidth() - 1.0f;
 
-	if (mover->IsClimbingOrJumping() || mover->IsAscendingOrDescendingLadder() || mover->IsOnGround() == false)
+	if (mover->IsClimbingOrJumping() || mover->IsAscendingOrDescendingLadder() || !mover->IsOnGround())
 	{
 		return false;
 	}

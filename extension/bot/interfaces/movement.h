@@ -123,15 +123,17 @@ public:
 	virtual void Frame() override;
 
 	// Max height difference that a player is able to climb without jumping
-	virtual float GetStepHeight() { return 18.0f; }
+	virtual float GetStepHeight() const { return 18.0f; }
 	// Max height a player can climb by jumping
-	virtual float GetMaxJumpHeight() { return 57.0f; }
+	virtual float GetMaxJumpHeight() const { return 57.0f; }
 	// Max distance between a (horizontal) gap that the bot is able to jump
-	virtual float GetMaxGapJumpDistance() { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
+	virtual float GetMaxGapJumpDistance() const { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
 	// Max height a player can safely fall
-	virtual float GetMaxDropHeight() { return 450.0f; }
+	virtual float GetMaxDropHeight() const { return 450.0f; }
 
-	inline virtual float GetTraversableSlopeLimit() { return 0.6f; }
+	inline virtual float GetTraversableSlopeLimit() const { return 0.6f; }
+	// (cheat) Set the bot's Z velocity to this value when crouch jumping
+	inline virtual float GetCrouchJumpZBoost() const { return 282.0f; } // max vel should be around 277 (tf2), we added some extra to help bots
 
 	// Bot collision hull width
 	virtual float GetHullWidth();
@@ -168,6 +170,7 @@ public:
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return 500.0f; }
+	inline virtual float GetMinimumMovementSpeed() { return 200.0f; }
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
 	virtual bool IsClimbingOrJumping();
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder

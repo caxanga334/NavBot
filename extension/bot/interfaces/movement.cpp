@@ -161,7 +161,10 @@ void IMovement::Frame()
 
 		if (m_internal_jumptimer == 0)
 		{
-			GetBot()->GetControlInterface()->PressJumpButton();
+			// GetBot()->GetControlInterface()->PressJumpButton(0.23f);
+			Vector vel = GetBot()->GetAbsVelocity();
+			vel.z = GetCrouchJumpZBoost();
+			GetBot()->SetAbsVelocity(vel);
 
 			if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 			{
@@ -349,10 +352,11 @@ void IMovement::CrouchJump()
 	// See shounic's video https://www.youtube.com/watch?v=7z_p_RqLhkA
 
 	// First the bot will crouch
-	GetBot()->GetControlInterface()->PressCrouchButton(0.1f); // hold the crouch button for about 7 ticks
+	GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
+	GetBot()->GetControlInterface()->PressJumpButton(0.3f);
 
 	// This is a tick timer, the bot will jump when it reaches 0
-	m_internal_jumptimer = 5; // jump after 5 ticks
+	m_internal_jumptimer = 8; // jump after some time
 	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
@@ -389,7 +393,7 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 
 bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
 {
-	Jump();
+	CrouchJump(); // Always do a crouch jump
 
 	m_isClimbingObstacle = true;
 	m_landingGoal = landingGoal;
@@ -630,6 +634,13 @@ void IMovement::StuckMonitor()
 		{
 			ClearStuckStatus();
 			bot->OnUnstuck();
+			m_stuck.UpdateNotStuck(origin);
+
+			if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s UNSTUCK! \n", bot->GetDebugIdentifier());
+				NDebugOverlay::Circle(m_stuck.GetStuckPos() + Vector(0.0f, 0.0f, 5.0f), QAngle(-90.0f, 0.0f, 0.0f), 5.0f, 0, 255, 0, 255, true, 1.0f);
+			}
 		}
 		else
 		{
@@ -657,7 +668,7 @@ void IMovement::StuckMonitor()
 		}
 		else
 		{
-			float minspeed = 0.1f * GetMovementSpeed() * 0.4f;
+			float minspeed = GetMinimumMovementSpeed() / 4.0f;
 			float mintimeforstuck = STUCK_RADIUS / minspeed;
 
 			if (m_stuck.stucktimer.IsGreaterThen(mintimeforstuck))
