@@ -35,7 +35,7 @@ const char* CBaseBot::GetDebugIdentifier()
 	return debug;
 }
 
-void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...) const
+void CBaseBot::DebugPrintToConsole(const int bits,const int red,const int green,const int blue, const char* fmt, ...) const
 {
 	if (!IsDebugging(bits))
 	{

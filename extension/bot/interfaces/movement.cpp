@@ -597,9 +597,14 @@ float IMovement::GetStuckDuration()
 	return 0.0f;
 }
 
-void IMovement::ClearStuckStatus()
+void IMovement::ClearStuckStatus(const char* reason)
 {
 	m_stuck.ClearStuck(GetBot()->GetAbsOrigin());
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 255, 200, 200, "ClearStuckStatus: %s \n", reason ? reason : "");
+	}
 }
 
 bool IMovement::IsAreaTraversable(const CNavArea* area) const

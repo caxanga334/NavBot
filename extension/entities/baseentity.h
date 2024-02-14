@@ -25,13 +25,17 @@ namespace entities
 		bool GetEntity(CBaseEntity** entity, edict_t** edict) const;
 		bool IsBoundsDefinedInEntitySpace() const;
 		Vector GetAbsOrigin() const;
+		void SetAbsOrigin(const Vector& origin) const;
 		Vector WorldAlignMins() const;
 		Vector WorldAlignMaxs() const;
 		Vector OBBCenter() const;
 		Vector WorldSpaceCenter() const;
 		QAngle GetAbsAngles() const;
+		void SetAbsAngles(const QAngle& angles) const;
+		void SetAbsAngles(const Vector& angles) const;
 		QAngle GetCollisionAngles() const;
 		Vector GetAbsVelocity() const;
+		void SetAbsVelocity(const Vector& velocity) const;
 		void CalcNearestPoint(const Vector& worldPos, Vector& out) const;
 		void GetTargetName(char* result, std::size_t maxsize) const;
 		CBaseEntity* GetOwnerEntity() const;
@@ -49,6 +53,11 @@ namespace entities
 		void WorldToCollisionSpace(const Vector& in, Vector& out) const;
 		int GetParentAttachment() const;
 		matrix3x4_t GetParentToWorldTransform(matrix3x4_t& tempMatrix) const;
+		int GetEffects() const;
+		inline bool IsEffectActive(int effects) const { return (GetEffects() & effects) != 0; }
+		float GetSimulationTime() const;
+		void SetSimulationTime(float time) const;
+		void Teleport(const Vector& origin, const QAngle* angles = nullptr, const Vector* velocity = nullptr) const;
 
 	private:
 		void CalcAbsolutePosition(matrix3x4_t& result) const;

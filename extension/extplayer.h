@@ -21,6 +21,7 @@ public:
 	inline edict_t* GetEdict() const { return m_edict; }
 	// Gets the player entity index
 	inline int GetIndex() const { return m_index; }
+	CBaseEntity* GetEntity() const;
 
 	bool operator==(const CBaseExtPlayer& other);
 

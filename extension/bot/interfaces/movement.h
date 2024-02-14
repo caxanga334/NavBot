@@ -189,7 +189,7 @@ public:
 
 	virtual bool IsStuck() { return m_stuck.isstuck; }
 	virtual float GetStuckDuration();
-	virtual void ClearStuckStatus();
+	virtual void ClearStuckStatus(const char* reason = nullptr);
 
 	virtual float GetSpeed() const { return m_speed; }
 	virtual float GetGroundSpeed() const { return m_groundspeed; }

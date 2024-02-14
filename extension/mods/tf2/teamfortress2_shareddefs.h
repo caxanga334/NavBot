@@ -22,6 +22,9 @@ namespace TeamFortress2
 	constexpr int TF_AMMO_PRIMARY = 1;
 	constexpr int TF_AMMO_SECONDARY = 2;
 	constexpr int TF_AMMO_METAL = 3;
+	constexpr int TF_AMMO_GRENADES1 = 4;
+	constexpr int TF_AMMO_GRENADES2 = 5;
+	constexpr int TF_AMMO_GRENADES3 = 6;
 
 	enum TFClassType
 	{

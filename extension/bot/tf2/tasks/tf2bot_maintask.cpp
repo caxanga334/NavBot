@@ -33,7 +33,7 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
 	{
-		bot->GetMovementInterface()->ClearStuckStatus(); // players are frozen during pre-round, don't get stuck
+		bot->GetMovementInterface()->ClearStuckStatus("PREROUND"); // players are frozen during pre-round, don't get stuck
 	}
 
 	UpdateLook(bot, threat);

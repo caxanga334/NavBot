@@ -1,4 +1,6 @@
 #include <extension.h>
+#include <util/helpers.h>
+#include <util/UtilTrace.h>
 #include <sdkports/sdk_timers.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"
@@ -8,7 +10,7 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	if (bot->IsCarryingAFlag())
 	{
-		return Continue(); // TO-DO: Deliver flag task
+		return PauseFor(new CTF2BotCTFDeliverFlagTask, "Going to deliver the flag!");
 	}
 	else
 	{
@@ -16,8 +18,7 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (flag)
 		{
-			auto task = new CTF2BotCTFFetchFlagTask(flag);
-			return PauseFor(task, "Going to fetch the flag!");
+			return PauseFor(new CTF2BotCTFFetchFlagTask(flag), "Going to fetch the flag!");
 		}
 	}
 
@@ -47,7 +48,7 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 		return Done("Failed to find a path to the flag!");
 	}
 
-	m_repathtimer.Start(2.5f);
+	m_repathtimer.Start(0.5f);
 
 	return Continue();
 }
@@ -63,7 +64,12 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (flag.IsStolen())
 	{
-		return Done("Flag is stolen!");
+		if (gamehelpers->IndexOfEdict(edict) == gamehelpers->IndexOfEdict(bot->GetItem()))
+		{
+			return SwitchTo(new CTF2BotCTFDeliverFlagTask, "I have the flag, going to deliver it!");
+		}
+
+		return Done("Someone stole the flag before me!");
 	}
 
 	if (m_repathtimer.IsElapsed())
@@ -80,4 +86,97 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskUpdate(CTF2Bot* bot)
 
 	m_nav.Update(bot);
 	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	CTF2BotPathCost cost(bot);
+
+	if (!m_nav.ComputePathToPosition(bot, m_goalpos, cost))
+	{
+		return TryDone(PRIORITY_HIGH, "Failed to find a path to the flag!");
+	}
+
+	m_repathtimer.Start(0.5f);
+	bot->GetMovementInterface()->ClearStuckStatus();
+
+	return TryContinue();
+}
+
+TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	auto goalzone = bot->GetFlagCaptureZoreToDeliver();
+
+	if (!goalzone)
+	{
+		return Done("Failed to find a capture zone!");
+	}
+
+	Vector center = UtilHelpers::getWorldSpaceCenter(goalzone);
+
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t result;
+	// get the ground position
+	UTIL_TraceLine(center, center + Vector(0.0f, 0.0f, -2048.0f), MASK_PLAYERSOLID_BRUSHONLY, 
+		reinterpret_cast<IServerEntity*>(bot->GetEntity()), COLLISION_GROUP_PLAYER_MOVEMENT, &result);
+
+	if (!result.DidHit())
+	{
+		return Done("Capture zone is floating in the air???");
+	}
+
+	Vector goal = result.endpos;
+	goal.z += 3.0f;
+
+	m_goalpos = goal;
+
+	CTF2BotPathCost cost(bot);
+
+	if (!m_nav.ComputePathToPosition(bot, goal, cost))
+	{
+		return Done("Failed to find a path to the capture zone!");
+	}
+
+	m_repathtimer.Start(0.5f);
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskUpdate(CTF2Bot* bot)
+{
+	if (!bot->IsCarryingAFlag())
+	{
+		return Done("Flag delivered!");
+	}
+
+	if (m_repathtimer.IsElapsed())
+	{
+		m_repathtimer.Start(0.5f);
+
+		CTF2BotPathCost cost(bot);
+
+		if (!m_nav.ComputePathToPosition(bot, m_goalpos, cost))
+		{
+			return Done("Failed to find a path to the capture zone!");
+		}
+	}
+
+	m_nav.Update(bot);
+
+	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	CTF2BotPathCost cost(bot);
+
+	if (!m_nav.ComputePathToPosition(bot, m_goalpos, cost))
+	{
+		return TryDone(PRIORITY_HIGH, "Failed to find a path to the capture zone!");
+	}
+
+	m_repathtimer.Start(0.5f);
+	bot->GetMovementInterface()->ClearStuckStatus();
+
+	return TryContinue();
 }

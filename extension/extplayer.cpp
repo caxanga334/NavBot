@@ -26,6 +26,13 @@ CBaseExtPlayer::~CBaseExtPlayer()
 {
 }
 
+CBaseEntity* CBaseExtPlayer::GetEntity() const
+{
+	CBaseEntity* entity = nullptr;
+	UtilHelpers::IndexToAThings(GetIndex(), &entity, nullptr);
+	return entity;
+}
+
 bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other)
 {
 	// Maybe also add something like a userid here?

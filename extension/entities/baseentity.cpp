@@ -34,6 +34,11 @@ Vector entities::HBaseEntity::GetAbsOrigin() const
 	return vec3_origin;
 }
 
+void entities::HBaseEntity::SetAbsOrigin(const Vector& origin) const
+{
+	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_vecOrigin", origin);
+}
+
 Vector entities::HBaseEntity::WorldAlignMins() const
 {
 	Vector result;
@@ -85,6 +90,17 @@ QAngle entities::HBaseEntity::GetAbsAngles() const
 	return vec3_angle;
 }
 
+void entities::HBaseEntity::SetAbsAngles(const QAngle& angles) const
+{
+	Vector vangles(angles.x, angles.y, angles.z);
+	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_angRotation", vangles);
+}
+
+void entities::HBaseEntity::SetAbsAngles(const Vector& angles) const
+{
+	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_angRotation", angles);
+}
+
 QAngle entities::HBaseEntity::GetCollisionAngles() const
 {
 	if (IsBoundsDefinedInEntitySpace())
@@ -105,6 +121,11 @@ Vector entities::HBaseEntity::GetAbsVelocity() const
 	}
 
 	return vec3_origin;
+}
+
+void entities::HBaseEntity::SetAbsVelocity(const Vector& velocity) const
+{
+	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_vecAbsVelocity", velocity);
 }
 
 void entities::HBaseEntity::CalcNearestPoint(const Vector& worldPos, Vector& out) const
@@ -264,6 +285,42 @@ matrix3x4_t entities::HBaseEntity::GetParentToWorldTransform(matrix3x4_t& tempMa
 	matrix3x4_t result;
 	parentEntity.CalcAbsolutePosition(result);
 	return result;
+}
+
+int entities::HBaseEntity::GetEffects() const
+{
+	int effects = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_fEffects", effects);
+	return 0;
+}
+
+float entities::HBaseEntity::GetSimulationTime() const
+{
+	float time = 0.0f;
+	entprops->GetEntPropFloat(GetIndex(), Prop_Data, "m_flSimulationTime", time);
+	return time;
+}
+
+void entities::HBaseEntity::SetSimulationTime(float time) const
+{
+	entprops->SetEntPropFloat(GetIndex(), Prop_Data, "m_flSimulationTime", time);
+}
+
+void entities::HBaseEntity::Teleport(const Vector& origin, const QAngle* angles, const Vector* velocity) const
+{
+	SetAbsOrigin(origin);
+
+	if (angles)
+	{
+		SetAbsAngles(*angles);
+	}
+
+	if (velocity)
+	{
+		SetAbsVelocity(*velocity);
+	}
+
+	SetSimulationTime(gpGlobals->curtime);
 }
 
 void entities::HBaseEntity::CalcAbsolutePosition(matrix3x4_t& result) const
