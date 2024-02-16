@@ -1,0 +1,23 @@
+"Games"
+{
+	/* OnPlayerRunCMD Hook */
+	"#default"
+	{
+		"Keys"
+		{
+			// If a mod needs to hook OnPlayerRunCMD, set this to 1
+			"HookPlayerRunCMD"	"0"
+		}
+	}
+	/* Nav Mesh editing sounds */
+	"#default"
+	{
+		"Keys"
+		{
+			// Default sounds are from HL2, should be compatible with most mods
+			"NavEdit_GenericBlip" "buttons\blip1.wav"
+			"NavEdit_GenericSuccess" "buttons\button3.wav"
+			"NavEdit_GenericError" "buttons\button2.wav"
+		}
+	}
+}
