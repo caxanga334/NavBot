@@ -31,7 +31,6 @@
 #pragma once
 
 #include <extension.h>
-#include <ifaces_extern.h>
 #include <dt_send.h>
 #include <server_class.h>
 

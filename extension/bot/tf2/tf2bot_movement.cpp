@@ -1,5 +1,4 @@
 #include <extension.h>
-#include <ifaces_extern.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/tf2lib.h>
 #include "tf2bot_movement.h"

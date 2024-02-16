@@ -1,6 +1,5 @@
 #include <extension.h>
 #include <manager.h>
-#include <ifaces_extern.h>
 #include <extplayer.h>
 #include <util/helpers.h>
 #include <util/entprops.h>

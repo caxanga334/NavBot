@@ -5,7 +5,7 @@
  */
 
 #include "Handle.h"
-#include <ifaces_extern.h>
+#include <extension.h>
 
 #include <eiface.h>
 

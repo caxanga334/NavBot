@@ -1,5 +1,4 @@
 #include <extension.h>
-#include <ifaces_extern.h>
 #include <manager.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <navmesh/nav.h>

@@ -1,7 +1,6 @@
 #include <stdexcept>
 
 #include <extension.h>
-#include <ifaces_extern.h>
 #include <server_class.h>
 #include <studio.h>
 #include "helpers.h"

@@ -1,4 +1,4 @@
-#include <ifaces_extern.h>
+#include <extension.h>
 #include "sdk_timers.h"
 
 // work-around since client header doesn't like inlined gpGlobals->curtime

@@ -32,21 +32,6 @@
 #include <filesystem>
 
 #include "extension.h"
-#include <engine/ivdebugoverlay.h>
-#include <engine/IEngineTrace.h>
-#include <iplayerinfo.h>
-#include <vphysics_interface.h>
-#include <filesystem.h>
-#include <datacache/imdlcache.h>
-#include <igameevents.h>
-#include <toolframework/itoolentity.h>
-#include <entitylist_base.h>
-
-#include <ISDKTools.h>
-#include <IBinTools.h>
-#include <ISDKHooks.h>
-
-#include "navmesh/nav_mesh.h"
 #include "manager.h"
 #include <util/entprops.h>
 #include <util/helpers.h>
@@ -55,9 +40,7 @@
 #include <bot/basebot.h>
 
 // Need this for CUserCmd class definition
-#if HOOK_PLAYERRUNCMD
 #include <usercmd.h>
-#endif
 
 /**
  * @file extension.cpp
@@ -70,6 +53,7 @@ IVDebugOverlay* debugoverlay = nullptr;
 IServerGameDLL* servergamedll = nullptr;
 IServerGameEnts* servergameents = nullptr;
 IEngineTrace* enginetrace = nullptr;
+IEngineSound* enginesound = nullptr;
 CNavMesh* TheNavMesh = nullptr;
 IPlayerInfoManager* playerinfomanager = nullptr;
 IServerGameClients* gameclients = nullptr;
@@ -91,7 +75,7 @@ CBaseEntityList* g_EntList = nullptr;
 IBotManager* botmanager = nullptr;
 
 CExtManager* extmanager = nullptr;
-
+NavBotExt* extension = nullptr;
 NavBotExt g_NavBotExt;		/**< Global singleton for extension's main interface */
 
 ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
@@ -101,9 +85,8 @@ static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 
 // SDKs that requires a runplayercommand hook
-#if HOOK_PLAYERRUNCMD
+
 SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*);
-#endif 
 
 
 SMEXT_LINK(&g_NavBotExt);
@@ -153,7 +136,7 @@ namespace Utils
 			}
 		}
 	}
-#ifdef HOOK_PLAYERRUNCMD
+
 	inline void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
 	{
 		ucmd->command_number = bcmd->command_number;
@@ -168,12 +151,23 @@ namespace Utils
 		ucmd->weaponsubtype = bcmd->weaponsubtype;
 		ucmd->random_seed = bcmd->random_seed;
 	}
-#endif // HOOK_PLAYERRUNCMD
 }
 
 
+NavBotExt::NavBotExt() :
+	m_bHookRunCmd(false)
+{
+	m_gamedata = nullptr;
+}
+
+NavBotExt::~NavBotExt()
+{
+}
+
 bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
+	extension = &g_NavBotExt;
+
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();
 
@@ -188,17 +182,22 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
 
-#if HOOK_PLAYERRUNCMD
-	SourceMod::IGameConfig* gamedata = nullptr;
-
-	if (gameconfs->LoadGameConfigFile("sdktools.games", &gamedata, error, maxlen) == false)
+	if (!gameconfs->LoadGameConfigFile("navbot.games", &m_gamedata, error, maxlen))
 	{
+		gameconfs->CloseGameConfigFile(m_gamedata);
+		return false;
+	}
+
+	SourceMod::IGameConfig* gamedata = nullptr;
+	if (!gameconfs->LoadGameConfigFile("sdktools.games", &gamedata, error, maxlen))
+	{
+		gameconfs->CloseGameConfigFile(m_gamedata);
 		return false;
 	}
 
 	int offset = 0;
 
-	if (gamedata->GetOffset("PlayerRunCmd", &offset) == false)
+	if (!gamedata->GetOffset("PlayerRunCmd", &offset))
 	{
 		const char* message = "Failed to get PlayerRunCmd offset from SDK Tools gamedata. Mod not supported!";
 		maxlen = strlen(message);
@@ -208,13 +207,23 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	gameconfs->CloseGameConfigFile(gamedata);
 	SH_MANUALHOOK_RECONFIGURE(MH_PlayerRunCommand, offset, 0, 0);
-#endif // HOOK_PLAYERRUNCMD
+
+	auto value = m_gamedata->GetKeyValue("HookPlayerRunCMD");
+
+	if (value)
+	{
+		int i = atoi(value);
+		m_bHookRunCmd = (i != 0);
+	}
 
 	return true;
 }
 
 void NavBotExt::SDK_OnUnload()
 {
+	gameconfs->CloseGameConfigFile(m_gamedata);
+	m_gamedata = nullptr;
+
 	delete TheNavMesh;
 	TheNavMesh = nullptr;
 
@@ -244,6 +253,7 @@ void NavBotExt::SDK_OnAllLoaded()
 	{
 		auto mod = extmanager->GetMod();
 		TheNavMesh = mod->NavMeshFactory();
+		TheNavMesh->LoadEditSounds(m_gamedata);
 	}
 
 	entprops->Init(true);
@@ -254,6 +264,7 @@ void NavBotExt::SDK_OnAllLoaded()
 bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)
 {
 	GET_V_IFACE_CURRENT(GetEngineFactory, enginetrace, IEngineTrace, INTERFACEVERSION_ENGINETRACE_SERVER);
+	GET_V_IFACE_CURRENT(GetEngineFactory, enginesound, IEngineSound, IENGINESOUND_SERVER_INTERFACE_VERSION);
 	// GET_V_IFACE_ANY(GetEngineFactory, engine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
 	// IGameEventManager2 needs to be GET_V_IFACE_CURRENT or an older version will be used and things are going to crash
 	GET_V_IFACE_CURRENT(GetEngineFactory, gameeventmanager, IGameEventManager2, INTERFACEVERSION_GAMEEVENTSMANAGER2);
@@ -353,7 +364,11 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 
 void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 {
-#if HOOK_PLAYERRUNCMD // don't bother if bots are disabled
+	if (!m_bHookRunCmd)
+	{
+		RETURN_META(MRES_IGNORED);
+	}
+
 	if (extmanager == nullptr) // TO-DO: This check might not be needed since the extension should load before any player is able to fully connect to the server
 	{
 		RETURN_META(MRES_IGNORED);
@@ -372,8 +387,6 @@ void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper
 
 		Utils::CopyBotCmdtoUserCmd(usercmd, cmd);
 	}
-
-#endif
 
 	RETURN_META(MRES_IGNORED);
 }

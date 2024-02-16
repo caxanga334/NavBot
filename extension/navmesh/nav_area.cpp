@@ -10,6 +10,8 @@
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
 #include <extension.h>
+#include <extplayer.h>
+#include <util/librandom.h>
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
@@ -5880,24 +5882,42 @@ bool CNavArea::IsCompletelyVisible( const CNavArea *viewedArea ) const
 /**
  * Return true if any portion of this area is visible to anyone on the given team
  */
-bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const {
-	VPROF_BUDGET("CNavArea::IsPotentiallyVisibleToTeam", "NextBot");
-
-	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
+bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const 
+{
+	for (int i = 1; i <= gpGlobals->maxClients; ++i) 
+	{
 		edict_t* pEnt = gamehelpers->EdictOfIndex(i);
-		if (pEnt) {
-			IPlayerInfo* player = playerinfomanager->GetPlayerInfo(pEnt);
-			if (player->GetTeamIndex() == teamIndex
-					&& player->GetHealth() > 0) {
-				CNavArea *from = nullptr;
-						// TODO: (CNavArea *) team->GetPlayer(i)->GetLastKnownArea();
 
-				if (from && from->IsPotentiallyVisible(this)) {
-					return true;
-				}
+		if (pEnt) 
+		{
+			auto player = playerhelpers->GetGamePlayer(i);
+
+			if (!player->IsInGame())
+				continue;
+
+			auto info = player->GetPlayerInfo();
+
+			if (!info)
+				continue;
+
+			if (info->IsDead())
+				continue;
+			
+			if (teamIndex != NAV_TEAM_ANY && info->GetTeamIndex() != teamIndex)
+				continue;
+
+			CBaseExtPlayer baseplayer(pEnt);
+			baseplayer.UpdateLastKnownNavArea(true);
+			
+			CNavArea* from = baseplayer.GetLastKnownNavArea();
+
+			if (from && from->IsPotentiallyVisible(this)) 
+			{
+				return true;
 			}
 		}
 	}
+
 	return false;
 }
 
@@ -5906,21 +5926,40 @@ bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const {
 /**
  * Return true if given area is completely visible from somewhere in this area by someone on the team (very fast)
  */
-bool CNavArea::IsCompletelyVisibleToTeam(int teamIndex) const {
-	VPROF_BUDGET("CNavArea::IsCompletelyVisibleToTeam", "NextBot");
+bool CNavArea::IsCompletelyVisibleToTeam(int teamIndex) const 
+{
 
-	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *pEnt = gamehelpers->EdictOfIndex(i);
-		if (pEnt) {
-			IPlayerInfo* player = playerinfomanager->GetPlayerInfo(pEnt);
-			if (player->GetTeamIndex() == teamIndex
-					&& player->GetHealth() > 0) {
-				CNavArea *from = nullptr; // TODO: (CNavArea *)team->GetPlayer(i)->GetLastKnownArea();
-				if (from && from->IsCompletelyVisible(this)) {
-					return true;
-				}
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		edict_t* pEnt = gamehelpers->EdictOfIndex(i);
+
+		if (pEnt)
+		{
+			auto player = playerhelpers->GetGamePlayer(i);
+
+			if (!player->IsInGame())
+				continue;
+
+			auto info = player->GetPlayerInfo();
+
+			if (!info)
+				continue;
+
+			if (info->IsDead())
+				continue;
+
+			if (teamIndex != NAV_TEAM_ANY && info->GetTeamIndex() != teamIndex)
+				continue;
+
+			CBaseExtPlayer baseplayer(pEnt);
+			baseplayer.UpdateLastKnownNavArea(true);
+
+			CNavArea* from = baseplayer.GetLastKnownNavArea();
+
+			if (from && from->IsCompletelyVisible(this))
+			{
+				return true;
 			}
-
 		}
 	}
 
@@ -5935,8 +5974,8 @@ Vector CNavArea::GetRandomPoint( void ) const
 	GetExtent( &extent );
 
 	Vector spot;
-	spot.x = RandomFloat( extent.lo.x, extent.hi.x ); 
-	spot.y = RandomFloat( extent.lo.y, extent.hi.y );
+	spot.x = librandom::generate_random_float(extent.lo.x, extent.hi.x);
+	spot.y = librandom::generate_random_float(extent.lo.y, extent.hi.y);
 	spot.z = GetZ( spot.x, spot.y );
 
 	return spot;

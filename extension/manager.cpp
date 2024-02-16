@@ -7,7 +7,6 @@
 #include <algorithm>
 
 #include "extension.h"
-#include "ifaces_extern.h"
 
 #include <bot/basebot.h>
 #include <bot/bot_debug_shared.h>

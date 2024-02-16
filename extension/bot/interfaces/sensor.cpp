@@ -4,7 +4,6 @@
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
-#include <ifaces_extern.h>
 #include <util/helpers.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"

@@ -35,10 +35,6 @@ public:
 	virtual const Vector& GetPlayerHullMins();
 	virtual const Vector& GetPlayerHullMaxs();
 
-	// if this is true, then we need to hook runplayercommand
-	// for example: DoDs already run player commands on bots
-	virtual bool UserCommandNeedsHook() { return false; }
-
 	// Allocates the nav mesh class used by the mod
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.

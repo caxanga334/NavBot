@@ -164,6 +164,10 @@ CNavMesh::~CNavMesh()
 
 }
 
+void CNavMesh::Precache()
+{
+}
+
 void CNavMesh::OnMapStart()
 {
 	auto error = Load();

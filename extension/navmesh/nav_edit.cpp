@@ -10,6 +10,7 @@
 // Author: Michael Booth, 2003-2004
 
 #include <extension.h>
+#include <entities/baseentity.h>
 #include "nav_mesh.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
@@ -2500,7 +2501,7 @@ void CNavMesh::CommandNavBeginArea( void )
 
 	if ( !(IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) || IsEditMode( NORMAL )) )
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
@@ -2509,16 +2510,16 @@ void CNavMesh::CommandNavBeginArea( void )
 	if ( IsEditMode( CREATING_AREA ) )
 	{
 		SetEditMode( NORMAL );
-		EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else if ( IsEditMode( CREATING_LADDER ) )
 	{
 		SetEditMode( NORMAL );
-		EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else if ( m_climbableSurface )
 	{
-		EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		
 		SetEditMode( CREATING_LADDER );
 
@@ -2528,7 +2529,7 @@ void CNavMesh::CommandNavBeginArea( void )
 	}
 	else
 	{
-		EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		
 		SetEditMode( CREATING_AREA );
 
@@ -2550,7 +2551,7 @@ void CNavMesh::CommandNavEndArea( void )
 
 	if ( !(IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) || IsEditMode( NORMAL )) )
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
@@ -2586,7 +2587,7 @@ void CNavMesh::CommandNavEndArea( void )
 		if (newArea == NULL)
 		{
 			Warning( "NavEndArea: Out of memory\n" );
-			EmitSound(player, "EDIT_END_AREA.NotCreating" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 			return;
 		}
 		
@@ -2599,7 +2600,7 @@ void CNavMesh::CommandNavEndArea( void )
 
 		TheNavAreas.AddToTail( newArea );
 		TheNavMesh->AddNavArea( newArea );
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 
 		if (sm_nav_create_place_on_ground.GetBool())
 		{
@@ -2643,7 +2644,7 @@ void CNavMesh::CommandNavEndArea( void )
 	{
 		SetEditMode( NORMAL );
 	
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 
 		Vector corner1, corner2, corner3;
 		if ( m_climbableSurface && FindLadderCorners( &corner1, &corner2, &corner3 ) )
@@ -2662,12 +2663,12 @@ void CNavMesh::CommandNavEndArea( void )
 		}
 		else
 		{
-			EmitSound(player, "EDIT_END_AREA.NotCreating" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		}
 	}
 	else
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 	}
 
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
@@ -3352,8 +3353,6 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::CommandNavWarpToMark( void )
 {
-	/**
-	  TODO
 	edict_t* ent = UTIL_GetListenServerEnt();
 	if (ent == NULL || !IsEditMode( NORMAL ) )
 		return;
@@ -3366,18 +3365,11 @@ void CNavMesh::CommandNavWarpToMark( void )
 	IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
 	if ( targetArea )
 	{
-		Vector origin = targetArea->GetCenter() + Vector( 0, 0, 0.75f * HumanHeight );
+		Vector origin = targetArea->GetCenter() + Vector( 0, 0, HumanHeight );
 		QAngle angles = player->GetAbsAngles();
-		if ( ( player->IsDead() || player->IsObserver() ) && player->GetObserverMode() == OBS_MODE_ROAMING )
-		{
-			UTIL_SetOrigin( player, origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
-		else
-		{
-			player->Teleport( &origin, &angles, &vec3_origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
+		entities::HBaseEntity be(ent);
+		be.Teleport(origin, &angles, nullptr);
+		EmitSound(ent, "EDIT_WARP_TO_MARK");
 	}
 	else if ( GetMarkedLadder() )
 	{
@@ -3387,22 +3379,14 @@ void CNavMesh::CommandNavWarpToMark( void )
 		Vector origin = (ladder->m_top + ladder->m_bottom)/2;
 		origin.x += ladder->GetNormal().x * GenerationStepSize;
 		origin.y += ladder->GetNormal().y * GenerationStepSize;
-		if ( ( player->IsDead() || player->IsObserver() ) && player->GetObserverMode() == OBS_MODE_ROAMING )
-		{
-			UTIL_SetOrigin( player, origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
-		else
-		{
-			player->Teleport( &origin, &angles, &vec3_origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
+		entities::HBaseEntity be(ent);
+		be.Teleport(origin, &angles, nullptr);
+		EmitSound(ent, "EDIT_WARP_TO_MARK" );
 	}
 	else
 	{
 		EmitSound(ent, "EDIT_WARP_TO_MARK" );
 	}
-	*/
 }
 
 
@@ -4086,3 +4070,20 @@ CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded 
 	}
 }
 
+void CNavMesh::LoadEditSounds(SourceMod::IGameConfig* gamedata)
+{
+	auto v1 = gamedata->GetKeyValue("NavEdit_GenericBlip");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_BLIP)] = std::string(v1);
+	auto v2 = gamedata->GetKeyValue("NavEdit_GenericSuccess");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_SUCCESS)] = std::string(v2);
+	auto v3 = gamedata->GetKeyValue("NavEdit_GenericError");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_ERROR)] = std::string(v3);
+}
+
+void CNavMesh::PlayEditSoundInternal(const std::string& sound) const
+{
+	char command[256];
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	ke::SafeSprintf(command, sizeof(command), "play %s", sound.c_str());
+	engine->ClientCommand(host, command);
+}

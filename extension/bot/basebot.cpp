@@ -1,5 +1,5 @@
 #include <extension.h>
-#include <ifaces_extern.h>
+#include <manager.h>
 #include <extplayer.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
@@ -489,8 +489,7 @@ void CBaseBot::BuildUserCommand(const int buttons)
 
 void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 {
-#if HOOK_PLAYERRUNCMD
-	if (extmanager->GetMod()->UserCommandNeedsHook() == true) // this mod already calls runplayermove on bots, just hook it
+	if (!extension->ShouldCallRunPlayerCommand()) // this mod already calls runplayermove on bots, we send the bot actual cmd on the hook
 	{
 		return;
 	}
@@ -498,9 +497,6 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 	{
 		m_controller->RunPlayerMove(ucmd);
 	}
-#else
-	m_controller->RunPlayerMove(ucmd);
-#endif // 
 }
 
 IPlayerController* CBaseBot::GetControlInterface()

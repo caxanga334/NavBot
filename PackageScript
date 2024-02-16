@@ -9,7 +9,8 @@ builder.SetBuildFolder('package')
 folder_list = [
   'addons/sourcemod/extensions',
   #'addons/sourcemod/scripting/include',
-  #'addons/sourcemod/gamedata',
+  'addons/sourcemod/gamedata',
+  'addons/sourcemod/gamedata/navbot.games',
   'addons/sourcemod/configs',
   'addons/sourcemod/configs/navbot',
   'addons/sourcemod/configs/navbot/tf',
@@ -49,11 +50,12 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 #)
 
 # GameData files
-#CopyFiles('gamedata', 'addons/sourcemod/gamedata',
-#  [ 'myfile.txt',
-#  'file2.txt'
-#  ]
-#)
+CopyFiles('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games',
+  [ 'common.games.txt',
+    'game.dod.txt',
+    'master.games.txt'
+  ]
+)
 
 # Config Files
 CopyFiles('configs', 'addons/sourcemod/configs/navbot',

@@ -25,6 +25,7 @@
 #include <cstdint>
 #include <vector>
 #include <utility>
+#include <array>
 
 #include "nav.h"
 #include <sdkports/sdk_timers.h>
@@ -34,6 +35,12 @@
 
 class HidingSpot;
 class CUtlBuffer;
+
+namespace SourceMod
+{
+	class IGameConfig;
+};
+
 
 HidingSpot *GetHidingSpotByID( unsigned int id );
 //--------------------------------------------------------------------------------------------------------
@@ -296,6 +303,7 @@ public:
 	virtual int	GetEventDebugID(void);
 #endif // SOURCE_ENGINE >= SE_LEFT4DEAD
 
+	virtual void Precache(); // precache edit sounds here
 	virtual void OnMapStart();
 	virtual void OnMapEnd() {}
 	
@@ -670,6 +678,22 @@ public:
 	std::filesystem::path GetFullPathToNavMeshFile() const;
 	const AuthorInfo& GetAuthorInfo() const { return m_authorinfo; }
 
+	void LoadEditSounds(SourceMod::IGameConfig* gamedata);
+
+	enum class EditSoundType : uint32_t
+	{
+		SOUND_GENERIC_BLIP = 0,
+		SOUND_GENERIC_SUCCESS,
+		SOUND_GENERIC_ERROR,
+
+		MAX_EDIT_SOUNDS
+	};
+
+	inline void PlayEditSound(EditSoundType type) const
+	{
+		PlayEditSoundInternal(m_editsounds[static_cast<size_t>(type)]);
+	}
+
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -876,6 +900,9 @@ private:
 	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
 	void BuildAuthorInfo();
 	AuthorInfo m_authorinfo;
+	std::array<std::string, static_cast<size_t>(EditSoundType::MAX_EDIT_SOUNDS)> m_editsounds;
+
+	void PlayEditSoundInternal(const std::string& sound) const;
 };
 
 // the global singleton interface

@@ -1,5 +1,4 @@
 #include <extension.h>
-#include <ifaces_extern.h>
 #include <extplayer.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>

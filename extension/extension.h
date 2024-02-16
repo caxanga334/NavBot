@@ -42,6 +42,21 @@ class IMoveHelper;
 
 #include "smsdk_ext.h"
 
+#include <engine/ivdebugoverlay.h>
+#include <engine/IEngineTrace.h>
+#include <engine/IEngineSound.h>
+#include <iplayerinfo.h>
+#include <vphysics_interface.h>
+#include <filesystem.h>
+#include <datacache/imdlcache.h>
+#include <igameevents.h>
+#include <toolframework/itoolentity.h>
+#include <entitylist_base.h>
+#include <ISDKTools.h>
+#include <IBinTools.h>
+#include <ISDKHooks.h>
+#include "navmesh/nav_mesh.h"
+
 /**
  * @brief Sample implementation of the SDK Extension.
  * Note: Uncomment one of the pre-defined virtual functions in order to use it.
@@ -49,6 +64,9 @@ class IMoveHelper;
 class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
 {
 public:
+	NavBotExt();
+	virtual ~NavBotExt();
+
 	/**
 	 * @brief This is called after the initial loading sequence has been processed.
 	 *
@@ -264,6 +282,39 @@ public:
 	void Hook_GameFrame(bool simulating);
 
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
+
+	inline bool ShouldCallRunPlayerCommand() const { return !m_bHookRunCmd; }
+	inline SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
+
+private:
+	bool m_bHookRunCmd;
+	SourceMod::IGameConfig* m_gamedata;
 };
+
+extern NavBotExt* extension;
+extern CGlobalVars* gpGlobals;
+extern IVDebugOverlay* debugoverlay;
+extern IServerGameDLL* servergamedll;
+extern IServerGameEnts* servergameents;
+extern IEngineTrace* enginetrace;
+extern IEngineSound* enginesound;
+extern CNavMesh* TheNavMesh;
+extern IPlayerInfoManager* playerinfomanager;
+extern IServerGameClients* gameclients;
+extern IGameEventManager2* gameeventmanager;
+extern IPhysicsSurfaceProps* physprops;
+extern IVModelInfo* modelinfo;
+extern IMDLCache* imdlcache;
+extern IFileSystem* filesystem;
+extern ICvar* icvar;
+extern IServerTools* servertools;
+extern IServerPluginHelpers* serverpluginhelpers;
+extern CBaseEntityList* g_EntList;
+
+extern IBinTools* g_pBinTools;
+extern ISDKTools* g_pSDKTools;
+extern ISDKHooks* g_pSDKHooks;
+
+extern IBotManager* botmanager;
 
 #endif // _INCLUDE_SOURCEMOD_EXTENSION_PROPER_H_

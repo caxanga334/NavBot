@@ -1,5 +1,4 @@
 #include <extension.h>
-#include <ifaces_extern.h>
 #include "tfnavarea.h"
 #include "tfnavmesh.h"
 
