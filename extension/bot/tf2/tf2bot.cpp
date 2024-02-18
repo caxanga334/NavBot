@@ -107,9 +107,9 @@ edict_t* CTF2Bot::GetFlagToFetch() const
 	if (IsCarryingAFlag())
 		return GetItem();
 
-	int flag = INVALID_ENT_REFERENCE;
+	int flag = INVALID_EHANDLE_INDEX;
 
-	while ((flag = UtilHelpers::FindEntityByClassname(flag, "item_teamflag")) != INVALID_ENT_REFERENCE)
+	while ((flag = UtilHelpers::FindEntityByClassname(flag, "item_teamflag")) != INVALID_EHANDLE_INDEX)
 	{
 		CBaseEntity* pFlag = nullptr;
 		
@@ -164,9 +164,9 @@ edict_t* CTF2Bot::GetFlagToFetch() const
 */
 edict_t* CTF2Bot::GetFlagCaptureZoreToDeliver() const
 {
-	int capturezone = INVALID_ENT_REFERENCE;
+	int capturezone = INVALID_EHANDLE_INDEX;
 
-	while ((capturezone = UtilHelpers::FindEntityByClassname(capturezone, "func_capturezone")) != INVALID_ENT_REFERENCE)
+	while ((capturezone = UtilHelpers::FindEntityByClassname(capturezone, "func_capturezone")) != INVALID_EHANDLE_INDEX)
 	{
 		CBaseEntity* pZone = nullptr;
 		edict_t* edict = nullptr;
@@ -186,6 +186,90 @@ edict_t* CTF2Bot::GetFlagCaptureZoreToDeliver() const
 	}
 
 	return nullptr;
+}
+
+bool CTF2Bot::IsAmmoLow() const
+{
+	// For engineer, check metal
+	if (GetMyClassType() == TeamFortress2::TFClass_Engineer)
+	{
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) <= 25)
+		{
+			return true;
+		}
+	}
+
+	// Primary Weapons
+	switch (GetMyClassType())
+	{
+	case TeamFortress2::TFClass_Spy:
+	{
+		break; // Spies does not have a primary weapon
+	}
+	case TeamFortress2::TFClass_Pyro:
+	case TeamFortress2::TFClass_Heavy:
+	{
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 50)
+		{
+			return true;
+		}
+
+		break;
+	}
+	default:
+	{
+		// While medic has 150 max default reserve ammo, we don't care
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 6)
+		{
+			return true;
+		}
+
+		break;
+	}
+	}
+
+	switch (GetMyClassType())
+	{
+	case TeamFortress2::TFClass_Medic:
+	{
+		break; // ignore medigun
+	}
+	case TeamFortress2::TFClass_Pyro:
+	case TeamFortress2::TFClass_Soldier:
+	case TeamFortress2::TFClass_Scout:
+	case TeamFortress2::TFClass_DemoMan:
+	case TeamFortress2::TFClass_Heavy:
+	{
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_SECONDARY) <= 12)
+		{
+			return true;
+		}
+
+		break;
+	}
+	case TeamFortress2::TFClass_Sniper:
+	case TeamFortress2::TFClass_Engineer:
+	{
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_SECONDARY) <= 25)
+		{
+			return true;
+		}
+
+		break;
+	}
+	default:
+	{
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 6)
+		{
+			return true;
+		}
+
+		break;
+	}
+	}
+
+
+	return false;
 }
 
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)

@@ -1,6 +1,8 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
+#include <util/EntityUtils.h>
+#include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
 
 #include "tf2bot.h"
@@ -46,6 +48,14 @@ bool CTF2BotSensor::IsIgnored(edict_t* entity)
 
 	if (IsClassnameIgnored(classname))
 		return true;
+
+	if (strncasecmp(classname, "obj_", 4) == 0)
+	{
+		tfentities::HBaseObject baseobject(entity);
+
+		if (baseobject.IsPlacing()) // ignore objects that haven't been built yet
+			return true;
+	}
 
 	return false;
 }

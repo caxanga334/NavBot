@@ -41,6 +41,9 @@ public:
 
 	virtual TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 
+	virtual QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
+	virtual QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+
 	virtual const char* GetName() const override { return "DeliverFlag"; }
 private:
 	CMeshNavigator m_nav;

@@ -63,6 +63,8 @@ sourceFiles = [
   'bot/tf2/tasks/tf2bot_maintask.cpp',
   'bot/tf2/tasks/tf2bot_tactical.cpp',
   'bot/tf2/tasks/tf2bot_scenario.cpp',
+  'bot/tf2/tasks/tf2bot_find_health_task.cpp',
+  'bot/tf2/tasks/tf2bot_find_ammo_task.cpp',
   'bot/tf2/tasks/scenario/tf2bot_map_ctf.cpp',
   'mods/tf2/teamfortress2mod.cpp',
   'mods/tf2/tf2lib.cpp',

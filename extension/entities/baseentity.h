@@ -58,6 +58,7 @@ namespace entities
 		float GetSimulationTime() const;
 		void SetSimulationTime(float time) const;
 		void Teleport(const Vector& origin, const QAngle* angles = nullptr, const Vector* velocity = nullptr) const;
+		bool IsDisabled() const;
 
 	private:
 		void CalcAbsolutePosition(matrix3x4_t& result) const;

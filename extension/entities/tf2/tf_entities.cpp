@@ -4,11 +4,24 @@
 #include <mods/tf2/tf2lib.h>
 #include "tf_entities.h"
 
-tfentities::HCaptureFlag::HCaptureFlag(edict_t* entity) : entities::HBaseEntity(entity)
+tfentities::HTFBaseEntity::HTFBaseEntity(edict_t* entity) : entities::HBaseEntity(entity)
 {
 }
 
-tfentities::HCaptureFlag::HCaptureFlag(CBaseEntity* entity) : entities::HBaseEntity(entity)
+tfentities::HTFBaseEntity::HTFBaseEntity(CBaseEntity* entity) : entities::HBaseEntity(entity)
+{
+}
+
+TeamFortress2::TFTeam tfentities::HTFBaseEntity::GetTFTeam() const
+{
+	return tf2lib::GetEntityTFTeam(GetIndex());
+}
+
+tfentities::HCaptureFlag::HCaptureFlag(edict_t* entity) : HTFBaseEntity(entity)
+{
+}
+
+tfentities::HCaptureFlag::HCaptureFlag(CBaseEntity* entity) : HTFBaseEntity(entity)
 {
 }
 
@@ -47,16 +60,11 @@ Vector tfentities::HCaptureFlag::GetPosition() const
 	return GetAbsOrigin(); // no owner, return my position
 }
 
-TeamFortress2::TFTeam tfentities::HCaptureFlag::GetTFTeam() const
-{
-	return tf2lib::GetEntityTFTeam(GetIndex());
-}
-
-tfentities::HCaptureZone::HCaptureZone(edict_t* entity) : entities::HBaseEntity(entity)
+tfentities::HCaptureZone::HCaptureZone(edict_t* entity) : HTFBaseEntity(entity)
 {
 }
 
-tfentities::HCaptureZone::HCaptureZone(CBaseEntity* entity) : entities::HBaseEntity(entity)
+tfentities::HCaptureZone::HCaptureZone(CBaseEntity* entity) : HTFBaseEntity(entity)
 {
 }
 
@@ -67,7 +75,151 @@ bool tfentities::HCaptureZone::IsDisabled() const
 	return result;
 }
 
-TeamFortress2::TFTeam tfentities::HCaptureZone::GetTFTeam() const
+tfentities::HFuncRegenerate::HFuncRegenerate(edict_t* entity) : HTFBaseEntity(entity)
 {
-	return tf2lib::GetEntityTFTeam(GetIndex());
+}
+
+tfentities::HFuncRegenerate::HFuncRegenerate(CBaseEntity* entity) : HTFBaseEntity(entity)
+{
+}
+
+bool tfentities::HFuncRegenerate::IsDisabled() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Data, "m_bDisabled", result);
+	return result;
+}
+
+tfentities::HBaseObject::HBaseObject(edict_t* entity) : HTFBaseEntity(entity)
+{
+}
+
+tfentities::HBaseObject::HBaseObject(CBaseEntity* entity) : HTFBaseEntity(entity)
+{
+}
+
+int tfentities::HBaseObject::GetHealth() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iHealth", value);
+	return value;
+}
+
+int tfentities::HBaseObject::GetMaxHealth() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iMaxHealth", value);
+	return value;
+}
+
+bool tfentities::HBaseObject::IsDisabled() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bDisabled", result);
+	return result;
+}
+
+float tfentities::HBaseObject::GetPercentageConstructed() const
+{
+	float value = 0.0f;
+	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flPercentageConstructed", value);
+	return value;
+}
+
+TeamFortress2::TFObjectType tfentities::HBaseObject::GetType() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iObjectType", value);
+	return static_cast<TeamFortress2::TFObjectType>(value);
+}
+
+TeamFortress2::TFObjectMode tfentities::HBaseObject::GetMode() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iObjectMode", value);
+	return static_cast<TeamFortress2::TFObjectMode>(value);
+}
+
+edict_t* tfentities::HBaseObject::GetBuilder() const
+{
+	int entity = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", entity);
+	return gamehelpers->EdictOfIndex(entity);
+}
+
+int tfentities::HBaseObject::GetLevel() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iUpgradeLevel", value);
+	return value;
+}
+
+int tfentities::HBaseObject::GetMaxLevel() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iHighestUpgradeLevel", value);
+	return value;
+}
+
+bool tfentities::HBaseObject::IsPlacing() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bPlacing", result);
+	return result;
+}
+
+bool tfentities::HBaseObject::IsBuilding() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bBuilding", result);
+	return result;
+}
+
+bool tfentities::HBaseObject::IsBeingCarried() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bCarried", result);
+	return result;
+}
+
+bool tfentities::HBaseObject::IsSapped() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bHasSapper", result);
+	return result;
+}
+
+bool tfentities::HBaseObject::IsRedeploying() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bCarryDeploy", result);
+	return result;
+}
+
+bool tfentities::HBaseObject::IsMiniBuilding() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bMiniBuilding", result);
+	return result;
+}
+
+bool tfentities::HBaseObject::IsDisposableBuilding() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bDisposableBuilding", result);
+	return result;
+}
+
+int tfentities::HBaseObject::GetMaxUpgradeMetal() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iUpgradeMetalRequired", value);
+	return value;
+}
+
+int tfentities::HBaseObject::GetUpgradeMetal() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iUpgradeMetal", value);
+	return value;
 }

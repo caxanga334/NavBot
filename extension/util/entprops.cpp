@@ -1739,7 +1739,7 @@ bool CEntPropUtils::SetEntDataEnt(int entity, int offset, int value, bool change
 
 	CBaseHandle &hndl = *(CBaseHandle *)((uint8_t *)pEntity + offset);
 
-	if ((unsigned)value == INVALID_ENT_REFERENCE)
+	if ((unsigned)value == INVALID_EHANDLE_INDEX)
 	{
 		hndl.Set(NULL);
 	}

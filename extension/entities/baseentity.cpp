@@ -145,7 +145,7 @@ void entities::HBaseEntity::GetTargetName(char* result, std::size_t maxsize) con
 CBaseEntity* entities::HBaseEntity::GetOwnerEntity() const
 {
 	CBaseEntity* owner = nullptr;
-	int ref = INVALID_ENT_REFERENCE;
+	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hOwnerEntity", ref);
 	UtilHelpers::IndexToAThings(ref, &owner, nullptr);
 	return owner;
@@ -154,7 +154,7 @@ CBaseEntity* entities::HBaseEntity::GetOwnerEntity() const
 CBaseEntity* entities::HBaseEntity::GetMoveParent() const
 {
 	CBaseEntity* entity = nullptr;
-	int ref = INVALID_ENT_REFERENCE;
+	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hMoveParent", ref);
 	UtilHelpers::IndexToAThings(ref, &entity, nullptr);
 	return entity;
@@ -163,7 +163,7 @@ CBaseEntity* entities::HBaseEntity::GetMoveParent() const
 CBaseEntity* entities::HBaseEntity::GetMoveChild() const
 {
 	CBaseEntity* entity = nullptr;
-	int ref = INVALID_ENT_REFERENCE;
+	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hMoveChild", ref);
 	UtilHelpers::IndexToAThings(ref, &entity, nullptr);
 	return entity;
@@ -172,7 +172,7 @@ CBaseEntity* entities::HBaseEntity::GetMoveChild() const
 CBaseEntity* entities::HBaseEntity::GetMovePeer() const
 {
 	CBaseEntity* entity = nullptr;
-	int ref = INVALID_ENT_REFERENCE;
+	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hMovePeer", ref);
 	UtilHelpers::IndexToAThings(ref, &entity, nullptr);
 	return entity;
@@ -321,6 +321,13 @@ void entities::HBaseEntity::Teleport(const Vector& origin, const QAngle* angles,
 	}
 
 	SetSimulationTime(gpGlobals->curtime);
+}
+
+bool entities::HBaseEntity::IsDisabled() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Data, "m_bDisabled", result);
+	return result;
 }
 
 void entities::HBaseEntity::CalcAbsolutePosition(matrix3x4_t& result) const

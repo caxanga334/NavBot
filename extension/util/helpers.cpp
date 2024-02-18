@@ -5,6 +5,7 @@
 #include <studio.h>
 #include "helpers.h"
 #include "entprops.h"
+#include "UtilTrace.h"
 
 #undef max // undef mathlib defs to avoid comflicts with STD
 #undef min
@@ -146,7 +147,7 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(edict_t* pEntity)
 }
 
 /// @brief Searches for entities by classname
-/// @return Entity index/reference or INVALID_ENT_REFERENCE if none is found
+/// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 {
 #ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
@@ -167,7 +168,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 		pEntity = gamehelpers->ReferenceToEntity(start);
 		if (!pEntity)
 		{
-			return INVALID_ENT_REFERENCE;
+			return INVALID_EHANDLE_INDEX;
 		}
 		pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
 	}
@@ -175,7 +176,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 	// it's tough to find a good ent these days
 	if (!pEntity)
 	{
-		return INVALID_ENT_REFERENCE;
+		return INVALID_EHANDLE_INDEX;
 	}
 
 	const char* classname = nullptr;
@@ -187,7 +188,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 		SourceMod::sm_datatable_info_t info;
 		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(pEntity), "m_iClassname", &info))
 		{
-			return INVALID_ENT_REFERENCE;
+			return INVALID_EHANDLE_INDEX;
 		}
 
 		offset = info.actual_offset;
@@ -221,13 +222,13 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 		pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
 	}
 
-	return INVALID_ENT_REFERENCE;
+	return INVALID_EHANDLE_INDEX;
 
 #endif // SOURCE_ENGINE > SE_ORANGEBOX
 }
 
 /// @brief Searches for entities in a sphere
-/// @return Entity index/reference or INVALID_ENT_REFERENCE if none is found
+/// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 {
 #ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
@@ -246,7 +247,7 @@ int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 
 		if (!pEntity)
 		{
-			return INVALID_ENT_REFERENCE;
+			return INVALID_EHANDLE_INDEX;
 		}
 
 		pEntity = static_cast<CBaseEntity*>(servertools->NextEntity(pEntity));
@@ -254,7 +255,7 @@ int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 
 	if (!pEntity)
 	{
-		return INVALID_ENT_REFERENCE;
+		return INVALID_EHANDLE_INDEX;
 	}
 
 	Vector pos(0.0f, 0.0f, 0.0f);
@@ -276,12 +277,12 @@ int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
 		pEntity = static_cast<CBaseEntity*>(servertools->NextEntity(pEntity));
 	}
 
-	return INVALID_ENT_REFERENCE;
+	return INVALID_EHANDLE_INDEX;
 #endif // SOURCE_ENGINE > SE_ORANGEBOX
 }
 
 /// @brief Searches for entities by their networkable class
-/// @return Entity index or INVALID_ENT_REFERENCE if none is found
+/// @return Entity index or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 {
 	edict_t* current;
@@ -311,14 +312,14 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 		}
 	}
 
-	return INVALID_ENT_REFERENCE;
+	return INVALID_EHANDLE_INDEX;
 }
 
 /**
  * @brief Searches for an entity by their targetname (The entity name given by the level design for I/O purposes)
  * @param start Search starting entity or -1 for the first entity.
  * @param targetname Targetname to search for.
- * @return Entity index if found or INVALID_ENT_REFERENCE if not found.
+ * @return Entity index if found or INVALID_EHANDLE_INDEX if not found.
 */
 int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 {
@@ -329,7 +330,7 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 
 	if (!targetname || targetname[0] == 0)
 	{
-		return INVALID_ENT_REFERENCE;
+		return INVALID_EHANDLE_INDEX;
 	}
 
 	if (targetname[0] == '!')
@@ -352,7 +353,7 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 		SourceMod::sm_datatable_info_t info;
 		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(pEntity), "m_iName", &info))
 		{
-			return INVALID_ENT_REFERENCE;
+			return INVALID_EHANDLE_INDEX;
 		}
 
 		offset = info.actual_offset;
@@ -378,7 +379,7 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 		pEntity = (CBaseEntity*)servertools->NextEntity(pEntity);
 	}
 
-	return INVALID_ENT_REFERENCE;
+	return INVALID_EHANDLE_INDEX;
 
 #endif // SOURCE_ENGINE > SE_ORANGEBOX
 }
@@ -388,13 +389,13 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
  * @param start Search start entity.
  * @param targetname Targetname to search for.
  * @param classname Limit search to this classname.
- * @return Entity index if found or INVALID_ENT_REFERENCE if not found.
+ * @return Entity index if found or INVALID_EHANDLE_INDEX if not found.
 */
 int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, const char* classname)
 {
 	int i = start;
 
-	while ((i = FindEntityByClassname(i, classname)) != INVALID_ENT_REFERENCE)
+	while ((i = FindEntityByClassname(i, classname)) != INVALID_EHANDLE_INDEX)
 	{
 		char name[64];
 		int length;
@@ -408,7 +409,7 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 		}
 	}
 
-	return INVALID_ENT_REFERENCE;
+	return INVALID_EHANDLE_INDEX;
 }
 
 /// @brief check if a point is in the field of a view of an object. supports up to 180 degree fov.
@@ -711,9 +712,9 @@ int UtilHelpers::GetNumberofPlayersOnTeam(const int team, const bool ignore_dead
 */
 std::optional<int> UtilHelpers::GetTeamManagerEntity(const int team, const char* classname)
 {
-	int entity = INVALID_ENT_REFERENCE;
+	int entity = INVALID_EHANDLE_INDEX;
 
-	while ((entity = FindEntityByClassname(entity, classname)) != INVALID_ENT_REFERENCE)
+	while ((entity = FindEntityByClassname(entity, classname)) != INVALID_EHANDLE_INDEX)
 	{
 		int entityteam = -1;
 
@@ -731,7 +732,7 @@ std::optional<int> UtilHelpers::GetTeamManagerEntity(const int team, const char*
 
 std::optional<int> UtilHelpers::GetOwnerEntity(const int entity)
 {
-	int owner = INVALID_ENT_REFERENCE;
+	int owner = INVALID_EHANDLE_INDEX;
 
 	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity", owner))
 	{
@@ -746,5 +747,15 @@ void UtilHelpers::CalcClosestPointOnAABB(const Vector& mins, const Vector& maxs,
 	closestOut.x = std::clamp(point.x, mins.x, maxs.x);
 	closestOut.y = std::clamp(point.y, mins.y, maxs.y);
 	closestOut.z = std::clamp(point.z, mins.z, maxs.z);
+}
+
+Vector UtilHelpers::GetGroundPositionFromCenter(edict_t* pEntity)
+{
+	Vector center = getWorldSpaceCenter(pEntity);
+
+	CTraceFilterSimple filter(pEntity->GetIServerEntity(), COLLISION_GROUP_NONE, nullptr);
+	trace_t result;
+	UTIL_TraceLine(center, center + Vector(0.0f, 0.0f, -4096.0f), MASK_SOLID, &filter, &result);
+	return result.endpos + Vector(0.0f, 0.0f, 1.0f);
 }
 

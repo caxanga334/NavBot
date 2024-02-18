@@ -276,7 +276,7 @@ std::vector<edict_t*> CBaseExtPlayer::GetAllWeapons() const
 
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
-		int weapon = INVALID_ENT_REFERENCE;
+		int weapon = INVALID_EHANDLE_INDEX;
 		
 		if (!entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", weapon, i))
 			continue;

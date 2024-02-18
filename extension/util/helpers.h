@@ -49,6 +49,7 @@ namespace UtilHelpers
 	std::optional<int> GetTeamManagerEntity(const int team, const char* classname);
 	std::optional<int> GetOwnerEntity(const int entity);
 	void CalcClosestPointOnAABB(const Vector& mins, const Vector& maxs, const Vector& point, Vector& closestOut);
+	Vector GetGroundPositionFromCenter(edict_t* pEntity);
 }
 
 #endif // !UTIL_HELPERS_H_

@@ -80,7 +80,7 @@ void CTFNavArea::UpdateDynamicSpawnRoom()
 	int nearest_team = 0; // store the team of the nearest func_respawnroom entity
 	float smallest_dist = std::numeric_limits<float>::max();
 
-	while ((spawnroom = UtilHelpers::FindEntityByClassname(spawnroom, "func_respawnroom")) != INVALID_ENT_REFERENCE)
+	while ((spawnroom = UtilHelpers::FindEntityByClassname(spawnroom, "func_respawnroom")) != INVALID_EHANDLE_INDEX)
 	{
 		edict_t* edict = nullptr;
 		

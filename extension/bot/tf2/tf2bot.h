@@ -39,6 +39,7 @@ public:
 	bool IsCarryingAFlag() const;
 	edict_t* GetFlagToFetch() const;
 	edict_t* GetFlagCaptureZoreToDeliver() const;
+	bool IsAmmoLow() const;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
