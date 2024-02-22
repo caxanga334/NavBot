@@ -93,6 +93,8 @@ void IMovement::Reset()
 
 void IMovement::Update()
 {
+	m_basemovespeed = GetBot()->GetMaxSpeed();
+
 	StuckMonitor();
 
 	auto velocity = GetBot()->GetAbsVelocity();
@@ -477,7 +479,28 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 	const float height = GetStepHeight();
 	Vector mins(-hullsize, -hullsize, height);
 	Vector maxs(hullsize, hullsize, GetCrouchedHullHeigh());
-	UTIL_TraceHull(from, to, mins, maxs, GetMovementTraceMask(), nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, &result);
+	UTIL_TraceHull(from, to, mins, maxs, GetMovementTraceMask(), nullptr, COLLISION_GROUP_NONE, &result);
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		if (result.DidHit())
+		{
+			NDebugOverlay::SweptBox(from, to, mins, maxs, vec3_angle, 255, 0, 0, 255, 15.0f);
+			NDebugOverlay::Sphere(result.endpos, 24.0f, 255, 0, 255, true, 15.0f);
+
+			auto index = result.GetEntityIndex();
+
+			if (index != -1)
+			{
+				auto classname = gamehelpers->GetEntityClassname(result.m_pEnt);
+				char message[256];
+				ke::SafeSprintf(message, sizeof(message), "Hit Entity %s#%i", classname, index);
+
+				NDebugOverlay::Text(result.endpos, message, false, 15.0f);
+				DevMsg("%s IMovement::IsPotentiallyTraversable \n  %s \n", GetBot()->GetDebugIdentifier(), message);
+			}
+		}
+	}
 
 	fraction = result.fraction;
 

@@ -216,6 +216,57 @@ struct SpotEncounter
 };
 typedef CUtlVector< SpotEncounter * > SpotEncounterVector;
 
+enum class NavLinkType : int32_t
+{
+	LINK_INVALID = 0,
+	LINK_GROUND, // solid ground
+	LINK_TELEPORTER, // map based teleporter (trigger_teleport)
+
+	MAX_LINK_TYPES // max known link types
+};
+
+// Special nav area connections
+class NavSpecialLink
+{
+public:
+	NavSpecialLink()
+	{
+		m_type = NavLinkType::MAX_LINK_TYPES;
+	}
+
+	NavSpecialLink(NavLinkType type, CNavArea* other, const Vector& position)
+	{
+		m_type = type;
+		m_link.area = other;
+		m_pos = position;
+	}
+
+	NavSpecialLink(NavLinkType type, unsigned int id, const Vector& position)
+	{
+		m_type = type;
+		m_link.id = id;
+		m_pos = position;
+	}
+
+	static const char* LinkTypeToString(NavLinkType type);
+
+	inline bool IsOfType(NavLinkType type) const { return m_type == type; }
+	inline bool IsConnectedTo(CNavArea* area) const { return m_link.area == area; }
+	inline NavLinkType GetType() const { return m_type; }
+	inline const Vector& GetPosition() const { return m_pos; }
+	inline CNavArea* GetConnectedArea() const { return m_link.area; }
+	inline void SetArea(CNavArea* area) { m_link.area = area; }
+	inline float GetConnectionLength() const { return m_link.length; }
+
+	bool operator==(const NavSpecialLink& other) const
+	{
+		return other.IsOfType(m_type) && other.m_link == m_link;
+	}
+
+	NavLinkType m_type; // Link type
+	NavConnect m_link; // Link connection
+	Vector m_pos; // Link position on the home area
+};
 
 //-------------------------------------------------------------------------------------------------------------------
 /**
@@ -264,6 +315,8 @@ protected:
 
 	/* 128*/	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
 
+	std::vector<NavSpecialLink> m_speciallinks; // Special 'link' connections
+
 	// --- End critical data --- 
 };
 
@@ -308,9 +361,15 @@ public:
 	void ConnectTo( CNavLadder *ladder );						// connect this area to given ladder
 	void Disconnect( CNavLadder *ladder );						// disconnect this area from given ladder
 
+	bool ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin); // connect via special link
+	void Disconnect(CNavArea* area, NavLinkType linktype); // remove special link connection
+
 	unsigned int GetID( void ) const	{ return m_id; }		// return this area's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							// re-orders area ID's so they are continuous
 	unsigned int GetDebugID( void ) const { return m_debugid; }
+
+	size_t GetSpecialLinkCount() const { return m_speciallinks.size(); }
+	const std::vector<NavSpecialLink>& GetSpecialLinks() const { return m_speciallinks; }
 
 	void SetAttributes( int bits )			{ m_attributeFlags = bits; }
 	int GetAttributes( void ) const			{ return m_attributeFlags; }
@@ -387,6 +446,7 @@ public:
 	const NavConnectVector *GetAdjacentAreas( NavDirType dir ) const	{ return &m_connect[dir]; }
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
 	bool IsConnected( const CNavLadder *ladder, CNavLadder::LadderDirectionType dir ) const;	// return true if given ladder is connected in given direction
+	bool IsConnected(const CNavArea* area, NavLinkType linktype) const; // returns true if the given area is connected via the given link type
 	float ComputeGroundHeightChange( const CNavArea *area );			// compute change in actual ground height from this area to given area
 
 	const NavConnectVector *GetIncomingConnections( NavDirType dir ) const	{ return &m_incomingConnect[dir]; }	// get areas connected TO this area by a ONE-WAY link (ie: we have no connection back to them)
@@ -653,6 +713,31 @@ public:
 		return true;
 	}
 
+	inline bool IsConnectedToBySpecialLink(CNavArea* other) const
+	{
+		for (auto& link : m_speciallinks)
+		{
+			if (link.GetConnectedArea() == other)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const NavSpecialLink* GetSpecialLinkConnectionToArea(CNavArea* other) const
+	{
+		for (auto& link : m_speciallinks)
+		{
+			if (link.GetConnectedArea() == other)
+			{
+				return &link;
+			}
+		}
+
+		return nullptr;
+	}
 
 private:
 	friend class CNavMesh;

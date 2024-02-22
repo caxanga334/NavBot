@@ -169,8 +169,8 @@ public:
 	virtual bool IsAbleToClimbOntoEntity(edict_t* entity);
 
 	// The speed the bot will move at (capped by the game player movements)
-	virtual float GetMovementSpeed() { return 500.0f; }
-	inline virtual float GetMinimumMovementSpeed() { return 200.0f; }
+	virtual float GetMovementSpeed() { return m_basemovespeed; }
+	virtual float GetMinimumMovementSpeed() { return m_basemovespeed * 0.4f; }
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
 	virtual bool IsClimbingOrJumping();
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
@@ -223,6 +223,7 @@ private:
 	Vector m_motionVector; // Unit vector of the bot current movement
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
 	int m_internal_jumptimer; // Tick based jump timer
+	float m_basemovespeed;
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();

@@ -50,7 +50,7 @@ enum RouteType
 class ShortestPathCost
 {
 public:
-	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const CFuncElevator *elevator, float length ) const
+	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length ) const
 	{
 		if ( fromArea == NULL )
 		{
@@ -61,8 +61,12 @@ public:
 		{
 			// compute distance traveled along path so far
 			float dist;
-
-			if ( ladder )
+			
+			if (link)
+			{
+				dist = link->GetConnectionLength();
+			}
+			else if ( ladder )
 			{
 				dist = ladder->m_length;
 			}
@@ -151,7 +155,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 	/// @todo Cost might work as "manhattan distance"
 	startArea->SetTotalCost( (startArea->GetCenter() - actualGoalPos).Length() );
 
-	float initCost = costFunc( startArea, NULL, NULL, NULL, -1.0f );	
+	/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length */
+	float initCost = costFunc( startArea, nullptr, nullptr, nullptr, nullptr, -1.0f );	
 	if (initCost < 0.0f)
 		return false;
 	startArea->SetCostSoFar( initCost );
@@ -193,16 +198,19 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 		// search adjacent areas
 		enum SearchType
 		{
-			SEARCH_FLOOR, SEARCH_LADDERS, SEARCH_ELEVATORS
+			SEARCH_FLOOR, SEARCH_LADDERS, SEARCH_ELEVATORS, SEARCH_LINKS
 		};
 		SearchType searchWhere = SEARCH_FLOOR;
 		int searchIndex = 0;
+		size_t linkIndex = 0U;
 
 		int dir = NORTH;
 		const NavConnectVector *floorList = area->GetAdjacentAreas( NORTH );
+		auto& linklist = area->GetSpecialLinks();
+		size_t maxlinks = area->GetSpecialLinkCount();
 
 		bool ladderUp = true;
-		const NavLadderConnectVector *ladderList = NULL;
+		const NavLadderConnectVector *ladderList = nullptr;
 		enum { AHEAD = 0, LEFT, RIGHT, BEHIND, NUM_TOP_DIRECTIONS };
 		int ladderTopDir = AHEAD;
 		bool bHaveMaxPathLength = ( maxPathLength > 0.0f );
@@ -210,10 +218,11 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 		
 		while( true )
 		{
-			CNavArea *newArea = NULL;
+			CNavArea *newArea = nullptr;
 			NavTraverseType how;
-			const CNavLadder *ladder = NULL;
-			const CFuncElevator *elevator = NULL;
+			const CNavLadder *ladder = nullptr;
+			const CFuncElevator *elevator = nullptr;
+			const NavSpecialLink* currentlink = nullptr;
 
 			//
 			// Get next adjacent area - either on floor or via ladder
@@ -313,7 +322,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 				length = -1.0f;
 			}
-			else // if ( searchWhere == SEARCH_ELEVATORS )
+			else if ( searchWhere == SEARCH_ELEVATORS )
 			{
 				const NavConnectVector &elevatorAreas = area->GetElevatorAreas();
 
@@ -323,7 +332,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				{
 					// done searching connected areas
 					elevator = NULL;
-					break;
+					searchWhere = SEARCH_LINKS;
+					continue;
 				}
 
 				newArea = elevatorAreas[ searchIndex++ ].area;
@@ -331,7 +341,28 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 				length = -1.0f;
 			}
+			else // if (searchWhere == SEARCH_LINKS)
+			{
+				if (maxlinks == 0)
+				{
+					// no link to search, get out
+					break;
+				}
+				else
+				{
+					if (linkIndex >= maxlinks)
+					{
+						linkIndex = 0;
+						break; // ALL links searched, break
+					}
 
+					currentlink = &linklist[linkIndex];
+					newArea = currentlink->GetConnectedArea();
+					length = currentlink->GetConnectionLength();
+					how = GO_SPECIAL_LINK;
+					linkIndex++;
+				}
+			}
 
 			// don't backtrack
 			Assert( newArea );
@@ -341,7 +372,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				|| newArea->IsBlocked( teamID, ignoreNavBlockers ) )
 				continue;
 
-			float newCostSoFar = costFunc( newArea, area, ladder, elevator, length );
+			/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length */
+			float newCostSoFar = costFunc( newArea, area, ladder, currentlink, elevator, length );
 
 			// NaNs really mess this function up causing tough to track down hangs. If
 			//  we get inf back, clamp it down to a really high number.

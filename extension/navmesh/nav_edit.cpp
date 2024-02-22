@@ -19,6 +19,9 @@
 #include <util/UtilTrace.h>
 #include <util/BaseEntity.h>
 #include <util/EntityUtils.h>
+#include <util/helpers.h>
+#include <sdkports/debugoverlay_shared.h>
+#include <entities/baseentity.h>
 #include "Color.h"
 #include "tier0/vprof.h"
 #include "collisionutils.h"
@@ -949,6 +952,7 @@ void CNavMesh::DrawEditMode( void )
 					connected += m_selectedArea->GetAdjacentCount( SOUTH );
 					connected += m_selectedArea->GetAdjacentCount( EAST );
 					connected += m_selectedArea->GetAdjacentCount( WEST );
+					connected += static_cast<int>(m_selectedArea->GetSpecialLinkCount());
 					Q_strncat( attrib, UTIL_VarArgs( "%d Connections ", connected ), sizeof( attrib ), -1 );
 				}
 
@@ -2438,6 +2442,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 						connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 						connected += GetMarkedArea()->GetAdjacentCount( EAST );
 						connected += GetMarkedArea()->GetAdjacentCount( WEST );
+						connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
 
 						Msg( "Marked Area is connected to %d other Areas\n", connected );
 					}
@@ -2456,6 +2461,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 		connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 		connected += GetMarkedArea()->GetAdjacentCount( EAST );
 		connected += GetMarkedArea()->GetAdjacentCount( WEST );
+		connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
 
 		Msg( "Marked Area is connected to %d other Areas\n", connected );
 	}
@@ -3164,6 +3170,7 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 				connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 				connected += GetMarkedArea()->GetAdjacentCount( EAST );
 				connected += GetMarkedArea()->GetAdjacentCount( WEST );
+				connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
 
 				int totalUnnamedAreas = 0;
 				FOR_EACH_VEC( TheNavAreas, it )
@@ -3421,6 +3428,193 @@ void CNavMesh::CommandNavLadderFlip( void )
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
+CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connections.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_nav_link_connect <link type> \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	int32_t linktype = static_cast<int32_t>(atoi(args[1]));
+
+	if (linktype <= static_cast<int32_t>(NavLinkType::LINK_INVALID) || linktype >= static_cast<int32_t>(NavLinkType::MAX_LINK_TYPES))
+	{
+		Warning("Unknown link type %i \n", linktype);
+
+		Msg("Valid link types: \n");
+		for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+		{
+			Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+		}
+
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	TheNavMesh->CommandNavConnectSpecialLink(linktype);
+}
+
+void CNavMesh::CommandNavConnectSpecialLink(int32_t linktype)
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	FindActiveNavArea();
+
+	if (m_selectedSet.Count() > 1)
+	{
+		bool bValid = true;
+		for (int i = 1; i < m_selectedSet.Count(); ++i)
+		{
+			// Make sure all connections are valid
+			CNavArea* first = m_selectedSet[0];
+			CNavArea* second = m_selectedSet[i];
+
+			first->ConnectTo(second, static_cast<NavLinkType>(linktype), m_linkorigin);
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+	}
+	else if (m_selectedArea)
+	{
+		if (m_markedArea)
+		{
+			m_markedArea->ConnectTo(m_selectedArea, static_cast<NavLinkType>(linktype), m_linkorigin);
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+		else
+		{
+			if (m_selectedSet.Count() == 1)
+			{
+				CNavArea* area = m_selectedSet[0];
+				area->ConnectTo(m_selectedArea, static_cast<NavLinkType>(linktype), m_linkorigin);
+				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			}
+			else
+			{
+				Msg("To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area.");
+				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+			}
+		}
+	}
+
+	SetMarkedArea(NULL);			// unmark the mark area
+	m_markedCorner = NUM_CORNERS;	// clear the corner selection
+	ClearSelectedSet();
+}
+
+CON_COMMAND_F(sm_nav_link_disconnect, "Disconnect nav areas via special link connections.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_nav_link_disconnect <link type ID> \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	int32_t linktype = static_cast<int32_t>(atoi(args[1]));
+
+	if (linktype <= static_cast<int32_t>(NavLinkType::LINK_INVALID) || linktype >= static_cast<int32_t>(NavLinkType::MAX_LINK_TYPES))
+	{
+		Warning("Unknown link type %i \n", linktype);
+
+		Msg("Valid link types: \n");
+		for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+		{
+			Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+		}
+
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	TheNavMesh->CommandNavDisconnectSpecialLink(linktype);
+}
+
+void CNavMesh::CommandNavDisconnectSpecialLink(int32_t linktype)
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	FindActiveNavArea();
+
+	if (m_selectedSet.Count() > 1)
+	{
+		bool bValid = true;
+		for (int i = 1; i < m_selectedSet.Count(); ++i)
+		{
+			// Make sure all connections are valid
+			CNavArea* first = m_selectedSet[0];
+			CNavArea* second = m_selectedSet[i];
+
+			first->Disconnect(second, static_cast<NavLinkType>(linktype));
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+	}
+	else if (m_selectedArea)
+	{
+		if (m_markedArea)
+		{
+			m_markedArea->Disconnect(m_selectedArea, static_cast<NavLinkType>(linktype));
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+		else
+		{
+			if (m_selectedSet.Count() == 1)
+			{
+				CNavArea* area = m_selectedSet[0];
+				area->Disconnect(m_selectedArea, static_cast<NavLinkType>(linktype));
+				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			}
+			else
+			{
+				Msg("To disconnect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area.");
+				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+			}
+		}
+	}
+
+	SetMarkedArea(NULL);			// unmark the mark area
+	m_markedCorner = NUM_CORNERS;	// clear the corner selection
+	ClearSelectedSet();
+}
+
+CON_COMMAND_F(sm_nav_link_set_origin, "Set the connection origin for creating new nav special links", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavSetLinkOrigin();
+}
+
+void CNavMesh::CommandNavSetLinkOrigin()
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	m_linkorigin = player->GetCollideable()->GetCollisionOrigin();
+	NDebugOverlay::Box(m_linkorigin, Vector(-16.0f, -16.0f, 0.0f), Vector(16.0f, 16.0f, 72.0f), 0, 220, 255, 125, 10.0f);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_link_warp_to_origin, "Teleports to the connection origin for creating new nav special links", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavWarpToLinkOrigin();
+}
+
+void CNavMesh::CommandNavWarpToLinkOrigin() const
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	entities::HBaseEntity be(player);
+
+	NDebugOverlay::Box(m_linkorigin, Vector(-16.0f, -16.0f, 0.0f), Vector(16.0f, 16.0f, 72.0f), 0, 220, 255, 125, 10.0f);
+	be.Teleport(m_linkorigin, nullptr, nullptr);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 class RadiusSelect

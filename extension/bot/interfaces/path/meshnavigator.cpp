@@ -19,7 +19,7 @@
 
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
 ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "25", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
-ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "100", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
+ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 
 CMeshNavigator::CMeshNavigator() : CPath()
 {
@@ -406,10 +406,17 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 				}
 
 				float fraction;
-				if (mover->IsPotentiallyTraversable(origin, skip->goal, fraction, false) && mover->HasPotentialGap(origin, skip->goal, fraction) == false)
+				if (mover->IsPotentiallyTraversable(origin, next->goal, fraction, false) && mover->HasPotentialGap(origin, next->goal, fraction) == false)
 				{
 					// only skip a segment if the bot is able to move directly to it from it's current position
 					// and there isn't any holes on the ground
+
+					if (bot->IsDebugging(BOTDEBUG_PATH))
+					{
+						NDebugOverlay::Text(next->goal + Vector(0.0f, 0.0f, 8.0f), "Segment Skipped!", false, 10.0f);
+						NDebugOverlay::Sphere(next->goal, 6.0f, 0, 230, 255, true, 10.0f);
+					}
+
 					skip = next;
 				}
 				else
@@ -515,7 +522,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	}
 
 	// don't try to climb on stairs
-	if (m_goal->area->HasAttributes(NAV_MESH_STAIRS) || myarea->HasAttributes(NAV_MESH_STAIRS))
+	if (m_goal->area->HasAttributes(NAV_MESH_STAIRS) || (myarea && myarea->HasAttributes(NAV_MESH_STAIRS)))
 	{
 		return false;
 	}

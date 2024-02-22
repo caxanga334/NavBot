@@ -73,10 +73,10 @@ ISDKHooks* g_pSDKHooks = nullptr;
 CBaseEntityList* g_EntList = nullptr;
 
 IBotManager* botmanager = nullptr;
-
-CExtManager* extmanager = nullptr;
 NavBotExt* extension = nullptr;
+CExtManager* extmanager = nullptr;
 NavBotExt g_NavBotExt;		/**< Global singleton for extension's main interface */
+
 
 ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
 
@@ -153,20 +153,11 @@ namespace Utils
 	}
 }
 
-
-NavBotExt::NavBotExt() :
-	m_bHookRunCmd(false)
-{
-	m_gamedata = nullptr;
-}
-
-NavBotExt::~NavBotExt()
-{
-}
-
 bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
-	extension = &g_NavBotExt;
+	extension = this;
+	m_hookruncmd = false;
+	m_gamedata = nullptr;
 
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();
@@ -174,16 +165,9 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	Utils::CreateDataDirectory(mod);
 	Utils::CreateConfigDirectory(mod);
 
-	ConVar_Register(0, this);
-
-	playerhelpers->AddClientListener(this);
-
-	sharesys->AddDependency(myself, "bintools.ext", true, true);
-	sharesys->AddDependency(myself, "sdktools.ext", true, true);
-	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
-
 	if (!gameconfs->LoadGameConfigFile("navbot.games", &m_gamedata, error, maxlen))
 	{
+		smutils->LogError(myself, "Failed to open NavBot gamedata file!");
 		gameconfs->CloseGameConfigFile(m_gamedata);
 		return false;
 	}
@@ -191,30 +175,43 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	SourceMod::IGameConfig* gamedata = nullptr;
 	if (!gameconfs->LoadGameConfigFile("sdktools.games", &gamedata, error, maxlen))
 	{
+		smutils->LogError(myself, "Failed to open SDKTools gamedata file!");
 		gameconfs->CloseGameConfigFile(m_gamedata);
 		return false;
 	}
-
-	int offset = 0;
-
-	if (!gamedata->GetOffset("PlayerRunCmd", &offset))
-	{
-		const char* message = "Failed to get PlayerRunCmd offset from SDK Tools gamedata. Mod not supported!";
-		maxlen = strlen(message);
-		strcpy(error, message);
-		return false;
-	}
-
-	gameconfs->CloseGameConfigFile(gamedata);
-	SH_MANUALHOOK_RECONFIGURE(MH_PlayerRunCommand, offset, 0, 0);
 
 	auto value = m_gamedata->GetKeyValue("HookPlayerRunCMD");
 
 	if (value)
 	{
 		int i = atoi(value);
-		m_bHookRunCmd = (i != 0);
+		m_hookruncmd = (i != 0);
 	}
+
+	int offset = 0;
+
+	if (!gamedata->GetOffset("PlayerRunCmd", &offset))
+	{
+		if (m_hookruncmd) // only fail if hookcmd is requested
+		{
+			const char* message = "Failed to get PlayerRunCmd offset from SDK Tools gamedata. Mod not supported!";
+			maxlen = strlen(message);
+			strcpy(error, message);
+			return false;
+		}
+	}
+
+	gameconfs->CloseGameConfigFile(gamedata);
+	SH_MANUALHOOK_RECONFIGURE(MH_PlayerRunCommand, offset, 0, 0);
+
+
+
+	// This stuff needs to be after any load failures so we don't causes other stuff to crash
+	ConVar_Register(0, this);
+	playerhelpers->AddClientListener(this);
+	sharesys->AddDependency(myself, "bintools.ext", true, true);
+	sharesys->AddDependency(myself, "sdktools.ext", true, true);
+	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
 
 	return true;
 }
@@ -364,7 +361,7 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 
 void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 {
-	if (!m_bHookRunCmd)
+	if (!m_hookruncmd)
 	{
 		RETURN_META(MRES_IGNORED);
 	}

@@ -12,6 +12,7 @@
 #include <extension.h>
 #include <extplayer.h>
 #include <util/librandom.h>
+#include <sdkports/debugoverlay_shared.h>
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
@@ -113,6 +114,26 @@ static void SelectedSetColorChaged(IConVar *var, const char *pOldValue,
 }
 ConVar sm_nav_selected_set_color( "sm_nav_selected_set_color", "255 255 200 96", FCVAR_CHEAT, "Color used to draw the selected set background while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
+
+const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
+{
+	switch (type)
+	{
+	case NavLinkType::LINK_INVALID:
+		return "INVALID_LINK";
+	case NavLinkType::LINK_GROUND:
+		return "GROUND_LINK";
+	case NavLinkType::LINK_TELEPORTER:
+		return "TELEPORTER_LINK";
+	case NavLinkType::MAX_LINK_TYPES:
+	default:
+	{
+		smutils->LogError(myself, "NavSpecialLink::LinkTypeToString called with invalid link type \"%i\"!", type);
+		return "ERROR";
+	}
+	}
+}
+
 
 void Extent::Init(edict_t *entity) {
 	entity->GetCollideable()->WorldSpaceSurroundingBounds(&lo, &hi);
@@ -384,6 +405,8 @@ CNavArea::CNavArea(unsigned int place)
 	m_funcNavCostVector.RemoveAll();
 
 	m_nVisTestCounter = (uint32)-1;
+
+	m_speciallinks.reserve(4);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -637,6 +660,7 @@ CNavArea::~CNavArea()
 {
 	// spot encounters aren't owned by anything else, so free them up here
 	m_spotEncounters.PurgeAndDeleteElements();
+	m_speciallinks.clear();
 
 	// if we are resetting the system, don't bother cleaning up - all areas are being destroyed
 	if (m_isReset)
@@ -869,6 +893,9 @@ void CNavArea::OnDestroyNotify( CNavArea *dead )
 	m_inheritVisibilityFrom.area = NULL;
 	m_potentiallyVisibleAreas.RemoveAll();
 	m_isInheritedFrom = false;
+
+	m_speciallinks.erase(std::remove_if(m_speciallinks.begin(), m_speciallinks.end(),
+		[dead](const NavSpecialLink& link) { return link.IsConnectedTo(dead); }), m_speciallinks.end());
 }
 
 
@@ -936,6 +963,35 @@ void CNavArea::ConnectTo( CNavLadder *ladder )
 	}
 }
 
+bool CNavArea::ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin)
+{
+	Vector pos;
+
+	if (IsConnectedToBySpecialLink(area))
+	{
+		Warning("Only one link per area connection! \n");
+		return false;
+	}
+
+	if (!Contains(origin))
+	{
+		Warning("Connect Area via link error: Link origin is outside nav area boundaries! \n");
+		return false;
+	}
+
+	float z = GetZ(origin);
+
+	pos.x = origin.x;
+	pos.y = origin.y;
+	pos.z = z;
+
+	m_speciallinks.emplace_back(linktype, area, pos);
+	DevMsg("Added special link between area #%i and #%i \n", GetID(), area->GetID());
+	NDebugOverlay::HorzArrow(pos + Vector(0.0f, 0.0f, 72.0f), pos, 4.0f, 0, 255, 255, 255, true, 10.0f);
+
+	return true;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Disconnect this area from given area
@@ -982,6 +1038,17 @@ void CNavArea::Disconnect( CNavLadder *ladder )
 	}
 }
 
+void CNavArea::Disconnect(CNavArea* area, NavLinkType linktype)
+{
+	NavSpecialLink link(linktype, area, vec3_origin);
+	auto it = std::find(m_speciallinks.begin(), m_speciallinks.end(), link);
+
+	if (it != m_speciallinks.end())
+	{
+		DevMsg("Removing special link of type %i between areas #%i and #%i. \n", static_cast<int>(linktype), GetID(), area->GetID());
+		m_speciallinks.erase(it);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavArea::AddLadderUp( CNavLadder *ladder )
@@ -1418,6 +1485,22 @@ bool CNavArea::IsConnected( const CNavArea *area, NavDirType dir ) const
 		{
 			if (area == m_connect[ dir ][ it ].area)
 				return true;
+		}
+	}
+
+	return false;
+}
+
+bool CNavArea::IsConnected(const CNavArea* area, NavLinkType linktype) const
+{
+	for (auto& link : m_speciallinks)
+	{
+		if (link.IsOfType(linktype))
+		{
+			if (link.m_link.area == area)
+			{
+				return true;
+			}
 		}
 	}
 
@@ -2620,7 +2703,6 @@ void CNavArea::ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, 
 	closePos->z = GetZ( closePos->x, closePos->y );
 }
 
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Return true if the given area and 'other' share a colinear edge (ie: no drop-down or step/jump/climb)
@@ -3417,6 +3499,17 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 				}
 			}
 		}
+	}
+
+	for (auto& link : m_speciallinks)
+	{
+		const Vector& start = link.GetPosition();
+		const Vector& end = link.m_link.area->GetCenter();
+		link.m_link.area->Draw();
+		NDebugOverlay::Line(start, end, 0, 255, 0, true, EXT_DEBUG_DRAW_TIME);
+		char message[64];
+		ke::SafeSprintf(message, sizeof(message), "Nav Link <%s>", NavSpecialLink::LinkTypeToString(link.m_type));
+		NDebugOverlay::Text(start, message, false, EXT_DEBUG_DRAW_TIME);
 	}
 }
 
@@ -5050,7 +5143,6 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	*/
 }
 
-
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::MarkObstacleToAvoid( float obstructionHeight )
 {
@@ -5980,19 +6072,3 @@ Vector CNavArea::GetRandomPoint( void ) const
 
 	return spot;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

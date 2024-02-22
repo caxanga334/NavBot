@@ -64,8 +64,6 @@ class IMoveHelper;
 class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
 {
 public:
-	NavBotExt();
-	virtual ~NavBotExt();
 
 	/**
 	 * @brief This is called after the initial loading sequence has been processed.
@@ -283,11 +281,11 @@ public:
 
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
 
-	inline bool ShouldCallRunPlayerCommand() const { return !m_bHookRunCmd; }
+	inline bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
 	inline SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
 
 private:
-	bool m_bHookRunCmd;
+	bool m_hookruncmd;
 	SourceMod::IGameConfig* m_gamedata;
 };
 

@@ -281,7 +281,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_maxdropheight = bot->GetMovementInterface()->GetMaxDropHeight();
 }
 
-float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const CFuncElevator* elevator, float length) const
+float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const
 {
 	if (fromArea == nullptr)
 	{
@@ -298,7 +298,11 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 
 	float dist = 0.0f;
 
-	if (length > 0.0f)
+	if (link)
+	{
+		dist = link->GetConnectionLength();
+	}
+	else if (length > 0.0f)
 	{
 		dist = length;
 	}

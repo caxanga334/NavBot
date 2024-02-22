@@ -48,11 +48,12 @@ public:
 	 * @param toArea Current nav area
 	 * @param fromArea Nav area the bot will be moving from, can be NULL for the first area
 	 * @param ladder Ladder the bot will be using
+	 * @param link If 'how' refers to GO_SPECIAL_LINK, this is the link or NULL if not using special links
 	 * @param elevator Not used, to be replaced when proper elevator supported is added to the extension version of the nav mesh
 	 * @param length Path length
 	 * @return path cost
 	*/
-	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const CFuncElevator* elevator, float length) const = 0;
+	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const = 0;
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments
@@ -134,6 +135,13 @@ public:
 		float curvature;
 		const CBasePathSegment* segment; // segment before the cursor position
 		bool outdated; // true if the cursor was changed without updating
+
+		PathCursor()
+		{
+			curvature = 0.0f;
+			segment = nullptr;
+			outdated = true;
+		}
 
 		inline void Invalidate()
 		{
@@ -271,8 +279,6 @@ public:
 		return pathBuildResult;
 	}
 
-	bool BuildTrivialPath(const Vector& start, const Vector& goal);
-
 	virtual void Draw(const CBasePathSegment* start, const float duration = 0.1f);
 	virtual void DrawFullPath(const float duration = 0.1f);
 	virtual float GetPathLength() const;
@@ -322,10 +328,12 @@ protected:
 	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessLaddersInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
 	virtual void PostProcessPath();
 	
 	inline std::vector<CBasePathSegment*>& GetAllSegments() { return m_segments; }
+	bool BuildTrivialPath(const Vector& start, const Vector& goal);
 
 private:
 	std::vector<CBasePathSegment*> m_segments;

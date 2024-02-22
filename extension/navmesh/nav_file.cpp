@@ -423,6 +423,26 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 	// store area we inherit visibility from
 	unsigned int id = ( m_inheritVisibilityFrom.area ) ? m_inheritVisibilityFrom.area->GetID() : 0;
 	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+
+	// Save special links
+
+	size_t linksize = m_speciallinks.size();
+	filestream.write(reinterpret_cast<char*>(&linksize), sizeof(size_t));
+
+	for (auto& link : m_speciallinks)
+	{
+		// write connecting area ID
+		unsigned int id = link.m_link.area->GetID();
+		filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+
+		// write link type
+		NavLinkType type = link.m_type;
+		filestream.write(reinterpret_cast<char*>(&type), sizeof(NavLinkType));
+
+		// write position
+		Vector pos = link.m_pos;
+		filestream.write(reinterpret_cast<char*>(&pos), sizeof(Vector));
+	}
 }
 
 
@@ -644,6 +664,25 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 	filestream.read(reinterpret_cast<char*>(&vid), sizeof(unsigned int));
 	m_inheritVisibilityFrom.id = vid;
 
+	// Load special links
+
+	size_t linksize = 0U;
+	filestream.read(reinterpret_cast<char*>(&linksize), sizeof(size_t));
+
+	for (size_t i = 0; i < linksize; i++)
+	{
+		unsigned int id = 0;
+		filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+
+		NavLinkType type = NavLinkType::LINK_INVALID;
+		filestream.read(reinterpret_cast<char*>(&type), sizeof(NavLinkType));
+
+		Vector pos;
+		filestream.read(reinterpret_cast<char*>(&pos), sizeof(Vector));
+
+		m_speciallinks.emplace_back(type, id, pos);
+	}
+
 	return NAV_OK;
 }
 
@@ -751,7 +790,7 @@ NavErrorType CNavArea::PostLoad( void )
 		info.area = TheNavMesh->GetNavAreaByID( info.id );
 		if ( info.area == NULL )
 		{
-			Warning( "Invalid area in visible set for area #%d\n", GetID() );
+			smutils->LogError(myself, "Invalid area in visible set for area #%d\n", GetID());
 		}		
 	}
 
@@ -765,6 +804,33 @@ NavErrorType CNavArea::PostLoad( void )
 
 	// func avoid/prefer attributes are controlled by func_nav_cost entities
 	ClearAllNavCostEntities();
+
+	// special links, convert IDs to CNavArea pointers
+
+	for (auto& i : m_speciallinks)
+	{
+		NavSpecialLink* link = &i;
+		auto id = link->m_link.id;
+		CNavArea* area = TheNavMesh->GetNavAreaByID(id);
+
+		if (!area)
+		{
+			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Nav Area #%i Special Link <%s> is missing connecting area!", GetID(), NavSpecialLink::LinkTypeToString(link->m_type));
+			error = NAV_CORRUPT_DATA;
+			continue;
+		}
+
+		link->m_link.area = area;
+
+		if (link->m_type == NavLinkType::LINK_TELEPORTER)
+		{
+			link->m_link.length = 0.1f; // teleports are instant
+		}
+		else
+		{
+			link->m_link.length = (area->GetCenter() - GetCenter()).Length();
+		}
+	}
 
 	return error;
 }

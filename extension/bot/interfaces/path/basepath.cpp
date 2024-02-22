@@ -19,6 +19,7 @@ CPath::CPath() :
 	m_ageTimer()
 {
 	m_segments.reserve(512);
+	m_cursorPos = 0.0f;
 }
 
 CPath::~CPath()
@@ -364,15 +365,24 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 				failed = true;
 			}
 			break;
+
+		case GO_SPECIAL_LINK:
+		{
+			if (!ProcessSpecialLinksInPath(bot, from, to, insertstack))
+			{
+				failed = true;
+			}
+			break;
+		}
 		default: // other types are not supported right now
 			break;
 		}
 
-		if (failed == true)
+		if (failed)
 			break; // exit loop
 	}
 
-	if (failed == false)
+	if (!failed)
 	{
 		// Second iteration, handle jump and climbing
 		for (size_t i = 1; i < m_segments.size(); i++)
@@ -384,6 +394,9 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 				continue;
 
 			if (to->how > GO_WEST || to->type != AIPath::SegmentType::SEGMENT_GROUND)
+				continue;
+
+			if (to->how == GO_SPECIAL_LINK)
 				continue;
 
 			if (ProcessPathJumps(bot, from, to, insertstack) == false)
@@ -413,9 +426,9 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		auto seg = insert.Seg;
 		auto it = std::find(m_segments.begin(), m_segments.end(), seg);
 
-		if (it != m_segments.end()) // got iterator of where we need to insert
+		if (it != m_segments.end() || (it == m_segments.end() && !insert.after)) // got iterator of where we need to insert
 		{
-			if (insert.after == true)
+			if (insert.after)
 			{
 				it++; // by default, it will be added before the element of the iterator
 			}
@@ -635,6 +648,45 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	return true;
 }
 
+bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+{
+	auto link = from->area->GetSpecialLinkConnectionToArea(to->area);
+
+	if (!link)
+	{
+		Warning("to->how == GO_SPECIAL_LINK but from->area nas no special link to to->area! \n");
+		return false;
+	}
+
+	switch (link->GetType())
+	{
+	case NavLinkType::LINK_GROUND:
+	case NavLinkType::LINK_TELEPORTER:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetPosition();
+		between->how = GO_SPECIAL_LINK;
+		between->type = AIPath::SEGMENT_GROUND;
+		// add a segments between from and to.
+		// the bot will go to from, them move to between and then move to to.
+		// between goal is the special link position on the nav area.
+
+		pathinsert.emplace(to, between, false); // insert before 'to'
+		break;
+	}
+	default:
+		Warning("CPath::ProcessSpecialLinksInPath unhandled link type!");
+		return false;
+	}
+
+	return true;
+}
+
 void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint)
 {
 	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
@@ -713,6 +765,8 @@ void CPath::PostProcessPath()
 void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration)
 {
 	constexpr float ARROW_WIDTH = 4.0f;
+
+	NDebugOverlay::Sphere(v1, 5.0f, 0, 210, 255, true, duration);
 
 	switch (type)
 	{

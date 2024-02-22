@@ -140,6 +140,7 @@ CNavMesh::CNavMesh( void )
 	m_placeCount = 0;
 	m_placeName = NULL;
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+	m_linkorigin = vec3_origin;
 
 	LoadPlaceDatabase();
 		
@@ -2793,6 +2794,7 @@ void CNavMesh::CommandNavMarkWalkable( void )
 
 	Msg( "Walkable position marked.\n" );
 }
+
 static ConCommand sm_nav_mark_walkable( "sm_nav_mark_walkable", CommandNavMarkWalkable, "Mark the current location as a walkable position. These positions are used as seed locations when sampling the map to generate a Navigation Mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
 

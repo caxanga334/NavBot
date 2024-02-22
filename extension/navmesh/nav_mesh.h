@@ -482,6 +482,10 @@ public:
 	void CommandNavSaveSelected( const CCommand &args );				// Save selected set to disk
 	void CommandNavMergeMesh( const CCommand &args );					// Merge a saved selected set into the current mesh
 	void CommandNavMarkWalkable( void );
+	void CommandNavConnectSpecialLink(int32_t linktype);
+	void CommandNavDisconnectSpecialLink(int32_t linktype);
+	void CommandNavSetLinkOrigin();
+	void CommandNavWarpToLinkOrigin() const;
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
@@ -901,6 +905,7 @@ private:
 	void BuildAuthorInfo();
 	AuthorInfo m_authorinfo;
 	std::array<std::string, static_cast<size_t>(EditSoundType::MAX_EDIT_SOUNDS)> m_editsounds;
+	Vector m_linkorigin;
 
 	void PlayEditSoundInternal(const std::string& sound) const;
 };

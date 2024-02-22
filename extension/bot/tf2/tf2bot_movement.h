@@ -21,7 +21,6 @@ public:
 	virtual float GetStandingHullHeigh() override;
 	virtual float GetCrouchedHullHeigh() override;
 
-	virtual float GetMovementSpeed() override { return 750.0f; }
 	bool CanDoubleJump() const;
 	void DoDoubleJump();
 

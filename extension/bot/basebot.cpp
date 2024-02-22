@@ -547,6 +547,18 @@ void CBaseBot::Spawn()
 		FirstSpawn();
 	}
 
+#ifdef EXT_DEBUG
+
+	auto speed = GetMaxSpeed();
+
+	if (speed <= 0.1f)
+	{
+		// Warn developers if this is 0
+		smutils->LogError(myself, "CBasePlayer::m_flMaxspeed == %4.8f", speed);
+	}
+
+#endif // EXT_DEBUG
+
 	Reset();
 }
 

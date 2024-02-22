@@ -74,6 +74,8 @@ public:
 
 	std::vector<edict_t*> GetAllWeapons() const;
 
+	virtual float GetMaxSpeed() const;
+
 protected:
 
 private:

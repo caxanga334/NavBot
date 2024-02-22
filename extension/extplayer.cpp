@@ -265,7 +265,7 @@ bool CBaseExtPlayer::IsActiveWeapon(const char* classname) const
 int CBaseExtPlayer::GetAmmoOfIndex(int index) const
 {
 	int ammo = 0;
-	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmo", ammo);
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmo", ammo, 4, index);
 	return ammo;
 }
 
@@ -290,6 +290,13 @@ std::vector<edict_t*> CBaseExtPlayer::GetAllWeapons() const
 	}
 
 	return myweapons;
+}
+
+float CBaseExtPlayer::GetMaxSpeed() const
+{
+	float speed = 0.0f;
+	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flMaxspeed", speed);
+	return speed;
 }
 
 #ifdef EXT_DEBUG
