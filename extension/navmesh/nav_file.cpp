@@ -822,13 +822,21 @@ NavErrorType CNavArea::PostLoad( void )
 
 		link->m_link.area = area;
 
-		if (link->m_type == NavLinkType::LINK_TELEPORTER)
+		switch (link->m_type)
 		{
+		case NavLinkType::LINK_TELEPORTER:
 			link->m_link.length = 0.1f; // teleports are instant
-		}
-		else
+			break;
+		case NavLinkType::LINK_BLAST_JUMP:
 		{
+			float length = (area->GetCenter() - GetCenter()).Length();
+			length += 350.0f; // extra length to compensate for the blast jump
+			link->m_link.length = length;
+			break;
+		}
+		default:
 			link->m_link.length = (area->GetCenter() - GetCenter()).Length();
+			break;
 		}
 	}
 

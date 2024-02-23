@@ -27,6 +27,8 @@ namespace AIPath
 		SEGMENT_JUMP_OVER_GAP, // Jumping over a gap/hole on the ground
 		SEGMENT_LADDER_UP, // Going up a ladder
 		SEGMENT_LADDER_DOWN, // Going down a ladder
+		SEGMENT_CLIMB_DOUBLE_JUMP, // Climbing over an obstacle that requires a double jump
+		SEGMENT_BLAST_JUMP, // Blast/Rocket jump to the next segment
 
 		MAX_SEGMENT_TYPES
 	};
@@ -37,6 +39,33 @@ namespace AIPath
 		PARTIAL_PATH, // Partial path, doesn't reach the end goal
 		NO_PATH // No path at all
 	};
+
+	inline const char* SegmentTypeToString(SegmentType type)
+	{
+		switch (type)
+		{
+		case AIPath::SEGMENT_GROUND:
+			return "GROUND";
+		case AIPath::SEGMENT_DROP_FROM_LEDGE:
+			return "DROP_FROM_LEDGE";
+		case AIPath::SEGMENT_CLIMB_UP:
+			return "CLIMB_UP";
+		case AIPath::SEGMENT_JUMP_OVER_GAP:
+			return "JUMP_OVER_GAP";
+		case AIPath::SEGMENT_LADDER_UP:
+			return "LADDER_UP";
+		case AIPath::SEGMENT_LADDER_DOWN:
+			return "LADDER_DOWN";
+		case AIPath::SEGMENT_CLIMB_DOUBLE_JUMP:
+			return "CLIMB_DOUBLE_JUMP";
+		case AIPath::SEGMENT_BLAST_JUMP:
+			return "BLAST_JUMP";
+		case AIPath::MAX_SEGMENT_TYPES:
+			return "MAX_SEGMENT_TYPES";
+		default:
+			return "ERROR";
+		}
+	}
 }
 
 // Abstract class for custom path finding costs

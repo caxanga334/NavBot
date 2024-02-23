@@ -279,6 +279,9 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_stepheight = bot->GetMovementInterface()->GetStepHeight();
 	m_maxjumpheight = bot->GetMovementInterface()->GetMaxJumpHeight();
 	m_maxdropheight = bot->GetMovementInterface()->GetMaxDropHeight();
+	m_maxdjheight = bot->GetMovementInterface()->GetMaxDoubleJumpHeight();
+	m_maxgapjumpdistance = bot->GetMovementInterface()->GetMaxGapJumpDistance();
+	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
 }
 
 float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const
@@ -311,24 +314,42 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 		dist = (toArea->GetCenter() + fromArea->GetCenter()).Length();
 	}
 
-	float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
-
-	if (deltaZ >= m_stepheight)
+	// only check gap and height on common connections
+	if (!link)
 	{
-		if (deltaZ >= m_maxjumpheight)
+		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
+
+		if (deltaZ >= m_stepheight)
 		{
-			// too high to reach
+			if (deltaZ >= m_maxjumpheight && !m_candoublejump) // can't double jump
+			{
+				// too high to reach
+				return -1.0f;
+			}
+			else if (deltaZ >= m_maxdjheight) // can double jump
+			{
+				// too high to reach
+				return -1.0f;
+			}
+
+			// jump type is resolved by the navigator
+
+			// add jump penalty
+			constexpr auto jumpPenalty = 2.0f;
+			dist *= jumpPenalty;
+		}
+		else if (deltaZ < -m_maxdropheight)
+		{
+			// too far to drop
 			return -1.0f;
 		}
 
-		// add jump penalty
-		constexpr auto jumpPenalty = 2.0f;
-		dist *= jumpPenalty;
-	}
-	else if (deltaZ < -m_maxdropheight)
-	{
-		// too far to drop
-		return -1.0f;
+		float gap = fromArea->ComputeAdjacentConnectionGapDistance(area);
+
+		if (gap >= m_maxgapjumpdistance)
+		{
+			return -1.0f; // can't jump over this gap
+		}
 	}
 
 	if (area->HasTFPathAttributes(CTFNavArea::TFNAV_PATH_NO_CARRIERS))

@@ -126,6 +126,8 @@ public:
 	virtual float GetStepHeight() const { return 18.0f; }
 	// Max height a player can climb by jumping
 	virtual float GetMaxJumpHeight() const { return 57.0f; }
+	// Max health a player can blimb by double jumping
+	virtual float GetMaxDoubleJumpHeight() const { return 0.0f; }
 	// Max distance between a (horizontal) gap that the bot is able to jump
 	virtual float GetMaxGapJumpDistance() const { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
 	// Max height a player can safely fall
@@ -161,12 +163,22 @@ public:
 	virtual void Jump();
 	// Makes the bot perform a crouch jump
 	virtual void CrouchJump();
+	// Makes the bot perform a double jump
+	virtual void DoubleJump() {}
 	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward);
 	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
+	// Perform a blast jump
+	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
 
 	virtual bool IsAbleToClimb() { return true; }
 	virtual bool IsAbleToJumpAcrossGap() { return true; }
 	virtual bool IsAbleToClimbOntoEntity(edict_t* entity);
+	virtual bool IsAbleToDoubleJump() { return false; }
+	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
+	virtual bool IsAbleToBlastJump() { return false; }
+	// Return true if the movement interface has taken control of the bot to perform an advanced movement.
+	// This is used by the navigator to know if it should wait before continuing following the path.
+	virtual bool IsOnAutoPilot() { return false; }
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return m_basemovespeed; }

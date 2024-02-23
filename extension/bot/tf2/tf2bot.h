@@ -62,6 +62,9 @@ private:
 	float m_stepheight;
 	float m_maxjumpheight;
 	float m_maxdropheight;
+	float m_maxdjheight; // max double jump height
+	float m_maxgapjumpdistance;
+	bool m_candoublejump;
 };
 
 #endif // !NAVBOT_TEAM_FORTRESS_2_BOT_H_

@@ -1,4 +1,5 @@
 #include <limits>
+#include <cmath>
 
 #include <extension.h>
 #include <bot/interfaces/playercontrol.h>
@@ -628,9 +629,16 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	}
 	else if (zdiff > fullstepsize) // too high to just walk, must climb/jump
 	{
+		AIPath::SegmentType type = AIPath::SegmentType::SEGMENT_CLIMB_UP; // default to simple jump
+
+		if (zdiff > mover->GetMaxJumpHeight() && zdiff < mover->GetMaxDoubleJumpHeight())
+		{
+			type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
+		}
+
 		// when climbing, start from the area center
 		to->goal = to->area->GetCenter();
-		to->type = AIPath::SegmentType::SEGMENT_CLIMB_UP; // mark this segment for jumping
+		to->type = type; // mark this segment for jumping
 
 		Vector jumppos;
 		from->area->GetClosestPointOnArea(to->goal, &jumppos);
@@ -665,6 +673,27 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 	{
 		// link ends at the destination area's center.
 		to->goal = to->area->GetCenter();
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetPosition();
+		between->how = GO_SPECIAL_LINK;
+		between->type = AIPath::SEGMENT_GROUND;
+		// add a segments between from and to.
+		// the bot will go to from, them move to between and then move to to.
+		// between goal is the special link position on the nav area.
+
+		pathinsert.emplace(to, between, false); // insert before 'to'
+		break;
+	}
+	case NavLinkType::LINK_BLAST_JUMP:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		// 'to' starts at the link position and ends at it's area center
+		// change it to a blast jump segment type
+		to->type = AIPath::SEGMENT_BLAST_JUMP;
 
 		auto between = CreateNewSegment();
 
@@ -767,6 +796,9 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	constexpr float ARROW_WIDTH = 4.0f;
 
 	NDebugOverlay::Sphere(v1, 5.0f, 0, 210, 255, true, duration);
+	char name[64];
+	ke::SafeSprintf(name, sizeof(name), "%s", AIPath::SegmentTypeToString(type));
+	NDebugOverlay::Text(v1, name, false, duration);
 
 	switch (type)
 	{
@@ -789,6 +821,16 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_LADDER_DOWN:
 	{
 		NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 200, 255, 0, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 204, 0, 255, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_BLAST_JUMP:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 0, 255, true, duration);
 		break;
 	}
 	default:

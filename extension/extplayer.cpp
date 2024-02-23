@@ -114,6 +114,30 @@ const QAngle CBaseExtPlayer::GetEyeAngles() const
 	return cmd.viewangles;
 }
 
+const Vector CBaseExtPlayer::GetMins() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Send, "m_vecMins", result) == true)
+	{
+		return result;
+	}
+
+	return vec3_origin;
+}
+
+const Vector CBaseExtPlayer::GetMaxs() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Send, "m_vecMaxs", result) == true)
+	{
+		return result;
+	}
+
+	return vec3_origin;
+}
+
 void CBaseExtPlayer::EyeVectors(Vector* pForward) const
 {
 	auto eyeangles = GetEyeAngles();

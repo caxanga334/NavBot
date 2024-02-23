@@ -357,7 +357,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					}
 
 					currentlink = &linklist[linkIndex];
-					newArea = currentlink->GetConnectedArea();
+					newArea = currentlink->m_link.area;
 					length = currentlink->GetConnectionLength();
 					how = GO_SPECIAL_LINK;
 					linkIndex++;

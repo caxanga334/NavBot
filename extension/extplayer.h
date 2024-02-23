@@ -43,6 +43,8 @@ public:
 	const QAngle GetAbsAngles() const;
 	const Vector GetEyeOrigin() const;
 	const QAngle GetEyeAngles() const;
+	const Vector GetMins() const;
+	const Vector GetMaxs() const;
 	void EyeVectors(Vector* pForward) const;
 	void EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const;
 	const Vector GetAbsVelocity() const;

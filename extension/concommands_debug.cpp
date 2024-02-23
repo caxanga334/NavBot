@@ -88,6 +88,8 @@ CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 	{
 		start = player.GetAbsOrigin();
 		reset = true;
+		NDebugOverlay::SweptBox(start, start, player.GetMins(), player.GetMaxs(), vec3_angle, 0, 220, 255, 255, 15.0f);
+		rootconsole->ConsolePrint("Start position set to <%3.2f, %3.2f, %3.2f>", start.x, start.y, start.z);
 		return;
 	}
 
@@ -121,10 +123,14 @@ CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 
 		to = area;
 
-		NDebugOverlay::HorzArrow(from->GetCenter(), to->GetCenter(), 4.0f, 0, 255, 0, 255, true, 20.0f);
+		NDebugOverlay::HorzArrow(from->GetCenter(), to->GetCenter(), 4.0f, 0, 255, 0, 255, true, 40.0f);
+
+		rootconsole->ConsolePrint("Path: from #%i to #%i. gap: %3.2f", from->GetID(), to->GetID(), from->ComputeAdjacentConnectionGapDistance(to));
 
 		from = to;
 	}
+
+	rootconsole->ConsolePrint("Path found!");
 }
 
 CON_COMMAND(sm_navbot_debug_botpath, "Debug bot path")

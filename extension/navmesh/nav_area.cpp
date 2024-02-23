@@ -125,6 +125,8 @@ const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
 		return "GROUND_LINK";
 	case NavLinkType::LINK_TELEPORTER:
 		return "TELEPORTER_LINK";
+	case NavLinkType::LINK_BLAST_JUMP:
+		return "BLAST_JUMP_LINK";
 	case NavLinkType::MAX_LINK_TYPES:
 	default:
 	{
@@ -2750,8 +2752,16 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 			break;
 	}
 
-	if ( dir == NUM_DIRECTIONS )
+	if (dir == NUM_DIRECTIONS)
+	{
+		// no direction, check special links
+		if (IsConnectedToBySpecialLink(destinationArea))
+		{
+			return GetSpecialLinkConnectionToArea(destinationArea)->GetConnectionLength();
+		}
+
 		return FLT_MAX;
+	}
 
 	Vector myEdge;
 	float halfWidth;
@@ -2763,6 +2773,36 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 	return otherEdge.z - myEdge.z;
 }
 
+float CNavArea::ComputeAdjacentConnectionGapDistance(const CNavArea* destinationArea) const
+{
+	// find which side it is connected on
+	int dir;
+	for (dir = 0; dir < NUM_DIRECTIONS; ++dir)
+	{
+		if (IsConnected(destinationArea, (NavDirType)dir))
+			break;
+	}
+
+	if (dir == NUM_DIRECTIONS)
+	{
+		// no direction, check special links
+		if (IsConnectedToBySpecialLink(destinationArea))
+		{
+			return GetSpecialLinkConnectionToArea(destinationArea)->GetConnectionLength();
+		}
+
+		return FLT_MAX;
+	}
+
+	Vector myEdge;
+	float halfWidth;
+	ComputePortal(destinationArea, (NavDirType)dir, &myEdge, &halfWidth);
+
+	Vector otherEdge;
+	destinationArea->ComputePortal(this, OppositeDirection((NavDirType)dir), &otherEdge, &halfWidth);
+
+	return (otherEdge - myEdge).AsVector2D().Length();
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**

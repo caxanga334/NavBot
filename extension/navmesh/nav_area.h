@@ -221,6 +221,7 @@ enum class NavLinkType : int32_t
 	LINK_INVALID = 0,
 	LINK_GROUND, // solid ground
 	LINK_TELEPORTER, // map based teleporter (trigger_teleport)
+	LINK_BLAST_JUMP, // Blast/Rocket Jump
 
 	MAX_LINK_TYPES // max known link types
 };
@@ -254,7 +255,7 @@ public:
 	inline bool IsConnectedTo(CNavArea* area) const { return m_link.area == area; }
 	inline NavLinkType GetType() const { return m_type; }
 	inline const Vector& GetPosition() const { return m_pos; }
-	inline CNavArea* GetConnectedArea() const { return m_link.area; }
+	inline const CNavArea* GetConnectedArea() const { return m_link.area; }
 	inline void SetArea(CNavArea* area) { m_link.area = area; }
 	inline float GetConnectionLength() const { return m_link.length; }
 
@@ -430,6 +431,7 @@ public:
 
 	bool IsContiguous( const CNavArea *other ) const;			// return true if the given area and 'other' share a colinear edge (ie: no drop-down or step/jump/climb)
 	float ComputeAdjacentConnectionHeightChange( const CNavArea *destinationArea ) const;			// return height change between edges of adjacent nav areas (not actual underlying ground)
+	float ComputeAdjacentConnectionGapDistance(const CNavArea* destinationArea) const; // return the 'gap' distance between edges of adjacent nav areas
 
 	bool IsEdge( NavDirType dir ) const;						// return true if there are no bi-directional links on the given side
 
@@ -713,7 +715,7 @@ public:
 		return true;
 	}
 
-	inline bool IsConnectedToBySpecialLink(CNavArea* other) const
+	inline bool IsConnectedToBySpecialLink(const CNavArea* other) const
 	{
 		for (auto& link : m_speciallinks)
 		{
@@ -726,7 +728,7 @@ public:
 		return false;
 	}
 
-	const NavSpecialLink* GetSpecialLinkConnectionToArea(CNavArea* other) const
+	const NavSpecialLink* GetSpecialLinkConnectionToArea(const CNavArea* other) const
 	{
 		for (auto& link : m_speciallinks)
 		{

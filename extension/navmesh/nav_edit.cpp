@@ -3428,11 +3428,20 @@ void CNavMesh::CommandNavLadderFlip( void )
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
+CON_COMMAND(sm_nav_link_list_all, "List all available 'Link' connection types.")
+{
+	Msg("Link Types: \n");
+	for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+	{
+		Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+	}
+}
+
 CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connections.", FCVAR_CHEAT)
 {
 	if (args.ArgC() < 2)
 	{
-		Msg("Usage: sm_nav_link_connect <link type> \n");
+		Msg("Usage: sm_nav_link_connect <link type ID> \n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
