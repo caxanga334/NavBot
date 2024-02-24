@@ -40,6 +40,7 @@ public:
 	edict_t* GetFlagToFetch() const;
 	edict_t* GetFlagCaptureZoreToDeliver() const;
 	bool IsAmmoLow() const;
+	edict_t* MedicFindBestPatient() const;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -47,6 +48,9 @@ private:
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
 	IntervalTimer m_classswitchtimer;
+
+	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
+	static constexpr float medic_patient_health_low_level() { return 0.6f; }
 };
 
 class CTF2BotPathCost : public IPathCost

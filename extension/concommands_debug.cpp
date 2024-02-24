@@ -234,6 +234,10 @@ CON_COMMAND_F(sm_debug_cbasehandles, "Debug CBaseHandle", FCVAR_CHEAT)
 		auto edict = ent2->GetNetworkable()->GetEdict();
 		Msg("Base Entity: %i \n", gamehelpers->EntityToBCompatRef(b2));
 		Msg("Stored Entity: %p, %i \n", edict, gamehelpers->IndexOfEdict(edict));
+		edict_t* ed1 = UtilHelpers::GetEdictFromCBaseHandle(handle);
+		CBaseEntity* b3 = UtilHelpers::GetBaseEntityFromCBaseHandle(handle);
+		Msg("Edict: %i \n", gamehelpers->IndexOfEdict(ed1));
+		Msg("Entity: %i \n", gamehelpers->EntityToBCompatRef(b3));
 		return;
 	}
 

@@ -774,3 +774,4 @@ const char* UtilHelpers::GetPlayerDebugIdentifier(edict_t* player)
 	ke::SafeSprintf(message, sizeof(message), "%s<#%i/%i>", name ? name : "", gamehelpers->IndexOfEdict(player), gp->GetUserId());
 	return message;
 }
+

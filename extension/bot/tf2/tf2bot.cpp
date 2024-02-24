@@ -268,8 +268,101 @@ bool CTF2Bot::IsAmmoLow() const
 	}
 	}
 
-
 	return false;
+}
+
+edict_t* CTF2Bot::MedicFindBestPatient() const
+{
+	// filter for getting potential teammates to heal
+	auto functor = [this](int client, edict_t* entity) -> bool {
+		auto myteam = GetMyTFTeam();
+		auto theirteam = tf2lib::GetEntityTFTeam(client);
+
+		if (client == GetIndex())
+		{
+			return false; // can't heal self
+		}
+
+		if (myteam != theirteam) // can only heal teammates
+		{
+			return false;
+		}
+
+		if (tf2lib::IsPlayerInvisible(client))
+		{
+			return false; // can't heal invisible players
+		}
+
+		Vector mypos = WorldSpaceCenter();
+		Vector theirpos = UtilHelpers::getWorldSpaceCenter(entity);
+		float range = (theirpos - mypos).Length();
+		constexpr auto max_scan_range = 1200.0f;
+
+		if (range > max_scan_range)
+		{
+			return false;
+		}
+
+		// Don't do LOS checks, medic has an autocall feature that can be used to find teammates
+
+		return true;
+	};
+
+	std::vector<int> players;
+	players.reserve(100);
+	UtilHelpers::CollectPlayers(players, functor);
+
+	if (players.size() == 0)
+	{
+		return nullptr; // no player to heal
+	}
+
+	edict_t* best = nullptr;
+	float bestrange = std::numeric_limits<float>::max();
+	Vector mypos = WorldSpaceCenter();
+
+	for (auto& client : players)
+	{
+		auto them = gamehelpers->EdictOfIndex(client);
+		Vector theirpos = UtilHelpers::getWorldSpaceCenter(them);
+		float distance = (theirpos - mypos).Length();
+		float health_percent = tf2lib::GetPlayerHealthPercentage(client);
+
+		if (health_percent >= 1.0f)
+		{
+			distance *= 1.25f; // at max health or overhealed
+		}
+
+		if (health_percent <= medic_patient_health_critical_level())
+		{
+			distance *= 0.5f;
+		}
+
+		if (health_percent <= medic_patient_health_low_level())
+		{
+			distance *= 0.75f;
+		}
+
+		if (tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_OnFire) ||
+			tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Bleeding))
+		{
+			distance *= 0.8f;
+		}
+
+		if (distance < bestrange)
+		{
+			bestrange = distance;
+			best = them;
+		}
+	}
+
+	if (best)
+	{
+		DebugPrintToConsole(BOTDEBUG_TASKS, 0, 102, 0, "%s MEDIC: Found patient %s, range factor: %3.4f \n", GetDebugIdentifier(), 
+			UtilHelpers::GetPlayerDebugIdentifier(best), bestrange);
+	}
+
+	return best;
 }
 
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)

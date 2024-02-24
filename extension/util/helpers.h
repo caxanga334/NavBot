@@ -71,6 +71,81 @@ namespace UtilHelpers
 	const char* GetPlayerDebugIdentifier(int player);
 	const char* GetPlayerDebugIdentifier(edict_t* player);
 	
+	inline edict_t* GetEdictFromCBaseHandle(const CBaseHandle& handle)
+	{
+		if (!handle.IsValid())
+			return nullptr;
+
+		int index = handle.GetEntryIndex();
+		edict_t* edict = nullptr;
+		CBaseEntity* entity = nullptr;
+
+		if (!IndexToAThings(index, &entity, &edict))
+		{
+			return nullptr;
+		}
+
+		if (!edict || !entity)
+		{
+			return nullptr;
+		}
+
+		auto se = edict->GetIServerEntity();
+
+		if (se->GetRefEHandle() != handle)
+		{
+			return nullptr;
+		}
+
+		return edict;
+	}
+
+	inline CBaseEntity* GetBaseEntityFromCBaseHandle(const CBaseHandle& handle)
+	{
+		if (!handle.IsValid())
+			return nullptr;
+
+		int index = handle.GetEntryIndex();
+
+		CBaseEntity* entity = nullptr;
+
+		if (!IndexToAThings(index, &entity, nullptr))
+		{
+			return nullptr;
+		}
+
+		if (!entity)
+		{
+			return nullptr;
+		}
+
+		IServerEntity* se = reinterpret_cast<IServerEntity*>(entity);
+
+		if (se->GetRefEHandle() != handle)
+		{
+			return nullptr;
+		}
+
+		return entity;
+	}
+
+	inline void SetHandleEntity(CBaseHandle& handle, edict_t* entity)
+	{
+		IServerEntity* se = entity->GetIServerEntity();
+
+		if (se == nullptr)
+		{
+			return;
+		}
+
+		handle.Set(se);
+	}
+
+	inline void SetHandleEntity(CBaseHandle& handle, CBaseEntity* entity)
+	{
+		IServerEntity* se = reinterpret_cast<IServerEntity*>(entity);
+		handle.Set(se);
+	}
 }
 
 template<typename T>

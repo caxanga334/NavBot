@@ -86,6 +86,41 @@ public:
 	// Events
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
 
+	/**
+	 * @brief Runs a function on every known entity.
+	 * @tparam T A class with void operator() overload with the following parameters: (const CKnownEntity* known)
+	 * @param functor Function to run on every known entity
+	 */
+	template <typename T>
+	inline void ForEveryKnownEntity(T& functor)
+	{
+		for (auto& i : m_knownlist)
+		{
+			const CKnownEntity* known = &i;
+			functor(known);
+		}
+	}
+
+	/**
+	 * @brief Collects filtered known entities into a vector
+	 * @tparam T A class with bool operator() overload with the following parameters: (const CKnownEntity* known), return true to add the known entity into the vector
+	 * @param outvector Vector to store the known entities
+	 * @param functor Function to filter the known entities
+	 */
+	template <typename T>
+	inline void CollectKnownEntities(std::vector<const CKnownEntity*>& outvector, T& functor)
+	{
+		for (auto& i : m_knownlist)
+		{
+			const CKnownEntity* known = &i;
+			
+			if (functor(known))
+			{
+				outvector.push_back(known);
+			}
+		}
+	}
+
 protected:
 	virtual void UpdateKnownEntities();
 	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);

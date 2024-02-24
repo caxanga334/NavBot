@@ -38,8 +38,7 @@ private:
 		return m_calltimer.IsGreaterThen(2.0f);
 	}
 
-	static constexpr float patient_health_critical_level() { return 0.3f; }
-	static constexpr float patient_health_low_level() { return 0.6f; }
+
 	static constexpr float medigun_max_heal_range() { return 400.0f; }
 	static constexpr float medic_range_to_stay_near_patient() { return 250.0f; }
 };

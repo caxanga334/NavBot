@@ -45,15 +45,15 @@ float CKnownEntity::GetTimeSinceLastVisible() const { return gpGlobals->curtime 
 
 float CKnownEntity::GetTimeSinceLastInfo() const { return gpGlobals->curtime - m_timelastinfo; }
 
-bool CKnownEntity::IsObsolete()
+bool CKnownEntity::IsObsolete() const
 {
-	return !m_handle.IsValid() || gamehelpers->GetHandleEntity(m_handle) == nullptr || 
-		GetTimeSinceLastInfo() > NKnownEntity::TIME_FOR_OBSOLETE || !UtilHelpers::IsEntityAlive(m_handle.GetEntryIndex());
+	return !m_handle.IsValid() || UtilHelpers::GetEdictFromCBaseHandle(m_handle) == nullptr ||
+		GetTimeSinceLastInfo() > time_to_become_obsolete() || !UtilHelpers::IsEntityAlive(m_handle.GetEntryIndex());
 }
 
-bool CKnownEntity::IsValid()
+bool CKnownEntity::IsValid() const
 {
-	return m_handle.IsValid() == true && gamehelpers->GetHandleEntity(m_handle) != nullptr;
+	return m_handle.IsValid() == true && UtilHelpers::GetEdictFromCBaseHandle(m_handle) != nullptr;
 }
 
 void CKnownEntity::UpdatePosition()
@@ -86,18 +86,23 @@ void CKnownEntity::MarkAsFullyVisible()
 	m_visible = true;
 }
 
-bool CKnownEntity::IsEntity(edict_t* entity)
+bool CKnownEntity::IsEntity(edict_t* entity) const
 {
-	auto me = gamehelpers->GetHandleEntity(m_handle);
+	auto me = UtilHelpers::GetEdictFromCBaseHandle(m_handle);
 	return me == entity;
 }
 
-bool CKnownEntity::IsEntity(const int entity)
+bool CKnownEntity::IsEntity(const int entity) const
 {
 	return entity == m_handle.GetEntryIndex();
 }
 
-edict_t* CKnownEntity::GetEdict()
+edict_t* CKnownEntity::GetEdict() const
 {
-	return gamehelpers->GetHandleEntity(m_handle);
+	return UtilHelpers::GetEdictFromCBaseHandle(m_handle);
+}
+
+CBaseEntity* CKnownEntity::GetEntity() const
+{
+	return UtilHelpers::GetBaseEntityFromCBaseHandle(m_handle);
 }

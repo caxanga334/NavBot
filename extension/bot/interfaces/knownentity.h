@@ -4,7 +4,7 @@
 
 namespace NKnownEntity
 {
-	constexpr auto TIME_FOR_OBSOLETE = 20.0f;
+	
 }
 
 // Known Entity. Represents an entity that is known to the bot
@@ -15,6 +15,8 @@ public:
 	CKnownEntity(int entity);
 
 	virtual ~CKnownEntity();
+
+	static constexpr float time_to_become_obsolete() { return 30.0f; }
 
 	bool operator==(const CKnownEntity& other);
 	inline bool operator!=(const CKnownEntity& other) { return !(*this == other); }
@@ -38,9 +40,9 @@ public:
 	// Gets the entity last known Nav Area
 	inline const CNavArea* GetLastKnownArea() const { return m_lastknownarea; }
 	// A known entity is obsolete if the stored entity is invalid or if enought time has passed
-	bool IsObsolete();
+	bool IsObsolete() const;
 	// checks if the actual entity is valid
-	bool IsValid();
+	bool IsValid() const;
 	// Updates the last known position of this entity
 	void UpdatePosition();
 	void UpdatePosition(const Vector& newPos);
@@ -54,9 +56,9 @@ public:
 	void MarkAsFullyVisible();
 
 	// true if the given entity is stored on this handle
-	bool IsEntity(edict_t* entity);
+	bool IsEntity(edict_t* entity) const;
 	// true if the given entity is stored on this handle
-	bool IsEntity(const int entity);
+	bool IsEntity(const int entity) const;
 
 	inline bool WasLastKnownPositionSeen() const { return m_lkpwasseen; }
 	inline void MarkLastKnownPositionAsSeen() { m_lkpwasseen = true; }
@@ -74,7 +76,8 @@ public:
 		return false;
 	}
 
-	edict_t* GetEdict();
+	edict_t* GetEdict() const;
+	CBaseEntity* GetEntity() const;
 private:
 	CBaseHandle m_handle; // Handle to the actual entity
 	Vector m_lastknownposition; // Last known position of this entity

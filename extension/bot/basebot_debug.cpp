@@ -24,7 +24,7 @@ bool CBaseBot::IsDebugging(int bits) const
 	return extmanager->IsDebugging(bits);
 }
 
-const char* CBaseBot::GetDebugIdentifier()
+const char* CBaseBot::GetDebugIdentifier() const
 {
 	static char debug[256];
 
