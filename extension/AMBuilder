@@ -19,6 +19,7 @@ sourceFiles = [
   'entities/tf2/tf_entities.cpp',
   'mods/basemod.cpp',
   'mods/basemod_gameevents.cpp',
+  # Nav Mesh
   'navmesh/nav_area.cpp',
   'navmesh/nav_colors.cpp',
   'navmesh/nav_edit.cpp',
@@ -30,6 +31,7 @@ sourceFiles = [
   'navmesh/nav_mesh.cpp',
   'navmesh/nav_node.cpp',
   'navmesh/nav_simplify.cpp',
+  # Utility
   'util/BaseEntity.cpp',
   'util/EntityUtils.cpp',
   'util/Handle.cpp',
@@ -65,6 +67,7 @@ sourceFiles = [
   'bot/tf2/tasks/tf2bot_scenario.cpp',
   'bot/tf2/tasks/tf2bot_find_health_task.cpp',
   'bot/tf2/tasks/tf2bot_find_ammo_task.cpp',
+  'bot/tf2/tasks/medic/tf2bot_medic_main_task.cpp',
   'bot/tf2/tasks/scenario/tf2bot_map_ctf.cpp',
   'mods/tf2/teamfortress2mod.cpp',
   'mods/tf2/tf2lib.cpp',

@@ -26,6 +26,7 @@ namespace tf2lib
 	TeamFortress2::TFTeam GetEnemyTFTeam(TeamFortress2::TFTeam team);
 	int GetClassDefaultPrimaryMaxAmmo(TeamFortress2::TFClassType type);
 	int GetClassDefaultSecondaryMaxAmmo(TeamFortress2::TFClassType type);
+	float GetPlayerHealthPercentage(int player);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)

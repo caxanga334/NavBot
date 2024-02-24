@@ -73,6 +73,13 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // no path or goal
 	}
 
+	auto mover = bot->GetMovementInterface();
+
+	if (mover->IsOnAutoPilot())
+	{
+		return; // movement interface is controlling the bot
+	}
+
 	if (!m_waitTimer.IsElapsed())
 	{
 		return; // wait for something to stop blocking our path (like a door opening)
@@ -90,10 +97,9 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
-	auto mover = bot->GetMovementInterface();
 	auto input = bot->GetControlInterface();
 
-	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP)
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
 	{
 		auto next = GetNextSegment(m_goal);
 		if (next != nullptr)

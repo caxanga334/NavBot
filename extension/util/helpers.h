@@ -2,8 +2,9 @@
 #define UTIL_HELPERS_H_
 #pragma once
 
+#include <vector>
 #include <optional>
-#include <const.h>
+#include <extension.h>
 
 struct edict_t;
 class CBaseEntity;
@@ -43,13 +44,61 @@ namespace UtilHelpers
 	// Vector::Normalized is not available in all SDK version
 	Vector GetNormalizedVector(const Vector& other);
 	int GetEntityHealth(int entity);
-	bool IsEntityAlive(const int entity);
 	bool IsPlayerAlive(const int player);
+	inline bool IsEntityAlive(const int entity)
+	{
+		if (IsPlayerIndex(entity))
+		{
+			return IsPlayerAlive(entity);
+		}
+
+		return GetEntityHealth(entity) > 0;
+	}
 	int GetNumberofPlayersOnTeam(const int team, const bool ignore_dead = false, const bool ignore_bots = false);
 	std::optional<int> GetTeamManagerEntity(const int team, const char* classname);
 	std::optional<int> GetOwnerEntity(const int entity);
 	void CalcClosestPointOnAABB(const Vector& mins, const Vector& maxs, const Vector& point, Vector& closestOut);
 	Vector GetGroundPositionFromCenter(edict_t* pEntity);
+	
+	/**
+	 * @brief Collects player into a vector of ints containing their indexes
+	 * @tparam T A class with an operator() overload with two parameters (int client, edict_t* entity), return true to add the client to the vector
+	 * @param playersvector Vector to store the players indexes
+	 * @param functor Player collection filter, only called to clients that are valid and in game.
+	 */
+	template <typename T>
+	void CollectPlayers(std::vector<int>& playersvector, T& functor);
+	const char* GetPlayerDebugIdentifier(int player);
+	const char* GetPlayerDebugIdentifier(edict_t* player);
+	
+}
+
+template<typename T>
+inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T& functor)
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto edict = gamehelpers->EdictOfIndex(i);
+
+		if (!edict)
+			continue;
+
+		if (edict->IsFree())
+			continue;
+
+		auto gp = playerhelpers->GetGamePlayer(i);
+
+		if (!gp)
+			continue;
+
+		if (!gp->IsInGame())
+			continue;
+
+		if (functor(i, edict))
+		{
+			playersvector.push_back(i);
+		}
+	}
 }
 
 #endif // !UTIL_HELPERS_H_

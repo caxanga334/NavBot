@@ -647,16 +647,6 @@ int UtilHelpers::GetEntityHealth(int entity)
 	return health;
 }
 
-bool UtilHelpers::IsEntityAlive(const int entity)
-{
-	if (IsPlayerIndex(entity))
-	{
-		return IsPlayerAlive(entity);
-	}
-
-	return GetEntityHealth(entity) > 0;
-}
-
 bool UtilHelpers::IsPlayerAlive(const int player)
 {
 	auto gp = playerhelpers->GetGamePlayer(player);
@@ -759,3 +749,28 @@ Vector UtilHelpers::GetGroundPositionFromCenter(edict_t* pEntity)
 	return result.endpos + Vector(0.0f, 0.0f, 1.0f);
 }
 
+const char* UtilHelpers::GetPlayerDebugIdentifier(int player)
+{
+	static char message[256];
+	auto gp = playerhelpers->GetGamePlayer(player);
+
+	if (!gp)
+		return "";
+
+	auto name = gp->GetName();
+	ke::SafeSprintf(message, sizeof(message), "%s<#%i/%i>", name ? name : "", player, gp->GetUserId());
+	return message;
+}
+
+const char* UtilHelpers::GetPlayerDebugIdentifier(edict_t* player)
+{
+	static char message[256];
+	auto gp = playerhelpers->GetGamePlayer(player);
+
+	if (!gp)
+		return "";
+
+	auto name = gp->GetName();
+	ke::SafeSprintf(message, sizeof(message), "%s<#%i/%i>", name ? name : "", gamehelpers->IndexOfEdict(player), gp->GetUserId());
+	return message;
+}

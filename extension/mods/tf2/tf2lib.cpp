@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/helpers.h>
 #include <util/entprops.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include "tf2lib.h"
@@ -233,3 +234,7 @@ int tf2lib::GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFo
 	return count;
 }
 
+float tf2lib::GetPlayerHealthPercentage(int player)
+{
+	return static_cast<float>(UtilHelpers::GetEntityHealth(player)) / static_cast<float>(GetPlayerMaxHealth(player));
+}
