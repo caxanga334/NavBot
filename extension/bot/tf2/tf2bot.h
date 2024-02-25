@@ -8,6 +8,7 @@
 #include <mods/tf2/teamfortress2_shareddefs.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/path/basepath.h>
+#include <basehandle.h>
 
 #include "tf2bot_behavior.h"
 #include "tf2bot_controller.h"
@@ -41,6 +42,15 @@ public:
 	edict_t* GetFlagCaptureZoreToDeliver() const;
 	bool IsAmmoLow() const;
 	edict_t* MedicFindBestPatient() const;
+	edict_t* GetMySentryGun() const;
+	edict_t* GetMyDispenser() const;
+	edict_t* GetMyTeleporterEntrance() const;
+	edict_t* GetMyTeleporterExit() const;
+	void SetMySentryGun(edict_t* entity);
+	void SetMyDispenser(edict_t* entity);
+	void SetMyTeleporterEntrance(edict_t* entity);
+	void SetMyTeleporterExit(edict_t* entity);
+	void FindMyBuildings();
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -48,6 +58,11 @@ private:
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
 	IntervalTimer m_classswitchtimer;
+
+	CBaseHandle m_mySentryGun;
+	CBaseHandle m_myDispenser;
+	CBaseHandle m_myTeleporterEntrance;
+	CBaseHandle m_myTeleporterExit;
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
 	static constexpr float medic_patient_health_low_level() { return 0.6f; }

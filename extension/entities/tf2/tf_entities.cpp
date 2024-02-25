@@ -147,6 +147,13 @@ edict_t* tfentities::HBaseObject::GetBuilder() const
 	return gamehelpers->EdictOfIndex(entity);
 }
 
+int tfentities::HBaseObject::GetBuilderIndex() const
+{
+	int entity = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", entity);
+	return entity;
+}
+
 int tfentities::HBaseObject::GetLevel() const
 {
 	int value = 0;

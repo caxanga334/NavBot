@@ -36,6 +36,8 @@ void CTF2Bot::TryJoinGame()
 void CTF2Bot::Spawn()
 {
 	CBaseBot::Spawn();
+
+	FindMyBuildings();
 }
 
 void CTF2Bot::FirstSpawn()
@@ -363,6 +365,101 @@ edict_t* CTF2Bot::MedicFindBestPatient() const
 	}
 
 	return best;
+}
+
+edict_t* CTF2Bot::GetMySentryGun() const
+{
+	return UtilHelpers::GetEdictFromCBaseHandle(m_mySentryGun);
+}
+
+edict_t* CTF2Bot::GetMyDispenser() const
+{
+	return UtilHelpers::GetEdictFromCBaseHandle(m_myDispenser);
+}
+
+edict_t* CTF2Bot::GetMyTeleporterEntrance() const
+{
+	return UtilHelpers::GetEdictFromCBaseHandle(m_myTeleporterEntrance);
+}
+
+edict_t* CTF2Bot::GetMyTeleporterExit() const
+{
+	return UtilHelpers::GetEdictFromCBaseHandle(m_myTeleporterExit);
+}
+
+void CTF2Bot::SetMySentryGun(edict_t* entity)
+{
+	UtilHelpers::SetHandleEntity(m_mySentryGun, entity);
+}
+
+void CTF2Bot::SetMyDispenser(edict_t* entity)
+{
+	UtilHelpers::SetHandleEntity(m_myDispenser, entity);
+}
+
+void CTF2Bot::SetMyTeleporterEntrance(edict_t* entity)
+{
+	UtilHelpers::SetHandleEntity(m_myTeleporterEntrance, entity);
+}
+
+void CTF2Bot::SetMyTeleporterExit(edict_t* entity)
+{
+	UtilHelpers::SetHandleEntity(m_myTeleporterExit, entity);
+}
+
+void CTF2Bot::FindMyBuildings()
+{
+	m_mySentryGun.Term();
+	m_myDispenser.Term();
+	m_myTeleporterEntrance.Term();
+	m_myTeleporterExit.Term();
+
+	if (GetMyClassType() == TeamFortress2::TFClass_Engineer)
+	{
+		for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
+		{
+			auto edict = gamehelpers->EdictOfIndex(i);
+
+			if (!edict || edict->IsFree())
+				continue;
+
+			auto classname = gamehelpers->GetEntityClassname(edict);
+
+			if (!classname || !classname[0])
+				continue;
+
+			tfentities::HBaseObject object(edict);
+
+			if (strncasecmp(classname, "obj_sentrygun", 13) == 0)
+			{
+				if (object.GetBuilderIndex() == GetIndex())
+				{
+					SetMySentryGun(edict);
+				}
+			}
+			else if (strncasecmp(classname, "obj_dispenser", 13) == 0)
+			{
+				if (object.GetBuilderIndex() == GetIndex())
+				{
+					SetMyDispenser(edict);
+				}
+			}
+			else if (strncasecmp(classname, "obj_teleporter", 14) == 0)
+			{
+				if (object.GetBuilderIndex() == GetIndex())
+				{
+					if (object.GetMode() == TeamFortress2::TFObjectMode_Entrance)
+					{
+						SetMyTeleporterEntrance(edict);
+					}
+					else
+					{
+						SetMyTeleporterExit(edict);
+					}
+				}
+			}
+		}
+	}
 }
 
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
