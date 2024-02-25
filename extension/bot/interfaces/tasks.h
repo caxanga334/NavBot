@@ -286,12 +286,12 @@ public:
 	return __result; \
 			\
 
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, CKnownEntity* them) override
+	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
 	}
 
-	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, CKnownEntity* them) override
+	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
 	}
@@ -326,9 +326,9 @@ public:
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
-	virtual CKnownEntity* SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override
+	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
 	{
-		CKnownEntity* result = nullptr;
+		const CKnownEntity* result = nullptr;
 
 		if (m_task)
 		{

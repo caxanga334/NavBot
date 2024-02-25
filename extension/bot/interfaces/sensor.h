@@ -48,13 +48,19 @@ public:
 	virtual bool IsEntityHidden(edict_t* entity) { return false; }
 	// Is the given position obscured by fog, smoke, etc?
 	virtual bool IsPositionObscured(const Vector& pos) { return false; }
+	// Adds a known entity to the list
 	virtual bool AddKnownEntity(edict_t* entity);
+	// Removes a specific entity from the known entity list
 	virtual void ForgetKnownEntity(edict_t* entity);
+	// Removes all known entities from the list
 	virtual void ForgetAllKnownEntities();
 
 	// Returns true if the given entity is already known by the bot
 	virtual bool IsKnown(edict_t* entity);
-	virtual CKnownEntity* GetKnown(edict_t* entity);
+	// Gets the Known entity of the given entity or NULL if not known by the bot
+	virtual const CKnownEntity* GetKnown(edict_t* entity);
+	// Updates the position of a known entity or adds it to the list if not known
+	virtual void UpdateKnownEntity(edict_t* entity);
 
 	/**
 	 * @brief Sets the bot field of view
@@ -71,7 +77,7 @@ public:
 	virtual const float GetTimeSinceVisibleThreat() const;
 
 	// Gets the primary known threat to the bot or NULL if none
-	virtual CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
+	virtual const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
 	/**
 	 * @brief Gets the quantity of known entities
 	 * @param teamindex Filter known entities by team or negative number if don't care
@@ -81,7 +87,7 @@ public:
 	*/
 	virtual int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
 	virtual int GetKnownEntityTeamIndex(CKnownEntity* known) { return 0; } // mods implement this
-	virtual CKnownEntity* GetNearestKnown(const int teamindex);
+	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
 
 	// Events
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
@@ -127,6 +133,8 @@ protected:
 	virtual void CollectPlayers(std::vector<edict_t*>& visibleVec);
 	virtual void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec);
 	virtual void CleanKnownEntities();
+	// Same as GetKnown but it's not const, use this internally when updating known entities
+	CKnownEntity* FindKnownEntity(edict_t* edict);
 
 private:
 	std::vector<CKnownEntity> m_knownlist;

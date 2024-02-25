@@ -2,11 +2,6 @@
 #define SMNAV_BOT_KNOWN_ENTITY_H_
 #pragma once
 
-namespace NKnownEntity
-{
-	
-}
-
 // Known Entity. Represents an entity that is known to the bot
 class CKnownEntity
 {
@@ -78,6 +73,7 @@ public:
 
 	edict_t* GetEdict() const;
 	CBaseEntity* GetEntity() const;
+	int GetIndex() const;
 private:
 	CBaseHandle m_handle; // Handle to the actual entity
 	Vector m_lastknownposition; // Last known position of this entity
@@ -88,6 +84,7 @@ private:
 	int m_volume; // How loud the sound made by this entity was
 	bool m_visible; // This entity is visible right now
 	bool m_lkpwasseen; // Last known position was seen by the bot
+	
 };
 
 #endif // !SMNAV_BOT_KNOWN_ENTITY_H_

@@ -22,6 +22,11 @@ public:
 	// Gets the player entity index
 	inline int GetIndex() const { return m_index; }
 	CBaseEntity* GetEntity() const;
+	IServerEntity* GetServerEntity() const { return m_edict->GetIServerEntity(); }
+	IServerUnknown* GetServerUnknown() const { return m_edict->GetUnknown(); }
+	IHandleEntity* GetHandleEntity() const { return reinterpret_cast<IHandleEntity*>(m_edict->GetIServerEntity()); }
+	IServerNetworkable* GetServerNetworkable() const { return m_edict->GetNetworkable(); }
+	ICollideable* GetCollideable() const { return m_edict->GetCollideable(); }
 
 	bool operator==(const CBaseExtPlayer& other);
 

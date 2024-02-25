@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <manager.h>
 #include <extplayer.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
@@ -105,4 +106,9 @@ edict_t* CKnownEntity::GetEdict() const
 CBaseEntity* CKnownEntity::GetEntity() const
 {
 	return UtilHelpers::GetBaseEntityFromCBaseHandle(m_handle);
+}
+
+int CKnownEntity::GetIndex() const
+{
+	return m_handle.GetEntryIndex();
 }

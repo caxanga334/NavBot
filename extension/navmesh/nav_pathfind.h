@@ -14,16 +14,13 @@
 
 #include <algorithm>
 
-#include "tier0/vprof.h"
-#include "mathlib/ssemath.h"
+#include <util/librandom.h>
 #include "nav_area.h"
-#include "vstdlib/random.h"
+
 
 #undef max
 #undef min
 #undef clamp
-
-extern CUniformRandomStream g_NavRandom;
 
 #ifdef STAGING_ONLY
 extern int g_DebugPathfindCounter;
@@ -117,8 +114,6 @@ template< typename CostFunctor >
 bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *goalPos,
 		const CostFunctor &costFunc, CNavArea **closestArea = NULL, float maxPathLength = 0.0f, int teamID = NAV_TEAM_ANY, bool ignoreNavBlockers = false )
 {
-	VPROF_BUDGET( "NavAreaBuildPath", "NextBotSpiky" );
-
 	if ( closestArea )
 	{
 		*closestArea = startArea;
@@ -907,13 +902,13 @@ CNavArea *FindMinimumCostArea( CNavArea *startArea, CostFunctor &costFunc )
 	if (cheapAreaSetCount)
 	{
 		// pick one of the areas at random
-		return cheapAreaSet[ g_NavRandom.RandomInt( 0, cheapAreaSetCount-1 ) ].area;
+		return cheapAreaSet[randomgen->GetRandomInt<int>(0, cheapAreaSetCount - 1)].area;
 	}
 	else
 	{
 		// degenerate case - no decent sized areas - pick a random area
 		int numAreas = TheNavAreas.Count();
-		int which = g_NavRandom.RandomInt( 0, numAreas-1 );
+		int which = randomgen->GetRandomInt<int>(0, numAreas - 1);
 
 		FOR_EACH_VEC( TheNavAreas, iter )
 		{
@@ -922,7 +917,7 @@ CNavArea *FindMinimumCostArea( CNavArea *startArea, CostFunctor &costFunc )
 		}
 
 	}
-	return cheapAreaSet[g_NavRandom.RandomInt( 0, cheapAreaSetCount-1 ) ].area;
+	return cheapAreaSet[randomgen->GetRandomInt<int>(0, cheapAreaSetCount - 1)].area;
 }
 
 
@@ -952,7 +947,7 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 	int n = shuffledVector.Count();
 	while( n > 1 )
 	{
-		int k = g_NavRandom.RandomInt( 0, n-1 );
+		int k = randomgen->GetRandomInt<int>(0, n - 1);
 		n--;
 
 		T *tmp = shuffledVector[n];

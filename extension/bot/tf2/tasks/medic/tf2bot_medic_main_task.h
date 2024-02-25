@@ -18,7 +18,7 @@ public:
 	virtual TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 
 	// medics never attack
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, CKnownEntity* them) override { return ANSWER_NO; }
+	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 
 	virtual const char* GetName() const override { return "MedicMain"; }
 

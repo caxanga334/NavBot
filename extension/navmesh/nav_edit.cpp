@@ -38,12 +38,6 @@
 #include "dota_player.h"
 #endif
 
-#include <util/UtilRandom.h>
-
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
-
-
 ConVar sm_nav_show_area_info( "sm_nav_show_area_info", "0.5", FCVAR_CHEAT, "Duration in seconds to show nav area ID and attributes while editing" );
 ConVar sm_nav_snap_to_grid( "sm_nav_snap_to_grid", "0", FCVAR_CHEAT, "Snap to the nav generation grid when creating new nav areas" );
 ConVar sm_nav_create_place_on_ground( "sm_nav_create_place_on_ground", "0", FCVAR_CHEAT, "If true, nav areas will be placed flush with the ground when created by hand." );
@@ -3796,7 +3790,7 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 #endif
 		return true;
 	}
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3859,7 +3853,7 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< 
 		return;
 	}
 
-	static unsigned int searchMarker = UTIL_GetRandomInt( 0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3915,7 +3909,7 @@ template < typename Functor >
 bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radius )
 {
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 
 	++searchMarker;
 

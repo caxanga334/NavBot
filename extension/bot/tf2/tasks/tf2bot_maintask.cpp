@@ -54,7 +54,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnTestEventPropagation(CTF2Bot
 #endif // EXT_DEBUG
 }
 
-CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	// Handle cases where one of them is NULL
 	if (threat1 && !threat2)
@@ -90,7 +90,7 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtP
 	return aimat;
 }
 
-void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
+void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (me->GetPlayerInfo()->IsDead())
 		return;
@@ -176,7 +176,7 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 	}
 }
 
-void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, CKnownEntity* threat)
+void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (!AllowedToSwitchWeapon())
 		return;
@@ -258,7 +258,7 @@ void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, CKnownEntity* threat
 	}
 }
 
-void CTF2BotMainTask::UpdateLook(CTF2Bot* me, CKnownEntity* threat)
+void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (threat)
 	{
@@ -402,7 +402,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 
 }
 
-CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	// TO-DO: Add threat selection
 

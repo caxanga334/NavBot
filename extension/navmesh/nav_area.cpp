@@ -10,6 +10,7 @@
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
 #include <extension.h>
+#include <manager.h>
 #include <extplayer.h>
 #include <util/librandom.h>
 #include <sdkports/debugoverlay_shared.h>
@@ -19,7 +20,6 @@
 #include "nav_entities.h"
 #include "nav_colors.h"
 #include <util/EntityUtils.h>
-#include <util/UtilRandom.h>
 #include <eiface.h>
 #include <Color.h>
 #include <iplayerinfo.h>
@@ -1991,7 +1991,7 @@ void CNavArea::InheritAttributes( CNavArea *first, CNavArea *second )
 		else
 		{
 			// both have valid, but different places - pick on at random
-			if (UTIL_GetRandomInt( 0, 100 ) < 50)
+			if (librandom::random_chance(50))
 				SetPlace( first->GetPlace() );
 			else
 				SetPlace( second->GetPlace() );
@@ -2415,7 +2415,7 @@ float CNavArea::GetDistanceSquaredToPoint( const Vector &pos ) const
 CNavArea *CNavArea::GetRandomAdjacentArea( NavDirType dir ) const
 {
 	int count = m_connect[ dir ].Count();
-	int which = UTIL_GetRandomInt( 0, count-1 );
+	int which = librandom::generate_random_int(0, count-1);
 
 	int i = 0;
 	FOR_EACH_VEC( m_connect[ dir ], it )
@@ -6038,10 +6038,12 @@ bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const
 			if (teamIndex != NAV_TEAM_ANY && info->GetTeamIndex() != teamIndex)
 				continue;
 
-			CBaseExtPlayer baseplayer(pEnt);
-			baseplayer.UpdateLastKnownNavArea(true);
+			auto extplayer = extmanager->GetPlayerByIndex(i);
+
+			if (!extplayer)
+				continue;
 			
-			CNavArea* from = baseplayer.GetLastKnownNavArea();
+			CNavArea* from = extplayer->GetLastKnownNavArea();
 
 			if (from && from->IsPotentiallyVisible(this)) 
 			{
@@ -6083,10 +6085,12 @@ bool CNavArea::IsCompletelyVisibleToTeam(int teamIndex) const
 			if (teamIndex != NAV_TEAM_ANY && info->GetTeamIndex() != teamIndex)
 				continue;
 
-			CBaseExtPlayer baseplayer(pEnt);
-			baseplayer.UpdateLastKnownNavArea(true);
+			auto extplayer = extmanager->GetPlayerByIndex(i);
 
-			CNavArea* from = baseplayer.GetLastKnownNavArea();
+			if (!extplayer)
+				continue;
+
+			CNavArea* from = extplayer->GetLastKnownNavArea();
 
 			if (from && from->IsCompletelyVisible(this))
 			{

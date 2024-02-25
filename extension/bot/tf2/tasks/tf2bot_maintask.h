@@ -22,7 +22,7 @@ public:
 	
 	virtual TaskEventResponseResult<CTF2Bot> OnTestEventPropagation(CTF2Bot* bot) override;
 
-	virtual CKnownEntity* SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override;
+	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 
 
@@ -32,12 +32,12 @@ private:
 	CountdownTimer m_weaponswitchtimer;
 
 	bool AllowedToSwitchWeapon();
-	void FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat);
-	void SelectBestWeaponForEnemy(CTF2Bot* me, CKnownEntity* threat);
-	void UpdateLook(CTF2Bot* me, CKnownEntity* threat);
+	void FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat);
+	void SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* threat);
+	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
 	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
-	CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, CKnownEntity* threat1, CKnownEntity* threat2);
+	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 };
 
 inline bool CTF2BotMainTask::AllowedToSwitchWeapon()

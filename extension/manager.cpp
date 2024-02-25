@@ -88,6 +88,11 @@ void CExtManager::Frame()
 		bot->PlayerThink();
 	}
 
+	for (auto& player : m_players)
+	{
+		player.get()->PlayerThink();
+	}
+
 	m_mod.get()->Frame();
 }
 
@@ -101,8 +106,18 @@ void CExtManager::OnClientPutInServer(int client)
 		return;
 	}
 
-#ifdef EXT_DEBUG
 	auto gp = playerhelpers->GetGamePlayer(client);
+
+	if (gp->IsSourceTV() || gp->IsReplay())
+		return; // Don't care about sourcetv bots
+
+	if (!IsNavBot(client))
+	{
+		// Add non navbot clients (humans and other bots) to the player lists so we can update their last known nav areas.
+		m_players.emplace_back(std::make_unique<CBaseExtPlayer>(edict));
+	}
+
+#ifdef EXT_DEBUG
 	auto auth = gp->GetAuthString(true);
 
 	if (auth == nullptr)
@@ -116,6 +131,12 @@ void CExtManager::OnClientPutInServer(int client)
 
 void CExtManager::OnClientDisconnect(int client)
 {
+	auto gp = playerhelpers->GetGamePlayer(client);
+
+	if (gp->IsSourceTV() || gp->IsReplay())
+		return; // Don't care about sourcetv bots
+
+
 	bool isbot = GetBotByIndex(client) != nullptr;
 
 	if (isbot == true)
@@ -138,6 +159,25 @@ void CExtManager::OnClientDisconnect(int client)
 		{
 			m_bots.erase(botit);
 		}
+	}
+
+	auto playerit = m_players.end();
+
+	for (auto it = m_players.end(); it != m_players.end(); it++)
+	{
+		auto& i = *it;
+		auto player = i.get();
+
+		if (player->GetIndex() == client)
+		{
+			playerit = it;
+			break;
+		}
+	}
+
+	if (playerit != m_players.end())
+	{
+		m_players.erase(playerit);
 	}
 }
 
@@ -192,7 +232,22 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 		auto bot = botptr.get();
 		if (bot->GetIndex() == index)
 		{
-			return botptr.get();
+			return bot;
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index)
+{
+	for (auto& playerptr : m_players)
+	{
+		auto player = playerptr.get();
+
+		if (player->GetIndex() == index)
+		{
+			return player;
 		}
 	}
 
@@ -264,7 +319,7 @@ void CExtManager::AddBot()
 
 void CExtManager::RemoveRandomBot()
 {
-	auto& botptr = m_bots[librandom::generate_random_uint(0, m_bots.size() - 1)];
+	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
 	auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
 	player->Kick("NavBot: Kicked by Bot Quota Manager.");
 }

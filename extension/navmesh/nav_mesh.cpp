@@ -12,6 +12,7 @@
 
 #include "extension.h"
 #include <util/helpers.h>
+#include <util/librandom.h>
 
 #include "nav_mesh.h"
 
@@ -29,19 +30,12 @@
 #include <generichash.h>
 #include <fmtstr.h>
 
-#include <util/UtilRandom.h>
-
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
-
-
 #define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, EXT_DEBUG_DRAW_TIME )
 
 /**
  * The singleton for accessing the navigation mesh
  */
 extern CNavMesh *TheNavMesh;
-CUniformRandomStream g_NavRandom;
 
 ConVar sm_nav_edit( "sm_nav_edit", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode." );
 ConVar sm_nav_quicksave( "sm_nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing." );	// TERROR: defaulting to 1, since we don't need the other data
@@ -145,8 +139,6 @@ CNavMesh::CNavMesh( void )
 	LoadPlaceDatabase();
 		
 	Reset();
-
-	g_NavRandom.SetSeed(0);
 
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("dod_round_start");
@@ -973,7 +965,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 	// find closest nav area
 
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 
 	++searchMarker;
 
