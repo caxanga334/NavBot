@@ -16,6 +16,8 @@ public:
 	CBaseMod();
 	virtual ~CBaseMod();
 
+	static constexpr auto NO_ECON_INDEX = -1;
+
 	// Called every server frame
 	virtual void Frame() {}
 
@@ -44,6 +46,8 @@ public:
 	virtual bool NavIsEntityIgnored(edict_t* entity, unsigned int flags) { return true; }
 	// Returns true if the entity is walkable, false if it should block nav
 	virtual bool NavIsEntityWalkable(edict_t* entity, unsigned int flags) { return true; }
+	// Returns the economy item index for the given weapon if the mod uses it (IE: TF2)
+	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
 private:
 	CBaseHandle m_playerresourceentity;
 

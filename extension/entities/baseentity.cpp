@@ -22,6 +22,13 @@ bool entities::HBaseEntity::GetEntity(CBaseEntity** entity, edict_t** edict) con
 	return UtilHelpers::IndexToAThings(GetIndex(), entity, edict);
 }
 
+const char* entities::HBaseEntity::GetClassname() const
+{
+	CBaseEntity* entity = nullptr;
+	if (!GetEntity(&entity, nullptr)) { return nullptr; }
+	return gamehelpers->GetEntityClassname(entity);
+}
+
 Vector entities::HBaseEntity::GetAbsOrigin() const
 {
 	Vector result;

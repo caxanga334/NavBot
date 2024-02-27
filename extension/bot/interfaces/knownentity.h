@@ -74,6 +74,7 @@ public:
 	edict_t* GetEdict() const;
 	CBaseEntity* GetEntity() const;
 	int GetIndex() const;
+	bool IsPlayer() const;
 private:
 	CBaseHandle m_handle; // Handle to the actual entity
 	Vector m_lastknownposition; // Last known position of this entity

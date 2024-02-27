@@ -229,7 +229,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 
 /// @brief Searches for entities in a sphere
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
-int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
+int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radius)
 {
 #ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
@@ -419,7 +419,7 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 /// @param flCosHalfFOV The width of the forward view cone as a dot product result.
 /// @return True if the point is within view from the source position at the specified FOV.
 /// @note https://github.com/ValveSoftware/source-sdk-2013/blob/beaae8ac45a2f322a792404092d4482065bef7ef/sp/src/public/mathlib/vector.h#L462-L477
-bool UtilHelpers::PointWithinViewAngle(Vector const& vecSrcPosition, Vector const& vecTargetPosition, Vector const& vecLookDirection, float flCosHalfFOV)
+bool UtilHelpers::PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV)
 {
 	Vector vecDelta = vecTargetPosition - vecSrcPosition;
 	float cosDiff = DotProduct(vecLookDirection, vecDelta);

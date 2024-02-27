@@ -212,6 +212,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_weaponselect = 0;
 	m_cmdtimer.Invalidate();
 	m_debugtextoffset = 0;
+	m_weapons.reserve(MAX_WEAPONS);
 }
 
 CBaseBot::~CBaseBot()
@@ -309,6 +310,9 @@ void CBaseBot::Reset()
 	{
 		iface->Reset();
 	}
+
+	m_weapons.clear();
+	m_weaponupdatetimer = 2; // delay next weapon update
 }
 
 void CBaseBot::Update()
@@ -321,6 +325,12 @@ void CBaseBot::Update()
 
 void CBaseBot::Frame()
 {
+	if (--m_weaponupdatetimer <= 0)
+	{
+		m_weaponupdatetimer = TIME_TO_TICKS(60.0f); // by default, update weapons every minute
+		UpdateMyWeapons();
+	}
+
 	for (auto iface : m_interfaces)
 	{
 		iface->Frame();
@@ -632,4 +642,45 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	trace_t result;
 	UTIL_TraceLine(GetEyeOrigin(), to, MASK_SHOT, &filter, &result);
 	return !result.DidHit();
+}
+
+void CBaseBot::UpdateMyWeapons()
+{
+	m_weapons.clear();
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		int index = INVALID_EHANDLE_INDEX;
+		entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", index, i);
+
+		if (index == INVALID_EHANDLE_INDEX)
+			continue;
+
+		edict_t* weapon = gamehelpers->EdictOfIndex(index);
+
+		if (!weapon || weapon->IsFree())
+			continue;
+
+		m_weapons.emplace_back(weapon);
+	}
+}
+
+const CBotWeapon* CBaseBot::GetActiveBotWeapon() const
+{
+	auto weapon = GetActiveWeapon();
+	
+	if (!weapon || weapon->IsFree())
+		return nullptr;
+
+	int index = gamehelpers->IndexOfEdict(weapon);
+
+	for (const auto& botweapon : m_weapons)
+	{
+		if (botweapon.GetBaseCombatWeapon().GetIndex() == index)
+		{
+			return &botweapon;
+		}
+	}
+
+	return nullptr;
 }

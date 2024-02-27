@@ -23,6 +23,7 @@ namespace entities
 		// returns an edict index or reference for non networked entities
 		inline int GetIndex() const { return m_index; }
 		bool GetEntity(CBaseEntity** entity, edict_t** edict) const;
+		const char* GetClassname() const;
 		bool IsBoundsDefinedInEntitySpace() const;
 		Vector GetAbsOrigin() const;
 		void SetAbsOrigin(const Vector& origin) const;

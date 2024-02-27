@@ -30,18 +30,17 @@ public:
 	virtual CBaseBot* AllocateBot(edict_t* edict) override;
 	virtual CNavMesh* NavMeshFactory() override;
 
-	inline const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
+	virtual int GetWeaponEconIndex(edict_t* weapon) const override;
+
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
 	TeamFortress2::TFWeaponID GetWeaponID(std::string& classname);
-	const WeaponInfo* GetWeaponInfo(edict_t* weapon);
 	bool ShouldSwitchClass(CTF2Bot* bot) const;
 	TeamFortress2::TFClassType SelectAClassForBot(CTF2Bot* bot) const;
 	TeamFortress2::TeamRoles GetTeamRole(TeamFortress2::TFTeam team) const;
 	CTF2ClassSelection::ClassRosterType GetRosterForTeam(TeamFortress2::TFTeam team) const;
 	edict_t* GetFlagToFetch(TeamFortress2::TFTeam team);
 private:
-	CWeaponInfoManager m_wim;
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
 	CTF2ClassSelection m_classselector;

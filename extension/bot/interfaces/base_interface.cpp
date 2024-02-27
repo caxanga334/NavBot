@@ -1,3 +1,4 @@
+#include <extension.h>
 #include <bot/basebot.h>
 #include "base_interface.h"
 

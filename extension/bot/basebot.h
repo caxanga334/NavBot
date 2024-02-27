@@ -12,6 +12,7 @@
 #include <bot/interfaces/event_listener.h>
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/profile.h>
+#include <bot/interfaces/weapon.h>
 #include <util/UtilTrace.h>
 #include <sdkports/sdk_timers.h>
 
@@ -147,6 +148,29 @@ public:
 	inline void DontAttackEnemies(const float time) { m_holdfire_time.Start(time); }
 	bool IsLineOfFireClear(const Vector& to) const;
 
+	void UpdateMyWeapons();
+	inline void SetWeaponUpdateTime(int ticks) { m_weaponupdatetimer = ticks; }
+	inline size_t GetMyWeaponsCount() const { return m_weapons.size(); }
+	// gets a CBotWeapon pointer of the weapon the bot is currently using, NULL if no weapon
+	const CBotWeapon* GetActiveBotWeapon() const;
+
+	/**
+	 * @brief Runs a function on every valid bot weapon
+	 * @tparam T a class with operator() overload with 1 parameter: (const CBotWeapon& weapon)
+	 * @param functor function to run on every valid weapon
+	 */
+	template <typename T>
+	inline void ForEveryWeapon(T functor) const
+	{
+		for (const auto& weapon : m_weapons)
+		{
+			if (!weapon.IsValid())
+				continue;
+
+			functor(weapon);
+		}
+	}
+
 protected:
 	bool m_isfirstspawn;
 
@@ -168,6 +192,8 @@ private:
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
 	int m_debugtextoffset;
 	CountdownTimer m_holdfire_time; // Timer for the bot to not attack enemies
+	std::vector<CBotWeapon> m_weapons;
+	int m_weaponupdatetimer;
 
 	void ExecuteQueuedCommands();
 };

@@ -32,7 +32,20 @@ TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (!patient)
 	{
-		// TO-DO: Retreat if no patient
+		int allieds = 0;
+
+		bot->GetSensorInterface()->ForEveryKnownEntity([bot, &allieds](const CKnownEntity* known) {
+			if (!known->IsObsolete() && known->IsPlayer() && tf2lib::GetEntityTFTeam(known->GetIndex()) == bot->GetMyTFTeam())
+			{
+				++allieds;
+			}
+		});
+
+		if (allieds == 0) // no nearby allied player
+		{
+
+		}
+
 		return Continue();
 	}
 

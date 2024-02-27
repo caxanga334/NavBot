@@ -102,6 +102,7 @@ public:
 		priority = 0;
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
+		maxclip1 = 0;
 	}
 
 	inline void Reset()
@@ -112,6 +113,7 @@ public:
 		priority = 0;
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
+		maxclip1 = 0;
 		attacksinfo[PRIMARY_ATTACK].Reset();
 		attacksinfo[SECONDARY_ATTACK].Reset();
 		attacksinfo[TERTIARY_ATTACK].Reset();
@@ -161,6 +163,7 @@ public:
 
 	inline void SetEconItemIndex(int index) { econindex = index; }
 	inline void SetPriority(int pri) { priority = pri; }
+	inline void SetMaxClip1(int clip) { maxclip1 = clip; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -169,6 +172,8 @@ public:
 	inline bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
 	inline bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
 	inline bool IsCombatWeapon() const { return priority >= 0; }
+	inline bool HasMaxClip1() const { return maxclip1 > 0; }
+	inline int GetMaxClip1() const { return maxclip1; }
 
 private:
 	std::string classname;
@@ -178,6 +183,7 @@ private:
 	int priority; // Priority for weapon selection
 	bool can_headshot;
 	float headshot_range_mult;
+	int maxclip1; // Maximum ammo stored in clip1
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
@@ -187,6 +193,11 @@ public:
 		m_tempweapinfo()
 	{
 		m_weapons.reserve(512);
+		m_isvalid = false;
+		m_section_weapon = false;
+		m_section_prim = false;
+		m_section_sec = false;
+		m_section_ter = false;
 	}
 
 	inline bool WeaponEntryExists(std::string& entry) const
@@ -200,6 +211,22 @@ public:
 		}
 
 		return false;
+	}
+
+	/**
+	 * @brief Searches for a weapon info. Economy index is searched first, then classname.
+	 * @param classname Weapon classname to search for.
+	 * @param index Weapon economy index to search for.
+	 * @return Pointer to WeaponInfo or NULL if not found.
+	 */
+	inline const WeaponInfo* GetWeaponInfo(const char* classname, const int index) const
+	{
+		const WeaponInfo* info = GetWeaponInfoByEconIndex(index);
+
+		if (info)
+			return info;
+
+		return GetWeaponInfoByClassname(classname);
 	}
 
 	/**
@@ -229,6 +256,8 @@ public:
 	*/
 	inline const WeaponInfo* GetWeaponInfoByEconIndex(const int index) const
 	{
+		if (index < 0) { return nullptr; }
+
 		for (auto& weapon : m_weapons)
 		{
 			if (weapon.GetItemDefIndex() == index)
@@ -239,6 +268,8 @@ public:
 
 		return nullptr;
 	}
+
+	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
 	/**
 	 * @brief Called when entering a new section

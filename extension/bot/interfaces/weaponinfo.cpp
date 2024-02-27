@@ -176,6 +176,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		hsrange = std::clamp(hsrange, 0.0f, 1.0f);
 		m_tempweapinfo.SetHeadShotRangeMultiplier(hsrange);
 	}
+	else if (strncmp(key, "maxclip1", 8) == 0)
+	{
+		m_tempweapinfo.SetMaxClip1(atoi(value));
+	}
 
 	if (IsParserInWeaponAttackSection())
 	{

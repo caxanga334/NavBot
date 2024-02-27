@@ -25,11 +25,11 @@ namespace UtilHelpers
 	bool pointIsWithinTrigger(edict_t* pEntity, const Vector& vPoint);
 	bool isBoundsDefinedInEntitySpace(edict_t* pEntity);
 	int FindEntityByClassname(int start, const char* searchname);
-	int FindEntityInSphere(int start, Vector center, float radius);
+	int FindEntityInSphere(int start, const Vector& center, float radius);
 	int FindEntityByNetClass(int start, const char* classname);
 	int FindEntityByTargetname(int start, const char* targetname);
 	int FindNamedEntityByClassname(int start, const char* targetname, const char* classname);
-	bool PointWithinViewAngle(Vector const& vecSrcPosition, Vector const& vecTargetPosition, Vector const& vecLookDirection, float flCosHalfFOV);
+	bool PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV);
 	float GetForwardViewCone(float angle);
 	CStudioHdr* GetEntityModelPtr(edict_t* pEntity);
 	int LookupBone(CStudioHdr* hdr, const char* bonename);

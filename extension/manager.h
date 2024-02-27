@@ -3,6 +3,7 @@
 #pragma once
 
 #include <bot/interfaces/profile.h>
+#include <bot/interfaces/weaponinfo.h>
 #include <sdkports/sdk_timers.h>
 
 class CBaseMod;
@@ -83,6 +84,8 @@ public:
 		}
 	}
 
+	inline const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of (human) players
@@ -94,6 +97,7 @@ private:
 	int m_quotaupdatetime; // Bot quota timer
 	BotQuotaMode m_quotamode; // Bot quota mode
 	int m_quotatarget; // Bot quota target
+	CWeaponInfoManager m_wim;
 };
 
 extern CExtManager* extmanager;

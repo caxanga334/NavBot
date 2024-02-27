@@ -19,7 +19,6 @@ folder_list = [
 
 if 'x86_64' in EXT.target_archs:
   folder_list.extend([
-    'addons/sourcemod/bin/x64',
     'addons/sourcemod/extensions/x64',
   ])
 

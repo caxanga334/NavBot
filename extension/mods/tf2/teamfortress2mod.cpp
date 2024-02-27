@@ -34,7 +34,6 @@ static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(T
 
 CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 {
-	m_wim.LoadConfigFile();
 	m_gamemode = TeamFortress2::GameModeType::GM_NONE;
 
 	[this]() {
@@ -157,6 +156,11 @@ CBaseBot* CTeamFortress2Mod::AllocateBot(edict_t* edict)
 CNavMesh* CTeamFortress2Mod::NavMeshFactory()
 {
 	return new CTFNavMesh;
+}
+
+int CTeamFortress2Mod::GetWeaponEconIndex(edict_t* weapon) const
+{
+	return tf2lib::GetWeaponItemDefinitionIndex(weapon);
 }
 
 const char* CTeamFortress2Mod::GetCurrentGameModeName() const
@@ -424,21 +428,6 @@ bool CTeamFortress2Mod::DetectPlayerDestruction()
 	}
 
 	return false;
-}
-
-const WeaponInfo* CTeamFortress2Mod::GetWeaponInfo(edict_t* weapon)
-{
-	const WeaponInfo* info = nullptr;
-
-	info = m_wim.GetWeaponInfoByEconIndex(tf2lib::GetWeaponItemDefinitionIndex(weapon));
-
-	if (info)
-	{
-		return info;
-	}
-
-	info = m_wim.GetWeaponInfoByClassname(gamehelpers->GetEntityClassname(weapon));
-	return info;
 }
 
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const

@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include <extension.h>
+#include <manager.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
@@ -29,6 +30,10 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		SelectBestWeaponForEnemy(bot, threat);
 		FireWeaponAtEnemy(bot, threat);
+	}
+	else // I don't have an enemy
+	{
+		
 	}
 
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
@@ -152,7 +157,7 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 		}
 	}
 
-	auto info = mod->GetWeaponInfo(me->GetActiveWeapon());
+	auto info = me->GetActiveBotWeapon()->GetWeaponInfo();
 	auto threat_range = me->GetRangeTo(origin);
 
 	if (threat_range < info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
@@ -181,80 +186,58 @@ void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* 
 	if (!AllowedToSwitchWeapon())
 		return;
 
-	if (!threat->IsVisibleNow())
-		return; // Don't bother with weapon switches if we can't see it
-	
-	auto allweapons = me->GetAllWeapons();
-	auto mod = CTeamFortress2Mod::GetTF2Mod();
-	std::vector<std::pair<edict_t*, const WeaponInfo*>> infovec;
-	infovec.reserve(MAX_WEAPONS);
-
-	for (auto weaponedict : allweapons)
+	if (me->GetMyWeaponsCount() == 0)
 	{
-		auto info = mod->GetWeaponInfoManager().GetWeaponInfoByEconIndex(tf2lib::GetWeaponItemDefinitionIndex(weaponedict));
-
-		if (info)
-		{
-			std::pair<edict_t*, const WeaponInfo*> pair(weaponedict, info);
-			infovec.push_back(pair);
-			continue;
-		}
-
-		info = mod->GetWeaponInfoManager().GetWeaponInfoByClassname(gamehelpers->GetEntityClassname(weaponedict));
-
-		if (info)
-		{
-			std::pair<edict_t*, const WeaponInfo*> pair(weaponedict, info);
-			infovec.push_back(pair);
-		}
+		me->UpdateMyWeapons(); // try updating
+		m_weaponswitchtimer.Start(0.5f); // don't spam weapon updates
+		return;
 	}
 
-	if (infovec.size() == 0) // no weapons?
-		return;
+	if (!threat->IsVisibleNow())
+		return; // Don't bother with weapon switches if we can't see it
 
-	const float threat_range = me->GetRangeTo(threat->GetEdict());
+	const float rangeTo = me->GetRangeTo(threat->GetEdict());
+	const CBotWeapon* best = nullptr;
+	int priority = -999;
 
-	edict_t* best = [me, threat, &infovec, &threat_range]() -> edict_t* {
-		edict_t* current_best = nullptr;
-		int current_priority = -99999999;
-
-		for (auto& pair : infovec)
+	me->ForEveryWeapon([&me, &rangeTo, &best, &priority](const CBotWeapon& weapon) {
+		if (weapon.GetWeaponInfo()) // weapon must have a valid weapon info
 		{
-			auto info = pair.second;
-			bool can_use = false;
-
-			if (!info->IsCombatWeapon())
-				continue; // Skip non-combat weapons
-
-			// most tf2 weapons only deals damage with the primary attack
-			if (info->HasPrimaryAttack())
+			if (!weapon.GetWeaponInfo()->IsCombatWeapon())
 			{
-				auto& attack = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
-
-				if (attack.InRangeTo(threat_range)) // in range to primary attrack
-				{
-					can_use = true;
-				}
-
-				// TO-DO: Ammo Check
+				return; // must be a usable weapon
 			}
 
-			if (!can_use)
-				continue;
-
-			if (info->GetPriority() > current_priority) // found usable weapon with a higher priority
+			// ammo check
+			if (weapon.GetBaseCombatWeapon().GetClip1() == 0 &&
+				me->GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) == 0)
 			{
-				current_priority = info->GetPriority();
-				current_best = pair.first;
+				return; // no ammo in clip and no reserve ammo, skip
+			}
+
+			if (rangeTo > weapon.GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+			{
+				return; // outside max range
+			}
+			else if (rangeTo < weapon.GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+			{
+				return; // too close
+			}
+
+			int currentprio = weapon.GetWeaponInfo()->GetPriority();
+
+			if (currentprio > priority)
+			{
+				best = &weapon;
+				priority = currentprio;
 			}
 		}
+	});
 
-		return current_best;
-	}();
-
-	if (best != me->GetActiveWeapon())
+	if (best)
 	{
-		me->SelectWeaponByCommand(gamehelpers->GetEntityClassname(best)); // switch!
+		me->SelectWeaponByCommand(best->GetBaseCombatWeapon().GetClassname());
+		m_weaponswitchtimer.Start(2.0f); // found a valid weapon,
 	}
 }
 
@@ -282,36 +265,29 @@ void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 
 void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result)
 {
-	auto myweapon = me->GetActiveWeapon();
+	auto myweapon = me->GetActiveBotWeapon();
 
 	if (!myweapon) // how?
 	{
+#ifdef EXT_DEBUG
+		smutils->LogError(myself, "CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result) -- CBaseBot::GetActiveBotWeapon() is NULL!");
+#endif // EXT_DEBUG
+
 		result = player->WorldSpaceCenter();
 		return;
 	}
 
-	int index = -1;
-	std::string classname(gamehelpers->GetEntityClassname(myweapon));
+	int index = myweapon->GetWeaponEconIndex();
+	std::string classname(myweapon->GetBaseCombatWeapon().GetClassname());
 	auto mod = CTeamFortress2Mod::GetTF2Mod();
-	entprops->GetEntProp(gamehelpers->IndexOfEdict(myweapon), Prop_Send, "m_iItemDefinitionIndex", index);
+	auto weaponinfo = myweapon->GetWeaponInfo(); // every tf2 weapon should have a valid weapon info, just let it crash if it doesn't have it for some reason
 
-	auto weaponinfo = [mod, &index, classname]() {
-		auto& wim = mod->GetWeaponInfoManager();
-		auto info = wim.GetWeaponInfoByEconIndex(index);
-
-		if (!info)
-		{
-			info = wim.GetWeaponInfoByClassname(classname.c_str());
-		}
-
-		return info;
-	}();
-
-	if (!weaponinfo) // no weapon info, just aim at the center
+#ifdef EXT_DEBUG
+	if (!weaponinfo)
 	{
-		result = player->WorldSpaceCenter();
-		return;
+		smutils->LogError(myself, "CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result) -- weaponinfo is NULL!");
 	}
+#endif // EXT_DEBUG
 
 	auto id = mod->GetWeaponID(classname);
 	auto sensor = me->GetSensorInterface();

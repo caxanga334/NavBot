@@ -71,6 +71,8 @@ void CExtManager::OnAllLoaded()
 	m_bdm.LoadProfiles();
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod.get()->GetModName());
+	
+	m_wim.LoadConfigFile();
 }
 
 void CExtManager::Frame()

@@ -112,3 +112,8 @@ int CKnownEntity::GetIndex() const
 {
 	return m_handle.GetEntryIndex();
 }
+
+bool CKnownEntity::IsPlayer() const
+{
+	return UtilHelpers::IsPlayerIndex(m_handle.GetEntryIndex());
+}
