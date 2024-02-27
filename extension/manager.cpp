@@ -14,6 +14,7 @@
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
 #include <extplayer.h>
+#include <util/helpers.h>
 #include <util/librandom.h>
 #include "manager.h"
 
@@ -24,7 +25,6 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
-#include <util/helpers.h>
 #include <entities/baseentity.h>
 #endif // EXT_DEBUG
 
@@ -424,7 +424,26 @@ void CExtManager::UpdateBotQuota()
 	int navbots = 0;
 	int otherbots = 0;
 
-	CountPlayers(humans, navbots, otherbots);
+	UtilHelpers::ForEachPlayer([this, &humans, &navbots, &otherbots](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
+		if (player->IsInGame())
+		{
+			if (player->IsFakeClient())
+			{
+				if (IsNavBot(client))
+				{
+					++navbots;
+				}
+				else
+				{
+					++otherbots;
+				}
+			}
+			else
+			{
+				++humans;
+			}
+		}
+	});
 
 	if (humans == 0) // server is empty of humans
 	{
@@ -475,39 +494,6 @@ void CExtManager::UpdateBotQuota()
 		}
 
 		break;
-	}
-}
-
-void CExtManager::CountPlayers(int& humans, int& navbots, int& otherbots) const
-{
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		auto player = playerhelpers->GetGamePlayer(i);
-
-		if (!player)
-			continue;
-
-		if (!player->IsInGame()) // must be in game
-			continue;
-
-		if (player->IsReplay() || player->IsSourceTV())
-			continue; // Ignore spectator bots
-
-		if (!player->IsFakeClient()) // human client
-		{
-			humans++;
-		}
-		else
-		{
-			if (IsNavBot(i))
-			{
-				navbots++;
-			}
-			else
-			{
-				otherbots++;
-			}
-		}
 	}
 }
 

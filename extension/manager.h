@@ -67,6 +67,22 @@ public:
 
 	void UpdateBotQuota();
 
+	/**
+	 * @brief Runs a function on each bot.
+	 * @tparam T A class with operator() overload with one parameter (BotClass* bot). BotClass is defined in the 'B' template parameter
+	 * @tparam B Bot class to use, default CBaseBot.
+	 * @param functor Function to call on each bot.
+	 */
+	template <typename T, typename B = CBaseBot>
+	inline void ForEachBot(T functor)
+	{
+		for (auto& ptr : m_bots)
+		{
+			B* bot = static_cast<B*>(ptr.get());
+			functor(bot);
+		}
+	}
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of (human) players
@@ -78,8 +94,6 @@ private:
 	int m_quotaupdatetime; // Bot quota timer
 	BotQuotaMode m_quotamode; // Bot quota mode
 	int m_quotatarget; // Bot quota target
-
-	void CountPlayers(int& humans, int& navbots, int& otherbots) const;
 };
 
 extern CExtManager* extmanager;

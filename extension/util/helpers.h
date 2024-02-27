@@ -67,7 +67,7 @@ namespace UtilHelpers
 	 * @param functor Player collection filter, only called to clients that are valid and in game.
 	 */
 	template <typename T>
-	void CollectPlayers(std::vector<int>& playersvector, T& functor);
+	void CollectPlayers(std::vector<int>& playersvector, T functor);
 	const char* GetPlayerDebugIdentifier(int player);
 	const char* GetPlayerDebugIdentifier(edict_t* player);
 	
@@ -146,10 +146,82 @@ namespace UtilHelpers
 		IServerEntity* se = reinterpret_cast<IServerEntity*>(entity);
 		handle.Set(se);
 	}
+
+	/**
+	 * @brief Runs a function on every valid edict
+	 * @tparam T Function to call. Overload operator() with 1 parameter (edict_t* edict)
+	 * @param functor Function to call
+	 */
+	template <typename T>
+	inline void ForEachEdict(T functor)
+	{
+		for (int i = 0; i < gpGlobals->maxEntities; i++)
+		{
+			auto edict = gamehelpers->EdictOfIndex(i);
+
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+				continue;
+
+			functor(edict);
+		}
+	}
+
+	/**
+	 * @brief Counts the number of players.
+	 * @tparam T A class with operator() overload with 3 parameters (int client, edict_t* entity, SourceMod::IGamePlayer* player)
+	 * @param functor Function to run on each player. Return true to count the player.
+	 * @return Number of players counted.
+	 */
+	template <typename T>
+	inline int CountPlayers(T functor)
+	{
+		int playercount = 0;
+
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			auto edict = gamehelpers->EdictOfIndex(i);
+
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+				continue;
+
+			auto player = playerhelpers->GetGamePlayer(i);
+
+			if (functor(i, edict, player))
+			{
+				++playercount;
+			}
+		}
+
+		return playercount;
+	}
+
+	/**
+	 * @brief Runs a function on each player.
+	 * @tparam T A class with operator() overload with 3 parameters (int client, edict_t* entity, SourceMod::IGamePlayer* player)
+	 * @param functor Function to run on each player.
+	 */
+	template <typename T>
+	inline void ForEachPlayer(T functor)
+	{
+		for (int i = 1; i <= gpGlobals->maxClients; i++)
+		{
+			edict_t* edict = gamehelpers->EdictOfIndex(i);
+
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+				continue;
+
+			SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(i);
+
+			if (!player)
+				continue;
+
+			functor(i, edict, player);
+		}
+	}
 }
 
 template<typename T>
-inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T& functor)
+inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T functor)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{

@@ -13,6 +13,9 @@
 #define _NAV_PATHFIND_H_
 
 #include <algorithm>
+#include <vector>
+#include <stack>
+#include <unordered_set>
 
 #include <util/librandom.h>
 #include "nav_area.h"
@@ -982,5 +985,55 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 		}
 	}
 }
+
+/**
+ * @brief Collects surround areas around the start area
+ * @tparam T A class with operator() overload with 1 parameter (CNavArea* area)
+ * @param startArea Area to start the search
+ * @param areaVector Vector to store collected areas
+ * @param functor Function to call when collecting areas, return true to add the area to the areaVector
+ */
+template <typename T>
+inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea*>& areaVector, T functor)
+{
+	std::unordered_set<unsigned int> searchedAreas;
+	std::vector<CNavArea*> newAreas;
+	std::stack<CNavArea*> toSearch;
+	searchedAreas.reserve(4096);
+	newAreas.reserve(64);
+	searchedAreas.emplace(startArea->GetID());
+	toSearch.push(startArea);
+
+	while (toSearch.size() > 0)
+	{
+		CNavArea* currentArea = toSearch.top();
+		toSearch.pop();
+
+		currentArea->ForEachConnectedArea([&newAreas, &searchedAreas](CNavArea* other) {
+			unsigned int id = other->GetID();
+
+			// area has not been searched yet!
+			if (searchedAreas.find(id) == searchedAreas.end())
+			{
+				newAreas.push_back(other); // add this area to the search list
+				searchedAreas.emplace(id);
+			}
+		});
+
+		if (functor(currentArea))
+		{
+			// collect area if functor returns true
+			areaVector.push_back(currentArea);
+		}
+
+		for (auto other : newAreas)
+		{
+			toSearch.push(other); // add new areas to search stack
+		}
+
+		newAreas.clear(); // clear new areas vector
+	}
+}
+
 
 #endif // _NAV_PATHFIND_H_

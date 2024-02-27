@@ -741,6 +741,32 @@ public:
 		return nullptr;
 	}
 
+	/**
+	 * @brief Runs a function on each nav area connected to this area
+	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)
+	 * @param functor function to run on each connected area to this area
+	 */
+	template <typename T>
+	inline void ForEachConnectedArea(T functor)
+	{
+		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			auto conn = GetAdjacentAreas(static_cast<NavDirType>(dir));
+
+			for (int i = 0; i < conn->Count(); i++)
+			{
+				CNavArea* connectedArea = conn->Element(i).area;
+				functor(connectedArea);
+			}
+		}
+
+		for (auto& link : m_speciallinks)
+		{
+			CNavArea* connectedArea = link.m_link.area;
+			functor(connectedArea);
+		}
+	}
+
 private:
 	friend class CNavMesh;
 	friend class CNavLadder;

@@ -296,4 +296,39 @@ CON_COMMAND_F(sm_navbot_debug_traces1, "Trace debugging command #1", FCVAR_CHEAT
 		if (length >= 2048.0f) { loop = false; break; }
 	}
 }
+
+CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_CHEAT)
+{
+	auto host = extmanager->GetPlayerByIndex(1);
+	CNavArea* area = host->GetLastKnownNavArea();
+
+	if (!area)
+	{
+		Warning("No Last Known Nav Area!\n");
+		return;
+	}
+
+	std::vector<CNavArea*> collectedAreas;
+	collectedAreas.reserve(512);
+	Vector origin = host->GetAbsOrigin();
+
+	NavCollectSurroundingAreas(area, collectedAreas, [host, &origin](CNavArea* area) -> bool {
+		const Vector& center = area->GetCenter();
+		const float length = (center - origin).Length();
+
+		if (length <= 750.0f)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	for (auto area : collectedAreas)
+	{
+		NDebugOverlay::Line(origin, area->GetCenter(), 0, 200, 255, true, 20.0f);
+	}
+
+	Msg("Collected %i areas \n", collectedAreas.size());
+}
 #endif // EXT_DEBUG
