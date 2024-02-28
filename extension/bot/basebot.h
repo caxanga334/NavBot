@@ -171,6 +171,9 @@ public:
 		}
 	}
 
+	inline const Vector& GetHomePos() const { return m_homepos; }
+	void SetHomePos(const Vector& home) { m_homepos = home; }
+
 protected:
 	bool m_isfirstspawn;
 
@@ -194,6 +197,7 @@ private:
 	CountdownTimer m_holdfire_time; // Timer for the bot to not attack enemies
 	std::vector<CBotWeapon> m_weapons;
 	int m_weaponupdatetimer;
+	Vector m_homepos; // Position where the bot spawned
 
 	void ExecuteQueuedCommands();
 };

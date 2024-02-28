@@ -180,6 +180,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_tempweapinfo.SetMaxClip1(atoi(value));
 	}
+	else if (strncmp(key, "slot", 4) == 0)
+	{
+		m_tempweapinfo.SetSlot(atoi(value));
+	}
 
 	if (IsParserInWeaponAttackSection())
 	{

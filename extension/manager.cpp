@@ -319,11 +319,11 @@ void CExtManager::AddBot()
 	rootconsole->ConsolePrint("Bot added to the game.");
 }
 
-void CExtManager::RemoveRandomBot()
+void CExtManager::RemoveRandomBot(const char* message)
 {
 	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
 	auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
-	player->Kick("NavBot: Kicked by Bot Quota Manager.");
+	player->Kick(message);
 }
 
 void CExtManager::RemoveAllBots(const char* message)
@@ -479,7 +479,7 @@ void CExtManager::UpdateBotQuota()
 		}
 		else if (navbots > target)
 		{
-			RemoveRandomBot();
+			RemoveRandomBot("Nav Bot: Kicked by bot quota manager.");
 		}
 
 		break;
@@ -492,7 +492,7 @@ void CExtManager::UpdateBotQuota()
 		}
 		else if (navbots > m_quotatarget) // number of bots is above desired quantity
 		{
-			RemoveRandomBot();
+			RemoveRandomBot("Nav Bot: Kicked by bot quota manager.");
 		}
 
 		break;

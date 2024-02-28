@@ -6,7 +6,7 @@
 
 class CTF2Bot;
 
-class CTF2BotMedicMainTask : public AITask<CTF2Bot>
+class CTF2BotMedicRetreatTask : public AITask<CTF2Bot>
 {
 public:
 	virtual TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
@@ -14,11 +14,14 @@ public:
 
 	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
 
-	virtual const char* GetName() const override { return "MedicMain"; }
+	virtual const char* GetName() const override { return "MedicRetreat"; }
 
 private:
+	Vector m_goal;
 	CMeshNavigator m_nav;
 	CountdownTimer m_repathtimer;
+
+	static constexpr float home_range() { return 256.0f; }
 };
 
 

@@ -238,3 +238,24 @@ float tf2lib::GetPlayerHealthPercentage(int player)
 {
 	return static_cast<float>(UtilHelpers::GetEntityHealth(player)) / static_cast<float>(GetPlayerMaxHealth(player));
 }
+
+TeamFortress2::TFTeam tf2lib::GetDisguiseTeam(int player)
+{
+	int team = TEAM_UNASSIGNED;
+	entprops->GetEntProp(player, Prop_Send, "m_nDisguiseTeam", team);
+	return static_cast<TeamFortress2::TFTeam>(team);
+}
+
+TeamFortress2::TFClassType tf2lib::GetDisguiseClass(int player)
+{
+	int classtype = 0;
+	entprops->GetEntProp(player, Prop_Send, "m_nDisguiseClass", classtype);
+	return static_cast<TeamFortress2::TFClassType>(classtype);
+}
+
+edict_t* tf2lib::GetDisguiseTarget(int player)
+{
+	int target = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(player, Prop_Send, "m_hDisguiseTarget", target);
+	return gamehelpers->EdictOfIndex(target);
+}

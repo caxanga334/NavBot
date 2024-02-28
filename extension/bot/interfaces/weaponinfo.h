@@ -84,6 +84,8 @@ private:
 class WeaponInfo
 {
 public:
+	// Random Number used to indicate an invalid weapon slot
+	static constexpr int INVALID_WEAPON_SLOT = -7912742;
 
 	enum AttackFunctionType
 	{
@@ -103,6 +105,7 @@ public:
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
+		slot = INVALID_WEAPON_SLOT;
 	}
 
 	inline void Reset()
@@ -114,6 +117,7 @@ public:
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
+		slot = INVALID_WEAPON_SLOT;
 		attacksinfo[PRIMARY_ATTACK].Reset();
 		attacksinfo[SECONDARY_ATTACK].Reset();
 		attacksinfo[TERTIARY_ATTACK].Reset();
@@ -164,6 +168,7 @@ public:
 	inline void SetEconItemIndex(int index) { econindex = index; }
 	inline void SetPriority(int pri) { priority = pri; }
 	inline void SetMaxClip1(int clip) { maxclip1 = clip; }
+	inline void SetSlot(int s) { slot = s; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -174,6 +179,8 @@ public:
 	inline bool IsCombatWeapon() const { return priority >= 0; }
 	inline bool HasMaxClip1() const { return maxclip1 > 0; }
 	inline int GetMaxClip1() const { return maxclip1; }
+	inline int GetSlot() const { return slot; }
+	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
 
 private:
 	std::string classname;
@@ -184,6 +191,7 @@ private:
 	bool can_headshot;
 	float headshot_range_mult;
 	int maxclip1; // Maximum ammo stored in clip1
+	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC

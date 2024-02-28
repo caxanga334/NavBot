@@ -46,7 +46,7 @@ public:
 	bool IsNavBot(const int client) const;
 
 	void AddBot();
-	void RemoveRandomBot();
+	void RemoveRandomBot(const char* message);
 	void RemoveAllBots(const char* message);
 
 	// Gets a vector of all bots currently in game
@@ -70,16 +70,15 @@ public:
 
 	/**
 	 * @brief Runs a function on each bot.
-	 * @tparam T A class with operator() overload with one parameter (BotClass* bot). BotClass is defined in the 'B' template parameter
-	 * @tparam B Bot class to use, default CBaseBot.
+	 * @tparam T A class with operator() overload with one parameter (CBaseBot* bot).
 	 * @param functor Function to call on each bot.
 	 */
-	template <typename T, typename B = CBaseBot>
+	template <typename T>
 	inline void ForEachBot(T functor)
 	{
 		for (auto& ptr : m_bots)
 		{
-			B* bot = static_cast<B*>(ptr.get());
+			CBaseBot* bot = ptr.get();
 			functor(bot);
 		}
 	}

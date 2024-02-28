@@ -27,6 +27,9 @@ namespace tf2lib
 	int GetClassDefaultPrimaryMaxAmmo(TeamFortress2::TFClassType type);
 	int GetClassDefaultSecondaryMaxAmmo(TeamFortress2::TFClassType type);
 	float GetPlayerHealthPercentage(int player);
+	TeamFortress2::TFTeam GetDisguiseTeam(int player);
+	TeamFortress2::TFClassType GetDisguiseClass(int player);
+	edict_t* GetDisguiseTarget(int player);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
@@ -113,7 +116,7 @@ inline int tf2lib::GetClassDefaultPrimaryMaxAmmo(TeamFortress2::TFClassType type
 	case TeamFortress2::TFClass_Pyro:
 		return 200;
 	case TeamFortress2::TFClass_Spy:
-		return 1; // a reminder that the spy's revolver is a secondary weapon
+		return 1; // The revolver uses secondary ammo type
 	case TeamFortress2::TFClass_Engineer:
 		return 32;
 	default:
@@ -140,7 +143,7 @@ inline int tf2lib::GetClassDefaultSecondaryMaxAmmo(TeamFortress2::TFClassType ty
 	case TeamFortress2::TFClass_Pyro:
 		return 32;
 	case TeamFortress2::TFClass_Spy:
-		return 24;
+		return 24; // Spy's revolver is a secondary weapon and uses secondary ammo type
 	case TeamFortress2::TFClass_Engineer:
 		return 200;
 	default:

@@ -570,6 +570,7 @@ void CBaseBot::Spawn()
 #endif // EXT_DEBUG
 
 	Reset();
+	m_homepos = GetAbsOrigin();
 }
 
 void CBaseBot::FirstSpawn()

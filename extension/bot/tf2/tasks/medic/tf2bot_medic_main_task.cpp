@@ -5,6 +5,7 @@
 #include <util/helpers.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/tf2lib.h>
+#include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_main_task.h"
 
 #undef max
@@ -32,18 +33,18 @@ TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (!patient)
 	{
-		int allieds = 0;
+		bool allieds = false;
 
 		bot->GetSensorInterface()->ForEveryKnownEntity([bot, &allieds](const CKnownEntity* known) {
-			if (!known->IsObsolete() && known->IsPlayer() && tf2lib::GetEntityTFTeam(known->GetIndex()) == bot->GetMyTFTeam())
+			if (!allieds && !known->IsObsolete() && known->IsPlayer() && tf2lib::GetEntityTFTeam(known->GetIndex()) == bot->GetMyTFTeam())
 			{
-				++allieds;
+				allieds = true;
 			}
 		});
 
-		if (allieds == 0) // no nearby allied player
+		if (!allieds) // no nearby allied player
 		{
-
+			return PauseFor(new CTF2BotMedicRetreatTask, "No patient to heal and no nearby teammates, retreating to safety!");
 		}
 
 		return Continue();
