@@ -135,6 +135,7 @@ protected:
 	virtual void CleanKnownEntities();
 	// Same as GetKnown but it's not const, use this internally when updating known entities
 	CKnownEntity* FindKnownEntity(edict_t* edict);
+	inline std::vector<CKnownEntity>& GetKnownEntityList() { return m_knownlist; }
 
 private:
 	std::vector<CKnownEntity> m_knownlist;

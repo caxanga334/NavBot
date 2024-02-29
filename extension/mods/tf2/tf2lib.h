@@ -15,6 +15,7 @@ namespace tf2lib
 	bool IsPlayerInvulnerable(int player);
 	bool IsPlayerRevealed(int player); // is player in an effect that reveals invisible players?
 	bool IsPlayerInvisible(int player);
+	inline bool IsPlayerDisguised(int player) { return IsPlayerInCondition(player, TeamFortress2::TFCond_Disguised); }
 	TeamFortress2::TFClassType GetPlayerClassType(int player);
 	int GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass);
 	int GetPlayerMaxHealth(int player);

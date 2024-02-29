@@ -23,6 +23,56 @@ public:
 	CTF2Bot(edict_t* edict);
 	virtual ~CTF2Bot();
 
+	enum KnownSpyInfo
+	{
+		KNOWNSPY_NOT_SUSPICIOUS = 0, // Enemy spy has fooled me
+		KNOWNSPY_SUSPICIOUS, // I don't trust the enemy spy
+		KNOWNSPY_FOUND // I Know the enemy spy is an enemy spy
+	};
+
+	class KnownSpy
+	{
+	public:
+		KnownSpy(edict_t* spy, KnownSpyInfo info = KnownSpyInfo::KNOWNSPY_NOT_SUSPICIOUS);
+
+		inline bool operator==(const KnownSpy& other)
+		{
+			return this->m_handle == other.m_handle;
+		}
+
+		void Update(KnownSpyInfo newinfo, const bool updateinfo = true, const bool updateclass = true);
+		bool IsValid() const;
+		inline float GetTimeSinceLastInfoUpdate() const { return m_time.GetElapsedTime(); }
+		edict_t* GetEdict() const;
+		int GetIndex() const { return m_handle.GetEntryIndex(); }
+		inline bool ShouldForget() const { return m_time.IsGreaterThen(time_to_forget()); }
+		inline bool ShouldLoseAggression() const { return m_time.IsGreaterThen(time_to_lose_aggro()); }
+		inline bool ShouldGoCalm() const { return m_time.IsGreaterThen(time_to_stay_calm()); }
+		inline KnownSpyInfo GetInfo() const { return m_info; }
+		bool IsSuspicious(CTF2Bot* me) const;
+
+	private:
+		CBaseHandle m_handle;
+		KnownSpyInfo m_info;
+		IntervalTimer m_time;
+		TeamFortress2::TFClassType m_lastclass;
+		// memorize info for 30 seconds
+		static constexpr float time_to_forget() { return 30.0f; }
+		static constexpr float time_to_lose_aggro() { return 5.0f; }
+		static constexpr float time_to_stay_calm() { return 20.0f; }
+		// if a suspicious spy gets this close to the bot, detect it
+		static constexpr float sus_too_close_range() { return 300.0f; }
+		// distance to consider a spy 'touching' the bot, used in detection
+		static constexpr float touch_range() { return 75.0f; }
+	};
+
+	// Reset the bot to it's initial state
+	virtual void Reset() override;
+	// Function called at intervals to run the AI 
+	// virtual void Update() override;
+	// Function called every server frame to run the AI
+	virtual void Frame() override;
+
 	virtual void TryJoinGame() override;
 	virtual void Spawn() override;
 	virtual void FirstSpawn() override;
@@ -32,6 +82,7 @@ public:
 	virtual CTF2BotSensor* GetSensorInterface() override { return m_tf2sensor.get(); }
 	virtual CTF2BotBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
 	virtual int GetMaxHealth() const override;
+
 	TeamFortress2::TFClassType GetMyClassType() const;
 	TeamFortress2::TFTeam GetMyTFTeam() const;
 	void JoinClass(TeamFortress2::TFClassType tfclass) const;
@@ -51,6 +102,15 @@ public:
 	void SetMyTeleporterEntrance(edict_t* entity);
 	void SetMyTeleporterExit(edict_t* entity);
 	void FindMyBuildings();
+
+	/**
+	 * @brief Gets a known spy information about a spy or NULL if none
+	 * @param spy Spy to search for
+	 * @return KnownSpy pointer or NULL if not known
+	 */
+	const KnownSpy* GetKnownSpy(edict_t* spy) const;
+	const KnownSpy* UpdateOrCreateKnownSpy(edict_t* spy, KnownSpyInfo info, const bool updateinfo = false, const bool updateclass = false);
+
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -58,14 +118,56 @@ private:
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
 	IntervalTimer m_classswitchtimer;
-
 	CBaseHandle m_mySentryGun;
 	CBaseHandle m_myDispenser;
 	CBaseHandle m_myTeleporterEntrance;
 	CBaseHandle m_myTeleporterExit;
+	std::vector<KnownSpy> m_knownspies;
+	int m_knownspythink;
+
+	inline void UpdateKnownSpies()
+	{
+		m_knownspies.erase(std::remove_if(m_knownspies.begin(), m_knownspies.end(), [](const KnownSpy& knownspy) {
+			if (!knownspy.IsValid())
+			{
+				return true; // remove information of spies that no longer exists
+			}
+
+			return knownspy.ShouldForget();
+		}), m_knownspies.end());
+
+		for (auto& knownspy : m_knownspies)
+		{
+			switch (knownspy.GetInfo())
+			{
+			case CTF2Bot::KNOWNSPY_FOUND:
+			{
+				if (knownspy.ShouldLoseAggression())
+				{
+					// after some time without info on the spy, go back to suspicious
+					knownspy.Update(KNOWNSPY_SUSPICIOUS, true, false);
+				}
+
+				break;
+			}
+			case CTF2Bot::KNOWNSPY_SUSPICIOUS:
+			{
+				if (knownspy.ShouldGoCalm())
+				{
+					// after a longer time without info on the spy, go back to not suspicious
+					knownspy.Update(KNOWNSPY_NOT_SUSPICIOUS, true, false);
+				}
+				break;
+			}
+			default:
+				break;
+			}
+		}
+	}
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
 	static constexpr float medic_patient_health_low_level() { return 0.6f; }
+	static constexpr float knownspy_think_interval() { return 0.5f; }
 };
 
 class CTF2BotPathCost : public IPathCost
