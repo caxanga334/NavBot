@@ -69,10 +69,10 @@ public:
 	inline CBotCmd* GetUserCommand() { return &m_cmd; }
 	// Sets the view angles to be sent on the next User Command
 	inline void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
-	virtual IPlayerController* GetControlInterface();
-	virtual IMovement* GetMovementInterface();
-	virtual ISensor* GetSensorInterface();
-	virtual IBehavior* GetBehaviorInterface();
+	virtual IPlayerController* GetControlInterface() const;
+	virtual IMovement* GetMovementInterface() const;
+	virtual ISensor* GetSensorInterface() const;
+	virtual IBehavior* GetBehaviorInterface() const;
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 
@@ -186,10 +186,10 @@ private:
 	CBotCmd m_cmd; // User command to send
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;
-	IPlayerController* m_basecontrol; // Base controller interface
-	IMovement* m_basemover; // Base movement interface
-	ISensor* m_basesensor; // Base vision and hearing interface
-	IBehavior* m_basebehavior; // Base AI Behavior interface
+	mutable IPlayerController* m_basecontrol; // Base controller interface
+	mutable IMovement* m_basemover; // Base movement interface
+	mutable ISensor* m_basesensor; // Base vision and hearing interface
+	mutable IBehavior* m_basebehavior; // Base AI Behavior interface
 	DifficultyProfile m_profile;
 	CountdownTimer m_cmdtimer; // Delay between commands
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send

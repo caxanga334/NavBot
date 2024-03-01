@@ -671,13 +671,25 @@ public:
 				}
 			}
 		}
+
+		auto& links = area->GetSpecialLinks();
+
+		for (auto& speciallink : links)
+		{
+			CNavArea* adjArea = speciallink.m_link.area;
+
+			if (ShouldSearch(adjArea, area, travelDistanceSoFar))
+			{
+				IncludeInSearch(adjArea, area, &speciallink);
+			}
+		}
 	}
 
 	// Invoked after the search has completed
 	virtual void PostSearch( void ) { }
 
 	// consider 'area' in upcoming search steps
-	void IncludeInSearch( CNavArea *area, CNavArea *priorArea ) 
+	void IncludeInSearch(CNavArea *area, CNavArea *priorArea, const NavSpecialLink* link = nullptr)
 	{
 		if ( area == NULL )
 			return;

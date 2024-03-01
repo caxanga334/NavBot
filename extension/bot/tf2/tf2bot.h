@@ -77,10 +77,10 @@ public:
 	void Spawn() override;
 	void FirstSpawn() override;
 
-	CTF2BotPlayerController* GetControlInterface() override { return m_tf2controller.get(); }
-	CTF2BotMovement* GetMovementInterface() override { return m_tf2movement.get(); }
-	CTF2BotSensor* GetSensorInterface() override { return m_tf2sensor.get(); }
-	CTF2BotBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
+	CTF2BotPlayerController* GetControlInterface() const override { return m_tf2controller.get(); }
+	CTF2BotMovement* GetMovementInterface() const override { return m_tf2movement.get(); }
+	CTF2BotSensor* GetSensorInterface() const override { return m_tf2sensor.get(); }
+	CTF2BotBehavior* GetBehaviorInterface() const override { return m_tf2behavior.get(); }
 	int GetMaxHealth() const override;
 
 	TeamFortress2::TFClassType GetMyClassType() const;

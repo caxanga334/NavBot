@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <manager.h>
 #include <extplayer.h>
+#include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
 #include <bot/interfaces/base_interface.h>
@@ -492,41 +493,41 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 	m_controller->RunPlayerMove(ucmd);
 }
 
-IPlayerController* CBaseBot::GetControlInterface()
+IPlayerController* CBaseBot::GetControlInterface() const
 {
 	if (m_basecontrol == nullptr)
 	{
-		m_basecontrol = new IPlayerController(this);
+		m_basecontrol = new IPlayerController(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basecontrol;
 }
 
-IMovement* CBaseBot::GetMovementInterface()
+IMovement* CBaseBot::GetMovementInterface() const
 {
 	if (m_basemover == nullptr)
 	{
-		m_basemover = new IMovement(this);
+		m_basemover = new IMovement(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basemover;
 }
 
-ISensor* CBaseBot::GetSensorInterface()
+ISensor* CBaseBot::GetSensorInterface() const
 {
 	if (m_basesensor == nullptr)
 	{
-		m_basesensor = new ISensor(this);
+		m_basesensor = new ISensor(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basesensor;
 }
 
-IBehavior* CBaseBot::GetBehaviorInterface()
+IBehavior* CBaseBot::GetBehaviorInterface() const
 {
 	if (m_basebehavior == nullptr)
 	{
-		m_basebehavior = new CBaseBotBehavior(this);
+		m_basebehavior = new CBaseBotBehavior(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basebehavior;
