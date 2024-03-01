@@ -80,7 +80,7 @@ CTF2BotFindHealthTask::HealthSource CTF2BotFindHealthTask::FindSource(CTF2Bot* m
 
 		auto classname = gamehelpers->GetEntityClassname(edict);
 
-		if (!classname || !classname[0])
+		if (classname == nullptr || classname[0] == 0)
 			continue;
 
 		float distance_mul = 1.0f;

@@ -33,7 +33,7 @@ CBaseEntity* CBaseExtPlayer::GetEntity() const
 	return entity;
 }
 
-bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other)
+bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other) const
 {
 	// Maybe also add something like a userid here?
 	return this->GetIndex() == other.GetIndex();

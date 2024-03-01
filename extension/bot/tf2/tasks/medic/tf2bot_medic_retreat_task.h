@@ -9,12 +9,12 @@ class CTF2Bot;
 class CTF2BotMedicRetreatTask : public AITask<CTF2Bot>
 {
 public:
-	virtual TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
-	virtual TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
 
-	virtual const char* GetName() const override { return "MedicRetreat"; }
+	const char* GetName() const override { return "MedicRetreat"; }
 
 private:
 	Vector m_goal;

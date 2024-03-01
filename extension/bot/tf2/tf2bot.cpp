@@ -109,7 +109,7 @@ bool CTF2Bot::IsCarryingAFlag() const
 {
 	auto item = GetItem();
 
-	if (!item)
+	if (item == nullptr)
 		return false;
 
 	if (strncasecmp(gamehelpers->GetEntityClassname(item), "item_teamflag", 13) == 0)
@@ -214,82 +214,43 @@ bool CTF2Bot::IsAmmoLow() const
 	// For engineer, check metal
 	if (GetMyClassType() == TeamFortress2::TFClass_Engineer)
 	{
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) <= 25)
+		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) <= 0)
 		{
 			return true;
 		}
 	}
 
-	// Primary Weapons
-	switch (GetMyClassType())
-	{
-	case TeamFortress2::TFClass_Spy:
-	{
-		break; // Spies does not have a primary weapon
-	}
-	case TeamFortress2::TFClass_Pyro:
-	case TeamFortress2::TFClass_Heavy:
-	{
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 50)
+	bool haslowammoweapon = false;
+
+	ForEveryWeapon([this, &haslowammoweapon](const CBotWeapon& weapon) {
+		if (haslowammoweapon)
+			return;
+
+		if (!weapon.GetWeaponInfo().IsCombatWeapon())
 		{
-			return true;
+			return; // don't bother with ammo for non combat weapons
 		}
 
-		break;
-	}
-	default:
-	{
-		// While medic has 150 max default reserve ammo, we don't care
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 6)
+		if (weapon.GetWeaponInfo().HasLowPrimaryAmmoThreshold())
 		{
-			return true;
+			if (GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) < weapon.GetWeaponInfo().GetLowPrimaryAmmoThreshold())
+			{
+				haslowammoweapon = true;
+				return;
+			}
 		}
 
-		break;
-	}
-	}
-
-	switch (GetMyClassType())
-	{
-	case TeamFortress2::TFClass_Medic:
-	{
-		break; // ignore medigun
-	}
-	case TeamFortress2::TFClass_Pyro:
-	case TeamFortress2::TFClass_Soldier:
-	case TeamFortress2::TFClass_Scout:
-	case TeamFortress2::TFClass_DemoMan:
-	case TeamFortress2::TFClass_Heavy:
-	{
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_SECONDARY) <= 12)
+		if (weapon.GetWeaponInfo().HasLowSecondaryAmmoThreshold())
 		{
-			return true;
+			if (GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetSecondaryAmmoType()) < weapon.GetWeaponInfo().GetLowSecondaryAmmoThreshold())
+			{
+				haslowammoweapon = true;
+				return;
+			}
 		}
+	});
 
-		break;
-	}
-	case TeamFortress2::TFClass_Sniper:
-	case TeamFortress2::TFClass_Engineer:
-	{
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_SECONDARY) <= 25)
-		{
-			return true;
-		}
-
-		break;
-	}
-	default:
-	{
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 6)
-		{
-			return true;
-		}
-
-		break;
-	}
-	}
-
-	return false;
+	return haslowammoweapon;
 }
 
 edict_t* CTF2Bot::MedicFindBestPatient() const
@@ -377,7 +338,7 @@ edict_t* CTF2Bot::MedicFindBestPatient() const
 		}
 	}
 
-	if (best)
+	if (best != nullptr)
 	{
 		DebugPrintToConsole(BOTDEBUG_TASKS, 0, 102, 0, "%s MEDIC: Found patient %s, range factor: %3.4f \n", GetDebugIdentifier(), 
 			UtilHelpers::GetPlayerDebugIdentifier(best), bestrange);
@@ -439,12 +400,12 @@ void CTF2Bot::FindMyBuildings()
 		{
 			auto edict = gamehelpers->EdictOfIndex(i);
 
-			if (!edict || edict->IsFree())
+			if (edict == nullptr || edict->IsFree())
 				continue;
 
 			auto classname = gamehelpers->GetEntityClassname(edict);
 
-			if (!classname || !classname[0])
+			if (classname == nullptr || classname[0] == 0)
 				continue;
 
 			tfentities::HBaseObject object(edict);
@@ -549,7 +510,7 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 
 	float dist = 0.0f;
 
-	if (link)
+	if (link != nullptr)
 	{
 		dist = link->GetConnectionLength();
 	}
@@ -563,7 +524,7 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	}
 
 	// only check gap and height on common connections
-	if (!link)
+	if (link == nullptr)
 	{
 		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
 
@@ -574,7 +535,8 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 				// too high to reach
 				return -1.0f;
 			}
-			else if (deltaZ >= m_maxdjheight) // can double jump
+
+			if (deltaZ >= m_maxdjheight) // can double jump
 			{
 				// too high to reach
 				return -1.0f;
@@ -686,13 +648,14 @@ bool CTF2Bot::KnownSpy::IsSuspicious(CTF2Bot* me) const
 		{
 			return true; // detect suspicious spies that didn't change their disguise class
 		}
-		else if (range <= sus_too_close_range())
+
+		if (range <= sus_too_close_range())
 		{
 			return true; // suspicious spy got too close for comfort
 		}
 	}
 
-	if (currentdisguisetarget)
+	if (currentdisguisetarget != nullptr)
 	{
 		int targetindex = gamehelpers->IndexOfEdict(currentdisguisetarget);
 

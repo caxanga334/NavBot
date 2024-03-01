@@ -17,16 +17,15 @@ class CTF2BotSensor;
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
 public:
-	virtual AITask<CTF2Bot>* InitialNextTask() override;
-	virtual TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+	AITask<CTF2Bot>* InitialNextTask() override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	
-	virtual TaskEventResponseResult<CTF2Bot> OnTestEventPropagation(CTF2Bot* bot) override;
+	TaskEventResponseResult<CTF2Bot> OnTestEventPropagation(CTF2Bot* bot) override;
 
-	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
-	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
+	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
+	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 
-
-	virtual const char* GetName() const override { return "MainTask"; }
+	const char* GetName() const override { return "MainTask"; }
 
 private:
 	CountdownTimer m_weaponswitchtimer;
@@ -36,7 +35,7 @@ private:
 	void SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* threat);
 	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
-	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
+	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo& info, CTF2BotSensor* sensor);
 	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 };
 

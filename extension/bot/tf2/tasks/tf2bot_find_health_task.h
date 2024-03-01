@@ -17,10 +17,10 @@ public:
 		DISPENSER // dispenser
 	};
 
-	virtual TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
-	virtual TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
-	virtual const char* GetName() const override { return "FindHealth"; }
+	const char* GetName() const override { return "FindHealth"; }
 
 private:
 	CountdownTimer m_repathtimer;

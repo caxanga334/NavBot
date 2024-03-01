@@ -163,6 +163,17 @@ int CTeamFortress2Mod::GetWeaponEconIndex(edict_t* weapon) const
 	return tf2lib::GetWeaponItemDefinitionIndex(weapon);
 }
 
+int CTeamFortress2Mod::GetWeaponID(edict_t* weapon) const
+{
+	auto classname = gamehelpers->GetEntityClassname(weapon);
+
+	if (classname == nullptr || classname[0] == 0)
+		return CBaseMod::NO_WEAPON_ID;
+
+	std::string szname(classname);
+	return static_cast<int>(GetTFWeaponID(szname));
+}
+
 const char* CTeamFortress2Mod::GetCurrentGameModeName() const
 {
 	return s_tf2gamemodenames[static_cast<int>(m_gamemode)];
@@ -209,47 +220,56 @@ bool CTeamFortress2Mod::DetectMapViaName()
 		m_gamemode = TeamFortress2::GameModeType::GM_CTF;
 		return true;
 	}
-	else if (map.find("cp_") != std::string::npos)
+
+	if (map.find("cp_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_CP;
 		return true;
 	}
-	else if (map.find("tc_") != std::string::npos)
+
+	if (map.find("tc_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_TC;
 		return true;
 	}
-	else if (map.find("mvm_") != std::string::npos)
+
+	if (map.find("mvm_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_MVM;
 		return true;
 	}
-	else if (map.find("pl_") != std::string::npos)
+
+	if (map.find("pl_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_PL;
 		return true;
 	}
-	else if (map.find("plr_") != std::string::npos)
+
+	if (map.find("plr_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_PL_RACE;
 		return true;
 	}
-	else if (map.find("arena_") != std::string::npos)
+
+	if (map.find("arena_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_ARENA;
 		return true;
 	}
-	else if (map.find("koth_") != std::string::npos)
+
+	if (map.find("koth_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_KOTH;
 		return true;
 	}
-	else if (map.find("sd_") != std::string::npos)
+
+	if (map.find("sd_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_SD;
 		return true;
 	}
-	else if (map.find("trade_") != std::string::npos)
+
+	if (map.find("trade_") != std::string::npos)
 	{
 		m_gamemode = TeamFortress2::GameModeType::GM_NONE;
 		return true;
@@ -367,7 +387,8 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 			m_gamemode = TeamFortress2::GameModeType::GM_ADCP;
 			return true;
 		}
-		else if (roundCount > 1)
+
+		if (roundCount > 1)
 		{
 			// We had multiple rounds, but not all of them were restricted...
 			// must be a push/pull TC map

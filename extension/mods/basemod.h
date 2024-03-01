@@ -17,6 +17,7 @@ public:
 	virtual ~CBaseMod();
 
 	static constexpr auto NO_ECON_INDEX = -1;
+	static constexpr auto NO_WEAPON_ID = -1;
 
 	// Called every server frame
 	virtual void Frame() {}
@@ -48,6 +49,8 @@ public:
 	virtual bool NavIsEntityWalkable(edict_t* entity, unsigned int flags) { return true; }
 	// Returns the economy item index for the given weapon if the mod uses it (IE: TF2)
 	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
+	// Returns the weapon ID, used for quick identification of the weapon
+	virtual int GetWeaponID(edict_t* weapon) const { return NO_WEAPON_ID; }
 private:
 	CBaseHandle m_playerresourceentity;
 

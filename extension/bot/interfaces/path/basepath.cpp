@@ -719,6 +719,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint)
 {
 	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
+	bot->GetMovementInterface()->AdjustPathCrossingPoint(from, to, frompos, crosspoint);
 }
 
 void CPath::PostProcessPath()

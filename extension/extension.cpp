@@ -359,7 +359,7 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 	RETURN_META(MRES_IGNORED);
 }
 
-void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
+void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper) const
 {
 	if (!m_hookruncmd)
 	{

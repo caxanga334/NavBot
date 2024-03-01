@@ -19,20 +19,20 @@ ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill leve
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
 public:
-	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	virtual TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	virtual TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
-	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
-	virtual const char* GetName() const { return "CBaseBotTestTask"; }
+	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
+	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
+	const char* GetName() const override { return "CBaseBotTestTask"; }
 };
 
 class CBaseBotPathTestTask : public AITask<CBaseBot>
 {
 public:
-	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	virtual TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
-	virtual const char* GetName() const { return "CBaseBotPathTestTask"; }
+	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
+	const char* GetName() const override { return "CBaseBotPathTestTask"; }
 
 private:
 	CMeshNavigator m_nav;
@@ -42,10 +42,9 @@ private:
 class CBaseBotSwitchTestTask : public AITask<CBaseBot>
 {
 public:
-	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	virtual const char* GetName() const { return "CBaseBotSwitchTestTask"; }
-
+	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	const char* GetName() const override { return "CBaseBotSwitchTestTask"; }
 };
 
 TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
@@ -123,13 +122,13 @@ class CBaseBotBehavior : public IBehavior
 {
 public:
 	CBaseBotBehavior(CBaseBot* bot);
-	virtual ~CBaseBotBehavior();
+	~CBaseBotBehavior() override;
 
-	virtual void Reset();
-	virtual void Update();
+	void Reset() override;
+	void Update() override;
 
-	virtual IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
-	virtual std::vector<IEventListener*>* GetListenerVector();
+	IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
+	std::vector<IEventListener*>* GetListenerVector() override;
 
 private:
 	AITaskManager<CBaseBot>* m_manager;
@@ -213,30 +212,15 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmdtimer.Invalidate();
 	m_debugtextoffset = 0;
 	m_weapons.reserve(MAX_WEAPONS);
+	m_weaponupdatetimer = 5;
 }
 
 CBaseBot::~CBaseBot()
 {
-	if (m_basecontrol)
-	{
-		delete m_basecontrol;
-	}
-
-	if (m_basemover)
-	{
-		delete m_basemover;
-	}
-
-	if (m_basesensor)
-	{
-		delete m_basesensor;
-	}
-	
-	if (m_basebehavior)
-	{
-		delete m_basebehavior;
-	}
-
+	delete m_basecontrol;
+	delete m_basemover;
+	delete m_basesensor;
+	delete m_basebehavior;
 	m_interfaces.clear();
 	m_listeners.clear();
 }
@@ -428,7 +412,8 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 	{
 		return true;
 	}
-	else if (strncmp(classname, "func_breakable_surf", 19) == 0)
+
+	if (strncmp(classname, "func_breakable_surf", 19) == 0)
 	{
 		return true;
 	}
@@ -462,20 +447,20 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	float forwardspeed = 0.0f;
 	float sidespeed = 0.0f;
 
-	if (buttons & INPUT_FORWARD)
+	if ((buttons & INPUT_FORWARD) != 0)
 	{
 		forwardspeed = mover->GetMovementSpeed();
 	}
-	else if (buttons & INPUT_BACK)
+	else if ((buttons & INPUT_BACK) != 0)
 	{
 		forwardspeed = -mover->GetMovementSpeed();
 	}
 
-	if (buttons & INPUT_MOVERIGHT)
+	if ((buttons & INPUT_MOVERIGHT) != 0)
 	{
 		sidespeed = mover->GetMovementSpeed();
 	}
-	else if (buttons & INPUT_MOVELEFT)
+	else if ((buttons & INPUT_MOVELEFT) != 0)
 	{
 		sidespeed = -mover->GetMovementSpeed();
 	}
@@ -503,10 +488,8 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 	{
 		return;
 	}
-	else
-	{
-		m_controller->RunPlayerMove(ucmd);
-	}
+
+	m_controller->RunPlayerMove(ucmd);
 }
 
 IPlayerController* CBaseBot::GetControlInterface()

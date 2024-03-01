@@ -642,6 +642,71 @@ bool IMovement::IsAreaTraversable(const CNavArea* area) const
 	return true;
 }
 
+void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint)
+{
+	// Compute a direction vector point towards the crossing point
+	Vector forward = (*crosspoint - fromPos);
+	forward.z = 0.0f;
+	forward.NormalizeInPlace();
+	Vector left(-forward.y, forward.x, 0.0f);
+
+	if (left.IsZero())
+	{
+		return;
+	}
+
+	CTraceFilterNoNPCsOrPlayer filter(GetBot()->GetHandleEntity(), COLLISION_GROUP_NONE);
+	trace_t result;
+	float hullwidth = GetHullWidth();
+	Vector mins(-hullwidth, -hullwidth, 0.0f);
+	Vector maxs(hullwidth, hullwidth, GetStandingHullHeigh());
+	const Vector& endPos = *crosspoint;
+	
+	UTIL_TraceHull(fromPos, endPos, mins, maxs, GetMovementTraceMask(), filter, &result);
+
+	if (!result.DidHit())
+	{
+		return; // no collision
+	}
+
+	if (GetBot()->IsDebugging(BOTDEBUG_PATH))
+	{
+		NDebugOverlay::SweptBox(fromPos, endPos, mins, maxs, vec3_angle, 255, 0, 0, 255, 15.0f);
+	}
+
+	// direct path is blocked, try left first
+
+	UTIL_TraceHull(fromPos, endPos + (left * hullwidth), mins, maxs, GetMovementTraceMask(), filter, &result);
+
+	if (!result.DidHit())
+	{
+		*crosspoint = endPos + (left * hullwidth);
+
+		if (GetBot()->IsDebugging(BOTDEBUG_PATH))
+		{
+			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 15.0f);
+		}
+
+		return;
+	}
+
+	// try right
+
+	UTIL_TraceHull(fromPos, endPos + (left * -hullwidth), mins, maxs, GetMovementTraceMask(), filter, &result);
+
+	if (!result.DidHit())
+	{
+		*crosspoint = endPos + (left * -hullwidth);
+
+		if (GetBot()->IsDebugging(BOTDEBUG_PATH))
+		{
+			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 15.0f);
+		}
+
+		return;
+	}
+}
+
 void IMovement::StuckMonitor()
 {
 	auto bot = GetBot();

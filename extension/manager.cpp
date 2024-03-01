@@ -70,7 +70,7 @@ void CExtManager::OnAllLoaded()
 	LoadBotNames();
 	m_bdm.LoadProfiles();
 
-	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod.get()->GetModName());
+	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod->GetModName());
 	
 	m_wim.LoadConfigFile();
 }
@@ -95,7 +95,7 @@ void CExtManager::Frame()
 		player.get()->PlayerThink();
 	}
 
-	m_mod.get()->Frame();
+	m_mod->Frame();
 }
 
 void CExtManager::OnClientPutInServer(int client)
@@ -186,9 +186,7 @@ void CExtManager::OnClientDisconnect(int client)
 void CExtManager::OnMapStart()
 {
 	TheNavMesh->OnMapStart();
-	m_mod.get()->OnMapStart();
-
-	CBaseMod* pointer = m_mod.get();
+	m_mod->OnMapStart();
 
 	if (m_botnames.size() != 0)
 	{
@@ -200,7 +198,7 @@ void CExtManager::OnMapStart()
 void CExtManager::OnMapEnd()
 {
 	TheNavMesh->OnMapEnd();
-	m_mod.get()->OnMapEnd();
+	m_mod->OnMapEnd();
 }
 
 // Detect current mod and initializes it
@@ -224,7 +222,7 @@ CBaseMod* CExtManager::GetMod()
 
 void CExtManager::NotifyRegisterGameEvents()
 {
-	m_mod.get()->RegisterGameEvents();
+	m_mod->RegisterGameEvents();
 }
 
 CBaseBot* CExtManager::GetBotByIndex(int index)
@@ -322,7 +320,7 @@ void CExtManager::AddBot()
 void CExtManager::RemoveRandomBot(const char* message)
 {
 	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
-	auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
+	auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
 	player->Kick(message);
 }
 
@@ -330,7 +328,7 @@ void CExtManager::RemoveAllBots(const char* message)
 {
 	for (auto& botptr : m_bots)
 	{
-		auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
+		auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
 		player->Kick(message);
 	}
 }
@@ -363,7 +361,7 @@ void CExtManager::LoadBotNames()
 			continue; // comment line, ignore
 		}
 
-		if (std::isspace(line[0]))
+		if (std::isspace(line[0]) != 0)
 		{
 			continue; // ignore lines that start with space
 		}
@@ -526,7 +524,8 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 			rootconsole->ConsolePrint("Stopped debugging");
 			return;
 		}
-		else if (strncasecmp(option, "SENSOR", 6) == 0)
+
+		if (strncasecmp(option, "SENSOR", 6) == 0)
 		{
 			extmanager->ToggleDebugOption(BOTDEBUG_SENSOR);
 			rootconsole->ConsolePrint("Toggle Debugging Bot Sensor Interface");

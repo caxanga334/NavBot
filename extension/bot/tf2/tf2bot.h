@@ -21,7 +21,7 @@ class CTF2Bot : public CBaseBot
 {
 public:
 	CTF2Bot(edict_t* edict);
-	virtual ~CTF2Bot();
+	~CTF2Bot() override;
 
 	enum KnownSpyInfo
 	{
@@ -67,21 +67,21 @@ public:
 	};
 
 	// Reset the bot to it's initial state
-	virtual void Reset() override;
+	void Reset() override;
 	// Function called at intervals to run the AI 
 	// virtual void Update() override;
 	// Function called every server frame to run the AI
-	virtual void Frame() override;
+	void Frame() override;
 
-	virtual void TryJoinGame() override;
-	virtual void Spawn() override;
-	virtual void FirstSpawn() override;
+	void TryJoinGame() override;
+	void Spawn() override;
+	void FirstSpawn() override;
 
-	virtual CTF2BotPlayerController* GetControlInterface() override { return m_tf2controller.get(); }
-	virtual CTF2BotMovement* GetMovementInterface() override { return m_tf2movement.get(); }
-	virtual CTF2BotSensor* GetSensorInterface() override { return m_tf2sensor.get(); }
-	virtual CTF2BotBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
-	virtual int GetMaxHealth() const override;
+	CTF2BotPlayerController* GetControlInterface() override { return m_tf2controller.get(); }
+	CTF2BotMovement* GetMovementInterface() override { return m_tf2movement.get(); }
+	CTF2BotSensor* GetSensorInterface() override { return m_tf2sensor.get(); }
+	CTF2BotBehavior* GetBehaviorInterface() override { return m_tf2behavior.get(); }
+	int GetMaxHealth() const override;
 
 	TeamFortress2::TFClassType GetMyClassType() const;
 	TeamFortress2::TFTeam GetMyTFTeam() const;
@@ -175,7 +175,7 @@ class CTF2BotPathCost : public IPathCost
 public:
 	CTF2BotPathCost(CTF2Bot* bot, RouteType routetype = FASTEST_ROUTE);
 
-	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const override;
+	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const override;
 
 private:
 	CTF2Bot* m_me;

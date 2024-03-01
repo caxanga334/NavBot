@@ -1513,10 +1513,8 @@ bool CNavArea::IsConnected(const CNavArea* area, NavLinkType linktype) const
 /**
  * Compute change in actual ground height from this area to given area
  */
-float CNavArea::ComputeGroundHeightChange( const CNavArea *area )
+float CNavArea::ComputeGroundHeightChange( const CNavArea *area ) const
 {
-	VPROF_BUDGET( "CNavArea::ComputeHeightChange", "NextBot" );
-
 	Vector closeFrom, closeTo;
 	area->GetClosestPointOnArea( GetCenter(), &closeTo );
 	GetClosestPointOnArea( area->GetCenter(), &closeFrom );

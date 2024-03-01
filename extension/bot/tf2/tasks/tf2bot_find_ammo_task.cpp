@@ -159,7 +159,7 @@ CTF2BotFindAmmoTask::AmmoSource CTF2BotFindAmmoTask::FindSource(CTF2Bot* me)
 
 		auto classname = gamehelpers->GetEntityClassname(edict);
 
-		if (!classname || !classname[0])
+		if (classname == nullptr || classname[0] == 0)
 			continue;
 
 		float distance_mul = 1.0f;

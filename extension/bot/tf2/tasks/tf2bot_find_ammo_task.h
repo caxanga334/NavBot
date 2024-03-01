@@ -19,13 +19,13 @@ public:
 
 	CTF2BotFindAmmoTask();
 
-	virtual TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
-	virtual TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
-	virtual TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
-	virtual TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
+	TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
+	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 
-	virtual const char* GetName() const override { return "FindAmmo"; }
+	const char* GetName() const override { return "FindAmmo"; }
 
 private:
 	CountdownTimer m_repathtimer;

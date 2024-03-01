@@ -28,19 +28,19 @@ class CBaseBot : public CBaseExtPlayer, public IEventListener
 {
 public:
 	CBaseBot(edict_t* edict);
-	virtual ~CBaseBot();
+	~CBaseBot() override;
 
 	// Event propagation
-	virtual std::vector<IEventListener*>* GetListenerVector() override;
+	std::vector<IEventListener*>* GetListenerVector() override;
 
 	// Called by the manager for all players every server frame.
 	// Overriden to call bot functions
-	virtual void PlayerThink() override final;
+	void PlayerThink() final;
 
 	// true if this is a bot managed by this extension
-	virtual bool IsExtensionBot() const override { return true; }
+	bool IsExtensionBot() const final { return true; }
 	// Pointer to the extension bot class
-	virtual CBaseBot* MyBotPointer() override { return this; }
+	CBaseBot* MyBotPointer() final { return this; }
 
 	// Reset the bot to it's initial state
 	virtual void Reset();
@@ -108,7 +108,7 @@ public:
 	void SelectWeaponByCommand(const char* szclassname) const;
 
 	inline const DifficultyProfile& GetDifficultyProfile() const { return m_profile; }
-	inline void SetDifficultyProfile(DifficultyProfile profile)
+	inline void SetDifficultyProfile(const DifficultyProfile& profile)
 	{
 		m_profile = profile;
 

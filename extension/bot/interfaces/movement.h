@@ -210,6 +210,8 @@ public:
 
 	virtual bool IsAreaTraversable(const CNavArea* area) const;
 	virtual bool NavigatorAllowSkip(const CNavArea* area) const { return true; }
+	// Called after calculating the crossing point between two nav areas
+	virtual void AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint);
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer

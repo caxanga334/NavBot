@@ -449,7 +449,7 @@ public:
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
 	bool IsConnected( const CNavLadder *ladder, CNavLadder::LadderDirectionType dir ) const;	// return true if given ladder is connected in given direction
 	bool IsConnected(const CNavArea* area, NavLinkType linktype) const; // returns true if the given area is connected via the given link type
-	float ComputeGroundHeightChange( const CNavArea *area );			// compute change in actual ground height from this area to given area
+	float ComputeGroundHeightChange( const CNavArea *area ) const;			// compute change in actual ground height from this area to given area
 
 	const NavConnectVector *GetIncomingConnections( NavDirType dir ) const	{ return &m_incomingConnect[dir]; }	// get areas connected TO this area by a ONE-WAY link (ie: we have no connection back to them)
 	void AddIncomingConnection( CNavArea *source, NavDirType incomingEdgeDir );

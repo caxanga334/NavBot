@@ -28,7 +28,7 @@ public:
 	IServerNetworkable* GetServerNetworkable() const { return m_edict->GetNetworkable(); }
 	ICollideable* GetCollideable() const { return m_edict->GetCollideable(); }
 
-	bool operator==(const CBaseExtPlayer& other);
+	bool operator==(const CBaseExtPlayer& other) const;
 
 	// Function called every server frame by the manager
 	virtual void PlayerThink();

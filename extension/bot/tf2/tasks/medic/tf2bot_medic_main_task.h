@@ -13,14 +13,14 @@ class CTF2BotMedicMainTask : public AITask<CTF2Bot>
 {
 public:
 	// virtual AITask<CTF2Bot>* InitialNextTask() override;
-	virtual TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
-	virtual TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
-	virtual TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+	TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 
 	// medics never attack
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 
-	virtual const char* GetName() const override { return "MedicMain"; }
+	const char* GetName() const override { return "MedicMain"; }
 
 private:
 	CBaseHandle m_patient; // my current heal target
@@ -37,7 +37,6 @@ private:
 	{
 		return m_calltimer.IsGreaterThen(2.0f);
 	}
-
 
 	static constexpr float medigun_max_heal_range() { return 400.0f; }
 	static constexpr float medic_range_to_stay_near_patient() { return 250.0f; }
