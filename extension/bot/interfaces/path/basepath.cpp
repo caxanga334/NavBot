@@ -2,9 +2,9 @@
 #include <cmath>
 
 #include <extension.h>
+#include <manager.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
-#include <manager.h>
 #include <mods/basemod.h>
 #include <util/UtilTrace.h>
 #include <sdkports/debugoverlay_shared.h>
@@ -13,8 +13,9 @@
 
 #undef min
 #undef max
+#undef clamp
 
-extern CExtManager* extmanager;
+static ConVar sm_navbot_path_segment_draw_limit("sm_navbot_path_segment_draw_limit", "25", FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Path segment draw limit.");
 
 CPath::CPath() :
 	m_ageTimer()
@@ -70,6 +71,8 @@ void CPath::Draw(const CBasePathSegment* start, const float duration)
 {
 	bool isstart = true;
 	Vector v1, v2;
+	int i = 0;
+	const int limit = sm_navbot_path_segment_draw_limit.GetInt();
 
 	constexpr float ARROW_WIDTH = 4.0f;
 
@@ -97,6 +100,11 @@ void CPath::Draw(const CBasePathSegment* start, const float duration)
 		v1 = next->goal;
 
 		next = GetNextSegment(next);
+
+		if (++i > limit)
+		{
+			return;
+		}
 	}
 }
 
@@ -518,6 +526,26 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 				newSegment->goal.y = endDrop.y;
 				newSegment->goal.z = ground;
 				newSegment->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
+
+				// Sometimes there is a railing between the drop and the ground
+
+				CTraceFilterNoNPCsOrPlayer filter(bot->GetHandleEntity(), COLLISION_GROUP_NONE);
+				trace_t result;
+				Vector mins(-halfWidth, -halfWidth, mover->GetStepHeight());
+				Vector maxs(halfWidth, halfWidth, hullHeight);
+
+				UTIL_TraceHull(from->goal, startDrop, mins, maxs, mover->GetMovementTraceMask(), filter, &result);
+
+				if (result.DidHit()) // probably collided with a railing
+				{
+					to->goal = result.endpos;
+					CBasePathSegment* seg2 = CreateNewSegment();
+					seg2->CopySegment(to);
+					seg2->goal = startDrop + Vector(0.0f, 0.0f, mover->GetStepHeight());
+					seg2->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
+					pathinsert.emplace(newSegment, seg2, false);
+				}
+
 
 				pathinsert.emplace(to, newSegment, true);
 			}

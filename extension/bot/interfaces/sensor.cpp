@@ -607,6 +607,9 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
+		if (i == GetBot()->GetIndex())
+			continue; // skip self
+
 		auto gp = playerhelpers->GetGamePlayer(i);
 
 		if (!gp->IsInGame())

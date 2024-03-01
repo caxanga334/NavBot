@@ -275,6 +275,11 @@ edict_t* CTF2Bot::MedicFindBestPatient() const
 			return false; // can't heal invisible players
 		}
 
+		if (!UtilHelpers::IsPlayerAlive(client))
+		{
+			return false;
+		}
+
 		Vector mypos = WorldSpaceCenter();
 		Vector theirpos = UtilHelpers::getWorldSpaceCenter(entity);
 		float range = (theirpos - mypos).Length();

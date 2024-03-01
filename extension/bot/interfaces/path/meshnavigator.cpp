@@ -233,10 +233,10 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 		if (start != nullptr)
 		{
-			Draw(start, 0.2f);
+			Draw(start, 0.1f);
 		}
 
-		NDebugOverlay::Sphere(goalPos, 5.0f, 255, 255, 0, true, 0.2f);
+		NDebugOverlay::Sphere(goalPos, 5.0f, 255, 255, 0, true, 0.1f);
 	}
 }
 
@@ -419,8 +419,8 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 
 					if (bot->IsDebugging(BOTDEBUG_PATH))
 					{
-						NDebugOverlay::Text(next->goal + Vector(0.0f, 0.0f, 8.0f), "Segment Skipped!", false, 10.0f);
-						NDebugOverlay::Sphere(next->goal, 6.0f, 0, 230, 255, true, 10.0f);
+						NDebugOverlay::Text(next->goal + Vector(0.0f, 0.0f, 8.0f), "Segment Skipped!", false, 0.5f);
+						NDebugOverlay::Sphere(next->goal, 6.0f, 0, 230, 255, true, 0.5f);
 					}
 
 					skip = next;

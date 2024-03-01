@@ -656,6 +656,24 @@ bool UtilHelpers::IsPlayerAlive(const int player)
 		return false;
 	}
 
+	int lifestate = 0;
+
+	if (entprops->GetEntProp(player, Prop_Data, "m_lifeState", lifestate))
+	{
+		if (lifestate != LIFE_ALIVE)
+		{
+			return false;
+		}
+	}
+#ifdef EXT_DEBUG
+	else
+	{
+		// log mods that doesn't support 'm_lifeState'
+		smutils->LogError(myself, "Warning: Failed to get m_lifeState propdata!");
+	}
+#endif // EXT_DEBUG
+
+
 	return GetEntityHealth(player) > 0;
 }
 

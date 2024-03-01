@@ -485,8 +485,8 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 	{
 		if (result.DidHit())
 		{
-			NDebugOverlay::SweptBox(from, to, mins, maxs, vec3_angle, 255, 0, 0, 255, 15.0f);
-			NDebugOverlay::Sphere(result.endpos, 24.0f, 255, 0, 255, true, 15.0f);
+			NDebugOverlay::SweptBox(from, to, mins, maxs, vec3_angle, 255, 0, 0, 255, 0.5f);
+			NDebugOverlay::Sphere(result.endpos, 24.0f, 255, 0, 255, true, 0.5f);
 
 			auto index = result.GetEntityIndex();
 
@@ -496,7 +496,7 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 				char message[256];
 				ke::SafeSprintf(message, sizeof(message), "Hit Entity %s#%i", classname, index);
 
-				NDebugOverlay::Text(result.endpos, message, false, 15.0f);
+				NDebugOverlay::Text(result.endpos, message, false, 0.5f);
 				DevMsg("%s IMovement::IsPotentiallyTraversable \n  %s \n", GetBot()->GetDebugIdentifier(), message);
 			}
 		}
@@ -658,7 +658,7 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 	CTraceFilterNoNPCsOrPlayer filter(GetBot()->GetHandleEntity(), COLLISION_GROUP_NONE);
 	trace_t result;
 	float hullwidth = GetHullWidth();
-	Vector mins(-hullwidth, -hullwidth, 0.0f);
+	Vector mins(-hullwidth, -hullwidth, GetStepHeight());
 	Vector maxs(hullwidth, hullwidth, GetStandingHullHeigh());
 	const Vector& endPos = *crosspoint;
 	
@@ -671,7 +671,7 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 
 	if (GetBot()->IsDebugging(BOTDEBUG_PATH))
 	{
-		NDebugOverlay::SweptBox(fromPos, endPos, mins, maxs, vec3_angle, 255, 0, 0, 255, 15.0f);
+		NDebugOverlay::SweptBox(fromPos, endPos, mins, maxs, vec3_angle, 255, 0, 0, 255, 0.2f);
 	}
 
 	// direct path is blocked, try left first
@@ -684,7 +684,7 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 
 		if (GetBot()->IsDebugging(BOTDEBUG_PATH))
 		{
-			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 15.0f);
+			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 0.2f);
 		}
 
 		return;
@@ -700,7 +700,7 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 
 		if (GetBot()->IsDebugging(BOTDEBUG_PATH))
 		{
-			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 15.0f);
+			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 0.2f);
 		}
 
 		return;

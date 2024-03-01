@@ -219,8 +219,7 @@ class CWeaponInfoManager : public SourceMod::ITextListener_SMC
 {
 public:
 	inline CWeaponInfoManager() :
-		m_tempweapinfo(),
-		m_defaultinfo()
+		m_tempweapinfo()
 	{
 		m_weapons.reserve(512);
 		m_isvalid = false;
@@ -249,21 +248,18 @@ public:
 	 * @param index Econ index to search
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
-	inline const WeaponInfo& GetWeaponInfo(const char* classname, const int index) const
+	inline void GetWeaponInfo(const char* classname, const int index, WeaponInfo& result) const
 	{
-		WeaponInfo result;
-
 		if (LookUpWeaponInfoByEconIndex(index, result))
 		{
-			return result;
+			return;
 		}
 
 		if (LookUpWeaponInfoByClassname(classname, result))
 		{
-			return result;
+			return;
 		}
 
-		return m_defaultinfo;
 	}
 
 	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
@@ -319,7 +315,6 @@ private:
 	bool m_section_ter; // tertiary attack section
 
 	WeaponInfo m_tempweapinfo; // temporary weapon info
-	WeaponInfo m_defaultinfo;
 
 	inline bool IsParserInWeaponAttackSection() const
 	{
