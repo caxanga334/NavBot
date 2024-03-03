@@ -15,6 +15,8 @@ public:
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
+
 	const char* GetName() const override { return "Tactical"; }
 
 private:

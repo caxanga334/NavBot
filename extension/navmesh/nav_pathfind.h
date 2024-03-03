@@ -821,6 +821,21 @@ inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector,
 					adjArea->AddToOpenList();
 				}
 			}
+
+			for (auto& links : area->GetSpecialLinks())
+			{
+				CNavArea* adjArea = links.m_link.area;
+
+				if (adjArea->IsBlocked(NAV_TEAM_ANY) || adjArea->IsMarked())
+				{
+					continue;
+				}
+
+				adjArea->SetTotalCost(0.0f);
+				adjArea->SetParent(area, GO_SPECIAL_LINK);
+				adjArea->SetCostSoFar(area->GetCostSoFar() + links.GetConnectionLength());
+				adjArea->AddToOpenList();
+			}
 		}
 	}
 }

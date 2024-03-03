@@ -18,7 +18,7 @@
 #undef min
 #undef clamp // undef mathlib macros
 
-static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_percent", "0.5f", FCVAR_GAMEDLL, "If the bot health is below this percentage, the bot should retreat for health", true, 0.0f, true, 1.0f);
+static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_percent", "0.5", FCVAR_GAMEDLL, "If the bot health is below this percentage, the bot should retreat for health", true, 0.0f, true, 1.0f);
 
 AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask()
 {
@@ -68,5 +68,27 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2B
 	m_healthchecktimer.Start(0.5f);
 
 	return Continue();
+}
+
+QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
+{
+	CTF2Bot* me = static_cast<CTF2Bot*>(base);
+
+	if (tf2lib::IsPlayerInvulnerable(me->GetIndex()))
+	{
+		return ANSWER_NO;
+	}
+
+	if (me->GetHealthPercentage() <= sm_navbot_tf_ai_low_health_percent.GetFloat())
+	{
+		return ANSWER_YES;
+	}
+
+	if (me->IsAmmoLow())
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_UNDEFINED;
 }
 

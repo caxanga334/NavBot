@@ -34,8 +34,6 @@
 #include <tslist.h>
 #include <utlhash.h>
 #include <vprof.h>
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
 #include "util/UtilTrace.h"
 
 extern IVDebugOverlay* debugoverlay;
@@ -409,6 +407,7 @@ CNavArea::CNavArea(unsigned int place)
 	m_nVisTestCounter = (uint32)-1;
 
 	m_speciallinks.reserve(4);
+	m_hints.reserve(16);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3301,6 +3300,11 @@ void CNavArea::Draw( void ) const
 		NavDrawLine( se, sw, color );
 		NavDrawLine( sw, nw, color );
 	}
+
+	for (const auto& hint : m_hints)
+	{
+		hint.Draw();
+	}
 }
 
 
@@ -6113,4 +6117,22 @@ Vector CNavArea::GetRandomPoint( void ) const
 	spot.z = GetZ( spot.x, spot.y );
 
 	return spot;
+}
+
+void NavHintPoint::Draw() const
+{
+	constexpr auto NavHintPointHeight = 64.0f;
+	constexpr auto NavHintTextHeight = NavHintPointHeight / 2.0f;
+
+	Vector top = m_pos + Vector(0.0f, 0.0f, NavHintPointHeight);
+	Vector half = m_pos + Vector(0.0f, 0.0f, NavHintTextHeight);
+	NDebugOverlay::Line(m_pos, top, 0, 230, 255, false, EXT_DEBUG_DRAW_TIME);
+
+	Vector forward;
+	AngleVectors(m_angle, &forward);
+	forward.NormalizeInPlace();
+	NDebugOverlay::HorzArrow(half, half + (forward * 24.0f), 4.0f, 0, 110, 0, 255, false, EXT_DEBUG_DRAW_TIME);
+
+	auto name = TheNavMesh->NavHintTypeIDToString(m_hintType);
+	NDebugOverlay::Text(half, name, true, EXT_DEBUG_DRAW_TIME);
 }

@@ -169,6 +169,8 @@ public:
 	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
 	// Perform a blast jump
 	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
+	// Climb by double jumping
+	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
 
 	virtual bool IsAbleToClimb() { return true; }
 	virtual bool IsAbleToJumpAcrossGap() { return true; }

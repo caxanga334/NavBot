@@ -31,6 +31,7 @@ namespace tf2lib
 	TeamFortress2::TFTeam GetDisguiseTeam(int player);
 	TeamFortress2::TFClassType GetDisguiseClass(int player);
 	edict_t* GetDisguiseTarget(int player);
+	float GetMedigunUberchargePercentage(int medigun);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)

@@ -13,6 +13,8 @@
 #undef min
 #undef clamp
 
+static ConVar sm_navbot_tf_medic_patient_scan_range("sm_navbot_tf_medic_patient_scan_range", "1500", FCVAR_GAMEDLL, "Medic AI: Distance to search for patients to heal.", true, 512.0f, true, 16384.0f);
+
 CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 {
 	m_tf2movement = std::make_unique<CTF2BotMovement>(this);
@@ -255,14 +257,21 @@ bool CTF2Bot::IsAmmoLow() const
 
 edict_t* CTF2Bot::MedicFindBestPatient() const
 {
+	const float max_scan_range = sm_navbot_tf_medic_patient_scan_range.GetFloat();
+
 	// filter for getting potential teammates to heal
-	auto functor = [this](int client, edict_t* entity) -> bool {
+	auto functor = [this, &max_scan_range](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> bool {
 		auto myteam = GetMyTFTeam();
 		auto theirteam = tf2lib::GetEntityTFTeam(client);
 
 		if (client == GetIndex())
 		{
 			return false; // can't heal self
+		}
+
+		if (tf2lib::GetPlayerClassType(client) == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(client))
+		{
+			theirteam = tf2lib::GetDisguiseTeam(client);
 		}
 
 		if (myteam != theirteam) // can only heal teammates
@@ -283,7 +292,7 @@ edict_t* CTF2Bot::MedicFindBestPatient() const
 		Vector mypos = WorldSpaceCenter();
 		Vector theirpos = UtilHelpers::getWorldSpaceCenter(entity);
 		float range = (theirpos - mypos).Length();
-		constexpr auto max_scan_range = 1200.0f;
+		
 
 		if (range > max_scan_range)
 		{
@@ -334,6 +343,22 @@ edict_t* CTF2Bot::MedicFindBestPatient() const
 			tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Bleeding))
 		{
 			distance *= 0.8f;
+		}
+
+		switch (tf2lib::GetPlayerClassType(client))
+		{
+		case TeamFortress2::TFClass_DemoMan:
+		case TeamFortress2::TFClass_Soldier:
+		case TeamFortress2::TFClass_Heavy:
+		case TeamFortress2::TFClass_Medic:
+			distance *= 0.6f; // big preference for these classes
+			break;
+		case TeamFortress2::TFClass_Scout:
+		case TeamFortress2::TFClass_Sniper:
+			distance *= 1.3f; // low priority for these classes
+			break;
+		default:
+			break;
 		}
 
 		if (distance < bestrange)

@@ -504,6 +504,22 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 					return true;
 			}
 		}
+		else if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
+		{
+			auto seg = GetNextSegment(m_goal);
+
+			if (seg != nullptr)
+			{
+				Vector nearClimb;
+				seg->area->GetClosestPointOnArea(origin, &nearClimb);
+				climbDir = nearClimb - origin;
+				climbDir.z = 0.0f;
+				climbDir.NormalizeInPlace();
+
+				if (mover->DoubleJumpToLedge(nearClimb, climbDir, nullptr))
+					return true;
+			}
+		}
 
 		return false;
 	}

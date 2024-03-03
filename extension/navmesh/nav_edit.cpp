@@ -11,6 +11,7 @@
 
 #include <extension.h>
 #include <entities/baseentity.h>
+#include <extplayer.h>
 #include "nav_mesh.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
@@ -289,6 +290,31 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 	return bestDist < 1.0f;
 }
 
+const char* CNavMesh::NavHintTypeIDToString(int hinttype) const
+{
+	if (hinttype <= NAVHINT_LAST_SHARED_HINT)
+	{
+		return GetNavAreaHintTypeNameInternal(hinttype);
+	}
+
+	return "ERROR";
+}
+
+int CNavMesh::GetMaxHintTypesAvailable() const
+{
+	return NAVHINT_LAST_SHARED_HINT;
+}
+
+const char* CNavMesh::GetNavAreaHintTypeNameInternal(int hint) const
+{
+	switch (hint)
+	{
+	case NAVHINT_CROSSINGPOINT:
+		return "CROSSING POINT";
+	default:
+		return "ERROR";
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -3617,6 +3643,136 @@ void CNavMesh::CommandNavWarpToLinkOrigin() const
 	NDebugOverlay::Box(m_linkorigin, Vector(-16.0f, -16.0f, 0.0f), Vector(16.0f, 16.0f, 72.0f), 0, 220, 255, 125, 10.0f);
 	be.Teleport(m_linkorigin, nullptr, nullptr);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_hint_print_type_list, "Prints the hint types available", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavPrintAllHintsTypes();
+}
+
+void CNavMesh::CommandNavPrintAllHintsTypes() const
+{
+	Msg("Nav Hint Types available: \n");
+
+	for (int i = 0; i <= TheNavMesh->GetMaxHintTypesAvailable(); i++)
+	{
+		Msg("ID #%i : %s \n", i, TheNavMesh->NavHintTypeIDToString(i));
+	}
+}
+
+CON_COMMAND_F(sm_nav_hint_add, "Adds a hint to the current marked area.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_nav_hint_add <type ID> \n");
+		Msg("Notes: \n  Your current position and angles will be used to set the hint's position and angles!\n");
+		return;
+	}
+
+	int type = atoi(args[1]);
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+	Vector origin = host.GetAbsOrigin();
+	QAngle angles = host.GetEyeAngles();
+	TheNavMesh->CommandNavAddHintToArea(type, origin, angles);
+}
+
+void CNavMesh::CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles) const
+{
+	if (m_markedArea == nullptr)
+	{
+		Warning("ERROR: To add a hint, you must first mark the area where the hint will be added using sm_nav_mark!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	m_markedArea->AddHint(hinttype, origin, angles);
+	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_hint_remove_nearest, "Removes the nearest hint from the marked area, optional type filter.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		TheNavMesh->CommandNavRemoveNearestHintFromArea(gamehelpers->EdictOfIndex(1)->GetCollideable()->GetCollisionOrigin());
+	}
+	else
+	{
+		int type = atoi(args[1]);
+		TheNavMesh->CommandNavRemoveNearestHintOfTypeFromArea(type, gamehelpers->EdictOfIndex(1)->GetCollideable()->GetCollisionOrigin());
+	}
+}
+
+void CNavMesh::CommandNavRemoveNearestHintFromArea(const Vector& origin) const
+{
+	if (m_markedArea == nullptr)
+	{
+		Warning("ERROR: You must mark an area first with sm_nav_mark!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	m_markedArea->RemoveNearestHint(origin);
+}
+
+void CNavMesh::CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const
+{
+	if (m_markedArea == nullptr)
+	{
+		Warning("ERROR: You must mark an area first with sm_nav_mark!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	m_markedArea->RemoveNearestHint(origin, hinttype);
+}
+
+CON_COMMAND_F(sm_nav_hint_wipe, "Wipe all hints from the marked area.", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavWipeAllHintsFromArea();
+}
+
+void CNavMesh::CommandNavWipeAllHintsFromArea()
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == nullptr || !IsEditMode(NORMAL))
+		return;
+
+	FindActiveNavArea();
+
+	if (m_selectedSet.Count() > 1)
+	{
+		for (int i = 1; i < m_selectedSet.Count(); ++i)
+		{
+			m_selectedSet[i]->WipeHints();
+		}
+
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+	}
+	else if (m_selectedArea)
+	{
+		if (m_markedArea)
+		{
+			m_markedArea->WipeHints();
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+		else
+		{
+			if (m_selectedSet.Count() == 1)
+			{
+				CNavArea* area = m_selectedSet[0];
+				area->WipeHints();
+				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			}
+			else
+			{
+				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+			}
+		}
+	}
+
+	SetMarkedArea(nullptr);			// unmark the mark area
+	m_markedCorner = NUM_CORNERS;	// clear the corner selection
+	ClearSelectedSet();
 }
 
 //--------------------------------------------------------------------------------------------------------------

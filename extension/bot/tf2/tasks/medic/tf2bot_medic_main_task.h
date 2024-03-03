@@ -32,14 +32,16 @@ private:
 	CMeshNavigator m_nav;
 
 	edict_t* GetPatient();
-	bool ScanForPatients(CTF2Bot* me);
+	void ScanForPatients(CTF2Bot* me);
+	void EquipMedigun(CTF2Bot* me) const;
 	inline bool ShouldListenToCall() const
 	{
 		return m_calltimer.IsGreaterThen(2.0f);
 	}
 
-	static constexpr float medigun_max_heal_range() { return 400.0f; }
-	static constexpr float medic_range_to_stay_near_patient() { return 250.0f; }
+	float GetUbercharge(CTF2Bot* me);
+
+	static constexpr float MEDIC_MAX_DISTANCE = 300.0f;
 };
 
 #endif // !NAVBOT_TF2BOT_TASK_MEDIC_MAIN_H_

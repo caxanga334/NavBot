@@ -486,6 +486,11 @@ public:
 	void CommandNavDisconnectSpecialLink(int32_t linktype);
 	void CommandNavSetLinkOrigin();
 	void CommandNavWarpToLinkOrigin() const;
+	void CommandNavPrintAllHintsTypes() const;
+	void CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles) const;
+	void CommandNavRemoveNearestHintFromArea(const Vector& origin) const;
+	void CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const;
+	void CommandNavWipeAllHintsFromArea();
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
@@ -698,6 +703,9 @@ public:
 		PlayEditSoundInternal(m_editsounds[static_cast<size_t>(type)]);
 	}
 
+	virtual const char* NavHintTypeIDToString(int hinttype) const;
+	virtual int GetMaxHintTypesAvailable() const;
+
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -908,6 +916,7 @@ private:
 	Vector m_linkorigin;
 
 	void PlayEditSoundInternal(const std::string& sound) const;
+	const char* GetNavAreaHintTypeNameInternal(int hint) const;
 };
 
 // the global singleton interface

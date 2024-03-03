@@ -4,9 +4,12 @@
 #include <mods/tf2/tf2lib.h>
 #include "tf2bot_movement.h"
 
+static ConVar sm_navbot_tf_double_jump_z_boost("sm_navbot_tf_double_jump_z_boost", "300.0", FCVAR_CHEAT, "Amount of Z velocity to add when double jumping.");
+
 CTF2BotMovement::CTF2BotMovement(CBaseBot* bot) : IMovement(bot)
 {
 	m_doublejumptimer = -1;
+	m_djboosttimer = -1;
 }
 
 CTF2BotMovement::~CTF2BotMovement()
@@ -16,6 +19,7 @@ CTF2BotMovement::~CTF2BotMovement()
 void CTF2BotMovement::Reset()
 {
 	m_doublejumptimer = -1;
+	m_djboosttimer = -1;
 	IMovement::Reset();
 }
 
@@ -28,6 +32,19 @@ void CTF2BotMovement::Frame()
 		if (m_doublejumptimer == 0)
 		{
 			Jump();
+			m_djboosttimer = 8; // apply boost later
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump! \n", GetBot()->GetDebugIdentifier());
+		}
+	}
+
+	if (m_djboosttimer >= 0)
+	{
+		if (--m_djboosttimer == 0)
+		{
+			Vector vel = GetBot()->GetAbsVelocity();
+			vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
+			GetBot()->SetAbsVelocity(vel);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump (Z BOOST)! \n", GetBot()->GetDebugIdentifier());
 		}
 	}
 
@@ -78,7 +95,7 @@ float CTF2BotMovement::GetMaxGapJumpDistance() const
 void CTF2BotMovement::DoubleJump()
 {
 	CrouchJump(); // crouch jump first
-	m_doublejumptimer = TIME_TO_TICKS(0.5f); // do the second jump half a second later
+	m_doublejumptimer = TIME_TO_TICKS(0.6f); // do the second jump half a second later
 }
 
 bool CTF2BotMovement::IsAbleToDoubleJump()

@@ -41,6 +41,7 @@ private:
 	static constexpr float scout_gap_jump_do_double_distance() { return 280.0f; }
 
 	int m_doublejumptimer;
+	int m_djboosttimer;
 };
 
 #endif // !NAVBOT_TF2_MOVEMENT_H_

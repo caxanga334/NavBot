@@ -259,3 +259,10 @@ edict_t* tf2lib::GetDisguiseTarget(int player)
 	entprops->GetEntPropEnt(player, Prop_Send, "m_hDisguiseTarget", target);
 	return gamehelpers->EdictOfIndex(target);
 }
+
+float tf2lib::GetMedigunUberchargePercentage(int medigun)
+{
+	float ubercharge = 0.0f;
+	entprops->GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel", ubercharge);
+	return ubercharge;
+}

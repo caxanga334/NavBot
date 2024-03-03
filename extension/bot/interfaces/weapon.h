@@ -29,6 +29,7 @@ public:
 	inline T GetModWeaponID() const { return static_cast<T>(m_weaponID); }
 	edict_t* GetEdict() const;
 	CBaseEntity* GetEntity() const;
+	inline int GetIndex() const { return m_handle.GetEntryIndex(); }
 private:
 	CBaseHandle m_handle;
 	WeaponInfo m_info;

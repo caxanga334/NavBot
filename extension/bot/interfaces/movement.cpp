@@ -404,6 +404,20 @@ bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingF
 	return true;
 }
 
+bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
+{
+	if (!IsAbleToDoubleJump())
+		return false;
+
+	DoubleJump();
+
+	m_isClimbingObstacle = true;
+	m_landingGoal = landingGoal;
+	m_isAirborne = false;
+
+	return true;
+}
+
 bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity)
 {
 	if (entity == nullptr)

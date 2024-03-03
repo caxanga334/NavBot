@@ -443,6 +443,16 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 		Vector pos = link.m_pos;
 		filestream.write(reinterpret_cast<char*>(&pos), sizeof(Vector));
 	}
+
+	size_t hintcount = m_hints.size();
+	filestream.write(reinterpret_cast<char*>(&hintcount), sizeof(size_t));
+
+	for (auto& hint : m_hints)
+	{
+		filestream.write(reinterpret_cast<char*>(&hint.m_hintType), sizeof(int));
+		filestream.write(reinterpret_cast<char*>(&hint.m_pos), sizeof(Vector));
+		filestream.write(reinterpret_cast<char*>(&hint.m_angle), sizeof(QAngle));
+	}
 }
 
 
@@ -681,6 +691,21 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		filestream.read(reinterpret_cast<char*>(&pos), sizeof(Vector));
 
 		m_speciallinks.emplace_back(type, id, pos);
+	}
+
+	size_t hintcount = 0U;
+	filestream.read(reinterpret_cast<char*>(&hintcount), sizeof(size_t));
+
+	for (size_t i = 0; i < hintcount; i++)
+	{
+		int type = 0;
+		filestream.read(reinterpret_cast<char*>(&type), sizeof(int));
+		Vector origin;
+		filestream.read(reinterpret_cast<char*>(&origin), sizeof(Vector));
+		QAngle angles;
+		filestream.read(reinterpret_cast<char*>(&angles), sizeof(QAngle));
+
+		m_hints.emplace_back(type, origin, angles);
 	}
 
 	return NAV_OK;

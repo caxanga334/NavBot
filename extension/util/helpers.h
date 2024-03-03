@@ -62,7 +62,7 @@ namespace UtilHelpers
 	
 	/**
 	 * @brief Collects player into a vector of ints containing their indexes
-	 * @tparam T A class with an operator() overload with two parameters (int client, edict_t* entity), return true to add the client to the vector
+	 * @tparam T A class with an operator() overload with two parameters (int client, edict_t* entity, SourceMod::IGamePlayer* player), return true to add the client to the vector
 	 * @param playersvector Vector to store the players indexes
 	 * @param functor Player collection filter, only called to clients that are valid and in game.
 	 */
@@ -241,7 +241,7 @@ inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T funct
 		if (!gp->IsInGame())
 			continue;
 
-		if (functor(i, edict))
+		if (functor(i, edict, gp))
 		{
 			playersvector.push_back(i);
 		}
