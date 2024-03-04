@@ -16,6 +16,7 @@
 #include <vector>
 #include <stack>
 #include <unordered_set>
+#include <unordered_map>
 
 #include <util/librandom.h>
 #include "nav_area.h"
@@ -1015,7 +1016,7 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 
 /**
  * @brief Collects surround areas around the start area
- * @tparam T A class with operator() overload with 1 parameter (CNavArea* area)
+ * @tparam T A class with operator() overload with 4 parameter (CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost)
  * @param startArea Area to start the search
  * @param areaVector Vector to store collected areas
  * @param functor Function to call when collecting areas, return true to add the area to the areaVector
@@ -1023,44 +1024,51 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 template <typename T>
 inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea*>& areaVector, T functor)
 {
-	std::unordered_set<unsigned int> searchedAreas;
-	std::vector<CNavArea*> newAreas;
+	std::unordered_map<unsigned int, float> areaCosts;
 	std::stack<CNavArea*> toSearch;
-	searchedAreas.reserve(4096);
-	newAreas.reserve(64);
-	searchedAreas.emplace(startArea->GetID());
-	toSearch.push(startArea);
+	CNavArea* previousArea = nullptr;
+	float newCost = 0.0f;
+	areaCosts.reserve(4096);
+
+	// Check if startArea should be included and compute cost for it
+	if (functor(previousArea, startArea, 0.0f, newCost))
+	{
+		areaVector.push_back(startArea);
+	}
+
+	// Save start area cost, also marks it as a already searched area
+	areaCosts.emplace(startArea->GetID(), newCost);
+
+	// Add all connected areas to the search list
+	startArea->ForEachConnectedArea([&toSearch](CNavArea* other) {
+		toSearch.push(other);
+	});
+
+	previousArea = startArea;
 
 	while (toSearch.size() > 0)
 	{
-		CNavArea* currentArea = toSearch.top();
+		CNavArea* next = toSearch.top();
 		toSearch.pop();
 
-		currentArea->ForEachConnectedArea([&newAreas, &searchedAreas](CNavArea* other) {
-			unsigned int id = other->GetID();
-
-			// area has not been searched yet!
-			if (searchedAreas.find(id) == searchedAreas.end())
+		next->ForEachConnectedArea([&areaCosts, &toSearch](CNavArea* other) {
+			if (areaCosts.find(other->GetID()) == areaCosts.end())
 			{
-				newAreas.push_back(other); // add this area to the search list
-				searchedAreas.emplace(id);
+				// new area, search it!
+				toSearch.push(other);
 			}
 		});
 
-		if (functor(currentArea))
+		float currentCost = areaCosts.find(previousArea->GetID())->second;
+		newCost = 0.0f; // reset new cost
+
+		if (functor(previousArea, next, currentCost, newCost))
 		{
-			// collect area if functor returns true
-			areaVector.push_back(currentArea);
+			areaVector.push_back(next);
 		}
 
-		for (auto other : newAreas)
-		{
-			toSearch.push(other); // add new areas to search stack
-		}
-
-		newAreas.clear(); // clear new areas vector
+		areaCosts.emplace(next->GetID(), newCost);
 	}
 }
-
 
 #endif // _NAV_PATHFIND_H_

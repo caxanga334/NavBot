@@ -312,16 +312,33 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_C
 	collectedAreas.reserve(512);
 	Vector origin = host->GetAbsOrigin();
 
-	NavCollectSurroundingAreas(area, collectedAreas, [host, &origin](CNavArea* area) -> bool {
-		const Vector& center = area->GetCenter();
-		const float length = (center - origin).Length();
+	NavCollectSurroundingAreas(area, collectedAreas, [](CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost) -> bool {
 
-		if (length <= 750.0f)
+		if (previousArea == nullptr) // first area in search
 		{
 			return true;
 		}
 
-		return false;
+		float cost = totalCostSoFar;
+		auto link = previousArea->GetSpecialLinkConnectionToArea(currentArea);
+
+		if (link)
+		{
+			cost += link->GetConnectionLength();
+		}
+		else
+		{
+			cost += (previousArea->GetCenter() - currentArea->GetCenter()).Length();
+		}
+
+		newCost = cost;
+
+		if (cost >= 1300.0f)
+		{
+			return false;
+		}
+
+		return true;
 	});
 
 	for (auto area : collectedAreas)

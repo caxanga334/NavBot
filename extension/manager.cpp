@@ -138,49 +138,24 @@ void CExtManager::OnClientDisconnect(int client)
 	if (gp->IsSourceTV() || gp->IsReplay())
 		return; // Don't care about sourcetv bots
 
-
-	bool isbot = GetBotByIndex(client) != nullptr;
-
-	if (isbot == true)
-	{
-		auto botit = m_bots.end();
-
-		for (auto it = m_bots.begin(); it != m_bots.end(); it++)
+	m_bots.erase(std::remove_if(m_bots.begin(), m_bots.end(), [&client](const std::unique_ptr<CBaseBot>& object) {
+		if (object->GetIndex() == client)
 		{
-			auto& botptr = *it;
-			auto bot = botptr.get();
-
-			if (bot->GetIndex() == client)
-			{
-				botit = it;
-				break;
-			}
+			return true;
 		}
 
-		if (botit != m_bots.end())
+		return false;
+	}), m_bots.end());
+
+	// Remove all players that have matching entity index
+	m_players.erase(std::remove_if(m_players.begin(), m_players.end(), [&client](const std::unique_ptr<CBaseExtPlayer>& object) {
+		if (object->GetIndex() == client)
 		{
-			m_bots.erase(botit);
+			return true;
 		}
-	}
 
-	auto playerit = m_players.end();
-
-	for (auto it = m_players.end(); it != m_players.end(); it++)
-	{
-		auto& i = *it;
-		auto player = i.get();
-
-		if (player->GetIndex() == client)
-		{
-			playerit = it;
-			break;
-		}
-	}
-
-	if (playerit != m_players.end())
-	{
-		m_players.erase(playerit);
-	}
+		return false;
+	}), m_players.end());
 }
 
 void CExtManager::OnMapStart()
