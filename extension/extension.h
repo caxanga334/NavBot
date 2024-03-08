@@ -278,7 +278,6 @@ public:
 	}
 
 	void Hook_GameFrame(bool simulating);
-
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper) const;
 
 	inline bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }

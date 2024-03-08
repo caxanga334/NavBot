@@ -9,6 +9,8 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <algorithm>
+
 #include <extension.h>
 #include <manager.h>
 #include <extplayer.h>
@@ -36,6 +38,10 @@
 #include <vprof.h>
 #include "util/UtilTrace.h"
 
+#undef min
+#undef max
+#undef clamp // mathlib compat hack
+
 extern IVDebugOverlay* debugoverlay;
 extern ConVar sm_nav_quicksave;
 extern IVEngineServer* engine;
@@ -61,7 +67,7 @@ ConVar sm_nav_show_light_intensity( "sm_nav_show_light_intensity", "0", FCVAR_CH
 ConVar sm_nav_debug_blocked( "sm_nav_debug_blocked", "0", FCVAR_CHEAT );
 ConVar sm_nav_show_contiguous( "sm_nav_show_continguous", "0", FCVAR_CHEAT, "Highlight non-contiguous connections" );
 
-const float DEF_NAV_VIEW_DISTANCE = 1500.0;
+constexpr float DEF_NAV_VIEW_DISTANCE = 1500.0;
 ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
 ConVar sm_nav_update_visibility_on_edit( "sm_nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
 ConVar sm_nav_potentially_visible_dot_tolerance( "sm_nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
@@ -5183,6 +5189,80 @@ void CNavArea::CheckFloor( edict_t* ignore )
 		NDebugOverlay::Box( origin, mins, maxs, 0, 255, 0, 64, 3.0f );
 	}
 	*/
+}
+
+bool CNavArea::HasSolidFloor() const
+{
+	constexpr auto hullsize = 12.0f;
+	Vector startPos = GetCenter();
+	startPos.z += StepHeight;
+	Vector endPos = GetCenter();
+	endPos.z -= JumpHeight;
+	Vector mins(-hullsize, -hullsize, 0.0f);
+	Vector maxs(hullsize, hullsize, 1.0f);
+
+	CTraceFilterNoNPCsOrPlayer filter(nullptr, COLLISION_GROUP_NONE);
+	trace_t result;
+	UTIL_TraceHull(startPos, endPos, mins, maxs, MASK_PLAYERSOLID, filter, &result);
+
+	if (!result.DidHit())
+	{
+		if (sm_nav_debug_blocked.GetBool())
+		{
+			NDebugOverlay::VertArrow(startPos, endPos, 8.0f, 255, 0, 0, 255, true, 20.0f);
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+bool CNavArea::HasSolidObstruction() const
+{
+	CTraceFilterNoNPCsOrPlayer filter(nullptr, COLLISION_GROUP_NONE);
+	trace_t result;
+	Vector origin = GetCenter();
+	origin.z += HalfHumanHeight;
+
+	const float sizeX = std::max(1.0f, std::min(GetSizeX() / 2 - 5, HalfHumanWidth));
+	const float sizeY = std::max(1.0f, std::min(GetSizeY() / 2 - 5, HalfHumanWidth));
+	Extent bounds;
+	bounds.lo.Init(-sizeX, -sizeY, 0);
+	// duck height - halfhumanheight
+	bounds.hi.Init(sizeX, sizeY, 36.0f - HalfHumanHeight);
+
+	UTIL_TraceHull(origin, origin, bounds.lo, bounds.hi, MASK_PLAYERSOLID, filter, &result);
+
+	if (result.DidHit())
+	{
+		if (sm_nav_debug_blocked.GetBool())
+		{
+			auto edict = gamehelpers->EdictOfIndex(result.GetEntityIndex());
+
+			if (edict != nullptr)
+			{
+				Msg("CNavArea::HasSolidObstruction() hit entity #%i <%s> \n", result.GetEntityIndex(), gamehelpers->GetEntityClassname(edict));
+
+				if (result.DidHitNonWorldEntity())
+				{
+					NDebugOverlay::EntityBounds(edict, 100, 0, 255, 150, 20.0f);
+				}
+			}
+
+			NDebugOverlay::SweptBox(origin, origin, bounds.lo, bounds.hi, vec3_angle, 255, 0, 0, 255, 20.0f);
+			NDebugOverlay::Text(GetCenter(), "CNavArea::HasSolidObstruction() == true", false, 20.0f);
+		}
+
+		return true; // something is obstructing the area
+	}
+
+	if (sm_nav_debug_blocked.GetBool())
+	{
+		NDebugOverlay::BoxAngles(origin, bounds.lo, bounds.hi, vec3_angle, 0, 130, 0, 200, 20.0f);
+	}
+
+	return false;
 }
 
 //--------------------------------------------------------------------------------------------------------

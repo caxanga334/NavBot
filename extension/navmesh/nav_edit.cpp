@@ -3775,6 +3775,37 @@ void CNavMesh::CommandNavWipeAllHintsFromArea()
 	ClearSelectedSet();
 }
 
+CON_COMMAND_F(sm_nav_debug_test_blocked, "Tests nav areas for possible block status", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavTestForBlocked();
+}
+
+void CNavMesh::CommandNavTestForBlocked() const
+{
+	if (m_markedArea != nullptr)
+	{
+		if (m_markedArea->HasSolidFloor())
+		{
+			Msg("Marked area has solid floor.\n");
+		}
+
+		if (m_markedArea->HasSolidObstruction())
+		{
+			Msg("Marked area has solid obstruction.\n");
+		}
+	}
+	else
+	{
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			auto area = TheNavAreas[it];
+
+			area->HasSolidFloor();
+			area->HasSolidObstruction();
+		}
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------
 class RadiusSelect
 {

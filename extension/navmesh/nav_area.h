@@ -12,6 +12,7 @@
 #ifndef _NAV_AREA_H_
 #define _NAV_AREA_H_
 
+#include <algorithm>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -528,6 +529,9 @@ public:
 	void UnblockArea( int teamID = NAV_TEAM_ANY );					// clear blocked status for the given team(s)
 
 	void CheckFloor( edict_t *ignore );						// Checks if there is a floor under the nav area, in case a breakable floor is gone
+	// Checks if there is a solid floor on this nav area
+	bool HasSolidFloor() const;
+	bool HasSolidObstruction() const;
 
 	void MarkObstacleToAvoid( float obstructionHeight );
 	void UpdateAvoidanceObstacles( void );

@@ -297,10 +297,10 @@ public:
 	};
 
 	// CEventListenerHelper
-	virtual void FireGameEvent(IGameEvent* event);
+	void FireGameEvent(IGameEvent* event) override;
 
 #if SOURCE_ENGINE >= SE_LEFT4DEAD
-	virtual int	GetEventDebugID(void);
+	int	GetEventDebugID(void) override;
 #endif // SOURCE_ENGINE >= SE_LEFT4DEAD
 
 	virtual void Precache(); // precache edit sounds here
@@ -325,6 +325,7 @@ public:
 	/**
 	 * Return true if nav mesh can be trusted for all climbing/jumping decisions because game environment is fairly simple.
 	 * Authoritative meshes mean path followers can skip CPU intensive realtime scanning of unpredictable geometry.
+	 * This should probably be true by default since we only deal with player bots and players have very limited climbing, unlike Non-Players NextBots
 	 */
 	virtual bool IsAuthoritative( void ) const { return false; }		
 
@@ -491,6 +492,7 @@ public:
 	void CommandNavRemoveNearestHintFromArea(const Vector& origin) const;
 	void CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const;
 	void CommandNavWipeAllHintsFromArea();
+	void CommandNavTestForBlocked() const;
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );

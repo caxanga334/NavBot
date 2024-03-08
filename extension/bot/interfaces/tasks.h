@@ -77,6 +77,7 @@ public:
 		}
 	}
 
+	const bool HasNextTask() const { return m_next != nullptr; }
 	AITask<BotClass>* GetNextTask() const { return m_next; }
 
 	const char* GetReason() const { return m_reason; }
@@ -104,7 +105,7 @@ public:
 	// Discard this result, deletes the stored task if any
 	void DiscardResult()
 	{
-		if (m_next)
+		if (m_next != nullptr)
 		{
 			delete m_next;
 			m_next = nullptr;

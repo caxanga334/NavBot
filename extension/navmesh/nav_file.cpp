@@ -67,6 +67,8 @@ public:
 	uint32_t magic;
 };
 
+static_assert(sizeof(NavMeshFileHeader) == 28U, "Changing this will invalidate all existing nav mesh files!");
+
 //--------------------------------------------------------------------------------------------------------------
 /// The current version of the nav file format
 

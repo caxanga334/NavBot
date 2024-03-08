@@ -191,6 +191,9 @@ void CNavMesh::OnMapStart()
 	default:
 		break;
 	}
+
+	// Sourcemod's OnMapStart is called on a ServerActivate hook
+	OnServerActivate(); // this isn't called anywhere else so just call it here
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -683,6 +686,8 @@ void CNavMesh::OnServerActivate( void )
 		CNavArea *area = TheNavAreas[ pit ];
 		area->OnServerActivate();
 	}
+
+	BuildTransientAreaList();
 }
 
 #ifdef NEXT_BOT
