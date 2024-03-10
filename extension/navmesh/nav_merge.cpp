@@ -4,25 +4,27 @@
 
 #include "nav_mesh.h"
 #include "nav_area.h"
-#include <edict.h>
-#include <iplayerinfo.h>
-#include "fmtstr.h"
-#include "tier0/vprof.h"
-#include "utldict.h"
-#include <KeyValues.h>
-#include <filesystem.h>
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
+// #include <edict.h>
+// #include <iplayerinfo.h>
+// #include "fmtstr.h"
+// #include "tier0/vprof.h"
+// #include "utldict.h"
+// #include <KeyValues.h>
+// #include <filesystem.h>
 
-extern IFileSystem *filesystem;
+// extern IFileSystem *filesystem;
+
+/*
 
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::SaveToSelectedSet( KeyValues *areaKey ) const
 {
+	
 	const char *placeName = TheNavMesh->PlaceToName( GetPlace() );
 	areaKey->SetString( "Place", (placeName)?placeName:"" );
 
 	areaKey->SetInt( "Attributes", GetAttributes() );
+	
 }
 
 
@@ -34,6 +36,7 @@ void CNavArea::RestoreFromSelectedSet( KeyValues *areaKey )
 	SetAttributes( areaKey->GetInt( "Attributes" ) );
 }
 
+*/
 
 //--------------------------------------------------------------------------------------------------------
 //class BuildSelectedSet
@@ -162,6 +165,7 @@ void CNavMesh::CommandNavSaveSelected( const CCommand &args )
 	//data->deleteThis();
 }
 
+/*
 
 //--------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_save_selected, "Writes the selected set to disk for merging into another mesh via nav_merge_mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT )
@@ -172,6 +176,9 @@ CON_COMMAND_F(sm_nav_save_selected, "Writes the selected set to disk for merging
 	TheNavMesh->CommandNavSaveSelected( args );
 }
 
+*/
+
+/*
 
 //--------------------------------------------------------------------------------------------------------
 Vector ReadCorner( KeyValues *areaKey, const char *cornerName )
@@ -222,10 +229,15 @@ void ReconnectMergedArea( CUtlDict< CNavArea *, int > &newAreas, KeyValues *area
 	}
 }
 
+*/
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::CommandNavMergeMesh( const CCommand &args )
 {
+	Warning("Command not implemented!\n");
+
+	/*
+
 	if ( args.ArgC() != 2 )
 	{
 		Msg( "Usage: nav_merge_mesh filename\n" );
@@ -301,8 +313,11 @@ void CNavMesh::CommandNavMergeMesh( const CCommand &args )
 	}
 
 	data->deleteThis();
+
+	*/
 }
 
+/*
 
 //--------------------------------------------------------------------------------------------------------
 int NavMeshMergeAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
@@ -344,6 +359,8 @@ CON_COMMAND_F_COMPLETION(sm_nav_merge_mesh, "Merges a saved selected set into th
 
 	TheNavMesh->CommandNavMergeMesh( args );
 }
+
+*/
 
 
 //--------------------------------------------------------------------------------------------------------

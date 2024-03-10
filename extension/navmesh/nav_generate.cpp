@@ -19,7 +19,6 @@
 #include <eiface.h>
 #include <irecipientfilter.h>
 #include <worldsize.h>
-#include <KeyValues.h>
 
 //#include "terror/TerrorShared.h"
 // #include "fmtstr.h"

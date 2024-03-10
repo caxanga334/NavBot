@@ -41,7 +41,7 @@ inline void DebuggerBreakOnNaN_StagingOnly( float val )
 
 class CFuncElevator;
 class CFuncNavCost;
-class KeyValues;
+// class KeyValues;
 
 inline bool FStrEq(const char *sz1, const char *sz2)
 {
@@ -389,8 +389,8 @@ public:
 	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);		// (EXTEND)
 	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 
-	virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
-	virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues
+	// virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
+	// virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues
 
 	// for interactively building or generating nav areas
 	void Build( CNavNode *nwNode, CNavNode *neNode, CNavNode *seNode, CNavNode *swNode );

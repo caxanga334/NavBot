@@ -30,7 +30,7 @@
 #include <tier1/checksum_crc.h>
 
 #ifdef WIN32
-#include <vstdlib/jobthread.h>
+// #include <vstdlib/jobthread.h>
 #endif // WIN32
 
 #include <tslist.h>
@@ -5892,6 +5892,12 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	// This function is only called during nav mesh generation, impact on linux should be limited since the debug overlay doesn't work on linux
 	// nav mesh editing is limited to windows only
 
+	FOR_EACH_VEC(collector.m_area, it)
+	{
+		CNavArea::ComputeVisToArea(collector.m_area.Element(it));
+	}
+
+/*
 #ifdef WIN32
 
 #if SOURCE_ENGINE != SE_ORANGEBOX && SOURCE_ENGINE != SE_EYE && SOURCE_ENGINE != SE_LEFT4DEAD && \
@@ -5906,6 +5912,8 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	// Warn on linux until replaced with std::thread
 	Warning("Nav Mesh Fatal: Nav Mesh should only be edited/generated on a Windows Listen Server! \n");
 #endif // WIN32
+
+*/
 
 
 	m_potentiallyVisibleAreas.EnsureCapacity( g_ComputedVis.Count() );

@@ -109,7 +109,7 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		return available_classes[0];
 	}
 
-	return available_classes[librandom::generate_random_uint(0, available_classes.size() - 1)];
+	return available_classes[randomgen->GetRandomInt<size_t>(0U, available_classes.size() - 1)];
 }
 
 /**
