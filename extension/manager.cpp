@@ -166,7 +166,7 @@ void CExtManager::OnMapStart()
 	if (m_botnames.size() != 0)
 	{
 		// get a new index on every map load
-		m_nextbotname = librandom::generate_random_uint(0, m_botnames.size() - 1);
+		m_nextbotname = randomgen->GetRandomInt<size_t>(0U, m_botnames.size() - 1U);
 	}
 }
 

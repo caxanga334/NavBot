@@ -11,8 +11,6 @@
 #include "nav_area.h"
 #include "nav_node.h"
 #include <eiface.h>
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
 
 extern ConVar sm_nav_snap_to_grid;
 extern ConVar sm_nav_split_place_on_ground;

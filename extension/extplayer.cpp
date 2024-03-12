@@ -357,7 +357,7 @@ CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 	int entity_var = 0;
 	float float_var = 0.0f;
 	char string_var[256]{};
-	int length = 0;
+	size_t length = 0;
 	bool results[5]{};
 
 	// Missing string prop, players doesn't have a good one to test

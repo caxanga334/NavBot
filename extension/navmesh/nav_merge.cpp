@@ -317,50 +317,50 @@ void CNavMesh::CommandNavMergeMesh( const CCommand &args )
 	*/
 }
 
-/*
-
-//--------------------------------------------------------------------------------------------------------
-int NavMeshMergeAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
-{
-	const char *commandName = "nav_merge_mesh";
-	int numMatches = 0;
-	partial += Q_strlen( commandName ) + 1;
-	int partialLength = Q_strlen( partial );
-
-	FileFindHandle_t findHandle;
-	char txtFilenameNoExtension[ MAX_PATH ];
-	const char *txtFilename = filesystem->FindFirstEx( "maps/*_selected_*.txt", "MOD", &findHandle );
-	while ( txtFilename )
-	{
-		Q_FileBase( txtFilename, txtFilenameNoExtension, sizeof( txtFilenameNoExtension ) );
-		if ( !Q_strnicmp( txtFilenameNoExtension, partial, partialLength ) && V_stristr( txtFilenameNoExtension, "_selected_" ) )
-		{
-			// Add the place name to the autocomplete array
-			Q_snprintf( commands[ numMatches++ ], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", commandName, txtFilenameNoExtension );
-
-			// Make sure we don't try to return too many place names
-			if ( numMatches == COMMAND_COMPLETION_MAXITEMS )
-				return numMatches;
-		}
-
-		txtFilename = filesystem->FindNext( findHandle );
-	}
-	filesystem->FindClose( findHandle );
-
-	return numMatches;
-}
 
 
 //--------------------------------------------------------------------------------------------------------
-CON_COMMAND_F_COMPLETION(sm_nav_merge_mesh, "Merges a saved selected set into the current mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT, NavMeshMergeAutocomplete )
-{
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
-		return;
+//int NavMeshMergeAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
+//{
+//	const char *commandName = "nav_merge_mesh";
+//	int numMatches = 0;
+//	partial += Q_strlen( commandName ) + 1;
+//	int partialLength = Q_strlen( partial );
+//
+//	FileFindHandle_t findHandle;
+//	char txtFilenameNoExtension[ MAX_PATH ];
+//	const char *txtFilename = filesystem->FindFirstEx( "maps/*_selected_*.txt", "MOD", &findHandle );
+//	while ( txtFilename )
+//	{
+//		Q_FileBase( txtFilename, txtFilenameNoExtension, sizeof( txtFilenameNoExtension ) );
+//		if ( !Q_strnicmp( txtFilenameNoExtension, partial, partialLength ) && V_stristr( txtFilenameNoExtension, "_selected_" ) )
+//		{
+//			// Add the place name to the autocomplete array
+//			Q_snprintf( commands[ numMatches++ ], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", commandName, txtFilenameNoExtension );
+//
+//			// Make sure we don't try to return too many place names
+//			if ( numMatches == COMMAND_COMPLETION_MAXITEMS )
+//				return numMatches;
+//		}
+//
+//		txtFilename = filesystem->FindNext( findHandle );
+//	}
+//	filesystem->FindClose( findHandle );
+//
+//	return numMatches;
+//}
 
-	TheNavMesh->CommandNavMergeMesh( args );
-}
 
-*/
+//--------------------------------------------------------------------------------------------------------
+//CON_COMMAND_F_COMPLETION(sm_nav_merge_mesh, "Merges a saved selected set into the current mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT, NavMeshMergeAutocomplete )
+//{
+//	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+//		return;
+//
+//	TheNavMesh->CommandNavMergeMesh( args );
+//}
+
+
 
 
 //--------------------------------------------------------------------------------------------------------

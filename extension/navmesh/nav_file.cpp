@@ -31,8 +31,6 @@
 #include <utlbuffer.h>
 #include <filesystem.h>
 #include <eiface.h>
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
 
 class NavMeshFileHeader
 {
@@ -177,14 +175,14 @@ Place PlaceDirectory::IndexToPlace( IndexType entry ) const
 void PlaceDirectory::Save(std::fstream& filestream)
 {
 	// store number of entries in directory
-	std::size_t size = m_directory.size();
-	filestream.write(reinterpret_cast<char*>(&size), sizeof(std::size_t));
+	uint64_t size = static_cast<uint64_t>(m_directory.size());
+	filestream.write(reinterpret_cast<char*>(&size), sizeof(uint64_t));
 
 	for (auto& place : m_directory)
 	{
 		auto name = TheNavMesh->PlaceToName(place);
-		std::size_t length = strlen(name) + 1;
-		filestream.write(reinterpret_cast<char*>(length), sizeof(std::size_t));
+		uint64_t length = static_cast<uint64_t>(strlen(name) + 1U);
+		filestream.write(reinterpret_cast<char*>(length), sizeof(uint64_t));
 		filestream.write(name, length);
 	}
 
@@ -195,16 +193,16 @@ void PlaceDirectory::Save(std::fstream& filestream)
 void PlaceDirectory::Load(std::fstream& filestream, uint32_t version)
 {
 	// read number of entries
-	std::size_t size = 0U;
-	filestream.read(reinterpret_cast<char*>(&size), sizeof(std::size_t));
+	uint64_t size = 0U;
+	filestream.read(reinterpret_cast<char*>(&size), sizeof(uint64_t));
 
 	m_directory.clear();
 
-	for (std::size_t i = 0; i < size; i++)
+	for (uint64_t i = 0; i < size; i++)
 	{
 		char placeName[256];
-		std::size_t length = 0U;
-		filestream.read(reinterpret_cast<char*>(&length), sizeof(std::size_t));
+		uint64_t length = 0U;
+		filestream.read(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 		filestream.read(placeName, length);
 
 		auto place = TheNavMesh->NameToPlace(placeName);
@@ -242,7 +240,7 @@ char *GetBspFilename( const char *navFilename )
 
 	Q_snprintf( bspFilename, sizeof( bspFilename ), FORMAT_BSPFILE, STRING( gpGlobals->mapname ) );
 
-	int len = strlen( bspFilename );
+	size_t len = strlen( bspFilename );
 	if (len < 3)
 		return NULL;
 
@@ -428,8 +426,8 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 
 	// Save special links
 
-	size_t linksize = m_speciallinks.size();
-	filestream.write(reinterpret_cast<char*>(&linksize), sizeof(size_t));
+	uint64_t linksize = static_cast<uint64_t>(m_speciallinks.size()); // size_t changes sizes between 32/64 bits, use a fixed unsigned 64 bit integer for compatibility
+	filestream.write(reinterpret_cast<char*>(&linksize), sizeof(uint64_t));
 
 	for (auto& link : m_speciallinks)
 	{
@@ -446,8 +444,8 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 		filestream.write(reinterpret_cast<char*>(&pos), sizeof(Vector));
 	}
 
-	size_t hintcount = m_hints.size();
-	filestream.write(reinterpret_cast<char*>(&hintcount), sizeof(size_t));
+	uint64_t hintcount = static_cast<uint64_t>(m_hints.size());
+	filestream.write(reinterpret_cast<char*>(&hintcount), sizeof(uint64_t));
 
 	for (auto& hint : m_hints)
 	{
@@ -678,10 +676,10 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 
 	// Load special links
 
-	size_t linksize = 0U;
-	filestream.read(reinterpret_cast<char*>(&linksize), sizeof(size_t));
+	uint64_t linksize = 0U;
+	filestream.read(reinterpret_cast<char*>(&linksize), sizeof(uint64_t));
 
-	for (size_t i = 0; i < linksize; i++)
+	for (uint64_t i = 0U; i < linksize; i++)
 	{
 		unsigned int id = 0;
 		filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
@@ -695,10 +693,10 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		m_speciallinks.emplace_back(type, id, pos);
 	}
 
-	size_t hintcount = 0U;
-	filestream.read(reinterpret_cast<char*>(&hintcount), sizeof(size_t));
+	uint64_t hintcount = 0U;
+	filestream.read(reinterpret_cast<char*>(&hintcount), sizeof(uint64_t));
 
-	for (size_t i = 0; i < hintcount; i++)
+	for (uint64_t i = 0U; i < hintcount; i++)
 	{
 		int type = 0;
 		filestream.read(reinterpret_cast<char*>(&type), sizeof(int));
@@ -1143,19 +1141,19 @@ bool CNavMesh::Save(void)
 	{
 		auto& creator = authorinfo.GetCreator();
 
-		size_t length = creator.first.length() + 1;
-		filestream.write(reinterpret_cast<char*>(&length), sizeof(size_t));
+		uint64_t length = static_cast<uint64_t>(creator.first.length() + 1U);
+		filestream.write(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 		filestream.write(creator.first.c_str(), length);
 		uint64_t steamid = creator.second;
 		filestream.write(reinterpret_cast<char*>(&steamid), sizeof(uint64_t));
 
-		size_t count = authorinfo.GetEditorCount();
-		filestream.write(reinterpret_cast<char*>(&count), sizeof(size_t));
+		uint64_t count = static_cast<uint64_t>(authorinfo.GetEditorCount());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(uint64_t));
 
 		for (auto& naveditor : authorinfo.GetEditors())
 		{
-			length = naveditor.first.length() + 1;
-			filestream.write(reinterpret_cast<char*>(&length), sizeof(size_t));
+			length = static_cast<uint64_t>(naveditor.first.length() + 1U);
+			filestream.write(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 			filestream.write(naveditor.first.c_str(), length);
 			steamid = naveditor.second;
 			filestream.write(reinterpret_cast<char*>(&steamid), sizeof(uint64_t));
@@ -1389,8 +1387,8 @@ NavErrorType CNavMesh::Load( void )
 
 	if (authorisset)
 	{
-		size_t length = 0;
-		filestream.read(reinterpret_cast<char*>(&length), sizeof(size_t));
+		uint64_t length = 0U;
+		filestream.read(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 		std::unique_ptr<char[]> creatornamebuffer = std::make_unique<char[]>(length);
 		filestream.read(creatornamebuffer.get(), length);
 		uint64_t steamid = 0;
@@ -1399,13 +1397,13 @@ NavErrorType CNavMesh::Load( void )
 		std::string cname(creatornamebuffer.get());
 		m_authorinfo.SetCreator(cname, steamid);
 
-		size_t count = 0;
-		filestream.read(reinterpret_cast<char*>(&count), sizeof(size_t));
+		uint64_t count = 0U;
+		filestream.read(reinterpret_cast<char*>(&count), sizeof(uint64_t));
 
-		for (size_t i = 0; i < count; i++)
+		for (uint64_t i = 0U; i < count; i++)
 		{
-			length = 0;
-			filestream.read(reinterpret_cast<char*>(&length), sizeof(size_t));
+			length = 0U;
+			filestream.read(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 			std::unique_ptr<char[]> editornamebuffer = std::make_unique<char[]>(length);
 			filestream.read(editornamebuffer.get(), length);
 
@@ -1503,7 +1501,7 @@ NavErrorType CNavMesh::Load( void )
 
 	if (loadResult == NAV_OK)
 	{
-		smutils->LogMessage(myself, "Loaded Navigation Mesh file \"%s\".", path.c_str());
+		smutils->LogMessage(myself, "Loaded Navigation Mesh file \"%s\".", path.string().c_str());
 	}
 
 	return loadResult;

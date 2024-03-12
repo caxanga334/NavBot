@@ -177,7 +177,7 @@ edict_t* CTF2Bot::GetFlagToFetch() const
 		return gamehelpers->EdictOfIndex(flag);
 	}
 
-	flag = collectedflags[librandom::generate_random_uint(0, collectedflags.size() - 1)];
+	flag = collectedflags[randomgen->GetRandomInt<size_t>(0U, collectedflags.size() - 1U)];
 	return gamehelpers->EdictOfIndex(flag);
 }
 

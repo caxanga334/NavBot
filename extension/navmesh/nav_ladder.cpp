@@ -24,8 +24,6 @@
 #include <ivdebugoverlay.h>
 #include <vphysics_interface.h>
 #include <shareddefs.h>
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
 
 extern ConVar sm_nav_area_bgcolor;
 extern IPlayerInfoManager* playerinfomanager;

@@ -80,11 +80,13 @@ bool NavAttributeSetter::operator() ( CNavArea *area )
 
 unsigned int CVisPairHashFuncs::operator()( const NavVisPair_t &item ) const
 {
-	COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
+	// COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
 
-	int key[2] = { (intptr_t)item.pAreas[0] + (int)item.pAreas[1]->GetID(), (intptr_t)item.pAreas[1] + (int)item.pAreas[0]->GetID() };
+	// int -> int64_t for 64 bits
+	int64_t key[2] = { (intptr_t)item.pAreas[0] + (int)item.pAreas[1]->GetID(), (intptr_t)item.pAreas[1] + (int)item.pAreas[0]->GetID() };
 
-	return Hash8( key );
+	// return Hash8( key );
+	return Hash16(key);
 }
 
 extern CGlobalVars *gpGlobals;

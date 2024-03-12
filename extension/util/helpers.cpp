@@ -398,7 +398,7 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 	while ((i = FindEntityByClassname(i, classname)) != INVALID_EHANDLE_INDEX)
 	{
 		char name[64];
-		int length;
+		size_t length;
 		
 		if (entprops->GetEntPropString(i, Prop_Data, "m_iName", name, 64, length))
 		{

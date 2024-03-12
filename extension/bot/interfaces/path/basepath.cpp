@@ -975,14 +975,12 @@ const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* current) 
 
 		if (seg == current)
 		{
-			int next = i + -1;
-
-			if (next < 0)
+			if (i == 0) // current is the first segment, there is no prior segment
 			{
 				return nullptr;
 			}
 
-			return m_segments[next];
+			return m_segments[i - 1U];
 		}
 	}
 
