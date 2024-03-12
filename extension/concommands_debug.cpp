@@ -26,8 +26,8 @@ CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 	// CBaseExtPlayer can be used for both players and bots
 	CBaseExtPlayer player(edict);
 
-	static Vector mins(-4.0f, -4.0f, -4.0f);
-	static Vector maxs(4.0f, 4.0f, 4.0f);
+	Vector mins(-4.0f, -4.0f, -4.0f);
+	Vector maxs(4.0f, 4.0f, 4.0f);
 
 	auto origin = player.GetAbsOrigin();
 	auto angles = player.GetAbsAngles();
@@ -42,7 +42,7 @@ CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 	debugoverlay->AddBoxOverlay(origin, mins, maxs, angles, 0, 255, 0, 200, 15.0f);
 	debugoverlay->AddBoxOverlay(eyepos, mins, maxs, eyeangles, 0, 0, 255, 200, 15.0f);
 
-	static Vector forward;
+	Vector forward;
 
 	AngleVectors(eyeangles, &forward);
 

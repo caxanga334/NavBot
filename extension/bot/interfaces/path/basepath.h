@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <stack>
+#include <iterator>
 #include <algorithm>
 
 #include <sdkports/sdk_timers.h>
@@ -324,10 +325,10 @@ public:
 	virtual const Vector& GetStartPosition() const;
 	virtual const Vector& GetEndPosition() const;
 
-	virtual const CBasePathSegment* GetFirstSegment() const;
-	virtual const CBasePathSegment* GetLastSegment() const;
-	virtual const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
-	virtual const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
+	const CBasePathSegment* GetFirstSegment() const;
+	const CBasePathSegment* GetLastSegment() const;
+	const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
+	const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
 	virtual const CBasePathSegment* GetGoalSegment() const;
 
 	enum SeekType
@@ -425,6 +426,88 @@ inline void CPath::MoveCursor(float value, MoveCursorType type)
 inline float CPath::GetCursorPosition(void) const
 {
 	return m_cursorPos;
+}
+
+inline const CBasePathSegment* CPath::GetFirstSegment() const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	return *m_segments.begin();
+}
+
+inline const CBasePathSegment* CPath::GetLastSegment() const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	return *std::prev(m_segments.end());
+}
+
+inline const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* current) const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const CBasePathSegment* object) {
+		if (object == current)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	if (it == m_segments.end())
+	{
+		return nullptr; // not found
+	}
+
+	it = std::next(it);
+
+	if (it == m_segments.end())
+	{
+		return nullptr;
+	}
+
+	return *it;
+}
+
+inline const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* current) const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const CBasePathSegment* object) {
+		if (object == current)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	if (it == m_segments.end())
+	{
+		return nullptr; // not found
+	}
+
+	if (it == m_segments.begin())
+	{
+		return nullptr; // current segment is the first segment, no previous segment
+	}
+
+	it = std::prev(it);
+
+	return *it;
 }
 
 #endif // !SMNAV_BOT_BASE_PATH_H_

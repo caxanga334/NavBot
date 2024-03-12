@@ -8,11 +8,10 @@ class CDayOfDefeatSourceMod : public CBaseMod
 {
 public:
 	CDayOfDefeatSourceMod() : CBaseMod() {}
-	virtual ~CDayOfDefeatSourceMod() {}
+	~CDayOfDefeatSourceMod() override {}
 
-	virtual const char* GetModName() override { return "Day of Defeat: Source"; }
-
-	virtual Mods::ModType GetModType() override { return Mods::ModType::MOD_DODS; }
+	const char* GetModName() override { return "Day of Defeat: Source"; }
+	Mods::ModType GetModType() override { return Mods::ModType::MOD_DODS; }
 };
 
 #endif // !SMNAV_DODS_MOD_H_
