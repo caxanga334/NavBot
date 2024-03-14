@@ -26,8 +26,11 @@
 #include <vector>
 #include <utility>
 #include <array>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "nav.h"
+#include <ITranslator.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
 #include <shareddefs.h>
@@ -194,7 +197,6 @@ public:
 	unsigned int operator()( const NavVisPair_t &item ) const;
 };
 
-
 //--------------------------------------------------------------------------------------------------------------
 //
 // The 'place directory' is used to save and load places from
@@ -212,27 +214,102 @@ class PlaceDirectory
 public:
 	typedef std::size_t IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
 
-	PlaceDirectory( void );
-	void Reset( void );
-	bool IsKnown( Place place ) const;						/// return true if this place is already in the directory
-	IndexType GetIndex( Place place ) const;				/// return the directory index corresponding to this Place (0 = no entry)
-	void AddPlace( Place place );							/// add the place to the directory if not already known
-	Place IndexToPlace( IndexType entry ) const;			/// given an index, return the Place
+	PlaceDirectory(void)
+	{
+		m_directory.reserve(1024);
+		m_hasUnnamedAreas = false;
+		m_currentIndex = 1;
+	}
+
+	void Reset(void)
+	{
+		m_directory.clear();
+		m_hasUnnamedAreas = false;
+		m_currentIndex = 1;
+	}
+
+	/// return true if this place is already in the directory
+	bool IsKnown( Place place ) const
+	{
+		for (auto& object : m_directory)
+		{
+			if (object.second == place)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/// return the directory index corresponding to this Place (0 = no entry)
+	IndexType GetIndex(Place place) const
+	{
+		if (place == UNDEFINED_PLACE)
+		{
+			return 0;
+		}
+
+		for (auto& object : m_directory)
+		{
+			if (object.second == place)
+			{
+				return object.first;
+			}
+		}
+
+		return 0;
+	}
+
+	/// add the place to the directory if not already known
+	void AddPlace(Place place)
+	{
+		if (place == UNDEFINED_PLACE)
+		{
+			m_hasUnnamedAreas = true;
+			return;
+		}
+
+		if (IsKnown(place))
+		{
+			return;
+		}
+
+		m_directory.emplace(m_currentIndex, place);
+		++m_currentIndex;
+	}
+
+	void LoadPlace(IndexType entryindex, Place place)
+	{
+		m_directory.emplace(entryindex, place);
+	}
+
+	/// given an index, return the Place
+	Place IndexToPlace(IndexType entry) const
+	{
+		auto it = m_directory.find(entry);
+
+		if (it != m_directory.end())
+		{
+			return it->second;
+		}
+
+		return UNDEFINED_PLACE;
+	}
+
 	void Save(std::fstream& filestream);					/// store the directory
 	void Load(std::fstream& filestream, uint32_t version);	/// load the directory
-	const std::vector<Place>& GetPlaces() const
-	{
-		return m_directory;
-	}
 
 	bool HasUnnamedPlaces( void ) const 
 	{
 		return m_hasUnnamedAreas;
 	}
 
+	const std::unordered_map<IndexType, Place>& GetDirectory() const { return m_directory; }
 
 private:
-	std::vector<Place> m_directory;
+	std::unordered_map<IndexType, Place> m_directory;
+	IndexType m_currentIndex;
 	bool m_hasUnnamedAreas;
 };
 
@@ -305,7 +382,7 @@ public:
 
 	virtual void Precache(); // precache edit sounds here
 	virtual void OnMapStart();
-	virtual void OnMapEnd() {}
+	virtual void OnMapEnd();
 	
 	virtual void PreLoadAreas( int nAreas ) {}
 	virtual CNavArea *CreateArea( void ) const;							// CNavArea factory
@@ -369,11 +446,15 @@ public:
 	CNavArea *GetNearestNavArea( edict_t *pEntity, int nGetNavAreaFlags = GETNAVAREA_CHECK_GROUND, float maxDist = 10000.0f ) const;
 
 	Place GetPlace( const Vector &pos ) const;							// return Place at given coordinate
-	const char *PlaceToName( Place place ) const;						// given a place, return its name
-	Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
+	// const char *PlaceToName( Place place ) const;						// given a place, return its name
+	const std::string* GetPlaceName(const Place place) const;
+	Place GetPlaceFromName(const std::string& name) const;
+	// Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
 	Place PartialNameToPlace( const char *name ) const;					// given the first part of a place name, return a place ID or zero if no place is defined, or the partial match is ambiguous
 	void PrintAllPlaces( void ) const;									// output a list of names to the console
 	int PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] );	// Given a partial place name, fill in possible place names for ConCommand autocomplete
+	// Returns a translated human readable place name
+	const char* GetTranslatedPlaceName(Place place) const;
 
 	static bool GetGroundHeight( const Vector &pos, float *height, Vector *normal = NULL );		// get the Z coordinate of the topmost ground level below the given point
 	bool GetSimpleGroundHeight( const Vector &pos, float *height, Vector *normal = NULL ) const;// get the Z coordinate of the ground level directly below the given point
@@ -696,6 +777,10 @@ public:
 		SOUND_GENERIC_BLIP = 0,
 		SOUND_GENERIC_SUCCESS,
 		SOUND_GENERIC_ERROR,
+		SOUND_SWITCH_ON,
+		SOUND_SWITCH_OFF,
+		SOUND_GENERIC_OFF,
+		SOUND_CONNECT_FAIL,
 
 		MAX_EDIT_SOUNDS
 	};
@@ -755,9 +840,17 @@ private:
 	//----------------------------------------------------------------------------------
 	// Place directory
 	//
-	char **m_placeName;											// master directory of place names (ie: "places")
-	unsigned int m_placeCount;									// number of "places" defined in placeName[]
+	std::unordered_map<Place, std::string> m_placeMap;
+
+	// char **m_placeName;											// master directory of place names (ie: "places")
+	// unsigned int m_placeCount;									// number of "places" defined in placeName[]
 	void LoadPlaceDatabase( void );								// load the place names from a file
+	void LoadPlaceTranslations();
+	void LoadGlobalPlaceDatabase();
+	void UnloadPlaceDatabase();
+	size_t GetPlaceCount() const { return m_placeMap.size(); }
+	const std::unordered_map<Place, std::string>& GetPlaces() const { return m_placeMap; }
+	SourceMod::IPhraseCollection* m_placePhrases;				// translation for place names
 
 	//----------------------------------------------------------------------------------
 	// Edit mode

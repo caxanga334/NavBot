@@ -97,79 +97,6 @@ extern NavAreaVector TheNavAreas;
 // into that directory, or zero if no place has been assigned to 
 // that area.
 //
-PlaceDirectory::PlaceDirectory( void )
-{
-	m_directory.reserve(4096);
-	Reset();
-}
-
-void PlaceDirectory::Reset( void )
-{
-	m_directory.clear();
-	m_hasUnnamedAreas = false;
-}
-
-/// return true if this place is already in the directory
-bool PlaceDirectory::IsKnown( Place place ) const
-{
-	for (auto& i : m_directory)
-	{
-		if (i == place)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
-/// return the directory index corresponding to this Place (0 = no entry)
-PlaceDirectory::IndexType PlaceDirectory::GetIndex( Place place ) const
-{
-	if (place == UNDEFINED_PLACE)
-		return 0;
-
-	auto it = std::find(m_directory.begin(), m_directory.end(), place);
-
-	if (it == m_directory.end())
-	{
-		return 0;
-	}
-
-	auto i = *it;
-	return static_cast<IndexType>(i + 1);
-}
-
-/// add the place to the directory if not already known
-void PlaceDirectory::AddPlace( Place place )
-{
-	if (place == UNDEFINED_PLACE)
-	{
-		m_hasUnnamedAreas = true;
-		return;
-	}
-
-	if (IsKnown( place ))
-		return;
-
-	m_directory.emplace_back(place);
-}
-
-/// given an index, return the Place
-Place PlaceDirectory::IndexToPlace( IndexType entry ) const
-{
-	if (entry == 0)
-		return UNDEFINED_PLACE;
-
-	std::size_t i = entry - 1;
-
-	if (i >= m_directory.size())
-	{
-		return UNDEFINED_PLACE;
-	}
-
-	return m_directory.at(i);
-}
 
 /// store the directory
 void PlaceDirectory::Save(std::fstream& filestream)
@@ -180,10 +107,12 @@ void PlaceDirectory::Save(std::fstream& filestream)
 
 	for (auto& place : m_directory)
 	{
-		auto name = TheNavMesh->PlaceToName(place);
-		uint64_t length = static_cast<uint64_t>(strlen(name) + 1U);
-		filestream.write(reinterpret_cast<char*>(length), sizeof(uint64_t));
-		filestream.write(name, length);
+		auto name = TheNavMesh->GetPlaceName(place.second);
+		uint64_t length = static_cast<uint64_t>(name->length() + 1U);
+		filestream.write(reinterpret_cast<char*>(&length), sizeof(uint64_t));
+		filestream.write(name->c_str(), length);
+		IndexType entry = place.first;
+		filestream.write(reinterpret_cast<char*>(&entry), sizeof(IndexType));
 	}
 
 	filestream.write(reinterpret_cast<char*>(&m_hasUnnamedAreas), sizeof(bool));
@@ -202,23 +131,24 @@ void PlaceDirectory::Load(std::fstream& filestream, uint32_t version)
 	{
 		char placeName[256];
 		uint64_t length = 0U;
+		IndexType entry = 0;
 		filestream.read(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 		filestream.read(placeName, length);
+		filestream.read(reinterpret_cast<char*>(&entry), sizeof(IndexType));
 
-		auto place = TheNavMesh->NameToPlace(placeName);
+		std::string name(placeName);
+		auto place = TheNavMesh->GetPlaceFromName(name);
 
 		if (place == UNDEFINED_PLACE)
 		{
 			Warning("Warning: NavMesh place \"%s\" is undefined? \n", placeName);
 		}
 
-		AddPlace(place);
+		LoadPlace(entry, place);
 	}
 
 	filestream.read(reinterpret_cast<char*>(&m_hasUnnamedAreas), sizeof(m_hasUnnamedAreas));
 }
-
-
 
 PlaceDirectory placeDirectory;
 

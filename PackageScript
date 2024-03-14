@@ -15,6 +15,7 @@ folder_list = [
   'addons/sourcemod/configs/navbot',
   'addons/sourcemod/configs/navbot/tf',
   'addons/sourcemod/configs/navbot/dod',
+  'addons/sourcemod/translations/navbot',
 ]
 
 if 'x86_64' in EXT.target_archs:
@@ -56,6 +57,11 @@ CopyFiles('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games',
   ]
 )
 
+# Translations
+CopyFiles('translations', 'addons/sourcemod/translations/navbot',
+  [ 'tf_places.phrases.txt' ]
+)
+
 # Config Files
 CopyFiles('configs', 'addons/sourcemod/configs/navbot',
   [ 'bot_names.cfg', 'bot_difficulty.cfg' ]
@@ -63,7 +69,7 @@ CopyFiles('configs', 'addons/sourcemod/configs/navbot',
 
 # TF2 Config files
 CopyFiles('configs/tf', 'addons/sourcemod/configs/navbot/tf',
-  [ 'weapons.cfg', 'class_selection.cfg' ]
+  [ 'weapons.cfg', 'class_selection.cfg', 'places.db' ]
 )
 
 # Copy binaries.

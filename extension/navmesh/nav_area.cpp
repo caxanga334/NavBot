@@ -9,6 +9,7 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <unordered_set>
 #include <algorithm>
 
 #include <extension.h>
@@ -5925,7 +5926,7 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	FOR_EACH_VEC( collector.m_area, it )
 	{
 		visPair.SetPair( this, (CNavArea *)collector.m_area[it] );
-		Assert( g_pNavVisPairHash->Find( visPair ) == g_pNavVisPairHash->InvalidHandle() );
+		// Assert( g_pNavVisPairHash->Find( visPair ) == g_pNavVisPairHash->InvalidHandle() );
 		g_pNavVisPairHash->Insert( visPair );
 	}
 }

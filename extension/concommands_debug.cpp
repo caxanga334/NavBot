@@ -348,4 +348,5 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_C
 
 	Msg("Collected %i areas \n", collectedAreas.size());
 }
+
 #endif // EXT_DEBUG
