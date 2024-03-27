@@ -42,9 +42,9 @@
 
 constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
 
-ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players");
+static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players", CExtManager::OnQuotaModeCvarChanged);
 
-ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.");
+static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 
 CExtManager::CExtManager() :
 	m_bdm()
@@ -168,6 +168,26 @@ void CExtManager::OnMapStart()
 		// get a new index on every map load
 		m_nextbotname = randomgen->GetRandomInt<size_t>(0U, m_botnames.size() - 1U);
 	}
+
+	auto mode = sm_navbot_quota_mode.GetString();
+
+	if (strncasecmp(mode, "normal", 6) == 0)
+	{
+		SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+	}
+	else if (strncasecmp(mode, "fill", 4) == 0)
+	{
+		SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
+	}
+	else
+	{
+		SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
+	}
+
+	int target = sm_navbot_quota_quantity.GetInt();
+	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
+	SetBotQuotaTarget(target);
 }
 
 void CExtManager::OnMapEnd()
@@ -372,26 +392,6 @@ void CExtManager::LoadBotNames()
 
 void CExtManager::UpdateBotQuota()
 {
-	auto mode = sm_navbot_quota_mode.GetString();
-
-	if (strncasecmp(mode, "normal", 6) == 0)
-	{
-		m_quotamode = BotQuotaMode::QUOTA_FIXED;
-	}
-	else if (strncasecmp(mode, "fill", 4) == 0)
-	{
-		m_quotamode = BotQuotaMode::QUOTA_FILL;
-	}
-	else
-	{
-		m_quotamode = BotQuotaMode::QUOTA_FIXED;
-		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
-	}
-
-	m_quotatarget = sm_navbot_quota_quantity.GetInt();
-
-	m_quotatarget = std::clamp(m_quotatarget, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
-
 	if (m_quotatarget == 0)
 		return;
 
@@ -402,6 +402,11 @@ void CExtManager::UpdateBotQuota()
 	UtilHelpers::ForEachPlayer([this, &humans, &navbots, &otherbots](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 		if (player->IsInGame())
 		{
+			if (m_mod->BotQuotaIsClientIgnored(client, entity, player))
+			{
+				return;
+			}
+
 			if (player->IsFakeClient())
 			{
 				if (IsNavBot(client))
@@ -470,6 +475,32 @@ void CExtManager::UpdateBotQuota()
 
 		break;
 	}
+}
+
+void CExtManager::OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	auto mode = sm_navbot_quota_mode.GetString();
+
+	if (strncasecmp(mode, "normal", 6) == 0)
+	{
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+	}
+	else if (strncasecmp(mode, "fill", 4) == 0)
+	{
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
+	}
+	else
+	{
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
+	}
+}
+
+void CExtManager::OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	int target = sm_navbot_quota_quantity.GetInt();
+	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
+	extmanager->SetBotQuotaTarget(target);
 }
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")

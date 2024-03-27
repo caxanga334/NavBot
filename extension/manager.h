@@ -83,7 +83,13 @@ public:
 		}
 	}
 
-	inline const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
+	const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
+
+	void SetBotQuotaMode(BotQuotaMode mode) { m_quotamode = mode; }
+	void SetBotQuotaTarget(int target) { m_quotatarget = target; }
+
+	static void OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
+	static void OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
 
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
@@ -98,6 +104,8 @@ private:
 	int m_quotatarget; // Bot quota target
 	CWeaponInfoManager m_wim;
 };
+
+
 
 extern CExtManager* extmanager;
 

@@ -51,6 +51,8 @@ public:
 	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
 	// Returns the weapon ID, used for quick identification of the weapon
 	virtual int GetWeaponID(edict_t* weapon) const { return NO_WEAPON_ID; }
+	// True if the given client should not count towards the number of clients in the server when checking the bot quota
+	virtual bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const { return false; }
 private:
 	CBaseHandle m_playerresourceentity;
 

@@ -32,6 +32,7 @@ public:
 
 	int GetWeaponEconIndex(edict_t* weapon) const override;
 	int GetWeaponID(edict_t* weapon) const override;
+	bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const override;
 
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;

@@ -607,6 +607,15 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
+		if (edict->IsFree())
+		{
+			continue;
+		}
+
+		if (edict->GetUnknown() == nullptr) {
+			continue;
+		}
+
 		if (i == GetBot()->GetIndex())
 			continue; // skip self
 
@@ -647,6 +656,11 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 		auto edict = gamehelpers->EdictOfIndex(i);
 
 		if (edict == nullptr) {
+			continue;
+		}
+
+		if (edict->IsFree())
+		{
 			continue;
 		}
 

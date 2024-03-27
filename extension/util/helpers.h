@@ -159,7 +159,7 @@ namespace UtilHelpers
 		{
 			auto edict = gamehelpers->EdictOfIndex(i);
 
-			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr || edict->GetUnknown() == nullptr)
 				continue;
 
 			functor(edict);
@@ -181,7 +181,7 @@ namespace UtilHelpers
 		{
 			auto edict = gamehelpers->EdictOfIndex(i);
 
-			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr || edict->GetUnknown() == nullptr)
 				continue;
 
 			auto player = playerhelpers->GetGamePlayer(i);
@@ -207,7 +207,7 @@ namespace UtilHelpers
 		{
 			edict_t* edict = gamehelpers->EdictOfIndex(i);
 
-			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr || edict->GetUnknown() == nullptr)
 				continue;
 
 			SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(i);
@@ -231,6 +231,9 @@ inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T funct
 			continue;
 
 		if (edict->IsFree())
+			continue;
+
+		if (edict->GetUnknown() == nullptr)
 			continue;
 
 		auto gp = playerhelpers->GetGamePlayer(i);
