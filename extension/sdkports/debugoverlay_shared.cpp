@@ -5,7 +5,7 @@
 //
 //=============================================================================//
 
-#include <ifaces_extern.h>
+#include <extension.h>
 #include "debugoverlay_shared.h"
 #include "mathlib/mathlib.h"
 #include "sdk_utils.h"

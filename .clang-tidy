@@ -1,0 +1,4 @@
+Checks: '-*,readability-delete-null-pointer,readability-implicit-bool-conversion,readability-redundant-inline-specifier,performance-noexcept-destructor,modernize-use-override,performance-inefficient-algorithm,performance-inefficient-vector-operation,bugprone-infinite-loop,readability-make-member-function-const,bugprone-suspicious-semicolon,bugprone-suspicious-memset-usage,performance-for-range-copy,performance-no-automatic-move,performance-move-const-arg,performance-unnecessary-copy-initialization,performance-unnecessary-value-param,readability-duplicate-include,readability-else-after-return,readability-redundant-casting,readability-redundant-smartptr-get,modernize-use-nullptr,readability-redundant-control-flow'
+CheckOptions:
+    - key: readability-implicit-bool-conversion.AllowPointerConditions
+      value: '1'

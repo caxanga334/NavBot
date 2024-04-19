@@ -82,7 +82,7 @@ public:
 	/**
 	 * @brief Called when starting parsing.
 	 */
-	virtual void ReadSMC_ParseStart() override;
+	void ReadSMC_ParseStart() override;
 
 	/**
 	 * @brief Called when ending parsing.
@@ -90,7 +90,7 @@ public:
 	 * @param halted			True if abnormally halted, false otherwise.
 	 * @param failed			True if parsing failed, false otherwise.
 	 */
-	virtual void ReadSMC_ParseEnd(bool halted, bool failed) override;
+	void ReadSMC_ParseEnd(bool halted, bool failed) override;
 
 	/**
 	 * @brief Called when entering a new section
@@ -99,7 +99,7 @@ public:
 	 * @param name			Name of section, with the colon omitted.
 	 * @return				SMCResult directive.
 	 */
-	virtual SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
+	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
 
 	/**
 	 * @brief Called when encountering a key/value pair in a section.
@@ -110,7 +110,7 @@ public:
 	 *						and key will contain the entire string.
 	 * @return				SMCResult directive.
 	 */
-	virtual SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
 
 	/**
 	 * @brief Called when leaving the current section.
@@ -118,7 +118,7 @@ public:
 	 * @param states		Parsing states.
 	 * @return				SMCResult directive.
 	 */
-	virtual SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
+	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
 
 private:
 	struct ProfileData

@@ -84,6 +84,8 @@ private:
 class WeaponInfo
 {
 public:
+	// Random Number used to indicate an invalid weapon slot
+	static constexpr int INVALID_WEAPON_SLOT = -7912742;
 
 	enum AttackFunctionType
 	{
@@ -102,6 +104,11 @@ public:
 		priority = 0;
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
+		maxclip1 = 0;
+		maxclip2 = 0;
+		primammolow = 0;
+		secammolow = 0;
+		slot = INVALID_WEAPON_SLOT;
 	}
 
 	inline void Reset()
@@ -112,6 +119,12 @@ public:
 		priority = 0;
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
+		maxclip1 = 0;
+		maxclip2 = 0;
+		primammolow = 0;
+		secammolow = 0;
+
+		slot = INVALID_WEAPON_SLOT;
 		attacksinfo[PRIMARY_ATTACK].Reset();
 		attacksinfo[SECONDARY_ATTACK].Reset();
 		attacksinfo[TERTIARY_ATTACK].Reset();
@@ -155,12 +168,19 @@ public:
 		return attacksinfo[type];
 	}
 
+	// Returns true if this is the default weapon info profile
+	inline bool IsDefault() const { return configentry.size() == 0; }
 	inline bool CanHeadShot() const { return can_headshot; }
 	inline float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
 	inline float GetMaxPrimaryHeadShotRange() const { return attacksinfo[PRIMARY_ATTACK].GetMaxRange() * headshot_range_mult; }
 
 	inline void SetEconItemIndex(int index) { econindex = index; }
 	inline void SetPriority(int pri) { priority = pri; }
+	inline void SetMaxClip1(int clip) { maxclip1 = clip; }
+	inline void SetMaxClip2(int clip) { maxclip2 = clip; }
+	inline void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
+	inline void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
+	inline void SetSlot(int s) { slot = s; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -169,6 +189,16 @@ public:
 	inline bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
 	inline bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
 	inline bool IsCombatWeapon() const { return priority >= 0; }
+	inline bool HasMaxClip1() const { return maxclip1 > 0; }
+	inline int GetMaxClip1() const { return maxclip1; }
+	inline bool HasMaxClip2() const { return maxclip2 > 0; }
+	inline int GetMaxClip2() const { return maxclip2; }
+	inline bool HasLowPrimaryAmmoThreshold() const { return primammolow > 0; }
+	inline int GetLowPrimaryAmmoThreshold() const { return primammolow; }
+	inline bool HasLowSecondaryAmmoThreshold() const { return secammolow > 0; }
+	inline int GetLowSecondaryAmmoThreshold() const { return secammolow; }
+	inline int GetSlot() const { return slot; }
+	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
 
 private:
 	std::string classname;
@@ -178,6 +208,11 @@ private:
 	int priority; // Priority for weapon selection
 	bool can_headshot;
 	float headshot_range_mult;
+	int maxclip1; // Maximum ammo stored in clip1
+	int maxclip2; // Maximum ammo stored in clip2
+	int primammolow; // Threshold for low primary ammo
+	int secammolow; // Threshold for low secondary ammo
+	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
@@ -187,6 +222,11 @@ public:
 		m_tempweapinfo()
 	{
 		m_weapons.reserve(512);
+		m_isvalid = false;
+		m_section_weapon = false;
+		m_section_prim = false;
+		m_section_sec = false;
+		m_section_ter = false;
 	}
 
 	inline bool WeaponEntryExists(std::string& entry) const
@@ -203,42 +243,26 @@ public:
 	}
 
 	/**
-	 * @brief Searches for a weapon info by classname
-	 * @param classname Weapon classname to search for
-	 * @return Pointer to WeaponInfo or NULL if not found
-	*/
-	inline const WeaponInfo* GetWeaponInfoByClassname(const char* classname) const
+	 * @brief Gets a weapon info by classname or econ index. Econ index has priority
+	 * @param classname Classname to search
+	 * @param index Econ index to search
+	 * @return A weaponinfo is always returned, if not found, a default is returned.
+	 */
+	inline void GetWeaponInfo(const char* classname, const int index, WeaponInfo& result) const
 	{
-		std::string name(classname);
-
-		for (auto& weapon : m_weapons)
+		if (LookUpWeaponInfoByEconIndex(index, result))
 		{
-			if (weapon.IsClassname(name))
-			{
-				return &weapon;
-			}
+			return;
 		}
 
-		return nullptr;
-	}
-
-	/**
-	 * @brief Searches for a weapon info by item definition index
-	 * @param index Item definition index
-	 * @return Pointer to WeaponInfo or NULL if not found
-	*/
-	inline const WeaponInfo* GetWeaponInfoByEconIndex(const int index) const
-	{
-		for (auto& weapon : m_weapons)
+		if (LookUpWeaponInfoByClassname(classname, result))
 		{
-			if (weapon.GetItemDefIndex() == index)
-			{
-				return &weapon;
-			}
+			return;
 		}
 
-		return nullptr;
 	}
+
+	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
 	/**
 	 * @brief Called when entering a new section
@@ -247,7 +271,7 @@ public:
 	 * @param name			Name of section, with the colon omitted.
 	 * @return				SMCResult directive.
 	 */
-	virtual SMCResult ReadSMC_NewSection(const SMCStates* states, const char* name) override;
+	SMCResult ReadSMC_NewSection(const SMCStates* states, const char* name) override;
 
 	/**
 	 * @brief Called when encountering a key/value pair in a section.
@@ -258,7 +282,7 @@ public:
 	 *						and key will contain the entire string.
 	 * @return				SMCResult directive.
 	 */
-	virtual SMCResult ReadSMC_KeyValue(const SMCStates* states, const char* key, const char* value) override;
+	SMCResult ReadSMC_KeyValue(const SMCStates* states, const char* key, const char* value) override;
 
 	/**
 	 * @brief Called when leaving the current section.
@@ -266,7 +290,7 @@ public:
 	 * @param states		Parsing states.
 	 * @return				SMCResult directive.
 	 */
-	virtual SMCResult ReadSMC_LeavingSection(const SMCStates* states) override;
+	SMCResult ReadSMC_LeavingSection(const SMCStates* states) override;
 
 	bool LoadConfigFile();
 
@@ -303,6 +327,38 @@ private:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
+	}
+
+	inline bool LookUpWeaponInfoByClassname(const char* classname, WeaponInfo& result) const
+	{
+		std::string name(classname);
+
+		for (auto& weapon : m_weapons)
+		{
+			if (weapon.IsClassname(name))
+			{
+				result = weapon;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	inline bool LookUpWeaponInfoByEconIndex(const int index, WeaponInfo& result) const
+	{
+		if (index < 0) { return false; }
+
+		for (auto& weapon : m_weapons)
+		{
+			if (weapon.GetItemDefIndex() == index)
+			{
+				result = weapon;
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	void PostParseAnalysis();

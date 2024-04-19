@@ -12,14 +12,21 @@
 #ifndef _NAV_AREA_H_
 #define _NAV_AREA_H_
 
+#include <algorithm>
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <cstdint>
+#include <vector>
+#include <cmath>
+
 #include "nav_ladder.h"
 #include <sdkports/sdk_timers.h>
 #include <shareddefs.h>
 #include <networkvar.h>
-#include <tier1/memstack.h>
 
 // BOTPORT: Clean up relationship between team index and danger storage in nav areas
-enum { MAX_NAV_TEAMS = 2 };
+constexpr auto MAX_NAV_TEAMS = 2;
 
 
 #ifdef STAGING_ONLY
@@ -34,7 +41,7 @@ inline void DebuggerBreakOnNaN_StagingOnly( float val )
 
 class CFuncElevator;
 class CFuncNavCost;
-class KeyValues;
+// class KeyValues;
 
 inline bool FStrEq(const char *sz1, const char *sz2)
 {
@@ -48,6 +55,7 @@ bool UTIL_IsCommandIssuedByServerAdmin();
 
 const char *UTIL_VarArgs( const char *format, ... );
 
+/* 
 class CNavVectorNoEditAllocator
 {
 public:
@@ -64,7 +72,7 @@ private:
 	static void *m_pCurrent;
 	static int m_nBytesCurrent;
 };
-
+*/
 
 //-------------------------------------------------------------------------------------------------------------------
 /**
@@ -143,8 +151,8 @@ public:
 
 	int GetFlags( void ) const		{ return m_flags; }
 
-	void Save( CUtlBuffer &fileBuffer, unsigned int version ) const;
-	void Load( CUtlBuffer &fileBuffer, unsigned int version );
+	void Save(std::fstream& filestream, uint32_t version);
+	void Load(std::fstream& filestream, uint32_t version);
 	NavErrorType PostLoad( void );
 
 	const Vector &GetPosition( void ) const		{ return m_pos; }	// get the position of the hiding spot
@@ -209,6 +217,98 @@ struct SpotEncounter
 };
 typedef CUtlVector< SpotEncounter * > SpotEncounterVector;
 
+enum class NavLinkType : int32_t
+{
+	LINK_INVALID = 0,
+	LINK_GROUND, // solid ground
+	LINK_TELEPORTER, // map based teleporter (trigger_teleport)
+	LINK_BLAST_JUMP, // Blast/Rocket Jump
+
+	MAX_LINK_TYPES // max known link types
+};
+
+// Special nav area connections
+class NavSpecialLink
+{
+public:
+	NavSpecialLink()
+	{
+		m_type = NavLinkType::MAX_LINK_TYPES;
+	}
+
+	NavSpecialLink(NavLinkType type, CNavArea* other, const Vector& position)
+	{
+		m_type = type;
+		m_link.area = other;
+		m_pos = position;
+	}
+
+	NavSpecialLink(NavLinkType type, unsigned int id, const Vector& position)
+	{
+		m_type = type;
+		m_link.id = id;
+		m_pos = position;
+	}
+
+	static const char* LinkTypeToString(NavLinkType type);
+
+	inline bool IsOfType(NavLinkType type) const { return m_type == type; }
+	inline bool IsConnectedTo(CNavArea* area) const { return m_link.area == area; }
+	inline NavLinkType GetType() const { return m_type; }
+	inline const Vector& GetPosition() const { return m_pos; }
+	inline const CNavArea* GetConnectedArea() const { return m_link.area; }
+	inline void SetArea(CNavArea* area) { m_link.area = area; }
+	inline float GetConnectionLength() const { return m_link.length; }
+
+	bool operator==(const NavSpecialLink& other) const
+	{
+		return other.IsOfType(m_type) && other.m_link == m_link;
+	}
+
+	NavLinkType m_type; // Link type
+	NavConnect m_link; // Link connection
+	Vector m_pos; // Link position on the home area
+};
+
+enum NavHintType : int
+{
+	NAVHINT_CROSSINGPOINT = 0,
+	NAVHINT_LAST_SHARED_HINT = NAVHINT_CROSSINGPOINT
+};
+
+class NavHintPoint
+{
+public:
+	NavHintPoint(int type, const Vector& origin, const QAngle& angles)
+	{
+		m_hintType = type;
+		m_pos = origin;
+		m_angle = angles;
+	}
+
+	bool operator==(const NavHintPoint& other) const
+	{
+		int x1 = std::roundf(m_pos.x);
+		int y1 = std::roundf(m_pos.y);
+		int z1 = std::roundf(m_pos.z);
+
+		int x2 = std::roundf(other.m_pos.x);
+		int y2 = std::roundf(other.m_pos.y);
+		int z2 = std::roundf(other.m_pos.z);
+
+		return (x1 == x2) && (y1 == y2) && (z1 == z2);
+	}
+
+	bool IsHintOfType(int type) const { return m_hintType == type; }
+	int GetHintType() const { return m_hintType; }
+	const Vector& GetPosition() const { return m_pos; }
+	const QAngle& GetAngle() const { return m_angle; }
+	void Draw() const;
+
+	int m_hintType; // Nav Hint type
+	Vector m_pos; // Nav Hint origin
+	QAngle m_angle; // Nav Hint Aiming angle
+};
 
 //-------------------------------------------------------------------------------------------------------------------
 /**
@@ -257,6 +357,8 @@ protected:
 
 	/* 128*/	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
 
+	std::vector<NavSpecialLink> m_speciallinks; // Special 'link' connections
+	std::vector<NavHintPoint> m_hints; // Nav hints in this area
 	// --- End critical data --- 
 };
 
@@ -273,6 +375,8 @@ public:
 	virtual void OnRoundRestartPreEntity( void ) { }			// invoked for each area when the round restarts, but before entities are deleted and recreated
 	virtual void OnEnter( edict_t *who, CNavArea *areaJustLeft ) { }	// invoked when player enters this area
 	virtual void OnExit( edict_t *who, CNavArea *areaJustEntered ) { }	// invoked when player exits this area
+	virtual void OnFrame() {} // invoked every server frame
+	virtual void OnUpdate() {} // invoked at intervals
 
 	virtual void OnDestroyNotify( CNavArea *dead );				// invoked when given area is going away
 	virtual void OnDestroyNotify( CNavLadder *dead );			// invoked when given ladder is going away
@@ -281,12 +385,12 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea ) { }		// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder ) { }	// invoked when given ladder has just been deleted from the mesh in edit mode
 
-	virtual void Save( CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion ) const;	// (EXTEND)
-	virtual NavErrorType Load( CUtlBuffer &fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion );		// (EXTEND)
+	virtual void Save(std::fstream& filestream, uint32_t version);	// (EXTEND)
+	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);		// (EXTEND)
 	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 
-	virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
-	virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues
+	// virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
+	// virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues
 
 	// for interactively building or generating nav areas
 	void Build( CNavNode *nwNode, CNavNode *neNode, CNavNode *seNode, CNavNode *swNode );
@@ -299,24 +403,135 @@ public:
 	void ConnectTo( CNavLadder *ladder );						// connect this area to given ladder
 	void Disconnect( CNavLadder *ladder );						// disconnect this area from given ladder
 
+	bool ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin); // connect via special link
+	void Disconnect(CNavArea* area, NavLinkType linktype); // remove special link connection
+
 	unsigned int GetID( void ) const	{ return m_id; }		// return this area's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							// re-orders area ID's so they are continuous
 	unsigned int GetDebugID( void ) const { return m_debugid; }
+
+	size_t GetSpecialLinkCount() const { return m_speciallinks.size(); }
+	const std::vector<NavSpecialLink>& GetSpecialLinks() const { return m_speciallinks; }
 
 	void SetAttributes( int bits )			{ m_attributeFlags = bits; }
 	int GetAttributes( void ) const			{ return m_attributeFlags; }
 	bool HasAttributes( int bits ) const	{ return ( m_attributeFlags & bits ) ? true : false; }
 	void RemoveAttributes( int bits )		{ m_attributeFlags &= ( ~bits ); }
 
+	void AddHint(int type, const Vector& origin, const QAngle& angle) 
+	{
+		if (!Contains(origin))
+		{
+			Warning("Cannot add hints outside the boundaries of a Nav Area! \n");
+			return;
+		}
+
+		m_hints.emplace_back(type, origin, angle);
+	}
+	void WipeHints() { m_hints.clear(); }
+	void RemoveNearestHint(const Vector& origin)
+	{
+		if (m_hints.size() > 0)
+		{
+			auto best = m_hints.end();
+			float dist = FLT_MAX;
+
+			for (auto it = m_hints.begin(); it != m_hints.end(); it++)
+			{
+				auto& hint = *it;
+
+				float current = (hint.GetPosition() - origin).Length();
+
+				if (current < dist)
+				{
+					dist = current;
+					best = it;
+				}
+			}
+
+			if (best != m_hints.end())
+			{
+				m_hints.erase(best);
+			}
+		}
+	}
+
+	void RemoveNearestHint(const Vector& origin, int type)
+	{
+		if (m_hints.size() > 0)
+		{
+			auto best = m_hints.end();
+			float dist = FLT_MAX;
+
+			for (auto it = m_hints.begin(); it != m_hints.end(); it++)
+			{
+				auto& hint = *it;
+
+				if (!hint.IsHintOfType(type))
+					continue;
+
+				float current = (hint.GetPosition() - origin).Length();
+
+				if (current < dist)
+				{
+					dist = current;
+					best = it;
+				}
+			}
+
+			if (best != m_hints.end())
+			{
+				m_hints.erase(best);
+			}
+		}
+	}
+
+	bool HasHintOfType(int type) const
+	{
+		auto it = std::find_if(m_hints.begin(), m_hints.end(), [&type](const NavHintPoint& hint) { return hint.IsHintOfType(type); });
+		return it != m_hints.end();
+	}
+
+	const std::vector<NavHintPoint>& GetHintsVector() const { return m_hints; }
+	const NavHintPoint* GetNearestHintOfType(int type, const Vector& origin)
+	{
+		if (m_hints.size() > 0)
+		{
+			const NavHintPoint* best = nullptr;
+			float dist = FLT_MAX;
+
+			for (const auto& hint : m_hints)
+			{
+				if (!hint.IsHintOfType(type))
+					continue;
+
+				float current = (hint.GetPosition() - origin).Length();
+
+				if (current < dist)
+				{
+					dist = current;
+					best = &hint;
+				}
+			}
+
+			return best;
+		}
+
+		return nullptr;
+	}
+
 	void SetPlace( Place place )		{ m_place = place; }	// set place descriptor
 	Place GetPlace( void ) const		{ return m_place; }		// get place descriptor
 
 	void MarkAsBlocked( int teamID, edict_t *blocker, bool bGenerateEvent = true );	// An entity can force a nav area to be blocked
-	virtual void UpdateBlocked( bool force = false, int teamID = TEAM_ANY );		// Updates the (un)blocked status of the nav area (throttled)
+	virtual void UpdateBlocked( bool force = false, int teamID = NAV_TEAM_ANY );		// Updates the (un)blocked status of the nav area (throttled)
 	virtual bool IsBlocked( int teamID, bool ignoreNavBlockers = false ) const;
-	void UnblockArea( int teamID = TEAM_ANY );					// clear blocked status for the given team(s)
+	void UnblockArea( int teamID = NAV_TEAM_ANY );					// clear blocked status for the given team(s)
 
 	void CheckFloor( edict_t *ignore );						// Checks if there is a floor under the nav area, in case a breakable floor is gone
+	// Checks if there is a solid floor on this nav area
+	bool HasSolidFloor() const;
+	bool HasSolidObstruction() const;
 
 	void MarkObstacleToAvoid( float obstructionHeight );
 	void UpdateAvoidanceObstacles( void );
@@ -362,6 +577,7 @@ public:
 
 	bool IsContiguous( const CNavArea *other ) const;			// return true if the given area and 'other' share a colinear edge (ie: no drop-down or step/jump/climb)
 	float ComputeAdjacentConnectionHeightChange( const CNavArea *destinationArea ) const;			// return height change between edges of adjacent nav areas (not actual underlying ground)
+	float ComputeAdjacentConnectionGapDistance(const CNavArea* destinationArea) const; // return the 'gap' distance between edges of adjacent nav areas
 
 	bool IsEdge( NavDirType dir ) const;						// return true if there are no bi-directional links on the given side
 
@@ -378,7 +594,8 @@ public:
 	const NavConnectVector *GetAdjacentAreas( NavDirType dir ) const	{ return &m_connect[dir]; }
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
 	bool IsConnected( const CNavLadder *ladder, CNavLadder::LadderDirectionType dir ) const;	// return true if given ladder is connected in given direction
-	float ComputeGroundHeightChange( const CNavArea *area );			// compute change in actual ground height from this area to given area
+	bool IsConnected(const CNavArea* area, NavLinkType linktype) const; // returns true if the given area is connected via the given link type
+	float ComputeGroundHeightChange( const CNavArea *area ) const;			// compute change in actual ground height from this area to given area
 
 	const NavConnectVector *GetIncomingConnections( NavDirType dir ) const	{ return &m_incomingConnect[dir]; }	// get areas connected TO this area by a ONE-WAY link (ie: we have no connection back to them)
 	void AddIncomingConnection( CNavArea *source, NavDirType incomingEdgeDir );
@@ -435,7 +652,7 @@ public:
 	//- A* pathfinding algorithm ------------------------------------------------------------------------
 	static void MakeNewMarker( void )	{ ++m_masterMarker; if (m_masterMarker == 0) m_masterMarker = 1; }
 	void Mark( void )					{ m_marker = m_masterMarker; }
-	BOOL IsMarked( void ) const			{ return (m_marker == m_masterMarker) ? true : false; }
+	bool IsMarked( void ) const			{ return (m_marker == m_masterMarker) ? true : false; }
 	
 	void SetParent( CNavArea *parent, NavTraverseType how = NUM_TRAVERSE_TYPES )	{ m_parent = parent; m_parentHow = how; }
 	CNavArea *GetParent( void ) const	{ return m_parent; }
@@ -644,6 +861,57 @@ public:
 		return true;
 	}
 
+	inline bool IsConnectedToBySpecialLink(const CNavArea* other) const
+	{
+		for (auto& link : m_speciallinks)
+		{
+			if (link.GetConnectedArea() == other)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	const NavSpecialLink* GetSpecialLinkConnectionToArea(const CNavArea* other) const
+	{
+		for (auto& link : m_speciallinks)
+		{
+			if (link.GetConnectedArea() == other)
+			{
+				return &link;
+			}
+		}
+
+		return nullptr;
+	}
+
+	/**
+	 * @brief Runs a function on each nav area connected to this area
+	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)
+	 * @param functor function to run on each connected area to this area
+	 */
+	template <typename T>
+	inline void ForEachConnectedArea(T functor)
+	{
+		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			auto conn = GetAdjacentAreas(static_cast<NavDirType>(dir));
+
+			for (int i = 0; i < conn->Count(); i++)
+			{
+				CNavArea* connectedArea = conn->Element(i).area;
+				functor(connectedArea);
+			}
+		}
+
+		for (auto& link : m_speciallinks)
+		{
+			CNavArea* connectedArea = link.m_link.area;
+			functor(connectedArea);
+		}
+	}
 
 private:
 	friend class CNavMesh;
@@ -1023,7 +1291,7 @@ inline Vector CNavArea::GetCorner( NavCornerType corner ) const
 	switch( corner )
 	{
 	default:
-		Assert( false && "GetCorner: Invalid type" );
+		return Vector(0.0f, 0.0f, 0.0f);
 	case NORTH_WEST:
 		return m_nwCorner;
 

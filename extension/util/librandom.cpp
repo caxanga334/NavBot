@@ -1,5 +1,7 @@
-#include <random>
 #include "librandom.h"
+
+static librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_randomgen;
+librandom::RandomNumberGenerator<std::mt19937, unsigned int>* randomgen = &s_randomgen;
 
 int librandom::generate_random_int(int min, int max)
 {
@@ -39,3 +41,5 @@ bool librandom::random_chance(int chance)
 {
 	return generate_random_int(0, 99) < chance;
 }
+
+

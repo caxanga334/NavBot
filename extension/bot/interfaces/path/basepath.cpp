@@ -1,9 +1,10 @@
 #include <limits>
+#include <cmath>
 
 #include <extension.h>
+#include <manager.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
-#include <manager.h>
 #include <mods/basemod.h>
 #include <util/UtilTrace.h>
 #include <sdkports/debugoverlay_shared.h>
@@ -12,13 +13,15 @@
 
 #undef min
 #undef max
+#undef clamp
 
-extern CExtManager* extmanager;
+static ConVar sm_navbot_path_segment_draw_limit("sm_navbot_path_segment_draw_limit", "25", FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Path segment draw limit.");
 
 CPath::CPath() :
 	m_ageTimer()
 {
 	m_segments.reserve(512);
+	m_cursorPos = 0.0f;
 }
 
 CPath::~CPath()
@@ -68,6 +71,8 @@ void CPath::Draw(const CBasePathSegment* start, const float duration)
 {
 	bool isstart = true;
 	Vector v1, v2;
+	int i = 0;
+	const int limit = sm_navbot_path_segment_draw_limit.GetInt();
 
 	constexpr float ARROW_WIDTH = 4.0f;
 
@@ -95,6 +100,11 @@ void CPath::Draw(const CBasePathSegment* start, const float duration)
 		v1 = next->goal;
 
 		next = GetNextSegment(next);
+
+		if (++i > limit)
+		{
+			return;
+		}
 	}
 }
 
@@ -352,27 +362,36 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		case GO_EAST:
 		case GO_SOUTH:
 		case GO_WEST:
-			if (ProcessGroundPath(bot, start, from, to, insertstack) == false)
+			if (!ProcessGroundPath(bot, start, from, to, insertstack))
 			{
 				failed = true;
 			}
 			break;
 		case GO_LADDER_UP:
 		case GO_LADDER_DOWN:
-			if (ProcessLaddersInPath(bot, from, to, insertstack) == false)
+			if (!ProcessLaddersInPath(bot, from, to, insertstack))
 			{
 				failed = true;
 			}
 			break;
+
+		case GO_SPECIAL_LINK:
+		{
+			if (!ProcessSpecialLinksInPath(bot, from, to, insertstack))
+			{
+				failed = true;
+			}
+			break;
+		}
 		default: // other types are not supported right now
 			break;
 		}
 
-		if (failed == true)
+		if (failed)
 			break; // exit loop
 	}
 
-	if (failed == false)
+	if (!failed)
 	{
 		// Second iteration, handle jump and climbing
 		for (size_t i = 1; i < m_segments.size(); i++)
@@ -384,6 +403,9 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 				continue;
 
 			if (to->how > GO_WEST || to->type != AIPath::SegmentType::SEGMENT_GROUND)
+				continue;
+
+			if (to->how == GO_SPECIAL_LINK)
 				continue;
 
 			if (ProcessPathJumps(bot, from, to, insertstack) == false)
@@ -413,9 +435,9 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		auto seg = insert.Seg;
 		auto it = std::find(m_segments.begin(), m_segments.end(), seg);
 
-		if (it != m_segments.end()) // got iterator of where we need to insert
+		if (it != m_segments.end() || (it == m_segments.end() && !insert.after)) // got iterator of where we need to insert
 		{
-			if (insert.after == true)
+			if (insert.after)
 			{
 				it++; // by default, it will be added before the element of the iterator
 			}
@@ -495,7 +517,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 			if (startDrop.z > ground + mover->GetStepHeight())
 			{
 				to->goal = startDrop;
-				to->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
+				to->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 				CBasePathSegment* newSegment = CreateNewSegment();
 				newSegment->CopySegment(to);
@@ -503,7 +525,27 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 				newSegment->goal.x = endDrop.x;
 				newSegment->goal.y = endDrop.y;
 				newSegment->goal.z = ground;
-				newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
+				newSegment->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
+
+				// Sometimes there is a railing between the drop and the ground
+
+				CTraceFilterNoNPCsOrPlayer filter(bot->GetHandleEntity(), COLLISION_GROUP_NONE);
+				trace_t result;
+				Vector mins(-halfWidth, -halfWidth, mover->GetStepHeight());
+				Vector maxs(halfWidth, halfWidth, hullHeight);
+
+				UTIL_TraceHull(from->goal, startDrop, mins, maxs, mover->GetMovementTraceMask(), filter, &result);
+
+				if (result.DidHit()) // probably collided with a railing
+				{
+					to->goal = result.endpos;
+					CBasePathSegment* seg2 = CreateNewSegment();
+					seg2->CopySegment(to);
+					seg2->goal = startDrop + Vector(0.0f, 0.0f, mover->GetStepHeight());
+					seg2->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
+					pathinsert.emplace(newSegment, seg2, false);
+				}
+
 
 				pathinsert.emplace(to, newSegment, true);
 			}
@@ -585,7 +627,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	// hull width used for calculations is the bot hull multiplied by this value
 	constexpr float HULL_WIDTH_SAFETY_MARGIN = 1.1f;
 
-	const float zdiff = fabsf(closeto.z - closefrom.z);
+	const float zdiff = closeto.z - closefrom.z;
 	const float gaplength = (closeto - closefrom).AsVector2D().Length();
 	const float fullstepsize = mover->GetStepHeight();
 	const float halfstepsize = fullstepsize * 0.5f;
@@ -593,7 +635,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	const float halfwidth = hullwidth * 0.5f;
 
 	// not too high and gap is greater than the bot hull (with some tolerance)
-	if (gaplength > hullwidth && zdiff < halfstepsize)
+	if (gaplength > hullwidth && fabsf(zdiff) < halfstepsize)
 	{
 		Vector landing;
 		to->area->GetClosestPointOnArea(to->goal, &landing);
@@ -615,17 +657,26 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	}
 	else if (zdiff > fullstepsize) // too high to just walk, must climb/jump
 	{
+		AIPath::SegmentType type = AIPath::SegmentType::SEGMENT_CLIMB_UP; // default to simple jump
+
+		if (zdiff > mover->GetMaxJumpHeight() && zdiff < mover->GetMaxDoubleJumpHeight())
+		{
+			type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
+		}
+
 		// when climbing, start from the area center
 		to->goal = to->area->GetCenter();
+		to->type = type; // mark this segment for jumping
 
 		Vector jumppos;
 		from->area->GetClosestPointOnArea(to->goal, &jumppos);
-
+		
+		// Create a new ground segment towards the jump position
 		CBasePathSegment* newSegment = CreateNewSegment();
 
 		newSegment->CopySegment(from);
 		newSegment->goal = jumppos;
-		newSegment->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
+		newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 		pathinsert.emplace(from, newSegment, true);
 	}
@@ -633,9 +684,81 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 	return true;
 }
 
+bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+{
+	auto link = from->area->GetSpecialLinkConnectionToArea(to->area);
+
+	if (!link)
+	{
+		Warning("to->how == GO_SPECIAL_LINK but from->area nas no special link to to->area! \n");
+		return false;
+	}
+
+	switch (link->GetType())
+	{
+	case NavLinkType::LINK_GROUND:
+	case NavLinkType::LINK_TELEPORTER:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetPosition();
+		between->how = GO_SPECIAL_LINK;
+		between->type = AIPath::SEGMENT_GROUND;
+		// add a segments between from and to.
+		// the bot will go to from, them move to between and then move to to.
+		// between goal is the special link position on the nav area.
+
+		pathinsert.emplace(to, between, false); // insert before 'to'
+		break;
+	}
+	case NavLinkType::LINK_BLAST_JUMP:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		// 'to' starts at the link position and ends at it's area center
+		// change it to a blast jump segment type
+		to->type = AIPath::SEGMENT_BLAST_JUMP;
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetPosition();
+		between->how = GO_SPECIAL_LINK;
+		between->type = AIPath::SEGMENT_GROUND;
+		// add a segments between from and to.
+		// the bot will go to from, them move to between and then move to to.
+		// between goal is the special link position on the nav area.
+
+		pathinsert.emplace(to, between, false); // insert before 'to'
+		break;
+	}
+	default:
+		Warning("CPath::ProcessSpecialLinksInPath unhandled link type!");
+		return false;
+	}
+
+	return true;
+}
+
 void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint)
 {
-	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
+	auto crossinghint = to->GetNearestHintOfType(NAVHINT_CROSSINGPOINT, frompos);
+
+	// If the destination area has a crossing point hint, use it
+	if (crossinghint != nullptr)
+	{
+		*crosspoint = crossinghint->GetPosition();
+	}
+	else
+	{
+		from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
+	}
+	
+	bot->GetMovementInterface()->AdjustPathCrossingPoint(from, to, frompos, crosspoint);
 }
 
 void CPath::PostProcessPath()
@@ -712,6 +835,11 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 {
 	constexpr float ARROW_WIDTH = 4.0f;
 
+	NDebugOverlay::Sphere(v1, 5.0f, 0, 210, 255, true, duration);
+	char name[64];
+	ke::SafeSprintf(name, sizeof(name), "%s", AIPath::SegmentTypeToString(type));
+	NDebugOverlay::Text(v1, name, false, duration);
+
 	switch (type)
 	{
 	case AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE:
@@ -733,6 +861,16 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_LADDER_DOWN:
 	{
 		NDebugOverlay::HorzArrow(v1, v2, ARROW_WIDTH, 200, 255, 0, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 204, 0, 255, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_BLAST_JUMP:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 0, 255, true, duration);
 		break;
 	}
 	default:
@@ -775,80 +913,6 @@ const Vector& CPath::GetEndPosition() const
 	}
 
 	return vec3_origin;
-}
-
-const CBasePathSegment* CPath::GetFirstSegment() const
-{
-	if (m_segments.size() == 0)
-	{
-		return nullptr;
-	}
-
-	return m_segments[0];
-}
-
-const CBasePathSegment* CPath::GetLastSegment() const
-{
-	if (m_segments.size() == 0)
-	{
-		return nullptr;
-	}
-
-	return m_segments[m_segments.size() - 1];
-}
-
-const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* current) const
-{
-	if (m_segments.size() == 0)
-	{
-		return nullptr;
-	}
-
-	for (size_t i = 0; i < m_segments.size(); i++)
-	{
-		CBasePathSegment* seg = m_segments[i];
-
-		if (seg == current)
-		{
-			size_t next = i + 1;
-
-			if (next >= m_segments.size())
-			{
-				return nullptr;
-			}
-
-			return m_segments[next];
-		}
-	}
-
-	return nullptr;
-}
-
-const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* current) const
-{
-	if (m_segments.size() == 0)
-	{
-		return nullptr;
-	}
-
-	for (size_t i = 0; i < m_segments.size(); i++)
-	{
-		CBasePathSegment* seg = m_segments[i];
-
-		if (seg == current)
-		{
-			int next = i + -1;
-
-			if (next < 0)
-			{
-				return nullptr;
-			}
-
-			return m_segments[next];
-		}
-	}
-
-	return nullptr;
 }
 
 // The segment the bot will try to reach.

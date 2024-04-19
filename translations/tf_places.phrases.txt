@@ -1,0 +1,11 @@
+"Phrases"
+{
+	"RedTeamSpawn"
+	{
+		"en"			"RED Spawn"
+	}
+	"BluTeamSpawn"
+	{
+		"en"			"BLU Spawn"
+	}
+}

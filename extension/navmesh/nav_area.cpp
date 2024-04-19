@@ -9,14 +9,20 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
-#include "nav_area.h"
+#include <unordered_set>
+#include <algorithm>
 
+#include <extension.h>
+#include <manager.h>
+#include <extplayer.h>
+#include <util/librandom.h>
+#include <sdkports/debugoverlay_shared.h>
+#include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_entities.h"
 #include "nav_colors.h"
 #include <util/EntityUtils.h>
-#include <util/UtilRandom.h>
 #include <eiface.h>
 #include <Color.h>
 #include <iplayerinfo.h>
@@ -25,15 +31,17 @@
 #include <tier1/checksum_crc.h>
 
 #ifdef WIN32
-#include <vstdlib/jobthread.h>
+// #include <vstdlib/jobthread.h>
 #endif // WIN32
 
 #include <tslist.h>
 #include <utlhash.h>
 #include <vprof.h>
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
 #include "util/UtilTrace.h"
+
+#undef min
+#undef max
+#undef clamp // mathlib compat hack
 
 extern IVDebugOverlay* debugoverlay;
 extern ConVar sm_nav_quicksave;
@@ -60,7 +68,7 @@ ConVar sm_nav_show_light_intensity( "sm_nav_show_light_intensity", "0", FCVAR_CH
 ConVar sm_nav_debug_blocked( "sm_nav_debug_blocked", "0", FCVAR_CHEAT );
 ConVar sm_nav_show_contiguous( "sm_nav_show_continguous", "0", FCVAR_CHEAT, "Highlight non-contiguous connections" );
 
-const float DEF_NAV_VIEW_DISTANCE = 1500.0;
+constexpr float DEF_NAV_VIEW_DISTANCE = 1500.0;
 ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
 ConVar sm_nav_update_visibility_on_edit( "sm_nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
 ConVar sm_nav_potentially_visible_dot_tolerance( "sm_nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
@@ -75,7 +83,7 @@ bool UTIL_IsCommandIssuedByServerAdmin() {
 		return false;
 	}
 	for (int i = 2; i <= gpGlobals->maxClients; i++) {
-		edict_t* player = engine->PEntityOfEntIndex(i);
+		edict_t* player = gamehelpers->EdictOfIndex(i);
 		IPlayerInfo* info = playerinfomanager->GetPlayerInfo(player);
 		if (player != nullptr && !player->IsFree() && player->GetNetworkable() != nullptr
 				&& info != nullptr && !info->IsFakeClient()) {
@@ -111,6 +119,28 @@ static void SelectedSetColorChaged(IConVar *var, const char *pOldValue,
 }
 ConVar sm_nav_selected_set_color( "sm_nav_selected_set_color", "255 255 200 96", FCVAR_CHEAT, "Color used to draw the selected set background while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
+
+const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
+{
+	switch (type)
+	{
+	case NavLinkType::LINK_INVALID:
+		return "INVALID_LINK";
+	case NavLinkType::LINK_GROUND:
+		return "GROUND_LINK";
+	case NavLinkType::LINK_TELEPORTER:
+		return "TELEPORTER_LINK";
+	case NavLinkType::LINK_BLAST_JUMP:
+		return "BLAST_JUMP_LINK";
+	case NavLinkType::MAX_LINK_TYPES:
+	default:
+	{
+		smutils->LogError(myself, "NavSpecialLink::LinkTypeToString called with invalid link type \"%i\"!", type);
+		return "ERROR";
+	}
+	}
+}
+
 
 void Extent::Init(edict_t *entity) {
 	entity->GetCollideable()->WorldSpaceSurroundingBounds(&lo, &hi);
@@ -230,6 +260,8 @@ bool IsBoxIntersectingBox(const Vector& boxMin1, const Vector& boxMax1,
 
 //--------------------------------------------------------------------------------------------------------------
 
+/*
+
 CMemoryStack CNavVectorNoEditAllocator::m_memory;
 void *CNavVectorNoEditAllocator::m_pCurrent;
 int CNavVectorNoEditAllocator::m_nBytesCurrent;
@@ -286,6 +318,8 @@ size_t CNavVectorNoEditAllocator::GetSize( void *pMem )
 	}
 	return m_nBytesCurrent;
 }
+
+*/
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavArea::CompressIDs( CNavMesh *TheNavMesh  )
@@ -378,6 +412,9 @@ CNavArea::CNavArea(unsigned int place)
 	m_funcNavCostVector.RemoveAll();
 
 	m_nVisTestCounter = (uint32)-1;
+
+	m_speciallinks.reserve(4);
+	m_hints.reserve(16);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -631,6 +668,7 @@ CNavArea::~CNavArea()
 {
 	// spot encounters aren't owned by anything else, so free them up here
 	m_spotEncounters.PurgeAndDeleteElements();
+	m_speciallinks.clear();
 
 	// if we are resetting the system, don't bother cleaning up - all areas are being destroyed
 	if (m_isReset)
@@ -863,6 +901,9 @@ void CNavArea::OnDestroyNotify( CNavArea *dead )
 	m_inheritVisibilityFrom.area = NULL;
 	m_potentiallyVisibleAreas.RemoveAll();
 	m_isInheritedFrom = false;
+
+	m_speciallinks.erase(std::remove_if(m_speciallinks.begin(), m_speciallinks.end(),
+		[dead](const NavSpecialLink& link) { return link.IsConnectedTo(dead); }), m_speciallinks.end());
 }
 
 
@@ -930,6 +971,35 @@ void CNavArea::ConnectTo( CNavLadder *ladder )
 	}
 }
 
+bool CNavArea::ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin)
+{
+	Vector pos;
+
+	if (IsConnectedToBySpecialLink(area))
+	{
+		Warning("Only one link per area connection! \n");
+		return false;
+	}
+
+	if (!Contains(origin))
+	{
+		Warning("Connect Area via link error: Link origin is outside nav area boundaries! \n");
+		return false;
+	}
+
+	float z = GetZ(origin);
+
+	pos.x = origin.x;
+	pos.y = origin.y;
+	pos.z = z;
+
+	m_speciallinks.emplace_back(linktype, area, pos);
+	DevMsg("Added special link between area #%i and #%i \n", GetID(), area->GetID());
+	NDebugOverlay::HorzArrow(pos + Vector(0.0f, 0.0f, 72.0f), pos, 4.0f, 0, 255, 255, 255, true, 10.0f);
+
+	return true;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Disconnect this area from given area
@@ -976,6 +1046,17 @@ void CNavArea::Disconnect( CNavLadder *ladder )
 	}
 }
 
+void CNavArea::Disconnect(CNavArea* area, NavLinkType linktype)
+{
+	NavSpecialLink link(linktype, area, vec3_origin);
+	auto it = std::find(m_speciallinks.begin(), m_speciallinks.end(), link);
+
+	if (it != m_speciallinks.end())
+	{
+		DevMsg("Removing special link of type %i between areas #%i and #%i. \n", static_cast<int>(linktype), GetID(), area->GetID());
+		m_speciallinks.erase(it);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavArea::AddLadderUp( CNavLadder *ladder )
@@ -1418,14 +1499,28 @@ bool CNavArea::IsConnected( const CNavArea *area, NavDirType dir ) const
 	return false;
 }
 
+bool CNavArea::IsConnected(const CNavArea* area, NavLinkType linktype) const
+{
+	for (auto& link : m_speciallinks)
+	{
+		if (link.IsOfType(linktype))
+		{
+			if (link.m_link.area == area)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Compute change in actual ground height from this area to given area
  */
-float CNavArea::ComputeGroundHeightChange( const CNavArea *area )
+float CNavArea::ComputeGroundHeightChange( const CNavArea *area ) const
 {
-	VPROF_BUDGET( "CNavArea::ComputeHeightChange", "NextBot" );
-
 	Vector closeFrom, closeTo;
 	area->GetClosestPointOnArea( GetCenter(), &closeTo );
 	GetClosestPointOnArea( area->GetCenter(), &closeFrom );
@@ -1900,7 +1995,7 @@ void CNavArea::InheritAttributes( CNavArea *first, CNavArea *second )
 		else
 		{
 			// both have valid, but different places - pick on at random
-			if (UTIL_GetRandomInt( 0, 100 ) < 50)
+			if (librandom::random_chance(50))
 				SetPlace( first->GetPlace() );
 			else
 				SetPlace( second->GetPlace() );
@@ -2324,7 +2419,7 @@ float CNavArea::GetDistanceSquaredToPoint( const Vector &pos ) const
 CNavArea *CNavArea::GetRandomAdjacentArea( NavDirType dir ) const
 {
 	int count = m_connect[ dir ].Count();
-	int which = UTIL_GetRandomInt( 0, count-1 );
+	int which = librandom::generate_random_int(0, count-1);
 
 	int i = 0;
 	FOR_EACH_VEC( m_connect[ dir ], it )
@@ -2614,7 +2709,6 @@ void CNavArea::ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, 
 	closePos->z = GetZ( closePos->x, closePos->y );
 }
 
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Return true if the given area and 'other' share a colinear edge (ie: no drop-down or step/jump/climb)
@@ -2662,8 +2756,16 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 			break;
 	}
 
-	if ( dir == NUM_DIRECTIONS )
+	if (dir == NUM_DIRECTIONS)
+	{
+		// no direction, check special links
+		if (IsConnectedToBySpecialLink(destinationArea))
+		{
+			return GetSpecialLinkConnectionToArea(destinationArea)->GetConnectionLength();
+		}
+
 		return FLT_MAX;
+	}
 
 	Vector myEdge;
 	float halfWidth;
@@ -2675,6 +2777,36 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 	return otherEdge.z - myEdge.z;
 }
 
+float CNavArea::ComputeAdjacentConnectionGapDistance(const CNavArea* destinationArea) const
+{
+	// find which side it is connected on
+	int dir;
+	for (dir = 0; dir < NUM_DIRECTIONS; ++dir)
+	{
+		if (IsConnected(destinationArea, (NavDirType)dir))
+			break;
+	}
+
+	if (dir == NUM_DIRECTIONS)
+	{
+		// no direction, check special links
+		if (IsConnectedToBySpecialLink(destinationArea))
+		{
+			return GetSpecialLinkConnectionToArea(destinationArea)->GetConnectionLength();
+		}
+
+		return FLT_MAX;
+	}
+
+	Vector myEdge;
+	float halfWidth;
+	ComputePortal(destinationArea, (NavDirType)dir, &myEdge, &halfWidth);
+
+	Vector otherEdge;
+	destinationArea->ComputePortal(this, OppositeDirection((NavDirType)dir), &otherEdge, &halfWidth);
+
+	return (otherEdge - myEdge).AsVector2D().Length();
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -3158,9 +3290,9 @@ void CNavArea::Draw( void ) const
 		NavDrawTriangle( m_center + Vector( 0, -bottomHeight, 0 ), m_center + Vector( -bottomWidth, -bottomHeight*2, 0 ), m_center + Vector( bottomWidth, -bottomHeight*2, 0 ), color );
 	}
 
-	if ( IsBlocked( TEAM_ANY ) || HasAvoidanceObstacle() || IsDamaging() )
+	if ( IsBlocked( NAV_TEAM_ANY ) || HasAvoidanceObstacle() || IsDamaging() )
 	{
-		NavEditColor color = (IsBlocked( TEAM_ANY ) && ( m_attributeFlags & NAV_MESH_NAV_BLOCKER ) ) ? NavBlockedByFuncNavBlockerColor : NavBlockedByDoorColor;
+		NavEditColor color = (IsBlocked( NAV_TEAM_ANY ) && ( m_attributeFlags & NAV_MESH_NAV_BLOCKER ) ) ? NavBlockedByFuncNavBlockerColor : NavBlockedByDoorColor;
 		const float blockedInset = 4.0f;
 		nw.x += blockedInset;
 		nw.y += blockedInset;
@@ -3174,6 +3306,11 @@ void CNavArea::Draw( void ) const
 		NavDrawLine( ne, se, color );
 		NavDrawLine( se, sw, color );
 		NavDrawLine( sw, nw, color );
+	}
+
+	for (const auto& hint : m_hints)
+	{
+		hint.Draw();
 	}
 }
 
@@ -3411,6 +3548,17 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 				}
 			}
 		}
+	}
+
+	for (auto& link : m_speciallinks)
+	{
+		const Vector& start = link.GetPosition();
+		const Vector& end = link.m_link.area->GetCenter();
+		link.m_link.area->Draw();
+		NDebugOverlay::Line(start, end, 0, 255, 0, true, EXT_DEBUG_DRAW_TIME);
+		char message[64];
+		ke::SafeSprintf(message, sizeof(message), "Nav Link <%s>", NavSpecialLink::LinkTypeToString(link.m_type));
+		NDebugOverlay::Text(start, message, false, EXT_DEBUG_DRAW_TIME);
 	}
 }
 
@@ -4656,14 +4804,11 @@ static void CommandNavUpdateBlocked( void )
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->UpdateBlocked( true );
 
-#if SOURCE_ENGINE == SE_SDK2013
-		if ( area->IsBlocked( TEAM_ANY ) )
+		if (area->IsBlocked(NAV_TEAM_ANY))
 		{
-			DevMsg("Area #%d %s is blocked\n", area->GetID(),
-					VecToString(
-							area->GetCenter() + Vector( 0, 0, HalfHumanHeight )));
+			auto& center = area->GetCenter();
+			DevMsg("Area #%i <%3.2f, %3.2f %3.2f is blocked\n>", area->GetID(), center.x, center.y, center.z);
 		}
-#endif
 	}
 	else
 	{
@@ -4673,13 +4818,11 @@ static void CommandNavUpdateBlocked( void )
 		{
 			CNavArea *area = TheNavAreas[ nit ];
 			area->UpdateBlocked( true );
-			if ( area->IsBlocked( TEAM_ANY ) )
+			if ( area->IsBlocked( NAV_TEAM_ANY ) )
 			{
-#if SOURCE_ENGINE == SE_SDK2013
-				DevMsg("Area #%d %s is blocked\n", area->GetID(),
-						VecToString(
-								area->GetCenter() + Vector( 0, 0, HalfHumanHeight )));
-#endif
+				auto& center = area->GetCenter();
+				DevMsg("Area #%i <%3.2f, %3.2f %3.2f is blocked\n>", area->GetID(), center.x, center.y, center.z);
+
 				if ( !blockedArea )
 				{
 					blockedArea = area;
@@ -4725,7 +4868,7 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		return true;
 #endif
 
-	if ( teamID == TEAM_ANY )
+	if ( teamID == NAV_TEAM_ANY )
 	{
 		bool isBlocked = false;
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
@@ -4749,7 +4892,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	}
 
 	bool wasBlocked = false;
-	if ( teamID == TEAM_ANY )
+	if ( teamID == NAV_TEAM_ANY )
 	{
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 		{
@@ -4770,8 +4913,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 			if ( blocker )
 			{
 				ConColorMsg(Color(0, 255, 128, 255), "%s %d blocked area %d\n",
-						blocker->GetClassName(), engine->IndexOfEdict(blocker),
-						GetID());
+						blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
 			}
 			else
 			{
@@ -4784,9 +4926,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	{
 		if ( blocker )
 		{
-			ConColorMsg(Color(0, 255, 128, 255),
-					"DUPE: %s %d blocked area %d\n", blocker->GetClassName(), engine->IndexOfEdict(
-					blocker), GetID());
+			ConColorMsg(Color(0, 255, 128, 255), "DUPE: %s %d blocked area %d\n", blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
 		}
 		else
 		{
@@ -4850,7 +4990,7 @@ void CNavArea::UnblockArea( int teamID )
 {
 	bool wasBlocked = IsBlocked( teamID );
 
-	if ( teamID == TEAM_ANY )
+	if ( teamID == NAV_TEAM_ANY )
 	{
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 		{
@@ -4914,7 +5054,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	// duck height - halfhumanheight
 	bounds.hi.Init( sizeX, sizeY, 36.0f - HalfHumanHeight );
 
-	bool wasBlocked = IsBlocked( TEAM_ANY );
+	bool wasBlocked = IsBlocked( NAV_TEAM_ANY );
 
 	// See if spot is valid
 #ifdef TERROR
@@ -4961,7 +5101,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	}
 	else if ( force )
 	{
-		if ( teamID == TEAM_ANY )
+		if ( teamID == NAV_TEAM_ANY )
 		{
 			for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 			{
@@ -4975,7 +5115,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		}
 	}
 
-	bool isBlocked = IsBlocked( TEAM_ANY );
+	bool isBlocked = IsBlocked( NAV_TEAM_ANY );
 
 	if ( wasBlocked != isBlocked )
 	{
@@ -5012,7 +5152,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
  */
 void CNavArea::CheckFloor( edict_t* ignore )
 {
-	if ( IsBlocked( TEAM_ANY ) )
+	if ( IsBlocked( NAV_TEAM_ANY ) )
 		return;
 
 	Vector origin = GetCenter();
@@ -5037,11 +5177,11 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	// If the center is open space, we're effectively blocked
 	if ( !tr.startsolid )
 	{
-		MarkAsBlocked( TEAM_ANY, NULL );
+		MarkAsBlocked( NAV_TEAM_ANY, NULL );
 	}
 
 	/*
-	if ( IsBlocked( TEAM_ANY ) )
+	if ( IsBlocked( NAV_TEAM_ANY ) )
 	{
 		NDebugOverlay::Box( origin, mins, maxs, 255, 0, 0, 64, 3.0f );
 	}
@@ -5052,6 +5192,79 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	*/
 }
 
+bool CNavArea::HasSolidFloor() const
+{
+	constexpr auto hullsize = 12.0f;
+	Vector startPos = GetCenter();
+	startPos.z += StepHeight;
+	Vector endPos = GetCenter();
+	endPos.z -= JumpHeight;
+	Vector mins(-hullsize, -hullsize, 0.0f);
+	Vector maxs(hullsize, hullsize, 1.0f);
+
+	CTraceFilterNoNPCsOrPlayer filter(nullptr, COLLISION_GROUP_NONE);
+	trace_t result;
+	UTIL_TraceHull(startPos, endPos, mins, maxs, MASK_PLAYERSOLID, filter, &result);
+
+	if (!result.DidHit())
+	{
+		if (sm_nav_debug_blocked.GetBool())
+		{
+			NDebugOverlay::VertArrow(startPos, endPos, 8.0f, 255, 0, 0, 255, true, 20.0f);
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+bool CNavArea::HasSolidObstruction() const
+{
+	CTraceFilterNoNPCsOrPlayer filter(nullptr, COLLISION_GROUP_NONE);
+	trace_t result;
+	Vector origin = GetCenter();
+	origin.z += HalfHumanHeight;
+
+	const float sizeX = std::max(1.0f, std::min(GetSizeX() / 2 - 5, HalfHumanWidth));
+	const float sizeY = std::max(1.0f, std::min(GetSizeY() / 2 - 5, HalfHumanWidth));
+	Extent bounds;
+	bounds.lo.Init(-sizeX, -sizeY, 0);
+	// duck height - halfhumanheight
+	bounds.hi.Init(sizeX, sizeY, 36.0f - HalfHumanHeight);
+
+	UTIL_TraceHull(origin, origin, bounds.lo, bounds.hi, MASK_PLAYERSOLID, filter, &result);
+
+	if (result.DidHit())
+	{
+		if (sm_nav_debug_blocked.GetBool())
+		{
+			auto edict = gamehelpers->EdictOfIndex(result.GetEntityIndex());
+
+			if (edict != nullptr)
+			{
+				Msg("CNavArea::HasSolidObstruction() hit entity #%i <%s> \n", result.GetEntityIndex(), gamehelpers->GetEntityClassname(edict));
+
+				if (result.DidHitNonWorldEntity())
+				{
+					NDebugOverlay::EntityBounds(edict, 100, 0, 255, 150, 20.0f);
+				}
+			}
+
+			NDebugOverlay::SweptBox(origin, origin, bounds.lo, bounds.hi, vec3_angle, 255, 0, 0, 255, 20.0f);
+			NDebugOverlay::Text(GetCenter(), "CNavArea::HasSolidObstruction() == true", false, 20.0f);
+		}
+
+		return true; // something is obstructing the area
+	}
+
+	if (sm_nav_debug_blocked.GetBool())
+	{
+		NDebugOverlay::BoxAngles(origin, bounds.lo, bounds.hi, vec3_angle, 0, 130, 0, 200, 20.0f);
+	}
+
+	return false;
+}
 
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::MarkObstacleToAvoid( float obstructionHeight )
@@ -5217,7 +5430,7 @@ static void CommandNavCheckFloor( void )
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->CheckFloor( NULL );
 #if SOURCE_ENGINE == SE_SDK2013
-		if ( area->IsBlocked( TEAM_ANY ) )
+		if ( area->IsBlocked( NAV_TEAM_ANY ) )
 		{
 			DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, HalfHumanHeight ) ) );
 		}
@@ -5231,7 +5444,7 @@ static void CommandNavCheckFloor( void )
 			CNavArea *area = TheNavAreas[ nit ];
 			area->CheckFloor( NULL );
 #if SOURCE_ENGINE == SE_SDK2013
-			if ( area->IsBlocked( TEAM_ANY ) )
+			if ( area->IsBlocked( NAV_TEAM_ANY ) )
 			{
 				DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, HalfHumanHeight ) ) );
 			}
@@ -5680,9 +5893,17 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	// This function is only called during nav mesh generation, impact on linux should be limited since the debug overlay doesn't work on linux
 	// nav mesh editing is limited to windows only
 
+	FOR_EACH_VEC(collector.m_area, it)
+	{
+		CNavArea::ComputeVisToArea(collector.m_area.Element(it));
+	}
+
+/*
 #ifdef WIN32
 
-#if SOURCE_ENGINE != SE_ORANGEBOX
+#if SOURCE_ENGINE != SE_ORANGEBOX && SOURCE_ENGINE != SE_EYE && SOURCE_ENGINE != SE_LEFT4DEAD && \
+	SOURCE_ENGINE != SE_LEFT4DEAD2 && SOURCE_ENGINE != SE_CSGO \
+
 	ParallelProcess("CNavArea::ComputeVisibilityToMesh", collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
 #else
 	ParallelProcess(collector.m_area.Base(), collector.m_area.Count(), &ComputeVisToArea);
@@ -5692,6 +5913,8 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	// Warn on linux until replaced with std::thread
 	Warning("Nav Mesh Fatal: Nav Mesh should only be edited/generated on a Windows Listen Server! \n");
 #endif // WIN32
+
+*/
 
 
 	m_potentiallyVisibleAreas.EnsureCapacity( g_ComputedVis.Count() );
@@ -5703,7 +5926,7 @@ void CNavArea::ComputeVisibilityToMesh( void )
 	FOR_EACH_VEC( collector.m_area, it )
 	{
 		visPair.SetPair( this, (CNavArea *)collector.m_area[it] );
-		Assert( g_pNavVisPairHash->Find( visPair ) == g_pNavVisPairHash->InvalidHandle() );
+		// Assert( g_pNavVisPairHash->Find( visPair ) == g_pNavVisPairHash->InvalidHandle() );
 		g_pNavVisPairHash->Insert( visPair );
 	}
 }
@@ -5882,24 +6105,44 @@ bool CNavArea::IsCompletelyVisible( const CNavArea *viewedArea ) const
 /**
  * Return true if any portion of this area is visible to anyone on the given team
  */
-bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const {
-	VPROF_BUDGET("CNavArea::IsPotentiallyVisibleToTeam", "NextBot");
+bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const 
+{
+	for (int i = 1; i <= gpGlobals->maxClients; ++i) 
+	{
+		edict_t* pEnt = gamehelpers->EdictOfIndex(i);
 
-	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *pEnt = engine->PEntityOfEntIndex(i);
-		if (pEnt) {
-			IPlayerInfo* player = playerinfomanager->GetPlayerInfo(pEnt);
-			if (player->GetTeamIndex() == teamIndex
-					&& player->GetHealth() > 0) {
-				CNavArea *from = nullptr;
-						// TODO: (CNavArea *) team->GetPlayer(i)->GetLastKnownArea();
+		if (pEnt) 
+		{
+			auto player = playerhelpers->GetGamePlayer(i);
 
-				if (from && from->IsPotentiallyVisible(this)) {
-					return true;
-				}
+			if (!player->IsInGame())
+				continue;
+
+			auto info = player->GetPlayerInfo();
+
+			if (!info)
+				continue;
+
+			if (info->IsDead())
+				continue;
+			
+			if (teamIndex != NAV_TEAM_ANY && info->GetTeamIndex() != teamIndex)
+				continue;
+
+			auto extplayer = extmanager->GetPlayerByIndex(i);
+
+			if (!extplayer)
+				continue;
+			
+			CNavArea* from = extplayer->GetLastKnownNavArea();
+
+			if (from && from->IsPotentiallyVisible(this)) 
+			{
+				return true;
 			}
 		}
 	}
+
 	return false;
 }
 
@@ -5908,21 +6151,42 @@ bool CNavArea::IsPotentiallyVisibleToTeam(int teamIndex) const {
 /**
  * Return true if given area is completely visible from somewhere in this area by someone on the team (very fast)
  */
-bool CNavArea::IsCompletelyVisibleToTeam(int teamIndex) const {
-	VPROF_BUDGET("CNavArea::IsCompletelyVisibleToTeam", "NextBot");
+bool CNavArea::IsCompletelyVisibleToTeam(int teamIndex) const 
+{
 
-	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *pEnt = engine->PEntityOfEntIndex(i);
-		if (pEnt) {
-			IPlayerInfo* player = playerinfomanager->GetPlayerInfo(pEnt);
-			if (player->GetTeamIndex() == teamIndex
-					&& player->GetHealth() > 0) {
-				CNavArea *from = nullptr; // TODO: (CNavArea *)team->GetPlayer(i)->GetLastKnownArea();
-				if (from && from->IsCompletelyVisible(this)) {
-					return true;
-				}
+	for (int i = 1; i <= gpGlobals->maxClients; ++i)
+	{
+		edict_t* pEnt = gamehelpers->EdictOfIndex(i);
+
+		if (pEnt)
+		{
+			auto player = playerhelpers->GetGamePlayer(i);
+
+			if (!player->IsInGame())
+				continue;
+
+			auto info = player->GetPlayerInfo();
+
+			if (!info)
+				continue;
+
+			if (info->IsDead())
+				continue;
+
+			if (teamIndex != NAV_TEAM_ANY && info->GetTeamIndex() != teamIndex)
+				continue;
+
+			auto extplayer = extmanager->GetPlayerByIndex(i);
+
+			if (!extplayer)
+				continue;
+
+			CNavArea* from = extplayer->GetLastKnownNavArea();
+
+			if (from && from->IsCompletelyVisible(this))
+			{
+				return true;
 			}
-
 		}
 	}
 
@@ -5937,25 +6201,27 @@ Vector CNavArea::GetRandomPoint( void ) const
 	GetExtent( &extent );
 
 	Vector spot;
-	spot.x = RandomFloat( extent.lo.x, extent.hi.x ); 
-	spot.y = RandomFloat( extent.lo.y, extent.hi.y );
+	spot.x = librandom::generate_random_float(extent.lo.x, extent.hi.x);
+	spot.y = librandom::generate_random_float(extent.lo.y, extent.hi.y);
 	spot.z = GetZ( spot.x, spot.y );
 
 	return spot;
 }
 
+void NavHintPoint::Draw() const
+{
+	constexpr auto NavHintPointHeight = 64.0f;
+	constexpr auto NavHintTextHeight = NavHintPointHeight / 2.0f;
 
+	Vector top = m_pos + Vector(0.0f, 0.0f, NavHintPointHeight);
+	Vector half = m_pos + Vector(0.0f, 0.0f, NavHintTextHeight);
+	NDebugOverlay::Line(m_pos, top, 0, 230, 255, false, EXT_DEBUG_DRAW_TIME);
 
+	Vector forward;
+	AngleVectors(m_angle, &forward);
+	forward.NormalizeInPlace();
+	NDebugOverlay::HorzArrow(half, half + (forward * 24.0f), 4.0f, 0, 110, 0, 255, false, EXT_DEBUG_DRAW_TIME);
 
-
-
-
-
-
-
-
-
-
-
-
-
+	auto name = TheNavMesh->NavHintTypeIDToString(m_hintType);
+	NDebugOverlay::Text(half, name, true, EXT_DEBUG_DRAW_TIME);
+}

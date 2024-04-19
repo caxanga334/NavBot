@@ -12,15 +12,19 @@ public:
 	{
 		m_tfpathattributes = 0;
 		m_tfattributes = 0;
+		m_mvmattributes = 0;
 		m_spawnroomteam = 0;
 	}
 
-	virtual void Save(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion) const override;
-	virtual NavErrorType Load(CUtlBuffer& fileBuffer, unsigned int version, unsigned int portversion, unsigned int subVersion) override;
+	void Save(std::fstream& filestream, uint32_t version) override;
+	NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion) override;
+	void UpdateBlocked(bool force = false, int teamID = NAV_TEAM_ANY) override;
+	bool IsBlocked(int teamID, bool ignoreNavBlockers = false) const override;
 
 	// Pathing flags
 	enum TFNavPathAttributes
 	{
+		TFNAV_PATH_INVALID = 0,
 		TFNAV_PATH_NO_RED_TEAM = (1 << 0), // Red team can't use this area
 		TFNAV_PATH_NO_BLU_TEAM = (1 << 1), // Blu team can't use this area
 		TFNAV_PATH_NO_CARRIERS = (1 << 2), // Flag/Objective carriers can't use this area
@@ -66,9 +70,12 @@ public:
 
 	void UpdateDynamicSpawnRoom();
 
+	void Debug_ShowTFPathAttributes() const;
+
 private:
 	int m_tfpathattributes;
 	int m_tfattributes;
+	int m_mvmattributes; // Attributes exclusive for the Mann vs Machine game modes
 	int m_spawnroomteam;
 };
 

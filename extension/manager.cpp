@@ -7,7 +7,6 @@
 #include <algorithm>
 
 #include "extension.h"
-#include "ifaces_extern.h"
 
 #include <bot/basebot.h>
 #include <bot/bot_debug_shared.h>
@@ -15,6 +14,7 @@
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
 #include <extplayer.h>
+#include <util/helpers.h>
 #include <util/librandom.h>
 #include "manager.h"
 
@@ -25,6 +25,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
+#include <entities/baseentity.h>
 #endif // EXT_DEBUG
 
 #if SOURCE_ENGINE == SE_TF2
@@ -41,9 +42,9 @@
 
 constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
 
-ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players");
+static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players", CExtManager::OnQuotaModeCvarChanged);
 
-ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.");
+static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 
 CExtManager::CExtManager() :
 	m_bdm()
@@ -69,7 +70,9 @@ void CExtManager::OnAllLoaded()
 	LoadBotNames();
 	m_bdm.LoadProfiles();
 
-	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod.get()->GetModName());
+	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod->GetModName());
+	
+	m_wim.LoadConfigFile();
 }
 
 void CExtManager::Frame()
@@ -87,7 +90,12 @@ void CExtManager::Frame()
 		bot->PlayerThink();
 	}
 
-	m_mod.get()->Frame();
+	for (auto& player : m_players)
+	{
+		player.get()->PlayerThink();
+	}
+
+	m_mod->Frame();
 }
 
 void CExtManager::OnClientPutInServer(int client)
@@ -100,8 +108,18 @@ void CExtManager::OnClientPutInServer(int client)
 		return;
 	}
 
-#ifdef EXT_DEBUG
 	auto gp = playerhelpers->GetGamePlayer(client);
+
+	if (gp->IsSourceTV() || gp->IsReplay())
+		return; // Don't care about sourcetv bots
+
+	if (!IsNavBot(client))
+	{
+		// Add non navbot clients (humans and other bots) to the player lists so we can update their last known nav areas.
+		m_players.emplace_back(std::make_unique<CBaseExtPlayer>(edict));
+	}
+
+#ifdef EXT_DEBUG
 	auto auth = gp->GetAuthString(true);
 
 	if (auth == nullptr)
@@ -115,47 +133,67 @@ void CExtManager::OnClientPutInServer(int client)
 
 void CExtManager::OnClientDisconnect(int client)
 {
-	bool isbot = GetBotByIndex(client) != nullptr;
+	auto gp = playerhelpers->GetGamePlayer(client);
 
-	if (isbot == true)
-	{
-		auto botit = m_bots.end();
+	if (gp->IsSourceTV() || gp->IsReplay())
+		return; // Don't care about sourcetv bots
 
-		for (auto it = m_bots.begin(); it != m_bots.end(); it++)
+	m_bots.erase(std::remove_if(m_bots.begin(), m_bots.end(), [&client](const std::unique_ptr<CBaseBot>& object) {
+		if (object->GetIndex() == client)
 		{
-			auto& botptr = *it;
-			auto bot = botptr.get();
-
-			if (bot->GetIndex() == client)
-			{
-				botit = it;
-				break;
-			}
+			return true;
 		}
 
-		if (botit != m_bots.end())
+		return false;
+	}), m_bots.end());
+
+	// Remove all players that have matching entity index
+	m_players.erase(std::remove_if(m_players.begin(), m_players.end(), [&client](const std::unique_ptr<CBaseExtPlayer>& object) {
+		if (object->GetIndex() == client)
 		{
-			m_bots.erase(botit);
+			return true;
 		}
-	}
+
+		return false;
+	}), m_players.end());
 }
 
 void CExtManager::OnMapStart()
 {
-	m_mod.get()->OnMapStart();
-
-	CBaseMod* pointer = m_mod.get();
+	TheNavMesh->OnMapStart();
+	m_mod->OnMapStart();
 
 	if (m_botnames.size() != 0)
 	{
 		// get a new index on every map load
-		m_nextbotname = librandom::generate_random_uint(0, m_botnames.size() - 1);
+		m_nextbotname = randomgen->GetRandomInt<size_t>(0U, m_botnames.size() - 1U);
 	}
+
+	auto mode = sm_navbot_quota_mode.GetString();
+
+	if (strncasecmp(mode, "normal", 6) == 0)
+	{
+		SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+	}
+	else if (strncasecmp(mode, "fill", 4) == 0)
+	{
+		SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
+	}
+	else
+	{
+		SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
+	}
+
+	int target = sm_navbot_quota_quantity.GetInt();
+	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
+	SetBotQuotaTarget(target);
 }
 
 void CExtManager::OnMapEnd()
 {
-	m_mod.get()->OnMapEnd();
+	TheNavMesh->OnMapEnd();
+	m_mod->OnMapEnd();
 }
 
 // Detect current mod and initializes it
@@ -179,7 +217,7 @@ CBaseMod* CExtManager::GetMod()
 
 void CExtManager::NotifyRegisterGameEvents()
 {
-	m_mod.get()->RegisterGameEvents();
+	m_mod->RegisterGameEvents();
 }
 
 CBaseBot* CExtManager::GetBotByIndex(int index)
@@ -189,7 +227,22 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 		auto bot = botptr.get();
 		if (bot->GetIndex() == index)
 		{
-			return botptr.get();
+			return bot;
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index)
+{
+	for (auto& playerptr : m_players)
+	{
+		auto player = playerptr.get();
+
+		if (player->GetIndex() == index)
+		{
+			return player;
 		}
 	}
 
@@ -259,18 +312,18 @@ void CExtManager::AddBot()
 	rootconsole->ConsolePrint("Bot added to the game.");
 }
 
-void CExtManager::RemoveRandomBot()
+void CExtManager::RemoveRandomBot(const char* message)
 {
-	auto& botptr = m_bots[librandom::generate_random_uint(0, m_bots.size() - 1)];
-	auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
-	player->Kick("NavBot: Kicked by Bot Quota Manager.");
+	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
+	auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
+	player->Kick(message);
 }
 
 void CExtManager::RemoveAllBots(const char* message)
 {
 	for (auto& botptr : m_bots)
 	{
-		auto player = playerhelpers->GetGamePlayer(botptr.get()->GetIndex());
+		auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
 		player->Kick(message);
 	}
 }
@@ -303,7 +356,7 @@ void CExtManager::LoadBotNames()
 			continue; // comment line, ignore
 		}
 
-		if (std::isspace(line[0]))
+		if (std::isspace(line[0]) != 0)
 		{
 			continue; // ignore lines that start with space
 		}
@@ -339,26 +392,6 @@ void CExtManager::LoadBotNames()
 
 void CExtManager::UpdateBotQuota()
 {
-	auto mode = sm_navbot_quota_mode.GetString();
-
-	if (strncasecmp(mode, "normal", 6) == 0)
-	{
-		m_quotamode = BotQuotaMode::QUOTA_FIXED;
-	}
-	else if (strncasecmp(mode, "fill", 4) == 0)
-	{
-		m_quotamode = BotQuotaMode::QUOTA_FILL;
-	}
-	else
-	{
-		m_quotamode = BotQuotaMode::QUOTA_FIXED;
-		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
-	}
-
-	m_quotatarget = sm_navbot_quota_quantity.GetInt();
-
-	m_quotatarget = std::clamp(m_quotatarget, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
-
 	if (m_quotatarget == 0)
 		return;
 
@@ -366,7 +399,31 @@ void CExtManager::UpdateBotQuota()
 	int navbots = 0;
 	int otherbots = 0;
 
-	CountPlayers(humans, navbots, otherbots);
+	UtilHelpers::ForEachPlayer([this, &humans, &navbots, &otherbots](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
+		if (player->IsInGame())
+		{
+			if (m_mod->BotQuotaIsClientIgnored(client, entity, player))
+			{
+				return;
+			}
+
+			if (player->IsFakeClient())
+			{
+				if (IsNavBot(client))
+				{
+					++navbots;
+				}
+				else
+				{
+					++otherbots;
+				}
+			}
+			else
+			{
+				++humans;
+			}
+		}
+	});
 
 	if (humans == 0) // server is empty of humans
 	{
@@ -400,7 +457,7 @@ void CExtManager::UpdateBotQuota()
 		}
 		else if (navbots > target)
 		{
-			RemoveRandomBot();
+			RemoveRandomBot("Nav Bot: Kicked by bot quota manager.");
 		}
 
 		break;
@@ -413,44 +470,37 @@ void CExtManager::UpdateBotQuota()
 		}
 		else if (navbots > m_quotatarget) // number of bots is above desired quantity
 		{
-			RemoveRandomBot();
+			RemoveRandomBot("Nav Bot: Kicked by bot quota manager.");
 		}
 
 		break;
 	}
 }
 
-void CExtManager::CountPlayers(int& humans, int& navbots, int& otherbots) const
+void CExtManager::OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
 {
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	auto mode = sm_navbot_quota_mode.GetString();
+
+	if (strncasecmp(mode, "normal", 6) == 0)
 	{
-		auto player = playerhelpers->GetGamePlayer(i);
-
-		if (!player)
-			continue;
-
-		if (!player->IsInGame()) // must be in game
-			continue;
-
-		if (player->IsReplay() || player->IsSourceTV())
-			continue; // Ignore spectator bots
-
-		if (!player->IsFakeClient()) // human client
-		{
-			humans++;
-		}
-		else
-		{
-			if (IsNavBot(i))
-			{
-				navbots++;
-			}
-			else
-			{
-				otherbots++;
-			}
-		}
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
 	}
+	else if (strncasecmp(mode, "fill", 4) == 0)
+	{
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
+	}
+	else
+	{
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
+		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
+	}
+}
+
+void CExtManager::OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	int target = sm_navbot_quota_quantity.GetInt();
+	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
+	extmanager->SetBotQuotaTarget(target);
 }
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
@@ -480,7 +530,8 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 			rootconsole->ConsolePrint("Stopped debugging");
 			return;
 		}
-		else if (strncasecmp(option, "SENSOR", 6) == 0)
+
+		if (strncasecmp(option, "SENSOR", 6) == 0)
 		{
 			extmanager->ToggleDebugOption(BOTDEBUG_SENSOR);
 			rootconsole->ConsolePrint("Toggle Debugging Bot Sensor Interface");
@@ -524,171 +575,3 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 	}
 }
 
-#ifdef EXT_DEBUG
-CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
-{
-	extern CExtManager* extmanager;
-	extern IVDebugOverlay* debugoverlay;
-
-	auto edict = gamehelpers->EdictOfIndex(1);
-
-	if (edict == nullptr)
-	{
-		return;
-	}
-
-	// CBaseExtPlayer can be used for both players and bots
-	CBaseExtPlayer player(edict);
-
-	static Vector mins(-4.0f, -4.0f, -4.0f);
-	static Vector maxs(4.0f, 4.0f, 4.0f);
-
-	auto origin = player.GetAbsOrigin();
-	auto angles = player.GetAbsAngles();
-	auto eyepos = player.GetEyeOrigin();
-	auto eyeangles = player.GetEyeAngles();
-
-	rootconsole->ConsolePrint("Origin: <%3.2f> <%3.2f> <%3.2f>", origin.x, origin.y, origin.z);
-	rootconsole->ConsolePrint("Angles: <%3.2f> <%3.2f> <%3.2f>", angles.x, angles.y, angles.z);
-	rootconsole->ConsolePrint("Eye Position: <%3.2f> <%3.2f> <%3.2f>", eyepos.x, eyepos.y, eyepos.z);
-	rootconsole->ConsolePrint("Eye Angles: <%3.2f> <%3.2f> <%3.2f>", eyeangles.x, eyeangles.y, eyeangles.z);
-
-	debugoverlay->AddBoxOverlay(origin, mins, maxs, angles, 0, 255, 0, 200, 15.0f);
-	debugoverlay->AddBoxOverlay(eyepos, mins, maxs, eyeangles, 0, 0, 255, 200, 15.0f);
-
-	static Vector forward;
-
-	AngleVectors(eyeangles, &forward);
-
-	forward = forward * 300.0f;
-
-	debugoverlay->AddLineOverlay(eyepos, eyepos + forward, 255, 0, 0, true, 15.0f);
-}
-
-CON_COMMAND_F(sm_navbot_debug_do_not_use, "Do not even think about executing this command.", FCVAR_CHEAT)
-{
-	throw std::runtime_error("Exception test!");
-}
-
-CON_COMMAND(sm_navbot_debug_event_propagation, "Event propagation test")
-{
-	extern CExtManager* extmanager;
-	auto& bots = extmanager->GetAllBots();
-
-	for (auto& botptr : bots)
-	{
-		auto bot = botptr.get();
-		bot->OnTestEventPropagation();
-		bot->GetBehaviorInterface()->ShouldFreeRoam(bot);
-	}
-}
-
-CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
-{
-	static Vector start;
-	static Vector end;
-	static bool reset = false;
-
-	auto edict = gamehelpers->EdictOfIndex(1);
-
-	if (edict == nullptr)
-	{
-		return;
-	}
-
-	// CBaseExtPlayer can be used for both players and bots
-	CBaseExtPlayer player(edict);
-
-	if (reset == false)
-	{
-		start = player.GetAbsOrigin();
-		reset = true;
-		return;
-	}
-
-	reset = false;
-	end = player.GetAbsOrigin();
-
-	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, 256.0f, true, true);
-
-	if (startArea == nullptr)
-	{
-		rootconsole->ConsolePrint("Path find: Failed to get starting area!");
-		return;
-	}
-
-	CNavArea* goalArea = TheNavMesh->GetNearestNavArea(end, 256.0f, true, true);
-
-	ShortestPathCost cost;
-	CNavArea* closest = nullptr;
-	bool path = NavAreaBuildPath(startArea, goalArea, &end, cost, &closest, 10000.0f, -2);
-
-	CNavArea* from = nullptr;
-	CNavArea* to = nullptr;
-
-	for (CNavArea* area = closest; area != nullptr; area = area->GetParent())
-	{
-		if (from == nullptr) // set starting area;
-		{
-			from = area;
-			continue;
-		}
-
-		to = area;
-
-		NDebugOverlay::HorzArrow(from->GetCenter(), to->GetCenter(), 4.0f, 0, 255, 0, 255, true, 20.0f);
-		
-		from = to;
-	}
-}
-
-CON_COMMAND(sm_navbot_debug_botpath, "Debug bot path")
-{
-	CBaseBot* bot = nullptr;
-	extern CGlobalVars* gpGlobals;
-	extern CExtManager* extmanager;
-
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		bot = extmanager->GetBotByIndex(i);
-
-		if (bot != nullptr)
-		{
-			break;
-		}
-	}
-
-	if (bot == nullptr)
-	{
-		rootconsole->ConsolePrint("Add a bot to the game first!");
-		return;
-	}
-
-	auto edict = gamehelpers->EdictOfIndex(1);
-
-	if (edict == nullptr)
-	{
-		return;
-	}
-
-	// CBaseExtPlayer can be used for both players and bots
-	CBaseExtPlayer player(edict);
-	ShortestPathCost cost;
-	CPath path;
-	Vector start = player.GetAbsOrigin();
-
-	path.ComputePathToPosition(bot, start, cost, 0.0f, true);
-	path.DrawFullPath(30.0f);
-
-	rootconsole->ConsolePrint("Showing path from bot position to your position.");
-}
-
-CON_COMMAND(sm_navbot_debug_rng, "Debug random number generator")
-{
-	for (int i = 0; i < 15; i++)
-	{
-		int n = librandom::generate_random_int(0, 100);
-		rootconsole->ConsolePrint("Random Number: %i", n);
-	}
-}
-#endif // EXT_DEBUG

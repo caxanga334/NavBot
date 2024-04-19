@@ -1,11 +1,15 @@
 #include <stdexcept>
 
 #include <extension.h>
-#include <ifaces_extern.h>
 #include <server_class.h>
 #include <studio.h>
 #include "helpers.h"
 #include "entprops.h"
+#include "UtilTrace.h"
+
+#undef max // undef mathlib defs to avoid comflicts with STD
+#undef min
+#undef clamp
 
 edict_t* UtilHelpers::BaseEntityToEdict(CBaseEntity* pEntity)
 {
@@ -146,7 +150,7 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(edict_t* pEntity)
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 {
-#if SOURCE_ENGINE > SE_ORANGEBOX
+#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
 #else
@@ -225,9 +229,9 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 
 /// @brief Searches for entities in a sphere
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
-int UtilHelpers::FindEntityInSphere(int start, Vector center, float radius)
+int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radius)
 {
-#if SOURCE_ENGINE > SE_ORANGEBOX
+#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
 #else
@@ -285,7 +289,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 
 	for (int i = ((start != -1) ? start : 0); i < gpGlobals->maxEntities; i++)
 	{
-		current = engine->PEntityOfEntIndex(i);
+		current = gamehelpers->EdictOfIndex(i);
 		if (current == nullptr || current->IsFree())
 		{
 			continue;
@@ -319,7 +323,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 */
 int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 {
-#if SOURCE_ENGINE > SE_ORANGEBOX
+#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
 	auto result = servertools->FindEntityByName(UtilHelpers::GetEntity(start), targetname);
 	return gamehelpers->EntityToBCompatRef(result);
 #else
@@ -394,7 +398,7 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 	while ((i = FindEntityByClassname(i, classname)) != INVALID_EHANDLE_INDEX)
 	{
 		char name[64];
-		int length;
+		size_t length;
 		
 		if (entprops->GetEntPropString(i, Prop_Data, "m_iName", name, 64, length))
 		{
@@ -415,7 +419,7 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 /// @param flCosHalfFOV The width of the forward view cone as a dot product result.
 /// @return True if the point is within view from the source position at the specified FOV.
 /// @note https://github.com/ValveSoftware/source-sdk-2013/blob/beaae8ac45a2f322a792404092d4482065bef7ef/sp/src/public/mathlib/vector.h#L462-L477
-bool UtilHelpers::PointWithinViewAngle(Vector const& vecSrcPosition, Vector const& vecTargetPosition, Vector const& vecLookDirection, float flCosHalfFOV)
+bool UtilHelpers::PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV)
 {
 	Vector vecDelta = vecTargetPosition - vecSrcPosition;
 	float cosDiff = DotProduct(vecLookDirection, vecDelta);
@@ -467,7 +471,7 @@ CStudioHdr* UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 	}
 
 	// TO-DO: Smart Pointers
-	return new CStudioHdr(studiomodel, mdlcache);
+	return new CStudioHdr(studiomodel, imdlcache);
 }
 
 /**
@@ -643,16 +647,6 @@ int UtilHelpers::GetEntityHealth(int entity)
 	return health;
 }
 
-bool UtilHelpers::IsEntityAlive(const int entity)
-{
-	if (IsPlayerIndex(entity))
-	{
-		return IsPlayerAlive(entity);
-	}
-
-	return GetEntityHealth(entity) > 0;
-}
-
 bool UtilHelpers::IsPlayerAlive(const int player)
 {
 	auto gp = playerhelpers->GetGamePlayer(player);
@@ -661,6 +655,24 @@ bool UtilHelpers::IsPlayerAlive(const int player)
 	{
 		return false;
 	}
+
+	int lifestate = 0;
+
+	if (entprops->GetEntProp(player, Prop_Data, "m_lifeState", lifestate))
+	{
+		if (lifestate != LIFE_ALIVE)
+		{
+			return false;
+		}
+	}
+#ifdef EXT_DEBUG
+	else
+	{
+		// log mods that doesn't support 'm_lifeState'
+		smutils->LogError(myself, "Warning: Failed to get m_lifeState propdata!");
+	}
+#endif // EXT_DEBUG
+
 
 	return GetEntityHealth(player) > 0;
 }
@@ -724,5 +736,69 @@ std::optional<int> UtilHelpers::GetTeamManagerEntity(const int team, const char*
 	}
 
 	return std::nullopt;
+}
+
+std::optional<int> UtilHelpers::GetOwnerEntity(const int entity)
+{
+	int owner = INVALID_EHANDLE_INDEX;
+
+	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity", owner))
+	{
+		return owner;
+	}
+
+	return std::nullopt;
+}
+
+void UtilHelpers::CalcClosestPointOnAABB(const Vector& mins, const Vector& maxs, const Vector& point, Vector& closestOut)
+{
+	closestOut.x = std::clamp(point.x, mins.x, maxs.x);
+	closestOut.y = std::clamp(point.y, mins.y, maxs.y);
+	closestOut.z = std::clamp(point.z, mins.z, maxs.z);
+}
+
+Vector UtilHelpers::GetGroundPositionFromCenter(edict_t* pEntity)
+{
+	Vector center = getWorldSpaceCenter(pEntity);
+
+	CTraceFilterSimple filter(pEntity->GetIServerEntity(), COLLISION_GROUP_NONE, nullptr);
+	trace_t result;
+	UTIL_TraceLine(center, center + Vector(0.0f, 0.0f, -4096.0f), MASK_SOLID, &filter, &result);
+	return result.endpos + Vector(0.0f, 0.0f, 1.0f);
+}
+
+const char* UtilHelpers::GetPlayerDebugIdentifier(int player)
+{
+	static char message[256];
+	auto gp = playerhelpers->GetGamePlayer(player);
+
+	if (!gp)
+		return "";
+
+	auto name = gp->GetName();
+	ke::SafeSprintf(message, sizeof(message), "%s<#%i/%i>", name ? name : "", player, gp->GetUserId());
+	return message;
+}
+
+const char* UtilHelpers::GetPlayerDebugIdentifier(edict_t* player)
+{
+	static char message[256];
+	auto gp = playerhelpers->GetGamePlayer(player);
+
+	if (!gp)
+		return "";
+
+	auto name = gp->GetName();
+	ke::SafeSprintf(message, sizeof(message), "%s<#%i/%i>", name ? name : "", gamehelpers->IndexOfEdict(player), gp->GetUserId());
+	return message;
+}
+
+void UtilHelpers::FakeClientCommandKeyValues(edict_t* client, KeyValues* kv)
+{
+#if SOURCE_ENGINE >= SE_EYE
+	gameclients->ClientCommandKeyValues(client, kv);
+#else
+	throw std::runtime_error("This engine branch does not support FakeClientCommandKeyValues!");
+#endif
 }
 

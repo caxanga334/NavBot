@@ -21,8 +21,14 @@ public:
 	inline edict_t* GetEdict() const { return m_edict; }
 	// Gets the player entity index
 	inline int GetIndex() const { return m_index; }
+	CBaseEntity* GetEntity() const;
+	IServerEntity* GetServerEntity() const { return m_edict->GetIServerEntity(); }
+	IServerUnknown* GetServerUnknown() const { return m_edict->GetUnknown(); }
+	IHandleEntity* GetHandleEntity() const { return reinterpret_cast<IHandleEntity*>(m_edict->GetIServerEntity()); }
+	IServerNetworkable* GetServerNetworkable() const { return m_edict->GetNetworkable(); }
+	ICollideable* GetCollideable() const { return m_edict->GetCollideable(); }
 
-	bool operator==(const CBaseExtPlayer& other);
+	bool operator==(const CBaseExtPlayer& other) const;
 
 	// Function called every server frame by the manager
 	virtual void PlayerThink();
@@ -42,9 +48,12 @@ public:
 	const QAngle GetAbsAngles() const;
 	const Vector GetEyeOrigin() const;
 	const QAngle GetEyeAngles() const;
+	const Vector GetMins() const;
+	const Vector GetMaxs() const;
 	void EyeVectors(Vector* pForward) const;
 	void EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const;
 	const Vector GetAbsVelocity() const;
+	void SetAbsVelocity(const Vector& velocity) const;
 	inline QAngle BodyAngles() const { return GetAbsAngles(); }
 	Vector BodyDirection3D() const;
 	Vector BodyDirection2D() const;
@@ -71,6 +80,8 @@ public:
 	int GetAmmoOfIndex(int index) const;
 
 	std::vector<edict_t*> GetAllWeapons() const;
+
+	virtual float GetMaxSpeed() const;
 
 protected:
 

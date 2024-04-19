@@ -42,6 +42,11 @@ public:
 
 	virtual void FireGameEvent(IGameEvent* event) = 0;
 
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+	// declare it here, since it's not used
+	virtual int	GetEventDebugID(void) { return EVENT_DEBUG_ID_INIT; }
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+
 private:
 	bool m_isListeningForEvents;
 };

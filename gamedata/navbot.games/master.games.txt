@@ -1,0 +1,11 @@
+"Game Master"
+{
+	"common.games.txt"
+	{
+	}
+	
+	"game.dod.txt"
+	{
+		"game"		"dod"
+	}
+}

@@ -9,8 +9,11 @@
 // Implementation of Navigation Mesh interface
 // Author: Michael S. Booth, 2003-2004
 
+#include <unordered_set>
 
 #include "extension.h"
+#include <util/helpers.h>
+#include <util/librandom.h>
 
 #include "nav_mesh.h"
 
@@ -28,19 +31,12 @@
 #include <generichash.h>
 #include <fmtstr.h>
 
-#include <util/UtilRandom.h>
-
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
-
-
 #define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, EXT_DEBUG_DRAW_TIME )
 
 /**
  * The singleton for accessing the navigation mesh
  */
 extern CNavMesh *TheNavMesh;
-CUniformRandomStream g_NavRandom;
 
 ConVar sm_nav_edit( "sm_nav_edit", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode." );
 ConVar sm_nav_quicksave( "sm_nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing." );	// TERROR: defaulting to 1, since we don't need the other data
@@ -58,11 +54,6 @@ extern ConVar sm_nav_show_approach_points;
 extern ConVar sm_nav_show_danger;
 
 extern ConVar sm_nav_show_potentially_visible;
-
-extern IVEngineServer* engine;
-extern IVDebugOverlay* debugoverlay;
-extern IPlayerInfoManager *playerinfomanager;
-extern IFileSystem *filesystem;
 extern NavAreaVector TheNavAreas;
 #ifdef STAGING_ONLY
 int g_DebugPathfindCounter = 0;
@@ -85,19 +76,21 @@ bool NavAttributeSetter::operator() ( CNavArea *area )
 
 unsigned int CVisPairHashFuncs::operator()( const NavVisPair_t &item ) const
 {
-	COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
-	int key[2] = { (int)item.pAreas[0] + (int)item.pAreas[1]->GetID(),
-			(int)item.pAreas[1] + (int)item.pAreas[0]->GetID() };
+	// COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
+
+	uintptr_t key[2] = { 
+		reinterpret_cast<uintptr_t>(item.pAreas[0]) + static_cast<uintptr_t>(item.pAreas[1]->GetID()),
+		reinterpret_cast<uintptr_t>(item.pAreas[1]) + static_cast<uintptr_t>(item.pAreas[0]->GetID())
+	};
+
 	return Hash8( key );
 }
-
-extern CGlobalVars *gpGlobals;
 
 template<typename Functor>
 bool ForEachActor(Functor &func) {
 	// iterate all non-bot players
 	for (int i = 1; i <= gpGlobals->maxClients; ++i) {
-		edict_t *ent = engine->PEntityOfEntIndex(i);
+		edict_t* ent = gamehelpers->EdictOfIndex(i);
 		if (ent == nullptr) {
 			continue;
 		}
@@ -135,14 +128,16 @@ CNavMesh::CNavMesh( void )
 	m_editMode = NORMAL;
 	m_bQuitWhenFinished = false;
 	m_hostThreadModeRestoreValue = 0;
-	m_placeCount = 0;
-	m_placeName = NULL;
+	// m_placeCount = 0;
+	// m_placeName = NULL;
+	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+	m_linkorigin = vec3_origin;
+	m_placeMap.reserve(512);
+	m_placePhrases = nullptr;
 
-	LoadPlaceDatabase();
+	// LoadPlaceDatabase();
 		
 	Reset();
-
-	g_NavRandom.SetSeed(0);
 
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("dod_round_start");
@@ -154,11 +149,66 @@ CNavMesh::~CNavMesh()
 {
 
  // !!!!bug!!! why does this crash in linux on server exit
+
+/*
 	for( unsigned int i=0; i<m_placeCount; ++i )
 	{
 		delete [] m_placeName[i];
+	} */
+
+
+	if (m_placePhrases != nullptr)
+	{
+		m_placePhrases->Destroy();
+		m_placePhrases = nullptr;
+	}
+}
+
+void CNavMesh::Precache()
+{
+}
+
+void CNavMesh::OnMapStart()
+{
+	// Load place database first
+	UnloadPlaceDatabase();
+	LoadPlaceDatabase();
+
+	auto error = Load();
+
+	switch (error)
+	{
+	case NAV_OK:
+		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
+		break;
+	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
+		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
+		break;
+	case NAV_INVALID_FILE:
+		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
+		break;
+	case NAV_BAD_FILE_VERSION:
+		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
+		break;
+	case NAV_FILE_OUT_OF_DATE:
+		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
+		break;
+	case NAV_CORRUPT_DATA:
+		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
+		break;
+	case NAV_OUT_OF_MEMORY:
+		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
+		break;
+	default:
+		break;
 	}
 
+	// Sourcemod's OnMapStart is called on a ServerActivate hook
+	OnServerActivate(); // this isn't called anywhere else so just call it here
+}
+
+void CNavMesh::OnMapEnd()
+{
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -361,6 +411,25 @@ void CNavMesh::Update( void )
 		DrawFuncNavPrefer();
 	}
 
+	{
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			CNavArea* area = TheNavAreas[it];
+
+			area->OnFrame();
+
+			if (m_invokeAreaUpdateTimer.IsElapsed())
+			{
+				area->OnUpdate();
+			}
+		}
+
+		if (m_invokeAreaUpdateTimer.IsElapsed())
+		{
+			m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+		}
+	}
+
 #ifdef NEXT_BOT
 	if (sm_nav_show_func_nav_prerequisite.GetBool() )
 	{
@@ -487,6 +556,13 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 		ForAllLadders(restart);
 	}
 }
+
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+int CNavMesh::GetEventDebugID(void)
+{
+	return EVENT_DEBUG_ID_INIT;
+}
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -625,6 +701,8 @@ void CNavMesh::OnServerActivate( void )
 		CNavArea *area = TheNavAreas[ pit ];
 		area->OnServerActivate();
 	}
+
+	BuildTransientAreaList();
 }
 
 #ifdef NEXT_BOT
@@ -669,6 +747,7 @@ void CNavMesh::TestAllAreasForBlockedStatus( void )
 void CNavMesh::OnRoundRestart( void )
 {
 	m_updateBlockedAreasTimer.Start( 1.0f );
+	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
@@ -791,15 +870,7 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	Vector testPos = pEntity->GetCollideable()->GetCollisionOrigin();
 
 	float flStepHeight = 1e-3;
-
-#if SOURCE_ENGINE == SE_SDK2013
-	bool isPlayer = pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients;
-#elif SOURCE_ENGINE == SE_ORANGEBOX
-	int index = engine->IndexOfEdict(pEntity);
-	bool isPlayer = index > 0 && index <= gpGlobals->maxClients;
-#else
-	bool isPlayer = pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients;
-#endif
+	bool isPlayer = UtilHelpers::IsPlayerIndex(gamehelpers->IndexOfEdict(pEntity));
 
 	if ( isPlayer )
 	{
@@ -914,7 +985,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 	// find closest nav area
 
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 
 	++searchMarker;
 
@@ -1049,39 +1120,14 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 
 	// quick check
 	CNavArea *pClose = GetNavArea( pEntity, nFlags );
-#if SOURCE_ENGINE == SE_SDK2013
-
-	return pClose ? pClose
-		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
-			maxDist,
-			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
-			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
-			pEntity->m_EdictIndex > 0 && pEntity->m_EdictIndex <= gpGlobals->maxClients
-			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
-
-#elif SOURCE_ENGINE == SE_ORANGEBOX
-
-	int index = engine->IndexOfEdict(pEntity);
-
+	int index = gamehelpers->IndexOfEdict(pEntity);
 	return pClose ? pClose
 		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
 			maxDist,
 			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
 			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
 			index > 0 && index <= gpGlobals->maxClients
-			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
-
-#else
-
-	return pClose ? pClose
-		: GetNearestNavArea(pEntity->GetCollideable()->GetCollisionOrigin(),
-			maxDist,
-			(nFlags & GETNAVAREA_CHECK_LOS) != 0,
-			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
-			pEntity->m_iIndex > 0 && pEntity->m_iIndex <= gpGlobals->maxClients
-			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : TEAM_ANY);
-
-#endif
+			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : NAV_TEAM_ANY);
 }
 
 
@@ -1144,7 +1190,7 @@ unsigned int CNavMesh::GetPlace( const Vector &pos ) const
  */
 void CNavMesh::LoadPlaceDatabase( void )
 {
-	m_placeCount = 0;
+	// m_placeCount = 0;
 
 #ifdef TERROR
 	// TODO: LoadPlaceDatabase happens during the constructor, so we can't override it!
@@ -1181,85 +1227,182 @@ void CNavMesh::LoadPlaceDatabase( void )
 
 	// TO-DO: Per map place database
 
+	// Load translations first
+	LoadPlaceTranslations();
+
+	LoadGlobalPlaceDatabase();
+
+	//auto mod = smutils->GetGameFolderName();
+	//char fullpath[256];
+	//smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/navplace.db", mod);
+
+	//CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
+	//filesystem->ReadFile(fullpath, "MOD", buf);
+
+	//if (!buf.Size())
+	//	return;
+
+	//const int maxNameLength = 128;
+	//char buffer[ maxNameLength ];
+
+	//CUtlVector<char*> placeNames;
+
+	//// count the number of places
+	//while( true )
+	//{
+	//	buf.GetLine( buffer, maxNameLength );
+
+	//	if ( !buf.IsValid() )
+	//		break;
+
+	//	int len = V_strlen( buffer );
+	//	if ( len >= 2 )
+	//	{
+	//		if ( buffer[len-1] == '\n' || buffer[len-1] == '\r' )
+	//			buffer[len-1] = 0;
+	//		
+	//		if ( buffer[len-2] == '\r' )
+	//			buffer[len-2] = 0;
+
+	//		char *pName = new char[ len + 1 ];
+	//		V_strncpy( pName, buffer, len+1 );
+	//		placeNames.AddToTail( pName );
+	//	}
+	//}
+
+	//// allocate place name array
+	//m_placeCount = placeNames.Count();
+	//m_placeName = new char * [ m_placeCount ];
+	//
+	//for ( unsigned int i=0; i < m_placeCount; i++ )
+	//{
+	//	m_placeName[i] = placeNames[i];
+	//}
+
+	//smutils->LogMessage(myself, "Loaded Nav Mesh place database with %i entries from file \"%s\".", m_placeCount, fullpath);
+}
+
+void CNavMesh::LoadPlaceTranslations()
+{
+	if (m_placePhrases == nullptr)
+	{
+		m_placePhrases = translator->CreatePhraseCollection();
+
+		// Translations also need to be mod specific
+		auto mod = smutils->GetGameFolderName();
+		char filename[256]{};
+		ke::SafeSprintf(filename, sizeof(filename), "navbot/%s_places.phrases", mod);
+		m_placePhrases->AddPhraseFile(filename);
+
+		// TO-DO: Check for possible conflicts with map specific place names
+	}
+}
+
+void CNavMesh::LoadGlobalPlaceDatabase()
+{
 	auto mod = smutils->GetGameFolderName();
 	char fullpath[256];
-	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/navplace.db", mod);
+	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/places.db", mod);
+	std::filesystem::path path(fullpath);
 
-	CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
-	filesystem->ReadFile(fullpath, "MOD", buf);
-
-	if (!buf.Size())
+	if (!std::filesystem::exists(path))
+	{
+		smutils->LogError(myself, "Failed to load global place database. File \"%s\" does not exists!", fullpath);
 		return;
+	}
 
-	const int maxNameLength = 128;
-	char buffer[ maxNameLength ];
+	m_placeMap.clear(); // remove old place names
 
-	CUtlVector<char*> placeNames;
+	Place id = 1U;
 
-	// count the number of places
-	while( true )
+	std::fstream filestream;
+	filestream.open(path, std::fstream::in);
+	constexpr auto MAX_PLACE_NAME_SIZE = 32U;
+
+	std::string line;
+	line.reserve(256);
+
+	while (std::getline(filestream, line))
 	{
-		buf.GetLine( buffer, maxNameLength );
-
-		if ( !buf.IsValid() )
-			break;
-
-		int len = V_strlen( buffer );
-		if ( len >= 2 )
+		if (line.find("//", 0, 2) != std::string::npos)
 		{
-			if ( buffer[len-1] == '\n' || buffer[len-1] == '\r' )
-				buffer[len-1] = 0;
-			
-			if ( buffer[len-2] == '\r' )
-				buffer[len-2] = 0;
-
-			char *pName = new char[ len + 1 ];
-			V_strncpy( pName, buffer, len+1 );
-			placeNames.AddToTail( pName );
+			continue; // comment line, ignore
 		}
+
+		// place names should not have any spaces on it
+		for (const auto& singlechar : line)
+		{
+			if (std::isspace(singlechar))
+			{
+				smutils->LogError(myself, "Place name \"%s\" contains space! skipping...", line.c_str());
+				continue;
+			}
+		}
+
+		// we don't want these
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.cend());
+		line.erase(std::remove(line.begin(), line.end(), '\n'), line.cend());
+
+		if (line.length() == 0)
+		{
+			continue;
+		}
+
+		if (line.length() > MAX_PLACE_NAME_SIZE)
+		{
+			smutils->LogError(myself, "Place name \"%s\" over character limit! skipping...", line.c_str());
+			continue;
+		}
+
+		m_placeMap.emplace(id, line);
+		++id;
 	}
 
-	// allocate place name array
-	m_placeCount = placeNames.Count();
-	m_placeName = new char * [ m_placeCount ];
-	
-	for ( unsigned int i=0; i < m_placeCount; i++ )
-	{
-		m_placeName[i] = placeNames[i];
-	}
+#ifdef EXT_DEBUG
+	Msg("[NAVBOT] Loaded global place database. Place count: %i \n", m_placeMap.size());
+#endif // EXT_DEBUG
+}
 
-	smutils->LogMessage(myself, "Loaded Nav Mesh place database with %i entries from file \"%s\".", m_placeCount, fullpath);
+void CNavMesh::UnloadPlaceDatabase()
+{
+	m_placeMap.clear();
 }
 
 //--------------------------------------------------------------------------------------------------------------
-/**
- * Given a place, return its name.
- * Reserve zero as invalid.
- */
-const char *CNavMesh::PlaceToName( Place place ) const
+
+const std::string* CNavMesh::GetPlaceName(const Place place) const
 {
-	return place >= 1 && place <= m_placeCount ?
-			m_placeName[ (int)place - 1 ]
-						 : nullptr;
+	auto it = m_placeMap.find(place);
+
+	if (it == m_placeMap.end())
+	{
+		return nullptr;
+	}
+
+	auto& name = it->second;
+	return &name;
 }
 
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Given a place name, return a place ID or zero if no place is defined
- * Reserve zero as invalid.
- */
-Place CNavMesh::NameToPlace( const char *name ) const
+Place CNavMesh::GetPlaceFromName(const std::string& name) const
 {
-	for( unsigned int i=0; i<m_placeCount; ++i )
+	auto it = std::find_if(m_placeMap.begin(), m_placeMap.end(), [&name](const std::pair<const Place, std::string>& object) {
+		if (object.second == name)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	if (it != m_placeMap.end())
 	{
-		if (FStrEq( m_placeName[i], name ))
-			return i+1;
+		return it->first;
 	}
 
 	return UNDEFINED_PLACE;
 }
 
+//--------------------------------------------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1268,6 +1411,20 @@ Place CNavMesh::NameToPlace( const char *name ) const
 Place CNavMesh::PartialNameToPlace( const char *name ) const
 {
 	Place found = UNDEFINED_PLACE;
+
+	for (auto& obj : m_placeMap)
+	{
+		const auto& str = obj.second;
+
+		if (str.find(name) != std::string::npos)
+		{
+			return obj.first;
+		}
+	}
+
+	return UNDEFINED_PLACE;
+
+/*
 	for( unsigned int i=0; i<m_placeCount; ++i )
 	{
 		if (!strncasecmp( m_placeName[i], name, strlen( name ) ))
@@ -1284,6 +1441,8 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 		}
 	}
 	return UNDEFINED_PLACE;
+
+*/
 }
 
 
@@ -1294,23 +1453,46 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
 int CNavMesh::PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
 {
 	int numMatches = 0;
-	partial += Q_strlen( "nav_use_place " );
+	partial += Q_strlen( "sm_nav_use_place " );
 	int partialLength = Q_strlen( partial );
 
-	for( unsigned int i=0; i<m_placeCount; ++i )
+	for (const auto& object : m_placeMap)
 	{
-		if ( !Q_strnicmp( m_placeName[i], partial, partialLength ) )
+		if (strncasecmp(object.second.c_str(), partial, partialLength) == 0)
 		{
 			// Add the place name to the autocomplete array
-			Q_snprintf( commands[ numMatches++ ], COMMAND_COMPLETION_ITEM_LENGTH, "sm_nav_use_place %s", m_placeName[i] );
+			ke::SafeSprintf(commands[numMatches], COMMAND_COMPLETION_ITEM_LENGTH, "sm_nav_use_place %s", object.second.c_str());
+			++numMatches;
 
 			// Make sure we don't try to return too many place names
-			if ( numMatches == COMMAND_COMPLETION_MAXITEMS )
+			if (numMatches == COMMAND_COMPLETION_MAXITEMS)
 				return numMatches;
 		}
 	}
 
 	return numMatches;
+}
+
+const char* CNavMesh::GetTranslatedPlaceName(Place place) const
+{
+	auto it = m_placeMap.find(place);
+
+	if (it == m_placeMap.end())
+	{
+		return nullptr;
+	}
+
+	// Place names doesn't require format so this should be fine.
+
+	SourceMod::Translation trans;
+	auto result = m_placePhrases->FindTranslation(it->second.c_str(), translator->GetServerLanguage(), &trans);
+
+	if (result != SourceMod::Trans_Okay)
+	{
+		return nullptr;
+	}
+
+	return trans.szPhrase;
 }
 
 
@@ -1328,30 +1510,28 @@ int StringSort (const SortStringType *s1, const SortStringType *s2)
  */
 void CNavMesh::PrintAllPlaces( void ) const
 {
-	if (m_placeCount == 0)
+	if (m_placeMap.empty())
 	{
 		Msg( "There are no entries in the Place database.\n" );
 		return;
 	}
 
-	unsigned int i;
+	Msg("Nav place name list: \n");
 
-	CUtlVector< SortStringType > placeNames;
-	for ( i=0; i<m_placeCount; ++i )
-	{
-		placeNames.AddToTail( m_placeName[i] );
-	}
-	placeNames.Sort( StringSort );
+	int i = 0;
 
-	for( i=0; i<(unsigned int)placeNames.Count(); ++i )
+	for (const auto& object : m_placeMap)
 	{
-		Msg( NameToPlace( placeNames[i] ) == GetNavPlace() ? "--> %-26s" : "%-30s",
-					placeNames[i] );
-		if ((i+1) % 3 == 0)
-			Msg( "\n" );
+		Msg(" %s ", object.second.c_str());
+		
+		if (++i > 4)
+		{
+			Msg("\n");
+			i = 0;
+		}
 	}
 
-	Msg( "\n" );
+	Msg("\n\n");
 }
 
 class CTraceFilterGroundEntities : public CTraceFilterWalkableEntities
@@ -2401,7 +2581,8 @@ static ConCommand sm_nav_load( "sm_nav_load", CommandNavLoad, "Loads the Navigat
 //--------------------------------------------------------------------------------------------------------------
 static int PlaceNameAutocompleteCallback( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
 {
-	return TheNavMesh->PlaceNameAutocomplete( partial, commands );
+	return 0; // this is causing crashes
+	// return TheNavMesh->PlaceNameAutocomplete( partial, commands );
 }
 
 
@@ -2427,7 +2608,7 @@ void CommandNavUsePlace( const CCommand &args )
 		}
 		else
 		{
-			Msg( "Current place set to '%s'\n", TheNavMesh->PlaceToName( place ) );
+			Msg("Current place set to '%s'\n", TheNavMesh->GetPlaceName(place)->c_str());
 			TheNavMesh->SetNavPlace( place );
 		}
 	}
@@ -2478,22 +2659,24 @@ void CommandNavPlaceList( void )
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
-	CUtlVector< Place > placeDirectory;
+	std::unordered_set<Place> allplaces;
+	allplaces.reserve(512);
 
 	FOR_EACH_VEC( TheNavAreas, nit )
 	{
 		Place place = TheNavAreas[ nit ]->GetPlace();
 
-		if ( place && !placeDirectory.HasElement( place ) )
+		if (place > 0)
 		{
-			placeDirectory.AddToTail( place );
+			allplaces.emplace(place);
 		}
 	}
 
-	Msg( "Map uses %d place names:\n", placeDirectory.Count() );
-	for ( int i=0; i<placeDirectory.Count(); ++i )
+	Msg("Map uses %d place names:\n", allplaces.size());
+
+	for (auto& place : allplaces)
 	{
-		Msg( "    %s\n", TheNavMesh->PlaceToName( placeDirectory[i] ) );
+		Msg("    %s\n", TheNavMesh->GetPlaceName(place)->c_str());
 	}
 }
 static ConCommand sm_nav_place_list( "sm_nav_place_list", CommandNavPlaceList, "Lists all place names used in the map.", FCVAR_GAMEDLL | FCVAR_CHEAT );
@@ -2760,6 +2943,7 @@ void CNavMesh::CommandNavMarkWalkable( void )
 
 	Msg( "Walkable position marked.\n" );
 }
+
 static ConCommand sm_nav_mark_walkable( "sm_nav_mark_walkable", CommandNavMarkWalkable, "Mark the current location as a walkable position. These positions are used as seed locations when sampling the map to generate a Navigation Mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
 
@@ -2874,38 +3058,40 @@ NavAttributeLookup TheNavAttributeTable[] =
  */
 static int NavAttributeAutocomplete( const char *input, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
 {
-	if ( Q_strlen( input ) >= COMMAND_COMPLETION_ITEM_LENGTH )
-	{
-		return 0;
-	}
-	
-	char command[ COMMAND_COMPLETION_ITEM_LENGTH+1 ];
-	Q_strncpy( command, input, sizeof( command ) );
-	
-	// skip to start of argument
-	char *partialArg = Q_strrchr( command, ' ' );
-	if ( partialArg == NULL )
-	{
-		return 0;
-	}
-	
-	// chop command from partial argument
-	*partialArg = '\000';
-	++partialArg;
-	
-	int partialArgLength = Q_strlen( partialArg );
+	return 0; // disable this until the crash is resolved
 
-	int count = 0;
-	for( unsigned int i=0; TheNavAttributeTable[i].name && count < COMMAND_COMPLETION_MAXITEMS; ++i )
-	{
-		if ( !Q_strnicmp( TheNavAttributeTable[i].name, partialArg, partialArgLength ) )
-		{
-			// Add to the autocomplete array
-			Q_snprintf( commands[ count++ ], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", command, TheNavAttributeTable[i].name );
-		}
-	}
+	//if ( Q_strlen( input ) >= COMMAND_COMPLETION_ITEM_LENGTH )
+	//{
+	//	return 0;
+	//}
+	//
+	//char command[ COMMAND_COMPLETION_ITEM_LENGTH+1 ];
+	//Q_strncpy( command, input, sizeof( command ) );
+	//
+	//// skip to start of argument
+	//char *partialArg = Q_strrchr( command, ' ' );
+	//if ( partialArg == NULL )
+	//{
+	//	return 0;
+	//}
+	//
+	//// chop command from partial argument
+	//*partialArg = '\000';
+	//++partialArg;
+	//
+	//int partialArgLength = Q_strlen( partialArg );
 
-	return count;
+	//int count = 0;
+	//for( unsigned int i=0; TheNavAttributeTable[i].name && count < COMMAND_COMPLETION_MAXITEMS; ++i )
+	//{
+	//	if ( !Q_strnicmp( TheNavAttributeTable[i].name, partialArg, partialArgLength ) )
+	//	{
+	//		// Add to the autocomplete array
+	//		Q_snprintf( commands[ count++ ], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", command, TheNavAttributeTable[i].name );
+	//	}
+	//}
+
+	//return count;
 }
 
 
@@ -3108,24 +3294,20 @@ HidingSpot::HidingSpot( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-void HidingSpot::Save( CUtlBuffer &fileBuffer, unsigned int version ) const
+void HidingSpot::Save(std::fstream& filestream, uint32_t version)
 {
-	fileBuffer.PutUnsignedInt( m_id );
-	fileBuffer.PutFloat( m_pos.x );
-	fileBuffer.PutFloat( m_pos.y );
-	fileBuffer.PutFloat( m_pos.z );
-	fileBuffer.PutUnsignedChar( m_flags );
+	filestream.write(reinterpret_cast<char*>(&m_id), sizeof(m_id));
+	filestream.write(reinterpret_cast<char*>(&m_pos), sizeof(Vector));
+	filestream.write(reinterpret_cast<char*>(&m_flags), sizeof(m_flags));
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
-void HidingSpot::Load( CUtlBuffer &fileBuffer, unsigned int version )
+void HidingSpot::Load(std::fstream& filestream, uint32_t version)
 {
-	m_id = fileBuffer.GetUnsignedInt();
-	m_pos.x = fileBuffer.GetFloat();
-	m_pos.y = fileBuffer.GetFloat();
-	m_pos.z = fileBuffer.GetFloat();
-	m_flags = fileBuffer.GetUnsignedChar();
+	filestream.read(reinterpret_cast<char*>(&m_id), sizeof(m_id));
+	filestream.read(reinterpret_cast<char*>(&m_pos), sizeof(Vector));
+	filestream.read(reinterpret_cast<char*>(&m_flags), sizeof(m_flags));
 
 	// update next ID to avoid ID collisions by later spots
 	if (m_id >= m_nextID)
@@ -3378,3 +3560,4 @@ inline void CNavMesh::DestroyArea( CNavArea *pArea ) const
 {
 	delete pArea;
 }
+

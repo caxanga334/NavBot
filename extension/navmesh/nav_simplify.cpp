@@ -11,8 +11,6 @@
 #include "nav_area.h"
 #include "nav_node.h"
 #include <eiface.h>
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
 
 extern ConVar sm_nav_snap_to_grid;
 extern ConVar sm_nav_split_place_on_ground;
@@ -265,7 +263,6 @@ void CNavMesh::SimplifySelectedAreas( void )
 	sm_nav_coplanar_slope_limit.SetValue( savedCoplanarSlopeLimit );
 	sm_nav_snap_to_grid.SetValue( savedGrid );
 }
-
 
 //--------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_simplify_selected, "Chops all selected areas into their component 1x1 areas and re-merges them together into larger areas", FCVAR_CHEAT )

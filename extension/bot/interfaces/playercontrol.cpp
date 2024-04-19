@@ -1,7 +1,6 @@
 #include <extension.h>
 #include <bot/basebot.h>
 #include <sdkports/debugoverlay_shared.h>
-#include <ifaces_extern.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <entities/baseentity.h>

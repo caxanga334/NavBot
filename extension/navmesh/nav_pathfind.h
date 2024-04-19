@@ -12,24 +12,19 @@
 #ifndef _NAV_PATHFIND_H_
 #define _NAV_PATHFIND_H_
 
-#include "tier0/vprof.h"
-#include "mathlib/ssemath.h"
+#include <algorithm>
+#include <vector>
+#include <stack>
+#include <unordered_set>
+#include <unordered_map>
+
+#include <util/librandom.h>
 #include "nav_area.h"
-#include "vstdlib/random.h"
-
-#if (SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || \
- SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_ORANGEBOX)
-
-template< class T >
-T Max(T const& val1, T const& val2)
-{
-	return val1 > val2 ? val1 : val2;
-}
-
-#endif
 
 
-extern CUniformRandomStream g_NavRandom;
+#undef max
+#undef min
+#undef clamp
 
 #ifdef STAGING_ONLY
 extern int g_DebugPathfindCounter;
@@ -56,7 +51,7 @@ enum RouteType
 class ShortestPathCost
 {
 public:
-	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const CFuncElevator *elevator, float length ) const
+	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length ) const
 	{
 		if ( fromArea == NULL )
 		{
@@ -67,8 +62,12 @@ public:
 		{
 			// compute distance traveled along path so far
 			float dist;
-
-			if ( ladder )
+			
+			if (link)
+			{
+				dist = link->GetConnectionLength();
+			}
+			else if ( ladder )
 			{
 				dist = ladder->m_length;
 			}
@@ -117,10 +116,8 @@ public:
 #define IGNORE_NAV_BLOCKERS true
 template< typename CostFunctor >
 bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *goalPos,
-		const CostFunctor &costFunc, CNavArea **closestArea = NULL, float maxPathLength = 0.0f, int teamID = TEAM_ANY, bool ignoreNavBlockers = false )
+		const CostFunctor &costFunc, CNavArea **closestArea = NULL, float maxPathLength = 0.0f, int teamID = NAV_TEAM_ANY, bool ignoreNavBlockers = false )
 {
-	VPROF_BUDGET( "NavAreaBuildPath", "NextBotSpiky" );
-
 	if ( closestArea )
 	{
 		*closestArea = startArea;
@@ -157,7 +154,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 	/// @todo Cost might work as "manhattan distance"
 	startArea->SetTotalCost( (startArea->GetCenter() - actualGoalPos).Length() );
 
-	float initCost = costFunc( startArea, NULL, NULL, NULL, -1.0f );	
+	/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length */
+	float initCost = costFunc( startArea, nullptr, nullptr, nullptr, nullptr, -1.0f );	
 	if (initCost < 0.0f)
 		return false;
 	startArea->SetCostSoFar( initCost );
@@ -199,16 +197,19 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 		// search adjacent areas
 		enum SearchType
 		{
-			SEARCH_FLOOR, SEARCH_LADDERS, SEARCH_ELEVATORS
+			SEARCH_FLOOR, SEARCH_LADDERS, SEARCH_ELEVATORS, SEARCH_LINKS
 		};
 		SearchType searchWhere = SEARCH_FLOOR;
 		int searchIndex = 0;
+		size_t linkIndex = 0U;
 
 		int dir = NORTH;
 		const NavConnectVector *floorList = area->GetAdjacentAreas( NORTH );
+		auto& linklist = area->GetSpecialLinks();
+		size_t maxlinks = area->GetSpecialLinkCount();
 
 		bool ladderUp = true;
-		const NavLadderConnectVector *ladderList = NULL;
+		const NavLadderConnectVector *ladderList = nullptr;
 		enum { AHEAD = 0, LEFT, RIGHT, BEHIND, NUM_TOP_DIRECTIONS };
 		int ladderTopDir = AHEAD;
 		bool bHaveMaxPathLength = ( maxPathLength > 0.0f );
@@ -216,10 +217,11 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 		
 		while( true )
 		{
-			CNavArea *newArea = NULL;
+			CNavArea *newArea = nullptr;
 			NavTraverseType how;
-			const CNavLadder *ladder = NULL;
-			const CFuncElevator *elevator = NULL;
+			const CNavLadder *ladder = nullptr;
+			const CFuncElevator *elevator = nullptr;
+			const NavSpecialLink* currentlink = nullptr;
 
 			//
 			// Get next adjacent area - either on floor or via ladder
@@ -319,7 +321,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 				length = -1.0f;
 			}
-			else // if ( searchWhere == SEARCH_ELEVATORS )
+			else if ( searchWhere == SEARCH_ELEVATORS )
 			{
 				const NavConnectVector &elevatorAreas = area->GetElevatorAreas();
 
@@ -329,7 +331,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				{
 					// done searching connected areas
 					elevator = NULL;
-					break;
+					searchWhere = SEARCH_LINKS;
+					continue;
 				}
 
 				newArea = elevatorAreas[ searchIndex++ ].area;
@@ -337,7 +340,28 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 				length = -1.0f;
 			}
+			else // if (searchWhere == SEARCH_LINKS)
+			{
+				if (maxlinks == 0)
+				{
+					// no link to search, get out
+					break;
+				}
+				else
+				{
+					if (linkIndex >= maxlinks)
+					{
+						linkIndex = 0;
+						break; // ALL links searched, break
+					}
 
+					currentlink = &linklist[linkIndex];
+					newArea = currentlink->m_link.area;
+					length = currentlink->GetConnectionLength();
+					how = GO_SPECIAL_LINK;
+					linkIndex++;
+				}
+			}
 
 			// don't backtrack
 			Assert( newArea );
@@ -347,7 +371,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				|| newArea->IsBlocked( teamID, ignoreNavBlockers ) )
 				continue;
 
-			float newCostSoFar = costFunc( newArea, area, ladder, elevator, length );
+			/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length */
+			float newCostSoFar = costFunc( newArea, area, ladder, currentlink, elevator, length );
 
 			// NaNs really mess this function up causing tough to track down hangs. If
 			//  we get inf back, clamp it down to a really high number.
@@ -367,7 +392,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 			// Make sure that any jump to a new area incurs some pathfinsing
 			// cost, to avoid us spinning our wheels over insignificant cost
 			// benefit, floating point precision bug, or busted cost functor.
-			newCostSoFar = Max( newCostSoFar, area->GetCostSoFar() * 1.00001f + 0.00001f );
+			newCostSoFar = std::max(newCostSoFar, area->GetCostSoFar() * 1.00001f + 0.00001f);
 				
 			// stop if path length limit reached
 			if ( bHaveMaxPathLength )
@@ -512,7 +537,7 @@ inline void AddAreaToOpenList( CNavArea *area, CNavArea *parent, const Vector &s
 #define EXCLUDE_OUTGOING_CONNECTIONS	0x4
 #define EXCLUDE_ELEVATORS				0x8
 template < typename Functor >
-void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functor &func, float maxRange = -1.0f, unsigned int options = 0, int teamID = TEAM_ANY )
+void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functor &func, float maxRange = -1.0f, unsigned int options = 0, int teamID = NAV_TEAM_ANY )
 {
 	if (startArea == NULL)
 		return;
@@ -625,7 +650,7 @@ public:
 	// return true if 'adjArea' should be included in the ongoing search
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar ) 
 	{
-		return !adjArea->IsBlocked( TEAM_ANY );
+		return !adjArea->IsBlocked( NAV_TEAM_ANY );
 	}
 
 	/**
@@ -647,13 +672,25 @@ public:
 				}
 			}
 		}
+
+		auto& links = area->GetSpecialLinks();
+
+		for (auto& speciallink : links)
+		{
+			CNavArea* adjArea = speciallink.m_link.area;
+
+			if (ShouldSearch(adjArea, area, travelDistanceSoFar))
+			{
+				IncludeInSearch(adjArea, area, &speciallink);
+			}
+		}
 	}
 
 	// Invoked after the search has completed
 	virtual void PostSearch( void ) { }
 
 	// consider 'area' in upcoming search steps
-	void IncludeInSearch( CNavArea *area, CNavArea *priorArea ) 
+	void IncludeInSearch(CNavArea *area, CNavArea *priorArea, const NavSpecialLink* link = nullptr)
 	{
 		if ( area == NULL )
 			return;
@@ -772,7 +809,7 @@ inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector,
 				{
 					CNavArea *adjArea = area->GetAdjacentArea( (NavDirType)dir, i );
 
-					if ( adjArea->IsBlocked( TEAM_ANY )
+					if ( adjArea->IsBlocked( NAV_TEAM_ANY )
 							|| adjArea->IsMarked() ) {
 						continue;
 					}
@@ -784,6 +821,21 @@ inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector,
 							+ ( adjArea->GetCenter() - area->GetCenter() ).Length());
 					adjArea->AddToOpenList();
 				}
+			}
+
+			for (auto& links : area->GetSpecialLinks())
+			{
+				CNavArea* adjArea = links.m_link.area;
+
+				if (adjArea->IsBlocked(NAV_TEAM_ANY) || adjArea->IsMarked())
+				{
+					continue;
+				}
+
+				adjArea->SetTotalCost(0.0f);
+				adjArea->SetParent(area, GO_SPECIAL_LINK);
+				adjArea->SetCostSoFar(area->GetCostSoFar() + links.GetConnectionLength());
+				adjArea->AddToOpenList();
 			}
 		}
 	}
@@ -881,13 +933,13 @@ CNavArea *FindMinimumCostArea( CNavArea *startArea, CostFunctor &costFunc )
 	if (cheapAreaSetCount)
 	{
 		// pick one of the areas at random
-		return cheapAreaSet[ g_NavRandom.RandomInt( 0, cheapAreaSetCount-1 ) ].area;
+		return cheapAreaSet[randomgen->GetRandomInt<int>(0, cheapAreaSetCount - 1)].area;
 	}
 	else
 	{
 		// degenerate case - no decent sized areas - pick a random area
 		int numAreas = TheNavAreas.Count();
-		int which = g_NavRandom.RandomInt( 0, numAreas-1 );
+		int which = randomgen->GetRandomInt<int>(0, numAreas - 1);
 
 		FOR_EACH_VEC( TheNavAreas, iter )
 		{
@@ -896,7 +948,7 @@ CNavArea *FindMinimumCostArea( CNavArea *startArea, CostFunctor &costFunc )
 		}
 
 	}
-	return cheapAreaSet[g_NavRandom.RandomInt( 0, cheapAreaSetCount-1 ) ].area;
+	return cheapAreaSet[randomgen->GetRandomInt<int>(0, cheapAreaSetCount - 1)].area;
 }
 
 
@@ -926,7 +978,7 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 	int n = shuffledVector.Count();
 	while( n > 1 )
 	{
-		int k = g_NavRandom.RandomInt( 0, n-1 );
+		int k = randomgen->GetRandomInt<int>(0, n - 1);
 		n--;
 
 		T *tmp = shuffledVector[n];
@@ -959,6 +1011,63 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 			if ( outVector->Count() >= maxCount )
 				return;
 		}
+	}
+}
+
+/**
+ * @brief Collects surround areas around the start area
+ * @tparam T A class with operator() overload with 4 parameter (CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost)
+ * @param startArea Area to start the search
+ * @param areaVector Vector to store collected areas
+ * @param functor Function to call when collecting areas, return true to add the area to the areaVector
+ */
+template <typename T>
+inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea*>& areaVector, T functor)
+{
+	std::unordered_map<unsigned int, float> areaCosts;
+	std::stack<CNavArea*> toSearch;
+	CNavArea* previousArea = nullptr;
+	float newCost = 0.0f;
+	areaCosts.reserve(4096);
+
+	// Check if startArea should be included and compute cost for it
+	if (functor(previousArea, startArea, 0.0f, newCost))
+	{
+		areaVector.push_back(startArea);
+	}
+
+	// Save start area cost, also marks it as a already searched area
+	areaCosts.emplace(startArea->GetID(), newCost);
+
+	// Add all connected areas to the search list
+	startArea->ForEachConnectedArea([&toSearch](CNavArea* other) {
+		toSearch.push(other);
+	});
+
+	previousArea = startArea;
+
+	while (toSearch.size() > 0)
+	{
+		CNavArea* next = toSearch.top();
+		toSearch.pop();
+
+		next->ForEachConnectedArea([&areaCosts, &toSearch](CNavArea* other) {
+			if (areaCosts.find(other->GetID()) == areaCosts.end())
+			{
+				// new area, search it!
+				toSearch.push(other);
+			}
+		});
+
+		float currentCost = areaCosts.find(previousArea->GetID())->second;
+		newCost = 0.0f; // reset new cost
+
+		if (functor(previousArea, next, currentCost, newCost))
+		{
+			areaVector.push_back(next);
+		}
+
+		areaCosts.emplace(next->GetID(), newCost);
 	}
 }
 

@@ -1,0 +1,12 @@
+"Games"
+{
+	/* OnPlayerRunCMD Hook */
+	"#default"
+	{
+		"Keys"
+		{
+			// If a mod needs to hook OnPlayerRunCMD, set this to 1
+			"HookPlayerRunCMD"	"1"
+		}
+	}
+}

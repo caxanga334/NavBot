@@ -26,7 +26,14 @@ CBaseExtPlayer::~CBaseExtPlayer()
 {
 }
 
-bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other)
+CBaseEntity* CBaseExtPlayer::GetEntity() const
+{
+	CBaseEntity* entity = nullptr;
+	UtilHelpers::IndexToAThings(GetIndex(), &entity, nullptr);
+	return entity;
+}
+
+bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other) const
 {
 	// Maybe also add something like a userid here?
 	return this->GetIndex() == other.GetIndex();
@@ -107,6 +114,30 @@ const QAngle CBaseExtPlayer::GetEyeAngles() const
 	return cmd.viewangles;
 }
 
+const Vector CBaseExtPlayer::GetMins() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Send, "m_vecMins", result) == true)
+	{
+		return result;
+	}
+
+	return vec3_origin;
+}
+
+const Vector CBaseExtPlayer::GetMaxs() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Send, "m_vecMaxs", result) == true)
+	{
+		return result;
+	}
+
+	return vec3_origin;
+}
+
 void CBaseExtPlayer::EyeVectors(Vector* pForward) const
 {
 	auto eyeangles = GetEyeAngles();
@@ -129,6 +160,11 @@ const Vector CBaseExtPlayer::GetAbsVelocity() const
 	}
 
 	return result;
+}
+
+void CBaseExtPlayer::SetAbsVelocity(const Vector& velocity) const
+{
+	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_vecAbsVelocity", velocity);
 }
 
 Vector CBaseExtPlayer::BodyDirection3D() const
@@ -253,7 +289,7 @@ bool CBaseExtPlayer::IsActiveWeapon(const char* classname) const
 int CBaseExtPlayer::GetAmmoOfIndex(int index) const
 {
 	int ammo = 0;
-	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmo", ammo);
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmo", ammo, 4, index);
 	return ammo;
 }
 
@@ -278,6 +314,13 @@ std::vector<edict_t*> CBaseExtPlayer::GetAllWeapons() const
 	}
 
 	return myweapons;
+}
+
+float CBaseExtPlayer::GetMaxSpeed() const
+{
+	float speed = 0.0f;
+	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flMaxspeed", speed);
+	return speed;
 }
 
 #ifdef EXT_DEBUG
@@ -314,7 +357,7 @@ CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 	int entity_var = 0;
 	float float_var = 0.0f;
 	char string_var[256]{};
-	int length = 0;
+	size_t length = 0;
 	bool results[5]{};
 
 	// Missing string prop, players doesn't have a good one to test

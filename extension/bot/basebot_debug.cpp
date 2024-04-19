@@ -1,5 +1,5 @@
 #include <extension.h>
-#include <ifaces_extern.h>
+#include <manager.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "basebot.h"
 
@@ -24,7 +24,7 @@ bool CBaseBot::IsDebugging(int bits) const
 	return extmanager->IsDebugging(bits);
 }
 
-const char* CBaseBot::GetDebugIdentifier()
+const char* CBaseBot::GetDebugIdentifier() const
 {
 	static char debug[256];
 
@@ -35,7 +35,7 @@ const char* CBaseBot::GetDebugIdentifier()
 	return debug;
 }
 
-void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...) const
+void CBaseBot::DebugPrintToConsole(const int bits,const int red,const int green,const int blue, const char* fmt, ...) const
 {
 	if (!IsDebugging(bits))
 	{
@@ -43,7 +43,7 @@ void CBaseBot::DebugPrintToConsole(const int bits, int red, int green, int blue,
 	}
 
 	char buffer[512]{};
-	va_list vaargs = nullptr;
+	va_list vaargs;
 	va_start(vaargs, fmt);
 	size_t len = ke::SafeVsprintf(buffer, sizeof(buffer), fmt, vaargs);
 

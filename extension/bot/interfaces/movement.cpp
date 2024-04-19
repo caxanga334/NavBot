@@ -93,6 +93,8 @@ void IMovement::Reset()
 
 void IMovement::Update()
 {
+	m_basemovespeed = GetBot()->GetMaxSpeed();
+
 	StuckMonitor();
 
 	auto velocity = GetBot()->GetAbsVelocity();
@@ -161,7 +163,10 @@ void IMovement::Frame()
 
 		if (m_internal_jumptimer == 0)
 		{
-			GetBot()->GetControlInterface()->PressJumpButton();
+			// GetBot()->GetControlInterface()->PressJumpButton(0.23f);
+			Vector vel = GetBot()->GetAbsVelocity();
+			vel.z = GetCrouchJumpZBoost();
+			GetBot()->SetAbsVelocity(vel);
 
 			if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 			{
@@ -349,10 +354,11 @@ void IMovement::CrouchJump()
 	// See shounic's video https://www.youtube.com/watch?v=7z_p_RqLhkA
 
 	// First the bot will crouch
-	GetBot()->GetControlInterface()->PressCrouchButton(0.1f); // hold the crouch button for about 7 ticks
+	GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
+	GetBot()->GetControlInterface()->PressJumpButton(0.3f);
 
 	// This is a tick timer, the bot will jump when it reaches 0
-	m_internal_jumptimer = 5; // jump after 5 ticks
+	m_internal_jumptimer = 8; // jump after some time
 	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
@@ -389,7 +395,21 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 
 bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
 {
-	Jump();
+	CrouchJump(); // Always do a crouch jump
+
+	m_isClimbingObstacle = true;
+	m_landingGoal = landingGoal;
+	m_isAirborne = false;
+
+	return true;
+}
+
+bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
+{
+	if (!IsAbleToDoubleJump())
+		return false;
+
+	DoubleJump();
 
 	m_isClimbingObstacle = true;
 	m_landingGoal = landingGoal;
@@ -473,7 +493,28 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 	const float height = GetStepHeight();
 	Vector mins(-hullsize, -hullsize, height);
 	Vector maxs(hullsize, hullsize, GetCrouchedHullHeigh());
-	UTIL_TraceHull(from, to, mins, maxs, GetMovementTraceMask(), nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, &result);
+	UTIL_TraceHull(from, to, mins, maxs, GetMovementTraceMask(), nullptr, COLLISION_GROUP_NONE, &result);
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		if (result.DidHit())
+		{
+			NDebugOverlay::SweptBox(from, to, mins, maxs, vec3_angle, 255, 0, 0, 255, 0.5f);
+			NDebugOverlay::Sphere(result.endpos, 24.0f, 255, 0, 255, true, 0.5f);
+
+			auto index = result.GetEntityIndex();
+
+			if (index != -1)
+			{
+				auto classname = gamehelpers->GetEntityClassname(result.m_pEnt);
+				char message[256];
+				ke::SafeSprintf(message, sizeof(message), "Hit Entity %s#%i", classname, index);
+
+				NDebugOverlay::Text(result.endpos, message, false, 0.5f);
+				DevMsg("%s IMovement::IsPotentiallyTraversable \n  %s \n", GetBot()->GetDebugIdentifier(), message);
+			}
+		}
+	}
 
 	fraction = result.fraction;
 
@@ -593,9 +634,91 @@ float IMovement::GetStuckDuration()
 	return 0.0f;
 }
 
-void IMovement::ClearStuckStatus()
+void IMovement::ClearStuckStatus(const char* reason)
 {
 	m_stuck.ClearStuck(GetBot()->GetAbsOrigin());
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 255, 200, 200, "ClearStuckStatus: %s \n", reason ? reason : "");
+	}
+}
+
+bool IMovement::IsAreaTraversable(const CNavArea* area) const
+{
+	auto bot = GetBot();
+
+	if (area->IsBlocked(bot->GetCurrentTeamIndex()))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint)
+{
+	// Compute a direction vector point towards the crossing point
+	Vector forward = (*crosspoint - fromPos);
+	forward.z = 0.0f;
+	forward.NormalizeInPlace();
+	Vector left(-forward.y, forward.x, 0.0f);
+
+	if (left.IsZero())
+	{
+		return;
+	}
+
+	CTraceFilterNoNPCsOrPlayer filter(GetBot()->GetHandleEntity(), COLLISION_GROUP_NONE);
+	trace_t result;
+	float hullwidth = GetHullWidth();
+	Vector mins(-hullwidth, -hullwidth, GetStepHeight());
+	Vector maxs(hullwidth, hullwidth, GetStandingHullHeigh());
+	const Vector& endPos = *crosspoint;
+	
+	UTIL_TraceHull(fromPos, endPos, mins, maxs, GetMovementTraceMask(), filter, &result);
+
+	if (!result.DidHit())
+	{
+		return; // no collision
+	}
+
+	if (GetBot()->IsDebugging(BOTDEBUG_PATH))
+	{
+		NDebugOverlay::SweptBox(fromPos, endPos, mins, maxs, vec3_angle, 255, 0, 0, 255, 0.2f);
+	}
+
+	// direct path is blocked, try left first
+
+	UTIL_TraceHull(fromPos, endPos + (left * hullwidth), mins, maxs, GetMovementTraceMask(), filter, &result);
+
+	if (!result.DidHit())
+	{
+		*crosspoint = endPos + (left * hullwidth);
+
+		if (GetBot()->IsDebugging(BOTDEBUG_PATH))
+		{
+			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 0.2f);
+		}
+
+		return;
+	}
+
+	// try right
+
+	UTIL_TraceHull(fromPos, endPos + (left * -hullwidth), mins, maxs, GetMovementTraceMask(), filter, &result);
+
+	if (!result.DidHit())
+	{
+		*crosspoint = endPos + (left * -hullwidth);
+
+		if (GetBot()->IsDebugging(BOTDEBUG_PATH))
+		{
+			NDebugOverlay::SweptBox(fromPos, *crosspoint, mins, maxs, vec3_angle, 0, 255, 0, 255, 0.2f);
+		}
+
+		return;
+	}
 }
 
 void IMovement::StuckMonitor()
@@ -618,6 +741,13 @@ void IMovement::StuckMonitor()
 		{
 			ClearStuckStatus();
 			bot->OnUnstuck();
+			m_stuck.UpdateNotStuck(origin);
+
+			if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+			{
+				bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s UNSTUCK! \n", bot->GetDebugIdentifier());
+				NDebugOverlay::Circle(m_stuck.GetStuckPos() + Vector(0.0f, 0.0f, 5.0f), QAngle(-90.0f, 0.0f, 0.0f), 5.0f, 0, 255, 0, 255, true, 1.0f);
+			}
 		}
 		else
 		{
@@ -645,7 +775,7 @@ void IMovement::StuckMonitor()
 		}
 		else
 		{
-			float minspeed = 0.1f * GetMovementSpeed() * 0.4f;
+			float minspeed = GetMinimumMovementSpeed() / 4.0f;
 			float mintimeforstuck = STUCK_RADIUS / minspeed;
 
 			if (m_stuck.stucktimer.IsGreaterThen(mintimeforstuck))

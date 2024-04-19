@@ -22,6 +22,9 @@ namespace TeamFortress2
 	constexpr int TF_AMMO_PRIMARY = 1;
 	constexpr int TF_AMMO_SECONDARY = 2;
 	constexpr int TF_AMMO_METAL = 3;
+	constexpr int TF_AMMO_GRENADES1 = 4;
+	constexpr int TF_AMMO_GRENADES2 = 5;
+	constexpr int TF_AMMO_GRENADES3 = 6;
 
 	enum TFClassType
 	{
@@ -446,6 +449,22 @@ namespace TeamFortress2
 		TF_FLAGEVENT_DROPPED,
 		TF_FLAGEVENT_RETURNED
 	};
+
+	enum TFFlagType
+	{
+		TF_FLAGTYPE_CTF = 0,
+		TF_FLAGTYPE_ATTACK_DEFEND,
+		TF_FLAGTYPE_TERRITORY_CONTROL,
+		TF_FLAGTYPE_INVADE,
+		TF_FLAGTYPE_RESOURCE_CONTROL,
+		TF_FLAGTYPE_ROBOT_DESTRUCTION,
+		TF_FLAGTYPE_PLAYER_DESTRUCTION
+	};
+
+	constexpr auto TF_FLAGINFO_HOME = 0;
+	constexpr auto TF_FLAGINFO_STOLEN = 1;
+	constexpr auto TF_FLAGINFO_DROPPED = 2;
+
 
 	enum class GameModeType
 	{

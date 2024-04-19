@@ -56,7 +56,7 @@ DifficultyProfile CDifficultyManager::GetProfileForSkillLevel(const int level) c
 		return m_default;
 	}
 
-	return collected[librandom::generate_random_uint(0, collected.size() - 1)];
+	return collected[randomgen->GetRandomInt<size_t>(0U, collected.size() - 1U)];
 }
 
 void CDifficultyManager::ReadSMC_ParseStart()

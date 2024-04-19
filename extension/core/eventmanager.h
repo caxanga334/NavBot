@@ -49,6 +49,10 @@ public:
 
 	virtual void FireGameEvent(IGameEvent* event) override;
 
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+	virtual int	GetEventDebugID(void) override { return EVENT_DEBUG_ID_INIT; }
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+
 	void Load();
 	void Unload();
 	void RegisterEventReceiver(IEventReceiver* receiver);

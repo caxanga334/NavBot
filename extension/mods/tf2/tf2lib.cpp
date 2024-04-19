@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/helpers.h>
 #include <util/entprops.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include "tf2lib.h"
@@ -233,3 +234,35 @@ int tf2lib::GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFo
 	return count;
 }
 
+float tf2lib::GetPlayerHealthPercentage(int player)
+{
+	return static_cast<float>(UtilHelpers::GetEntityHealth(player)) / static_cast<float>(GetPlayerMaxHealth(player));
+}
+
+TeamFortress2::TFTeam tf2lib::GetDisguiseTeam(int player)
+{
+	int team = TEAM_UNASSIGNED;
+	entprops->GetEntProp(player, Prop_Send, "m_nDisguiseTeam", team);
+	return static_cast<TeamFortress2::TFTeam>(team);
+}
+
+TeamFortress2::TFClassType tf2lib::GetDisguiseClass(int player)
+{
+	int classtype = 0;
+	entprops->GetEntProp(player, Prop_Send, "m_nDisguiseClass", classtype);
+	return static_cast<TeamFortress2::TFClassType>(classtype);
+}
+
+edict_t* tf2lib::GetDisguiseTarget(int player)
+{
+	int target = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(player, Prop_Send, "m_hDisguiseTarget", target);
+	return gamehelpers->EdictOfIndex(target);
+}
+
+float tf2lib::GetMedigunUberchargePercentage(int medigun)
+{
+	float ubercharge = 0.0f;
+	entprops->GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel", ubercharge);
+	return ubercharge;
+}

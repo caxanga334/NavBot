@@ -176,6 +176,26 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		hsrange = std::clamp(hsrange, 0.0f, 1.0f);
 		m_tempweapinfo.SetHeadShotRangeMultiplier(hsrange);
 	}
+	else if (strncmp(key, "maxclip1", 8) == 0)
+	{
+		m_tempweapinfo.SetMaxClip1(atoi(value));
+	}
+	else if (strncmp(key, "maxclip2", 8) == 0)
+	{
+		m_tempweapinfo.SetMaxClip2(atoi(value));
+	}
+	else if (strncmp(key, "low_primary_ammo_threshold", 26) == 0)
+	{
+		m_tempweapinfo.SetLowPrimaryAmmoThreshold(atoi(value));
+	}
+	else if (strncmp(key, "low_secondary_ammo_threshold", 28) == 0)
+	{
+		m_tempweapinfo.SetLowSecondaryAmmoThreshold(atoi(value));
+	}
+	else if (strncmp(key, "slot", 4) == 0)
+	{
+		m_tempweapinfo.SetSlot(atoi(value));
+	}
 
 	if (IsParserInWeaponAttackSection())
 	{

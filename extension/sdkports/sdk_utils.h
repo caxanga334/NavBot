@@ -2,7 +2,7 @@
 #define SDK_PORT_UTILS_H_
 #pragma once
 
-#include <ifaces_extern.h>
+#include <extension.h>
 #include <mathlib/mathlib.h>
 
 inline float UTIL_VecToYaw(const Vector& vec)

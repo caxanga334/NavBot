@@ -1,6 +1,8 @@
 #include <algorithm>
 
 #include <extension.h>
+#include <manager.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/prediction.h>
@@ -29,13 +31,35 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 		SelectBestWeaponForEnemy(bot, threat);
 		FireWeaponAtEnemy(bot, threat);
 	}
+	else // I don't have an enemy
+	{
+		
+	}
+
+	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
+	{
+		bot->GetMovementInterface()->ClearStuckStatus("PREROUND"); // players are frozen during pre-round, don't get stuck
+	}
 
 	UpdateLook(bot, threat);
 
 	return Continue();
 }
 
-CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnTestEventPropagation(CTF2Bot* bot)
+{
+#ifdef EXT_DEBUG
+	auto host = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer player(host);
+	Vector goal = player.GetAbsOrigin();
+
+	return TryPauseFor(new CTF2BotDevTask(goal), PRIORITY_CRITICAL, "Move to Origin debug task!");
+#else
+	return TryContinue();
+#endif // EXT_DEBUG
+}
+
+const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	// Handle cases where one of them is NULL
 	if (threat1 && !threat2)
@@ -71,7 +95,7 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtP
 	return aimat;
 }
 
-void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
+void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (me->GetPlayerInfo()->IsDead())
 		return;
@@ -82,7 +106,9 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 	if (tf2lib::IsPlayerInCondition(me->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
 
-	if (me->GetActiveWeapon() == nullptr)
+	auto myweapon = me->GetActiveBotWeapon();
+
+	if (myweapon == nullptr)
 		return;
 
 	if (me->GetBehaviorInterface()->ShouldAttack(me, threat) == ANSWER_NO)
@@ -91,9 +117,7 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 	if (threat->GetEdict() == nullptr)
 		return;
 
-	auto mod = CTeamFortress2Mod::GetTF2Mod();
-	std::string classname(gamehelpers->GetEntityClassname(me->GetActiveWeapon()));
-	auto id = mod->GetWeaponID(classname);
+	TeamFortress2::TFWeaponID id = myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>();
 
 	if (me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Medic)
 	{
@@ -133,15 +157,15 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 		}
 	}
 
-	auto info = mod->GetWeaponInfo(me->GetActiveWeapon());
+	auto& info = me->GetActiveBotWeapon()->GetWeaponInfo();
 	auto threat_range = me->GetRangeTo(origin);
 
-	if (threat_range < info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+	if (threat_range < info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
 	{
 		return; // Don't fire
 	}
 
-	if (threat_range > info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+	if (threat_range > info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
 	{
 		return; // Don't fire
 	}
@@ -157,89 +181,67 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, CKnownEntity* threat)
 	}
 }
 
-void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, CKnownEntity* threat)
+void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (!AllowedToSwitchWeapon())
 		return;
 
-	if (!threat->IsVisibleNow())
-		return; // Don't bother with weapon switches if we can't see it
-	
-	auto allweapons = me->GetAllWeapons();
-	auto mod = CTeamFortress2Mod::GetTF2Mod();
-	std::vector<std::pair<edict_t*, const WeaponInfo*>> infovec;
-	infovec.reserve(MAX_WEAPONS);
-
-	for (auto weaponedict : allweapons)
+	if (me->GetMyWeaponsCount() == 0)
 	{
-		auto info = mod->GetWeaponInfoManager().GetWeaponInfoByEconIndex(tf2lib::GetWeaponItemDefinitionIndex(weaponedict));
-
-		if (info)
-		{
-			std::pair<edict_t*, const WeaponInfo*> pair(weaponedict, info);
-			infovec.push_back(pair);
-			continue;
-		}
-
-		info = mod->GetWeaponInfoManager().GetWeaponInfoByClassname(gamehelpers->GetEntityClassname(weaponedict));
-
-		if (info)
-		{
-			std::pair<edict_t*, const WeaponInfo*> pair(weaponedict, info);
-			infovec.push_back(pair);
-		}
+		me->UpdateMyWeapons(); // try updating
+		m_weaponswitchtimer.Start(0.5f); // don't spam weapon updates
+		return;
 	}
 
-	if (infovec.size() == 0) // no weapons?
-		return;
+	if (!threat->IsVisibleNow())
+		return; // Don't bother with weapon switches if we can't see it
 
-	const float threat_range = me->GetRangeTo(threat->GetEdict());
+	const float rangeTo = me->GetRangeTo(threat->GetEdict());
+	const CBotWeapon* best = nullptr;
+	int priority = -999;
 
-	edict_t* best = [me, threat, &infovec, &threat_range]() -> edict_t* {
-		edict_t* current_best = nullptr;
-		int current_priority = -99999999;
-
-		for (auto& pair : infovec)
+	me->ForEveryWeapon([&me, &rangeTo, &best, &priority](const CBotWeapon& weapon) {
+		if (!weapon.GetWeaponInfo().IsDefault()) // weapon must have a valid weapon info
 		{
-			auto info = pair.second;
-			bool can_use = false;
-
-			if (!info->IsCombatWeapon())
-				continue; // Skip non-combat weapons
-
-			// most tf2 weapons only deals damage with the primary attack
-			if (info->HasPrimaryAttack())
+			if (!weapon.GetWeaponInfo().IsCombatWeapon())
 			{
-				auto& attack = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
-
-				if (attack.InRangeTo(threat_range)) // in range to primary attrack
-				{
-					can_use = true;
-				}
-
-				// TO-DO: Ammo Check
+				return; // must be a usable weapon
 			}
 
-			if (!can_use)
-				continue;
-
-			if (info->GetPriority() > current_priority) // found usable weapon with a higher priority
+			// ammo check
+			if (weapon.GetBaseCombatWeapon().GetClip1() == 0 &&
+				me->GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) == 0)
 			{
-				current_priority = info->GetPriority();
-				current_best = pair.first;
+				return; // no ammo in clip and no reserve ammo, skip
+			}
+
+			if (rangeTo > weapon.GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+			{
+				return; // outside max range
+			}
+			else if (rangeTo < weapon.GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+			{
+				return; // too close
+			}
+
+			int currentprio = weapon.GetWeaponInfo().GetPriority();
+
+			if (currentprio > priority)
+			{
+				best = &weapon;
+				priority = currentprio;
 			}
 		}
+	});
 
-		return current_best;
-	}();
-
-	if (best != me->GetActiveWeapon())
+	if (best)
 	{
-		me->SelectWeaponByCommand(gamehelpers->GetEntityClassname(best)); // switch!
+		me->SelectWeaponByCommand(best->GetBaseCombatWeapon().GetClassname());
+		m_weaponswitchtimer.Start(2.0f); // found a valid weapon,
 	}
 }
 
-void CTF2BotMainTask::UpdateLook(CTF2Bot* me, CKnownEntity* threat)
+void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (threat)
 	{
@@ -263,38 +265,23 @@ void CTF2BotMainTask::UpdateLook(CTF2Bot* me, CKnownEntity* threat)
 
 void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result)
 {
-	auto myweapon = me->GetActiveWeapon();
+	auto myweapon = me->GetActiveBotWeapon();
 
 	if (!myweapon) // how?
 	{
+#ifdef EXT_DEBUG
+		smutils->LogError(myself, "CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result) -- CBaseBot::GetActiveBotWeapon() is NULL!");
+#endif // EXT_DEBUG
+
 		result = player->WorldSpaceCenter();
 		return;
 	}
 
-	int index = -1;
-	std::string classname(gamehelpers->GetEntityClassname(myweapon));
+	int index = myweapon->GetWeaponEconIndex();
+	std::string classname(myweapon->GetBaseCombatWeapon().GetClassname());
 	auto mod = CTeamFortress2Mod::GetTF2Mod();
-	entprops->GetEntProp(gamehelpers->IndexOfEdict(myweapon), Prop_Send, "m_iItemDefinitionIndex", index);
-
-	auto weaponinfo = [mod, &index, classname]() {
-		auto& wim = mod->GetWeaponInfoManager();
-		auto info = wim.GetWeaponInfoByEconIndex(index);
-
-		if (!info)
-		{
-			info = wim.GetWeaponInfoByClassname(classname.c_str());
-		}
-
-		return info;
-	}();
-
-	if (!weaponinfo) // no weapon info, just aim at the center
-	{
-		result = player->WorldSpaceCenter();
-		return;
-	}
-
-	auto id = mod->GetWeaponID(classname);
+	auto& weaponinfo = myweapon->GetWeaponInfo(); // every tf2 weapon should have a valid weapon info, just let it crash if it doesn't have it for some reason
+	TeamFortress2::TFWeaponID id = myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>();
 	auto sensor = me->GetSensorInterface();
 
 	switch (id)
@@ -309,7 +296,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	case TeamFortress2::TFWeaponID::TF_WEAPON_GRENADELAUNCHER:
 	{
 		const float rangeTo = me->GetRangeTo(player->WorldSpaceCenter());
-		const float speed = weaponinfo->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
+		const float speed = weaponinfo.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
 		const float time = pred::GetProjectileTravelTime(speed, rangeTo);
 		Vector velocity = player->GetAbsVelocity();
 		const float velocitymod = RemapValClamped(rangeTo, 600.0f, 1500.0f, 1.0f, 1.5f);
@@ -343,7 +330,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	}
 }
 
-void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor)
+void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo& info, CTF2BotSensor* sensor)
 {
 	if (player->GetGroundEntity() == nullptr) // target is airborne
 	{
@@ -365,7 +352,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 	constexpr float veryCloseRange = 150.0f;
 	if (rangeBetween > veryCloseRange)
 	{
-		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
+		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
 
 		if (sensor->IsLineOfSightClear(targetPos))
 		{
@@ -374,7 +361,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 		}
 
 		// try their head and hope
-		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
+		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
 		return;
 	}
 
@@ -383,7 +370,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 
 }
 
-CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	// TO-DO: Add threat selection
 
@@ -399,3 +386,61 @@ CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, CKnownEnt
 	return threat2;
 }
 
+#ifdef EXT_DEBUG
+
+CTF2BotDevTask::CTF2BotDevTask(const Vector& moveTo)
+{
+	m_goal = moveTo;
+}
+
+TaskResult<CTF2Bot> CTF2BotDevTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	m_repathtimer.Start(0.5f);
+
+	CTF2BotPathCost cost(bot);
+	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+	{
+		return Done("Failed to compute path!");
+	}
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotDevTask::OnTaskUpdate(CTF2Bot* bot)
+{
+	if (m_repathtimer.IsElapsed())
+	{
+		m_repathtimer.Reset();
+
+		CTF2BotPathCost cost(bot);
+		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+		{
+			return Done("Failed to compute path!");
+		}
+	}
+
+	m_nav.Update(bot);
+
+	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	m_repathtimer.Reset();
+
+	CTF2BotPathCost cost(bot);
+	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+	{
+		return TryDone(PRIORITY_HIGH, "Failed to compute path!");
+	}
+
+	bot->GetMovementInterface()->ClearStuckStatus();
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
+{
+	return TryDone(PRIORITY_HIGH, "Goal reached!");
+}
+
+#endif // EXT_DEBUG

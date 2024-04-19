@@ -12,6 +12,8 @@
 #ifndef _NAV_H_
 #define _NAV_H_
 
+#include "nav_consts.h"
+
 #include <vector.h>
 #include <utlvector.h>
 
@@ -47,12 +49,12 @@ constexpr float ClimbUpHeight = JumpCrouchHeight; //200.0f;				// height to chec
 #endif
 
 // TERROR: Converted these values to use the same numbers as the player bounding boxes etc
-#define HalfHumanWidth			16
-#define HalfHumanHeight			35.5
-#define HumanHeight				71
-#define HumanEyeHeight			62
-#define HumanCrouchHeight		55
-#define HumanCrouchEyeHeight	37
+constexpr auto HalfHumanWidth = 16.0f;
+constexpr auto HalfHumanHeight = 35.5f;
+constexpr auto HumanHeight = 71.0f;
+constexpr auto HumanEyeHeight = 62.0f;
+constexpr auto HumanCrouchHeight = 55.0f;
+constexpr auto HumanCrouchEyeHeight = 37.0f;
 
 
 #define NAV_MAGIC_NUMBER 0xFEEDFACE				// to help identify nav files
@@ -129,6 +131,8 @@ enum NavTraverseType
 	GO_JUMP,
 	GO_ELEVATOR_UP,
 	GO_ELEVATOR_DOWN,
+
+	GO_SPECIAL_LINK,
 
 	NUM_TRAVERSE_TYPES
 };

@@ -19,7 +19,18 @@
 #ifndef _NAV_MESH_H_
 #define _NAV_MESH_H_
 
+#include <filesystem>
+#include <fstream>
+#include <string>
+#include <cstdint>
+#include <vector>
+#include <utility>
+#include <array>
+#include <unordered_map>
+#include <unordered_set>
+
 #include "nav.h"
+#include <ITranslator.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
 #include <shareddefs.h>
@@ -27,6 +38,12 @@
 
 class HidingSpot;
 class CUtlBuffer;
+
+namespace SourceMod
+{
+	class IGameConfig;
+};
+
 
 HidingSpot *GetHidingSpotByID( unsigned int id );
 //--------------------------------------------------------------------------------------------------------
@@ -180,7 +197,6 @@ public:
 	unsigned int operator()( const NavVisPair_t &item ) const;
 };
 
-
 //--------------------------------------------------------------------------------------------------------------
 //
 // The 'place directory' is used to save and load places from
@@ -196,35 +212,108 @@ public:
 class PlaceDirectory
 {
 public:
-	typedef unsigned short IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
+	typedef std::size_t IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
 
-	PlaceDirectory( void );
-	void Reset( void );
-	bool IsKnown( Place place ) const;						/// return true if this place is already in the directory
-	IndexType GetIndex( Place place ) const;				/// return the directory index corresponding to this Place (0 = no entry)
-	void AddPlace( Place place );							/// add the place to the directory if not already known
-	Place IndexToPlace( IndexType entry ) const;			/// given an index, return the Place
-	void Save( CUtlBuffer &fileBuffer );					/// store the directory
-	void Load( CUtlBuffer &fileBuffer, int version );		/// load the directory
-	const CUtlVector< Place > *GetPlaces( void ) const
+	PlaceDirectory(void)
 	{
-		return &m_directory;
+		m_directory.reserve(1024);
+		m_hasUnnamedAreas = false;
+		m_currentIndex = 1;
 	}
+
+	void Reset(void)
+	{
+		m_directory.clear();
+		m_hasUnnamedAreas = false;
+		m_currentIndex = 1;
+	}
+
+	/// return true if this place is already in the directory
+	bool IsKnown( Place place ) const
+	{
+		for (auto& object : m_directory)
+		{
+			if (object.second == place)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/// return the directory index corresponding to this Place (0 = no entry)
+	IndexType GetIndex(Place place) const
+	{
+		if (place == UNDEFINED_PLACE)
+		{
+			return 0;
+		}
+
+		for (auto& object : m_directory)
+		{
+			if (object.second == place)
+			{
+				return object.first;
+			}
+		}
+
+		return 0;
+	}
+
+	/// add the place to the directory if not already known
+	void AddPlace(Place place)
+	{
+		if (place == UNDEFINED_PLACE)
+		{
+			m_hasUnnamedAreas = true;
+			return;
+		}
+
+		if (IsKnown(place))
+		{
+			return;
+		}
+
+		m_directory.emplace(m_currentIndex, place);
+		++m_currentIndex;
+	}
+
+	void LoadPlace(IndexType entryindex, Place place)
+	{
+		m_directory.emplace(entryindex, place);
+	}
+
+	/// given an index, return the Place
+	Place IndexToPlace(IndexType entry) const
+	{
+		auto it = m_directory.find(entry);
+
+		if (it != m_directory.end())
+		{
+			return it->second;
+		}
+
+		return UNDEFINED_PLACE;
+	}
+
+	void Save(std::fstream& filestream);					/// store the directory
+	void Load(std::fstream& filestream, uint32_t version);	/// load the directory
 
 	bool HasUnnamedPlaces( void ) const 
 	{
 		return m_hasUnnamedAreas;
 	}
 
+	const std::unordered_map<IndexType, Place>& GetDirectory() const { return m_directory; }
 
 private:
-	CUtlVector< Place > m_directory;
+	std::unordered_map<IndexType, Place> m_directory;
+	IndexType m_currentIndex;
 	bool m_hasUnnamedAreas;
 };
 
 extern PlaceDirectory placeDirectory;
-
-
 
 //--------------------------------------------------------------------------------------------------------
 /**
@@ -237,8 +326,63 @@ public:
 	CNavMesh( void );
 	virtual ~CNavMesh();
 
+	static constexpr uint32_t NavMeshVersion = 1;
+	static constexpr uint32_t NavMagicNumber = 0x20110FC0;
+
+	typedef std::pair<std::string, uint64_t> NavEditor; // name & steamid pair
+
+	class AuthorInfo
+	{
+	public:
+		AuthorInfo()
+		{
+			creator.second = 0;
+			editors.reserve(16);
+		}
+
+		inline bool HasCreatorBeenSet() const { return creator.second != 0; }
+		inline void SetCreator(std::string name, uint64_t steamid)
+		{
+			creator = std::make_pair(name, steamid);
+		}
+
+		inline void AddEditor(std::string name, uint64_t steamid)
+		{
+			editors.emplace_back(name, steamid);
+		}
+
+		inline bool IsCreator(uint64_t steamid) const { return creator.second == steamid; }
+		inline const NavEditor& GetCreator() const { return creator; }
+		inline size_t GetEditorCount() const { return editors.size(); }
+		inline const std::vector<NavEditor>& GetEditors() const { return editors; }
+		inline bool IsEditor(uint64_t steamid) const
+		{
+			for (auto& naveditor : editors)
+			{
+				if (naveditor.second == steamid)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+	private:
+		NavEditor creator; // original navmesh author
+		std::vector<NavEditor> editors; // list of other editors
+	};
+
 	// CEventListenerHelper
-	virtual void FireGameEvent(IGameEvent* event);
+	void FireGameEvent(IGameEvent* event) override;
+
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+	int	GetEventDebugID(void) override;
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+
+	virtual void Precache(); // precache edit sounds here
+	virtual void OnMapStart();
+	virtual void OnMapEnd();
 	
 	virtual void PreLoadAreas( int nAreas ) {}
 	virtual CNavArea *CreateArea( void ) const;							// CNavArea factory
@@ -251,26 +395,25 @@ public:
 	// virtual void FireGameEvent( IGameEvent *event );					// incoming event processing
 
 	virtual NavErrorType Load( void );									// load navigation data from a file
-	virtual NavErrorType PostLoad( unsigned int version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
+	virtual NavErrorType PostLoad( uint32_t version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 	inline bool IsLoaded( void ) const		{ return m_isLoaded; }				// return true if a Navigation Mesh has been loaded
 	inline bool IsAnalyzed( void ) const	{ return m_isAnalyzed; }			// return true if a Navigation Mesh has been analyzed
 
 	/**
 	 * Return true if nav mesh can be trusted for all climbing/jumping decisions because game environment is fairly simple.
 	 * Authoritative meshes mean path followers can skip CPU intensive realtime scanning of unpredictable geometry.
+	 * This should probably be true by default since we only deal with player bots and players have very limited climbing, unlike Non-Players NextBots
 	 */
 	virtual bool IsAuthoritative( void ) const { return false; }		
 
-	const CUtlVector< Place > *GetPlacesFromNavFile( bool *hasUnnamedPlaces );	// Reads the used place names from the nav file (can be used to selectively precache before the nav is loaded)
-
-	virtual bool Save( void ) const;									// store Navigation Mesh to a file
+	virtual bool Save(void);									// store Navigation Mesh to a file
 	inline bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
 
-	virtual unsigned int GetSubVersionNumber( void ) const;										// returns sub-version number of data format used by derived classes
-	virtual void SaveCustomData( CUtlBuffer &fileBuffer ) const { }								// store custom mesh data for derived classes
-	virtual void LoadCustomData( CUtlBuffer &fileBuffer, unsigned int subVersion ) { }			// load custom mesh data for derived classes
-	virtual void SaveCustomDataPreArea( CUtlBuffer &fileBuffer ) const { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
-	virtual void LoadCustomDataPreArea( CUtlBuffer &fileBuffer, unsigned int subVersion ) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
+	virtual uint32_t GetSubVersionNumber( void ) const;										// returns sub-version number of data format used by derived classes
+	virtual void SaveCustomData(std::fstream& filestream) { }								// store custom mesh data for derived classes
+	virtual void LoadCustomData(std::fstream& filestream, uint32_t subVersion ) { }			// load custom mesh data for derived classes
+	virtual void SaveCustomDataPreArea(std::fstream& filestream) { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
+	virtual void LoadCustomDataPreArea(std::fstream& filestream, uint32_t subVersion) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
 
 	// events
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
@@ -299,15 +442,19 @@ public:
 	CNavArea *GetNavArea( const Vector &pos, float beneathLimt = 120.0f ) const;	// given a position, return the nav area that IsOverlapping and is *immediately* beneath it
 	CNavArea *GetNavArea( edict_t *pEntity, int nGetNavAreaFlags, float flBeneathLimit = 120.0f ) const;
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
-	CNavArea *GetNearestNavArea( const Vector &pos, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = TEAM_ANY ) const;
+	CNavArea *GetNearestNavArea( const Vector &pos, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = NAV_TEAM_ANY ) const;
 	CNavArea *GetNearestNavArea( edict_t *pEntity, int nGetNavAreaFlags = GETNAVAREA_CHECK_GROUND, float maxDist = 10000.0f ) const;
 
 	Place GetPlace( const Vector &pos ) const;							// return Place at given coordinate
-	const char *PlaceToName( Place place ) const;						// given a place, return its name
-	Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
+	// const char *PlaceToName( Place place ) const;						// given a place, return its name
+	const std::string* GetPlaceName(const Place place) const;
+	Place GetPlaceFromName(const std::string& name) const;
+	// Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
 	Place PartialNameToPlace( const char *name ) const;					// given the first part of a place name, return a place ID or zero if no place is defined, or the partial match is ambiguous
 	void PrintAllPlaces( void ) const;									// output a list of names to the console
 	int PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] );	// Given a partial place name, fill in possible place names for ConCommand autocomplete
+	// Returns a translated human readable place name
+	const char* GetTranslatedPlaceName(Place place) const;
 
 	static bool GetGroundHeight( const Vector &pos, float *height, Vector *normal = NULL );		// get the Z coordinate of the topmost ground level below the given point
 	bool GetSimpleGroundHeight( const Vector &pos, float *height, Vector *normal = NULL ) const;// get the Z coordinate of the ground level directly below the given point
@@ -417,6 +564,16 @@ public:
 	void CommandNavSaveSelected( const CCommand &args );				// Save selected set to disk
 	void CommandNavMergeMesh( const CCommand &args );					// Merge a saved selected set into the current mesh
 	void CommandNavMarkWalkable( void );
+	void CommandNavConnectSpecialLink(int32_t linktype);
+	void CommandNavDisconnectSpecialLink(int32_t linktype);
+	void CommandNavSetLinkOrigin();
+	void CommandNavWarpToLinkOrigin() const;
+	void CommandNavPrintAllHintsTypes() const;
+	void CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles) const;
+	void CommandNavRemoveNearestHintFromArea(const Vector& origin) const;
+	void CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const;
+	void CommandNavWipeAllHintsFromArea();
+	void CommandNavTestForBlocked() const;
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
@@ -608,6 +765,34 @@ public:
 
 	void SimplifySelectedAreas( void );	// Simplifies the selected set by reducing to 1x1 areas and re-merging them up with loosened tolerances
 
+	// Formats the map filename for save/load
+	virtual std::string GetMapFileName() const;
+	std::filesystem::path GetFullPathToNavMeshFile() const;
+	const AuthorInfo& GetAuthorInfo() const { return m_authorinfo; }
+
+	void LoadEditSounds(SourceMod::IGameConfig* gamedata);
+
+	enum class EditSoundType : uint32_t
+	{
+		SOUND_GENERIC_BLIP = 0,
+		SOUND_GENERIC_SUCCESS,
+		SOUND_GENERIC_ERROR,
+		SOUND_SWITCH_ON,
+		SOUND_SWITCH_OFF,
+		SOUND_GENERIC_OFF,
+		SOUND_CONNECT_FAIL,
+
+		MAX_EDIT_SOUNDS
+	};
+
+	inline void PlayEditSound(EditSoundType type) const
+	{
+		PlayEditSoundInternal(m_editsounds[static_cast<size_t>(type)]);
+	}
+
+	virtual const char* NavHintTypeIDToString(int hinttype) const;
+	virtual int GetMaxHintTypesAvailable() const;
+
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -615,6 +800,9 @@ protected:
 	bool FindGroundForNode( Vector *pos, Vector *normal );
 	void GenerateNodes( const Extent &bounds );
 	void RemoveNodes( void );
+
+	const NavAreaVector& GetSelectedAreaSet() const { return m_selectedSet; }
+	void SetMarkedCorner(NavCornerType corner) { m_markedCorner = corner; }
 
 private:
 	friend class CNavArea;
@@ -633,7 +821,7 @@ private:
 	bool m_isOutOfDate;											// true if the Navigation Mesh is older than the actual BSP
 	bool m_isAnalyzed;											// true if the Navigation Mesh needs analysis
 
-	enum { HASH_TABLE_SIZE = 256 };
+	static constexpr auto HASH_TABLE_SIZE = 256;
 	CNavArea *m_hashTable[ HASH_TABLE_SIZE ];					// hash table to optimize lookup by ID
 	int ComputeHashKey( unsigned int id ) const;				// returns a hash key for the given nav area ID
 
@@ -652,9 +840,17 @@ private:
 	//----------------------------------------------------------------------------------
 	// Place directory
 	//
-	char **m_placeName;											// master directory of place names (ie: "places")
-	unsigned int m_placeCount;									// number of "places" defined in placeName[]
+	std::unordered_map<Place, std::string> m_placeMap;
+
+	// char **m_placeName;											// master directory of place names (ie: "places")
+	// unsigned int m_placeCount;									// number of "places" defined in placeName[]
 	void LoadPlaceDatabase( void );								// load the place names from a file
+	void LoadPlaceTranslations();
+	void LoadGlobalPlaceDatabase();
+	void UnloadPlaceDatabase();
+	size_t GetPlaceCount() const { return m_placeMap.size(); }
+	const std::unordered_map<Place, std::string>& GetPlaces() const { return m_placeMap; }
+	SourceMod::IPhraseCollection* m_placePhrases;				// translation for place names
 
 	//----------------------------------------------------------------------------------
 	// Edit mode
@@ -806,7 +1002,16 @@ private:
 	void EndVisibilityComputations( void );
 
 	void TestAllAreasForBlockedStatus( void );					// Used to update blocked areas after a round restart. Need to delay so the map logic has all fired.
-	CountdownTimer m_updateBlockedAreasTimer;			
+	CountdownTimer m_updateBlockedAreasTimer;		
+	CountdownTimer m_invokeAreaUpdateTimer;
+	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
+	void BuildAuthorInfo();
+	AuthorInfo m_authorinfo;
+	std::array<std::string, static_cast<size_t>(EditSoundType::MAX_EDIT_SOUNDS)> m_editsounds;
+	Vector m_linkorigin;
+
+	void PlayEditSoundInternal(const std::string& sound) const;
+	const char* GetNavAreaHintTypeNameInternal(int hint) const;
 };
 
 // the global singleton interface
@@ -831,7 +1036,7 @@ inline CNavMesh::EditModeType CNavMesh::GetEditMode( void ) const
 }
 
 //--------------------------------------------------------------------------------------------------------------
-inline unsigned int CNavMesh::GetSubVersionNumber( void ) const
+inline uint32_t CNavMesh::GetSubVersionNumber( void ) const
 {
 	return 0;
 }

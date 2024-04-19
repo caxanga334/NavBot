@@ -2,7 +2,6 @@
 
 #include <extension.h>
 #include <extplayer.h>
-#include <ifaces_extern.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/UtilTrace.h>

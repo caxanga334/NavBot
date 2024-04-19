@@ -9,6 +9,7 @@
 // AI Navigation entities
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <extension.h>
 #include "nav_entities.h"
 
 #include "nav_area.h"
@@ -17,8 +18,6 @@
 #include <iplayerinfo.h>
 #include <collisionutils.h>
 #include <ivdebugoverlay.h>
-// memdbgon must be the last include file in a .cpp file!!!
-#include "tier0/memdbgon.h"
 
 // the global singleton interface
 extern CNavMesh *TheNavMesh;
@@ -308,7 +307,7 @@ CUtlLinkedList<CFuncNavBlocker *> CFuncNavBlocker::gm_NavBlockers;
 
 inline bool CFuncNavBlocker::IsBlockingNav( int teamNumber ) const
 {
-	if ( teamNumber == TEAM_ANY )
+	if ( teamNumber == NAV_TEAM_ANY )
 	{
 		bool isBlocked = false;
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
@@ -355,8 +354,7 @@ void EntityText(ICollideable* collision, int text_offset, const char *text, floa
 int NavEntity::DrawDebugTextOverlays() {
 	int offset = 1;
 	char tempstr[512];
-	extern IVEngineServer* engine;
-	Q_snprintf(tempstr, sizeof(tempstr), "(%d) Name: %s", engine->IndexOfEdict(pEnt), pEnt->GetClassName());
+	ke::SafeSprintf(tempstr, sizeof(tempstr), "(%d) Name: %s", gamehelpers->IndexOfEdict(pEnt), pEnt->GetClassName());
 	EntityText(pEnt->GetCollideable(), offset, tempstr, 0);
 	offset++;
 	auto serverEnt = pEnt->GetIServerEntity();
@@ -449,7 +447,7 @@ CFuncNavBlocker::CFuncNavBlocker( edict_t* pEnt ) : NavEntity(pEnt),
 	gm_NavBlockers.AddToTail( this );
 
 	if ( !m_blockedTeamNumber )
-		m_blockedTeamNumber = TEAM_ANY;
+		m_blockedTeamNumber = NAV_TEAM_ANY;
 
 	/**
 	 * TODO
@@ -491,7 +489,7 @@ void CFuncNavBlocker::UnblockNav( void )
 }
 
 void CFuncNavBlocker::setBlockedTeam(bool block) {
-	if ( m_blockedTeamNumber == TEAM_ANY )
+	if ( m_blockedTeamNumber == NAV_TEAM_ANY )
 	{
 		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
 		{

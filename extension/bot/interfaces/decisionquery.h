@@ -30,9 +30,9 @@ public:
 	virtual ~IDecisionQuery() {}
 
 	// Should the bot attack this threat?
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, CKnownEntity* them);
+	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them);
 	// Should the bot seek and destroy this threat?
-	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, CKnownEntity* them);
+	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them);
 	// Should the bot pick up this item/weapon?
 	virtual QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item);
 	// Should the bot be in a hurry?
@@ -52,19 +52,19 @@ public:
 	*/
 	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false);
 	// Given two known entities, select which one the bot should target first
-	virtual CKnownEntity* SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2);
+	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 	// Given a entity, returns a vector of where the bot should aim at. The player parameter may be NULL.
 	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr);
 private:
 
 };
 
-inline QueryAnswerType IDecisionQuery::ShouldAttack(CBaseBot* me, CKnownEntity* them)
+inline QueryAnswerType IDecisionQuery::ShouldAttack(CBaseBot* me, const CKnownEntity* them)
 {
 	return ANSWER_UNDEFINED;
 }
 
-inline QueryAnswerType IDecisionQuery::ShouldSeekAndDestroy(CBaseBot* me, CKnownEntity* them)
+inline QueryAnswerType IDecisionQuery::ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them)
 {
 	return ANSWER_UNDEFINED;
 }
@@ -99,7 +99,7 @@ inline QueryAnswerType IDecisionQuery::IsBlocker(CBaseBot* me, edict_t* blocker,
 	return ANSWER_UNDEFINED;
 }
 
-inline CKnownEntity* IDecisionQuery::SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+inline const CKnownEntity* IDecisionQuery::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return nullptr;
 }

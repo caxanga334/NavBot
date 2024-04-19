@@ -3,6 +3,7 @@
 #pragma once
 
 #include <bot/interfaces/profile.h>
+#include <bot/interfaces/weaponinfo.h>
 #include <sdkports/sdk_timers.h>
 
 class CBaseMod;
@@ -41,10 +42,11 @@ public:
 	void NotifyRegisterGameEvents();
 
 	CBaseBot* GetBotByIndex(int index);
+	CBaseExtPlayer* GetPlayerByIndex(int index);
 	bool IsNavBot(const int client) const;
 
 	void AddBot();
-	void RemoveRandomBot();
+	void RemoveRandomBot(const char* message);
 	void RemoveAllBots(const char* message);
 
 	// Gets a vector of all bots currently in game
@@ -66,8 +68,32 @@ public:
 
 	void UpdateBotQuota();
 
+	/**
+	 * @brief Runs a function on each bot.
+	 * @tparam T A class with operator() overload with one parameter (CBaseBot* bot).
+	 * @param functor Function to call on each bot.
+	 */
+	template <typename T>
+	inline void ForEachBot(T functor)
+	{
+		for (auto& ptr : m_bots)
+		{
+			CBaseBot* bot = ptr.get();
+			functor(bot);
+		}
+	}
+
+	const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
+
+	void SetBotQuotaMode(BotQuotaMode mode) { m_quotamode = mode; }
+	void SetBotQuotaTarget(int target) { m_quotatarget = target; }
+
+	static void OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
+	static void OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
+	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of (human) players
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
 	size_t m_nextbotname; // Index of the next bot name to use
@@ -76,9 +102,10 @@ private:
 	int m_quotaupdatetime; // Bot quota timer
 	BotQuotaMode m_quotamode; // Bot quota mode
 	int m_quotatarget; // Bot quota target
-
-	void CountPlayers(int& humans, int& navbots, int& otherbots) const;
+	CWeaponInfoManager m_wim;
 };
+
+
 
 extern CExtManager* extmanager;
 

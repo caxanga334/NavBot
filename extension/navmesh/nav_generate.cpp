@@ -9,6 +9,7 @@
 // Auto-generate a Navigation Mesh by sampling the current map
 // Author: Michael S. Booth (mike@turtlerockstudios.com), 2003
 
+#include <extension.h>
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_pathfind.h"
@@ -18,7 +19,6 @@
 #include <eiface.h>
 #include <irecipientfilter.h>
 #include <worldsize.h>
-#include <KeyValues.h>
 
 //#include "terror/TerrorShared.h"
 // #include "fmtstr.h"
@@ -26,10 +26,6 @@
 #ifdef TERROR
 #include "func_simpleladder.h"
 #endif
-
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
-
 
 enum { MAX_BLOCKED_AREAS = 256 };
 static unsigned int blockedID[ MAX_BLOCKED_AREAS ];
@@ -3366,7 +3362,7 @@ class CRecipientFilter : public IRecipientFilter
 public:
 	CRecipientFilter(edict_t *pPlayer)
 	{
-		m_iPlayerSlot = engine->IndexOfEdict(pPlayer);
+		m_iPlayerSlot = gamehelpers->IndexOfEdict(pPlayer);
 	}
 
 	bool IsReliable(void) const { return true; }
@@ -3380,6 +3376,7 @@ private:
 };
 
 //--------------------------------------------------------------------------------------------------------------
+/*
 void ShowViewPortPanelToAll( const char * name, bool bShow, KeyValues *data )
 {
 	CRecipientFilter filter(UTIL_GetListenServerEnt());
@@ -3419,7 +3416,7 @@ void ShowViewPortPanelToAll( const char * name, bool bShow, KeyValues *data )
 	}
 	engine->MessageEnd();
 }
-
+*/
 //--------------------------------------------------------------------------------------------------------------
 static void AnalysisProgress( const char *msg, int ticks, int current, bool showPercent = true )
 {
@@ -3444,7 +3441,7 @@ static void AnalysisProgress( const char *msg, int ticks, int current, bool show
 	data->SetInt( "total", ticks );
 	data->SetInt( "current", current );
 
-	ShowViewPortPanelToAll( PANEL_NAV_PROGRESS, true, data );
+	// ShowViewPortPanelToAll( PANEL_NAV_PROGRESS, true, data );
 
 	data->deleteThis();
 }
@@ -3453,9 +3450,9 @@ static void AnalysisProgress( const char *msg, int ticks, int current, bool show
 //--------------------------------------------------------------------------------------------------------------
 static void HideAnalysisProgress( void )
 {
-	KeyValues *data = new KeyValues("data");
-	ShowViewPortPanelToAll( PANEL_NAV_PROGRESS, false, data );
-	data->deleteThis();
+	// KeyValues *data = new KeyValues("data");
+	// ShowViewPortPanelToAll( PANEL_NAV_PROGRESS, false, data );
+	// data->deleteThis();
 }
 
 

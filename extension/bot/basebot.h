@@ -12,6 +12,7 @@
 #include <bot/interfaces/event_listener.h>
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/profile.h>
+#include <bot/interfaces/weapon.h>
 #include <util/UtilTrace.h>
 #include <sdkports/sdk_timers.h>
 
@@ -27,19 +28,19 @@ class CBaseBot : public CBaseExtPlayer, public IEventListener
 {
 public:
 	CBaseBot(edict_t* edict);
-	virtual ~CBaseBot();
+	~CBaseBot() override;
 
 	// Event propagation
-	virtual std::vector<IEventListener*>* GetListenerVector() override;
+	std::vector<IEventListener*>* GetListenerVector() override;
 
 	// Called by the manager for all players every server frame.
 	// Overriden to call bot functions
-	virtual void PlayerThink() override final;
+	void PlayerThink() final;
 
 	// true if this is a bot managed by this extension
-	virtual bool IsExtensionBot() const override { return true; }
+	bool IsExtensionBot() const final { return true; }
 	// Pointer to the extension bot class
-	virtual CBaseBot* MyBotPointer() override { return this; }
+	CBaseBot* MyBotPointer() final { return this; }
 
 	// Reset the bot to it's initial state
 	virtual void Reset();
@@ -68,10 +69,10 @@ public:
 	inline CBotCmd* GetUserCommand() { return &m_cmd; }
 	// Sets the view angles to be sent on the next User Command
 	inline void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
-	virtual IPlayerController* GetControlInterface();
-	virtual IMovement* GetMovementInterface();
-	virtual ISensor* GetSensorInterface();
-	virtual IBehavior* GetBehaviorInterface();
+	virtual IPlayerController* GetControlInterface() const;
+	virtual IMovement* GetMovementInterface() const;
+	virtual ISensor* GetSensorInterface() const;
+	virtual IBehavior* GetBehaviorInterface() const;
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 
@@ -107,7 +108,7 @@ public:
 	void SelectWeaponByCommand(const char* szclassname) const;
 
 	inline const DifficultyProfile& GetDifficultyProfile() const { return m_profile; }
-	inline void SetDifficultyProfile(DifficultyProfile profile)
+	inline void SetDifficultyProfile(const DifficultyProfile& profile)
 	{
 		m_profile = profile;
 
@@ -128,8 +129,8 @@ public:
 
 	void FakeClientCommand(const char* command) const;
 	bool IsDebugging(int bits) const;
-	virtual const char* GetDebugIdentifier();
-	void DebugPrintToConsole(const int bits, int red, int green, int blue, const char* fmt, ...) const;
+	virtual const char* GetDebugIdentifier() const;
+	void DebugPrintToConsole(const int bits,const int red,const int green,const int blue, const char* fmt, ...) const;
 	void DebugDisplayText(const char* text);
 	void DebugFrame();
 
@@ -147,6 +148,32 @@ public:
 	inline void DontAttackEnemies(const float time) { m_holdfire_time.Start(time); }
 	bool IsLineOfFireClear(const Vector& to) const;
 
+	void UpdateMyWeapons();
+	inline void SetWeaponUpdateTime(int ticks) { m_weaponupdatetimer = ticks; }
+	inline size_t GetMyWeaponsCount() const { return m_weapons.size(); }
+	// gets a CBotWeapon pointer of the weapon the bot is currently using, NULL if no weapon
+	const CBotWeapon* GetActiveBotWeapon() const;
+
+	/**
+	 * @brief Runs a function on every valid bot weapon
+	 * @tparam T a class with operator() overload with 1 parameter: (const CBotWeapon& weapon)
+	 * @param functor function to run on every valid weapon
+	 */
+	template <typename T>
+	inline void ForEveryWeapon(T functor) const
+	{
+		for (const auto& weapon : m_weapons)
+		{
+			if (!weapon.IsValid())
+				continue;
+
+			functor(weapon);
+		}
+	}
+
+	inline const Vector& GetHomePos() const { return m_homepos; }
+	void SetHomePos(const Vector& home) { m_homepos = home; }
+
 protected:
 	bool m_isfirstspawn;
 
@@ -159,15 +186,18 @@ private:
 	CBotCmd m_cmd; // User command to send
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;
-	IPlayerController* m_basecontrol; // Base controller interface
-	IMovement* m_basemover; // Base movement interface
-	ISensor* m_basesensor; // Base vision and hearing interface
-	IBehavior* m_basebehavior; // Base AI Behavior interface
+	mutable IPlayerController* m_basecontrol; // Base controller interface
+	mutable IMovement* m_basemover; // Base movement interface
+	mutable ISensor* m_basesensor; // Base vision and hearing interface
+	mutable IBehavior* m_basebehavior; // Base AI Behavior interface
 	DifficultyProfile m_profile;
 	CountdownTimer m_cmdtimer; // Delay between commands
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
 	int m_debugtextoffset;
 	CountdownTimer m_holdfire_time; // Timer for the bot to not attack enemies
+	std::vector<CBotWeapon> m_weapons;
+	int m_weaponupdatetimer;
+	Vector m_homepos; // Position where the bot spawned
 
 	void ExecuteQueuedCommands();
 };

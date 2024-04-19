@@ -7,6 +7,9 @@
 #include <string>
 
 #include <extension.h>
+#include <manager.h>
+#include <mods/basemod.h>
+#include <util/helpers.h>
 
 #include "EntityUtils.h"
 
@@ -178,7 +181,7 @@ template<typename Func>
 void forAllEntities(const Func& func,
 		int startIndex = gpGlobals->maxClients + 1) {
 	for (int i = startIndex; i < gpGlobals->maxEntities; i++) {
-		edict_t *ent = engine->PEntityOfEntIndex(i);
+		edict_t* ent = gamehelpers->EdictOfIndex(i);
 		if (ent != nullptr && !ent->IsFree()) {
 			func(ent);
 		}
@@ -278,8 +281,10 @@ bool isBreakable(edict_t* target) {
  */
 bool IsEntityWalkable(edict_t *entity, unsigned int flags) {
 	extern ConVar sm_nav_solid_props;
+
 	if (FClassnameIs(entity, "worldspawn") || FClassnameIs(entity, "player"))
 		return false;
+
 	// if we hit a door, assume its walkable because it will open when we touch it
 	if (FClassnameIs(entity, "func_door*")) {
 #ifdef PROBLEMATIC	// cp_dustbowl doors dont open by touch - they use surrounding triggers
@@ -293,9 +298,11 @@ bool IsEntityWalkable(edict_t *entity, unsigned int flags) {
 
 		return (flags & WALK_THRU_FUNC_DOORS);
 	}
+
 	if (FClassnameIs(entity, "prop_door*")) {
 		return (flags & WALK_THRU_PROP_DOORS);
 	}
+
 	// if we hit a clip brush, ignore it if it is not BRUSHSOLID_ALWAYS
 	if (FClassnameIs(entity, "func_brush")) {
 		switch ( entity->GetCollideable()->GetSolidFlags( ))
@@ -308,22 +315,51 @@ bool IsEntityWalkable(edict_t *entity, unsigned int flags) {
 					return (flags & WALK_THRU_TOGGLE_BRUSHES) != 0;
 				}
 	}
+
+#if SOURCE_ENGINE == SE_TF2
+	if (FClassnameIs(entity, "func_respawnroomvisualizer"))
+	{
+		return true;
+	}
+#endif // SOURCE_ENGINE == SE_TF2
+
+	auto mod = extmanager->GetMod();
+
+	if (mod && !mod->NavIsEntityIgnored(entity, flags))
+	{
+		return mod->NavIsEntityWalkable(entity, flags);
+	}
+
 	// if we hit a breakable object, assume its walkable because we will shoot it when we touch it
-	return (((FClassnameIs( entity, "func_breakable" ) || FClassnameIs( entity, "func_breakable_surf" ))
-			&& *BaseEntity(entity).getHealth() > 0) && (flags & WALK_THRU_BREAKABLES))
-			|| FClassnameIs( entity, "func_playerinfected_clip" )
-			|| (sm_nav_solid_props.GetBool() && FClassnameIs( entity, "prop_*" ));
+	if (FClassnameIs(entity, "func_breakable") || FClassnameIs(entity, "func_breakable_surf"))
+	{
+		if ((flags & WALK_THRU_BREAKABLES) && UtilHelpers::GetEntityHealth(gamehelpers->IndexOfEdict(entity)) > 0)
+		{
+			return true;
+		}
+	}
+	
+	if (FClassnameIs(entity, "func_playerinfected_clip"))
+	{
+		return true;
+	}
+
+	if (sm_nav_solid_props.GetBool() && FClassnameIs(entity, "prop_*"))
+	{
+		return true;
+	}
+	
+	return false;
 }
 
 edict_t* UTIL_GetListenServerEnt() {
 	// no "local player" if this is a dedicated server or a single player game
 	if (engine->IsDedicatedServer()) {
-		Assert(!"UTIL_GetListenServerHost");
-		Warning(
-				"UTIL_GetListenServerHost() called from a dedicated server or single-player game.\n");
-		return NULL;
+		Warning("UTIL_GetListenServerHost() called from a dedicated server or single-player game.\n");
+		return nullptr;
 	}
-	return engine->PEntityOfEntIndex(1);
+
+	return gamehelpers->EdictOfIndex(1);
 }
 
 IPlayerInfo *UTIL_GetListenServerHost(void) {

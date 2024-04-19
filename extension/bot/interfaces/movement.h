@@ -123,13 +123,19 @@ public:
 	virtual void Frame() override;
 
 	// Max height difference that a player is able to climb without jumping
-	virtual float GetStepHeight() { return 18.0f; }
+	virtual float GetStepHeight() const { return 18.0f; }
 	// Max height a player can climb by jumping
-	virtual float GetMaxJumpHeight() { return 57.0f; }
+	virtual float GetMaxJumpHeight() const { return 57.0f; }
+	// Max health a player can blimb by double jumping
+	virtual float GetMaxDoubleJumpHeight() const { return 0.0f; }
 	// Max distance between a (horizontal) gap that the bot is able to jump
-	virtual float GetMaxGapJumpDistance() { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
+	virtual float GetMaxGapJumpDistance() const { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
+	// Max height a player can safely fall
+	virtual float GetMaxDropHeight() const { return 450.0f; }
 
-	inline virtual float GetTraversableSlopeLimit() { return 0.6f; }
+	inline virtual float GetTraversableSlopeLimit() const { return 0.6f; }
+	// (cheat) Set the bot's Z velocity to this value when crouch jumping
+	inline virtual float GetCrouchJumpZBoost() const { return 282.0f; } // max vel should be around 277 (tf2), we added some extra to help bots
 
 	// Bot collision hull width
 	virtual float GetHullWidth();
@@ -157,15 +163,28 @@ public:
 	virtual void Jump();
 	// Makes the bot perform a crouch jump
 	virtual void CrouchJump();
+	// Makes the bot perform a double jump
+	virtual void DoubleJump() {}
 	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward);
 	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
+	// Perform a blast jump
+	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
+	// Climb by double jumping
+	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
 
 	virtual bool IsAbleToClimb() { return true; }
 	virtual bool IsAbleToJumpAcrossGap() { return true; }
 	virtual bool IsAbleToClimbOntoEntity(edict_t* entity);
+	virtual bool IsAbleToDoubleJump() { return false; }
+	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
+	virtual bool IsAbleToBlastJump() { return false; }
+	// Return true if the movement interface has taken control of the bot to perform an advanced movement.
+	// This is used by the navigator to know if it should wait before continuing following the path.
+	virtual bool IsOnAutoPilot() { return false; }
 
 	// The speed the bot will move at (capped by the game player movements)
-	virtual float GetMovementSpeed() { return 500.0f; }
+	virtual float GetMovementSpeed() { return m_basemovespeed; }
+	virtual float GetMinimumMovementSpeed() { return m_basemovespeed * 0.4f; }
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
 	virtual bool IsClimbingOrJumping();
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
@@ -184,12 +203,17 @@ public:
 
 	virtual bool IsStuck() { return m_stuck.isstuck; }
 	virtual float GetStuckDuration();
-	virtual void ClearStuckStatus();
+	virtual void ClearStuckStatus(const char* reason = nullptr);
 
 	virtual float GetSpeed() const { return m_speed; }
 	virtual float GetGroundSpeed() const { return m_groundspeed; }
 	virtual const Vector& GetMotionVector() { return m_motionVector; }
 	virtual const Vector2D& GetGroundMotionVector() { return m_groundMotionVector; }
+
+	virtual bool IsAreaTraversable(const CNavArea* area) const;
+	virtual bool NavigatorAllowSkip(const CNavArea* area) const { return true; }
+	// Called after calculating the crossing point between two nav areas
+	virtual void AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint);
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
@@ -215,6 +239,7 @@ private:
 	Vector m_motionVector; // Unit vector of the bot current movement
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
 	int m_internal_jumptimer; // Tick based jump timer
+	float m_basemovespeed;
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();

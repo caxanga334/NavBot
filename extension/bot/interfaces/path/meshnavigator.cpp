@@ -18,7 +18,7 @@
 #undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
 
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
-ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "20", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
+ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "25", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
 ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 
 CMeshNavigator::CMeshNavigator() : CPath()
@@ -68,12 +68,19 @@ void CMeshNavigator::OnPathChanged(CBaseBot* bot, AIPath::ResultType result)
 
 void CMeshNavigator::Update(CBaseBot* bot)
 {
-	if (IsValid() == false || m_goal == nullptr)
+	if (!IsValid() || m_goal == nullptr)
 	{
 		return; // no path or goal
 	}
 
-	if (m_waitTimer.IsElapsed() == false)
+	auto mover = bot->GetMovementInterface();
+
+	if (mover->IsOnAutoPilot())
+	{
+		return; // movement interface is controlling the bot
+	}
+
+	if (!m_waitTimer.IsElapsed())
 	{
 		return; // wait for something to stop blocking our path (like a door opening)
 	}
@@ -83,17 +90,16 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // bot is using a ladder
 	}
 
-	if (CheckProgress(bot) == false)
+	if (!CheckProgress(bot))
 	{
 		return; // goal reached
 	}
 
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
-	auto mover = bot->GetMovementInterface();
 	auto input = bot->GetControlInterface();
 
-	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP)
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
 	{
 		auto next = GetNextSegment(m_goal);
 		if (next != nullptr)
@@ -124,7 +130,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	forward = CrossProduct(normal, forward);
 	left = CrossProduct(left, normal);
 
-	if (Climbing(bot, m_goal, forward, left, goalRange) == false)
+	if (!Climbing(bot, m_goal, forward, left, goalRange))
 	{
 		if (IsValid() == false)
 		{
@@ -144,7 +150,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	const bool isOnStairs = myarea->HasAttributes(NAV_MESH_STAIRS);
 	const float tooHighDistance = mover->GetMaxJumpHeight();
 
-	if (m_goal->ladder == nullptr && mover->IsClimbingOrJumping() == false && isOnStairs == false && m_goal->goal.z > origin.z + tooHighDistance)
+	if (m_goal->ladder == nullptr && !mover->IsClimbingOrJumping() && !isOnStairs && m_goal->goal.z > origin.z + tooHighDistance)
 	{
 		constexpr auto CLOSE_RANGE = 25.0f;
 		Vector2D to(origin.x - m_goal->goal.x, origin.y - m_goal->goal.y);
@@ -153,7 +159,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		{
 			float fraction;
 			auto next = GetNextSegment(m_goal);
-			if (mover->IsStuck() || next != nullptr || (next->goal.z - origin.z > mover->GetMaxJumpHeight()) || mover->IsPotentiallyTraversable(origin, next->goal, fraction) == false)
+			if (mover->IsStuck() || !next || (next->goal.z - origin.z > mover->GetMaxJumpHeight()) || !mover->IsPotentiallyTraversable(origin, next->goal, fraction))
 			{
 				bot->OnMoveToFailure(this, IEventListener::FAIL_FELL_OFF_PATH);
 
@@ -227,10 +233,10 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 		if (start != nullptr)
 		{
-			Draw(start, 0.2f);
+			Draw(start, 0.1f);
 		}
 
-		NDebugOverlay::Sphere(goalPos, 5.0f, 255, 255, 0, true, 0.2f);
+		NDebugOverlay::Sphere(goalPos, 5.0f, 255, 255, 0, true, 0.1f);
 	}
 }
 
@@ -395,11 +401,28 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 					break; // don't skip heights greater than the bot step height
 				}
 
+				if (from->area->HasAttributes(NAV_MESH_PRECISE) || next->area->HasAttributes(NAV_MESH_PRECISE))
+				{
+					break; // don't skip precise areas
+				}
+
+				if (!mover->NavigatorAllowSkip(next->area))
+				{
+					break; // movement interface disallows skipping the next segment area
+				}
+
 				float fraction;
-				if (mover->IsPotentiallyTraversable(origin, skip->goal, fraction, false) && mover->HasPotentialGap(origin, skip->goal, fraction) == false)
+				if (mover->IsPotentiallyTraversable(origin, next->goal, fraction, false) && mover->HasPotentialGap(origin, next->goal, fraction) == false)
 				{
 					// only skip a segment if the bot is able to move directly to it from it's current position
 					// and there isn't any holes on the ground
+
+					if (bot->IsDebugging(BOTDEBUG_PATH))
+					{
+						NDebugOverlay::Text(next->goal + Vector(0.0f, 0.0f, 8.0f), "Segment Skipped!", false, 0.5f);
+						NDebugOverlay::Sphere(next->goal, 6.0f, 0, 230, 255, true, 0.5f);
+					}
+
 					skip = next;
 				}
 				else
@@ -430,7 +453,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	Vector origin = bot->GetAbsOrigin();
 	const bool debug = sm_navbot_path_debug_climbing.GetBool();
 
-	if (mover->IsAbleToClimb() == false)
+	if (!mover->IsAbleToClimb())
 	{
 		return false;
 	}
@@ -451,7 +474,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 	const float ledgeLookAheadDist = mover->GetHullWidth() - 1.0f;
 
-	if (mover->IsClimbingOrJumping() || mover->IsAscendingOrDescendingLadder() || mover->IsOnGround() == false)
+	if (mover->IsClimbingOrJumping() || mover->IsAscendingOrDescendingLadder() || !mover->IsOnGround())
 	{
 		return false;
 	}
@@ -481,6 +504,22 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 					return true;
 			}
 		}
+		else if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
+		{
+			auto seg = GetNextSegment(m_goal);
+
+			if (seg != nullptr)
+			{
+				Vector nearClimb;
+				seg->area->GetClosestPointOnArea(origin, &nearClimb);
+				climbDir = nearClimb - origin;
+				climbDir.z = 0.0f;
+				climbDir.NormalizeInPlace();
+
+				if (mover->DoubleJumpToLedge(nearClimb, climbDir, nullptr))
+					return true;
+			}
+		}
 
 		return false;
 	}
@@ -505,7 +544,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	}
 
 	// don't try to climb on stairs
-	if (m_goal->area->HasAttributes(NAV_MESH_STAIRS) || myarea->HasAttributes(NAV_MESH_STAIRS))
+	if (m_goal->area->HasAttributes(NAV_MESH_STAIRS) || (myarea && myarea->HasAttributes(NAV_MESH_STAIRS)))
 	{
 		return false;
 	}

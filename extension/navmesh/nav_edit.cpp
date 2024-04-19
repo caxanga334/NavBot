@@ -9,6 +9,9 @@
 // Implementation of Navigation Mesh edit mode
 // Author: Michael Booth, 2003-2004
 
+#include <extension.h>
+#include <entities/baseentity.h>
+#include <extplayer.h>
 #include "nav_mesh.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
@@ -17,6 +20,9 @@
 #include <util/UtilTrace.h>
 #include <util/BaseEntity.h>
 #include <util/EntityUtils.h>
+#include <util/helpers.h>
+#include <sdkports/debugoverlay_shared.h>
+#include <entities/baseentity.h>
 #include "Color.h"
 #include "tier0/vprof.h"
 #include "collisionutils.h"
@@ -32,12 +38,6 @@
 #include "dota_npc_base.h"
 #include "dota_player.h"
 #endif
-
-#include <util/UtilRandom.h>
-
-// NOTE: This has to be the last file included!
-#include "tier0/memdbgon.h"
-
 
 ConVar sm_nav_show_area_info( "sm_nav_show_area_info", "0.5", FCVAR_CHEAT, "Duration in seconds to show nav area ID and attributes while editing" );
 ConVar sm_nav_snap_to_grid( "sm_nav_snap_to_grid", "0", FCVAR_CHEAT, "Snap to the nav generation grid when creating new nav areas" );
@@ -143,11 +143,8 @@ void CNavMesh::GetEditVectors( Vector *pos, Vector *forward )
 		return;
 	}
 
-	edict_t *ent  = UTIL_GetListenServerEnt();
-	if ( !ent )
-	{
-		return;
-	}
+	
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
 
 	//DOTA places the edit cursor where the 2D cursor is located.
 #ifdef DOTA_SERVER_DLL
@@ -165,12 +162,8 @@ void CNavMesh::GetEditVectors( Vector *pos, Vector *forward )
 		AngleVectors( EyeAngles() + player->GetPunchAngle(), forward );
 	}
 #else
-	IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
-	if (player == nullptr) {
-		return;
-	}
-	gameclients->ClientEarPosition(ent, pos);
-	AngleVectors( player->GetLastUserCommand().viewangles, forward, nullptr, nullptr );
+	*pos = host.GetEyeOrigin();
+	host.EyeVectors(forward);
 #endif
 
 #ifdef SERVER_USES_VGUI
@@ -290,6 +283,31 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 	return bestDist < 1.0f;
 }
 
+const char* CNavMesh::NavHintTypeIDToString(int hinttype) const
+{
+	if (hinttype <= NAVHINT_LAST_SHARED_HINT)
+	{
+		return GetNavAreaHintTypeNameInternal(hinttype);
+	}
+
+	return "ERROR";
+}
+
+int CNavMesh::GetMaxHintTypesAvailable() const
+{
+	return NAVHINT_LAST_SHARED_HINT;
+}
+
+const char* CNavMesh::GetNavAreaHintTypeNameInternal(int hint) const
+{
+	switch (hint)
+	{
+	case NAVHINT_CROSSINGPOINT:
+		return "CROSSING POINT";
+	default:
+		return "ERROR";
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -297,8 +315,6 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
  */
 bool CNavMesh::FindActiveNavArea( void )
 {
-	VPROF( "CNavMesh::FindActiveNavArea" );
-
 	m_splitAlongX = false;
 	m_splitEdge = 0.0f;
 	m_selectedArea = NULL;
@@ -306,8 +322,12 @@ bool CNavMesh::FindActiveNavArea( void )
 	m_selectedLadder = NULL;
 
 	edict_t* ent = UTIL_GetListenServerEnt();
-	if ( ent == NULL )
+
+	if (ent == nullptr)
+	{
 		return false;
+	}
+
 	Vector from, dir;
 	GetEditVectors( &from, &dir );
 
@@ -896,12 +916,16 @@ void CNavMesh::DrawEditMode( void )
 
 				if (m_selectedArea->GetPlace())
 				{
-					const char *name = TheNavMesh->PlaceToName( m_selectedArea->GetPlace() );
-#if SOURCE_ENGINE == SE_SDK2013
-					V_strcpy_safe( locName, name != nullptr ? name: "ERROR" );
-#else
-					Q_strcpy(locName, name != nullptr ? name : "ERROR");
-#endif
+					auto name = TheNavMesh->GetPlaceName(m_selectedArea->GetPlace());
+					
+					if (name != nullptr)
+					{
+						ke::SafeStrcpy(locName, sizeof(locName), name->c_str());
+					}
+					else
+					{
+						ke::SafeStrcpy(locName, sizeof(locName), "ERROR!");
+					}
 				}
 				else
 				{
@@ -936,7 +960,7 @@ void CNavMesh::DrawEditMode( void )
 					if ( m_selectedArea->IsBlocked( TEAM_SURVIVOR ) ) Q_strncat( attrib, "BLOCKED_SURVIVOR ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsBlocked( TEAM_ZOMBIE ) ) Q_strncat( attrib, "BLOCKED_ZOMBIE ", sizeof( attrib ), -1 );
 #else
-					if ( m_selectedArea->IsBlocked( TEAM_ANY ) ) Q_strncat( attrib, "BLOCKED ", sizeof( attrib ), -1 );
+					if ( m_selectedArea->IsBlocked( NAV_TEAM_ANY ) ) Q_strncat( attrib, "BLOCKED ", sizeof( attrib ), -1 );
 #endif
 					if ( m_selectedArea->HasAvoidanceObstacle() )	Q_strncat( attrib, "OBSTRUCTED ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsDamaging() )		Q_strncat( attrib, "DAMAGING ", sizeof( attrib ), -1 );
@@ -947,6 +971,7 @@ void CNavMesh::DrawEditMode( void )
 					connected += m_selectedArea->GetAdjacentCount( SOUTH );
 					connected += m_selectedArea->GetAdjacentCount( EAST );
 					connected += m_selectedArea->GetAdjacentCount( WEST );
+					connected += static_cast<int>(m_selectedArea->GetSpecialLinkCount());
 					Q_strncat( attrib, UTIL_VarArgs( "%d Connections ", connected ), sizeof( attrib ), -1 );
 				}
 
@@ -2003,7 +2028,7 @@ void CommandNavCenterInWorld( void )
 			navExtent.Encompass( area->GetCorner( SOUTH_EAST ) );
 		}
 	}
-	edict_t* worldEnt = engine->PEntityOfEntIndex(0);
+	edict_t* worldEnt = gamehelpers->EdictOfIndex(0);
 	// Get the world's extent
 	if ( worldEnt == nullptr )
 		return;
@@ -2091,7 +2116,7 @@ void CNavMesh::CommandNavSelectBlockedAreas( void )
 	{
 		CNavArea *area = TheNavAreas[ it ];
 
-		if ( area && area->IsBlocked( TEAM_ANY ) )
+		if ( area && area->IsBlocked( NAV_TEAM_ANY ) )
 		{
 			AddToSelectedSet( area );
 		}
@@ -2357,13 +2382,13 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 		if (IsInSelectedSet( m_selectedArea ))
 		{
 			// remove from set
-			EmitSound(player, "EDIT_MARK.Disable" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 			RemoveFromSelectedSet( m_selectedArea );
 		}
 		else
 		{
 			// add to set
-			EmitSound(player, "EDIT_MARK.Enable" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 			AddToSelectedSet( m_selectedArea );
 		}
 		return;
@@ -2374,7 +2399,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 	if ( m_markedArea || m_markedLadder )
 	{
 		// Unmark area or ladder
-		EmitSound(player, "EDIT_MARK.Enable" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		Msg("Area unmarked.\n");
 		SetMarkedArea( NULL );
 	}
@@ -2393,7 +2418,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 						CNavLadder *ladder = TheNavMesh->GetLadderByID( ladderIDToMark );
 						if ( ladder )
 						{
-							EmitSound(player, "EDIT_MARK.Disable" );
+							PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 							SetMarkedLadder( ladder );
 
 							int connected = 0;
@@ -2428,7 +2453,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 					}
 					if( areaToMark )
 					{
-						EmitSound(player, "EDIT_MARK.Disable" );
+						PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 						SetMarkedArea( areaToMark );
 
 						int connected = 0;
@@ -2436,6 +2461,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 						connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 						connected += GetMarkedArea()->GetAdjacentCount( EAST );
 						connected += GetMarkedArea()->GetAdjacentCount( WEST );
+						connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
 
 						Msg( "Marked Area is connected to %d other Areas\n", connected );
 					}
@@ -2446,7 +2472,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 	else if ( m_selectedArea )
 	{
 		// Mark an area
-		EmitSound(player, "EDIT_MARK.Disable" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 		SetMarkedArea( m_selectedArea );
 
 		int connected = 0;
@@ -2454,13 +2480,14 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 		connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 		connected += GetMarkedArea()->GetAdjacentCount( EAST );
 		connected += GetMarkedArea()->GetAdjacentCount( WEST );
+		connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
 
 		Msg( "Marked Area is connected to %d other Areas\n", connected );
 	}
 	else if ( m_selectedLadder )
 	{
 		// Mark a ladder
-		EmitSound(player, "EDIT_MARK.Disable" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 		SetMarkedLadder( m_selectedLadder );
 
 		int connected = 0;
@@ -2499,7 +2526,7 @@ void CNavMesh::CommandNavBeginArea( void )
 
 	if ( !(IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) || IsEditMode( NORMAL )) )
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
@@ -2508,16 +2535,16 @@ void CNavMesh::CommandNavBeginArea( void )
 	if ( IsEditMode( CREATING_AREA ) )
 	{
 		SetEditMode( NORMAL );
-		EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else if ( IsEditMode( CREATING_LADDER ) )
 	{
 		SetEditMode( NORMAL );
-		EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else if ( m_climbableSurface )
 	{
-		EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		
 		SetEditMode( CREATING_LADDER );
 
@@ -2527,7 +2554,7 @@ void CNavMesh::CommandNavBeginArea( void )
 	}
 	else
 	{
-		EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		
 		SetEditMode( CREATING_AREA );
 
@@ -2549,7 +2576,7 @@ void CNavMesh::CommandNavEndArea( void )
 
 	if ( !(IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) || IsEditMode( NORMAL )) )
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
@@ -2585,7 +2612,7 @@ void CNavMesh::CommandNavEndArea( void )
 		if (newArea == NULL)
 		{
 			Warning( "NavEndArea: Out of memory\n" );
-			EmitSound(player, "EDIT_END_AREA.NotCreating" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 			return;
 		}
 		
@@ -2598,7 +2625,7 @@ void CNavMesh::CommandNavEndArea( void )
 
 		TheNavAreas.AddToTail( newArea );
 		TheNavMesh->AddNavArea( newArea );
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 
 		if (sm_nav_create_place_on_ground.GetBool())
 		{
@@ -2642,7 +2669,7 @@ void CNavMesh::CommandNavEndArea( void )
 	{
 		SetEditMode( NORMAL );
 	
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 
 		Vector corner1, corner2, corner3;
 		if ( m_climbableSurface && FindLadderCorners( &corner1, &corner2, &corner3 ) )
@@ -2661,12 +2688,12 @@ void CNavMesh::CommandNavEndArea( void )
 		}
 		else
 		{
-			EmitSound(player, "EDIT_END_AREA.NotCreating" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		}
 	}
 	else
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 	}
 
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
@@ -2696,7 +2723,7 @@ void CNavMesh::CommandNavConnect( void )
 			NavDirType dir = second->ComputeLargestPortal( first, &center, &halfWidth );
 			if (dir == NUM_DIRECTIONS)
 			{
-				EmitSound(player, "EDIT_CONNECT.AllDirections" );
+				PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 				bValid = false;
 				break;
 			}
@@ -2704,7 +2731,7 @@ void CNavMesh::CommandNavConnect( void )
 			dir = first->ComputeLargestPortal( second, &center, &halfWidth );
 			if (dir == NUM_DIRECTIONS)
 			{
-				EmitSound(player, "EDIT_CONNECT.AllDirections" );
+				PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 				bValid = false;
 				break;
 			}
@@ -2722,7 +2749,7 @@ void CNavMesh::CommandNavConnect( void )
 
 				dir = first->ComputeLargestPortal( second, &center, &halfWidth );
 				first->ConnectTo( second, dir );
-				EmitSound(player, "EDIT_CONNECT.Added" );
+				PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 			}
 		}
 	}
@@ -2731,19 +2758,19 @@ void CNavMesh::CommandNavConnect( void )
 		if ( m_markedLadder )
 		{
 			m_markedLadder->ConnectTo( m_selectedArea );
-			EmitSound(player, "EDIT_CONNECT.Added" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 		else if ( m_markedArea )
 		{
 			NavDirType dir = GetMarkedArea()->ComputeLargestPortal( m_selectedArea, &center, &halfWidth );
 			if (dir == NUM_DIRECTIONS)
 			{
-				EmitSound(player, "EDIT_CONNECT.AllDirections" );
+				PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 			}
 			else
 			{
 				m_markedArea->ConnectTo( m_selectedArea, dir );
-				EmitSound(player, "EDIT_CONNECT.Added" );
+				PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 			}
 		}
 		else
@@ -2754,18 +2781,18 @@ void CNavMesh::CommandNavConnect( void )
 				NavDirType dir = area->ComputeLargestPortal( m_selectedArea, &center, &halfWidth );
 				if (dir == NUM_DIRECTIONS)
 				{
-					EmitSound(player, "EDIT_CONNECT.AllDirections" );
+					PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 				}
 				else
 				{
 					area->ConnectTo( m_selectedArea, dir );
-					EmitSound(player, "EDIT_CONNECT.Added" );
+					PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 				}
 			}
 			else
 			{
-				Msg( "To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area." );
-				EmitSound(player, "EDIT_CONNECT.AllDirections" );
+				Msg( "To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area. \n" );
+				PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 			}
 		}
 	}
@@ -2774,12 +2801,12 @@ void CNavMesh::CommandNavConnect( void )
 		if ( m_markedArea )
 		{
 			m_markedArea->ConnectTo( m_selectedLadder );
-			EmitSound(player, "EDIT_CONNECT.Added" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 		else
 		{
-			Msg( "To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area." );
-			EmitSound(player, "EDIT_CONNECT.AllDirections" );
+			Msg( "To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area. \n" );
+			PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 		}
 	}
 
@@ -2808,7 +2835,7 @@ void CNavMesh::CommandNavDisconnect( void )
 			CNavArea *second = m_selectedSet[i];
 			if ( !first->IsConnected( second, NUM_DIRECTIONS ) && !second->IsConnected( first, NUM_DIRECTIONS ) )
 			{
-				EmitSound(player, "EDIT_CONNECT.AllDirections" );
+				PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 				bValid = false;
 				break;
 			}
@@ -2824,7 +2851,7 @@ void CNavMesh::CommandNavDisconnect( void )
 				first->Disconnect( second );
 				second->Disconnect( first );
 			}
-			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 	}
 	else if ( m_selectedArea )
@@ -2833,13 +2860,13 @@ void CNavMesh::CommandNavDisconnect( void )
 		{
 			m_markedArea->Disconnect( m_selectedArea );
 			m_selectedArea->Disconnect( m_markedArea );
-			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 		else if ( m_selectedSet.Count() == 1 )
 		{
 			m_selectedSet[0]->Disconnect( m_selectedArea );
 			m_selectedArea->Disconnect( m_selectedSet[0] );
-			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 		else
 		{
@@ -2847,12 +2874,12 @@ void CNavMesh::CommandNavDisconnect( void )
 			{
 				m_markedLadder->Disconnect( m_selectedArea );
 				m_selectedArea->Disconnect( m_markedLadder );
-				EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+				PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 			}
 			else
 			{
-				Msg( "To disconnect areas, mark an area, highlight a second area, then invoke the disconnect command. This will remove all connections between the two areas." );
-				EmitSound(player, "EDIT_DISCONNECT.NoMarkedArea" );
+				Msg( "To disconnect areas, mark an area, highlight a second area, then invoke the disconnect command. This will remove all connections between the two areas. \n" );
+				PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 			}
 		}
 	}
@@ -2862,18 +2889,18 @@ void CNavMesh::CommandNavDisconnect( void )
 		{
 			m_markedArea->Disconnect( m_selectedLadder );
 			m_selectedLadder->Disconnect( m_markedArea );
-			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 		if ( m_selectedSet.Count() == 1 )
 		{
 			m_selectedSet[0]->Disconnect( m_selectedLadder );
 			m_selectedLadder->Disconnect( m_selectedSet[0] );
-			EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		}
 		else
 		{
-			Msg( "To disconnect areas, mark an area, highlight a second area, then invoke the disconnect command. This will remove all connections between the two areas." );
-			EmitSound(player, "EDIT_DISCONNECT.NoMarkedArea" );
+			Msg( "To disconnect areas, mark an area, highlight a second area, then invoke the disconnect command. This will remove all connections between the two areas. \n" );
+			PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 		}
 	}
 
@@ -2921,7 +2948,7 @@ void CNavMesh::CommandNavDisconnectOutgoingOneWays( void )
 			}
 		}
 	}
-	EmitSound(player, "EDIT_DISCONNECT.MarkedArea" );
+	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 
 	ClearSelectedSet();
 	SetMarkedArea( NULL );			// unmark the mark area
@@ -3026,7 +3053,7 @@ void CNavMesh::CommandNavTogglePlaceMode( void )
 	if (player == NULL)
 		return;
 	SetEditMode(  IsEditMode( PLACE_PAINTING ) ? NORMAL : PLACE_PAINTING );
-	EmitSound(player, "EDIT_TOGGLE_PLACE_MODE" );
+	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 
 	SetMarkedArea( NULL );			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
@@ -3079,7 +3106,7 @@ void CNavMesh::CommandNavPlacePick( void )
 
 	if ( m_selectedArea )
 	{
-		EmitSound(player, "EDIT_PLACE_PICK" );
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 		TheNavMesh->SetNavPlace( m_selectedArea->GetPlace() );
 	}
 
@@ -3102,13 +3129,13 @@ void CNavMesh::CommandNavTogglePlacePainting( void )
 		if (m_isPlacePainting)
 		{
 			m_isPlacePainting = false;
-			EmitSound(player, "Bot.EditSwitchOff" );
+			PlayEditSound(EditSoundType::SOUND_SWITCH_OFF);
 		}
 		else
 		{
 			m_isPlacePainting = true;
 
-			EmitSound(player, "Bot.EditSwitchOn" );
+			PlayEditSound(EditSoundType::SOUND_SWITCH_ON);
 
 			// paint the initial area
 			m_selectedArea->SetPlace( TheNavMesh->GetNavPlace() );
@@ -3162,6 +3189,7 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 				connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 				connected += GetMarkedArea()->GetAdjacentCount( EAST );
 				connected += GetMarkedArea()->GetAdjacentCount( WEST );
+				connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
 
 				int totalUnnamedAreas = 0;
 				FOR_EACH_VEC( TheNavAreas, it )
@@ -3351,8 +3379,6 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::CommandNavWarpToMark( void )
 {
-	/**
-	  TODO
 	edict_t* ent = UTIL_GetListenServerEnt();
 	if (ent == NULL || !IsEditMode( NORMAL ) )
 		return;
@@ -3365,18 +3391,11 @@ void CNavMesh::CommandNavWarpToMark( void )
 	IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
 	if ( targetArea )
 	{
-		Vector origin = targetArea->GetCenter() + Vector( 0, 0, 0.75f * HumanHeight );
+		Vector origin = targetArea->GetCenter() + Vector( 0, 0, HumanHeight );
 		QAngle angles = player->GetAbsAngles();
-		if ( ( player->IsDead() || player->IsObserver() ) && player->GetObserverMode() == OBS_MODE_ROAMING )
-		{
-			UTIL_SetOrigin( player, origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
-		else
-		{
-			player->Teleport( &origin, &angles, &vec3_origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
+		entities::HBaseEntity be(ent);
+		be.Teleport(origin, &angles, nullptr);
+		EmitSound(ent, "EDIT_WARP_TO_MARK");
 	}
 	else if ( GetMarkedLadder() )
 	{
@@ -3386,22 +3405,14 @@ void CNavMesh::CommandNavWarpToMark( void )
 		Vector origin = (ladder->m_top + ladder->m_bottom)/2;
 		origin.x += ladder->GetNormal().x * GenerationStepSize;
 		origin.y += ladder->GetNormal().y * GenerationStepSize;
-		if ( ( player->IsDead() || player->IsObserver() ) && player->GetObserverMode() == OBS_MODE_ROAMING )
-		{
-			UTIL_SetOrigin( player, origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
-		else
-		{
-			player->Teleport( &origin, &angles, &vec3_origin );
-			EmitSound(ent, "EDIT_WARP_TO_MARK" );
-		}
+		entities::HBaseEntity be(ent);
+		be.Teleport(origin, &angles, nullptr);
+		EmitSound(ent, "EDIT_WARP_TO_MARK" );
 	}
 	else
 	{
 		EmitSound(ent, "EDIT_WARP_TO_MARK" );
 	}
-	*/
 }
 
 
@@ -3436,6 +3447,363 @@ void CNavMesh::CommandNavLadderFlip( void )
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
+CON_COMMAND(sm_nav_link_list_all, "List all available 'Link' connection types.")
+{
+	Msg("Link Types: \n");
+	for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+	{
+		Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+	}
+}
+
+CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connections.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_nav_link_connect <link type ID> \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	int32_t linktype = static_cast<int32_t>(atoi(args[1]));
+
+	if (linktype <= static_cast<int32_t>(NavLinkType::LINK_INVALID) || linktype >= static_cast<int32_t>(NavLinkType::MAX_LINK_TYPES))
+	{
+		Warning("Unknown link type %i \n", linktype);
+
+		Msg("Valid link types: \n");
+		for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+		{
+			Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+		}
+
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	TheNavMesh->CommandNavConnectSpecialLink(linktype);
+}
+
+void CNavMesh::CommandNavConnectSpecialLink(int32_t linktype)
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	FindActiveNavArea();
+
+	if (m_selectedSet.Count() > 1)
+	{
+		bool bValid = true;
+		for (int i = 1; i < m_selectedSet.Count(); ++i)
+		{
+			// Make sure all connections are valid
+			CNavArea* first = m_selectedSet[0];
+			CNavArea* second = m_selectedSet[i];
+
+			first->ConnectTo(second, static_cast<NavLinkType>(linktype), m_linkorigin);
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+	}
+	else if (m_selectedArea)
+	{
+		if (m_markedArea)
+		{
+			m_markedArea->ConnectTo(m_selectedArea, static_cast<NavLinkType>(linktype), m_linkorigin);
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+		else
+		{
+			if (m_selectedSet.Count() == 1)
+			{
+				CNavArea* area = m_selectedSet[0];
+				area->ConnectTo(m_selectedArea, static_cast<NavLinkType>(linktype), m_linkorigin);
+				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			}
+			else
+			{
+				Msg("To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area.");
+				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+			}
+		}
+	}
+
+	SetMarkedArea(NULL);			// unmark the mark area
+	m_markedCorner = NUM_CORNERS;	// clear the corner selection
+	ClearSelectedSet();
+}
+
+CON_COMMAND_F(sm_nav_link_disconnect, "Disconnect nav areas via special link connections.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_nav_link_disconnect <link type ID> \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	int32_t linktype = static_cast<int32_t>(atoi(args[1]));
+
+	if (linktype <= static_cast<int32_t>(NavLinkType::LINK_INVALID) || linktype >= static_cast<int32_t>(NavLinkType::MAX_LINK_TYPES))
+	{
+		Warning("Unknown link type %i \n", linktype);
+
+		Msg("Valid link types: \n");
+		for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+		{
+			Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+		}
+
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	TheNavMesh->CommandNavDisconnectSpecialLink(linktype);
+}
+
+void CNavMesh::CommandNavDisconnectSpecialLink(int32_t linktype)
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	FindActiveNavArea();
+
+	if (m_selectedSet.Count() > 1)
+	{
+		bool bValid = true;
+		for (int i = 1; i < m_selectedSet.Count(); ++i)
+		{
+			// Make sure all connections are valid
+			CNavArea* first = m_selectedSet[0];
+			CNavArea* second = m_selectedSet[i];
+
+			first->Disconnect(second, static_cast<NavLinkType>(linktype));
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+	}
+	else if (m_selectedArea)
+	{
+		if (m_markedArea)
+		{
+			m_markedArea->Disconnect(m_selectedArea, static_cast<NavLinkType>(linktype));
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+		else
+		{
+			if (m_selectedSet.Count() == 1)
+			{
+				CNavArea* area = m_selectedSet[0];
+				area->Disconnect(m_selectedArea, static_cast<NavLinkType>(linktype));
+				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			}
+			else
+			{
+				Msg("To disconnect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area.");
+				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+			}
+		}
+	}
+
+	SetMarkedArea(NULL);			// unmark the mark area
+	m_markedCorner = NUM_CORNERS;	// clear the corner selection
+	ClearSelectedSet();
+}
+
+CON_COMMAND_F(sm_nav_link_set_origin, "Set the connection origin for creating new nav special links", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavSetLinkOrigin();
+}
+
+void CNavMesh::CommandNavSetLinkOrigin()
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	m_linkorigin = player->GetCollideable()->GetCollisionOrigin();
+	NDebugOverlay::Box(m_linkorigin, Vector(-16.0f, -16.0f, 0.0f), Vector(16.0f, 16.0f, 72.0f), 0, 220, 255, 125, 10.0f);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_link_warp_to_origin, "Teleports to the connection origin for creating new nav special links", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavWarpToLinkOrigin();
+}
+
+void CNavMesh::CommandNavWarpToLinkOrigin() const
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+	entities::HBaseEntity be(player);
+
+	NDebugOverlay::Box(m_linkorigin, Vector(-16.0f, -16.0f, 0.0f), Vector(16.0f, 16.0f, 72.0f), 0, 220, 255, 125, 10.0f);
+	be.Teleport(m_linkorigin, nullptr, nullptr);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_hint_print_type_list, "Prints the hint types available", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavPrintAllHintsTypes();
+}
+
+void CNavMesh::CommandNavPrintAllHintsTypes() const
+{
+	Msg("Nav Hint Types available: \n");
+
+	for (int i = 0; i <= TheNavMesh->GetMaxHintTypesAvailable(); i++)
+	{
+		Msg("ID #%i : %s \n", i, TheNavMesh->NavHintTypeIDToString(i));
+	}
+}
+
+CON_COMMAND_F(sm_nav_hint_add, "Adds a hint to the current marked area.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_nav_hint_add <type ID> \n");
+		Msg("Notes: \n  Your current position and angles will be used to set the hint's position and angles!\n");
+		return;
+	}
+
+	int type = atoi(args[1]);
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+	Vector origin = host.GetAbsOrigin();
+	QAngle angles = host.GetEyeAngles();
+	TheNavMesh->CommandNavAddHintToArea(type, origin, angles);
+}
+
+void CNavMesh::CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles) const
+{
+	if (m_markedArea == nullptr)
+	{
+		Warning("ERROR: To add a hint, you must first mark the area where the hint will be added using sm_nav_mark!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	m_markedArea->AddHint(hinttype, origin, angles);
+	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_hint_remove_nearest, "Removes the nearest hint from the marked area, optional type filter.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		TheNavMesh->CommandNavRemoveNearestHintFromArea(gamehelpers->EdictOfIndex(1)->GetCollideable()->GetCollisionOrigin());
+	}
+	else
+	{
+		int type = atoi(args[1]);
+		TheNavMesh->CommandNavRemoveNearestHintOfTypeFromArea(type, gamehelpers->EdictOfIndex(1)->GetCollideable()->GetCollisionOrigin());
+	}
+}
+
+void CNavMesh::CommandNavRemoveNearestHintFromArea(const Vector& origin) const
+{
+	if (m_markedArea == nullptr)
+	{
+		Warning("ERROR: You must mark an area first with sm_nav_mark!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	m_markedArea->RemoveNearestHint(origin);
+}
+
+void CNavMesh::CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const
+{
+	if (m_markedArea == nullptr)
+	{
+		Warning("ERROR: You must mark an area first with sm_nav_mark!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	m_markedArea->RemoveNearestHint(origin, hinttype);
+}
+
+CON_COMMAND_F(sm_nav_hint_wipe, "Wipe all hints from the marked area.", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavWipeAllHintsFromArea();
+}
+
+void CNavMesh::CommandNavWipeAllHintsFromArea()
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+	if (player == nullptr || !IsEditMode(NORMAL))
+		return;
+
+	FindActiveNavArea();
+
+	if (m_selectedSet.Count() > 1)
+	{
+		for (int i = 1; i < m_selectedSet.Count(); ++i)
+		{
+			m_selectedSet[i]->WipeHints();
+		}
+
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+	}
+	else if (m_selectedArea)
+	{
+		if (m_markedArea)
+		{
+			m_markedArea->WipeHints();
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		}
+		else
+		{
+			if (m_selectedSet.Count() == 1)
+			{
+				CNavArea* area = m_selectedSet[0];
+				area->WipeHints();
+				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			}
+			else
+			{
+				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+			}
+		}
+	}
+
+	SetMarkedArea(nullptr);			// unmark the mark area
+	m_markedCorner = NUM_CORNERS;	// clear the corner selection
+	ClearSelectedSet();
+}
+
+CON_COMMAND_F(sm_nav_debug_test_blocked, "Tests nav areas for possible block status", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavTestForBlocked();
+}
+
+void CNavMesh::CommandNavTestForBlocked() const
+{
+	if (m_markedArea != nullptr)
+	{
+		if (m_markedArea->HasSolidFloor())
+		{
+			Msg("Marked area has solid floor.\n");
+		}
+
+		if (m_markedArea->HasSolidObstruction())
+		{
+			Msg("Marked area has solid obstruction.\n");
+		}
+	}
+	else
+	{
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			auto area = TheNavAreas[it];
+
+			area->HasSolidFloor();
+			area->HasSolidObstruction();
+		}
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 class RadiusSelect
@@ -3608,7 +3976,7 @@ bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent
 #endif
 		return true;
 	}
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3671,7 +4039,7 @@ void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< 
 		return;
 	}
 
-	static unsigned int searchMarker = UTIL_GetRandomInt( 0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 	if ( ++searchMarker == 0 )
 	{
 		++searchMarker;
@@ -3727,7 +4095,7 @@ template < typename Functor >
 bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radius )
 {
 	// use a unique marker for this method, so it can be used within a SearchSurroundingArea() call
-	static unsigned int searchMarker = UTIL_GetRandomInt(0, 1024*1024 );
+	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
 
 	++searchMarker;
 
@@ -4060,6 +4428,53 @@ void CNavMesh::OnEditDestroyNotify( CNavLadder *deadLadder )
 {
 }
 
+CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded nav mesh file")
+{
+	auto& authorinfo = TheNavMesh->GetAuthorInfo();
 
+	if (!authorinfo.HasCreatorBeenSet())
+	{
+		Msg("Author info not set! Author info is set when the nav mesh is saved to file. \n");
+		return;
+	}
 
+	auto& op = authorinfo.GetCreator();
 
+	Msg("Nav Mesh created by %s (%lli) \n", op.first.c_str(), op.second);
+
+	if (authorinfo.GetEditorCount() > 0)
+	{
+		Msg("Edited by: \n");
+	}
+
+	for (auto& naveditor : authorinfo.GetEditors())
+	{
+		Msg("%s (%lli) \n", naveditor.first.c_str(), naveditor.second);
+	}
+}
+
+void CNavMesh::LoadEditSounds(SourceMod::IGameConfig* gamedata)
+{
+	auto soundfile = gamedata->GetKeyValue("NavEdit_GenericBlip");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_BLIP)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_GenericSuccess");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_SUCCESS)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_GenericError");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_ERROR)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_SwitchOn");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_SWITCH_ON)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_SwitchOff");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_SWITCH_OFF)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_GenericOff");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_OFF)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_ConnectFail");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_CONNECT_FAIL)] = std::string(soundfile);
+}
+
+void CNavMesh::PlayEditSoundInternal(const std::string& sound) const
+{
+	char command[256];
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	ke::SafeSprintf(command, sizeof(command), "play %s", sound.c_str());
+	engine->ClientCommand(host, command);
+}

@@ -1,6 +1,7 @@
 #include <extension.h>
-#include <ifaces_extern.h>
+#include <manager.h>
 #include <extplayer.h>
+#include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
 #include <bot/interfaces/base_interface.h>
@@ -19,20 +20,20 @@ ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill leve
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
 public:
-	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	virtual TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	virtual TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
-	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
-	virtual const char* GetName() const { return "CBaseBotTestTask"; }
+	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
+	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
+	const char* GetName() const override { return "CBaseBotTestTask"; }
 };
 
 class CBaseBotPathTestTask : public AITask<CBaseBot>
 {
 public:
-	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	virtual TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
-	virtual const char* GetName() const { return "CBaseBotPathTestTask"; }
+	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
+	const char* GetName() const override { return "CBaseBotPathTestTask"; }
 
 private:
 	CMeshNavigator m_nav;
@@ -42,10 +43,9 @@ private:
 class CBaseBotSwitchTestTask : public AITask<CBaseBot>
 {
 public:
-	virtual TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	virtual TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	virtual const char* GetName() const { return "CBaseBotSwitchTestTask"; }
-
+	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
+	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
+	const char* GetName() const override { return "CBaseBotSwitchTestTask"; }
 };
 
 TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
@@ -123,13 +123,13 @@ class CBaseBotBehavior : public IBehavior
 {
 public:
 	CBaseBotBehavior(CBaseBot* bot);
-	virtual ~CBaseBotBehavior();
+	~CBaseBotBehavior() override;
 
-	virtual void Reset();
-	virtual void Update();
+	void Reset() override;
+	void Update() override;
 
-	virtual IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
-	virtual std::vector<IEventListener*>* GetListenerVector();
+	IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
+	std::vector<IEventListener*>* GetListenerVector() override;
 
 private:
 	AITaskManager<CBaseBot>* m_manager;
@@ -212,30 +212,16 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_weaponselect = 0;
 	m_cmdtimer.Invalidate();
 	m_debugtextoffset = 0;
+	m_weapons.reserve(MAX_WEAPONS);
+	m_weaponupdatetimer = 5;
 }
 
 CBaseBot::~CBaseBot()
 {
-	if (m_basecontrol)
-	{
-		delete m_basecontrol;
-	}
-
-	if (m_basemover)
-	{
-		delete m_basemover;
-	}
-
-	if (m_basesensor)
-	{
-		delete m_basesensor;
-	}
-	
-	if (m_basebehavior)
-	{
-		delete m_basebehavior;
-	}
-
+	delete m_basecontrol;
+	delete m_basemover;
+	delete m_basesensor;
+	delete m_basebehavior;
 	m_interfaces.clear();
 	m_listeners.clear();
 }
@@ -309,6 +295,9 @@ void CBaseBot::Reset()
 	{
 		iface->Reset();
 	}
+
+	m_weapons.clear();
+	m_weaponupdatetimer = 2; // delay next weapon update
 }
 
 void CBaseBot::Update()
@@ -321,6 +310,12 @@ void CBaseBot::Update()
 
 void CBaseBot::Frame()
 {
+	if (--m_weaponupdatetimer <= 0)
+	{
+		m_weaponupdatetimer = TIME_TO_TICKS(60.0f); // by default, update weapons every minute
+		UpdateMyWeapons();
+	}
+
 	for (auto iface : m_interfaces)
 	{
 		iface->Frame();
@@ -418,7 +413,8 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 	{
 		return true;
 	}
-	else if (strncmp(classname, "func_breakable_surf", 19) == 0)
+
+	if (strncmp(classname, "func_breakable_surf", 19) == 0)
 	{
 		return true;
 	}
@@ -452,20 +448,20 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	float forwardspeed = 0.0f;
 	float sidespeed = 0.0f;
 
-	if (buttons & INPUT_FORWARD)
+	if ((buttons & INPUT_FORWARD) != 0)
 	{
 		forwardspeed = mover->GetMovementSpeed();
 	}
-	else if (buttons & INPUT_BACK)
+	else if ((buttons & INPUT_BACK) != 0)
 	{
 		forwardspeed = -mover->GetMovementSpeed();
 	}
 
-	if (buttons & INPUT_MOVERIGHT)
+	if ((buttons & INPUT_MOVERIGHT) != 0)
 	{
 		sidespeed = mover->GetMovementSpeed();
 	}
-	else if (buttons & INPUT_MOVELEFT)
+	else if ((buttons & INPUT_MOVELEFT) != 0)
 	{
 		sidespeed = -mover->GetMovementSpeed();
 	}
@@ -489,55 +485,49 @@ void CBaseBot::BuildUserCommand(const int buttons)
 
 void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 {
-#if HOOK_PLAYERRUNCMD
-	if (extmanager->GetMod()->UserCommandNeedsHook() == true) // this mod already calls runplayermove on bots, just hook it
+	if (!extension->ShouldCallRunPlayerCommand()) // this mod already calls runplayermove on bots, we send the bot actual cmd on the hook
 	{
 		return;
 	}
-	else
-	{
-		m_controller->RunPlayerMove(ucmd);
-	}
-#else
+
 	m_controller->RunPlayerMove(ucmd);
-#endif // 
 }
 
-IPlayerController* CBaseBot::GetControlInterface()
+IPlayerController* CBaseBot::GetControlInterface() const
 {
 	if (m_basecontrol == nullptr)
 	{
-		m_basecontrol = new IPlayerController(this);
+		m_basecontrol = new IPlayerController(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basecontrol;
 }
 
-IMovement* CBaseBot::GetMovementInterface()
+IMovement* CBaseBot::GetMovementInterface() const
 {
 	if (m_basemover == nullptr)
 	{
-		m_basemover = new IMovement(this);
+		m_basemover = new IMovement(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basemover;
 }
 
-ISensor* CBaseBot::GetSensorInterface()
+ISensor* CBaseBot::GetSensorInterface() const
 {
 	if (m_basesensor == nullptr)
 	{
-		m_basesensor = new ISensor(this);
+		m_basesensor = new ISensor(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basesensor;
 }
 
-IBehavior* CBaseBot::GetBehaviorInterface()
+IBehavior* CBaseBot::GetBehaviorInterface() const
 {
 	if (m_basebehavior == nullptr)
 	{
-		m_basebehavior = new CBaseBotBehavior(this);
+		m_basebehavior = new CBaseBotBehavior(const_cast<CBaseBot*>(this));
 	}
 
 	return m_basebehavior;
@@ -551,7 +541,20 @@ void CBaseBot::Spawn()
 		FirstSpawn();
 	}
 
+#ifdef EXT_DEBUG
+
+	auto speed = GetMaxSpeed();
+
+	if (speed <= 0.1f)
+	{
+		// Warn developers if this is 0
+		smutils->LogError(myself, "CBasePlayer::m_flMaxspeed == %4.8f", speed);
+	}
+
+#endif // EXT_DEBUG
+
 	Reset();
+	m_homepos = GetAbsOrigin();
 }
 
 void CBaseBot::FirstSpawn()
@@ -624,4 +627,45 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	trace_t result;
 	UTIL_TraceLine(GetEyeOrigin(), to, MASK_SHOT, &filter, &result);
 	return !result.DidHit();
+}
+
+void CBaseBot::UpdateMyWeapons()
+{
+	m_weapons.clear();
+
+	for (int i = 0; i < MAX_WEAPONS; i++)
+	{
+		int index = INVALID_EHANDLE_INDEX;
+		entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", index, i);
+
+		if (index == INVALID_EHANDLE_INDEX)
+			continue;
+
+		edict_t* weapon = gamehelpers->EdictOfIndex(index);
+
+		if (!weapon || weapon->IsFree())
+			continue;
+
+		m_weapons.emplace_back(weapon);
+	}
+}
+
+const CBotWeapon* CBaseBot::GetActiveBotWeapon() const
+{
+	auto weapon = GetActiveWeapon();
+	
+	if (!weapon || weapon->IsFree())
+		return nullptr;
+
+	int index = gamehelpers->IndexOfEdict(weapon);
+
+	for (const auto& botweapon : m_weapons)
+	{
+		if (botweapon.GetBaseCombatWeapon().GetIndex() == index)
+		{
+			return &botweapon;
+		}
+	}
+
+	return nullptr;
 }

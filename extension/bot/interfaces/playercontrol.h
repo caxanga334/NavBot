@@ -3,9 +3,9 @@
 #pragma once
 
 #include <mathlib/vector.h>
+#include <basehandle.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/playerinput.h>
-#include <basehandle.h>
 
 struct edict_t;
 

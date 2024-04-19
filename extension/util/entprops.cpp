@@ -471,7 +471,7 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 	}
 	else
 	{
-		result = (bool*)((uint8_t*)pEntity + offset) ? 1 : 0;
+		result = *(bool*)((uint8_t*)pEntity + offset) ? 1 : 0;
 		return true;
 	}
 }
@@ -855,7 +855,7 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 
 		if (type == PropEnt_Unknown)
 		{
-			return -1;
+			return false;
 		}
 
 		CHECK_SET_PROP_DATA_OFFSET(false);
@@ -1276,7 +1276,7 @@ bool CEntPropUtils::SetEntPropVector(int entity, PropType proptype, const char *
 /// @param len 
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, int& len, int element)
+bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element)
 {
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
@@ -1826,7 +1826,7 @@ bool CEntPropUtils::SetEntDataVector(int entity, int offset, Vector value, bool 
 /// @param maxlen Maximum length of output string buffer.
 /// @param len Number of non-null bytes written.
 /// @return String pointer at the given memory location.
-bool CEntPropUtils::GetEntDataString(int entity, int offset, int maxlen, char* result, int& len)
+bool CEntPropUtils::GetEntDataString(int entity, int offset, int maxlen, char* result, size_t& len)
 {
 	CBaseEntity *pEntity = GetEntity(entity);
 
@@ -2056,7 +2056,7 @@ bool CEntPropUtils::GameRules_GetPropVector(const char *prop, Vector& result, in
 /// @param maxlen Maximum length of output string buffer.
 /// @param element Element # (starting from 0) if property is an array.
 /// @return Value at the given property offset.
-bool CEntPropUtils::GameRules_GetPropString(const char* prop, char* result, int& len, int maxlen, int element)
+bool CEntPropUtils::GameRules_GetPropString(const char* prop, char* result, size_t& len, int maxlen, int element)
 {
 	int offset;
 	int bit_count;

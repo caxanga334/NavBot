@@ -1,0 +1,127 @@
+name: Build Extension
+
+on:
+  push:
+
+jobs:
+  build_ext:
+    name: Build for ${{ matrix.identifier }}
+    runs-on: ${{ matrix.os_version }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        buildjobs:
+          - windows-x86
+          - windows-x64
+          - linux-latest
+
+        include:
+          - meta_branch: "1.12-dev"
+            sm_branch: "master"
+            sdks_to_fetch: 'tf2 css hl2dm dods orangebox sdk2013 bms l4d l4d2 eye'
+          
+          - buildjobs: windows-x86
+            os_version: windows-latest
+            identifier: 'Windows Latest (x86)'
+            msvc_arch: 'x86'
+            ambuild_target: 'x86'
+            package_name: 'windows-x86'
+            build_sdks: 'tf2,dods,css,hl2dm,orangebox,sdk2013,bms,l4d,l4d2,eye'
+
+          - buildjobs: windows-x64
+            os_version: windows-latest
+            identifier: 'Windows Latest (x86-64)'
+            msvc_arch: 'x64'
+            ambuild_target: 'x86_64'
+            package_name: 'windows-x86-64'
+            build_sdks: 'tf2'
+
+          - buildjobs: linux-latest
+            os_version: ubuntu-latest
+            identifier: 'Linux Latest (x86, x86-64)'
+            cc: clang-15
+            cxx: clang++-15
+            ambuild_target: 'x86,x86_64'
+            package_name: 'linux-latest'
+            build_sdks: 'tf2,dods,css,hl2dm,orangebox,sdk2013,bms,l4d,l4d2'
+
+    steps:
+      - name: Install Packages (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx }} g++-multilib
+          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
+          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+
+      - name: Install MSVC for ${{ matrix.identifier }}
+        if: runner.os == 'Windows'
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: ${{ matrix.msvc_arch }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: '3.11'
+
+      - name: Setup ambuild
+        run: |
+          python -m pip install wheel
+          pip install git+https://github.com/alliedmodders/ambuild
+
+      - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: alliedmodders/metamod-source
+          ref: ${{ matrix.meta_branch }}
+          path: mmsource
+          submodules: recursive
+    
+      - name: Fetch SourceMod ${{ matrix.sm_branch }}
+        uses: actions/checkout@v4.1.1
+        with:
+          repository: alliedmodders/sourcemod
+          ref: ${{ matrix.sm_branch }}
+          path: sourcemod
+          submodules: recursive
+      
+      - name: Fetch SDKs
+        shell: bash
+        run: |
+          git clone --mirror https://github.com/alliedmodders/hl2sdk hl2sdk-proxy-repo
+          sdks=(${{ matrix.sdks_to_fetch }})
+          for sdk in "${sdks[@]}"
+          do
+            git clone hl2sdk-proxy-repo -b $sdk hl2sdk-$sdk
+          done
+
+      - name: Fetch Extension
+        uses: actions/checkout@v4.1.1
+        with:
+          path: navbot
+          submodules: recursive
+
+      - name: Build Extension For ${{ matrix.ambuild_target }}
+        working-directory: navbot
+        run: |
+          mkdir build
+          cd build
+          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --sm-path="${{ github.workspace }}/sourcemod" --mms-path="${{ github.workspace }}/mmsource" --enable-optimize --enable-lto --targets "${{ matrix.ambuild_target }}" --symbol-files
+          ambuild
+
+      - name: Get commit SHA
+        uses: benjlevesque/short-sha@v3.0
+        id: short-sha
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
+          path: |
+              navbot/build/package/*
+    
+      
+    

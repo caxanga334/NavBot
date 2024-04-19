@@ -1,0 +1,6 @@
+// Team Fortress 2 Nav Mesh place name database.
+// Lines starting with '//' are comment lines.
+// Place names should not have any spaces in them.
+// TO-DO: Add place names
+RedTeamSpawn
+BluTeamSpawn

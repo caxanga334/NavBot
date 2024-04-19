@@ -20,12 +20,12 @@ void IBehavior::Frame()
 {
 }
 
-QueryAnswerType IBehavior::ShouldAttack(CBaseBot* me, CKnownEntity* them)
+QueryAnswerType IBehavior::ShouldAttack(CBaseBot* me, const CKnownEntity* them)
 {
 	return GetDecisionQueryResponder()->ShouldAttack(me, them);
 }
 
-QueryAnswerType IBehavior::ShouldSeekAndDestroy(CBaseBot* me, CKnownEntity* them)
+QueryAnswerType IBehavior::ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them)
 {
 	return GetDecisionQueryResponder()->ShouldSeekAndDestroy(me, them);
 }
@@ -60,7 +60,7 @@ QueryAnswerType IBehavior::IsBlocker(CBaseBot* me, edict_t* blocker, const bool 
 	return GetDecisionQueryResponder()->IsBlocker(me, blocker, any);
 }
 
-CKnownEntity* IBehavior::SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2)
+const CKnownEntity* IBehavior::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return GetDecisionQueryResponder()->SelectTargetThreat(me, threat1, threat2);
 }

@@ -4,7 +4,6 @@
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
-#include <ifaces_extern.h>
 #include <util/helpers.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"
@@ -252,7 +251,7 @@ bool ISensor::AddKnownEntity(edict_t* entity)
 {
 	auto index = gamehelpers->IndexOfEdict(entity);
 
-	if (index == 0) // index 0 is the world entity
+	if (index <= 0) // filter invalid edicts and worldspawn entity.
 	{
 		return false;
 	}
@@ -264,7 +263,7 @@ bool ISensor::AddKnownEntity(edict_t* entity)
 		return true; // Entity is already in the list
 	}
 
-	m_knownlist.push_back(other);
+	m_knownlist.emplace_back(entity);
 
 	return true;
 }
@@ -302,7 +301,7 @@ bool ISensor::IsKnown(edict_t* entity)
  * @param entity Entity to search
  * @return Pointer to a Knownentity of the given entity or NULL if the bot doesn't known this entity
 */
-CKnownEntity* ISensor::GetKnown(edict_t* entity)
+const CKnownEntity* ISensor::GetKnown(edict_t* entity)
 {
 	CKnownEntity other(entity);
 
@@ -317,6 +316,20 @@ CKnownEntity* ISensor::GetKnown(edict_t* entity)
 	return nullptr;
 }
 
+void ISensor::UpdateKnownEntity(edict_t* entity)
+{
+	auto known = FindKnownEntity(entity);
+
+	if (known == nullptr)
+	{
+		AddKnownEntity(entity);
+	}
+	else
+	{
+		known->UpdatePosition();
+	}
+}
+
 void ISensor::SetFieldOfView(const float fov)
 {
 	m_fieldofview = fov;
@@ -328,12 +341,12 @@ const float ISensor::GetTimeSinceVisibleThreat() const
 	return m_threatvisibletimer.GetElapsedTime();
 }
 
-CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
+const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 {
 	if (m_knownlist.empty())
 		return nullptr;
 
-	CKnownEntity* primarythreat = nullptr;
+	const CKnownEntity* primarythreat = nullptr;
 
 	// get the first valid threat
 
@@ -425,9 +438,9 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 	return quantity;
 }
 
-CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
+const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 {
-	CKnownEntity* nearest = nullptr;
+	const CKnownEntity* nearest = nullptr;
 	float smallest = std::numeric_limits<float>::max();
 	auto origin = GetBot()->GetEyeOrigin();
 
@@ -477,12 +490,12 @@ void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type, c
 		return; // outside hearing range
 	}
 
-	auto known = GetKnown(source);
+	auto known = FindKnownEntity(source);
 
 	if (known == nullptr)
 	{
 		AddKnownEntity(source);
-		known = GetKnown(source);
+		known = FindKnownEntity(source);
 		known->NotifyHeard(volume, position);
 	}
 	else
@@ -516,7 +529,7 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 	for (auto edict : visibleVec)
 	{
 		// all entities inside visibleVec are visible to the bot RIGHT NOW!
-		auto known = GetKnown(edict);
+		auto known = FindKnownEntity(edict);
 		auto pos = UtilHelpers::getWorldSpaceCenter(edict);
 
 		if (known == nullptr) // first time seening this entity
@@ -594,6 +607,18 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
+		if (edict->IsFree())
+		{
+			continue;
+		}
+
+		if (edict->GetUnknown() == nullptr) {
+			continue;
+		}
+
+		if (i == GetBot()->GetIndex())
+			continue; // skip self
+
 		auto gp = playerhelpers->GetGamePlayer(i);
 
 		if (!gp->IsInGame())
@@ -634,6 +659,11 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
+		if (edict->IsFree())
+		{
+			continue;
+		}
+
 		if (edict->GetUnknown() == nullptr) {
 			continue;
 		}
@@ -657,5 +687,20 @@ void ISensor::CleanKnownEntities()
 		[](CKnownEntity& known) { return known.IsObsolete(); });
 
 	m_knownlist.erase(iter, m_knownlist.end());
+}
+
+CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
+{
+	int index = gamehelpers->IndexOfEdict(edict);
+
+	for (auto& known : m_knownlist)
+	{
+		if (gamehelpers->IndexOfEdict(known.GetEdict()) == index)
+		{
+			return &known;
+		}
+	}
+
+	return nullptr;
 }
 

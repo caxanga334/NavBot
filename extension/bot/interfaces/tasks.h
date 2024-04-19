@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <memory>
 
+#include <am-string.h>
 #include <tier1/strtools.h>
 #include <bot/bot_debug_shared.h>
 #include "decisionquery.h"
@@ -76,6 +77,7 @@ public:
 		}
 	}
 
+	const bool HasNextTask() const { return m_next != nullptr; }
 	AITask<BotClass>* GetNextTask() const { return m_next; }
 
 	const char* GetReason() const { return m_reason; }
@@ -103,7 +105,7 @@ public:
 	// Discard this result, deletes the stored task if any
 	void DiscardResult()
 	{
-		if (m_next)
+		if (m_next != nullptr)
 		{
 			delete m_next;
 			m_next = nullptr;
@@ -199,7 +201,7 @@ public:
 																\
 		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
 			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 			{ \
 				__result = __respondingTask->DFUNC(ARG1); \
@@ -223,7 +225,7 @@ public:
 																\
 		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
 			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 			{ \
 				__result = __respondingTask->DFUNC(ARG1, ARG2); \
@@ -247,7 +249,7 @@ public:
 																\
 		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
 			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 			{ \
 				__result = __respondingTask->DFUNC(ARG1, ARG2, ARG3); \
@@ -271,7 +273,7 @@ public:
 																\
 		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetHeadTask(); \
+			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
 			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
 			{ \
 				__result = __respondingTask->DFUNC(ARG1, ARG2, ARG3, ARG4); \
@@ -285,12 +287,12 @@ public:
 	return __result; \
 			\
 
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, CKnownEntity* them) override
+	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
 	}
 
-	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, CKnownEntity* them) override
+	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
 	}
@@ -325,9 +327,9 @@ public:
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
-	virtual CKnownEntity* SelectTargetThreat(CBaseBot* me, CKnownEntity* threat1, CKnownEntity* threat2) override
+	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
 	{
-		CKnownEntity* result = nullptr;
+		const CKnownEntity* result = nullptr;
 
 		if (m_task)
 		{
@@ -336,7 +338,7 @@ public:
 
 			while (respondingTask != nullptr && result == nullptr)
 			{
-				AITask<BotClass>* previousTask = respondingTask->GetHeadTask();
+				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
 				while (respondingTask != nullptr && result == nullptr)
 				{
 					result = respondingTask->SelectTargetThreat(me, threat1, threat2);
@@ -361,7 +363,7 @@ public:
 
 			while (respondingTask != nullptr && result == vec3_origin)
 			{
-				AITask<BotClass>* previousTask = respondingTask->GetHeadTask();
+				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
 				while (respondingTask != nullptr && result == vec3_origin)
 				{
 					result = respondingTask->GetTargetAimPos(me, entity, player);
@@ -559,18 +561,18 @@ public:
 	*/
 	virtual AITask<BotClass>* InitialNextTask() { return nullptr; }
 
-	AITask<BotClass>* GetHeadTask() const { return m_headTask; }
+	AITask<BotClass>* GetPreviousTask() const { return m_prevTask; }
 	AITask<BotClass>* GetNextTask() const { return m_nextTask; }
-	AITask<BotClass>* GetTaskAboveMe() const { return m_aboveTask; }
-	AITask<BotClass>* GetTaskBelowMe() const { return m_belowTask; }
+	AITask<BotClass>* GetTaskAboveMe() const { return m_topTask; }
+	AITask<BotClass>* GetTaskBelowMe() const { return m_bottomTask; }
 
 private:
 	friend class AITaskManager<BotClass>;
 	AITaskManager<BotClass>* m_manager;
-	AITask<BotClass>* m_headTask; // The task that contains this task
-	AITask<BotClass>* m_nextTask; // The next *ACTIVE* task that this task contains
-	AITask<BotClass>* m_aboveTask;
-	AITask<BotClass>* m_belowTask;
+	AITask<BotClass>* m_prevTask; // previous task on the list
+	AITask<BotClass>* m_nextTask; // next task on the list
+	AITask<BotClass>* m_topTask; // top of the stack
+	AITask<BotClass>* m_bottomTask; // bottom of the stack
 	BotClass* m_bot;
 	std::vector<IEventListener*> m_listener; // Event Listeners
 	mutable TaskEventResponseResult<BotClass> m_pendingEventResult;
@@ -999,10 +1001,10 @@ template<typename BotClass>
 inline AITask<BotClass>::AITask() : m_pendingEventResult(PRIORITY_IGNORED, TASK_CONTINUE, nullptr, nullptr)
 {
 	m_manager = nullptr;
-	m_headTask = nullptr;
+	m_prevTask = nullptr;
 	m_nextTask = nullptr;
-	m_aboveTask = nullptr;
-	m_belowTask = nullptr;
+	m_topTask = nullptr;
+	m_bottomTask = nullptr;
 	m_bot = nullptr;
 	m_hasStarted = false;
 	m_isPaused = false;
@@ -1013,33 +1015,32 @@ template<typename BotClass>
 inline AITask<BotClass>::~AITask()
 {
 	// If there is a task before me
-	if (m_headTask)
+	if (m_prevTask)
 	{
-		if (m_headTask->m_nextTask == this)
+		if (m_prevTask->m_nextTask == this)
 		{
 			// Update the next task of the task before me to a task that is below me
-			m_headTask->m_nextTask = m_belowTask;
+			m_prevTask->m_nextTask = m_bottomTask;
 		}
 	}
 
 	AITask<BotClass>* iter = nullptr, * next = nullptr;
-	for (iter = m_headTask; iter != nullptr; iter = next)
+	for (iter = m_nextTask; iter != nullptr; iter = next)
 	{
-		next = iter->m_belowTask;
+		next = iter->m_bottomTask;
 		delete iter;
 	}
 
-	if (m_belowTask)
+	if (m_bottomTask)
 	{
 		// We're going away and is no longer above our below task
-		m_belowTask->m_aboveTask = nullptr;
+		m_bottomTask->m_topTask = nullptr;
 	}
 
-	if (m_aboveTask)
+	if (m_topTask)
 	{
 		// Any task above me is also going away
-		delete m_aboveTask;
-		m_aboveTask = nullptr;
+		delete m_topTask;
 	}
 
 	m_pendingEventResult.DiscardResult();
@@ -1054,9 +1055,9 @@ inline const char* AITask<BotClass>::DebugString() const
 	szdebug[0] = '\0';
 
 	auto root = this;
-	while (root->m_headTask)
+	while (root->m_prevTask)
 	{
-		root = root->m_headTask;
+		root = root->m_prevTask;
 	}
 
 	return BuildDebugString(szdebug, root);
@@ -1067,20 +1068,20 @@ inline char* AITask<BotClass>::BuildDebugString(char* name, const AITask<BotClas
 {
 	constexpr auto size = 256;
 
-	Q_strcat(name, task->GetName(), size);
+	ke::SafeStrcat(name, size, task->GetName());
 
 	auto next = task->GetNextTask();
 	if (next)
 	{
-		Q_strcat(name, "(", size);
+		ke::SafeStrcat(name, size, "(");
 		BuildDebugString(name, next);
-		Q_strcat(name, ")", size);
+		ke::SafeStrcat(name, size, ")");
 	}
 
 	auto below = task->GetTaskBelowMe();
 	if (below)
 	{
-		Q_strcat(name, "<<", size);
+		ke::SafeStrcat(name, size, "<<");
 		BuildDebugString(name, below);
 	}
 
@@ -1147,9 +1148,9 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 	case TASK_PAUSE:
 	{
 		AITask<BotClass>* topTask = this;
-		while (topTask->m_aboveTask != nullptr)
+		while (topTask->m_topTask != nullptr)
 		{
-			topTask = topTask->m_aboveTask;
+			topTask = topTask->m_topTask;
 		}
 
 		if (bot->IsDebugging(BOTDEBUG_TASKS))
@@ -1215,7 +1216,7 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 		// We're changing tasks, end the current one
 		this->ProcessTaskEnd(bot, manager, newTask);
 		// And start the new one
-		TaskResult<BotClass> startresult = newTask->ProcessTaskStart(bot, manager, this, this->m_belowTask);
+		TaskResult<BotClass> startresult = newTask->ProcessTaskStart(bot, manager, this, this->m_bottomTask);
 
 		if (this != newTask)
 		{
@@ -1226,7 +1227,7 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 	}
 	case TASK_DONE:
 	{
-		AITask<BotClass>* taskToResume = this->m_belowTask;
+		AITask<BotClass>* taskToResume = this->m_bottomTask;
 		this->ProcessTaskEnd(bot, manager, taskToResume);
 
 		if (bot->IsDebugging(BOTDEBUG_TASKS))
@@ -1299,27 +1300,28 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskStart(BotClass* bot, AI
 	// Maintain the task list
 	if (pastTask)
 	{
-		m_headTask = pastTask->m_headTask;
+		m_prevTask = pastTask->m_prevTask;
 	}
 
-	if (m_headTask)
+	if (m_prevTask)
 	{
-		m_headTask->m_nextTask = this;
+		m_prevTask->m_nextTask = this;
 	}
 
-	m_belowTask = belowTask;
+	m_bottomTask = belowTask;
 	if (belowTask) // if there is a task below us, then place us on top of that task
 	{
-		m_belowTask->m_aboveTask = this;
+		belowTask->m_topTask = this;
 	}
 
-	m_aboveTask = nullptr;
+	m_topTask = nullptr;
 
 	m_nextTask = InitialNextTask();
 	if (m_nextTask)
 	{
 		// Build Task list
-		m_nextTask->m_headTask = this;
+		m_nextTask->m_prevTask = this;
+		m_nextTask->RunTask(bot, manager, SwitchTo(m_nextTask, "Starting next task in list."));
 	}
 
 	// Start ourself
@@ -1379,24 +1381,19 @@ inline void AITask<BotClass>::ProcessTaskEnd(BotClass* bot, AITaskManager<BotCla
 
 	// notify the other tasks on the list that we're ending
 	AITask<BotClass>* iter = nullptr, * next = nullptr;
-	for (iter = m_headTask; iter != nullptr; iter = next)
+	for (iter = m_nextTask; iter != nullptr; iter = next)
 	{
-		next = iter->m_belowTask;
+		next = iter->m_bottomTask;
 		iter->ProcessTaskEnd(bot, manager, nextTask);
-	}
-
-	for (AITask<BotClass>* next = m_nextTask; next != nullptr; next = m_nextTask->m_belowTask)
-	{
-		next->ProcessTaskEnd(bot, manager, nextTask);
 	}
 
 	// Call my OnEnd
 	OnTaskEnd(bot, nextTask);
 
 	// Also end any tasks above me
-	if (m_aboveTask)
+	if (m_topTask)
 	{
-		m_aboveTask->ProcessTaskEnd(bot, manager, nextTask);
+		m_topTask->ProcessTaskEnd(bot, manager, nextTask);
 	}
 }
 
@@ -1426,7 +1423,7 @@ inline AITask<BotClass>* AITask<BotClass>::ProcessTaskPause(BotClass* bot, AITas
 	{
 		// End me
 		ProcessTaskEnd(bot, manager, nullptr);
-		AITask<BotClass>* toreplace = m_belowTask;
+		AITask<BotClass>* toreplace = m_bottomTask;
 		manager->NotifyTaskEnd(this);
 		return toreplace;
 	}
@@ -1458,12 +1455,12 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskResume(BotClass* bot, A
 	}
 
 	m_isPaused = false;
-	m_aboveTask = nullptr;
+	m_topTask = nullptr;
 
-	if (m_headTask)
+	if (m_prevTask)
 	{
 		// Add ourselves back to the list
-		m_headTask->m_nextTask = this;
+		m_prevTask->m_nextTask = this;
 	}
 
 	// Tell the next tasks on my list to also resume

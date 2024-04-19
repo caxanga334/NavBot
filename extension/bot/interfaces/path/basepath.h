@@ -4,6 +4,8 @@
 
 #include <vector>
 #include <stack>
+#include <iterator>
+#include <algorithm>
 
 #include <sdkports/sdk_timers.h>
 #include <bot/basebot.h>
@@ -26,6 +28,8 @@ namespace AIPath
 		SEGMENT_JUMP_OVER_GAP, // Jumping over a gap/hole on the ground
 		SEGMENT_LADDER_UP, // Going up a ladder
 		SEGMENT_LADDER_DOWN, // Going down a ladder
+		SEGMENT_CLIMB_DOUBLE_JUMP, // Climbing over an obstacle that requires a double jump
+		SEGMENT_BLAST_JUMP, // Blast/Rocket jump to the next segment
 
 		MAX_SEGMENT_TYPES
 	};
@@ -36,6 +40,33 @@ namespace AIPath
 		PARTIAL_PATH, // Partial path, doesn't reach the end goal
 		NO_PATH // No path at all
 	};
+
+	inline const char* SegmentTypeToString(SegmentType type)
+	{
+		switch (type)
+		{
+		case AIPath::SEGMENT_GROUND:
+			return "GROUND";
+		case AIPath::SEGMENT_DROP_FROM_LEDGE:
+			return "DROP_FROM_LEDGE";
+		case AIPath::SEGMENT_CLIMB_UP:
+			return "CLIMB_UP";
+		case AIPath::SEGMENT_JUMP_OVER_GAP:
+			return "JUMP_OVER_GAP";
+		case AIPath::SEGMENT_LADDER_UP:
+			return "LADDER_UP";
+		case AIPath::SEGMENT_LADDER_DOWN:
+			return "LADDER_DOWN";
+		case AIPath::SEGMENT_CLIMB_DOUBLE_JUMP:
+			return "CLIMB_DOUBLE_JUMP";
+		case AIPath::SEGMENT_BLAST_JUMP:
+			return "BLAST_JUMP";
+		case AIPath::MAX_SEGMENT_TYPES:
+			return "MAX_SEGMENT_TYPES";
+		default:
+			return "ERROR";
+		}
+	}
 }
 
 // Abstract class for custom path finding costs
@@ -47,11 +78,12 @@ public:
 	 * @param toArea Current nav area
 	 * @param fromArea Nav area the bot will be moving from, can be NULL for the first area
 	 * @param ladder Ladder the bot will be using
+	 * @param link If 'how' refers to GO_SPECIAL_LINK, this is the link or NULL if not using special links
 	 * @param elevator Not used, to be replaced when proper elevator supported is added to the extension version of the nav mesh
 	 * @param length Path length
 	 * @return path cost
 	*/
-	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const CFuncElevator* elevator, float length) = 0;
+	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const = 0;
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments
@@ -133,6 +165,13 @@ public:
 		float curvature;
 		const CBasePathSegment* segment; // segment before the cursor position
 		bool outdated; // true if the cursor was changed without updating
+
+		PathCursor()
+		{
+			curvature = 0.0f;
+			segment = nullptr;
+			outdated = true;
+		}
 
 		inline void Invalidate()
 		{
@@ -270,8 +309,6 @@ public:
 		return pathBuildResult;
 	}
 
-	bool BuildTrivialPath(const Vector& start, const Vector& goal);
-
 	virtual void Draw(const CBasePathSegment* start, const float duration = 0.1f);
 	virtual void DrawFullPath(const float duration = 0.1f);
 	virtual float GetPathLength() const;
@@ -288,10 +325,10 @@ public:
 	virtual const Vector& GetStartPosition() const;
 	virtual const Vector& GetEndPosition() const;
 
-	virtual const CBasePathSegment* GetFirstSegment() const;
-	virtual const CBasePathSegment* GetLastSegment() const;
-	virtual const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
-	virtual const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
+	const CBasePathSegment* GetFirstSegment() const;
+	const CBasePathSegment* GetLastSegment() const;
+	const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
+	const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
 	virtual const CBasePathSegment* GetGoalSegment() const;
 
 	enum SeekType
@@ -321,10 +358,12 @@ protected:
 	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessLaddersInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
 	virtual void PostProcessPath();
 	
 	inline std::vector<CBasePathSegment*>& GetAllSegments() { return m_segments; }
+	bool BuildTrivialPath(const Vector& start, const Vector& goal);
 
 private:
 	std::vector<CBasePathSegment*> m_segments;
@@ -387,6 +426,88 @@ inline void CPath::MoveCursor(float value, MoveCursorType type)
 inline float CPath::GetCursorPosition(void) const
 {
 	return m_cursorPos;
+}
+
+inline const CBasePathSegment* CPath::GetFirstSegment() const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	return *m_segments.begin();
+}
+
+inline const CBasePathSegment* CPath::GetLastSegment() const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	return *std::prev(m_segments.end());
+}
+
+inline const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* current) const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const CBasePathSegment* object) {
+		if (object == current)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	if (it == m_segments.end())
+	{
+		return nullptr; // not found
+	}
+
+	it = std::next(it);
+
+	if (it == m_segments.end())
+	{
+		return nullptr;
+	}
+
+	return *it;
+}
+
+inline const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* current) const
+{
+	if (m_segments.size() == 0)
+	{
+		return nullptr;
+	}
+
+	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const CBasePathSegment* object) {
+		if (object == current)
+		{
+			return true;
+		}
+
+		return false;
+	});
+
+	if (it == m_segments.end())
+	{
+		return nullptr; // not found
+	}
+
+	if (it == m_segments.begin())
+	{
+		return nullptr; // current segment is the first segment, no previous segment
+	}
+
+	it = std::prev(it);
+
+	return *it;
 }
 
 #endif // !SMNAV_BOT_BASE_PATH_H_
