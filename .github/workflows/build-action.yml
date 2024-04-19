@@ -17,7 +17,7 @@ jobs:
           - linux-latest
 
         include:
-          - meta_branch: "1.12-dev"
+          - meta_branch: "master"
             sm_branch: "master"
             sdks_to_fetch: 'tf2 css hl2dm dods orangebox sdk2013 bms l4d l4d2 eye'
           
