@@ -28,6 +28,7 @@ jobs:
             ambuild_target: 'x86'
             package_name: 'windows-x86'
             build_sdks: 'tf2,dods,css,hl2dm,orangebox,sdk2013,bms,l4d,l4d2,eye'
+            dbgsym_ext: 'pdb'
 
           - buildjobs: windows-x64
             os_version: windows-latest
@@ -36,6 +37,7 @@ jobs:
             ambuild_target: 'x86_64'
             package_name: 'windows-x86-64'
             build_sdks: 'tf2'
+            dbgsym_ext: 'pdb'
 
           - buildjobs: linux-latest
             os_version: ubuntu-latest
@@ -45,6 +47,7 @@ jobs:
             ambuild_target: 'x86,x86_64'
             package_name: 'linux-latest'
             build_sdks: 'tf2,dods,css,hl2dm,orangebox,sdk2013,bms,l4d,l4d2'
+            dbgsym_ext: 'dbg'
 
     steps:
       - name: Install Packages (Linux)
@@ -116,12 +119,17 @@ jobs:
         uses: benjlevesque/short-sha@v3.0
         id: short-sha
 
-      - name: Upload a Build Artifact
+      - name: Upload Extension Build Artifact
         uses: actions/upload-artifact@v4.3.1
         with:
           name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
           path: |
               navbot/build/package/*
     
-      
+      - name: Upload Debugging Symbols Artifact
+        uses: actions/upload-artifact@v4.3.1
+        with:
+          name: navbot-dbgsym-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
+          path: |
+              navbot/build/extension/**/*.${{ matrix.dbgsym_ext }}
     
