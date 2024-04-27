@@ -31,9 +31,7 @@ SourceMod::SMCResult CMvMUpgradeManager::ReadSMC_NewSection(const SourceMod::SMC
 	if (strcmp(name, "upgrade") == 0)
 	{
 		m_parserinupgradesection = true;
-		m_parserinfo.attribute.clear();
-		m_parserinfo.priority = 1;
-		m_parserinfo.quality = MVM_DEFAULT_QUALITY;
+		ClearParserTemporaryInfo();
 		return SourceMod::SMCResult_Continue;
 	}
 
@@ -275,6 +273,11 @@ void CMvMUpgradeManager::PostLoadBotUpgradeInfo()
 			}
 
 			info.SetUpgrade(upgrade);
+
+			if (storage.second.m_highestpriority < info.priority)
+			{
+				storage.second.m_highestpriority = info.priority;
+			}
 		}
 	}
 

@@ -18,10 +18,12 @@ public:
 
 	enum BuyUpgradeState : int
 	{
-		STATE_GOBUY = 0, // Go and buy something
+		STATE_GOBUY = 0, // Start buying stuff
 		STATE_BUYINGSTUFF, // Buying stuff
+		STATE_ADVANCE, // Advance into the next priority
 		STATE_WAITFORNEXTWAVE, // Already bought stuff, wait until the bot gets more money from the next wave
 		STATE_DOREFUND, // Bot should refund and rebuy stuff
+		STATE_REFILTER, // Rerun the weapon filter
 
 		MAX_STATES
 	};
@@ -76,7 +78,8 @@ public:
 	const int GetCurrentPriority() const { return m_nextpriority; }
 	const bool IsUpgradingDone() const { return m_tobuylist.empty(); }
 	const bool IsAtInitialPriority() const { return m_nextpriority == INITIAL_PRIORITY; }
-	const bool ShouldGoToAnUpgradeStation() const { return m_state == STATE_GOBUY || m_state == STATE_DOREFUND; }
+	const bool ShouldGoToAnUpgradeStation() const { return m_state == STATE_GOBUY || m_state == STATE_DOREFUND || m_state == STATE_REFILTER || m_state == STATE_ADVANCE || 
+		m_state == STATE_BUYINGSTUFF; }
 	const bool IsDoneForCurrentWave() const { return m_state == STATE_WAITFORNEXTWAVE; }
 	const bool IsBuyingUpgrades() const { return m_state == STATE_GOBUY || m_state == STATE_BUYINGSTUFF; }
 	BuyUpgradeState GetState() const { return m_state; }
@@ -101,6 +104,7 @@ private:
 	void ExecuteBuy();
 	void ExecuteRefund();
 	bool CanAffordAnyUpgrade() const;
+	bool AnyUpgradeAvailable() const;
 };
 
 #endif // !NAVBOT_TF2_MVM_UPGRADES_H_

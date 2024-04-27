@@ -35,6 +35,7 @@
 #include "manager.h"
 #include <util/entprops.h>
 #include <util/helpers.h>
+#include <util/librandom.h>
 #include <core/eventmanager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
@@ -158,6 +159,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	extension = this;
 	m_hookruncmd = false;
 	m_gamedata = nullptr;
+	randomgen->ReSeed(); // set the initial seed based on the clock
 
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();

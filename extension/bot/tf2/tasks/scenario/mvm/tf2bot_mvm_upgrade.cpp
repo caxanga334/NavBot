@@ -60,14 +60,14 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (!m_buydelay.HasStarted()) // Bot reached the upgrade station, start the timer
 		{
-			m_buydelay.Start(randomgen->GetRandomReal<float>(2.0f, 5.0f));
+			m_buydelay.Start(randomgen->GetRandomReal<float>(1.0f, 2.0f));
 		}
 		else
 		{
 			if (m_buydelay.IsElapsed())
 			{
 				manager.Update(); // bot is inside an upgrade zone, buy upgrades
-				m_buydelay.Start(randomgen->GetRandomReal<float>(2.0f, 5.0f));
+				m_buydelay.Start(randomgen->GetRandomReal<float>(1.0f, 2.0f));
 			}
 		}
 	}

@@ -14,9 +14,12 @@ class KeyValues;
 class CMvMBotUpgradeInfoStorage
 {
 public:
-	CMvMBotUpgradeInfoStorage() { m_upgradeinfos.reserve(32); }
+	CMvMBotUpgradeInfoStorage() { m_upgradeinfos.reserve(32); m_highestpriority = 0; }
 
 	std::vector<TF2BotUpgradeInfo_t> m_upgradeinfos;
+	int m_highestpriority;
+
+	const int GetMaxPriority() const { return m_highestpriority; }
 };
 
 class CMvMUpgradeManager : public SourceMod::ITextListener_SMC
@@ -63,6 +66,23 @@ public:
 	const MvMUpgrade_t* FindUpgrade(const std::string& attributename, int quality = MVM_DEFAULT_QUALITY) const;
 	void CollectUpgradesToBuy(std::vector<const TF2BotUpgradeInfo_t*>& upgradeVec, int priority, TeamFortress2::TFClassType classtype) const;
 
+	/**
+	 * @brief Returns the max priority for a given class
+	 * @param classtype TF Class
+	 * @return Max priority or -1 on failure
+	 */
+	const int GetMaxPriorityForClass(TeamFortress2::TFClassType classtype) const
+	{
+		auto storage = m_upgradeinfos.find(static_cast<int>(classtype));
+
+		if (storage != m_upgradeinfos.end())
+		{
+			return storage->second.GetMaxPriority();
+		}
+
+		return -1;
+	}
+
 private:
 	std::vector<MvMUpgrade_t> m_upgrades;
 	std::unordered_map<int, CMvMBotUpgradeInfoStorage> m_upgradeinfos;
@@ -87,6 +107,16 @@ private:
 	}
 
 	void PostLoadBotUpgradeInfo();
+
+	void ClearParserTemporaryInfo()
+	{
+		m_parserinfo.allowedweapons.clear();
+		m_parserinfo.attribute.clear();
+		m_parserinfo.itemslot = 0;
+		m_parserinfo.maxlevel = -1;
+		m_parserinfo.priority = 1;
+		m_parserinfo.quality = MVM_DEFAULT_QUALITY;
+	}
 };
 
 #endif // !NAVBOT_MVM_UPGRADE_PARSER_H_
