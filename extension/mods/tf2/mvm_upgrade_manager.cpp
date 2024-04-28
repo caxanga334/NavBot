@@ -77,6 +77,17 @@ SourceMod::SMCResult CMvMUpgradeManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 			m_parserinfo.allowedweapons.emplace(atoi(token.c_str()));
 		}
 	}
+	else if (strncmp(key, "excludedweapons", 15) == 0)
+	{
+		std::string szValue(value);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			m_parserinfo.excludedweapons.emplace(atoi(token.c_str()));
+		}
+	}
 
 	return SourceMod::SMCResult_Continue;
 }

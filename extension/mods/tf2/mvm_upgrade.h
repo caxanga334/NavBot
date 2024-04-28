@@ -100,6 +100,7 @@ struct TF2BotUpgradeInfo_t
 		itemslot = 0;
 		maxlevel = 0;
 		allowedweapons.reserve(4);
+		excludedweapons.reserve(4);
 		upgrade = nullptr;
 	}
 
@@ -111,6 +112,13 @@ struct TF2BotUpgradeInfo_t
 			return true;
 
 		return allowedweapons.find(itemindex) != allowedweapons.end();
+	}
+
+	const bool AreThereExcludedWeapons() const { return !excludedweapons.empty(); }
+
+	const bool IsWeaponExcluded(const int itemindex) const
+	{
+		return excludedweapons.find(itemindex) != excludedweapons.end();
 	}
 
 	void SetUpgrade(const MvMUpgrade_t* upg)
@@ -132,6 +140,7 @@ struct TF2BotUpgradeInfo_t
 	int itemslot;
 	int maxlevel;
 	std::unordered_set<int> allowedweapons;
+	std::unordered_set<int> excludedweapons;
 	const MvMUpgrade_t* upgrade;
 };
 

@@ -111,6 +111,7 @@ private:
 	void ClearParserTemporaryInfo()
 	{
 		m_parserinfo.allowedweapons.clear();
+		m_parserinfo.excludedweapons.clear();
 		m_parserinfo.attribute.clear();
 		m_parserinfo.itemslot = 0;
 		m_parserinfo.maxlevel = -1;

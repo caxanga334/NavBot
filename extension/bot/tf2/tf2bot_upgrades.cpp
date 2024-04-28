@@ -286,6 +286,36 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 	}
 
 	m_tobuylist.erase(start, m_tobuylist.end()); // remove upgrades
+
+	auto start2 = std::remove_if(m_tobuylist.begin(), m_tobuylist.end(), [&myweaponindexes](const TF2BotUpgradeInfo_t* upgradeinfo) {
+		if (!upgradeinfo->AreThereExcludedWeapons())
+		{
+			return false; // no weapon exclusions
+		}
+
+		for (auto& index : myweaponindexes)
+		{
+			if (upgradeinfo->IsWeaponExcluded(index))
+			{
+				return true; // bot contains a weapon that is excluded for this upgrade
+			}
+		}
+
+		return false;
+	});
+
+	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
+	{
+		for (auto it = start2; it != m_tobuylist.end(); it++)
+		{
+			auto upgrade = *it;
+
+			ConColorMsg(Color(255, 0, 0, 255), "%s: Removing invalid upgrade %i <%s, %i, %i>. (Weapon Exclusions)\n", m_me->GetDebugIdentifier(),
+				upgrade->GetUpgradeIndex(), upgrade->attribute.c_str(), upgrade->quality, upgrade->itemslot);
+		}
+	}
+
+	m_tobuylist.erase(start2, m_tobuylist.end()); // remove upgrades
 }
 
 void CTF2BotUpgradeManager::RemoveFinishedUpgrades()
