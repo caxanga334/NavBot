@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <sdkports/sdk_timers.h>
 #include <navmesh/nav_area.h>
 #include "tfnavarea.h"
@@ -78,6 +79,31 @@ std::string CTFNavMesh::GetMapFileName() const
 	auto sub2 = mapname.substr(n2 + UGC_STR_SIZE);
 	std::string finalname = sub1 + "_ugc" + sub2; // becomes something like this: ctf_harbine_ugc3067683041
 	return finalname;
+}
+
+void CTFNavMesh::PostCustomAnalysis(void)
+{
+	CTeamFortress2Mod* mod = CTeamFortress2Mod::GetTF2Mod();
+
+	bool hasfrontline = false;
+
+	FOR_EACH_VEC(TheNavAreas, it)
+	{
+		CTFNavArea* area = static_cast<CTFNavArea*>(TheNavAreas[it]);
+
+		if (mod->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
+		{
+			if (!hasfrontline && area->HasMVMAttributes(CTFNavArea::MVMNAV_FRONTLINES))
+			{
+				hasfrontline = true;
+			}
+		}
+	}
+
+	if (!hasfrontline)
+	{
+		smutils->LogError(myself, "Mann vs Machine navmesh without \"Frontlines\" areas!");
+	}
 }
 
 void CTFNavMesh::UpdateDebugDraw()

@@ -25,6 +25,9 @@ public:
 
 	virtual std::string GetMapFileName() const override;
 
+protected:
+	void PostCustomAnalysis(void) override;
+
 private:
 	static constexpr auto NAV_SPAWNROOM_UPDATE_INTERVAL = 10.0f;
 	CountdownTimer m_spawnroomupdatetimer;

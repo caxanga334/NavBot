@@ -32,22 +32,22 @@ public:
 		TFNAV_PATH_DYNAMIC_SPAWNROOM = (1 << 4), // Dynamic No Red/Blu based on the nearest spawnroom entity
 	};
 
-	inline void SetTFPathAttributes(TFNavPathAttributes attribute)
+	void SetTFPathAttributes(TFNavPathAttributes attribute)
 	{
 		m_tfpathattributes |= attribute;
 	}
 
-	inline void ClearTFPathAttributes(TFNavPathAttributes attribute)
+	void ClearTFPathAttributes(TFNavPathAttributes attribute)
 	{
 		m_tfpathattributes &= ~attribute;
 	}
 
-	inline bool HasTFPathAttributes(TFNavPathAttributes attributes) const
+	bool HasTFPathAttributes(TFNavPathAttributes attributes) const
 	{
 		return (m_tfpathattributes & attributes) ? true : false;
 	}
 
-	inline bool CanBeUsedByTeam(TeamFortress2::TFTeam team) const
+	bool CanBeUsedByTeam(TeamFortress2::TFTeam team) const
 	{
 		if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM) && team == TeamFortress2::TFTeam_Red)
 		{
@@ -66,6 +66,52 @@ public:
 		}
 
 		return true;
+	}
+
+	enum TFNavAttributes
+	{
+		TFNAV_LIMIT_TO_REDTEAM = (1 << 0), // Hints are limited to RED team only, this does not block pathing!
+		TFNAV_LIMIT_TO_BLUTEAM = (1 << 1), // Hints are limited to BLU team only, this does not block pathing!
+		TFNAV_SENTRYGUN_HINT = (1 << 2), // This is a good spot to build a sentry gun
+		TFNAV_DISPENSER_HINT = (1 << 3), // This is a good spot to build a dispenser
+		TFNAV_TELE_ENTRANCE_HINT = (1 << 4), // This is a good spot to build a teleporter entrance
+		TFNAV_TELE_EXIT_HINT = (1 << 5), // This is a good spot to build a teleporter exit
+		TFNAV_SNIPER_HINT = (1 << 6), // This is a good spot to snipe from
+	};
+
+	void SetTFAttributes(TFNavAttributes attribute)
+	{
+		m_tfattributes |= attribute;
+	}
+
+	void ClearTFAttributes(TFNavAttributes attribute)
+	{
+		m_tfattributes &= ~attribute;
+	}
+
+	bool HasTFAttributes(TFNavAttributes attributes) const
+	{
+		return (m_tfattributes & attributes) ? true : false;
+	}
+
+	enum MvMNavAttributes
+	{
+		MVMNAV_FRONTLINES = (1 << 0), // Bots will move here while waiting for the wave to start
+	};
+
+	void SetMVMAttributes(MvMNavAttributes attribute)
+	{
+		m_mvmattributes |= attribute;
+	}
+
+	void ClearMVMAttributes(MvMNavAttributes attribute)
+	{
+		m_mvmattributes &= ~attribute;
+	}
+
+	bool HasMVMAttributes(MvMNavAttributes attributes) const
+	{
+		return (m_mvmattributes & attributes) ? true : false;
 	}
 
 	void UpdateDynamicSpawnRoom();

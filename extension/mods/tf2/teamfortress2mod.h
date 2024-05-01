@@ -45,6 +45,7 @@ public:
 	edict_t* GetFlagToFetch(TeamFortress2::TFTeam team);
 	const CMvMUpgradeManager& GetMvMUpgradeManager() const { return m_upgrademanager; }
 	void ReloadUpgradeManager() { m_upgrademanager.Reload(); }
+	bool MVM_ShouldBotsReadyUp() const;
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
