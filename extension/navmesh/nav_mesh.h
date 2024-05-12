@@ -167,36 +167,6 @@ enum GetNavAreaFlags_t
 	GETNAVAREA_CHECK_GROUND			= 0x4,
 };
 
-
-//--------------------------------------------------------------------------------------------------------
-// for nav mesh visibilty computation
-struct NavVisPair_t
-{
-	void SetPair( CNavArea *pArea1, CNavArea *pArea2 )
-	{
-		int iArea1 = (int)( pArea1 > pArea2 );
-		pAreas[iArea1] = pArea1;
-		pAreas[( iArea1 + 1 ) % 2] = pArea2;
-	}
-
-	CNavArea *pAreas[2];
-};
-
-
-// for nav mesh visibilty computation
-class CVisPairHashFuncs
-{
-public:
-	CVisPairHashFuncs( int ) {}
-
-	bool operator()( const NavVisPair_t &lhs, const NavVisPair_t &rhs ) const
-	{
-		return ( lhs.pAreas[0] == rhs.pAreas[0] && lhs.pAreas[1] == rhs.pAreas[1] );
-	}
-
-	unsigned int operator()( const NavVisPair_t &item ) const;
-};
-
 //--------------------------------------------------------------------------------------------------------------
 //
 // The 'place directory' is used to save and load places from

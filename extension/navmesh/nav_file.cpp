@@ -246,60 +246,6 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 			break;
 	}
 
-	//
-	// Save encounter spots for this area
-	//
-	{
-		// save number of encounter paths for this area
-		int count = m_spotEncounters.Count();
-		filestream.write(reinterpret_cast<char*>(&count), sizeof(int));
-
-		SpotEncounter *e;
-		FOR_EACH_VEC( m_spotEncounters, it )
-		{
-			e = m_spotEncounters[ it ];
-
-			unsigned int fromid = e->from.area ? e->from.area->m_id : 0;
-			filestream.write(reinterpret_cast<char*>(&fromid), sizeof(unsigned int));
-
-			uint8_t dir = static_cast<uint8_t>(e->fromDir);
-			filestream.write(reinterpret_cast<char*>(&dir), sizeof(uint8_t));
-
-			unsigned int toid = e->to.area ? e->to.area->m_id : 0;
-			filestream.write(reinterpret_cast<char*>(&toid), sizeof(unsigned int));
-
-			dir = static_cast<uint8_t>(e->toDir);
-			filestream.write(reinterpret_cast<char*>(&dir), sizeof(uint8_t));
-
-			// write list of spots along this path
-			constexpr int MAX_SPOTS = 255;
-			int spotcount = e->spots.Count();
-			if (spotcount > MAX_SPOTS)
-			{
-				spotcount = MAX_SPOTS;
-				Warning( "Warning: NavArea #%d: Truncated encounter spot list to %i\n", m_id, MAX_SPOTS);
-			}
-			filestream.write(reinterpret_cast<char*>(&spotcount), sizeof(int));
-		
-			saveCount = 0;
-			FOR_EACH_VEC( e->spots, sit )
-			{
-				SpotOrder *order = &e->spots[ sit ];
-
-				// order->spot may be NULL if we've loaded a nav mesh that has been edited but not re-analyzed
-				unsigned int id = (order->spot) ? order->spot->GetID() : 0;
-				filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-
-				uint8_t t = static_cast<uint8_t>(255 * order->t);
-				filestream.write(reinterpret_cast<char*>(&t), sizeof(uint8_t));
-
-				// overflow check
-				if (++saveCount == spotcount)
-					break;
-			}
-		}
-	}
-
 	// store place dictionary entry
 	PlaceDirectory::IndexType entry = placeDirectory.GetIndex( GetPlace() );
 	filestream.write(reinterpret_cast<char*>(&entry), sizeof(PlaceDirectory::IndexType));
@@ -334,25 +280,6 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 	{
 		filestream.write(reinterpret_cast<char*>(&m_lightIntensity[i]), sizeof(float));
 	}
-
-	// save visible area set
-	int visibleAreaCount = m_potentiallyVisibleAreas.Count();
-	filestream.write(reinterpret_cast<char*>(&visibleAreaCount), sizeof(int));
-
-	for ( int vit=0; vit<m_potentiallyVisibleAreas.Count(); ++vit )
-	{
-		CNavArea *area = m_potentiallyVisibleAreas[vit].area;
-
-		unsigned int id = area ? area->GetID() : 0;
-		unsigned char attribs = m_potentiallyVisibleAreas[vit].attributes;
-
-		filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-		filestream.write(reinterpret_cast<char*>(&attribs), sizeof(unsigned char));
-	}
-
-	// store area we inherit visibility from
-	unsigned int id = ( m_inheritVisibilityFrom.area ) ? m_inheritVisibilityFrom.area->GetID() : 0;
-	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
 
 	// Save special links
 
@@ -480,54 +407,6 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 	}
 
 	//
-	// Load encounter paths for this area
-	//
-	{
-		int count = 0;
-		filestream.read(reinterpret_cast<char*>(&count), sizeof(int));
-
-		for (int e = 0; e < count; ++e)
-		{
-			SpotEncounter* encounter = new SpotEncounter;
-
-			unsigned int fromid = 0;
-			filestream.read(reinterpret_cast<char*>(&fromid), sizeof(unsigned int));
-			encounter->from.id = fromid;
-
-			uint8_t dir = 0;
-			filestream.read(reinterpret_cast<char*>(&dir), sizeof(uint8_t));
-			encounter->fromDir = static_cast<NavDirType>(dir);
-
-			unsigned int toid = 0;
-			filestream.read(reinterpret_cast<char*>(&toid), sizeof(unsigned int));
-			encounter->to.id = toid;
-
-			filestream.read(reinterpret_cast<char*>(&dir), sizeof(uint8_t));
-			encounter->toDir = static_cast<NavDirType>(dir);
-
-			// read list of spots along this path
-			int spotCount = 0;
-			filestream.read(reinterpret_cast<char*>(&spotCount), sizeof(int));
-
-			for (int s = 0; s < spotCount; ++s)
-			{
-				SpotOrder order;
-				unsigned int id = 0;
-				filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-				order.id = id;
-
-				uint8_t t = 0;
-				filestream.read(reinterpret_cast<char*>(&t), sizeof(uint8_t));
-				order.t = (float)t / 255.0f;
-
-				encounter->spots.AddToTail(order);
-			}
-
-			m_spotEncounters.AddToTail(encounter);
-		}
-	}
-
-	//
 	// Load Place data
 	//
 	PlaceDirectory::IndexType entry = 0;
@@ -578,31 +457,6 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 	{
 		filestream.read(reinterpret_cast<char*>(&m_lightIntensity[i]), sizeof(float));
 	}
-
-	// load visibility information
-	int visibleAreaCount = 0;
-	filestream.read(reinterpret_cast<char*>(&visibleAreaCount), sizeof(int));
-	m_potentiallyVisibleAreas.EnsureCapacity(visibleAreaCount);
-
-	for(int j = 0; j < visibleAreaCount; ++j)
-	{
-		AreaBindInfo info;
-		unsigned int id = 0;
-		unsigned char attribs = 0;
-
-		filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-		filestream.read(reinterpret_cast<char*>(&attribs), sizeof(unsigned char));
-
-		info.id = id;
-		info.attributes = attribs;
-
-		m_potentiallyVisibleAreas.AddToTail( info );
-	}
-
-	// read area from which we inherit visibility
-	unsigned int vid = 0;
-	filestream.read(reinterpret_cast<char*>(&vid), sizeof(unsigned int));
-	m_inheritVisibilityFrom.id = vid;
 
 	// Load special links
 
@@ -690,72 +544,6 @@ NavErrorType CNavArea::PostLoad( void )
 			connect->length = ( connect->area->GetCenter() - GetCenter() ).Length();
 		}
 	}
-
-	// resolve spot encounter IDs
-	SpotEncounter *e;
-	FOR_EACH_VEC( m_spotEncounters, it )
-	{
-		e = m_spotEncounters[ it ];
-
-		e->from.area = TheNavMesh->GetNavAreaByID( e->from.id );
-		if (e->from.area == NULL)
-		{
-			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing \"from\" Navigation Area for Encounter Spot.");
-			error = NAV_CORRUPT_DATA;
-		}
-
-		e->to.area = TheNavMesh->GetNavAreaByID( e->to.id );
-		if (e->to.area == NULL)
-		{
-			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing \"to\" Navigation Area for Encounter Spot.");
-			error = NAV_CORRUPT_DATA;
-		}
-
-		if (e->from.area && e->to.area)
-		{
-			// compute path
-			float halfWidth;
-			ComputePortal( e->to.area, e->toDir, &e->path.to, &halfWidth );
-			ComputePortal( e->from.area, e->fromDir, &e->path.from, &halfWidth );
-
-			const float eyeHeight = HalfHumanHeight;
-			e->path.from.z = e->from.area->GetZ( e->path.from ) + eyeHeight;
-			e->path.to.z = e->to.area->GetZ( e->path.to ) + eyeHeight;
-		}
-
-		// resolve HidingSpot IDs
-		FOR_EACH_VEC( e->spots, sit )
-		{
-			SpotOrder *order = &e->spots[ sit ];
-
-			order->spot = GetHidingSpotByID( order->id );
-			if (order->spot == NULL)
-			{
-				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Missing Hiding Spot");
-				error = NAV_CORRUPT_DATA;
-			}
-		}
-	}
-
-	// convert visible ID's to pointers to actual areas
-	for ( int it=0; it<m_potentiallyVisibleAreas.Count(); ++it )
-	{
-		AreaBindInfo &info = m_potentiallyVisibleAreas[ it ];
-
-		info.area = TheNavMesh->GetNavAreaByID( info.id );
-		if ( info.area == NULL )
-		{
-			smutils->LogError(myself, "Invalid area in visible set for area #%d\n", GetID());
-		}		
-	}
-
-	m_inheritVisibilityFrom.area = TheNavMesh->GetNavAreaByID( m_inheritVisibilityFrom.id );
-	Assert( m_inheritVisibilityFrom.area != this );
-
-	// remove any invalid areas from the list
-	AreaBindInfo bad;
-	bad.area = NULL;
-	while( m_potentiallyVisibleAreas.FindAndRemove( bad ) );
 
 	// func avoid/prefer attributes are controlled by func_nav_cost entities
 	ClearAllNavCostEntities();

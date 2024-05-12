@@ -74,18 +74,6 @@ bool NavAttributeSetter::operator() ( CNavArea *area )
 	return true;
 }
 
-unsigned int CVisPairHashFuncs::operator()( const NavVisPair_t &item ) const
-{
-	// COMPILE_TIME_ASSERT( sizeof(CNavArea *) == 4 );
-
-	uintptr_t key[2] = { 
-		reinterpret_cast<uintptr_t>(item.pAreas[0]) + static_cast<uintptr_t>(item.pAreas[1]->GetID()),
-		reinterpret_cast<uintptr_t>(item.pAreas[1]) + static_cast<uintptr_t>(item.pAreas[0]->GetID())
-	};
-
-	return Hash8( key );
-}
-
 template<typename Functor>
 bool ForEachActor(Functor &func) {
 	// iterate all non-bot players
@@ -429,41 +417,6 @@ void CNavMesh::Update( void )
 			m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 		}
 	}
-
-#ifdef NEXT_BOT
-	if (sm_nav_show_func_nav_prerequisite.GetBool() )
-	{
-		DrawFuncNavPrerequisite();
-	}
-#endif
-
-#ifdef EXT_DEBUG
-	if (sm_nav_show_potentially_visible.GetBool())
-	{
-		edict_t* player = gamehelpers->EdictOfIndex(1); // get listen server host
-		if (player && player->GetIServerEntity())
-		{
-			auto& origin = player->GetCollideable()->GetCollisionOrigin();
-			CNavArea* eyepointArea = TheNavMesh->GetNearestNavArea(origin, 512.0f, false, true);
-			if (eyepointArea)
-			{
-				FOR_EACH_VEC(TheNavAreas, it)
-				{
-					CNavArea* area = TheNavAreas[it];
-
-					if (eyepointArea->IsCompletelyVisible(area))
-					{
-						area->DrawFilled(100, 100, 200, 255);
-					}
-					else if (eyepointArea->IsPotentiallyVisible(area) && sm_nav_show_potentially_visible.GetInt() == 1)
-					{
-						area->DrawFilled(100, 200, 100, 255);
-					}
-				}
-			}
-		}
-	}
-#endif // EXT_DEBUG
 
 	// draw any walkable seeds that have been marked
 	for ( int it=0; it < m_walkableSeeds.Count(); ++it )
@@ -3428,27 +3381,10 @@ void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 }
 
 
-
-extern CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs > *g_pNavVisPairHash;
-
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::BeginVisibilityComputations( void )
 {
-	if ( !g_pNavVisPairHash )
-	{
-		g_pNavVisPairHash = new CUtlHash< NavVisPair_t, CVisPairHashFuncs, CVisPairHashFuncs >( 16*1024 );
-	}
-	else
-	{
-		g_pNavVisPairHash->RemoveAll();
-	}
-
-	FOR_EACH_VEC( TheNavAreas, it )
-	{
-		TheNavAreas[ it ]->ResetPotentiallyVisibleAreas();
-	}
 }
-
 
 //--------------------------------------------------------------------------------------------------------
 /**
@@ -3456,90 +3392,6 @@ void CNavMesh::BeginVisibilityComputations( void )
  */
 void CNavMesh::EndVisibilityComputations( void )
 {
-	g_pNavVisPairHash->RemoveAll();
-
-	int avgVisLength = 0;
-	int maxVisLength = 0;
-	int minVisLength = 999999999;
-
-	// Optimize visibility storage of nav mesh by doing a kind of run-length encoding.
-	// Pick an "anchor" area and compare adjacent areas visibility lists to it. If the delta is
-	// small, point back to the anchor and just store the delta.
-	FOR_EACH_VEC( TheNavAreas, it )
-	{
-		CNavArea *area = (CNavArea *)TheNavAreas[ it ];
-
-		int visLength = area->m_potentiallyVisibleAreas.Count();
-		avgVisLength += visLength;
-		if ( visLength < minVisLength )
-		{
-			minVisLength = visLength;
-		}
-		if ( visLength > maxVisLength )
-		{
-			maxVisLength = visLength;
-		}
-
-		if ( area->m_isInheritedFrom )
-		{
-			// another area is inheriting from our vis data, we can't inherit
-			continue;
-		}
-
-		// find adjacent area with the smallest change from our visibility list
-		CNavArea::CAreaBindInfoArray bestDelta;
-		CNavArea *anchor = NULL;
-
-		for( int dir = NORTH; dir < NUM_DIRECTIONS; ++dir )
-		{
-			int count = area->GetAdjacentCount( (NavDirType)dir );
-			for( int i=0; i<count; ++i )
-			{
-				CNavArea *adjArea = (CNavArea *)area->GetAdjacentArea( (NavDirType)dir, i );
-
-				// do not inherit from an area that is inheriting - use its ultimate source
-				if ( adjArea->m_inheritVisibilityFrom.area != NULL )
-				{
-					adjArea = adjArea->m_inheritVisibilityFrom.area;
-					if ( adjArea == area )
-						continue;	// don't try to inherit visibility from ourselves
-				}
-
-				const CNavArea::CAreaBindInfoArray &delta = area->ComputeVisibilityDelta( adjArea );
-
-				// keep the smallest delta
-				if ( !anchor || ( anchor && delta.Count() < bestDelta.Count() ) )
-				{
-					bestDelta = delta;
-					anchor = adjArea;
-					Assert( anchor != area );
-				}
-			}
-		}
-
-		// if best delta is small enough, inherit our data from this anchor
-		if ( anchor && bestDelta.Count() <= sm_nav_max_vis_delta_list_length.GetInt() && anchor != area )
-		{
-			// inherit from anchor area's visibility list
-			area->m_inheritVisibilityFrom.area = anchor;
-			area->m_potentiallyVisibleAreas = bestDelta;
-
-			// mark inherited-from area so it doesn't later try to inherit
-			anchor->m_isInheritedFrom = true;
-		}
-		else
-		{
-			// retain full list of visible areas
-			area->m_inheritVisibilityFrom.area = NULL;
-		}
-	}
-
-	if ( TheNavAreas.Count() )
-	{
-		avgVisLength /= TheNavAreas.Count();
-	}
-
-	Msg( "NavMesh Visibility List Lengths:  min = %d, avg = %d, max = %d\n", minVisLength, avgVisLength, maxVisLength );
 }
 
 

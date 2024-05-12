@@ -616,9 +616,6 @@ public:
 	//- hiding spots ------------------------------------------------------------------------------------
 	const HidingSpotVector *GetHidingSpots( void ) const	{ return &m_hidingSpots; }
 
-	SpotEncounter *GetSpotEncounter( const CNavArea *from, const CNavArea *to );	// given the areas we are moving between, return the spots we will encounter
-	int GetSpotEncounterCount( void ) const				{ return m_spotEncounters.Count(); }
-
 	//- "danger" ----------------------------------------------------------------------------------------
 	void IncreaseDanger( int teamID, float amount );			// increase the danger of this area for the given team
 	float GetDanger( int teamID );								// return the danger of this area (decays over time)
@@ -704,7 +701,6 @@ public:
 	//- generation and analysis -------------------------------------------------------------------------
 	virtual void ComputeHidingSpots( void );					// analyze local area neighborhood to find "hiding spots" in this area - for map learning
 	virtual void ComputeSniperSpots( void );					// analyze local area neighborhood to find "sniper spots" in this area - for map learning
-	virtual void ComputeSpotEncounters( void );					// compute spot encounter data - for map learning
 	virtual void ComputeEarliestOccupyTimes( void );
 	virtual void CustomAnalysis( bool isIncremental = false ) { }	// for game-specific analysis
 	virtual bool ComputeLighting( void );						// compute 0..1 light intensity at corners and center (requires client via listenserver)
@@ -712,154 +708,6 @@ public:
 	virtual bool IsAbleToMergeWith( CNavArea *other ) const;
 
 	virtual void InheritAttributes( CNavArea *first, CNavArea *second = NULL );
-
-
-	//- visibility -------------------------------------------------------------------------------------
-	enum VisibilityType
-	{
-		NOT_VISIBLE				= 0x00,
-		POTENTIALLY_VISIBLE		= 0x01,
-		COMPLETELY_VISIBLE		= 0x02,
-	};
-
-	VisibilityType ComputeVisibility( const CNavArea *area, bool isPVSValid, bool bCheckPVS = true, bool *pOutsidePVS = NULL ) const;	// do actual line-of-sight traces to determine if any part of given area is visible from this area
-	void SetupPVS( void ) const;
-	bool IsInPVS( void ) const;					// return true if this area is within the current PVS
-
-	struct AreaBindInfo							// for pointer loading and binding
-	{
-		union
-		{
-			CNavArea *area;
-			unsigned int id;
-		};
-
-		unsigned char attributes;				// VisibilityType
-
-		bool operator==( const AreaBindInfo &other ) const
-		{
-			return ( area == other.area );
-		}
-	};
-
-	virtual bool IsEntirelyVisible( const Vector &eye, const edict_t *ignore = NULL ) const;				// return true if entire area is visible from given eyepoint (CPU intensive)
-	virtual bool IsPartiallyVisible( const Vector &eye, const edict_t *ignore = NULL ) const;				// return true if any portion of the area is visible from given eyepoint (CPU intensive)
-
-	virtual bool IsPotentiallyVisible( const CNavArea *area ) const;		// return true if given area is potentially visible from somewhere in this area (very fast)
-	virtual bool IsPotentiallyVisibleToTeam( int team ) const;				// return true if any portion of this area is visible to anyone on the given team (very fast)
-
-	virtual bool IsCompletelyVisible( const CNavArea *area ) const;			// return true if given area is completely visible from somewhere in this area (very fast)
-	virtual bool IsCompletelyVisibleToTeam( int team ) const;				// return true if given area is completely visible from somewhere in this area by someone on the team (very fast)
-
-	//-------------------------------------------------------------------------------------
-	/**
-	 * Apply the functor to all navigation areas that are potentially
-	 * visible from this area.
-	 */
-	template < typename Functor >
-	bool ForAllPotentiallyVisibleAreas( Functor &func )
-	{
-		int i;
-
-		++s_nCurrVisTestCounter;
-
-		for ( i=0; i<m_potentiallyVisibleAreas.Count(); ++i )
-		{
-			CNavArea *area = m_potentiallyVisibleAreas[i].area;
-			if ( !area )
-				continue;
-
-			// If this assertion triggers, an area is in here twice!
-			Assert( area->m_nVisTestCounter != s_nCurrVisTestCounter );
-			area->m_nVisTestCounter = s_nCurrVisTestCounter;
-
-			if ( m_potentiallyVisibleAreas[i].attributes == NOT_VISIBLE )
-				continue;
-			
-			if ( !func( area ) )
-				return false;
-		}
-
-		// for each inherited area
-		if ( !m_inheritVisibilityFrom.area )
-			return true;
-
-		CAreaBindInfoArray &inherited = m_inheritVisibilityFrom.area->m_potentiallyVisibleAreas;
-
-		for ( i=0; i<inherited.Count(); ++i )
-		{
-			if ( !inherited[i].area
-			// We may have visited this from m_potentiallyVisibleAreas
-					|| inherited[i].area->m_nVisTestCounter == s_nCurrVisTestCounter )
-				continue;
-
-			// Theoretically, this shouldn't matter. But, just in case!
-			inherited[i].area->m_nVisTestCounter = s_nCurrVisTestCounter;
-
-			if ( inherited[i].attributes == NOT_VISIBLE )
-				continue;
-
-			if ( !func( inherited[i].area ) )
-				return false;
-		}
-
-		return true;
-	}
-
-	//-------------------------------------------------------------------------------------
-	/**
-	 * Apply the functor to all navigation areas that are
-	 * completely visible from somewhere in this area.
-	 */
-	template < typename Functor >
-	bool ForAllCompletelyVisibleAreas( Functor &func )
-	{
-		int i;
-
-		++s_nCurrVisTestCounter;
-
-		for ( i=0; i<m_potentiallyVisibleAreas.Count(); ++i )
-		{
-			CNavArea *area = m_potentiallyVisibleAreas[i].area;
-			if ( !area )
-				continue;
-
-			// If this assertion triggers, an area is in here twice!
-			Assert( area->m_nVisTestCounter != s_nCurrVisTestCounter );
-			area->m_nVisTestCounter = s_nCurrVisTestCounter;
-
-			if ( ( m_potentiallyVisibleAreas[i].attributes & COMPLETELY_VISIBLE ) == 0 )
-				continue;
-
-			if ( !func( area ) )
-				return false;
-		}
-
-		if ( !m_inheritVisibilityFrom.area )
-			return true;
-
-		// for each inherited area
-		CAreaBindInfoArray &inherited = m_inheritVisibilityFrom.area->m_potentiallyVisibleAreas;
-
-		for ( i=0; i<inherited.Count(); ++i )
-		{
-			if ( !inherited[i].area
-					// We may have visited this from m_potentiallyVisibleAreas
-					|| inherited[i].area->m_nVisTestCounter == s_nCurrVisTestCounter )
-				continue;
-
-			// Theoretically, this shouldn't matter. But, just in case!
-			inherited[i].area->m_nVisTestCounter = s_nCurrVisTestCounter;
-
-			if ( ( inherited[i].attributes & COMPLETELY_VISIBLE ) == 0 )
-				continue;
-
-			if ( !func( inherited[i].area ) )
-				return false;
-		}
-
-		return true;
-	}
 
 	inline bool IsConnectedToBySpecialLink(const CNavArea* other) const
 	{
@@ -963,8 +811,8 @@ private:
 	bool IsHidingSpotCollision( const Vector &pos ) const;		// returns true if an existing hiding spot is too close to given position
 
 	//- encounter spots ---------------------------------------------------------------------------------
-	SpotEncounterVector m_spotEncounters;						// list of possible ways to move thru this area, and the spots to look at as we do
-	void AddSpotEncounters( const CNavArea *from, NavDirType fromDir, const CNavArea *to, NavDirType toDir );	// add spot encounter data when moving from area to area
+	// SpotEncounterVector m_spotEncounters;						// list of possible ways to move thru this area, and the spots to look at as we do
+	// void AddSpotEncounters( const CNavArea *from, NavDirType fromDir, const CNavArea *to, NavDirType toDir );	// add spot encounter data when moving from area to area
 
 	float m_earliestOccupyTime[ MAX_NAV_TEAMS ];				// min time to reach this spot from spawn
 
@@ -1007,24 +855,7 @@ private:
 	void ConnectElevators( void );								// find elevator connections between areas
 
 	int m_damagingTickCount;									// this area is damaging through this tick count
-
-
-	//- visibility --------------------------------------------------------------------------------------
-	void ComputeVisibilityToMesh( void );						// compute visibility to surrounding mesh
-	void ResetPotentiallyVisibleAreas();
-	static void ComputeVisToArea( CNavArea *&pOtherArea );
-
-#ifndef _X360
-	typedef CUtlVector<AreaBindInfo> CAreaBindInfoArray; // shaves 8 bytes off structure caused by need to support editing
-#else
-	typedef CUtlVector<AreaBindInfo> CAreaBindInfoArray; // Need to use this on 360 to support external allocation pattern
-#endif
-
-	AreaBindInfo m_inheritVisibilityFrom;						// if non-NULL, m_potentiallyVisibleAreas becomes a list of additions and deletions (NOT_VISIBLE) to the list of this area
-	CAreaBindInfoArray m_potentiallyVisibleAreas;				// list of areas potentially visible from inside this area (after PostLoad(), use area portion of union)
-	bool m_isInheritedFrom;										// latch used during visibility inheritance computation
-
-	const CAreaBindInfoArray &ComputeVisibilityDelta( const CNavArea *other ) const;	// return a list of the delta between our visibility list and the given adjacent area
+	
 
 	uint32 m_nVisTestCounter;
 	static uint32 s_nCurrVisTestCounter;

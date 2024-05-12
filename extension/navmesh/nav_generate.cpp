@@ -3565,19 +3565,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_ENCOUNTER_SPOTS:
 		{
-			while( m_generationIndex < TheNavAreas.Count() )
-			{
-				TheNavAreas[ m_generationIndex++ ]->ComputeSpotEncounters();
-
-				// don't go over our time allotment
-				if( Plat_FloatTime() - startTime > maxTime )
-				{
-					AnalysisProgress( "Finding encounter spots...", 100, 100 * m_generationIndex / TheNavAreas.Count() );
-					return true;
-				}
-			}
-
-			Msg( "Finding encounter spots...DONE\n" );
+			Msg( "Finding encounter spots...SKIPPED\n" );
 
 			m_generationState = FIND_SNIPER_SPOTS;
 			m_generationIndex = 0;
@@ -3587,6 +3575,9 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_SNIPER_SPOTS:
 		{
+			// Disabled: Corners are bad sniping spots, manually placed hints with freedom of placement are better for designing sniper spots
+			// Just skip this to speed up nav mesh computation
+			/*
 			while( m_generationIndex < TheNavAreas.Count() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeSniperSpots();
@@ -3598,6 +3589,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 					return true;
 				}
 			}
+			*/
 
 			Msg( "Finding sniper spots...DONE\n" );
 
@@ -3612,6 +3604,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case COMPUTE_MESH_VISIBILITY:
 		{
+			/*
 			while( m_generationIndex < TheNavAreas.Count() )
 			{
 				TheNavAreas[ m_generationIndex++ ]->ComputeVisibilityToMesh();
@@ -3623,6 +3616,9 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 					return true;
 				}
 			}
+			*/
+
+			DevMsg("Skipping mesh visibility!\n");
 
 			Msg( "Optimizing mesh visibility...\n" );
 
