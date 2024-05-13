@@ -2963,7 +2963,7 @@ void CNavArea::Draw( void ) const
 	NavEditColor color;
 	bool useAttributeColors = true;
 
-	const float DebugDuration = EXT_DEBUG_DRAW_TIME;
+	const float DebugDuration = NDEBUG_PERSIST_FOR_ONE_TICK;
 
 	if ( TheNavMesh->IsEditMode( CNavMesh::PLACE_PAINTING ) )
 	{
@@ -3332,7 +3332,7 @@ void CNavArea::DrawFilled( int r, int g, int b, int a, float deltaT, bool noDept
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::DrawSelectedSet( const Vector &shift ) const
 {
-	const float deltaT = EXT_DEBUG_DRAW_TIME;
+	const float deltaT = NDEBUG_PERSIST_FOR_ONE_TICK;
 	int r = s_selectedSetColor.r();
 	int g = s_selectedSetColor.g();
 	int b = s_selectedSetColor.b();
@@ -3359,7 +3359,7 @@ void CNavArea::DrawSelectedSet( const Vector &shift ) const
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::DrawDragSelectionSet( Color &dragSelectionSetColor ) const
 {
-	const float deltaT = EXT_DEBUG_DRAW_TIME;
+	const float deltaT = NDEBUG_PERSIST_FOR_ONE_TICK;
 	int r = dragSelectionSetColor.r();
 	int g = dragSelectionSetColor.g();
 	int b = dragSelectionSetColor.b();
@@ -3543,10 +3543,10 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 		const Vector& start = link.GetPosition();
 		const Vector& end = link.m_link.area->GetCenter();
 		link.m_link.area->Draw();
-		NDebugOverlay::Line(start, end, 0, 255, 0, true, EXT_DEBUG_DRAW_TIME);
+		NDebugOverlay::Line(start, end, 0, 255, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 		char message[64];
 		ke::SafeSprintf(message, sizeof(message), "Nav Link <%s>", NavSpecialLink::LinkTypeToString(link.m_type));
-		NDebugOverlay::Text(start, message, false, EXT_DEBUG_DRAW_TIME);
+		NDebugOverlay::Text(start, message, false, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 }
 
@@ -5361,13 +5361,13 @@ void NavHintPoint::Draw() const
 
 	Vector top = m_pos + Vector(0.0f, 0.0f, NavHintPointHeight);
 	Vector half = m_pos + Vector(0.0f, 0.0f, NavHintTextHeight);
-	NDebugOverlay::Line(m_pos, top, 0, 230, 255, false, EXT_DEBUG_DRAW_TIME);
+	NDebugOverlay::Line(m_pos, top, 0, 230, 255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
 
 	Vector forward;
 	AngleVectors(m_angle, &forward);
 	forward.NormalizeInPlace();
-	NDebugOverlay::HorzArrow(half, half + (forward * 24.0f), 4.0f, 0, 110, 0, 255, false, EXT_DEBUG_DRAW_TIME);
+	NDebugOverlay::HorzArrow(half, half + (forward * 24.0f), 4.0f, 0, 110, 0, 255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
 
 	auto name = TheNavMesh->NavHintTypeIDToString(m_hintType);
-	NDebugOverlay::Text(half, name, true, EXT_DEBUG_DRAW_TIME);
+	NDebugOverlay::Text(half, name, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }

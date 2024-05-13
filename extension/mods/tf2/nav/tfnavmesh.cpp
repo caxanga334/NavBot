@@ -7,7 +7,9 @@
 
 extern NavAreaVector TheNavAreas;
 
-ConVar sm_nav_tf_show_path_attributes("sm_nav_tf_show_path_attributes", "0", FCVAR_GAMEDLL, "Shows TF Path Attributes");
+ConVar sm_tf_nav_show_path_attributes("sm_tf_nav_show_path_attributes", "0", FCVAR_GAMEDLL, "Shows TF Path Attributes");
+ConVar sm_tf_nav_show_attributes("sm_tf_nav_show_attributes", "0", FCVAR_GAMEDLL, "Shows TF Attributes");
+ConVar sm_tf_nav_show_mvm_attributes("sm_tf_nav_show_mvm_attributes", "0", FCVAR_GAMEDLL, "Shows TF MvM Attributes");
 
 CTFNavMesh::CTFNavMesh() : CNavMesh()
 {
@@ -53,7 +55,9 @@ void CTFNavMesh::Update()
 
 bool CTFNavMesh::Save(void)
 {
-	sm_nav_tf_show_path_attributes.SetValue(0); // disable rendering to avoid crashes during map change
+	sm_tf_nav_show_path_attributes.SetValue(0); // disable rendering to avoid crashes during map change
+	sm_tf_nav_show_attributes.SetValue(0);
+	sm_tf_nav_show_mvm_attributes.SetValue(0);
 
 	return CNavMesh::Save();
 }
@@ -100,7 +104,7 @@ void CTFNavMesh::PostCustomAnalysis(void)
 		}
 	}
 
-	if (!hasfrontline)
+	if (!hasfrontline && mod->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
 	{
 		smutils->LogError(myself, "Mann vs Machine navmesh without \"Frontlines\" areas!");
 	}
@@ -112,9 +116,19 @@ void CTFNavMesh::UpdateDebugDraw()
 	{
 		CTFNavArea* area = static_cast<CTFNavArea*>(TheNavAreas[it]);
 		
-		if (sm_nav_tf_show_path_attributes.GetBool())
+		if (sm_tf_nav_show_path_attributes.GetBool())
 		{
 			area->Debug_ShowTFPathAttributes();
+		}
+
+		if (sm_tf_nav_show_attributes.GetBool())
+		{
+			area->Debug_ShowTFAttributes();
+		}
+
+		if (sm_tf_nav_show_mvm_attributes.GetBool())
+		{
+			area->Debug_ShowMvMAttributes();
 		}
 	}
 }

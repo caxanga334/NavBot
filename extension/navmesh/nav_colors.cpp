@@ -13,9 +13,7 @@
 
 #include "Color.h"
 #include <vector.h>
-#include <ivdebugoverlay.h>
-
-extern IVDebugOverlay* debugoverlay;
+#include <sdkports/debugoverlay_shared.h>
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -78,9 +76,9 @@ void NavDrawLine(const Vector& from, const Vector& to, NavEditColor navColor) {
 
 	Color color = NavColors[navColor];
 	debugoverlay->AddLineOverlay(from + offset, to + offset, color[0], color[1],
-			color[2], false, EXT_DEBUG_DRAW_TIME);
+			color[2], false, NDEBUG_PERSIST_FOR_ONE_TICK);
 	debugoverlay->AddLineOverlay(from + offset, to + offset, color[0] / 2,
-			color[1] / 2, color[2] / 2, true, EXT_DEBUG_DRAW_TIME);
+			color[1] / 2, color[2] / 2, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -101,7 +99,7 @@ void NavDrawFilledTriangle(const Vector& point1, const Vector& point2,
 		}
 	}
 	debugoverlay->AddTriangleOverlay(point1, point2, point3, color[0], color[1],
-			color[2], 255, true, EXT_DEBUG_DRAW_TIME);
+			color[2], 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 
 void HorzArrow(const Vector &startPos, const Vector &endPos, float width, int r,
@@ -141,9 +139,9 @@ void NavDrawHorizontalArrow(const Vector& from, const Vector& to, float width,
 
 	Color color = NavColors[navColor];
 	HorzArrow(from + offset, to + offset, width, color[0], color[1], color[2],
-			255, false, EXT_DEBUG_DRAW_TIME);
+			255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
 	HorzArrow(from + offset, to + offset, width, color[0] / 2, color[1] / 2,
-			color[2] / 2, 255, true, EXT_DEBUG_DRAW_TIME);
+			color[2] / 2, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -170,10 +168,10 @@ void NavDrawDashedLine(const Vector& from, const Vector& to,
 		distance += solidLen + gapLen;
 
 		debugoverlay->AddLineOverlay(start + offset, end + offset, color[0],
-				color[1], color[2], false, EXT_DEBUG_DRAW_TIME);
+				color[1], color[2], false, NDEBUG_PERSIST_FOR_ONE_TICK);
 		debugoverlay->AddLineOverlay(start + offset, end + offset, color[0] / 2,
 				color[1] / 2, color[2] / 2, true,
-				EXT_DEBUG_DRAW_TIME);
+				NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 }
 

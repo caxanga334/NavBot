@@ -10,6 +10,7 @@
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
 #include <extension.h>
+#include <sdkports/debugoverlay_shared.h>
 #include "nav_entities.h"
 
 #include "nav_area.h"
@@ -17,13 +18,10 @@
 #include <eiface.h>
 #include <iplayerinfo.h>
 #include <collisionutils.h>
-#include <ivdebugoverlay.h>
 
 // the global singleton interface
 extern CNavMesh *TheNavMesh;
-extern IPlayerInfoManager* playerinfomanager;
 extern NavAreaVector TheNavAreas;
-extern IVDebugOverlay* debugoverlay;
 
 #if SOURCE_ENGINE == SE_DODS
 
@@ -348,7 +346,7 @@ void EntityText(ICollideable* collision, int text_offset, const char *text, floa
 	{
 		VectorTransform(vecLocalCenter, collision->CollisionToWorldTransform(), origin);
 	}
-	debugoverlay->AddTextOverlayRGB(origin, text_offset, EXT_DEBUG_DRAW_TIME, r, g, b, a, "%s", text);
+	debugoverlay->AddTextOverlayRGB(origin, text_offset, NDEBUG_PERSIST_FOR_ONE_TICK, r, g, b, a, "%s", text);
 }
 
 int NavEntity::DrawDebugTextOverlays() {
@@ -404,7 +402,7 @@ int CFuncNavBlocker::DrawDebugTextOverlays( void )
 	{
 		Extent areaExtent;
 		collector.m_area[i]->GetExtent( &areaExtent );
-		debugoverlay->AddBoxOverlay( vec3_origin, areaExtent.lo, areaExtent.hi, vec3_angle, 0, 255, 0, 10, EXT_DEBUG_DRAW_TIME );
+		debugoverlay->AddBoxOverlay( vec3_origin, areaExtent.lo, areaExtent.hi, vec3_angle, 0, 255, 0, 10, NDEBUG_PERSIST_FOR_ONE_TICK );
 	}
 
 	*/
@@ -552,7 +550,7 @@ int CFuncNavObstruction::DrawDebugTextOverlays( void )
 {
 	int offset = NavEntity::DrawDebugTextOverlays();
 	EntityText(pEnt->GetCollideable(), offset++, CanObstructNavAreas() ? "Obstructing nav" : "Not obstructing nav",
-		EXT_DEBUG_DRAW_TIME);
+		NDEBUG_PERSIST_FOR_ONE_TICK);
 	return offset;
 }
 

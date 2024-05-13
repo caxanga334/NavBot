@@ -401,7 +401,7 @@ class ExtensionConfig(object):
     cxx.defines += ['WIN32', '_WINDOWS']
 
   def configure_shared(self, cxx):
-    cxx.defines += ['EXT_DEBUG_DRAW_TIME=0.0f', 'RAD_TELEMETRY_DISABLED']
+    cxx.defines += ['RAD_TELEMETRY_DISABLED']
 
     if builder.options.debugmode == '1':
       cxx.defines += ['EXT_DEBUG']
@@ -464,6 +464,7 @@ class ExtensionConfig(object):
     ]
     return compiler
 
+
   def ExtLibrary(self, context, compiler, name):
     binary = self.Library(context, compiler, name)
     SetArchFlags(compiler)
@@ -512,6 +513,11 @@ class ExtensionConfig(object):
 
     self.ConfigureSDKCompat(binary, sdk)
 
+    return binary
+
+  def CPPLibrary(self, project, context, compiler, name):
+    binary = project.Configure(compiler, name, '{0}'.format(compiler.target.arch))
+    self.AddCxxCompat(binary)
     return binary
 
   def HL2Library(self, context, compiler, name, sdk):

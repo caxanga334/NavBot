@@ -14,6 +14,7 @@
 #include "extension.h"
 #include <util/helpers.h>
 #include <util/librandom.h>
+#include <sdkports/debugoverlay_shared.h>
 
 #include "nav_mesh.h"
 
@@ -21,7 +22,6 @@
 #include "nav_node.h"
 #include <util/UtilTrace.h>
 #include <util/EntityUtils.h>
-#include <ivdebugoverlay.h>
 #include <eiface.h>
 #include <iplayerinfo.h>
 #include <vprof.h>
@@ -31,7 +31,7 @@
 #include <generichash.h>
 #include <fmtstr.h>
 
-#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, EXT_DEBUG_DRAW_TIME )
+#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_PERSIST_FOR_ONE_TICK )
 
 /**
  * The singleton for accessing the navigation mesh
@@ -1626,7 +1626,7 @@ void CNavMesh::DrawPlayerCounts( void ) const
 			Text(area->GetCenter(),
 					msg.sprintf("%d (%d/%d)", area->GetPlayerCount(),
 							area->GetPlayerCount(1), area->GetPlayerCount(2)),
-					false, EXT_DEBUG_DRAW_TIME);
+					false, NDEBUG_PERSIST_FOR_ONE_TICK);
 		}
 	}
 	*/

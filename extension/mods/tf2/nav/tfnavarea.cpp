@@ -118,19 +118,19 @@ void CTFNavArea::Debug_ShowTFPathAttributes() const
 	if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM))
 	{
 		ke::SafeStrcat(message, TEXT_SIZE, " NO_RED_TEAM");
-		DrawFilled(153, 204, 255, 255, EXT_DEBUG_DRAW_TIME, true);
+		DrawFilled(153, 204, 255, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_NO_BLU_TEAM))
 	{
 		ke::SafeStrcat(message, TEXT_SIZE, " NO_BLU_TEAM");
-		DrawFilled(255, 64, 64, 255, EXT_DEBUG_DRAW_TIME, true);
+		DrawFilled(255, 64, 64, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_NO_CARRIERS))
 	{
 		ke::SafeStrcat(message, TEXT_SIZE, " NO_FLAG_CARRIERS");
-		DrawFilled(255, 69, 0, 255, EXT_DEBUG_DRAW_TIME, true);
+		DrawFilled(255, 69, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 	}
 
 	if (HasTFPathAttributes(TFNAV_PATH_CARRIERS_AVOID))
@@ -146,13 +146,72 @@ void CTFNavArea::Debug_ShowTFPathAttributes() const
 		
 		if (m_spawnroomteam == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Blue))
 		{
-			DrawFilled(153, 204, 255, 255, EXT_DEBUG_DRAW_TIME, true);
+			DrawFilled(153, 204, 255, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 		}
 		else if (m_spawnroomteam == static_cast<int>(TeamFortress2::TFTeam::TFTeam_Red))
 		{
-			DrawFilled(255, 64, 64, 255, EXT_DEBUG_DRAW_TIME, true);
+			DrawFilled(255, 64, 64, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 		}
 	}
 
-	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, EXT_DEBUG_DRAW_TIME);
+	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+}
+
+void CTFNavArea::Debug_ShowTFAttributes() const
+{
+	constexpr auto TEXT_SIZE = 256;
+	char message[TEXT_SIZE]{};
+
+	if (HasTFAttributes(TFNAV_LIMIT_TO_REDTEAM))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " LIMIT_TO_RED_TEAM");
+		DrawFilled(153, 204, 255, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
+	}
+
+	if (HasTFAttributes(TFNAV_LIMIT_TO_BLUTEAM))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " LIMIT_TO_BLU_TEAM");
+		DrawFilled(255, 64, 64, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
+	}
+
+	if (HasTFAttributes(TFNAV_SENTRYGUN_HINT))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " SENTRYGUN_HINT");
+	}
+
+	if (HasTFAttributes(TFNAV_DISPENSER_HINT))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " DISPENSER_HINT");
+	}
+
+	if (HasTFAttributes(TFNAV_TELE_ENTRANCE_HINT))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " TELE_ENTRANCE_HINT");
+	}
+
+	if (HasTFAttributes(TFNAV_TELE_EXIT_HINT))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " TELE_EXIT_HINT");
+	}
+
+	if (HasTFAttributes(TFNAV_SNIPER_HINT))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " SNIPER_HINT");
+	}
+
+	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+}
+
+void CTFNavArea::Debug_ShowMvMAttributes() const
+{
+	constexpr auto TEXT_SIZE = 256;
+	char message[TEXT_SIZE]{};
+
+	if (HasMVMAttributes(MVMNAV_FRONTLINES))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " FRONTLINES");
+		DrawFilled(0, 153, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
+	}
+
+	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }

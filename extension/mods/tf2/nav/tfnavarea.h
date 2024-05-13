@@ -70,6 +70,7 @@ public:
 
 	enum TFNavAttributes
 	{
+		TFNAV_INVALID = 0,
 		TFNAV_LIMIT_TO_REDTEAM = (1 << 0), // Hints are limited to RED team only, this does not block pathing!
 		TFNAV_LIMIT_TO_BLUTEAM = (1 << 1), // Hints are limited to BLU team only, this does not block pathing!
 		TFNAV_SENTRYGUN_HINT = (1 << 2), // This is a good spot to build a sentry gun
@@ -96,6 +97,7 @@ public:
 
 	enum MvMNavAttributes
 	{
+		MVMNAV_INVALID = 0,
 		MVMNAV_FRONTLINES = (1 << 0), // Bots will move here while waiting for the wave to start
 	};
 
@@ -117,6 +119,8 @@ public:
 	void UpdateDynamicSpawnRoom();
 
 	void Debug_ShowTFPathAttributes() const;
+	void Debug_ShowTFAttributes() const;
+	void Debug_ShowMvMAttributes() const;
 
 private:
 	int m_tfpathattributes;
