@@ -82,6 +82,8 @@ public:
 	virtual void FirstSpawn();
 	// Called when the player_death event is fired for this bot
 	virtual void Killed() {}
+	// Called by the OnTakeDamage_Alive hook.
+	virtual void OnTakeDamage_Alive(const CTakeDamageInfo& info);
 	// Called to check if the bot can join the game
 	virtual bool CanJoinGame() { return true; }
 	// Called to check if the bot has joined a team and should be considerated as playing

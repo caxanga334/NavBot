@@ -42,11 +42,15 @@
 
 // Need this for CUserCmd class definition
 #include <usercmd.h>
+#include <util/Handle.h>
+#include <takedamageinfo.h>
 
 /**
  * @file extension.cpp
  * @brief Implement extension code here.
  */
+
+
 
 CGlobalVars* gpGlobals = nullptr;
 IVDebugOverlay* debugoverlay = nullptr;
@@ -87,14 +91,14 @@ SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 
 // SDKs that requires a runplayercommand hook
 
-SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*);
-
+SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*)
+SH_DECL_MANUALHOOK1(MH_CBasePlayer_OnTakeDamage_Alive, 0, 0, 0, int, const CTakeDamageInfo&)
 
 SMEXT_LINK(&g_NavBotExt);
 
 namespace Utils
 {
-	inline void CreateDataDirectory(const char* mod)
+	inline static void CreateDataDirectory(const char* mod)
 	{
 		char fullpath[PLATFORM_MAX_PATH + 1];
 		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s", mod);
@@ -116,7 +120,7 @@ namespace Utils
 		}
 	}
 
-	inline void CreateConfigDirectory(const char* mod)
+	inline static void CreateConfigDirectory(const char* mod)
 	{
 		char fullpath[PLATFORM_MAX_PATH + 1];
 		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s", mod);
@@ -138,7 +142,7 @@ namespace Utils
 		}
 	}
 
-	inline void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
+	inline static void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
 	{
 		ucmd->command_number = bcmd->command_number;
 		ucmd->tick_count = bcmd->tick_count;
@@ -158,6 +162,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	extension = this;
 	m_hookruncmd = false;
+	m_hasbaseplayerhooks = true; // we will always hook these, set to false on gamedata failure
 	m_gamedata = nullptr;
 	randomgen->ReSeed(); // set the initial seed based on the clock
 
@@ -203,10 +208,23 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		}
 	}
 
-	gameconfs->CloseGameConfigFile(gamedata);
 	SH_MANUALHOOK_RECONFIGURE(MH_PlayerRunCommand, offset, 0, 0);
+	gameconfs->CloseGameConfigFile(gamedata);
+	gamedata = nullptr;
 
-
+	if (gameconfs->LoadGameConfigFile("sdkhooks.games", &gamedata, error, maxlen))
+	{
+		offset = 0;
+		if (gamedata->GetOffset("OnTakeDamage_Alive", &offset))
+		{
+			SH_MANUALHOOK_RECONFIGURE(MH_CBasePlayer_OnTakeDamage_Alive, offset, 0, 0);
+		}
+		else
+		{
+			m_hasbaseplayerhooks = false;
+			smutils->LogError(myself, "Failed to get CBaseEntity::OnTakeDamage_Alive vtable offset from SDKHooks gamedata!");
+		}
+	}
 
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	ConVar_Register(0, this);
@@ -214,7 +232,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
-
+	
 	return true;
 }
 
@@ -278,9 +296,17 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	GET_V_IFACE_CURRENT(GetServerFactory, servertools, IServerTools, VSERVERTOOLS_INTERFACE_VERSION);
 
-#ifndef __linux__
+#ifdef WIN32
 	GET_V_IFACE_CURRENT(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
-#endif
+#else
+	GET_V_IFACE_CURRENT(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
+
+	if (!debugoverlay && !engine->IsDedicatedServer())
+	{
+		// Report if debug overlay is not available on a Linux listen server
+		smutils->LogError(myself, "Failed to get %s interface. NavMesh drawing will be unavailable.", VDEBUG_OVERLAY_INTERFACE_VERSION);
+	}
+#endif // WIN32
 
 	GET_V_IFACE_CURRENT(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
 
@@ -319,31 +345,41 @@ void NavBotExt::OnClientPutInServer(int client)
 {
 	extmanager->OnClientPutInServer(client);
 
-#ifdef HOOK_PLAYERRUNCMD
 	CBaseEntity* baseent = nullptr;
 	UtilHelpers::IndexToAThings(client, &baseent, nullptr);
 
 	if (baseent != nullptr)
 	{
-		SH_ADD_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
-	}
-#endif // HOOK_PLAYERRUNCMD
+		if (m_hookruncmd)
+		{
+			SH_ADD_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
+		}
 
+		if (m_hasbaseplayerhooks)
+		{
+			SH_ADD_MANUALHOOK(MH_CBasePlayer_OnTakeDamage_Alive, baseent, SH_MEMBER(this, &NavBotExt::Hook_CBaseEntity_OnTakeDamage_Alive), false);
+		}
+	}
 }
 
 void NavBotExt::OnClientDisconnecting(int client)
 {
 	extmanager->OnClientDisconnect(client);
-
-#ifdef HOOK_PLAYERRUNCMD
 	CBaseEntity* baseent = nullptr;
 	UtilHelpers::IndexToAThings(client, &baseent, nullptr);
 
 	if (baseent != nullptr)
 	{
-		SH_REMOVE_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
+		if (m_hookruncmd)
+		{
+			SH_REMOVE_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
+		}
+
+		if (m_hasbaseplayerhooks)
+		{
+			SH_REMOVE_MANUALHOOK(MH_CBasePlayer_OnTakeDamage_Alive, baseent, SH_MEMBER(this, &NavBotExt::Hook_CBaseEntity_OnTakeDamage_Alive), false);
+		}
 	}
-#endif // HOOK_PLAYERRUNCMD
 }
 
 void NavBotExt::Hook_GameFrame(bool simulating)
@@ -373,7 +409,7 @@ void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper
 		RETURN_META(MRES_IGNORED);
 	}
 
-	static CBaseBot* bot;
+	CBaseBot* bot;
 	CBaseEntity* player = META_IFACEPTR(CBaseEntity);
 	int index = gamehelpers->EntityToBCompatRef(player);
 
@@ -381,11 +417,43 @@ void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper
 
 	if (bot != nullptr)
 	{
-		static CBotCmd* cmd;
-		cmd = bot->GetUserCommand();
-
+		CBotCmd* cmd = bot->GetUserCommand();
 		Utils::CopyBotCmdtoUserCmd(usercmd, cmd);
 	}
 
 	RETURN_META(MRES_IGNORED);
+}
+
+int NavBotExt::Hook_CBaseEntity_OnTakeDamage_Alive(const CTakeDamageInfo& info)
+{
+	CBaseEntity* victim = META_IFACEPTR(CBaseEntity);
+	int index = gamehelpers->EntityToBCompatRef(victim);
+	
+	CBaseBot* bot = extmanager->GetBotByIndex(index);
+
+	if (bot)
+	{
+		bot->OnTakeDamage_Alive(info);
+	}
+
+#ifdef EXT_DEBUG
+	CBaseEntity* attacker = info.GetAttacker();
+	CBaseEntity* inflictor = info.GetInflictor();
+
+	char message[256]{};
+
+	if (attacker)
+	{
+		auto classname = gamehelpers->GetEntityClassname(attacker);
+
+		if (classname && classname[0])
+		{
+			ke::SafeSprintf(message, sizeof(message), "%p <%s> %p", attacker, classname, inflictor);
+		}
+	}
+
+	rootconsole->ConsolePrint("%s", message);
+#endif // EXT_DEBUG
+
+	RETURN_META_VALUE(MRES_IGNORED, 0);
 }

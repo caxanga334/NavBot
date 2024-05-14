@@ -34,6 +34,7 @@
 
 class CUserCmd;
 class IMoveHelper;
+class CTakeDamageInfo;
 
 /**
  * @file extension.h
@@ -279,12 +280,14 @@ public:
 
 	void Hook_GameFrame(bool simulating);
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper) const;
+	int Hook_CBaseEntity_OnTakeDamage_Alive(const CTakeDamageInfo& info);
 
 	inline bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
 	inline SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
 
 private:
 	bool m_hookruncmd;
+	bool m_hasbaseplayerhooks; // true if we have gamedata for ontakedamage and other hooks
 	SourceMod::IGameConfig* m_gamedata;
 };
 

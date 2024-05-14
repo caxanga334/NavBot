@@ -4,6 +4,7 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
+#include <util/Handle.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
@@ -11,6 +12,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #include <mods/basemod.h>
 #include <tier1/convar.h>
+#include <takedamageinfo.h>
 #include "basebot.h"
 
 extern CGlobalVars* gpGlobals;
@@ -558,6 +560,10 @@ void CBaseBot::Spawn()
 }
 
 void CBaseBot::FirstSpawn()
+{
+}
+
+void CBaseBot::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 }
 

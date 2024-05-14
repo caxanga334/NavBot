@@ -5,6 +5,7 @@
 
 class CNavArea;
 class CBaseBot;
+class CTakeDamageInfo;
 
 #include <eiface.h>
 #include <iplayerinfo.h>

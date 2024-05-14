@@ -9,6 +9,8 @@
 
 #include <basehandle.h>
 
+class CBaseEntity;
+
 // -------------------------------------------------------------------------------------------------- //
 // CHandle.
 // -------------------------------------------------------------------------------------------------- //
@@ -46,7 +48,7 @@ public:
 	}
 
 	void Set(const T* pVal) {
-		CBaseHandle::Set(dynamic_cast<const IHandleEntity*>(pVal));
+		CBaseHandle::Set(reinterpret_cast<const IHandleEntity*>(pVal));
 	}
 	operator T*() {
 		return Get();
@@ -78,7 +80,6 @@ public:
 	}
 };
 
-
-
+typedef CHandle<CBaseEntity> EHANDLE;
 
 #endif /* UTILS_VALVE_NAVMESH_HANDLE_H_ */
