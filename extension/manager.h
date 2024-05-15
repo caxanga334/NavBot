@@ -42,7 +42,6 @@ public:
 	void NotifyRegisterGameEvents();
 
 	CBaseBot* GetBotByIndex(int index);
-	CBaseExtPlayer* GetPlayerByIndex(int index);
 	bool IsNavBot(const int client) const;
 
 	void AddBot();
@@ -93,7 +92,6 @@ public:
 
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
-	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of (human) players
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
 	size_t m_nextbotname; // Index of the next bot name to use

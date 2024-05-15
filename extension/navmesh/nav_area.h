@@ -273,7 +273,7 @@ public:
 enum NavHintType : int
 {
 	NAVHINT_CROSSINGPOINT = 0,
-	NAVHINT_LAST_SHARED_HINT = NAVHINT_CROSSINGPOINT
+	NAVHINT_LAST_SHARED_HINT = 10000 // The first 10000 hints are reserved for the base class
 };
 
 class NavHintPoint

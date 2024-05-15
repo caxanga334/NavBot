@@ -59,14 +59,14 @@ void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
 		return;
 	}
 	
-	auto groundent = GetGroundEntity();
+	edict_t* groundent = GetGroundEntity();
 
 	if (groundent == nullptr)
 	{
 		return; // don't update if the bot is midair
 	}
 
-	auto newarea = TheNavMesh->GetNearestNavArea(GetEdict(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, 50.0f);
+	CNavArea* newarea = TheNavMesh->GetNearestNavArea(GetEdict(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, 50.0f);
 
 	if (!newarea)
 	{

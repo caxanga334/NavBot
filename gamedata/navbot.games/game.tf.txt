@@ -6,17 +6,17 @@
 		{
 			"Event_Killed"
 			{
-				"windows"	"66"
-				"windows64" "66"
-				"linux"		"67"
-				"linux64"	"67"
+				"windows"	"68"
+				"windows64" "68"
+				"linux"		"69"
+				"linux64"	"69"
 			}
 			"Event_KilledOther"
 			{
-				"windows"	"67"
-				"windows64" "67"
-				"linux"		"68"
-				"linux64"	"68"
+				"windows"	"69"
+				"windows64" "69"
+				"linux"		"70"
+				"linux64"	"70"
 			}			
 		}
 	}

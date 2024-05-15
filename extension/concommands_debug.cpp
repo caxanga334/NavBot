@@ -303,8 +303,10 @@ CON_COMMAND_F(sm_navbot_debug_traces1, "Trace debugging command #1", FCVAR_CHEAT
 
 CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_CHEAT)
 {
-	auto host = extmanager->GetPlayerByIndex(1);
-	CNavArea* area = host->GetLastKnownNavArea();
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer player(host);
+	player.UpdateLastKnownNavArea(true);
+	CNavArea* area = player.GetLastKnownNavArea();
 
 	if (!area)
 	{
@@ -314,7 +316,7 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_C
 
 	std::vector<CNavArea*> collectedAreas;
 	collectedAreas.reserve(512);
-	Vector origin = host->GetAbsOrigin();
+	Vector origin = player.GetAbsOrigin();
 
 	NavCollectSurroundingAreas(area, collectedAreas, [](CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost) -> bool {
 

@@ -15,6 +15,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <entities/baseentity.h>
 
 #include "nav_mesh.h"
 
@@ -1066,8 +1067,6 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 //----------------------------------------------------------------------------
 CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDist ) const
 {
-	VPROF( "CNavMesh::GetNearestNavArea [ent]" );
-
 	if ( !m_grid.Count() )
 		return NULL;
 
@@ -1081,6 +1080,17 @@ CNavArea *CNavMesh::GetNearestNavArea( edict_t *pEntity, int nFlags, float maxDi
 			(nFlags & GETNAVAREA_CHECK_GROUND) != 0,
 			index > 0 && index <= gpGlobals->maxClients
 			? playerinfomanager->GetPlayerInfo(pEntity)->GetTeamIndex() : NAV_TEAM_ANY);
+}
+
+CNavArea* CNavMesh::GetNearestNavArea(CBaseEntity* entity, float maxDist, bool checkLOS, bool checkGround, int team) const
+{
+	entities::HBaseEntity be(entity);
+
+	Vector origin = be.GetAbsOrigin();
+
+	CNavArea* result = GetNearestNavArea(origin, maxDist, checkLOS, checkGround, team);
+
+	return result;
 }
 
 

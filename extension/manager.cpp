@@ -90,11 +90,6 @@ void CExtManager::Frame()
 		bot->PlayerThink();
 	}
 
-	for (auto& player : m_players)
-	{
-		player.get()->PlayerThink();
-	}
-
 	m_mod->Frame();
 }
 
@@ -112,12 +107,6 @@ void CExtManager::OnClientPutInServer(int client)
 
 	if (gp->IsSourceTV() || gp->IsReplay())
 		return; // Don't care about sourcetv bots
-
-	if (!IsNavBot(client))
-	{
-		// Add non navbot clients (humans and other bots) to the player lists so we can update their last known nav areas.
-		m_players.emplace_back(std::make_unique<CBaseExtPlayer>(edict));
-	}
 
 #ifdef EXT_DEBUG
 	auto auth = gp->GetAuthString(true);
@@ -146,16 +135,6 @@ void CExtManager::OnClientDisconnect(int client)
 
 		return false;
 	}), m_bots.end());
-
-	// Remove all players that have matching entity index
-	m_players.erase(std::remove_if(m_players.begin(), m_players.end(), [&client](const std::unique_ptr<CBaseExtPlayer>& object) {
-		if (object->GetIndex() == client)
-		{
-			return true;
-		}
-
-		return false;
-	}), m_players.end());
 }
 
 void CExtManager::OnMapStart()
@@ -228,21 +207,6 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 		if (bot->GetIndex() == index)
 		{
 			return bot;
-		}
-	}
-
-	return nullptr;
-}
-
-CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index)
-{
-	for (auto& playerptr : m_players)
-	{
-		auto player = playerptr.get();
-
-		if (player->GetIndex() == index)
-		{
-			return player;
 		}
 	}
 

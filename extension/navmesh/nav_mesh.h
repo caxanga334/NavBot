@@ -414,6 +414,7 @@ public:
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
 	CNavArea *GetNearestNavArea( const Vector &pos, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = NAV_TEAM_ANY ) const;
 	CNavArea *GetNearestNavArea( edict_t *pEntity, int nGetNavAreaFlags = GETNAVAREA_CHECK_GROUND, float maxDist = 10000.0f ) const;
+	CNavArea* GetNearestNavArea(CBaseEntity* entity, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = NAV_TEAM_ANY) const;
 
 	Place GetPlace( const Vector &pos ) const;							// return Place at given coordinate
 	// const char *PlaceToName( Place place ) const;						// given a place, return its name
