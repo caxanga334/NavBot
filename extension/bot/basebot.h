@@ -5,6 +5,7 @@
 #include <queue>
 #include <string>
 
+#include <IGameConfigs.h>
 #include <extplayer.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
@@ -29,6 +30,19 @@ class CBaseBot : public CBaseExtPlayer, public IEventListener
 public:
 	CBaseBot(edict_t* edict);
 	~CBaseBot() override;
+
+	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks);
+
+private:
+	void AddHooks();
+
+	void Hook_Spawn();
+	void Hook_Touch(CBaseEntity* pOther);
+	int Hook_OnTakeDamage_Alive(const CTakeDamageInfo& info);
+	void Hook_Event_Killed(const CTakeDamageInfo& info);
+	void Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInfo& info);
+
+public:
 
 	// Event propagation
 	std::vector<IEventListener*>* GetListenerVector() override;
@@ -80,7 +94,9 @@ public:
 	virtual void Spawn();
 	// Called on the first spawn call
 	virtual void FirstSpawn();
-	// Called when the player_death event is fired for this bot
+	// Called when this bot touches another entity
+	virtual void Touch(CBaseEntity* pOther) {}
+	// Called when this bot dies
 	virtual void Killed() {}
 	// Called by the OnTakeDamage_Alive hook.
 	virtual void OnTakeDamage_Alive(const CTakeDamageInfo& info);
@@ -179,6 +195,9 @@ public:
 protected:
 	bool m_isfirstspawn;
 
+	// Adds a SourceHook Hook into the hook list to be removed when this is destroyed
+	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
+
 private:
 	int m_nextupdatetime;
 	int m_joingametime; // delay between joingame attempts
@@ -200,6 +219,8 @@ private:
 	std::vector<CBotWeapon> m_weapons;
 	int m_weaponupdatetimer;
 	Vector m_homepos; // Position where the bot spawned
+	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
+	IntervalTimer m_burningtimer;
 
 	void ExecuteQueuedCommands();
 };

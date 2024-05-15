@@ -8,6 +8,7 @@ class CBaseBot;
 class CPath;
 class CBaseEntity;
 class Vector;
+class CTakeDamageInfo;
 struct edict_t;
 
 // Interface for receiving events
@@ -40,9 +41,11 @@ public:
 	virtual void OnUnstuck(); // bot was stuck and is no longer stuck
 	virtual void OnMoveToFailure(CPath* path, MovementFailureType reason);
 	virtual void OnMoveToSuccess(CPath* path);
-	virtual void OnInjured(edict_t* attacker = nullptr); // when the bot takes damage
-	virtual void OnKilled(edict_t* attacker = nullptr); // when the bot is killed
-	virtual void OnOtherKilled(edict_t* victim, edict_t* attacker = nullptr); // when another player gets killed
+	virtual void OnContact(CBaseEntity* pOther); // Something touched the bot
+	virtual void OnIgnited(const CTakeDamageInfo& info); // The bot is on fire and/or taking fire damage
+	virtual void OnInjured(const CTakeDamageInfo& info); // when the bot takes damage
+	virtual void OnKilled(const CTakeDamageInfo& info); // when the bot is killed
+	virtual void OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info); // when another player gets killed
 	virtual void OnSight(edict_t* subject); // when the bot spots an entity
 	virtual void OnLostSight(edict_t* subject); // when the bot loses sight of an entity
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume); // when the bot hears an entity
@@ -113,7 +116,7 @@ inline void IEventListener::OnMoveToSuccess(CPath* path)
 	}
 }
 
-inline void IEventListener::OnInjured(edict_t* attacker)
+inline void IEventListener::OnContact(CBaseEntity* pOther)
 {
 	auto vec = GetListenerVector();
 
@@ -121,12 +124,12 @@ inline void IEventListener::OnInjured(edict_t* attacker)
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnInjured(attacker);
+			listener->OnContact(pOther);
 		}
 	}
 }
 
-inline void IEventListener::OnKilled(edict_t* attacker)
+inline void IEventListener::OnIgnited(const CTakeDamageInfo& info)
 {
 	auto vec = GetListenerVector();
 
@@ -134,12 +137,12 @@ inline void IEventListener::OnKilled(edict_t* attacker)
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnKilled(attacker);
+			listener->OnIgnited(info);
 		}
 	}
 }
 
-inline void IEventListener::OnOtherKilled(edict_t* victim, edict_t* attacker)
+inline void IEventListener::OnInjured(const CTakeDamageInfo& info)
 {
 	auto vec = GetListenerVector();
 
@@ -147,7 +150,33 @@ inline void IEventListener::OnOtherKilled(edict_t* victim, edict_t* attacker)
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnOtherKilled(victim, attacker);
+			listener->OnInjured(info);
+		}
+	}
+}
+
+inline void IEventListener::OnKilled(const CTakeDamageInfo& info)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnKilled(info);
+		}
+	}
+}
+
+inline void IEventListener::OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnOtherKilled(pVictim, info);
 		}
 	}
 }

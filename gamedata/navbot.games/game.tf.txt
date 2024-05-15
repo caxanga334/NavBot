@@ -1,26 +1,23 @@
 "Games"
 {
-	/* OnPlayerRunCMD Hook */
-	"dod"
+	"tf"
 	{
-		"Keys"
-		{
-			// If a mod needs to hook OnPlayerRunCMD, set this to 1
-			"HookPlayerRunCMD"	"1"
-		}
-
 		"Offsets"
 		{
 			"Event_Killed"
 			{
 				"windows"	"66"
+				"windows64" "66"
 				"linux"		"67"
+				"linux64"	"67"
 			}
 			"Event_KilledOther"
 			{
 				"windows"	"67"
+				"windows64" "67"
 				"linux"		"68"
-			}
+				"linux64"	"68"
+			}			
 		}
 	}
 }

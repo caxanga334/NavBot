@@ -142,10 +142,11 @@ void CTeamFortress2Mod::OnMapEnd()
 
 void CTeamFortress2Mod::RegisterGameEvents()
 {
-	auto em = GetGameEventManager();
-	em->RegisterEventReceiver(new CPlayerSpawnEvent);
-	em->RegisterEventReceiver(new CPlayerHurtEvent);
-	em->RegisterEventReceiver(new CTF2PlayerDeathEvent);
+	// Not used, replaced by sourcehooks
+	// auto em = GetGameEventManager();
+	// em->RegisterEventReceiver(new CPlayerSpawnEvent);
+	// em->RegisterEventReceiver(new CPlayerHurtEvent);
+	// em->RegisterEventReceiver(new CTF2PlayerDeathEvent);
 	
 	// don't call base, TF2 uses modified generic source events
 }

@@ -29,10 +29,11 @@ CBaseBot* CBaseMod::AllocateBot(edict_t* edict)
 
 void CBaseMod::RegisterGameEvents()
 {
-	auto evmanager = GetGameEventManager();
+	// auto evmanager = GetGameEventManager();
 
-	evmanager->RegisterEventReceiver(new CPlayerSpawnEvent);
-	evmanager->RegisterEventReceiver(new CPlayerHurtEvent);
+	// evmanager->RegisterEventReceiver(new CPlayerSpawnEvent);
+	// evmanager->RegisterEventReceiver(new CPlayerHurtEvent);
+	// No longer used, we now hook the vtable
 }
 
 const Vector& CBaseMod::GetPlayerHullMins()

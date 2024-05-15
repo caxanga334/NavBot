@@ -42,15 +42,12 @@
 
 // Need this for CUserCmd class definition
 #include <usercmd.h>
-#include <util/Handle.h>
-#include <takedamageinfo.h>
+#include <sdkports/sdk_takedamageinfo.h>
 
 /**
  * @file extension.cpp
  * @brief Implement extension code here.
  */
-
-
 
 CGlobalVars* gpGlobals = nullptr;
 IVDebugOverlay* debugoverlay = nullptr;
@@ -92,7 +89,6 @@ SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 // SDKs that requires a runplayercommand hook
 
 SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*)
-SH_DECL_MANUALHOOK1(MH_CBasePlayer_OnTakeDamage_Alive, 0, 0, 0, int, const CTakeDamageInfo&)
 
 SMEXT_LINK(&g_NavBotExt);
 
@@ -162,7 +158,6 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	extension = this;
 	m_hookruncmd = false;
-	m_hasbaseplayerhooks = true; // we will always hook these, set to false on gamedata failure
 	m_gamedata = nullptr;
 	randomgen->ReSeed(); // set the initial seed based on the clock
 
@@ -212,18 +207,20 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	gameconfs->CloseGameConfigFile(gamedata);
 	gamedata = nullptr;
 
-	if (gameconfs->LoadGameConfigFile("sdkhooks.games", &gamedata, error, maxlen))
+	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &gamedata, error, maxlen))
 	{
-		offset = 0;
-		if (gamedata->GetOffset("OnTakeDamage_Alive", &offset))
-		{
-			SH_MANUALHOOK_RECONFIGURE(MH_CBasePlayer_OnTakeDamage_Alive, offset, 0, 0);
-		}
-		else
-		{
-			m_hasbaseplayerhooks = false;
-			smutils->LogError(myself, "Failed to get CBaseEntity::OnTakeDamage_Alive vtable offset from SDKHooks gamedata!");
-		}
+		const char* message = "Failed to load SDK Tools gamedata!";
+		maxlen = strlen(message);
+		strcpy(error, message);
+		return false;
+	}
+
+	if (!CBaseBot::InitHooks(m_gamedata, gamedata))
+	{
+		const char* message = "Failed to setup SourceHooks (CBaseBot)!";
+		maxlen = strlen(message);
+		strcpy(error, message);
+		return false;
 	}
 
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
@@ -354,11 +351,6 @@ void NavBotExt::OnClientPutInServer(int client)
 		{
 			SH_ADD_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
 		}
-
-		if (m_hasbaseplayerhooks)
-		{
-			SH_ADD_MANUALHOOK(MH_CBasePlayer_OnTakeDamage_Alive, baseent, SH_MEMBER(this, &NavBotExt::Hook_CBaseEntity_OnTakeDamage_Alive), false);
-		}
 	}
 }
 
@@ -373,11 +365,6 @@ void NavBotExt::OnClientDisconnecting(int client)
 		if (m_hookruncmd)
 		{
 			SH_REMOVE_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
-		}
-
-		if (m_hasbaseplayerhooks)
-		{
-			SH_REMOVE_MANUALHOOK(MH_CBasePlayer_OnTakeDamage_Alive, baseent, SH_MEMBER(this, &NavBotExt::Hook_CBaseEntity_OnTakeDamage_Alive), false);
 		}
 	}
 }
@@ -422,38 +409,4 @@ void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper
 	}
 
 	RETURN_META(MRES_IGNORED);
-}
-
-int NavBotExt::Hook_CBaseEntity_OnTakeDamage_Alive(const CTakeDamageInfo& info)
-{
-	CBaseEntity* victim = META_IFACEPTR(CBaseEntity);
-	int index = gamehelpers->EntityToBCompatRef(victim);
-	
-	CBaseBot* bot = extmanager->GetBotByIndex(index);
-
-	if (bot)
-	{
-		bot->OnTakeDamage_Alive(info);
-	}
-
-#ifdef EXT_DEBUG
-	CBaseEntity* attacker = info.GetAttacker();
-	CBaseEntity* inflictor = info.GetInflictor();
-
-	char message[256]{};
-
-	if (attacker)
-	{
-		auto classname = gamehelpers->GetEntityClassname(attacker);
-
-		if (classname && classname[0])
-		{
-			ke::SafeSprintf(message, sizeof(message), "%p <%s> %p", attacker, classname, inflictor);
-		}
-	}
-
-	rootconsole->ConsolePrint("%s", message);
-#endif // EXT_DEBUG
-
-	RETURN_META_VALUE(MRES_IGNORED, 0);
 }

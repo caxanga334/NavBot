@@ -18,7 +18,7 @@
 #include <vector>
 
 #include "nav.h"
-#include <util/Handle.h>
+#include <sdkports/sdk_ehandle.h>
 
 class CUtlBuffer;
 class CNavMesh;

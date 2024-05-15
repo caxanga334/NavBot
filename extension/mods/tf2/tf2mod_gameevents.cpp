@@ -6,6 +6,7 @@
 #include "teamfortress2mod.h"
 #include "tf2mod_gameevents.h"
 
+/*
 void CTF2PlayerDeathEvent::OnGameEvent(IGameEvent* gameevent)
 {
 	int victim = playerhelpers->GetClientOfUserId(gameevent->GetInt("userid"));
@@ -71,3 +72,4 @@ void CTF2PlayerDeathEvent::OnGameEvent(IGameEvent* gameevent)
 		}
 	}
 }
+*/

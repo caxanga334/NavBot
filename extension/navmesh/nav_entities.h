@@ -13,7 +13,7 @@
 #define NAV_ENTITIES_H
 
 #include "nav_mesh.h"
-#include <util/Handle.h>
+#include <sdkports/sdk_ehandle.h>
 #include <utllinkedlist.h>
 #include <fmtstr.h>
 #include <string_t.h>

@@ -4,7 +4,6 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
-#include <util/Handle.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
@@ -12,7 +11,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #include <mods/basemod.h>
 #include <tier1/convar.h>
-#include <takedamageinfo.h>
+#include <sdkports/sdk_takedamageinfo.h>
 #include "basebot.h"
 
 extern CGlobalVars* gpGlobals;
@@ -216,6 +215,9 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_debugtextoffset = 0;
 	m_weapons.reserve(MAX_WEAPONS);
 	m_weaponupdatetimer = 5;
+	m_shhooks.reserve(32);
+
+	AddHooks();
 }
 
 CBaseBot::~CBaseBot()
@@ -226,6 +228,13 @@ CBaseBot::~CBaseBot()
 	delete m_basebehavior;
 	m_interfaces.clear();
 	m_listeners.clear();
+
+	for (auto& hook : m_shhooks)
+	{
+		SH_REMOVE_HOOK_ID(hook);
+	}
+
+	m_shhooks.clear();
 }
 
 std::vector<IEventListener*>* CBaseBot::GetListenerVector()

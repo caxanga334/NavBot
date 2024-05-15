@@ -15,6 +15,8 @@
 // Forward declaration
 template <typename BotClass> class AITask;
 class CPath;
+class CBaseEntity;
+class CTakeDamageInfo;
 
 // Types of results an AI Task can have
 enum TaskResultType
@@ -548,9 +550,11 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnUnstuck(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnMoveToFailure(BotClass* bot, CPath* path, IEventListener::MovementFailureType reason) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnMoveToSuccess(BotClass* bot, CPath* path) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnInjured(BotClass* bot, edict_t* attacker = nullptr) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnKilled(BotClass* bot, edict_t* attacker = nullptr) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnOtherKilled(BotClass* bot, edict_t* victim, edict_t* attacker = nullptr) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnContact(BotClass* bot, CBaseEntity* pOther) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnIgnited(BotClass* bot, const CTakeDamageInfo& info) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnInjured(BotClass* bot, const CTakeDamageInfo& info) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnKilled(BotClass* bot, const CTakeDamageInfo& info) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnOtherKilled(BotClass* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type, const int volume) { return TryContinue(); }
@@ -941,57 +945,67 @@ private:
 	AITask<BotClass>* ProcessTaskPause(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 	TaskResult<BotClass> ProcessTaskResume(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 
-	virtual void OnTestEventPropagation() override final
+	void OnTestEventPropagation() override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnTestEventPropagation);
 	}
 
-	virtual void OnStuck() override final
+	void OnStuck() override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnStuck);
 	}
 
-	virtual void OnUnstuck() override final
+	void OnUnstuck() override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnUnstuck);
 	}
 
-	virtual void OnMoveToFailure(CPath* path, IEventListener::MovementFailureType reason) override final
+	void OnMoveToFailure(CPath* path, IEventListener::MovementFailureType reason) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnMoveToFailure, path, reason);
 	}
 
-	virtual void OnMoveToSuccess(CPath* path) override final
+	void OnMoveToSuccess(CPath* path) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnMoveToSuccess, path);
 	}
 
-	virtual void OnInjured(edict_t* attacker = nullptr) override final
+	void OnContact(CBaseEntity* pOther) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnInjured, attacker);
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnContact, pOther);
 	}
 
-	virtual void OnKilled(edict_t* attacker = nullptr) override final
+	void OnIgnited(const CTakeDamageInfo& info) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnKilled, attacker);
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnIgnited, info);
 	}
 
-	virtual void OnOtherKilled(edict_t* victim, edict_t* attacker = nullptr) override final
+	void OnInjured(const CTakeDamageInfo& info) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnOtherKilled, victim, attacker);
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnInjured, info);
 	}
 
-	virtual void OnSight(edict_t* subject) override final
+	void OnKilled(const CTakeDamageInfo& info) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnKilled, info);
+	}
+
+	void OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnOtherKilled, pVictim, info);
+	}
+
+	void OnSight(edict_t* subject) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSight, subject);
 	}
 
-	virtual void OnLostSight(edict_t* subject) override final
+	void OnLostSight(edict_t* subject) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnLostSight, subject);
 	}
 
-	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override final
+	void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnSound, source, position, type, volume);
 	}

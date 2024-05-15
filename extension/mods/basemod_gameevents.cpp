@@ -60,6 +60,6 @@ void CPlayerHurtEvent::OnGameEvent(IGameEvent* gameevent)
 
 	if (bot != nullptr)
 	{
-		bot->OnInjured(pAttacker);
+		// bot->OnInjured(pAttacker);
 	}
 }

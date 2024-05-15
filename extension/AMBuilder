@@ -14,6 +14,7 @@ sourceFiles = [
   'sdkports/debugoverlay_shared.cpp',
   'sdkports/studio.cpp',
   'sdkports/gametrace_server.cpp',
+  'sdkports/sdk_ehandle.cpp',
   'entities/baseentity.cpp',
   'entities/basecombatchar.cpp',
   'entities/basecombatweapon.cpp',
@@ -35,7 +36,6 @@ sourceFiles = [
   # Utility
   'util/BaseEntity.cpp',
   'util/EntityUtils.cpp',
-  'util/Handle.cpp',
   'util/SimpleException.cpp',
   'util/UtilTrace.cpp',
   'util/entprops.cpp',
@@ -56,6 +56,7 @@ sourceFiles = [
   'bot/interfaces/path/meshnavigator.cpp',
   'bot/basebot.cpp',
   'bot/basebot_debug.cpp',
+  'bot/basebot_hooks.cpp',
   'concommands_bots.cpp',
   'concommands_debug.cpp',
   # TF2 Bot
