@@ -135,6 +135,18 @@ void entities::HBaseEntity::SetAbsVelocity(const Vector& velocity) const
 	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_vecAbsVelocity", velocity);
 }
 
+Vector entities::HBaseEntity::GetViewOffset() const
+{
+	Vector result;
+
+	if (entprops->GetEntPropVector(GetIndex(), Prop_Data, "m_vecViewOffset", result) == true)
+	{
+		return result;
+	}
+
+	return vec3_origin;
+}
+
 void entities::HBaseEntity::CalcNearestPoint(const Vector& worldPos, Vector& out) const
 {
 	Vector localPt, localClosestPt;

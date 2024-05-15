@@ -328,19 +328,25 @@ bool CNavMesh::FindActiveNavArea( void )
 		return false;
 	}
 
+	entities::HBaseEntity player(ent);
+
 	Vector from, dir;
 	GetEditVectors( &from, &dir );
 
 	float maxRange = 2000.0f;		// 500
 	bool isClippingRayAtFeet = false;
-	if (sm_nav_create_area_at_feet.GetBool() && dir.z < 0 )
+
+	if (sm_nav_create_area_at_feet.GetBool())
 	{
-		Vector earPos;
-		gameclients->ClientEarPosition(ent, &earPos);
-		if ( earPos.z != 0.0f )
+		if (dir.z < 0)
 		{
-			maxRange = maxRange * earPos.z / (-dir.z * maxRange);
-			isClippingRayAtFeet = true;
+			float eyeHeight = player.GetViewOffset().z;
+			if (eyeHeight != 0.0f)
+			{
+				float rayHeight = -dir.z * maxRange;
+				maxRange = maxRange * eyeHeight / rayHeight;
+				isClippingRayAtFeet = true;
+			}
 		}
 	}
 
