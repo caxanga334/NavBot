@@ -53,7 +53,7 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 CopyFiles('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games',
   [ 'common.games.txt',
     'game.dod.txt',
-	'game.tf.txt',
+    'game.tf.txt',
     'master.games.txt'
   ]
 )
