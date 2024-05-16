@@ -21,28 +21,22 @@ public:
 
 	// Called every server frame
 	virtual void Frame() {}
-
+	// Called when the map starts
 	virtual void OnMapStart();
+	// Called when the map ends
 	virtual void OnMapEnd() {}
-
 	// Called by the manager when allocating a new bot instance
 	virtual CBaseBot* AllocateBot(edict_t* edict);
-
+	// Mod name (IE: Team Fortress 2)
 	virtual const char* GetModName() { return "CBaseMod"; }
-
+	// Mod ID
 	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_BASE; }
-
 	// Called for mods to register event listeners
 	virtual void RegisterGameEvents();
-
-	virtual const Vector& GetPlayerHullMins();
-	virtual const Vector& GetPlayerHullMaxs();
-
 	// Allocates the nav mesh class used by the mod
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
 	virtual std::optional<int> GetPlayerResourceEntity();
-
 	// return false to call NavIsEntityWalkable ir order to determine if the entity is walkable. Used for nav mesh editing and generation.
 	virtual bool NavIsEntityIgnored(edict_t* entity, unsigned int flags) { return true; }
 	// Returns true if the entity is walkable, false if it should block nav

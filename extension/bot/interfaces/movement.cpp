@@ -861,7 +861,10 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	{
 		if (debug)
 		{
-			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), extmanager->GetMod()->GetPlayerHullMins(), extmanager->GetMod()->GetPlayerHullMaxs(), 0, 0, 255, 255, 5.0f);
+			Vector mins = GetBot()->GetMins();
+			Vector maxs = GetBot()->GetMaxs();
+
+			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), mins, maxs, 0, 0, 255, 255, 5.0f);
 			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (UP DIR)! \n", GetBot()->GetDebugIdentifier());
 		}
 
@@ -928,7 +931,10 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 	{
 		if (debug)
 		{
-			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), extmanager->GetMod()->GetPlayerHullMins(), extmanager->GetMod()->GetPlayerHullMaxs(), 0, 0, 255, 255, 5.0f);
+			Vector mins = GetBot()->GetMins();
+			Vector maxs = GetBot()->GetMaxs();
+
+			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), mins, maxs, 0, 0, 255, 255, 5.0f);
 			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (DOWN DIR)! \n", GetBot()->GetDebugIdentifier());
 		}
 

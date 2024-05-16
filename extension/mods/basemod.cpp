@@ -36,18 +36,6 @@ void CBaseMod::RegisterGameEvents()
 	// No longer used, we now hook the vtable
 }
 
-const Vector& CBaseMod::GetPlayerHullMins()
-{
-	static Vector mins(-16.0f, -16.0f, 0.0f);
-	return mins;
-}
-
-const Vector& CBaseMod::GetPlayerHullMaxs()
-{
-	static Vector maxs(16.0f, 16.0f, 72.0f);
-	return maxs;
-}
-
 CNavMesh* CBaseMod::NavMeshFactory()
 {
 	return new CNavMesh;

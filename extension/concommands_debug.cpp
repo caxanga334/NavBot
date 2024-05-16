@@ -19,6 +19,16 @@
 #include <sm_argbuffer.h>
 
 #ifdef EXT_DEBUG
+CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	Vector target = UtilHelpers::getWorldSpaceCenter(host);
+
+	extmanager->ForEachBot([&target](CBaseBot* bot) {
+		bot->GetControlInterface()->AimAt(target, IPlayerController::LOOK_CRITICAL, 10.0f, "Debug command!");
+	});
+}
+
 CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 {
 	auto edict = gamehelpers->EdictOfIndex(1);
