@@ -101,6 +101,7 @@ private:
 	BotQuotaMode m_quotamode; // Bot quota mode
 	int m_quotatarget; // Bot quota target
 	CWeaponInfoManager m_wim;
+	bool m_iscreatingbot; // We are creating a NavBot
 };
 
 

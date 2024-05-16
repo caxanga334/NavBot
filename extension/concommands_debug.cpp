@@ -16,6 +16,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <util/UtilTrace.h>
+#include <sm_argbuffer.h>
 
 #ifdef EXT_DEBUG
 CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
@@ -378,6 +379,38 @@ CON_COMMAND_F(sm_navbot_tf_debug_test_buy_upgrade, "Testing sending KeyValue com
 }
 
 #endif // SOURCE_ENGINE == SE_TF2
+
+#if SOURCE_ENGINE == SE_DODS && defined(WIN32)
+
+CON_COMMAND_F(sm_navbot_dod_debug_vcall, "Testing Virtual function calling.", FCVAR_CHEAT)
+{
+	static SourceMod::ICallWrapper* pCall = nullptr;
+
+	if (!pCall)
+	{
+		constexpr int OFFSET = 149; // WorldSpaceCenter
+
+		SourceMod::PassInfo ret;
+		ret.flags = PASSFLAG_BYVAL;
+		ret.size = sizeof(void*);
+		ret.type = SourceMod::PassType::PassType_Basic;
+
+		pCall = g_pBinTools->CreateVCall(OFFSET, 0, 0, &ret, nullptr, 0);
+	}
+
+	CBaseEntity* host = gamehelpers->ReferenceToEntity(1);
+	ArgBuffer<void*> vstk(host);
+
+	Vector result;
+	Vector* retval = nullptr;
+	pCall->Execute(vstk, &retval);
+
+	result = *retval;
+	Msg("CBaseEntity::WorldSpaceCenter() <%3.2f, %3.2f, %3.2f>\n", result.x, result.y, result.z);
+}
+
+#endif // SOURCE_ENGINE == SE_DODS
+
 
 
 #endif // EXT_DEBUG

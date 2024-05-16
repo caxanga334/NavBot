@@ -1,14 +1,36 @@
 #include <extension.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include "basebot.h"
+// Need this for CUserCmd class definition
+#include <usercmd.h>
+
+namespace BotHookHelpers
+{
+	inline static void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
+	{
+		ucmd->command_number = bcmd->command_number;
+		ucmd->tick_count = bcmd->tick_count;
+		ucmd->viewangles = bcmd->viewangles;
+		ucmd->forwardmove = bcmd->forwardmove;
+		ucmd->sidemove = bcmd->sidemove;
+		ucmd->upmove = bcmd->upmove;
+		ucmd->buttons = bcmd->buttons;
+		ucmd->impulse = bcmd->impulse;
+		ucmd->weaponselect = bcmd->weaponselect;
+		ucmd->weaponsubtype = bcmd->weaponsubtype;
+		ucmd->random_seed = bcmd->random_seed;
+	}
+}
 
 SH_DECL_MANUALHOOK0_void(CBaseBot_Spawn, 0, 0, 0)
 SH_DECL_MANUALHOOK1_void(CBaseBot_Touch, 0, 0, 0, CBaseEntity*);
 SH_DECL_MANUALHOOK1(CBaseBot_OnTakeDamage_Alive, 0, 0, 0, int, const CTakeDamageInfo&)
 SH_DECL_MANUALHOOK1_void(CBaseBot_Event_Killed, 0, 0, 0, const CTakeDamageInfo&)
 SH_DECL_MANUALHOOK2_void(CBaseBot_Event_KilledOther, 0, 0, 0, CBaseEntity*, const CTakeDamageInfo&)
+SH_DECL_MANUALHOOK0_void(CBaseBot_PhysicsSimulate, 0, 0, 0)
+SH_DECL_MANUALHOOK2_void(CBaseBot_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*)
 
-bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks)
+bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools)
 {
 	int offset = 0;
 
@@ -26,6 +48,16 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 
 	if (!gd_navbot->GetOffset("Event_KilledOther", &offset)) { return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Event_KilledOther, offset, 0, 0);
+
+	if (!gd_navbot->GetOffset("PhysicsSimulate", &offset)) { return false; }
+	SH_MANUALHOOK_RECONFIGURE(CBaseBot_PhysicsSimulate, offset, 0, 0);
+
+	// This mod needs to hook CBasePlayer::PlayerRunCommand
+	if (extension->ShouldHookRunPlayerCommand())
+	{
+		if (!gd_sdktools->GetOffset("PlayerRunCmd", &offset)) { return false; }
+		SH_MANUALHOOK_RECONFIGURE(CBaseBot_PlayerRunCommand, offset, 0, 0);
+	}
 
 	return true;
 }
@@ -49,10 +81,20 @@ void CBaseBot::AddHooks()
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_OnTakeDamage_Alive, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_OnTakeDamage_Alive), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_Killed, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_Killed), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_KilledOther, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_KilledOther), false));
+	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_PhysicsSimulate, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_PhysicsSimulate), false));
+
+	if (extension->ShouldHookRunPlayerCommand())
+	{
+		m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_PlayerRunCommand, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_PlayerRunCommand), false));
+	}
 }
 
 void CBaseBot::Hook_Spawn()
 {
+#ifdef EXT_DEBUG
+	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
+#endif // EXT_DEBUG
+
 	Spawn();
 	RETURN_META(MRES_IGNORED);
 }
@@ -92,4 +134,17 @@ void CBaseBot::Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInf
 {
 	OnOtherKilled(pVictim, info);
 	RETURN_META(MRES_IGNORED);
+}
+
+void CBaseBot::Hook_PhysicsSimulate()
+{
+	PlayerThink();
+	RETURN_META(MRES_IGNORED);
+}
+
+void CBaseBot::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
+{
+	CBotCmd* botcmd = GetUserCommand();
+	BotHookHelpers::CopyBotCmdtoUserCmd(usercmd, botcmd);
+	RETURN_META(MRES_HANDLED);
 }

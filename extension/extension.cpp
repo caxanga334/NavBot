@@ -39,9 +39,6 @@
 #include <core/eventmanager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
-
-// Need this for CUserCmd class definition
-#include <usercmd.h>
 #include <sdkports/sdk_takedamageinfo.h>
 
 /**
@@ -87,8 +84,6 @@ static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 
 // SDKs that requires a runplayercommand hook
-
-SH_DECL_MANUALHOOK2_void(MH_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*)
 
 SMEXT_LINK(&g_NavBotExt);
 
@@ -137,21 +132,6 @@ namespace Utils
 			}
 		}
 	}
-
-	inline static void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
-	{
-		ucmd->command_number = bcmd->command_number;
-		ucmd->tick_count = bcmd->tick_count;
-		ucmd->viewangles = bcmd->viewangles;
-		ucmd->forwardmove = bcmd->forwardmove;
-		ucmd->sidemove = bcmd->sidemove;
-		ucmd->upmove = bcmd->upmove;
-		ucmd->buttons = bcmd->buttons;
-		ucmd->impulse = bcmd->impulse;
-		ucmd->weaponselect = bcmd->weaponselect;
-		ucmd->weaponsubtype = bcmd->weaponsubtype;
-		ucmd->random_seed = bcmd->random_seed;
-	}
 }
 
 bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
@@ -174,10 +154,20 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
-	SourceMod::IGameConfig* gamedata = nullptr;
-	if (!gameconfs->LoadGameConfigFile("sdktools.games", &gamedata, error, maxlen))
+	SourceMod::IGameConfig* sdktools_gamedata = nullptr;
+	if (!gameconfs->LoadGameConfigFile("sdktools.games", &sdktools_gamedata, error, maxlen))
 	{
 		smutils->LogError(myself, "Failed to open SDKTools gamedata file!");
+		gameconfs->CloseGameConfigFile(m_gamedata);
+		return false;
+	}
+
+	SourceMod::IGameConfig* sdkhooks_gamedata = nullptr;
+	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &sdkhooks_gamedata, error, maxlen))
+	{
+		const char* message = "Failed to load SDKHooks gamedata!";
+		maxlen = strlen(message);
+		strcpy(error, message);
 		gameconfs->CloseGameConfigFile(m_gamedata);
 		return false;
 	}
@@ -192,36 +182,21 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	int offset = 0;
 
-	if (!gamedata->GetOffset("PlayerRunCmd", &offset))
+	if (m_hookruncmd)
 	{
-		if (m_hookruncmd) // only fail if hookcmd is requested
-		{
-			const char* message = "Failed to get PlayerRunCmd offset from SDK Tools gamedata. Mod not supported!";
-			maxlen = strlen(message);
-			strcpy(error, message);
-			return false;
-		}
+		smutils->LogMessage(myself, "CBasePlayer::PlayerRunCommand hook enabled!");
 	}
 
-	SH_MANUALHOOK_RECONFIGURE(MH_PlayerRunCommand, offset, 0, 0);
-	gameconfs->CloseGameConfigFile(gamedata);
-	gamedata = nullptr;
-
-	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &gamedata, error, maxlen))
-	{
-		const char* message = "Failed to load SDK Tools gamedata!";
-		maxlen = strlen(message);
-		strcpy(error, message);
-		return false;
-	}
-
-	if (!CBaseBot::InitHooks(m_gamedata, gamedata))
+	if (!CBaseBot::InitHooks(m_gamedata, sdkhooks_gamedata, sdktools_gamedata))
 	{
 		const char* message = "Failed to setup SourceHooks (CBaseBot)!";
 		maxlen = strlen(message);
 		strcpy(error, message);
 		return false;
 	}
+
+	gameconfs->CloseGameConfigFile(sdkhooks_gamedata);
+	gameconfs->CloseGameConfigFile(sdktools_gamedata);
 
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	ConVar_Register(0, this);
@@ -341,32 +316,11 @@ bool NavBotExt::RegisterConCommandBase(ConCommandBase* pVar)
 void NavBotExt::OnClientPutInServer(int client)
 {
 	extmanager->OnClientPutInServer(client);
-
-	CBaseEntity* baseent = nullptr;
-	UtilHelpers::IndexToAThings(client, &baseent, nullptr);
-
-	if (baseent != nullptr)
-	{
-		if (m_hookruncmd)
-		{
-			SH_ADD_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
-		}
-	}
 }
 
 void NavBotExt::OnClientDisconnecting(int client)
 {
 	extmanager->OnClientDisconnect(client);
-	CBaseEntity* baseent = nullptr;
-	UtilHelpers::IndexToAThings(client, &baseent, nullptr);
-
-	if (baseent != nullptr)
-	{
-		if (m_hookruncmd)
-		{
-			SH_REMOVE_MANUALHOOK(MH_PlayerRunCommand, baseent, SH_MEMBER(this, &NavBotExt::Hook_PlayerRunCommand), false);
-		}
-	}
 }
 
 void NavBotExt::Hook_GameFrame(bool simulating)
@@ -384,29 +338,3 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 	RETURN_META(MRES_IGNORED);
 }
 
-void NavBotExt::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper) const
-{
-	if (!m_hookruncmd)
-	{
-		RETURN_META(MRES_IGNORED);
-	}
-
-	if (extmanager == nullptr) // TO-DO: This check might not be needed since the extension should load before any player is able to fully connect to the server
-	{
-		RETURN_META(MRES_IGNORED);
-	}
-
-	CBaseBot* bot;
-	CBaseEntity* player = META_IFACEPTR(CBaseEntity);
-	int index = gamehelpers->EntityToBCompatRef(player);
-
-	bot = extmanager->GetBotByIndex(index);
-
-	if (bot != nullptr)
-	{
-		CBotCmd* cmd = bot->GetUserCommand();
-		Utils::CopyBotCmdtoUserCmd(usercmd, cmd);
-	}
-
-	RETURN_META(MRES_IGNORED);
-}

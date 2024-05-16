@@ -17,7 +17,14 @@
 				"windows64" "69"
 				"linux"		"70"
 				"linux64"	"70"
-			}			
+			}
+			"PhysicsSimulate"
+			{
+				"windows"	"109"
+				"windows64" "109"
+				"linux"		"110"
+				"linux64"	"110"
+			}
 		}
 	}
 }

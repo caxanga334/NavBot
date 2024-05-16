@@ -1,14 +1,7 @@
 "Games"
 {
-	/* OnPlayerRunCMD Hook */
-	"dod"
+	"cstrike"
 	{
-		"Keys"
-		{
-			// If a mod needs to hook OnPlayerRunCMD, set this to 1
-			"HookPlayerRunCMD"	"1"
-		}
-
 		"Offsets"
 		{
 			"Event_Killed"

@@ -279,10 +279,11 @@ public:
 	}
 
 	void Hook_GameFrame(bool simulating);
-	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper) const;
 
-	inline bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
-	inline SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
+	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
+	// True if we should SourceHook CBasePlayer::PlayerRunCommand
+	bool ShouldHookRunPlayerCommand() const { return m_hookruncmd; }
+	SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
 
 private:
 	bool m_hookruncmd;

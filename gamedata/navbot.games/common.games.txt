@@ -1,27 +1,25 @@
 "Games"
 {
-	/* OnPlayerRunCMD Hook */
+	
 	"#default"
 	{
 		"Keys"
 		{
-			// If a mod needs to hook OnPlayerRunCMD, set this to 1
+			/* OnPlayerRunCMD Hook 
+			 * If a mod needs to hook OnPlayerRunCMD, set this to 1
+			*/
 			"HookPlayerRunCMD"	"0"
-		}
-	}
-	/* Nav Mesh editing sounds */
-	"#default"
-	{
-		"Keys"
-		{
-			// Default sounds are from HL2, should be compatible with most mods
-			"NavEdit_GenericBlip" "buttons\blip1.wav"
-			"NavEdit_GenericSuccess" "buttons\button3.wav"
-			"NavEdit_GenericError" "buttons\button2.wav"
-			"NavEdit_SwitchOn" "buttons\lightswitch2.wav"
-			"NavEdit_SwitchOff" "buttons\combine_button7.wav"
-			"NavEdit_GenericOff" "buttons\combine_button2.wav"
-			"NavEdit_ConnectFail" "buttons\button10.wav"
+			
+			/* Nav Mesh editing sounds 
+			 * Default sounds are from HL2, should be compatible with most mods
+			*/
+			"NavEdit_GenericBlip" 		"buttons\blip1.wav"
+			"NavEdit_GenericSuccess" 	"buttons\button3.wav"
+			"NavEdit_GenericError" 		"buttons\button2.wav"
+			"NavEdit_SwitchOn" 			"buttons\lightswitch2.wav"
+			"NavEdit_SwitchOff" 		"buttons\combine_button7.wav"
+			"NavEdit_GenericOff" 		"buttons\combine_button2.wav"
+			"NavEdit_ConnectFail" 		"buttons\button10.wav"
 		}
 	}
 }

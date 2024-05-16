@@ -56,6 +56,7 @@ CExtManager::CExtManager() :
 	m_quotamode = BotQuotaMode::QUOTA_FIXED;
 	m_quotatarget = 0;
 	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
+	m_iscreatingbot = false;
 }
 
 CExtManager::~CExtManager()
@@ -84,23 +85,32 @@ void CExtManager::Frame()
 		UpdateBotQuota();
 	}
 
+	/*
+	* This is now called by the CBasePlayer::PhysicsSimulate() hook
 	for (auto& botptr : m_bots)
 	{
 		auto bot = botptr.get();
 		bot->PlayerThink();
 	}
+	*/
 
 	m_mod->Frame();
 }
 
 void CExtManager::OnClientPutInServer(int client)
 {
-	auto edict = gamehelpers->EdictOfIndex(client);
+	edict_t* edict = gamehelpers->EdictOfIndex(client);
 
 	if (edict == nullptr)
 	{
 		smutils->LogError(myself, "CExtManager::OnClientPutInServer failed to convert client index to edict pointer!");
 		return;
+	}
+
+	if (m_iscreatingbot)
+	{
+		smutils->LogMessage(myself, "Adding NavBot to the game. #%i<%p>", client, edict);
+		m_bots.emplace_back(m_mod->AllocateBot(edict));
 	}
 
 	auto gp = playerhelpers->GetGamePlayer(client);
@@ -249,24 +259,25 @@ void CExtManager::AddBot()
 		name = botname.c_str();
 	}
 
-	// Tell the bot manager to create a new bot. OnClientPutInServer is too late to catch the bot being created
-	auto edict = botmanager->CreateBot(name);
+	// Tell the bot manager to create a new bot. Now that we are using SourceHooks, we need to catch the bot on 'OnClientPutInServer'.
+	m_iscreatingbot = true;
+	edict_t* edict = botmanager->CreateBot(name);
+	m_iscreatingbot = false;
 
 	if (edict == nullptr)
 	{
-		smutils->LogError(myself, "Game bot manager failed to create a new bot!");
+		smutils->LogError(myself, "Failed to create a new bot with the Bot Manager interface!");
 		return;
 	}
 
-	// Create a new bot instance
-	auto mod = m_mod.get();
-	auto& botptr = m_bots.emplace_back(mod->AllocateBot(edict));
-	auto bot = botptr.get();
+	
 
 #ifdef EXT_DEBUG
+	auto bot = GetBotByIndex(gamehelpers->IndexOfEdict(edict));
+
 	// the base bot doesn't allocate these on the constructor
 	// to allow debugging these interface, we have to call these functions at least once to create them
-	
+
 	bot->GetControlInterface();
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();

@@ -3,9 +3,24 @@
 	"common.games.txt"
 	{
 	}
-	
+	// Day of Defeat: Source
 	"game.dod.txt"
 	{
 		"game"		"dod"
+	}
+	// Team Fortress 2
+	"game.tf.txt"
+	{
+		"game"		"tf"
+	}
+	// Counter-Strike: Source
+	"game.cstrike.txt"
+	{
+		"game"		"cstrike"
+	}
+	// Half-Life 2: Deathmatch
+	"game.hl2mp.txt"
+	{
+		"game"		"hl2mp"
 	}
 }

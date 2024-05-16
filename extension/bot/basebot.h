@@ -24,6 +24,8 @@ constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
 
 class IBotController;
 class IBotInterface;
+class CUserCmd;
+class IMoveHelper;
 
 class CBaseBot : public CBaseExtPlayer, public IEventListener
 {
@@ -31,7 +33,7 @@ public:
 	CBaseBot(edict_t* edict);
 	~CBaseBot() override;
 
-	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks);
+	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools);
 
 private:
 	void AddHooks();
@@ -41,6 +43,8 @@ private:
 	int Hook_OnTakeDamage_Alive(const CTakeDamageInfo& info);
 	void Hook_Event_Killed(const CTakeDamageInfo& info);
 	void Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInfo& info);
+	void Hook_PhysicsSimulate();
+	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
 
 public:
 
