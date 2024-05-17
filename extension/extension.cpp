@@ -33,6 +33,7 @@
 
 #include "extension.h"
 #include "manager.h"
+#include "natives.h"
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
@@ -204,6 +205,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
+	sharesys->RegisterLibrary(myself, "navbot");
 	
 	return true;
 }
@@ -248,6 +250,10 @@ void NavBotExt::SDK_OnAllLoaded()
 	entprops->Init(true);
 
 	GetGameEventManager()->Load();
+	natives::setup(m_natives);
+	m_natives.push_back({ nullptr, nullptr });
+	sharesys->AddNatives(myself, m_natives.data());
+	smutils->LogMessage(myself, "Registered %i natives.", m_natives.size() - 1);
 }
 
 bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)

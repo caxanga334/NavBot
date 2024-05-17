@@ -41,6 +41,8 @@ class CTakeDamageInfo;
  * @brief Sample extension code header.
  */
 
+#include <vector>
+
 #include "smsdk_ext.h"
 
 #include <engine/ivdebugoverlay.h>
@@ -285,9 +287,12 @@ public:
 	bool ShouldHookRunPlayerCommand() const { return m_hookruncmd; }
 	SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
 
+	std::vector<sp_nativeinfo_t>& GetNativesVector() { return m_natives; }
+
 private:
 	bool m_hookruncmd;
 	SourceMod::IGameConfig* m_gamedata;
+	std::vector<sp_nativeinfo_t> m_natives;
 };
 
 extern NavBotExt* extension;

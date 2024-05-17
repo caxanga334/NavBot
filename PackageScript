@@ -8,7 +8,8 @@ builder.SetBuildFolder('package')
 # Add any folders you need to this list
 folder_list = [
   'addons/sourcemod/extensions',
-  #'addons/sourcemod/scripting/include',
+  'addons/sourcemod/scripting/',
+  'addons/sourcemod/scripting/include',
   'addons/sourcemod/gamedata',
   'addons/sourcemod/gamedata/navbot.games',
   'addons/sourcemod/configs',
@@ -45,9 +46,15 @@ CopyFiles('extension', 'addons/sourcemod/extensions',
 )
 
 # Include files 
-#CopyFiles('include', 'addons/sourcemod/scripting/include',
-#  [ 'sample.inc', ]
-#)
+CopyFiles('scripting/include', 'addons/sourcemod/scripting/include',
+  [ 'navbot.inc', ]
+)
+
+# Plugin Sources
+CopyFiles('scripting/', 'addons/sourcemod/scripting/',
+  [ 'navbot_example.sp', ]
+)
+
 
 # GameData files
 CopyFiles('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games',
