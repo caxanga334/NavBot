@@ -110,6 +110,7 @@ public:
 	 * @param isready Is the bot ready?
 	 */
 	void ToggleTournamentReadyStatus(bool isready = true) const;
+	bool TournamentIsReady() const;
 
 	/**
 	 * @brief Gets a known spy information about a spy or NULL if none

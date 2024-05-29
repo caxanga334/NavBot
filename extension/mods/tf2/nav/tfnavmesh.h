@@ -2,6 +2,7 @@
 #define SMNAV_TF_NAV_MESH_H_
 #pragma once
 
+
 #include <navmesh/nav_mesh.h>
 
 class CountdownTimer;

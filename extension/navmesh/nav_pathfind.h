@@ -449,6 +449,26 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 	return false;
 }
 
+/**
+ * @brief Checks if the goal area is reachable from the start area.
+ * @tparam CostFunctor A* cost function
+ * @param start Start area
+ * @param goal Goal/End area
+ * @param costFunc A* cost function
+ * @return true if the start area can reach the goal area. false otherwise.
+ */
+template<typename CostFunctor>
+bool NavIsReachable(CNavArea* start, CNavArea* goal, CostFunctor& costFunc)
+{
+	if (start == nullptr || goal == nullptr)
+		return false;
+
+	if (start == goal)
+		return true;
+
+	return NavAreaBuildPath(start, goal, nullptr, costFunc, nullptr);
+}
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**

@@ -266,3 +266,36 @@ float tf2lib::GetMedigunUberchargePercentage(int medigun)
 	entprops->GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel", ubercharge);
 	return ubercharge;
 }
+
+bool tf2lib::MVM_ShouldBotsReadyUp()
+{
+	bool readyup = false; // true if the bots should ready up
+	bool anyhumans = false;
+
+	UtilHelpers::ForEachPlayer([&readyup, &anyhumans](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (!player->IsFakeClient())
+		{
+			anyhumans = true;
+
+			if (tf2lib::GetEntityTFTeam(client) == TeamFortress2::TFTeam::TFTeam_Red)
+			{
+				int isready = 0;
+				entprops->GameRules_GetProp("m_bPlayerReady", isready, 4, client);
+
+				if (isready != 0)
+				{
+					// We have at least 1 human player on RED team that is not ready
+					readyup = true;
+				}
+			}
+		}
+	});
+
+	if (!anyhumans)
+	{
+		// no humans on RED team
+		return true;
+	}
+
+	return readyup;
+}

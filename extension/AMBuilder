@@ -73,6 +73,7 @@ sourceFiles = [
   'bot/tf2/tasks/tf2bot_find_health_task.cpp',
   'bot/tf2/tasks/tf2bot_find_ammo_task.cpp',
   'bot/tf2/tasks/tf2bot_roam.cpp',
+  'bot/tf2/tasks/general/tf2bot_collect_item.cpp',
   'bot/tf2/tasks/medic/tf2bot_medic_main_task.cpp',
   'bot/tf2/tasks/medic/tf2bot_medic_retreat_task.cpp',
   'bot/tf2/tasks/scenario/tf2bot_map_ctf.cpp',

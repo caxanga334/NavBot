@@ -587,39 +587,6 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 	return nullptr;
 }
 
-bool CTeamFortress2Mod::MVM_ShouldBotsReadyUp() const
-{
-	bool readyup = false; // true if the bots should ready up
-	bool anyhumans = false;
-
-	UtilHelpers::ForEachPlayer([&readyup, &anyhumans](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
-		if (!player->IsFakeClient())
-		{
-			anyhumans = true;
-
-			if (tf2lib::GetEntityTFTeam(client) == TeamFortress2::TFTeam::TFTeam_Red)
-			{
-				int isready = 0;
-				entprops->GameRules_GetProp("m_bPlayerReady", isready, 4, client);
-
-				if (isready != 0)
-				{
-					// We have at least 1 human player on RED team that is not ready
-					readyup = true;
-				}
-			}
-		}
-	});
-
-	if (!anyhumans)
-	{
-		// no humans on RED team
-		return true;
-	}
-
-	return readyup;
-}
-
 #if SOURCE_ENGINE == SE_TF2
 
 CON_COMMAND(sm_navbot_tf_show_upgrades, "[TF2] List all MvM Upgrades known by the bots.")

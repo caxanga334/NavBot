@@ -1,5 +1,7 @@
+#include <vector>
 #include <extension.h>
 #include <util/entprops.h>
+#include <mods/tf2/tf2lib.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/tf2/nav/tfnavarea.h>
@@ -29,6 +31,25 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			// Buy upgrades
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
+		}
+
+		if (m_isready)
+		{
+			// Bot is not ready yet, toggle ready mode
+			if (!bot->TournamentIsReady() && tf2lib::MVM_ShouldBotsReadyUp())
+			{
+				bot->ToggleTournamentReadyStatus(true);
+			}
+		}
+		else
+		{
+			CTFNavArea* area = static_cast<CTFNavArea*>(bot->GetLastKnownNavArea());
+
+			if (area && area->HasMVMAttributes(CTFNavArea::MVMNAV_FRONTLINES))
+			{
+				// bot is at a frontline area
+				m_isready = true;
+			}
 		}
 	}
 

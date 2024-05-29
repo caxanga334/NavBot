@@ -4,11 +4,18 @@
 
 #include <bot/interfaces/path/meshnavigator.h>
 
+
 class CTF2Bot;
 
 class CTF2BotMvMIdleTask : public AITask<CTF2Bot>
 {
 public:
+	CTF2BotMvMIdleTask()
+	{
+		m_goal.Init();
+		m_isready = false;
+	}
+
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
@@ -20,6 +27,7 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	CountdownTimer m_repathtimer;
+	bool m_isready; // true if the bot is ready and should ready up when possible
 };
 
 #endif // !NAVBOT_TF2BOT_TASK_MVM_IDLE_H_

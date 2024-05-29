@@ -32,6 +32,7 @@ namespace tf2lib
 	TeamFortress2::TFClassType GetDisguiseClass(int player);
 	edict_t* GetDisguiseTarget(int player);
 	float GetMedigunUberchargePercentage(int medigun);
+	bool MVM_ShouldBotsReadyUp();
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)

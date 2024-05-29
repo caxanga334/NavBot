@@ -498,6 +498,14 @@ void CTF2Bot::ToggleTournamentReadyStatus(bool isready) const
 	serverpluginhelpers->ClientCommand(GetEdict(), command);
 }
 
+bool CTF2Bot::TournamentIsReady() const
+{
+	int index = GetIndex();
+	int isready = 0;
+	entprops->GameRules_GetProp("m_bPlayerReady", isready, 4, index);
+	return isready != 0;
+}
+
 const CTF2Bot::KnownSpy* CTF2Bot::GetKnownSpy(edict_t* spy) const
 {
 	int index = gamehelpers->IndexOfEdict(spy);
