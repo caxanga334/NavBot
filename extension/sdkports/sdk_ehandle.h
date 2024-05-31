@@ -3,6 +3,7 @@
 #pragma once
 
 #include <basehandle.h>
+#include <util/helpers.h>
 
 // -------------------------------------------------------------------------------------------------- //
 // CHandle.
@@ -32,6 +33,9 @@ public:
 	const CBaseHandle& operator=(const T* val);
 
 	T* operator->() const;
+
+	// Tries to get an edict pointer
+	edict_t* ToEdict() const;
 };
 
 
@@ -131,6 +135,12 @@ template<class T>
 T* CHandle<T>::operator -> () const
 {
 	return Get();
+}
+
+template<class T>
+inline edict_t* CHandle<T>::ToEdict() const
+{
+	return UtilHelpers::GetEdictFromCBaseHandle(*this);
 }
 
 typedef CHandle<CBaseEntity> EHANDLE;

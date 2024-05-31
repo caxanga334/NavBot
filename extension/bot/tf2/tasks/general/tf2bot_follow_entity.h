@@ -1,6 +1,5 @@
-#ifndef NAVBOT_TF2BOT_COLECT_ITEM_TASK_H_
-#define NAVBOT_TF2BOT_COLECT_ITEM_TASK_H_
-#pragma once
+#ifndef NAVBOT_TF2BOT_FOLLOW_ENTITY_TASK_H_
+#define NAVBOT_TF2BOT_FOLLOW_ENTITY_TASK_H_
 
 #include <functional>
 #include <string>
@@ -10,13 +9,10 @@
 
 class CTF2Bot;
 
-/**
- * @brief Shared tasks for picking up entities that are stored on the player's m_hItem
- */
-class CTF2BotCollectItemTask : public AITask<CTF2Bot>
+class CTF2BotFollowEntityTask : public AITask<CTF2Bot>
 {
 public:
-	CTF2BotCollectItemTask(CBaseEntity* item, const bool failOnPause = false, const bool ignoreExisting = false);
+	CTF2BotFollowEntityTask(CBaseEntity* entity, const float updateRate = 0.5f, const float followRange = 256.0f, const bool failOnPause = false);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
@@ -26,8 +22,6 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 
-	// Overrides this task name (used in debugging).
-	void SetNameOverride(const char* newName) { m_name.assign(newName); }
 	const char* GetName() const override { return m_name.c_str(); }
 
 	// Sets a custom validator function, this should return false to 'fail' the task.
@@ -38,19 +32,22 @@ public:
 	void SetGoalFunction(std::function<bool(CTF2Bot*, CBaseEntity*)> F) { m_goalFunc = F; }
 
 private:
-	CHandle<CBaseEntity> m_item; // item the bot will collect
-	const bool m_failOnPause; // end this task if it's paused
-	const bool m_ignoreExisting; // don't end this task if the bot already has an item on it's inventory
-	std::function<bool(CTF2Bot*, CBaseEntity*)> m_validationFunc; // function to call if the object is valid
+	CHandle<CBaseEntity> m_followtarget; // Entity the bot will follow
+	Vector m_followgoal; // Vector of the bot move goal
+	std::string m_name;
+	CountdownTimer m_updateEntityPositionTimer; // Timer to update the entity's position
+	std::function<bool(CTF2Bot*, CBaseEntity*)> m_validationFunc; // function to call if the entity is valid
 	std::function<Vector(CTF2Bot*, CBaseEntity*)> m_positionFunc; // function to call to get the object position
 	std::function<bool(CTF2Bot*, CBaseEntity*)> m_goalFunc; // function to call to determine if the goal of the task was reached
 	CMeshNavigator m_nav;
-	Vector m_moveGoal;
-	CountdownTimer m_repathTimer;
-	std::string m_name; // task name
-	uint8_t m_moveFailures;
+	const float m_updaterate; // frequency of position and pathing updates
+	const float m_followrange; // Distance to stop moving towards the entity
+	bool m_isplayer; // is the entity being follow a player?
+	bool m_failOnPause; // 'fail' the task on pause?
+	uint8_t m_pathfailures;
 
-	bool DefaultValidator(CTF2Bot* bot);
+	bool ValidateFollowEntity(CTF2Bot* me);
+	void GetEntityPosition(CTF2Bot*me, Vector& out);
 };
 
-#endif // !NAVBOT_TF2BOT_COLECT_ITEM_TASK_H_
+#endif // !NAVBOT_TF2BOT_FOLLOW_ENTITY_TASK_H_

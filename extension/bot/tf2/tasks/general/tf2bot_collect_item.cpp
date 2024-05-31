@@ -3,8 +3,6 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"
-#include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
-#include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include "tf2bot_collect_item.h"
 
 CTF2BotCollectItemTask::CTF2BotCollectItemTask(CBaseEntity* item, const bool failOnPause, const bool ignoreExisting) :
