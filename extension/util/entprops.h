@@ -110,6 +110,7 @@ private:
 	bool IsNetworkedEntity(CBaseEntity *pEntity);
 	edict_t *BaseEntityToEdict(CBaseEntity *pEntity);
 	bool FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop, int entity);
+	bool FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_info_t& dinfo, const char* prop);
 	int MatchTypeDescAsInteger(_fieldtypes type, int flags);
 	ServerClass* FindEntityServerClass(CBaseEntity* pEntity);
 	bool IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pEdictData);

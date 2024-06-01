@@ -300,6 +300,25 @@ bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntit
 	return true;
 }
 
+bool CEntPropUtils::FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_info_t& dinfo, const char* prop)
+{
+	datamap_t* pMap = gamehelpers->GetDataMap(pEntity);
+
+	if (pMap == nullptr)
+	{
+		smutils->LogError(myself, "DataMap lookup failed for prop %s", prop);
+		return false;
+	}
+
+	if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+	{
+		throw std::invalid_argument("Entity does not have given DataMap Property!");
+		return false;
+	}
+
+	return true;
+}
+
 /* Given an entity reference or index, fill out a CBaseEntity and/or edict.
    If lookup is successful, returns true and writes back the two parameters.
    If lookup fails, returns false and doesn't touch the params.  */
@@ -369,17 +388,10 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
@@ -531,19 +543,11 @@ bool CEntPropUtils::SetEntProp(int entity, PropType proptype, const char *prop, 
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
-			const char *classname = gamehelpers->GetEntityClassname(pEntity);
 			return false;
 		}
 
@@ -660,19 +664,11 @@ bool CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char* p
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
-			// const char *classname = gamehelpers->GetEntityClassname(pEntity);
 			return false;
 		}
 
@@ -732,17 +728,10 @@ bool CEntPropUtils::SetEntPropFloat(int entity, PropType proptype, const char *p
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
@@ -819,17 +808,10 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
@@ -958,17 +940,10 @@ bool CEntPropUtils::SetEntPropEnt(int entity, PropType proptype, const char *pro
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
@@ -1115,17 +1090,10 @@ bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* 
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
@@ -1201,17 +1169,10 @@ bool CEntPropUtils::SetEntPropVector(int entity, PropType proptype, const char *
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
@@ -1297,17 +1258,10 @@ bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* 
 	switch (proptype)
 	{
 	case Prop_Data:
-		typedescription_t *td;
-		datamap_t *pMap;
-
-		if ((pMap = gamehelpers->GetDataMap(pEntity)) == NULL)
-		{
-			return false;
-		}
-
+		typedescription_t* td;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
+		if (!FindDataMap(pEntity, dinfo, prop))
 		{
 			return false;
 		}
