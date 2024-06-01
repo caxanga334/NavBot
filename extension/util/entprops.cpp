@@ -27,6 +27,7 @@
  *
  */
 
+#include <exception>
 #include <util/helpers.h>
 #include "entprops.h"
 
@@ -256,7 +257,7 @@ void CEntPropUtils::Init(bool reset)
 	}
 	else
 	{
-		smutils->LogMessage(myself, "CEntPropUtils::Init --  Retrieved game rules proxy classname \"%s\".", grclassname);
+		smutils->LogMessage(myself, "CEntPropUtils::Init -- Retrieved game rules proxy classname \"%s\".", grclassname);
 	}
 
 	gameconfs->CloseGameConfigFile(gamedata);
@@ -269,29 +270,30 @@ void CEntPropUtils::Init(bool reset)
 /// @return true if the entity is networked, false otherwise
 bool CEntPropUtils::IsNetworkedEntity(CBaseEntity *pEntity)
 {
-	IServerUnknown *pUnk = (IServerUnknown *)pEntity;
-	IServerNetworkable *pNet = pUnk->GetNetworkable();
+	IServerNetworkable* pNet = reinterpret_cast<IServerUnknown*>(pEntity)->GetNetworkable();
 
 	if (!pNet)
 	{
-		return false;
+		return true;
 	}
 
-	return true;
+	edict_t* edict = pNet->GetEdict();
+	return (edict && !edict->IsFree()) ? true : false;
 }
 
 bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop, int entity)
 {
-	IServerUnknown *pUnk = (IServerUnknown *)pEntity;
-	IServerNetworkable *pNet = pUnk->GetNetworkable();
+	ServerClass* pServerClass = FindEntityServerClass(pEntity);
 
-	if (!pNet)
+	if (pServerClass == nullptr)
 	{
+		smutils->LogError(myself, "Failed to retreive entity <%i> ServerClass. Prop: %s", entity, prop);
 		return false;
 	}
 
-	if (!gamehelpers->FindSendPropInfo(pNet->GetServerClass()->GetName(), prop, info))
+	if (!gamehelpers->FindSendPropInfo(pServerClass->GetName(), prop, info))
 	{
+		throw std::invalid_argument("Entity does not have given prop!");
 		return false;
 	}
 

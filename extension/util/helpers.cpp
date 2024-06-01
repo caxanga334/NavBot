@@ -88,6 +88,74 @@ bool UtilHelpers::IndexToAThings(int num, CBaseEntity** pEntData, edict_t** pEdi
 	return true;
 }
 
+bool UtilHelpers::IsEntNetworkable(int index)
+{
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(index);
+
+	if (!entity)
+	{
+		return false;
+	}
+
+	IServerNetworkable* pNet = reinterpret_cast<IServerUnknown*>(entity)->GetNetworkable();
+
+	if (!pNet)
+	{
+		return true;
+	}
+
+	edict_t* edict = pNet->GetEdict();
+	return (edict && !edict->IsFree()) ? true : false;
+}
+
+bool UtilHelpers::IsEntNetworkable(CBaseEntity* entity)
+{
+	IServerNetworkable* pNet = reinterpret_cast<IServerUnknown*>(entity)->GetNetworkable();
+
+	if (!pNet)
+	{
+		return true;
+	}
+
+	edict_t* edict = pNet->GetEdict();
+	return (edict && !edict->IsFree()) ? true : false;
+}
+
+bool UtilHelpers::FindDataTable(SendTable* pTable, const char* name, sm_sendprop_info_t* info, unsigned int offset)
+{
+	const char* pname;
+	int props = pTable->GetNumProps();
+	SendProp* prop;
+	SendTable* table;
+
+	for (int i = 0; i < props; i++)
+	{
+		prop = pTable->GetProp(i);
+
+		if ((table = prop->GetDataTable()) != NULL)
+		{
+			pname = table->GetName();
+			if (pname && strcmp(name, pname) == 0)
+			{
+				info->prop = prop;
+				info->actual_offset = offset + info->prop->GetOffset();
+				return true;
+			}
+
+			if (FindDataTable(table,
+				name,
+				info,
+				offset + prop->GetOffset())
+				)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
 Vector UtilHelpers::getOBBCenter(edict_t* pEntity)
 {
 	Vector result = Vector(0, 0, 0);

@@ -20,6 +20,11 @@ namespace UtilHelpers
 	edict_t* GetEdict(int entity);
 	CBaseEntity* GetEntity(int entity);
 	bool IndexToAThings(int num, CBaseEntity** pEntData, edict_t** pEdictData);
+	// Returns whether or not an entity has a valid networkable edict.
+	bool IsEntNetworkable(int index);
+	// Returns whether or not an entity has a valid networkable edict.
+	bool IsEntNetworkable(CBaseEntity* entity);
+	bool FindDataTable(SendTable* pTable, const char* name, sm_sendprop_info_t* info, unsigned int offset);
 	Vector getOBBCenter(edict_t* pEntity);
 	Vector collisionToWorldSpace(const Vector& in, edict_t* pEntity);
 	Vector getWorldSpaceCenter(edict_t* pEntity);

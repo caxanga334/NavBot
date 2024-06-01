@@ -111,6 +111,7 @@ private:
 	edict_t *BaseEntityToEdict(CBaseEntity *pEntity);
 	bool FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop, int entity);
 	int MatchTypeDescAsInteger(_fieldtypes type, int flags);
+	ServerClass* FindEntityServerClass(CBaseEntity* pEntity);
 	bool IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pEdictData);
 	CBaseEntity *GetEntity(int entity);
 	CBaseEntity *GetGameRulesProxyEntity();
@@ -149,13 +150,24 @@ inline int CEntPropUtils::MatchTypeDescAsInteger(_fieldtypes type, int flags)
 	return 0;
 }
 
+inline ServerClass* CEntPropUtils::FindEntityServerClass(CBaseEntity* pEntity)
+{
+	IServerNetworkable* pNet = reinterpret_cast<IServerUnknown*>(pEntity)->GetNetworkable();
+
+	if (pNet == nullptr)
+	{
+		return nullptr;
+	}
+
+	return pNet->GetServerClass();
+}
+
 /// @brief Converts a CBaseEntity to an edict_t
 /// @param pEntity CBaseEntity pointer
 /// @return edict_t pointer
 inline edict_t *CEntPropUtils::BaseEntityToEdict(CBaseEntity *pEntity)
 {
-	IServerUnknown *pUnk = (IServerUnknown *)pEntity;
-	IServerNetworkable *pNet = pUnk->GetNetworkable();
+	IServerNetworkable* pNet = reinterpret_cast<IServerUnknown*>(pEntity)->GetNetworkable();
 
 	if (!pNet)
 	{
