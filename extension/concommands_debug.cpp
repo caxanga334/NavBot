@@ -13,8 +13,10 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_ehandle.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
+#include <util/ehandle_edict.h>
 #include <util/UtilTrace.h>
 #include <sm_argbuffer.h>
 
@@ -364,6 +366,23 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_C
 	}
 
 	Msg("Collected %i areas \n", collectedAreas.size());
+}
+
+CON_COMMAND_F(sm_navbot_debug_new_handles, "Tests new entity handles", FCVAR_CHEAT)
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+
+	Msg("In: %p\n", host);
+
+	CHandleEdict handle;
+	handle.Set(host);
+
+	Msg("Entry: %i Serial Number: %i\n", handle.GetEntryIndex(), handle.GetSerialNumber());
+
+	edict_t* out = handle.Get();
+	Msg("Out: %p\n", out);
+	CBaseEntity* be = handle.ToBaseEntity();
+	Msg("Base Entity: %p\n", be);
 }
 
 #if SOURCE_ENGINE == SE_TF2
