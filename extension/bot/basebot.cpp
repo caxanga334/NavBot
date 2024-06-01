@@ -204,7 +204,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_isfirstspawn = false;
 	m_nextupdatetime = 64;
 	m_joingametime = 64;
-	m_controller = botmanager->GetBotController(edict);
+	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet. We now get it at the 'OnSpawn' hook.
 	m_listeners.reserve(8);
 	m_basecontrol = nullptr;
 	m_basemover = nullptr;

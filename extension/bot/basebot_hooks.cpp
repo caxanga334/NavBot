@@ -77,6 +77,7 @@ void CBaseBot::AddHooks()
 
 	// Add hooks for this bot instance, hooks are removed on the destructor
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Spawn, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Spawn), false));
+	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Spawn, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Spawn_Post), true));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Touch, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Touch), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_OnTakeDamage_Alive, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_OnTakeDamage_Alive), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_Killed, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_Killed), false));
@@ -94,6 +95,29 @@ void CBaseBot::Hook_Spawn()
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
 #endif // EXT_DEBUG
+
+	
+	RETURN_META(MRES_IGNORED);
+}
+
+void CBaseBot::Hook_Spawn_Post()
+{
+#ifdef EXT_DEBUG
+	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn_Post <%p>\n", this);
+#endif // EXT_DEBUG
+
+	// Constructor is too early, catch it here. Will probably fail the first time it's called.
+	if (m_controller == nullptr)
+	{
+		m_controller = botmanager->GetBotController(GetEdict());
+
+#ifdef EXT_DEBUG
+		if (m_controller != nullptr)
+		{
+			smutils->LogMessage(myself, "m_controller was NULL. Got %p on CBaseBot::Hook_Spawn_Post!", m_controller);
+		}
+#endif // EXT_DEBUG
+	}
 
 	Spawn();
 	RETURN_META(MRES_IGNORED);
@@ -117,7 +141,6 @@ int CBaseBot::Hook_OnTakeDamage_Alive(const CTakeDamageInfo& info)
 		}
 	}
 
-
 	OnTakeDamage_Alive(info);
 	OnInjured(info);
 	RETURN_META_VALUE(MRES_IGNORED, 0);
@@ -138,6 +161,23 @@ void CBaseBot::Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInf
 
 void CBaseBot::Hook_PhysicsSimulate()
 {
+	// Constructor is too early to fetch it.
+	// We fetch it On Spawn and also here for extra safety against crashes
+	if (m_controller == nullptr)
+	{
+		m_controller = botmanager->GetBotController(GetEdict());
+#ifdef EXT_DEBUG
+		smutils->LogMessage(myself,"m_controller was NULL, got %p", m_controller);
+#endif // EXT_DEBUG
+	}
+
+#ifdef EXT_DEBUG
+	if (m_controller == nullptr)
+	{
+		smutils->LogError(myself, "m_controller was NULL and IBotManager::GetBotController returned NULL!");
+	}
+#endif // EXT_DEBUG
+
 	PlayerThink();
 	RETURN_META(MRES_IGNORED);
 }

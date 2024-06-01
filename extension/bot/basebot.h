@@ -39,6 +39,7 @@ private:
 	void AddHooks();
 
 	void Hook_Spawn();
+	void Hook_Spawn_Post();
 	void Hook_Touch(CBaseEntity* pOther);
 	int Hook_OnTakeDamage_Alive(const CTakeDamageInfo& info);
 	void Hook_Event_Killed(const CTakeDamageInfo& info);
