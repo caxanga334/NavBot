@@ -70,7 +70,7 @@ public:
 	// Reset the bot to it's initial state
 	void Reset() override;
 	// Function called at intervals to run the AI 
-	// virtual void Update() override;
+	void Update() override;
 	// Function called every server frame to run the AI
 	void Frame() override;
 

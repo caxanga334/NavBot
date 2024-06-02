@@ -187,7 +187,7 @@ void CMvMUpgradeManager::Reload()
 
 	extmanager->ForEachBot([](CBaseBot* bot) {
 		CTF2Bot* tf2bot = static_cast<CTF2Bot*>(bot);
-		tf2bot->GetUpgradeManager().InitUpgrades();
+		tf2bot->GetUpgradeManager().Reset();
 	});
 }
 

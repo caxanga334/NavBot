@@ -27,7 +27,7 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 	if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
 	{
 		// Should the bot buy upgrades?
-		if (bot->GetUpgradeManager().ShouldGoToAnUpgradeStation())
+		if (!bot->GetUpgradeManager().IsManagerReady() || bot->GetUpgradeManager().ShouldGoToAnUpgradeStation())
 		{
 			// Buy upgrades
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
@@ -56,6 +56,18 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 	// TO-DO: Move to defensive positions near the robot spawn
 	// TO-DO: Engineer
 	// TO-DO: Add ready up logic
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	CTF2BotMvMUpgradeTask* upgradetask = dynamic_cast<CTF2BotMvMUpgradeTask*>(pastTask);
+
+	if (upgradetask != nullptr)
+	{
+		m_isready = false; // we just used an upgrade station, go back to the frontlines
+	}
 
 	return Continue();
 }

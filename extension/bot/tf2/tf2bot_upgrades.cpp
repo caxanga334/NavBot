@@ -3,6 +3,7 @@
 #include <mods/tf2/teamfortress2_shareddefs.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/mvm_upgrade_manager.h>
+#include <mods/tf2/tf2lib.h>
 #include <util/librandom.h>
 #include <util/helpers.h>
 #include "tf2bot.h"
@@ -17,7 +18,7 @@ CTF2BotUpgradeManager::CTF2BotUpgradeManager()
 	m_numupgrades = 0;
 	m_tobuylist.reserve(16);
 	m_boughtlist.reserve(32);
-	m_state = STATE_GOBUY;
+	m_state = STATE_INIT;
 }
 
 CTF2BotUpgradeManager::~CTF2BotUpgradeManager()
@@ -28,69 +29,37 @@ void CTF2BotUpgradeManager::Update()
 {
 	switch (m_state)
 	{
-	case CTF2BotUpgradeManager::STATE_GOBUY:
-
-		// If buy list is empty, advance into the next priority
-		if (m_tobuylist.empty())
-		{
-			if (!AnyUpgradeAvailable())
-			{
-				OnDoneUpgrading();
-				return;
-			}
-
-			if (sm_navbot_tf_debug_bot_upgrades.GetBool())
-			{
-				ConColorMsg(Color(0, 128, 0, 255), "%s: Buy list is empty!\n", m_me->GetDebugIdentifier());
-				ConColorMsg(Color(0, 128, 128, 255), "Advancing from priority %i to %i!\n", m_nextpriority, (m_nextpriority + 1));
-			}
-
-			m_state = STATE_ADVANCE;
-			return;
-		}
-
-		// I have stuff to buy but I can't afford anything
-		if (!CanAffordAnyUpgrade())
-		{
-			OnDoneUpgrading();
-			return;
-		}
-
-		m_state = STATE_BUYINGSTUFF; // enter buy state
-		return;
-	case CTF2BotUpgradeManager::STATE_BUYINGSTUFF:
-		ExecuteBuy();
-		RemoveFinishedUpgrades(); // clean up
-
-		if (!CanAffordAnyUpgrade())
-		{
-			OnDoneUpgrading();
-			return;
-		}
-		return;
-	case CTF2BotUpgradeManager::STATE_ADVANCE:
-		AdvancePriority();
-		FetchUpgrades();
-		m_state = STATE_GOBUY;
-		return;
-	case CTF2BotUpgradeManager::STATE_WAITFORNEXTWAVE:
-		return;
-	case CTF2BotUpgradeManager::STATE_DOREFUND:
-		ExecuteRefund();
-		OnUpgradesRefunded();
-		return;
-	case CTF2BotUpgradeManager::STATE_REFILTER:
-		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
-		{
-			ConColorMsg(Color(0, 200, 200, 255), "%s: Running Upgrade Filter!\n", m_me->GetDebugIdentifier());
-		}
-
-		FilterUpgrades();
-		m_state = STATE_GOBUY;
-		return;
-	default:
-		return;
+	case CTF2BotUpgradeManager::STATE_INVALID:
+		m_state = STATE_INIT;
+		break;
+	case CTF2BotUpgradeManager::STATE_RESET:
+		Reset(); // this set the state to init
+		break;
+	case CTF2BotUpgradeManager::STATE_INIT:
+		InitUpgrades();
+		break;
+	case CTF2BotUpgradeManager::STATE_UPDATEFILTER:
+	{
+		ExecuteState_UpdateFilter();
+		break;
 	}
+	case CTF2BotUpgradeManager::STATE_REFUND:
+		ExecuteState_Refund();
+		break;
+	case CTF2BotUpgradeManager::STATE_UPGRADE:
+		ExecuteState_Upgrade();
+		break;
+	case CTF2BotUpgradeManager::STATE_ADVANCE:
+		ExecuteState_Advance();
+		break;
+	case CTF2BotUpgradeManager::STATE_DONE:
+		return;
+		break;
+	default:
+		break;
+	}
+
+
 }
 
 void CTF2BotUpgradeManager::ExecuteBuy()
@@ -100,7 +69,7 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
 			Vector origin = m_me->GetAbsOrigin();
-			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::Update called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f>", m_me->GetDebugIdentifier(),
+			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::ExecuteBuy called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f>", m_me->GetDebugIdentifier(),
 				origin.x, origin.y, origin.z);
 		}
 
@@ -111,7 +80,7 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 	{
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
-			ConColorMsg(Color(0, 128, 0, 255), "%s: CTF2BotUpgradeManager::Update - Buy list is empty!", m_me->GetDebugIdentifier());
+			ConColorMsg(Color(0, 128, 0, 255), "%s: CTF2BotUpgradeManager::ExecuteBuy - Buy list is empty!", m_me->GetDebugIdentifier());
 			ConColorMsg(Color(0, 128, 128, 255), "Advancing from priority %i to %i!\n", m_nextpriority, (m_nextpriority + 1));
 		}
 
@@ -119,8 +88,18 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 		return;
 	}
 
-	auto upgradeinfo = m_tobuylist[randomgen->GetRandomInt<size_t>(0U, m_tobuylist.size() - 1U)];
-	int currency = m_me->GetCurrency();
+	auto upgradeinfo = SelectRandomUpgradeToBuy();
+
+	if (upgradeinfo == nullptr)
+	{
+		// SelectRandomUpgradeToBuy will filter upgrades that the bot cannot buy due to lack of currency
+		// the list is not empty because that's checked before getting here
+		// so the most probable cause is lack of currency to buy any upgrade, in this case, just mark as done for the current wave
+
+		OnDoneUpgrading();
+		return;
+	}
+
 	auto data = GetOrCreateUpgradeData(upgradeinfo->upgrade);
 
 	// Upgrade reached desired level limit, remove it from the to-buy list
@@ -134,12 +113,6 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 	if (data->IsMaxed())
 	{
 		RemoveFinishedUpgrades(); // clean up
-		return;
-	}
-
-	// Can't afford it
-	if (!upgradeinfo->upgrade->CanAfford(m_me->GetCurrency()))
-	{
 		return;
 	}
 
@@ -195,6 +168,80 @@ bool CTF2BotUpgradeManager::AnyUpgradeAvailable() const
 	return false;
 }
 
+// Selects a random upgrade that the bot can afford, NULL if no upgrade is available
+const TF2BotUpgradeInfo_t* CTF2BotUpgradeManager::SelectRandomUpgradeToBuy() const
+{
+	std::vector<const TF2BotUpgradeInfo_t*> out;
+	const int currency = m_me->GetCurrency();
+
+	for (auto info : m_tobuylist)
+	{
+		if (info->upgrade->CanAfford(currency))
+		{
+			out.push_back(info);
+		}
+	}
+
+	if (out.empty())
+	{
+		return nullptr;
+	}
+
+	return out[randomgen->GetRandomInt<size_t>(0, out.size() - 1)];
+}
+
+void CTF2BotUpgradeManager::ExecuteState_Refund()
+{
+	if (!m_me->IsInUpgradeZone())
+	{
+		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
+		{
+			Vector origin = m_me->GetAbsOrigin();
+			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::ExecuteState_Refund called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f>", m_me->GetDebugIdentifier(),
+				origin.x, origin.y, origin.z);
+		}
+
+		return;
+	}
+
+	ExecuteRefund();
+	m_state = STATE_INIT;
+}
+
+void CTF2BotUpgradeManager::ExecuteState_Upgrade()
+{
+	if (AnyUpgradeAvailable())
+	{
+		// Bot did not buy all available upgrades
+
+		if (!m_tobuylist.empty() && !CanAffordAnyUpgrade())
+		{
+			OnDoneUpgrading(); // List is not empty, not enough currency to but anything, done for the current wave
+			return;
+		}
+	}
+
+	ExecuteBuy();
+}
+
+void CTF2BotUpgradeManager::ExecuteState_Advance()
+{
+	AdvancePriority();
+	FetchUpgrades();
+	m_state = STATE_UPGRADE;
+}
+
+void CTF2BotUpgradeManager::ExecuteState_UpdateFilter()
+{
+	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
+	{
+		ConColorMsg(Color(0, 200, 200, 255), "%s: Running Upgrade Filter!\n", m_me->GetDebugIdentifier());
+	}
+
+	FilterUpgrades();
+	m_state = STATE_UPGRADE;
+}
+
 void CTF2BotUpgradeManager::BeginBuyingUpgrades()
 {
 	KeyValues* kvcmd = new KeyValues("MvM_UpgradesBegin");
@@ -238,6 +285,12 @@ void CTF2BotUpgradeManager::EndBuyingUpgrades()
 void CTF2BotUpgradeManager::FetchUpgrades()
 {
 	CTeamFortress2Mod::GetTF2Mod()->GetMvMUpgradeManager().CollectUpgradesToBuy(m_tobuylist, m_nextpriority, m_me->GetMyClassType());
+
+	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
+	{
+		ConColorMsg(Color(0, 128, 0, 255), "%s: Collected %i upgrades for class %s. Current Priority: %i\n", m_me->GetDebugIdentifier(), m_tobuylist.size(), tf2lib::GetClassNameFromType(m_me->GetMyClassType()), m_nextpriority);
+	}
+
 	FilterUpgrades();
 }
 
@@ -245,7 +298,7 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 {
 	if (m_me->GetMyWeaponsCount() == 0)
 	{
-		m_state = STATE_REFILTER;
+		m_state = STATE_UPDATEFILTER;
 		m_me->UpdateMyWeapons(); // Force an update
 		return;
 	}

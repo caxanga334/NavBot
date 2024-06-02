@@ -37,6 +37,21 @@ void CTF2Bot::Reset()
 	CBaseBot::Reset();
 }
 
+void CTF2Bot::Update()
+{
+	CTeamFortress2Mod* mod = CTeamFortress2Mod::GetTF2Mod();
+
+	if (mod->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
+	{
+		if (!m_upgrademan.IsManagerReady())
+		{
+			m_upgrademan.Update();
+		}
+	}
+
+	CBaseBot::Update();
+}
+
 void CTF2Bot::Frame()
 {
 	if (--m_knownspythink < 0)
@@ -60,12 +75,16 @@ void CTF2Bot::Spawn()
 	CBaseBot::Spawn();
 
 	FindMyBuildings();
+
+	if (GetMyClassType() > TeamFortress2::TFClass_Unknown)
+	{
+		m_upgrademan.OnBotSpawn();
+	}
 }
 
 void CTF2Bot::FirstSpawn()
 {
 	CBaseBot::FirstSpawn();
-	m_upgrademan.InitUpgrades();
 }
 
 int CTF2Bot::GetMaxHealth() const
