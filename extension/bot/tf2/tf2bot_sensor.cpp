@@ -77,35 +77,15 @@ bool CTF2BotSensor::IsFriendly(edict_t* entity)
 bool CTF2BotSensor::IsEnemy(edict_t* entity)
 {
 	CTF2Bot* me = static_cast<CTF2Bot*>(GetBot());
+	auto spymonitor = me->GetSpyMonitorInterface();
 	int index = gamehelpers->IndexOfEdict(entity);
 	auto theirteam = tf2lib::GetEntityTFTeam(index);
 	auto theirclass = tf2lib::GetPlayerClassType(index);
 	
 	if (theirclass == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(index))
 	{
-		auto knownspy = me->GetKnownSpy(entity);
-		auto knownentity = GetKnown(entity);
-		bool isvisible = knownentity ? knownentity->IsVisibleNow() : true; // if this is called on an entity not known by the bot sensors, it's very likely visible right now.
-
-		if (!knownspy) // first time seeing this spy
-		{
-			// create a new known spy and check
-			knownspy = me->UpdateOrCreateKnownSpy(entity, CTF2Bot::KNOWNSPY_NOT_SUSPICIOUS, true, true); // always update class when creating
-			return knownspy->IsSuspicious(me);
-		}
-		else // already known spy
-		{
-			if (knownspy->IsSuspicious(me))
-			{
-				me->UpdateOrCreateKnownSpy(entity, CTF2Bot::KNOWNSPY_FOUND, true, isvisible);
-				return true;
-			}
-			else
-			{
-				me->UpdateOrCreateKnownSpy(entity, CTF2Bot::KNOWNSPY_NOT_SUSPICIOUS, false, isvisible);
-				return false; // The spy has fooled me!
-			}
-		}
+		auto& knownspy = spymonitor->GetKnownSpy(entity);
+		return knownspy.IsHostile();
 	}
 	else
 	{

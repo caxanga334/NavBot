@@ -67,6 +67,7 @@ sourceFiles = [
   'bot/tf2/tf2bot_controller.cpp',
   'bot/tf2/tf2bot_movement.cpp',
   'bot/tf2/tf2bot_sensor.cpp',
+  'bot/tf2/tf2bot_spymonitor.cpp',
   'bot/tf2/tf2bot_upgrades.cpp',
   'bot/tf2/tasks/tf2bot_maintask.cpp',
   'bot/tf2/tasks/tf2bot_tactical.cpp',

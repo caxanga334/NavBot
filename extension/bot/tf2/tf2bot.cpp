@@ -21,8 +21,8 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2controller = std::make_unique<CTF2BotPlayerController>(this);
 	m_tf2sensor = std::make_unique<CTF2BotSensor>(this);
 	m_tf2behavior = std::make_unique<CTF2BotBehavior>(this);
+	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
 	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
-	m_knownspythink = TIME_TO_TICKS(knownspy_think_interval());
 	m_upgrademan.SetMe(this);
 }
 
@@ -32,8 +32,6 @@ CTF2Bot::~CTF2Bot()
 
 void CTF2Bot::Reset()
 {
-	m_knownspies.clear();
-	m_knownspythink = TIME_TO_TICKS(knownspy_think_interval());
 	CBaseBot::Reset();
 }
 
@@ -54,12 +52,6 @@ void CTF2Bot::Update()
 
 void CTF2Bot::Frame()
 {
-	if (--m_knownspythink < 0)
-	{
-		UpdateKnownSpies();
-		m_knownspythink = TIME_TO_TICKS(knownspy_think_interval());
-	}
-
 	CBaseBot::Frame();
 }
 
@@ -525,45 +517,6 @@ bool CTF2Bot::TournamentIsReady() const
 	return isready != 0;
 }
 
-const CTF2Bot::KnownSpy* CTF2Bot::GetKnownSpy(edict_t* spy) const
-{
-	int index = gamehelpers->IndexOfEdict(spy);
-
-	for (const auto& knownspy : m_knownspies)
-	{
-		if (!knownspy.IsValid())
-			continue;
-
-		if (knownspy.GetIndex() == index)
-		{
-			return &knownspy;
-		}
-	}
-
-	return nullptr;
-}
-
-const CTF2Bot::KnownSpy* CTF2Bot::UpdateOrCreateKnownSpy(edict_t* spy, KnownSpyInfo info, const bool updateinfo, const bool updateclass)
-{
-	int index = gamehelpers->IndexOfEdict(spy);
-
-	for (auto& knownspy : m_knownspies)
-	{
-		if (!knownspy.IsValid())
-			continue;
-
-		if (knownspy.GetIndex() == index)
-		{
-			knownspy.Update(info, updateinfo, updateclass);
-			return &knownspy;
-		}
-	}
-
-	// if we reach here, the spy is not in the known list
-	auto& newknown = m_knownspies.emplace_back(spy, info);
-	return &newknown;
-}
-
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 {
 	m_me = bot;
@@ -665,106 +618,4 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	float cost = dist + fromArea->GetCostSoFar();
 
 	return cost;
-}
-
-CTF2Bot::KnownSpy::KnownSpy(edict_t* spy, KnownSpyInfo info)
-{
-	m_handle.Set(spy->GetIServerEntity());
-	m_info = info;
-	m_time.Start();
-	
-	if (tf2lib::IsPlayerInCondition(m_handle.GetEntryIndex(), TeamFortress2::TFCond_Disguised))
-	{
-		m_lastclass = tf2lib::GetDisguiseClass(m_handle.GetEntryIndex());
-	}
-	else
-	{
-		m_lastclass = TeamFortress2::TFClass_Unknown;
-	}
-}
-
-void CTF2Bot::KnownSpy::Update(KnownSpyInfo newinfo, const bool updateinfo, const bool updateclass)
-{
-	m_time.Start();
-
-	if (updateinfo)
-	{
-		m_info = newinfo;
-	}
-
-	if (updateclass && tf2lib::IsPlayerDisguised(m_handle.GetEntryIndex()))
-	{
-		// if disguised, update last disguise class, otherwise keep the original in memory
-		m_lastclass = tf2lib::GetDisguiseClass(m_handle.GetEntryIndex());
-	}
-}
-
-bool CTF2Bot::KnownSpy::IsValid() const
-{
-	return m_handle.IsValid() && (UtilHelpers::GetEdictFromCBaseHandle(m_handle) != nullptr);
-}
-
-edict_t* CTF2Bot::KnownSpy::GetEdict() const
-{
-	return UtilHelpers::GetEdictFromCBaseHandle(m_handle);
-}
-
-bool CTF2Bot::KnownSpy::IsSuspicious(CTF2Bot* me) const
-{
-	if (m_info == KNOWNSPY_FOUND)
-	{
-		return true; // Known spy
-	}
-
-	if (tf2lib::GetDisguiseTeam(m_handle.GetEntryIndex()) != me->GetMyTFTeam())
-	{
-		return true; // not disguised as my team
-	}
-
-	auto currentdisguiseclass = tf2lib::GetDisguiseClass(m_handle.GetEntryIndex());
-	auto currentdisguisetarget = tf2lib::GetDisguiseTarget(m_handle.GetEntryIndex());
-	float range = me->GetRangeTo(GetEdict());
-
-	if (m_info == KNOWNSPY_SUSPICIOUS)
-	{
-		if (currentdisguiseclass == m_lastclass)
-		{
-			return true; // detect suspicious spies that didn't change their disguise class
-		}
-
-		if (range <= sus_too_close_range())
-		{
-			return true; // suspicious spy got too close for comfort
-		}
-	}
-
-	if (currentdisguisetarget != nullptr)
-	{
-		int targetindex = gamehelpers->IndexOfEdict(currentdisguisetarget);
-
-		if (targetindex == me->GetIndex())
-		{
-			return true; // disguised as me!
-		}
-
-		if (!UtilHelpers::IsPlayerAlive(targetindex))
-		{
-			return true; // disguised as a dead teammate
-		}
-
-		auto theirclass = tf2lib::GetPlayerClassType(targetindex);
-
-		if (currentdisguiseclass != theirclass)
-		{
-			return true; // disguise class and disguise target class mismatch
-		}
-	}
-
-	// Too close
-	if (range <= touch_range())
-	{
-		return true;
-	}
-
-	return false;
 }
