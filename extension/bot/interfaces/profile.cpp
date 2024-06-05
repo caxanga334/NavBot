@@ -107,6 +107,14 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	{
 		m_data.minrecognitiontime = atof(value);
 	}
+	else if (strncasecmp(key, "initialaimspeed", 15) == 0)
+	{
+		m_data.aiminitialspeed = atof(value);
+	}
+	else if (strncasecmp(key, "aimacceleration", 15) == 0)
+	{
+		m_data.aimacceleration = atof(value);
+	}
 	else
 	{
 		smutils->LogError(myself, "Unknown key \"%s\" with value \"%s\" found while parsing bot difficulty profile!", key, value);
@@ -123,6 +131,8 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_LeavingSection(const SourceMod:
 
 		profile.SetSkillLevel(m_data.skill_level);
 		profile.SetAimSpeed(m_data.aimspeed);
+		profile.SetAimAcceleration(m_data.aimacceleration);
+		profile.SetAimInitialSpeed(m_data.aiminitialspeed);
 		profile.SetFOV(m_data.fov);
 		profile.SetMaxVisionRange(m_data.maxvisionrange);
 		profile.SetMaxHearingRange(m_data.maxhearingrange);

@@ -57,16 +57,25 @@ public:
 	virtual const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
 
 private:
+
+	struct AimData
+	{
+		float speed; // current aim speed
+		float maxspeed; // aim speed to reach
+		float base; // initial aim speed
+		float acceleration; // how fast to reach max speed
+	};
+
 	LookPriority m_priority; // Current look priority
 	CountdownTimer m_looktimer; // Timer for the current look at task
 	Vector m_looktarget; // Look at target (Position Vector)
 	CBaseHandle m_lookentity; // Look at target (Entity, overrides vector if present)
 	QAngle m_lastangles; // Last bot view angles
-	float m_aimspeed; // Look angle approach rate
 	bool m_isSteady; // Is the bot aim steady?
 	bool m_isOnTarget; // Is the bot looking at it's look timer
 	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
 	IntervalTimer m_steadyTimer; // Aim stability timer
+	AimData m_aimdata;
 };
 
 inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)

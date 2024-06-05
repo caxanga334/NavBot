@@ -21,7 +21,9 @@ IPlayerController::~IPlayerController()
 void IPlayerController::OnDifficultyProfileChanged()
 {
 	auto& profile = GetBot()->GetDifficultyProfile();
-	m_aimspeed = profile.GetAimSpeed();
+	m_aimdata.maxspeed = profile.GetAimSpeed();
+	m_aimdata.acceleration = profile.GetAimAcceleration();
+	m_aimdata.base = profile.GetAimInitialSpeed();
 }
 
 void IPlayerController::Reset()
@@ -39,7 +41,9 @@ void IPlayerController::Reset()
 	m_steadyTimer.Invalidate();
 
 	auto& profile = GetBot()->GetDifficultyProfile();
-	m_aimspeed = profile.GetAimSpeed();
+	m_aimdata.maxspeed = profile.GetAimSpeed();
+	m_aimdata.acceleration = profile.GetAimAcceleration();
+	m_aimdata.base = profile.GetAimInitialSpeed();
 }
 
 void IPlayerController::Update()
@@ -104,6 +108,7 @@ void IPlayerController::RunLook()
 	// no need to make changes anymore
 	if (m_looktimer.IsElapsed())
 	{
+		m_aimdata.speed = m_aimdata.base;
 		return;
 	}
 
@@ -157,11 +162,14 @@ void IPlayerController::RunLook()
 		m_isOnTarget = false; // aim is off target
 	}
 
-	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimspeed);
-	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimspeed);
+	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimdata.speed);
+	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimdata.speed);
 
 	finalAngles.x = AngleNormalize(finalAngles.x);
 	finalAngles.y = AngleNormalize(finalAngles.y);
+
+	// Accelerate our aim
+	m_aimdata.speed = Approach(m_aimdata.maxspeed, m_aimdata.speed, m_aimdata.acceleration);
 
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{
