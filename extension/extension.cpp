@@ -65,6 +65,7 @@ IFileSystem* filesystem = nullptr;
 ICvar* icvar = nullptr;
 IServerTools* servertools = nullptr;
 IServerPluginHelpers* serverpluginhelpers = nullptr;
+IStaticPropMgrServer* staticpropmgr = nullptr;
 
 IBinTools* g_pBinTools = nullptr;
 ISDKTools* g_pSDKTools = nullptr;
@@ -273,6 +274,15 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_CURRENT(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	GET_V_IFACE_CURRENT(GetServerFactory, servertools, IServerTools, VSERVERTOOLS_INTERFACE_VERSION);
+	GET_V_IFACE_CURRENT(GetEngineFactory, staticpropmgr, IStaticPropMgrServer, INTERFACEVERSION_STATICPROPMGR_SERVER);
+
+#ifdef EXT_DEBUG
+	if (staticpropmgr == nullptr)
+	{
+		smutils->LogError(myself, "Failed to get Static Prop Manager Server interface!");
+	}
+#endif // EXT_DEBUG
+
 
 #ifdef WIN32
 	GET_V_IFACE_CURRENT(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);

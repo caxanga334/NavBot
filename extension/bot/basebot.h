@@ -14,7 +14,6 @@
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/profile.h>
 #include <bot/interfaces/weapon.h>
-#include <util/UtilTrace.h>
 #include <sdkports/sdk_timers.h>
 
 // Interval between calls to Update()

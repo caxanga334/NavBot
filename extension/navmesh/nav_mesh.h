@@ -33,6 +33,7 @@
 #include <ITranslator.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
+#include <sdkports/sdk_traces.h>
 #include <shareddefs.h>
 #include <convar.h>
 

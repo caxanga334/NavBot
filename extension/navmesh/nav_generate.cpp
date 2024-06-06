@@ -13,7 +13,6 @@
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_pathfind.h"
-#include <util/UtilTrace.h>
 #include <util/EntityUtils.h>
 #include <viewport_panel_names.h>
 #include <eiface.h>

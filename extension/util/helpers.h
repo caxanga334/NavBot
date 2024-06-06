@@ -13,6 +13,7 @@ class CStudioHdr;
 class SendTable;
 class CBaseHandle;
 class KeyValues;
+class ServerClass;
 
 namespace UtilHelpers
 {
@@ -24,6 +25,7 @@ namespace UtilHelpers
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(CBaseEntity* entity);
+	bool HasDataTable(SendTable* root, const char* name);
 	bool FindDataTable(SendTable* pTable, const char* name, sm_sendprop_info_t* info, unsigned int offset);
 	Vector getOBBCenter(edict_t* pEntity);
 	Vector collisionToWorldSpace(const Vector& in, edict_t* pEntity);
@@ -256,6 +258,23 @@ namespace UtilHelpers
 	 * @param kv Keyvalue command.
 	 */
 	void FakeClientCommandKeyValues(edict_t* client, KeyValues* kv);
+
+	/**
+	 * @brief Finds a given entity's server class.
+	 *
+	 * @return				ServerClass pointer on success, nullptr on failure.
+	 * 
+	 * @note Ported from Sourcemod to here for compatibility reasons. Also available in gamehelpers but requires a very recent SM dev build
+	 */
+	ServerClass* FindEntityServerClass(CBaseEntity* pEntity);
+
+	constexpr int PATTERN_DIRECTORY = 0x00000001;
+
+	bool StringMatchesPattern(const char* source, const char* pattern, int nFlags);
+	bool StringMatchesPattern(const std::string& source, const std::string& pattern, int nFlags);
+
+	bool FClassnameIs(edict_t* pEntity, const char* szClassname);
+	bool FClassnameIs(CBaseEntity* pEntity, const char* szClassname);
 }
 
 template<typename T>

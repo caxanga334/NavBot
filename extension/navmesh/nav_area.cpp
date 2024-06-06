@@ -17,6 +17,7 @@
 #include <extplayer.h>
 #include <util/librandom.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_traces.h>
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
@@ -36,8 +37,6 @@
 
 #include <tslist.h>
 #include <utlhash.h>
-#include <vprof.h>
-#include "util/UtilTrace.h"
 
 #undef min
 #undef max
@@ -2703,8 +2702,6 @@ void CNavArea::ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, 
  */
 bool CNavArea::IsContiguous( const CNavArea *other ) const
 {
-	VPROF_BUDGET( "CNavArea::IsContiguous", "NextBot" );
-
 	// find which side it is connected on
 	int dir;
 	for( dir=0; dir<NUM_DIRECTIONS; ++dir )
@@ -2734,8 +2731,6 @@ bool CNavArea::IsContiguous( const CNavArea *other ) const
  */
 float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinationArea ) const
 {
-	VPROF_BUDGET( "CNavArea::ComputeAdjacentConnectionHeightChange", "NextBot" );
-
 	// find which side it is connected on
 	int dir;
 	for( dir=0; dir<NUM_DIRECTIONS; ++dir )
@@ -3758,11 +3753,12 @@ inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 {
 	Vector corner;
 	trace_t result;
-	CTraceFilterNoNPCsOrPlayer traceFilter( NULL, COLLISION_GROUP_NONE );
+	trace::CTraceFilterNoNPCsOrPlayers tracefilter(nullptr, COLLISION_GROUP_NONE);
 	const float offset = 0.75f * HumanHeight;
 
 	// check center first
-	UTIL_TraceLine( eye, GetCenter() + Vector( 0, 0, offset ), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &traceFilter, &result );
+	trace::line(eye, GetCenter() + Vector(0, 0, offset), MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE, &tracefilter, result);
+
 	if (result.fraction == 1.0f)
 	{
 		// we can see this area
@@ -3776,7 +3772,9 @@ inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 	for( int c=0; c<NUM_CORNERS; ++c )
 	{
 		corner = GetCorner( (NavCornerType)c );
-		UTIL_TraceLine( eye, corner + Vector( 0, 0, offset ), MASK_BLOCKLOS_AND_NPCS|CONTENTS_IGNORE_NODRAW_OPAQUE, &traceFilter, &result );
+
+		trace::line(eye, GetCenter() + Vector(0, 0, offset), MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE, &tracefilter, result);
+
 		if (result.fraction == 1.0f)
 		{
 			// we can see this area
@@ -3890,7 +3888,9 @@ bool IsHidingSpotInCover( const Vector &spot )
 
 	// if we are crouched underneath something, that counts as good cover
 	to = from + Vector( 0, 0, 20.0f );
-	UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+
+	trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+
 	if (result.fraction != 1.0f)
 		return true;
 
@@ -3901,7 +3901,7 @@ bool IsHidingSpotInCover( const Vector &spot )
 	{
 		to = from + Vector( coverRange * (float)cos(angle), coverRange * (float)sin(angle), HalfHumanHeight );
 
-		UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+		trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 		// if traceline hit something, it hit "cover"
 		if (result.fraction != 1.0f)
@@ -4142,7 +4142,7 @@ void ClassifySniperSpot( HidingSpot *spot )
 				walkable.z = area->GetZ( walkable ) + HalfHumanHeight;
 				
 				// check line of sight
-				UTIL_TraceLine( eye, walkable, CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_PLAYERCLIP, NULL, COLLISION_GROUP_NONE, &result );
+				trace::line(eye, walkable, CONTENTS_SOLID | CONTENTS_MOVEABLE | CONTENTS_PLAYERCLIP, nullptr, COLLISION_GROUP_NONE, result);
 
 				if (result.fraction == 1.0f && !result.startsolid)
 				{
@@ -4763,7 +4763,6 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 // checks if any func_nav_blockers are still blocking the area
 void CNavArea::UpdateBlockedFromNavBlockers( void )
 {
-	VPROF( "CNavArea::UpdateBlockedFromNavBlockers" );
 	Extent bounds;
 	GetExtent( &bounds );
 
@@ -4844,7 +4843,6 @@ void CNavArea::UnblockArea( int teamID )
  */
 void CNavArea::UpdateBlocked( bool force, int teamID )
 {
-	VPROF( "CNavArea::UpdateBlocked" );
 	if ( !force && !m_blockedTimer.IsElapsed() )
 	{
 		return;
@@ -4882,23 +4880,13 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	// See if spot is valid
 #ifdef TERROR
 	// don't unblock func_doors
-	CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_PROP_DOORS | WALK_THRU_BREAKABLES );
+	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_PROP_DOORS | trace::WALK_THRU_BREAKABLES);
 #else
-	CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_DOORS | WALK_THRU_BREAKABLES );
+	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_DOORS | trace::WALK_THRU_BREAKABLES);
 #endif
 	trace_t tr;
-	{
-	VPROF( "CNavArea::UpdateBlocked-Trace" );
-	UTIL_TraceHull(
-		origin,
-		origin,
-		bounds.lo,
-		bounds.hi,
-		MASK_NPCSOLID_BRUSHONLY,
-		filter,
-		&tr );
 
-	}
+	trace::hull(origin, origin, bounds.lo, bounds.hi, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
 
 	if ( !tr.startsolid )
 	{
@@ -4942,8 +4930,6 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 
 	if ( wasBlocked != isBlocked )
 	{
-		VPROF( "CNavArea::UpdateBlocked-Event" );
-
 		if ( isBlocked )
 		{
 			TheNavMesh->OnAreaBlocked( this );
@@ -4986,16 +4972,10 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	Vector maxs = Vector( size, size, JumpCrouchHeight + 10.0f );
 
 	// See if spot is valid
+	CBaseEntity* be = reinterpret_cast<CBaseEntity*>(ignore->GetIServerEntity());
 	trace_t tr;
-	UTIL_TraceHull(
-		origin,
-		origin,
-		mins,
-		maxs,
-		MASK_NPCSOLID_BRUSHONLY,
-		CTraceFilterSimple(ignore->GetIServerEntity(),
-				COLLISION_GROUP_PLAYER_MOVEMENT),
-		&tr );
+	trace::CTraceFilterSimple filter(COLLISION_GROUP_PLAYER_MOVEMENT, be);
+	trace::hull(origin, origin, mins, maxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
 
 	// If the center is open space, we're effectively blocked
 	if ( !tr.startsolid )
@@ -5025,9 +5005,11 @@ bool CNavArea::HasSolidFloor() const
 	Vector mins(-hullsize, -hullsize, 0.0f);
 	Vector maxs(hullsize, hullsize, 1.0f);
 
-	CTraceFilterNoNPCsOrPlayer filter(nullptr, COLLISION_GROUP_NONE);
+	trace::CTraceFilterNoNPCsOrPlayers filter(nullptr, COLLISION_GROUP_NONE);
+
 	trace_t result;
-	UTIL_TraceHull(startPos, endPos, mins, maxs, MASK_PLAYERSOLID, filter, &result);
+
+	trace::hull(startPos, endPos, mins, maxs, MASK_PLAYERSOLID, &filter, result);
 
 	if (!result.DidHit())
 	{
@@ -5044,7 +5026,7 @@ bool CNavArea::HasSolidFloor() const
 
 bool CNavArea::HasSolidObstruction() const
 {
-	CTraceFilterNoNPCsOrPlayer filter(nullptr, COLLISION_GROUP_NONE);
+	trace::CTraceFilterNoNPCsOrPlayers filter(nullptr, COLLISION_GROUP_NONE);
 	trace_t result;
 	Vector origin = GetCenter();
 	origin.z += HalfHumanHeight;
@@ -5056,7 +5038,7 @@ bool CNavArea::HasSolidObstruction() const
 	// duck height - halfhumanheight
 	bounds.hi.Init(sizeX, sizeY, 36.0f - HalfHumanHeight);
 
-	UTIL_TraceHull(origin, origin, bounds.lo, bounds.hi, MASK_PLAYERSOLID, filter, &result);
+	trace::hull(origin, origin, bounds.lo, bounds.hi, MASK_PLAYERSOLID, &filter, result);
 
 	if (result.DidHit())
 	{

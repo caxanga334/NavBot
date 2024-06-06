@@ -3,7 +3,6 @@
 
 #include <bot/interfaces/base_interface.h>
 #include <sdkports/sdk_timers.h>
-#include <util/UtilTrace.h>
 
 class CNavLadder;
 class CNavArea;

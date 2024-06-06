@@ -50,4 +50,14 @@ inline Vector UTIL_YawToVector(float yaw)
 	return ret;
 }
 
+inline edict_t* UTIL_GetListenServerEnt()
+{
+	return gamehelpers->EdictOfIndex(1);
+}
+
+inline edict_t* UTIL_GetListenServerHost()
+{
+	return gamehelpers->EdictOfIndex(1);
+}
+
 #endif

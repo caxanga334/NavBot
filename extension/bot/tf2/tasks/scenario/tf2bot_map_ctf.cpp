@@ -1,6 +1,5 @@
 #include <extension.h>
 #include <util/helpers.h>
-#include <util/UtilTrace.h>
 #include <sdkports/sdk_timers.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"

@@ -61,10 +61,29 @@ namespace entities
 		void SetSimulationTime(float time) const;
 		void Teleport(const Vector& origin, const QAngle* angles = nullptr, const Vector* velocity = nullptr) const;
 		bool IsDisabled() const;
+		RenderMode_t GetRenderMode() const;
+		int GetHealth() const;
+		int GetMaxHealth() const;
+		int GetTakeDamage() const;
 
 	private:
 		void CalcAbsolutePosition(matrix3x4_t& result) const;
 		int m_index; // entity index or reference
+	};
+
+	class HFuncBrush : public HBaseEntity
+	{
+	public:
+		HFuncBrush(edict_t* entity) : HBaseEntity(entity) {}
+		HFuncBrush(CBaseEntity* entity) : HBaseEntity(entity) {}
+
+		enum BrushSolidities_e {
+			BRUSHSOLID_TOGGLE = 0,
+			BRUSHSOLID_NEVER = 1,
+			BRUSHSOLID_ALWAYS = 2,
+		};
+
+		BrushSolidities_e GetSolidity() const;
 	};
 }
 

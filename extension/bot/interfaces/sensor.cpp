@@ -5,6 +5,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <util/helpers.h>
+#include <sdkports/sdk_traces.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"
 
@@ -12,29 +13,27 @@
 #undef min
 #undef clamp
 
-BotSensorTraceFilter::BotSensorTraceFilter(int collisionGroup) :
-	CTraceFilterSimple(nullptr, collisionGroup, nullptr)
+class BotSensorTraceFilter : public trace::CTraceFilterSimple
 {
-}
+public:
+	BotSensorTraceFilter(int collisionGroup) : trace::CTraceFilterSimple(collisionGroup, nullptr) {}
 
-bool BotSensorTraceFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+};
+
+bool BotSensorTraceFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
 {
-	auto entity = entityFromEntityHandle(pHandleEntity);
-
-	if (entity == nullptr)
+	if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
 	{
-		return false;
-	}
-	
-	const auto index = gamehelpers->IndexOfEdict(entity);
-	const bool isplayer = UtilHelpers::IsPlayerIndex(index);
+		if (UtilHelpers::IsPlayerIndex(entity))
+		{
+			return false; // don't hit players
+		}
 
-	if (isplayer)
-	{
-		return false; // Don't hit players
+		return true;
 	}
 
-	return CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask);
+	return false;
 }
 
 ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
@@ -209,7 +208,8 @@ bool ISensor::IsLineOfSightClear(const Vector& pos)
 
 	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
 	trace_t result;
-	UTIL_TraceLine(start, pos, MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result);
+
+	trace::line(start, pos, MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 
 	return result.fraction >= 1.0f && !result.startsolid;
 }
@@ -220,15 +220,15 @@ bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player)
 	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
 	trace_t result;
 
-	UTIL_TraceLine(start, player.GetEyeOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result);
+	trace::line(start, player.GetEyeOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 
 	if (result.DidHit())
 	{
-		UTIL_TraceLine(start, player.WorldSpaceCenter(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result);
+		trace::line(start, player.WorldSpaceCenter(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 
 		if (result.DidHit())
 		{
-			UTIL_TraceLine(start, player.GetAbsOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, &result);
+			trace::line(start, player.GetAbsOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 		}
 	}
 

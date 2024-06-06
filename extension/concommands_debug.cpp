@@ -14,10 +14,10 @@
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_ehandle.h>
+#include <sdkports/sdk_traces.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <util/ehandle_edict.h>
-#include <util/UtilTrace.h>
 #include <sm_argbuffer.h>
 
 #ifdef EXT_DEBUG
@@ -440,6 +440,22 @@ CON_COMMAND_F(sm_navbot_dod_debug_vcall, "Testing Virtual function calling.", FC
 
 #endif // SOURCE_ENGINE == SE_DODS
 
+CON_COMMAND_F(sm_navbot_debug_new_traces, "Debug new trace functions.", FCVAR_CHEAT)
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	entities::HBaseEntity be(host);
+	CBaseExtPlayer player(host);
+	
+	Vector start = player.GetEyeOrigin();
+	Vector forward;
+	player.EyeVectors(&forward);
+	forward.NormalizeInPlace();
 
+	Vector end = start + (forward * 2048.0f);
+
+	trace_t result;
+	trace::line(start, end, MASK_SOLID, result);
+	Msg("Trace Result: fraction %3.6f \n", result.fraction);
+}
 
 #endif // EXT_DEBUG

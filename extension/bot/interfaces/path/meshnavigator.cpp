@@ -5,7 +5,6 @@
 #include <bot/basebot.h>
 #include <bot/interfaces/movement.h>
 #include <bot/interfaces/playercontrol.h>
-#include <util/UtilTrace.h>
 #include <util/EntityUtils.h>
 #include <util/librandom.h>
 #include <entities/baseentity.h>

@@ -349,6 +349,34 @@ bool entities::HBaseEntity::IsDisabled() const
 	return result;
 }
 
+RenderMode_t entities::HBaseEntity::GetRenderMode() const
+{
+	int render = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_nRenderMode", render);
+	return static_cast<RenderMode_t>(render);
+}
+
+int entities::HBaseEntity::GetHealth() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iHealth", value);
+	return value;
+}
+
+int entities::HBaseEntity::GetMaxHealth() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iMaxHealth", value);
+	return value;
+}
+
+int entities::HBaseEntity::GetTakeDamage() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_takedamage", value);
+	return value;
+}
+
 void entities::HBaseEntity::CalcAbsolutePosition(matrix3x4_t& result) const
 {
 	matrix3x4_t tempmat;
@@ -372,7 +400,9 @@ void entities::HBaseEntity::CalcAbsolutePosition(matrix3x4_t& result) const
 	return;
 }
 
-
-
-
-
+entities::HFuncBrush::BrushSolidities_e entities::HFuncBrush::GetSolidity() const
+{
+	int solidity = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iSolidity", solidity);
+	return static_cast<entities::HFuncBrush::BrushSolidities_e>(solidity);
+}

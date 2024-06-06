@@ -13,7 +13,6 @@
 #include "nav_colors.h"
 #include "nav.h"
 #include "nav_mesh.h"
-#include <util/UtilTrace.h>
 #include <util/BasePlayer.h>
 #include <util/EntityUtils.h>
 #include <gametrace.h>

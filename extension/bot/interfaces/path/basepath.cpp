@@ -6,7 +6,6 @@
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
 #include <mods/basemod.h>
-#include <util/UtilTrace.h>
 #include <sdkports/debugoverlay_shared.h>
 
 #include "basepath.h"

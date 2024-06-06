@@ -12,6 +12,7 @@
 #include <mods/basemod.h>
 #include <tier1/convar.h>
 #include <sdkports/sdk_takedamageinfo.h>
+#include <sdkports/sdk_traces.h>
 #include "basebot.h"
 
 extern CGlobalVars* gpGlobals;
@@ -638,9 +639,9 @@ void CBaseBot::ExecuteQueuedCommands()
 
 bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 {
-	CTraceFilterNoNPCsOrPlayer filter(GetEdict()->GetIServerEntity(), COLLISION_GROUP_NONE);
+	trace::CTraceFilterNoNPCsOrPlayers filter(GetEntity(), COLLISION_GROUP_NONE);
 	trace_t result;
-	UTIL_TraceLine(GetEyeOrigin(), to, MASK_SHOT, &filter, &result);
+	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
 	return !result.DidHit();
 }
 

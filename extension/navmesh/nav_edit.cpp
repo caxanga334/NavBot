@@ -17,12 +17,11 @@
 #include "nav_pathfind.h"
 #include "nav_node.h"
 #include "nav_colors.h"
-#include <util/UtilTrace.h>
-#include <util/BaseEntity.h>
-#include <util/EntityUtils.h>
 #include <util/helpers.h>
 #include <sdkports/debugoverlay_shared.h>
-#include <entities/baseentity.h>
+#include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_utils.h>
+#include <entities/worldspawn.h>
 #include "Color.h"
 #include "tier0/vprof.h"
 #include "collisionutils.h"
@@ -329,6 +328,8 @@ bool CNavMesh::FindActiveNavArea( void )
 	}
 
 	entities::HBaseEntity player(ent);
+	CBaseEntity* be;
+	player.GetEntity(&be, nullptr);
 
 	Vector from, dir;
 	GetEditVectors( &from, &dir );
@@ -353,8 +354,8 @@ bool CNavMesh::FindActiveNavArea( void )
 	Vector to = from + maxRange * dir;
 
 	trace_t result;
-	CTraceFilterWalkableEntities filter( ent->GetIServerEntity(), COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
-	UTIL_TraceLine( from, to, (sm_nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, &result );
+	trace::CTraceFilterWalkableEntities filter(be, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+	trace::line(from, to, (sm_nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, result);
 
 	if (result.fraction != 1.0f)
 	{
@@ -508,10 +509,12 @@ bool CNavMesh::FindLadderCorners( Vector *corner1, Vector *corner2, Vector *corn
 
 
 //--------------------------------------------------------------------------------------------------------------
-bool CheckForClimbableSurface( const Vector &start, const Vector &end )
+static bool CheckForClimbableSurface( const Vector &start, const Vector &end )
 {
 	trace_t result;
-	UTIL_TraceLine( start, end, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+
+	trace::line(start, end, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+
 	return result.DidHit()
 			&& (physprops->GetSurfaceData(result.surface.surfaceProps)->game.climbable != 0
 					|| (result.contents & CONTENTS_LADDER) != 0);
@@ -519,7 +522,7 @@ bool CheckForClimbableSurface( const Vector &start, const Vector &end )
 
 
 //--------------------------------------------------------------------------------------------------------------
-void StepAlongClimbableSurface( Vector &pos, const Vector &increment, const Vector &probe )
+static void StepAlongClimbableSurface( Vector &pos, const Vector &increment, const Vector &probe )
 {
 	while ( CheckForClimbableSurface( pos + increment - probe, pos + increment + probe ) )
 	{
@@ -872,8 +875,7 @@ void CNavMesh::DrawEditMode( void )
 				if ( ladderEntity )
 				{
 					V_snprintf(buffer, sizeof(buffer), "Ladder #%d (Team %d)\n",
-							m_selectedLadder->GetID(),
-							*BaseEntity(ladderEntity->GetNetworkable()->GetEdict()).getTeam());
+							m_selectedLadder->GetID(), entities::HBaseEntity(ladderEntity->GetNetworkable()->GetEdict()).GetTeam());
 				}
 				else
 				{
@@ -2034,14 +2036,16 @@ void CommandNavCenterInWorld( void )
 			navExtent.Encompass( area->GetCorner( SOUTH_EAST ) );
 		}
 	}
+
 	edict_t* worldEnt = gamehelpers->EdictOfIndex(0);
 	// Get the world's extent
 	if ( worldEnt == nullptr )
 		return;
+
 	Extent worldExtent;
-	BaseEntity world(worldEnt);
-	worldExtent.lo = *world.getPtr<Vector>("m_WorldMins");
-	worldExtent.hi = *world.getPtr<Vector>("m_WorldMaxs");
+	entities::HWorld world(worldEnt);
+	worldExtent.lo = world.GetWorldMins();
+	worldExtent.hi = world.GetWorldMaxs();
 
 	// Compute the difference, and shift in XY
 	Vector shift = ( navExtent.lo + navExtent.hi - worldExtent.lo - worldExtent.hi ) * 0.5f;
@@ -3862,11 +3866,8 @@ CON_COMMAND_F(sm_nav_select_radius, "Adds all areas in a radius to the selection
 	}
 
 	float radius = atof( args[ 1 ] );
-	IPlayerInfo *host = UTIL_GetListenServerHost();
-	if ( ! host )
-		return;
-
-	RadiusSelect select( host->GetAbsOrigin(), radius );
+	CBaseExtPlayer player(gamehelpers->EdictOfIndex(1));
+	RadiusSelect select( player.GetAbsOrigin(), radius);
 	TheNavMesh->ForAllAreas( select );
 
 	Msg( "%d areas added to selection\n", select.GetNumSelected() );

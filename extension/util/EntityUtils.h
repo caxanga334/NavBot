@@ -21,16 +21,6 @@ enum BrushSolidities_e {
 	BRUSHSOLID_ALWAYS = 2,
 };
 
-#define WALK_THRU_PROP_DOORS		0x01
-#define WALK_THRU_FUNC_DOORS		0x02
-#define WALK_THRU_DOORS				(WALK_THRU_PROP_DOORS | WALK_THRU_FUNC_DOORS)
-#define WALK_THRU_BREAKABLES		0x04
-#define WALK_THRU_TOGGLE_BRUSHES	0x08
-#define WALK_THRU_PROP_DOORS		0x01
-#define WALK_THRU_FUNC_DOORS		0x02
-#define WALK_THRU_DOORS				(WALK_THRU_PROP_DOORS | WALK_THRU_FUNC_DOORS)
-#define WALK_THRU_EVERYTHING		(WALK_THRU_DOORS | WALK_THRU_BREAKABLES | WALK_THRU_TOGGLE_BRUSHES)
-
 edict_t * findNearestEntity(const CUtlLinkedList<edict_t*>& entities, const Vector& pos,
 		float maxRadius = 0.0f);
 
@@ -51,7 +41,7 @@ bool IsEntityWalkable( edict_t *entity, unsigned int flags );
 
 bool isBreakable(edict_t* target);
 
-bool FClassnameIs(edict_t *pEntity, const char *szClassname);
+bool FClassnameIs(edict_t* pEntity, const char* szClassname);
 
 bool FClassnameIs(CBaseEntity* pEntity, const char* szClassname);
 

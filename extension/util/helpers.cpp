@@ -5,7 +5,6 @@
 #include <studio.h>
 #include "helpers.h"
 #include "entprops.h"
-#include "UtilTrace.h"
 
 #undef max // undef mathlib defs to avoid comflicts with STD
 #undef min
@@ -119,6 +118,36 @@ bool UtilHelpers::IsEntNetworkable(CBaseEntity* entity)
 
 	edict_t* edict = pNet->GetEdict();
 	return (edict && !edict->IsFree()) ? true : false;
+}
+
+bool UtilHelpers::HasDataTable(SendTable* root, const char* name)
+{
+	const char* pname = nullptr;
+	int props = root->GetNumProps();
+	SendProp* prop = nullptr;
+	SendTable* table = nullptr;
+
+	for (int i = 0; i < props; i++)
+	{
+		prop = root->GetProp(i);
+
+		if ((table = prop->GetDataTable()) != nullptr)
+		{
+			pname = table->GetName();
+
+			if (pname && strcmp(name, pname) == 0)
+			{
+				return true;
+			}
+
+			if (HasDataTable(table, name))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 bool UtilHelpers::FindDataTable(SendTable* pTable, const char* name, sm_sendprop_info_t* info, unsigned int offset)
@@ -868,5 +897,195 @@ void UtilHelpers::FakeClientCommandKeyValues(edict_t* client, KeyValues* kv)
 #else
 	throw std::runtime_error("This engine branch does not support FakeClientCommandKeyValues!");
 #endif
+}
+
+ServerClass* UtilHelpers::FindEntityServerClass(CBaseEntity* pEntity)
+{
+	IServerNetworkable* pNetwork = reinterpret_cast<IServerUnknown*>(pEntity)->GetNetworkable();
+
+	if (pNetwork == nullptr)
+	{
+		return nullptr;
+	}
+
+	return pNetwork->GetServerClass();
+}
+
+bool UtilHelpers::StringMatchesPattern(const char* source, const char* pattern, int nFlags)
+{
+	const char* pszSource = source;
+	const char* pszPattern = pattern;
+	bool bExact = true;
+
+	while (1)
+	{
+		if ((*pszPattern) == 0)
+		{
+			return ((*pszSource) == 0);
+		}
+
+		if ((*pszPattern) == '*')
+		{
+			pszPattern++;
+
+			if ((*pszPattern) == 0)
+			{
+				return true;
+			}
+
+			bExact = false;
+			continue;
+		}
+
+		int nLength = 0;
+
+		while ((*pszPattern) != '*' && (*pszPattern) != 0)
+		{
+			nLength++;
+			pszPattern++;
+		}
+
+		while (1)
+		{
+			const char* pszStartPattern = pszPattern - nLength;
+			const char* pszSearch = pszSource;
+
+			for (int i = 0; i < nLength; i++, pszSearch++, pszStartPattern++)
+			{
+				if ((*pszSearch) == 0)
+				{
+					return false;
+				}
+
+				if ((*pszSearch) != (*pszStartPattern))
+				{
+					break;
+				}
+			}
+
+			if (pszSearch - pszSource == nLength)
+			{
+				break;
+			}
+
+			if (bExact == true)
+			{
+				return false;
+			}
+
+			if ((nFlags & UtilHelpers::PATTERN_DIRECTORY) != 0)
+			{
+				if ((*pszPattern) != '/' && (*pszSource) == '/')
+				{
+					return false;
+				}
+			}
+
+			pszSource++;
+		}
+
+		pszSource += nLength;
+	}
+}
+
+bool UtilHelpers::StringMatchesPattern(const std::string& source, const std::string& pattern, int nFlags)
+{
+	const char* pszSource = source.c_str();
+	const char* pszPattern = pattern.c_str();
+	bool bExact = true;
+
+	while (1)
+	{
+		if ((*pszPattern) == 0)
+		{
+			return ((*pszSource) == 0);
+		}
+
+		if ((*pszPattern) == '*')
+		{
+			pszPattern++;
+
+			if ((*pszPattern) == 0)
+			{
+				return true;
+			}
+
+			bExact = false;
+			continue;
+		}
+
+		int nLength = 0;
+
+		while ((*pszPattern) != '*' && (*pszPattern) != 0)
+		{
+			nLength++;
+			pszPattern++;
+		}
+
+		while (1)
+		{
+			const char* pszStartPattern = pszPattern - nLength;
+			const char* pszSearch = pszSource;
+
+			for (int i = 0; i < nLength; i++, pszSearch++, pszStartPattern++)
+			{
+				if ((*pszSearch) == 0)
+				{
+					return false;
+				}
+
+				if ((*pszSearch) != (*pszStartPattern))
+				{
+					break;
+				}
+			}
+
+			if (pszSearch - pszSource == nLength)
+			{
+				break;
+			}
+
+			if (bExact == true)
+			{
+				return false;
+			}
+
+			if ((nFlags & UtilHelpers::PATTERN_DIRECTORY) != 0)
+			{
+				if ((*pszPattern) != '/' && (*pszSource) == '/')
+				{
+					return false;
+				}
+			}
+
+			pszSource++;
+		}
+
+		pszSource += nLength;
+	}
+}
+
+bool UtilHelpers::FClassnameIs(edict_t* pEntity, const char* szClassname)
+{
+	auto classname = pEntity->GetClassName();
+
+	if (Q_strcmp(classname, szClassname) == 0) { return true; }
+
+	std::string s1(classname);
+	std::string s2(szClassname);
+
+	return UtilHelpers::StringMatchesPattern(s1, s2, 0);
+}
+
+bool UtilHelpers::FClassnameIs(CBaseEntity* pEntity, const char* szClassname)
+{
+	auto classname = gamehelpers->GetEntityClassname(pEntity);
+
+	if (Q_strcmp(classname, szClassname) == 0) { return true; }
+
+	std::string s1(classname);
+	std::string s2(szClassname);
+
+	return UtilHelpers::StringMatchesPattern(s1, s2, 0);
 }
 

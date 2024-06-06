@@ -48,6 +48,7 @@ class CTakeDamageInfo;
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineTrace.h>
 #include <engine/IEngineSound.h>
+#include <engine/IStaticPropMgr.h>
 #include <iplayerinfo.h>
 #include <vphysics_interface.h>
 #include <filesystem.h>
@@ -313,6 +314,7 @@ extern IFileSystem* filesystem;
 extern ICvar* icvar;
 extern IServerTools* servertools;
 extern IServerPluginHelpers* serverpluginhelpers;
+extern IStaticPropMgrServer* staticpropmgr;
 extern CBaseEntityList* g_EntList;
 
 extern IBinTools* g_pBinTools;

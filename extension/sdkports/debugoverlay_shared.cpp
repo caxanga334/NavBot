@@ -10,7 +10,6 @@
 #include "mathlib/mathlib.h"
 #include "sdk_utils.h"
 #include <extplayer.h>
-#include <util/UtilTrace.h>
 
 #define	MAX_OVERLAY_DIST_SQR	90000000
 

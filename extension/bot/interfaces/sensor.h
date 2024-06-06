@@ -5,15 +5,6 @@
 
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
-#include <util/UtilTrace.h>
-
-class BotSensorTraceFilter : public CTraceFilterSimple
-{
-public:
-	BotSensorTraceFilter(int collisionGroup);
-
-	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask);
-};
 
 // Sensor interface manages the bot perception (vision and hearing)
 class ISensor : public IBotInterface
