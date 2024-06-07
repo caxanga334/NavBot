@@ -9,18 +9,20 @@
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
 #include <extension.h>
+#include <extplayer.h>
+#include <entities/baseentity.h>
+#include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_utils.h>
 #include "nav_area.h"
 #include "nav_colors.h"
 #include "nav.h"
 #include "nav_mesh.h"
-#include <util/BasePlayer.h>
-#include <util/EntityUtils.h>
 #include <gametrace.h>
 #include <eiface.h>
 #include <convar.h>
 #include <iplayerinfo.h>
 #include <utlbuffer.h>
-#include <ivdebugoverlay.h>
 #include <vphysics_interface.h>
 #include <shareddefs.h>
 
@@ -240,7 +242,7 @@ void CNavLadder::SetDir( NavDirType dir )
 	// TERROR: use the MASK_ZOMBIESOLID_BRUSHONLY contents, since that's what zombies use
 	UTIL_TraceLine( from, to, MASK_ZOMBIESOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
 #else
-	UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+	trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 #endif
 	extern IPhysicsSurfaceProps *physprops;
 	if (result.fraction != 1.0f
@@ -251,7 +253,7 @@ void CNavLadder::SetDir( NavDirType dir )
 	}
 }
 
-void DrawAbsBoxOverlay(edict_t *edict)
+static void DrawAbsBoxOverlay(edict_t *edict)
 {
 	int red = 0;
 	int green = 200;
@@ -289,10 +291,10 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 	}
 
 	// Highlight ladder entity ------------------------------------------------
-	IServerEntity *ladderEntity = m_ladderEntity.Get();
-	if ( ladderEntity )
+	edict_t* ladderEntity = m_ladderEntity.ToEdict();
+	if (ladderEntity)
 	{
-		DrawAbsBoxOverlay(ladderEntity->GetNetworkable()->GetEdict());
+		DrawAbsBoxOverlay(ladderEntity);
 	}
 
 	// Draw 'ladder' lines ----------------------------------------------------
@@ -426,14 +428,18 @@ void CNavLadder::DrawConnectedAreas( bool isEdit )
 }
 
 //--------------------------------------------------------------------------------------------------------------
-bool CNavLadder::IsUsableByTeam(int teamNumber) const {
-	IServerEntity* ent = m_ladderEntity.Get();
-	if (ent == nullptr) {
+bool CNavLadder::IsUsableByTeam(int teamNumber) const
+{
+	CBaseEntity* pEntity = GetLadderEntity();
+
+	if (pEntity == nullptr)
+	{
 		return true;
 	}
-	int *ladderTeamNumber = BaseEntity(ent->GetNetworkable()->GetEdict()).getTeam();
-	return ladderTeamNumber == nullptr || teamNumber == *ladderTeamNumber
-			|| *ladderTeamNumber == TEAM_UNASSIGNED;
+
+	entities::HBaseEntity be(pEntity);
+	const int ladderTeam = be.GetTeam();
+	return (ladderTeam == teamNumber || ladderTeam == TEAM_UNASSIGNED);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -449,14 +455,7 @@ void CNavLadder::OnRoundRestart( void )
 //--------------------------------------------------------------------------------------------------------------
 void CNavLadder::FindLadderEntity( void )
 {
-	CUtlLinkedList<edict_t*> ladder;
-	findEntWithPatternInName("*ladder", ladder);
-	m_ladderEntity = ladder.Count() > 0 ? ladder[0]->GetIServerEntity(): nullptr;
-	edict_t *nearest = findNearestEntity(ladder,
-			(m_top + m_bottom) * 0.5f, HalfHumanWidth);
-	if (nearest != nullptr) {
-		m_ladderEntity = nearest->GetIServerEntity();
-	}
+
 }
 
 
@@ -566,19 +565,28 @@ public:
 		m_ignore = ignore;
 	}
 
-	bool operator() ( edict_t *ent )
+	bool operator() ( edict_t *entity )
 	{
-		if (ent == m_ignore)
+		if (entity == m_ignore)
 			return true;
-		IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
 
-		if (!BasePlayer(ent).isOnLadder())
+		CBaseExtPlayer player(entity);
+
+		if (!player.IsOnLadder())
 			return true;
+
 		// player is on a ladder - is it this one?
-		const Vector &feet = player->GetAbsOrigin();
-		return feet.z > m_ladder->m_top.z + HalfHumanHeight
-				|| feet.z + HumanHeight < m_ladder->m_bottom.z - HalfHumanHeight
-				|| Vector2D( m_ladder->m_bottom.x - feet.x, m_ladder->m_bottom.y - feet.y ).IsLengthGreaterThan( 50.0f );
+		const Vector& feet = player.GetAbsOrigin();
+
+		if (feet.z > m_ladder->m_top.z + HalfHumanHeight)
+			return true;
+
+		if (feet.z + HumanHeight < m_ladder->m_bottom.z - HalfHumanHeight)
+			return true;
+
+		Vector2D away(m_ladder->m_bottom.x - feet.x, m_ladder->m_bottom.y - feet.y);
+		const float onLadderRange = 50.0f;
+		return away.IsLengthGreaterThan(onLadderRange);
 	}
 
 	const CNavLadder *m_ladder;

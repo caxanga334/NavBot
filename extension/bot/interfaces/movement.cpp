@@ -7,9 +7,9 @@
 #include <navmesh/nav_ladder.h>
 #include <manager.h>
 #include <mods/basemod.h>
-#include <util/EntityUtils.h>
 #include <util/entprops.h>
 #include <util/helpers.h>
+#include <entities/baseentity.h>
 #include "movement.h"
 
 extern CExtManager* extmanager;
@@ -19,46 +19,41 @@ constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
 constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
-	CTraceFilterSimple(bot->GetEdict()->GetIServerEntity(), COLLISION_GROUP_PLAYER_MOVEMENT)
+	trace::CTraceFilterSimple(bot->GetEntity(), COLLISION_GROUP_NONE)
 {
 	m_me = bot;
 	m_mover = mover;
 	m_now = now;
 }
 
-bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+bool CMovementTraverseFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
 {
-	edict_t* entity = entityFromEntityHandle(pHandleEntity);
-
-	if (entity == m_me->GetEdict())
+	if (pEntity != nullptr && pEdict != nullptr)
 	{
-		return false; // don't hit the bot
-	}
+		if (pEntity == m_me->GetEntity())
+		{
+			return false; // Don't hit myself
+		}
 
-	if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
-	{
-		return !m_mover->IsEntityTraversable(entity, m_now);
+		if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
+		{
+			return !m_mover->IsEntityTraversable(pEdict, m_now);
+		}
 	}
 
 	return false;
 }
 
-CTraceFilterOnlyActors::CTraceFilterOnlyActors(const IHandleEntity* handleentity) :
-	CTraceFilterSimple(handleentity, COLLISION_GROUP_NONE, nullptr)
+CTraceFilterOnlyActors::CTraceFilterOnlyActors(CBaseEntity* pPassEnt, int collisionGroup) :
+	trace::CTraceFilterSimple(pPassEnt, collisionGroup)
 {
 }
 
-bool CTraceFilterOnlyActors::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+bool CTraceFilterOnlyActors::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
 {
-	if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+	if (trace::CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
 	{
-		edict_t* entity = entityFromEntityHandle(pHandleEntity);
-		int index = gamehelpers->IndexOfEdict(entity);
-
-		if (UtilHelpers::IsPlayerIndex(index))
-		{
-			return true; // hit players
-		}
+		return UtilHelpers::IsPlayerIndex(entity);
 	}
 
 	return false;
@@ -425,7 +420,7 @@ bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity)
 		return false;
 	}
 
-	if (FClassnameIs(entity, "func_door*") == true || FClassnameIs(entity, "prop_door*") == true)
+	if (UtilHelpers::FClassnameIs(entity, "func_door*") == true || UtilHelpers::FClassnameIs(entity, "prop_door*") == true)
 	{
 		return false; // never climb doors
 	}
@@ -455,11 +450,10 @@ bool IMovement::IsOnLadder()
 bool IMovement::IsGap(const Vector& pos, const Vector& forward)
 {
 	trace_t result;
-	CTraceFilterNoNPCsOrPlayer filter(GetBot()->GetEdict()->GetIServerEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
+	trace::CTraceFilterNoNPCsOrPlayers filter(GetBot()->GetEntity(), COLLISION_GROUP_NONE);
 	Vector start = pos + Vector(0.0f, 0.0f, GetStepHeight());
 	Vector end = pos + Vector(0.0f, 0.0f, -GetMaxJumpHeight());
-	UTIL_TraceLine(start, end, GetMovementTraceMask(), &filter, &result);
-
+	trace::line(start, end, GetMovementTraceMask(), &filter, result);
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
@@ -493,7 +487,7 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 	const float height = GetStepHeight();
 	Vector mins(-hullsize, -hullsize, height);
 	Vector maxs(hullsize, hullsize, GetCrouchedHullHeigh());
-	UTIL_TraceHull(from, to, mins, maxs, GetMovementTraceMask(), nullptr, COLLISION_GROUP_NONE, &result);
+	trace::hull(from, to, mins, maxs, GetMovementTraceMask(), &filter, result);
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
@@ -558,12 +552,12 @@ bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
 		return false;
 	}
 
-	if (FClassnameIs(entity, "func_door*") == true)
+	if (UtilHelpers::FClassnameIs(entity, "func_door*") == true)
 	{
 		return true;
 	}
 
-	if (FClassnameIs(entity, "prop_door*") == true)
+	if (UtilHelpers::FClassnameIs(entity, "prop_door*") == true)
 	{
 		int doorstate = 0;
 		if (entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate) == false)
@@ -580,24 +574,19 @@ bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
 		}
 	}
 
-	if (FClassnameIs(entity, "func_brush") == true)
+	if (UtilHelpers::FClassnameIs(entity, "func_brush") == true)
 	{
-		int solidity = 0;
-		if (entprops->GetEntProp(index, Prop_Data, "m_iSolidity", solidity) == true)
+		entities::HFuncBrush brush(gamehelpers->EdictOfIndex(index));
+		auto solidity = brush.GetSolidity();
+		
+		switch (solidity)
 		{
-			switch (solidity)
-			{
-			case BRUSHSOLID_NEVER:
-			case BRUSHSOLID_TOGGLE:
-			{
-				return true;
-			}
-			case BRUSHSOLID_ALWAYS:
-			default:
-			{
-				return false;
-			}
-			}
+		case entities::HFuncBrush::BRUSHSOLID_TOGGLE:
+		case entities::HFuncBrush::BRUSHSOLID_NEVER:
+			return true;
+		case entities::HFuncBrush::BRUSHSOLID_ALWAYS:
+		default:
+			return false;
 		}
 	}
 
@@ -669,14 +658,14 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 		return;
 	}
 
-	CTraceFilterNoNPCsOrPlayer filter(GetBot()->GetHandleEntity(), COLLISION_GROUP_NONE);
+	trace::CTraceFilterNoNPCsOrPlayers filter(GetBot()->GetEntity(), COLLISION_GROUP_NONE);
 	trace_t result;
 	float hullwidth = GetHullWidth();
 	Vector mins(-hullwidth, -hullwidth, GetStepHeight());
 	Vector maxs(hullwidth, hullwidth, GetStandingHullHeigh());
 	const Vector& endPos = *crosspoint;
 	
-	UTIL_TraceHull(fromPos, endPos, mins, maxs, GetMovementTraceMask(), filter, &result);
+	trace::hull(fromPos, endPos, mins, maxs, GetMovementTraceMask(), &filter, result);
 
 	if (!result.DidHit())
 	{
@@ -690,7 +679,7 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 
 	// direct path is blocked, try left first
 
-	UTIL_TraceHull(fromPos, endPos + (left * hullwidth), mins, maxs, GetMovementTraceMask(), filter, &result);
+	trace::hull(fromPos, endPos + (left * hullwidth), mins, maxs, GetMovementTraceMask(), &filter, result);
 
 	if (!result.DidHit())
 	{
@@ -705,8 +694,7 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 	}
 
 	// try right
-
-	UTIL_TraceHull(fromPos, endPos + (left * -hullwidth), mins, maxs, GetMovementTraceMask(), filter, &result);
+	trace::hull(fromPos, endPos + (left * -hullwidth), mins, maxs, GetMovementTraceMask(), &filter, result);
 
 	if (!result.DidHit())
 	{

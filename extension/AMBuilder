@@ -37,10 +37,6 @@ sourceFiles = [
   'navmesh/nav_node.cpp',
   'navmesh/nav_simplify.cpp',
   # Utility
-  'util/BaseEntity.cpp',
-  'util/EntityUtils.cpp',
-  'util/SimpleException.cpp',
-  'util/UtilTrace.cpp',
   'util/entprops.cpp',
   'util/helpers.cpp',
   'util/librandom.cpp',

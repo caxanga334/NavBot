@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <sdkports/sdk_timers.h>
+#include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"
 #include "tf2bot_map_ctf.h"
@@ -116,8 +117,7 @@ TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskStart(CTF2Bot* bot, AITask<
 	CTraceFilterWorldAndPropsOnly filter;
 	trace_t result;
 	// get the ground position
-	UTIL_TraceLine(center, center + Vector(0.0f, 0.0f, -2048.0f), MASK_PLAYERSOLID_BRUSHONLY, 
-		reinterpret_cast<IServerEntity*>(bot->GetEntity()), COLLISION_GROUP_PLAYER_MOVEMENT, &result);
+	trace::line(center, center + Vector(0.0f, 0.0f, -2048.0f), MASK_PLAYERSOLID_BRUSHONLY, bot->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT, result);
 
 	if (!result.DidHit())
 	{

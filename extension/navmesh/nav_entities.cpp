@@ -24,7 +24,7 @@ extern NavAreaVector TheNavAreas;
 
 #if SOURCE_ENGINE == SE_DODS
 
-inline char* V_strdup(const char* pSrc)
+inline static char* V_strdup(const char* pSrc)
 {
 	int nLen = V_strlen(pSrc);
 	char* pResult = new char[nLen + 1];

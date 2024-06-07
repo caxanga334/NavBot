@@ -18,12 +18,12 @@
 #include <util/librandom.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_utils.h>
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_entities.h"
 #include "nav_colors.h"
-#include <util/EntityUtils.h>
 #include <eiface.h>
 #include <Color.h>
 #include <iplayerinfo.h>
@@ -4709,7 +4709,7 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 //--------------------------------------------------------------------------------------------------------
 void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent )
 {
-	if ( blocker && FClassnameIs(blocker,  "func_nav_blocker" ) )
+	if ( blocker && UtilHelpers::FClassnameIs(blocker,  "func_nav_blocker" ) )
 	{
 		m_attributeFlags |= NAV_MESH_NAV_BLOCKER;
 	}

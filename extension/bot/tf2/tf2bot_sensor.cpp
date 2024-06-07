@@ -1,7 +1,6 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
-#include <util/EntityUtils.h>
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
 

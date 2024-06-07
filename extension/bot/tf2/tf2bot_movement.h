@@ -10,29 +10,29 @@ class CTF2BotMovement : public IMovement
 {
 public:
 	CTF2BotMovement(CBaseBot* bot);
-	virtual ~CTF2BotMovement();
+	~CTF2BotMovement() override;
 
 	static constexpr float PLAYER_HULL_WIDTH = 48.0f;
 	static constexpr float PLAYER_HULL_STAND = 82.0f;
 	static constexpr float PLAYER_HULL_CROUCH = 62.0f;
 
-	virtual void Reset() override;
-	virtual void Frame() override;
+	void Reset() override;
+	void Frame() override;
 
-	virtual float GetHullWidth() override;
-	virtual float GetStandingHullHeigh() override;
-	virtual float GetCrouchedHullHeigh() override;
+	float GetHullWidth() override;
+	float GetStandingHullHeigh() override;
+	float GetCrouchedHullHeigh() override;
 	// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Mapper%27s_Reference#Jump_Distances
-	virtual float GetMaxDoubleJumpHeight() const override { return 110.0f; } // add some safety margin
-	virtual float GetMaxGapJumpDistance() const override;
+	float GetMaxDoubleJumpHeight() const override { return 110.0f; } // add some safety margin
+	float GetMaxGapJumpDistance() const override;
 
-	virtual void DoubleJump() override;
+	void DoubleJump() override;
 
-	virtual bool IsAbleToDoubleJump() override;
+	bool IsAbleToDoubleJump() override;
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
-	virtual bool IsAbleToBlastJump() override;
-
-	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward) override;
+	bool IsAbleToBlastJump() override;
+	void JumpAcrossGap(const Vector& landing, const Vector& forward) override;
+	bool IsEntityTraversable(edict_t* entity, const bool now = true) override;
 
 private:
 	CTF2Bot* GetTF2Bot() const;

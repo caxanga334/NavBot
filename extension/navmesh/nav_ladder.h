@@ -24,8 +24,6 @@ class CUtlBuffer;
 class CNavMesh;
 class IServerEntity;
 
-typedef CHandle<IServerEntity> EHandle;
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * The NavLadder represents ladders in the Navigation Mesh, and their connections to adjacent NavAreas
@@ -100,12 +98,12 @@ public:
 	void Shift( const Vector &shift );							///< shift the nav ladder
 
 	bool IsUsableByTeam( int teamNumber ) const;
-	IServerEntity *GetLadderEntity( void ) const;
+	CBaseEntity* GetLadderEntity(void) const { return m_ladderEntity.Get(); }
 
 private:
 	void FindLadderEntity( void );
 
-	EHandle m_ladderEntity;
+	CHandle<CBaseEntity> m_ladderEntity;
 
 	NavDirType m_dir;								///< which way the ladder faces (ie: surface normal of climbable side)
 	Vector m_normal;								///< surface normal of the ladder surface (or Vector-ized m_dir, if the traceline fails)
@@ -126,13 +124,6 @@ private:
 	static unsigned int m_nextID;					///< used to allocate unique IDs
 	unsigned int m_id;								///< unique area ID
 };
-
-//--------------------------------------------------------------------------------------------------------------
-inline IServerEntity *CNavLadder::GetLadderEntity( void ) const
-{
-	return m_ladderEntity.Get();
-}
-
 
 //--------------------------------------------------------------------------------------------------------------
 inline NavDirType CNavLadder::GetDir( void ) const

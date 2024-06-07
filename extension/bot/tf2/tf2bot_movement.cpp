@@ -159,6 +159,20 @@ void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward
 	}
 }
 
+bool CTF2BotMovement::IsEntityTraversable(edict_t* entity, const bool now)
+{
+	int index = gamehelpers->IndexOfEdict(entity);
+	auto team = tf2lib::GetEntityTFTeam(index);
+
+	/* TO-DO: check solid teammates cvar */
+	if (UtilHelpers::IsPlayerIndex(index) && GetTF2Bot()->GetMyTFTeam() == team)
+	{
+		return true;
+	}
+
+	return IMovement::IsEntityTraversable(entity, now);
+}
+
 CTF2Bot* CTF2BotMovement::GetTF2Bot() const
 {
 	return static_cast<CTF2Bot*>(GetBot());

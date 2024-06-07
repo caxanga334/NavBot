@@ -2,10 +2,11 @@
 
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_traces.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/movement.h>
 #include <bot/interfaces/playercontrol.h>
-#include <util/EntityUtils.h>
+#include <util/helpers.h>
 #include <util/librandom.h>
 #include <entities/baseentity.h>
 #include <manager.h>
@@ -606,7 +607,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	Vector feet = origin;
 	Vector ceiling(feet + Vector(0.0f, 0.0f, mover->GetMaxJumpHeight()));
 
-	UTIL_TraceHull(feet, ceiling, skipStepHeightHullMin, skipStepHeightHullMax, mask, filter, &result);
+	trace::hull(feet, ceiling, skipStepHeightHullMin, skipStepHeightHullMax, mask, &filter, result);
 
 	ceilingFraction = result.fraction;
 
@@ -618,7 +619,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 		Vector backupFeet(feet - climbDir * backupDist);
 		Vector backupCeiling(backupFeet + Vector(0, 0, mover->GetMaxJumpHeight()));
 
-		UTIL_TraceHull(backupFeet, backupCeiling, skipStepHeightHullMin, skipStepHeightHullMax, mask, filter, &backupresult);
+		trace::hull(backupFeet, backupCeiling, skipStepHeightHullMin, skipStepHeightHullMax, mask, &filter, backupresult);
 
 		if (backupresult.startsolid == false && backupresult.fraction > ceilingFraction)
 		{
@@ -641,7 +642,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 	Vector ledgePos = feet;
 
-	UTIL_TraceHull(feet, feet + climbDir * ledgeLookAheadDist, skipStepHeightHullMin, climbHullMax, mask, filter, &result);
+	trace::hull(feet, feet + climbDir * ledgeLookAheadDist, skipStepHeightHullMin, climbHullMax, mask, &filter, result);
 
 	if (bot->IsDebugging(BOTDEBUG_PATH) && debug)
 	{
@@ -705,8 +706,9 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 			bool isLastIteration = false;
 			while (true)
 			{
-				UTIL_TraceHull(feet + Vector(0.0f, 0.0f, ledgeHeight), feet + Vector(0.0f, 0.0f, ledgeHeight) + climbDir * ledgeTopLookAheadRange,
-					climbHullMin, climbHullMax, mask, filter, &result);
+
+				trace::hull(feet + Vector(0.0f, 0.0f, ledgeHeight), feet + Vector(0.0f, 0.0f, ledgeHeight) + climbDir * ledgeTopLookAheadRange,
+					climbHullMin, climbHullMax, mask, &filter, result);
 
 				float traceDepth = ledgeTopLookAheadRange * result.fraction;
 
@@ -719,7 +721,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 							bool isUsable = true;
 							ledgePos = result.endpos;
 
-							UTIL_TraceHull(ledgePos, ledgePos + Vector(0, 0, -ledgeHeightIncrement), climbHullMin, climbHullMax, mask, filter, &result);
+							trace::hull(ledgePos, ledgePos + Vector(0, 0, -ledgeHeightIncrement), climbHullMin, climbHullMax, mask, &filter, result);
 
 							ledgePos = result.endpos;
 
@@ -759,7 +761,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 									testPos -= edgeTolerance * climbDir;
 									backUpSoFar += edgeTolerance;
 
-									UTIL_TraceHull(testPos, Vector(0.0f, 0.0f, -ledgeHeightIncrement), climbHullMin, climbHullMax, mask, filter, &result);
+									trace::hull(testPos, Vector(0.0f, 0.0f, -ledgeHeightIncrement), climbHullMin, climbHullMax, mask, &filter, result);
 
 									if (bot->IsDebugging(BOTDEBUG_PATH) && debug)
 									{
@@ -780,12 +782,12 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 								ledgePos += climbDir * halfWidth;
 								Vector climbHullMinStep(climbHullMin);
 
-								UTIL_TraceHull(validLedgePos, ledgePos, climbHullMinStep, climbHullMax, mask, filter, &result);
+								trace::hull(validLedgePos, ledgePos, climbHullMinStep, climbHullMax, mask, &filter, result);
 
 								ledgePos = result.endpos;
 
 								// now that we have a ledge position, trace to find the actual ground
-								UTIL_TraceHull(ledgePos + Vector(0.0f, 0.0f, mover->GetStepHeight()), ledgePos, climbHullMin, climbHullMax, mask, filter, &result);
+								trace::hull(ledgePos + Vector(0.0f, 0.0f, mover->GetStepHeight()), ledgePos, climbHullMin, climbHullMax, mask, &filter, result);
 
 								if (!result.startsolid)
 								{
@@ -976,7 +978,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	m_didAvoidCheck = true;
 
 	trace_t result;
-	CTraceFilterNoNPCsOrPlayer filter(bot->GetEdict()->GetIServerEntity(), COLLISION_GROUP_NONE);
+	trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 
 	unsigned int mask = mover->GetMovementTraceMask();
 
@@ -1001,7 +1003,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	float leftAvoid = 0.0f;
 
 	CMovementTraverseFilter movementfilter(bot, mover, false);
-	UTIL_TraceHull(leftFrom, leftTo, hullMin, hullMax, mask, movementfilter, &result);
+	trace::hull(leftFrom, leftTo, hullMin, hullMax, mask, &movementfilter, result);
 
 	if (result.fraction < 1.0f || result.startsolid)
 	{
@@ -1018,7 +1020,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 		// track any doors we need to avoid
 		if (result.DidHitNonWorldEntity())
 		{
-			if (FClassnameIs(result.m_pEnt, "prop_door*"))
+			if (UtilHelpers::FClassnameIs(result.m_pEnt, "prop_door*"))
 			{
 				door = result.m_pEnt;
 			}
@@ -1032,7 +1034,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	bool isRightClear = true;
 	float rightAvoid = 0.0f;
 
-	UTIL_TraceHull(rightFrom, rightTo, hullMin, hullMax, mask, movementfilter, &result);
+	trace::hull(rightFrom, rightTo, hullMin, hullMax, mask, &movementfilter, result);
 
 	if (result.fraction < 1.0f || result.startsolid)
 	{
@@ -1048,7 +1050,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 		if (result.DidHitNonWorldEntity())
 		{
-			if (FClassnameIs(result.m_pEnt, "prop_door*"))
+			if (UtilHelpers::FClassnameIs(result.m_pEnt, "prop_door*"))
 			{
 				door = result.m_pEnt;
 			}
@@ -1142,7 +1144,7 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 
 	edict_t* blocker = nullptr;
 	trace_t result;
-	CTraceFilterOnlyActors filter(bot->GetEdict()->GetIServerEntity());
+	CTraceFilterOnlyActors filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 
 	const float size = mover->GetHullWidth() / 4.0f;
 	Vector mins(-size, -size, mover->GetStepHeight());
@@ -1168,7 +1170,7 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 			traceRange = minTraceRange;
 		}
 
-		UTIL_TraceHull(from, from + traceRange * traceforward, mins, maxs, mask, filter, &result);
+		trace::hull(from, from + traceRange * traceforward, mins, maxs, mask, &filter, result);
 
 		if (result.DidHitNonWorldEntity())
 		{

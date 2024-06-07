@@ -3,7 +3,6 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
-#include <util/EntityUtils.h>
 #include <util/librandom.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/debugoverlay_shared.h>

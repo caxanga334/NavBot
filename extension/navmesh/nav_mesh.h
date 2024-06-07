@@ -33,7 +33,6 @@
 #include <ITranslator.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
-#include <sdkports/sdk_traces.h>
 #include <shareddefs.h>
 #include <convar.h>
 
@@ -769,7 +768,7 @@ protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
 	virtual void RemoveNavArea( CNavArea *area );				// remove an area from the grid
-	bool FindGroundForNode( Vector *pos, Vector *normal );
+	bool FindGroundForNode( Vector *pos, Vector *normal ) const;
 	void GenerateNodes( const Extent &bounds );
 	void RemoveNodes( void );
 

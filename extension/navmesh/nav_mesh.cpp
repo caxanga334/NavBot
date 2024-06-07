@@ -15,6 +15,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_traces.h>
 #include <entities/baseentity.h>
 
 #include "nav_mesh.h"
@@ -881,7 +882,8 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	{
 		// trace directly down to see if it's below us and unobstructed
 		trace_t result;
-		UTIL_TraceLine( testPos, Vector( testPos.x, testPos.y, useZ ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+		trace::line(testPos, Vector(testPos.x, testPos.y, useZ), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+
 		if ( ( result.fraction != 1.0f ) && ( fabs( result.endpos.z - useZ ) > flStepHeight ) )
 			return NULL;
 	}
@@ -1016,8 +1018,9 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						trace_t result;
 
 						// make sure 'pos' is not embedded in the world
-						UTIL_TraceLine( pos, pos + Vector( 0, 0, StepHeight ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
-							// it was embedded - move it out
+						trace::line(pos, pos + Vector(0, 0, StepHeight), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+
+						// it was embedded - move it out
 						Vector safePos = result.startsolid ? result.endpos + Vector( 0, 0, 1.0f )
 									: pos;
 
@@ -1026,7 +1029,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						if ( heightDelta > StepHeight )
 						{
 							// trace to the height of the original point
-							UTIL_TraceLine( areaPos + Vector( 0, 0, StepHeight ), Vector( areaPos.x, areaPos.y, safePos.z ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+							trace::line(areaPos + Vector(0, 0, StepHeight), Vector(areaPos.x, areaPos.y, safePos.z), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 							
 							if ( result.fraction != 1.0f )
 							{
@@ -1035,7 +1038,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						}
 
 						// trace to the original point's height above the area
-						UTIL_TraceLine( safePos, Vector( areaPos.x, areaPos.y, safePos.z + StepHeight ), MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+						trace::line(safePos, Vector(areaPos.x, areaPos.y, safePos.z + StepHeight), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 						if ( result.fraction != 1.0f )
 						{
@@ -1495,59 +1498,69 @@ void CNavMesh::PrintAllPlaces( void ) const
 	Msg("\n\n");
 }
 
-class CTraceFilterGroundEntities : public CTraceFilterWalkableEntities
+class CTraceFilterGroundEntities : public trace::CTraceFilterWalkableEntities
 {
-	typedef CTraceFilterWalkableEntities BaseClass;
+	typedef trace::CTraceFilterWalkableEntities BaseClass;
 
 public:
-	CTraceFilterGroundEntities( const IHandleEntity *passentity, int collisionGroup, unsigned int flags )
+	CTraceFilterGroundEntities(CBaseEntity* passentity, int collisionGroup, unsigned int flags)
 		: BaseClass( passentity, collisionGroup, flags )
 	{
 	}
 
-	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask )
+	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override
 	{
-		edict_t *pEntity =
-				reinterpret_cast<IServerUnknown*>(pServerEntity)->GetNetworkable()->GetEdict();
-		return !FClassnameIs( pEntity, "prop_door" )
-				&& !FClassnameIs( pEntity, "prop_door_rotating" )
-				&& !FClassnameIs( pEntity, "func_breakable" )
-				&& BaseClass::ShouldHitEntity( pServerEntity, contentsMask );
+		if (pEntity != nullptr)
+		{
+			if (UtilHelpers::FClassnameIs(pEntity, "prop_door") || 
+				UtilHelpers::FClassnameIs(pEntity, "prop_door_rotating") || 
+				UtilHelpers::FClassnameIs(pEntity, "func_breakable"))
+			{
+				return false;
+			}
+		}
+
+		return BaseClass::ShouldHitEntity(entity, pEntity, pEdict, contentsMask);
 	}
 };
 
 bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal )
 {
-	VPROF( "CNavMesh::GetGroundHeight" );
-
 	const float flMaxOffset = 100.0f;
 
-	CTraceFilterGroundEntities filter( NULL, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
+	CTraceFilterGroundEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
 
 	trace_t result;
 	Vector to( pos.x, pos.y, pos.z - 10000.0f );
 	Vector from( pos.x, pos.y, pos.z + HalfHumanHeight + 1e-3 );
+
 	while( to.z - pos.z < flMaxOffset ) 
 	{
-		UTIL_TraceLine( from, to, MASK_NPCSOLID_BRUSHONLY, &filter, &result );
-		if ( !result.startsolid && (( result.fraction == 1.0f ) || ( ( from.z - result.endpos.z ) >= HalfHumanHeight ) ) )
+		trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, &filter, result);
+
+		if (!result.startsolid && ((result.fraction == 1.0f) || ((from.z - result.endpos.z) >= HalfHumanHeight)))
 		{
 			*height = result.endpos.z;
-			if ( normal )
+
+			if (normal)
 			{
-				*normal = !result.plane.normal.IsZero() ? result.plane.normal : Vector( 0, 0, 1 );
+				*normal = !result.plane.normal.IsZero() ? result.plane.normal : Vector(0, 0, 1);
 			}
+
 			return true;
-		}	  
+		}
+
 		to.z = ( result.startsolid ) ? from.z : result.endpos.z;
 		from.z = to.z + HalfHumanHeight + 1e-3;
 	}
 
 	*height = 0.0f;
+
 	if ( normal )
 	{
 		normal->Init( 0.0f, 0.0f, 1.0f );
 	}
+
 	return false;
 }
 
@@ -1567,7 +1580,7 @@ bool CNavMesh::GetSimpleGroundHeight( const Vector &pos, float *height, Vector *
 
 	trace_t result;
 
-	UTIL_TraceLine( pos, to, MASK_NPCSOLID_BRUSHONLY, NULL, COLLISION_GROUP_NONE, &result );
+	trace::line(pos, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 	if (result.startsolid)
 		return false;
@@ -2880,13 +2893,8 @@ void CNavMesh::CommandNavMarkWalkable( void )
 	else
 	{
 		// we are not in edit mode, use the position of the local player
-		IPlayerInfo *player = UTIL_GetListenServerHost();
-		if (player == NULL)
-		{
-			Msg( "ERROR: No local player!\n" );
-			return;
-		}
-		pos = player->GetAbsOrigin();
+		entities::HBaseEntity be(gamehelpers->EdictOfIndex(1));
+		pos = be.GetAbsOrigin();
 	}
 
 	// snap position to the sampling grid

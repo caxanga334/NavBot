@@ -137,37 +137,23 @@ float CNavMesh::SnapToGrid( float x, bool forceGrid ) const
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::GetEditVectors( Vector *pos, Vector *forward )
 {
-	if ( !pos || !forward )
+	if (!pos || !forward)
 	{
 		return;
 	}
 
-	
-	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
 
-	//DOTA places the edit cursor where the 2D cursor is located.
-#ifdef DOTA_SERVER_DLL
-	CDOTAPlayer *pDOTAPlayer = ToDOTAPlayer( player );
-
-	if ( pDOTAPlayer && pDOTAPlayer->GetMoveType() != MOVETYPE_NOCLIP )
+	if (ent == nullptr)
 	{
-		Vector dir = pDOTAPlayer->GetCrosshairTracePos() - EyePosition();
-		VectorNormalize( dir );
-
-		*forward = dir;
+		return;
 	}
-	else
-	{
-		AngleVectors( EyeAngles() + player->GetPunchAngle(), forward );
-	}
-#else
-	*pos = host.GetEyeOrigin();
-	host.EyeVectors(forward);
-#endif
 
-#ifdef SERVER_USES_VGUI
-//	GetNavUIEditVectors( pos, forward );
-#endif // SERVER_USES_VGUI
+	CBaseExtPlayer player(ent);
+
+	Vector dir;
+	AngleVectors(player.GetEyeAngles() /* + player->GetPunchAngle() */, forward);
+	*pos = player.GetEyeOrigin();
 }
 
 
@@ -328,8 +314,6 @@ bool CNavMesh::FindActiveNavArea( void )
 	}
 
 	entities::HBaseEntity player(ent);
-	CBaseEntity* be;
-	player.GetEntity(&be, nullptr);
 
 	Vector from, dir;
 	GetEditVectors( &from, &dir );
@@ -354,7 +338,7 @@ bool CNavMesh::FindActiveNavArea( void )
 	Vector to = from + maxRange * dir;
 
 	trace_t result;
-	trace::CTraceFilterWalkableEntities filter(be, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
 	trace::line(from, to, (sm_nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, result);
 
 	if (result.fraction != 1.0f)
@@ -871,16 +855,16 @@ void CNavMesh::DrawEditMode( void )
 				// print ladder info
 				char buffer[80];
 
-				IServerEntity *ladderEntity = m_selectedLadder->GetLadderEntity();
+				CBaseEntity *ladderEntity = m_selectedLadder->GetLadderEntity();
 				if ( ladderEntity )
 				{
-					V_snprintf(buffer, sizeof(buffer), "Ladder #%d (Team %d)\n",
-							m_selectedLadder->GetID(), entities::HBaseEntity(ladderEntity->GetNetworkable()->GetEdict()).GetTeam());
+					V_snprintf(buffer, sizeof(buffer), "Ladder #%d (Team %d)\n", m_selectedLadder->GetID(), entities::HBaseEntity(ladderEntity).GetTeam());
 				}
 				else
 				{
 					V_snprintf( buffer, sizeof( buffer ), "Ladder #%d\n", m_selectedLadder->GetID() );
 				}
+
 				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255,
 						0, 128, buffer);
 			}

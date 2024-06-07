@@ -9,6 +9,11 @@
 // AI Navigation Nodes
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <extension.h>
+#include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_utils.h>
+
 #include "nav_node.h"
 
 #include "nav_colors.h"
@@ -16,9 +21,7 @@
 #include "nav.h"
 #include "tier1/utlhash.h"
 #include "tier1/generichash.h"
-#include <eiface.h>
-#include <ivdebugoverlay.h>
-#include <iplayerinfo.h>
+
 
 NavDirType Opposite[ NUM_DIRECTIONS ] = { SOUTH, WEST, NORTH, EAST };
 
@@ -207,14 +210,15 @@ void Text(const Vector &origin, const char *text, bool bViewCheck,
 	// Clip text that is obscured
 	if (bViewCheck) {
 		trace_t tr;
-		UTIL_TraceLine(player->GetAbsOrigin(), origin, MASK_OPAQUE, NULL,
-				COLLISION_GROUP_NONE, &tr);
+
+		trace::line(player->GetAbsOrigin(), origin, MASK_OPAQUE, nullptr, COLLISION_GROUP_NONE, tr);
 
 		if ((tr.endpos - origin).Length() > 10)
 			return;
 	}
 
-	if (debugoverlay) {
+	if (debugoverlay)
+	{
 		debugoverlay->AddTextOverlay(origin, duration, "%s", text);
 	}
 }
@@ -353,13 +357,13 @@ float CNavNode::GetGroundHeightAboveNode( NavCornerType cornerType ) const
  */
 bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, const Vector& maxs, float *groundHeightAboveNode )
 {
-	CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING );
+	trace::CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_EVERYTHING);
 	trace_t tr;
 
 	Vector start( m_pos );
 	Vector end( start );
 	end.z += JumpCrouchHeight;
-	UTIL_TraceHull( start, end, NavTraceMins, NavTraceMaxs, MASK_NPCSOLID_BRUSHONLY, filter, &tr );
+	trace::hull(start, end, NavTraceMins, NavTraceMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
 
 	float maxHeight = tr.endpos.z - start.z;
 
@@ -371,14 +375,18 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 		start.z += height;
 
 		realMaxs.z = HumanCrouchHeight;
-		UTIL_TraceHull( start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, filter, &tr );
+
+		trace::hull(start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
+
 		if ( !tr.startsolid )
 		{
 			*groundHeightAboveNode = start.z - m_pos.z;
 
 			// We found a crouch-sized space.  See if we can stand up.
 			realMaxs.z = HumanHeight;
-			UTIL_TraceHull( start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, filter, &tr );
+
+			trace::hull(start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
+
 			if ( !tr.startsolid )
 			{
 				// We found a crouch-sized space.  See if we can stand up.

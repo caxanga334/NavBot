@@ -3,17 +3,18 @@
 
 #include <bot/interfaces/base_interface.h>
 #include <sdkports/sdk_timers.h>
+#include <sdkports/sdk_traces.h>
 
 class CNavLadder;
 class CNavArea;
 class IMovement;
 
-class CMovementTraverseFilter : public CTraceFilterSimple
+class CMovementTraverseFilter : public trace::CTraceFilterSimple
 {
 public:
 	CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now = true);
 
-	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
 
 private:
 	CBaseBot* m_me;
@@ -21,17 +22,17 @@ private:
 	bool m_now;
 };
 
-class CTraceFilterOnlyActors : public CTraceFilterSimple
+class CTraceFilterOnlyActors : public trace::CTraceFilterSimple
 {
 public:
-	CTraceFilterOnlyActors(const IHandleEntity* handleentity);
+	CTraceFilterOnlyActors(CBaseEntity* pPassEnt, int collisionGroup);
 
 	virtual TraceType_t	GetTraceType() const override
 	{
 		return TRACE_ENTITIES_ONLY;
 	}
 
-	virtual bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
 };
 
 // Interface responsible for managing the bot's momvement and sending proper inputs to IPlayerController

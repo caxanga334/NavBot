@@ -321,7 +321,9 @@ namespace trace
 		}
 
 		if (pEdict != nullptr && !StandardFilterRules(pEdict, contentsMask))
+		{
 			return false;
+		}
 
 		if (m_passEntity != nullptr)
 		{
@@ -393,21 +395,25 @@ namespace trace
 	{
 		if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
 		{
+			// Don't hit players
 			if (entity > 0 && entity <= gpGlobals->maxClients)
 			{
 				return false;
 			}
 
+			// Don't hit NPCs
 			if (IsNPC(pEntity))
 			{
 				return false;
 			}
+
+			return true; // hit else
 		}
 
-		return true;
+		return false; // base class didn't hit
 	}
 
-	inline static bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
+	bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 	{
 		entities::HBaseEntity be(pEntity);
 

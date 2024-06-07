@@ -8,6 +8,7 @@
 #include <extension.h>
 #include "debugoverlay_shared.h"
 #include "mathlib/mathlib.h"
+#include "sdk_traces.h"
 #include "sdk_utils.h"
 #include <extplayer.h>
 
@@ -211,7 +212,7 @@ void NDebugOverlay::Text( const Vector &origin, const char *text, bool bViewChec
 	if (bViewCheck)
 	{
 		trace_t tr;
-		UTIL_TraceLine(player.GetAbsOrigin(), origin, MASK_OPAQUE, NULL, COLLISION_GROUP_NONE, &tr);
+		trace::line(player.GetAbsOrigin(), origin, MASK_OPAQUE, nullptr, COLLISION_GROUP_NONE, tr);
 		
 		if ((tr.endpos - origin).Length() > 10)
 			return;
@@ -368,11 +369,8 @@ void NDebugOverlay::DrawGroundCrossHairOverlay( void )
 	Vector vForward;
 	Vector vSource = player.GetEyeOrigin();
 	player.EyeVectors( &vForward );
-
-	auto edict = player.GetEdict();
-	const auto handleentity = static_cast<IHandleEntity*>(edict->GetUnknown());
 	trace_t tr;
-	UTIL_TraceLine ( vSource, vSource + vForward * 2048, MASK_SOLID, handleentity, COLLISION_GROUP_NONE, &tr);
+	trace::line(vSource, vSource + vForward * 2048, MASK_SOLID, player.GetEntity(), COLLISION_GROUP_NONE, tr);
 	float dotPr = DotProduct(Vector(0,0,1),tr.plane.normal);
 	if (tr.fraction != 1.0 &&  dotPr > 0.5)
 	{

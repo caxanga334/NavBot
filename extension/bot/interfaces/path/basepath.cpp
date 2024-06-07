@@ -493,12 +493,11 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 			Vector lowerPos = Vector(pos.x, pos.y, toPos.z);
 
 			trace_t result;
-			const IHandleEntity* botent = bot->GetEdict()->GetIServerEntity();
-			CTraceFilterNoNPCsOrPlayer filter(botent, COLLISION_GROUP_NONE);
+			trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 			Vector v1(-halfWidth, -halfWidth, mover->GetStepHeight());
 			Vector v2(halfWidth, halfWidth, hullHeight);
 
-			UTIL_TraceHull(pos, lowerPos, v1, v2, mover->GetMovementTraceMask(), filter, &result);
+			trace::hull(pos, lowerPos, v1, v2, mover->GetMovementTraceMask(), &filter, result);
 
 			if (result.fraction >= 1.0f)
 			{
@@ -528,12 +527,12 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 
 				// Sometimes there is a railing between the drop and the ground
 
-				CTraceFilterNoNPCsOrPlayer filter(bot->GetHandleEntity(), COLLISION_GROUP_NONE);
+				trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 				trace_t result;
 				Vector mins(-halfWidth, -halfWidth, mover->GetStepHeight());
 				Vector maxs(halfWidth, halfWidth, hullHeight);
 
-				UTIL_TraceHull(from->goal, startDrop, mins, maxs, mover->GetMovementTraceMask(), filter, &result);
+				trace::hull(from->goal, startDrop, mins, maxs, mover->GetMovementTraceMask(), &filter, result);
 
 				if (result.DidHit()) // probably collided with a railing
 				{

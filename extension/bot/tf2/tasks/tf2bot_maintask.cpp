@@ -6,6 +6,7 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/prediction.h>
+#include <sdkports/sdk_traces.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include "bot/tf2/tf2bot.h"
@@ -334,13 +335,13 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 {
 	if (player->GetGroundEntity() == nullptr) // target is airborne
 	{
-		CTraceFilterNoNPCsOrPlayer filter(me->GetEdict()->GetIServerEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
-		trace_t trace;
-		UTIL_TraceLine(player->GetAbsOrigin(), player->GetAbsOrigin() + Vector(0.0f, 0.0f, -256.0f), MASK_PLAYERSOLID, &filter, &trace);
+		trace::CTraceFilterNoNPCsOrPlayers filter(me->GetEntity(), COLLISION_GROUP_NONE);
+		trace_t tr;
+		trace::line(player->GetAbsOrigin(), player->GetAbsOrigin() + Vector(0.0f, 0.0f, -256.0f), MASK_PLAYERSOLID, &filter, tr);
 
-		if (trace.DidHit())
+		if (tr.DidHit())
 		{
-			result = trace.endpos;
+			result = tr.endpos;
 			return;
 		}
 	}

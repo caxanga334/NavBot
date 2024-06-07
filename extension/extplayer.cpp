@@ -200,7 +200,7 @@ int CBaseExtPlayer::GetCurrentTeamIndex() const
 	return m_playerinfo->GetTeamIndex();
 }
 
-MoveType_t CBaseExtPlayer::GetMoveType()
+MoveType_t CBaseExtPlayer::GetMoveType() const
 {
 	int movetype = 0;
 	
@@ -212,7 +212,7 @@ MoveType_t CBaseExtPlayer::GetMoveType()
 	return static_cast<MoveType_t>(movetype);
 }
 
-edict_t* CBaseExtPlayer::GetGroundEntity()
+edict_t* CBaseExtPlayer::GetGroundEntity() const
 {
 	int groundent = -1;
 	edict_t* entity = nullptr;

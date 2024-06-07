@@ -55,6 +55,13 @@ namespace trace
 			m_extraHitFunc = nullptr;
 		}
 
+		CTraceFilterSimple(CBaseEntity* pass, int collisiongroup)
+		{
+			m_passEntity = pass;
+			m_collisiongroup = collisiongroup;
+			m_extraHitFunc = nullptr;
+		}
+
 		CTraceFilterSimple(int collisiongroup, CBaseEntity* pass)
 		{
 			m_passEntity = pass;
@@ -197,6 +204,8 @@ namespace trace
 	{
 		return enginetrace->GetPointContents(point);
 	}
+
+	bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);
 }
 
 #endif // !NAVBOT_SDKPORTS_TRACES_H_

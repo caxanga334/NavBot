@@ -261,59 +261,6 @@ CON_COMMAND_F(sm_debug_cbasehandles, "Debug CBaseHandle", FCVAR_CHEAT)
 	Msg("Failed to get CBaseEntity! \n");
 }
 
-CON_COMMAND_F(sm_navbot_debug_traces1, "Trace debugging command #1", FCVAR_CHEAT)
-{
-	auto host = gamehelpers->EdictOfIndex(1);
-	entities::HBaseEntity entity(host);
-	CBaseExtPlayer player(host);
-
-	Vector mins = entity.WorldAlignMins();
-	Vector maxs = entity.WorldAlignMaxs();
-	Vector origin = entity.GetAbsOrigin();
-	Vector forward;
-	auto angles = player.GetEyeAngles();
-	player.EyeVectors(&forward);
-	forward.NormalizeInPlace();
-
-	CTraceFilterNoNPCsOrPlayer filter(host->GetIServerEntity(), COLLISION_GROUP_PLAYER);
-	trace_t result;
-
-	constexpr auto inc = 24.0f;
-	float length = inc;
-	Vector startpos = origin;
-	Vector endpos = origin + (forward * length);
-	bool loop = true;
-	while (loop)
-	{
-		UTIL_TraceHull(startpos, endpos, mins, maxs, MASK_PLAYERSOLID, filter, &result);
-
-		if (result.DidHit())
-		{
-			NDebugOverlay::SweptBox(startpos, endpos, mins, maxs, angles, 255, 0, 0, 255, 10.0f);
-			loop = false;
-
-			int entity = result.GetEntityIndex();
-			Msg("Hit entity %i \n", entity);
-
-			CBaseEntity* be = nullptr;
-			if (UtilHelpers::IndexToAThings(entity, &be, nullptr))
-			{
-				Msg("    %s  \n", gamehelpers->GetEntityClassname(be));
-			}
-		}
-		else
-		{
-			NDebugOverlay::SweptBox(startpos, endpos, mins, maxs, angles, 0, 255, 0, 255, 10.0f);
-		}
-
-		startpos = endpos;
-		length += inc;
-		endpos = origin + (forward * length);
-
-		if (length >= 2048.0f) { loop = false; break; }
-	}
-}
-
 CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_CHEAT)
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);

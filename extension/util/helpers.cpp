@@ -1,6 +1,7 @@
 #include <stdexcept>
 
 #include <extension.h>
+#include <sdkports/sdk_traces.h>
 #include <server_class.h>
 #include <studio.h>
 #include "helpers.h"
@@ -858,9 +859,9 @@ Vector UtilHelpers::GetGroundPositionFromCenter(edict_t* pEntity)
 {
 	Vector center = getWorldSpaceCenter(pEntity);
 
-	CTraceFilterSimple filter(pEntity->GetIServerEntity(), COLLISION_GROUP_NONE, nullptr);
+	trace::CTraceFilterSimple filter(reinterpret_cast<CBaseEntity*>(pEntity->GetIServerEntity()), COLLISION_GROUP_NONE);
 	trace_t result;
-	UTIL_TraceLine(center, center + Vector(0.0f, 0.0f, -4096.0f), MASK_SOLID, &filter, &result);
+	trace::line(center, center + Vector(0.0f, 0.0f, -4096.0f), MASK_SOLID, &filter, result);
 	return result.endpos + Vector(0.0f, 0.0f, 1.0f);
 }
 
