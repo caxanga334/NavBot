@@ -74,7 +74,7 @@ namespace trace
 		{
 			m_passEntity = pass;
 			m_collisiongroup = collisiongroup;
-			m_extraHitFunc = F;
+			m_extraHitFunc = extrafunc;
 		}
 
 		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
@@ -85,7 +85,7 @@ namespace trace
 		template <typename F>
 		void SetExtraFunc(F func)
 		{
-			m_extraHitFunc = F;
+			m_extraHitFunc = func;
 		}
 
 		void ClearExtraFunc() { m_extraHitFunc = nullptr; }
