@@ -17,7 +17,7 @@ class CTF2BotSensor;
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
 public:
-	AITask<CTF2Bot>* InitialNextTask() override;
+	AITask<CTF2Bot>* InitialNextTask(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	
 	TaskEventResponseResult<CTF2Bot> OnTestEventPropagation(CTF2Bot* bot) override;

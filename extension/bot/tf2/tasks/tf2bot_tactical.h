@@ -10,7 +10,7 @@ class CTF2Bot;
 class CTF2BotTacticalTask : public AITask<CTF2Bot>
 {
 public:
-	AITask<CTF2Bot>* InitialNextTask() override;
+	AITask<CTF2Bot>* InitialNextTask(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;

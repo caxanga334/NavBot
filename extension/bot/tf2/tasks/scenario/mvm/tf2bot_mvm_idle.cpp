@@ -33,22 +33,11 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
 		}
 
-		if (m_isready)
+		if (!bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)
 		{
-			// Bot is not ready yet, toggle ready mode
 			if (!bot->TournamentIsReady() && tf2lib::MVM_ShouldBotsReadyUp())
 			{
 				bot->ToggleTournamentReadyStatus(true);
-			}
-		}
-		else
-		{
-			CTFNavArea* area = static_cast<CTFNavArea*>(bot->GetLastKnownNavArea());
-
-			if (area && area->HasMVMAttributes(CTFNavArea::MVMNAV_FRONTLINES))
-			{
-				// bot is at a frontline area
-				m_isready = true;
 			}
 		}
 	}
@@ -62,13 +51,6 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	CTF2BotMvMUpgradeTask* upgradetask = dynamic_cast<CTF2BotMvMUpgradeTask*>(pastTask);
-
-	if (upgradetask != nullptr)
-	{
-		m_isready = false; // we just used an upgrade station, go back to the frontlines
-	}
-
 	return Continue();
 }
 
@@ -80,4 +62,36 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMvMIdleTask::OnMoveToFailure(CTF2Bot* bo
 TaskEventResponseResult<CTF2Bot> CTF2BotMvMIdleTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
 {
 	return TryContinue();
+}
+
+QueryAnswerType CTF2BotMvMIdleTask::IsReady(CBaseBot* me)
+{
+	CTF2Bot* tf2bot = static_cast<CTF2Bot*>(me);
+	auto& manager = tf2bot->GetUpgradeManager();
+
+	if (!manager.IsManagerReady() || manager.ShouldGoToAnUpgradeStation())
+	{
+		return ANSWER_NO;
+	}
+
+	auto myclass = tf2bot->GetMyClassType();
+
+	if (myclass == TeamFortress2::TFClass_Medic)
+	{
+		// medic logic here
+		// check uber%
+	}
+	else if (myclass == TeamFortress2::TFClass_Engineer)
+	{
+		// all buildings must be level 3 and health, also check their position
+	}
+
+	CTFNavArea* area = static_cast<CTFNavArea*>(me->GetLastKnownNavArea());
+
+	if (area && !area->HasMVMAttributes(CTFNavArea::MVMNAV_FRONTLINES))
+	{
+		return ANSWER_NO;
+	}
+
+	return ANSWER_YES;
 }

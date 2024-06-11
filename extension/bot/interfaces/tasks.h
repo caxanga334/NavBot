@@ -289,47 +289,47 @@ public:
 	return __result; \
 			\
 
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
 	}
 
-	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
 	}
 
-	virtual QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override
+	QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldPickup, me, item);
 	}
 
-	virtual QueryAnswerType ShouldHurry(CBaseBot* me) override
+	QueryAnswerType ShouldHurry(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(ShouldHurry, me);
 	}
 
-	virtual QueryAnswerType ShouldRetreat(CBaseBot* me) override
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(ShouldRetreat, me);
 	}
 
-	virtual QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override
+	QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldUse, me, object);
 	}
 
-	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me) override
+	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(ShouldFreeRoam, me);
 	}
 
-	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override
+	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override
 	{
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
-	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
+	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
 	{
 		const CKnownEntity* result = nullptr;
 
@@ -354,7 +354,7 @@ public:
 		return result;
 	}
 
-	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override
+	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override
 	{
 		Vector result = vec3_origin;
 
@@ -377,6 +377,11 @@ public:
 		}
 
 		return result;
+	}
+
+	QueryAnswerType IsReady(CBaseBot* me) override
+	{
+		PROPAGATE_DECISION_WITH_1ARG(IsReady, me);
 	}
 
 private:
@@ -563,7 +568,7 @@ public:
 	 * @brief The task that comes after this
 	 * @return NULL for none or pointer to a task that will be added after this task
 	*/
-	virtual AITask<BotClass>* InitialNextTask() { return nullptr; }
+	virtual AITask<BotClass>* InitialNextTask(AITask<BotClass>* bot) { return nullptr; }
 
 	AITask<BotClass>* GetPreviousTask() const { return m_prevTask; }
 	AITask<BotClass>* GetNextTask() const { return m_nextTask; }

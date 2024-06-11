@@ -7,6 +7,7 @@ class CTF2Bot;
 class CTF2BotScenarioTask : public AITask<CTF2Bot>
 {
 public:
+	AITask<CTF2Bot>* InitialNextTask(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
 	const char* GetName() const override { return "Scenario"; }

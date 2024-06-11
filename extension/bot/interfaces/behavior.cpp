@@ -69,3 +69,8 @@ Vector IBehavior::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer*
 {
 	return GetDecisionQueryResponder()->GetTargetAimPos(me, entity, player);
 }
+
+QueryAnswerType IBehavior::IsReady(CBaseBot* me)
+{
+	return GetDecisionQueryResponder()->IsReady(me);
+}

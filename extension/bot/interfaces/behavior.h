@@ -23,16 +23,17 @@ public:
 	// Returns who will answer to decision queries
 	virtual IDecisionQuery* GetDecisionQueryResponder() = 0;
 
-	virtual QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
-	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
-	virtual QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override;
-	virtual QueryAnswerType ShouldHurry(CBaseBot* me) override;
-	virtual QueryAnswerType ShouldRetreat(CBaseBot* me) override;
-	virtual QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override;
-	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
-	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
-	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
-	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
+	QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override;
+	QueryAnswerType ShouldHurry(CBaseBot* me) override;
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
+	QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override;
+	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
+	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
+	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
+	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
+	QueryAnswerType IsReady(CBaseBot* me) override;
 
 private:
 

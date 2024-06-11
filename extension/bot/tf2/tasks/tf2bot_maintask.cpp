@@ -17,7 +17,7 @@
 #undef min
 #undef clamp
 
-AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask()
+AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask(CTF2Bot* bot)
 {
 	return new CTF2BotTacticalTask;
 }

@@ -19,7 +19,7 @@
 
 static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_percent", "0.5", FCVAR_GAMEDLL, "If the bot health is below this percentage, the bot should retreat for health", true, 0.0f, true, 1.0f);
 
-AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask()
+AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask(CTF2Bot* bot)
 {
 	return new CTF2BotScenarioTask;
 }

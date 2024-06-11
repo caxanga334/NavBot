@@ -13,7 +13,6 @@ public:
 	CTF2BotMvMIdleTask()
 	{
 		m_goal.Init();
-		m_isready = false;
 	}
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
@@ -24,11 +23,12 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 
 	const char* GetName() const override { return "MvMIdle"; }
+
+	QueryAnswerType IsReady(CBaseBot* me) override;
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	CountdownTimer m_repathtimer;
-	bool m_isready; // true if the bot is ready and should ready up when possible
 };
 
 #endif // !NAVBOT_TF2BOT_TASK_MVM_IDLE_H_
