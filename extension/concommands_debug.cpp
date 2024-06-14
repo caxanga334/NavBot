@@ -7,7 +7,7 @@
 #include <bot/basebot.h>
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/path/basepath.h>
-#include <entities/baseentity.h>
+#include <entities/tf2/tf_entities.h>
 #include <navmesh/nav.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
@@ -18,6 +18,8 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <util/ehandle_edict.h>
+#include <util/sdkcalls.h>
+#include <util/entprops.h>
 #include <sm_argbuffer.h>
 
 #ifdef EXT_DEBUG
@@ -315,6 +317,34 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_C
 	Msg("Collected %i areas \n", collectedAreas.size());
 }
 
+CON_COMMAND_F(sm_nav_debug_area_collector_2, "Debugs nav area collector.", FCVAR_CHEAT)
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer player(host);
+	player.UpdateLastKnownNavArea(true);
+	CNavArea* area = player.GetLastKnownNavArea();
+	Vector origin = player.GetEyeOrigin();
+
+	if (!area)
+	{
+		Warning("No Last Known Nav Area!\n");
+		return;
+	}
+
+	INavAreaCollector<CNavArea> collector(area, 512.0f);
+	collector.Execute();
+	
+	auto& vec = collector.GetCollectedAreas();
+	Vector offset(0.0f, 0.0f, 32.0f);
+
+	for (auto area : vec)
+	{
+		NDebugOverlay::Line(origin, area->GetCenter() + offset, 0, 200, 255, true, 20.0f);
+	}
+
+	Msg("Collected %i areas.\n", collector.GetCollectedAreasCount());
+}
+
 CON_COMMAND_F(sm_navbot_debug_new_handles, "Tests new entity handles", FCVAR_CHEAT)
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
@@ -403,6 +433,66 @@ CON_COMMAND_F(sm_navbot_debug_new_traces, "Debug new trace functions.", FCVAR_CH
 	trace_t result;
 	trace::line(start, end, MASK_SOLID, result);
 	Msg("Trace Result: fraction %3.6f \n", result.fraction);
+}
+
+CON_COMMAND_F(sm_navbot_debug_sdkcalls, "Debug new SDKCalls functions.", FCVAR_CHEAT)
+{
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer player(ent);
+
+	for (int i = 0; i <= 5; i++)
+	{
+		CBaseEntity* pWeapon = player.GetWeaponOfSlot(i);
+
+		Msg("[SLOT %i]: %p\n", i, pWeapon);
+	}
+
+	CBaseEntity* newWeapon = player.GetWeaponOfSlot(2); // generally melee
+
+	if (newWeapon != nullptr)
+	{
+		player.SelectWeapon(newWeapon);
+	}
+}
+
+CON_COMMAND(sm_navbot_debug_tests, "Debug stuff")
+{
+	using namespace SourceMod;
+
+	int index = UtilHelpers::FindEntityByClassname(-1, "item_teamflag");
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(index);
+
+	if (entity == nullptr)
+	{
+		Warning("Failed to get a pointer to a item_teamflag entity!\n");
+		return;
+	}
+
+	ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
+	sm_sendprop_info_t info;
+
+	if (pClass != nullptr && gamehelpers->FindSendPropInfo(pClass->GetName(), "m_flTimeToSetPoisonous", &info))
+	{
+		static constexpr auto size = sizeof(EHANDLE) + sizeof(int);
+		int offset = info.actual_offset + size;
+		Msg("Computed offset for CCaptureFlag::m_vecResetPos %i\n", offset);
+
+		Vector res;
+		
+		if (entprops->GetEntDataVector(index, offset, res))
+		{
+			Msg("Value at offset: %3.2f %3.2f %3.2f\n", res.x, res.y, res.z);
+
+			entities::HBaseEntity be(entity);
+			res = be.GetAbsOrigin();
+			Msg("Abs origin: %3.2f %3.2f %3.2f\n", res.x, res.y, res.z);
+		}
+	}
+
+	tfentities::HCaptureFlag flag(entity);
+
+	Vector out = flag.GetReturnPosition();
+	Msg("Flag return position: %3.2f %3.2f %3.2f\n", out.x, out.y, out.z);
 }
 
 #endif // EXT_DEBUG

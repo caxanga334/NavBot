@@ -297,8 +297,11 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 		filestream.write(reinterpret_cast<char*>(&type), sizeof(NavLinkType));
 
 		// write position
-		Vector pos = link.m_pos;
-		filestream.write(reinterpret_cast<char*>(&pos), sizeof(Vector));
+		Vector start = link.m_start;
+		filestream.write(reinterpret_cast<char*>(&start), sizeof(Vector));
+
+		Vector end = link.m_end;
+		filestream.write(reinterpret_cast<char*>(&end), sizeof(Vector));
 	}
 
 	uint64_t hintcount = static_cast<uint64_t>(m_hints.size());
@@ -471,10 +474,13 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		NavLinkType type = NavLinkType::LINK_INVALID;
 		filestream.read(reinterpret_cast<char*>(&type), sizeof(NavLinkType));
 
-		Vector pos;
-		filestream.read(reinterpret_cast<char*>(&pos), sizeof(Vector));
+		Vector start;
+		filestream.read(reinterpret_cast<char*>(&start), sizeof(Vector));
 
-		m_speciallinks.emplace_back(type, id, pos);
+		Vector end;
+		filestream.read(reinterpret_cast<char*>(&end), sizeof(Vector));
+
+		m_speciallinks.emplace_back(type, id, start, end);
 	}
 
 	uint64_t hintcount = 0U;

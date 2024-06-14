@@ -95,6 +95,19 @@ public:
 		return (m_tfattributes & attributes) ? true : false;
 	}
 
+	bool IsTFAttributesRestrictedForTeam(TeamFortress2::TFTeam team) const
+	{
+		switch (team)
+		{
+		case TeamFortress2::TFTeam_Red:
+			return HasTFAttributes(TFNAV_LIMIT_TO_BLUTEAM);
+		case TeamFortress2::TFTeam_Blue:
+			return HasTFAttributes(TFNAV_LIMIT_TO_REDTEAM);
+		default:
+			return false;
+		}
+	}
+
 	enum MvMNavAttributes
 	{
 		MVMNAV_INVALID = 0,
@@ -121,6 +134,31 @@ public:
 	void Debug_ShowTFPathAttributes() const;
 	void Debug_ShowTFAttributes() const;
 	void Debug_ShowMvMAttributes() const;
+
+	// Returns if there are any building blocking attributes
+	bool IsBuildable(TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned) const
+	{
+		// Small areas are not buildable
+		if (GetSizeX() < 32.0f || GetSizeY() < 32.0f)
+		{
+			return false;
+		}
+
+		// Cannot build inside spawn rooms
+		if (HasTFPathAttributes(TFNAV_PATH_DYNAMIC_SPAWNROOM))
+		{
+			return false;
+		}
+
+		// TODO: tag areas inside func_nobuild entities
+
+		if (team >= TeamFortress2::TFTeam::TFTeam_Red && !CanBeUsedByTeam(team))
+		{
+			return false;
+		}
+
+		return true;
+	}
 
 private:
 	int m_tfpathattributes;

@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <sdkports/sdk_traces.h>
 #include "tfnavarea.h"
 #include "tfnavmesh.h"
 
@@ -244,4 +245,41 @@ CON_COMMAND_F(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Attributes on 
 	}
 
 	TheNavMesh->ClearSelectedSet();
+}
+
+CON_COMMAND_F(sm_tf_nav_auto_set_spawnrooms, "Detects and set spawn room areas automatically.", FCVAR_CHEAT)
+{
+	int areas = 0;
+
+	auto functor = [&areas](CNavArea* baseArea) {
+		CTFNavArea* area = static_cast<CTFNavArea*>(baseArea);
+		Vector center = area->GetCenter();
+		center.z += 24.0f;
+		bool inside = false;
+
+		UtilHelpers::ForEachEntityOfClassname("func_respawnroom", [&inside, &center](int index, edict_t* edict, CBaseEntity* entity) {
+			if (edict != nullptr && edict->GetCollideable() != nullptr)
+			{
+				if (trace::pointwithin(edict->GetCollideable(), center))
+				{
+					inside = true;
+					return false; // exit search
+				}
+			}
+
+			return true; // keep searching for entities
+		});
+
+		if (inside)
+		{
+			areas++;
+			area->SetTFPathAttributes(CTFNavArea::TFNAV_PATH_DYNAMIC_SPAWNROOM);
+		}
+		
+		return true;
+	};
+
+	TheNavMesh->ForAllAreas(functor);
+
+	Msg("Added spawn room attribute to %i nav areas!\n", areas);
 }

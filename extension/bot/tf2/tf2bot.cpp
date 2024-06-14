@@ -64,9 +64,9 @@ void CTF2Bot::TryJoinGame()
 
 void CTF2Bot::Spawn()
 {
-	CBaseBot::Spawn();
-
 	FindMyBuildings();
+
+	CBaseBot::Spawn();
 
 	if (GetMyClassType() > TeamFortress2::TFClass_Unknown)
 	{
@@ -443,7 +443,7 @@ void CTF2Bot::FindMyBuildings()
 		{
 			auto edict = gamehelpers->EdictOfIndex(i);
 
-			if (edict == nullptr || edict->IsFree())
+			if (edict == nullptr || edict->IsFree() || edict->GetIServerEntity() == nullptr)
 				continue;
 
 			auto classname = gamehelpers->GetEntityClassname(edict);
@@ -452,6 +452,24 @@ void CTF2Bot::FindMyBuildings()
 				continue;
 
 			tfentities::HBaseObject object(edict);
+			CBaseEntity* entity;
+
+			if (object.GetEntity(&entity, nullptr))
+			{
+				ServerClass* svclss = gamehelpers->FindEntityServerClass(entity);
+
+				if (svclss != nullptr)
+				{
+					if (!UtilHelpers::HasDataTable(svclss->m_pTable, "DT_BaseObject"))
+					{
+						continue;
+					}
+				}
+			}
+
+			// Placing means it still a blueprint
+			if (object.IsPlacing())
+				continue;
 
 			if (strncasecmp(classname, "obj_sentrygun", 13) == 0)
 			{
@@ -515,6 +533,14 @@ bool CTF2Bot::TournamentIsReady() const
 	int isready = 0;
 	entprops->GameRules_GetProp("m_bPlayerReady", isready, 4, index);
 	return isready != 0;
+}
+
+bool CTF2Bot::IsInsideSpawnRoom() const
+{
+	int result = 0;
+	// this should be non-zero if a bot is touching a func_respawnroom entity
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iSpawnRoomTouchCount", result);
+	return result > 0;
 }
 
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)

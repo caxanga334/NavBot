@@ -79,18 +79,20 @@ bool CTF2BotSensor::IsEnemy(edict_t* entity)
 	auto spymonitor = me->GetSpyMonitorInterface();
 	int index = gamehelpers->IndexOfEdict(entity);
 	auto theirteam = tf2lib::GetEntityTFTeam(index);
-	auto theirclass = tf2lib::GetPlayerClassType(index);
 	
-	if (theirclass == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(index))
+	if (theirteam == me->GetMyTFTeam())
 	{
-		auto& knownspy = spymonitor->GetKnownSpy(entity);
-		return knownspy.IsHostile();
+		return false;
 	}
-	else
+
+	if (UtilHelpers::IsPlayerIndex(index))
 	{
-		if (theirteam == me->GetMyTFTeam())
+		auto theirclass = tf2lib::GetPlayerClassType(index);
+
+		if (theirclass == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(index))
 		{
-			return false;
+			auto& knownspy = spymonitor->GetKnownSpy(entity);
+			return knownspy.IsHostile();
 		}
 	}
 

@@ -4,14 +4,18 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <mods/tf2/tf2lib.h>
 #include "bot/tf2/tf2bot.h"
-#include "tf2bot_scenario.h"
 #include "tf2bot_tactical.h"
 #include "tf2bot_find_ammo_task.h"
 #include "tf2bot_find_health_task.h"
+#include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
+#include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
+#include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
+#include "scenario/mvm/tf2bot_mvm_idle.h"
 
 #undef max
 #undef min
@@ -21,7 +25,7 @@ static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_per
 
 AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask(CTF2Bot* bot)
 {
-	return new CTF2BotScenarioTask;
+	return SelectScenarioTask(bot);
 }
 
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -89,5 +93,41 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 	}
 
 	return ANSWER_UNDEFINED;
+}
+
+AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me)
+{
+	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
+	auto gm = tf2mod->GetCurrentGameMode();
+	auto myclass = me->GetMyClassType();
+
+	if (gm == TeamFortress2::GameModeType::GM_MVM)
+	{
+		return new CTF2BotMvMIdleTask; // In MvM, all bots start with this
+	}
+
+	switch (myclass)
+	{
+	case TeamFortress2::TFClass_Sniper:
+		break; // TODO
+	case TeamFortress2::TFClass_Medic:
+		return new CTF2BotMedicMainTask;
+	case TeamFortress2::TFClass_Spy:
+		break; // TODO
+	case TeamFortress2::TFClass_Engineer:
+		return new CTF2BotEngineerMainTask;
+	default:
+		break;
+	}
+
+	switch (gm)
+	{
+	case TeamFortress2::GameModeType::GM_CTF:
+		return new CTF2BotCTFMonitorTask;
+	default:
+		break;
+	}
+
+	return nullptr;
 }
 

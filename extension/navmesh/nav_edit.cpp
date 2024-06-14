@@ -3480,49 +3480,52 @@ CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connectio
 
 void CNavMesh::CommandNavConnectSpecialLink(int32_t linktype)
 {
-	edict_t* player = UTIL_GetListenServerEnt();
-	if (player == NULL || !IsEditMode(NORMAL))
+	edict_t* ent = UTIL_GetListenServerEnt();
+
+	if (ent == nullptr || !IsEditMode(NORMAL))
 		return;
 
+	/**
+	 * Creates a special link between two areas
+	 * 
+	*/
+
+	CBaseExtPlayer player(ent);
+
+	if (m_markedArea == nullptr)
+	{
+		Msg("Mark a nav area first!");
+		PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
+		return;
+	}
+
+	player.UpdateLastKnownNavArea(true);
+
+	CNavArea* startArea = m_markedArea;
 	FindActiveNavArea();
 
-	if (m_selectedSet.Count() > 1)
+	if (m_selectedArea == nullptr)
 	{
-		bool bValid = true;
-		for (int i = 1; i < m_selectedSet.Count(); ++i)
-		{
-			// Make sure all connections are valid
-			CNavArea* first = m_selectedSet[0];
-			CNavArea* second = m_selectedSet[i];
-
-			first->ConnectTo(second, static_cast<NavLinkType>(linktype), m_linkorigin);
-			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
-		}
-	}
-	else if (m_selectedArea)
-	{
-		if (m_markedArea)
-		{
-			m_markedArea->ConnectTo(m_selectedArea, static_cast<NavLinkType>(linktype), m_linkorigin);
-			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
-		}
-		else
-		{
-			if (m_selectedSet.Count() == 1)
-			{
-				CNavArea* area = m_selectedSet[0];
-				area->ConnectTo(m_selectedArea, static_cast<NavLinkType>(linktype), m_linkorigin);
-				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
-			}
-			else
-			{
-				Msg("To connect areas, mark an area, highlight a second area, then invoke the connect command. Make sure the cursor is directly north, south, east, or west of the marked area.");
-				PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
-			}
-		}
+		Msg("Aim at the destination area!");
+		PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
+		return;
 	}
 
-	SetMarkedArea(NULL);			// unmark the mark area
+	CNavArea* endArea = m_selectedArea;
+	Vector linkEnd = player.GetAbsOrigin();
+
+	if (!endArea->Contains(linkEnd))
+	{
+		Warning("Link destination outside destination nav area!\n");
+	}
+
+	startArea->ConnectTo(endArea, static_cast<NavLinkType>(linktype), m_linkorigin, linkEnd);
+	NDebugOverlay::SweptBox(linkEnd, linkEnd, player.GetMins(), player.GetMaxs(), vec3_angle, 0, 128, 0, 255, 10.0f);
+	NDebugOverlay::Line(m_linkorigin, linkEnd, 0, 0, 200, true, 10.0f);
+	Msg("Creating a new link connection between area #%i and area #%i", startArea->GetID(), endArea->GetID());
+	PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+
+	SetMarkedArea(nullptr);			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 	ClearSelectedSet();
 }

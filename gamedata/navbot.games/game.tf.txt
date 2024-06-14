@@ -25,6 +25,21 @@
 				"linux"		"110"
 				"linux64"	"110"
 			}
+			"Weapon_Switch"
+			{
+				"windows"	"274"
+				"windows64" "274"
+				"linux"		"275"
+				"linux64"	"275"
+			}
+			/* offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos */
+			"CCaptureFlag::m_vecResetPos"
+			{
+				"windows"	"8"
+				"windows64" "8"
+				"linux"		"8"
+				"linux64"	"8"
+			}
 		}
 	}
 }

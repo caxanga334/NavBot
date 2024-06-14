@@ -37,6 +37,7 @@
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
+#include <util/sdkcalls.h>
 #include <core/eventmanager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
@@ -140,7 +141,9 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	extension = this;
 	m_hookruncmd = false;
-	m_gamedata = nullptr;
+	m_cfg_navbot = nullptr;
+	m_cfg_sdkhooks = nullptr;
+	m_cfg_sdktools = nullptr;
 	randomgen->ReSeed(); // set the initial seed based on the clock
 
 	// Create the directory
@@ -149,32 +152,31 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	Utils::CreateDataDirectory(mod);
 	Utils::CreateConfigDirectory(mod);
 
-	if (!gameconfs->LoadGameConfigFile("navbot.games", &m_gamedata, error, maxlen))
+	if (!gameconfs->LoadGameConfigFile("navbot.games", &m_cfg_navbot, error, maxlen))
 	{
 		smutils->LogError(myself, "Failed to open NavBot gamedata file!");
-		gameconfs->CloseGameConfigFile(m_gamedata);
+		gameconfs->CloseGameConfigFile(m_cfg_navbot);
 		return false;
 	}
 
-	SourceMod::IGameConfig* sdktools_gamedata = nullptr;
-	if (!gameconfs->LoadGameConfigFile("sdktools.games", &sdktools_gamedata, error, maxlen))
+
+	if (!gameconfs->LoadGameConfigFile("sdktools.games", &m_cfg_sdktools, error, maxlen))
 	{
 		smutils->LogError(myself, "Failed to open SDKTools gamedata file!");
-		gameconfs->CloseGameConfigFile(m_gamedata);
+		gameconfs->CloseGameConfigFile(m_cfg_sdktools);
 		return false;
 	}
 
-	SourceMod::IGameConfig* sdkhooks_gamedata = nullptr;
-	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &sdkhooks_gamedata, error, maxlen))
+	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &m_cfg_sdkhooks, error, maxlen))
 	{
 		const char* message = "Failed to load SDKHooks gamedata!";
 		maxlen = strlen(message);
 		strcpy(error, message);
-		gameconfs->CloseGameConfigFile(m_gamedata);
+		gameconfs->CloseGameConfigFile(m_cfg_sdkhooks);
 		return false;
 	}
 
-	auto value = m_gamedata->GetKeyValue("HookPlayerRunCMD");
+	auto value = m_cfg_navbot->GetKeyValue("HookPlayerRunCMD");
 
 	if (value)
 	{
@@ -189,16 +191,13 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		smutils->LogMessage(myself, "CBasePlayer::PlayerRunCommand hook enabled!");
 	}
 
-	if (!CBaseBot::InitHooks(m_gamedata, sdkhooks_gamedata, sdktools_gamedata))
+	if (!CBaseBot::InitHooks(m_cfg_navbot, m_cfg_sdkhooks, m_cfg_sdktools))
 	{
 		const char* message = "Failed to setup SourceHooks (CBaseBot)!";
 		maxlen = strlen(message);
 		strcpy(error, message);
 		return false;
 	}
-
-	gameconfs->CloseGameConfigFile(sdkhooks_gamedata);
-	gameconfs->CloseGameConfigFile(sdktools_gamedata);
 
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	ConVar_Register(0, this);
@@ -213,8 +212,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 void NavBotExt::SDK_OnUnload()
 {
-	gameconfs->CloseGameConfigFile(m_gamedata);
-	m_gamedata = nullptr;
+	gameconfs->CloseGameConfigFile(m_cfg_navbot);
+	gameconfs->CloseGameConfigFile(m_cfg_sdktools);
+	gameconfs->CloseGameConfigFile(m_cfg_sdkhooks);
+	m_cfg_navbot = nullptr;
+	m_cfg_sdktools = nullptr;
+	m_cfg_sdkhooks = nullptr;
 
 	delete TheNavMesh;
 	TheNavMesh = nullptr;
@@ -245,10 +248,11 @@ void NavBotExt::SDK_OnAllLoaded()
 	{
 		auto mod = extmanager->GetMod();
 		TheNavMesh = mod->NavMeshFactory();
-		TheNavMesh->LoadEditSounds(m_gamedata);
+		TheNavMesh->LoadEditSounds(m_cfg_navbot);
 	}
 
 	entprops->Init(true);
+	sdkcalls->Init();
 
 	GetGameEventManager()->Load();
 	natives::setup(m_natives);

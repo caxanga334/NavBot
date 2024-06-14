@@ -1090,3 +1090,21 @@ bool UtilHelpers::FClassnameIs(CBaseEntity* pEntity, const char* szClassname)
 	return UtilHelpers::StringMatchesPattern(s1, s2, 0);
 }
 
+bool UtilHelpers::FindSendPropOffset(CBaseEntity* entity, const char* prop, int& out)
+{
+	ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
+
+	if (pClass != nullptr)
+	{
+		sm_sendprop_info_t info;
+		if (gamehelpers->FindSendPropInfo(pClass->GetName(), prop, &info))
+		{
+			out = static_cast<int>(info.actual_offset);
+			return true;
+		}
+	}
+
+	out = -1;
+	return false;
+}
+

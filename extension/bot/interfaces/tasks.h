@@ -568,7 +568,7 @@ public:
 	 * @brief The task that comes after this
 	 * @return NULL for none or pointer to a task that will be added after this task
 	*/
-	virtual AITask<BotClass>* InitialNextTask(AITask<BotClass>* bot) { return nullptr; }
+	virtual AITask<BotClass>* InitialNextTask(BotClass* bot) { return nullptr; }
 
 	AITask<BotClass>* GetPreviousTask() const { return m_prevTask; }
 	AITask<BotClass>* GetNextTask() const { return m_nextTask; }
@@ -1335,7 +1335,7 @@ inline TaskResult<BotClass> AITask<BotClass>::ProcessTaskStart(BotClass* bot, AI
 
 	m_topTask = nullptr;
 
-	m_nextTask = InitialNextTask();
+	m_nextTask = InitialNextTask(bot);
 	if (m_nextTask)
 	{
 		// Build Task list

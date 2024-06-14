@@ -37,6 +37,7 @@ namespace tfentities
 		bool IsStolen() const { return GetStatus() == TeamFortress2::TF_FLAGINFO_STOLEN; }
 		bool IsDropped() const { return GetStatus() == TeamFortress2::TF_FLAGINFO_DROPPED; }
 		Vector GetPosition() const;
+		Vector GetReturnPosition() const;
 	};
 
 	class HCaptureZone : public HTFBaseEntity

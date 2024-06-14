@@ -703,13 +703,21 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 		auto between = CreateNewSegment();
 
 		between->CopySegment(from);
-		between->goal = link->GetPosition();
+		between->goal = link->GetStart();
 		between->how = GO_SPECIAL_LINK;
 		between->type = AIPath::SEGMENT_GROUND;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
 
+		auto post = CreateNewSegment();
+
+		post->CopySegment(between);
+		post->how = GO_SPECIAL_LINK;
+		post->goal = link->GetEnd();
+		post->type = AIPath::SEGMENT_GROUND;
+
+		pathinsert.emplace(to, post, false);
 		pathinsert.emplace(to, between, false); // insert before 'to'
 		break;
 	}
@@ -724,7 +732,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 		auto between = CreateNewSegment();
 
 		between->CopySegment(from);
-		between->goal = link->GetPosition();
+		between->goal = link->GetStart();
 		between->how = GO_SPECIAL_LINK;
 		between->type = AIPath::SEGMENT_GROUND;
 		// add a segments between from and to.

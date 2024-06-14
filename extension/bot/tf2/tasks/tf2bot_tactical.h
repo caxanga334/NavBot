@@ -22,6 +22,8 @@ public:
 private:
 	CountdownTimer m_ammochecktimer;
 	CountdownTimer m_healthchecktimer;
+
+	AITask<CTF2Bot>* SelectScenarioTask(CTF2Bot* me);
 };
 
 

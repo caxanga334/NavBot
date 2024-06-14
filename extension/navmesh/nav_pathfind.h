@@ -17,6 +17,7 @@
 #include <stack>
 #include <unordered_set>
 #include <unordered_map>
+#include <cstdlib>
 
 #include <util/librandom.h>
 #include "nav_area.h"
@@ -1035,6 +1036,29 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 }
 
 /**
+ * @brief Default function to calculate the path cost between two nav areas
+ * @param A From Area
+ * @param B To Area
+ * @return path cost. Negative if not connect.
+ */
+inline float NavPathFindDefaultCostBetweenTwoAreas(const CNavArea* A, const CNavArea* B)
+{
+	if (!A->HasAnyConnectionsTo(B))
+	{
+		return -1.0f;
+	}
+
+	const NavSpecialLink* link = A->GetSpecialLinkConnectionToArea(B);
+
+	if (link != nullptr)
+	{
+		return link->GetConnectionLength();
+	}
+
+	return (A->GetCenter() - B->GetCenter()).Length();
+}
+
+/**
  * @brief Collects surround areas around the start area
  * @tparam T A class with operator() overload with 4 parameter (CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost)
  * @param startArea Area to start the search
@@ -1042,12 +1066,13 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
  * @param functor Function to call when collecting areas, return true to add the area to the areaVector
  */
 template <typename T>
-inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea*>& areaVector, T functor)
+inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea*>& areaVector, T functor, const float travelLimit = -1.0f)
 {
 	std::unordered_map<unsigned int, float> areaCosts;
 	std::stack<CNavArea*> toSearch;
 	CNavArea* previousArea = nullptr;
 	float newCost = 0.0f;
+	float totalCostSoFar = 0.0f;
 	areaCosts.reserve(4096);
 
 	// Check if startArea should be included and compute cost for it
@@ -1071,18 +1096,21 @@ inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea
 		CNavArea* next = toSearch.top();
 		toSearch.pop();
 
-		next->ForEachConnectedArea([&areaCosts, &toSearch](CNavArea* other) {
+		next->ForEachConnectedArea([&areaCosts, &toSearch, &totalCostSoFar, &travelLimit](CNavArea* other) {
 			if (areaCosts.find(other->GetID()) == areaCosts.end())
 			{
-				// new area, search it!
-				toSearch.push(other);
+				if (travelLimit < 0.0f || totalCostSoFar <= travelLimit)
+				{
+					// new area, search it!
+					toSearch.push(other);
+				}
 			}
 		});
 
-		float currentCost = areaCosts.find(previousArea->GetID())->second;
+		totalCostSoFar = areaCosts.find(previousArea->GetID())->second;
 		newCost = 0.0f; // reset new cost
 
-		if (functor(previousArea, next, currentCost, newCost))
+		if (functor(previousArea, next, totalCostSoFar, newCost))
 		{
 			areaVector.push_back(next);
 		}
@@ -1090,5 +1118,153 @@ inline void NavCollectSurroundingAreas(CNavArea* startArea, std::vector<CNavArea
 		areaCosts.emplace(next->GetID(), newCost);
 	}
 }
+
+/**
+ * @brief Interface for collecting nav areas
+ * @tparam T Nav area class
+ */
+template <typename T>
+class INavAreaCollector
+{
+public:
+	INavAreaCollector(T* startArea, const float travelLimit = -1.0f)
+	{
+		m_startArea = startArea;
+		m_collectedAreas.reserve(8196);
+		m_knownCosts.reserve(8196);
+		m_travelLimit = travelLimit;
+	}
+
+	virtual ~INavAreaCollector() {}
+
+	// Resets the collector for a new search
+	void Reset();
+
+	// Runs the collector
+	void Execute();
+
+	// Return true to stop the search immediately
+	virtual bool StopSearch() { return false; }
+	// Return true if 'area' should be collected
+	virtual bool ShouldCollect(T* prevArea, T* area, float currentCost = 0.0f) { return true; }
+	// Return the travel cost to go from prevArea to area
+	virtual float ComputeCostForAreas(T* prevArea, T* area);
+	// Called when a search ends
+	virtual void OnSearchEnd() {}
+
+	const float GetTotalCostSoFar() const { return m_totalCostSoFar; }
+	const float GetTravelLimit() const { return m_travelLimit; }
+	void SetTravelLimit(float newLimit) { m_travelLimit = newLimit; }
+
+	// Returns a vector with the collected areas
+	const std::vector<T*>& GetCollectedAreas() const { return m_collectedAreas; }
+	const size_t GetCollectedAreasCount() const { return m_collectedAreas.size(); }
+	const bool IsEmpty() const { return m_collectedAreas.empty(); }
+
+private:
+	T* m_startArea;
+	std::vector<T*> m_collectedAreas;
+	std::stack<T*> m_toSearch;
+	std::unordered_map<unsigned int, float> m_knownCosts;
+	float m_travelLimit;
+	float m_totalCostSoFar;
+
+	float GetCostForAreas(T* prevArea, T* area)
+	{
+		if (prevArea == nullptr)
+		{
+			return 0.0f; // start area
+		}
+
+		return m_totalCostSoFar + ComputeCostForAreas(prevArea, area);
+	}
+};
+
+template<typename T>
+inline void INavAreaCollector<T>::Reset()
+{
+	m_collectedAreas.clear();
+	m_knownCosts.clear();
+
+	while (!m_toSearch.empty())
+	{
+		m_toSearch.pop();
+	}
+}
+
+template<typename T>
+inline void INavAreaCollector<T>::Execute()
+{
+	T* previousArea = nullptr;
+	float newCost = 0.0f;
+
+	// Check if startArea should be included and compute cost for it
+	if (ShouldCollect(nullptr, m_startArea, 0.0f))
+	{
+		m_collectedAreas.push_back(m_startArea);
+	}
+
+	// Save start area cost, also marks it as a already searched area
+	newCost = GetCostForAreas(nullptr, m_startArea);
+	m_knownCosts.emplace(m_startArea->GetID(), newCost);
+
+	// Add all connected areas to the search list
+	m_startArea->ForEachConnectedArea([this](CNavArea* other) {
+		m_toSearch.push(static_cast<T*>(other));
+	});
+
+	previousArea = m_startArea;
+
+	while (!m_toSearch.empty())
+	{
+		if (StopSearch())
+		{
+			break;
+		}
+
+		T* nextArea = m_toSearch.top();
+		m_toSearch.pop();
+
+		nextArea->ForEachConnectedArea([this](CNavArea* other) {
+
+			T* area = static_cast<T*>(other);
+
+			// Cost was never calculated, this is an unexplored area!
+			if (m_knownCosts.find(area->GetID()) == m_knownCosts.end())
+			{
+				if (m_travelLimit > 0.0f && m_totalCostSoFar > m_travelLimit)
+				{
+					return;
+				}
+				else
+				{
+					// Add to search list
+					m_toSearch.push(static_cast<T*>(area));
+				}
+			}
+		});
+
+		m_totalCostSoFar = m_knownCosts.find(previousArea->GetID())->second;
+
+		// This function will sum the total cost so far with the new calculated cost
+		newCost = GetCostForAreas(previousArea, nextArea);
+
+		if (ShouldCollect(previousArea, nextArea, newCost))
+		{
+			m_collectedAreas.push_back(nextArea);
+		}
+
+		m_knownCosts.emplace(nextArea->GetID(), newCost);
+		m_totalCostSoFar = newCost; // save the new total cost so far
+		previousArea = nextArea;
+	}
+}
+
+template<typename T>
+inline float INavAreaCollector<T>::ComputeCostForAreas(T* prevArea, T* area)
+{
+	return NavPathFindDefaultCostBetweenTwoAreas(prevArea, area);
+}
+
 
 #endif // _NAV_PATHFIND_H_

@@ -4,6 +4,7 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/librandom.h>
+#include <util/sdkcalls.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/interfaces/playerinput.h>
@@ -685,3 +686,4 @@ const CBotWeapon* CBaseBot::GetActiveBotWeapon() const
 
 	return nullptr;
 }
+

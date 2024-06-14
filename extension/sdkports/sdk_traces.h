@@ -2,6 +2,7 @@
 #define NAVBOT_SDKPORTS_TRACES_H_
 
 #include <functional>
+#include <eiface.h>
 #include <IEngineTrace.h>
 
 class CBaseEntity;
@@ -203,6 +204,88 @@ namespace trace
 	inline int pointcontents(const Vector& point)
 	{
 		return enginetrace->GetPointContents(point);
+	}
+
+	/**
+	 * @brief Checks if a specific point is within this entity's zone
+	 * @param collideable Entity collideable
+	 * @param point Point to check
+	 * @none See: https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/mp/src/game/server/triggers.cpp#L310-L318
+	 * @hint Can be used to check if a point is inside a brush entity.
+	 * @return true if the given point is inside the entity's collision, false otherwise
+	 */
+	inline bool pointwithin(ICollideable* collideable, const Vector& point)
+	{
+		Ray_t ray;
+		ray.Init(point, point);
+		trace_t result;
+		enginetrace->ClipRayToCollideable(ray, MASK_ALL, collideable, &result);
+		return result.startsolid;
+	}
+
+	inline bool pointwithin(edict_t* edict, const Vector& point)
+	{
+		ICollideable* collideable = edict->GetCollideable();
+
+		if (collideable == nullptr)
+		{
+			return false;
+		}
+
+		Ray_t ray;
+		ray.Init(point, point);
+		trace_t result;
+		enginetrace->ClipRayToCollideable(ray, MASK_ALL, collideable, &result);
+		return result.startsolid;
+	}
+
+	inline bool pointwithin(CBaseEntity* entity, const Vector& point)
+	{
+		ICollideable* collideable = reinterpret_cast<IServerEntity*>(entity)->GetCollideable();
+
+		if (collideable == nullptr)
+		{
+			return false;
+		}
+
+		Ray_t ray;
+		ray.Init(point, point);
+		trace_t result;
+		enginetrace->ClipRayToCollideable(ray, MASK_ALL, collideable, &result);
+		return result.startsolid;
+	}
+
+	inline bool pointwithin(IHandleEntity* entity, const Vector& point)
+	{
+		Ray_t ray;
+		ray.Init(point, point);
+		trace_t result;
+		enginetrace->ClipRayToEntity(ray, MASK_ALL, entity, &result);
+		return result.startsolid;
+	}
+
+	inline void pointwithin(ICollideable* collideable, const Vector& point, unsigned int mask, trace_t& result)
+	{
+		Ray_t ray;
+		ray.Init(point, point);
+		enginetrace->ClipRayToCollideable(ray, mask, collideable, &result);
+	}
+
+	inline void pointwithin(IHandleEntity* entity, const Vector& point, unsigned int mask, trace_t& result)
+	{
+		Ray_t ray;
+		ray.Init(point, point);
+		enginetrace->ClipRayToEntity(ray, mask, entity, &result);
+	}
+
+	inline bool pointoutisdeworld(const Vector& point)
+	{
+		return enginetrace->PointOutsideWorld(point);
+	}
+
+	inline ICollideable* entitytocollideable(IHandleEntity* entity)
+	{
+		return enginetrace->GetCollideable(entity);
 	}
 
 	bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);

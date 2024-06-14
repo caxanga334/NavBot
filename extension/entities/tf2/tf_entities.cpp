@@ -60,6 +60,40 @@ Vector tfentities::HCaptureFlag::GetPosition() const
 	return GetAbsOrigin(); // no owner, return my position
 }
 
+Vector tfentities::HCaptureFlag::GetReturnPosition() const
+{
+	using namespace SourceMod;
+	static int offset = -1;
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(GetIndex());
+
+	if (offset < 0)
+	{
+		IGameConfig* cfg = extension->GetExtensionGameData();
+		int add_to_offset;
+
+		if (!cfg->GetOffset("CCaptureFlag::m_vecResetPos", &add_to_offset))
+		{
+			smutils->LogError(myself, "Failed to get offset for CCaptureFlag::m_vecResetPos from NavBot's gamedata file!");
+		}
+
+		
+		int base;
+
+		if (UtilHelpers::FindSendPropOffset(entity, "m_flTimeToSetPoisonous", base))
+		{
+			offset = base + add_to_offset;
+		}
+	}
+
+	if (offset < 0)
+	{
+		return vec3_origin;
+	}
+
+	Vector* result = (Vector*)((uint8_t*)entity + offset);
+	return *result;
+}
+
 tfentities::HCaptureZone::HCaptureZone(edict_t* entity) : HTFBaseEntity(entity)
 {
 }

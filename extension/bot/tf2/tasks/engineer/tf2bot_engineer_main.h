@@ -3,9 +3,13 @@
 
 class CTF2Bot;
 
+/**
+ * @brief Primary engineer behavior
+ */
 class CTF2BotEngineerMainTask : public AITask<CTF2Bot>
 {
 public:
+	AITask<CTF2Bot>* InitialNextTask(CTF2Bot* bot) override;
 
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 

@@ -960,7 +960,7 @@ void CNavArea::ConnectTo( CNavLadder *ladder )
 	}
 }
 
-bool CNavArea::ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin)
+bool CNavArea::ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& start, const Vector& end)
 {
 	Vector pos;
 
@@ -970,19 +970,19 @@ bool CNavArea::ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& ori
 		return false;
 	}
 
-	if (!Contains(origin))
+	if (!Contains(start))
 	{
-		Warning("Connect Area via link error: Link origin is outside nav area boundaries! \n");
+		Warning("Connect Area via link error: Link start is outside nav area boundaries! \n");
 		return false;
 	}
 
-	float z = GetZ(origin);
+	float z = GetZ(start);
 
-	pos.x = origin.x;
-	pos.y = origin.y;
+	pos.x = start.x;
+	pos.y = start.y;
 	pos.z = z;
 
-	m_speciallinks.emplace_back(linktype, area, pos);
+	m_speciallinks.emplace_back(linktype, area, pos, end);
 	DevMsg("Added special link between area #%i and #%i \n", GetID(), area->GetID());
 	NDebugOverlay::HorzArrow(pos + Vector(0.0f, 0.0f, 72.0f), pos, 4.0f, 0, 255, 255, 255, true, 10.0f);
 
@@ -1037,7 +1037,7 @@ void CNavArea::Disconnect( CNavLadder *ladder )
 
 void CNavArea::Disconnect(CNavArea* area, NavLinkType linktype)
 {
-	NavSpecialLink link(linktype, area, vec3_origin);
+	NavSpecialLink link(linktype, area, vec3_origin, vec3_origin);
 	auto it = std::find(m_speciallinks.begin(), m_speciallinks.end(), link);
 
 	if (it != m_speciallinks.end())
@@ -3535,8 +3535,8 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 
 	for (auto& link : m_speciallinks)
 	{
-		const Vector& start = link.GetPosition();
-		const Vector& end = link.m_link.area->GetCenter();
+		const Vector& start = link.m_start;
+		const Vector& end = link.m_end;
 		link.m_link.area->Draw();
 		NDebugOverlay::Line(start, end, 0, 255, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 		char message[64];

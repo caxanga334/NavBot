@@ -19,6 +19,11 @@
 				"windows"	"104"
 				"linux"		"105"
 			}
+			"Weapon_Switch"
+			{
+				"windows"	"264"
+				"linux"		"265"
+			}
 		}
 	}
 }

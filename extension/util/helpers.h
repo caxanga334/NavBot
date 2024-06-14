@@ -275,6 +275,15 @@ namespace UtilHelpers
 
 	bool FClassnameIs(edict_t* pEntity, const char* szClassname);
 	bool FClassnameIs(CBaseEntity* pEntity, const char* szClassname);
+
+	/**
+	 * @brief Finds the offset for a given networked property on an entity
+	 * @param entity Entity that contains the property
+	 * @param prop Name of the property to search for
+	 * @param out Offset value.
+	 * @return 
+	 */
+	bool FindSendPropOffset(CBaseEntity* entity, const char* prop, int& out);
 }
 
 template<typename T>

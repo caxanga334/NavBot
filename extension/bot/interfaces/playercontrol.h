@@ -26,6 +26,7 @@ public:
 		LOOK_DANGER, // Something dangerous
 		LOOK_OPERATE, // Operating a machine, buttons, levers, etc
 		LOOK_COMBAT, // Enemies
+		LOOK_VERY_IMPORTANT, // Something very important, more than enemies
 		LOOK_MOVEMENT, // Movement that requires looking in a specific direction (ie: ladders, jumps)
 		LOOK_CRITICAL, // Something of very high importance
 		LOOK_MANDATORY, // Nothing can interrupt this
@@ -96,6 +97,8 @@ inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)
 		return "OPERATE";
 	case IPlayerController::LOOK_COMBAT:
 		return "COMBAT";
+	case IPlayerController::LOOK_VERY_IMPORTANT:
+		return "VERY IMPORTANT";
 	case IPlayerController::LOOK_MOVEMENT:
 		return "MOVEMENT";
 	case IPlayerController::LOOK_CRITICAL:

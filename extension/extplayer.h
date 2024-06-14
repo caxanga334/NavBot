@@ -85,6 +85,19 @@ public:
 	virtual float GetMaxSpeed() const;
 	inline bool IsOnLadder() const { return GetMoveType() == MOVETYPE_LADDER; }
 
+	/**
+	 * @brief Switch weapons by calling the game's function
+	 * @param weapon Weapon entity
+	 * @return true if the switch was made.
+	 */
+	bool SelectWeapon(CBaseEntity* weapon) const;
+	/**
+	 * @brief Given a weapon slot, returns a pointer to a weapon occupying the slot.
+	 * @param slot Weapon slot to get weapon from.
+	 * @return A CBaseEntity pointer of the weapon or NULL if no weapon is found.
+	 */
+	CBaseEntity* GetWeaponOfSlot(int slot) const;
+
 protected:
 
 private:

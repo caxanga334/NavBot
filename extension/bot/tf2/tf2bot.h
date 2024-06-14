@@ -64,6 +64,35 @@ public:
 	void FindMyBuildings();
 	int GetCurrency() const;
 	bool IsInUpgradeZone() const;
+
+	inline void BeginBuilding(TeamFortress2::TFObjectType type, TeamFortress2::TFObjectMode mode)
+	{
+		switch (type)
+		{
+		case TeamFortress2::TFObject_Dispenser:
+			DelayedFakeClientCommand("build 0");
+			break;
+		case TeamFortress2::TFObject_Teleporter:
+		{
+			if (mode == TeamFortress2::TFObjectMode::TFObjectMode_Entrance)
+			{
+				DelayedFakeClientCommand("build 1");
+			}
+			else
+			{
+				DelayedFakeClientCommand("build 3");
+			}
+
+			break;
+		}
+		case TeamFortress2::TFObject_Sentry:
+			DelayedFakeClientCommand("build 2");
+			break;
+		default:
+			break;
+		}
+	}
+
 	/**
 	 * @brief Toggles the ready status in Tournament modes. Also used in Mann vs Machine.
 	 * @param isready Is the bot ready?
@@ -72,6 +101,8 @@ public:
 	bool TournamentIsReady() const;
 
 	CTF2BotUpgradeManager& GetUpgradeManager() { return m_upgrademan; }
+
+	bool IsInsideSpawnRoom() const;
 
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;

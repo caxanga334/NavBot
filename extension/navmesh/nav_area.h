@@ -233,21 +233,23 @@ class NavSpecialLink
 public:
 	NavSpecialLink()
 	{
-		m_type = NavLinkType::MAX_LINK_TYPES;
+		m_type = NavLinkType::LINK_INVALID;
 	}
 
-	NavSpecialLink(NavLinkType type, CNavArea* other, const Vector& position)
+	NavSpecialLink(NavLinkType type, CNavArea* other, const Vector& start, const Vector& end)
 	{
 		m_type = type;
 		m_link.area = other;
-		m_pos = position;
+		m_start = start;
+		m_end = end;
 	}
 
-	NavSpecialLink(NavLinkType type, unsigned int id, const Vector& position)
+	NavSpecialLink(NavLinkType type, unsigned int id, const Vector& start, const Vector& end)
 	{
 		m_type = type;
 		m_link.id = id;
-		m_pos = position;
+		m_start = start;
+		m_end = end;
 	}
 
 	static const char* LinkTypeToString(NavLinkType type);
@@ -255,7 +257,8 @@ public:
 	inline bool IsOfType(NavLinkType type) const { return m_type == type; }
 	inline bool IsConnectedTo(CNavArea* area) const { return m_link.area == area; }
 	inline NavLinkType GetType() const { return m_type; }
-	inline const Vector& GetPosition() const { return m_pos; }
+	inline const Vector& GetStart() const { return m_start; }
+	inline const Vector& GetEnd() const { return m_end; }
 	inline const CNavArea* GetConnectedArea() const { return m_link.area; }
 	inline void SetArea(CNavArea* area) { m_link.area = area; }
 	inline float GetConnectionLength() const { return m_link.length; }
@@ -267,7 +270,8 @@ public:
 
 	NavLinkType m_type; // Link type
 	NavConnect m_link; // Link connection
-	Vector m_pos; // Link position on the home area
+	Vector m_start; // Link start
+	Vector m_end; // Link end
 };
 
 enum NavHintType : int
@@ -403,7 +407,7 @@ public:
 	void ConnectTo( CNavLadder *ladder );						// connect this area to given ladder
 	void Disconnect( CNavLadder *ladder );						// disconnect this area from given ladder
 
-	bool ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin); // connect via special link
+	bool ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin, const Vector& end); // connect via special link
 	void Disconnect(CNavArea* area, NavLinkType linktype); // remove special link connection
 
 	unsigned int GetID( void ) const	{ return m_id; }		// return this area's unique ID
@@ -594,7 +598,26 @@ public:
 	const NavConnectVector *GetAdjacentAreas( NavDirType dir ) const	{ return &m_connect[dir]; }
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
 	bool IsConnected( const CNavLadder *ladder, CNavLadder::LadderDirectionType dir ) const;	// return true if given ladder is connected in given direction
-	bool IsConnected(const CNavArea* area, NavLinkType linktype) const; // returns true if the given area is connected via the given link type
+	bool IsConnected(const CNavArea* area, NavLinkType linktype) const; // returns true if the given area is connected via the given link typ
+	// true if there is at least 1 form of connection to the other area
+	inline bool HasAnyConnectionsTo(const CNavArea* other) const
+	{
+		for (int dir = static_cast<int>(NORTH); dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			if (IsConnected(other, static_cast<NavDirType>(dir)))
+			{
+				return true;
+			}
+		}
+
+		if (IsConnectedToBySpecialLink(other))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
 	float ComputeGroundHeightChange( const CNavArea *area ) const;			// compute change in actual ground height from this area to given area
 
 	const NavConnectVector *GetIncomingConnections( NavDirType dir ) const	{ return &m_incomingConnect[dir]; }	// get areas connected TO this area by a ONE-WAY link (ie: we have no connection back to them)

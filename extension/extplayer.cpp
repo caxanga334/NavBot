@@ -3,6 +3,7 @@
 #include "navmesh/nav_area.h"
 #include <util/entprops.h>
 #include <util/helpers.h>
+#include <util/sdkcalls.h>
 #include "extplayer.h"
 
 extern CGlobalVars* gpGlobals;
@@ -321,6 +322,16 @@ float CBaseExtPlayer::GetMaxSpeed() const
 	float speed = 0.0f;
 	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flMaxspeed", speed);
 	return speed;
+}
+
+bool CBaseExtPlayer::SelectWeapon(CBaseEntity* weapon) const
+{
+	return sdkcalls->CBaseCombatCharacter_Weapon_Switch(GetEntity(), weapon);
+}
+
+CBaseEntity* CBaseExtPlayer::GetWeaponOfSlot(int slot) const
+{
+	return sdkcalls->CBaseCombatCharacter_Weapon_GetSlot(GetEntity(), slot);
 }
 
 #ifdef EXT_DEBUG

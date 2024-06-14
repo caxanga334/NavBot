@@ -286,13 +286,17 @@ public:
 	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
 	// True if we should SourceHook CBasePlayer::PlayerRunCommand
 	bool ShouldHookRunPlayerCommand() const { return m_hookruncmd; }
-	SourceMod::IGameConfig* GetExtensionGameData() { return m_gamedata; }
+	SourceMod::IGameConfig* GetExtensionGameData() { return m_cfg_navbot; }
+	SourceMod::IGameConfig* GetSDKHooksGameData() { return m_cfg_sdkhooks; }
+	SourceMod::IGameConfig* GetSDKToolsGameData() { return m_cfg_sdktools; }
 
 	std::vector<sp_nativeinfo_t>& GetNativesVector() { return m_natives; }
 
 private:
 	bool m_hookruncmd;
-	SourceMod::IGameConfig* m_gamedata;
+	SourceMod::IGameConfig* m_cfg_navbot;
+	SourceMod::IGameConfig* m_cfg_sdktools;
+	SourceMod::IGameConfig* m_cfg_sdkhooks;
 	std::vector<sp_nativeinfo_t> m_natives;
 };
 
