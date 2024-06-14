@@ -33,7 +33,7 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
 		}
 
-		if (!bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)
+		if (bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)
 		{
 			if (!bot->TournamentIsReady() && tf2lib::MVM_ShouldBotsReadyUp())
 			{

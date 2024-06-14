@@ -137,7 +137,7 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& o
 	}
 	else
 	{
-		buildGoal = hintAreas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
+		buildGoal = hintAreas[randomgen->GetRandomInt<size_t>(0, hintAreas.size() - 1)];
 	}
 
 	out = buildGoal->GetCenter();

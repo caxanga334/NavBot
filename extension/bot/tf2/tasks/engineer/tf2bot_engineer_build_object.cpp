@@ -12,7 +12,7 @@ CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type,
 	m_type = type;
 	m_goal = location;
 	m_reachedGoal = false;
-	m_trydir = 0;
+	m_trydir = randomgen->GetRandomInt<int>(0, 3); // randomize initial value
 
 	switch (type)
 	{
