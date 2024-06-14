@@ -21,12 +21,13 @@ public:
 
 	static CTeamFortress2Mod* GetTF2Mod();
 
+	void FireGameEvent(IGameEvent* event) override;
+
 	const char* GetModName() override { return "Team Fortress 2"; }
 
 	Mods::ModType GetModType() override { return Mods::ModType::MOD_TF2; }
 	void OnMapStart() override;
 	void OnMapEnd() override;
-	void RegisterGameEvents() override;
 
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;

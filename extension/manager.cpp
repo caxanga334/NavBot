@@ -204,11 +204,6 @@ CBaseMod* CExtManager::GetMod()
 	return m_mod.get();
 }
 
-void CExtManager::NotifyRegisterGameEvents()
-{
-	m_mod->RegisterGameEvents();
-}
-
 CBaseBot* CExtManager::GetBotByIndex(int index)
 {
 	for (auto& botptr : m_bots)

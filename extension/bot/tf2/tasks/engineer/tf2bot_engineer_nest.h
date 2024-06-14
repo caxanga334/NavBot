@@ -35,6 +35,7 @@ private:
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
 	bool FindSpotToBuildSentryGun(CTF2Bot* me, Vector& out);
 	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& out);
+	bool GetRandomSentrySpot(CTF2Bot* me, Vector& out);
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_NEST_H_

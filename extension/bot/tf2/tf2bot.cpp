@@ -543,6 +543,8 @@ bool CTF2Bot::IsInsideSpawnRoom() const
 	return result > 0;
 }
 
+
+
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 {
 	m_me = bot;

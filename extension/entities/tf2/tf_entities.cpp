@@ -197,9 +197,24 @@ int tfentities::HBaseObject::GetLevel() const
 
 int tfentities::HBaseObject::GetMaxLevel() const
 {
+	/* the actual max level isn't readable from a netprop, if we want to get it, we need to do a vcall
 	int value = 0;
 	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iHighestUpgradeLevel", value);
 	return value;
+	*/
+
+	/*
+	* Unless we setup a vcall to GetMaxUpgradeLevel, we will have to assume these values
+	*/
+
+	if (IsMiniBuilding())
+	{
+		return 1;
+	}
+	else
+	{
+		return 3;
+	}
 }
 
 bool tfentities::HBaseObject::IsPlacing() const

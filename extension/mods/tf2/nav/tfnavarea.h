@@ -129,6 +129,27 @@ public:
 		return (m_mvmattributes & attributes) ? true : false;
 	}
 
+	// Run Time Attributes, these are set by code and are not saved to file
+	enum RTNavAttributes
+	{
+		RTNAV_INVALID = 0
+	};
+
+	void SetRTAttributes(RTNavAttributes attribute)
+	{
+		m_rtattributes |= attribute;
+	}
+
+	void ClearRTAttributes(RTNavAttributes attribute)
+	{
+		m_rtattributes &= ~attribute;
+	}
+
+	bool HasRTAttributes(RTNavAttributes attributes) const
+	{
+		return (m_rtattributes & attributes) ? true : false;
+	}
+
 	void UpdateDynamicSpawnRoom();
 
 	void Debug_ShowTFPathAttributes() const;
@@ -138,8 +159,11 @@ public:
 	// Returns if there are any building blocking attributes
 	bool IsBuildable(TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned) const
 	{
+		// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Mapper%27s_Reference
+		static constexpr auto BUILDING_WIDTH = 57.0f;
+
 		// Small areas are not buildable
-		if (GetSizeX() < 32.0f || GetSizeY() < 32.0f)
+		if (GetSizeX() < BUILDING_WIDTH || GetSizeY() < BUILDING_WIDTH)
 		{
 			return false;
 		}
@@ -164,6 +188,7 @@ private:
 	int m_tfpathattributes;
 	int m_tfattributes;
 	int m_mvmattributes; // Attributes exclusive for the Mann vs Machine game modes
+	int m_rtattributes; // Run time attributes
 	int m_spawnroomteam;
 };
 

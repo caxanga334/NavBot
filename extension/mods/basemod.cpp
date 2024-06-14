@@ -2,10 +2,8 @@
 #include <util/helpers.h>
 #include <extplayer.h>
 #include <bot/basebot.h>
-#include <core/eventmanager.h>
 #include <navmesh/nav_mesh.h>
 #include <server_class.h>
-#include "basemod_gameevents.h"
 #include "basemod.h"
 
 CBaseMod::CBaseMod()
@@ -25,15 +23,6 @@ void CBaseMod::OnMapStart()
 CBaseBot* CBaseMod::AllocateBot(edict_t* edict)
 {
 	return new CBaseBot(edict);
-}
-
-void CBaseMod::RegisterGameEvents()
-{
-	// auto evmanager = GetGameEventManager();
-
-	// evmanager->RegisterEventReceiver(new CPlayerSpawnEvent);
-	// evmanager->RegisterEventReceiver(new CPlayerHurtEvent);
-	// No longer used, we now hook the vtable
 }
 
 CNavMesh* CBaseMod::NavMeshFactory()

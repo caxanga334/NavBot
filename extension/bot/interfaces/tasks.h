@@ -384,6 +384,11 @@ public:
 		PROPAGATE_DECISION_WITH_1ARG(IsReady, me);
 	}
 
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldAssistTeammate, me, teammate);
+	}
+
 private:
 	friend class AITask<BotClass>;
 

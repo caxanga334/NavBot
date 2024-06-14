@@ -39,8 +39,6 @@ public:
 
 	CBaseMod* GetMod();
 
-	void NotifyRegisterGameEvents();
-
 	CBaseBot* GetBotByIndex(int index);
 	bool IsNavBot(const int client) const;
 

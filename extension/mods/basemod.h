@@ -3,6 +3,8 @@
 
 #include <optional>
 
+#include <sdkports/eventlistenerhelper.h>
+
 class CBaseExtPlayer;
 class CBaseBot;
 class CNavMesh;
@@ -10,7 +12,7 @@ class CNavMesh;
 #include "gamemods_shared.h"
 
 // Base game mod class
-class CBaseMod
+class CBaseMod : public CEventListenerHelper
 {
 public:
 	CBaseMod();
@@ -18,6 +20,9 @@ public:
 
 	static constexpr auto NO_ECON_INDEX = -1;
 	static constexpr auto NO_WEAPON_ID = -1;
+
+	// Called when a game event is fired
+	void FireGameEvent(IGameEvent* event) override {}
 
 	// Called every server frame
 	virtual void Frame() {}
@@ -31,8 +36,6 @@ public:
 	virtual const char* GetModName() { return "CBaseMod"; }
 	// Mod ID
 	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_BASE; }
-	// Called for mods to register event listeners
-	virtual void RegisterGameEvents();
 	// Allocates the nav mesh class used by the mod
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
@@ -47,6 +50,12 @@ public:
 	virtual int GetWeaponID(edict_t* weapon) const { return NO_WEAPON_ID; }
 	// True if the given client should not count towards the number of clients in the server when checking the bot quota
 	virtual bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const { return false; }
+	// A new round has started
+	virtual void OnNewRound() {}
+	// A round has started
+	virtual void OnRoundStart() {}
+	// A round has ended
+	virtual void OnRoundEnd() {}
 private:
 	CBaseHandle m_playerresourceentity;
 

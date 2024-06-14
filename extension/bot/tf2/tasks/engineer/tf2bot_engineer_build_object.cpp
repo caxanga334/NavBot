@@ -5,6 +5,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
+#include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_build_object.h"
 
 CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location)

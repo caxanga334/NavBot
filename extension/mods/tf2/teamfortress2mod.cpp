@@ -5,11 +5,8 @@
 #include <util/entprops.h>
 #include <bot/basebot.h>
 #include <bot/tf2/tf2bot.h>
-#include <core/eventmanager.h>
 #include <mods/tf2/nav/tfnavmesh.h>
-#include <mods/basemod_gameevents.h>
 #include "tf2lib.h"
-#include "tf2mod_gameevents.h"
 #include "teamfortress2mod.h"
 
 ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
@@ -110,6 +107,8 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	m_weaponidmap.emplace("tf_weapon_invis", TeamFortress2::TFWeaponID::TF_WEAPON_INVIS);
 
 	m_classselector.LoadClassSelectionData();
+
+	ListenForGameEvent("teamplay_round_start");
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -119,6 +118,19 @@ CTeamFortress2Mod::~CTeamFortress2Mod()
 CTeamFortress2Mod* CTeamFortress2Mod::GetTF2Mod()
 {
 	return static_cast<CTeamFortress2Mod*>(extmanager->GetMod());
+}
+
+void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
+{
+	if (event != nullptr)
+	{
+		const char* name = event->GetName();
+
+		if (strncasecmp(name, "teamplay_round_start", 20) == 0)
+		{
+			OnRoundStart();
+		}
+	}
 }
 
 void CTeamFortress2Mod::OnMapStart()
@@ -138,17 +150,6 @@ void CTeamFortress2Mod::OnMapEnd()
 	CBaseMod::OnMapEnd();
 
 	m_upgrademanager.Reset();
-}
-
-void CTeamFortress2Mod::RegisterGameEvents()
-{
-	// Not used, replaced by sourcehooks
-	// auto em = GetGameEventManager();
-	// em->RegisterEventReceiver(new CPlayerSpawnEvent);
-	// em->RegisterEventReceiver(new CPlayerHurtEvent);
-	// em->RegisterEventReceiver(new CTF2PlayerDeathEvent);
-	
-	// don't call base, TF2 uses modified generic source events
 }
 
 CBaseBot* CTeamFortress2Mod::AllocateBot(edict_t* edict)

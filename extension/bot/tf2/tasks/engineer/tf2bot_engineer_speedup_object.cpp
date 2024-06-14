@@ -3,15 +3,14 @@
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
-#include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
-#include "tf2bot_engineer_repair_object.h"
+#include "tf2bot_engineer_speedup_object.h"
 
-CTF2BotEngineerRepairObjectTask::CTF2BotEngineerRepairObjectTask(CBaseEntity* object) :
+CTF2BotEngineerSpeedUpObjectTask::CTF2BotEngineerSpeedUpObjectTask(CBaseEntity* object) :
 	m_object(object)
 {
 }
 
-TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+TaskResult<CTF2Bot> CTF2BotEngineerSpeedUpObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	if (m_object.Get() == nullptr)
 	{
@@ -21,25 +20,18 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskStart(CTF2Bot* bot, A
 	return Continue();
 }
 
-TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
+TaskResult<CTF2Bot> CTF2BotEngineerSpeedUpObjectTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	if (m_object.Get() == nullptr)
 	{
 		return Done("Goal object is no longer valid");
 	}
 
-	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) == 0)
-	{
-		return PauseFor(new CTF2BotFindAmmoTask, "Need more metal!");
-	}
-
 	tfentities::HBaseObject object(m_object.Get());
 
-	const bool needsRepair = object.GetHealthPercentage() < 0.9999f || object.IsSapped();
-
-	if (!needsRepair)
+	if (object.GetPercentageConstructed() > 0.99f)
 	{
-		return Done("Object is repaied!");
+		return Done("Object is fully constructed!");
 	}
 
 	/* TODO position behind sentry if under attack by enemy */
@@ -72,7 +64,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		bot->GetControlInterface()->AimAt(object.WorldSpaceCenter(), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to repair it.");
+		bot->GetControlInterface()->AimAt(object.WorldSpaceCenter(), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to construct it.");
 		bot->GetControlInterface()->PressAttackButton(0.5f);
 		bot->GetControlInterface()->PressCrouchButton(0.5f);
 	}

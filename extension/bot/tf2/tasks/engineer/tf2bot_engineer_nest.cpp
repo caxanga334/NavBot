@@ -87,13 +87,33 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, goal);
 		}
 	}
+	else if (me->GetMySentryGun() == nullptr)
+	{
+		Vector goal;
+
+		if (FindSpotToBuildSentryGun(me, goal))
+		{
+			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, goal);
+		}
+	}
+
+	if (me->GetMySentryGun() != nullptr)
+	{
+		tfentities::HBaseObject sentrygun(me->GetMySentryGun());
+
+		if (!sentrygun.IsAtMaxLevel())
+		{
+			return new CTF2BotEngineerUpgradeObjectTask(gamehelpers->ReferenceToEntity(sentrygun.GetIndex()));
+		}
+	}
 
 	return nullptr;
 }
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildSentryGun(CTF2Bot* me, Vector& out)
 {
-	return false;
+	// TO-DO: Add game mode specific sentry spots
+	return GetRandomSentrySpot(me, out);
 }
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& out)
@@ -125,6 +145,60 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& o
 	for (auto tfarea : areas)
 	{
 		if (tfarea->HasTFAttributes(CTFNavArea::TFNAV_TELE_ENTRANCE_HINT) && !tfarea->IsTFAttributesRestrictedForTeam(me->GetMyTFTeam()))
+		{
+			hintAreas.push_back(tfarea);
+		}
+	}
+
+	if (hintAreas.empty())
+	{
+		// no hints were found, pick a random one
+		buildGoal = areas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
+	}
+	else
+	{
+		buildGoal = hintAreas[randomgen->GetRandomInt<size_t>(0, hintAreas.size() - 1)];
+	}
+
+	out = buildGoal->GetCenter();
+
+	if (me->IsDebugging(BOTDEBUG_TASKS))
+	{
+		buildGoal->DrawFilled(0, 128, 0, 255, 10.0f, true);
+	}
+
+	return true;
+}
+
+bool CTF2BotEngineerNestTask::GetRandomSentrySpot(CTF2Bot* me, Vector& out)
+{
+	me->UpdateLastKnownNavArea(true);
+	CNavArea* start = me->GetLastKnownNavArea();
+
+	if (start == nullptr)
+	{
+		return false;
+	}
+
+	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
+
+	collector.SetTravelLimit(4096.0f);
+	collector.Execute();
+
+	if (collector.IsEmpty())
+	{
+		return false;
+	}
+
+	auto& areas = collector.GetCollectedAreas();
+
+	CTFNavArea* buildGoal = nullptr;
+	std::vector<CTFNavArea*> hintAreas;
+	hintAreas.reserve(32);
+
+	for (auto tfarea : areas)
+	{
+		if (tfarea->HasTFAttributes(CTFNavArea::TFNAV_SENTRYGUN_HINT) && !tfarea->IsTFAttributesRestrictedForTeam(me->GetMyTFTeam()))
 		{
 			hintAreas.push_back(tfarea);
 		}

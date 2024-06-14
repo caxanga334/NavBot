@@ -46,6 +46,11 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Ammo collected!");
 	}
 
+	if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer && bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) >= 200)
+	{
+		return Done("Ammo collected!");
+	}
+
 	UpdateSourcePosition();
 
 	if (m_repathtimer.IsElapsed())
@@ -224,7 +229,7 @@ CTF2BotFindAmmoTask::AmmoSource CTF2BotFindAmmoTask::FindSource(CTF2Bot* me)
 
 		if (me->IsDebugging(BOTDEBUG_TASKS))
 		{
-			me->DebugPrintToConsole(BOTDEBUG_TASKS, 153, 156, 255, "%s Found Ammo Source <%i> at %3.2f, %3.2f, %3.2f", me->GetDebugIdentifier(), static_cast<int>(source),
+			me->DebugPrintToConsole(BOTDEBUG_TASKS, 153, 156, 255, "%s Found Ammo Source <%i> at %3.2f, %3.2f, %3.2f\n", me->GetDebugIdentifier(), static_cast<int>(source),
 				m_sourcepos.x, m_sourcepos.y, m_sourcepos.z);
 
 			NDebugOverlay::Text(m_sourcepos, "Ammo Source!", false, 10.0f);
@@ -260,7 +265,10 @@ bool CTF2BotFindAmmoTask::IsSourceStillValid(CTF2Bot* me)
 	{
 		tfentities::HTFBaseEntity entity(edict);
 
-		if (entity.IsEffectActive(EF_NODRAW) || entity.IsDisabled())
+		if (entity.IsEffectActive(EF_NODRAW))
+			return false;
+
+		if (entity.IsDisabled())
 			return false;
 
 		break;

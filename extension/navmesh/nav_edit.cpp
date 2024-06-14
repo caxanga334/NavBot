@@ -3959,6 +3959,13 @@ const NavAreaVector &CNavMesh::GetSelectedSet( void ) const
 	return m_selectedSet;
 }
 
+template<typename T>
+T* CNavMesh::GetRandomNavArea()
+{
+	T* = static_cast<T*>(TheNavAreas.Element(randomgen->GetRandomInt<int>(0, TheNavAreas.Count() - 1)));
+	return T;
+}
+
 template < typename Functor >
 bool CNavMesh::ForAllAreasOverlappingExtent( Functor &func, const Extent &extent )
 {

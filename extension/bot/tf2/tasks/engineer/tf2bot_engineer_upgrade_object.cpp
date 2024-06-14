@@ -70,6 +70,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		bot->GetControlInterface()->AimAt(object.WorldSpaceCenter(), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to upgrade it.");
 		bot->GetControlInterface()->PressAttackButton(0.5f);
+		bot->GetControlInterface()->PressCrouchButton(0.5f);
 	}
 
 	return Continue();

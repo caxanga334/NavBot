@@ -495,4 +495,21 @@ CON_COMMAND(sm_navbot_debug_tests, "Debug stuff")
 	Msg("Flag return position: %3.2f %3.2f %3.2f\n", out.x, out.y, out.z);
 }
 
+CON_COMMAND_F(sm_navbot_debug_server_class, "Debug ServerClass class.", FCVAR_CHEAT)
+{
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(1);
+	ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
+
+	auto name = pClass->GetName();
+	auto id = pClass->m_ClassID;
+	auto netname = pClass->m_pNetworkName;
+	auto table = pClass->m_pTable;
+	const char* tablename = table ? table->GetName() : "NULL";
+
+	Msg("Name: %s\n", name ? name : "NULL");
+	Msg("ID: %i\n", id);
+	Msg("Network Name: %s\n", netname ? netname : "NULL");
+	Msg("Table Name: %s\n", tablename ? tablename : "NULL");
+}
+
 #endif // EXT_DEBUG

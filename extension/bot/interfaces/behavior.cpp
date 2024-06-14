@@ -74,3 +74,8 @@ QueryAnswerType IBehavior::IsReady(CBaseBot* me)
 {
 	return GetDecisionQueryResponder()->IsReady(me);
 }
+
+QueryAnswerType IBehavior::ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate)
+{
+	return GetDecisionQueryResponder()->ShouldAssistTeammate(me, teammate);
+}

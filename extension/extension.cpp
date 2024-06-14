@@ -38,7 +38,6 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <util/sdkcalls.h>
-#include <core/eventmanager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
@@ -226,8 +225,6 @@ void NavBotExt::SDK_OnUnload()
 	extmanager = nullptr;
 
 	ConVar_Unregister();
-
-	GetGameEventManager()->Unload();
 }
 
 void NavBotExt::SDK_OnAllLoaded()
@@ -254,7 +251,6 @@ void NavBotExt::SDK_OnAllLoaded()
 	entprops->Init(true);
 	sdkcalls->Init();
 
-	GetGameEventManager()->Load();
 	natives::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });
 	sharesys->AddNatives(myself, m_natives.data());

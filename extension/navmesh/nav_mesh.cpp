@@ -1094,7 +1094,6 @@ CNavArea* CNavMesh::GetNearestNavArea(CBaseEntity* entity, float maxDist, bool c
 	return result;
 }
 
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Given an ID, return the associated area

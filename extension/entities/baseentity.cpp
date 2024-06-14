@@ -310,7 +310,7 @@ int entities::HBaseEntity::GetEffects() const
 {
 	int effects = 0;
 	entprops->GetEntProp(GetIndex(), Prop_Data, "m_fEffects", effects);
-	return 0;
+	return effects;
 }
 
 float entities::HBaseEntity::GetSimulationTime() const

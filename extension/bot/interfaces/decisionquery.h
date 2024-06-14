@@ -57,6 +57,8 @@ public:
 	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr);
 	// If a game mode has a toggle ready feature, this asks if the bot is ready
 	virtual QueryAnswerType IsReady(CBaseBot* me);
+	// Should the bot help a specific teammate?
+	virtual QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate);
 private:
 
 };
@@ -112,6 +114,11 @@ inline Vector IDecisionQuery::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBa
 }
 
 inline QueryAnswerType IDecisionQuery::IsReady(CBaseBot* me)
+{
+	return ANSWER_UNDEFINED;
+}
+
+inline QueryAnswerType IDecisionQuery::ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate)
 {
 	return ANSWER_UNDEFINED;
 }
