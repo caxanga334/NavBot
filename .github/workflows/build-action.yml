@@ -55,6 +55,11 @@ jobs:
         with:
           version: "5.0.0-beta2"
 
+      - name: Setup Python
+        uses: actions/setup-python@v5.1.0
+        with:
+          python-version: '3.11'
+
       - name: Install Packages (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -133,22 +138,10 @@ jobs:
         uses: benjlevesque/short-sha@v3.0
         id: short-sha
 
-      - name: Prepare Package Directory
-        shell: bash
+      - name: Run Package Script
         run: |
-          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/configs/
-          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/gamedata/
-          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
-          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/scripting/
-          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/translations/
-          cp --recursive ${{ github.workspace }}/navbot/configs/* ${{ github.workspace }}/output/addons/sourcemod/configs/
-          cp --recursive ${{ github.workspace }}/navbot/gamedata/* ${{ github.workspace }}/output/addons/sourcemod/gamedata/
-          cp --recursive ${{ github.workspace }}/navbot/scripting/* ${{ github.workspace }}/output/addons/sourcemod/scripting/
-          cp --recursive ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
-          cp --recursive ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
-          cp ${{ github.workspace }}/navbot/extension/navbot.autoload ${{ github.workspace }}/output/addons/sourcemod/extensions/
-          cp --recursive ${{ github.workspace }}/navbot/build/bin/x86/release/*.{${{ matrix.libsym_ext }},${{ matrix.dbgsym_ext }}} ${{ github.workspace }}/output/addons/sourcemod/extensions/
-          cp --recursive ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.{${{ matrix.libsym_ext }},${{ matrix.dbgsym_ext }}} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
+          cd ${{ github.workspace }}/navbot/
+          python3 package.py
 
       - name: Upload Extension as Artifact
         uses: actions/upload-artifact@v4.3.3
