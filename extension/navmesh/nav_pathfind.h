@@ -1303,7 +1303,7 @@ inline void INavAreaCollector<T>::IncludeInSearch(T* prevArea, T* area)
 {
 	if (m_nodes.find(area->GetID()) == m_nodes.end())
 	{
-		auto& status = m_nodes.emplace(area->GetID(), INavSearchNode<T>(area));
+		auto status = m_nodes.emplace(area->GetID(), INavSearchNode<T>(area));
 		
 		if (status.second == true)
 		{
@@ -1326,7 +1326,7 @@ template<typename T>
 inline void INavAreaCollector<T>::InitSearch()
 {
 
-	auto& status = m_nodes.emplace(m_startArea->GetID(), INavSearchNode<T>(m_startArea));
+	auto status = m_nodes.emplace(m_startArea->GetID(), INavSearchNode<T>(m_startArea));
 
 	if (status.second == true)
 	{
