@@ -137,3 +137,8 @@ workspace "navbot"
 
 include("premake/tf2.lua")
 include("premake/dods.lua")
+include("premake/css.lua")
+include("premake/bms.lua")
+include("premake/sdk2013.lua")
+include("premake/hl2dm.lua")
+include("premake/orangebox.lua")
