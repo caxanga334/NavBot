@@ -152,7 +152,7 @@ jobs:
           rsync -rv ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
           rsync -rv ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
 
-      - name: Upload a Build Artifact
+      - name: Upload Extension as Artifact
         uses: actions/upload-artifact@v4.3.3
         with:
           name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
