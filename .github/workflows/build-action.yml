@@ -19,7 +19,7 @@ jobs:
         include:
           - meta_branch: "master"
             sm_branch: "master"
-            sdks_to_fetch: 'tf2 dods'
+            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm'
           
           - buildjobs: windows-x86
             os_version: windows-latest
