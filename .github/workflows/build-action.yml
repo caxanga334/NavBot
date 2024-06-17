@@ -119,7 +119,7 @@ jobs:
         if: runner.os == 'Windows' && matrix.msvc_arch == 'x86'
         run: |
           cd ${{ github.workspace }}/navbot/build/${{ matrix.premake5action }}/
-          msbuild navbot.sln -maxCpuCount:4 -target:NavBot-TF2,NavBot-DODS -property:Platform=Win32 -property:Configuration=Release
+          msbuild navbot.sln -maxCpuCount:4 -target:NavBot-TF2,NavBot-DODS,NavBot-SDK2013,NavBot-BMS,NavBot-CSS,NavBot-HL2DM,NavBot-ORANGEBOX -property:Platform=Win32 -property:Configuration=Release
 
       - name: Compile Extension (MSBuild - 64 bits)
         if: runner.os == 'Windows' && matrix.msvc_arch == 'x64'
@@ -132,7 +132,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}/navbot/build/${{ matrix.premake5action }}/
           make -j 4 config=release_linux64 NavBot-TF2
-          make -j 4 config=release_linux32 NavBot-TF2 NavBot-DODS
+          make -j 4 config=release_linux32 NavBot-TF2 NavBot-DODS NavBot-SDK2013 NavBot-BMS NavBot-CSS NavBot-HL2DM NavBot-ORANGEBOX
 
       - name: Get commit SHA
         uses: benjlevesque/short-sha@v3.0
