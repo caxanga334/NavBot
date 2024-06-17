@@ -14,7 +14,7 @@ jobs:
         buildjobs:
           - windows-x86
           - windows-x64
-          - linux-latest
+          - linux-stable
 
         include:
           - meta_branch: "master"
@@ -42,7 +42,7 @@ jobs:
             identifier: 'Linux'
             cc: clang-9
             cxx: clang++-9
-            package_name: 'linux-latest'
+            package_name: 'linux-stable'
             dbgsym_ext: 'dbg'
             premake5action: 'gmake2'
 
