@@ -141,16 +141,16 @@ jobs:
           mkdir -p ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
           mkdir -p ${{ github.workspace }}/output/addons/sourcemod/scripting/
           mkdir -p ${{ github.workspace }}/output/addons/sourcemod/translations/
-          rsync -rv ${{ github.workspace }}/navbot/configs/* ${{ github.workspace }}/output/addons/sourcemod/configs/
-          rsync -rv ${{ github.workspace }}/navbot/gamedata/* ${{ github.workspace }}/output/addons/sourcemod/gamedata/
-          rsync -rv ${{ github.workspace }}/navbot/scripting/* ${{ github.workspace }}/output/addons/sourcemod/scripting/
-          rsync -rv ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
-          rsync -rv ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
-          cp ${{ github.workspace }}/navbot/navbot.autoload ${{ github.workspace }}/output/addons/sourcemod/extensions/
-          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/
-          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/
-          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
-          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
+          cp --recursive ${{ github.workspace }}/navbot/configs/* ${{ github.workspace }}/output/addons/sourcemod/configs/
+          cp --recursive ${{ github.workspace }}/navbot/gamedata/* ${{ github.workspace }}/output/addons/sourcemod/gamedata/
+          cp --recursive ${{ github.workspace }}/navbot/scripting/* ${{ github.workspace }}/output/addons/sourcemod/scripting/
+          cp --recursive ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
+          cp --recursive ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
+          cp ${{ github.workspace }}/navbot/extension/navbot.autoload ${{ github.workspace }}/output/addons/sourcemod/extensions/
+          cp --recursive ${{ github.workspace }}/navbot/build/bin/x86/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/
+          cp --recursive ${{ github.workspace }}/navbot/build/bin/x86/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/
+          cp --recursive ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
+          cp --recursive ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
 
       - name: Upload Extension as Artifact
         uses: actions/upload-artifact@v4.3.3
