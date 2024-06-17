@@ -5,6 +5,9 @@ on:
 
 jobs:
   build_ext:
+    name: Build for ${{ matrix.identifier }}
+    runs-on: ${{ matrix.os_version }}
+
     strategy:
       fail-fast: false
       matrix:
@@ -42,9 +45,6 @@ jobs:
             package_name: 'linux-latest'
             dbgsym_ext: 'dbg'
             premake5action: 'gmake2'
-
-    name: Build for ${{ matrix.identifier }}
-    runs-on: ${{ matrix.os_version }}
 
     steps:
       - name: Setup Premake5
