@@ -50,4 +50,4 @@ if x64Bins.exists():
 
   for file in allfiles:
     if file.suffix in ValidFiles:
-      shutil.copy(file, BasePath.joinpath('addons/sourcemod/extensions/' + file.name))
+      shutil.copy(file, BasePath.joinpath('addons/sourcemod/extensions/x64/' + file.name))
