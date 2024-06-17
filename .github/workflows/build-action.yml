@@ -26,6 +26,7 @@ jobs:
             identifier: 'Windows Latest (x86)'
             msvc_arch: 'x86'
             package_name: 'windows-x86'
+            libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
             premake5action: 'vs2022'
 
@@ -34,6 +35,7 @@ jobs:
             identifier: 'Windows Latest (x86-64)'
             msvc_arch: 'x64'
             package_name: 'windows-x86-64'
+            libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
             premake5action: 'vs2022'
 
@@ -43,6 +45,7 @@ jobs:
             cc: clang-9
             cxx: clang++-9
             package_name: 'linux-stable'
+            libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             premake5action: 'gmake2'
 
@@ -129,4 +132,31 @@ jobs:
       - name: Get commit SHA
         uses: benjlevesque/short-sha@v3.0
         id: short-sha
+
+      - name: Prepare Package Directory
+        shell: bash
+        run: |
+          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/configs/
+          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/gamedata/
+          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
+          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/scripting/
+          mkdir -p ${{ github.workspace }}/output/addons/sourcemod/translations/
+          rsync -rv ${{ github.workspace }}/navbot/configs/* ${{ github.workspace }}/output/addons/sourcemod/configs/
+          rsync -rv ${{ github.workspace }}/navbot/gamedata/* ${{ github.workspace }}/output/addons/sourcemod/gamedata/
+          rsync -rv ${{ github.workspace }}/navbot/scripting/* ${{ github.workspace }}/output/addons/sourcemod/scripting/
+          rsync -rv ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
+          rsync -rv ${{ github.workspace }}/navbot/translations/* ${{ github.workspace }}/output/addons/sourcemod/translations/
+          cp ${{ github.workspace }}/navbot/navbot.autoload ${{ github.workspace }}/output/addons/sourcemod/extensions/
+          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/
+          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/
+          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.libsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
+          rsync -rv ${{ github.workspace }}/navbot/build/bin/x86_64/release/*.${{ matrix.dbgsym_ext }} ${{ github.workspace }}/output/addons/sourcemod/extensions/x64/
+
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4.3.3
+        with:
+          name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
+          path: |
+              output/*
+            
     

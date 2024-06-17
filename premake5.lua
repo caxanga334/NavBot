@@ -98,7 +98,7 @@ workspace "navbot"
         defines { "LINUX", "_LINUX", "POSIX", "_FILE_OFFSET_BITS=64", "COMPILER_GCC" }
         defines { "stricmp=strcasecmp", "_stricmp=strcasecmp", "_snprintf=snprintf", "_vsnprintf=vsnprintf", "HAVE_STDINT_H", "GNUC" }
         buildoptions { 
-            "-Wno-non-virtual-dtor", "-Wno-overloaded-virtual", "-Wno-register", "-Wno-implicit-const-int-float-conversion",
+            "-Wno-non-virtual-dtor", "-Wno-overloaded-virtual", "-Wno-register", "-Wno-implicit-int-float-conversion", "-Wno-tautological-overlap-compare",
             "-Wno-inconsistent-missing-override", "-Wno-null-dereference", "-Wno-delete-non-virtual-dtor", "-Wno-sometimes-uninitialized",
             "-Wno-expansion-to-defined", "-Wno-unused", "-Wno-switch", "-Wno-array-bounds", "-Wno-varargs", "-Wno-implicit-exception-spec-mismatch",
         }
