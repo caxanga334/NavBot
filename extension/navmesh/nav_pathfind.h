@@ -1122,6 +1122,18 @@ public:
 
 	const std::vector<T*>& GetCollectedAreas() const { return m_collected; }
 	bool IsCollectedAreasEmpty() const { return m_collected.empty(); }
+	size_t GetCollectedAreasCount() const { return m_collected.size(); }
+	// Returns a random collected area. No filtering.
+	T* GetRandomCollectedArea() const { return m_collected[randomgen->GetRandomInt<size_t>(0, m_collected.size() - 1)]; }
+
+	/**
+	 * @brief Gets a random collected area
+	 * @tparam F Filter function
+	 * @param functor Filter function, params: (T* area). Return true to add the area to the output vector, false to don't add it.
+	 * @return A random area from the output vector.
+	 */
+	template<typename F>
+	T* GetRandomCollectedArea(F functor) const;
 
 protected:
 
@@ -1341,4 +1353,24 @@ inline void INavAreaCollector<T>::InitSearch()
 	}
 }
 
+template<typename T>
+template<typename F>
+inline T* INavAreaCollector<T>::GetRandomCollectedArea(F functor) const
+{
+	std::vector<T*> out;
+	out.reserve(m_collected.size());
+
+	for (auto area : m_collected)
+	{
+		if (functor(area))
+		{
+			out.push_back(area);
+		}
+	}
+
+	return out[randomgen->GetRandomInt<size_t>(0, out.size() - 1)];
+}
+
 #endif // _NAV_PATHFIND_H_
+
+

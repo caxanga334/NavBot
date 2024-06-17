@@ -16,25 +16,25 @@ class EngineerBuildableLocationCollector : public INavAreaCollector<CTFNavArea>
 {
 public:
 	EngineerBuildableLocationCollector(CTF2Bot* engineer, CTFNavArea* startArea) :
-		INavAreaCollector<CTFNavArea>(startArea, 2048.0f)
+		INavAreaCollector<CTFNavArea>(startArea, 4096.0f)
 	{
 		m_me = engineer;
 	}
 
-	// bool ShouldCollect(CTFNavArea* prevArea, CTFNavArea* area, float currentCost = 0.0f) override;
+	bool ShouldCollect(CTFNavArea* area) override;
 private:
 	CTF2Bot* m_me;
 };
 
-//bool EngineerBuildableLocationCollector::ShouldCollect(CTFNavArea* prevArea, CTFNavArea* area, float currentCost)
-//{
-//	if (!area->IsBuildable(m_me->GetMyTFTeam()))
-//	{
-//		return false;
-//	}
-//
-//	return true;
-//}
+bool EngineerBuildableLocationCollector::ShouldCollect(CTFNavArea* area)
+{
+	if (!area->IsBuildable())
+	{
+		return false;
+	}
+
+	return true;
+}
 
 CTF2BotEngineerNestTask::CTF2BotEngineerNestTask()
 {
@@ -126,13 +126,12 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& o
 		return false;
 	}
 
-	/*
 	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
 
 	collector.SetTravelLimit(c_navbot_tf_engineer_tele_entrance_build_range.GetFloat()); // default is 2048, reduce it for tele entrance
 	collector.Execute();
 
-	if (collector.IsEmpty())
+	if (collector.IsCollectedAreasEmpty())
 	{
 		return false;
 	}
@@ -161,14 +160,12 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& o
 		buildGoal = hintAreas[randomgen->GetRandomInt<size_t>(0, hintAreas.size() - 1)];
 	}
 
-	out = buildGoal->GetCenter();
+	out = buildGoal->GetRandomPoint();
 
 	if (me->IsDebugging(BOTDEBUG_TASKS))
 	{
-		buildGoal->DrawFilled(0, 128, 0, 255, 10.0f, true);
+		buildGoal->DrawFilled(0, 128, 0, 255, 5.0f, true);
 	}
-
-	*/
 
 	return true;
 }
@@ -183,13 +180,13 @@ bool CTF2BotEngineerNestTask::GetRandomSentrySpot(CTF2Bot* me, Vector& out)
 		return false;
 	}
 
-	/*
+	
 	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
 
 	collector.SetTravelLimit(4096.0f);
 	collector.Execute();
 
-	if (collector.IsEmpty())
+	if (collector.IsCollectedAreasEmpty())
 	{
 		return false;
 	}
@@ -218,14 +215,12 @@ bool CTF2BotEngineerNestTask::GetRandomSentrySpot(CTF2Bot* me, Vector& out)
 		buildGoal = hintAreas[randomgen->GetRandomInt<size_t>(0, hintAreas.size() - 1)];
 	}
 
-	out = buildGoal->GetCenter();
+	out = buildGoal->GetRandomPoint();
 
 	if (me->IsDebugging(BOTDEBUG_TASKS))
 	{
-		buildGoal->DrawFilled(0, 128, 0, 255, 10.0f, true);
+		buildGoal->DrawFilled(0, 128, 0, 255, 5.0f, true);
 	}
-
-	*/
 
 	return true;
 }

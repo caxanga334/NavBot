@@ -5329,8 +5329,8 @@ Vector CNavArea::GetRandomPoint( void ) const
 	GetExtent( &extent );
 
 	Vector spot;
-	spot.x = librandom::generate_random_float(extent.lo.x, extent.hi.x);
-	spot.y = librandom::generate_random_float(extent.lo.y, extent.hi.y);
+	spot.x = randomgen->GetRandomReal<float>(extent.lo.x, extent.hi.x);
+	spot.y = randomgen->GetRandomReal<float>(extent.lo.y, extent.hi.y);
 	spot.z = GetZ( spot.x, spot.y );
 
 	return spot;
