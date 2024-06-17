@@ -220,7 +220,7 @@ CTF2BotFindAmmoTask::AmmoSource CTF2BotFindAmmoTask::FindSource(CTF2Bot* me)
 
 		if (source == AmmoSource::RESUPPLY)
 		{
-			m_sourcepos = UtilHelpers::GetGroundPositionFromCenter(best);
+			m_sourcepos = GetResupplyPosition(best);
 		}
 		else
 		{
@@ -303,4 +303,21 @@ bool CTF2BotFindAmmoTask::IsSourceStillValid(CTF2Bot* me)
 	}
 
 	return true;
+}
+
+Vector CTF2BotFindAmmoTask::GetResupplyPosition(edict_t* resupply)
+{
+	Vector center = UtilHelpers::getWorldSpaceCenter(resupply);
+	auto area = TheNavMesh->GetNearestNavArea(center, 1024.0f, false, false);
+
+	if (area == nullptr)
+	{
+		return UtilHelpers::GetGroundPositionFromCenter(resupply);
+	}
+
+	Vector point;
+
+	area->GetClosestPointOnArea(center, &point);
+	point.z = area->GetZ(point.x, point.y);
+	return point;
 }

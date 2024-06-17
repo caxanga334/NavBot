@@ -40,6 +40,8 @@ private:
 	void UpdateSourcePosition();
 	bool IsSourceStillValid(CTF2Bot* me);
 
+	Vector GetResupplyPosition(edict_t* resupply);
+
 	// max distance to search for ammo
 	static constexpr float max_distance() { return 2048.0f; }
 };

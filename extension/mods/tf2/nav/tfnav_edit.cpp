@@ -163,6 +163,8 @@ private:
 	CTFNavArea::MvMNavAttributes m_attribute;
 };
 
+#if SOURCE_ENGINE == SE_TF2
+
 CON_COMMAND_F(sm_tf_nav_toggle_path_attrib, "Toggles NavBot TF Path Attributes on the selected set", FCVAR_CHEAT)
 {
 	if (args.ArgC() < 2)
@@ -283,3 +285,5 @@ CON_COMMAND_F(sm_tf_nav_auto_set_spawnrooms, "Detects and set spawn room areas a
 
 	Msg("Added spawn room attribute to %i nav areas!\n", areas);
 }
+
+#endif
