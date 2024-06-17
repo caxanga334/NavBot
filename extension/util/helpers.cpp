@@ -11,6 +11,15 @@
 #undef min
 #undef clamp
 
+#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || \
+SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013
+
+// Source SDKs which server tools V2 interface is available
+#define SDKIFACE_SERVERTOOLSV2_AVAILABLE
+
+#endif 
+
+
 edict_t* UtilHelpers::BaseEntityToEdict(CBaseEntity* pEntity)
 {
 	IServerUnknown* pUnk = (IServerUnknown*)pEntity;
@@ -248,7 +257,7 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(edict_t* pEntity)
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 {
-#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
+#ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
 #else
@@ -329,7 +338,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radius)
 {
-#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
+#ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
 #else
@@ -421,7 +430,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 */
 int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 {
-#ifdef SDKCOMPAT_HAS_SERVERTOOLSV2
+#ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	auto result = servertools->FindEntityByName(UtilHelpers::GetEntity(start), targetname);
 	return gamehelpers->EntityToBCompatRef(result);
 #else

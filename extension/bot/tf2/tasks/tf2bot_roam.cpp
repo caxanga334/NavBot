@@ -84,6 +84,7 @@ void CTF2BotRoamTask::FindRandomGoalPosition(CTF2Bot* me)
 	if (myarea == nullptr)
 		return;
 
+	/*
 	std::vector<CNavArea*> areas;
 	NavCollectSurroundingAreas(myarea, areas, [&me](CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost) {
 		if (previousArea == nullptr)
@@ -125,4 +126,6 @@ void CTF2BotRoamTask::FindRandomGoalPosition(CTF2Bot* me)
 	m_goal = randomArea->GetCenter();
 	me->DebugPrintToConsole(BOTDEBUG_TASKS, 0, 130, 0, "%s Random Nav Area Goal #%i <%3.2f, %3.2f, %3.2f>", me->GetDebugIdentifier(), randomArea->GetID(), 
 		m_goal.x, m_goal.y, m_goal.z);
+
+	*/
 }

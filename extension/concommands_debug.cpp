@@ -263,88 +263,6 @@ CON_COMMAND_F(sm_debug_cbasehandles, "Debug CBaseHandle", FCVAR_CHEAT)
 	Msg("Failed to get CBaseEntity! \n");
 }
 
-CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs nav area collector.", FCVAR_CHEAT)
-{
-	edict_t* host = gamehelpers->EdictOfIndex(1);
-	CBaseExtPlayer player(host);
-	player.UpdateLastKnownNavArea(true);
-	CNavArea* area = player.GetLastKnownNavArea();
-
-	if (!area)
-	{
-		Warning("No Last Known Nav Area!\n");
-		return;
-	}
-
-	std::vector<CNavArea*> collectedAreas;
-	collectedAreas.reserve(512);
-	Vector origin = player.GetAbsOrigin();
-
-	NavCollectSurroundingAreas(area, collectedAreas, [](CNavArea* previousArea, CNavArea* currentArea, const float totalCostSoFar, float& newCost) -> bool {
-
-		if (previousArea == nullptr) // first area in search
-		{
-			return true;
-		}
-
-		float cost = totalCostSoFar;
-		auto link = previousArea->GetSpecialLinkConnectionToArea(currentArea);
-
-		if (link)
-		{
-			cost += link->GetConnectionLength();
-		}
-		else
-		{
-			cost += (previousArea->GetCenter() - currentArea->GetCenter()).Length();
-		}
-
-		newCost = cost;
-
-		if (cost >= 1300.0f)
-		{
-			return false;
-		}
-
-		return true;
-	});
-
-	for (auto area : collectedAreas)
-	{
-		NDebugOverlay::Line(origin, area->GetCenter(), 0, 200, 255, true, 20.0f);
-	}
-
-	Msg("Collected %i areas \n", collectedAreas.size());
-}
-
-CON_COMMAND_F(sm_nav_debug_area_collector_2, "Debugs nav area collector.", FCVAR_CHEAT)
-{
-	edict_t* host = gamehelpers->EdictOfIndex(1);
-	CBaseExtPlayer player(host);
-	player.UpdateLastKnownNavArea(true);
-	CNavArea* area = player.GetLastKnownNavArea();
-	Vector origin = player.GetEyeOrigin();
-
-	if (!area)
-	{
-		Warning("No Last Known Nav Area!\n");
-		return;
-	}
-
-	INavAreaCollector<CNavArea> collector(area, 512.0f);
-	collector.Execute();
-	
-	auto& vec = collector.GetCollectedAreas();
-	Vector offset(0.0f, 0.0f, 32.0f);
-
-	for (auto area : vec)
-	{
-		NDebugOverlay::Line(origin, area->GetCenter() + offset, 0, 200, 255, true, 20.0f);
-	}
-
-	Msg("Collected %i areas.\n", collector.GetCollectedAreasCount());
-}
-
 CON_COMMAND_F(sm_navbot_debug_new_handles, "Tests new entity handles", FCVAR_CHEAT)
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
@@ -510,6 +428,48 @@ CON_COMMAND_F(sm_navbot_debug_server_class, "Debug ServerClass class.", FCVAR_CH
 	Msg("ID: %i\n", id);
 	Msg("Network Name: %s\n", netname ? netname : "NULL");
 	Msg("Table Name: %s\n", tablename ? tablename : "NULL");
+}
+
+CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs NavMeshCollector", FCVAR_CHEAT)
+{
+	CBaseExtPlayer player(gamehelpers->EdictOfIndex(1));
+	player.UpdateLastKnownNavArea(true);
+	
+	CNavArea* start = player.GetLastKnownNavArea();
+
+	if (start == nullptr)
+	{
+		Warning("Failed to get starting area!\n");
+		return;
+	}
+
+	float limit = 512.0f;
+
+	if (args.ArgC() >= 2)
+	{
+		limit = atof(args[2]);
+	}
+
+	INavAreaCollector<CNavArea> collector(start, limit);
+
+	collector.Execute();
+
+	if (collector.IsCollectedAreasEmpty())
+	{
+		Warning("No areas were collected!\n");
+		return;
+	}
+
+	auto& collected = collector.GetCollectedAreas();
+
+	Msg("Collected %i areas, travel limit: %3.2f\n", collected.size(), limit);
+
+	Vector startPos = player.GetEyeOrigin();
+
+	for (auto area : collected)
+	{
+		NDebugOverlay::Line(startPos, area->GetCenter(), 0, 128, 0, true, 20.0f);
+	}
 }
 
 #endif // EXT_DEBUG

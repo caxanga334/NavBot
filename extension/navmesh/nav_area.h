@@ -758,6 +758,32 @@ public:
 		return nullptr;
 	}
 
+	const CNavLadder* GetLadderConnectionToArea(const CNavArea* other) const
+	{
+		for (int dir = 0; dir < static_cast<int>(CNavLadder::NUM_LADDER_DIRECTIONS); dir++)
+		{
+			FOR_EACH_VEC(m_ladder[dir], it)
+			{
+				auto& connect = m_ladder[dir].Element(it);
+				auto ladder = connect.ladder;
+
+				if (ladder != nullptr)
+				{
+					if (ladder->m_bottomArea == other ||
+						ladder->m_topForwardArea == other ||
+						ladder->m_topLeftArea == other ||
+						ladder->m_topRightArea == other || 
+						ladder->m_topBehindArea == other)
+					{
+						return ladder;
+					}
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	/**
 	 * @brief Runs a function on each nav area connected to this area
 	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)

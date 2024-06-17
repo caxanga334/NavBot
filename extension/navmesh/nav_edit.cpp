@@ -3962,8 +3962,8 @@ const NavAreaVector &CNavMesh::GetSelectedSet( void ) const
 template<typename T>
 T* CNavMesh::GetRandomNavArea()
 {
-	T* = static_cast<T*>(TheNavAreas.Element(randomgen->GetRandomInt<int>(0, TheNavAreas.Count() - 1)));
-	return T;
+	T* area = static_cast<T*>(TheNavAreas.Element(randomgen->GetRandomInt<int>(0, TheNavAreas.Count() - 1)));
+	return area;
 }
 
 template < typename Functor >
