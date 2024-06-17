@@ -148,6 +148,6 @@ jobs:
         with:
           name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
           path: |
-              output/*
+              navbot/output/*
             
     
