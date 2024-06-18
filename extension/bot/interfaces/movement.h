@@ -116,11 +116,11 @@ public:
 	};
 
 	// Reset the interface to it's initial state
-	virtual void Reset() override;
+	void Reset() override;
 	// Called at intervals
-	virtual void Update() override;
+	void Update() override;
 	// Called every server frame
-	virtual void Frame() override;
+	void Frame() override;
 
 	// Max height difference that a player is able to climb without jumping
 	virtual float GetStepHeight() const { return 18.0f; }
@@ -154,7 +154,10 @@ public:
 	 * @param important if true, send a high priority look request
 	*/
 	virtual void FaceTowards(const Vector& pos, const bool important = false);
+	// Makes the bot releases all movement keys, keeping momentum
 	virtual void Stop();
+	// Makes the bot loses it's momentum. Use if you need the bot to stop immediately
+	virtual void Brake(const float brakeTime = 0.1f) { m_braketimer.Start(brakeTime); }
 	// Makes the bot climb the given ladder
 	virtual void ClimbLadder(const CNavLadder* ladder, CNavArea* dismount);
 	// Makes the bot go down a ladder
@@ -214,9 +217,12 @@ public:
 	virtual bool NavigatorAllowSkip(const CNavArea* area) const { return true; }
 	// Called after calculating the crossing point between two nav areas
 	virtual void AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint);
+	// Called when the bot is determined to be stuck, try to unstuck it (IE: jumping)
+	virtual void TryToUnstuck();
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
+	CountdownTimer m_braketimer; // Timer for forced braking
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
 	CountdownTimer m_ladderTimer; // Max time to use a ladder

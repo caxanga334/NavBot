@@ -60,6 +60,7 @@ public:
 	Vector BodyDirection2D() const;
 	// Gets the player model scale, virtual in case a mod uses different scaling
 	virtual float GetModelScale() const;
+	void Teleport(const Vector& origin, QAngle* angles = nullptr, Vector* velocity = nullptr) const;
 	// Changes the player team
 	virtual void ChangeTeam(int newTeam);
 	virtual int GetCurrentTeamIndex() const;

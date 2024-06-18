@@ -64,6 +64,14 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
+	// if the bot is this close to the dispenser, stop moving
+	static constexpr auto DISPENSER_TOUCH_RANGE = 64.0f;
+
+	if (m_type == AmmoSource::DISPENSER && bot->GetRangeTo(m_sourcepos) < DISPENSER_TOUCH_RANGE)
+	{
+		return Continue();
+	}
+
 	m_nav.Update(bot);
 
 	return Continue();

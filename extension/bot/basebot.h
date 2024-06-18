@@ -25,6 +25,7 @@ class IBotController;
 class IBotInterface;
 class CUserCmd;
 class IMoveHelper;
+class CMeshNavigator;
 
 class CBaseBot : public CBaseExtPlayer, public IEventListener
 {
@@ -196,6 +197,17 @@ public:
 	inline const Vector& GetHomePos() const { return m_homepos; }
 	void SetHomePos(const Vector& home) { m_homepos = home; }
 
+	void SetActiveNavigator(CMeshNavigator* nav) { m_activeNavigator = nav; }
+	// Gets the last nav mesh navigator used by the bot. NULL if not pathing
+	CMeshNavigator* GetActiveNavigator() const { return m_activeNavigator; }
+	void NotifyNavigatorDestruction(CMeshNavigator* nav, const bool force = false)
+	{
+		if (force || m_activeNavigator == nav)
+		{
+			m_activeNavigator = nullptr;
+		}
+	}
+
 protected:
 	bool m_isfirstspawn;
 
@@ -225,6 +237,7 @@ private:
 	Vector m_homepos; // Position where the bot spawned
 	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
 	IntervalTimer m_burningtimer;
+	CMeshNavigator* m_activeNavigator;
 
 	void ExecuteQueuedCommands();
 };

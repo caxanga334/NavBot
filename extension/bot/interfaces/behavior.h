@@ -11,14 +11,14 @@ class IBehavior : public IBotInterface, public IDecisionQuery
 {
 public:
 	IBehavior(CBaseBot* bot);
-	virtual ~IBehavior();
+	~IBehavior() override;
 
 	// Reset the interface to it's initial state
-	virtual void Reset();
+	void Reset() override;
 	// Called at intervals
-	virtual void Update();
+	void Update() override;
 	// Called every server frame
-	virtual void Frame();
+	void Frame() override;
 
 	// Returns who will answer to decision queries
 	virtual IDecisionQuery* GetDecisionQueryResponder() = 0;

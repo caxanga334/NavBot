@@ -36,10 +36,15 @@ CMeshNavigator::CMeshNavigator() : CPath()
 	m_avoidTimer.Invalidate();
 	m_blocker.Term();
 	m_didAvoidCheck = false;
+	m_me = nullptr;
 }
 
 CMeshNavigator::~CMeshNavigator()
 {
+	if (m_me != nullptr)
+	{
+		m_me->NotifyNavigatorDestruction(this);
+	}
 }
 
 void CMeshNavigator::Invalidate()
@@ -74,6 +79,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	}
 
 	auto mover = bot->GetMovementInterface();
+	m_me = bot;
+	bot->SetActiveNavigator(this);
 
 	if (mover->IsOnAutoPilot())
 	{

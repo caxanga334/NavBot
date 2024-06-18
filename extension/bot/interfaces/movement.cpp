@@ -169,6 +169,13 @@ void IMovement::Frame()
 			}
 		}
 	}
+
+	if (m_braketimer.HasStarted() && !m_braketimer.IsElapsed())
+	{
+		// Cheat: force velocity to zero. The correct way would be to setup counter-strafing
+		Vector vel(0.0f, 0.0f, 0.0f);
+		GetBot()->SetAbsVelocity(vel);
+	}
 }
 
 float IMovement::GetHullWidth()
@@ -293,7 +300,6 @@ void IMovement::FaceTowards(const Vector& pos, const bool important)
 	input->AimAt(lookAt, priority, 0.1f);
 }
 
-// makes the bot stop moving
 void IMovement::Stop()
 {
 	auto input = GetBot()->GetControlInterface();
@@ -709,6 +715,27 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 	}
 }
 
+void IMovement::TryToUnstuck()
+{
+	auto bot = GetBot();
+
+	if (bot->IsOnLadder())
+	{
+		return;
+	}
+
+	Vector start = bot->GetEyeOrigin();
+	Vector end(start.x, start.y, start.z + 64.0f);
+	trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
+	trace_t tr;
+	trace::line(start, end, MASK_PLAYERSOLID, &filter, tr);
+
+	if (!tr.DidHit())
+	{
+		CrouchJump();
+	}
+}
+
 void IMovement::StuckMonitor()
 {
 	auto bot = GetBot();
@@ -745,6 +772,7 @@ void IMovement::StuckMonitor()
 
 				// resend stuck event
 				bot->OnStuck();
+				TryToUnstuck();
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{
@@ -771,6 +799,7 @@ void IMovement::StuckMonitor()
 				// bot is taking too long to move, consider it stuck
 				m_stuck.Stuck(bot);
 				bot->OnStuck();
+				TryToUnstuck();
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{

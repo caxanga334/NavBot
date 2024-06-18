@@ -288,6 +288,32 @@ namespace trace
 		return enginetrace->GetCollideable(entity);
 	}
 
+	// Given a point, trace downwards to find a solid ground (line)
+	inline Vector getground(const Vector& point)
+	{
+		Vector end = point;
+		end.z -= 16384.0f;
+		CTraceFilterWorldAndPropsOnly filter;
+		Ray_t ray;
+		ray.Init(point, end);
+		trace_t tr;
+		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+		return tr.endpos;
+	}
+
+	// Given a point, trace downwards to find a solid ground (hull)
+	inline Vector getground(const Vector& point, const Vector& mins, const Vector& maxs)
+	{
+		Vector end = point;
+		end.z -= 16384.0f;
+		CTraceFilterWorldAndPropsOnly filter;
+		Ray_t ray;
+		ray.Init(point, end, mins, maxs);
+		trace_t tr;
+		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+		return tr.endpos;
+	}
+
 	bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);
 }
 

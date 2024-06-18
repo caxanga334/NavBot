@@ -37,6 +37,7 @@ protected:
 	virtual edict_t* FindBlocker(CBaseBot* bot);
 
 private:
+	CBaseBot* m_me; // bot that is using this navigator
 	const CBasePathSegment* m_goal; // the segment the bot is currently trying to reach
 	CountdownTimer m_waitTimer; // timer for the bot to wait for stuff (lifts, doors, obstacles, ...)
 	CountdownTimer m_avoidTimer; // timer for collision avoidance

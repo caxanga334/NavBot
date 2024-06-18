@@ -220,5 +220,6 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnMoveToSuccess
 	m_reachedGoal = true;
 	m_giveupTimer.Start(15.0f);
 	m_strafeTimer.Start(2.0f);
+	bot->GetMovementInterface()->Brake();
 	return TryContinue();
 }

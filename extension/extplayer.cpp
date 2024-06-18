@@ -1,6 +1,7 @@
 #include "extension.h"
 #include "navmesh/nav_mesh.h"
 #include "navmesh/nav_area.h"
+#include <entities/baseentity.h>
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <util/sdkcalls.h>
@@ -189,6 +190,12 @@ float CBaseExtPlayer::GetModelScale() const
 	float result = 1.0f;
 	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flModelScale", result);
 	return result; // result won't be touched if getentpropfloat fails, so this will default to 1.0
+}
+
+void CBaseExtPlayer::Teleport(const Vector& origin, QAngle* angles, Vector* velocity) const
+{
+	entities::HBaseEntity entity(GetEntity());
+	entity.Teleport(origin, angles, velocity);
 }
 
 void CBaseExtPlayer::ChangeTeam(int newTeam)

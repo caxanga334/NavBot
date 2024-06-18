@@ -12,8 +12,6 @@ class CTF2Bot;
 class CTF2BotEngineerNestTask : public AITask<CTF2Bot>
 {
 public:
-	static constexpr auto max_travel_distance() { return 2048.0f; }
-
 	CTF2BotEngineerNestTask();
 
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
@@ -34,8 +32,15 @@ private:
 
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
 	bool FindSpotToBuildSentryGun(CTF2Bot* me, Vector& out);
+	bool FindSpotToBuildDispenser(CTF2Bot* me, Vector& out);
 	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& out);
+	bool FindSpotToBuildTeleExit(CTF2Bot* me, Vector& out);
 	bool GetRandomSentrySpot(CTF2Bot* me, Vector& out);
+	bool GetRandomDispenserSpot(CTF2Bot* me, const Vector& start, Vector& out);
+
+	static constexpr auto max_travel_distance() { return 2048.0f; }
+	static constexpr auto behind_sentry_distance() { return 200.0f; }
+	static constexpr auto max_dispenser_to_sentry_range() { return 750.0f; }
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_NEST_H_
