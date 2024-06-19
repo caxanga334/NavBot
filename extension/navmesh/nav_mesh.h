@@ -680,6 +680,25 @@ public:
 		return true;
 	}
 
+	template <typename F, typename T>
+	static void CollectNavAreasInRadius(const Vector& center, const float radius, F shouldCollectFunctor, std::vector<T*>& out)
+	{
+		extern NavAreaVector TheNavAreas;
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			CNavArea* basearea = TheNavAreas[it];
+
+			if ((center - basearea->GetCenter()).Length() <= radius)
+			{
+				T* area = static_cast<T*>(basearea);
+				if (shouldCollectFunctor(area))
+				{
+					out.push_back(area);
+				}
+			}
+		}
+	}
+
 	//-------------------------------------------------------------------------------------
 	/**
 	 * tests a new area for connections to adjacent pre-existing areas

@@ -5,6 +5,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <entities/tf2/tf_entities.h>
+#include <mods/tf2/nav/tfnavarea.h>
 #include "tf2bot_mvm_upgrade.h"
 
 #undef min // undef valve mathlib stuff that causes issues with C++ STD lib
@@ -156,14 +157,26 @@ bool CTF2BotMvMUpgradeTask::SelectNearestUpgradeStation(CTF2Bot* me)
 void CTF2BotMvMUpgradeTask::SetGoalPosition()
 {
 	Vector center = UtilHelpers::getWorldSpaceCenter(UtilHelpers::GetEdictFromCBaseHandle(m_upgradestation));
-	auto area = TheNavMesh->GetNearestNavArea(center, 1024.0f, false, false);
 
-	if (area == nullptr)
+	std::vector<CTFNavArea*> nearbyAreas;
+	nearbyAreas.reserve(64);
+
+	CNavMesh::CollectNavAreasInRadius(center, 512.0f, [](CTFNavArea* area) {
+		if (area->HasMVMAttributes(CTFNavArea::MVMNAV_UPGRADESTATION))
+		{
+			return true;
+		}
+
+		return false;
+	}, nearbyAreas);
+
+	if (nearbyAreas.empty())
 	{
 		m_goal = center;
 		return;
 	}
-	
-	area->GetClosestPointOnArea(center, &m_goal);
-	m_goal.z = area->GetCenter().z;
+
+	CTFNavArea* goalarea = nearbyAreas[randomgen->GetRandomInt<size_t>(0, nearbyAreas.size() - 1)];
+	goalarea->GetClosestPointOnArea(center, &m_goal);
+	m_goal.z = goalarea->GetCenter().z;
 }

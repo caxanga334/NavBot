@@ -33,6 +33,7 @@ public:
 	bool IsAbleToBlastJump() override;
 	void JumpAcrossGap(const Vector& landing, const Vector& forward) override;
 	bool IsEntityTraversable(edict_t* entity, const bool now = true) override;
+	void TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle) override;
 
 private:
 	CTF2Bot* GetTF2Bot() const;

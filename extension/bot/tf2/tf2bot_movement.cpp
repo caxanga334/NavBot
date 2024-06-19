@@ -2,6 +2,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/tf2lib.h>
+#include <entities/tf2/tf_entities.h>
 #include "tf2bot_movement.h"
 
 static ConVar sm_navbot_tf_double_jump_z_boost("sm_navbot_tf_double_jump_z_boost", "300.0", FCVAR_CHEAT, "Amount of Z velocity to add when double jumping.");
@@ -171,6 +172,38 @@ bool CTF2BotMovement::IsEntityTraversable(edict_t* entity, const bool now)
 	}
 
 	return IMovement::IsEntityTraversable(entity, now);
+}
+
+void CTF2BotMovement::TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle)
+{
+	auto classname = gamehelpers->GetEntityClassname(obstacle);
+	bool isobject = false;
+
+	if (classname != nullptr && classname[0] != '\0')
+	{
+		if (strncasecmp(classname, "obj_", 4) == 0)
+		{
+			isobject = true;
+		}
+	}
+
+	auto me = GetTF2Bot();
+
+	if (me->GetMyClassType() == TeamFortress2::TFClass_Engineer && isobject)
+	{
+		tfentities::HBaseObject object(obstacle);
+
+		if (object.GetBuilderIndex() == me->GetIndex())
+		{
+			// my objects are solid to me
+			if (IsOnGround() && me->GetRangeTo(object.GetAbsOrigin()) < 32.0f)
+			{
+				CrouchJump(); // try jumping over my buildings
+			}
+		}
+	}
+
+	IMovement::TryToAvoidObstacleInPath(from, to, fraction, obstacle);
 }
 
 CTF2Bot* CTF2BotMovement::GetTF2Bot() const

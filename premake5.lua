@@ -27,33 +27,40 @@ newoption {
     category    = "Paths"
 }
 
-if (_OPTIONS["hl2sdk-root"] == nil) then
-    error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
-end
+Path_HL2SDKROOT = ""
+Path_SM = ""
+Path_MMS = ""
 
-if (_OPTIONS["mms-path"] == nil) then
-    error("Failed to get path to Metamod Source. Set path with --mms-path=path")
-end
+-- when "premake5 --help" is ran, _ACTION is NULL (nil)
+if (_ACTION ~= nil) then
+	if (_OPTIONS["hl2sdk-root"] == nil) then
+		error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
+	end
 
-if (_OPTIONS["sm-path"] == nil) then
-    error("Failed to get path to SourceMod. Set path with --sm-path=path")
-end
+	if (_OPTIONS["mms-path"] == nil) then
+		error("Failed to get path to Metamod Source. Set path with --mms-path=path")
+	end
 
-if (not os.isdir(_OPTIONS["hl2sdk-root"])) then
-    error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
-end
+	if (_OPTIONS["sm-path"] == nil) then
+		error("Failed to get path to SourceMod. Set path with --sm-path=path")
+	end
 
-if (not os.isdir(_OPTIONS["mms-path"])) then
-    error("Failed to get path to Metamod Source. Set path with --mms-path=path")
-end
+	if (not os.isdir(_OPTIONS["hl2sdk-root"])) then
+		error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
+	end
 
-if (not os.isdir(_OPTIONS["sm-path"])) then
-    error("Failed to get path to SourceMod. Set path with --sm-path=path")
-end
+	if (not os.isdir(_OPTIONS["mms-path"])) then
+		error("Failed to get path to Metamod Source. Set path with --mms-path=path")
+	end
 
-Path_HL2SDKROOT = path.normalize(_OPTIONS["hl2sdk-root"])
-Path_SM = path.normalize(_OPTIONS["sm-path"])
-Path_MMS = path.normalize(_OPTIONS["mms-path"])
+	if (not os.isdir(_OPTIONS["sm-path"])) then
+		error("Failed to get path to SourceMod. Set path with --sm-path=path")
+	end
+	
+	Path_HL2SDKROOT = path.normalize(_OPTIONS["hl2sdk-root"])
+	Path_SM = path.normalize(_OPTIONS["sm-path"])
+	Path_MMS = path.normalize(_OPTIONS["mms-path"])
+end
 
 workspace "navbot"
     configurations { 

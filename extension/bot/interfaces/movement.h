@@ -194,7 +194,7 @@ public:
 	virtual bool IsAscendingOrDescendingLadder();
 	virtual bool IsOnLadder(); // true if the bot is on a ladder right now
 	virtual bool IsGap(const Vector& pos, const Vector& forward);
-	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float &fraction, const bool now = true);
+	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now = true, CBaseEntity** obstacle = nullptr);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float& fraction);
 
@@ -219,6 +219,8 @@ public:
 	virtual void AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint);
 	// Called when the bot is determined to be stuck, try to unstuck it (IE: jumping)
 	virtual void TryToUnstuck();
+	// Called when an obstacle is found between 'from' and 'to'. Try to avoid it (IE: by jumping)
+	virtual void TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle);
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer

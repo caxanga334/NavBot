@@ -164,9 +164,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 		if (mover->IsStuck() || to.IsLengthLessThan(CLOSE_RANGE))
 		{
-			float fraction;
 			auto next = GetNextSegment(m_goal);
-			if (mover->IsStuck() || !next || (next->goal.z - origin.z > mover->GetMaxJumpHeight()) || !mover->IsPotentiallyTraversable(origin, next->goal, fraction))
+			if (mover->IsStuck() || !next || (next->goal.z - origin.z > mover->GetMaxJumpHeight()) || !mover->IsPotentiallyTraversable(origin, next->goal, nullptr))
 			{
 				bot->OnMoveToFailure(this, IEventListener::FAIL_FELL_OFF_PATH);
 
@@ -320,7 +319,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 
 			// If it's reachable, then the bot reached it
 			if (toGoal.z < mover->GetStepHeight() && 
-				mover->IsPotentiallyTraversable(origin, next->goal, fraction, false) == true && 
+				mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false) == true && 
 				mover->HasPotentialGap(origin, next->goal, fraction) == false)
 			{
 				return true;
@@ -419,7 +418,9 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 				}
 
 				float fraction;
-				if (mover->IsPotentiallyTraversable(origin, next->goal, fraction, false) && mover->HasPotentialGap(origin, next->goal, fraction) == false)
+				CBaseEntity* obstacle = nullptr;
+				bool IsPotentiallyTraversable = mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false, &obstacle);
+				if (IsPotentiallyTraversable && mover->HasPotentialGap(origin, next->goal, fraction) == false)
 				{
 					// only skip a segment if the bot is able to move directly to it from it's current position
 					// and there isn't any holes on the ground
@@ -434,6 +435,11 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 				}
 				else
 				{
+					if (!IsPotentiallyTraversable && obstacle != nullptr)
+					{
+						mover->TryToAvoidObstacleInPath(origin, next->goal, fraction, obstacle);
+					}
+
 					break; // unreachable, just keep following the path
 				}
 			}
@@ -566,10 +572,9 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 	Vector toGoal = m_goal->goal - origin;
 	toGoal.NormalizeInPlace();
-	float fraction = 0.0f;
 
 	if (toGoal.z < mover->GetTraversableSlopeLimit() && m_goal->type != AIPath::SegmentType::SEGMENT_CLIMB_UP &&
-		mover->IsPotentiallyTraversable(origin, origin * ledgeLookAheadDist * toGoal, fraction, true))
+		mover->IsPotentiallyTraversable(origin, origin * ledgeLookAheadDist * toGoal, nullptr, true))
 	{
 		return false;
 	}

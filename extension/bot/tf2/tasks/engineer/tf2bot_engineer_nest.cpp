@@ -11,7 +11,9 @@
 #include "tf2bot_engineer_upgrade_object.h"
 #include "tf2bot_engineer_nest.h"
 
-static ConVar c_navbot_tf_engineer_tele_entrance_build_range("sm_navbot_tf_engineer_teleentrance_build_range", "3000.0", FCVAR_GAMEDLL, "Maximum distance the engineer will build a teleporter entrance.");
+static ConVar c_navbot_tf_engineer_tele_entrance_build_range("sm_navbot_tf_engineer_teleentrance_build_range", "2048.0", FCVAR_GAMEDLL, "Maximum distance the engineer will build a teleporter entrance.");
+
+static ConVar c_navbot_tf_engineer_tele_exit_build_range("sm_navbot_tf_engineer_teleexit_build_range", "1200.0", FCVAR_GAMEDLL, "Maximum distance the tele exit should be from the sentry gun.");
 
 class EngineerBuildableLocationCollector : public INavAreaCollector<CTFNavArea>
 {
@@ -26,6 +28,20 @@ public:
 private:
 	CTF2Bot* m_me;
 };
+
+inline static Vector GetSpotBehindSentry(edict_t* sentry)
+{
+	tfentities::HBaseObject sentrygun(sentry);
+	Vector origin = sentrygun.GetAbsOrigin();
+	QAngle angle = sentrygun.GetAbsAngles();
+	Vector forward;
+
+	AngleVectors(angle, &forward);
+	forward.NormalizeInPlace();
+
+	Vector point = (origin - (forward * CTF2BotEngineerNestTask::behind_sentry_distance()));
+	return point;
+}
 
 bool EngineerBuildableLocationCollector::ShouldCollect(CTFNavArea* area)
 {
@@ -53,6 +69,25 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 		return PauseFor(nextTask, "Taking care of my own nest!");
 	}
 
+	/* TO-DO:
+	* Check if buildings are still useful, if not, move them
+	*/
+
+	// At this point, the bot has fully upgraded everything, time to idle near the sentry
+
+	m_goal = GetSpotBehindSentry(bot->GetMySentryGun());
+
+	if (bot->GetRangeTo(m_goal) > 32.0f)
+	{
+		if (!m_nav.IsValid() || m_nav.GetAge() > 3.0f)
+		{
+			CTF2BotPathCost cost(bot);
+			m_nav.ComputePathToPosition(bot, m_goal, cost);
+		}
+
+		m_nav.Update(bot);
+	}
+
 	return Continue();
 }
 
@@ -69,6 +104,10 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskResume(CTF2Bot* bot, AITask<C
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
+	m_nav.Invalidate();
+	CTF2BotPathCost cost(bot);
+	m_nav.ComputePathToPosition(bot, m_goal, cost);
+
 	return TryContinue();
 }
 
@@ -106,6 +145,15 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, goal);
 		}
 	}
+	else if (me->GetMyTeleporterExit() == nullptr)
+	{
+		Vector goal;
+
+		if (FindSpotToBuildTeleExit(me, goal))
+		{
+			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, goal);
+		}
+	}
 
 	if (me->GetMySentryGun() != nullptr)
 	{
@@ -124,6 +172,17 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 		if (!dispenser.IsAtMaxLevel())
 		{
 			return new CTF2BotEngineerUpgradeObjectTask(gamehelpers->ReferenceToEntity(dispenser.GetIndex()));
+		}
+	}
+
+	// For now we assume the exit is closer to the bot
+	if (me->GetMyTeleporterExit() != nullptr)
+	{
+		tfentities::HBaseObject exit(me->GetMyTeleporterExit());
+
+		if (!exit.IsAtMaxLevel())
+		{
+			return new CTF2BotEngineerUpgradeObjectTask(gamehelpers->ReferenceToEntity(exit.GetIndex()));
 		}
 	}
 
@@ -154,7 +213,8 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, Vector& out)
 	AngleVectors(angle, &forward);
 	forward.NormalizeInPlace();
 
-	Vector point = (origin - (forward * behind_sentry_distance()));
+	static constexpr auto DISPENSER_OFFSET = 32.0f;
+	Vector point = (origin - (forward * (behind_sentry_distance() + DISPENSER_OFFSET)));
 	trace::CTraceFilterNoNPCsOrPlayers filter(me->GetEntity(), COLLISION_GROUP_NONE);
 	Vector mins(-36.0f, -36.0f, 0.0f);
 	Vector maxs(36.0f, 36.0f, 84.0f);
@@ -248,7 +308,66 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& o
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildTeleExit(CTF2Bot* me, Vector& out)
 {
-	return false;
+	edict_t* mysentry = me->GetMySentryGun();
+
+	if (mysentry == nullptr)
+	{
+		// Must build sentry first
+		return false;
+	}
+
+	tfentities::HBaseObject sentrygun(mysentry);
+	Vector origin = sentrygun.GetAbsOrigin();
+
+	CNavArea* start = TheNavMesh->GetNearestNavArea(origin, 512.0f, false, false);
+
+	if (start == nullptr)
+	{
+		return false;
+	}
+
+	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
+
+	collector.SetTravelLimit(c_navbot_tf_engineer_tele_exit_build_range.GetFloat());
+	collector.Execute();
+
+	if (collector.IsCollectedAreasEmpty())
+	{
+		return false;
+	}
+
+	auto& areas = collector.GetCollectedAreas();
+
+	CTFNavArea* buildGoal = nullptr;
+	std::vector<CTFNavArea*> hintAreas;
+	hintAreas.reserve(32);
+
+	for (auto tfarea : areas)
+	{
+		if (tfarea->HasTFAttributes(CTFNavArea::TFNAV_TELE_EXIT_HINT) && !tfarea->IsTFAttributesRestrictedForTeam(me->GetMyTFTeam()))
+		{
+			hintAreas.push_back(tfarea);
+		}
+	}
+
+	if (hintAreas.empty())
+	{
+		// no hints were found, pick a random one
+		buildGoal = areas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
+	}
+	else
+	{
+		buildGoal = hintAreas[randomgen->GetRandomInt<size_t>(0, hintAreas.size() - 1)];
+	}
+
+	out = buildGoal->GetRandomPoint();
+
+	if (me->IsDebugging(BOTDEBUG_TASKS))
+	{
+		buildGoal->DrawFilled(0, 128, 0, 255, 5.0f, true);
+	}
+
+	return true;
 }
 
 bool CTF2BotEngineerNestTask::GetRandomSentrySpot(CTF2Bot* me, Vector& out)

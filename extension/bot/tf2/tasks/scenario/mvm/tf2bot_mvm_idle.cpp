@@ -6,6 +6,8 @@
 #include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
+#include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include "tf2bot_mvm_upgrade.h"
 #include "tf2bot_mvm_idle.h"
 
@@ -31,6 +33,14 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			// Buy upgrades
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
+		}
+		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer)
+		{
+			return SwitchTo(new CTF2BotEngineerMainTask, "Starting engineer behavior!");
+		}
+		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Medic)
+		{
+			return SwitchTo(new CTF2BotMedicMainTask, "Starting medic behavior!");
 		}
 
 		if (bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)

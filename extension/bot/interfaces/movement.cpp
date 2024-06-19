@@ -472,7 +472,7 @@ bool IMovement::IsGap(const Vector& pos, const Vector& forward)
  * (ie: blocked by an entity that can be destroyed)
  * @return true if the bot can walk, false otherwise
 */
-bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, float& fraction, const bool now)
+bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now, CBaseEntity** obstacle)
 {
 	float heightdiff = to.z - from.z;
 
@@ -482,7 +482,11 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 		along.NormalizeInPlace();
 		if (along.z > GetTraversableSlopeLimit()) // too high, can't climb this ramp
 		{
-			fraction = 0.0f;
+			if (fraction != nullptr)
+			{
+				*fraction = 0.0f;
+			}
+
 			return false;
 		}
 	}
@@ -516,7 +520,15 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 		}
 	}
 
-	fraction = result.fraction;
+	if (fraction != nullptr)
+	{
+		*fraction = result.fraction;
+	}
+
+	if (obstacle != nullptr)
+	{
+		*obstacle = result.m_pEnt;
+	}
 
 	return result.fraction >= 1.0f && !result.startsolid;
 }
@@ -525,7 +537,7 @@ bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float& fra
 {
 	// get movement fraction
 	float traversableFraction = 0.0f;
-	IsPotentiallyTraversable(from, to, traversableFraction, true);
+	IsPotentiallyTraversable(from, to, &traversableFraction, true);
 
 	Vector end = from + (to - from) * traversableFraction;
 	Vector forward = to - from;
@@ -733,6 +745,16 @@ void IMovement::TryToUnstuck()
 	if (!tr.DidHit())
 	{
 		CrouchJump();
+	}
+}
+
+void IMovement::TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle)
+{
+	int index = gamehelpers->EntityToBCompatRef(obstacle);
+
+	if (index == 0)
+	{
+		return; // worldspawn entity
 	}
 }
 

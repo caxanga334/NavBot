@@ -73,6 +73,10 @@ inline static CTFNavArea::MvMNavAttributes NameToMvMAttributes(const char* name)
 	{
 		return CTFNavArea::MVMNAV_FRONTLINES;
 	}
+	else if (strncasecmp(name, "upgradestation", 10) == 0)
+	{
+		return CTFNavArea::MVMNAV_UPGRADESTATION;
+	}
 	else
 	{
 		return CTFNavArea::MVMNAV_INVALID;
@@ -226,7 +230,7 @@ CON_COMMAND_F(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Attributes on 
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_tf_nav_toggle_mvm_attrib <attribute 1> ... <attribute N> \n");
-		Msg("Valid Attributes: frontlines \n");
+		Msg("Valid Attributes: frontlines upgradestation \n");
 		return;
 	}
 

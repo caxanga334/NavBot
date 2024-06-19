@@ -112,6 +112,7 @@ public:
 	{
 		MVMNAV_INVALID = 0,
 		MVMNAV_FRONTLINES = (1 << 0), // Bots will move here while waiting for the wave to start
+		MVMNAV_UPGRADESTATION = (1 << 1), // Bots needs to go here to buy upgrades
 	};
 
 	void SetMVMAttributes(MvMNavAttributes attribute)

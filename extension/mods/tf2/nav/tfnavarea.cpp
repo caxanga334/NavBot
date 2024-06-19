@@ -213,5 +213,11 @@ void CTFNavArea::Debug_ShowMvMAttributes() const
 		DrawFilled(0, 153, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 	}
 
+	if (HasMVMAttributes(MVMNAV_UPGRADESTATION))
+	{
+		ke::SafeStrcat(message, TEXT_SIZE, " UPGRADE_STATION");
+		DrawFilled(0, 60, 200, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
+	}
+
 	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }

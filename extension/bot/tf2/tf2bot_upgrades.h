@@ -75,6 +75,8 @@ public:
 		}
 	}
 
+	void MarkAsDone() { m_state = STATE_DONE; }
+
 	TF2BotUpgrade_t* GetOrCreateUpgradeData(const MvMUpgrade_t* upgrade);
 	void DoRefund() { m_state = STATE_REFUND; }
 
