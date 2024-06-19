@@ -6,6 +6,7 @@
 #include <util/librandom.h>
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/nav/tfnavarea.h>
+#include <navmesh/nav_utils.h>
 #include "tf2bot_mvm_upgrade.h"
 
 #undef min // undef valve mathlib stuff that causes issues with C++ STD lib
@@ -161,7 +162,7 @@ void CTF2BotMvMUpgradeTask::SetGoalPosition()
 	std::vector<CTFNavArea*> nearbyAreas;
 	nearbyAreas.reserve(64);
 
-	CNavMesh::CollectNavAreasInRadius(center, 512.0f, [](CTFNavArea* area) {
+	navutils::CollectNavAreasInRadius(center, 512.0f, [](CTFNavArea* area) {
 		if (area->HasMVMAttributes(CTFNavArea::MVMNAV_UPGRADESTATION))
 		{
 			return true;
