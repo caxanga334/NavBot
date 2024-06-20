@@ -12,102 +12,51 @@
 #undef min
 #undef clamp
 
+static ConVar c_navbot_tf_medic_scan_time("sm_navbot_tf_medic_scan_time", "1.0", FCVAR_GAMEDLL, "Medics will scan for new heal targets every this seconds.");
+static ConVar c_navbot_tf_medic_uber_enemies_count("sm_navbot_tf_medic_uber_enemies_count", "3", FCVAR_GAMEDLL, "Medics will deploy uber if this many enemies are visible on screen.");
+
 TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	m_scantimer.Start(1.0f);
-	m_repathtimer.Start(0.25f);
-	ScanForPatients(bot);
-
+	m_scantimer.Start(c_navbot_tf_medic_scan_time.GetFloat());
+	m_calltimer.Reset();
+	m_haspatienttimer.Reset();
+	LookForPatients(bot);
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	auto patient = GetPatient();
-	EquipMedigun(bot);
-
-	if (m_scantimer.IsElapsed() || patient == nullptr)
+	if (m_scantimer.IsElapsed())
 	{
-		ScanForPatients(bot);
-		m_scantimer.Start(1.0f);
+		LookForPatients(bot);
 	}
 
-	bool allieds = false;
-	bool enemySentryGun = false;
-	int visibleEnemyCount = 0;
+	if (IsCurrentPatientValid())
+	{
+		EquipMedigun(bot);
 
-	bot->GetSensorInterface()->ForEveryKnownEntity([&bot, &allieds, &visibleEnemyCount, &enemySentryGun](const CKnownEntity* known) {
-		if (!known->IsObsolete() && known->IsPlayer())
+		if (bot->GetRangeTo(m_patient.ToEdict()) <= medigun_max_range())
 		{
-			if (!allieds && tf2lib::GetEntityTFTeam(known->GetIndex()) == bot->GetMyTFTeam())
-			{
-				allieds = true;
-			}
+			bot->GetControlInterface()->AimAt(m_patient.ToEdict(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at my patient to heal them.");
 
-			if (known->IsVisibleNow() && tf2lib::GetEntityTFTeam(known->GetIndex()) == tf2lib::GetEnemyTFTeam(bot->GetMyTFTeam()))
+			if (bot->IsLookingTowards(m_patient.Get(), heal_dot_tolerance()))
 			{
-				++visibleEnemyCount;
-				
-				if (!enemySentryGun)
+				bot->GetControlInterface()->PressAttackButton(0.2f);
+
+				if (GetUbercharge(bot) >= 0.99f)
 				{
-					auto classname = gamehelpers->GetEntityClassname(known->GetEntity());
-
-					if (strncasecmp(classname, "obj_sentrygun", 13) == 0)
+					if (bot->GetHealthPercentage() < 0.6f || tf2lib::GetPlayerHealthPercentage(m_patient.GetEntryIndex()) < 0.6f)
 					{
-						enemySentryGun = true;
+						bot->GetControlInterface()->PressSecondaryAttackButton(0.1f);
+					}
+					else
+					{
+						// deploy based on visible enemies
+						DeployUberIfNeeded(bot);
 					}
 				}
 			}
 		}
-	});
-
-	if (!patient)
-	{
-		if (!allieds) // no nearby allied player
-		{
-			return PauseFor(new CTF2BotMedicRetreatTask, "No patient to heal and no nearby teammates, retreating to safety!");
-		}
-
-		return Continue();
-	}
-
-	m_haspatienttimer.Start();
-	bot->GetControlInterface()->AimAt(patient, IPlayerController::LOOK_COMBAT, 0.2f, "MEDIC: Looking at patient!");
-
-	const float range = bot->GetRangeTo(patient);
-	Vector aimat = UtilHelpers::getWorldSpaceCenter(patient);
-	auto medigun = bot->GetActiveBotWeapon();
-	const float max_heal_range = medigun != nullptr ? medigun->GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange() : 400.0f;
-
-	// When near the patient, begin healing them
-	if (range <= max_heal_range)
-	{
-		bot->GetControlInterface()->PressAttackButton(0.5f);
-	}
-	else
-	{
-		bot->GetControlInterface()->ReleaseAttackButton();
-	}
-
-	// Auto deploy uber if at half health or an enemy sentry gun is visible or more than 3 enemies are visible right now
-	if (GetUbercharge(bot) >= 0.99f && (bot->GetHealthPercentage() < 0.5f || enemySentryGun || visibleEnemyCount > 3 || 
-		tf2lib::GetPlayerHealthPercentage(m_patient.GetEntryIndex()) < 0.5f ))
-	{
-		bot->GetControlInterface()->PressSecondaryAttackButton(0.3f);
-		m_scantimer.Start(10.0f); // Don't switch patients
-	}
-
-	if (range > MEDIC_MAX_DISTANCE)
-	{
-		if (m_repathtimer.IsElapsed() || !m_nav.IsValid())
-		{
-			const Vector& goal = patient->GetCollideable()->GetCollisionOrigin();
-			CTF2BotPathCost cost(bot);
-			m_nav.ComputePathToPosition(bot, goal, cost);
-			m_repathtimer.Start(0.25f);
-		}
-
-		m_nav.Update(bot); // move towards the patient
 	}
 
 	return Continue();
@@ -115,46 +64,145 @@ TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	m_scantimer.Start(0.1f);
-	m_repathtimer.Start(0.25f);
-	ScanForPatients(bot);
-	m_nav.Invalidate();
-
 	return Continue();
 }
 
-edict_t* CTF2BotMedicMainTask::GetPatient()
+bool CTF2BotMedicMainTask::IsCurrentPatientValid()
 {
-	if (!m_patient.IsValid())
+	if (m_patient.Get() == nullptr)
 	{
-		return nullptr;
+		return false;
 	}
 
-	auto patient = gamehelpers->GetHandleEntity(m_patient);
-
-	if (!patient)
+	if (!UtilHelpers::IsPlayerAlive(m_patient.GetEntryIndex()))
 	{
 		m_patient.Term();
-		return nullptr;
+		return false;
 	}
 
-	// patient has died
-	if (!UtilHelpers::IsEntityAlive(m_patient.GetEntryIndex()))
-	{
-		m_patient.Term();
-		return nullptr;
-	}
-
-	return patient;
+	return true;
 }
 
-void CTF2BotMedicMainTask::ScanForPatients(CTF2Bot* me)
+bool CTF2BotMedicMainTask::LookForPatients(CTF2Bot* me)
 {
-	auto best = me->MedicFindBestPatient();
+	float bestDist = std::numeric_limits<float>::max();
+	CBaseEntity* best = nullptr;
 
-	if (best)
+	UtilHelpers::ForEachPlayer([&me, &best, &bestDist](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (!player->IsInGame())
+		{
+			return;
+		}
+
+		if (client == me->GetIndex())
+		{
+			return;
+		}
+
+		auto myteam = me->GetMyTFTeam();
+
+		if (myteam != tf2lib::GetEntityTFTeam(client))
+		{
+			if (tf2lib::GetPlayerClassType(client) == TeamFortress2::TFClass_Spy)
+			{
+				auto& spy = me->GetSpyMonitorInterface()->GetKnownSpy(entity);
+
+				if (spy.GetDetectionLevel() != CTF2BotSpyMonitor::DETECTION_FOOLED)
+				{
+					return; // Don't heal hostile spies
+				}
+			}
+			else
+			{
+				return; // Don't heal enemies that are not spies
+			}
+		}
+
+		if (!me->GetSensorInterface()->IsLineOfSightClear(entity))
+		{
+			return;
+		}
+
+		float distance = me->GetRangeTo(entity);
+
+		if (tf2lib::GetPlayerHealthPercentage(client) >= 0.9f)
+		{
+			distance *= 2.0f;
+		}
+
+		if (distance < bestDist)
+		{
+			best = gamehelpers->ReferenceToEntity(client);
+			bestDist = distance;
+		}
+	});
+
+	if (best != nullptr)
 	{
-		UtilHelpers::SetHandleEntity(m_patient, best);
+		m_patient.Set(best);
+		m_scantimer.Start(c_navbot_tf_medic_scan_time.GetFloat());
+		m_haspatienttimer.Start();
+		return true;
+	}
+
+	return false;
+}
+
+void CTF2BotMedicMainTask::PathToPatient(CTF2Bot* me)
+{
+	entities::HBaseEntity patient(m_patient.Get());
+	Vector goal = patient.GetAbsOrigin();
+
+	if (me->GetRangeTo(goal) <= MEDIC_MAX_DISTANCE && me->GetSensorInterface()->IsLineOfSightClear(m_patient.Get()))
+	{
+		return;
+	}
+
+	if (!m_nav.IsValid() || m_repathtimer.IsElapsed())
+	{
+		CTF2BotPathCost cost(me);
+
+		m_repathtimer.Start(0.5f);
+		if (!m_nav.ComputePathToPosition(me, goal, cost))
+		{
+			m_nav.Invalidate();
+			return;
+		}
+	}
+
+	m_nav.Update(me);
+}
+
+void CTF2BotMedicMainTask::DeployUberIfNeeded(CTF2Bot* me)
+{
+	bool sentry = false;
+	int visibleEnemies = 0;
+	auto enemyteam = tf2lib::GetEnemyTFTeam(me->GetMyTFTeam());
+
+	me->GetSensorInterface()->ForEveryKnownEntity([&me, &sentry, &visibleEnemies, &enemyteam](const CKnownEntity* known) {
+		if (known->IsObsolete())
+		{
+			return;
+		}
+
+		if (enemyteam == tf2lib::GetEntityTFTeam(known->GetIndex()))
+		{
+			if (known->IsVisibleNow())
+			{
+				visibleEnemies++;
+
+				if (!sentry && UtilHelpers::FClassnameIs(known->GetEntity(), "obj_sentrygun"))
+				{
+					sentry = true;
+				}
+			}
+		}
+
+	});
+
+	if (visibleEnemies >= c_navbot_tf_medic_uber_enemies_count.GetInt() || sentry)
+	{
+		me->GetControlInterface()->PressSecondaryAttackButton(0.1f);
 	}
 }
 
@@ -170,12 +218,11 @@ void CTF2BotMedicMainTask::EquipMedigun(CTF2Bot* me) const
 	me->SelectWeaponByCommand("tf_weapon_medigun");
 }
 
-
 float CTF2BotMedicMainTask::GetUbercharge(CTF2Bot* me)
 {
 	auto medigun = me->GetActiveBotWeapon();
 
-	if (medigun)
+	if (medigun && medigun->GetModWeaponID<TeamFortress2::TFWeaponID>() == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
 	{
 		return tf2lib::GetMedigunUberchargePercentage(medigun->GetIndex());
 	}

@@ -4,7 +4,7 @@
 
 #include <sdkports/sdk_timers.h>
 #include <bot/interfaces/path/meshnavigator.h>
-#include <basehandle.h>
+#include <sdkports/sdk_ehandle.h>
 
 class CTF2Bot;
 struct edict_t;
@@ -23,17 +23,21 @@ public:
 	const char* GetName() const override { return "MedicMain"; }
 
 private:
-	CBaseHandle m_patient; // my current heal target
-	CBaseHandle m_caller; // last player who yelled MEDIC!
+	CHandle<CBaseEntity> m_patient; // my current heal target
+	CHandle<CBaseEntity> m_caller; // last player who yelled MEDIC!
 	IntervalTimer m_calltimer; // timer since last MEDIC! call
 	CountdownTimer m_scantimer; // timer for scanning for patients
 	CountdownTimer m_repathtimer;
 	IntervalTimer m_haspatienttimer;
 	CMeshNavigator m_nav;
 
-	edict_t* GetPatient();
-	void ScanForPatients(CTF2Bot* me);
+	bool IsCurrentPatientValid();
+	bool LookForPatients(CTF2Bot* me);
+	void PathToPatient(CTF2Bot* me);
+	void DeployUberIfNeeded(CTF2Bot* me);
+
 	void EquipMedigun(CTF2Bot* me) const;
+	// true if the medic should listen to a MEDIC yell
 	inline bool ShouldListenToCall() const
 	{
 		return m_calltimer.IsGreaterThen(2.0f);
@@ -42,6 +46,8 @@ private:
 	float GetUbercharge(CTF2Bot* me);
 
 	static constexpr float MEDIC_MAX_DISTANCE = 300.0f;
+	static constexpr auto medigun_max_range() { return 420.0f; }
+	static constexpr auto heal_dot_tolerance() { return 0.95f; }
 };
 
 #endif // !NAVBOT_TF2BOT_TASK_MEDIC_MAIN_H_

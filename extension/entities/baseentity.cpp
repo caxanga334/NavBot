@@ -46,6 +46,11 @@ void entities::HBaseEntity::SetAbsOrigin(const Vector& origin) const
 	entprops->SetEntPropVector(GetIndex(), Prop_Data, "m_vecOrigin", origin);
 }
 
+Vector entities::HBaseEntity::EyePosition() const
+{
+	return GetAbsOrigin() + GetViewOffset();
+}
+
 Vector entities::HBaseEntity::WorldAlignMins() const
 {
 	Vector result;

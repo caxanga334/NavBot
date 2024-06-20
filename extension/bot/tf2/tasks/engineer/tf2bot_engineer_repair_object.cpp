@@ -9,6 +9,7 @@
 CTF2BotEngineerRepairObjectTask::CTF2BotEngineerRepairObjectTask(CBaseEntity* object) :
 	m_object(object)
 {
+	m_sentry = false;
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -16,6 +17,11 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskStart(CTF2Bot* bot, A
 	if (m_object.Get() == nullptr)
 	{
 		return Done("Goal object is no longer valid");
+	}
+
+	if (UtilHelpers::FClassnameIs(m_object.Get(), "obj_sentrygun"))
+	{
+		m_sentry = true;
 	}
 
 	return Continue();
@@ -78,4 +84,22 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
+}
+
+QueryAnswerType CTF2BotEngineerRepairObjectTask::ShouldAttack(CBaseBot* me, const CKnownEntity* them)
+{
+	if (UtilHelpers::IsPlayerIndex(them->GetIndex()))
+	{
+		if (tf2lib::GetPlayerClassType(them->GetIndex()) == TeamFortress2::TFClass_Spy)
+		{
+			return ANSWER_YES; // always attack spies
+		}
+	}
+
+	if (m_sentry)
+	{
+		return ANSWER_NO; // the sentry will deal with them
+	}
+
+	return ANSWER_UNDEFINED;
 }

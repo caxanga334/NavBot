@@ -73,7 +73,7 @@ private:
 	CBaseHandle m_lookentity; // Look at target (Entity, overrides vector if present)
 	QAngle m_lastangles; // Last bot view angles
 	bool m_isSteady; // Is the bot aim steady?
-	bool m_isOnTarget; // Is the bot looking at it's look timer
+	bool m_isOnTarget; // Is the bot looking at it's look target
 	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
 	IntervalTimer m_steadyTimer; // Aim stability timer
 	AimData m_aimdata;

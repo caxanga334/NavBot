@@ -8,12 +8,22 @@
 #include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_build_object.h"
 
-CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location)
+CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location, const QAngle* angles)
 {
 	m_type = type;
 	m_goal = location;
 	m_reachedGoal = false;
 	m_trydir = randomgen->GetRandomInt<int>(0, 3); // randomize initial value
+
+	if (angles != nullptr)
+	{
+		m_lookangles = *angles;
+		m_hasangles = true;
+	}
+	else
+	{
+		m_hasangles = false;
+	}
 
 	switch (type)
 	{
@@ -46,6 +56,22 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 	{
 		return Done("Failed to build path to build location.");
+	}
+
+	if (m_hasangles)
+	{
+		trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
+		trace_t tr;
+		Vector mins = bot->GetMins();
+		Vector maxs = bot->GetMaxs();
+
+		trace::hull(m_goal, m_goal, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+		if (tr.fraction < 1.0f || tr.startsolid)
+		{
+			// disable high precision placement, bot will get stuck
+			m_hasangles = false;
+		}
 	}
 
 	m_repathTimer.Start(2.5f);
@@ -198,6 +224,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 
 		m_nav.Update(bot);
+
+		// RED bots on MvM can build without limits, this is a workround to make sure the bot has the correct weapon
+		bot->SelectWeapon(bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot_Primary));
 	}
 
 
@@ -219,7 +248,25 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnMoveToSuccess
 {
 	m_reachedGoal = true;
 	m_giveupTimer.Start(15.0f);
-	m_strafeTimer.Start(2.0f);
-	bot->GetMovementInterface()->Brake();
+
+	// high precision building placement
+	if (m_hasangles)
+	{
+		Vector forward;
+		AngleVectors(m_lookangles, &forward);
+		forward.NormalizeInPlace();
+		Vector lookpoint = m_goal + (forward * 256.0f);
+		bot->GetControlInterface()->AimAt(lookpoint, IPlayerController::LOOK_CRITICAL, 2.0f, "Looking at high precision building placement location.");
+		bot->Teleport(m_goal); // cheat
+		bot->SnapEyeAngles(m_lookangles);
+		m_strafeTimer.Start(4.0f);
+		bot->GetMovementInterface()->Brake(0.3f);
+	}
+	else
+	{
+		m_strafeTimer.Start(2.0f);
+		bot->GetMovementInterface()->Brake();
+	}
+
 	return TryContinue();
 }

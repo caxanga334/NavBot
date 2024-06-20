@@ -34,6 +34,8 @@ public:
 	// Checks if there are obstructions between the bot and the given position
 	virtual bool IsLineOfSightClear(const Vector& pos);
 	virtual bool IsLineOfSightClear(CBaseExtPlayer& player);
+	virtual bool IsLineOfSightClear(edict_t* entity);
+	virtual bool IsLineOfSightClear(CBaseEntity* entity);
 	virtual bool IsInFieldOfView(const Vector& pos);
 	// Is the entity hidden by fog, smoke, etc?
 	virtual bool IsEntityHidden(edict_t* entity) { return false; }

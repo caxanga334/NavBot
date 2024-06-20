@@ -235,6 +235,50 @@ bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player)
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
+bool ISensor::IsLineOfSightClear(edict_t* entity)
+{
+	auto start = GetBot()->GetEyeOrigin();
+	entities::HBaseEntity baseent(entity);
+	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
+	trace_t result;
+
+	trace::line(start, baseent.EyePosition(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+
+	if (result.DidHit())
+	{
+		trace::line(start, baseent.WorldSpaceCenter(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+
+		if (result.DidHit())
+		{
+			trace::line(start, baseent.GetAbsOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+		}
+	}
+
+	return result.fraction >= 1.0f && !result.startsolid;
+}
+
+bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
+{
+	auto start = GetBot()->GetEyeOrigin();
+	entities::HBaseEntity baseent(entity);
+	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
+	trace_t result;
+
+	trace::line(start, baseent.EyePosition(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+
+	if (result.DidHit())
+	{
+		trace::line(start, baseent.WorldSpaceCenter(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+
+		if (result.DidHit())
+		{
+			trace::line(start, baseent.GetAbsOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+		}
+	}
+
+	return result.fraction >= 1.0f && !result.startsolid;
+}
+
 bool ISensor::IsInFieldOfView(const Vector& pos)
 {
 	Vector forward;

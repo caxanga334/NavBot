@@ -98,6 +98,35 @@ public:
 	 * @return A CBaseEntity pointer of the weapon or NULL if no weapon is found.
 	 */
 	CBaseEntity* GetWeaponOfSlot(int slot) const;
+	/**
+	 * @brief Sets the player view angles. Reimplementation of the SDK's CBasePlayer::SnapEyeAngles
+	 * @param viewAngles Angles to set.
+	 */
+	void SnapEyeAngles(const QAngle& viewAngles) const;
+
+	static constexpr auto DEFAULT_LOOK_TOWARDS_TOLERANCE = 0.9f;
+
+	/**
+	 * @brief Checks if the player is looking towars the given entity.
+	 * @param edict Entity to check if the player is looking at.
+	 * @param tolerance Dot product tolerance.
+	 * @return true if looking, false otherwise.
+	 */
+	bool IsLookingTowards(edict_t* edict, const float tolerance = DEFAULT_LOOK_TOWARDS_TOLERANCE) const;
+	/**
+	 * @brief Checks if the player is looking towars the given entity.
+	 * @param entity Entity to check if the player is looking at.
+	 * @param tolerance Dot product tolerance.
+	 * @return true if looking, false otherwise.
+	 */
+	bool IsLookingTowards(CBaseEntity* entity, const float tolerance = DEFAULT_LOOK_TOWARDS_TOLERANCE) const;
+	/**
+	 * @brief Checks if the player is looking towars the given position.
+	 * @param position Position to check if the player is looking at.
+	 * @param tolerance Dot product tolerance.
+	 * @return true if looking, false otherwise.
+	 */
+	bool IsLookingTowards(const Vector& position, const float tolerance = DEFAULT_LOOK_TOWARDS_TOLERANCE) const;
 
 protected:
 

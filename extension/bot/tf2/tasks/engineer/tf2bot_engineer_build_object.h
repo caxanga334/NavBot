@@ -19,7 +19,7 @@ public:
 		MAX_OBJECT_TYPES
 	};
 
-	CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location);
+	CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location, const QAngle* angles = nullptr);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
@@ -28,11 +28,21 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
+	{
+		if (m_reachedGoal)
+		{
+			return ANSWER_NO;
+		}
+
+		return ANSWER_UNDEFINED;
+	}
 
 	const char* GetName() const override { return m_taskname.c_str(); }
 
 private:
 	Vector m_goal;
+	QAngle m_lookangles;
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_giveupTimer;
 	CountdownTimer m_strafeTimer;
@@ -40,6 +50,7 @@ private:
 	eObjectType m_type;
 	std::string m_taskname;
 	bool m_reachedGoal;
+	bool m_hasangles;
 	int m_trydir;
 };
 

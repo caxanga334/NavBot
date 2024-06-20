@@ -472,4 +472,15 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs NavMeshCollector", FCVAR_CHEA
 	}
 }
 
+CON_COMMAND_F(sm_snap_my_angles, "sNAP", FCVAR_CHEAT)
+{
+	CBaseExtPlayer player(gamehelpers->EdictOfIndex(1));
+	
+	QAngle angles(0.0f, 0.0f, 0.0f);
+
+	angles.y = randomgen->GetRandomReal<vec_t>(0.0f, 359.0f);
+
+	player.SnapEyeAngles(angles);
+}
+
 #endif // EXT_DEBUG

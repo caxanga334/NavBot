@@ -1,4 +1,5 @@
 #include "extension.h"
+#include <PlayerState.h>
 #include "navmesh/nav_mesh.h"
 #include "navmesh/nav_area.h"
 #include <entities/baseentity.h>
@@ -340,6 +341,46 @@ CBaseEntity* CBaseExtPlayer::GetWeaponOfSlot(int slot) const
 {
 	return sdkcalls->CBaseCombatCharacter_Weapon_GetSlot(GetEntity(), slot);
 }
+
+void CBaseExtPlayer::SnapEyeAngles(const QAngle& viewAngles) const
+{
+	CPlayerState* state = gameclients->GetPlayerState(GetEdict());
+
+	if (state != nullptr)
+	{
+		state->v_angle = viewAngles;
+		state->fixangle = FIXANGLE_ABSOLUTE;
+	}
+#ifdef EXT_DEBUG
+	else
+	{
+		smutils->LogError(myself, "Got NULL CPlayerState!");
+	}
+#endif // EXT_DEBUG
+}
+
+bool CBaseExtPlayer::IsLookingTowards(edict_t* edict, const float tolerance) const
+{
+	entities::HBaseEntity be(edict);
+	return IsLookingTowards(be.GetAbsOrigin(), tolerance) || IsLookingTowards(be.WorldSpaceCenter(), tolerance) || IsLookingTowards(be.EyePosition(), tolerance);
+}
+
+bool CBaseExtPlayer::IsLookingTowards(CBaseEntity* entity, const float tolerance) const
+{
+	entities::HBaseEntity be(entity);
+	return IsLookingTowards(be.GetAbsOrigin(), tolerance) || IsLookingTowards(be.WorldSpaceCenter(), tolerance) || IsLookingTowards(be.EyePosition(), tolerance);
+}
+
+bool CBaseExtPlayer::IsLookingTowards(const Vector& position, const float tolerance) const
+{
+	Vector eyepos = GetEyeOrigin();
+	Vector to = position - eyepos;
+	to.NormalizeInPlace();
+	Vector forward;
+	EyeVectors(&forward);
+	return DotProduct(forward, to) >= tolerance;
+}
+
 
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)

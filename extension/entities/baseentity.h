@@ -27,6 +27,7 @@ namespace entities
 		bool IsBoundsDefinedInEntitySpace() const;
 		Vector GetAbsOrigin() const;
 		void SetAbsOrigin(const Vector& origin) const;
+		Vector EyePosition() const;
 		Vector WorldAlignMins() const;
 		Vector WorldAlignMaxs() const;
 		Vector OBBCenter() const;
