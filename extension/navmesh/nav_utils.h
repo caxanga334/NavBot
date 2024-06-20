@@ -2,8 +2,9 @@
 #define NAVMESH_UTILS_H_
 
 #include <util/librandom.h>
-#include "nav.h"
 #include "nav_area.h"
+
+extern NavAreaVector TheNavAreas;
 
 // undef valve mathlib stuff so we can use std version
 #undef max
@@ -13,9 +14,8 @@
 namespace navutils
 {
 	template <typename F, typename T>
-	static void CollectNavAreasInRadius(const Vector& center, const float radius, F shouldCollectFunctor, std::vector<T*>& out)
+	void CollectNavAreasInRadius(const Vector& center, const float radius, F shouldCollectFunctor, std::vector<T*>& out)
 	{
-		extern NavAreaVector TheNavAreas;
 		FOR_EACH_VEC(TheNavAreas, it)
 		{
 			CNavArea* basearea = TheNavAreas[it];
