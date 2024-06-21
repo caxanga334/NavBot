@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
@@ -5,9 +7,14 @@
 #include <mods/tf2/tf2lib.h>
 #include "tf2bot_medic_retreat_task.h"
 
+#undef max
+#undef min
+#undef clamp
+
 TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	m_goal = bot->GetHomePos();
+	m_goal = GetRetreatPosition(bot);
+
 	CTF2BotPathCost cost(bot);
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost, 0.0f, true))
 	{
@@ -54,4 +61,36 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
+}
+
+// Retreat to the nearest alive teammate or to my spawn point if none is found
+Vector CTF2BotMedicRetreatTask::GetRetreatPosition(CTF2Bot* me) const
+{
+	CBaseEntity* nearestTeammate = nullptr;
+	float t = std::numeric_limits<float>::max();
+	auto myteam = me->GetMyTFTeam();
+	Vector origin = me->GetAbsOrigin();
+	Vector goal;
+
+	UtilHelpers::ForEachPlayer([&t, &nearestTeammate, &myteam, &origin, &goal](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (player->IsInGame() && UtilHelpers::IsPlayerAlive(client) && tf2lib::GetEntityTFTeam(client) == myteam)
+		{
+			CBaseExtPlayer them(entity);
+			float d = (them.GetAbsOrigin() - origin).Length();
+
+			if (d < t)
+			{
+				t = d;
+				nearestTeammate = them.GetEntity();
+				goal = them.GetAbsOrigin();
+			}
+		}
+	});
+
+	if (nearestTeammate != nullptr)
+	{
+		return goal;
+	}
+
+	return me->GetHomePos();
 }

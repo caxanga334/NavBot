@@ -22,6 +22,8 @@ private:
 	CountdownTimer m_repathtimer;
 
 	static constexpr float home_range() { return 256.0f; }
+
+	Vector GetRetreatPosition(CTF2Bot* me) const;
 };
 
 

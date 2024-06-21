@@ -121,7 +121,8 @@ workspace "navbot"
         defines { "NDEBUG" }
         targetdir "build/bin/%{cfg.architecture}/release"
         optimize "Full"
-        flags { "LinkTimeOptimization" }         
+        flags { "LinkTimeOptimization" }
+		visibility "Hidden"
 
     filter { "platforms:Win32" }
         system "Windows"

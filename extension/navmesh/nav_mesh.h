@@ -182,7 +182,7 @@ enum GetNavAreaFlags_t
 class PlaceDirectory
 {
 public:
-	typedef std::size_t IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
+	typedef uint32_t IndexType;	// Loaded/Saved as UnsignedShort.  Change this and you'll have to version.
 
 	PlaceDirectory(void)
 	{

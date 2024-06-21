@@ -17,9 +17,9 @@ void CTFNavArea::Save(std::fstream& filestream, uint32_t version)
 {
 	CNavArea::Save(filestream, version); // Save base first
 
-	filestream.write(reinterpret_cast<char*>(&m_tfattributes), sizeof(m_tfattributes));
-	filestream.write(reinterpret_cast<char*>(&m_tfpathattributes), sizeof(m_tfpathattributes));
-	filestream.write(reinterpret_cast<char*>(&m_mvmattributes), sizeof(m_mvmattributes));
+	filestream.write(reinterpret_cast<char*>(&m_tfattributes), sizeof(int));
+	filestream.write(reinterpret_cast<char*>(&m_tfpathattributes), sizeof(int));
+	filestream.write(reinterpret_cast<char*>(&m_mvmattributes), sizeof(int));
 }
 
 NavErrorType CTFNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
@@ -33,9 +33,9 @@ NavErrorType CTFNavArea::Load(std::fstream& filestream, uint32_t version, uint32
 
 	if (subVersion > 0)
 	{
-		filestream.read(reinterpret_cast<char*>(&m_tfattributes), sizeof(m_tfattributes));
-		filestream.read(reinterpret_cast<char*>(&m_tfpathattributes), sizeof(m_tfpathattributes));
-		filestream.read(reinterpret_cast<char*>(&m_mvmattributes), sizeof(m_mvmattributes));
+		filestream.read(reinterpret_cast<char*>(&m_tfattributes), sizeof(int));
+		filestream.read(reinterpret_cast<char*>(&m_tfpathattributes), sizeof(int));
+		filestream.read(reinterpret_cast<char*>(&m_mvmattributes), sizeof(int));
 
 		if (!filestream.good())
 		{

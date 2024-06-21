@@ -32,6 +32,12 @@
 #include <filesystem.h>
 #include <eiface.h>
 
+/*
+* Reminders:
+* size_t / std::size_t will change size between 32/64 bits. If saving a size_t, save as uint64_t!
+*/
+
+
 class NavMeshFileHeader
 {
 public:

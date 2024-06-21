@@ -4,8 +4,11 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <bot/tf2/tf2bot.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
+#include <entities/tf2/tf_entities.h>
 #include "tf2bot_medic_retreat_task.h"
+#include "tf2bot_medic_revive_task.h"
 #include "tf2bot_medic_main_task.h"
 
 #undef max
@@ -31,11 +34,26 @@ TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskUpdate(CTF2Bot* bot)
 		LookForPatients(bot);
 	}
 
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
+	{
+		if (!tf2lib::IsPlayerInvulnerable(bot->GetIndex()) || !IsCurrentPatientValid())
+		{
+			CBaseEntity* marker = FindReviveMarker(bot);
+
+			if (marker != nullptr)
+			{
+				return PauseFor(new CTF2BotMedicReviveTask(marker), "Reviving dead teammate.");
+			}
+		}
+	}
+
 	if (IsCurrentPatientValid())
 	{
+		m_haspatienttimer.Start();
 		EquipMedigun(bot);
+		PathToPatient(bot);
 
-		if (bot->GetRangeTo(m_patient.ToEdict()) <= medigun_max_range())
+		if (bot->GetRangeTo(m_patient.ToEdict()) <= medigun_max_range() && bot->GetSensorInterface()->IsLineOfSightClear(m_patient.Get()))
 		{
 			bot->GetControlInterface()->AimAt(m_patient.ToEdict(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at my patient to heal them.");
 
@@ -56,6 +74,13 @@ TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskUpdate(CTF2Bot* bot)
 					}
 				}
 			}
+		}
+	}
+	else
+	{
+		if (!LookForPatients(bot) && m_haspatienttimer.IsGreaterThen(3.0f))
+		{
+			return PauseFor(new CTF2BotMedicRetreatTask, "No patient, retreating to find one.");
 		}
 	}
 
@@ -228,4 +253,27 @@ float CTF2BotMedicMainTask::GetUbercharge(CTF2Bot* me)
 	}
 
 	return 0.0f;
+}
+
+CBaseEntity* CTF2BotMedicMainTask::FindReviveMarker(CTF2Bot* me)
+{
+	CBaseEntity* marker = nullptr;
+	float t = std::numeric_limits<float>::max();
+	Vector origin = me->GetAbsOrigin();
+
+	UtilHelpers::ForEachEntityOfClassname("entity_revive_marker", [&marker, &t, &origin](int index, edict_t* edict, CBaseEntity* entity) -> bool {
+		tfentities::HTFBaseEntity be(entity);
+
+		float d = (be.GetAbsOrigin() - origin).Length();
+
+		if (d < t && d <= 2048.0f)
+		{
+			marker = entity;
+			t = d;
+		}
+
+		return true;
+	});
+
+	return marker;
 }

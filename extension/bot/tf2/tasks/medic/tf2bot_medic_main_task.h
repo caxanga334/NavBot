@@ -45,7 +45,9 @@ private:
 
 	float GetUbercharge(CTF2Bot* me);
 
-	static constexpr float MEDIC_MAX_DISTANCE = 300.0f;
+	CBaseEntity* FindReviveMarker(CTF2Bot* me);
+
+	static constexpr float MEDIC_MAX_DISTANCE = 200.0f;
 	static constexpr auto medigun_max_range() { return 420.0f; }
 	static constexpr auto heal_dot_tolerance() { return 0.95f; }
 };
