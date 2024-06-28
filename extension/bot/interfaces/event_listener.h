@@ -49,6 +49,12 @@ public:
 	virtual void OnSight(edict_t* subject); // when the bot spots an entity
 	virtual void OnLostSight(edict_t* subject); // when the bot loses sight of an entity
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume); // when the bot hears an entity
+	virtual void OnRoundStateChanged(); // When the round state changes (IE: round start,end, freeze time end, setup time end, etc...)
+	virtual void OnFlagTaken(CBaseEntity* flag); // CTF: Flag was stolen
+	virtual void OnFlagDropped(CBaseEntity* flag); // CTF: Flag was dropped
+	virtual void OnControlPointCaptured(CBaseEntity* point); // When a control point is captured
+	virtual void OnControlPointLost(CBaseEntity* point); // When a control point is lost
+	virtual void OnControlPointContested(CBaseEntity* point); // When a control point is under siege
 };
 
 inline void IEventListener::OnTestEventPropagation()
@@ -216,6 +222,84 @@ inline void IEventListener::OnSound(edict_t* source, const Vector& position, Sou
 		for (auto listener : *vec)
 		{
 			listener->OnSound(source, position, type, volume);
+		}
+	}
+}
+
+inline void IEventListener::OnRoundStateChanged()
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnRoundStateChanged();
+		}
+	}
+}
+
+inline void IEventListener::OnFlagTaken(CBaseEntity* flag)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnFlagTaken(flag);
+		}
+	}
+}
+
+inline void IEventListener::OnFlagDropped(CBaseEntity* flag)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnFlagDropped(flag);
+		}
+	}
+}
+
+inline void IEventListener::OnControlPointCaptured(CBaseEntity* point)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnControlPointCaptured(point);
+		}
+	}
+}
+
+inline void IEventListener::OnControlPointLost(CBaseEntity* point)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnControlPointLost(point);
+		}
+	}
+}
+
+inline void IEventListener::OnControlPointContested(CBaseEntity* point)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnControlPointContested(point);
 		}
 	}
 }

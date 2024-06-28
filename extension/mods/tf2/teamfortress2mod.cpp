@@ -6,10 +6,12 @@
 #include <bot/basebot.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavmesh.h>
+#include <entities/tf2/tf_entities.h>
 #include "tf2lib.h"
 #include "teamfortress2mod.h"
 
-ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
+static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
+static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
 
 static const char* s_tf2gamemodenames[] = {
 	"NONE/DEFAULT",
@@ -109,6 +111,9 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	m_classselector.LoadClassSelectionData();
 
 	ListenForGameEvent("teamplay_round_start");
+	ListenForGameEvent("controlpoint_initialized");
+	ListenForGameEvent("mvm_begin_wave");
+	ListenForGameEvent("mvm_wave_complete");
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -129,6 +134,25 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		if (strncasecmp(name, "teamplay_round_start", 20) == 0)
 		{
 			OnRoundStart();
+			return;
+		}
+
+		if (strncasecmp(name, "mvm_begin_wave", 14) == 0)
+		{
+			OnRoundStart();
+			return;
+		}
+
+		if (strncasecmp(name, "mvm_wave_complete", 17) == 0)
+		{
+			OnRoundStart();
+			return;
+		}
+
+		if (strncasecmp(name, "controlpoint_initialized", 24) == 0)
+		{
+			FindControlPoints();
+			return;
 		}
 	}
 }
@@ -468,6 +492,106 @@ bool CTeamFortress2Mod::DetectPlayerDestruction()
 	return false;
 }
 
+void CTeamFortress2Mod::FindPayloadCarts()
+{
+	m_red_payload.Term();
+	m_blu_payload.Term();
+
+	UtilHelpers::ForEachEntityOfClassname("team_train_watcher", [this](int index, edict_t* edict, CBaseEntity* entity) {
+		if (edict == nullptr)
+		{
+			return true; // return early, keep loop
+		}
+
+		tfentities::HTFBaseEntity be(entity);
+
+		if (be.IsDisabled())
+		{
+			return true; // return early, keep loop
+		}
+
+		if (!m_red_payload.IsValid() && be.GetTFTeam() == TeamFortress2::TFTeam::TFTeam_Red)
+		{
+			std::unique_ptr<char[]> targetname = std::make_unique<char[]>(256);
+			std::size_t len = 0;
+
+			if (entprops->GetEntPropString(index, Prop_Data, "m_iszTrain", targetname.get(), 256, len))
+			{
+				int train = UtilHelpers::FindEntityByTargetname(INVALID_EHANDLE_INDEX, targetname.get());
+				CBaseEntity* pTrain = gamehelpers->ReferenceToEntity(train);
+
+				if (pTrain != nullptr)
+				{
+					if (sm_navbot_tf_mod_debug.GetBool())
+					{
+						smutils->LogMessage(myself, "[DEBUG] Found RED payload cart %s<#%i>", targetname.get(), train);
+					}
+
+					m_red_payload.Set(pTrain);
+				}
+			}
+		}
+
+		if (!m_blu_payload.IsValid() && be.GetTFTeam() == TeamFortress2::TFTeam::TFTeam_Blue)
+		{
+			std::unique_ptr<char[]> targetname = std::make_unique<char[]>(256);
+			std::size_t len = 0;
+
+			if (entprops->GetEntPropString(index, Prop_Data, "m_iszTrain", targetname.get(), 256, len))
+			{
+				int train = UtilHelpers::FindEntityByTargetname(INVALID_EHANDLE_INDEX, targetname.get());
+				CBaseEntity* pTrain = gamehelpers->ReferenceToEntity(train);
+
+				if (pTrain != nullptr)
+				{
+					if (sm_navbot_tf_mod_debug.GetBool())
+					{
+						smutils->LogMessage(myself, "[DEBUG] Found BLU payload cart %s<#%i>", targetname.get(), train);
+					}
+
+					m_blu_payload.Set(pTrain);
+				}
+			}
+		}
+
+		return true; // keep loop
+	});
+}
+
+void CTeamFortress2Mod::FindControlPoints()
+{
+	for (auto& handle : m_controlpoints)
+	{
+		handle.Term();
+	}
+
+	size_t i = 0;
+
+	UtilHelpers::ForEachEntityOfClassname("team_control_point", [this, &i](int index, edict_t* edict, CBaseEntity* entity) {
+		m_controlpoints[i].Set(entity);
+		
+		if (++i >= TeamFortress2::TF_MAX_CONTROL_POINTS)
+		{
+			return false; // end search
+		}
+
+		return true;
+	});
+
+	if (sm_navbot_tf_mod_debug.GetBool())
+	{
+		smutils->LogMessage(myself, "[DEBUG] Found %i control points.", i);
+
+		for (auto& handle : m_controlpoints)
+		{
+			if (handle.IsValid())
+			{
+				smutils->LogMessage(myself, "[DEBUG] Control Point: %i", handle.GetEntryIndex());
+			}
+		}
+	}
+}
+
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 {
 	std::string classname(sm_navbot_tf_force_class.GetString());
@@ -586,6 +710,16 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 	}
 
 	return nullptr;
+}
+
+void CTeamFortress2Mod::OnRoundStart()
+{
+	FindPayloadCarts();
+	FindControlPoints();
+
+	extmanager->ForEachBot([](CBaseBot* bot) {
+		bot->OnRoundStateChanged();
+	});
 }
 
 #if SOURCE_ENGINE == SE_TF2

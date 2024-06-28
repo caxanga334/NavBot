@@ -1,6 +1,7 @@
 #include <memory>
 #include <string>
 #include <sstream>
+#include <chrono>
 
 #include <extension.h>
 #include <manager.h>
@@ -127,7 +128,13 @@ CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 
 	ShortestPathCost cost;
 	CNavArea* closest = nullptr;
+	auto tstart = std::chrono::high_resolution_clock::now();
 	bool path = NavAreaBuildPath(startArea, goalArea, &end, cost, &closest, 10000.0f, -2);
+	auto tend = std::chrono::high_resolution_clock::now();
+
+	const std::chrono::duration<double, std::milli> millis = (tend - tstart);
+
+	Msg("NavAreaBuildPath took %f ms.\n", millis.count());
 
 	CNavArea* from = nullptr;
 	CNavArea* to = nullptr;

@@ -40,7 +40,7 @@ public:
 	CTF2BotMovement* GetMovementInterface() const override { return m_tf2movement.get(); }
 	CTF2BotSensor* GetSensorInterface() const override { return m_tf2sensor.get(); }
 	CTF2BotBehavior* GetBehaviorInterface() const override { return m_tf2behavior.get(); }
-	CTF2BotSpyMonitor* GetSpyMonitorInterface() const { return nullptr; }
+	CTF2BotSpyMonitor* GetSpyMonitorInterface() const { return m_tf2spymonitor.get(); }
 	int GetMaxHealth() const override;
 
 	TeamFortress2::TFClassType GetMyClassType() const;
@@ -116,7 +116,6 @@ private:
 	CBaseHandle m_myDispenser;
 	CBaseHandle m_myTeleporterEntrance;
 	CBaseHandle m_myTeleporterExit;
-	int m_knownspythink;
 	CTF2BotUpgradeManager m_upgrademan;
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }

@@ -365,6 +365,9 @@ void CExtManager::UpdateBotQuota()
 	if (m_quotatarget == 0)
 		return;
 
+	if (!TheNavMesh->IsLoaded())
+		return;
+
 	int humans = 0;
 	int navbots = 0;
 	int otherbots = 0;
@@ -463,6 +466,11 @@ void CExtManager::OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, fl
 	{
 		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
 		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
+	}
+
+	if (!TheNavMesh->IsLoaded())
+	{
+		Warning("[NAVBOT] Nav mesh not loaded, bot quota unavailable.\n");
 	}
 }
 

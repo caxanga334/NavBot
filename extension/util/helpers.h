@@ -21,6 +21,24 @@ namespace UtilHelpers
 	edict_t* GetEdict(int entity);
 	CBaseEntity* GetEntity(int entity);
 	bool IndexToAThings(int num, CBaseEntity** pEntData, edict_t** pEdictData);
+	// True if this is a valid CBaseEntity index
+	inline bool IsValidEntity(int index)
+	{
+		return gamehelpers->ReferenceToEntity(index) != nullptr;
+	}
+	// True if this is a valid edict index
+	inline bool IsValidEdict(int index)
+	{
+		edict_t* edict = nullptr;
+
+		if (!IndexToAThings(index, nullptr, &edict))
+		{
+			return false;
+		}
+
+		return edict != nullptr;
+	}
+
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.

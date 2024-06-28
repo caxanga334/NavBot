@@ -279,3 +279,31 @@ int tfentities::HBaseObject::GetUpgradeMetal() const
 	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iUpgradeMetal", value);
 	return value;
 }
+
+int tfentities::HTeamControlPoint::GetGroup() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iCPGroup", value);
+	return value;
+}
+
+int tfentities::HTeamControlPoint::GetPointIndex() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iPointIndex", value);
+	return value;
+}
+
+TeamFortress2::TFTeam tfentities::HTeamControlPoint::GetDefaultOwner() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iDefaultOwner", value);
+	return static_cast<TeamFortress2::TFTeam>(value);
+}
+
+bool tfentities::HTeamControlPoint::IsLocked() const
+{
+	int value = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_bLocked", value);
+	return value != 0;
+}

@@ -26,6 +26,8 @@ namespace TeamFortress2
 	constexpr int TF_AMMO_GRENADES2 = 5;
 	constexpr int TF_AMMO_GRENADES3 = 6;
 
+	constexpr size_t TF_MAX_CONTROL_POINTS = 8;
+
 	enum TFClassType
 	{
 		TFClass_Unknown = 0,

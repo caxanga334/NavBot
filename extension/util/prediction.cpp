@@ -4,6 +4,7 @@
 #include <extplayer.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
+#include <entities/baseentity.h>
 #include <mathlib/vector.h>
 #include "prediction.h"
 

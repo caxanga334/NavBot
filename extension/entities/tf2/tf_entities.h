@@ -93,6 +93,19 @@ namespace tfentities
 		}
 		inline float GetUpgradeProgress() const { return static_cast<float>(GetUpgradeMetal()) / static_cast<float>(GetMaxUpgradeMetal()); }
 	};
+
+	class HTeamControlPoint : public HTFBaseEntity
+	{
+	public:
+		HTeamControlPoint(edict_t* entity) : HTFBaseEntity(entity) {}
+		HTeamControlPoint(CBaseEntity* entity) : HTFBaseEntity(entity) {}
+
+		int GetGroup() const;
+		int GetPointIndex() const;
+		int GetArea() const { return GetPointIndex(); }
+		TeamFortress2::TFTeam GetDefaultOwner() const;
+		bool IsLocked() const;
+	};
 }
 
 #endif // !SMNAV_TFENTITIES_CAPTUREFLAG_H_

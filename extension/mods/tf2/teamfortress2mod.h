@@ -2,10 +2,12 @@
 #define SMNAV_TF2_MOD_H_
 #pragma once
 
+#include <array>
 #include <unordered_map>
 #include <string>
 #include <bot/interfaces/weaponinfo.h>
 #include <mods/basemod.h>
+#include <sdkports/sdk_ehandle.h>
 #include "tf2_class_selection.h"
 #include "teamfortress2_shareddefs.h"
 #include "mvm_upgrade_manager.h"
@@ -46,17 +48,24 @@ public:
 	edict_t* GetFlagToFetch(TeamFortress2::TFTeam team);
 	const CMvMUpgradeManager& GetMvMUpgradeManager() const { return m_upgrademanager; }
 	void ReloadUpgradeManager() { m_upgrademanager.Reload(); }
+	void OnRoundStart() override;
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
 	CTF2ClassSelection m_classselector;
 	CMvMUpgradeManager m_upgrademanager;
+	CHandle<CBaseEntity> m_red_payload;
+	CHandle<CBaseEntity> m_blu_payload;
+	std::array<CHandle<CBaseEntity>, TeamFortress2::TF_MAX_CONTROL_POINTS> m_controlpoints;
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();
 	bool DetectMapViaGameRules();
 	bool DetectKoth();
 	bool DetectPlayerDestruction();
+
+	void FindPayloadCarts();
+	void FindControlPoints();
 };
 
 inline TeamFortress2::TFWeaponID CTeamFortress2Mod::GetTFWeaponID(std::string& classname) const

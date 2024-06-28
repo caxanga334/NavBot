@@ -568,6 +568,12 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type, const int volume) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnRoundStateChanged(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnFlagTaken(BotClass* bot, CBaseEntity* flag) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnFlagDropped(BotClass* bot, CBaseEntity* flag) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnControlPointCaptured(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnControlPointLost(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnControlPointContested(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1018,6 +1024,36 @@ private:
 	void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnSound, source, position, type, volume);
+	}
+
+	void OnRoundStateChanged() override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnRoundStateChanged);
+	}
+
+	void OnFlagTaken(CBaseEntity* flag) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagTaken, flag);
+	}
+
+	void OnFlagDropped(CBaseEntity* flag) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagDropped, flag);
+	}
+
+	void OnControlPointCaptured(CBaseEntity* point) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointCaptured, point);
+	}
+
+	void OnControlPointLost(CBaseEntity* point) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointLost, point);
+	}
+
+	void OnControlPointContested(CBaseEntity* point) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointContested, point);
 	}
 };
 
