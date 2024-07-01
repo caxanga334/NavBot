@@ -265,6 +265,79 @@ void CEntPropUtils::Init(bool reset)
 	smutils->LogMessage(myself, "CEntPropUtils::Init -- Done.");
 }
 
+/**
+ * @brief Checks if a property exists on an entity.
+ * @param entity Entity index/reference to search.
+ * @param proptype Property type.
+ * @param prop Property name.
+ * @param offset Optional variable to store the property offset if found.
+ * @return True if the property was found. False otherwise.
+ */
+bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset)
+{
+	using namespace SourceMod;
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+
+	if (!pEntity)
+	{
+		return false;
+	}
+
+	switch (proptype)
+	{
+	case Prop_Send:
+	{
+		ServerClass* pClass = gamehelpers->FindEntityServerClass(pEntity);
+		sm_sendprop_info_t info;
+		
+		if (!pClass)
+		{
+			return false;
+		}
+
+		if (gamehelpers->FindSendPropInfo(pClass->GetName(), prop, &info))
+		{
+			if (offset != nullptr)
+			{
+				*offset = info.actual_offset;
+			}
+
+			return true;
+		}
+
+		break;
+	}
+	case Prop_Data:
+	{
+		datamap_t* map = gamehelpers->GetDataMap(pEntity);
+		sm_datatable_info_t info;
+
+		if (map == nullptr)
+		{
+			return false;
+		}
+
+		if (gamehelpers->FindDataMapInfo(map, prop, &info))
+		{
+			if (offset != nullptr)
+			{
+				*offset = info.actual_offset;
+			}
+
+			return true;
+		}
+
+		break;
+	}
+	default:
+		return false;
+	}
+
+
+	return false;
+}
+
 /// @brief Checks if the given entity is a networked entity
 /// @param pEntity Entity to check
 /// @return true if the entity is networked, false otherwise

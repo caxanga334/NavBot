@@ -219,8 +219,8 @@ public:
 	virtual void AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint);
 	// Called when the bot is determined to be stuck, try to unstuck it (IE: jumping)
 	virtual void TryToUnstuck();
-	// Called when an obstacle is found between 'from' and 'to'. Try to avoid it (IE: by jumping)
-	virtual void TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle);
+	// Called when there is an obstacle on the bot's path.
+	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer

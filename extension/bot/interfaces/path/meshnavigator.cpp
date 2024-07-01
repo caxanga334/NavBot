@@ -418,8 +418,7 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 				}
 
 				float fraction;
-				CBaseEntity* obstacle = nullptr;
-				bool IsPotentiallyTraversable = mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false, &obstacle);
+				bool IsPotentiallyTraversable = mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false);
 				if (IsPotentiallyTraversable && mover->HasPotentialGap(origin, next->goal, fraction) == false)
 				{
 					// only skip a segment if the bot is able to move directly to it from it's current position
@@ -435,10 +434,6 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 				}
 				else
 				{
-					if (!IsPotentiallyTraversable && obstacle != nullptr)
-					{
-						mover->TryToAvoidObstacleInPath(origin, next->goal, fraction, obstacle);
-					}
 
 					break; // unreachable, just keep following the path
 				}
@@ -1006,6 +1001,8 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	Vector nextStepHullMin(-size, -size, 2.0f * mover->GetStepHeight() + 0.1f);
 
 	CBaseEntity* door = nullptr;
+	CBaseEntity* leftEnt = nullptr;
+	CBaseEntity* rightEnt = nullptr;
 
 	// check left side
 	Vector leftFrom = bot->GetAbsOrigin() + offset * left;
@@ -1037,6 +1034,8 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 				door = result.m_pEnt;
 			}
 		}
+
+		leftEnt = result.m_pEnt;
 	}
 
 	// check right side
@@ -1067,6 +1066,8 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 				door = result.m_pEnt;
 			}
 		}
+
+		rightEnt = result.m_pEnt;
 	}
 
 	Vector adjustedGoal = goalPos;
@@ -1079,7 +1080,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 		Vector forward, right, up;
 		AngleVectors(doorent.GetAbsAngles(), &forward, &right, &up);
 
-		const float doorWidth = 100.0f;
+		constexpr float doorWidth = 100.0f;
 		Vector doorEdge = doorent.GetAbsOrigin() - doorWidth * right;
 
 		adjustedGoal.x = doorEdge.x;
@@ -1124,6 +1125,12 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 		// do avoid check again next frame
 		m_avoidTimer.Invalidate();
+	}
+
+	// If the bot did not hit a door and the blocking entity is the same for both left and right, notify movement
+	if (door == nullptr && isLeftClear == false && isRightClear == false && leftEnt == rightEnt)
+	{
+		mover->ObstacleOnPath(leftEnt, goalPos, forward, left);
 	}
 
 	if (bot->IsDebugging(BOTDEBUG_PATH))

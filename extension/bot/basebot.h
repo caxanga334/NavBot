@@ -35,6 +35,9 @@ public:
 
 	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools);
 
+	// Called when the bot is added to the game
+	void PostAdd();
+
 private:
 	void AddHooks();
 

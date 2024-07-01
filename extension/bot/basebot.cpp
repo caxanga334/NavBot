@@ -5,198 +5,14 @@
 #include <util/entprops.h>
 #include <util/librandom.h>
 #include <util/sdkcalls.h>
-#include <bot/interfaces/base_interface.h>
-#include <bot/interfaces/knownentity.h>
-#include <bot/interfaces/playerinput.h>
-#include <bot/interfaces/tasks.h>
-#include <bot/interfaces/path/meshnavigator.h>
 #include <mods/basemod.h>
 #include <tier1/convar.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include <sdkports/sdk_traces.h>
+#include "basebot_behavior.h"
 #include "basebot.h"
 
-extern CGlobalVars* gpGlobals;
-
 ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty.");
-
-class CBaseBotTestTask : public AITask<CBaseBot>
-{
-public:
-	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	TaskEventResponseResult<CBaseBot> OnTestEventPropagation(CBaseBot* bot) override;
-	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
-	const char* GetName() const override { return "CBaseBotTestTask"; }
-};
-
-class CBaseBotPathTestTask : public AITask<CBaseBot>
-{
-public:
-	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
-	const char* GetName() const override { return "CBaseBotPathTestTask"; }
-
-private:
-	CMeshNavigator m_nav;
-	Vector m_goal;
-};
-
-class CBaseBotSwitchTestTask : public AITask<CBaseBot>
-{
-public:
-	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
-	const char* GetName() const override { return "CBaseBotSwitchTestTask"; }
-};
-
-TaskResult<CBaseBot> CBaseBotTestTask::OnTaskUpdate(CBaseBot* bot)
-{
-	// rootconsole->ConsolePrint("AI Task -- Update");
-	return Continue();
-}
-
-TaskResult<CBaseBot> CBaseBotTestTask::OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask)
-{
-	rootconsole->ConsolePrint("CBaseBotTestTask::OnTaskResume");
-	return SwitchTo(new CBaseBotSwitchTestTask, "Testing Task Switch!");
-}
-
-TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnTestEventPropagation(CBaseBot* bot)
-{
-	rootconsole->ConsolePrint("AI Event -- OnTestEventPropagation");
-	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH, "Event pause test!");
-}
-
-QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(CBaseBot* me)
-{
-	rootconsole->ConsolePrint("AI Query -- ShouldFreeRoam");
-	return ANSWER_YES;
-}
-
-TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)
-{
-	edict_t* host = gamehelpers->EdictOfIndex(1); // get listen server host
-	CBaseExtPlayer player(host);
-	ShortestPathCost cost;
-
-	m_goal = player.GetAbsOrigin();
-	m_nav.SetSkipAheadDistance(350.0f);
-
-	bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
-
-	if (result == false)
-	{
-		rootconsole->ConsolePrint("CBaseBotPathTestTask::OnTaskStart path failed!");
-		return Done("Failed to find a path!");
-	}
-
-	return Continue();
-}
-
-TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
-{
-	if (m_nav.IsValid() == false)
-	{
-		return Done("My Path is invalid!");
-	}
-
-	if (m_nav.GetAge() > 1.0f)
-	{
-		ShortestPathCost cost;
-		bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
-
-		if (result == false)
-		{
-			return Done("No Path!");
-		}
-	}
-
-	m_nav.Update(bot);
-	return Continue();
-}
-
-TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnMoveToSuccess(CBaseBot* bot, CPath* path)
-{
-	return TryDone(PRIORITY_HIGH, "Returning to previous task!");
-}
-
-class CBaseBotBehavior : public IBehavior
-{
-public:
-	CBaseBotBehavior(CBaseBot* bot);
-	~CBaseBotBehavior() override;
-
-	void Reset() override;
-	void Update() override;
-
-	IDecisionQuery* GetDecisionQueryResponder() override { return m_manager; }
-	std::vector<IEventListener*>* GetListenerVector() override;
-
-private:
-	AITaskManager<CBaseBot>* m_manager;
-	std::vector<IEventListener*> m_listeners;
-};
-
-TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)
-{
-	rootconsole->ConsolePrint("CBaseBotSwitchTestTask::OnTaskStart");
-	
-	if (pastTask != nullptr)
-	{
-		rootconsole->ConsolePrint("%p", pastTask);
-	}
-
-	return Continue();
-}
-
-TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskUpdate(CBaseBot* bot)
-{
-	rootconsole->ConsolePrint("Hello from CBaseBotSwitchTestTask::OnTaskUpdate!");
-	return SwitchTo(new CBaseBotTestTask, "Returning back to main task!");
-}
-
-CBaseBotBehavior::CBaseBotBehavior(CBaseBot* bot) : IBehavior(bot)
-{
-	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
-	m_listeners.reserve(2);
-	m_listeners.push_back(m_manager);
-}
-
-CBaseBotBehavior::~CBaseBotBehavior()
-{
-	delete m_manager;
-}
-
-void CBaseBotBehavior::Reset()
-{
-	m_listeners.clear();
-
-	delete m_manager;
-	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
-
-	m_listeners.push_back(m_manager);
-}
-
-void CBaseBotBehavior::Update()
-{
-	m_manager->Update(GetBot());
-}
-
-std::vector<IEventListener*>* CBaseBotBehavior::GetListenerVector()
-{
-	if (m_manager == nullptr)
-	{
-		return nullptr;
-	}
-
-	static std::vector<IEventListener*> listeners;
-	listeners.clear();
-	listeners.push_back(m_manager);
-	return &listeners;
-}
-
 
 CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
@@ -237,6 +53,18 @@ CBaseBot::~CBaseBot()
 	}
 
 	m_shhooks.clear();
+}
+
+void CBaseBot::PostAdd()
+{
+	if (m_controller == nullptr)
+	{
+		m_controller = botmanager->GetBotController(GetEdict());
+	}
+
+#ifdef EXT_DEBUG
+	ConColorMsg(Color(0, 255, 60, 255), "CBaseBot::PostAdd m_controller = %p \n", m_controller);
+#endif // EXT_DEBUG
 }
 
 std::vector<IEventListener*>* CBaseBot::GetListenerVector()

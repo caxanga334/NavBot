@@ -78,6 +78,7 @@ class CEntPropUtils
 {
 public:
 	void Init(bool reset = false);
+	bool HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
 	bool GetEntProp(int entity, PropType proptype, const char *prop, int &result, int size = 4, int element = 0);
 	bool GetEntPropBool(int entity, PropType proptype, const char *prop, bool& result, int element = 0);
 	bool SetEntProp(int entity, PropType proptype, const char *prop, int value, int size = 4, int element = 0);

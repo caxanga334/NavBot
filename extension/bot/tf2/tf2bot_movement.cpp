@@ -174,38 +174,6 @@ bool CTF2BotMovement::IsEntityTraversable(edict_t* entity, const bool now)
 	return IMovement::IsEntityTraversable(entity, now);
 }
 
-void CTF2BotMovement::TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle)
-{
-	auto classname = gamehelpers->GetEntityClassname(obstacle);
-	bool isobject = false;
-
-	if (classname != nullptr && classname[0] != '\0')
-	{
-		if (strncasecmp(classname, "obj_", 4) == 0)
-		{
-			isobject = true;
-		}
-	}
-
-	auto me = GetTF2Bot();
-
-	if (me->GetMyClassType() == TeamFortress2::TFClass_Engineer && isobject)
-	{
-		tfentities::HBaseObject object(obstacle);
-
-		if (object.GetBuilderIndex() == me->GetIndex())
-		{
-			// my objects are solid to me
-			if (IsOnGround() && me->GetRangeTo(object.GetAbsOrigin()) < 32.0f)
-			{
-				CrouchJump(); // try jumping over my buildings
-			}
-		}
-	}
-
-	IMovement::TryToAvoidObstacleInPath(from, to, fraction, obstacle);
-}
-
 CTF2Bot* CTF2BotMovement::GetTF2Bot() const
 {
 	return static_cast<CTF2Bot*>(GetBot());

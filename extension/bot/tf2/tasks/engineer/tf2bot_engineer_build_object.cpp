@@ -76,6 +76,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 
 	m_repathTimer.Start(2.5f);
 
+	// hack for mvm
+	bot->SelectWeapon(bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Primary));
+
 	return Continue();
 }
 

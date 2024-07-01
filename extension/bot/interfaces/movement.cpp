@@ -748,13 +748,36 @@ void IMovement::TryToUnstuck()
 	}
 }
 
-void IMovement::TryToAvoidObstacleInPath(const Vector& from, const Vector& to, const float& fraction, CBaseEntity* obstacle)
+void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left)
 {
-	int index = gamehelpers->EntityToBCompatRef(obstacle);
+	Vector mins(-8, -8, -8);
+	Vector maxs(8, 8, 4);
+	Vector start = GetBot()->GetEyeOrigin();
+	Vector end = goalPos;
+	end.z = start.z;
 
-	if (index == 0)
+	trace::CTraceFilterNoNPCsOrPlayers filter(GetBot()->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
+	trace_t tr;
+	trace::hull(start, end, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+	if (!tr.startsolid && tr.fraction >= 0.9999f)
 	{
-		return; // worldspawn entity
+		// Nothing ahead around eye level, JUMP!
+		CrouchJump();
+
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			NDebugOverlay::SweptBox(start, end, mins, maxs, vec3_angle, 0, 156, 0, 255, 0.3f);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s IMovement::ObstacleOnPath CLEAR \nGoal: <%3.2f, %3.2f, %3.2f> \n", GetBot()->GetDebugIdentifier(), goalPos.x, goalPos.y, goalPos.z);
+		}
+	}
+	else
+	{
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			NDebugOverlay::SweptBox(start, end, mins, maxs, vec3_angle, 255, 0, 0, 255, 0.3f);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s IMovement::ObstacleOnPath NOT CLEAR \nGoal: <%3.2f, %3.2f, %3.2f> \n", GetBot()->GetDebugIdentifier(), goalPos.x, goalPos.y, goalPos.z);
+		}
 	}
 }
 

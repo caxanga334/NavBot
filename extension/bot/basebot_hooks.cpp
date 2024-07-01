@@ -62,8 +62,6 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 	return true;
 }
 
-// TO-DO: Move the PlayerRunCMD hook to here too!
-
 void CBaseBot::AddHooks()
 {
 	CBaseEntity* ifaceptr = GetEntity();
@@ -95,7 +93,6 @@ void CBaseBot::Hook_Spawn()
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
 #endif // EXT_DEBUG
-
 	
 	RETURN_META(MRES_IGNORED);
 }
@@ -105,19 +102,6 @@ void CBaseBot::Hook_Spawn_Post()
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn_Post <%p>\n", this);
 #endif // EXT_DEBUG
-
-	// Constructor is too early, catch it here. Will probably fail the first time it's called.
-	if (m_controller == nullptr)
-	{
-		m_controller = botmanager->GetBotController(GetEdict());
-
-#ifdef EXT_DEBUG
-		if (m_controller != nullptr)
-		{
-			smutils->LogMessage(myself, "m_controller was NULL. Got %p on CBaseBot::Hook_Spawn_Post!", m_controller);
-		}
-#endif // EXT_DEBUG
-	}
 
 	Spawn();
 	RETURN_META(MRES_IGNORED);
@@ -161,20 +145,10 @@ void CBaseBot::Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInf
 
 void CBaseBot::Hook_PhysicsSimulate()
 {
-	// Constructor is too early to fetch it.
-	// We fetch it On Spawn and also here for extra safety against crashes
-	if (m_controller == nullptr)
-	{
-		m_controller = botmanager->GetBotController(GetEdict());
-#ifdef EXT_DEBUG
-		smutils->LogMessage(myself,"m_controller was NULL, got %p", m_controller);
-#endif // EXT_DEBUG
-	}
-
 #ifdef EXT_DEBUG
 	if (m_controller == nullptr)
 	{
-		smutils->LogError(myself, "m_controller was NULL and IBotManager::GetBotController returned NULL!");
+		ConColorMsg(Color(255, 0, 0, 255), "CBaseBot::Hook_PhysicsSimulate called with NULL m_controller <%p>\n", this);
 	}
 #endif // EXT_DEBUG
 

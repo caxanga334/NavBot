@@ -35,10 +35,10 @@ CPath::~CPath()
 
 bool CPath::BuildTrivialPath(const Vector& start, const Vector& goal)
 {
-	constexpr float NAV_MAX_DIST = 256.0f;
+	constexpr float NAV_MAX_DIST = 1024.0f;
 
-	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, NAV_MAX_DIST, true, true);
-	CNavArea* goalArea = TheNavMesh->GetNearestNavArea(goal, NAV_MAX_DIST, true, true);
+	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, NAV_MAX_DIST, false, true);
+	CNavArea* goalArea = TheNavMesh->GetNearestNavArea(goal, NAV_MAX_DIST, false, true);
 
 	if (startArea == nullptr || goalArea == nullptr)
 		return false;

@@ -265,11 +265,11 @@ void CExtManager::AddBot()
 		return;
 	}
 
-	
-
-#ifdef EXT_DEBUG
 	auto bot = GetBotByIndex(gamehelpers->IndexOfEdict(edict));
 
+	bot->PostAdd();
+
+#ifdef EXT_DEBUG
 	// the base bot doesn't allocate these on the constructor
 	// to allow debugging these interface, we have to call these functions at least once to create them
 
@@ -279,7 +279,7 @@ void CExtManager::AddBot()
 	bot->GetBehaviorInterface();
 #endif // EXT_DEBUG
 
-	rootconsole->ConsolePrint("Bot added to the game.");
+	smutils->LogMessage(myself, "NavBot added to the game.");
 }
 
 void CExtManager::RemoveRandomBot(const char* message)
