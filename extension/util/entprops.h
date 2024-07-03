@@ -33,6 +33,7 @@
 #include <extension.h>
 #include <dt_send.h>
 #include <server_class.h>
+#include "helpers.h"
 
 // Indicates an invalid entity reference/index. Better compat between 32 bits integers and 64 bits integers than INVALID_EHANDLE_INDEX
 #define INVALID_ENT_REFERENCE -1
@@ -106,6 +107,18 @@ public:
 	bool GameRules_GetPropVector(const char *prop, Vector &result, int element = 0);
 	bool GameRules_GetPropString(const char *prop, char* result, size_t& len, int maxlen, int element = 0);
 	RoundState GameRules_GetRoundState();
+
+	/**
+	 * @brief Gets the address to an entity property. Very raw and very unsafe.
+	 * @tparam T Variable type to cast to.
+	 * @param entity Entity that contains the property.
+	 * @param proptype Property type.
+	 * @param prop Property name.
+	 * @return Pointer to property or NULL on failure.
+	 * @note Does not check for bit count for integer types, make sure you know what you are doing!
+	 */
+	template <typename T>
+	T* GetPointerToEntData(CBaseEntity* entity, PropType proptype, const char* prop);
 
 private:
 	bool IsNetworkedEntity(CBaseEntity *pEntity);
@@ -192,6 +205,54 @@ inline CBaseEntity *CEntPropUtils::GetEntity(int entity)
 
 	return pEntity;
 }
+
+template<typename T>
+inline T* CEntPropUtils::GetPointerToEntData(CBaseEntity* entity, PropType proptype, const char* prop)
+{
+
+	switch (proptype)
+	{
+	case Prop_Send:
+	{
+		ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
+		SourceMod::sm_sendprop_info_t info;
+
+		if (!pClass)
+		{
+			return nullptr;
+		}
+
+		if (gamehelpers->FindSendPropInfo(pClass->GetName(), prop, &info))
+		{
+			return (T*)((uint8_t*)entity + info.actual_offset);
+		}
+
+		break;
+	}
+	case Prop_Data:
+	{
+		datamap_t* map = gamehelpers->GetDataMap(entity);
+		SourceMod::sm_datatable_info_t info;
+
+		if (map == nullptr)
+		{
+			return nullptr;
+		}
+
+		if (gamehelpers->FindDataMapInfo(map, prop, &info))
+		{
+			return (T*)((uint8_t*)entity + info.actual_offset);
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
+	return nullptr;
+}
+
 
 // Global singleton for accessing the Ent Prop Utils
 extern CEntPropUtils *entprops;

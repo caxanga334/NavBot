@@ -64,6 +64,9 @@ Color s_dragSelectionSetDeleteColor( 255, 100, 100, 96 );
 extern ConVar sm_nav_show_nodes;
 #endif // DEBUG_NAV_NODES
 
+constexpr auto NAV_EDIT_OVERLAY_X = 0.5f;
+constexpr auto NAV_EDIT_OVERLAY_Y = 0.53f;
+
 //--------------------------------------------------------------------------------------------------------------
 int GetGridSize( bool forceGrid = false )
 {
@@ -865,7 +868,7 @@ void CNavMesh::DrawEditMode( void )
 					V_snprintf( buffer, sizeof( buffer ), "Ladder #%d\n", m_selectedLadder->GetID() );
 				}
 
-				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255,
+				debugoverlay->AddScreenTextOverlay(NAV_EDIT_OVERLAY_X, NAV_EDIT_OVERLAY_Y, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255,
 						0, 128, buffer);
 			}
 
@@ -968,7 +971,7 @@ void CNavMesh::DrawEditMode( void )
 				}
 
 				Q_snprintf( buffer, sizeof( buffer ), "Area #%d %s %s\n", m_selectedArea->GetID(), locName, attrib );
-				debugoverlay->AddScreenTextOverlay(0.5, 0.53, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255,
+				debugoverlay->AddScreenTextOverlay(NAV_EDIT_OVERLAY_X, NAV_EDIT_OVERLAY_Y, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255,
 						0, 128, buffer);
 
 				// do "place painting"

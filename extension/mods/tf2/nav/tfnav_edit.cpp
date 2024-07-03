@@ -3,84 +3,65 @@
 #include "tfnavarea.h"
 #include "tfnavmesh.h"
 
-inline static CTFNavArea::TFNavPathAttributes NameToTFNavPathAttribute(const char* name)
+#if SOURCE_ENGINE == SE_TF2
+
+static const std::unordered_map<std::string, CTFNavArea::TFNavPathAttributes> s_tfnavpathattribs = {
+	{"noredteam", CTFNavArea::TFNAV_PATH_NO_RED_TEAM},
+	{"nobluteam", CTFNavArea::TFNAV_PATH_NO_BLU_TEAM},
+	{"noflagcarriers", CTFNavArea::TFNAV_PATH_NO_CARRIERS},
+	{"flagcarriersavoid", CTFNavArea::TFNAV_PATH_CARRIERS_AVOID},
+	{"spawnroom", CTFNavArea::TFNAV_PATH_DYNAMIC_SPAWNROOM},
+};
+
+inline static CTFNavArea::TFNavPathAttributes NameToTFNavPathAttribute(std::string name)
 {
-	if (strncasecmp(name, "noredteam", 9) == 0)
+	auto it = s_tfnavpathattribs.find(name);
+
+	if (it != s_tfnavpathattribs.end())
 	{
-		return CTFNavArea::TFNAV_PATH_NO_RED_TEAM;
+		return it->second;
 	}
-	else if (strncasecmp(name, "nobluteam", 9) == 0)
-	{
-		return CTFNavArea::TFNAV_PATH_NO_BLU_TEAM;
-	}
-	else if (strncasecmp(name, "noflagcarriers", 14) == 0)
-	{
-		return CTFNavArea::TFNAV_PATH_NO_CARRIERS;
-	}
-	else if (strncasecmp(name, "flagcarriersavoid", 17) == 0)
-	{
-		return CTFNavArea::TFNAV_PATH_CARRIERS_AVOID;
-	}
-	else if (strncasecmp(name, "spawnroom", 9) == 0)
-	{
-		return CTFNavArea::TFNAV_PATH_DYNAMIC_SPAWNROOM;
-	}
-	else
-	{
-		return CTFNavArea::TFNAV_PATH_INVALID;
-	}
+
+	return CTFNavArea::TFNAV_PATH_INVALID;
 }
 
-inline static CTFNavArea::TFNavAttributes NameToTFNavAttributes(const char* name)
+static const std::unordered_map<std::string, CTFNavArea::TFNavAttributes> s_tfnavattribs = {
+	{"limit_red", CTFNavArea::TFNAV_LIMIT_TO_REDTEAM},
+	{"limit_blu", CTFNavArea::TFNAV_LIMIT_TO_BLUTEAM},
+	{"sentry_gun_hint", CTFNavArea::TFNAV_SENTRYGUN_HINT},
+	{"dispenser_hint", CTFNavArea::TFNAV_DISPENSER_HINT},
+	{"tele_entrance_hint", CTFNavArea::TFNAV_TELE_ENTRANCE_HINT},
+	{"tele_exit_hint", CTFNavArea::TFNAV_TELE_EXIT_HINT},
+	{"sniper_spot_hint", CTFNavArea::TFNAV_SNIPER_HINT},
+};
+
+inline static CTFNavArea::TFNavAttributes NameToTFNavAttributes(std::string name)
 {
-	if (strncasecmp(name, "limit_red", 9) == 0)
+	auto it = s_tfnavattribs.find(name);
+
+	if (it != s_tfnavattribs.end())
 	{
-		return CTFNavArea::TFNAV_LIMIT_TO_REDTEAM;
+		return it->second;
 	}
-	else if (strncasecmp(name, "limit_blu", 9) == 0)
-	{
-		return CTFNavArea::TFNAV_LIMIT_TO_BLUTEAM;
-	}
-	else if (strncasecmp(name, "sentry_gun_hint", 15) == 0)
-	{
-		return CTFNavArea::TFNAV_SENTRYGUN_HINT;
-	}
-	else if (strncasecmp(name, "dispenser_hint", 14) == 0)
-	{
-		return CTFNavArea::TFNAV_DISPENSER_HINT;
-	}
-	else if (strncasecmp(name, "tele_entrance_hint", 18) == 0)
-	{
-		return CTFNavArea::TFNAV_TELE_ENTRANCE_HINT;
-	}
-	else if (strncasecmp(name, "tele_exit_hint", 14) == 0)
-	{
-		return CTFNavArea::TFNAV_TELE_EXIT_HINT;
-	}
-	else if (strncasecmp(name, "sniper_spot_hint", 16) == 0)
-	{
-		return CTFNavArea::TFNAV_SNIPER_HINT;
-	}
-	else
-	{
-		return CTFNavArea::TFNAV_INVALID;
-	}
+
+	return CTFNavArea::TFNAV_INVALID;
 }
 
-inline static CTFNavArea::MvMNavAttributes NameToMvMAttributes(const char* name)
+static const std::unordered_map<std::string, CTFNavArea::MvMNavAttributes> s_mvmattribs = {
+	{"frontlines", CTFNavArea::MVMNAV_FRONTLINES},
+	{"upgradestation", CTFNavArea::MVMNAV_UPGRADESTATION},
+};
+
+inline static CTFNavArea::MvMNavAttributes NameToMvMAttributes(std::string name)
 {
-	if (strncasecmp(name, "frontlines", 10) == 0)
+	auto it = s_mvmattribs.find(name);
+
+	if (it != s_mvmattribs.end())
 	{
-		return CTFNavArea::MVMNAV_FRONTLINES;
+		return it->second;
 	}
-	else if (strncasecmp(name, "upgradestation", 10) == 0)
-	{
-		return CTFNavArea::MVMNAV_UPGRADESTATION;
-	}
-	else
-	{
-		return CTFNavArea::MVMNAV_INVALID;
-	}
+
+	return CTFNavArea::MVMNAV_INVALID;
 }
 
 class CTFNavEditTogglePathAttribute
@@ -167,14 +148,20 @@ private:
 	CTFNavArea::MvMNavAttributes m_attribute;
 };
 
-#if SOURCE_ENGINE == SE_TF2
-
 CON_COMMAND_F(sm_tf_nav_toggle_path_attrib, "Toggles NavBot TF Path Attributes on the selected set", FCVAR_CHEAT)
 {
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_tf_nav_toggle_path_attrib <attribute 1> ... <attribute N> \n");
-		Msg("Valid Attributes: noredteam nobluteam noflagcarriers flagcarriersavoid spawnroom \n");
+		Msg("Valid Attributes: ");
+
+		for (auto& i : s_tfnavpathattribs)
+		{
+			Msg("%s ", i.first.c_str());
+		}
+
+		Msg("\n");
+
 		return;
 	}
 
@@ -202,7 +189,15 @@ CON_COMMAND_F(sm_tf_nav_toggle_attrib, "Toggles NavBot TF Attributes on the sele
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_tf_nav_toggle_attrib <attribute 1> ... <attribute N> \n");
-		Msg("Valid Attributes: limit_red limit_blu sentry_gun_hint dispenser_hint tele_entrance_hint tele_exit_hint sniper_spot_hint \n");
+		Msg("Valid Attributes: ");
+
+		for (auto& i : s_tfnavattribs)
+		{
+			Msg("%s ", i.first.c_str());
+		}
+
+		Msg("\n");
+
 		return;
 	}
 
@@ -230,7 +225,15 @@ CON_COMMAND_F(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Attributes on 
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_tf_nav_toggle_mvm_attrib <attribute 1> ... <attribute N> \n");
-		Msg("Valid Attributes: frontlines upgradestation \n");
+		Msg("Valid Attributes: ");
+
+		for (auto& i : s_mvmattribs)
+		{
+			Msg("%s ", i.first.c_str());
+		}
+
+		Msg("\n");
+
 		return;
 	}
 

@@ -485,6 +485,65 @@ namespace TeamFortress2
 
 		GM_MAX_GAMEMODE_TYPES
 	};
+
+	class TFObjectiveResource
+	{
+	public:
+		TFObjectiveResource()
+		{
+			m_bPlayingMiniRounds = nullptr;
+			m_bCPIsVisible = nullptr;
+			m_iPreviousPoints = nullptr;
+			m_bTeamCanCap = nullptr;
+			m_bInMiniRound = nullptr;
+			m_bCPLocked = nullptr;
+			m_iOwner = nullptr;
+		}
+
+		bool* m_bPlayingMiniRounds;
+		int* m_bCPIsVisible; // this is an int, don't ask why [MAX_CONTROL_POINTS]
+		int* m_iPreviousPoints; // [MAX_CONTROL_POINTS * MAX_CONTROL_POINT_TEAMS * MAX_PREVIOUS_POINTS]
+		bool* m_bTeamCanCap; // [MAX_CONTROL_POINTS * MAX_CONTROL_POINT_TEAMS]
+		bool* m_bInMiniRound; // [MAX_CONTROL_POINTS]
+		bool* m_bCPLocked; // [MAX_CONTROL_POINTS]
+		int* m_iOwner; // [MAX_CONTROL_POINTS]
+
+		bool IsPlayingMiniRounds() const
+		{
+			return *m_bPlayingMiniRounds;
+		}
+
+		bool IsLocked(int index) const
+		{
+			return m_bCPLocked[index];
+		}
+
+		bool IsVisible(int index) const
+		{
+			return m_bCPIsVisible[index] != 0;
+		}
+
+		bool InMiniRound(int index) const
+		{
+			return m_bInMiniRound[index];
+		}
+
+		int GetOwner(int index) const
+		{
+			return m_iOwner[index];
+		}
+
+		int GetPreviousPointForPoint(int index, int team, int iPrevIndex) const
+		{
+			int iIntIndex = iPrevIndex + (index * MAX_PREVIOUS_POINTS) + (team * MAX_CONTROL_POINTS * MAX_PREVIOUS_POINTS);
+			return m_iPreviousPoints[iIntIndex];
+		}
+
+		bool TeamCanCapPoint(int index, int team) const
+		{
+			return m_bTeamCanCap[index + (team * MAX_CONTROL_POINTS)];
+		}
+	};
 }
 
 

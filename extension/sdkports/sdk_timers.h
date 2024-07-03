@@ -2,6 +2,8 @@
 #define SDK_PORT_TIMERS_H_
 #pragma once
 
+#include <util/librandom.h>
+
 /**
  * Simple class for tracking intervals of game time.
  * Upon creation, the timer is invalidated.  To measure time intervals, start the timer via Start().
@@ -80,6 +82,12 @@ public:
 	{
 		m_timestamp = Now() + duration;
 		m_duration = duration;
+	}
+
+	void StartRandom(float min = 1.0f, float max = 3.0f)
+	{
+		float duration = randomgen->GetRandomReal<float>(min, max);
+		Start(duration);
 	}
 
 	void Invalidate(void)

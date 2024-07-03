@@ -28,7 +28,6 @@
  */
 
 #include <exception>
-#include <util/helpers.h>
 #include "entprops.h"
 
 // From game/server/variant_t.h, same on all supported games.

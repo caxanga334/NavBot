@@ -309,6 +309,47 @@ public:
 		return pathBuildResult;
 	}
 
+	/**
+	 * @brief Checks if the bot can reach a specific goal.
+	 * @tparam CostFunction Nav path cost functor
+	 * @param bot Bot to test.
+	 * @param goal Goal position.
+	 * @param costFunc Path cost functor.
+	 * @param maxPathLength Maximum path length.
+	 * @return true if reachable, false otherwise.
+	 */
+	template <typename CostFunction>
+	bool IsReachable(CBaseBot* bot, const Vector& goal, CostFunction& costFunc, const float maxPathLength = 0.0f)
+	{
+		auto start = bot->GetAbsOrigin();
+		auto startArea = bot->GetLastKnownNavArea();
+
+		if (startArea == nullptr)
+		{
+			return false;
+		}
+
+		constexpr float MaxDistanceToArea = 200.0f;
+		CNavArea* goalArea = TheNavMesh->GetNearestNavArea(goal, MaxDistanceToArea, true, true);
+
+		if (goalArea == startArea)
+		{
+			return true;
+		}
+
+		Vector endPos = goal;
+		if (goalArea)
+		{
+			endPos.z = goalArea->GetZ(endPos);
+		}
+		else
+		{
+			TheNavMesh->GetGroundHeight(endPos, &endPos.z);
+		}
+
+		return NavAreaBuildPath(startArea, goalArea, &goal, costFunc, nullptr, maxPathLength, bot->GetCurrentTeamIndex());
+	}
+
 	virtual void Draw(const CBasePathSegment* start, const float duration = 0.1f);
 	virtual void DrawFullPath(const float duration = 0.1f);
 	virtual float GetPathLength() const;

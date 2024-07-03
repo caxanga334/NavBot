@@ -25,7 +25,7 @@ public:
 
 	// Called when all extensions have been loaded
 	void OnAllLoaded();
-
+	// Called every server frame
 	void Frame();
 
 	void OnClientPutInServer(int client);

@@ -68,6 +68,7 @@ class CTakeDamageInfo;
 class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
 {
 public:
+	NavBotExt();
 
 	/**
 	 * @brief This is called after the initial loading sequence has been processed.

@@ -46,6 +46,43 @@ static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMED
 
 static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 
+static inline const char* GetEngineBranchName()
+{
+	switch (SOURCE_ENGINE)
+	{
+	case SE_TF2:
+		return "Team Fortress 2 Branch";
+	case SE_ORANGEBOX:
+		return "Orange Box Branch";
+	case SE_CSS:
+		return "Counter-Strike: Source Branch";
+	case SE_CSGO:
+		return "Counter-Strike: Global Offensive Branch";
+	case SE_SDK2013:
+		return "Source SDK 2013 Branch";
+	case SE_HL2DM:
+		return "Half-Life 2: Deathmatch Branch";
+	case SE_DODS:
+		return "Day of Defeat: Source Branch";
+	case SE_EPISODEONE:
+		return "Episode One/Original Branch";
+	case SE_BMS:
+		return "Black Mesa Branch";
+	case SE_LEFT4DEAD:
+		return "Left 4 Dead Branch";
+	case SE_LEFT4DEAD2:
+		return "Left 4 Dead 2 Branch";
+	case SE_PORTAL2:
+		return "Portal 2 Branch";
+	case SE_ALIENSWARM:
+		return "Alien Swarm Branch";
+	case SE_INSURGENCY:
+		return "Insurgency Branch";
+	default:
+		return "Unknown";
+	}
+}
+
 CExtManager::CExtManager() :
 	m_bdm()
 {
@@ -71,7 +108,7 @@ void CExtManager::OnAllLoaded()
 	LoadBotNames();
 	m_bdm.LoadProfiles();
 
-	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%i'. Detected Mod: '%s'", SOURCE_ENGINE, m_mod->GetModName());
+	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%s'. Detected Mod: '%s'", GetEngineBranchName(), m_mod->GetModName());
 	
 	m_wim.LoadConfigFile();
 }

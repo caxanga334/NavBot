@@ -55,25 +55,6 @@ bool UTIL_IsCommandIssuedByServerAdmin();
 
 const char *UTIL_VarArgs( const char *format, ... );
 
-/* 
-class CNavVectorNoEditAllocator
-{
-public:
-	CNavVectorNoEditAllocator();
-
-	static void Reset();
-	static void *Alloc( size_t nSize );
-	static void *Realloc( void *pMem, size_t nSize );
-	static void Free( void *pMem );
-	static size_t GetSize( void *pMem );
-
-private:
-	static CMemoryStack m_memory;
-	static void *m_pCurrent;
-	static int m_nBytesCurrent;
-};
-*/
-
 //-------------------------------------------------------------------------------------------------------------------
 /**
  * Functor interface for iteration
@@ -435,7 +416,7 @@ public:
 	void WipeHints() { m_hints.clear(); }
 	void RemoveNearestHint(const Vector& origin)
 	{
-		if (m_hints.size() > 0)
+		if (!m_hints.empty())
 		{
 			auto best = m_hints.end();
 			float dist = FLT_MAX;
@@ -462,7 +443,7 @@ public:
 
 	void RemoveNearestHint(const Vector& origin, int type)
 	{
-		if (m_hints.size() > 0)
+		if (!m_hints.empty())
 		{
 			auto best = m_hints.end();
 			float dist = FLT_MAX;
@@ -499,7 +480,7 @@ public:
 	const std::vector<NavHintPoint>& GetHintsVector() const { return m_hints; }
 	const NavHintPoint* GetNearestHintOfType(int type, const Vector& origin)
 	{
-		if (m_hints.size() > 0)
+		if (!m_hints.empty())
 		{
 			const NavHintPoint* best = nullptr;
 			float dist = FLT_MAX;

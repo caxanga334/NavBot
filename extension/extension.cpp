@@ -136,6 +136,14 @@ namespace Utils
 	}
 }
 
+NavBotExt::NavBotExt()
+{
+	m_hookruncmd = false;
+	m_cfg_navbot = nullptr;
+	m_cfg_sdktools = nullptr;
+	m_cfg_sdkhooks = nullptr;
+}
+
 bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
 	extension = this;

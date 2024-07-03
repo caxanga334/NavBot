@@ -15,6 +15,9 @@
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
+#include <bot/tf2/tasks/sniper/tf2bot_task_sniper_move_to_sniper_spot.h>
+#include <bot/tf2/tasks/spy/tf2bot_task_spy_infiltrate.h>
+#include "scenario/payload/tf2bot_task_push_payload.h"
 #include "scenario/mvm/tf2bot_mvm_idle.h"
 
 #undef max
@@ -109,7 +112,7 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me)
 	switch (myclass)
 	{
 	case TeamFortress2::TFClass_Sniper:
-		break; // TODO
+		return new CTF2BotSniperMoveToSnipingSpotTask;
 	case TeamFortress2::TFClass_Medic:
 		return new CTF2BotMedicMainTask;
 	case TeamFortress2::TFClass_Spy:
@@ -124,6 +127,8 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me)
 	{
 	case TeamFortress2::GameModeType::GM_CTF:
 		return new CTF2BotCTFMonitorTask;
+	case TeamFortress2::GameModeType::GM_PL:
+		return new CTF2BotPushPayloadTask;
 	default:
 		break;
 	}

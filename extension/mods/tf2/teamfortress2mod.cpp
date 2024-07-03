@@ -34,6 +34,7 @@ static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(T
 CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 {
 	m_gamemode = TeamFortress2::GameModeType::GM_NONE;
+	m_bInSetup = false;
 
 	m_weaponidmap.reserve(72);
 	m_weaponidmap.emplace("tf_weapon_scattergun", TeamFortress2::TFWeaponID::TF_WEAPON_SCATTERGUN);
@@ -111,6 +112,7 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	m_classselector.LoadClassSelectionData();
 
 	ListenForGameEvent("teamplay_round_start");
+	ListenForGameEvent("teamplay_setup_finished");
 	ListenForGameEvent("controlpoint_initialized");
 	ListenForGameEvent("mvm_begin_wave");
 	ListenForGameEvent("mvm_wave_complete");
@@ -131,8 +133,13 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 	{
 		const char* name = event->GetName();
 
+#ifdef EXT_DEBUG
+		ConColorMsg(Color(255, 200, 150, 255), "CTeamFortress2Mod::FireGameEvent %s \n", name);
+#endif // EXT_DEBUG
+
 		if (strncasecmp(name, "teamplay_round_start", 20) == 0)
 		{
+			CheckForSetup();
 			OnRoundStart();
 			return;
 		}
@@ -152,6 +159,12 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		if (strncasecmp(name, "controlpoint_initialized", 24) == 0)
 		{
 			FindControlPoints();
+			return;
+		}
+
+		if (strncasecmp(name, "teamplay_setup_finished", 23) == 0)
+		{
+			m_bInSetup = false;
 			return;
 		}
 	}
@@ -592,6 +605,124 @@ void CTeamFortress2Mod::FindControlPoints()
 	}
 }
 
+void CTeamFortress2Mod::CheckForSetup()
+{
+	bool setup = false;
+
+	UtilHelpers::ForEachEntityOfClassname("team_round_timer", [&setup](int index, edict_t* edict, CBaseEntity* entity) {
+		
+		int disabled = 0;
+		entprops->GetEntProp(index, Prop_Send, "m_bIsDisabled", disabled);
+
+		if (disabled != 0)
+		{
+			return true; // exit early, keep searching
+		}
+
+		int paused = 0;
+		entprops->GetEntProp(index, Prop_Send, "m_bTimerPaused", paused);
+
+		if (paused != 0)
+		{
+			return true; // exit early, keep searching
+		}
+
+		int setuplength = 0;
+		entprops->GetEntProp(index, Prop_Send, "m_nSetupTimeLength", setuplength);
+
+		if (setuplength > 0)
+		{
+			setup = true;
+			return false; // end search
+		}
+
+
+		return true;
+	});
+
+#ifdef EXT_DEBUG
+	ConColorMsg(Color(64, 200, 0, 255), "CTeamFortress2Mod::CheckForSetup m_bInSetup = %s\n", setup ? "TRUE" : "FALSE");
+#endif // EXT_DEBUG
+
+	m_bInSetup = setup;
+}
+
+void CTeamFortress2Mod::UpdateObjectiveResource()
+{
+	int ref = UtilHelpers::FindEntityByNetClass(-1, "CTFObjectiveResource");
+
+	if (ref == INVALID_EHANDLE_INDEX)
+	{
+		if (sm_navbot_tf_mod_debug.GetBool())
+		{
+			Warning("Failed to locate CTFObjectiveResource! \n");
+		}
+		return;
+	}
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(ref);
+
+	if (entity == nullptr)
+	{
+		if (sm_navbot_tf_mod_debug.GetBool())
+		{
+			Warning("Found reference %i but failed to retreive CBaseEntity pointer!\n", ref);
+		}
+		return;
+	}
+
+	m_objecteResourceEntity.Set(entity);
+
+	m_objectiveResourcesData.m_bPlayingMiniRounds = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bPlayingMiniRounds");
+	m_objectiveResourcesData.m_bCPIsVisible = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_bCPIsVisible");
+	m_objectiveResourcesData.m_iPreviousPoints = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iPreviousPoints");
+	m_objectiveResourcesData.m_bTeamCanCap = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bTeamCanCap");
+	m_objectiveResourcesData.m_bInMiniRound = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bInMiniRound");
+	m_objectiveResourcesData.m_bCPLocked = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bCPLocked");
+	m_objectiveResourcesData.m_iOwner = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iOwner");
+
+	if (sm_navbot_tf_mod_debug.GetBool())
+	{
+		ConColorMsg(Color(0, 128, 0, 255), "Found CTFObjectiveResource #%i <%p> \n", ref, entity);
+	}
+}
+
+bool CTeamFortress2Mod::TeamMayCapturePoint(int team, int pointindex) const
+{
+	if (m_objecteResourceEntity.Get() == nullptr)
+	{
+		return false;
+	}
+
+	int pointneeded = m_objectiveResourcesData.GetPreviousPointForPoint(pointindex, team, 0);
+
+	if (pointneeded == pointindex || pointneeded == -1)
+	{
+		return true;
+	}
+
+	if (m_objectiveResourcesData.IsLocked(pointindex))
+	{
+		return false;
+	}
+
+	// Check if the team owns the previous points
+	for (int prev = 0; prev < MAX_PREVIOUS_POINTS; prev++)
+	{
+		pointneeded = m_objectiveResourcesData.GetPreviousPointForPoint(pointindex, team, prev);
+
+		if (pointneeded != -1)
+		{
+			if (m_objectiveResourcesData.GetOwner(pointneeded) != team)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 {
 	std::string classname(sm_navbot_tf_force_class.GetString());
@@ -716,10 +847,190 @@ void CTeamFortress2Mod::OnRoundStart()
 {
 	FindPayloadCarts();
 	FindControlPoints();
+	UpdateObjectiveResource();
 
 	extmanager->ForEachBot([](CBaseBot* bot) {
 		bot->OnRoundStateChanged();
 	});
+}
+
+const TeamFortress2::TFObjectiveResource* CTeamFortress2Mod::GetTFObjectiveResource() const
+{
+	if (m_objecteResourceEntity.Get() != nullptr)
+	{
+		return &m_objectiveResourcesData;
+	}
+
+	return nullptr;
+}
+
+void CTeamFortress2Mod::CollectControlPointsToAttack(CTF2Bot* bot, std::vector<CBaseEntity*>& out)
+{
+	if (m_objecteResourceEntity.Get() == nullptr)
+	{
+		return;
+	}
+
+	int team = bot->GetCurrentTeamIndex();
+	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
+
+	for (auto& handle : m_controlpoints)
+	{
+		CBaseEntity* entity = handle.Get();
+
+		if (entity == nullptr)
+		{
+			continue;
+		}
+
+		tfentities::HTeamControlPoint point(entity);
+		int index = point.GetPointIndex();
+
+		if (m_objectiveResourcesData.IsLocked(index))
+		{
+			continue;
+		}
+
+		if (!m_objectiveResourcesData.TeamCanCapPoint(index, team))
+		{
+			continue;
+		}
+
+		if (m_objectiveResourcesData.GetOwner(index) == team)
+		{
+			continue;
+		}
+
+		if (minirounds && !m_objectiveResourcesData.InMiniRound(index))
+		{
+			continue;
+		}
+
+		if (TeamMayCapturePoint(team, index))
+		{
+			out.push_back(entity);
+		}
+	}
+}
+
+void CTeamFortress2Mod::CollectControlPointsToDefend(CTF2Bot* bot, std::vector<CBaseEntity*>& out)
+{
+	if (m_objecteResourceEntity.Get() == nullptr)
+	{
+		return;
+	}
+
+	// collect points the enemy team can capture
+	int team = static_cast<int>(tf2lib::GetEnemyTFTeam(bot->GetMyTFTeam()));
+	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
+
+	for (auto& handle : m_controlpoints)
+	{
+		CBaseEntity* entity = handle.Get();
+
+		if (entity == nullptr)
+		{
+			continue;
+		}
+
+		tfentities::HTeamControlPoint point(entity);
+		int index = point.GetPointIndex();
+
+		if (m_objectiveResourcesData.IsLocked(index))
+		{
+			continue;
+		}
+
+		if (!m_objectiveResourcesData.TeamCanCapPoint(index, team))
+		{
+			continue;
+		}
+
+		if (m_objectiveResourcesData.GetOwner(index) == team)
+		{
+			continue;
+		}
+
+		if (minirounds && !m_objectiveResourcesData.InMiniRound(index))
+		{
+			continue;
+		}
+
+		if (TeamMayCapturePoint(team, index))
+		{
+			out.push_back(entity);
+		}
+	}
+}
+
+CBaseEntity* CTeamFortress2Mod::GetControlPointByIndex(const int index) const
+{
+	for (auto& handle : m_controlpoints)
+	{
+		if (handle.Get() == nullptr)
+		{
+			continue;
+		}
+
+		tfentities::HTeamControlPoint controlpoint(handle.Get());
+
+		if (index == controlpoint.GetPointIndex())
+		{
+			return handle.Get();
+		}
+	}
+
+	return nullptr;
+}
+
+void CTeamFortress2Mod::DebugInfo_ControlPoints()
+{
+	if (m_objecteResourceEntity.Get() == nullptr)
+	{
+		Warning("Objective Resource is invalid! \n");
+		return;
+	}
+
+	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
+
+	Msg("Is playing mini rounds: %s \n", minirounds ? "YES" : "NO");
+
+	for (auto& handle : m_controlpoints)
+	{
+		CBaseEntity* pPoint = handle.Get();
+
+		if (pPoint == nullptr)
+		{
+			continue;
+		}
+
+		tfentities::HTeamControlPoint controlpoint(pPoint);
+		int index = controlpoint.GetPointIndex();
+
+		std::unique_ptr<char[]> targetname = std::make_unique<char[]>(128);
+		controlpoint.GetTargetName(targetname.get(), 128);
+
+		bool locked = m_objectiveResourcesData.IsLocked(index);
+		bool canredcap = m_objectiveResourcesData.TeamCanCapPoint(index, 2);
+		bool canblucap = m_objectiveResourcesData.TeamCanCapPoint(index, 3);
+		bool redmaycap = TeamMayCapturePoint(2, index);
+		bool blumaycap = TeamMayCapturePoint(3, index);
+		int owner = m_objectiveResourcesData.GetOwner(index);
+
+		Msg("Control Point Data for point #%i (%i) <%s> \n", handle.GetEntryIndex(), index, targetname.get());
+		Msg("    Locked: %s \n", locked ? "YES" : "NO");
+		Msg("    Can RED capture: %s \n", canredcap ? "YES" : "NO");
+		Msg("    Can BLU capture: %s \n", canblucap ? "YES" : "NO");
+		Msg("    RED may capture: %s \n", redmaycap ? "YES" : "NO");
+		Msg("    BLU may capture: %s \n", blumaycap ? "YES" : "NO");
+		Msg("    Owner: %i \n", owner);
+
+		if (minirounds)
+		{
+			bool inminiround = m_objectiveResourcesData.InMiniRound(index);
+			Msg("    In Mini Round: %s \n", inminiround ? "YES" : "NO");
+		}
+	}
 }
 
 #if SOURCE_ENGINE == SE_TF2
@@ -733,6 +1044,11 @@ CON_COMMAND(sm_navbot_tf_reload_upgrades, "[TF2] Reload MvM Upgrades")
 {
 	CTeamFortress2Mod::GetTF2Mod()->ReloadUpgradeManager();
 	rootconsole->ConsolePrint("Reloaded MvM Upgrades.");
+}
+
+CON_COMMAND(sm_navbot_tf_debug_control_points, "[TF2] Show control point data.")
+{
+	CTeamFortress2Mod::GetTF2Mod()->DebugInfo_ControlPoints();
 }
 
 #endif // SOURCE_ENGINE == SE_TF2

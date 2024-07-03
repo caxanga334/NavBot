@@ -1058,6 +1058,7 @@ public:
 		parent = nullptr;
 		child = nullptr;
 		me = nullptr;
+		how = NUM_TRAVERSE_TYPES;
 		cost = 0.0f;
 		total = 0.0f;
 	}
@@ -1067,6 +1068,7 @@ public:
 		parent = nullptr;
 		child = nullptr;
 		me = myself;
+		how = NUM_TRAVERSE_TYPES;
 		cost = 0.0f;
 		total = 0.0f;
 	}
@@ -1074,6 +1076,7 @@ public:
 	T* parent;
 	T* child;
 	T* me;
+	NavTraverseType how;
 	float cost;
 	float total;
 };

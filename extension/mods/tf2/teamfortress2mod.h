@@ -49,6 +49,16 @@ public:
 	const CMvMUpgradeManager& GetMvMUpgradeManager() const { return m_upgrademanager; }
 	void ReloadUpgradeManager() { m_upgrademanager.Reload(); }
 	void OnRoundStart() override;
+	CBaseEntity* GetREDPayload() const { return m_red_payload.Get(); }
+	CBaseEntity* GetBLUPayload() const { return m_blu_payload.Get(); }
+	bool IsInSetup() const { return m_bInSetup; }
+	const TeamFortress2::TFObjectiveResource* GetTFObjectiveResource() const;
+	void CollectControlPointsToAttack(CTF2Bot* bot, std::vector<CBaseEntity*>& out);
+	void CollectControlPointsToDefend(CTF2Bot* bot, std::vector<CBaseEntity*>& out);
+	CBaseEntity* GetControlPointByIndex(const int index) const;
+
+	void DebugInfo_ControlPoints();
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
@@ -57,6 +67,9 @@ private:
 	CHandle<CBaseEntity> m_red_payload;
 	CHandle<CBaseEntity> m_blu_payload;
 	std::array<CHandle<CBaseEntity>, TeamFortress2::TF_MAX_CONTROL_POINTS> m_controlpoints;
+	CHandle<CBaseEntity> m_objecteResourceEntity;
+	TeamFortress2::TFObjectiveResource m_objectiveResourcesData;
+	bool m_bInSetup;
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();
@@ -66,6 +79,9 @@ private:
 
 	void FindPayloadCarts();
 	void FindControlPoints();
+	void CheckForSetup();
+	void UpdateObjectiveResource();
+	bool TeamMayCapturePoint(int team, int pointindex) const;
 };
 
 inline TeamFortress2::TFWeaponID CTeamFortress2Mod::GetTFWeaponID(std::string& classname) const

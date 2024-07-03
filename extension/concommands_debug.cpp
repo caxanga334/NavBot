@@ -16,6 +16,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_game_util.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <util/ehandle_edict.h>
@@ -489,5 +490,32 @@ CON_COMMAND_F(sm_snap_my_angles, "sNAP", FCVAR_CHEAT)
 
 	player.SnapEyeAngles(angles);
 }
+
+#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
+
+CON_COMMAND_F(sm_get_entity_size, "Returns the entity size", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("Usage: sm_get_entity_size <entity classname> \n");
+		return;
+	}
+
+	const char* classname = args[1];
+
+	IEntityFactory* factory = servertools->GetEntityFactoryDictionary()->FindFactory(classname);
+
+	if (factory == nullptr)
+	{
+		Warning("ERROR: Could not find Entity Factor for classname '%s' \n", classname);
+		return;
+	}
+
+	size_t size = factory->GetEntitySize();
+
+	Msg("Entity (%s) class size is: %i \n", classname, size);
+}
+
+#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 
 #endif // EXT_DEBUG
