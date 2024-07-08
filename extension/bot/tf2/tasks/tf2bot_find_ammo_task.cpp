@@ -12,8 +12,16 @@
 
 CTF2BotFindAmmoTask::CTF2BotFindAmmoTask() : m_sourcepos(0.0f, 0.0f, 0.0f),
 m_type(AmmoSource::NONE),
+m_reached(false),
+m_metalLimit(200)
+{
+}
+
+CTF2BotFindAmmoTask::CTF2BotFindAmmoTask(int maxmetal) : m_sourcepos(0.0f, 0.0f, 0.0f),
+m_type(AmmoSource::NONE),
 m_reached(false)
 {
+	m_metalLimit = maxmetal;
 }
 
 TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -46,7 +54,7 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Ammo collected!");
 	}
 
-	if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer && bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) >= 200)
+	if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer && bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) >= m_metalLimit)
 	{
 		return Done("Ammo collected!");
 	}

@@ -3,6 +3,7 @@
 #include <mods/tf2/nav/tfnavarea.h>
 #include <navmesh/nav_pathfind.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include "tf2bot_task_sniper_snipe_area.h"
 #include "tf2bot_task_sniper_move_to_sniper_spot.h"
 
 class SniperSpotAreaCollector : public INavAreaCollector<CTFNavArea>
@@ -44,6 +45,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskStart(CTF2Bot* bot
 	m_nav.ComputePathToPosition(bot, m_goal, cost);
 
 	m_repathTimer.StartRandom();
+	m_sniping = false;
 
 	return Continue();
 }
@@ -58,10 +60,11 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 		return Continue(); 
 	}
 
-	if (bot->GetRangeTo(m_goal) <= 48.0f)
+	if (bot->GetRangeTo(m_goal) <= 36.0f)
 	{
 		// reached sniping goal
-		return Continue();
+		m_sniping = true;
+		return PauseFor(new CTF2BotSniperSnipeAreaTask(), "Sniping!");
 	}
 
 	if (m_repathTimer.IsElapsed() || !m_nav.IsValid())
@@ -73,6 +76,17 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 	}
 
 	m_nav.Update(bot);
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	if (m_sniping)
+	{
+		FindSniperSpot(bot);
+		m_sniping = false;
+	}
 
 	return Continue();
 }

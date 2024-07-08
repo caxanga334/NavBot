@@ -244,11 +244,12 @@ void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* 
 
 void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 {
-	if (threat)
+	// if I have a threat and I should attack it, look at it
+	if (threat && me->GetBehaviorInterface()->ShouldAttack(me, threat) != ANSWER_NO)
 	{
 		if (threat->IsVisibleNow())
 		{
-			me->GetControlInterface()->AimAt(threat->GetEdict(), IPlayerController::LOOK_COMBAT, 1.0f, "Looking at current threat!"); // look at my enemies
+			me->GetControlInterface()->AimAt(threat->GetEdict(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at current threat!"); // look at my enemies
 			return;
 		}
 
@@ -319,6 +320,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 		if (sensor->IsAbleToSee(headpos, false)) // if visible, go for headshots
 		{
 			result = headpos;
+			result.z += 2.0f;
 			return;
 		}
 

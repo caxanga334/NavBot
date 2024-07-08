@@ -18,6 +18,7 @@ public:
 	};
 
 	CTF2BotFindAmmoTask();
+	CTF2BotFindAmmoTask(int maxmetal);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
@@ -35,6 +36,7 @@ private:
 	bool m_reached;
 	CBaseHandle m_sourceentity;
 	Vector m_sourcepos;
+	int m_metalLimit;
 
 	AmmoSource FindSource(CTF2Bot* me);
 	void UpdateSourcePosition();

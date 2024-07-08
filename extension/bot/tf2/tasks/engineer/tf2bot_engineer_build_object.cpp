@@ -49,7 +49,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 {
 	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 150)
 	{
-		return PauseFor(new CTF2BotFindAmmoTask, "Need more metal to build!");
+		return PauseFor(new CTF2BotFindAmmoTask(150), "Need more metal to build!");
 	}
 
 	CTF2BotPathCost cost(bot);

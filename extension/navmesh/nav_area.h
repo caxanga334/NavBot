@@ -784,6 +784,60 @@ public:
 			}
 		}
 
+		auto laddersup = GetLadders(CNavLadder::LADDER_UP);
+
+		if (laddersup)
+		{
+			for (int i = 0; i < laddersup->Count(); i++)
+			{
+				auto& conn = laddersup->Element(i);
+				CNavArea* connectedArea = conn.ladder->m_topForwardArea;
+
+				if (connectedArea)
+				{
+					functor(connectedArea);
+				}
+
+				connectedArea = conn.ladder->m_topBehindArea;
+
+				if (connectedArea)
+				{
+					functor(connectedArea);
+				}
+
+				connectedArea = conn.ladder->m_topLeftArea;
+
+				if (connectedArea)
+				{
+					functor(connectedArea);
+				}
+
+				connectedArea = conn.ladder->m_topRightArea;
+
+				if (connectedArea)
+				{
+					functor(connectedArea);
+				}
+				
+			}
+		}
+
+		auto laddersdown = GetLadders(CNavLadder::LADDER_DOWN);
+
+		if (laddersdown)
+		{
+			for (int i = 0; i < laddersdown->Count(); i++)
+			{
+				auto& conn = laddersdown->Element(i);
+				CNavArea* connectedArea = conn.ladder->m_bottomArea;
+
+				if (connectedArea)
+				{
+					functor(connectedArea);
+				}
+			}
+		}
+
 		for (auto& link : m_speciallinks)
 		{
 			CNavArea* connectedArea = link.m_link.area;

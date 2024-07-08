@@ -517,6 +517,11 @@ bool CTF2Bot::IsInUpgradeZone() const
 	return val;
 }
 
+bool CTF2Bot::IsUsingSniperScope() const
+{
+	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Zoomed);
+}
+
 void CTF2Bot::ToggleTournamentReadyStatus(bool isready) const
 {
 	char command[64];

@@ -64,6 +64,7 @@ public:
 	void FindMyBuildings();
 	int GetCurrency() const;
 	bool IsInUpgradeZone() const;
+	bool IsUsingSniperScope() const;
 
 	inline void BeginBuilding(TeamFortress2::TFObjectType type, TeamFortress2::TFObjectMode mode)
 	{
