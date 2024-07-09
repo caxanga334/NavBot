@@ -271,6 +271,30 @@ namespace UtilHelpers
 	}
 
 	/**
+	 * @brief Runs a function on every entity.
+	 * @tparam T A function with the following parameters: (int index, edict_t* edict, CBaseEntity* entity)
+	 * @param functor Function to call.
+	 */
+	template <typename T>
+	inline void ForEveryEntity(T functor)
+	{
+		CBaseHandle next = g_EntList->FirstHandle();
+
+		do
+		{
+			CBaseEntity* pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(next);
+			edict_t* pEdict = UtilHelpers::GetEdictFromCBaseHandle(next);
+			int index = next.GetEntryIndex();
+
+			functor(index, pEdict, pEntity);
+
+			next = g_EntList->NextHandle(next);
+
+		} while (next.IsValid());
+
+	}
+
+	/**
 	 * @brief Calls ClientCommandKeyValues for the given client. Throws an exception if the engine branch doesn't support keyvalue commands.
 	 * @param client Client that will be sending the command.
 	 * @param kv Keyvalue command.

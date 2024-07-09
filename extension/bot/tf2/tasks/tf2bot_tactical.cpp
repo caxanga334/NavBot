@@ -16,7 +16,6 @@
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
 #include <bot/tf2/tasks/sniper/tf2bot_task_sniper_move_to_sniper_spot.h>
-#include <bot/tf2/tasks/spy/tf2bot_task_spy_infiltrate.h>
 #include "scenario/payload/tf2bot_task_push_payload.h"
 #include "scenario/mvm/tf2bot_mvm_idle.h"
 

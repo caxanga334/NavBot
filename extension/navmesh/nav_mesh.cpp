@@ -130,6 +130,10 @@ CNavMesh::CNavMesh( void )
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("dod_round_start");
 	ListenForGameEvent("teamplay_round_start");
+
+	// Default walkable entities for generation
+	AddWalkableEntity("info_player_start");
+	AddWalkableEntity("info_player_teamspawn");
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -2914,6 +2918,18 @@ void CNavMesh::CommandNavMarkWalkable( void )
 
 static ConCommand sm_nav_mark_walkable( "sm_nav_mark_walkable", CommandNavMarkWalkable, "Mark the current location as a walkable position. These positions are used as seed locations when sampling the map to generate a Navigation Mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
+static void CommandNavSeedWalkableSpots()
+{
+	TheNavMesh->CommandNavSeedWalkableSpots();
+	Msg("Walkable spots added!\n");
+}
+
+void CNavMesh::CommandNavSeedWalkableSpots(void)
+{
+	AddWalkableSeeds();
+}
+
+static ConCommand sm_nav_seed_walkable_spots("sm_nav_seed_walkable_spots", CommandNavSeedWalkableSpots, "Automatically adds walkable positions.", FCVAR_GAMEDLL | FCVAR_CHEAT);
 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavClearWalkableMarks( void )

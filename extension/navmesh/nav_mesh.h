@@ -448,7 +448,12 @@ public:
 	void BeginAnalysis( bool quitWhenFinished = false );						// re-analyze an existing Mesh.  Determine Hiding Spots, Encounter Spots, etc.
 
 	bool IsGenerating( void ) const		{ return m_generationMode != GENERATE_NONE; }	// return true while a Navigation Mesh is being generated
-	void addPlayerSpawnName(const char *name) {	m_spawnNames.AddToTail(name); }		// adds the name of a spawn entitie
+	/**
+	 * @brief Adds an entity classname to the list of entities to be used for generating walkable spots
+	 * @param name Entity classname
+	 * @param useCenter if true, use the entity WorldSpaceCenter instead of AbsOrigin for the walkable spot. 
+	 */
+	void AddWalkableEntity(const char* name, bool useCenter = false) { m_walkableEntities.emplace(name, useCenter); }
 	void AddWalkableSeed( const Vector &pos, const Vector &normal );	// add given walkable position to list of seed positions for map sampling
 	virtual void AddWalkableSeeds( void );								// adds walkable positions for any/all positions a mod specifies
 	void ClearWalkableSeeds( void )		{ m_walkableSeeds.RemoveAll(); }	// erase all walkable seed positions
@@ -535,6 +540,7 @@ public:
 	void CommandNavSaveSelected( const CCommand &args );				// Save selected set to disk
 	void CommandNavMergeMesh( const CCommand &args );					// Merge a saved selected set into the current mesh
 	void CommandNavMarkWalkable( void );
+	void CommandNavSeedWalkableSpots(void);
 	void CommandNavConnectSpecialLink(int32_t linktype);
 	void CommandNavDisconnectSpecialLink(int32_t linktype);
 	void CommandNavSetLinkOrigin();
@@ -945,7 +951,8 @@ private:
 	float m_generationStartTime;
 	Extent m_simplifyGenerationExtent;
 
-	CUtlVector<CUtlString> m_spawnNames;						// list of spawn names
+	std::unordered_map<std::string, bool> m_walkableEntities;			// List of entities class names to generate walkable seeds
+
 	struct WalkableSeedSpot
 	{
 		Vector pos;

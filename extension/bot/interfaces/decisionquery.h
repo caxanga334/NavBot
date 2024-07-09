@@ -5,7 +5,7 @@ struct edict_t;
 class CBaseBot;
 class CKnownEntity;
 class CBaseExtPlayer;
-class Vector;
+class CBotWeapon;
 
 #include "mathlib.h"
 
@@ -59,6 +59,8 @@ public:
 	virtual QueryAnswerType IsReady(CBaseBot* me);
 	// Should the bot help a specific teammate?
 	virtual QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate);
+	// Should the bot switch to this weapon?
+	virtual QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon);
 private:
 
 };
@@ -119,6 +121,11 @@ inline QueryAnswerType IDecisionQuery::IsReady(CBaseBot* me)
 }
 
 inline QueryAnswerType IDecisionQuery::ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate)
+{
+	return ANSWER_UNDEFINED;
+}
+
+inline QueryAnswerType IDecisionQuery::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon)
 {
 	return ANSWER_UNDEFINED;
 }

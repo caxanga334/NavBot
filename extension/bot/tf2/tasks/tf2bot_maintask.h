@@ -41,10 +41,7 @@ private:
 
 inline bool CTF2BotMainTask::AllowedToSwitchWeapon()
 {
-	if (!m_weaponswitchtimer.HasStarted())
-		return true;
-
-	if (m_weaponswitchtimer.IsElapsed())
+	if (!m_weaponswitchtimer.HasStarted() || m_weaponswitchtimer.IsElapsed())
 		return true;
 
 	return false;

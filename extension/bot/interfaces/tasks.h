@@ -389,6 +389,11 @@ public:
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAssistTeammate, me, teammate);
 	}
 
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override
+	{
+		PROPAGATE_DECISION_WITH_2ARGS(ShouldSwitchToWeapon, me, weapon);
+	}
+
 private:
 	friend class AITask<BotClass>;
 

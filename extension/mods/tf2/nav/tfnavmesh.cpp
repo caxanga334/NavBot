@@ -14,6 +14,20 @@ ConVar sm_tf_nav_show_mvm_attributes("sm_tf_nav_show_mvm_attributes", "0", FCVAR
 CTFNavMesh::CTFNavMesh() : CNavMesh()
 {
 	m_spawnroomupdatetimer.Start(NAV_SPAWNROOM_UPDATE_INTERVAL);
+
+	AddWalkableEntity("item_ammopack_full");
+	AddWalkableEntity("item_ammopack_medium");
+	AddWalkableEntity("item_ammopack_small");
+	AddWalkableEntity("item_healthkit_full");
+	AddWalkableEntity("item_healthkit_medium");
+	AddWalkableEntity("item_healthkit_small");
+	AddWalkableEntity("item_teamflag");
+	AddWalkableEntity("func_capturezone", true);
+	AddWalkableEntity("func_regenerate", true);
+	AddWalkableEntity("team_control_point");
+	AddWalkableEntity("trigger_capture_area", true);
+	AddWalkableEntity("trigger_timer_door", true);
+	AddWalkableEntity("info_powerup_spawn");
 }
 
 CTFNavMesh::~CTFNavMesh()

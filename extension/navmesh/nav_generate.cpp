@@ -13,6 +13,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
+#include <entities/baseentity.h>
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_pathfind.h"
@@ -3194,26 +3195,40 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 // adds walkable positions for any/all positions a mod specifies
 void CNavMesh::AddWalkableSeeds( void )
 {
-	// TO-DO
-/*
-	CUtlLinkedList<edict_t*> spawns;
-	FOR_EACH_VEC(this->m_spawnNames, i) {
-		findEntWithMatchingName(m_spawnNames[i], spawns);
-	}
-	FOR_EACH_LL(spawns, i)
-	{
-		// snap it to the sampling grid
-		Vector pos = spawns[i]->GetCollideable()->GetCollisionOrigin();
-		pos.x = TheNavMesh->SnapToGrid( pos.x );
-		pos.y = TheNavMesh->SnapToGrid( pos.y );
+	UtilHelpers::ForEveryEntity([this](int index, edict_t* edict, CBaseEntity* entity) {
+		const char* classname = gamehelpers->GetEntityClassname(entity);
 
-		Vector normal;
-		if ( FindGroundForNode( &pos, &normal ) )
+		if (classname != nullptr && classname[0] != '\0')
 		{
-			AddWalkableSeed( pos, normal );
+			auto it = m_walkableEntities.find(classname);
+
+			if (it != m_walkableEntities.end())
+			{
+				entities::HBaseEntity be(entity);
+
+				Vector pos;
+
+				if (it->second)
+				{
+					pos = be.WorldSpaceCenter();
+				}
+				else
+				{
+					pos = be.GetAbsOrigin();
+				}
+
+				pos.x = SnapToGrid(pos.x);
+				pos.y = SnapToGrid(pos.y);
+
+				Vector normal;
+
+				if (FindGroundForNode(&pos, &normal))
+				{
+					AddWalkableSeed(pos, normal);
+				}
+			}
 		}
-	}
-*/
+	});
 }
 
 

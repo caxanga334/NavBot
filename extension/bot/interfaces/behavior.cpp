@@ -79,3 +79,8 @@ QueryAnswerType IBehavior::ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& te
 {
 	return GetDecisionQueryResponder()->ShouldAssistTeammate(me, teammate);
 }
+
+QueryAnswerType IBehavior::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon)
+{
+	return GetDecisionQueryResponder()->ShouldSwitchToWeapon(me, weapon);
+}

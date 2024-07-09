@@ -35,6 +35,7 @@ public:
 	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 	QueryAnswerType IsReady(CBaseBot* me) override;
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate) override;
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
 
 private:
 

@@ -237,8 +237,13 @@ void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* 
 
 	if (best)
 	{
-		me->SelectWeaponByCommand(best->GetBaseCombatWeapon().GetClassname());
-		m_weaponswitchtimer.Start(2.0f); // found a valid weapon,
+		// start the timer even if the query disallows switch
+		m_weaponswitchtimer.Start(3.0f); // found a valid weapon
+
+		if (ShouldSwitchToWeapon(me, best) != ANSWER_NO)
+		{
+			me->SelectWeapon(best->GetEntity());
+		}
 	}
 }
 

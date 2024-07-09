@@ -491,6 +491,13 @@ CON_COMMAND_F(sm_snap_my_angles, "sNAP", FCVAR_CHEAT)
 	player.SnapEyeAngles(angles);
 }
 
+CON_COMMAND_F(sm_navbot_debug_entlist, "Debugs the entity list.", FCVAR_CHEAT)
+{
+	UtilHelpers::ForEveryEntity([](int index, edict_t* edict, CBaseEntity* entity) {
+		Msg("Entity #%i: %s (%p <%p>) \n", index, gamehelpers->GetEntityClassname(entity) ? gamehelpers->GetEntityClassname(entity) : "NULL CLASSNAME", entity, edict);
+	});
+}
+
 #if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 
 CON_COMMAND_F(sm_get_entity_size, "Returns the entity size", FCVAR_CHEAT)
