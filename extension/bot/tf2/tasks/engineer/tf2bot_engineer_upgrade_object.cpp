@@ -40,7 +40,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		return PauseFor(new CTF2BotFindAmmoTask(object.GetMetalNeededToUpgrade()), "Need more metal!");
 	}
 
-	auto myweapon = bot->GetActiveBotWeapon();
+	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (myweapon && myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>() != TeamFortress2::TFWeaponID::TF_WEAPON_WRENCH)
 	{

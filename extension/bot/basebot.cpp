@@ -14,6 +14,8 @@
 
 ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty.");
 
+int CBaseBot::m_maxStringCommandsPerSecond = 20;
+
 CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
@@ -22,17 +24,17 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_isfirstspawn = false;
 	m_nextupdatetime = 64;
 	m_joingametime = 64;
-	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet. We now get it at the 'OnSpawn' hook.
+	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet.
 	m_listeners.reserve(8);
 	m_basecontrol = nullptr;
 	m_basemover = nullptr;
 	m_basesensor = nullptr;
 	m_basebehavior = nullptr;
+	m_baseinventory = nullptr;
 	m_weaponselect = 0;
 	m_cmdtimer.Invalidate();
+	m_cmdsents = 0;
 	m_debugtextoffset = 0;
-	m_weapons.reserve(MAX_WEAPONS);
-	m_weaponupdatetimer = 5;
 	m_shhooks.reserve(32);
 
 	AddHooks();
@@ -40,10 +42,6 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 
 CBaseBot::~CBaseBot()
 {
-	delete m_basecontrol;
-	delete m_basemover;
-	delete m_basesensor;
-	delete m_basebehavior;
 	m_interfaces.clear();
 	m_listeners.clear();
 
@@ -103,7 +101,6 @@ void CBaseBot::PlayerThink()
 		return;
 	}
 
-	ExecuteQueuedCommands(); // Run queue commands
 	Frame(); // Call bot frame
 
 	int buttons = 0;
@@ -126,6 +123,8 @@ void CBaseBot::PlayerThink()
 
 	// This needs to be the last call on a bot think cycle
 	BuildUserCommand(buttons);
+	// Execute the command at the end of the tick since the BOT AI might queue commands on this tick
+	ExecuteQueuedCommands(); // Run queue commands
 }
 
 void CBaseBot::Reset()
@@ -136,9 +135,6 @@ void CBaseBot::Reset()
 	{
 		iface->Reset();
 	}
-
-	m_weapons.clear();
-	m_weaponupdatetimer = 2; // delay next weapon update
 }
 
 void CBaseBot::Update()
@@ -151,12 +147,6 @@ void CBaseBot::Update()
 
 void CBaseBot::Frame()
 {
-	if (--m_weaponupdatetimer <= 0)
-	{
-		m_weaponupdatetimer = TIME_TO_TICKS(60.0f); // by default, update weapons every minute
-		UpdateMyWeapons();
-	}
-
 	for (auto iface : m_interfaces)
 	{
 		iface->Frame();
@@ -336,42 +326,52 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 
 IPlayerController* CBaseBot::GetControlInterface() const
 {
-	if (m_basecontrol == nullptr)
+	if (!m_basecontrol)
 	{
-		m_basecontrol = new IPlayerController(const_cast<CBaseBot*>(this));
+		m_basecontrol = std::make_unique<IPlayerController>(const_cast<CBaseBot*>(this));
 	}
 
-	return m_basecontrol;
+	return m_basecontrol.get();
 }
 
 IMovement* CBaseBot::GetMovementInterface() const
 {
-	if (m_basemover == nullptr)
+	if (!m_basemover)
 	{
-		m_basemover = new IMovement(const_cast<CBaseBot*>(this));
+		m_basemover = std::make_unique<IMovement>(const_cast<CBaseBot*>(this));
 	}
 
-	return m_basemover;
+	return m_basemover.get();
 }
 
 ISensor* CBaseBot::GetSensorInterface() const
 {
-	if (m_basesensor == nullptr)
+	if (!m_basesensor)
 	{
-		m_basesensor = new ISensor(const_cast<CBaseBot*>(this));
+		m_basesensor = std::make_unique<ISensor>(const_cast<CBaseBot*>(this));
 	}
 
-	return m_basesensor;
+	return m_basesensor.get();
 }
 
 IBehavior* CBaseBot::GetBehaviorInterface() const
 {
-	if (m_basebehavior == nullptr)
+	if (!m_basebehavior)
 	{
-		m_basebehavior = new CBaseBotBehavior(const_cast<CBaseBot*>(this));
+		m_basebehavior = std::make_unique<CBaseBotBehavior>(const_cast<CBaseBot*>(this));
 	}
 
-	return m_basebehavior;
+	return m_basebehavior.get();
+}
+
+IInventory* CBaseBot::GetInventoryInterface() const
+{
+	if (!m_baseinventory)
+	{
+		m_baseinventory = std::make_unique<IInventory>(const_cast<CBaseBot*>(this));
+	}
+
+	return m_baseinventory.get();
 }
 
 void CBaseBot::Spawn()
@@ -446,24 +446,37 @@ void CBaseBot::FakeClientCommand(const char* command) const
 
 void CBaseBot::ExecuteQueuedCommands()
 {
-	if (m_cmdqueue.size() == 0)
+	if (m_cmdqueue.empty())
 	{
 		return;
 	}
 
-	if (!m_cmdtimer.HasStarted() || m_cmdtimer.IsElapsed())
+	if (!m_cmdtimer.HasStarted() || m_cmdtimer.IsGreaterThen(1.1f))
 	{
-		constexpr auto NEXT_COMMAND_DELAY = 0.25f;
-		
+		m_cmdtimer.Start();
+		m_cmdsents = 0; // reset the counter
+	}
+
+	if (m_cmdsents >= CBaseBot::m_maxStringCommandsPerSecond)
+	{
+		return;
+	}
+
+	while (m_cmdsents <= CBaseBot::m_maxStringCommandsPerSecond)
+	{
+		// Keep pushing commands until empty or we hit the limit per second
+
 		auto& next = m_cmdqueue.front();
 		serverpluginhelpers->ClientCommand(GetEdict(), next.c_str());
 		m_cmdqueue.pop();
+		m_cmdsents++;
 
-		if (m_cmdqueue.size() == 0)
+		if (m_cmdqueue.empty())
 		{
-			m_cmdtimer.Invalidate();
+			return;
 		}
 	}
+
 }
 
 bool CBaseBot::IsLineOfFireClear(const Vector& to) const
@@ -472,46 +485,5 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	trace_t result;
 	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
 	return !result.DidHit();
-}
-
-void CBaseBot::UpdateMyWeapons()
-{
-	m_weapons.clear();
-
-	for (int i = 0; i < MAX_WEAPONS; i++)
-	{
-		int index = INVALID_EHANDLE_INDEX;
-		entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", index, i);
-
-		if (index == INVALID_EHANDLE_INDEX)
-			continue;
-
-		edict_t* weapon = gamehelpers->EdictOfIndex(index);
-
-		if (!weapon || weapon->IsFree())
-			continue;
-
-		m_weapons.emplace_back(weapon);
-	}
-}
-
-const CBotWeapon* CBaseBot::GetActiveBotWeapon() const
-{
-	auto weapon = GetActiveWeapon();
-	
-	if (!weapon || weapon->IsFree())
-		return nullptr;
-
-	int index = gamehelpers->IndexOfEdict(weapon);
-
-	for (const auto& botweapon : m_weapons)
-	{
-		if (botweapon.GetBaseCombatWeapon().GetIndex() == index)
-		{
-			return &botweapon;
-		}
-	}
-
-	return nullptr;
 }
 

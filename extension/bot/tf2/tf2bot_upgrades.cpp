@@ -296,17 +296,17 @@ void CTF2BotUpgradeManager::FetchUpgrades()
 
 void CTF2BotUpgradeManager::FilterUpgrades()
 {
-	if (m_me->GetMyWeaponsCount() == 0)
+	if (m_me->GetInventoryInterface()->HasAnyWeapons())
 	{
 		m_state = STATE_UPDATEFILTER;
-		m_me->UpdateMyWeapons(); // Force an update
+		m_me->GetInventoryInterface()->BuildInventory();
 		return;
 	}
 
 
 	// Collect weapon item definition indexes
 	std::vector<int> myweaponindexes;
-	m_me->ForEveryWeapon([&myweaponindexes](const CBotWeapon& weapon) {
+	m_me->GetInventoryInterface()->ForEveryWeapon([&myweaponindexes](const CBotWeapon& weapon) {
 		myweaponindexes.push_back(weapon.GetWeaponEconIndex());
 	});
 

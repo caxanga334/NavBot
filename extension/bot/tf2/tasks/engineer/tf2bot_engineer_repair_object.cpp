@@ -50,7 +50,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	/* TODO position behind sentry if under attack by enemy */
 
-	auto myweapon = bot->GetActiveBotWeapon();
+	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (myweapon && myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>() != TeamFortress2::TFWeaponID::TF_WEAPON_WRENCH)
 	{

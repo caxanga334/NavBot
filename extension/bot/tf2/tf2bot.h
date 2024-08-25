@@ -62,6 +62,9 @@ public:
 	void SetMyTeleporterEntrance(edict_t* entity);
 	void SetMyTeleporterExit(edict_t* entity);
 	void FindMyBuildings();
+	bool IsDisguised() const;
+	bool IsCloaked() const;
+	bool IsInvisible() const;
 	int GetCurrency() const;
 	bool IsInUpgradeZone() const;
 	bool IsUsingSniperScope() const;
@@ -71,27 +74,34 @@ public:
 		switch (type)
 		{
 		case TeamFortress2::TFObject_Dispenser:
-			DelayedFakeClientCommand("build 0");
+			DelayedFakeClientCommand("build 0 0");
 			break;
 		case TeamFortress2::TFObject_Teleporter:
 		{
 			if (mode == TeamFortress2::TFObjectMode::TFObjectMode_Entrance)
 			{
-				DelayedFakeClientCommand("build 1");
+				DelayedFakeClientCommand("build 1 0");
 			}
 			else
 			{
-				DelayedFakeClientCommand("build 3");
+				DelayedFakeClientCommand("build 1 1");
 			}
 
 			break;
 		}
 		case TeamFortress2::TFObject_Sentry:
-			DelayedFakeClientCommand("build 2");
+			DelayedFakeClientCommand("build 2 0");
 			break;
 		default:
 			break;
 		}
+	}
+
+	inline void DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam = false)
+	{
+		std::unique_ptr<char[]> buffer = std::make_unique<char[]>(128);
+		ke::SafeSprintf(buffer.get(), 128, "disguise %i %i", static_cast<int>(classtype), myTeam ? -2 : -1);
+		DelayedFakeClientCommand(buffer.get());
 	}
 
 	/**

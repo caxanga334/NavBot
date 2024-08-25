@@ -29,7 +29,7 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat != nullptr) // I have an enemy
 	{
-		SelectBestWeaponForEnemy(bot, threat);
+		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
 		FireWeaponAtEnemy(bot, threat);
 	}
 	else // I don't have an enemy
@@ -107,7 +107,7 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	if (tf2lib::IsPlayerInCondition(me->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
 
-	auto myweapon = me->GetActiveBotWeapon();
+	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (myweapon == nullptr)
 		return;
@@ -158,7 +158,7 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 		}
 	}
 
-	auto& info = me->GetActiveBotWeapon()->GetWeaponInfo();
+	auto& info = me->GetInventoryInterface()->GetActiveBotWeapon()->GetWeaponInfo();
 	auto threat_range = me->GetRangeTo(origin);
 
 	if (threat_range < info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
@@ -179,71 +179,6 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	if (id == TeamFortress2::TFWeaponID::TF_WEAPON_PIPEBOMBLAUNCHER)
 	{
 		me->GetControlInterface()->PressSecondaryAttackButton(); // make stickies detonate as soon as possible
-	}
-}
-
-void CTF2BotMainTask::SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* threat)
-{
-	if (!AllowedToSwitchWeapon())
-		return;
-
-	if (me->GetMyWeaponsCount() == 0)
-	{
-		me->UpdateMyWeapons(); // try updating
-		m_weaponswitchtimer.Start(0.5f); // don't spam weapon updates
-		return;
-	}
-
-	if (!threat->IsVisibleNow())
-		return; // Don't bother with weapon switches if we can't see it
-
-	const float rangeTo = me->GetRangeTo(threat->GetEdict());
-	const CBotWeapon* best = nullptr;
-	int priority = -999;
-
-	me->ForEveryWeapon([&me, &rangeTo, &best, &priority](const CBotWeapon& weapon) {
-		if (!weapon.GetWeaponInfo().IsDefault()) // weapon must have a valid weapon info
-		{
-			if (!weapon.GetWeaponInfo().IsCombatWeapon())
-			{
-				return; // must be a usable weapon
-			}
-
-			// ammo check
-			if (weapon.GetBaseCombatWeapon().GetClip1() == 0 &&
-				me->GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) == 0)
-			{
-				return; // no ammo in clip and no reserve ammo, skip
-			}
-
-			if (rangeTo > weapon.GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
-			{
-				return; // outside max range
-			}
-			else if (rangeTo < weapon.GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
-			{
-				return; // too close
-			}
-
-			int currentprio = weapon.GetWeaponInfo().GetPriority();
-
-			if (currentprio > priority)
-			{
-				best = &weapon;
-				priority = currentprio;
-			}
-		}
-	});
-
-	if (best)
-	{
-		// start the timer even if the query disallows switch
-		m_weaponswitchtimer.Start(3.0f); // found a valid weapon
-
-		if (ShouldSwitchToWeapon(me, best) != ANSWER_NO)
-		{
-			me->SelectWeapon(best->GetEntity());
-		}
 	}
 }
 
@@ -272,7 +207,7 @@ void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 
 void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result)
 {
-	auto myweapon = me->GetActiveBotWeapon();
+	const CBotWeapon* myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (!myweapon) // how?
 	{

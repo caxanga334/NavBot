@@ -233,7 +233,7 @@ void CTF2BotMedicMainTask::DeployUberIfNeeded(CTF2Bot* me)
 
 void CTF2BotMedicMainTask::EquipMedigun(CTF2Bot* me) const
 {
-	auto myweapon = me->GetActiveBotWeapon();
+	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (myweapon && myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>() == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
 	{
@@ -245,7 +245,7 @@ void CTF2BotMedicMainTask::EquipMedigun(CTF2Bot* me) const
 
 float CTF2BotMedicMainTask::GetUbercharge(CTF2Bot* me)
 {
-	auto medigun = me->GetActiveBotWeapon();
+	auto medigun = me->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (medigun && medigun->GetModWeaponID<TeamFortress2::TFWeaponID>() == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
 	{

@@ -237,7 +237,7 @@ bool CTF2Bot::IsAmmoLow() const
 
 	bool haslowammoweapon = false;
 
-	ForEveryWeapon([this, &haslowammoweapon](const CBotWeapon& weapon) {
+	GetInventoryInterface()->ForEveryWeapon([this, &haslowammoweapon](const CBotWeapon& weapon) {
 		if (haslowammoweapon)
 			return;
 
@@ -501,6 +501,21 @@ void CTF2Bot::FindMyBuildings()
 			}
 		}
 	}
+}
+
+bool CTF2Bot::IsDisguised() const
+{
+	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Disguised);
+}
+
+bool CTF2Bot::IsCloaked() const
+{
+	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Cloaked);
+}
+
+bool CTF2Bot::IsInvisible() const
+{
+	return tf2lib::IsPlayerInvisible(GetIndex());
 }
 
 int CTF2Bot::GetCurrency() const

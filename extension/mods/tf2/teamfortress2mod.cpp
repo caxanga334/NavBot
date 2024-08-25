@@ -1046,9 +1046,35 @@ CON_COMMAND(sm_navbot_tf_reload_upgrades, "[TF2] Reload MvM Upgrades")
 	rootconsole->ConsolePrint("Reloaded MvM Upgrades.");
 }
 
-CON_COMMAND(sm_navbot_tf_debug_control_points, "[TF2] Show control point data.")
+CON_COMMAND_F(sm_navbot_tf_debug_control_points, "[TF2] Show control point data.", FCVAR_CHEAT)
 {
 	CTeamFortress2Mod::GetTF2Mod()->DebugInfo_ControlPoints();
 }
+
+CON_COMMAND_F(sm_navbot_tf_debug_payload_carts, "[TF2] Shows which payload cart for each team.", FCVAR_CHEAT)
+{
+	CBaseEntity* redpayload = CTeamFortress2Mod::GetTF2Mod()->GetREDPayload();
+	CBaseEntity* blupayload = CTeamFortress2Mod::GetTF2Mod()->GetBLUPayload();
+
+	if (redpayload != nullptr)
+	{
+		Msg("Found RED payload #%i \n", gamehelpers->EntityToReference(redpayload));
+	}
+
+	if (blupayload != nullptr)
+	{
+		Msg("Found BLU payload #%i \n", gamehelpers->EntityToReference(blupayload));
+	}
+}
+
+#ifdef EXT_DEBUG
+
+CON_COMMAND_F(sm_navbot_tf_debug_update_payload_carts, "[TF2] Forces NavBot to update the current goal payload cart. \n", FCVAR_CHEAT)
+{
+	CTeamFortress2Mod::GetTF2Mod()->Debug_UpdatePayload();
+}
+
+#endif // EXT_DEBUG
+
 
 #endif // SOURCE_ENGINE == SE_TF2

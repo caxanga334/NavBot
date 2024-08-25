@@ -59,6 +59,14 @@ public:
 
 	void DebugInfo_ControlPoints();
 
+#ifdef EXT_DEBUG
+	inline void Debug_UpdatePayload()
+	{
+		FindPayloadCarts();
+	}
+#endif // EXT_DEBUG
+
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;

@@ -32,7 +32,6 @@ private:
 
 	bool AllowedToSwitchWeapon();
 	void FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat);
-	void SelectBestWeaponForEnemy(CTF2Bot* me, const CKnownEntity* threat);
 	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
 	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo& info, CTF2BotSensor* sensor);

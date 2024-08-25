@@ -214,6 +214,18 @@ void CExtManager::OnMapStart()
 	int target = sm_navbot_quota_quantity.GetInt();
 	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
 	SetBotQuotaTarget(target);
+
+	ConVarRef sv_quota_stringcmdspersecond("sv_quota_stringcmdspersecond");
+
+	if (sv_quota_stringcmdspersecond.IsValid())
+	{
+		CBaseBot::m_maxStringCommandsPerSecond = std::max(sv_quota_stringcmdspersecond.GetInt(), 0);
+	}
+	else
+	{
+		// either failed to find the convar or it does not exists
+		CBaseBot::m_maxStringCommandsPerSecond = 20;
+	}
 }
 
 void CExtManager::OnMapEnd()
@@ -314,6 +326,7 @@ void CExtManager::AddBot()
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();
 	bot->GetBehaviorInterface();
+	bot->GetInventoryInterface();
 #endif // EXT_DEBUG
 
 	smutils->LogMessage(myself, "NavBot added to the game.");
