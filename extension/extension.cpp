@@ -47,6 +47,7 @@
  * @brief Implement extension code here.
  */
 
+
 CGlobalVars* gpGlobals = nullptr;
 IVDebugOverlay* debugoverlay = nullptr;
 // IVEngineServer* engine = nullptr;
@@ -284,25 +285,20 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetServerFactory, servertools, IServerTools, VSERVERTOOLS_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, staticpropmgr, IStaticPropMgrServer, INTERFACEVERSION_STATICPROPMGR_SERVER);
 
-#ifdef EXT_DEBUG
-	if (staticpropmgr == nullptr)
+	debugoverlay = reinterpret_cast<IVDebugOverlay*>(ismm->VInterfaceMatch(ismm->GetEngineFactory(), VDEBUG_OVERLAY_INTERFACE_VERSION));
+
+	// Warn if debug overlay is not available on a Listen Server.
+	if (debugoverlay == nullptr && !engine->IsDedicatedServer())
 	{
-		smutils->LogError(myself, "Failed to get Static Prop Manager Server interface!");
+		smutils->LogMessage(myself, "Warning: Could not get interface %s. Nav mesh drawing and editing will not be available.", VDEBUG_OVERLAY_INTERFACE_VERSION);
+	}
+#ifdef EXT_DEBUG
+	else
+	{
+		smutils->LogMessage(myself, "Found debug overlay interface.");
 	}
 #endif // EXT_DEBUG
 
-
-#ifdef WIN32
-	GET_V_IFACE_CURRENT(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
-#else
-	GET_V_IFACE_CURRENT(GetEngineFactory, debugoverlay, IVDebugOverlay, VDEBUG_OVERLAY_INTERFACE_VERSION);
-
-	if (!debugoverlay && !engine->IsDedicatedServer())
-	{
-		// Report if debug overlay is not available on a Linux listen server
-		smutils->LogError(myself, "Failed to get %s interface. NavMesh drawing will be unavailable.", VDEBUG_OVERLAY_INTERFACE_VERSION);
-	}
-#endif // WIN32
 
 	GET_V_IFACE_CURRENT(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
 
