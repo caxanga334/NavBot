@@ -9,8 +9,8 @@ if not BasePath.exists():
   BasePath.mkdir(0o755, True, True)
 
 CreateDirs = [
-  'addons/sourcemod/configs/',
-  'addons/sourcemod/configs/tf/',
+  'addons/sourcemod/configs/navbot/',
+  'addons/sourcemod/configs/navbot/tf/',
   'addons/sourcemod/gamedata/navbot.games',
   'addons/sourcemod/extensions/x64/',
   'addons/sourcemod/scripting/include',
@@ -22,7 +22,7 @@ for folder in CreateDirs:
   NewFolder.mkdir(0o755, True, True)
   print("Creating folder: " + str(NewFolder))
 
-shutil.copytree(RootPath.joinpath('configs'), BasePath.joinpath('addons/sourcemod/configs/'), dirs_exist_ok=True)
+shutil.copytree(RootPath.joinpath('configs'), BasePath.joinpath('addons/sourcemod/configs/navbot/'), dirs_exist_ok=True)
 shutil.copytree(RootPath.joinpath('gamedata'), BasePath.joinpath('addons/sourcemod/gamedata/'), dirs_exist_ok=True)
 shutil.copytree(RootPath.joinpath('scripting'), BasePath.joinpath('addons/sourcemod/scripting/'), dirs_exist_ok=True)
 shutil.copytree(RootPath.joinpath('translations'), BasePath.joinpath('addons/sourcemod/translations/'), dirs_exist_ok=True)
