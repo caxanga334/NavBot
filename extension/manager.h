@@ -42,7 +42,7 @@ public:
 	CBaseBot* GetBotByIndex(int index);
 	bool IsNavBot(const int client) const;
 
-	void AddBot();
+	void AddBot(std::string* newbotname = nullptr, edict_t** newbotedict = nullptr);
 	void RemoveRandomBot(const char* message);
 	void RemoveAllBots(const char* message);
 

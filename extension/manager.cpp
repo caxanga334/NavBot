@@ -280,27 +280,34 @@ bool CExtManager::IsNavBot(const int client) const
 	return false;
 }
 
-void CExtManager::AddBot()
+void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 {
 	const char* name = nullptr;
 
-	if (m_botnames.size() == 0)
+	if (newbotname != nullptr)
 	{
-		char botname[30]{};
-		std::sprintf(botname, "SMNav Bot #%04d", librandom::generate_random_int(0, 9999));
-		name = botname;
+		name = newbotname->c_str();
 	}
 	else
 	{
-		auto& botname = m_botnames[m_nextbotname];
-		m_nextbotname++;
-
-		if (m_nextbotname >= m_botnames.size())
+		if (m_botnames.empty())
 		{
-			m_nextbotname = 0; // go back to start
+			char botname[30]{};
+			std::sprintf(botname, "NavBot #%04d", librandom::generate_random_int(0, 9999));
+			name = botname;
 		}
+		else
+		{
+			auto& botname = m_botnames[m_nextbotname];
+			m_nextbotname++;
 
-		name = botname.c_str();
+			if (m_nextbotname >= m_botnames.size())
+			{
+				m_nextbotname = 0; // go back to start
+			}
+
+			name = botname.c_str();
+		}
 	}
 
 	// Tell the bot manager to create a new bot. Now that we are using SourceHooks, we need to catch the bot on 'OnClientPutInServer'.
@@ -311,6 +318,12 @@ void CExtManager::AddBot()
 	if (edict == nullptr)
 	{
 		smutils->LogError(myself, "Failed to create a new bot with the Bot Manager interface!");
+
+		if (newbotedict != nullptr)
+		{
+			newbotedict = nullptr;
+		}
+
 		return;
 	}
 
@@ -328,6 +341,11 @@ void CExtManager::AddBot()
 	bot->GetBehaviorInterface();
 	bot->GetInventoryInterface();
 #endif // EXT_DEBUG
+
+	if (newbotedict != nullptr)
+	{
+		newbotedict = &edict;
+	}
 
 	smutils->LogMessage(myself, "NavBot added to the game.");
 }
@@ -407,7 +425,7 @@ void CExtManager::LoadBotNames()
 	}
 #endif // EXT_DEBUG
 
-	rootconsole->ConsolePrint("[SMNav] Bot name list loaded with %i names.", m_botnames.size());
+	rootconsole->ConsolePrint("[NavBot] Bot name list loaded with %i names.", m_botnames.size());
 }
 
 void CExtManager::UpdateBotQuota()

@@ -9,6 +9,8 @@ namespace natives
 {
 	void setup(std::vector<sp_nativeinfo_t>& nv);
 	cell_t IsNavBot(IPluginContext* context, const cell_t* params);
+	cell_t AddNavBot(IPluginContext* context, const cell_t* params);
+	cell_t IsNavMeshLoaded(IPluginContext* context, const cell_t* params);
 }
 
 

@@ -8,7 +8,20 @@
 
 CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 {
-	extmanager->AddBot();
+	if (!TheNavMesh->IsLoaded())
+	{
+		Warning("Nav Mesh not loaded, bots will not be able to move!");
+	}
+
+	if (args.ArgC() < 2)
+	{
+		extmanager->AddBot(nullptr, nullptr);
+	}
+	else
+	{
+		std::string botname(args[1]);
+		extmanager->AddBot(&botname, nullptr);
+	}	
 }
 
 CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
