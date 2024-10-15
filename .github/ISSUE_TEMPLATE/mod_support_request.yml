@@ -1,0 +1,66 @@
+﻿name: Request Mod Support
+description: Request NavBot support for a new game/mod.
+title: "[Mod Support Request]: "
+labels:
+  - "Request: Mod Support"
+body:
+  - type: textarea
+    id: in-mod-name
+    attributes:
+      label: 'Game/Mod Name?'
+      description: 'The name of the game/mod'
+      placeholder: 'Team Fortress 2'
+    validations:
+      required: true
+  - type: textarea
+    id: in-mod-link
+    attributes:
+      label: 'Mod URL'
+      description: 'URL to the game/mod'
+      placeholder: 'https://store.steampowered.com/app/440/Team_Fortress_2/'
+    validations:
+      required: true
+  - type: textarea
+    id: in-engine-version
+    attributes:
+      label: 'Source Engine Version/Branch?'
+      description: 'What Source Engine branch does this mod runs'
+      placeholder: 'Source SDK 2013'
+  - type: dropdown
+    id: in-native-bots
+    attributes:
+      label: 'Native Bots'
+      description: 'Does the mod have native/built-in bots'
+      multiple: false
+      options:
+        - 'Yes'
+        - 'No'
+    validations:
+      required: true
+  - type: dropdown
+    id: in-native-open-source
+    attributes:
+      label: 'Open Source?'
+      description: 'Is the mod open source.'
+      multiple: false
+      options:
+        - 'Yes'
+        - 'No'
+  - type: checkboxes
+    id: in-os-support
+    attributes:
+      label: 'OS Support'
+      description: 'Which operating systems are supported by the mod'
+      options:
+        - label: 'Windows'
+        - label: 'Linux'
+  - type: dropdown
+    id: in-arch
+    attributes:
+      label: 'What Architecture The Mod Uses?'
+      description: 'Arch used by the mod binaries.'
+      multiple: false
+      options:
+        - 'x86 (32 bits) only'
+        - 'x86-64 (64 bits) only'
+        - 'x86 and x86-64 (both 32 and 64 bits)'
