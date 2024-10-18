@@ -264,11 +264,12 @@ enum NavHintType : int
 class NavHintPoint
 {
 public:
-	NavHintPoint(int type, const Vector& origin, const QAngle& angles)
+	NavHintPoint(int type, const Vector& origin, const QAngle& angles, CNavArea* area)
 	{
 		m_hintType = type;
 		m_pos = origin;
 		m_angle = angles;
+		m_area = area;
 	}
 
 	bool operator==(const NavHintPoint& other) const
@@ -285,14 +286,17 @@ public:
 	}
 
 	bool IsHintOfType(int type) const { return m_hintType == type; }
+	bool IsOwnedByArea(const CNavArea* other) const { return m_area == other; }
 	int GetHintType() const { return m_hintType; }
 	const Vector& GetPosition() const { return m_pos; }
 	const QAngle& GetAngle() const { return m_angle; }
+	const CNavArea* GetOwningArea() const { return m_area; }
 	void Draw() const;
 
 	int m_hintType; // Nav Hint type
 	Vector m_pos; // Nav Hint origin
 	QAngle m_angle; // Nav Hint Aiming angle
+	CNavArea* m_area; // Nav Area that this hint belongs to
 };
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -411,7 +415,7 @@ public:
 			return;
 		}
 
-		m_hints.emplace_back(type, origin, angle);
+		m_hints.emplace_back(type, origin, angle, this);
 	}
 	void WipeHints() { m_hints.clear(); }
 	void RemoveNearestHint(const Vector& origin)

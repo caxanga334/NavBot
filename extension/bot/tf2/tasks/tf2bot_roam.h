@@ -26,7 +26,7 @@ private:
 	bool m_hasgoal;
 	uint8_t m_failcount;
 
-	void FindRandomGoalPosition(CTF2Bot* me);
+	bool FindRandomGoalPosition(CTF2Bot* me);
 };
 
 #endif // !NAVBOT_TF2_ROAM_TASK_H_

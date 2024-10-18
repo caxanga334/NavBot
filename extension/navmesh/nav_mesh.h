@@ -38,6 +38,7 @@
 
 class HidingSpot;
 class CUtlBuffer;
+class NavHintPoint;
 
 namespace SourceMod
 {
@@ -990,6 +991,31 @@ private:
 
 	void PlayEditSoundInternal(const std::string& sound) const;
 	const char* GetNavAreaHintTypeNameInternal(int hint) const;
+
+	std::vector<const NavHintPoint*> m_navhints;						// Vector of all available nav hints.
+
+protected:
+	void RebuildNavHintVector();
+
+public:
+
+	/**
+	 * @brief Loops all Nav Hints.
+	 * @tparam T Functor with 1 parameter: bool (const NavHintPoint* hint)
+	 * @param functor Function to run on each nav hint. Return false to end loop early.
+	 */
+	template <typename T>
+	void ForEveryNavHint(T functor)
+	{
+		for (auto hint : m_navhints)
+		{
+			if (functor(hint) == false)
+			{
+				return;
+			}
+		}
+	}
+
 };
 
 // the global singleton interface

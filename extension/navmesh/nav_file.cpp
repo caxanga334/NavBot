@@ -501,7 +501,7 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		QAngle angles;
 		filestream.read(reinterpret_cast<char*>(&angles), sizeof(QAngle));
 
-		m_hints.emplace_back(type, origin, angles);
+		m_hints.emplace_back(type, origin, angles, this);
 	}
 
 	return NAV_OK;
@@ -1334,6 +1334,8 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	{
 		m_avoidanceObstacles[i]->OnNavMeshLoaded();
 	}
+
+	RebuildNavHintVector();
 
 	// the Navigation Mesh has been successfully loaded
 	m_isLoaded = true;

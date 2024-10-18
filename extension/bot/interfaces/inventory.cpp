@@ -48,6 +48,9 @@ bool IInventory::HasWeapon(std::string classname)
 {
 	for (auto& weapon : m_weapons)
 	{
+		if (!weapon.IsValid())
+			continue;
+
 		const char* clname = weapon.GetBaseCombatWeapon().GetClassname();
 
 		if (clname != nullptr)

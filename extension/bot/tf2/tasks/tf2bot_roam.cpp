@@ -42,7 +42,10 @@ TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* 
 {
 	if (!m_hasgoal)
 	{
-		FindRandomGoalPosition(bot);
+		if (!FindRandomGoalPosition(bot))
+		{
+			return Done("Failed to find a random destination!");
+		}
 	}
 
 	CTF2BotPathCost cost(bot);
@@ -99,23 +102,25 @@ TaskEventResponseResult<CTF2Bot> CTF2BotRoamTask::OnMoveToSuccess(CTF2Bot* bot, 
 	return TryDone(PRIORITY_HIGH, "Goal Reached!");
 }
 
-void CTF2BotRoamTask::FindRandomGoalPosition(CTF2Bot* me)
+bool CTF2BotRoamTask::FindRandomGoalPosition(CTF2Bot* me)
 {
 	me->UpdateLastKnownNavArea(true);
 	auto myarea = me->GetLastKnownNavArea();
 
 	if (myarea == nullptr)
-		return;
+		return false;
 
 	RoamCollector collector(myarea, me->GetCurrentTeamIndex());
 	collector.Execute();
 
 	if (collector.IsCollectedAreasEmpty())
 	{
-		return;
+		return false;
 	}
 
 	auto goalarea = collector.GetRandomCollectedArea();
 
 	m_goal = goalarea->GetRandomPoint();
+
+	return true;
 }

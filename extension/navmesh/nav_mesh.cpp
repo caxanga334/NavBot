@@ -302,6 +302,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 
 	// destroy all hiding spots
 	DestroyHidingSpots();
+	m_navhints.clear();
 
 	// destroy navigation nodes created during map generation
 	CNavNode::CleanupGeneration();
@@ -3444,3 +3445,19 @@ inline void CNavMesh::DestroyArea( CNavArea *pArea ) const
 	delete pArea;
 }
 
+void CNavMesh::RebuildNavHintVector()
+{
+	m_navhints.clear();
+
+	for (int i = 0; i < TheNavAreas.Count(); i++)
+	{
+		CNavArea* area = TheNavAreas[i];
+
+		auto& hints = area->GetHintsVector();
+
+		for (auto& hint : hints)
+		{
+			m_navhints.push_back(&hint);
+		}
+	}
+}
