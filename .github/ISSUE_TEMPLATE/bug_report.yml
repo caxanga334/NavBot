@@ -1,0 +1,125 @@
+﻿name: Bug Report
+description: File a bug report.
+title: "[Bug]: "
+labels:
+  - "bug"
+body:
+  - type: input
+    id: in-mod-name
+    attributes:
+      label: 'Game/Mod Name?'
+      description: 'The name of the game/mod'
+      placeholder: 'Team Fortress 2'
+    validations:
+      required: true
+  - type: textarea
+    id: in-mms-version
+    attributes:
+      label: 'MMS Version'
+      description: 'The Metamod: Source version.'
+      placeholder: 'The output of meta version'
+    validations:
+      required: true
+  - type: textarea
+    id: in-sm-version
+    attributes:
+      label: 'SM Version'
+      description: 'The Sourcemod version.'
+      placeholder: 'The output of sm version'
+    validations:
+      required: true
+  - type: textarea
+    id: in-sm-exts
+    attributes:
+      label: 'SM Extensions'
+      description: 'Sourcemod extensions loaded.'
+      placeholder: 'The output of sm exts list'
+    validations:
+      required: true
+  - type: textarea
+    id: in-sm-plugins
+    attributes:
+      label: 'SM Plugins'
+      description: 'Sourcemod plugins loaded.'
+      placeholder: 'The output of sm plugins list'
+    validations:
+      required: true
+  - type: textarea
+    id: in-ext-info
+    attributes:
+      label: 'NavBot Info'
+      description: 'Information about the extension being used on the server.'
+      placeholder: 'The output of sm_navbot_info'
+    validations:
+      required: true
+  - type: dropdown
+    id: in-os
+    attributes:
+      label: 'OS'
+      description: 'Operating System used by the server.'
+      multiple: false
+      options:
+        - Windows
+        - Linux
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: in-sv-type
+    attributes:
+      label: 'Server Type'
+      description: 'Type of the server running the extension.'
+      multiple: false
+      options:
+        - Listen Server
+        - Dedicated Server
+      default: 0
+    validations:
+      required: true
+  - type: dropdown
+    id: in-download
+    attributes:
+      label: 'How did you download the extension?'
+      multiple: false
+      options:
+        - Github
+        - Built from Source
+        - Thirdparty
+      default: 0
+    validations:
+      required: true
+  - type: textarea
+    id: in-bug-desc
+    attributes:
+      label: 'Description'
+      description: 'Describe the bug.'
+      placeholder: 'This is not working...'
+    validations:
+      required: true
+  - type: textarea
+    id: in-steps
+    attributes:
+      label: 'Reproduction Steps'
+      description: 'Steps to reproduce the bug.'
+      placeholder: |
+        1. Do this
+        2. Do that
+        3. Then this
+  - type: textarea
+    id: in-expected-behavior
+    attributes:
+      label: 'Expected Behavior'
+      description: 'A clear and concise description of what you expected to happen.'
+      placeholder: 'This should not happen'
+    validations:
+      required: false
+  - type: textarea
+    id: in-extras
+    attributes:
+      label: 'Additional Information'
+      description: 'Any additional information such as videos and screenshots.'
+      placeholder: | 
+        'Video and/or screenshot showing the bug happening.'
+        'Text explaining something'
+    validations:
+      required: false
