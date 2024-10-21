@@ -3675,7 +3675,7 @@ CON_COMMAND_F(sm_nav_hint_add, "Adds a hint to the current marked area.", FCVAR_
 	TheNavMesh->CommandNavAddHintToArea(type, origin, angles);
 }
 
-void CNavMesh::CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles) const
+void CNavMesh::CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles)
 {
 	if (m_markedArea == nullptr)
 	{
@@ -3685,6 +3685,7 @@ void CNavMesh::CommandNavAddHintToArea(int hinttype, const Vector& origin, const
 	}
 
 	m_markedArea->AddHint(hinttype, origin, angles);
+	RebuildNavHintVector();
 	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 }
 
@@ -3701,7 +3702,7 @@ CON_COMMAND_F(sm_nav_hint_remove_nearest, "Removes the nearest hint from the mar
 	}
 }
 
-void CNavMesh::CommandNavRemoveNearestHintFromArea(const Vector& origin) const
+void CNavMesh::CommandNavRemoveNearestHintFromArea(const Vector& origin)
 {
 	if (m_markedArea == nullptr)
 	{
@@ -3711,9 +3712,11 @@ void CNavMesh::CommandNavRemoveNearestHintFromArea(const Vector& origin) const
 	}
 
 	m_markedArea->RemoveNearestHint(origin);
+	RebuildNavHintVector();
+	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-void CNavMesh::CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const
+void CNavMesh::CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin)
 {
 	if (m_markedArea == nullptr)
 	{
@@ -3723,6 +3726,8 @@ void CNavMesh::CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vec
 	}
 
 	m_markedArea->RemoveNearestHint(origin, hinttype);
+	RebuildNavHintVector();
+	PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 }
 
 CON_COMMAND_F(sm_nav_hint_wipe, "Wipe all hints from the marked area.", FCVAR_CHEAT)
@@ -3772,6 +3777,7 @@ void CNavMesh::CommandNavWipeAllHintsFromArea()
 	SetMarkedArea(nullptr);			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 	ClearSelectedSet();
+	RebuildNavHintVector();
 }
 
 CON_COMMAND_F(sm_nav_debug_test_blocked, "Tests nav areas for possible block status", FCVAR_CHEAT)

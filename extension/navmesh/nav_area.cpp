@@ -77,23 +77,29 @@ Color s_selectedSetColor( 255, 255, 200, 96 );
 Color s_selectedSetBorderColor( 100, 100, 0, 255 );
 Color s_dragSelectionSetBorderColor( 50, 50, 50, 255 );
 
-bool UTIL_IsCommandIssuedByServerAdmin() {
-	if (engine->IsDedicatedServer()) {
+bool UTIL_IsCommandIssuedByServerAdmin() 
+{
+	if (engine->IsDedicatedServer()) 
+	{
 		return false;
 	}
-	for (int i = 2; i <= gpGlobals->maxClients; i++) {
+
+	for (int i = 2; i <= gpGlobals->maxClients; i++) 
+	{
 		edict_t* player = gamehelpers->EdictOfIndex(i);
 		IPlayerInfo* info = playerinfomanager->GetPlayerInfo(player);
-		if (player != nullptr && !player->IsFree() && player->GetNetworkable() != nullptr
-				&& info != nullptr && !info->IsFakeClient()) {
+
+		if (player != nullptr && !player->IsFree() && player->GetNetworkable() != nullptr && info != nullptr && !info->IsFakeClient()) 
+		{
 			return false;
 		}
 	}
+
 	return true;
 }
 
-static void SelectedSetColorChaged(IConVar *var, const char *pOldValue,
-		float flOldValue) {
+static void SelectedSetColorChaged(IConVar *var, const char *pOldValue, float flOldValue) 
+{
 	ConVarRef colorVar(var->GetName());
 
 	Color *color = &s_selectedSetColor;
@@ -112,11 +118,15 @@ static void SelectedSetColorChaged(IConVar *var, const char *pOldValue,
 	(*color)[0] = r;
 	(*color)[1] = g;
 	(*color)[2] = b;
-	if (numFound > 3) {
+
+	if (numFound > 3) 
+	{
 		(*color)[3] = a;
 	}
 }
+
 ConVar sm_nav_selected_set_color( "sm_nav_selected_set_color", "255 255 200 96", FCVAR_CHEAT, "Color used to draw the selected set background while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
+
 ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 
 const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
@@ -141,7 +151,8 @@ const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
 }
 
 
-void Extent::Init(edict_t *entity) {
+void Extent::Init(edict_t *entity) 
+{
 	entity->GetCollideable()->WorldSpaceSurroundingBounds(&lo, &hi);
 }
 
@@ -170,8 +181,7 @@ static float ComputeBoxOffset(const Ray_t& ray)
 //-----------------------------------------------------------------------------
 // Intersects a swept box against a triangle
 //-----------------------------------------------------------------------------
-float IntersectRayWithTriangle(const Ray_t& ray,
-	const Vector& v1, const Vector& v2, const Vector& v3, bool oneSided)
+float IntersectRayWithTriangle(const Ray_t& ray, const Vector& v1, const Vector& v2, const Vector& v3, bool oneSided)
 {
 	// This is cute: Use barycentric coordinates to represent the triangle
 	// Vo(1-u-v) + V1u + V2v and intersect that with a line Po + Dt

@@ -5,6 +5,7 @@
 
 #include <extension.h>
 #include <manager.h>
+#include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/path/basepath.h>
@@ -23,6 +24,20 @@
 #include <util/sdkcalls.h>
 #include <util/entprops.h>
 #include <sm_argbuffer.h>
+
+CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
+{
+	Msg("--- BEGIN NavBot Info ---\n");
+	Msg("Extension Version: %s\n", SMEXT_CONF_VERSION);
+	Msg("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
+	Msg("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");
+	CBaseMod* mod = extmanager->GetMod();
+	Msg("Game Folder: %s\n", smutils->GetGameFolderName() != nullptr ? smutils->GetGameFolderName() : "");
+	Msg("Current Mod (Extension): %s\n", mod->GetModName());
+	Msg("Current Map: %s\n", STRING(gpGlobals->mapname));
+	Msg("Nav Mesh:\n    Status: %s\n    Version: %i\n    Subversion: %i\n", TheNavMesh->IsLoaded() ? "Loaded" : "NOT Loaded", CNavMesh::NavMeshVersion, TheNavMesh->GetSubVersionNumber());
+	Msg("--- END NavBot Info ---\n");
+}
 
 #ifdef EXT_DEBUG
 CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")

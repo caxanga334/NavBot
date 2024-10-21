@@ -547,9 +547,9 @@ public:
 	void CommandNavSetLinkOrigin();
 	void CommandNavWarpToLinkOrigin() const;
 	void CommandNavPrintAllHintsTypes() const;
-	void CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles) const;
-	void CommandNavRemoveNearestHintFromArea(const Vector& origin) const;
-	void CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin) const;
+	void CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles);
+	void CommandNavRemoveNearestHintFromArea(const Vector& origin);
+	void CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin);
 	void CommandNavWipeAllHintsFromArea();
 	void CommandNavTestForBlocked() const;
 

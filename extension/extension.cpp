@@ -290,12 +290,12 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	// Warn if debug overlay is not available on a Listen Server.
 	if (debugoverlay == nullptr && !engine->IsDedicatedServer())
 	{
-		smutils->LogMessage(myself, "Warning: Could not get interface %s. Nav mesh drawing and editing will not be available.", VDEBUG_OVERLAY_INTERFACE_VERSION);
+		ismm->LogMsg(this, "Warning: Could not get interface %s. Nav mesh drawing and editing will not be available.", VDEBUG_OVERLAY_INTERFACE_VERSION);
 	}
 #ifdef EXT_DEBUG
 	else
 	{
-		smutils->LogMessage(myself, "Found debug overlay interface.");
+		ismm->LogMsg(this, "Found debug overlay interface.");
 	}
 #endif // EXT_DEBUG
 

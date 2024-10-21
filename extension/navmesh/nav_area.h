@@ -208,7 +208,9 @@ enum class NavLinkType : int32_t
 	MAX_LINK_TYPES // max known link types
 };
 
-// Special nav area connections
+/**
+ * @brief Link connections between two Nav Areas. "Off-Mesh" connections.
+ */
 class NavSpecialLink
 {
 public:
@@ -258,7 +260,7 @@ public:
 enum NavHintType : int
 {
 	NAVHINT_CROSSINGPOINT = 0,
-	NAVHINT_LAST_SHARED_HINT = 10000 // The first 10000 hints are reserved for the base class
+	NAVHINT_LAST_SHARED_HINT = 100000 // The first 100000 hints are reserved for the base class
 };
 
 class NavHintPoint
