@@ -20,6 +20,7 @@
 			"NavEdit_SwitchOff" 		"buttons\combine_button7.wav"
 			"NavEdit_GenericOff" 		"buttons\combine_button2.wav"
 			"NavEdit_ConnectFail" 		"buttons\button10.wav"
+			"NavEdit_WaypointAdd"		"weapons\crossbow\hit1.wav"
 		}
 	}
 }

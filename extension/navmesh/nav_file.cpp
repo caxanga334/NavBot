@@ -16,6 +16,7 @@
 
 #include "nav_mesh.h"
 #include "nav_area.h"
+#include "nav_waypoint.h"
 
 #ifdef TERROR
 #include "func_elevator.h"
@@ -890,6 +891,18 @@ bool CNavMesh::Save(void)
 		}
 	}
 
+	{
+		// first write the number of waypoints
+		uint64_t count = static_cast<uint64_t>(m_waypoints.size());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(uint64_t));
+
+		for (auto& pair : m_waypoints)
+		{
+			auto& wpt = pair.second;
+			wpt->Save(filestream, CNavMesh::NavMeshVersion);
+		}
+	}
+
 	//
 	// Build a directory of the Places in this map
 	//
@@ -1145,6 +1158,28 @@ NavErrorType CNavMesh::Load( void )
 		}
 	}
 
+	{
+		uint64_t numWaypoints = 0;
+		CWaypoint::g_NextWaypointID = 0;
+		filestream.read(reinterpret_cast<char*>(&numWaypoints), sizeof(uint64_t));
+		Vector tmp{ 0.0f, 0.0f, 0.0f };
+
+		for (uint64_t i = 0; i < numWaypoints; i++)
+		{
+			auto wpt = AddWaypoint(tmp);
+
+			if (wpt.has_value())
+			{
+				NavErrorType error = wpt->get()->Load(filestream, CNavMesh::NavMeshVersion, GetSubVersionNumber());
+
+				if (error != NAV_OK)
+				{
+					return error;
+				}
+			}
+		}
+	}
+
 	placeDirectory.Load(filestream, header.version);
 	LoadCustomDataPreArea(filestream, header.subversion);
 
@@ -1271,6 +1306,22 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 		HidingSpot *spot = TheHidingSpots[ hit ];
 		spot->PostLoad();
 	}
+
+	WaypointID topID = 0;
+
+	// allow waypoints to connect to each other
+	for (auto& pair : m_waypoints)
+	{
+		auto& wpt = pair.second;
+		wpt->PostLoad();
+
+		if (wpt->GetID() >= topID)
+		{
+			topID = wpt->GetID();
+		}
+	}
+
+	CWaypoint::g_NextWaypointID = topID + 1;
 
 	ComputeBattlefrontAreas();
 	

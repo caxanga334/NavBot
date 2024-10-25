@@ -28,6 +28,8 @@
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
+#include <optional>
+#include <algorithm>
 
 #include "nav.h"
 #include <ITranslator.h>
@@ -553,6 +555,7 @@ public:
 	void CommandNavWipeAllHintsFromArea();
 	void CommandNavTestForBlocked() const;
 
+
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
 	void ClearDragSelectionSet( void );
@@ -759,6 +762,7 @@ public:
 		SOUND_SWITCH_OFF,
 		SOUND_GENERIC_OFF,
 		SOUND_CONNECT_FAIL,
+		SOUND_WAYPOINT_ADD,
 
 		MAX_EDIT_SOUNDS
 	};
@@ -769,7 +773,11 @@ public:
 	}
 
 	virtual const char* NavHintTypeIDToString(int hinttype) const;
-	virtual int GetMaxHintTypesAvailable() const;
+
+	// Base nav mesh hint names
+	void PrintBaseNavHints() const;
+	// Mod nav mesh hint names
+	virtual void PrintModNavHints() const {};
 
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
@@ -786,6 +794,7 @@ private:
 	friend class CNavArea;
 	friend class CNavNode;
 	friend class CNavUIBasePanel;
+	friend class CWaypoint;
 
 	mutable CUtlVector<NavAreaVector> m_grid;
 	float m_gridCellSize;										// the width/height of a grid cell for spatially partitioning nav areas for fast access
@@ -839,6 +848,7 @@ private:
 	unsigned int m_navPlace;									// current navigation place for editing
 	void OnEditModeStart( void );								// called when edit mode has just been enabled
 	void DrawEditMode( void );									// draw navigation areas
+	void DrawWaypoints();										// draw waypoints
 	void OnEditModeEnd( void );									// called when edit mode has just been disabled
 	void UpdateDragSelectionSet( void );							// update which areas are overlapping the drag selected bounds
 	Vector m_editCursorPos;										// current position of the cursor
@@ -983,6 +993,7 @@ private:
 	void TestAllAreasForBlockedStatus( void );					// Used to update blocked areas after a round restart. Need to delay so the map logic has all fired.
 	CountdownTimer m_updateBlockedAreasTimer;		
 	CountdownTimer m_invokeAreaUpdateTimer;
+	CountdownTimer m_invokeWaypointUpdateTimer;
 	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
 	void BuildAuthorInfo();
 	AuthorInfo m_authorinfo;
@@ -1015,6 +1026,66 @@ public:
 			}
 		}
 	}
+
+private:
+	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> m_waypoints;
+	std::shared_ptr<CWaypoint> m_selectedWaypoint; // Selected waypoint for editing
+
+protected:
+	// Creates a new waypoint instance
+	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
+
+public:
+	/**
+	 * @brief Adds a new waypoint.
+	 * @param origin Initial position of the new waypoint
+	 * @return Pointer to waypoint or NULL on failure.
+	 */
+	std::optional<const std::shared_ptr<CWaypoint>> AddWaypoint(const Vector& origin);
+
+	void RemoveWaypoint(CWaypoint* wpt);
+
+	template <typename T>
+	inline std::optional<const std::shared_ptr<T>> GetWaypointOfID(WaypointID id) const
+	{
+		auto it = m_waypoints.find(id);
+
+		if (it == m_waypoints.end())
+		{
+			return std::nullopt;
+		}
+
+		return it->second;
+	}
+
+	/**
+	 * @brief Runs a function on every waypoint
+	 * @tparam T Waypoint class
+	 * @tparam F Function bool (T* waypoint)
+	 * @param functor Function to run. Return false to end loop.
+	 */
+	template <typename T, typename F>
+	inline void ForEveryWaypoint(F functor)
+	{
+		std::for_each(m_waypoints.begin(), m_waypoints.end(), [&functor](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+			T* wpt = static_cast<T*>(object.second.get());
+			
+			if (functor(wpt) == false)
+			{
+				return;
+			}
+		});
+	}
+
+	const std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>>& GetAllWaypoints() const { return m_waypoints; }
+
+	void CompressWaypointsIDs();
+
+	void SetSelectedWaypoint(std::shared_ptr<CWaypoint> wpt) { m_selectedWaypoint = wpt; }
+	void ClearSelectedWaypoint() { m_selectedWaypoint = nullptr; }
+	const std::shared_ptr<CWaypoint>& GetSelectedWaypoint() const { return m_selectedWaypoint; }
+	void SelectNearestWaypoint(const Vector& start);
+	void SelectWaypointofID(WaypointID id);
 
 };
 

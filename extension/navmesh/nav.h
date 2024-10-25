@@ -232,6 +232,7 @@ struct Ray
 
 class CNavArea;
 class CNavNode;
+class CWaypoint;
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -408,5 +409,7 @@ typedef CNavVectorNoEditAllocator CNavVectorAllocator;
 typedef CUtlVector<NavLadderConnect> NavLadderConnectVector;
 
 typedef CUtlVector<NavConnect> NavConnectVector;
+
+typedef uint32_t WaypointID;
 
 #endif // _NAV_H_

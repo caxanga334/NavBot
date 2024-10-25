@@ -13,6 +13,7 @@
 #include <entities/baseentity.h>
 #include <extplayer.h>
 #include "nav_mesh.h"
+#include "nav_waypoint.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
 #include "nav_node.h"
@@ -273,17 +274,7 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 
 const char* CNavMesh::NavHintTypeIDToString(int hinttype) const
 {
-	if (hinttype <= NAVHINT_LAST_SHARED_HINT)
-	{
-		return GetNavAreaHintTypeNameInternal(hinttype);
-	}
-
-	return "ERROR";
-}
-
-int CNavMesh::GetMaxHintTypesAvailable() const
-{
-	return NAVHINT_LAST_SHARED_HINT;
+	return GetNavAreaHintTypeNameInternal(hinttype);
 }
 
 const char* CNavMesh::GetNavAreaHintTypeNameInternal(int hint) const
@@ -294,6 +285,14 @@ const char* CNavMesh::GetNavAreaHintTypeNameInternal(int hint) const
 		return "CROSSING POINT";
 	default:
 		return "ERROR";
+	}
+}
+
+void CNavMesh::PrintBaseNavHints() const
+{
+	for (int i = 0; i < static_cast<int>(NavHintType::NAVHINT_BASE_MAX); i++)
+	{
+		Msg("ID #%i : %s \n", i, TheNavMesh->NavHintTypeIDToString(i));
 	}
 }
 
@@ -1082,6 +1081,33 @@ void CNavMesh::DrawEditMode( void )
 			}
 		}
 	}
+}
+
+void CNavMesh::DrawWaypoints()
+{
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
+
+	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
+		return;
+
+	CBaseExtPlayer host(ent);
+	Vector origin = host.GetAbsOrigin();
+
+	std::for_each(m_waypoints.begin(), m_waypoints.end(), [this, &origin](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+		
+		float distance = (object.second->GetOrigin() - origin).Length();
+
+		if (distance <= CWaypoint::WAYPOINT_EDIT_DRAW_RANGE)
+		{
+			object.second->Draw();
+		}
+	});
+
+	if (m_selectedWaypoint)
+	{
+		NDebugOverlay::Text(m_selectedWaypoint->GetOrigin() + Vector(0.0f, 0.0f, 24.0f), "SELECTED WAYPOINT", false, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
+
 }
 
 
@@ -3653,10 +3679,8 @@ void CNavMesh::CommandNavPrintAllHintsTypes() const
 {
 	Msg("Nav Hint Types available: \n");
 
-	for (int i = 0; i <= TheNavMesh->GetMaxHintTypesAvailable(); i++)
-	{
-		Msg("ID #%i : %s \n", i, TheNavMesh->NavHintTypeIDToString(i));
-	}
+	PrintBaseNavHints();
+	PrintModNavHints();
 }
 
 CON_COMMAND_F(sm_nav_hint_add, "Adds a hint to the current marked area.", FCVAR_CHEAT)
@@ -4479,6 +4503,8 @@ void CNavMesh::LoadEditSounds(SourceMod::IGameConfig* gamedata)
 	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_OFF)] = std::string(soundfile);
 	soundfile = gamedata->GetKeyValue("NavEdit_ConnectFail");
 	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_CONNECT_FAIL)] = std::string(soundfile);
+	soundfile = gamedata->GetKeyValue("NavEdit_WaypointAdd");
+	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_WAYPOINT_ADD)] = std::string(soundfile);
 }
 
 void CNavMesh::PlayEditSoundInternal(const std::string& sound) const

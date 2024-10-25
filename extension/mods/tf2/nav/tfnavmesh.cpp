@@ -69,10 +69,6 @@ void CTFNavMesh::Update()
 
 bool CTFNavMesh::Save(void)
 {
-	sm_tf_nav_show_path_attributes.SetValue(0); // disable rendering to avoid crashes during map change
-	sm_tf_nav_show_attributes.SetValue(0);
-	sm_tf_nav_show_mvm_attributes.SetValue(0);
-
 	return CNavMesh::Save();
 }
 
@@ -126,6 +122,11 @@ void CTFNavMesh::PostCustomAnalysis(void)
 
 void CTFNavMesh::UpdateDebugDraw()
 {
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
+
+	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
+		return;
+
 	FOR_EACH_VEC(TheNavAreas, it)
 	{
 		CTFNavArea* area = static_cast<CTFNavArea*>(TheNavAreas[it]);

@@ -9,8 +9,6 @@
 // Implementation of Navigation Mesh interface
 // Author: Michael S. Booth, 2003-2004
 
-#include <unordered_set>
-
 #include "extension.h"
 #include <util/helpers.h>
 #include <util/librandom.h>
@@ -22,6 +20,7 @@
 
 #include "nav_area.h"
 #include "nav_node.h"
+#include "nav_waypoint.h"
 #include <eiface.h>
 #include <iplayerinfo.h>
 #include <vprof.h>
@@ -119,9 +118,12 @@ CNavMesh::CNavMesh( void )
 	// m_placeCount = 0;
 	// m_placeName = NULL;
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
 	m_placePhrases = nullptr;
+	m_waypoints.reserve(128);
+	m_selectedWaypoint = nullptr;
 
 	// LoadPlaceDatabase();
 		
@@ -330,6 +332,11 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 		m_isLoaded = false;
 	}
 
+	if (!incremental)
+	{
+		m_waypoints.clear();
+	}
+
 	SetEditMode( NORMAL );
 
 	m_markedArea = NULL;
@@ -338,6 +345,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	m_climbableSurface = false;
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
+	m_selectedWaypoint = nullptr;
 }
 
 
@@ -374,6 +382,11 @@ void CNavMesh::Update( void )
 		}
 
 		DrawEditMode();
+
+		if (sm_nav_waypoint_edit.GetBool())
+		{
+			DrawWaypoints();
+		}
 	}
 	else
 	{
@@ -420,6 +433,17 @@ void CNavMesh::Update( void )
 		if (m_invokeAreaUpdateTimer.IsElapsed())
 		{
 			m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+		}
+	}
+
+	{
+		if (m_invokeWaypointUpdateTimer.IsElapsed())
+		{
+			m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
+
+			std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+				object.second->Update();
+			});
 		}
 	}
 
@@ -706,6 +730,7 @@ void CNavMesh::OnRoundRestart( void )
 {
 	m_updateBlockedAreasTimer.Start( 1.0f );
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
@@ -3461,3 +3486,107 @@ void CNavMesh::RebuildNavHintVector()
 		}
 	}
 }
+
+std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
+{
+	return std::move(std::make_shared<CWaypoint>());
+}
+
+std::optional<const std::shared_ptr<CWaypoint>> CNavMesh::AddWaypoint(const Vector& origin)
+{
+	std::shared_ptr<CWaypoint> wpt = CreateWaypoint();
+
+	if (m_waypoints.count(wpt->GetID()) > 0)
+	{
+#ifdef EXT_DEBUG
+		Warning("CNavMesh::AddWaypoint duplicate waypoint ID %i\n", wpt->GetID());
+#endif // EXT_DEBUG
+
+		return std::nullopt;
+	}
+
+	wpt->SetOrigin(origin);
+
+	m_waypoints[wpt->GetID()] = wpt;
+
+	return wpt;
+}
+
+void CNavMesh::RemoveWaypoint(CWaypoint* wpt)
+{
+	WaypointID key = wpt->GetID();
+
+	if (m_waypoints.count(key) == 0)
+	{
+		Warning("Waypoint %i is a stray!\n", key);
+		return; // Stray waypoint? (Reminder that waypoints are always created as shared_ptr)
+	}
+
+	for (auto& pair : m_waypoints)
+	{
+		auto& other = pair.second;
+
+		if (other->GetID() == key)
+			continue; // skip self
+
+		other->NotifyWaypointDestruction(wpt);
+	}
+
+	m_waypoints.erase(key);
+}
+
+void CNavMesh::CompressWaypointsIDs()
+{
+	CWaypoint::g_NextWaypointID = 0;
+
+	for (auto& pair : m_waypoints)
+	{
+		auto& wpt = pair.second;
+		wpt->m_ID = CWaypoint::g_NextWaypointID;
+		CWaypoint::g_NextWaypointID++;
+	}
+}
+
+void CNavMesh::SelectNearestWaypoint(const Vector& start)
+{
+	std::shared_ptr<CWaypoint> nearest = nullptr;
+	float best = 99999999.0f;
+
+	std::for_each(m_waypoints.begin(), m_waypoints.end(), [&nearest, &best, &start](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+
+		float distance = (object.second->GetOrigin() - start).Length();
+
+		if (distance <= CWaypoint::WAYPOINT_DELETE_SEARCH_DIST && distance < best)
+		{
+			nearest = object.second;
+			best = distance;
+		}
+	});
+
+	if (nearest)
+	{
+		m_selectedWaypoint = nearest;
+		Msg("Selected waypoint %i\n", nearest->GetID());
+	}
+	else
+	{
+		Msg("No waypoint found!\n");
+	}
+
+}
+
+void CNavMesh::SelectWaypointofID(WaypointID id)
+{
+	auto wpt = GetWaypointOfID<CWaypoint>(id);
+
+	if (wpt.has_value())
+	{
+		m_selectedWaypoint = wpt.value();
+		Msg("Selected waypoint %i \n", id);
+		return;
+	}
+
+	Warning("Waypoint of ID %i not found! \n", id);
+}
+
+

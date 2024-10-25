@@ -260,7 +260,8 @@ public:
 enum NavHintType : int
 {
 	NAVHINT_CROSSINGPOINT = 0,
-	NAVHINT_LAST_SHARED_HINT = 100000 // The first 100000 hints are reserved for the base class
+	NAVHINT_BASE_MAX, // Last valid base hint ID
+	NAVHINT_LAST_SHARED_HINT = 100000 // The first 100000 hints are reserved for the base class, mod IDs should start with this + 1
 };
 
 class NavHintPoint
