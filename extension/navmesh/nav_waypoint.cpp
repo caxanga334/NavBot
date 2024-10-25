@@ -2,6 +2,8 @@
 #include <fstream>
 
 #include <extension.h>
+#include <manager.h>
+#include <util/librandom.h>
 #include <bot/basebot.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "nav_mesh.h"
@@ -36,6 +38,7 @@ CWaypoint::CWaypoint()
 	m_flags = 0;
 	m_numAimAngles = 0;
 	m_teamNum = NAV_TEAM_ANY;
+	m_radius = CWaypoint::WAYPOINT_DEFAULT_RADIUS;
 	m_user.Term();
 }
 
@@ -58,7 +61,7 @@ void CWaypoint::Update()
 		{
 			m_user.Term();
 			m_expireUserTimer.Invalidate();
-			OnStopUse();
+			OnStopUse(nullptr);
 		}
 
 		// Use timer expired
@@ -66,7 +69,7 @@ void CWaypoint::Update()
 		{
 			m_user = nullptr;
 			m_expireUserTimer.Invalidate();
-			OnStopUse();
+			OnStopUse(nullptr);
 		}
 	}
 }
@@ -181,23 +184,32 @@ void CWaypoint::Draw() const
 		Vector start = m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_AIM_HEIGHT);
 		Vector end = start + (forward * CWaypoint::WAYPOINT_AIM_LENGTH);
 
-		NDebugOverlay::Line(start, end, 0, 0, 255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Line(start, end, 255, 255, 0, false, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
 	if (m_radius >= 0.98f)
 	{
-		Vector mins{ -m_radius, m_radius, 0.0f };
+		Vector mins{ -m_radius, -m_radius, 0.0f };
 		Vector maxs{ m_radius, m_radius, CWaypoint::WAYPOINT_HEIGHT };
 
 		NDebugOverlay::Box(m_origin, mins, maxs, r, g, b, 150, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
 	constexpr std::size_t size = 512;
-	std::unique_ptr<char[]> text = std::make_unique<char[]>(size);
 
-	ke::SafeSprintf(text.get(), size, "Waypoint #%i\nTeam #%i", m_ID, m_teamNum);
+	{
+		std::unique_ptr<char[]> text = std::make_unique<char[]>(size);
+		ke::SafeSprintf(text.get(), size, "Waypoint #%i Team #%i Radius %3.1f", m_ID, m_teamNum, m_radius);
+		NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT), text.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
 
-	NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT), text.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
+	{
+		std::unique_ptr<char[]> modtext = std::make_unique<char[]>(size);
+		ke::SafeSprintf(modtext.get(), size, "");
+		DrawModText(modtext.get(), size);
+		NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT - 4.0f), modtext.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
+
 }
 
 void CWaypoint::Use(CBaseBot* user, const float duration) const
@@ -212,16 +224,71 @@ bool CWaypoint::IsBeingUsed() const
 	return m_expireUserTimer.HasStarted() && !m_expireUserTimer.IsElapsed();
 }
 
-void CWaypoint::StopUsing() const
+void CWaypoint::StopUsing(CBaseBot* user) const
 {
+	if (m_user.Get() == nullptr)
+	{
+		return;
+	}
+
+	if (user != nullptr)
+	{
+		if (m_user.Get() != user->GetEntity())
+		{
+			return; // Only the owning bot can 'free' this waypoint.
+		}
+
+		m_user = nullptr;
+		m_expireUserTimer.Invalidate();
+		OnStopUse(user);
+		return;
+	}
+
 	m_user = nullptr;
 	m_expireUserTimer.Invalidate();
-	OnStopUse();
+	OnStopUse(nullptr);
+}
+
+Vector CWaypoint::GetRandomPoint() const
+{
+	Vector tmp;
+
+	tmp.x = randomgen->GetRandomReal<float>((m_origin.x - m_radius), (m_origin.x + m_radius));
+	tmp.y = randomgen->GetRandomReal<float>((m_origin.y - m_radius), (m_origin.y + m_radius));
+	tmp.z = m_origin.z;
+
+	return tmp;
 }
 
 const QAngle& CWaypoint::GetAngle(std::size_t index) const
 {
 	return m_aimAngles.at(index);
+}
+
+void CWaypoint::AddAngle(QAngle& angle)
+{
+	if (m_numAimAngles >= CWaypoint::MAX_AIM_ANGLES)
+	{
+		return;
+	}
+
+	m_aimAngles[static_cast<std::size_t>(m_numAimAngles)] = angle;
+	m_numAimAngles++;
+}
+
+void CWaypoint::SetAngle(QAngle& angle, std::size_t index)
+{
+	m_aimAngles[index] = angle;
+}
+
+void CWaypoint::ClearAngles()
+{
+	for (auto& angle : m_aimAngles)
+	{
+		angle.Init(0.0f, 0.0f, 0.0f);
+	}
+
+	m_numAimAngles = 0;
 }
 
 void CWaypoint::ConnectTo(const CWaypoint* other)
@@ -280,4 +347,10 @@ bool CWaypoint::IsConnectedTo(WaypointID id) const
 void CWaypoint::NotifyWaypointDestruction(const CWaypoint* other)
 {
 	DisconnectFrom(other);
+}
+
+void CWaypoint::PrintInfo()
+{
+	Msg("Waypoint #%i\n  Team: %i\n  Radius: %3.2f\n  ", m_ID, m_teamNum, m_radius);
+	Msg("Waypoint is connected to %i waypoints.\n", m_connections.size());
 }

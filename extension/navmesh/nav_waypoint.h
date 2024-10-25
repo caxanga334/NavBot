@@ -62,6 +62,7 @@ public:
 	static constexpr auto UPDATE_INTERVAL = 0.5f;
 	static constexpr auto WAYPOINT_EDIT_DRAW_RANGE = 1024.0f;
 	static constexpr auto WAYPOINT_DELETE_SEARCH_DIST = 256.0f;
+	static constexpr auto WAYPOINT_DEFAULT_RADIUS = 0.0f;
 	static WaypointID g_NextWaypointID;
 
 	enum BaseFlags : int
@@ -88,11 +89,13 @@ public:
 
 	void Use(CBaseBot* user, const float duration = 10.0f) const;
 	bool IsBeingUsed() const;
-	void StopUsing() const;
+	void StopUsing(CBaseBot* user) const;
 
 	WaypointID GetID() const { return m_ID; }
 	const Vector& GetOrigin() const { return m_origin; }
 	void SetOrigin(const Vector& origin) { m_origin = origin; }
+	// Gets a random position within the waypoint's radius.
+	Vector GetRandomPoint() const;
 	/**
 	 * @brief Gets a stored angle from the waypoint
 	 * @param index Index to the angle array, from 0 to MAX_AIM_ANGLES - 1
@@ -101,6 +104,10 @@ public:
 	const QAngle& GetAngle(std::size_t index) const;
 
 	std::size_t GetNumOfAvailableAngles() const { return static_cast<std::size_t>(m_numAimAngles); }
+
+	void AddAngle(QAngle& angle);
+	void SetAngle(QAngle& angle, std::size_t index);
+	void ClearAngles();
 
 	/**
 	 * @brief Runs a function on every available aim angle of this waypoint.
@@ -151,6 +158,8 @@ public:
 
 	const std::vector<WaypointConnect>& GetConnections() const { return m_connections; }
 
+	virtual void PrintInfo();
+
 protected:
 	friend class CNavMesh;
 
@@ -167,8 +176,14 @@ protected:
 
 	// Called when a bot 'uses' this waypoint
 	virtual void OnUse(CBaseBot* user) const {}
-	// Called when the waypoint stops being used
-	virtual void OnStopUse() const {}
+	/**
+	 * @brief Called when a bot stops using this waypoint.
+	 * @param user Bot that release this waypoint. NULL if it was an automatic release.
+	 */
+	virtual void OnStopUse(CBaseBot* user) const {}
+
+	// Additional mod specific waypoint draw text
+	virtual void DrawModText(char* text, std::size_t size) const {}
 };
 
 extern ConVar sm_nav_waypoint_edit;

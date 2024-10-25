@@ -1077,6 +1077,26 @@ public:
 		});
 	}
 
+	/**
+	 * @brief Collects waypoints into a vector.
+	 * @tparam T Waypoint class.
+	 * @tparam F Collect functor. bool (T* waypoint)
+	 * @param vec Vector to store the collected waypoints.
+	 * @param functor Function to collect waypoints. Return true to collect, false to skip.
+	 */
+	template <typename T, typename F>
+	inline void CollectWaypoints(std::vector<T*>& vec, F functor)
+	{
+		std::for_each(m_waypoints.begin(), m_waypoints.end(), [&vec, &functor](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+			T* wpt = static_cast<T*>(object.second.get());
+
+			if (functor(wpt) == true)
+			{
+				vec.push_back(wpt);
+			}
+		});
+	}
+
 	const std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>>& GetAllWaypoints() const { return m_waypoints; }
 
 	void CompressWaypointsIDs();

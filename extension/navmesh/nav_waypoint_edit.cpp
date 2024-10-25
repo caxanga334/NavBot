@@ -116,6 +116,46 @@ CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.
 	if (firstID == secondID)
 	{
 		Warning("Connection must be between two different waypoints\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_CONNECT_FAIL);
+		return;
+	}
+
+	auto fromWpt = TheNavMesh->GetWaypointOfID<CWaypoint>(firstID);
+	auto toWpt = TheNavMesh->GetWaypointOfID<CWaypoint>(secondID);
+
+	if (!fromWpt.has_value())
+	{
+		Warning("Waypoint with ID %i does not exists!\n", firstID);
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_CONNECT_FAIL);
+		return;
+	}
+
+	if (!toWpt.has_value())
+	{
+		Warning("Waypoint with ID %i does not exists!\n", secondID);
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_CONNECT_FAIL);
+		return;
+	}
+
+	fromWpt->get()->ConnectTo(toWpt->get());
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_waypoint_disconnect, "Removes a connection between two waypoints.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 3)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_disconnect <from ID> <to ID>\n");
+		Msg("Removes a connection from the first waypoint to the second.\n");
+		return;
+	}
+
+	WaypointID firstID = static_cast<WaypointID>(atoi(args[1]));
+	WaypointID secondID = static_cast<WaypointID>(atoi(args[2]));
+
+	if (firstID == secondID)
+	{
+		Warning("Connection must be between two different waypoints\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
@@ -137,5 +177,157 @@ CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.
 		return;
 	}
 
-	fromWpt->get()->ConnectTo(toWpt->get());
+	fromWpt->get()->DisconnectFrom(toWpt->get());
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_waypoint_info, "Shows information about the selected waypoint.", FCVAR_CHEAT)
+{
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		waypoint->PrintInfo();
+	}
+	else
+	{
+		Warning("ERROR: No waypoint selected!\n");
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_set_radius, "Sets the waypoint radius.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_set_radius <radius>\n");
+		return;
+	}
+
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		float radius = atof(args[1]);
+		radius = std::clamp(radius, 0.0f, 512.0f);
+		waypoint->SetRadius(radius);
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_add_angle, "Adds a new angle to an waypoint.", FCVAR_CHEAT)
+{
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		if (waypoint->GetNumOfAvailableAngles() >= CWaypoint::MAX_AIM_ANGLES)
+		{
+			Warning("Waypoint at max angles capacity!\n");
+			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+			return;
+		}
+
+		QAngle eyeAngles = host.GetEyeAngles();
+		waypoint->AddAngle(eyeAngles);
+		Msg("Added angle <%3.2f, %3.2f, %3.2f> to waypoint #%i\n", eyeAngles.x, eyeAngles.y, eyeAngles.z, waypoint->GetID());
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_update_angle, "Updates an existing angle on an waypoint.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_update_angle <angle index>\n");
+		return;
+	}
+
+	int index = atoi(args[1]);
+
+	if (index < 0 || index >= static_cast<int>(CWaypoint::MAX_AIM_ANGLES))
+	{
+		Warning("Index must be between 0 and %i\n", CWaypoint::MAX_AIM_ANGLES);
+		return;
+	}
+
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		if (static_cast<std::size_t>(index) >= waypoint->GetNumOfAvailableAngles())
+		{
+			Warning("Index %i out of bounds. Use sm_nav_waypoint_add_angle!\n", index);
+			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+			return;
+		}
+
+		QAngle eyeAngles = host.GetEyeAngles();
+		waypoint->SetAngle(eyeAngles, static_cast<std::size_t>(index));
+		Msg("Updated angle [%i] <%3.2f, %3.2f, %3.2f> of waypoint #%i\n", index, eyeAngles.x, eyeAngles.y, eyeAngles.z, waypoint->GetID());
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_clear_angles, "Removes all angles from an waypoint.", FCVAR_CHEAT)
+{
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		waypoint->ClearAngles();
+		Msg("Removed all angles from waypoint #%i\n", waypoint->GetID());
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_set_team, "Sets the waypoint owning team.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_set_team <team index>\n");
+		return;
+	}
+
+	int teamnum = atoi(args[1]);
+
+	if (teamnum < TEAM_UNASSIGNED)
+	{
+		teamnum = NAV_TEAM_ANY;
+	}
+
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		waypoint->SetTeam(teamnum);
+		Msg("Waypoint #%i team set to %i.\n", waypoint->GetID(), teamnum);
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
 }
