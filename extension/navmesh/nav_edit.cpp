@@ -9,6 +9,8 @@
 // Implementation of Navigation Mesh edit mode
 // Author: Michael Booth, 2003-2004
 
+#include <string_view>
+
 #include <extension.h>
 #include <entities/baseentity.h>
 #include <extplayer.h>
@@ -4489,22 +4491,35 @@ CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded 
 
 void CNavMesh::LoadEditSounds(SourceMod::IGameConfig* gamedata)
 {
-	auto soundfile = gamedata->GetKeyValue("NavEdit_GenericBlip");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_BLIP)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_GenericSuccess");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_SUCCESS)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_GenericError");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_ERROR)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_SwitchOn");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_SWITCH_ON)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_SwitchOff");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_SWITCH_OFF)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_GenericOff");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_GENERIC_OFF)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_ConnectFail");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_CONNECT_FAIL)] = std::string(soundfile);
-	soundfile = gamedata->GetKeyValue("NavEdit_WaypointAdd");
-	m_editsounds[static_cast<size_t>(EditSoundType::SOUND_WAYPOINT_ADD)] = std::string(soundfile);
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array keyNames = {
+		"NavEdit_GenericBlip"sv,
+		"NavEdit_GenericSuccess"sv,
+		"NavEdit_GenericError"sv,
+		"NavEdit_SwitchOn"sv,
+		"NavEdit_SwitchOff"sv,
+		"NavEdit_GenericOff"sv,
+		"NavEdit_ConnectFail"sv,
+		"NavEdit_WaypointAdd"sv,
+	};
+
+	static_assert(keyNames.size() == static_cast<size_t>(CNavMesh::EditSoundType::MAX_EDIT_SOUNDS), "EditSoundType enum and keyNames array size mismatch!");
+
+	for (size_t i = 0; i < keyNames.size(); i++)
+	{
+		auto& key = keyNames[i];
+		const char* soundfile = gamedata->GetKeyValue(key.data());
+
+		if (soundfile == nullptr)
+		{
+			smutils->LogError(myself, "Failed to retreive nav mesh edit sound for key \"%s\"!", key.data());
+		}
+		else
+		{
+			m_editsounds[i] = std::string(soundfile);
+		}
+	}
 }
 
 void CNavMesh::PlayEditSoundInternal(const std::string& sound) const

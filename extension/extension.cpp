@@ -167,7 +167,6 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
-
 	if (!gameconfs->LoadGameConfigFile("sdktools.games", &m_cfg_sdktools, error, maxlen))
 	{
 		smutils->LogError(myself, "Failed to open SDKTools gamedata file!");
@@ -177,9 +176,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &m_cfg_sdkhooks, error, maxlen))
 	{
-		const char* message = "Failed to load SDKHooks gamedata!";
-		maxlen = strlen(message);
-		strcpy(error, message);
+		smutils->LogError(myself, "Failed to load SDKHooks gamedata!");
 		gameconfs->CloseGameConfigFile(m_cfg_sdkhooks);
 		return false;
 	}
@@ -201,9 +198,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	if (!CBaseBot::InitHooks(m_cfg_navbot, m_cfg_sdkhooks, m_cfg_sdktools))
 	{
-		const char* message = "Failed to setup SourceHooks (CBaseBot)!";
-		maxlen = strlen(message);
-		strcpy(error, message);
+		ke::SafeSprintf(error, maxlen, "Failed to setup SourceHooks (CBaseBot)!");
+		return false;
+	}
+
+	if (!m_bpc.LoadConfigFile(error, maxlen))
+	{
 		return false;
 	}
 
@@ -214,6 +214,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
 	sharesys->RegisterLibrary(myself, "navbot");
+	plsys->AddPluginsListener(this);
 	
 	return true;
 }
@@ -341,6 +342,14 @@ void NavBotExt::OnClientPutInServer(int client)
 void NavBotExt::OnClientDisconnecting(int client)
 {
 	extmanager->OnClientDisconnect(client);
+}
+
+void NavBotExt::OnPluginLoaded(IPlugin* plugin)
+{
+	if (plugin && plugin->GetPublicInfo())
+	{
+		m_bpc.ValidatePlugin(plugin);
+	}
 }
 
 void NavBotExt::Hook_GameFrame(bool simulating)

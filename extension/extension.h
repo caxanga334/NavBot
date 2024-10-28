@@ -60,12 +60,13 @@ class CTakeDamageInfo;
 #include <IBinTools.h>
 #include <ISDKHooks.h>
 #include "navmesh/nav_mesh.h"
+#include "core/badplugins.h"
 
 /**
  * @brief Sample implementation of the SDK Extension.
  * Note: Uncomment one of the pre-defined virtual functions in order to use it.
  */
-class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
+class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener, public SourceMod::IPluginsListener
 {
 public:
 	NavBotExt();
@@ -282,6 +283,14 @@ public:
 	{
 	}
 
+// SourceMod::IPluginsListener callbacks
+public:
+	// @brief Called when a plugin's required dependencies and natives have
+	// been bound. Plugins at this phase may be in any state Failed or
+	// lower. This is invoked immediately before OnPluginStart, and sometime
+	// after OnPluginCreated.
+	void OnPluginLoaded(IPlugin* plugin) override;
+
 	void Hook_GameFrame(bool simulating);
 
 	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
@@ -299,6 +308,7 @@ private:
 	SourceMod::IGameConfig* m_cfg_sdktools;
 	SourceMod::IGameConfig* m_cfg_sdkhooks;
 	std::vector<sp_nativeinfo_t> m_natives;
+	CBadPluginChecker m_bpc; // Bad plugin checker
 };
 
 extern NavBotExt* extension;

@@ -33,6 +33,7 @@ namespace NDebugOverlay
 	void	EntityTextAtPosition( const Vector &origin, int text_offset, const char *text, float flDuration, int r = 255, int g = 255, int b = 255, int a = 255);
 	void	Grid( const Vector &vPosition );
 	void	Text( const Vector &origin, const char *text, bool bViewCheck, float flDuration );
+	void	Text(const Vector& origin, bool bViewCheck, float flDuration, const char* fmt, ...);
 	void	ScreenText( float fXpos, float fYpos, const char *text, int r, int g, int b, int a, float flDuration);
 	void	Cross3D(const Vector &position, const Vector &mins, const Vector &maxs, int r, int g, int b, bool noDepthTest, float flDuration );
 	void	Cross3D(const Vector &position, float size, int r, int g, int b, bool noDepthTest, float flDuration );

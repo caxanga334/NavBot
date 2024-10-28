@@ -103,8 +103,8 @@ void NDebugOverlay::Line( const Vector &origin, const Vector &target, int r, int
 
 	Vector toOrigin		= origin - player.GetAbsOrigin();
 	Vector toTarget		= target - player.GetAbsOrigin();
- 	float  dotOrigin	= DotProduct(clientForward,toOrigin);
- 	float  dotTarget	= DotProduct(clientForward,toTarget);
+	float  dotOrigin	= DotProduct(clientForward,toOrigin);
+	float  dotTarget	= DotProduct(clientForward,toTarget);
 	
 	if (dotOrigin < 0 && dotTarget < 0) 
 		return;
@@ -139,9 +139,9 @@ void NDebugOverlay::Triangle( const Vector &p1, const Vector &p2, const Vector &
 	Vector clientForward;
 	player.EyeVectors( &clientForward );
 	
- 	float  dot1 = DotProduct(clientForward, to1);
- 	float  dot2 = DotProduct(clientForward, to2);
- 	float  dot3 = DotProduct(clientForward, to3);
+	float  dot1 = DotProduct(clientForward, to1);
+	float  dot2 = DotProduct(clientForward, to2);
+	float  dot3 = DotProduct(clientForward, to3);
 
 	if (dot1 < 0 && dot2 < 0 && dot3 < 0) 
 		return;
@@ -203,7 +203,7 @@ void NDebugOverlay::Text( const Vector &origin, const char *text, bool bViewChec
 	player.EyeVectors( &clientForward );
 
 	Vector toText	= origin - player.GetAbsOrigin();
- 	float  dotPr	= DotProduct(clientForward,toText);
+	float  dotPr	= DotProduct(clientForward,toText);
 	
 	if (dotPr < 0) 
 		return;
@@ -222,6 +222,58 @@ void NDebugOverlay::Text( const Vector &origin, const char *text, bool bViewChec
 	{
 		debugoverlay->AddTextOverlay( origin, duration, "%s", text );
 	}	
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: Draw debug text at a position
+//-----------------------------------------------------------------------------
+void NDebugOverlay::Text(const Vector& origin, bool bViewCheck, float flDuration, const char* fmt, ...)
+{
+	CBaseExtPlayer player(GetLocalPlayer());
+
+	// Clip text that is far away
+	if ((player.GetAbsOrigin() - origin).LengthSqr() > MAX_OVERLAY_DIST_SQR)
+		return;
+
+	// Clip text that is behind the client 
+	Vector clientForward;
+	player.EyeVectors(&clientForward);
+
+	Vector toText = origin - player.GetAbsOrigin();
+	float  dotPr = DotProduct(clientForward, toText);
+
+	if (dotPr < 0)
+		return;
+
+	// Clip text that is obscured
+	if (bViewCheck)
+	{
+		trace_t tr;
+		trace::line(player.GetAbsOrigin(), origin, MASK_OPAQUE, nullptr, COLLISION_GROUP_NONE, tr);
+
+		if ((tr.endpos - origin).Length() > 10)
+			return;
+	}
+
+	char buffer[512]{};
+	va_list vaargs;
+	va_start(vaargs, fmt);
+	size_t length = ke::SafeVsprintf(buffer, sizeof(buffer), fmt, vaargs);
+
+	if (length >= sizeof(buffer) - 1)
+	{
+		buffer[511] = '\0';
+	}
+	else {
+		buffer[length] = '\0';
+	}
+
+	va_end(vaargs);
+
+	if (debugoverlay)
+	{
+		debugoverlay->AddTextOverlay(origin, flDuration, "%s", buffer);
+	}
 }
 
 //-----------------------------------------------------------------------------
