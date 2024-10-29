@@ -5,14 +5,13 @@
 #include <mods/basemod.h>
 #include "weapon.h"
 
-CBotWeapon::CBotWeapon(edict_t* entity) : m_bcw(entity),
-	m_info()
+CBotWeapon::CBotWeapon(edict_t* entity) : m_bcw(entity)
 {
 	auto classname = gamehelpers->GetEntityClassname(entity);
 	m_econindex = extmanager->GetMod()->GetWeaponEconIndex(entity);
 	m_weaponID = extmanager->GetMod()->GetWeaponID(entity);
 
-	extmanager->GetWeaponInfoManager().GetWeaponInfo(classname, m_econindex, m_info);
+	m_info = extmanager->GetWeaponInfoManager().GetWeaponInfo(classname, m_econindex);
 	UtilHelpers::SetHandleEntity(m_handle, entity);
 }
 
@@ -22,7 +21,7 @@ CBotWeapon::~CBotWeapon()
 
 bool CBotWeapon::IsValid() const
 {
-	return m_handle.IsValid() && (UtilHelpers::GetEdictFromCBaseHandle(m_handle) != nullptr);
+	return m_info.get() != nullptr && m_handle.IsValid() && (UtilHelpers::GetEdictFromCBaseHandle(m_handle) != nullptr);
 }
 
 edict_t* CBotWeapon::GetEdict() const

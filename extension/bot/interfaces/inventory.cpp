@@ -110,7 +110,7 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 	ForEveryWeapon([&bot, &priority, &rangeToThreat, &best](const CBotWeapon& weapon) {
 		
 		// weapon must be usable against enemies
-		if (!weapon.GetWeaponInfo().IsCombatWeapon())
+		if (!weapon.GetWeaponInfo()->IsCombatWeapon())
 		{
 			return;
 		}
@@ -121,16 +121,16 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			return;
 		}
 
-		if (rangeToThreat > weapon.GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+		if (rangeToThreat > weapon.GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
 		{
 			return; // outside max range
 		}
-		else if (rangeToThreat < weapon.GetWeaponInfo().GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+		else if (rangeToThreat < weapon.GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
 		{
 			return; // too close
 		}
 
-		int currentprio = weapon.GetWeaponInfo().GetPriority();
+		int currentprio = weapon.GetWeaponInfo()->GetPriority();
 
 		if (currentprio > priority)
 		{

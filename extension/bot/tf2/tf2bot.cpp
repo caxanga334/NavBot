@@ -241,23 +241,23 @@ bool CTF2Bot::IsAmmoLow() const
 		if (haslowammoweapon)
 			return;
 
-		if (!weapon.GetWeaponInfo().IsCombatWeapon())
+		if (!weapon.GetWeaponInfo()->IsCombatWeapon())
 		{
 			return; // don't bother with ammo for non combat weapons
 		}
 
-		if (weapon.GetWeaponInfo().HasLowPrimaryAmmoThreshold())
+		if (weapon.GetWeaponInfo()->HasLowPrimaryAmmoThreshold())
 		{
-			if (GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) < weapon.GetWeaponInfo().GetLowPrimaryAmmoThreshold())
+			if (GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) < weapon.GetWeaponInfo()->GetLowPrimaryAmmoThreshold())
 			{
 				haslowammoweapon = true;
 				return;
 			}
 		}
 
-		if (weapon.GetWeaponInfo().HasLowSecondaryAmmoThreshold())
+		if (weapon.GetWeaponInfo()->HasLowSecondaryAmmoThreshold())
 		{
-			if (GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetSecondaryAmmoType()) < weapon.GetWeaponInfo().GetLowSecondaryAmmoThreshold())
+			if (GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetSecondaryAmmoType()) < weapon.GetWeaponInfo()->GetLowSecondaryAmmoThreshold())
 			{
 				haslowammoweapon = true;
 				return;

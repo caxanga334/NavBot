@@ -21,7 +21,7 @@ public:
 	 * @brief Gets the Weapon info.
 	 * @return Weapon Info pointer or NULL if no weapon info was obtained from the weapon info manager.
 	 */
-	inline const WeaponInfo& GetWeaponInfo() const { return m_info; }
+	inline const std::shared_ptr<WeaponInfo>& GetWeaponInfo() const { return m_info; }
 	inline const entities::HBaseCombatWeapon& GetBaseCombatWeapon() const { return m_bcw; }
 	inline int GetWeaponEconIndex() const { return m_econindex; }
 	inline int GetWeaponID() const { return m_weaponID; }
@@ -32,7 +32,7 @@ public:
 	inline int GetIndex() const { return m_handle.GetEntryIndex(); }
 private:
 	CBaseHandle m_handle;
-	WeaponInfo m_info;
+	std::shared_ptr<WeaponInfo> m_info;
 	entities::HBaseCombatWeapon m_bcw;
 	int m_econindex;
 	int m_weaponID; // weapon ID, mod implemented

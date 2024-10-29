@@ -34,7 +34,7 @@ private:
 	void FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat);
 	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
-	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo& info, CTF2BotSensor* sensor);
+	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
 	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 };
 

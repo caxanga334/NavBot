@@ -4,6 +4,11 @@
 
 #include <string>
 #include <vector>
+#include <memory>
+#include <algorithm>
+#include <unordered_map>
+#include <optional>
+#include <cmath>
 
 #include <ITextParsers.h>
 
@@ -181,6 +186,7 @@ public:
 	inline void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
 	inline void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	inline void SetSlot(int s) { slot = s; }
+	inline void AddCustomData(std::string key, float data) { custom_data[key] = data; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -199,6 +205,61 @@ public:
 	inline int GetLowSecondaryAmmoThreshold() const { return secammolow; }
 	inline int GetSlot() const { return slot; }
 	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
+	inline bool HasData(std::string key) const { return custom_data.count(key) > 0; }
+	inline bool HasAnyCustomData() const { return !custom_data.empty(); }
+
+	/**
+	 * @brief Gets a custom stored data as float
+	 * @param key Data key to look
+	 * @return Data if found or NULL optional if not found.
+	 */
+	inline std::optional<float> GetData(std::string key) const
+	{
+		if (custom_data.count(key) > 0)
+		{
+			return custom_data.at(key);
+		}
+		
+		return std::nullopt;
+	}
+
+	/**
+	 * @brief Gets a custom stored data as int
+	 * @param key Data key to look
+	 * @return Data if found or NULL optional if not found.
+	 */
+	inline std::optional<int> GetDataInt(std::string key) const
+	{
+		if (custom_data.count(key) > 0)
+		{
+			return static_cast<int>(std::roundf(custom_data.at(key)));
+		}
+
+		return std::nullopt;
+	}
+
+	/**
+	 * @brief Gets a custom stored data as bool
+	 * @param key Data key to look
+	 * @return true if data exists and is equal or greater than 1.0, false otherwise. NULL optional if data is not found.
+	 */
+	inline std::optional<bool> GetDataBool(std::string key) const
+	{
+		if (custom_data.count(key) > 0)
+		{
+			const float& value = custom_data.at(key);
+
+			if (value >= 0.9f)
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		return std::nullopt;
+	}
+
 
 private:
 	std::string classname;
@@ -213,27 +274,30 @@ private:
 	int primammolow; // Threshold for low primary ammo
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
+	std::unordered_map<std::string, float> custom_data; // Custom data for mods
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
 {
 public:
-	inline CWeaponInfoManager() :
-		m_tempweapinfo()
+	inline CWeaponInfoManager()
 	{
-		m_weapons.reserve(512);
+		m_weapons.reserve(128);
 		m_isvalid = false;
 		m_section_weapon = false;
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
+		m_section_customdata = false;
+		m_current = nullptr;
+		m_default = std::make_shared<WeaponInfo>();
 	}
 
 	inline bool WeaponEntryExists(std::string& entry) const
 	{
-		for (auto& weapon : m_weapons)
+		for (auto& weaponptr : m_weapons)
 		{
-			if (weapon.IsEntry(entry))
+			if (weaponptr->IsEntry(entry))
 			{
 				return true;
 			}
@@ -248,18 +312,25 @@ public:
 	 * @param index Econ index to search
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
-	inline void GetWeaponInfo(const char* classname, const int index, WeaponInfo& result) const
+	inline std::shared_ptr<WeaponInfo> GetWeaponInfo(std::string classname, const int index) const
 	{
-		if (LookUpWeaponInfoByEconIndex(index, result))
+		std::shared_ptr<WeaponInfo> result{ nullptr };
+
+		result = LookUpWeaponInfoByEconIndex(index);
+
+		if (result)
 		{
-			return;
+			return result;
 		}
 
-		if (LookUpWeaponInfoByClassname(classname, result))
+		result = LookUpWeaponInfoByClassname(classname);
+
+		if (result)
 		{
-			return;
+			return result;
 		}
 
+		return m_default;
 	}
 
 	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
@@ -295,7 +366,8 @@ public:
 	bool LoadConfigFile();
 
 private:
-	std::vector<WeaponInfo> m_weapons;
+	std::vector<std::shared_ptr<WeaponInfo>> m_weapons;
+	std::shared_ptr<WeaponInfo> m_default; // Default weapon info for when lookup fails
 
 	inline void InitParserData()
 	{
@@ -304,7 +376,7 @@ private:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
-		m_tempweapinfo.Reset();
+		m_section_customdata = false;
 	}
 
 	// parser data
@@ -313,8 +385,9 @@ private:
 	bool m_section_prim; // primary attack section
 	bool m_section_sec; // secondary attack section
 	bool m_section_ter; // tertiary attack section
+	bool m_section_customdata; // parsing custom data section
 
-	WeaponInfo m_tempweapinfo; // temporary weapon info
+	WeaponInfo* m_current; // Current weapon info being parsed
 
 	inline bool IsParserInWeaponAttackSection() const
 	{
@@ -327,38 +400,35 @@ private:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
+		m_section_customdata = false;
 	}
 
-	inline bool LookUpWeaponInfoByClassname(const char* classname, WeaponInfo& result) const
+	inline std::shared_ptr<WeaponInfo> LookUpWeaponInfoByClassname(std::string classname) const
 	{
-		std::string name(classname);
-
-		for (auto& weapon : m_weapons)
+		for (auto& weaponptr : m_weapons)
 		{
-			if (weapon.IsClassname(name))
+			if (weaponptr->IsClassname(classname))
 			{
-				result = weapon;
-				return true;
+				return weaponptr;
 			}
 		}
 
-		return false;
+		return nullptr;
 	}
 
-	inline bool LookUpWeaponInfoByEconIndex(const int index, WeaponInfo& result) const
+	inline std::shared_ptr<WeaponInfo> LookUpWeaponInfoByEconIndex(const int index) const
 	{
-		if (index < 0) { return false; }
+		if (index < 0) { return nullptr; }
 
-		for (auto& weapon : m_weapons)
+		for (auto& weaponptr : m_weapons)
 		{
-			if (weapon.GetItemDefIndex() == index)
+			if (weaponptr->GetItemDefIndex() == index)
 			{
-				result = weapon;
-				return true;
+				return weaponptr;
 			}
 		}
 
-		return false;
+		return nullptr;
 	}
 
 	void PostParseAnalysis();

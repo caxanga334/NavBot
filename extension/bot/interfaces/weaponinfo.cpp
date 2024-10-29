@@ -45,21 +45,21 @@ void CWeaponInfoManager::PostParseAnalysis()
 	std::unordered_set<int> itemindexes;
 	entries.reserve(m_weapons.size());
 
-	for (auto& weaponinfo : m_weapons)
+	for (auto& weaponinfoptr : m_weapons)
 	{
-		std::string entry(weaponinfo.GetConfigEntryName());
+		std::string entry(weaponinfoptr->GetConfigEntryName());
 
 		// duplicate check
 		if (entries.find(entry) == entries.end())
 		{
-			entries.emplace(weaponinfo.GetConfigEntryName());
+			entries.emplace(weaponinfoptr->GetConfigEntryName());
 		}
 		else
 		{
 			smutils->LogError(myself, "Duplicate Weapon Info entry found! \"%s\" ", entry.c_str());
 		}
 
-		auto index = weaponinfo.GetItemDefIndex();
+		auto index = weaponinfoptr->GetItemDefIndex();
 
 		if (index >= 0)
 		{
@@ -73,7 +73,7 @@ void CWeaponInfoManager::PostParseAnalysis()
 			}
 		}
 
-		auto classname = weaponinfo.GetClassname();
+		auto classname = weaponinfoptr->GetClassname();
 
 		// check if classname is missing by length, most weapons should have a 'weapon' somewhere in their classname
 		if (strlen(classname) < 3)
@@ -125,20 +125,30 @@ SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const 
 			return SMCResult_Halt;
 		}
 	}
+	else if (strncmp(name, "custom_data", 11) == 0)
+	{
+		m_section_customdata = true;
+
+		if (!m_section_weapon)
+		{
+			return SMCResult_Halt;
+		}
+	}
 
 	if (!m_section_weapon) // weapon section can be anything
 	{
 		m_section_weapon = true;
-		m_tempweapinfo.Reset();
-		m_tempweapinfo.SetConfigEntryName(name);
+		auto& newinfo = m_weapons.emplace_back(new WeaponInfo());
+		m_current = newinfo.get();
+		m_current->SetConfigEntryName(name);
 	}
-	else if (IsParserInWeaponAttackSection())
+	else if (IsParserInWeaponAttackSection() || m_section_customdata)
 	{
 		return SMCResult_Continue;
 	}
 	else // not a weapon entry section and not a know section name
 	{
-		smutils->LogError(myself, "Unknown section! %s", name);
+		smutils->LogError(myself, "Unknown section! %s at line %d col %d", name, states->line, states->col);
 		return SMCResult_Halt;
 	}
 
@@ -147,54 +157,67 @@ SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const 
 
 SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const char* key, const char* value)
 {
+	if (m_section_customdata)
+	{
+		if (m_current->HasData(key))
+		{
+			smutils->LogError(myself, "Duplicate custom data '%s' for weapon entry '%s'. Line %d col %d", key, m_current->GetConfigEntryName(), states->line, states->col);
+			return SourceMod::SMCResult_Continue;
+		}
+
+		float data = atof(value);
+		m_current->AddCustomData(key, data);
+		return SourceMod::SMCResult_Continue;
+	}
+
 	if (strncmp(key, "classname", 9) == 0)
 	{
-		m_tempweapinfo.SetClassname(value);
+		m_current->SetClassname(value);
 	}
 	else if (strncmp(key, "itemindex", 9) == 0)
 	{
-		m_tempweapinfo.SetEconItemIndex(atoi(value));
+		m_current->SetEconItemIndex(atoi(value));
 	}
 	else if (strncmp(key, "priority", 8) == 0)
 	{
-		m_tempweapinfo.SetPriority(atoi(value));
+		m_current->SetPriority(atoi(value));
 	}
 	else if (strncmp(key, "can_headshot", 12) == 0)
 	{
 		if (strncmp(value, "true", 4) == 0)
 		{
-			m_tempweapinfo.SetCanHeadShot(true);
+			m_current->SetCanHeadShot(true);
 		}
 		else
 		{
-			m_tempweapinfo.SetCanHeadShot(false);
+			m_current->SetCanHeadShot(false);
 		}
 	}
 	else if (strncmp(key, "headshot_range_multiplier", 25) == 0)
 	{
 		float hsrange = atof(value);
 		hsrange = std::clamp(hsrange, 0.0f, 1.0f);
-		m_tempweapinfo.SetHeadShotRangeMultiplier(hsrange);
+		m_current->SetHeadShotRangeMultiplier(hsrange);
 	}
 	else if (strncmp(key, "maxclip1", 8) == 0)
 	{
-		m_tempweapinfo.SetMaxClip1(atoi(value));
+		m_current->SetMaxClip1(atoi(value));
 	}
 	else if (strncmp(key, "maxclip2", 8) == 0)
 	{
-		m_tempweapinfo.SetMaxClip2(atoi(value));
+		m_current->SetMaxClip2(atoi(value));
 	}
 	else if (strncmp(key, "low_primary_ammo_threshold", 26) == 0)
 	{
-		m_tempweapinfo.SetLowPrimaryAmmoThreshold(atoi(value));
+		m_current->SetLowPrimaryAmmoThreshold(atoi(value));
 	}
 	else if (strncmp(key, "low_secondary_ammo_threshold", 28) == 0)
 	{
-		m_tempweapinfo.SetLowSecondaryAmmoThreshold(atoi(value));
+		m_current->SetLowSecondaryAmmoThreshold(atoi(value));
 	}
 	else if (strncmp(key, "slot", 4) == 0)
 	{
-		m_tempweapinfo.SetSlot(atoi(value));
+		m_current->SetSlot(atoi(value));
 	}
 
 	if (IsParserInWeaponAttackSection())
@@ -212,40 +235,40 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 
 		if (strncmp(key, "maxrange", 8) == 0)
 		{
-			m_tempweapinfo.GetAttackInfoForEditing(type)->SetMaxRange(atof(value));
+			m_current->GetAttackInfoForEditing(type)->SetMaxRange(atof(value));
 		}
 		else if (strncmp(key, "minrange", 8) == 0)
 		{
-			m_tempweapinfo.GetAttackInfoForEditing(type)->SetMinRange(atof(value));
+			m_current->GetAttackInfoForEditing(type)->SetMinRange(atof(value));
 		}
 		else if (strncmp(key, "projectilespeed", 15) == 0)
 		{
-			m_tempweapinfo.GetAttackInfoForEditing(type)->SetProjectileSpeed(atof(value));
+			m_current->GetAttackInfoForEditing(type)->SetProjectileSpeed(atof(value));
 		}
 		else if (strncmp(key, "gravity", 7) == 0)
 		{
-			m_tempweapinfo.GetAttackInfoForEditing(type)->SetGravity(atof(value));
+			m_current->GetAttackInfoForEditing(type)->SetGravity(atof(value));
 		}
 		else if (strncmp(key, "melee", 5) == 0)
 		{
 			if (strncmp(value, "true", 4) == 0)
 			{
-				m_tempweapinfo.GetAttackInfoForEditing(type)->SetMelee(true);
+				m_current->GetAttackInfoForEditing(type)->SetMelee(true);
 			}
 			else
 			{
-				m_tempweapinfo.GetAttackInfoForEditing(type)->SetMelee(false);
+				m_current->GetAttackInfoForEditing(type)->SetMelee(false);
 			}
 		}
 		else if (strncmp(key, "explosive", 7) == 0)
 		{
 			if (strncmp(value, "true", 4) == 0)
 			{
-				m_tempweapinfo.GetAttackInfoForEditing(type)->SetExplosive(true);
+				m_current->GetAttackInfoForEditing(type)->SetExplosive(true);
 			}
 			else
 			{
-				m_tempweapinfo.GetAttackInfoForEditing(type)->SetExplosive(false);
+				m_current->GetAttackInfoForEditing(type)->SetExplosive(false);
 			}
 		}
 	}
@@ -263,7 +286,12 @@ SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SMCStates* states)
 			return SMCResult_Continue;
 		}
 
-		m_weapons.push_back(m_tempweapinfo);
+		if (m_section_customdata)
+		{
+			m_section_customdata = false;
+			return SMCResult_Continue;
+		}
+
 		m_section_weapon = false;
 	}
 

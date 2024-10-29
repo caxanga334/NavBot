@@ -161,12 +161,12 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	auto& info = me->GetInventoryInterface()->GetActiveBotWeapon()->GetWeaponInfo();
 	auto threat_range = me->GetRangeTo(origin);
 
-	if (threat_range < info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+	if (threat_range < info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
 	{
 		return; // Don't fire
 	}
 
-	if (threat_range > info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+	if (threat_range > info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
 	{
 		return; // Don't fire
 	}
@@ -232,13 +232,13 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	case TeamFortress2::TFWeaponID::TF_WEAPON_DIRECTHIT:
 	case TeamFortress2::TFWeaponID::TF_WEAPON_PARTICLE_CANNON:
 	{
-		InternalAimWithRocketLauncher(me, player, result, weaponinfo, sensor);
+		InternalAimWithRocketLauncher(me, player, result, weaponinfo.get(), sensor);
 		break;
 	}
 	case TeamFortress2::TFWeaponID::TF_WEAPON_GRENADELAUNCHER:
 	{
 		const float rangeTo = me->GetRangeTo(player->WorldSpaceCenter());
-		const float speed = weaponinfo.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
+		const float speed = weaponinfo->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
 		const float time = pred::GetProjectileTravelTime(speed, rangeTo);
 		Vector velocity = player->GetAbsVelocity();
 		const float velocitymod = RemapValClamped(rangeTo, 600.0f, 1500.0f, 1.0f, 1.5f);
@@ -273,7 +273,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	}
 }
 
-void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo& info, CTF2BotSensor* sensor)
+void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor)
 {
 	if (player->GetGroundEntity() == nullptr) // target is airborne
 	{
@@ -295,7 +295,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 	constexpr float veryCloseRange = 150.0f;
 	if (rangeBetween > veryCloseRange)
 	{
-		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
+		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
 
 		if (sensor->IsLineOfSightClear(targetPos))
 		{
@@ -304,7 +304,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 		}
 
 		// try their head and hope
-		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), info.GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
+		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
 		return;
 	}
 
