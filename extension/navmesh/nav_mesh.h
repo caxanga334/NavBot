@@ -40,7 +40,6 @@
 
 class HidingSpot;
 class CUtlBuffer;
-class NavHintPoint;
 
 namespace SourceMod
 {
@@ -772,13 +771,6 @@ public:
 		PlayEditSoundInternal(m_editsounds[static_cast<size_t>(type)]);
 	}
 
-	virtual const char* NavHintTypeIDToString(int hinttype) const;
-
-	// Base nav mesh hint names
-	void PrintBaseNavHints() const;
-	// Mod nav mesh hint names
-	virtual void PrintModNavHints() const {};
-
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -1001,31 +993,6 @@ private:
 	Vector m_linkorigin;
 
 	void PlayEditSoundInternal(const std::string& sound) const;
-	const char* GetNavAreaHintTypeNameInternal(int hint) const;
-
-	std::vector<const NavHintPoint*> m_navhints;						// Vector of all available nav hints.
-
-protected:
-	void RebuildNavHintVector();
-
-public:
-
-	/**
-	 * @brief Loops all Nav Hints.
-	 * @tparam T Functor with 1 parameter: bool (const NavHintPoint* hint)
-	 * @param functor Function to run on each nav hint. Return false to end loop early.
-	 */
-	template <typename T>
-	void ForEveryNavHint(T functor)
-	{
-		for (auto hint : m_navhints)
-		{
-			if (functor(hint) == false)
-			{
-				return;
-			}
-		}
-	}
 
 private:
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> m_waypoints;
@@ -1034,6 +1001,9 @@ private:
 protected:
 	// Creates a new waypoint instance
 	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
+
+	// Rebuilds the waypoint ID map
+	void RebuildWaypointMap();
 
 public:
 	/**

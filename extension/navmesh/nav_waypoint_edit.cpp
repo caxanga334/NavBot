@@ -88,6 +88,7 @@ CON_COMMAND_F(sm_nav_waypoint_mark_crosshair, "Marks/select the waypoint nearest
 	trace::line(host.GetEyeOrigin(), host.GetEyeOrigin() + (forward * CWaypoint::WAYPOINT_EDIT_DRAW_RANGE), MASK_SHOT, tr);
 	
 	TheNavMesh->SelectNearestWaypoint(tr.endpos);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
 CON_COMMAND_F(sm_nav_waypoint_mark_nearest, "Marks/select the waypoint nearest to you.", FCVAR_CHEAT)
@@ -96,9 +97,25 @@ CON_COMMAND_F(sm_nav_waypoint_mark_nearest, "Marks/select the waypoint nearest t
 	TheNavMesh->SelectNearestWaypoint(host.GetAbsOrigin());
 }
 
+CON_COMMAND_F(sm_nav_waypoint_mark_id, "Marks/select the waypoint of the given ID.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_mark_id <ID>\n");
+		Msg("Selects the specific waypoint of ID.\n");
+		return;
+	}
+	
+	WaypointID id = static_cast<WaypointID>(atoi(args[1]));
+
+	TheNavMesh->SelectWaypointofID(id);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
 CON_COMMAND_F(sm_nav_waypoint_unmark, "Clears the selected/marked waypoint.", FCVAR_CHEAT)
 {
 	TheNavMesh->ClearSelectedWaypoint();
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
 CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.", FCVAR_CHEAT)
@@ -188,6 +205,7 @@ CON_COMMAND_F(sm_nav_waypoint_info, "Shows information about the selected waypoi
 	if (waypoint)
 	{
 		waypoint->PrintInfo();
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else
 	{

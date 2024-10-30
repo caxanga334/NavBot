@@ -58,6 +58,7 @@ public:
 	static constexpr auto WAYPOINT_AIM_HEIGHT = 64.0f;
 	static constexpr auto WAYPOINT_TEXT_HEIGHT = 50.0f;
 	static constexpr auto WAYPOINT_AIM_LENGTH = 32.0f;
+	static constexpr auto WAYPOINT_CONNECT_HEIGHT = 58.0f;
 	static constexpr std::size_t MAX_AIM_ANGLES = 4U;
 	static constexpr auto UPDATE_INTERVAL = 0.5f;
 	static constexpr auto WAYPOINT_EDIT_DRAW_RANGE = 1024.0f;

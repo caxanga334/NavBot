@@ -195,6 +195,14 @@ void CWaypoint::Draw() const
 		NDebugOverlay::Box(m_origin, mins, maxs, r, g, b, 150, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
+	Vector cStart = m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_CONNECT_HEIGHT);
+
+	for (auto& connect : m_connections)
+	{
+		Vector end = connect.GetOther()->GetOrigin() + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_CONNECT_HEIGHT);
+		NDebugOverlay::Line(cStart, end, 0, 255, 255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
+
 	constexpr std::size_t size = 512;
 
 	{
@@ -313,6 +321,11 @@ void CWaypoint::ConnectTo(const CWaypoint* other)
 
 void CWaypoint::DisconnectFrom(const CWaypoint* other)
 {
+	if (m_connections.empty())
+	{
+		return;
+	}
+
 	m_connections.erase(std::remove_if(m_connections.begin(), m_connections.end(), [&other](const WaypointConnect& object) {
 		return object.GetOther() == other;
 	}));
@@ -353,4 +366,9 @@ void CWaypoint::PrintInfo()
 {
 	Msg("Waypoint #%i\n  Team: %i\n  Radius: %3.2f\n  ", m_ID, m_teamNum, m_radius);
 	Msg("Waypoint is connected to %i waypoints.\n", m_connections.size());
+
+	for (auto& connect : m_connections)
+	{
+		Msg("Waypoint has connection to waypoint #%i\n", connect.GetOther()->GetID());
+	}
 }

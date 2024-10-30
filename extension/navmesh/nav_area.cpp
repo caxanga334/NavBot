@@ -356,7 +356,6 @@ CNavArea::CNavArea(unsigned int place)
 	m_nVisTestCounter = (uint32)-1;
 
 	m_speciallinks.reserve(4);
-	m_hints.reserve(16);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3236,11 +3235,6 @@ void CNavArea::Draw( void ) const
 		NavDrawLine( se, sw, color );
 		NavDrawLine( sw, nw, color );
 	}
-
-	for (const auto& hint : m_hints)
-	{
-		hint.Draw();
-	}
 }
 
 
@@ -5282,20 +5276,3 @@ Vector CNavArea::GetRandomPoint( void ) const
 	return spot;
 }
 
-void NavHintPoint::Draw() const
-{
-	constexpr auto NavHintPointHeight = 64.0f;
-	constexpr auto NavHintTextHeight = NavHintPointHeight / 2.0f;
-
-	Vector top = m_pos + Vector(0.0f, 0.0f, NavHintPointHeight);
-	Vector half = m_pos + Vector(0.0f, 0.0f, NavHintTextHeight);
-	NDebugOverlay::Line(m_pos, top, 0, 230, 255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
-
-	Vector forward;
-	AngleVectors(m_angle, &forward);
-	forward.NormalizeInPlace();
-	NDebugOverlay::HorzArrow(half, half + (forward * 24.0f), 4.0f, 0, 110, 0, 255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
-
-	auto name = TheNavMesh->NavHintTypeIDToString(m_hintType);
-	NDebugOverlay::Text(half, name, true, NDEBUG_PERSIST_FOR_ONE_TICK);
-}

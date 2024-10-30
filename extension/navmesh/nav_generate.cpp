@@ -3367,7 +3367,6 @@ void CNavMesh::BeginAnalysis( bool quitWhenFinished )
 	}
 
 	DestroyHidingSpots();
-	m_navhints.clear();
 	m_generationState = FIND_HIDING_SPOTS;
 	m_generationIndex = 0;
 	m_generationMode = GENERATE_ANALYSIS_ONLY;
@@ -3537,7 +3536,6 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			}
 
 			DestroyHidingSpots();
-			m_navhints.clear();
 
 			// Remove and re-add elements in TheNavAreas, to ensure indices are useful for progress feedback
 			NavAreaVector tmpSet;

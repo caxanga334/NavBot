@@ -304,7 +304,6 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 
 	// destroy all hiding spots
 	DestroyHidingSpots();
-	m_navhints.clear();
 
 	// destroy navigation nodes created during map generation
 	CNavNode::CleanupGeneration();
@@ -2976,6 +2975,7 @@ void CommandNavCompressID( void )
 
 	CNavArea::CompressIDs(TheNavMesh);
 	CNavLadder::CompressIDs(TheNavMesh);
+	TheNavMesh->CompressWaypointsIDs();
 }
 static ConCommand sm_nav_compress_id( "sm_nav_compress_id", CommandNavCompressID, "Re-orders area and ladder ID's so they are continuous.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
@@ -3453,43 +3453,42 @@ void CNavMesh::EndVisibilityComputations( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-inline unsigned int CNavMesh::GetGenerationTraceMask( void ) const
+unsigned int CNavMesh::GetGenerationTraceMask( void ) const
 {
 	return MASK_NPCSOLID_BRUSHONLY;
 }
 
 //--------------------------------------------------------------------------------------------------------------
-inline CNavArea *CNavMesh::CreateArea( void ) const
+CNavArea *CNavMesh::CreateArea( void ) const
 {
 	return new CNavArea(GetNavPlace());
 }
 
 //--------------------------------------------------------------------------------------------------------------
-inline void CNavMesh::DestroyArea( CNavArea *pArea ) const
+void CNavMesh::DestroyArea( CNavArea *pArea ) const
 {
 	delete pArea;
-}
-
-void CNavMesh::RebuildNavHintVector()
-{
-	m_navhints.clear();
-
-	for (int i = 0; i < TheNavAreas.Count(); i++)
-	{
-		CNavArea* area = TheNavAreas[i];
-
-		auto& hints = area->GetHintsVector();
-
-		for (auto& hint : hints)
-		{
-			m_navhints.push_back(&hint);
-		}
-	}
 }
 
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
 {
 	return std::move(std::make_shared<CWaypoint>());
+}
+
+void CNavMesh::RebuildWaypointMap()
+{
+	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> temp;
+	temp.reserve(m_waypoints.size());
+	temp.swap(m_waypoints);
+
+	m_waypoints.clear();
+
+	for (auto& wpt : temp)
+	{
+		m_waypoints[wpt.second->GetID()] = std::move(wpt.second);
+	}
+
+	temp.clear();
 }
 
 std::optional<const std::shared_ptr<CWaypoint>> CNavMesh::AddWaypoint(const Vector& origin)
@@ -3545,6 +3544,8 @@ void CNavMesh::CompressWaypointsIDs()
 		wpt->m_ID = CWaypoint::g_NextWaypointID;
 		CWaypoint::g_NextWaypointID++;
 	}
+
+	RebuildWaypointMap();
 }
 
 void CNavMesh::SelectNearestWaypoint(const Vector& start)

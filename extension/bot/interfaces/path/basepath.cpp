@@ -752,17 +752,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 
 void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint)
 {
-	auto crossinghint = to->GetNearestHintOfType(NAVHINT_CROSSINGPOINT, frompos);
-
-	// If the destination area has a crossing point hint, use it
-	if (crossinghint != nullptr)
-	{
-		*crosspoint = crossinghint->GetPosition();
-	}
-	else
-	{
-		from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
-	}
+	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
 	
 	bot->GetMovementInterface()->AdjustPathCrossingPoint(from, to, frompos, crosspoint);
 }

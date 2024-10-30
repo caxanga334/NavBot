@@ -310,16 +310,6 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 		Vector end = link.m_end;
 		filestream.write(reinterpret_cast<char*>(&end), sizeof(Vector));
 	}
-
-	uint64_t hintcount = static_cast<uint64_t>(m_hints.size());
-	filestream.write(reinterpret_cast<char*>(&hintcount), sizeof(uint64_t));
-
-	for (auto& hint : m_hints)
-	{
-		filestream.write(reinterpret_cast<char*>(&hint.m_hintType), sizeof(int));
-		filestream.write(reinterpret_cast<char*>(&hint.m_pos), sizeof(Vector));
-		filestream.write(reinterpret_cast<char*>(&hint.m_angle), sizeof(QAngle));
-	}
 }
 
 
@@ -488,21 +478,6 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		filestream.read(reinterpret_cast<char*>(&end), sizeof(Vector));
 
 		m_speciallinks.emplace_back(type, id, start, end);
-	}
-
-	uint64_t hintcount = 0U;
-	filestream.read(reinterpret_cast<char*>(&hintcount), sizeof(uint64_t));
-
-	for (uint64_t i = 0U; i < hintcount; i++)
-	{
-		int type = 0;
-		filestream.read(reinterpret_cast<char*>(&type), sizeof(int));
-		Vector origin;
-		filestream.read(reinterpret_cast<char*>(&origin), sizeof(Vector));
-		QAngle angles;
-		filestream.read(reinterpret_cast<char*>(&angles), sizeof(QAngle));
-
-		m_hints.emplace_back(type, origin, angles, this);
 	}
 
 	return NAV_OK;
@@ -1164,6 +1139,8 @@ NavErrorType CNavMesh::Load( void )
 		filestream.read(reinterpret_cast<char*>(&numWaypoints), sizeof(uint64_t));
 		Vector tmp{ 0.0f, 0.0f, 0.0f };
 
+		m_waypoints.reserve(static_cast<size_t>(numWaypoints));
+
 		for (uint64_t i = 0; i < numWaypoints; i++)
 		{
 			auto wpt = AddWaypoint(tmp);
@@ -1309,6 +1286,8 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 
 	WaypointID topID = 0;
 
+	RebuildWaypointMap();
+
 	// allow waypoints to connect to each other
 	for (auto& pair : m_waypoints)
 	{
@@ -1385,8 +1364,6 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	{
 		m_avoidanceObstacles[i]->OnNavMeshLoaded();
 	}
-
-	RebuildNavHintVector();
 
 	// the Navigation Mesh has been successfully loaded
 	m_isLoaded = true;

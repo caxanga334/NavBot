@@ -6,6 +6,7 @@
 #include <navmesh/nav_mesh.h>
 
 class CountdownTimer;
+class CTFWaypoint;
 
 class CTFNavMesh : public CNavMesh
 {
@@ -28,6 +29,9 @@ public:
 
 protected:
 	void PostCustomAnalysis(void) override;
+
+	// Creates a new waypoint instance
+	std::shared_ptr<CWaypoint> CreateWaypoint() const override;
 
 private:
 	static constexpr auto NAV_SPAWNROOM_UPDATE_INTERVAL = 10.0f;

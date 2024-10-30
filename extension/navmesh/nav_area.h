@@ -257,51 +257,6 @@ public:
 	Vector m_end; // Link end
 };
 
-enum NavHintType : int
-{
-	NAVHINT_CROSSINGPOINT = 0,
-	NAVHINT_BASE_MAX, // Last valid base hint ID
-	NAVHINT_LAST_SHARED_HINT = 100000 // The first 100000 hints are reserved for the base class, mod IDs should start with this + 1
-};
-
-class NavHintPoint
-{
-public:
-	NavHintPoint(int type, const Vector& origin, const QAngle& angles, CNavArea* area)
-	{
-		m_hintType = type;
-		m_pos = origin;
-		m_angle = angles;
-		m_area = area;
-	}
-
-	bool operator==(const NavHintPoint& other) const
-	{
-		int x1 = std::roundf(m_pos.x);
-		int y1 = std::roundf(m_pos.y);
-		int z1 = std::roundf(m_pos.z);
-
-		int x2 = std::roundf(other.m_pos.x);
-		int y2 = std::roundf(other.m_pos.y);
-		int z2 = std::roundf(other.m_pos.z);
-
-		return (x1 == x2) && (y1 == y2) && (z1 == z2);
-	}
-
-	bool IsHintOfType(int type) const { return m_hintType == type; }
-	bool IsOwnedByArea(const CNavArea* other) const { return m_area == other; }
-	int GetHintType() const { return m_hintType; }
-	const Vector& GetPosition() const { return m_pos; }
-	const QAngle& GetAngle() const { return m_angle; }
-	const CNavArea* GetOwningArea() const { return m_area; }
-	void Draw() const;
-
-	int m_hintType; // Nav Hint type
-	Vector m_pos; // Nav Hint origin
-	QAngle m_angle; // Nav Hint Aiming angle
-	CNavArea* m_area; // Nav Area that this hint belongs to
-};
-
 //-------------------------------------------------------------------------------------------------------------------
 /**
  * A CNavArea is a rectangular region defining a walkable area in the environment
@@ -350,7 +305,6 @@ protected:
 	/* 128*/	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
 
 	std::vector<NavSpecialLink> m_speciallinks; // Special 'link' connections
-	std::vector<NavHintPoint> m_hints; // Nav hints in this area
 	// --- End critical data --- 
 };
 
@@ -409,108 +363,6 @@ public:
 	int GetAttributes( void ) const			{ return m_attributeFlags; }
 	bool HasAttributes( int bits ) const	{ return ( m_attributeFlags & bits ) ? true : false; }
 	void RemoveAttributes( int bits )		{ m_attributeFlags &= ( ~bits ); }
-
-	void AddHint(int type, const Vector& origin, const QAngle& angle) 
-	{
-		if (!Contains(origin))
-		{
-			Warning("Cannot add hints outside the boundaries of a Nav Area! \n");
-			return;
-		}
-
-		m_hints.emplace_back(type, origin, angle, this);
-	}
-	void WipeHints() { m_hints.clear(); }
-	void RemoveNearestHint(const Vector& origin)
-	{
-		if (!m_hints.empty())
-		{
-			auto best = m_hints.end();
-			float dist = FLT_MAX;
-
-			for (auto it = m_hints.begin(); it != m_hints.end(); it++)
-			{
-				auto& hint = *it;
-
-				float current = (hint.GetPosition() - origin).Length();
-
-				if (current < dist)
-				{
-					dist = current;
-					best = it;
-				}
-			}
-
-			if (best != m_hints.end())
-			{
-				m_hints.erase(best);
-			}
-		}
-	}
-
-	void RemoveNearestHint(const Vector& origin, int type)
-	{
-		if (!m_hints.empty())
-		{
-			auto best = m_hints.end();
-			float dist = FLT_MAX;
-
-			for (auto it = m_hints.begin(); it != m_hints.end(); it++)
-			{
-				auto& hint = *it;
-
-				if (!hint.IsHintOfType(type))
-					continue;
-
-				float current = (hint.GetPosition() - origin).Length();
-
-				if (current < dist)
-				{
-					dist = current;
-					best = it;
-				}
-			}
-
-			if (best != m_hints.end())
-			{
-				m_hints.erase(best);
-			}
-		}
-	}
-
-	bool HasHintOfType(int type) const
-	{
-		auto it = std::find_if(m_hints.begin(), m_hints.end(), [&type](const NavHintPoint& hint) { return hint.IsHintOfType(type); });
-		return it != m_hints.end();
-	}
-
-	const std::vector<NavHintPoint>& GetHintsVector() const { return m_hints; }
-	const NavHintPoint* GetNearestHintOfType(int type, const Vector& origin)
-	{
-		if (!m_hints.empty())
-		{
-			const NavHintPoint* best = nullptr;
-			float dist = FLT_MAX;
-
-			for (const auto& hint : m_hints)
-			{
-				if (!hint.IsHintOfType(type))
-					continue;
-
-				float current = (hint.GetPosition() - origin).Length();
-
-				if (current < dist)
-				{
-					dist = current;
-					best = &hint;
-				}
-			}
-
-			return best;
-		}
-
-		return nullptr;
-	}
 
 	void SetPlace( Place place )		{ m_place = place; }	// set place descriptor
 	Place GetPlace( void ) const		{ return m_place; }		// get place descriptor

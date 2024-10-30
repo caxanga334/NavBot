@@ -4,6 +4,7 @@
 #include <navmesh/nav_area.h>
 #include "tfnavarea.h"
 #include "tfnavmesh.h"
+#include "tfnav_waypoint.h"
 
 extern NavAreaVector TheNavAreas;
 
@@ -118,6 +119,11 @@ void CTFNavMesh::PostCustomAnalysis(void)
 	{
 		smutils->LogError(myself, "Mann vs Machine navmesh without \"Frontlines\" areas!");
 	}
+}
+
+std::shared_ptr<CWaypoint> CTFNavMesh::CreateWaypoint() const
+{
+	return std::make_shared<CTFWaypoint>();
 }
 
 void CTFNavMesh::UpdateDebugDraw()
