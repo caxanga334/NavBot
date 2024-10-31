@@ -4355,7 +4355,7 @@ void CNavMesh::LoadEditSounds(SourceMod::IGameConfig* gamedata)
 
 		if (soundfile == nullptr)
 		{
-			smutils->LogError(myself, "Failed to retreive nav mesh edit sound for key \"%s\"!", key.data());
+			smutils->LogError(myself, "Failed to retrieve nav mesh edit sound for key \"%s\"!", key.data());
 		}
 		else
 		{

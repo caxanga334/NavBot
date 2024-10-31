@@ -864,14 +864,14 @@ const TeamFortress2::TFObjectiveResource* CTeamFortress2Mod::GetTFObjectiveResou
 	return nullptr;
 }
 
-void CTeamFortress2Mod::CollectControlPointsToAttack(CTF2Bot* bot, std::vector<CBaseEntity*>& out)
+void CTeamFortress2Mod::CollectControlPointsToAttack(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out)
 {
 	if (m_objecteResourceEntity.Get() == nullptr)
 	{
 		return;
 	}
 
-	int team = bot->GetCurrentTeamIndex();
+	int team = static_cast<int>(tfteam);
 	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
 
 	for (auto& handle : m_controlpoints)
@@ -913,7 +913,7 @@ void CTeamFortress2Mod::CollectControlPointsToAttack(CTF2Bot* bot, std::vector<C
 	}
 }
 
-void CTeamFortress2Mod::CollectControlPointsToDefend(CTF2Bot* bot, std::vector<CBaseEntity*>& out)
+void CTeamFortress2Mod::CollectControlPointsToDefend(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out)
 {
 	if (m_objecteResourceEntity.Get() == nullptr)
 	{
@@ -921,7 +921,7 @@ void CTeamFortress2Mod::CollectControlPointsToDefend(CTF2Bot* bot, std::vector<C
 	}
 
 	// collect points the enemy team can capture
-	int team = static_cast<int>(tf2lib::GetEnemyTFTeam(bot->GetMyTFTeam()));
+	int team = static_cast<int>(tf2lib::GetEnemyTFTeam(tfteam));
 	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
 
 	for (auto& handle : m_controlpoints)
@@ -1033,7 +1033,7 @@ void CTeamFortress2Mod::DebugInfo_ControlPoints()
 	}
 }
 
-void CTeamFortress2Mod::ShowControlPoints() const
+void CTeamFortress2Mod::Command_ShowControlPoints() const
 {
 	for (auto& ehandle : m_controlpoints)
 	{
@@ -1056,7 +1056,7 @@ void CTeamFortress2Mod::ShowControlPoints() const
 		char targetname[512]{};
 		cp.GetTargetName(targetname, sizeof(targetname));
 
-		Msg("   Target Name: %s\n", targetname);
+		Msg("    Target Name: %s\n", targetname);
 	}
 }
 
@@ -1096,7 +1096,7 @@ CON_COMMAND_F(sm_navbot_tf_debug_payload_carts, "[TF2] Shows which payload cart 
 
 CON_COMMAND_F(sm_navbot_tf_list_control_points, "[TF2] Shows a list of control points on this map", FCVAR_CHEAT)
 {
-	CTeamFortress2Mod::GetTF2Mod()->ShowControlPoints();
+	CTeamFortress2Mod::GetTF2Mod()->Command_ShowControlPoints();
 }
 
 #ifdef EXT_DEBUG

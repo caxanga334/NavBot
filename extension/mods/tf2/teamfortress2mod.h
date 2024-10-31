@@ -53,8 +53,8 @@ public:
 	CBaseEntity* GetBLUPayload() const { return m_blu_payload.Get(); }
 	bool IsInSetup() const { return m_bInSetup; }
 	const TeamFortress2::TFObjectiveResource* GetTFObjectiveResource() const;
-	void CollectControlPointsToAttack(CTF2Bot* bot, std::vector<CBaseEntity*>& out);
-	void CollectControlPointsToDefend(CTF2Bot* bot, std::vector<CBaseEntity*>& out);
+	void CollectControlPointsToAttack(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out);
+	void CollectControlPointsToDefend(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out);
 	CBaseEntity* GetControlPointByIndex(const int index) const;
 
 	void DebugInfo_ControlPoints();
@@ -66,7 +66,7 @@ public:
 	}
 #endif // EXT_DEBUG
 
-	void ShowControlPoints() const;
+	void Command_ShowControlPoints() const;
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
