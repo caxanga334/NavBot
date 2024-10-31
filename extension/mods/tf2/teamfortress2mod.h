@@ -66,6 +66,7 @@ public:
 	}
 #endif // EXT_DEBUG
 
+	void ShowControlPoints() const;
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map

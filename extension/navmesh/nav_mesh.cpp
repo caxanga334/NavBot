@@ -535,6 +535,10 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 		NavRoundRestart restart;
 		ForAllAreas(restart);
 		ForAllLadders(restart);
+
+		std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+			object.second->OnRoundRestart();
+		});
 	}
 }
 

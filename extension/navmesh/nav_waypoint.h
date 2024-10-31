@@ -57,6 +57,7 @@ public:
 	static constexpr auto WAYPOINT_HEIGHT = 72.0f;
 	static constexpr auto WAYPOINT_AIM_HEIGHT = 64.0f;
 	static constexpr auto WAYPOINT_TEXT_HEIGHT = 50.0f;
+	static constexpr auto WAYPOINT_MOD_TEXT_HEIGHT = WAYPOINT_TEXT_HEIGHT - 4.0f;
 	static constexpr auto WAYPOINT_AIM_LENGTH = 32.0f;
 	static constexpr auto WAYPOINT_CONNECT_HEIGHT = 58.0f;
 	static constexpr std::size_t MAX_AIM_ANGLES = 4U;
@@ -76,9 +77,25 @@ public:
 		return this->m_ID == other.m_ID;
 	}
 
+	// Resets temporary waypoint data
 	virtual void Reset();
+	// Called at intervals
 	virtual void Update();
+	// invoked when a game round restarts
+	virtual void OnRoundRestart() { Reset(); }
+	// Is this waypoint enabled?
 	virtual bool IsEnabled() const { return true; }
+	// Can this team use this waypoint
+	virtual bool IsAvailableToTeam(const int teamNum)
+	{
+		if (m_teamNum < TEAM_UNASSIGNED)
+		{
+			return true;
+		}
+
+		return m_teamNum == teamNum;
+	}
+	// Can this bot use this waypoint
 	virtual bool CanBeUsedByBot(CBaseBot* bot) const;
 
 	virtual void Save(std::fstream& filestream, uint32_t version);
@@ -88,8 +105,18 @@ public:
 	// Draws this waypoint during editing
 	virtual void Draw() const;
 
+	/**
+	 * @brief Marks this waypoint as being used by this bot. Prevents other bots from using this waypoint.
+	 * @param user Bot using this waypoint
+	 * @param duration Waypoint use timeout in case the bot doesn't notify it stopped using it.
+	 */
 	void Use(CBaseBot* user, const float duration = 10.0f) const;
+	// True if a bot is using this waypoint.
 	bool IsBeingUsed() const;
+	/**
+	 * @brief Notify that this waypoint is no longer being used.
+	 * @param user Bot that was using this waypoint.
+	 */
 	void StopUsing(CBaseBot* user) const;
 
 	WaypointID GetID() const { return m_ID; }
@@ -159,6 +186,27 @@ public:
 
 	const std::vector<WaypointConnect>& GetConnections() const { return m_connections; }
 
+	/**
+	 * @brief Runs a function on every connected waypoint.
+	 * @tparam T Waypoint class.
+	 * @tparam F Function to run. bool (const T* waypoint)
+	 * @param functor Functiob to run. Return false to end loop early.
+	 */
+	template <typename T, typename F>
+	void ForEveryConnectedWaypoint(F functor)
+	{
+		for (auto& connect : m_connections)
+		{
+			const T* wpt = static_cast<T*>(connect.GetOther());
+
+			if (functor(wpt) == false)
+			{
+				return;
+			}
+		}
+	}
+
+	// Prints information about this waypoint to the developer console. (Called when the waypoint info command is used on this waypoint)
 	virtual void PrintInfo();
 
 protected:
@@ -184,7 +232,7 @@ protected:
 	virtual void OnStopUse(CBaseBot* user) const {}
 
 	// Additional mod specific waypoint draw text
-	virtual void DrawModText(char* text, std::size_t size) const {}
+	virtual void DrawModText() const {}
 };
 
 extern ConVar sm_nav_waypoint_edit;

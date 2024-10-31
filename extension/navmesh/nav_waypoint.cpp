@@ -205,19 +205,11 @@ void CWaypoint::Draw() const
 
 	constexpr std::size_t size = 512;
 
-	{
-		std::unique_ptr<char[]> text = std::make_unique<char[]>(size);
-		ke::SafeSprintf(text.get(), size, "Waypoint #%i Team #%i Radius %3.1f", m_ID, m_teamNum, m_radius);
-		NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT), text.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
-	}
+	std::unique_ptr<char[]> text = std::make_unique<char[]>(size);
+	ke::SafeSprintf(text.get(), size, "Waypoint #%i Team #%i Radius %3.1f", m_ID, m_teamNum, m_radius);
+	NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT), text.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
 
-	{
-		std::unique_ptr<char[]> modtext = std::make_unique<char[]>(size);
-		ke::SafeSprintf(modtext.get(), size, "");
-		DrawModText(modtext.get(), size);
-		NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT - 4.0f), modtext.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
-	}
-
+	DrawModText();
 }
 
 void CWaypoint::Use(CBaseBot* user, const float duration) const

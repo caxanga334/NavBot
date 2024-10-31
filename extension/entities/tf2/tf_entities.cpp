@@ -307,3 +307,19 @@ bool tfentities::HTeamControlPoint::IsLocked() const
 	entprops->GetEntProp(GetIndex(), Prop_Data, "m_bLocked", value);
 	return value != 0;
 }
+
+std::string tfentities::HTeamControlPoint::GetPrintName() const
+{
+	constexpr auto size = 512;
+	char result[size]{};
+	std::string ret;
+	size_t len = 0;
+
+	if (entprops->GetEntPropString(GetIndex(), Prop_Data, "m_iszPrintName", result, size, len))
+	{
+		ret.assign(result);
+		return std::move(ret);
+	}
+
+	return std::move(ret);
+}

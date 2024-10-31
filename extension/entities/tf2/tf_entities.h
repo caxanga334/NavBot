@@ -105,6 +105,7 @@ namespace tfentities
 		int GetArea() const { return GetPointIndex(); }
 		TeamFortress2::TFTeam GetDefaultOwner() const;
 		bool IsLocked() const;
+		std::string GetPrintName() const;
 	};
 }
 

@@ -2,6 +2,7 @@
 #define SMNAV_ENTITIES_BASE_ENTITY_H_
 #pragma once
 
+#include <string>
 #include <const.h>
 
 // Helper classes to access entity data

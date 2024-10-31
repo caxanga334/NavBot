@@ -1033,6 +1033,33 @@ void CTeamFortress2Mod::DebugInfo_ControlPoints()
 	}
 }
 
+void CTeamFortress2Mod::ShowControlPoints() const
+{
+	for (auto& ehandle : m_controlpoints)
+	{
+		CBaseEntity* pEntity = ehandle.Get();
+
+		if (pEntity == nullptr)
+			continue;
+
+		tfentities::HTeamControlPoint cp(pEntity);
+
+		Msg("Control Point #%i\n", cp.GetPointIndex());
+
+		std::string printname = cp.GetPrintName();
+
+		if (!printname.empty())
+		{
+			Msg("    Display Name: %s\n", printname.c_str());
+		}
+
+		char targetname[512]{};
+		cp.GetTargetName(targetname, sizeof(targetname));
+
+		Msg("   Target Name: %s\n", targetname);
+	}
+}
+
 #if SOURCE_ENGINE == SE_TF2
 
 CON_COMMAND(sm_navbot_tf_show_upgrades, "[TF2] List all MvM Upgrades known by the bots.")
@@ -1065,6 +1092,11 @@ CON_COMMAND_F(sm_navbot_tf_debug_payload_carts, "[TF2] Shows which payload cart 
 	{
 		Msg("Found BLU payload #%i \n", gamehelpers->EntityToReference(blupayload));
 	}
+}
+
+CON_COMMAND_F(sm_navbot_tf_list_control_points, "[TF2] Shows a list of control points on this map", FCVAR_CHEAT)
+{
+	CTeamFortress2Mod::GetTF2Mod()->ShowControlPoints();
 }
 
 #ifdef EXT_DEBUG
