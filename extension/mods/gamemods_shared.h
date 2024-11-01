@@ -7,7 +7,7 @@
 namespace Mods
 {
 	// Game/Mod IDs
-	enum ModType
+	enum ModType : int
 	{
 		MOD_ALL = -2, // Indicate that something should apply for all mods
 		MOD_INVALID_ID = -1, // Invalid/Unknown mod

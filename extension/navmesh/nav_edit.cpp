@@ -3462,30 +3462,24 @@ CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connectio
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_nav_link_connect <link type ID> \n");
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
-	int32_t linktype = static_cast<int32_t>(atoi(args[1]));
+	long long input = atoll(args[1]);
 
-	if (linktype <= static_cast<int32_t>(NavLinkType::LINK_INVALID) || linktype >= static_cast<int32_t>(NavLinkType::MAX_LINK_TYPES))
+	if (input < 0 || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
 	{
-		Warning("Unknown link type %i \n", linktype);
-
-		Msg("Valid link types: \n");
-		for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
-		{
-			Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
-		}
-
+		Warning("Link type is invalid!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
+
+	uint32_t linktype = static_cast<uint32_t>(input);
 
 	TheNavMesh->CommandNavConnectSpecialLink(linktype);
 }
 
-void CNavMesh::CommandNavConnectSpecialLink(int32_t linktype)
+void CNavMesh::CommandNavConnectSpecialLink(uint32_t linktype)
 {
 	edict_t* ent = UTIL_GetListenServerEnt();
 
@@ -3542,30 +3536,24 @@ CON_COMMAND_F(sm_nav_link_disconnect, "Disconnect nav areas via special link con
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_nav_link_disconnect <link type ID> \n");
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
-	int32_t linktype = static_cast<int32_t>(atoi(args[1]));
+	long long input = atoll(args[1]);
 
-	if (linktype <= static_cast<int32_t>(NavLinkType::LINK_INVALID) || linktype >= static_cast<int32_t>(NavLinkType::MAX_LINK_TYPES))
+	if (input < 0 || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
 	{
-		Warning("Unknown link type %i \n", linktype);
-
-		Msg("Valid link types: \n");
-		for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
-		{
-			Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
-		}
-
+		Warning("Link type is invalid!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
+
+	uint32_t linktype = static_cast<uint32_t>(input);
 
 	TheNavMesh->CommandNavDisconnectSpecialLink(linktype);
 }
 
-void CNavMesh::CommandNavDisconnectSpecialLink(int32_t linktype)
+void CNavMesh::CommandNavDisconnectSpecialLink(uint32_t linktype)
 {
 	edict_t* player = UTIL_GetListenServerEnt();
 	if (player == NULL || !IsEditMode(NORMAL))

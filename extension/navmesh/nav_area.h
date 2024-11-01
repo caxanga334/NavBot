@@ -198,7 +198,7 @@ struct SpotEncounter
 };
 typedef CUtlVector< SpotEncounter * > SpotEncounterVector;
 
-enum class NavLinkType : int32_t
+enum class NavLinkType : uint32_t
 {
 	LINK_INVALID = 0,
 	LINK_GROUND, // solid ground

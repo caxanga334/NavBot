@@ -10,6 +10,8 @@
 // Author: Michael S. Booth, 2003-2004
 
 #include "extension.h"
+#include <manager.h>
+#include <mods/basemod.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <sdkports/debugoverlay_shared.h>
@@ -21,10 +23,6 @@
 #include "nav_area.h"
 #include "nav_node.h"
 #include "nav_waypoint.h"
-#include <eiface.h>
-#include <iplayerinfo.h>
-#include <vprof.h>
-#include <filesystem.h>
 #include <utlbuffer.h>
 #include <utlhash.h>
 #include <generichash.h>
@@ -345,6 +343,8 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
 	m_selectedWaypoint = nullptr;
+
+	extmanager->GetMod()->OnNavMeshDestroyed();
 }
 
 
@@ -354,8 +354,6 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
  */
 void CNavMesh::Update( void )
 {
-	VPROF( "CNavMesh::Update" );
-
 	if (IsGenerating())
 	{
 		UpdateGeneration( 0.03 );
@@ -800,8 +798,6 @@ inline void CNavMesh::GridToWorld( int gridX, int gridY, Vector *pos ) const
  */
 CNavArea *CNavMesh::GetNavArea( const Vector &pos, float beneathLimit ) const
 {
-	VPROF_BUDGET( "CNavMesh::GetNavArea", "NextBot"  );
-
 	if ( !m_grid.Count() )
 		return NULL;
 
@@ -847,8 +843,6 @@ CNavArea *CNavMesh::GetNavArea( const Vector &pos, float beneathLimit ) const
 //----------------------------------------------------------------------------
 CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLimit ) const
 {
-	VPROF( "CNavMesh::GetNavArea [ent]" );
-
 	if ( !m_grid.Count() )
 		return NULL;
 
@@ -933,8 +927,6 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
  */
 CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool checkLOS, bool checkGround, int team ) const
 {
-	VPROF_BUDGET( "CNavMesh::GetNearestNavArea", "NextBot" );
-
 	if ( !m_grid.Count() )
 		return NULL;	
 
@@ -3387,7 +3379,6 @@ void CNavMesh::OnAreaUnblocked( CNavArea *area )
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::UpdateBlockedAreas( void )
 {
-	VPROF( "CNavMesh::UpdateBlockedAreas" );
 	for ( int i=0; i<m_blockedAreas.Count(); ++i )
 	{
 		CNavArea *area = m_blockedAreas[i];
@@ -3433,7 +3424,6 @@ void CNavMesh::OnAvoidanceObstacleLeftArea( CNavArea *area )
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 {
-	VPROF( "CNavMesh::UpdateAvoidanceObstacleAreas" );
 	for ( int i=0; i<m_avoidanceObstacleAreas.Count(); ++i )
 	{
 		CNavArea *area = m_avoidanceObstacleAreas[i];

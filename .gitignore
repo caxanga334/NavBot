@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+
+# Generated paths
+build/
+versioning/
+output/

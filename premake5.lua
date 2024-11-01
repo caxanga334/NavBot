@@ -56,7 +56,7 @@ if (_ACTION ~= nil) then
 	if (not os.isdir(_OPTIONS["sm-path"])) then
 		error("Failed to get path to SourceMod. Set path with --sm-path=path")
 	end
-	
+
 	Path_HL2SDKROOT = path.normalize(_OPTIONS["hl2sdk-root"])
 	Path_SM = path.normalize(_OPTIONS["sm-path"])
 	Path_MMS = path.normalize(_OPTIONS["mms-path"])

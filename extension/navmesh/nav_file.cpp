@@ -13,22 +13,15 @@
 #include <memory>
 
 #include "extension.h"
+#include <manager.h>
+#include <mods/basemod.h>
 
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "nav_waypoint.h"
 
-#ifdef TERROR
-#include "func_elevator.h"
-#endif
-
 #include "tier1/lzmaDecoder.h"
 
-#ifdef CSTRIKE_DLL
-#include "cs_shareddefs.h"
-#include "nav_pathfind.h"
-#include "cs_nav_area.h"
-#endif
 #include <utlbuffer.h>
 #include <filesystem.h>
 #include <eiface.h>
@@ -1367,7 +1360,8 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 
 	// the Navigation Mesh has been successfully loaded
 	m_isLoaded = true;
-	
+	extmanager->GetMod()->OnNavMeshLoaded();
+
 	return NAV_OK;
 }
 

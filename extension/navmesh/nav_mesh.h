@@ -520,9 +520,9 @@ public:
 	void CommandNavDisconnect( void );									// disconnect marked area from selected area
 	void CommandNavDisconnectOutgoingOneWays( void );					// disconnect all outgoing one-way connects from each area in the selected set
 	void CommandNavSplice( void );										// create new area in between marked and selected areas
-	void CommandNavCrouch( void );										// toggle crouch attribute on current area
+	// void CommandNavCrouch( void );										// toggle crouch attribute on current area
 	void CommandNavTogglePlaceMode( void );								// switch between normal and place editing
-	void CommandNavSetPlaceMode( void );								// switch between normal and place editing
+	// void CommandNavSetPlaceMode( void );								// switch between normal and place editing
 	void CommandNavPlaceFloodFill( void );								// floodfill areas out from current area
 	void CommandNavPlaceSet( void );									// sets the Place for the selected set
 	void CommandNavPlacePick( void );									// "pick up" the place at the current area
@@ -543,15 +543,10 @@ public:
 	void CommandNavMergeMesh( const CCommand &args );					// Merge a saved selected set into the current mesh
 	void CommandNavMarkWalkable( void );
 	void CommandNavSeedWalkableSpots(void);
-	void CommandNavConnectSpecialLink(int32_t linktype);
-	void CommandNavDisconnectSpecialLink(int32_t linktype);
+	void CommandNavConnectSpecialLink(uint32_t linktype);
+	void CommandNavDisconnectSpecialLink(uint32_t linktype);
 	void CommandNavSetLinkOrigin();
 	void CommandNavWarpToLinkOrigin() const;
-	void CommandNavPrintAllHintsTypes() const;
-	void CommandNavAddHintToArea(int hinttype, const Vector& origin, const QAngle& angles);
-	void CommandNavRemoveNearestHintFromArea(const Vector& origin);
-	void CommandNavRemoveNearestHintOfTypeFromArea(int hinttype, const Vector& origin);
-	void CommandNavWipeAllHintsFromArea();
 	void CommandNavTestForBlocked() const;
 
 

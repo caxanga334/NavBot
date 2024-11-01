@@ -411,6 +411,12 @@ void CExtManager::UpdateBotQuota()
 				return;
 			}
 
+			// Ignore STV/Replay bots.
+			if (player->IsSourceTV() || player->IsReplay())
+			{
+				return;
+			}
+
 			if (player->IsFakeClient())
 			{
 				if (IsNavBot(client))

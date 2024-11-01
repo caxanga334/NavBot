@@ -56,6 +56,10 @@ public:
 	virtual void OnRoundStart() {}
 	// A round has ended
 	virtual void OnRoundEnd() {}
+	// Called when the nav mesh is fully loaded and valid.
+	virtual void OnNavMeshLoaded() {}
+	// Called when the nav mesh is destroyed. Any stored nav mesh data is invalid at this point. Use this to clear anything that's stored on the mod.
+	virtual void OnNavMeshDestroyed() {}
 private:
 	CBaseHandle m_playerresourceentity;
 

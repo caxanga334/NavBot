@@ -9,8 +9,10 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include <array>
 #include <unordered_set>
 #include <algorithm>
+#include <string_view>
 
 #include <extension.h>
 #include <manager.h>
@@ -24,16 +26,9 @@
 #include "nav_node.h"
 #include "nav_entities.h"
 #include "nav_colors.h"
-#include <eiface.h>
 #include <Color.h>
-#include <iplayerinfo.h>
 #include <collisionutils.h>
-#include <ivdebugoverlay.h>
 #include <tier1/checksum_crc.h>
-
-#ifdef WIN32
-// #include <vstdlib/jobthread.h>
-#endif // WIN32
 
 #include <tslist.h>
 #include <utlhash.h>
@@ -131,23 +126,23 @@ ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "10
 
 const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
 {
-	switch (type)
+	using namespace std::literals::string_view_literals;
+
+	if (type >= NavLinkType::MAX_LINK_TYPES)
 	{
-	case NavLinkType::LINK_INVALID:
-		return "INVALID_LINK";
-	case NavLinkType::LINK_GROUND:
-		return "GROUND_LINK";
-	case NavLinkType::LINK_TELEPORTER:
-		return "TELEPORTER_LINK";
-	case NavLinkType::LINK_BLAST_JUMP:
-		return "BLAST_JUMP_LINK";
-	case NavLinkType::MAX_LINK_TYPES:
-	default:
-	{
-		smutils->LogError(myself, "NavSpecialLink::LinkTypeToString called with invalid link type \"%i\"!", type);
 		return "ERROR";
 	}
-	}
+
+	constexpr std::array linkNames = {
+		"INVALID_LINK"sv,
+		"GROUND_LINK"sv,
+		"TELEPORTER_LINK"sv,
+		"BLAST_JUMP_LINK"sv,
+	};
+
+	static_assert(linkNames.size() == static_cast<size_t>(NavLinkType::MAX_LINK_TYPES), "linkNames and NavLinkType enum mismatch!");
+
+	return linkNames.at(static_cast<size_t>(type)).data();
 }
 
 
