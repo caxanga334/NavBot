@@ -25,11 +25,6 @@ CPath::CPath() :
 
 CPath::~CPath()
 {
-	for (auto segment : m_segments)
-	{
-		delete segment;
-	}
-
 	m_segments.clear();
 }
 
@@ -45,8 +40,8 @@ bool CPath::BuildTrivialPath(const Vector& start, const Vector& goal)
 
 	Invalidate(); // destroy any path that exists
 
-	CBasePathSegment* startSeg = CreateNewSegment();
-	CBasePathSegment* endSeg = CreateNewSegment();
+	std::shared_ptr<CBasePathSegment> startSeg = CreateNewSegment();
+	std::shared_ptr<CBasePathSegment> endSeg = CreateNewSegment();
 
 	startSeg->area = startArea;
 	startSeg->goal = start;
@@ -59,8 +54,8 @@ bool CPath::BuildTrivialPath(const Vector& start, const Vector& goal)
 	endSeg->forward = startSeg->forward;
 	endSeg->distance = startSeg->length;
 
-	m_segments.push_back(startSeg);
-	m_segments.push_back(endSeg);
+	m_segments.push_back(std::move(startSeg));
+	m_segments.push_back(std::move(endSeg));
 	m_ageTimer.Start();
 
 	return true;
@@ -229,20 +224,20 @@ const CPath::PathCursor& CPath::GetCursorData()
 			if (m_cursorPos < error || m_segments.size() < 2)
 			{
 				// path start
-				auto seg = m_segments[0];
+				auto& seg = m_segments[0];
 				m_cursor.position = seg->goal;
 				m_cursor.forward = seg->forward;
 				m_cursor.curvature = seg->curvature;
-				m_cursor.segment = seg;
+				m_cursor.segment = seg.get();
 			}
 			else if (m_cursorPos > GetPathLength() + error)
 			{
 				// path end
-				auto seg = m_segments[m_segments.size() - 1];
+				auto& seg = m_segments[m_segments.size() - 1];
 				m_cursor.position = seg->goal;
 				m_cursor.forward = seg->forward;
 				m_cursor.curvature = seg->curvature;
-				m_cursor.segment = seg;
+				m_cursor.segment = seg.get();
 			}
 			else
 			{
@@ -327,7 +322,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	IPlayerController* input = bot->GetControlInterface();
 	IMovement* mover = bot->GetMovementInterface();
 
-	auto startSeg = m_segments[0];
+	auto& startSeg = m_segments[0];
 
 	// If the starting area is inside the start area, then use it
 	if (startSeg->area->Contains(start))
@@ -352,8 +347,8 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	// first iteration
 	for (size_t i = 1; i < m_segments.size(); i++)
 	{
-		auto to = m_segments[i];
-		auto from = m_segments[i - 1];
+		auto& to = m_segments[i];
+		auto& from = m_segments[i - 1];
 
 		switch (to->how)
 		{
@@ -395,8 +390,8 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		// Second iteration, handle jump and climbing
 		for (size_t i = 1; i < m_segments.size(); i++)
 		{
-			auto to = m_segments[i];
-			auto from = m_segments[i - 1];
+			auto& to = m_segments[i];
+			auto& from = m_segments[i - 1];
 
 			if (from->how != NUM_TRAVERSE_TYPES && from->how > GO_WEST)
 				continue;
@@ -420,8 +415,8 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	{
 		while (insertstack.empty() == false)
 		{
-			auto& insert = insertstack.top();
-			delete insert.newSeg;
+			// auto& insert = insertstack.top();
+			// delete insert.newSeg;
 			insertstack.pop();
 			return false;
 		}
@@ -431,7 +426,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	while (insertstack.empty() == false)
 	{
 		auto& insert = insertstack.top(); // get top element
-		auto seg = insert.Seg;
+		auto& seg = insert.Seg;
 		auto it = std::find(m_segments.begin(), m_segments.end(), seg);
 
 		if (it != m_segments.end() || (it == m_segments.end() && !insert.after)) // got iterator of where we need to insert
@@ -441,11 +436,11 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 				it++; // by default, it will be added before the element of the iterator
 			}
 
-			m_segments.insert(it, insert.newSeg);
+			m_segments.insert(it, std::move(insert.newSeg));
 		}
 		else
 		{
-			delete insert.newSeg;
+			// delete insert.newSeg;
 		}
 
 		insertstack.pop(); // remove top element
@@ -455,7 +450,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	return true;
 }
 
-bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
 	IMovement* mover = bot->GetMovementInterface();
 
@@ -517,8 +512,8 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 				to->goal = startDrop;
 				to->type = AIPath::SegmentType::SEGMENT_GROUND;
 
-				CBasePathSegment* newSegment = CreateNewSegment();
-				newSegment->CopySegment(to);
+				std::shared_ptr<CBasePathSegment> newSegment = CreateNewSegment();
+				newSegment->CopySegment(to.get());
 
 				newSegment->goal.x = endDrop.x;
 				newSegment->goal.y = endDrop.y;
@@ -537,13 +532,12 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 				if (result.DidHit()) // probably collided with a railing
 				{
 					to->goal = result.endpos;
-					CBasePathSegment* seg2 = CreateNewSegment();
-					seg2->CopySegment(to);
+					std::shared_ptr<CBasePathSegment> seg2 = CreateNewSegment();
+					seg2->CopySegment(to.get());
 					seg2->goal = startDrop + Vector(0.0f, 0.0f, mover->GetStepHeight());
 					seg2->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
-					pathinsert.emplace(newSegment, seg2, false);
+					pathinsert.emplace(newSegment, std::move(seg2), false);
 				}
-
 
 				pathinsert.emplace(to, newSegment, true);
 			}
@@ -553,7 +547,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegme
 	return true;
 }
 
-bool CPath::ProcessLaddersInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
 	switch (to->how)
 	{
@@ -614,7 +608,7 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, CBasePathSegment* from, CBasePat
 	return true;
 }
 
-bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
 	auto mover = bot->GetMovementInterface();
 	// get closest point from areas to test for a gap
@@ -645,13 +639,13 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 		// Adjust goal for optimal jump landing
 		to->goal = landing + jumpforward * halfwidth;
 
-		CBasePathSegment* newSegment = CreateNewSegment();
+		std::shared_ptr<CBasePathSegment> newSegment = CreateNewSegment();
 
 		newSegment->CopySegment(from);
 		newSegment->goal = jumpfrom - jumpforward * halfwidth;
 		newSegment->type = AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP;
 
-		pathinsert.emplace(from, newSegment, true);
+		pathinsert.emplace(from, std::move(newSegment), true);
 	}
 	else if (zdiff > fullstepsize) // too high to just walk, must climb/jump
 	{
@@ -670,19 +664,19 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSeg
 		from->area->GetClosestPointOnArea(to->goal, &jumppos);
 		
 		// Create a new ground segment towards the jump position
-		CBasePathSegment* newSegment = CreateNewSegment();
+		std::shared_ptr<CBasePathSegment> newSegment = CreateNewSegment();
 
 		newSegment->CopySegment(from);
 		newSegment->goal = jumppos;
 		newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
 
-		pathinsert.emplace(from, newSegment, true);
+		pathinsert.emplace(from, std::move(newSegment), true);
 	}
 
 	return true;
 }
 
-bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
 	auto link = from->area->GetSpecialLinkConnectionToArea(to->area);
 
@@ -717,8 +711,8 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 		post->goal = link->GetEnd();
 		post->type = AIPath::SEGMENT_GROUND;
 
-		pathinsert.emplace(to, post, false);
-		pathinsert.emplace(to, between, false); // insert before 'to'
+		pathinsert.emplace(to, std::move(post), false);
+		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
 		break;
 	}
 	case NavLinkType::LINK_BLAST_JUMP:
@@ -739,7 +733,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBa
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
 
-		pathinsert.emplace(to, between, false); // insert before 'to'
+		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
 		break;
 	}
 	default:
@@ -764,7 +758,7 @@ void CPath::PostProcessPath()
 
 	if (m_segments.size() == 1)
 	{
-		auto seg = m_segments[0];
+		auto& seg = m_segments[0];
 
 		seg->forward = vec3_origin;
 		seg->length = 0.0f;
@@ -776,8 +770,8 @@ void CPath::PostProcessPath()
 	float currentDistance = 0.0f;
 	for (size_t i = 0; i < m_segments.size() - 1; i++)
 	{
-		auto from = m_segments[i];
-		auto to = m_segments[i + 1];
+		auto& from = m_segments[i];
+		auto& to = m_segments[i + 1];
 
 		from->forward = to->goal - from->goal;
 		from->length = from->forward.NormalizeInPlace();
@@ -790,8 +784,8 @@ void CPath::PostProcessPath()
 
 	for (size_t i = 1; i < m_segments.size() - 1; i++)
 	{
-		auto to = m_segments[i];
-		auto from = m_segments[i - 1];
+		auto& to = m_segments[i];
+		auto& from = m_segments[i - 1];
 
 		if (to->type != AIPath::SegmentType::SEGMENT_GROUND)
 		{
@@ -818,7 +812,7 @@ void CPath::PostProcessPath()
 
 	// path goal segment (end) keeps the direction of the last segment
 	size_t last = m_segments.size() - 1;
-	auto seglast = m_segments[last];
+	auto& seglast = m_segments[last];
 	seglast->forward = m_segments[last - 1]->forward;
 	seglast->length = 0.0f;
 	seglast->distance = currentDistance;

@@ -39,7 +39,7 @@
 
 /* Basic information exposed publicly */
 #define SMEXT_CONF_NAME			"Nav Bot"
-#define SMEXT_CONF_DESCRIPTION	"Source Engine Bots that uses valve's navigation meshes for pathfinding."
+#define SMEXT_CONF_DESCRIPTION	"Player bot for source engine mods."
 #define SMEXT_CONF_VERSION		"0.0.0.0"
 #define SMEXT_CONF_AUTHOR		"caxanga334"
 #define SMEXT_CONF_URL			"https://github.com/caxanga334/NavBot"

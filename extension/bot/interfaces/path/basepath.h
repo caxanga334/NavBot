@@ -6,6 +6,7 @@
 #include <stack>
 #include <iterator>
 #include <algorithm>
+#include <memory>
 
 #include <sdkports/sdk_timers.h>
 #include <bot/basebot.h>
@@ -129,12 +130,17 @@ public:
 		this->portalcenter = other->portalcenter;
 		this->portalhalfwidth = other->portalhalfwidth;
 	}
+
+	inline void CopySegment(const std::shared_ptr<CBasePathSegment>& other)
+	{
+		CopySegment(other.get());
+	}
 };
 
 class PathInsertSegmentInfo
 {
 public:
-	PathInsertSegmentInfo(CBasePathSegment* Seg, CBasePathSegment* newSeg, const bool afterseg = true) :
+	PathInsertSegmentInfo(std::shared_ptr<CBasePathSegment> Seg, std::shared_ptr<CBasePathSegment> newSeg, const bool afterseg = true) :
 		after(afterseg)
 	{
 		this->Seg = Seg;
@@ -142,8 +148,8 @@ public:
 	}
 
 	const bool after;
-	CBasePathSegment* Seg; // the segment will be added after this one
-	CBasePathSegment* newSeg; // new segment to be added
+	std::shared_ptr<CBasePathSegment> Seg; // the segment will be added after this one
+	std::shared_ptr<CBasePathSegment> newSeg; // new segment to be added
 };
 
 // good reference for valve nav mesh pathing
@@ -185,7 +191,12 @@ public:
 
 	virtual void Invalidate();
 
-	virtual CBasePathSegment* CreateNewSegment() { return new CBasePathSegment; }
+protected:
+	virtual CBasePathSegment* AllocNewSegment() const { return new CBasePathSegment; }
+
+	std::shared_ptr<CBasePathSegment> CreateNewSegment() { return std::shared_ptr<CBasePathSegment>(AllocNewSegment()); }
+
+public:
 
 	/**
 	 * @brief Finds a path via A* search
@@ -264,25 +275,25 @@ public:
 		// the path is built from end to start, include the end position first
 		if (pathBuildResult == true || includeGoalOnFailure == true)
 		{
-			CBasePathSegment* segment = CreateNewSegment();
+			std::shared_ptr<CBasePathSegment> segment = CreateNewSegment();
 
 			segment->area = closestArea;
 			segment->goal = endPos;
 			segment->type = AIPath::SegmentType::SEGMENT_GROUND;
 
-			m_segments.push_back(segment);
+			m_segments.push_back(std::move(segment));
 		}
 
 		// construct the path segments
 		// Reminder: areas are added to the back of the segment vector, the first area is the goal area.
 		for (CNavArea* area = closestArea; area != nullptr; area = area->GetParent())
 		{
-			CBasePathSegment* segment = CreateNewSegment();
+			std::shared_ptr<CBasePathSegment> segment = CreateNewSegment();
 
 			segment->area = area;
 			segment->how = area->GetParentHow();
 
-			m_segments.push_back(segment);
+			m_segments.push_back(std::move(segment));
 		}
 
 		// Place the path start at the vector start
@@ -394,20 +405,40 @@ public:
 	virtual void MoveCursor(float value, MoveCursorType type = PATH_ABSOLUTE_DISTANCE);
 	virtual float GetCursorPosition(void) const;
 
+	/**
+	 * @brief Runs a function on every path segment.
+	 * @tparam T Path Segment class.
+	 * @tparam F Function. bool (const T* segment)
+	 * @param functor Function to run, return false to end loop early.
+	 */
+	template <typename T, typename F>
+	void ForEveryPathSegment(F functor)
+	{
+		for (auto& segptr : m_segments)
+		{
+			const T* segment = static_cast<T*>(segptr.get());
+
+			if (functor(segment) == false)
+			{
+				return;
+			}
+		}
+	}
+
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
-	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
-	virtual bool ProcessLaddersInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
-	virtual bool ProcessPathJumps(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
-	virtual bool ProcessSpecialLinksInPath(CBaseBot* bot, CBasePathSegment* from, CBasePathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
 	virtual void PostProcessPath();
 	
-	inline std::vector<CBasePathSegment*>& GetAllSegments() { return m_segments; }
+	inline std::vector<std::shared_ptr<CBasePathSegment>>& GetAllSegments() { return m_segments; }
 	bool BuildTrivialPath(const Vector& start, const Vector& goal);
 
 private:
-	std::vector<CBasePathSegment*> m_segments;
+	std::vector<std::shared_ptr<CBasePathSegment>> m_segments;
 	IntervalTimer m_ageTimer;
 	PathCursor m_cursor;
 	float m_cursorPos;
@@ -418,11 +449,6 @@ private:
 
 inline void CPath::Invalidate()
 {
-	for (auto segment : m_segments)
-	{
-		delete segment;
-	}
-
 	m_segments.clear();
 	m_ageTimer.Invalidate();
 	m_cursorPos = 0.0f;
@@ -476,7 +502,7 @@ inline const CBasePathSegment* CPath::GetFirstSegment() const
 		return nullptr;
 	}
 
-	return *m_segments.begin();
+	return m_segments.begin()->get();
 }
 
 inline const CBasePathSegment* CPath::GetLastSegment() const
@@ -486,7 +512,7 @@ inline const CBasePathSegment* CPath::GetLastSegment() const
 		return nullptr;
 	}
 
-	return *std::prev(m_segments.end());
+	return std::prev(m_segments.end())->get();
 }
 
 inline const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* current) const
@@ -496,8 +522,8 @@ inline const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* cur
 		return nullptr;
 	}
 
-	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const CBasePathSegment* object) {
-		if (object == current)
+	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const std::shared_ptr<CBasePathSegment> object) {
+		if (object.get() == current)
 		{
 			return true;
 		}
@@ -517,7 +543,7 @@ inline const CBasePathSegment* CPath::GetNextSegment(const CBasePathSegment* cur
 		return nullptr;
 	}
 
-	return *it;
+	return it->get();
 }
 
 inline const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* current) const
@@ -527,8 +553,8 @@ inline const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* cu
 		return nullptr;
 	}
 
-	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const CBasePathSegment* object) {
-		if (object == current)
+	auto it = std::find_if(m_segments.begin(), m_segments.end(), [&current](const std::shared_ptr<CBasePathSegment> object) {
+		if (object.get() == current)
 		{
 			return true;
 		}
@@ -548,7 +574,7 @@ inline const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* cu
 
 	it = std::prev(it);
 
-	return *it;
+	return it->get();
 }
 
 #endif // !SMNAV_BOT_BASE_PATH_H_
