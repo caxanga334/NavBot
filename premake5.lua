@@ -62,6 +62,18 @@ if (_ACTION ~= nil) then
 	Path_MMS = path.normalize(_OPTIONS["mms-path"])
 end
 
+-- run versioning script
+
+if os.host() == "windows" then
+    if os.execute("python versioning.py") ~= true then
+        error("Failed to run python script versioning.py!")
+    end
+elseif os.host() == "linux" then
+    if os.execute("python3 versioning.py") ~= true then
+        error("Failed to run python script versioning.py! Is Python 3 installed on your system?")
+    end
+end
+
 workspace "navbot"
     configurations { 
         "Debug",

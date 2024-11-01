@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include <extension.h>
+#include <auto_version.h>
 #include <manager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
@@ -29,6 +30,7 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 {
 	Msg("--- BEGIN NavBot Info ---\n");
 	Msg("Extension Version: %s\n", SMEXT_CONF_VERSION);
+	Msg("Git Commit: %s\n", GIT_COMMIT_HASH);
 	Msg("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
 	Msg("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");
 	CBaseMod* mod = extmanager->GetMod();

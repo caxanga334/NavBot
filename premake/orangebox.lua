@@ -26,7 +26,8 @@ project "NavBot-ORANGEBOX"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
-        "../extension"
+        "../extension",
+        "../versioning/include"
 	}
 	files {
         "../extension/**.h",
