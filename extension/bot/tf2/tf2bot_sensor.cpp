@@ -25,6 +25,7 @@ CTF2BotSensor::CTF2BotSensor(CBaseBot* bot) : ISensor(bot)
 	AddClassnametoFilter("tf_zombie");
 	AddClassnametoFilter("headless_hatman");
 	AddClassnametoFilter("tf_robot_destruction_robot");
+	AddClassnametoFilter("base_boss");
 }
 
 CTF2BotSensor::~CTF2BotSensor()
