@@ -83,6 +83,28 @@ void CWeaponInfoManager::PostParseAnalysis()
 	}
 }
 
+std::shared_ptr<WeaponInfo> CWeaponInfoManager::GetWeaponInfo(std::string classname, const int index) const
+{
+	std::shared_ptr<WeaponInfo> result{ nullptr };
+
+	result = LookUpWeaponInfoByEconIndex(index);
+
+	if (result)
+	{
+		return result;
+	}
+
+	result = LookUpWeaponInfoByClassname(classname);
+
+	if (result)
+	{
+		return result;
+	}
+
+	smutils->LogError(myself, "CWeaponInfoManager::GetWeaponInfo Failed to find WeaponInfo for %s <%i>", classname.c_str(), index);
+	return m_default;
+}
+
 SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const char* name)
 {
 	// If the file doesn't start with this, the file is invalid

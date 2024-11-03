@@ -7,6 +7,11 @@
 #include "tf2bot.h"
 #include "tf2bot_sensor.h"
 
+#if SOURCE_ENGINE == SE_TF2
+ConVar sm_navbot_tf_attack_nextbots("sm_navbot_tf_attack_nextbots", "1", FCVAR_GAMEDLL, "If enabled, allow bots to attacks NextBot entities.");
+#endif // SOURCE_ENGINE == SE_TF2
+
+
 CTF2BotSensor::CTF2BotSensor(CBaseBot* bot) : ISensor(bot)
 {
 	m_classname_filter.reserve(12);
@@ -45,6 +50,22 @@ bool CTF2BotSensor::IsIgnored(edict_t* entity)
 	{
 		return IsPlayerIgnoredInternal(entity);
 	}
+
+#if SOURCE_ENGINE == SE_TF2
+	if (sm_navbot_tf_attack_nextbots.GetBool())
+	{
+		CBaseEntity* be = reinterpret_cast<CBaseEntity*>(entity->GetIServerEntity());
+		ServerClass* sc = gamehelpers->FindEntityServerClass(be);
+
+		if (sc != nullptr)
+		{
+			if (UtilHelpers::HasDataTable(sc->m_pTable, "DT_NextBot"))
+			{
+				return false; // Don't ignore NextBot entities.
+			}
+		}
+	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	if (IsClassnameIgnored(classname))
 		return true;

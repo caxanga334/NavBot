@@ -312,26 +312,7 @@ public:
 	 * @param index Econ index to search
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
-	inline std::shared_ptr<WeaponInfo> GetWeaponInfo(std::string classname, const int index) const
-	{
-		std::shared_ptr<WeaponInfo> result{ nullptr };
-
-		result = LookUpWeaponInfoByEconIndex(index);
-
-		if (result)
-		{
-			return result;
-		}
-
-		result = LookUpWeaponInfoByClassname(classname);
-
-		if (result)
-		{
-			return result;
-		}
-
-		return m_default;
-	}
+	std::shared_ptr<WeaponInfo> GetWeaponInfo(std::string classname, const int index) const;
 
 	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
