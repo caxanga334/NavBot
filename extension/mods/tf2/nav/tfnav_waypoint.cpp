@@ -1,4 +1,6 @@
 #include <vector>
+#include <string_view>
+#include <array>
 #include <extension.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
@@ -9,10 +11,43 @@
 CTFWaypoint::CTFWaypoint()
 {
 	m_cpindex = CTFWaypoint::NO_CONTROL_POINT;
+	m_tfhint = TFHINT_NONE;
 }
 
 CTFWaypoint::~CTFWaypoint()
 {
+}
+
+const char* CTFWaypoint::TFHintToString(CTFWaypoint::TFHint hint)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"NONE"sv,
+		"GUARD"sv,
+		"SNIPER"sv,
+		"SENTRY GUN"sv,
+		"DISPENSER"sv,
+		"TELE ENTRANCE"sv,
+		"TELE EXIT"sv,
+	};
+
+	static_assert(names.size() == static_cast<size_t>(CTFWaypoint::TFHint::MAX_TFHINT_TYPES), "TFHint name array and enum size mismatch!");
+
+	return names[static_cast<size_t>(hint)].data();
+}
+
+CTFWaypoint::TFHint CTFWaypoint::StringToTFHint(const char* szName)
+{
+	for (unsigned int i = 0; i < static_cast<unsigned int>(CTFWaypoint::TFHint::MAX_TFHINT_TYPES); i++)
+	{
+		if (strcasecmp(szName, CTFWaypoint::TFHintToString(static_cast<CTFWaypoint::TFHint>(i))) == 0)
+		{
+			return static_cast<CTFWaypoint::TFHint>(i);
+		}
+	}
+
+	return MAX_TFHINT_TYPES;
 }
 
 void CTFWaypoint::Save(std::fstream& filestream, uint32_t version)
@@ -20,6 +55,7 @@ void CTFWaypoint::Save(std::fstream& filestream, uint32_t version)
 	CWaypoint::Save(filestream, version);
 
 	filestream.write(reinterpret_cast<char*>(&m_cpindex), sizeof(int));
+	filestream.write(reinterpret_cast<char*>(&m_tfhint), sizeof(TFHint));
 }
 
 NavErrorType CTFWaypoint::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
@@ -37,6 +73,7 @@ NavErrorType CTFWaypoint::Load(std::fstream& filestream, uint32_t version, uint3
 	}
 
 	filestream.read(reinterpret_cast<char*>(&m_cpindex), sizeof(int));
+	filestream.read(reinterpret_cast<char*>(&m_tfhint), sizeof(TFHint));
 
 	return filestream.good() ? NAV_OK : NAV_CORRUPT_DATA;
 }
