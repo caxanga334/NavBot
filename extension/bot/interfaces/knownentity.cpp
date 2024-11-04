@@ -1,38 +1,48 @@
 #include <extension.h>
-#include <manager.h>
-#include <extplayer.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
-#include <basehandle.h>
 #include <util/helpers.h>
+#include <entities/baseentity.h>
 #include "knownentity.h"
 
 CKnownEntity::CKnownEntity(edict_t* entity)
 {
-	m_timeknown = gpGlobals->curtime;
-	m_timelastvisible = -9999.0f;
-	m_timelastinfo = -9999.0f;
-	m_volume = 0;
 	gamehelpers->SetHandleEntity(m_handle, entity);
+	Init();
 	UpdatePosition();
 }
 
 CKnownEntity::CKnownEntity(int entity)
 {
-	m_timeknown = gpGlobals->curtime;
-	m_timelastvisible = -9999.0f;
-	m_timelastinfo = -9999.0f;
-	m_volume = 0;
+	
 	auto edict = gamehelpers->EdictOfIndex(entity);
 	gamehelpers->SetHandleEntity(m_handle, edict);
+	Init();
+	UpdatePosition();
+}
+
+CKnownEntity::CKnownEntity(CBaseEntity* entity)
+{
+	m_handle.Set(entity);
+	Init();
 	UpdatePosition();
 }
 
 CKnownEntity::~CKnownEntity()
 {
+}
+
+void CKnownEntity::Init()
+{
+	m_timeknown = gpGlobals->curtime;
+	m_timelastvisible = -9999.0f;
+	m_timelastinfo = -9999.0f;
+	m_volume = 0;
+	m_visible = false;
+	m_lkpwasseen = false;
 }
 
 bool CKnownEntity::operator==(const CKnownEntity& other)
@@ -48,37 +58,28 @@ float CKnownEntity::GetTimeSinceLastInfo() const { return gpGlobals->curtime - m
 
 bool CKnownEntity::IsObsolete() const
 {
-	return !m_handle.IsValid() || UtilHelpers::GetEdictFromCBaseHandle(m_handle) == nullptr ||
-		GetTimeSinceLastInfo() > time_to_become_obsolete() || !UtilHelpers::IsEntityAlive(m_handle.GetEntryIndex());
+	return !m_handle.IsValid() || m_handle.Get() == nullptr || GetTimeSinceLastInfo() > time_to_become_obsolete() || !UtilHelpers::IsEntityAlive(m_handle.GetEntryIndex());
 }
 
 bool CKnownEntity::IsValid() const
 {
-	return m_handle.IsValid() == true && UtilHelpers::GetEdictFromCBaseHandle(m_handle) != nullptr;
+	return m_handle.IsValid() == true && m_handle.Get() != nullptr;
 }
 
 void CKnownEntity::UpdatePosition()
 {
-	constexpr auto NAV_AREA_DIST = 128.0f;
+	constexpr auto NAV_AREA_DIST = 512.0f;
 
-	auto entity = gamehelpers->GetHandleEntity(m_handle);
+	CBaseEntity* pEntity = m_handle.Get();
 
-	if (entity)
+	if (pEntity != nullptr)
 	{
+		entities::HBaseEntity be(pEntity);
 		m_timelastinfo = gpGlobals->curtime;
-		auto pos = UtilHelpers::getWorldSpaceCenter(entity);
-		m_lastknownposition = pos;
-		m_lastknownarea = TheNavMesh->GetNearestNavArea(pos, NAV_AREA_DIST);
+		m_lastknownposition = be.GetAbsOrigin();
+		m_lastknownvelocity = be.GetAbsVelocity();
+		m_lastknownarea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
 	}
-}
-
-void CKnownEntity::UpdatePosition(const Vector& newPos)
-{
-	constexpr auto NAV_AREA_DIST = 128.0f;
-
-	m_timelastinfo = gpGlobals->curtime;
-	m_lastknownposition = newPos;
-	m_lastknownarea = TheNavMesh->GetNearestNavArea(newPos, NAV_AREA_DIST);
 }
 
 void CKnownEntity::MarkAsFullyVisible()
@@ -100,12 +101,12 @@ bool CKnownEntity::IsEntity(const int entity) const
 
 edict_t* CKnownEntity::GetEdict() const
 {
-	return UtilHelpers::GetEdictFromCBaseHandle(m_handle);
+	return m_handle.ToEdict();
 }
 
 CBaseEntity* CKnownEntity::GetEntity() const
 {
-	return UtilHelpers::GetBaseEntityFromCBaseHandle(m_handle);
+	return m_handle.Get();
 }
 
 int CKnownEntity::GetIndex() const

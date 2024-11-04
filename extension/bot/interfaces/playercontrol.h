@@ -2,8 +2,11 @@
 #define SMNAV_BOT_BASE_PLAYER_CONTROL_IFACE_H_
 #pragma once
 
+#include <string_view>
+#include <array>
+
 #include <mathlib/vector.h>
-#include <basehandle.h>
+#include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/playerinput.h>
 
@@ -46,8 +49,10 @@ public:
 	virtual void ProcessButtons(int &buttons) override;
 	virtual void RunLook();
 	virtual void AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason = nullptr);
-	virtual void AimAt(edict_t* entity, const LookPriority priority, const float duration, const char* reason = nullptr);
-	virtual void AimAt(const int entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	virtual void AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	void AimAt(const QAngle& angles, const LookPriority priority, const float duration, const char* reason = nullptr);
+	void AimAt(edict_t* entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	void AimAt(const int entity, const LookPriority priority, const float duration, const char* reason = nullptr);
 	// True if the bot aim is Steady
 	virtual const bool IsAimSteady() const { return m_isSteady; }
 	// True if the bot aim is currently on target
@@ -70,7 +75,7 @@ private:
 	LookPriority m_priority; // Current look priority
 	CountdownTimer m_looktimer; // Timer for the current look at task
 	Vector m_looktarget; // Look at target (Position Vector)
-	CBaseHandle m_lookentity; // Look at target (Entity, overrides vector if present)
+	CHandle<CBaseEntity> m_lookentity; // Look at target (Entity, overrides vector if present)
 	QAngle m_lastangles; // Last bot view angles
 	bool m_isSteady; // Is the bot aim steady?
 	bool m_isOnTarget; // Is the bot looking at it's look target
@@ -81,36 +86,27 @@ private:
 
 inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)
 {
-	switch (priority)
-	{
-	case IPlayerController::LOOK_NONE:
-		return "NONE";
-	case IPlayerController::LOOK_AMBIENT:
-		return "AMBIENT";
-	case IPlayerController::LOOK_INTERESTING:
-		return "INTERESTING";
-	case IPlayerController::LOOK_ALERT:
-		return "ALERT";
-	case IPlayerController::LOOK_DANGER:
-		return "DANGER";
-	case IPlayerController::LOOK_OPERATE:
-		return "OPERATE";
-	case IPlayerController::LOOK_COMBAT:
-		return "COMBAT";
-	case IPlayerController::LOOK_VERY_IMPORTANT:
-		return "VERY IMPORTANT";
-	case IPlayerController::LOOK_MOVEMENT:
-		return "MOVEMENT";
-	case IPlayerController::LOOK_CRITICAL:
-		return "CRITICAL";
-	case IPlayerController::LOOK_MANDATORY:
-		return "MANDATORY";
-	case IPlayerController::MAX_LOOK_PRIORITY:
-		return "ERROR PRIORITY == MAX_LOOK_PRIORITY";
-	default:
-		return "ERROR UNKNOWN PRIORITY";
-	}
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"NONE"sv,
+		"AMBIENT"sv,
+		"INTERESTING"sv,
+		"ALERT"sv,
+		"DANGER"sv,
+		"OPERATE"sv,
+		"COMBAT"sv,
+		"VERY IMPORTANT"sv,
+		"MOVEMENT"sv,
+		"CRITICAL"sv,
+		"MANDATORY"sv,
+	};
+
+	static_assert(names.size() == static_cast<size_t>(IPlayerController::MAX_LOOK_PRIORITY), "Look priority name array and enum size mismatch!");
+
+	return names[static_cast<size_t>(priority)].data();
 }
+
 
 #endif // !SMNAV_BOT_BASE_PLAYER_CONTROL_IFACE_H_
 

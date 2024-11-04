@@ -13,10 +13,10 @@ public:
 	CTF2BotSensor(CBaseBot* bot);
 	virtual ~CTF2BotSensor();
 
-	virtual bool IsIgnored(edict_t* entity) override;
-	virtual bool IsFriendly(edict_t* entity) override;
-	virtual bool IsEnemy(edict_t* entity) override;
-	virtual int GetKnownEntityTeamIndex(CKnownEntity* known) override;
+	bool IsIgnored(edict_t* entity) override;
+	bool IsFriendly(edict_t* entity) override;
+	bool IsEnemy(edict_t* entity) override;
+	int GetKnownEntityTeamIndex(CKnownEntity* known) override;
 
 private:
 	std::unordered_set<std::string> m_classname_filter;

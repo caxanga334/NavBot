@@ -213,65 +213,55 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 	m_priority = priority;
 	m_looktimer.Start(duration);
 	m_looktarget = pos;
-	m_lookentity.Set(nullptr);
+	m_lookentity = nullptr;
 	m_didLookAtTarget = false;
+}
+
+void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason)
+{
+	if (!m_looktimer.IsElapsed() && m_priority > priority)
+	{
+		return;
+	}
+
+	if (m_priority == priority)
+	{
+		// Don't reaim too frequently
+		if (IsAimSteady() == false || GetSteadyTime() < smnav_bot_aim_lookat_settle_duration.GetFloat())
+		{
+			return;
+		}
+	}
+
+	auto me = GetBot();
+	if (me->IsDebugging(BOTDEBUG_LOOK))
+	{
+		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"%s\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+			gamehelpers->GetEntityClassname(entity), duration, GetLookPriorityName(priority), reason ? reason : "");
+	}
+
+	m_priority = priority;
+	m_looktimer.Start(duration);
+	m_lookentity = entity;
+	m_didLookAtTarget = false;
+}
+
+void IPlayerController::AimAt(const QAngle& angles, const LookPriority priority, const float duration, const char* reason)
+{
+	Vector forward;
+	AngleVectors(angles, &forward);
+	forward.NormalizeInPlace();
+	Vector goal = GetBot()->GetEyeOrigin() + (forward * 512.0f);
+	AimAt(goal, priority, duration, reason);
 }
 
 void IPlayerController::AimAt(edict_t* entity, const LookPriority priority, const float duration, const char* reason)
 {
-	if (!m_looktimer.IsElapsed() && m_priority > priority)
-	{
-		return;
-	}
-
-	if (m_priority == priority)
-	{
-		// Don't reaim too frequently
-		if (IsAimSteady() == false || GetSteadyTime() < smnav_bot_aim_lookat_settle_duration.GetFloat())
-		{
-			return;
-		}
-	}
-
-	auto me = GetBot();
-	if (me->IsDebugging(BOTDEBUG_LOOK))
-	{
-		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"%s#%i\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
-			gamehelpers->GetEntityClassname(entity), gamehelpers->IndexOfEdict(entity), duration, GetLookPriorityName(priority), reason ? reason : "");
-	}
-
-	m_priority = priority;
-	m_looktimer.Start(duration);
-	gamehelpers->SetHandleEntity(m_lookentity, entity);
-	m_didLookAtTarget = false;
+	AimAt(entity->GetIServerEntity()->GetBaseEntity(), priority, duration, reason);
 }
 
 void IPlayerController::AimAt(const int entity, const LookPriority priority, const float duration, const char* reason)
 {
-	if (!m_looktimer.IsElapsed() && m_priority > priority)
-	{
-		return;
-	}
-
-	if (m_priority == priority)
-	{
-		// Don't reaim too frequently
-		if (IsAimSteady() == false || GetSteadyTime() < smnav_bot_aim_lookat_settle_duration.GetFloat())
-		{
-			return;
-		}
-	}
-
-	auto me = GetBot();
-	if (me->IsDebugging(BOTDEBUG_LOOK))
-	{
-		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"#%i\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
-			entity, duration, GetLookPriorityName(priority), reason ? reason : "");
-	}
-
-	m_priority = priority;
-	m_looktimer.Start(duration);
-	auto edict = gamehelpers->EdictOfIndex(entity);
-	gamehelpers->SetHandleEntity(m_lookentity, edict);
-	m_didLookAtTarget = false;
+	edict_t* edict = gamehelpers->EdictOfIndex(entity);
+	AimAt(edict->GetIServerEntity()->GetBaseEntity(), priority, duration, reason);
 }

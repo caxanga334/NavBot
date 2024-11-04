@@ -2,14 +2,17 @@
 #define SMNAV_BOT_KNOWN_ENTITY_H_
 #pragma once
 
+#include <sdkports/sdk_ehandle.h>
+
 // Known Entity. Represents an entity that is known to the bot
 class CKnownEntity
 {
 public:
 	CKnownEntity(edict_t* entity);
 	CKnownEntity(int entity);
+	CKnownEntity(CBaseEntity* entity);
 
-	virtual ~CKnownEntity();
+	~CKnownEntity();
 
 	static constexpr float time_to_become_obsolete() { return 30.0f; }
 
@@ -32,6 +35,8 @@ public:
 	inline int GetVolume() const { return m_volume; }
 	// Gets the entity last known position
 	inline const Vector& GetLastKnownPosition() const { return m_lastknownposition; }
+	// Gets the entity last known velocity
+	inline const Vector& GetLastKnownVelocity() const { return m_lastknownvelocity; }
 	// Gets the entity last known Nav Area
 	inline const CNavArea* GetLastKnownArea() const { return m_lastknownarea; }
 	// A known entity is obsolete if the stored entity is invalid or if enought time has passed
@@ -40,13 +45,7 @@ public:
 	bool IsValid() const;
 	// Updates the last known position of this entity
 	void UpdatePosition();
-	void UpdatePosition(const Vector& newPos);
-	// Notify this entity was heard
-	inline void NotifyHeard(const int volume, const Vector &soundOrigin)
-	{
-		m_volume = volume;
-		UpdatePosition(soundOrigin);
-	}
+
 	// Marks this entity as fully visible
 	void MarkAsFullyVisible();
 
@@ -54,6 +53,8 @@ public:
 	bool IsEntity(edict_t* entity) const;
 	// true if the given entity is stored on this handle
 	bool IsEntity(const int entity) const;
+	// true if the given entity is stored on this handle
+	bool IsEntity(CBaseEntity* entity) const { return m_handle.Get() == entity; }
 
 	inline bool WasLastKnownPositionSeen() const { return m_lkpwasseen; }
 	inline void MarkLastKnownPositionAsSeen() { m_lkpwasseen = true; }
@@ -76,8 +77,9 @@ public:
 	int GetIndex() const;
 	bool IsPlayer() const;
 private:
-	CBaseHandle m_handle; // Handle to the actual entity
+	CHandle<CBaseEntity> m_handle; // Handle to the actual entity
 	Vector m_lastknownposition; // Last known position of this entity
+	Vector m_lastknownvelocity; // Last known velocity of this entity
 	CNavArea* m_lastknownarea; // Nav area nearest to the LKP
 	float m_timeknown; // Timestamp when this entity became known
 	float m_timelastvisible; // Timestamp of when this entity was fully visible to the bot
@@ -86,6 +88,7 @@ private:
 	bool m_visible; // This entity is visible right now
 	bool m_lkpwasseen; // Last known position was seen by the bot
 	
+	void Init();
 };
 
 #endif // !SMNAV_BOT_KNOWN_ENTITY_H_

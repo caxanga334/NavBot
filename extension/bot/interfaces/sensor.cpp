@@ -46,6 +46,7 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
 	m_minrecognitiontime = profile.GetMinRecognitionTime();
 	m_lastupdatetime = 0.0f;
+	m_primarythreatcache = nullptr;
 }
 
 ISensor::~ISensor()
@@ -76,42 +77,13 @@ void ISensor::Update()
 
 void ISensor::Frame()
 {
+	// frame gets called before update, clear the primary threat cache
+	m_primarythreatcache = nullptr;
 }
 
 bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
 {
-	auto me = GetBot();
-	auto start = me->GetEyeOrigin();
-	auto pos = UtilHelpers::getWorldSpaceCenter(entity);
-	const auto maxdist = GetMaxVisionRange() * GetMaxVisionRange();
-	float distance = (start - pos).LengthSqr();
-
-	if (distance > maxdist)
-	{
-		return false;
-	}
-
-	// Check FOV
-	if (checkFOV)
-	{
-		if (IsInFieldOfView(pos) == false)
-		{
-			return false;
-		}
-	}
-
-	if (IsLineOfSightClear(pos) == false)
-	{
-		return false;
-	}
-
-	// Test for smoke, fog, ...
-	if (IsEntityHidden(entity))
-	{
-		return false;
-	}
-
-	return true;
+	return IsAbleToSee(entity->GetIServerEntity()->GetBaseEntity(), checkFOV);
 }
 
 /**
@@ -122,9 +94,15 @@ bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
 */
 bool ISensor::IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV)
 {
+	return IsAbleToSee(player.GetEntity(), checkFOV);
+}
+
+bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
+{
 	auto me = GetBot();
 	auto start = me->GetEyeOrigin();
-	auto pos = player.WorldSpaceCenter();
+	entities::HBaseEntity be(entity);
+	auto pos = be.WorldSpaceCenter();
 	const auto maxdist = GetMaxVisionRange() * GetMaxVisionRange();
 	float distance = (start - pos).LengthSqr();
 
@@ -142,13 +120,13 @@ bool ISensor::IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV)
 		}
 	}
 
-	if (IsLineOfSightClear(player) == false)
+	if (IsLineOfSightClear(entity) == false)
 	{
 		return false;
 	}
 
 	// Test for smoke, fog, ...
-	if (IsEntityHidden(player.GetEdict()))
+	if (IsEntityHidden(entity))
 	{
 		return false;
 	}
@@ -286,6 +264,11 @@ bool ISensor::IsInFieldOfView(const Vector& pos)
 	return UtilHelpers::PointWithinViewAngle(GetBot()->GetEyeOrigin(), pos, forward, m_coshalfFOV);
 }
 
+bool ISensor::IsEntityHidden(edict_t* entity)
+{
+	return IsEntityHidden(entity->GetIServerEntity()->GetBaseEntity());
+}
+
 /**
  * @brief Adds the given entity to the known entity list
  * @param entity Entity to be added to the list
@@ -390,6 +373,9 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 	if (m_knownlist.empty())
 		return nullptr;
 
+	if (m_primarythreatcache != nullptr)
+		return m_primarythreatcache;
+
 	const CKnownEntity* primarythreat = nullptr;
 
 	// get the first valid threat
@@ -442,6 +428,7 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 		primarythreat = GetBot()->GetBehaviorInterface()->SelectTargetThreat(GetBot(), primarythreat, &known);
 	}
 
+	m_primarythreatcache = primarythreat; // cache primary threat to skip calculations for multiple GetPrimaryKnownThreat calls, cache is cleared on the next server frame
 	return primarythreat;
 }
 
@@ -515,37 +502,6 @@ const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 	}
 
 	return nearest;
-}
-
-void ISensor::OnSound(edict_t* source, const Vector& position, SoundType type, const int volume)
-{
-	Vector origin = GetBot()->GetAbsOrigin();
-	float distance = (origin - position).Length();
-	float maxdistance = GetMaxHearingRange();
-	constexpr auto GUNFIRE_MULTIPLIER = 1.5f;
-	
-	if (type == IEventListener::SoundType::SOUND_WEAPON)
-	{
-		maxdistance = maxdistance * GUNFIRE_MULTIPLIER; // weapons are loud
-	}
-
-	if (distance > maxdistance)
-	{
-		return; // outside hearing range
-	}
-
-	auto known = FindKnownEntity(source);
-
-	if (known == nullptr)
-	{
-		AddKnownEntity(source);
-		known = FindKnownEntity(source);
-		known->NotifyHeard(volume, position);
-	}
-	else
-	{
-		known->NotifyHeard(volume, position);
-	}
 }
 
 void ISensor::UpdateKnownEntities()

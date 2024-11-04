@@ -26,19 +26,21 @@ public:
 	virtual bool IsFriendly(edict_t* entity) { return false; }
 	virtual bool IsEnemy(edict_t* entity) { return false; }
 	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
-	virtual bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
-	virtual bool IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV = true);
+	bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
+	bool IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV = true);
+	virtual bool IsAbleToSee(CBaseEntity* entity, const bool checkFOV = true);
 	virtual bool IsAbleToSee(const Vector& pos, const bool checkFOV = true);
 	// Is the bot able to hear this entity
 	virtual bool IsAbleToHear(edict_t* entity);
 	// Checks if there are obstructions between the bot and the given position
 	virtual bool IsLineOfSightClear(const Vector& pos);
-	virtual bool IsLineOfSightClear(CBaseExtPlayer& player);
-	virtual bool IsLineOfSightClear(edict_t* entity);
+	bool IsLineOfSightClear(CBaseExtPlayer& player);
+	bool IsLineOfSightClear(edict_t* entity);
 	virtual bool IsLineOfSightClear(CBaseEntity* entity);
 	virtual bool IsInFieldOfView(const Vector& pos);
 	// Is the entity hidden by fog, smoke, etc?
-	virtual bool IsEntityHidden(edict_t* entity) { return false; }
+	bool IsEntityHidden(edict_t* entity);
+	virtual bool IsEntityHidden(CBaseEntity* entity) { return false; }
 	// Is the given position obscured by fog, smoke, etc?
 	virtual bool IsPositionObscured(const Vector& pos) { return false; }
 	// Adds a known entity to the list
@@ -59,13 +61,12 @@ public:
 	 * @brief Sets the bot field of view
 	 * @param fov The FOV in degrees
 	*/
-	virtual void SetFieldOfView(const float fov);
-	virtual float GetFieldOfView() const { return m_fieldofview; }
-	virtual const float GetDefaultFieldOfView() const { return 90.0f; }
-	virtual const float GetMaxVisionRange() const { return m_maxvisionrange; }
-	virtual const float GetMaxHearingRange() const { return m_maxhearingrange; }
+	void SetFieldOfView(const float fov);
+	float GetFieldOfView() const { return m_fieldofview; }
+	const float GetMaxVisionRange() const { return m_maxvisionrange; }
+	const float GetMaxHearingRange() const { return m_maxhearingrange; }
 	// Time it takes for the bot to become aware of an entity
-	virtual const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
+	const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
 	// Time since a threat was visible
 	virtual const float GetTimeSinceVisibleThreat() const;
 
@@ -83,7 +84,7 @@ public:
 	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
 
 	// Events
-	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
+	// virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
 
 	/**
 	 * @brief Runs a function on every known entity.
@@ -132,6 +133,7 @@ protected:
 
 private:
 	std::vector<CKnownEntity> m_knownlist;
+	const CKnownEntity* m_primarythreatcache;
 	float m_fieldofview;
 	float m_coshalfFOV;
 	float m_maxvisionrange;
