@@ -1,41 +1,11 @@
 #include <extension.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavarea.h>
+#include <mods/tf2/nav/tfnav_waypoint.h>
 #include <navmesh/nav_pathfind.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include "tf2bot_task_sniper_snipe_area.h"
 #include "tf2bot_task_sniper_move_to_sniper_spot.h"
-
-class SniperSpotAreaCollector : public INavAreaCollector<CTFNavArea>
-{
-public:
-	SniperSpotAreaCollector(CTF2Bot* me, CTFNavArea* startArea) :
-		INavAreaCollector<CTFNavArea>(startArea, 8000.0f)
-	{
-		m_me = me;
-	}
-
-	bool ShouldCollect(CTFNavArea* area) override;
-private:
-	CTF2Bot* m_me;
-};
-
-bool SniperSpotAreaCollector::ShouldCollect(CTFNavArea* area)
-{
-	if (area->GetSizeX() < 16.0f || area->GetSizeY() < 16.0f)
-	{
-		// don't snipe in small areas
-		return false;
-	}
-
-	if (area->IsBlocked(m_me->GetCurrentTeamIndex()))
-	{
-		// don't snipe on blocked areas
-		return false;
-	}
-
-	return true;
-}
 
 TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
@@ -60,7 +30,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 		return Continue(); 
 	}
 
-	if (bot->GetRangeTo(m_goal) <= 36.0f)
+	if (bot->GetRangeTo(m_goal) <= 16.0f)
 	{
 		// reached sniping goal
 		m_sniping = true;
@@ -100,42 +70,25 @@ void CTF2BotSniperMoveToSnipingSpotTask::FindSniperSpot(CTF2Bot* bot)
 
 void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot, Vector& out)
 {
-	SniperSpotAreaCollector collector(bot, static_cast<CTFNavArea*>(bot->GetLastKnownNavArea()));
+	std::vector<CTFWaypoint*> spots;
+	auto& thewaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllSniperWaypoints();
 
-	collector.Execute();
-
-	if (collector.IsCollectedAreasEmpty())
+	for (auto waypoint : thewaypoints)
 	{
-		out = bot->GetAbsOrigin();
-		return;
-	}
-
-	std::vector<CTFNavArea*> hintAreas;
-	hintAreas.reserve(collector.GetCollectedAreasCount());
-
-	auto& vec = collector.GetCollectedAreas();
-
-	for (auto area : vec)
-	{
-		if (area->HasTFAttributes(CTFNavArea::TFNAV_SNIPER_HINT) && !area->IsTFAttributesRestrictedForTeam(bot->GetMyTFTeam()))
+		if (waypoint->IsEnabled() && waypoint->IsAvailableToTeam(static_cast<int>(bot->GetMyTFTeam())) && waypoint->CanBeUsedByBot(bot))
 		{
-			hintAreas.push_back(area);
+			spots.push_back(waypoint);
 		}
 	}
 
-	if (!hintAreas.empty())
+	if (spots.empty())
 	{
-		CTFNavArea* area = hintAreas[randomgen->GetRandomInt<size_t>(0, hintAreas.size() - 1)];
-		out = area->GetCenter();
-	}
-	else
-	{
-		CTFNavArea* area = vec[randomgen->GetRandomInt<size_t>(0, vec.size() - 1)];
-		out = area->GetCenter();
+		bot->DebugPrintToConsole(BOTDEBUG_ERRORS, 255, 0, 0, "Bot %s failed to find a valid Sniper waypoint to snipe from!", bot->GetDebugIdentifier());
+		m_goal = bot->GetAbsOrigin();
+		return;
 	}
 
-	if (bot->IsDebugging(BOTDEBUG_TASKS))
-	{
-		bot->DebugPrintToConsole(BOTDEBUG_TASKS, 30, 160, 0, "%s: Selected sniper spot: %3.2f, %3.2f, %3.2f \n", bot->GetDebugIdentifier(), out.x, out.y, out.z);
-	}
+	CTFWaypoint* goal = librandom::utils::GetRandomElementFromVector<CTFWaypoint*>(spots);
+	goal->Use(bot); // prevent other bots from selecting
+	m_goal = goal->GetOrigin();
 }

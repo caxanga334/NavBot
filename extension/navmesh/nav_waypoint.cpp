@@ -76,7 +76,12 @@ void CWaypoint::Update()
 
 bool CWaypoint::CanBeUsedByBot(CBaseBot* bot) const
 {
-	return m_expireUserTimer.HasStarted() == false;
+	if (m_user.Get() == bot->GetEntity())
+	{
+		return true;
+	}
+
+	return !m_expireUserTimer.HasStarted();
 }
 
 void CWaypoint::Save(std::fstream& filestream, uint32_t version)

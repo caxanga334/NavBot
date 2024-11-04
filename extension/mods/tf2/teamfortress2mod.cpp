@@ -6,6 +6,7 @@
 #include <bot/basebot.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavmesh.h>
+#include <mods/tf2/nav/tfnav_waypoint.h>
 #include <entities/tf2/tf_entities.h>
 #include "tf2lib.h"
 #include "teamfortress2mod.h"
@@ -226,6 +227,28 @@ bool CTeamFortress2Mod::BotQuotaIsClientIgnored(int client, edict_t* entity, Sou
 	}
 
 	return false;
+}
+
+void CTeamFortress2Mod::OnNavMeshLoaded()
+{
+	TheNavMesh->ForEveryWaypoint<CTFWaypoint>([this](CTFWaypoint* waypoint) {
+		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_SNIPER && waypoint->GetNumOfAvailableAngles() > 0)
+		{
+			m_sniperWaypoints.push_back(waypoint);
+		}
+
+		return true;
+	});
+
+	if (m_sniperWaypoints.empty())
+	{
+		smutils->LogError(myself, "Map lacks Sniper waypoints.");
+	}
+}
+
+void CTeamFortress2Mod::OnNavMeshDestroyed()
+{
+	m_sniperWaypoints.clear();
 }
 
 const char* CTeamFortress2Mod::GetCurrentGameModeName() const

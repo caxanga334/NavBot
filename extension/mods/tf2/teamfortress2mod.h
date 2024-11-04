@@ -13,6 +13,7 @@
 #include "mvm_upgrade_manager.h"
 
 class CTF2Bot;
+class CTFWaypoint;
 struct edict_t;
 
 class CTeamFortress2Mod : public CBaseMod
@@ -37,6 +38,9 @@ public:
 	int GetWeaponEconIndex(edict_t* weapon) const override;
 	int GetWeaponID(edict_t* weapon) const override;
 	bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const override;
+
+	void OnNavMeshLoaded() override;
+	void OnNavMeshDestroyed() override;
 
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
@@ -68,6 +72,8 @@ public:
 
 	void Command_ShowControlPoints() const;
 
+	const std::vector<CTFWaypoint*>& GetAllSniperWaypoints() const { return m_sniperWaypoints; }
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
@@ -79,6 +85,7 @@ private:
 	CHandle<CBaseEntity> m_objecteResourceEntity;
 	TeamFortress2::TFObjectiveResource m_objectiveResourcesData;
 	bool m_bInSetup;
+	std::vector<CTFWaypoint*> m_sniperWaypoints;
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();

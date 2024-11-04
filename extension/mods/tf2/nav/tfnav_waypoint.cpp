@@ -113,5 +113,6 @@ bool CTFWaypoint::IsAvailableToTeam(const int teamNum)
 
 void CTFWaypoint::DrawModText() const
 {
-	NDebugOverlay::Text(GetOrigin() + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_MOD_TEXT_HEIGHT), false, NDEBUG_PERSIST_FOR_ONE_TICK, "CP %i", m_cpindex);
+	NDebugOverlay::Text(GetOrigin() + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_MOD_TEXT_HEIGHT), false, NDEBUG_PERSIST_FOR_ONE_TICK, "CP %i Hint %s", 
+		m_cpindex, CTFWaypoint::TFHintToString(m_tfhint));
 }

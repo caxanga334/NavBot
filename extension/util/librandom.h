@@ -4,6 +4,7 @@
 
 #include <random>
 #include <chrono>
+#include <vector>
 
 namespace librandom
 {
@@ -68,5 +69,17 @@ namespace librandom
 
 // default generator using Mersenne Twister 19937
 extern librandom::RandomNumberGenerator<std::mt19937, unsigned int>* randomgen;
+
+namespace librandom
+{
+	namespace utils
+	{
+		template <typename T>
+		inline T GetRandomElementFromVector(const std::vector<T>& vec)
+		{
+			return vec[randomgen->GetRandomInt<size_t>(0U, vec.size() - 1U)];
+		}
+	}
+}
 
 #endif // !SMNAV_LIB_RANDOM_NUMBER_H_
