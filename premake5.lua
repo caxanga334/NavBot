@@ -30,6 +30,7 @@ newoption {
 Path_HL2SDKROOT = ""
 Path_SM = ""
 Path_MMS = ""
+g_Compiler = ""
 
 -- when "premake5 --help" is ran, _ACTION is NULL (nil)
 if (_ACTION ~= nil) then
@@ -60,6 +61,27 @@ if (_ACTION ~= nil) then
 	Path_HL2SDKROOT = path.normalize(_OPTIONS["hl2sdk-root"])
 	Path_SM = path.normalize(_OPTIONS["sm-path"])
 	Path_MMS = path.normalize(_OPTIONS["mms-path"])
+end
+
+-- check compiler
+if os.host() == "windows" then
+    g_Compiler = "MSVC"
+    print("Microsoft C++ compiler selected.")
+elseif os.host() == "linux" then
+    local cxx = os.getenv("CXX")
+
+    if cxx == nil then
+        g_Compiler = "CLANG"
+        print("CXX env not set. Using clang.")
+    else
+        if string.startswith(cxx, "clang") then
+            g_Compiler = "CLANG"
+            print("Clang selected.")
+        else
+            g_Compiler = "GCC"
+            print("GCC selected.")
+        end
+    end
 end
 
 -- run versioning script
@@ -98,6 +120,14 @@ workspace "navbot"
     pic "On"
     include("premake/common_sdk.lua")
 
+    if g_Compiler == "MSVC" then
+        toolset "msc"
+    elseif g_Compiler == "CLANG" then
+        toolset "clang"
+    else
+        toolset "gcc"
+    end
+
     filter { "system:Windows" }
         defines { "_CRT_SECURE_NO_DEPRECATE", "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_DEPRECATE", "_WINDOWS", "_ITERATOR_DEBUG_LEVEL=0" }
         flags { "MultiProcessorCompile" }
@@ -113,16 +143,23 @@ workspace "navbot"
             "legacy_stdio_definitions.lib",
         }
 
+    -- Linux options shared for both GCC/Clang
     filter { "system:Linux" }
         defines { "LINUX", "_LINUX", "POSIX", "_FILE_OFFSET_BITS=64", "COMPILER_GCC" }
         defines { "stricmp=strcasecmp", "_stricmp=strcasecmp", "_snprintf=snprintf", "_vsnprintf=vsnprintf", "HAVE_STDINT_H", "GNUC" }
         buildoptions { 
-            "-Wno-non-virtual-dtor", "-Wno-overloaded-virtual", "-Wno-register", "-Wno-implicit-float-conversion", "-Wno-tautological-overlap-compare",
-            "-Wno-inconsistent-missing-override", "-Wno-null-dereference", "-Wno-delete-non-virtual-dtor", "-Wno-sometimes-uninitialized",
-            "-Wno-expansion-to-defined", "-Wno-unused", "-Wno-switch", "-Wno-array-bounds", "-Wno-varargs", "-Wno-implicit-exception-spec-mismatch",
+            "-Wno-non-virtual-dtor", "-Wno-overloaded-virtual", "-Wno-register", "-Wno-varargs", "-Wno-array-bounds", "-Wno-unused",
+            "-Wno-null-dereference", "-Wno-delete-non-virtual-dtor", "-Wno-switch", "-Wno-expansion-to-defined",  
         }
         -- disable prefixes for Linux
         targetprefix ""
+
+    -- Linux options for Clang only
+    filter { "system:linux", "toolset:clang" }
+        buildoptions {
+            "-Wno-implicit-exception-spec-mismatch", "-Wno-sometimes-uninitialized", "-Wno-inconsistent-missing-override", "-Wno-tautological-overlap-compare",
+            "-Wno-implicit-float-conversion",
+        }
 
     filter { "configurations:Debug" }
         defines { "EXT_DEBUG" }
