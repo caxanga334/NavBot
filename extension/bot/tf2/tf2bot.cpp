@@ -645,6 +645,16 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 			return -1.0f; // can't jump over this gap
 		}
 	}
+	else
+	{
+		// Don't use double jump links if we can't perform a double jump
+		if (link->GetType() == NavLinkType::LINK_DOUBLE_JUMP && !m_candoublejump)
+		{
+			return -1.0f;
+		}
+
+		// TO-DO: Same check for when rocket jumps are implemented.
+	}
 
 	if (area->HasTFPathAttributes(CTFNavArea::TFNAV_PATH_NO_CARRIERS))
 	{

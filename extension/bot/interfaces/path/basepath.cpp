@@ -736,6 +736,32 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
 		break;
 	}
+	case NavLinkType::LINK_DOUBLE_JUMP:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetStart();
+		between->how = GO_SPECIAL_LINK;
+		between->type = AIPath::SEGMENT_GROUND;
+		// add a segments between from and to.
+		// the bot will go to from, them move to between and then move to to.
+		// between goal is the special link position on the nav area.
+
+		auto post = CreateNewSegment();
+
+		post->CopySegment(between);
+		post->how = GO_SPECIAL_LINK;
+		post->goal = link->GetEnd();
+		post->type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
+
+		pathinsert.emplace(to, std::move(post), false);
+		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
+		break;
+	}
 	default:
 		Warning("CPath::ProcessSpecialLinksInPath unhandled link type!");
 		return false;

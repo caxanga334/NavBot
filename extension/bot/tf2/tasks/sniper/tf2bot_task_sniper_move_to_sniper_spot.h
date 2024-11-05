@@ -4,6 +4,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 
 class CTF2Bot;
+class CTFWaypoint;
 
 class CTF2BotSniperMoveToSnipingSpotTask : public AITask<CTF2Bot>
 {
@@ -18,6 +19,7 @@ private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
 	CountdownTimer m_repathTimer;
+	CTFWaypoint* m_waypoint;
 	bool m_sniping;
 
 	void FindSniperSpot(CTF2Bot* bot);

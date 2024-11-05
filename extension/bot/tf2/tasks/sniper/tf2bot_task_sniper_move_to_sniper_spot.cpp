@@ -34,7 +34,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 	{
 		// reached sniping goal
 		m_sniping = true;
-		return PauseFor(new CTF2BotSniperSnipeAreaTask(), "Sniping!");
+		return PauseFor(new CTF2BotSniperSnipeAreaTask(m_waypoint), "Sniping!");
 	}
 
 	if (m_repathTimer.IsElapsed() || !m_nav.IsValid())
@@ -85,10 +85,12 @@ void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot, Vect
 	{
 		bot->DebugPrintToConsole(BOTDEBUG_ERRORS, 255, 0, 0, "Bot %s failed to find a valid Sniper waypoint to snipe from!", bot->GetDebugIdentifier());
 		m_goal = bot->GetAbsOrigin();
+		m_waypoint = nullptr;
 		return;
 	}
 
 	CTFWaypoint* goal = librandom::utils::GetRandomElementFromVector<CTFWaypoint*>(spots);
 	goal->Use(bot); // prevent other bots from selecting
-	m_goal = goal->GetOrigin();
+	m_waypoint = goal;
+	m_goal = goal->GetRandomPoint();
 }

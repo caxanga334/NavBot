@@ -138,6 +138,7 @@ const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
 		"GROUND_LINK"sv,
 		"TELEPORTER_LINK"sv,
 		"BLAST_JUMP_LINK"sv,
+		"LINK_DOUBLE_JUMP"sv,
 	};
 
 	static_assert(linkNames.size() == static_cast<size_t>(NavLinkType::MAX_LINK_TYPES), "linkNames and NavLinkType enum mismatch!");

@@ -204,6 +204,7 @@ enum class NavLinkType : uint32_t
 	LINK_GROUND, // solid ground
 	LINK_TELEPORTER, // map based teleporter (trigger_teleport)
 	LINK_BLAST_JUMP, // Blast/Rocket Jump
+	LINK_DOUBLE_JUMP,
 
 	MAX_LINK_TYPES // max known link types
 };

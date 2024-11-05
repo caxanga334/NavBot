@@ -82,9 +82,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	m_me = bot;
 	bot->SetActiveNavigator(this);
 
-	if (mover->IsOnAutoPilot())
+	if (mover->IsControllingMovements())
 	{
-		return; // movement interface is controlling the bot
+		// bot movements are under control of the movement interface, likely performing an advanced movement that requires multiple steps such as a rocket jump.
+		// Wait until it's done to continue moving the bot.
+		return;
 	}
 
 	if (!m_waitTimer.IsElapsed())

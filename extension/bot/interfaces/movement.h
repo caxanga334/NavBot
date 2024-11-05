@@ -181,9 +181,11 @@ public:
 	virtual bool IsAbleToDoubleJump() { return false; }
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
 	virtual bool IsAbleToBlastJump() { return false; }
-	// Return true if the movement interface has taken control of the bot to perform an advanced movement.
-	// This is used by the navigator to know if it should wait before continuing following the path.
-	virtual bool IsOnAutoPilot() { return false; }
+	/**
+	 * @brief Checks if the movement interface has taken control of the bot movements to perform a maneuver
+	 * @return True if controlling the bot's movements. False otherwise.
+	 */
+	virtual bool IsControllingMovements() { return false; }
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return m_basemovespeed; }

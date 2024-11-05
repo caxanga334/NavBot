@@ -57,40 +57,23 @@ bool SnipingAreaCollector::ShouldCollect(CTFNavArea* area)
 	return isEdgeArea;
 }
 
-CTF2BotSniperSnipeAreaTask::CTF2BotSniperSnipeAreaTask()
-{
-	m_lookAngles.Init(0.0f, 0.0f, 0.0f);
-	m_hint = false;
-}
-
-CTF2BotSniperSnipeAreaTask::CTF2BotSniperSnipeAreaTask(const QAngle& hintAngles)
-{
-	m_lookAngles = hintAngles;
-	m_hint = true;
-}
-
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	m_boredTimer.StartRandom(15.0f, 60.0f);
 	m_changeAnglesTimer.StartRandom(5.0f, 10.0f);
 	m_fireWeaponDelay.Start(0.1f);
 
-	if (m_hint)
-	{
-		Vector forward;
-		AngleVectors(m_lookAngles, &forward);
-		m_hintLookAt = bot->GetEyeOrigin() + (forward * 512.0f);
-		bot->GetControlInterface()->AimAt(m_hintLookAt, IPlayerController::LOOK_ALERT, 0.5f, "Sniper: Looking at snipe angles.");
-	}
-	else
-	{
-		BuildLookPoints(bot);
+	BuildLookPoints(bot);
 
-		if (!m_lookPoints.empty())
-		{
-			const Vector& lookat = m_lookPoints[randomgen->GetRandomInt<size_t>(0, m_lookPoints.size() - 1)];
-			bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
-		}
+	if (!m_lookPoints.empty())
+	{
+		const Vector& lookat = m_lookPoints[randomgen->GetRandomInt<size_t>(0, m_lookPoints.size() - 1)];
+		bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
+	}
+
+	if (m_waypoint != nullptr)
+	{
+		m_waypoint->Use(bot, m_boredTimer.GetRemainingTime() + 1.0f);
 	}
 
 	return Continue();
@@ -129,31 +112,24 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 			return Done("Bored timer expired, no visible threat!");
 		}
 
-		if (m_hint)
+		if (m_changeAnglesTimer.IsElapsed())
 		{
-			bot->GetControlInterface()->AimAt(m_hintLookAt, IPlayerController::LOOK_ALERT, 0.5f, "Sniper: Looking at snipe angles.");
-		}
-		else
-		{
-			if (m_changeAnglesTimer.IsElapsed())
-			{
-				m_changeAnglesTimer.StartRandom(5.0f, 10.0f);
+			m_changeAnglesTimer.StartRandom(5.0f, 10.0f);
 
-				if (m_lookPoints.empty())
-				{
-					QAngle currentAngles = bot->GetEyeAngles();
-					float y = randomgen->GetRandomReal<float>(-25.0f, 25.0f);
-					currentAngles[YAW] += y;
-					Vector forward;
-					AngleVectors(currentAngles, &forward);
-					Vector lookat = bot->GetEyeOrigin() + (forward * 512.0f);
-					bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
-				}
-				else
-				{
-					const Vector& lookat = m_lookPoints[randomgen->GetRandomInt<size_t>(0, m_lookPoints.size() - 1)];
-					bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
-				}
+			if (m_lookPoints.empty())
+			{
+				QAngle currentAngles = bot->GetEyeAngles();
+				float y = randomgen->GetRandomReal<float>(-25.0f, 25.0f);
+				currentAngles[YAW] += y;
+				Vector forward;
+				AngleVectors(currentAngles, &forward);
+				Vector lookat = bot->GetEyeOrigin() + (forward * 512.0f);
+				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
+			}
+			else
+			{
+				const Vector& lookat = m_lookPoints[randomgen->GetRandomInt<size_t>(0, m_lookPoints.size() - 1)];
+				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
 			}
 		}
 	}
@@ -166,6 +142,11 @@ void CTF2BotSniperSnipeAreaTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTa
 	if (bot->IsUsingSniperScope())
 	{
 		bot->GetControlInterface()->PressSecondaryAttackButton();
+	}
+
+	if (m_waypoint != nullptr)
+	{
+		m_waypoint->StopUsing(bot);
 	}
 }
 
@@ -183,6 +164,22 @@ QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldAttack(CBaseBot* me, const CKn
 
 void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 {
+	if (m_waypoint != nullptr)
+	{
+		Vector start = me->GetEyeOrigin();
+
+		m_waypoint->ForEveryAngle([this, &me, &start](const QAngle& angle) {
+			Vector forward;
+			AngleVectors(angle, &forward);
+			forward.NormalizeInPlace();
+
+			Vector end = start + (forward * 512.0f);
+			m_lookPoints.push_back(end);
+		});
+
+		return;
+	}
+
 	SnipingAreaCollector collector(me);
 	collector.Execute();
 

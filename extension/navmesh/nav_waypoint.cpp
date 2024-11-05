@@ -219,6 +219,11 @@ void CWaypoint::Draw() const
 
 void CWaypoint::Use(CBaseBot* user, const float duration) const
 {
+	if (m_user.Get() != nullptr && m_user.Get() != user->GetEntity())
+	{
+		return; // Don't allow overrides
+	}
+
 	m_user = user->GetEntity();
 	m_expireUserTimer.Start(duration);
 	OnUse(user);
@@ -256,6 +261,11 @@ void CWaypoint::StopUsing(CBaseBot* user) const
 
 Vector CWaypoint::GetRandomPoint() const
 {
+	if (m_radius <= 0.98f)
+	{
+		return m_origin;
+	}
+
 	Vector tmp;
 
 	tmp.x = randomgen->GetRandomReal<float>((m_origin.x - m_radius), (m_origin.x + m_radius));
