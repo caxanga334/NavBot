@@ -10,9 +10,9 @@
 
 In order to compile NavBot, you need:
 
-* A C++ compiler
-  * Windows: MSVC (Visual Studio)
-  * Linux: Clang
+* A C++ compiler:
+  * Windows: MSVC (Visual Studio).
+  * Linux: Clang or GCC. Clang is preferred.
 * [Premake5]
 * Git
 
@@ -39,7 +39,8 @@ git clone https://github.com/alliedmodders/hl2sdk-mock.git hl2sdk-mock --recurse
 ```bash
 #!/bin/bash
 
-git clone https://github.com/alliedmodders/sourcemod.git sourcemod-1.12 --recurse-submodules --depth=1
+git clone https://github.com/alliedmodders/sourcemod.git sourcemod-1.13 --recurse-submodules --depth=1
+git clone https://github.com/alliedmodders/sourcemod.git sourcemod-1.12 --recurse-submodules --depth=1 --branch=1.12-dev
 git clone https://github.com/alliedmodders/sourcemod.git sourcemod-1.11 --recurse-submodules --depth=1 --branch=1.11-dev
 git clone https://github.com/alliedmodders/metamod-source.git mmsource-2.0 --recurse-submodules --depth=1
 git clone https://github.com/alliedmodders/metamod-source.git mmsource-1.12 --recurse-submodules --depth=1 --branch=1.12-dev
