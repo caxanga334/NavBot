@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/entprops.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <navmesh/nav_pathfind.h>
@@ -166,7 +167,10 @@ void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 {
 	if (m_waypoint != nullptr)
 	{
-		Vector start = me->GetEyeOrigin();
+		// This should never return NULL for most entities, especially players.
+		Vector* view_ofs = entprops->GetPointerToEntData<Vector>(me->GetEntity(), Prop_Data, "m_vecviewoffset");
+		// use the waypoint origin at eye level as a start point so aim angles are consistent
+		Vector start = m_waypoint->GetOrigin() + *view_ofs;
 
 		m_waypoint->ForEveryAngle([this, &me, &start](const QAngle& angle) {
 			Vector forward;
