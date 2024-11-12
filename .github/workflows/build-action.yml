@@ -17,7 +17,7 @@ jobs:
           - linux-stable
 
         include:
-          - meta_branch: "master"
+          - meta_branch: "1.12-dev"
             sm_branch: "1.12-dev"
             sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm'
           
