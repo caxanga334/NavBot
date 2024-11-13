@@ -14,8 +14,8 @@ Enable nav mesh editing, then to enable waypoint editing, the set `sm_nav_waypoi
 
 ## Command List
 
-| --- | --- | --- |
 | Command | Arguments | Description |
+|:---:|:---:|:---:|
 | sm_nav_waypoint_add | None | Creates a new waypoint at your current position. |
 | sm_nav_waypoint_delete | None | Deletes the selected waypoint or nearest if none is selected. |
 | sm_nav_waypoint_mark_crosshair | None | Selects the nearest waypoint to your crosshair. |
@@ -48,16 +48,16 @@ The `Any Team` is the default team a waypoint is assigned to and applies to all 
 
 Most mods also doesn't change the unassigned and spectator teams.
 
-| --- | --- |
 | Index | Meaning |
+|:---:|:---:|
 | -2 | Any Team (Default) |
 | 0 | Unassigned Team |
 | 1 | Spectator Team | 
 
 ### Team Fortress 2
 
-| --- | --- |
 | Index | Meaning |
+|:---:|:---:|
 | 2 | RED Team |
 | 3 | BLU Team |
 
