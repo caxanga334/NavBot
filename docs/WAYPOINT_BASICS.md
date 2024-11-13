@@ -29,7 +29,9 @@ Enable nav mesh editing, then to enable waypoint editing, the set `sm_nav_waypoi
 | sm_nav_waypoint_add_angle | None | Adds a new angle to the selected waypoint. |
 | sm_nav_waypoint_update_angle | (Angle Index) | Updates the angle value of the given angle index. |
 | sm_nav_waypoint_clear_angles | None | Removes all angles from the selected waypoint. |
+| sm_nav_waypoint_view_angle | (Angle Index) | Snaps your view angles to the given angle of index. |
 | sm_nav_waypoint_set_team | (Team Index) | Sets the team index that owns this waypoint. |
+| sm_nav_waypoint_warp_to | None | Teleports you to the selected waypoint. |
 
 # Aditional Information
 

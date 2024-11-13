@@ -349,3 +349,59 @@ CON_COMMAND_F(sm_nav_waypoint_set_team, "Sets the waypoint owning team.", FCVAR_
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 	}
 }
+
+CON_COMMAND_F(sm_nav_waypoint_warp_to, "Teleports you to the selected waypoint.", FCVAR_CHEAT)
+{
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+		host.Teleport(waypoint->GetOrigin());
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_view_angle, "Sets your current angle to the given angle index", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_view_angle <angle index>\n");
+		return;
+	}
+
+	int index = atoi(args[1]);
+
+	if (index < 0 || index >= static_cast<int>(CWaypoint::MAX_AIM_ANGLES))
+	{
+		Warning("Index must be between 0 and %i\n", CWaypoint::MAX_AIM_ANGLES);
+		return;
+	}
+
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (waypoint)
+	{
+		if (static_cast<size_t>(index) >= waypoint->GetNumOfAvailableAngles())
+		{
+			Warning("Invalid angle index %i\n", index);
+			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+			return;
+		}
+
+		CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+		host.SnapEyeAngles(waypoint->GetAngle(static_cast<size_t>(index)));
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
