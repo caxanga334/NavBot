@@ -20,16 +20,16 @@ Enable nav mesh editing, then to enable waypoint editing, the set `sm_nav_waypoi
 | sm_nav_waypoint_delete | None | Deletes the selected waypoint or nearest if none is selected. |
 | sm_nav_waypoint_mark_crosshair | None | Selects the nearest waypoint to your crosshair. |
 | sm_nav_waypoint_mark_nearest | None | Selects the nearest waypoint to your current position. |
-| sm_nav_waypoint_mark_id | <Waypoint ID> | Selects the waypoint with the specific ID. |
+| sm_nav_waypoint_mark_id | (Waypoint ID) | Selects the waypoint with the specific ID. |
 | sm_nav_waypoint_unmark | None | Clears the selected waypoint. |
-| sm_nav_waypoint_connect | <From ID> <To ID> | Creates a one-way connection between two waypoints. |
-| sm_nav_waypoint_disconnect | <From ID> <To ID> | Removes a one-way connection between two waypoints. |
+| sm_nav_waypoint_connect | (From ID) (To ID) | Creates a one-way connection between two waypoints. |
+| sm_nav_waypoint_disconnect | (From ID) (To ID) | Removes a one-way connection between two waypoints. |
 | sm_nav_waypoint_info | None | Shows information of the selected waypoint. |
-| sm_nav_waypoint_set_radius | <Radius> | Sets the waypoint radius. |
+| sm_nav_waypoint_set_radius | (Radius) | Sets the waypoint radius. |
 | sm_nav_waypoint_add_angle | None | Adds a new angle to the selected waypoint. |
-| sm_nav_waypoint_update_angle | <Angle Index> | Updates the angle value of the given angle index. |
+| sm_nav_waypoint_update_angle | (Angle Index) | Updates the angle value of the given angle index. |
 | sm_nav_waypoint_clear_angles | None | Removes all angles from the selected waypoint. |
-| sm_nav_waypoint_set_team | <Team Index> | Sets the team index that owns this waypoint. |
+| sm_nav_waypoint_set_team | (Team Index) | Sets the team index that owns this waypoint. |
 
 # Aditional Information
 
