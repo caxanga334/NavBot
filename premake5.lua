@@ -102,13 +102,14 @@ workspace "navbot"
         "Release"
     }
 
-    location (todir)
+    platforms { 
+        "Win32",
+        "Win64",
+        "Linux32",
+        "Linux64"
+    }
 
-    filter { "system:Windows" }
-        platforms { "Win32", "Win64" }
-    
-    filter { "system:Linux" }
-        platforms { "Linux32", "Linux64" }
+    location (todir)
 
     symbols "On"
 	exceptionhandling "On"
