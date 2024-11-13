@@ -14,6 +14,7 @@
 #include <extension.h>
 #include <entities/baseentity.h>
 #include <extplayer.h>
+#include "nav_trace.h"
 #include "nav_mesh.h"
 #include "nav_waypoint.h"
 #include "nav_entities.h"
@@ -318,7 +319,7 @@ bool CNavMesh::FindActiveNavArea( void )
 	Vector to = from + maxRange * dir;
 
 	trace_t result;
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 	trace::line(from, to, (sm_nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, result);
 
 	if (result.fraction != 1.0f)

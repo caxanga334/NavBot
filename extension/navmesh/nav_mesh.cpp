@@ -19,7 +19,7 @@
 #include <entities/baseentity.h>
 
 #include "nav_mesh.h"
-
+#include "nav_trace.h"
 #include "nav_area.h"
 #include "nav_node.h"
 #include "nav_waypoint.h"
@@ -154,6 +154,71 @@ CNavMesh::~CNavMesh()
 		m_placePhrases->Destroy();
 		m_placePhrases = nullptr;
 	}
+}
+
+bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
+{
+	entities::HBaseEntity be(pEntity);
+
+	if (UtilHelpers::FClassnameIs(pEntity, "worldspawn"))
+		return false;
+
+	if (UtilHelpers::FClassnameIs(pEntity, "player"))
+		return false;
+
+	// if we hit a door, assume its walkable because it will open when we touch it
+	if (UtilHelpers::FClassnameIs(pEntity, "func_door*"))
+	{
+#ifdef PROBLEMATIC	// cp_dustbowl doors dont open by touch - they use surrounding triggers
+		if (!entity->HasSpawnFlags(SF_DOOR_PTOUCH))
+		{
+			// this door is not opened by touching it, if it is closed, the area is blocked
+			CBaseDoor* door = (CBaseDoor*)entity;
+			return door->m_toggle_state == TS_AT_TOP;
+		}
+#endif // _DEBUG
+
+		return (flags & WALK_THRU_FUNC_DOORS) ? true : false;
+	}
+
+	if (UtilHelpers::FClassnameIs(pEntity, "prop_door*"))
+	{
+		return (flags & WALK_THRU_PROP_DOORS) ? true : false;
+	}
+
+	// if we hit a clip brush, ignore it if it is not BRUSHSOLID_ALWAYS
+	if (UtilHelpers::FClassnameIs(pEntity, "func_brush"))
+	{
+		entities::HFuncBrush brush(pEntity);
+
+		switch (brush.GetSolidity())
+		{
+		case entities::HFuncBrush::BrushSolidities_e::BRUSHSOLID_ALWAYS:
+			return false;
+		case entities::HFuncBrush::BrushSolidities_e::BRUSHSOLID_NEVER:
+			return true;
+		case entities::HFuncBrush::BrushSolidities_e::BRUSHSOLID_TOGGLE:
+		default:
+			return (flags & WALK_THRU_TOGGLE_BRUSHES) ? true : false;
+		}
+	}
+
+	// if we hit a breakable object, assume its walkable because we will shoot it when we touch it
+	if (UtilHelpers::FClassnameIs(pEntity, "func_breakable") && be.GetHealth() > 0 && be.GetTakeDamage() == DAMAGE_YES)
+		return (flags & WALK_THRU_BREAKABLES) ? true : false;
+
+	if (UtilHelpers::FClassnameIs(pEntity, "func_breakable_surf") && be.GetTakeDamage() == DAMAGE_YES)
+		return (flags & WALK_THRU_BREAKABLES) ? true : false;
+
+	if (UtilHelpers::FClassnameIs(pEntity, "func_playerinfected_clip") == true)
+		return true;
+
+	ConVarRef solidprops("sm_nav_solid_props", false);
+
+	if (solidprops.GetBool() && UtilHelpers::FClassnameIs(pEntity, "prop_*"))
+		return true;
+
+	return false;
 }
 
 void CNavMesh::Precache()
@@ -1522,9 +1587,9 @@ void CNavMesh::PrintAllPlaces( void ) const
 	Msg("\n\n");
 }
 
-class CTraceFilterGroundEntities : public trace::CTraceFilterWalkableEntities
+class CTraceFilterGroundEntities : public CTraceFilterWalkableEntities
 {
-	typedef trace::CTraceFilterWalkableEntities BaseClass;
+	typedef CTraceFilterWalkableEntities BaseClass;
 
 public:
 	CTraceFilterGroundEntities(CBaseEntity* passentity, int collisionGroup, unsigned int flags)
@@ -1552,7 +1617,7 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 {
 	const float flMaxOffset = 100.0f;
 
-	CTraceFilterGroundEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterGroundEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 
 	trace_t result;
 	Vector to( pos.x, pos.y, pos.z - 10000.0f );

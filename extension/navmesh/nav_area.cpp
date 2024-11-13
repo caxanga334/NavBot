@@ -21,6 +21,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
+#include "nav_trace.h"
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
@@ -4818,7 +4819,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 	// don't unblock func_doors
 	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_PROP_DOORS | trace::WALK_THRU_BREAKABLES);
 #else
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_DOORS | trace::WALK_THRU_BREAKABLES);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_DOORS | WALK_THRU_BREAKABLES);
 #endif
 	trace_t tr;
 

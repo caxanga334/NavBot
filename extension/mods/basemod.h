@@ -40,10 +40,6 @@ public:
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
 	virtual std::optional<int> GetPlayerResourceEntity();
-	// return false to call NavIsEntityWalkable ir order to determine if the entity is walkable. Used for nav mesh editing and generation.
-	virtual bool NavIsEntityIgnored(edict_t* entity, unsigned int flags) { return true; }
-	// Returns true if the entity is walkable, false if it should block nav
-	virtual bool NavIsEntityWalkable(edict_t* entity, unsigned int flags) { return true; }
 	// Returns the economy item index for the given weapon if the mod uses it (IE: TF2)
 	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
 	// Returns the weapon ID, used for quick identification of the weapon

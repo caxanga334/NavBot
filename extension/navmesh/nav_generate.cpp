@@ -15,6 +15,7 @@
 #include <sdkports/sdk_utils.h>
 #include <entities/baseentity.h>
 #include "nav_mesh.h"
+#include "nav_trace.h"
 #include "nav_node.h"
 #include "nav_pathfind.h"
 #include <viewport_panel_names.h>
@@ -1558,7 +1559,7 @@ static bool testStitchConnection( CNavArea *source, CNavArea *target, const Vect
 	trace_t result;
 	Vector from( sourcePos );
 	Vector pos( targetPos );
-	trace::CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING );
+	CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
 	Vector to, toNormal;
 	bool success = false;
 	if ( TraceAdjacentNode( 0, from, pos, &result ) )
@@ -2365,7 +2366,7 @@ void CNavMesh::FixCornerOnCornerAreas( void )
 				vecCorner[2] = cornerPos;											// common corner of this nav area, nav area we touch, and new nav area
 				vecCorner[3] = cornerPos + vecDeltaOurEdge;							// intersection of far edge of new nav area with this nav area
 			
-				trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+				CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 				if ( !TraceAdjacentNode( 0, vecCorner[1], vecCorner[0], &result, MaxDrop ) ||	// can we move from edge of other area to far corner of new node
 					!TraceAdjacentNode( 0, vecCorner[3], vecCorner[0], &result, MaxDrop ) )		// can we move from edge of this area to far corner of new node
 					continue;	// new node would not fit
@@ -2577,7 +2578,7 @@ static bool TestForValidCrouchArea( CNavNode *node )
 	trace_t tr;
 	Vector end( *node->GetPosition() );
 	end.z += JumpCrouchHeight;
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING);
 
 	trace::hull(*node->GetPosition(), end, Vector(0.0f, 0.0f, 0.0f), Vector(GenerationStepSize, GenerationStepSize, HumanCrouchHeight),
 		TheNavMesh->GetGenerationTraceMask(), &filter, tr);
@@ -3976,7 +3977,7 @@ bool CNavMesh::FindGroundForNode( Vector *pos, Vector *normal ) const
 	Vector end( *pos );
 	end.z -= DeathDrop;
 
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING);
 
 	trace::hull(Vector(pos->x, pos->y, pos->z + HalfHumanHeight - 0.1f), end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 
@@ -4009,7 +4010,7 @@ bool StayOnFloor( trace_t *trace, float zLimit /* = DeathDrop */ )
 	Vector end( trace->endpos );
 	end.z -= zLimit;
 
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 	trace::hull(trace->endpos, end, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
 
 	DrawTrace( trace );
@@ -4023,7 +4024,7 @@ bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace
 {
 	const float MinDistance = 1.0f;	// if we can't move at least this far, don't bother stepping up.
 
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 	trace::hull(start, end, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
 	DrawTrace( trace );
 
@@ -4072,7 +4073,7 @@ static bool IsNodeOverlapped( const Vector& pos, const Vector& offset )
 		end.x += offset.x * GenerationStepSize;
 		end.y += offset.y * GenerationStepSize;
 		trace_t trace;
-		trace::CTraceFilterWalkableEntities filter( nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING );
+		CTraceFilterWalkableEntities filter( nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
 		trace::hull(start, end, mins, maxs, TheNavMesh->GetGenerationTraceMask(), &filter, trace);
 		if ( trace.startsolid || trace.allsolid
 				|| trace.fraction < 0.1f )
@@ -4203,7 +4204,7 @@ bool CNavMesh::SampleStep( void )
 				// test if we can move to new position
 				trace_t result;
 				Vector from( *m_currentNode->GetPosition() );
-				trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, trace::WALK_THRU_EVERYTHING);
+				CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 				Vector to, toNormal;
 				float obstacleHeight = 0, obstacleStartDist = 0, obstacleEndDist = GenerationStepSize;
 				if ( TraceAdjacentNode( 0, from, pos, &result ) )
@@ -4415,7 +4416,7 @@ bool IsWalkableTraceLineClear( const Vector &from, const Vector &to, unsigned in
 	// edict_t *ignore = NULL;
 	Vector useFrom = from;
 
-	trace::CTraceFilterWalkableEntities traceFilter(nullptr, COLLISION_GROUP_NONE, flags);
+	CTraceFilterWalkableEntities traceFilter(nullptr, COLLISION_GROUP_NONE, flags);
 
 	result.fraction = 0.0f;
 
@@ -4425,7 +4426,7 @@ bool IsWalkableTraceLineClear( const Vector &from, const Vector &to, unsigned in
 		trace::line(useFrom, to, MASK_NPCSOLID, &traceFilter, result);
 
 		// if we hit a walkable entity, try again
-		if (result.fraction != 1.0f && trace::IsEntityWalkable(result.m_pEnt, flags))
+		if (result.fraction != 1.0f && TheNavMesh->IsEntityWalkable(result.m_pEnt, flags))
 		{
 			// ignore = ent;
 			// start from just beyond where we hit to avoid infinite loops

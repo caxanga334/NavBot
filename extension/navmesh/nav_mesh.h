@@ -352,6 +352,9 @@ public:
 	int	GetEventDebugID(void) override;
 #endif // SOURCE_ENGINE >= SE_LEFT4DEAD
 
+	// Used by CTraceFilterWalkableEntities to determine if this entity is walkable
+	virtual bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);
+
 	virtual void Precache(); // precache edit sounds here
 	virtual void OnMapStart();
 	virtual void OnMapEnd();

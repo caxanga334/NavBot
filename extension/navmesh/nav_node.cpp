@@ -14,8 +14,8 @@
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
 
+#include "nav_trace.h"
 #include "nav_node.h"
-
 #include "nav_colors.h"
 #include "nav_mesh.h"
 #include "nav.h"
@@ -357,7 +357,7 @@ float CNavNode::GetGroundHeightAboveNode( NavCornerType cornerType ) const
  */
 bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, const Vector& maxs, float *groundHeightAboveNode )
 {
-	trace::CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_EVERYTHING);
+	CTraceFilterWalkableEntities filter( NULL, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING);
 	trace_t tr;
 
 	Vector start( m_pos );

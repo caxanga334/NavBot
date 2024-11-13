@@ -136,28 +136,6 @@ namespace trace
 	private:
 	};
 
-	constexpr auto WALK_THRU_PROP_DOORS = 0x01;
-	constexpr auto WALK_THRU_FUNC_DOORS = 0x02;
-	constexpr auto WALK_THRU_DOORS = (WALK_THRU_PROP_DOORS | WALK_THRU_FUNC_DOORS);
-	constexpr auto WALK_THRU_BREAKABLES = 0x04;
-	constexpr auto WALK_THRU_TOGGLE_BRUSHES = 0x08;
-	constexpr auto WALK_THRU_EVERYTHING = (WALK_THRU_DOORS | WALK_THRU_BREAKABLES | WALK_THRU_TOGGLE_BRUSHES);
-
-	class CTraceFilterWalkableEntities : public CTraceFilterNoNPCsOrPlayers
-	{
-	public:
-		CTraceFilterWalkableEntities(CBaseEntity* passEnt, int collisiongroup, unsigned int flags) :
-			CTraceFilterNoNPCsOrPlayers(passEnt, collisiongroup)
-		{
-			m_flags = flags;
-		}
-
-		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
-
-	private:
-		unsigned int m_flags;
-	};
-
 	inline void line(const Vector& start, const Vector& end, unsigned int mask, trace_t& result)
 	{
 		Ray_t ray;
@@ -313,8 +291,6 @@ namespace trace
 		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
 		return tr.endpos;
 	}
-
-	bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);
 }
 
 #endif // !NAVBOT_SDKPORTS_TRACES_H_
