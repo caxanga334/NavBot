@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <extension.h>
 #include <util/helpers.h>
+#include <util/sdkcalls.h>
+#include <ISDKTools.h>
 #include <server_class.h>
 #include <sm_argbuffer.h>
 #include <entities/baseentity.h>
@@ -164,7 +166,7 @@ namespace trace
 	}
 
 	// Local copy of the gamerules ShouldCollide
-	// TO-DO: ShouldCollide is virtual, should be easy to SDKCall it instead of doing this
+	// This is used as a fallback in case the SDKCall is not available.
 	inline static bool CGameRules_ShouldCollide(int collisionGroup0, int collisionGroup1)
 	{
 		if (collisionGroup0 > collisionGroup1)
@@ -339,10 +341,25 @@ namespace trace
 			return false;
 		}
 
-		// TO-DO: Replace with a Virtual call to the real CGameRules::ShouldCollide
-		if (pEdict != nullptr && pEdict->GetCollideable() != nullptr && !CGameRules_ShouldCollide(m_collisiongroup, pEdict->GetCollideable()->GetCollisionGroup()))
+		if (pEdict != nullptr && pEdict->GetCollideable() != nullptr)
 		{
-			return false;
+			CGameRules* gamerules = reinterpret_cast<CGameRules*>(g_pSDKTools->GetGameRules());
+
+			if (gamerules == nullptr)
+			{
+				// If gamerules is not available from SDKTools, fallback to our local implementation
+				if (!CGameRules_ShouldCollide(m_collisiongroup, pEdict->GetCollideable()->GetCollisionGroup()))
+				{
+					return false;
+				}
+			}
+			else
+			{
+				if (!sdkcalls->CGameRules_ShouldCollide(gamerules, m_collisiongroup, pEdict->GetCollideable()->GetCollisionGroup()))
+				{
+					return false;
+				}
+			}
 		}
 
 		if (m_extraHitFunc)

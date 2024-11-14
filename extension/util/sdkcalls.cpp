@@ -15,6 +15,8 @@ CSDKCaller::CSDKCaller()
 	m_call_cbc_weaponswitch = nullptr;
 	m_offsetof_cbc_weaponslot = invalid_offset();
 	m_call_cbc_weaponslot = nullptr;
+	m_offsetof_cgr_shouldcollide = invalid_offset();
+	m_call_cgr_shouldcollide = nullptr;
 }
 
 CSDKCaller::~CSDKCaller()
@@ -56,6 +58,12 @@ bool CSDKCaller::Init()
 		fail = true;
 	}
 
+	if (!cfg_navbot->GetOffset("CGameRules_ShouldCollide", &m_offsetof_cgr_shouldcollide))
+	{
+		smutils->LogError(myself, "Failed to get offset for CGameRules::ShouldCollide!");
+		fail = true;
+	}
+
 	gameconfs->CloseGameConfigFile(cfg_navbot);
 	gameconfs->CloseGameConfigFile(cfg_sdktools);
 	cfg_navbot = nullptr;
@@ -90,13 +98,23 @@ CBaseEntity* CSDKCaller::CBaseCombatCharacter_Weapon_GetSlot(CBaseEntity* pBCC, 
 	return result;
 }
 
+bool CSDKCaller::CGameRules_ShouldCollide(CGameRules* pGR, int collisionGroup0, int collisionGroup1)
+{
+	ArgBuffer<void*, int, int> vstk(pGR, collisionGroup0, collisionGroup1);
+	bool result = false;
+	m_call_cgr_shouldcollide->Execute(vstk, &result);
+	return result;
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
 	SetupCBCWeaponSlot();
+	SetupCGRShouldCollide();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
-		m_call_cbc_weaponslot == nullptr)
+		m_call_cbc_weaponslot == nullptr ||
+		m_call_cgr_shouldcollide == nullptr)
 	{
 		return false;
 	}
@@ -145,4 +163,26 @@ void CSDKCaller::SetupCBCWeaponSlot()
 	params[0].type = PassType_Basic;
 
 	m_call_cbc_weaponslot = g_pBinTools->CreateVCall(m_offsetof_cbc_weaponslot, 0, 0, &ret, params, 1);
+}
+
+void CSDKCaller::SetupCGRShouldCollide()
+{
+	using namespace SourceMod;
+
+	/* bool CGameRules::ShouldCollide(int, int) */
+
+	PassInfo ret;
+	ret.flags = PASSFLAG_BYVAL;
+	ret.size = sizeof(bool);
+	ret.type = PassType_Basic;
+
+	PassInfo params[2];
+	params[0].flags = PASSFLAG_BYVAL;
+	params[0].size = sizeof(int);
+	params[0].type = PassType_Basic;
+	params[1].flags = PASSFLAG_BYVAL;
+	params[1].size = sizeof(int);
+	params[1].type = PassType_Basic;
+
+	m_call_cgr_shouldcollide = g_pBinTools->CreateVCall(m_offsetof_cgr_shouldcollide, 0, 0, &ret, params, 2);
 }

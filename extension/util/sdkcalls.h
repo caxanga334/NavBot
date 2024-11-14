@@ -4,6 +4,7 @@
 #include <IBinTools.h>
 
 class CBaseEntity;
+class CGameRules;
 
 /**
  * @brief Class to manager SDK Calls
@@ -26,10 +27,20 @@ public:
 
 	/**
 	 * @brief Calls the game's CBaseCombatCharacter::Weapon_GetSlot function.
+	 * @param pBCC A pointer to a CBaseCombatCharacter entity.
 	 * @param slot Weapon slot.
 	 * @return Entity to a weapon at the given weapon slot. NULL if none.
 	 */
 	CBaseEntity* CBaseCombatCharacter_Weapon_GetSlot(CBaseEntity* pBCC, int slot);
+
+	/**
+	 * @brief Calls the game's CGameRules::ShouldCollide function.
+	 * @param pGR Pointer to the gamerules object
+	 * @param collisionGroup0 First collision group
+	 * @param collisionGroup1 Second collision group
+	 * @return true if the given groups should collide, false otherwise
+	 */
+	bool CGameRules_ShouldCollide(CGameRules* pGR, int collisionGroup0, int collisionGroup1);
 
 private:
 	static constexpr int invalid_offset() { return -1; }
@@ -44,9 +55,14 @@ private:
 	int m_offsetof_cbc_weaponslot;
 	SourceMod::ICallWrapper* m_call_cbc_weaponslot;
 
+	//  CGameRules::ShouldCollide(int, int)
+	int m_offsetof_cgr_shouldcollide;
+	SourceMod::ICallWrapper* m_call_cgr_shouldcollide;
+
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
 	void SetupCBCWeaponSlot();
+	void SetupCGRShouldCollide();
 };
 
 extern CSDKCaller* sdkcalls;

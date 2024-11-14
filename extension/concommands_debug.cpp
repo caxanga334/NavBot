@@ -374,7 +374,8 @@ CON_COMMAND_F(sm_navbot_debug_new_traces, "Debug new trace functions.", FCVAR_CH
 	Vector end = start + (forward * 2048.0f);
 
 	trace_t result;
-	trace::line(start, end, MASK_SOLID, result);
+	trace::line(start, end, MASK_SOLID, player.GetEntity(), COLLISION_GROUP_NONE, result);
+	NDebugOverlay::Line(start, result.endpos, 255, 0, 0, true, 20.0f);
 	Msg("Trace Result: fraction %3.6f \n", result.fraction);
 }
 

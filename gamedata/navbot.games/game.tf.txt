@@ -32,6 +32,14 @@
 				"linux"		"275"
 				"linux64"	"275"
 			}
+			/* vtable offset for CGameRules::ShouldCollide(int, int) */
+			"CGameRules_ShouldCollide"
+			{
+				"windows"	"29"
+				"windows64" "29"
+				"linux"		"30"
+				"linux64"	"30"
+			}
 			/* offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos */
 			"CCaptureFlag::m_vecResetPos"
 			{

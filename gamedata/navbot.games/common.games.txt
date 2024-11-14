@@ -22,5 +22,14 @@
 			"NavEdit_ConnectFail" 		"buttons\button10.wav"
 			"NavEdit_WaypointAdd"		"weapons\crossbow\hit1.wav"
 		}
+		"Offsets"
+		{
+			// vtable offset for CGameRules::ShouldCollide(int, int)
+			"CGameRules_ShouldCollide"
+			{
+				"windows"	"29"
+				"linux"		"30"
+			}
+		}
 	}
 }
