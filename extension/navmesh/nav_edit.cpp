@@ -4360,3 +4360,9 @@ void CNavMesh::PlayEditSoundInternal(const std::string& sound) const
 	ke::SafeSprintf(command, sizeof(command), "play %s", sound.c_str());
 	engine->ClientCommand(host, command);
 }
+
+CON_COMMAND(sm_nav_print_map_name, "Prints the current map name used by the Navigaiton Mesh.")
+{
+	std::string name = TheNavMesh->GetMapFileName();
+	rootconsole->ConsolePrint("Map: %s", name.c_str());
+}

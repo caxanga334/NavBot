@@ -32,7 +32,6 @@
 #include <algorithm>
 
 #include "nav.h"
-#include <ITranslator.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
 #include <shareddefs.h>
@@ -40,6 +39,7 @@
 
 class HidingSpot;
 class CUtlBuffer;
+class NavPlaceDatabaseLoader;
 
 namespace SourceMod
 {
@@ -425,12 +425,17 @@ public:
 	// const char *PlaceToName( Place place ) const;						// given a place, return its name
 	const std::string* GetPlaceName(const Place place) const;
 	Place GetPlaceFromName(const std::string& name) const;
-	// Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
+	Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined
 	Place PartialNameToPlace( const char *name ) const;					// given the first part of a place name, return a place ID or zero if no place is defined, or the partial match is ambiguous
 	void PrintAllPlaces( void ) const;									// output a list of names to the console
 	int PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] );	// Given a partial place name, fill in possible place names for ConCommand autocomplete
-	// Returns a translated human readable place name
-	const char* GetTranslatedPlaceName(Place place) const;
+
+	/**
+	 * @brief Given a place index, returns a human readable name for the place.
+	 * @param place Place index.
+	 * @return Place readable name or NULL on invalid place index.
+	 */
+	std::optional<std::string> GetPlaceDisplayName(Place place) const;
 
 	static bool GetGroundHeight( const Vector &pos, float *height, Vector *normal = NULL );		// get the Z coordinate of the topmost ground level below the given point
 	bool GetSimpleGroundHeight( const Vector &pos, float *height, Vector *normal = NULL ) const;// get the Z coordinate of the ground level directly below the given point
@@ -817,17 +822,22 @@ private:
 	//----------------------------------------------------------------------------------
 	// Place directory
 	//
-	std::unordered_map<Place, std::string> m_placeMap;
+
+	/**
+	 * @brief Map of place names
+	 * First is the place key name (IE: CTSpawn)
+	 * Second is the place display/full name (IE: Counter-Terrorist Spawn)
+	 */
+	std::unordered_map<Place, std::pair<std::string, std::string>> m_placeMap;
 
 	// char **m_placeName;											// master directory of place names (ie: "places")
 	// unsigned int m_placeCount;									// number of "places" defined in placeName[]
 	void LoadPlaceDatabase( void );								// load the place names from a file
-	void LoadPlaceTranslations();
-	void LoadGlobalPlaceDatabase();
-	void UnloadPlaceDatabase();
+	void ParseGlobalPlaceDatabase(NavPlaceDatabaseLoader& loader);
+	void ParseModPlaceDatabase(NavPlaceDatabaseLoader& loader);
+	void ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader);
 	size_t GetPlaceCount() const { return m_placeMap.size(); }
-	const std::unordered_map<Place, std::string>& GetPlaces() const { return m_placeMap; }
-	SourceMod::IPhraseCollection* m_placePhrases;				// translation for place names
+	const std::unordered_map<Place, std::pair<std::string, std::string>>& GetPlaces() const { return m_placeMap; }
 
 	//----------------------------------------------------------------------------------
 	// Edit mode

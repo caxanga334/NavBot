@@ -23,6 +23,7 @@
 #include "nav_area.h"
 #include "nav_node.h"
 #include "nav_waypoint.h"
+#include "nav_place_loader.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
 #include <generichash.h>
@@ -119,11 +120,8 @@ CNavMesh::CNavMesh( void )
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
-	m_placePhrases = nullptr;
 	m_waypoints.reserve(128);
 	m_selectedWaypoint = nullptr;
-
-	// LoadPlaceDatabase();
 		
 	Reset();
 
@@ -139,21 +137,6 @@ CNavMesh::CNavMesh( void )
 //--------------------------------------------------------------------------------------------------------------
 CNavMesh::~CNavMesh()
 {
-
- // !!!!bug!!! why does this crash in linux on server exit
-
-/*
-	for( unsigned int i=0; i<m_placeCount; ++i )
-	{
-		delete [] m_placeName[i];
-	} */
-
-
-	if (m_placePhrases != nullptr)
-	{
-		m_placePhrases->Destroy();
-		m_placePhrases = nullptr;
-	}
 }
 
 bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
@@ -227,8 +210,6 @@ void CNavMesh::Precache()
 
 void CNavMesh::OnMapStart()
 {
-	// Load place database first
-	UnloadPlaceDatabase();
 	LoadPlaceDatabase();
 
 	auto error = Load();
@@ -1243,182 +1224,70 @@ unsigned int CNavMesh::GetPlace( const Vector &pos ) const
  */
 void CNavMesh::LoadPlaceDatabase( void )
 {
-	// m_placeCount = 0;
+	NavPlaceDatabaseLoader loader;
 
-#ifdef TERROR
-	// TODO: LoadPlaceDatabase happens during the constructor, so we can't override it!
-	// Population.txt holds all the info we need for place names in Left4Dead, so let's not
-	// make Phil edit yet another text file.
-	KeyValues *populationData = new KeyValues( "population" );
-	if ( populationData->LoadFromFile( filesystem, "scripts/population.txt" ) )
+	m_placeMap.clear();
+
+	ParseGlobalPlaceDatabase(loader);
+	ParseModPlaceDatabase(loader);
+	ParseMapPlaceDatabase(loader);
+
+	auto& places = loader.GetEntries();
+
+	Place index = 1U;
+
+	for (auto& entry : places)
 	{
-		CUtlVector< char * > placeNames;
+		std::string placeKey{ entry.first };
 
-		for ( KeyValues *key = populationData->GetFirstTrueSubKey(); key != NULL; key = key->GetNextTrueSubKey() )
-		{
-			if ( FStrEq( key->GetName(), "default" ) )	// default population is the undefined place
-				continue;
+		auto pair = std::make_pair(placeKey, entry.second);
 
-			placeNames.AddToTail( CloneString( key->GetName() ) );
-		}
-
-		m_placeCount = placeNames.Count();
-
-		// allocate place name array
-		m_placeName = new char * [ m_placeCount ];
-		for ( unsigned int i=0; i<m_placeCount; ++i )
-		{
-			m_placeName[i] = placeNames[i];
-		}
-
-		populationData->deleteThis();
-		return;
-	}
-
-	populationData->deleteThis();
-#endif
-
-	// TO-DO: Per map place database
-
-	// Load translations first
-	LoadPlaceTranslations();
-
-	LoadGlobalPlaceDatabase();
-
-	//auto mod = smutils->GetGameFolderName();
-	//char fullpath[256];
-	//smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/navplace.db", mod);
-
-	//CUtlBuffer buf( 0, 0, CUtlBuffer::TEXT_BUFFER );
-	//filesystem->ReadFile(fullpath, "MOD", buf);
-
-	//if (!buf.Size())
-	//	return;
-
-	//const int maxNameLength = 128;
-	//char buffer[ maxNameLength ];
-
-	//CUtlVector<char*> placeNames;
-
-	//// count the number of places
-	//while( true )
-	//{
-	//	buf.GetLine( buffer, maxNameLength );
-
-	//	if ( !buf.IsValid() )
-	//		break;
-
-	//	int len = V_strlen( buffer );
-	//	if ( len >= 2 )
-	//	{
-	//		if ( buffer[len-1] == '\n' || buffer[len-1] == '\r' )
-	//			buffer[len-1] = 0;
-	//		
-	//		if ( buffer[len-2] == '\r' )
-	//			buffer[len-2] = 0;
-
-	//		char *pName = new char[ len + 1 ];
-	//		V_strncpy( pName, buffer, len+1 );
-	//		placeNames.AddToTail( pName );
-	//	}
-	//}
-
-	//// allocate place name array
-	//m_placeCount = placeNames.Count();
-	//m_placeName = new char * [ m_placeCount ];
-	//
-	//for ( unsigned int i=0; i < m_placeCount; i++ )
-	//{
-	//	m_placeName[i] = placeNames[i];
-	//}
-
-	//smutils->LogMessage(myself, "Loaded Nav Mesh place database with %i entries from file \"%s\".", m_placeCount, fullpath);
-}
-
-void CNavMesh::LoadPlaceTranslations()
-{
-	if (m_placePhrases == nullptr)
-	{
-		m_placePhrases = translator->CreatePhraseCollection();
-
-		// Translations also need to be mod specific
-		auto mod = smutils->GetGameFolderName();
-		char filename[256]{};
-		ke::SafeSprintf(filename, sizeof(filename), "navbot/%s_places.phrases", mod);
-		m_placePhrases->AddPhraseFile(filename);
-
-		// TO-DO: Check for possible conflicts with map specific place names
-	}
-}
-
-void CNavMesh::LoadGlobalPlaceDatabase()
-{
-	auto mod = smutils->GetGameFolderName();
-	char fullpath[256];
-	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/places.db", mod);
-	std::filesystem::path path(fullpath);
-
-	if (!std::filesystem::exists(path))
-	{
-		smutils->LogError(myself, "Failed to load global place database. File \"%s\" does not exists!", fullpath);
-		return;
-	}
-
-	m_placeMap.clear(); // remove old place names
-
-	Place id = 1U;
-
-	std::fstream filestream;
-	filestream.open(path, std::fstream::in);
-	constexpr auto MAX_PLACE_NAME_SIZE = 32U;
-
-	std::string line;
-	line.reserve(256);
-
-	while (std::getline(filestream, line))
-	{
-		if (line.find("//", 0, 2) != std::string::npos)
-		{
-			continue; // comment line, ignore
-		}
-
-		// place names should not have any spaces on it
-		for (const auto& singlechar : line)
-		{
-			if (std::isspace(singlechar))
-			{
-				smutils->LogError(myself, "Place name \"%s\" contains space! skipping...", line.c_str());
-				continue;
-			}
-		}
-
-		// we don't want these
-		line.erase(std::remove(line.begin(), line.end(), '\r'), line.cend());
-		line.erase(std::remove(line.begin(), line.end(), '\n'), line.cend());
-
-		if (line.length() == 0)
-		{
-			continue;
-		}
-
-		if (line.length() > MAX_PLACE_NAME_SIZE)
-		{
-			smutils->LogError(myself, "Place name \"%s\" over character limit! skipping...", line.c_str());
-			continue;
-		}
-
-		m_placeMap.emplace(id, line);
-		++id;
+		m_placeMap[index] = pair;
+		index++;
 	}
 
 #ifdef EXT_DEBUG
-	Msg("[NAVBOT] Loaded global place database. Place count: %i \n", m_placeMap.size());
+	smutils->LogMessage(myself, "Loaded place database with %i places.", m_placeMap.size());
 #endif // EXT_DEBUG
 }
 
-void CNavMesh::UnloadPlaceDatabase()
+void CNavMesh::ParseGlobalPlaceDatabase(NavPlaceDatabaseLoader& loader)
 {
-	m_placeMap.clear();
+	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/nav_places.cfg");
+	std::filesystem::path path{ szPath.get() };
+
+	if (!loader.ParseFile(path))
+	{
+		smutils->LogError(myself, "Failed to parse Nav global place database.");
+	}
+}
+
+void CNavMesh::ParseModPlaceDatabase(NavPlaceDatabaseLoader& loader)
+{
+	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+	const char* mod = smutils->GetGameFolderName();
+	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/nav_places.cfg", mod);
+	std::filesystem::path path{ szPath.get() };
+
+	if (!loader.ParseFile(path))
+	{
+		rootconsole->ConsolePrint("Could not parse Nav mod specific place database. <%s>", szPath.get());
+	}
+}
+
+void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)
+{
+	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+	std::string mapname = GetMapFileName();
+	const char* mod = smutils->GetGameFolderName();
+	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/maps/nav_places_%s.cfg", mod, mapname.c_str());
+	std::filesystem::path path{ szPath.get() };
+
+	if (!loader.ParseFile(path))
+	{
+		rootconsole->ConsolePrint("Could not parse Nav map specific place database. <%s>", szPath.get());
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -1432,14 +1301,14 @@ const std::string* CNavMesh::GetPlaceName(const Place place) const
 		return nullptr;
 	}
 
-	auto& name = it->second;
+	auto& name = it->second.second;
 	return &name;
 }
 
 Place CNavMesh::GetPlaceFromName(const std::string& name) const
 {
-	auto it = std::find_if(m_placeMap.begin(), m_placeMap.end(), [&name](const std::pair<const Place, std::string>& object) {
-		if (object.second == name)
+	auto it = std::find_if(m_placeMap.begin(), m_placeMap.end(), [&name](const std::pair<const Place, std::pair<std::string, std::string>>& object) {
+		if (object.second.first == name)
 		{
 			return true;
 		}
@@ -1456,6 +1325,21 @@ Place CNavMesh::GetPlaceFromName(const std::string& name) const
 }
 
 //--------------------------------------------------------------------------------------------------------------
+Place CNavMesh::NameToPlace(const char* name) const
+{
+	for (auto& obj : m_placeMap)
+	{
+		const auto& str = obj.second.first; // first is the key name
+
+		if (FStrEq(str.c_str(), name))
+		{
+			return obj.first;
+		}
+	}
+
+	return UNDEFINED_PLACE;
+}
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1464,38 +1348,35 @@ Place CNavMesh::GetPlaceFromName(const std::string& name) const
 Place CNavMesh::PartialNameToPlace( const char *name ) const
 {
 	Place found = UNDEFINED_PLACE;
+	bool isAmbiguous = false;
 
 	for (auto& obj : m_placeMap)
 	{
-		const auto& str = obj.second;
-
-		if (str.find(name) != std::string::npos)
-		{
-			return obj.first;
-		}
-	}
-
-	return UNDEFINED_PLACE;
-
-/*
-	for( unsigned int i=0; i<m_placeCount; ++i )
-	{
-		if (!strncasecmp( m_placeName[i], name, strlen( name ) ))
+		if (!strncasecmp(obj.second.first.c_str(), name, std::strlen(name)))
 		{
 			// check for exact match in case of subsets of other strings
-			if (!stricmp( m_placeName[i], name ))
+			if (!strcasecmp(obj.second.first.c_str(), name))
 			{
-				return NameToPlace( m_placeName[i] );
+				found = NameToPlace(obj.second.first.c_str());
+				isAmbiguous = false;
+				break;
 			}
-			if (found == UNDEFINED_PLACE)
+
+			if (found != UNDEFINED_PLACE)
 			{
-				found = NameToPlace( m_placeName[i] );
+				isAmbiguous = true;
+			}
+			else
+			{
+				found = NameToPlace(obj.second.first.c_str());
 			}
 		}
 	}
-	return UNDEFINED_PLACE;
 
-*/
+	if (isAmbiguous)
+		return UNDEFINED_PLACE;
+
+	return found;
 }
 
 
@@ -1505,6 +1386,8 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
  */
 int CNavMesh::PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
 {
+	/*
+	* Broken, doesn't work. Crashes the game when auto complete is called.
 	int numMatches = 0;
 	partial += Q_strlen( "sm_nav_use_place " );
 	int partialLength = Q_strlen( partial );
@@ -1524,30 +1407,22 @@ int CNavMesh::PlaceNameAutocomplete( char const *partial, char commands[ COMMAND
 	}
 
 	return numMatches;
+	*/
+
+	return 0;
 }
 
-const char* CNavMesh::GetTranslatedPlaceName(Place place) const
+std::optional<std::string> CNavMesh::GetPlaceDisplayName(Place place) const
 {
 	auto it = m_placeMap.find(place);
 
 	if (it == m_placeMap.end())
 	{
-		return nullptr;
+		return std::nullopt;
 	}
 
-	// Place names doesn't require format so this should be fine.
-
-	SourceMod::Translation trans;
-	auto result = m_placePhrases->FindTranslation(it->second.c_str(), translator->GetServerLanguage(), &trans);
-
-	if (result != SourceMod::Trans_Okay)
-	{
-		return nullptr;
-	}
-
-	return trans.szPhrase;
+	return it->second.second;
 }
-
 
 //--------------------------------------------------------------------------------------------------------------
 typedef const char * SortStringType;
@@ -1575,7 +1450,7 @@ void CNavMesh::PrintAllPlaces( void ) const
 
 	for (const auto& object : m_placeMap)
 	{
-		Msg(" %s ", object.second.c_str());
+		Msg(" %s ", object.second.first.c_str());
 		
 		if (++i > 4)
 		{

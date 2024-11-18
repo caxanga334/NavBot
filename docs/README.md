@@ -11,6 +11,7 @@ Welcome to the NavBot extension documentation index.
 - [Nav Mesh Editing Basics]
 - [Waypoint Editing Basics]
 - [Questions and Answers]
+- [Nav Mesh Places]
 
 <!-- Links -->
 [SDK Compatibility]: SDKS.md
@@ -20,3 +21,4 @@ Welcome to the NavBot extension documentation index.
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md
 [For Developers]: developers/README.md
 [Questions and Answers]: QAA.md
+[Nav Mesh Places]: NAVMESH_PLACES.md
