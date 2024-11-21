@@ -543,4 +543,90 @@ CON_COMMAND_F(sm_get_entity_size, "Returns the entity size", FCVAR_CHEAT)
 
 #endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 
+CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHEAT)
+{
+	CBaseExtPlayer host{ gamehelpers->EdictOfIndex(1) };
+	trace_t tr;
+	CTraceFilterWorldAndPropsOnly filter;
+
+	Vector start = host.GetEyeOrigin();
+	QAngle eyeAngles = host.GetEyeAngles();
+	Vector forward;
+	AngleVectors(eyeAngles, &forward);
+	forward.NormalizeInPlace();
+	Vector end = start + (forward * 4096.0f);
+
+	trace::line(start, end, MASK_SOLID, &filter, tr);
+
+	if (tr.fraction < 1.0f)
+	{
+		const char* name = tr.surface.name;
+
+		if (name != nullptr)
+		{
+			Msg("Surface name: %s\n", name);
+		}
+
+		{
+			Vector normal = tr.plane.normal;
+
+			Msg("Surface Normal: %3.4f, %3.4f, %3.4f\n", normal.x, normal.y, normal.z);
+		}
+
+		if ((tr.contents & CONTENTS_LADDER) != 0)
+		{
+			Msg("Hit Ladder!\n");
+		}
+
+		if ((tr.contents & CONTENTS_PLAYERCLIP) != 0)
+		{
+			Msg("Hit Player Clip!\n");
+		}
+
+		if ((tr.contents & CONTENTS_WATER) != 0)
+		{
+			Msg("Hit Water!\n");
+		}
+
+		if ((tr.contents & CONTENTS_SOLID) != 0)
+		{
+			Msg("Hit Solid!\n");
+		}
+
+		if ((tr.contents & CONTENTS_BLOCKLOS) != 0)
+		{
+			Msg("Hit Block LOS!\n");
+		}
+
+		surfacedata_t* surfacedata = physprops->GetSurfaceData(tr.surface.surfaceProps);
+
+		if (surfacedata != nullptr)
+		{
+			Msg("---- PHYSICS ----\n");
+			Msg("Friction: %3.4f\nElasticity: %3.4f\nDensity: %3.4f\nThickness: %3.4f\nDampening: %3.4f\n",
+				surfacedata->physics.friction,
+				surfacedata->physics.elasticity,
+				surfacedata->physics.density,
+				surfacedata->physics.thickness,
+				surfacedata->physics.dampening);
+
+			Msg("---- GAME ----\n");
+			Msg("Max Speed Factor: %3.4f\nJump Factor: %3.2f\nMaterial: <%i>\nClimbable: %i\n", 
+				surfacedata->game.maxSpeedFactor,
+				surfacedata->game.jumpFactor,
+				surfacedata->game.material,
+				static_cast<int>(surfacedata->game.climbable));
+		}
+		else
+		{
+			Msg("Got NULL surfacedata_t!\n");
+		}
+	}
+	else
+	{
+		Msg("Trace did not hit anything!\n");
+	}
+
+}
+
 #endif // EXT_DEBUG
