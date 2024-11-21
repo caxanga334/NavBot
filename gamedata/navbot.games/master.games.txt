@@ -23,4 +23,9 @@
 	{
 		"game"		"hl2mp"
 	}
+	// Black Mesa (Steam)
+	"game.bms.txt"
+	{
+		"game"		"bms"
+	}
 }

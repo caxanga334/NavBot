@@ -1,0 +1,29 @@
+"Games"
+{
+	"bms"
+	{
+		"Offsets"
+		{
+			"Event_Killed"
+			{
+				"windows"	"72"
+				"linux"		"73"
+			}
+			"Event_KilledOther"
+			{
+				"windows"	"73"
+				"linux"		"74"
+			}
+			"PhysicsSimulate"
+			{
+				"windows"	"113"
+				"linux"		"114"
+			}
+			"Weapon_Switch"
+			{
+				"windows"	"284"
+				"linux"		"285"
+			}
+		}
+	}
+}

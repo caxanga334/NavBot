@@ -16,3 +16,4 @@ Any SDK version not listed is considered **Not Implemented**.
 |Counter-Strike: Source|Compiles|
 |Source SDK 2013|Compiles|
 |Team Fortress 2|Compiles|
+|Black Mesa|Compiles|
