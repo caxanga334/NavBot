@@ -14,7 +14,7 @@ CreateDirs = [
   'addons/sourcemod/gamedata/navbot.games',
   'addons/sourcemod/extensions/x64/',
   'addons/sourcemod/scripting/include',
-  'addons/sourcemod/translations/',
+#  'addons/sourcemod/translations/',
 ]
 
 for folder in CreateDirs:
@@ -25,7 +25,7 @@ for folder in CreateDirs:
 shutil.copytree(RootPath.joinpath('configs'), BasePath.joinpath('addons/sourcemod/configs/navbot/'), dirs_exist_ok=True)
 shutil.copytree(RootPath.joinpath('gamedata'), BasePath.joinpath('addons/sourcemod/gamedata/'), dirs_exist_ok=True)
 shutil.copytree(RootPath.joinpath('scripting'), BasePath.joinpath('addons/sourcemod/scripting/'), dirs_exist_ok=True)
-shutil.copytree(RootPath.joinpath('translations'), BasePath.joinpath('addons/sourcemod/translations/'), dirs_exist_ok=True)
+# shutil.copytree(RootPath.joinpath('translations'), BasePath.joinpath('addons/sourcemod/translations/'), dirs_exist_ok=True)
 shutil.copy(RootPath.joinpath('extension/navbot.autoload'), BasePath.joinpath('addons/sourcemod/extensions/navbot.autoload'))
 
 ValidFiles = [
