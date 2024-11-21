@@ -3468,7 +3468,7 @@ CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connectio
 
 	long long input = atoll(args[1]);
 
-	if (input < 0 || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
+	if (input <= static_cast<long long>(NavLinkType::LINK_INVALID) || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
 	{
 		Warning("Link type is invalid!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -3542,7 +3542,7 @@ CON_COMMAND_F(sm_nav_link_disconnect, "Disconnect nav areas via special link con
 
 	long long input = atoll(args[1]);
 
-	if (input < 0 || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
+	if (input <= static_cast<long long>(NavLinkType::LINK_INVALID) || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
 	{
 		Warning("Link type is invalid!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);

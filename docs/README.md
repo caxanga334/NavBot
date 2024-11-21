@@ -9,9 +9,10 @@ Welcome to the NavBot extension documentation index.
 - [Mod Compatibility]
 - [For Developers]
 - [Nav Mesh Editing Basics]
+- [Nav Mesh Places]
+- [Nav Mesh Link Connections]
 - [Waypoint Editing Basics]
 - [Questions and Answers]
-- [Nav Mesh Places]
 
 <!-- Links -->
 [SDK Compatibility]: SDKS.md
@@ -22,3 +23,4 @@ Welcome to the NavBot extension documentation index.
 [For Developers]: developers/README.md
 [Questions and Answers]: QAA.md
 [Nav Mesh Places]: NAVMESH_PLACES.md
+[Nav Mesh Link Connections]: NAVMESH_LINKS.md
