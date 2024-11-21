@@ -327,11 +327,8 @@ bool CNavMesh::FindActiveNavArea( void )
 		if ( !IsEditMode( CREATING_AREA ) )
 		{
 			m_surfaceNormal = result.plane.normal;
-			m_climbableSurface = (physprops->GetSurfaceData(result.surface.surfaceProps)->game.climbable != 0
-					|| (result.contents & CONTENTS_LADDER) != 0)
-					// check if we're on the same plane as the original point when we're building a ladder
-					&& (!IsEditMode(CREATING_LADDER) || m_surfaceNormal == m_ladderNormal)
-					&& m_surfaceNormal.z <= 0.9f; // don't try to build ladders on flat ground
+			// New virtual function added to handle differences between mods. Primarily due to Black Mesa
+			m_climbableSurface = IsClimbableSurface(result);
 		}
 
 		if ( ( m_climbableSurface && !IsEditMode( CREATING_LADDER ) ) || !IsEditMode( CREATING_AREA ) )

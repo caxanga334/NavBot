@@ -3524,4 +3524,39 @@ void CNavMesh::SelectWaypointofID(WaypointID id)
 	Warning("Waypoint of ID %i not found! \n", id);
 }
 
+bool CNavMesh::IsClimbableSurface(const trace_t& tr)
+{
+	/*
+	* This function is called by CNavMesh::FindActiveNavArea to set the value of CNavMesh::m_climbableSurface
+	* Ladders are an example of a climable surface
+	* Override per mod needs
+	*/
 
+	bool climbable = false;
+
+	climbable = physprops->GetSurfaceData(tr.surface.surfaceProps)->game.climbable != 0;
+
+	if (!climbable)
+	{
+		climbable = (tr.contents & CONTENTS_LADDER) != 0;
+	}
+
+	if (climbable)
+	{
+		// check if we're on the same plane as the original point when we're building a ladder
+		if (IsEditMode(CREATING_LADDER))
+		{
+			if (m_surfaceNormal != m_ladderNormal)
+			{
+				climbable = false;
+			}
+		}
+
+		if (m_surfaceNormal.z > 0.9f)
+		{
+			climbable = false; // don't try to build ladders on flat ground
+		}
+	}
+
+	return climbable;
+}

@@ -36,6 +36,7 @@
 #include <sdkports/eventlistenerhelper.h>
 #include <shareddefs.h>
 #include <convar.h>
+#include <gametrace.h>
 
 class HidingSpot;
 class CUtlBuffer;
@@ -784,6 +785,13 @@ protected:
 
 	const NavAreaVector& GetSelectedAreaSet() const { return m_selectedSet; }
 	void SetMarkedCorner(NavCornerType corner) { m_markedCorner = corner; }
+
+	/**
+	 * @brief Is this surface climbable?
+	 * @param tr Trace result that hit the surface
+	 * @return true if climbable, false otherwise.
+	 */
+	virtual bool IsClimbableSurface(const trace_t& tr);
 
 private:
 	friend class CNavArea;
