@@ -6,6 +6,8 @@
 #include <sdkports/sdk_timers.h>
 #include <bot/interfaces/path/meshnavigator.h>
 
+class CTFWaypoint;
+
 class CTF2BotEngineerBuildObjectTask : public AITask<CTF2Bot>
 {
 public:
@@ -19,7 +21,8 @@ public:
 		MAX_OBJECT_TYPES
 	};
 
-	CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location, const QAngle* angles = nullptr);
+	CTF2BotEngineerBuildObjectTask(eObjectType type, const CTFWaypoint* waypoint);
+	CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& goal);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
@@ -41,6 +44,7 @@ public:
 	const char* GetName() const override { return m_taskname.c_str(); }
 
 private:
+	const CTFWaypoint* m_waypoint;
 	Vector m_goal;
 	QAngle m_lookangles;
 	CountdownTimer m_repathTimer;

@@ -5,6 +5,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 
 class CTF2Bot;
+class CTFWaypoint;
 
 /**
  * @brief Task responsible for taking care of the engineer's own buildings
@@ -30,16 +31,17 @@ public:
 	static constexpr auto max_travel_distance() { return 2048.0f; }
 	static constexpr auto behind_sentry_distance() { return 96.0f; }
 	static constexpr auto max_dispenser_to_sentry_range() { return 750.0f; }
+
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
-	bool FindSpotToBuildSentryGun(CTF2Bot* me, Vector& out);
+	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint* out);
+	bool FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint* out);
 	bool FindSpotToBuildDispenser(CTF2Bot* me, Vector& out);
-	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, Vector& out);
-	bool FindSpotToBuildTeleExit(CTF2Bot* me, Vector& out);
-	bool GetRandomSentrySpot(CTF2Bot* me, Vector& out);
+	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint* out);
+	bool FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint* out);
 	bool GetRandomDispenserSpot(CTF2Bot* me, const Vector& start, Vector& out);
 };
 

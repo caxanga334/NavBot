@@ -237,12 +237,49 @@ void CTeamFortress2Mod::OnNavMeshLoaded()
 			m_sniperWaypoints.push_back(waypoint);
 		}
 
+		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_SENTRYGUN && waypoint->GetNumOfAvailableAngles() > 0)
+		{
+			m_sentryWaypoints.push_back(waypoint);
+		}
+
+		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_DISPENSER && waypoint->GetNumOfAvailableAngles() > 0)
+		{
+			m_dispenserWaypoints.push_back(waypoint);
+		}
+
+		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_TELE_ENTRANCE && waypoint->GetNumOfAvailableAngles() > 0)
+		{
+			m_teleentranceWaypoints.push_back(waypoint);
+		}
+
+		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_TELE_EXIT && waypoint->GetNumOfAvailableAngles() > 0)
+		{
+			m_teleexitWaypoints.push_back(waypoint);
+		}
+
 		return true;
 	});
 
 	if (m_sniperWaypoints.empty())
 	{
 		smutils->LogError(myself, "Map lacks Sniper waypoints.");
+	}
+
+	if (m_sentryWaypoints.empty())
+	{
+		smutils->LogError(myself, "Map lacks Sentry Gun waypoints.");
+	}
+
+	// Dispenser is the only optional one for now
+
+	if (m_teleentranceWaypoints.empty())
+	{
+		smutils->LogError(myself, "Map lacks Teleporter Entrance waypoints.");
+	}
+
+	if (m_teleexitWaypoints.empty())
+	{
+		smutils->LogError(myself, "Map lacks Teleporter Exit waypoints.");
 	}
 }
 

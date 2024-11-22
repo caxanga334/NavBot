@@ -73,6 +73,10 @@ public:
 	void Command_ShowControlPoints() const;
 
 	const std::vector<CTFWaypoint*>& GetAllSniperWaypoints() const { return m_sniperWaypoints; }
+	const std::vector<CTFWaypoint*>& GetAllSentryWaypoints() const { return m_sentryWaypoints; }
+	const std::vector<CTFWaypoint*>& GetAllDispenserWaypoints() const { return m_dispenserWaypoints; }
+	const std::vector<CTFWaypoint*>& GetAllTeleEntranceWaypoints() const { return m_teleentranceWaypoints; }
+	const std::vector<CTFWaypoint*>& GetAllTeleExitWaypoints() const { return m_teleexitWaypoints; }
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
@@ -86,6 +90,10 @@ private:
 	TeamFortress2::TFObjectiveResource m_objectiveResourcesData;
 	bool m_bInSetup;
 	std::vector<CTFWaypoint*> m_sniperWaypoints;
+	std::vector<CTFWaypoint*> m_sentryWaypoints;
+	std::vector<CTFWaypoint*> m_dispenserWaypoints;
+	std::vector<CTFWaypoint*> m_teleentranceWaypoints;
+	std::vector<CTFWaypoint*> m_teleexitWaypoints;
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();

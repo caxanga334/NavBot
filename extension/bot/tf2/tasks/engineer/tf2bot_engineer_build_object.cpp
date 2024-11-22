@@ -3,27 +3,57 @@
 #include <util/helpers.h>
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
+#include <mods/tf2/nav/tfnav_waypoint.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
 #include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_build_object.h"
 
-CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& location, const QAngle* angles)
+CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const CTFWaypoint* waypoint)
 {
 	m_type = type;
-	m_goal = location;
+	m_waypoint = waypoint;
+	m_goal = waypoint->GetRandomPoint();
 	m_reachedGoal = false;
 	m_trydir = randomgen->GetRandomInt<int>(0, 3); // randomize initial value
+	m_hasangles = false;
 
-	if (angles != nullptr)
+	auto angles = waypoint->GetRandomAngle();
+
+	if (angles.has_value())
 	{
-		m_lookangles = *angles;
+		m_lookangles = angles.value();
 		m_hasangles = true;
 	}
-	else
+
+	switch (type)
 	{
-		m_hasangles = false;
+	case CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN:
+		m_taskname.assign("BuildObject<SentryGun>");
+		break;
+	case CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER:
+		m_taskname.assign("BuildObject<Dispenser>");
+		break;
+	case CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE:
+		m_taskname.assign("BuildObject<TeleEntrance>");
+		break;
+	case CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT:
+		m_taskname.assign("BuildObject<TeleExit>");
+		break;
+	default:
+		m_taskname.assign("BuildObject<unknown>");
+		break;
 	}
+}
+
+CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& goal)
+{
+	m_type = type;
+	m_waypoint = nullptr;
+	m_goal = goal;
+	m_reachedGoal = false;
+	m_trydir = randomgen->GetRandomInt<int>(0, 3); // randomize initial value
+	m_hasangles = false;
 
 	switch (type)
 	{
@@ -78,6 +108,11 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 
 	// hack for mvm
 	bot->SelectWeapon(bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Primary));
+
+	if (m_waypoint != nullptr)
+	{
+		m_waypoint->Use(bot, 30.0f);
+	}
 
 	return Continue();
 }

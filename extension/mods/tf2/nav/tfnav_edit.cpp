@@ -28,11 +28,6 @@ inline static CTFNavArea::TFNavPathAttributes NameToTFNavPathAttribute(std::stri
 static const std::unordered_map<std::string, CTFNavArea::TFNavAttributes> s_tfnavattribs = {
 	{"limit_red", CTFNavArea::TFNAV_LIMIT_TO_REDTEAM},
 	{"limit_blu", CTFNavArea::TFNAV_LIMIT_TO_BLUTEAM},
-	{"sentry_gun_hint", CTFNavArea::TFNAV_SENTRYGUN_HINT},
-	{"dispenser_hint", CTFNavArea::TFNAV_DISPENSER_HINT},
-	{"tele_entrance_hint", CTFNavArea::TFNAV_TELE_ENTRANCE_HINT},
-	{"tele_exit_hint", CTFNavArea::TFNAV_TELE_EXIT_HINT},
-	{"sniper_spot_hint", CTFNavArea::TFNAV_SNIPER_HINT},
 };
 
 inline static CTFNavArea::TFNavAttributes NameToTFNavAttributes(std::string name)

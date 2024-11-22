@@ -329,7 +329,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		}
 	}
 
-	// Check 2D distance to goal
+	// Check distance to goal
 	if (toGoal.IsLengthLessThan(GetGoalTolerance()) == true)
 	{
 		return true;

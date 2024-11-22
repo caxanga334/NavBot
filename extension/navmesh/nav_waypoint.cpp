@@ -275,9 +275,35 @@ Vector CWaypoint::GetRandomPoint() const
 	return tmp;
 }
 
+float CWaypoint::DistanceTo(const Vector& other) const
+{
+	return (this->m_origin - other).Length();
+}
+
+float CWaypoint::DistanceTo2D(const Vector& other) const
+{
+	return DistanceTo2D(other.AsVector2D());
+}
+
+float CWaypoint::DistanceTo2D(const Vector2D& other) const
+{
+	return (this->m_origin.AsVector2D() - other).Length();
+}
+
 const QAngle& CWaypoint::GetAngle(std::size_t index) const
 {
 	return m_aimAngles.at(index);
+}
+
+std::optional<QAngle> CWaypoint::GetRandomAngle() const
+{
+	if (m_numAimAngles == 0)
+	{
+		return std::nullopt;
+	}
+
+	const QAngle& angle = m_aimAngles[randomgen->GetRandomInt<size_t>(0U, static_cast<size_t>(m_numAimAngles - 1))];
+	return angle;
 }
 
 void CWaypoint::AddAngle(QAngle& angle)

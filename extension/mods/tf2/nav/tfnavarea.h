@@ -73,11 +73,6 @@ public:
 		TFNAV_INVALID = 0,
 		TFNAV_LIMIT_TO_REDTEAM = (1 << 0), // Hints are limited to RED team only, this does not block pathing!
 		TFNAV_LIMIT_TO_BLUTEAM = (1 << 1), // Hints are limited to BLU team only, this does not block pathing!
-		TFNAV_SENTRYGUN_HINT = (1 << 2), // This is a good spot to build a sentry gun
-		TFNAV_DISPENSER_HINT = (1 << 3), // This is a good spot to build a dispenser
-		TFNAV_TELE_ENTRANCE_HINT = (1 << 4), // This is a good spot to build a teleporter entrance
-		TFNAV_TELE_EXIT_HINT = (1 << 5), // This is a good spot to build a teleporter exit
-		TFNAV_SNIPER_HINT = (1 << 6), // This is a good spot to snipe from
 	};
 
 	void SetTFAttributes(TFNavAttributes attribute)

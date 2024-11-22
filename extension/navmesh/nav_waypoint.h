@@ -4,6 +4,7 @@
 #include <vector>
 #include <array>
 #include <variant>
+#include <optional>
 #include <sdkports/sdk_ehandle.h>
 #include "nav.h"
 
@@ -124,12 +125,22 @@ public:
 	void SetOrigin(const Vector& origin) { m_origin = origin; }
 	// Gets a random position within the waypoint's radius.
 	Vector GetRandomPoint() const;
+
+	float DistanceTo(const Vector& other) const;
+	float DistanceTo2D(const Vector& other) const;
+	float DistanceTo2D(const Vector2D& other) const;
+
 	/**
 	 * @brief Gets a stored angle from the waypoint
 	 * @param index Index to the angle array, from 0 to MAX_AIM_ANGLES - 1
 	 * @return Reference to angle.
 	 */
 	const QAngle& GetAngle(std::size_t index) const;
+	/**
+	 * @brief Gets a random angle from waypoint.
+	 * @return Angle or NULL optional if this waypoint doesn't have any angles.
+	 */
+	std::optional<QAngle> GetRandomAngle() const;
 
 	std::size_t GetNumOfAvailableAngles() const { return static_cast<std::size_t>(m_numAimAngles); }
 

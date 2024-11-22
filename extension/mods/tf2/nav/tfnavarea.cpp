@@ -112,7 +112,7 @@ void CTFNavArea::UpdateDynamicSpawnRoom()
 
 void CTFNavArea::Debug_ShowTFPathAttributes() const
 {
-	constexpr auto TEXT_SIZE = 256;
+	constexpr size_t TEXT_SIZE = 512U;
 	char message[TEXT_SIZE]{};
 
 	if (HasTFPathAttributes(TFNAV_PATH_NO_RED_TEAM))
@@ -159,7 +159,7 @@ void CTFNavArea::Debug_ShowTFPathAttributes() const
 
 void CTFNavArea::Debug_ShowTFAttributes() const
 {
-	constexpr auto TEXT_SIZE = 256;
+	constexpr size_t TEXT_SIZE = 512U;
 	char message[TEXT_SIZE]{};
 
 	if (HasTFAttributes(TFNAV_LIMIT_TO_REDTEAM))
@@ -174,37 +174,12 @@ void CTFNavArea::Debug_ShowTFAttributes() const
 		DrawFilled(255, 64, 64, 255, NDEBUG_PERSIST_FOR_ONE_TICK, true);
 	}
 
-	if (HasTFAttributes(TFNAV_SENTRYGUN_HINT))
-	{
-		ke::SafeStrcat(message, TEXT_SIZE, " SENTRYGUN_HINT");
-	}
-
-	if (HasTFAttributes(TFNAV_DISPENSER_HINT))
-	{
-		ke::SafeStrcat(message, TEXT_SIZE, " DISPENSER_HINT");
-	}
-
-	if (HasTFAttributes(TFNAV_TELE_ENTRANCE_HINT))
-	{
-		ke::SafeStrcat(message, TEXT_SIZE, " TELE_ENTRANCE_HINT");
-	}
-
-	if (HasTFAttributes(TFNAV_TELE_EXIT_HINT))
-	{
-		ke::SafeStrcat(message, TEXT_SIZE, " TELE_EXIT_HINT");
-	}
-
-	if (HasTFAttributes(TFNAV_SNIPER_HINT))
-	{
-		ke::SafeStrcat(message, TEXT_SIZE, " SNIPER_HINT");
-	}
-
 	NDebugOverlay::Text(GetCenter() + Vector(0.0f, 0.0f, 12.0f), message, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 
 void CTFNavArea::Debug_ShowMvMAttributes() const
 {
-	constexpr auto TEXT_SIZE = 256;
+	constexpr size_t TEXT_SIZE = 512U;
 	char message[TEXT_SIZE]{};
 
 	if (HasMVMAttributes(MVMNAV_FRONTLINES))

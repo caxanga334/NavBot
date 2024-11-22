@@ -560,6 +560,9 @@ CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHE
 
 	if (tr.fraction < 1.0f)
 	{
+		NDebugOverlay::Line(start, tr.endpos, 0, 255, 0, true, 20.0f);
+		NDebugOverlay::Cross3D(tr.endpos, 12.0f, 0, 255, 0, true, 20.0f);
+
 		const char* name = tr.surface.name;
 
 		if (name != nullptr)
