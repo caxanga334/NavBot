@@ -2,6 +2,10 @@ name: Build Extension
 
 on:
   push:
+    branches: [ '*' ]
+    tags: [ '*' ]
+  pull_request: 
+    types: [ opened, reopened, ready_for_review ]
 
 jobs:
   build_ext:
@@ -150,4 +154,122 @@ jobs:
           path: |
               navbot/output/*
             
+  compile_plugins:
+    name: Compile Plugins
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        sm_version: [ '1.12.x' ]
+
+    steps:
+      - name: Fetch Extension
+        uses: actions/checkout@v4.2.2
+        with:
+          path: navbot
+          submodules: recursive
+
+      - name: Get short SHA
+        uses: benjlevesque/short-sha@v3.0
+        id: short-sha
+      
+      - name: Setup SourcePawn Compiler ${{ matrix.sm_version }}
+        id: setup_sp
+        uses: rumblefrog/setup-sp@master
+        with:
+          version: ${{ matrix.sm_version }}
+  
+
+      - name: Set environment variables
+        run: |
+          echo "SOURCEFILES_PATH=$GITHUB_WORKSPACE/sourcefiles" >> $GITHUB_ENV
+          echo "TPINCLUDES_PATH=$GITHUB_WORKSPACE/thirdparty/includes" >> $GITHUB_ENV
+          echo "NAVBOTINC_PATH=$GITHUB_WORKSPACE/navbot/scripting/include" >> $GITHUB_ENV
+          echo "BUILD_PATH=$GITHUB_WORKSPACE/navbot/scripting" >> $GITHUB_ENV
+          echo "PACKAGE_PATH=$GITHUB_WORKSPACE/build/package" >> $GITHUB_ENV
+          echo "CONFIGS_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/configs" >> $GITHUB_ENV
+          echo "SMDATA_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/data" >> $GITHUB_ENV
+          echo "GAMEDATA_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/gamedata" >> $GITHUB_ENV
+          echo "BINARY_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/plugins" >> $GITHUB_ENV
+          echo "LOC_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/translations" >> $GITHUB_ENV
+      
+      - name: Create Folders
+        run: |
+          echo "Creating folders..."
+          mkdir -p ${{ env.TPINCLUDES_PATH }}
+          mkdir -p ${{ env.BUILD_PATH }}
+          mkdir -p ${{ env.CONFIGS_PATH }}
+          mkdir -p ${{ env.SMDATA_PATH }}
+          mkdir -p ${{ env.GAMEDATA_PATH }}
+          mkdir -p ${{ env.BINARY_PATH }}
+          mkdir -p ${{ env.LOC_PATH }}
+
+      - name: Compile Plugins
+        working-directory: ${{ env.BUILD_PATH }}
+        run: |
+          for file in *.sp; do
+            echo -e "\nCompiling $file..."
+            spcomp -O2 -v2 -i ${{ env.TPINCLUDES_PATH }}/ -i ${{ env.NAVBOTINC_PATH }}/ $file
+          done
+          echo "===OUT FILES==="
+          ls -lah *.smx
+
+      - name: Move Compiled Plugins to Package Directory
+        run: |
+          rsync -rv ${{ env.BUILD_PATH }}/*.smx ${{ env.BINARY_PATH }}/
+
+      - name: Upload Compiled Plugins Artifact
+        uses: actions/upload-artifact@v4.4.3
+        with:
+          name: plugins-${{ matrix.package-name }}-${{ steps.short-sha.outputs.sha }}
+          path: |
+            build/package/*
+
+  do_release:
+    name: Create GH Release
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [ build_ext, compile_plugins ]
+
+    steps:
+      - name: Create Folders
+        run: |
+          mkdir -p ${{ github.workspace }}/upload/
+          mkdir -p ${{ github.workspace }}/download/
+
+      # Going to leave a note here, this download them into FOLDERS, not a zipped file
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4.1.8
+        with:
+          path: ${{ github.workspace }}/download/
+
+      - name: ZIP Folders
+        run: |
+          cd ${{ github.workspace }}/download/
+          find . -mindepth 1 -maxdepth 1 -type d -exec 7z a -tzip {}.zip {} \;
+          ls -lah
+          mv *.zip ${{ github.workspace }}/upload/
+          cd ${{ github.workspace }}/upload/
+          ls -lah
+
+      - name: Create Pre-release
+        uses: softprops/action-gh-release@v2.1.0
+        if: "contains('pr', ${{ github.ref_name }})"
+        with:
+          name: "NavBot ${{ github.ref_name }}"
+          generate_release_notes: true
+          prerelease: true
+          files: |
+            upload/*.zip
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.1.0
+        if: "!contains('pr', ${{ github.ref_name }})"
+        with:
+          name: "NavBot ${{ github.ref_name }}"
+          generate_release_notes: true
+          prerelease: false
+          files: |
+            upload/*.zip
+
     
