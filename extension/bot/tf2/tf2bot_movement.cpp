@@ -148,7 +148,7 @@ public:
 		GetBot()->GetMovementInterface()->MoveTowards(m_landing);
 	}
 
-	bool TakeOverMovement() override { return true; }
+	bool BlockNavigator() override { return true; }
 	bool IsClimbingOrJumping() override { return true; }
 
 	bool IsDone() override { return m_wasairborne && !m_onground; }
