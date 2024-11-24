@@ -221,7 +221,7 @@ jobs:
       - name: Upload Compiled Plugins Artifact
         uses: actions/upload-artifact@v4.4.3
         with:
-          name: plugins-${{ matrix.package-name }}-${{ steps.short-sha.outputs.sha }}
+          name: navbot-sm-plugins-${{ steps.short-sha.outputs.sha }}
           path: |
             build/package/*
 
