@@ -11,6 +11,7 @@ Welcome to the NavBot extension documentation index.
 - [Nav Mesh Editing Basics]
 - [Nav Mesh Places]
 - [Nav Mesh Link Connections]
+- [Nav Mesh Editing Tips]
 - [Waypoint Editing Basics]
 - [Questions and Answers]
 
@@ -24,3 +25,4 @@ Welcome to the NavBot extension documentation index.
 [Questions and Answers]: QAA.md
 [Nav Mesh Places]: NAVMESH_PLACES.md
 [Nav Mesh Link Connections]: NAVMESH_LINKS.md
+[Nav Mesh Editing Tips]: NAVMESH_EDITING_TIPS.md

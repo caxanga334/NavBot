@@ -12,8 +12,6 @@
 #include <entities/baseentity.h>
 #include "movement.h"
 
-extern CExtManager* extmanager;
-
 constexpr auto DEFAULT_PLAYER_STANDING_HEIGHT = 72.0f;
 constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
 constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
@@ -59,6 +57,220 @@ bool CTraceFilterOnlyActors::ShouldHitEntity(int entity, CBaseEntity* pEntity, e
 	return false;
 }
 
+// Simple jump
+class JumpAction : public IMovement::Action<CBaseBot>
+{
+public:
+	JumpAction(CBaseBot* bot) : IMovement::Action<CBaseBot>(bot) {}
+
+	void OnStart() override
+	{
+		m_timer.Start(0.8f);
+		GetBot()->GetControlInterface()->PressJumpButton();
+	}
+
+	void Execute() override {}
+
+	bool IsClimbingOrJumping() override { return true; }
+
+	bool IsDone() override { return m_timer.HasStarted() && m_timer.IsElapsed(); }
+
+private:
+	CountdownTimer m_timer;
+};
+
+class CrouchJumpAction : public IMovement::Action<CBaseBot>
+{
+public:
+	CrouchJumpAction(CBaseBot* bot, float zboost) : IMovement::Action<CBaseBot>(bot)
+	{
+		m_zboost = zboost;
+		m_jumpboost_timer = 9;
+	}
+
+	void OnStart() override
+	{
+		m_jumpboost_timer = 9;
+		m_timer.Start(0.8f);
+		GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
+		GetBot()->GetControlInterface()->PressJumpButton(0.3f);
+	}
+
+	void Execute() override
+	{
+		if (m_jumpboost_timer > 0)
+		{
+			m_jumpboost_timer--;
+
+			if (m_jumpboost_timer == 0)
+			{
+				Vector vel = GetBot()->GetAbsVelocity();
+				vel.z = m_zboost;
+				GetBot()->SetAbsVelocity(vel);
+			}
+		}
+	}
+
+	bool IsClimbingOrJumping() override { return true; }
+
+	bool IsDone() override { return m_timer.HasStarted() && m_timer.IsElapsed(); }
+
+private:
+	CountdownTimer m_timer;
+	int m_jumpboost_timer;
+	float m_zboost;
+};
+
+class JumpOverGapAction : public IMovement::Action<CBaseBot>
+{
+public:
+	JumpOverGapAction(CBaseBot* bot, const Vector& landing, const Vector& forward) : IMovement::Action<CBaseBot>(bot)
+	{
+		m_landing = landing;
+		m_forward = forward;
+		m_wasairborne = false;
+		m_onground = false;
+	}
+
+	void OnStart() override
+	{
+		GetBot()->GetControlInterface()->AimAt(m_landing + Vector(0.0f, 0.0f, 48.0f), IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at jump landing spot!");
+		GetBot()->GetControlInterface()->PressJumpButton();
+
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			Vector top = GetBot()->GetAbsOrigin();
+			top.z += GetBot()->GetMovementInterface()->GetMaxJumpHeight();
+
+			NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
+			NDebugOverlay::HorzArrow(top, m_landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
+		}
+	}
+
+	void Execute() override
+	{
+		if (m_onground)
+			return;
+
+		bool airborne = !GetBot()->GetMovementInterface()->IsOnGround();
+
+		if (!m_wasairborne && airborne)
+		{
+			m_wasairborne = true;
+		}
+
+		Vector toLanding = m_landing - GetBot()->GetAbsOrigin();
+		toLanding.z = 0.0f;
+		toLanding.NormalizeInPlace();
+
+		if (airborne)
+		{
+			GetBot()->GetControlInterface()->AimAt(GetBot()->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
+		}
+		else
+		{
+			if (m_wasairborne)
+			{
+				m_onground = true; // end jump
+			}
+		}
+
+		GetBot()->GetMovementInterface()->MoveTowards(m_landing);
+	}
+
+	bool BlockNavigator() override { return true; }
+	bool IsClimbingOrJumping() override { return true; }
+
+	bool IsDone() override { return m_wasairborne && !m_onground; }
+
+private:
+	Vector m_landing;
+	Vector m_forward;
+	bool m_wasairborne;
+	bool m_onground;
+};
+
+class ClimbUpToLedgeAction : public IMovement::Action<CBaseBot>
+{
+public:
+	ClimbUpToLedgeAction(CBaseBot* bot, const Vector& landing, const Vector& forward, edict_t* obstacle) : IMovement::Action<CBaseBot>(bot)
+	{
+		m_zboost = bot->GetMovementInterface()->GetCrouchJumpZBoost();
+		m_jumpboost_timer = 9;
+		m_wasairborne = false;
+		m_onground = false;
+		m_landing = landing;
+		m_forward = forward;
+		
+		if (obstacle != nullptr && obstacle->GetIServerEntity() != nullptr)
+		{
+			m_obstacle = obstacle->GetIServerEntity()->GetBaseEntity();
+		}
+	}
+
+	void OnStart() override
+	{
+		m_jumpboost_timer = 9;
+		m_timer.Start(0.8f);
+		GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
+		GetBot()->GetControlInterface()->PressJumpButton(0.3f);
+	}
+
+	void Execute() override
+	{
+		if (m_jumpboost_timer > 0)
+		{
+			m_jumpboost_timer--;
+
+			if (m_jumpboost_timer == 0)
+			{
+				Vector vel = GetBot()->GetAbsVelocity();
+				vel.z = m_zboost;
+				GetBot()->SetAbsVelocity(vel);
+			}
+		}
+
+		bool airborne = !GetBot()->GetMovementInterface()->IsOnGround();
+
+		if (!m_wasairborne && airborne)
+		{
+			m_wasairborne = true;
+		}
+
+		if (!m_onground && m_wasairborne && !airborne)
+		{
+			m_onground = true;
+			return;
+		}
+
+		Vector toLanding = m_landing - GetBot()->GetAbsOrigin();
+		toLanding.z = 0.0f;
+		toLanding.NormalizeInPlace();
+
+		if (airborne)
+		{
+			GetBot()->GetControlInterface()->AimAt(GetBot()->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
+		}
+
+		GetBot()->GetMovementInterface()->MoveTowards(m_landing);
+	}
+
+	bool BlockNavigator() override { return true; }
+	bool IsClimbingOrJumping() override { return true; }
+
+	bool IsDone() override { return m_wasairborne && !m_onground; }
+
+private:
+	CountdownTimer m_timer;
+	int m_jumpboost_timer;
+	float m_zboost;
+	bool m_wasairborne;
+	bool m_onground;
+	Vector m_landing;
+	Vector m_forward;
+	CHandle<CBaseEntity> m_obstacle;
+};
+
 IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 {
 	Reset();
@@ -70,20 +282,16 @@ IMovement::~IMovement()
 
 void IMovement::Reset()
 {
-	m_internal_jumptimer = -1;
 	m_jumptimer.Invalidate();
 	m_ladder = nullptr;
 	m_ladderExit = nullptr;
 	m_ladderState = NOT_USING_LADDER;
-	m_landingGoal = vec3_origin;
-	m_isClimbingObstacle = false;
-	m_isJumpingAcrossGap = false;
-	m_isAirborne = false;
 	m_stuck.Reset();
 	m_motionVector = vec3_origin;
 	m_groundMotionVector = vec2_origin;
 	m_speed = 0.0f;
 	m_groundspeed = 0.0f;
+	m_action = nullptr;
 }
 
 void IMovement::Update()
@@ -113,60 +321,18 @@ void IMovement::Update()
 	{
 		return;
 	}
-
-	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
-	{
-		Vector toLanding = m_landingGoal - GetBot()->GetAbsOrigin();
-		toLanding.z = 0.0f;
-		toLanding.NormalizeInPlace();
-
-		if (m_isAirborne)
-		{
-			GetBot()->GetControlInterface()->AimAt(GetBot()->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
-
-			if (IsOnGround())
-			{
-				// jump complete
-				m_isJumpingAcrossGap = false;
-				m_isClimbingObstacle = false;
-				m_isAirborne = false;
-			}
-		}
-		else // not airborne, jump!
-		{
-			if (!IsClimbingOrJumping())
-			{
-				Jump();
-			}
-
-			if (!IsOnGround())
-			{
-				m_isAirborne = true;
-			}
-		}
-
-		MoveTowards(m_landingGoal);
-	}
 }
 
 void IMovement::Frame()
 {
-	// update crouch-jump timer
-	if (m_internal_jumptimer >= 0)
+	if (m_action)
 	{
-		m_internal_jumptimer--;
+		m_action->Execute();
 
-		if (m_internal_jumptimer == 0)
+		if (m_action->IsDone())
 		{
-			// GetBot()->GetControlInterface()->PressJumpButton(0.23f);
-			Vector vel = GetBot()->GetAbsVelocity();
-			vel.z = GetCrouchJumpZBoost();
-			GetBot()->SetAbsVelocity(vel);
-
-			if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-			{
-				GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (JUMP) \n", GetBot()->GetDebugIdentifier());
-			}
+			m_action->OnEnd();
+			m_action = nullptr;
 		}
 	}
 
@@ -345,27 +511,12 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 
 void IMovement::Jump()
 {
-	GetBot()->GetControlInterface()->PressJumpButton();
-	m_jumptimer.Start(0.8f);
+	ExecuteMovementAction<JumpAction>(false, GetBot());
 }
 
 void IMovement::CrouchJump()
 {
-	// Execute a crouch jump
-	// See shounic's video https://www.youtube.com/watch?v=7z_p_RqLhkA
-
-	// First the bot will crouch
-	GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
-	GetBot()->GetControlInterface()->PressJumpButton(0.3f);
-
-	// This is a tick timer, the bot will jump when it reaches 0
-	m_internal_jumptimer = 8; // jump after some time
-	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
-
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-	{
-		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (CROUCH) \n", GetBot()->GetDebugIdentifier());
-	}
+	ExecuteMovementAction<CrouchJumpAction>(false, GetBot(), GetCrouchJumpZBoost());
 }
 
 /**
@@ -375,48 +526,12 @@ void IMovement::CrouchJump()
 */
 void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 {
-	Jump();
-
-	// look towards the jump target
-	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
-
-	m_isJumpingAcrossGap = true;
-	m_landingGoal = landing;
-	m_isAirborne = false;
-
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-	{
-		Vector top = GetBot()->GetAbsOrigin();
-		top.z += GetMaxJumpHeight();
-
-		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
-		NDebugOverlay::HorzArrow(top, landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
-	}
+	ExecuteMovementAction<JumpOverGapAction>(false, GetBot(), landing, forward);
 }
 
 bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
 {
-	CrouchJump(); // Always do a crouch jump
-
-	m_isClimbingObstacle = true;
-	m_landingGoal = landingGoal;
-	m_isAirborne = false;
-
-	return true;
-}
-
-bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
-{
-	if (!IsAbleToDoubleJump())
-		return false;
-
-	DoubleJump();
-
-	m_isClimbingObstacle = true;
-	m_landingGoal = landingGoal;
-	m_isAirborne = false;
-
-	return true;
+	return ExecuteMovementAction<ClimbUpToLedgeAction>(false, GetBot(), landingGoal, landingForward, obstacle);
 }
 
 bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity)
@@ -1139,5 +1254,3 @@ IMovement::LadderState IMovement::DismountLadderBottom()
 
 	return NOT_USING_LADDER;
 }
-
-

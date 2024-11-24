@@ -1,6 +1,8 @@
 #ifndef SMNAV_BOT_MOVEMENT_INTERFACE_H_
 #define SMNAV_BOT_MOVEMENT_INTERFACE_H_
 
+#include <memory>
+
 #include <bot/interfaces/base_interface.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
@@ -40,7 +42,7 @@ class IMovement : public IBotInterface
 {
 public:
 	IMovement(CBaseBot* bot);
-	virtual ~IMovement();
+	~IMovement() override;
 
 	class StuckStatus
 	{
@@ -99,6 +101,65 @@ public:
 		{
 			this->movementrequesttimer.Start();
 		}
+	};
+
+private:
+
+	/**
+	 * @brief Interface for movement actions. A movement action represents a single action done by the bot. Examples: crouch jumps, rocket jumps, double jumps, etc...
+	 */
+	class IAction
+	{
+	public:
+
+		virtual ~IAction() {}
+
+		// Called once when the action is about to be executed. This is called on the same frame as the action is created
+		virtual void OnStart() {}
+
+		// Called every frame while this action is running. Note: there is a 1 frame delay from OnStart
+		virtual void Execute() = 0;
+
+		// Called once when the action is about to be discarded.
+		virtual void OnEnd() {}
+
+		/**
+		 * @brief Does this action takes full control of the bot movements? If yes, blocks the navigation from sending movement inputs.
+		 * @return True if this movement action should block inputs from the navigator. False otherwise.
+		 */
+		virtual bool BlockNavigator() { return false; }
+
+		/**
+		 * @brief Does this action counts as the bot climbing over an obstacle or jumping?
+		 * @return True if this is a climb or jump. False otherwise.
+		 */
+		virtual bool IsClimbingOrJumping() { return false; }
+
+		// Override me! This tells the movement interface that the action is done and can be discarded.
+		virtual bool IsDone() = 0;
+	};
+
+public:
+
+	/**
+	 * @brief Movement actions should derive from this.
+	 * @tparam T Bot class.
+	 */
+	template<typename T>
+	class Action : public IAction
+	{
+	public:
+		Action(T* bot)
+		{
+			m_me = bot;
+		}
+
+		~Action() override {}
+
+		inline T* GetBot() const { return m_me; }
+
+	private:
+		T* m_me;
 	};
 	
 	// Ladder usage state
@@ -173,7 +234,7 @@ public:
 	// Perform a blast jump
 	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
 	// Climb by double jumping
-	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
+	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle) { return false; }
 
 	virtual bool IsAbleToClimb() { return true; }
 	virtual bool IsAbleToJumpAcrossGap() { return true; }
@@ -185,13 +246,31 @@ public:
 	 * @brief Checks if the movement interface has taken control of the bot movements to perform a maneuver
 	 * @return True if controlling the bot's movements. False otherwise.
 	 */
-	virtual bool IsControllingMovements() { return false; }
+	virtual bool IsControllingMovements()
+	{
+		if (m_action)
+		{
+			return m_action->BlockNavigator();
+		}
+
+		return false;
+	}
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return m_basemovespeed; }
 	virtual float GetMinimumMovementSpeed() { return m_basemovespeed * 0.4f; }
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
-	virtual bool IsClimbingOrJumping();
+
+	virtual bool IsClimbingOrJumping()
+	{
+		if (m_action)
+		{
+			return m_action->IsClimbingOrJumping();
+		}
+
+		return false;
+	}
+
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
 	virtual bool IsAscendingOrDescendingLadder();
 	virtual bool IsOnLadder(); // true if the bot is on a ladder right now
@@ -224,17 +303,39 @@ public:
 	// Called when there is an obstacle on the bot's path.
 	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
 
+	/**
+	 * @brief Executes a movement action.
+	 * @tparam T Action to execute.
+	 * @tparam ...Types Arguments passed to the action.
+	 * @param force if true, will override any existing action.
+	 * @param ...args Arguments passed to the action
+	 * @return True if the action was created, false if not.
+	 */
+	template <typename T, class... Types>
+	bool ExecuteMovementAction(bool force, Types... args)
+	{
+		// Don't override any existing actions unless force is true
+		if (force == false && m_action)
+		{
+			return false;
+		}
+
+		std::unique_ptr<T> action = std::make_unique<T>(std::forward<Types>(args)...);
+
+		m_action = std::move(action);
+
+		m_action->OnStart();
+
+		return true;
+	}
+
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	CountdownTimer m_braketimer; // Timer for forced braking
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
 	CountdownTimer m_ladderTimer; // Max time to use a ladder
-	Vector m_landingGoal; // jump landing goal position
 	LadderState m_ladderState; // ladder operation state
-	bool m_isJumpingAcrossGap;
-	bool m_isClimbingObstacle;
-	bool m_isAirborne;
 
 	// stuck monitoring
 	StuckStatus m_stuck;
@@ -243,13 +344,15 @@ protected:
 
 	virtual bool TraverseLadder();
 
+	const std::unique_ptr<IAction>& GetRunningAction() const { return m_action; }
+
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed
 	Vector m_motionVector; // Unit vector of the bot current movement
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
-	int m_internal_jumptimer; // Tick based jump timer
 	float m_basemovespeed;
+	std::unique_ptr<IAction> m_action; // Movement action being performed
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();
@@ -258,21 +361,6 @@ private:
 	LadderState DismountLadderTop();
 	LadderState DismountLadderBottom();
 };
-
-inline bool IMovement::IsClimbingOrJumping()
-{
-	if (!m_jumptimer.IsElapsed())
-	{
-		return true;
-	}
-
-	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
-	{
-		return true;
-	}
-
-	return false;
-}
 
 #endif // !SMNAV_BOT_MOVEMENT_INTERFACE_H_
 

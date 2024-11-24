@@ -202,11 +202,6 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
-	if (!m_bpc.LoadConfigFile(error, maxlen))
-	{
-		return false;
-	}
-
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	ConVar_Register(0, this);
 	playerhelpers->AddClientListener(this);
@@ -214,7 +209,6 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
 	sharesys->RegisterLibrary(myself, "navbot");
-	plsys->AddPluginsListener(this);
 	
 	return true;
 }
@@ -342,14 +336,6 @@ void NavBotExt::OnClientPutInServer(int client)
 void NavBotExt::OnClientDisconnecting(int client)
 {
 	extmanager->OnClientDisconnect(client);
-}
-
-void NavBotExt::OnPluginLoaded(IPlugin* plugin)
-{
-	if (plugin && plugin->GetPublicInfo())
-	{
-		m_bpc.ValidatePlugin(plugin);
-	}
 }
 
 void NavBotExt::Hook_GameFrame(bool simulating)

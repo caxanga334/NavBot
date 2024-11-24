@@ -16,6 +16,8 @@ class IEventListener
 {
 public:
 
+	virtual ~IEventListener() {}
+
 	enum MovementFailureType
 	{
 		FAIL_NO_PATH = 0, // no path exists
