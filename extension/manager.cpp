@@ -284,7 +284,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 		if (newbotedict != nullptr)
 		{
-			newbotedict = nullptr;
+			*newbotedict = nullptr;
 		}
 
 		return;
@@ -307,7 +307,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 	if (newbotedict != nullptr)
 	{
-		newbotedict = &edict;
+		*newbotedict = edict;
 	}
 
 	smutils->LogMessage(myself, "NavBot added to the game.");
