@@ -235,22 +235,43 @@ jobs:
       - name: Create Folders
         run: |
           mkdir -p ${{ github.workspace }}/upload/
-          mkdir -p ${{ github.workspace }}/download/
+          mkdir -p ${{ github.workspace }}/download/windows/
+          mkdir -p ${{ github.workspace }}/download/linux/
+          mkdir -p ${{ github.workspace }}/download/shared/
 
-      # Going to leave a note here, this download them into FOLDERS, not a zipped file
-      - name: Download Artifacts
+      - name: Download Artifacts (Windows)
         uses: actions/download-artifact@v4.1.8
         with:
-          path: ${{ github.workspace }}/download/
+          pattern: '*windows*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/windows/
 
-      - name: ZIP Folders
+      - name: Download Artifacts (Linux)
+        uses: actions/download-artifact@v4.1.8
+        with:
+          pattern: '*linux*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/linux/
+  
+      - name: Download Artifacts (Shared)
+        uses: actions/download-artifact@v4.1.8
+        with:
+          pattern: '*sm-plugins*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/shared/
+
+      - name: Create Package
         run: |
-          cd ${{ github.workspace }}/download/
-          find . -mindepth 1 -maxdepth 1 -type d -exec 7z a -tzip {}.zip {} \;
+          cd ${{ github.workspace }}/download/windows/
+          rsync -rv ${{ github.workspace }}/download/shared/* ${{ github.workspace }}/download/windows/
+          7z a -r "navbot-windows-${{ github.ref_name }}.7z" addons
           ls -lah
-          mv *.zip ${{ github.workspace }}/upload/
-          cd ${{ github.workspace }}/upload/
+          mv *.7z ${{ github.workspace }}/upload/
+          cd ${{ github.workspace }}/download/linux/
+          rsync -rv ${{ github.workspace }}/download/shared/* ${{ github.workspace }}/download/linux/
+          tar -czf "navbot-linux-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
           ls -lah
+          mv *.tar.gz ${{ github.workspace }}/upload/
 
       - name: Create Pre-release
         uses: softprops/action-gh-release@v2.1.0
@@ -260,7 +281,7 @@ jobs:
           generate_release_notes: true
           prerelease: true
           files: |
-            upload/*.zip
+            upload/*.7z
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.1.0
@@ -270,6 +291,7 @@ jobs:
           generate_release_notes: true
           prerelease: false
           files: |
-            upload/*.zip
+            upload/*.7z
+            upload/*.tar.gz
 
     
