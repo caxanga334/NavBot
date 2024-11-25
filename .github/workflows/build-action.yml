@@ -275,17 +275,18 @@ jobs:
 
       - name: Create Pre-release
         uses: softprops/action-gh-release@v2.1.0
-        if: "contains('pr', ${{ github.ref_name }})"
+        if: contains(github.ref_name, 'pr') == true
         with:
           name: "NavBot ${{ github.ref_name }}"
           generate_release_notes: true
           prerelease: true
           files: |
             upload/*.7z
+            upload/*.tar.gz
 
       - name: Create Release
         uses: softprops/action-gh-release@v2.1.0
-        if: "!contains('pr', ${{ github.ref_name }})"
+        if: contains(github.ref_name, 'pr') == false
         with:
           name: "NavBot ${{ github.ref_name }}"
           generate_release_notes: true
