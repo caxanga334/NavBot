@@ -26,7 +26,6 @@ native bool IsNavBot(int client);
  */
 native bool AddNavBot(int& client, const char[] botName = NULL_STRING);
 
-
 /**
  * Checks if NavBot's Navigation Mesh for the current map is loaded.
  *
