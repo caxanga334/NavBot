@@ -2,6 +2,7 @@
 
 #include <extension.h>
 #include <sdkports/sdk_traces.h>
+#include <entities/baseentity.h>
 #include <server_class.h>
 #include <studio.h>
 #include "helpers.h"
@@ -898,6 +899,39 @@ const char* UtilHelpers::GetPlayerDebugIdentifier(edict_t* player)
 	auto name = gp->GetName();
 	ke::SafeSprintf(message, sizeof(message), "%s<#%i/%i>", name ? name : "", gamehelpers->IndexOfEdict(player), gp->GetUserId());
 	return message;
+}
+
+CBaseEntity* UtilHelpers::GetNearestEntityOfClassname(const Vector& source, const char* classname, float maxRange)
+{
+	CBaseEntity* pBest = nullptr;
+	float distance = std::numeric_limits<float>::max();
+	float current = 0.0f;
+
+	int entity = INVALID_EHANDLE_INDEX;
+	while ((entity = UtilHelpers::FindEntityByClassname(entity, classname)) != INVALID_EHANDLE_INDEX)
+	{
+		CBaseEntity* pBaseEntity = nullptr;
+
+		if (!IndexToAThings(entity, &pBaseEntity, nullptr))
+			continue;
+
+		entities::HBaseEntity be{ pBaseEntity };
+
+		Vector center = be.WorldSpaceCenter();
+
+		current = source.DistTo(center);
+
+		if (current > maxRange)
+			continue;
+
+		if (current < distance)
+		{
+			distance = current;
+			pBest = pBaseEntity;
+		}
+	}
+
+	return pBest;
 }
 
 void UtilHelpers::FakeClientCommandKeyValues(edict_t* client, KeyValues* kv)

@@ -632,4 +632,57 @@ CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHE
 
 }
 
+// SDKs that may have func_useableladder entities
+#if SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013
+
+CON_COMMAND_F(sm_navbot_debug_useable_ladder, "Useable ladder debug command", FCVAR_CHEAT)
+{
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	Vector center = host.GetAbsOrigin();
+
+	CBaseEntity* ladder = nullptr;
+
+	UtilHelpers::ForEachEntityInSphere(center, 512, [&ladder](int index, edict_t* edict, CBaseEntity* entity) {
+		if (edict != nullptr && entity != nullptr)
+		{
+			if (strcmp(gamehelpers->GetEntityClassname(entity), "func_useableladder") == 0)
+			{
+				ladder = entity;
+				return false;
+			}
+		}
+
+		return true;
+	});
+
+	if (ladder == nullptr)
+	{
+		Msg("No ladder found!\n");
+		return;
+	}
+
+	entities::HBaseEntity ent{ ladder };
+
+	Vector origin = reinterpret_cast<IServerEntity*>(ladder)->GetCollideable()->GetCollisionOrigin();
+	Vector topPosition, bottomPosition;
+	Vector* top = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecPlayerMountPositionTop");
+	Vector* bottom = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecPlayerMountPositionBottom");
+	Vector* dir = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecLadderDir");
+	bool* fakeladder = entprops->GetPointerToEntData<bool>(ladder, Prop_Send, "m_bFakeLadder");
+
+	ent.ComputeAbsPosition((*top + origin), &topPosition);
+	ent.ComputeAbsPosition((*bottom + origin), &bottomPosition);
+
+	Msg("Ladder Origin: %3.2f, %3.2f, %3.2f\n", origin.x, origin.y, origin.z);
+	Msg("Ladder Top: %3.2f, %3.2f, %3.2f\n", topPosition.x, topPosition.y, topPosition.z);
+	Msg("Ladder Bottom: %3.2f, %3.2f, %3.2f\n", bottomPosition.x, bottomPosition.y, bottomPosition.z);
+	Msg("Ladder Dir: %3.2f, %3.2f, %3.2f\n", dir->x, dir->y, dir->z);
+	Msg("Ladder is %s <%i>\n", *fakeladder ? "FAKE" : "REAL", static_cast<int>(*fakeladder));
+
+	NDebugOverlay::VertArrow(bottomPosition, topPosition, 10.0f, 0, 255, 0, 255, true, 20.0f);
+}
+
+#endif // SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013
+
+
 #endif // EXT_DEBUG

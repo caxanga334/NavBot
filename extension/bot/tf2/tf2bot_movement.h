@@ -16,12 +16,8 @@ public:
 	static constexpr float PLAYER_HULL_STAND = 82.0f;
 	static constexpr float PLAYER_HULL_CROUCH = 62.0f;
 
-	static constexpr float min_health_for_rocket_jumps() { return 100.0f; }
-	// if the gap length on a jump over gap is greater than this, then a scout bot will perform a double jump
-	static constexpr float scout_gap_jump_do_double_distance() { return 280.0f; }
-
-	// void Reset() override;
-	// void Frame() override;
+	void Reset() override;
+	void Frame() override;
 
 	float GetHullWidth() override;
 	float GetStandingHullHeigh() override;
@@ -40,6 +36,12 @@ public:
 
 private:
 	CTF2Bot* GetTF2Bot() const;
+	static constexpr float min_health_for_rocket_jumps() { return 100.0f; }
+	// if the gap length on a jump over gap is greater than this, then a scout bot will perform a double jump
+	static constexpr float scout_gap_jump_do_double_distance() { return 280.0f; }
+
+	int m_doublejumptimer;
+	int m_djboosttimer;
 };
 
 #endif // !NAVBOT_TF2_MOVEMENT_H_

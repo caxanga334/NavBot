@@ -271,6 +271,32 @@ namespace UtilHelpers
 	}
 
 	/**
+	 * @brief Runs a function on each entity inside the sphere's radius.
+	 * @tparam T A class with bool operator() overload with 3 parameter (int index, edict_t* edict, CBaseEntity* entity), Edict may be null if the entity is not networked. Return false to exit early.
+	 * @param center Search center point.
+	 * @param radius Search sphere radius.
+	 * @param functor Function to run.
+	 */
+	template <typename T>
+	inline void ForEachEntityInSphere(const Vector& center, float radius, T functor)
+	{
+		int entity = INVALID_EHANDLE_INDEX;
+		while ((entity = UtilHelpers::FindEntityInSphere(entity, center, radius)) != INVALID_EHANDLE_INDEX)
+		{
+			edict_t* edict = nullptr;
+			CBaseEntity* be = nullptr;
+
+			if (!IndexToAThings(entity, &be, &edict))
+				continue;
+
+			if (functor(entity, edict, be) == false)
+			{
+				return;
+			}
+		}
+	}
+
+	/**
 	 * @brief Runs a function on every entity.
 	 * @tparam T A function with the following parameters: (int index, edict_t* edict, CBaseEntity* entity)
 	 * @param functor Function to call.
@@ -293,6 +319,26 @@ namespace UtilHelpers
 		} while (next.IsValid());
 
 	}
+
+	// Gets the listen server host entity. NULL if on dedicated server.
+	inline edict_t* GetListenServerHost()
+	{
+		if (!engine->IsDedicatedServer())
+		{
+			return gamehelpers->EdictOfIndex(1);
+		}
+
+		return nullptr;
+	}
+
+	/**
+	 * @brief Gets the nearest entity from the source of the given classname.
+	 * @param source Source position for distance calculations.
+	 * @param classname Entity classname to search.
+	 * @param maxRange Maximum entity search range.
+	 * @return CBaseEntity pointer of the entity or NULL if none is found.
+	 */
+	CBaseEntity* GetNearestEntityOfClassname(const Vector& source, const char* classname, float maxRange = 65535.0f);
 
 	/**
 	 * @brief Calls ClientCommandKeyValues for the given client. Throws an exception if the engine branch doesn't support keyvalue commands.

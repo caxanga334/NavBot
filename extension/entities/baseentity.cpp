@@ -382,6 +382,34 @@ int entities::HBaseEntity::GetTakeDamage() const
 	return value;
 }
 
+matrix3x4_t entities::HBaseEntity::EntityToWorldTransform() const
+{
+	// the real function only calculates the absolute position if the dirty flag is set.
+	// since we don't have direct access to the member the result is stored, we always make the calculations.
+
+	matrix3x4_t result;
+	CalcAbsolutePosition(result);
+	return std::move(result);
+}
+
+void entities::HBaseEntity::ComputeAbsPosition(const Vector& vecLocalPosition, Vector* pAbsPosition) const
+{
+	CBaseEntity* pMoveParent = GetMoveParent();
+
+	if (pMoveParent == nullptr)
+	{
+		*pAbsPosition = vecLocalPosition;
+	}
+	else
+	{
+		HBaseEntity mp(pMoveParent);
+		matrix3x4_t matrix;
+		mp.CalcAbsolutePosition(matrix);
+
+		VectorTransform(vecLocalPosition, matrix, *pAbsPosition);
+	}
+}
+
 void entities::HBaseEntity::CalcAbsolutePosition(matrix3x4_t& result) const
 {
 	matrix3x4_t tempmat;

@@ -10,6 +10,7 @@
 
 #include <extension.h>
 #include <extplayer.h>
+#include <util/entprops.h>
 #include <entities/baseentity.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
@@ -18,19 +19,9 @@
 #include "nav_colors.h"
 #include "nav.h"
 #include "nav_mesh.h"
-#include <gametrace.h>
-#include <eiface.h>
-#include <convar.h>
-#include <iplayerinfo.h>
-#include <utlbuffer.h>
-#include <vphysics_interface.h>
 #include <shareddefs.h>
 
 extern ConVar sm_nav_area_bgcolor;
-extern IPlayerInfoManager* playerinfomanager;
-extern IVDebugOverlay* debugoverlay;
-extern IVEngineServer *engine;
-extern CGlobalVars* gpGlobals;
 
 unsigned int CNavLadder::m_nextID = 1;
 
@@ -363,6 +354,15 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 		bottomLeft += up * (GenerationStepSize/2);
 	}
 
+	if (m_ladderType == USEABLE_LADDER)
+	{
+		NDebugOverlay::Cross3D(m_useableOrigin, 12.0f, 0, 255, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
+
+	NDebugOverlay::Cross3D(m_top + (m_normal * 24.0f), 12.0f, 255, 0, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+	NDebugOverlay::Cross3D(m_bottom + (m_normal * 24.0f), 12.0f, 0, 255, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+	NDebugOverlay::Text(m_top, true, NDEBUG_PERSIST_FOR_ONE_TICK, "Ladder #%i", m_id);
+
 	// Draw connector lines ---------------------------------------------------
 	if ( !isEdit )
 	{
@@ -452,10 +452,93 @@ void CNavLadder::OnRoundRestart( void )
 }
 
 
+void CNavLadder::BuildUseableLadder(CBaseEntity* ladder)
+{
+	IServerEntity* svent = reinterpret_cast<IServerEntity*>(ladder);
+
+	m_ladderType = USEABLE_LADDER;
+	m_useableOrigin = svent->GetCollideable()->GetCollisionOrigin();
+	m_ladderEntity = ladder;
+
+	entities::HBaseEntity ent{ ladder };
+
+	Vector origin = reinterpret_cast<IServerEntity*>(ladder)->GetCollideable()->GetCollisionOrigin();
+	Vector topPosition, bottomPosition;
+	Vector* top = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecPlayerMountPositionTop");
+	Vector* bottom = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecPlayerMountPositionBottom");
+
+	ent.ComputeAbsPosition((*top + origin), &topPosition);
+	ent.ComputeAbsPosition((*bottom + origin), &bottomPosition);
+
+	m_top = topPosition;
+	m_bottom = bottomPosition;
+	m_top.z += StepHeight;
+	m_bottom.z += (StepHeight / 2.0f);
+	m_length = fabsf(topPosition.z - bottomPosition.z);
+	m_width = 24.0f; // temporary, player hull width
+	UpdateUseableLadderDir(NORTH);
+
+	m_topBehindArea = nullptr;
+	m_topForwardArea = nullptr;
+	m_topLeftArea = nullptr;
+	m_topRightArea = nullptr;
+	m_bottomArea = nullptr;
+	ConnectGeneratedLadder(10.0f);
+}
+
+void CNavLadder::UpdateUseableLadderDir(NavDirType dir)
+{
+	if (m_ladderType != USEABLE_LADDER)
+		return;
+
+	m_dir = dir;
+	m_normal.Init(0.0f, 0.0f, 0.0f);
+	AddDirectionVector(&m_normal, OppositeDirection(m_dir), 1.0f);
+
+	NDebugOverlay::HorzArrow(m_useableOrigin, m_useableOrigin + (m_normal * 256.0f), 6.0f, 255, 0, 0, 255, true, 20.0f);
+}
+
 //--------------------------------------------------------------------------------------------------------------
 void CNavLadder::FindLadderEntity( void )
 {
+	if (this->m_ladderType == USEABLE_LADDER)
+	{
+		CBaseEntity* ladder = nullptr;
+		float distance = 99999999.0f;
 
+		UtilHelpers::ForEachEntityOfClassname("func_useableladder", [&ladder, &distance, this](int index, edict_t* edict, CBaseEntity* entity) {
+			if (edict == nullptr || entity == nullptr)
+			{
+				return true; // exit early but keep searching
+			}
+
+			Vector origin = edict->GetCollideable()->GetCollisionOrigin();
+			
+			float current = (this->GetUseableLadderEntityOrigin() - origin).Length();
+
+			if (current < distance)
+			{
+				ladder = entity;
+				distance = current;
+			}
+
+			return true;
+		});
+
+		if (ladder != nullptr)
+		{
+			m_ladderEntity = ladder;
+
+#ifdef EXT_DEBUG
+			smutils->LogMessage(myself, "Nav Ladder <Useable> #%i found ladder entity %i", m_id, gamehelpers->EntityToBCompatRef(ladder));
+#endif // EXT_DEBUG
+
+		}
+		else
+		{
+			Warning("Useable Nav Ladder #%i could not find a matching func_useableladder entity!\n", m_id);
+		}
+	}
 }
 
 
@@ -477,11 +560,17 @@ void CNavLadder::Save(std::fstream& filestream, uint32_t version)
 	// save bottom endpoint of ladder
 	filestream.write(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
 
+	// save useable ladder entity origin
+	filestream.write(reinterpret_cast<char*>(&m_useableOrigin), sizeof(Vector));
+
 	// save ladder length
 	filestream.write(reinterpret_cast<char*>(&m_length), sizeof(float));
 
 	// save direction
 	filestream.write(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
+
+	// save ladder type
+	filestream.write(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
 
 	// save IDs of connecting areas
 	unsigned int id = m_topForwardArea ? m_topForwardArea->GetID() : 0;
@@ -515,11 +604,17 @@ void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t v
 	// load bottom endpoint of ladder
 	filestream.read(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
 
+	// save useable ladder entity origin
+	filestream.read(reinterpret_cast<char*>(&m_useableOrigin), sizeof(Vector));
+
 	// load ladder length
 	filestream.read(reinterpret_cast<char*>(&m_length), sizeof(float));
 
 	// load direction
 	filestream.read(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
+
+	// load ladder type
+	filestream.read(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
 
 	// load IDs of connecting areas
 	unsigned int id = 0;
@@ -548,8 +643,22 @@ void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t v
 		DevMsg( "ERROR: Unconnected ladder #%d top at ( %g, %g, %g )\n", m_id, m_top.x, m_top.y, m_top.z );
 		DevWarning( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
 	}
+}
 
+void CNavLadder::PostLoad(CNavMesh* TheNavMesh, uint32_t version)
+{
 	FindLadderEntity();
+
+	if (m_ladderType == USEABLE_LADDER)
+	{
+		m_normal.Init(0.0f, 0.0f, 0.0f);
+		AddDirectionVector(&m_normal, OppositeDirection(m_dir), 1.0f);
+	}
+	else
+	{
+		// regenerate the surface normal
+		this->SetDir(m_dir);
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------

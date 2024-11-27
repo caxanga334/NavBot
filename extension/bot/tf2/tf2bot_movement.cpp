@@ -5,170 +5,51 @@
 #include <entities/tf2/tf_entities.h>
 #include "tf2bot_movement.h"
 
-#if SOURCE_ENGINE == SE_TF2 // don't register this convar outside of tf2 mods
 static ConVar sm_navbot_tf_double_jump_z_boost("sm_navbot_tf_double_jump_z_boost", "300.0", FCVAR_CHEAT, "Amount of Z velocity to add when double jumping.");
-#endif
-
-class TF2DoubleJumpAction : public IMovement::Action<CTF2Bot>
-{
-public:
-	TF2DoubleJumpAction(CTF2Bot* bot) : IMovement::Action<CTF2Bot>(bot)
-	{
-		m_boostTimer = -1;
-	}
-
-	void OnStart() override
-	{
-		GetBot()->GetControlInterface()->PressCrouchButton(0.4f);
-		GetBot()->GetControlInterface()->PressJumpButton(0.2f);
-		m_secondJumpTimer.Start(0.5f);
-	}
-
-	void Execute() override
-	{
-		if (m_secondJumpTimer.HasStarted() && m_secondJumpTimer.IsElapsed())
-		{
-			GetBot()->GetControlInterface()->PressJumpButton();
-			m_secondJumpTimer.Invalidate();
-			m_boostTimer = 9;
-		}
-#if SOURCE_ENGINE == SE_TF2
-		if (m_boostTimer >= 0)
-		{
-			m_boostTimer--;
-
-			if (m_boostTimer == 0)
-			{
-				Vector vel = GetBot()->GetAbsVelocity();
-				vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
-				GetBot()->SetAbsVelocity(vel);
-				m_doneTimer.Start(0.2f);
-			}
-		}
-#endif
-	}
-
-	bool IsClimbingOrJumping() override { return true; }
-
-	bool IsDone() override { return m_doneTimer.HasStarted() && m_doneTimer.IsElapsed(); }
-
-private:
-	CountdownTimer m_secondJumpTimer;
-	CountdownTimer m_doneTimer;
-	int m_boostTimer;
-};
-
-class TF2JumpOverGapAction : public IMovement::Action<CTF2Bot>
-{
-public:
-	TF2JumpOverGapAction(CTF2Bot* bot, const Vector& landing, const Vector& forward) : IMovement::Action<CTF2Bot>(bot)
-	{
-		m_landing = landing;
-		m_forward = forward;
-		m_wasairborne = false;
-		m_onground = false;
-		m_boostTimer = -1;
-
-		float jumplength = (GetBot()->GetAbsOrigin() - landing).Length();
-
-		m_requiresDJ = (jumplength >= CTF2BotMovement::scout_gap_jump_do_double_distance());
-	}
-
-	void OnStart() override
-	{
-		GetBot()->GetControlInterface()->AimAt(m_landing + Vector(0.0f, 0.0f, 48.0f), IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at jump landing spot!");
-		GetBot()->GetControlInterface()->PressJumpButton();
-
-		if (m_requiresDJ)
-		{
-			m_secondJumpTimer.Start(0.5f);
-		}
-
-		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-		{
-			Vector top = GetBot()->GetAbsOrigin();
-			top.z += GetBot()->GetMovementInterface()->GetMaxJumpHeight();
-
-			NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
-			NDebugOverlay::HorzArrow(top, m_landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
-		}
-	}
-
-	void Execute() override
-	{
-		if (m_onground)
-			return;
-
-		bool airborne = !GetBot()->GetMovementInterface()->IsOnGround();
-
-		if (!m_wasairborne && airborne)
-		{
-			m_wasairborne = true;
-		}
-
-		Vector toLanding = m_landing - GetBot()->GetAbsOrigin();
-		toLanding.z = 0.0f;
-		toLanding.NormalizeInPlace();
-
-		if (airborne)
-		{
-			GetBot()->GetControlInterface()->AimAt(GetBot()->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
-		}
-		else
-		{
-			if (m_wasairborne)
-			{
-				m_onground = true; // end jump
-			}
-		}
-#if SOURCE_ENGINE == SE_TF2
-		if (m_requiresDJ)
-		{
-			if (m_secondJumpTimer.HasStarted() && m_secondJumpTimer.IsElapsed())
-			{
-				m_secondJumpTimer.Invalidate();
-				m_boostTimer = 8;
-			}
-
-
-			if (m_boostTimer >= 0)
-			{
-				m_boostTimer--;
-
-				if (m_boostTimer == 0)
-				{
-					Vector vel = GetBot()->GetAbsVelocity();
-					vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
-					GetBot()->SetAbsVelocity(vel);
-				}
-			}
-		}
-#endif
-
-		GetBot()->GetMovementInterface()->MoveTowards(m_landing);
-	}
-
-	bool BlockNavigator() override { return true; }
-	bool IsClimbingOrJumping() override { return true; }
-
-	bool IsDone() override { return m_wasairborne && !m_onground; }
-
-private:
-	Vector m_landing;
-	Vector m_forward;
-	bool m_wasairborne;
-	bool m_onground;
-	bool m_requiresDJ;
-	CountdownTimer m_secondJumpTimer;
-	int m_boostTimer;
-};
 
 CTF2BotMovement::CTF2BotMovement(CBaseBot* bot) : IMovement(bot)
 {
+	m_doublejumptimer = -1;
+	m_djboosttimer = -1;
 }
 
 CTF2BotMovement::~CTF2BotMovement()
 {
+}
+
+void CTF2BotMovement::Reset()
+{
+	m_doublejumptimer = -1;
+	m_djboosttimer = -1;
+	IMovement::Reset();
+}
+
+void CTF2BotMovement::Frame()
+{
+	if (m_doublejumptimer >= 0)
+	{
+		m_doublejumptimer--;
+
+		if (m_doublejumptimer == 0)
+		{
+			Jump();
+			m_djboosttimer = 8; // apply boost later
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump! \n", GetBot()->GetDebugIdentifier());
+		}
+	}
+
+	if (m_djboosttimer >= 0)
+	{
+		if (--m_djboosttimer == 0)
+		{
+			Vector vel = GetBot()->GetAbsVelocity();
+			vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
+			GetBot()->SetAbsVelocity(vel);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump (Z BOOST)! \n", GetBot()->GetDebugIdentifier());
+		}
+	}
+
+	IMovement::Frame();
 }
 
 float CTF2BotMovement::GetHullWidth()
@@ -214,12 +95,20 @@ float CTF2BotMovement::GetMaxGapJumpDistance() const
 
 void CTF2BotMovement::DoubleJump()
 {
-	ExecuteMovementAction<TF2DoubleJumpAction>(false, GetTF2Bot());
+	CrouchJump(); // crouch jump first
+	m_doublejumptimer = TIME_TO_TICKS(0.6f); // do the second jump half a second later
 }
 
 bool CTF2BotMovement::IsAbleToDoubleJump()
 {
-	return GetTF2Bot()->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Scout;
+	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());
+
+	if (cls == TeamFortress2::TFClass_Scout)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 bool CTF2BotMovement::IsAbleToBlastJump()
@@ -242,7 +131,33 @@ bool CTF2BotMovement::IsAbleToBlastJump()
 
 void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 {
-	ExecuteMovementAction<TF2JumpOverGapAction>(false, GetTF2Bot(), landing, forward);
+	Jump();
+
+	// look towards the jump target
+	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
+
+	m_isJumpingAcrossGap = true;
+	m_landingGoal = landing;
+	m_isAirborne = false;
+
+	if (GetTF2Bot()->GetMyClassType() == TeamFortress2::TFClass_Scout)
+	{
+		float jumplength = (GetBot()->GetAbsOrigin() - landing).Length();
+
+		if (jumplength >= scout_gap_jump_do_double_distance())
+		{
+			m_doublejumptimer = TIME_TO_TICKS(0.5f);
+		}
+	}
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		Vector top = GetBot()->GetAbsOrigin();
+		top.z += GetMaxJumpHeight();
+
+		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
+		NDebugOverlay::HorzArrow(top, landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
+	}
 }
 
 bool CTF2BotMovement::IsEntityTraversable(edict_t* entity, const bool now)

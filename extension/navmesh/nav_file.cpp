@@ -1295,6 +1295,11 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 
 	CWaypoint::g_NextWaypointID = topID + 1;
 
+	for (int i = 0; i < m_ladders.Count(); i++)
+	{
+		m_ladders[i]->PostLoad(this, version);
+	}
+
 	ComputeBattlefrontAreas();
 	
 	//

@@ -18,6 +18,12 @@ public:
 	CBaseExtPlayer(edict_t* edict);
 	virtual ~CBaseExtPlayer();
 
+	/**
+	 * @brief Radius the player is able to use objects.
+	 * https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/baseplayer_shared.h#L15
+	 */
+	static constexpr float PLAYER_USE_RADIUS = 80.0f;
+
 	// Gets the player edict_t
 	inline edict_t* GetEdict() const { return m_edict; }
 	// Gets the player entity index

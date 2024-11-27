@@ -339,6 +339,15 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 	m_ladders.AddToTail( ladder );
 }
 
+void CNavMesh::CreateUseableLadder(CBaseEntity* pLadder)
+{
+	CNavLadder* ladder = new CNavLadder;
+
+	ladder->BuildUseableLadder(pLadder);
+
+	m_ladders.AddToTail(ladder);
+}
+
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )

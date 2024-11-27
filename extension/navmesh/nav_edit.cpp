@@ -4363,3 +4363,112 @@ CON_COMMAND(sm_nav_print_map_name, "Prints the current map name used by the Navi
 	std::string name = TheNavMesh->GetMapFileName();
 	rootconsole->ConsolePrint("Map: %s", name.c_str());
 }
+
+void CNavMesh::BuildNearestUseableLadder()
+{
+}
+
+CON_COMMAND_F(sm_nav_build_useable_ladder, "Builds a new useable ladder.", FCVAR_CHEAT)
+{
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	Vector start = host.WorldSpaceCenter();
+
+	CBaseEntity* pLadder = UtilHelpers::GetNearestEntityOfClassname(start, "func_useableladder", 512.0f);
+
+	if (pLadder == nullptr)
+	{
+		Warning("No \"func_useableladder\" entity found within 512 units!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	TheNavMesh->CreateUseableLadder(pLadder);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+void CNavMesh::CommandNavSelectNearestUseableLadder()
+{
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	Vector start = host.WorldSpaceCenter();
+
+	CNavLadder* nearest = nullptr;
+	float dist = 512.0f; // max 512 units
+
+	for (int i = 0; i < m_ladders.Count(); ++i)
+	{
+		CNavLadder* ladder = m_ladders[i];
+
+		if (ladder->GetLadderType() != CNavLadder::USEABLE_LADDER)
+			continue;
+
+		float cd = (ladder->GetUseableLadderEntityOrigin() - start).Length();
+
+		if (cd < dist)
+		{
+			cd = dist;
+			nearest = ladder;
+		}
+	}
+
+	if (nearest != nullptr)
+	{
+		m_markedLadder = nearest;
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		Msg("Marked nearest ladder.\n");
+	}
+	else
+	{
+		Msg("No nearby ladder!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+
+
+CON_COMMAND_F(sm_nav_select_nearest_useable_ladder, "Selects the nearest useable ladder.", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavSelectNearestUseableLadder();
+}
+
+void CNavMesh::CommandNavSetUseableLadderDir()
+{
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	Vector start = host.WorldSpaceCenter();
+
+	CNavLadder* nearest = nullptr;
+	float dist = 512.0f; // max 512 units
+
+	for (int i = 0; i < m_ladders.Count(); ++i)
+	{
+		CNavLadder* ladder = m_ladders[i];
+
+		if (ladder->GetLadderType() != CNavLadder::USEABLE_LADDER)
+			continue;
+
+		float cd = (ladder->GetUseableLadderEntityOrigin() - start).Length();
+
+		if (cd < dist)
+		{
+			cd = dist;
+			nearest = ladder;
+		}
+	}
+
+	if (nearest != nullptr)
+	{
+		QAngle eyes = host.GetEyeAngles();
+		NavDirType dir = AngleToDirection(eyes[YAW]);
+		nearest->UpdateUseableLadderDir(dir);
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+	}
+	else
+	{
+		Msg("No nearby ladder!\n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_useable_ladder_set_dir, "Sets the direction a useable ladder is facing.", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavSetUseableLadderDir();
+}

@@ -41,6 +41,10 @@ public:
 		m_bottomArea = NULL;
 		// set an ID for interactive editing - loads will overwrite this
 		m_id = m_nextID++;
+		m_length = 0.0f;
+		m_width = 0.0f;
+		m_dir = NUM_DIRECTIONS;
+		m_ladderType = MAX_LADDER_TYPES;
 	}
 
 	~CNavLadder();
@@ -49,6 +53,7 @@ public:
 
 	void Save(std::fstream& filestream, uint32_t version);
 	void Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version);
+	void PostLoad(CNavMesh* TheNavMesh, uint32_t version);
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							///<re-orders ladder ID's so they are continuous
@@ -59,6 +64,14 @@ public:
 		LADDER_DOWN,
 
 		NUM_LADDER_DIRECTIONS
+	};
+
+	enum LadderType : std::uint32_t
+	{
+		SIMPLE_LADDER = 0, // simple ladder (CSS, DODS)
+		USEABLE_LADDER, // useable ladder (HL2, HL2DM)
+
+		MAX_LADDER_TYPES
 	};
 
 	Vector m_top;									///< world coords of the top of the ladder
@@ -100,13 +113,25 @@ public:
 	bool IsUsableByTeam( int teamNumber ) const;
 	CBaseEntity* GetLadderEntity(void) const { return m_ladderEntity.Get(); }
 
+	const Vector& GetUseableLadderEntityOrigin() const { return m_useableOrigin; }
+
+	// Builds a useable ladder of the given entity
+	void BuildUseableLadder(CBaseEntity* ladder);
+	void UpdateUseableLadderDir(NavDirType dir);
+
+	LadderType GetLadderType() const { return m_ladderType; }
+
 private:
 	void FindLadderEntity( void );
+
+	static constexpr auto USABLE_LADDER_ENTITY_SEARCH_RANGE = 512.0f; // search range for the ladder entity
+	static constexpr auto USABLE_LADDER_DISMOUNT_POINT_SEARCH_RANGE = 128.0f; // search range for the dismount points around the ladder
 
 	CHandle<CBaseEntity> m_ladderEntity;
 
 	NavDirType m_dir;								///< which way the ladder faces (ie: surface normal of climbable side)
 	Vector m_normal;								///< surface normal of the ladder surface (or Vector-ized m_dir, if the traceline fails)
+	Vector m_useableOrigin;							/// If this is a useable ladder, this is the origin of the func_useableladder entity
 
 	enum LadderConnectionType						///< Ladder connection directions, to facilitate iterating over connections
 	{
@@ -123,6 +148,7 @@ private:
 
 	static unsigned int m_nextID;					///< used to allocate unique IDs
 	unsigned int m_id;								///< unique area ID
+	LadderType m_ladderType;
 };
 
 //--------------------------------------------------------------------------------------------------------------

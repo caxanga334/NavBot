@@ -63,6 +63,7 @@ public:
 	void ReleaseBackwardsButton();
 	void PressUseButton(const float duration = -1.0f);
 	void ReleaseUseButton();
+	bool IsPressingTheUseButton();
 	void PressMoveLeftButton(const float duration = -1.0f);
 	void ReleaseMoveLeftButton();
 	void PressMoveRightButton(const float duration = -1.0f);
@@ -252,6 +253,11 @@ inline void IPlayerInput::ReleaseUseButton()
 {
 	m_buttons &= ~INPUT_USE;
 	m_usebuttontimer.Invalidate();
+}
+
+inline bool IPlayerInput::IsPressingTheUseButton()
+{
+	return m_usebuttontimer.HasStarted() && !m_usebuttontimer.IsElapsed();
 }
 
 inline void IPlayerInput::PressMoveLeftButton(const float duration)

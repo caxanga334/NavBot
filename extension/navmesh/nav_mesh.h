@@ -376,9 +376,9 @@ public:
 	/**
 	 * Return true if nav mesh can be trusted for all climbing/jumping decisions because game environment is fairly simple.
 	 * Authoritative meshes mean path followers can skip CPU intensive realtime scanning of unpredictable geometry.
-	 * This should probably be true by default since we only deal with player bots and players have very limited climbing, unlike Non-Players NextBots
+	 * Original was default to false. NavBot uses true as default since player bots have a more restricted movement and the climbing code works better with non-player bots/NPCs.
 	 */
-	virtual bool IsAuthoritative( void ) const { return false; }		
+	virtual bool IsAuthoritative( void ) const { return true; }
 
 	virtual bool Save(void);									// store Navigation Mesh to a file
 	inline bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
@@ -557,6 +557,8 @@ public:
 	void CommandNavSetLinkOrigin();
 	void CommandNavWarpToLinkOrigin() const;
 	void CommandNavTestForBlocked() const;
+	void CommandNavSelectNearestUseableLadder();
+	void CommandNavSetUseableLadderDir();
 
 
 	void AddToDragSelectionSet( CNavArea *pArea );
@@ -583,6 +585,7 @@ public:
 
 	void CreateLadder( const Vector &mins, const Vector &maxs, float maxHeightAboveTopArea );
 	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea );
+	void CreateUseableLadder(CBaseEntity* pLadder);
 
 	float SnapToGrid( float x, bool forceGrid = false ) const;					// snap given coordinate to generation grid boundary
 	Vector SnapToGrid( const Vector& in, bool snapX = true, bool snapY = true, bool forceGrid = false ) const;	// snap given vector's X & Y coordinates to generation grid boundary
@@ -693,6 +696,25 @@ public:
 		return true;
 	}
 
+	/**
+	 * @brief Runs a function on every Nav Ladder
+	 * @tparam T Function. bool (CNavLadder* ladder). Return false to end loop early.
+	 * @param func Function to run on each ladder.
+	 */
+	template <typename T>
+	void ForEveryLadder(T func)
+	{
+		for (int i = 0; i < m_ladders.Count(); ++i)
+		{
+			CNavLadder* ladder = m_ladders[i];
+
+			if (func(ladder) == false)
+			{
+				return;
+			}
+		}
+	}
+
 	//-------------------------------------------------------------------------------------
 	/**
 	 * tests a new area for connections to adjacent pre-existing areas
@@ -792,6 +814,11 @@ protected:
 	 * @return true if climbable, false otherwise.
 	 */
 	virtual bool IsClimbableSurface(const trace_t& tr);
+
+	/**
+	 * @brief Builds a new useable ladder from the nearest useable ladder entity to the listen server host.
+	 */
+	virtual void BuildNearestUseableLadder();
 
 private:
 	friend class CNavArea;

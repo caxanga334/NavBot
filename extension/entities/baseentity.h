@@ -67,6 +67,8 @@ namespace entities
 		int GetHealth() const;
 		int GetMaxHealth() const;
 		int GetTakeDamage() const;
+		matrix3x4_t EntityToWorldTransform() const;
+		void ComputeAbsPosition(const Vector& vecLocalPosition, Vector* pAbsPosition) const;
 
 	private:
 		void CalcAbsolutePosition(matrix3x4_t& result) const;
