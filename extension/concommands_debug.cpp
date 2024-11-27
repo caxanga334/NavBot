@@ -684,5 +684,63 @@ CON_COMMAND_F(sm_navbot_debug_useable_ladder, "Useable ladder debug command", FC
 
 #endif // SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013
 
+CON_COMMAND_F(sm_navbot_debug_find_ledge, "finds the ledge", FCVAR_CHEAT)
+{
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	Vector start = host.GetAbsOrigin();
+	Vector mins = host.GetMins();
+	Vector maxs = host.GetMaxs();
+	Vector forward;
+	QAngle eyeAngles = host.GetEyeAngles();
+	AngleVectors(eyeAngles, &forward);
+	forward.z = 0.0f;
+	forward.NormalizeInPlace();
+
+	CTraceFilterWorldAndPropsOnly filter;
+	bool lasthit = false;
+	Vector hitpos;
+	int it = 0;
+	constexpr auto stepSize = 16.0f;
+
+	do
+	{
+		it++;
+		trace_t tr;
+		Vector pos1 = start + (forward * (stepSize * static_cast<float>(it)));
+		Vector pos2 = pos1;
+		pos2.z -= StepHeight;
+		trace::hull(pos1, pos2, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+		if (trace::pointoutisdeworld(pos1))
+		{
+			Msg("Outside world!\n");
+			break;
+		}
+
+		if (tr.DidHit())
+		{
+			NDebugOverlay::SweptBox(pos1, pos2, mins, maxs, vec3_angle, 255, 0, 0, 255, 20.0f);
+
+			if (!lasthit)
+			{
+				lasthit = true;
+			}
+
+			hitpos = tr.endpos;
+		}
+		else
+		{
+			NDebugOverlay::SweptBox(pos1, pos2, mins, maxs, vec3_angle, 0, 153, 0, 255, 20.0f);
+
+			if (lasthit)
+			{
+				NDebugOverlay::Cross3D(hitpos, 16.0f, 0, 255, 255, true, 20.0f);
+				NDebugOverlay::Text(hitpos, "LEDGE", false, 20.0f);
+				break;
+			}
+		}
+
+	} while (it <= 20);
+}
 
 #endif // EXT_DEBUG

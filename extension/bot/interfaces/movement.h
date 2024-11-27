@@ -40,7 +40,7 @@ class IMovement : public IBotInterface
 {
 public:
 	IMovement(CBaseBot* bot);
-	virtual ~IMovement();
+	~IMovement() override;
 
 	class StuckStatus
 	{
@@ -230,6 +230,7 @@ protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
 	CountdownTimer m_ladderTimer; // Max time to use a ladder
+	CountdownTimer m_useLadderTimer; // Timer for pressing the use key to climb a ladder.
 	Vector m_landingGoal; // jump landing goal position
 	LadderState m_ladderState; // ladder operation state
 	bool m_isJumpingAcrossGap;
@@ -257,6 +258,8 @@ private:
 	LadderState UseLadderDown();
 	LadderState DismountLadderTop();
 	LadderState DismountLadderBottom();
+
+	static constexpr float MIN_LADDER_SPEED = 25.0f;
 };
 
 inline bool IMovement::IsClimbingOrJumping()
