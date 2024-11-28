@@ -1067,20 +1067,19 @@ public:
 
 	bool operator()( CNavLadder *ladder )
 	{
-		if ( ladder->m_topForwardArea == m_originalArea )
-			ladder->m_topForwardArea = m_replacementArea;
+		bool found = false;
 
-		if ( ladder->m_topRightArea == m_originalArea )
-			ladder->m_topRightArea = m_replacementArea;
+		for (auto& connect : ladder->GetConnections())
+		{
+			if (connect.GetConnectedArea() == m_originalArea)
+			{
+				found = true;
+				break;
+			}
+		}
 
-		if ( ladder->m_topLeftArea == m_originalArea )
-			ladder->m_topLeftArea = m_replacementArea;
-
-		if ( ladder->m_topBehindArea == m_originalArea )
-			ladder->m_topBehindArea = m_replacementArea;
-
-		if ( ladder->m_bottomArea == m_originalArea )
-			ladder->m_bottomArea = m_replacementArea;
+		ladder->Disconnect(m_originalArea);
+		ladder->ConnectTo(m_replacementArea);
 
 		return true;
 	}
@@ -1402,19 +1401,26 @@ bool CNavArea::IsConnected( const CNavArea *area, NavDirType dir ) const
 		{
 			CNavLadder *ladder = m_ladder[ CNavLadder::LADDER_UP ][ it ].ladder;
 
-			if (ladder->m_topBehindArea == area ||
-				ladder->m_topForwardArea == area ||
-				ladder->m_topLeftArea == area ||
-				ladder->m_topRightArea == area)
-				return true;
+			for (auto& connect : ladder->GetConnections())
+			{
+				if (connect.IsConnectedToLadderTop() && connect.GetConnectedArea() == area)
+				{
+					return true;
+				}
+			}
 		}
 
 		FOR_EACH_VEC( m_ladder[ CNavLadder::LADDER_DOWN ], dit )
 		{
 			CNavLadder *ladder = m_ladder[ CNavLadder::LADDER_DOWN ][ dit ].ladder;
 
-			if (ladder->m_bottomArea == area)
-				return true;
+			for (auto& connect : ladder->GetConnections())
+			{
+				if (connect.IsConnectedToLadderBottom() && connect.GetConnectedArea() == area)
+				{
+					return true;
+				}
+			}
 		}
 	}
 	else

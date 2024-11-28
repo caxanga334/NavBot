@@ -212,8 +212,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 		bool ladderUp = true;
 		const NavLadderConnectVector *ladderList = nullptr;
-		enum { AHEAD = 0, LEFT, RIGHT, BEHIND, NUM_TOP_DIRECTIONS };
-		int ladderTopDir = AHEAD;
+		std::size_t ladderConnIndex = 0;
+		const std::vector<LadderToAreaConnection>* ladderAreaList = nullptr;
 		bool bHaveMaxPathLength = ( maxPathLength > 0.0f );
 		float length = -1;
 		
@@ -241,7 +241,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 						searchWhere = SEARCH_LADDERS;
 
 						ladderList = area->GetLadders( CNavLadder::LADDER_UP );
-						ladderTopDir = AHEAD;
+						ladderConnIndex = 0;
 					}
 					else
 					{
@@ -278,6 +278,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 						// check down ladders
 						ladderUp = false;
 						ladderList = area->GetLadders( CNavLadder::LADDER_DOWN );
+						ladderConnIndex = 0;
 					}
 					searchIndex = 0;
 					continue;
@@ -287,35 +288,67 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				{
 					ladder = ladderList->Element( searchIndex ).ladder;
 
-					// do not use BEHIND connection, as its very hard to get to when going up a ladder
-					if ( ladderTopDir == AHEAD )
+					// if index is 0, update the area vectors
+					if (ladderConnIndex == 0)
 					{
-						newArea = ladder->m_topForwardArea;
+						ladderAreaList = &ladder->GetConnections();
 					}
-					else if ( ladderTopDir == LEFT )
+
+					if (ladderConnIndex >= ladderAreaList->size())
 					{
-						newArea = ladder->m_topLeftArea;
-					}
-					else if ( ladderTopDir == RIGHT )
-					{
-						newArea = ladder->m_topRightArea;
+						++searchIndex; // go to next ladder
+						ladderConnIndex = 0; // reset index
+						continue;
 					}
 					else
 					{
-						++searchIndex;
-						ladderTopDir = AHEAD;
-						continue;
+						if (ladderAreaList->at(ladderConnIndex).IsConnectedToLadderTop())
+						{
+							newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
+						}
+						else
+						{
+							ladderConnIndex++; // increment index
+							continue;
+						}
+
+						ladderConnIndex++; // increment index
 					}
 
 					how = GO_LADDER_UP;
-					++ladderTopDir;
 				}
 				else
 				{
-					newArea = ladderList->Element( searchIndex ).ladder->m_bottomArea;
-					how = GO_LADDER_DOWN;
 					ladder = ladderList->Element(searchIndex).ladder;
-					++searchIndex;
+
+					// if index is 0, update the area vectors
+					if (ladderConnIndex == 0)
+					{
+						ladderAreaList = &ladder->GetConnections();
+					}
+
+					if (ladderConnIndex >= ladderAreaList->size())
+					{
+						++searchIndex; // go to next ladder
+						ladderConnIndex = 0; // reset index
+						continue;
+					}
+					else
+					{
+						if (ladderAreaList->at(ladderConnIndex).IsConnectedToLadderBottom())
+						{
+							newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
+						}
+						else
+						{
+							ladderConnIndex++; // increment index
+							continue;
+						}
+
+						ladderConnIndex++; // increment index
+					}
+					
+					how = GO_LADDER_DOWN;
 				}
 
 				if ( newArea == NULL )
@@ -631,10 +664,13 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 				{
 					const CNavLadder *ladder = (*ladderList)[ it ].ladder;
 
-					// do not use BEHIND connection, as its very hard to get to when going up a ladder
-					AddAreaToOpenList( ladder->m_topForwardArea, area, startPos, maxRange );
-					AddAreaToOpenList( ladder->m_topLeftArea, area, startPos, maxRange );
-					AddAreaToOpenList( ladder->m_topRightArea, area, startPos, maxRange );
+					for (auto& connect : ladder->GetConnections())
+					{
+						if (connect.IsConnectedToLadderTop())
+						{
+							AddAreaToOpenList(connect.GetConnectedArea(), area, startPos, maxRange);
+						}
+					}
 				}
 			}
 
@@ -644,8 +680,15 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 			{
 				FOR_EACH_VEC( (*ladderList), it )
 				{
-					AddAreaToOpenList( (*ladderList)[ it ].ladder->m_bottomArea, area,
-							startPos, maxRange );
+					const CNavLadder* ladder = (*ladderList)[it].ladder;
+
+					for (auto& connect : ladder->GetConnections())
+					{
+						if (connect.IsConnectedToLadderBottom())
+						{
+							AddAreaToOpenList(connect.GetConnectedArea(), area, startPos, maxRange);
+						}
+					}
 				}
 			}
 
@@ -1252,29 +1295,15 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 	for (int it = 0; it < upconns->Count(); it++)
 	{
 		auto& connect = upconns->Element(it);
+		const CNavLadder* ladder = connect.ladder;
 
-		if (connect.ladder->m_topForwardArea != nullptr)
+		for (auto& ladderconn : ladder->GetConnections())
 		{
-			T* other = static_cast<T*>(connect.ladder->m_topForwardArea);
-			IncludeInSearch(area, other);
-		}
-
-		if (connect.ladder->m_topBehindArea != nullptr)
-		{
-			T* other = static_cast<T*>(connect.ladder->m_topBehindArea);
-			IncludeInSearch(area, other);
-		}
-
-		if (connect.ladder->m_topLeftArea != nullptr)
-		{
-			T* other = static_cast<T*>(connect.ladder->m_topLeftArea);
-			IncludeInSearch(area, other);
-		}
-
-		if (connect.ladder->m_topRightArea != nullptr)
-		{
-			T* other = static_cast<T*>(connect.ladder->m_topRightArea);
-			IncludeInSearch(area, other);
+			if (ladderconn.IsConnectedToLadderTop())
+			{
+				T* other = static_cast<T*>(ladderconn.GetConnectedArea());
+				IncludeInSearch(area, other);
+			}
 		}
 	}
 
@@ -1283,11 +1312,15 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 	for (int it = 0; it < downconns->Count(); it++)
 	{
 		auto& connect = upconns->Element(it);
+		const CNavLadder* ladder = connect.ladder;
 
-		if (connect.ladder->m_bottomArea != nullptr)
+		for (auto& ladderconn : ladder->GetConnections())
 		{
-			T* other = static_cast<T*>(connect.ladder->m_bottomArea);
-			IncludeInSearch(area, other);
+			if (ladderconn.IsConnectedToLadderBottom())
+			{
+				T* other = static_cast<T*>(ladderconn.GetConnectedArea());
+				IncludeInSearch(area, other);
+			}
 		}
 	}
 

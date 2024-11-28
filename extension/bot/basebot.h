@@ -161,7 +161,8 @@ public:
 	void FakeClientCommand(const char* command) const;
 	bool IsDebugging(int bits) const;
 	virtual const char* GetDebugIdentifier() const;
-	void DebugPrintToConsole(const int bits,const int red,const int green,const int blue, const char* fmt, ...) const;
+	void DebugPrintToConsole(const int bits, const int red, const int green, const int blue, const char* fmt, ...) const;
+	void DebugPrintToConsole(const int red, const int green, const int blue, const char* fmt, ...) const;
 	void DebugDisplayText(const char* text);
 	void DebugFrame();
 

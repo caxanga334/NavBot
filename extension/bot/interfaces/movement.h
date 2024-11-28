@@ -185,7 +185,7 @@ public:
 	 * @brief Checks if the movement interface has taken control of the bot movements to perform a maneuver
 	 * @return True if controlling the bot's movements. False otherwise.
 	 */
-	virtual bool IsControllingMovements() { return false; }
+	virtual bool IsControllingMovements();
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return m_basemovespeed; }
@@ -233,6 +233,7 @@ protected:
 	CountdownTimer m_useLadderTimer; // Timer for pressing the use key to climb a ladder.
 	Vector m_landingGoal; // jump landing goal position
 	LadderState m_ladderState; // ladder operation state
+	CountdownTimer m_ladderWait; // ladder wait timer
 	bool m_isJumpingAcrossGap;
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
@@ -261,6 +262,16 @@ private:
 
 	static constexpr float MIN_LADDER_SPEED = 25.0f;
 };
+
+inline bool IMovement::IsControllingMovements()
+{
+	if (m_ladderState != NOT_USING_LADDER)
+	{
+		return true; // take full control when doing ladder operations
+	}
+
+	return false;
+}
 
 inline bool IMovement::IsClimbingOrJumping()
 {

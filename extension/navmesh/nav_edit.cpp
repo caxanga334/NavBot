@@ -2419,15 +2419,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 						{
 							PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 							SetMarkedLadder( ladder );
-
-							int connected = 0;
-							connected += m_markedLadder->m_topForwardArea != NULL;
-							connected += m_markedLadder->m_topLeftArea != NULL;
-							connected += m_markedLadder->m_topRightArea != NULL;
-							connected += m_markedLadder->m_topBehindArea != NULL;
-							connected += m_markedLadder->m_bottomArea != NULL;
-
-							Msg( "Marked Ladder is connected to %d Areas\n", connected );
+							Msg("Marked Ladder is connected to %d Areas\n", static_cast<int>(m_markedLadder->GetConnectionsCount()));
 						}
 					}
 				}
@@ -2488,15 +2480,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 		// Mark a ladder
 		PlayEditSound(EditSoundType::SOUND_GENERIC_OFF);
 		SetMarkedLadder( m_selectedLadder );
-
-		int connected = 0;
-		connected += m_markedLadder->m_topForwardArea != NULL;
-		connected += m_markedLadder->m_topLeftArea != NULL;
-		connected += m_markedLadder->m_topRightArea != NULL;
-		connected += m_markedLadder->m_topBehindArea != NULL;
-		connected += m_markedLadder->m_bottomArea != NULL;
-
-		Msg( "Marked Ladder is connected to %d Areas\n", connected );
+		Msg("Marked Ladder is connected to %d Areas\n", static_cast<int>(m_markedLadder->GetConnectionsCount()));
 	}
 
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
@@ -3426,20 +3410,9 @@ void CNavMesh::CommandNavLadderFlip( void )
 
 	if ( m_selectedLadder )
 	{
-		CNavArea *area;
-
 		// flip direction
 		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
 		m_selectedLadder->SetDir( OppositeDirection( m_selectedLadder->GetDir() ) );
-
-		// and reverse ladder's area pointers
-		area = m_selectedLadder->m_topBehindArea;
-		m_selectedLadder->m_topBehindArea = m_selectedLadder->m_topForwardArea;
-		m_selectedLadder->m_topForwardArea = area;
-
-		area = m_selectedLadder->m_topRightArea;
-		m_selectedLadder->m_topRightArea = m_selectedLadder->m_topLeftArea;
-		m_selectedLadder->m_topLeftArea = area;
 	}
 
 	SetMarkedArea( NULL );			// unmark the mark area

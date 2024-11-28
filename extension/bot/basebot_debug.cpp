@@ -60,6 +60,26 @@ void CBaseBot::DebugPrintToConsole(const int bits,const int red,const int green,
 	ConColorMsg(Color(red, green, blue, 255), "%s", buffer);
 }
 
+void CBaseBot::DebugPrintToConsole(const int red, const int green, const int blue, const char* fmt, ...) const
+{
+	char buffer[512]{};
+	va_list vaargs;
+	va_start(vaargs, fmt);
+	size_t len = ke::SafeVsprintf(buffer, sizeof(buffer), fmt, vaargs);
+
+	if (len >= sizeof(buffer) - 1)
+	{
+		buffer[511] = '\0';
+	}
+	else {
+		buffer[len] = '\0';
+	}
+
+	va_end(vaargs);
+
+	ConColorMsg(Color(red, green, blue, 255), "%s", buffer);
+}
+
 void CBaseBot::DebugDisplayText(const char* text)
 {
 	NDebugOverlay::EntityText(GetIndex(), m_debugtextoffset, text, 0.1f);

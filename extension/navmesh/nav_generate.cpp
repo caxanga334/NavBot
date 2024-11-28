@@ -248,11 +248,7 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 
 	ladder->SetDir( ladder->GetDir() );	// now that we've adjusted the top and bottom, re-check the normal
 
-	ladder->m_bottomArea = NULL;
-	ladder->m_topForwardArea = NULL;
-	ladder->m_topLeftArea = NULL;
-	ladder->m_topRightArea = NULL;
-	ladder->m_topBehindArea = NULL;
+	ladder->m_connections.clear();
 	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
 
 	// add ladder to global list
@@ -328,11 +324,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 	ladder->SetDir( ladder->GetDir() );	// now that we've adjusted the top and bottom, re-check the normal
 
-	ladder->m_bottomArea = NULL;
-	ladder->m_topForwardArea = NULL;
-	ladder->m_topLeftArea = NULL;
-	ladder->m_topRightArea = NULL;
-	ladder->m_topBehindArea = NULL;
+	ladder->m_connections.clear();
 	ladder->ConnectGeneratedLadder( maxHeightAboveTopArea );
 
 	// add ladder to global list
@@ -362,15 +354,15 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	Vector center = m_bottom + Vector( 0, 0, GenerationStepSize );
 	AddDirectionVector( &center, m_dir, HalfHumanWidth );
 
-	m_bottomArea = TheNavMesh->GetNearestNavArea( center, true );
-	if (!m_bottomArea)
+	CNavArea* bottomArea = TheNavMesh->GetNearestNavArea( center, true );
+	if (!bottomArea)
 	{
 		DevMsg( "ERROR: Unconnected ladder bottom at ( %g, %g, %g )\n", m_bottom.x, m_bottom.y, m_bottom.z );
 	}
 	else
 	{
 		// store reference to ladder in the area
-		m_bottomArea->AddLadderUp( this );
+		bottomArea->AddLadderUp( this );
 	}
 
 	//
@@ -384,53 +376,62 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	float beneathLimit = MIN( 120.0f, m_top.z - m_bottom.z + HalfHumanWidth );
 
 	// find "ahead" area
-	m_topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL );
-	if (m_topForwardArea == m_bottomArea)
-		m_topForwardArea = NULL;
+	CNavArea* topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL );
+	if (topForwardArea == bottomArea)
+		topForwardArea = nullptr;
 
 	// find "left" area
-	m_topLeftArea = findFirstAreaInDirection( &center, DirectionLeft( m_dir ), nearLadderRange, beneathLimit, NULL );
-	if (m_topLeftArea == m_bottomArea)
-		m_topLeftArea = NULL;
+	CNavArea* topLeftArea = findFirstAreaInDirection( &center, DirectionLeft( m_dir ), nearLadderRange, beneathLimit, NULL );
+	if (topLeftArea == bottomArea)
+		topLeftArea = nullptr;
 
 	// find "right" area
-	m_topRightArea = findFirstAreaInDirection( &center, DirectionRight( m_dir ), nearLadderRange, beneathLimit, NULL );
-	if (m_topRightArea == m_bottomArea)
-		m_topRightArea = NULL;
+	CNavArea* topRightArea = findFirstAreaInDirection( &center, DirectionRight( m_dir ), nearLadderRange, beneathLimit, NULL );
+	if (topRightArea == bottomArea)
+		topRightArea = nullptr;
 
 	// find "behind" area - must look farther, since ladder is against the wall away from this area
-	m_topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL );
-	if (m_topBehindArea == m_bottomArea)
-		m_topBehindArea = NULL;
+	CNavArea* topBehindArea = findFirstAreaInDirection( &center, m_dir, 2.0f*nearLadderRange, beneathLimit, NULL );
+	if (topBehindArea == bottomArea)
+		topBehindArea = nullptr;
 
 	// can't include behind area, since it is not used when going up a ladder
-	if (!m_topForwardArea && !m_topLeftArea && !m_topRightArea)
+	if (!topForwardArea && !topLeftArea && !topRightArea)
 		DevMsg( "ERROR: Unconnected ladder top at ( %g, %g, %g )\n", m_top.x, m_top.y, m_top.z );
 
 	// store reference to ladder in the area(s)
-	if (m_topForwardArea)
-		m_topForwardArea->AddLadderDown( this );
-
-	if (m_topLeftArea)
-		m_topLeftArea->AddLadderDown( this );
-
-	if (m_topRightArea)
-		m_topRightArea->AddLadderDown( this );
-
-	if (m_topBehindArea)
+	if (topForwardArea)
 	{
-		m_topBehindArea->AddLadderDown( this );
-		Disconnect( m_topBehindArea );
+		topForwardArea->AddLadderDown(this);
+		ConnectTo(topForwardArea);
+	}
+
+	if (topLeftArea)
+	{
+		topLeftArea->AddLadderDown(this);
+		ConnectTo(topBehindArea);
+	}
+
+	if (topRightArea)
+	{
+		topRightArea->AddLadderDown(this);
+		ConnectTo(topRightArea);
+	}
+
+	if (topBehindArea)
+	{
+		topBehindArea->AddLadderDown( this );
+		Disconnect( topBehindArea );
 	}
 
 	// adjust top of ladder to highest connected area
 	float topZ = m_bottom.z + 5.0f;
 	bool topAdjusted = false;
 	CNavArea *topAreaList[4];
-	topAreaList[0] = m_topForwardArea;
-	topAreaList[1] = m_topLeftArea;
-	topAreaList[2] = m_topRightArea;
-	topAreaList[3] = m_topBehindArea;
+	topAreaList[0] = topForwardArea;
+	topAreaList[1] = topLeftArea;
+	topAreaList[2] = topRightArea;
+	topAreaList[3] = topBehindArea;
 
 	for( int a=0; a<4; ++a )
 	{
@@ -459,13 +460,13 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	// Determine whether this ladder is "dangling" or not
 	// "Dangling" ladders are too high to go up
 	//
-	if (m_bottomArea)
+	if (bottomArea)
 	{
 		Vector bottomSpot;
-		m_bottomArea->GetClosestPointOnArea( m_bottom, &bottomSpot );
+		bottomArea->GetClosestPointOnArea( m_bottom, &bottomSpot );
 		if (m_bottom.z - bottomSpot.z > HumanHeight)
 		{
-			m_bottomArea->Disconnect( this );
+			bottomArea->Disconnect( this );
 		}
 	}
 }

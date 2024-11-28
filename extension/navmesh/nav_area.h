@@ -610,11 +610,7 @@ public:
 
 				if (ladder != nullptr)
 				{
-					if (ladder->m_bottomArea == other ||
-						ladder->m_topForwardArea == other ||
-						ladder->m_topLeftArea == other ||
-						ladder->m_topRightArea == other || 
-						ladder->m_topBehindArea == other)
+					if (ladder->IsConnected(this))
 					{
 						return ladder;
 					}
@@ -651,34 +647,14 @@ public:
 			for (int i = 0; i < laddersup->Count(); i++)
 			{
 				auto& conn = laddersup->Element(i);
-				CNavArea* connectedArea = conn.ladder->m_topForwardArea;
 
-				if (connectedArea)
+				for (auto& lc : conn.ladder->GetConnections())
 				{
-					functor(connectedArea);
-				}
-
-				connectedArea = conn.ladder->m_topBehindArea;
-
-				if (connectedArea)
-				{
-					functor(connectedArea);
-				}
-
-				connectedArea = conn.ladder->m_topLeftArea;
-
-				if (connectedArea)
-				{
-					functor(connectedArea);
-				}
-
-				connectedArea = conn.ladder->m_topRightArea;
-
-				if (connectedArea)
-				{
-					functor(connectedArea);
-				}
-				
+					if (lc.IsConnectedToLadderTop())
+					{
+						functor(lc.GetConnectedArea());
+					}
+				}				
 			}
 		}
 
@@ -689,11 +665,13 @@ public:
 			for (int i = 0; i < laddersdown->Count(); i++)
 			{
 				auto& conn = laddersdown->Element(i);
-				CNavArea* connectedArea = conn.ladder->m_bottomArea;
 
-				if (connectedArea)
+				for (auto& lc : conn.ladder->GetConnections())
 				{
-					functor(connectedArea);
+					if (lc.IsConnectedToLadderBottom())
+					{
+						functor(lc.GetConnectedArea());
+					}
 				}
 			}
 		}

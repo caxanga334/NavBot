@@ -560,13 +560,17 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 		for (i = 0; i < ladders->Count(); i++)
 		{
 			CNavLadder* ladder = ladders->Element(i).ladder;
+			auto& connections = ladder->GetConnections();
 
-			if (ladder->m_topForwardArea == to->area || ladder->m_topLeftArea == to->area || ladder->m_topRightArea == to->area)
+			for (auto& connect : connections)
 			{
-				to->ladder = ladder;
-				to->goal = ladder->m_bottom + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
-				to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
-				break;
+				if (connect.IsConnectedToLadderTop() && connect.GetConnectedArea() == to->area)
+				{
+					to->ladder = ladder;
+					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
+					to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
+					break;
+				}
 			}
 
 			if (i == ladders->Count())
@@ -585,13 +589,17 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 		for (i = 0; i < ladders->Count(); i++)
 		{
 			CNavLadder* ladder = ladders->Element(i).ladder;
+			auto& connections = ladder->GetConnections();
 
-			if (ladder->m_bottomArea == to->area)
+			for (auto& connect : connections)
 			{
-				to->ladder = ladder;
-				to->goal = ladder->m_bottom + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
-				to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
-				break;
+				if (connect.IsConnectedToLadderBottom() && connect.GetConnectedArea() == to->area)
+				{
+					to->ladder = ladder;
+					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
+					to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
+					break;
+				}
 			}
 
 			if (i == ladders->Count())

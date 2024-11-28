@@ -16,6 +16,7 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <variant>
 
 #include "nav.h"
 #include <sdkports/sdk_ehandle.h>
@@ -23,6 +24,49 @@
 class CUtlBuffer;
 class CNavMesh;
 class IServerEntity;
+
+// Represents a connection from the ladder to exit areas
+struct LadderToAreaConnection
+{
+	LadderToAreaConnection()
+	{
+		connect = 0U;
+		bottom = true;
+	}
+
+	LadderToAreaConnection(CNavArea* area)
+	{
+		connect = area;
+		bottom = true;
+	}
+
+	bool operator==(const LadderToAreaConnection& other)
+	{
+		if (std::holds_alternative<CNavArea*>(this->connect) == false)
+		{
+			return false;
+		}
+
+		if (std::holds_alternative<CNavArea*>(other.connect) == false)
+		{
+			return false;
+		}
+
+		return std::get<CNavArea*>(this->connect) == std::get<CNavArea*>(other.connect);
+	}
+
+	// Post load operations
+	void PostLoad();
+
+	CNavArea* GetConnectedArea() const { return std::get<CNavArea*>(connect); }
+	bool IsConnectedToLadderBottom() const { return bottom; }
+	bool IsConnectedToLadderTop() const { return !bottom; }
+	const Vector& GetConnectionPoint() const { return point; }
+
+	std::variant<unsigned int, CNavArea*> connect;
+	Vector point; // connection point on the ladder
+	bool bottom;
+};
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -34,17 +78,15 @@ class CNavLadder
 public:
 	CNavLadder( void )
 	{
-		m_topForwardArea = NULL;
-		m_topRightArea = NULL;
-		m_topLeftArea = NULL;
-		m_topBehindArea = NULL;
-		m_bottomArea = NULL;
+		m_connections.reserve(2); // ladders will generally have two connections
 		// set an ID for interactive editing - loads will overwrite this
 		m_id = m_nextID++;
 		m_length = 0.0f;
 		m_width = 0.0f;
 		m_dir = NUM_DIRECTIONS;
 		m_ladderType = MAX_LADDER_TYPES;
+		m_bottomCount = 0;
+		m_topCount = 0;
 	}
 
 	~CNavLadder();
@@ -81,13 +123,8 @@ public:
 
 	Vector GetPosAtHeight( float height ) const;	///< Compute x,y coordinate of the ladder at a given height
 
-	CNavArea *m_topForwardArea;						///< the area at the top of the ladder
-	CNavArea *m_topLeftArea;
-	CNavArea *m_topRightArea;
-	CNavArea *m_topBehindArea;						///< area at top of ladder "behind" it - only useful for descending
-	CNavArea *m_bottomArea;							///< the area at the bottom of the ladder
-
 	bool IsConnected( const CNavArea *area, LadderDirectionType dir ) const;	///< returns true if given area is connected in given direction
+	bool IsConnected(const CNavArea* area) const;
 
 	void ConnectGeneratedLadder( float maxHeightAboveTopArea );		///< Connect a generated ladder to nav areas at the end of nav generation
 
@@ -100,7 +137,7 @@ public:
 	void DrawLadder(  bool isSelected,  bool isMarked, bool isEdit ) const;					///< Draws ladder and connections
 	void DrawConnectedAreas( bool isEdit );				///< Draws connected areas
 
-	void UpdateDangling( void );					///< Checks if the ladder is dangling (bots cannot go up)
+	// void UpdateDangling( void );					///< Checks if the ladder is dangling (bots cannot go up)
 
 	bool IsInUse( const edict_t *ignore = NULL ) const;	///< return true if someone is on this ladder (other than 'ignore')
 
@@ -121,34 +158,31 @@ public:
 
 	LadderType GetLadderType() const { return m_ladderType; }
 
+	const std::vector<LadderToAreaConnection>& GetConnections() const { return m_connections; }
+	const LadderToAreaConnection* GetConnectionToArea(const CNavArea* area) const;
+	std::size_t GetConnectionsCount() const { return m_connections.size(); }
+	std::size_t GetTopConnectionCount() const { return m_topCount; }
+	std::size_t GetBottomConnectionCount() const { return m_bottomCount; }
+	void GetConnectedAreas(std::vector<CNavArea*>& topAreas, std::vector<CNavArea*>& bottomAreas) const;
+
 private:
+	friend class CNavMesh;
 	void FindLadderEntity( void );
 
 	static constexpr auto USABLE_LADDER_ENTITY_SEARCH_RANGE = 512.0f; // search range for the ladder entity
 	static constexpr auto USABLE_LADDER_DISMOUNT_POINT_SEARCH_RANGE = 128.0f; // search range for the dismount points around the ladder
 
+	std::vector<LadderToAreaConnection> m_connections;
 	CHandle<CBaseEntity> m_ladderEntity;
-
 	NavDirType m_dir;								///< which way the ladder faces (ie: surface normal of climbable side)
 	Vector m_normal;								///< surface normal of the ladder surface (or Vector-ized m_dir, if the traceline fails)
 	Vector m_useableOrigin;							/// If this is a useable ladder, this is the origin of the func_useableladder entity
 
-	enum LadderConnectionType						///< Ladder connection directions, to facilitate iterating over connections
-	{
-		LADDER_TOP_FORWARD = 0,
-		LADDER_TOP_LEFT,
-		LADDER_TOP_RIGHT,
-		LADDER_TOP_BEHIND,
-		LADDER_BOTTOM,
-
-		NUM_LADDER_CONNECTIONS
-	};
-
-	CNavArea ** GetConnection( LadderConnectionType dir );
-
 	static unsigned int m_nextID;					///< used to allocate unique IDs
 	unsigned int m_id;								///< unique area ID
 	LadderType m_ladderType;
+	std::size_t m_bottomCount;						// Number of bottom connections, used in path finding
+	std::size_t m_topCount;							// Number of top connections, used in path finding
 };
 
 //--------------------------------------------------------------------------------------------------------------

@@ -51,38 +51,20 @@ void CNavLadder::Shift( const Vector &shift )
 }
 
 //--------------------------------------------------------------------------------------------------------------
-CNavArea ** CNavLadder::GetConnection( LadderConnectionType dir )
-{
-	switch ( dir )
-	{
-	case LADDER_TOP_FORWARD:
-		return &m_topForwardArea;
-	case LADDER_TOP_LEFT:
-		return &m_topLeftArea;
-	case LADDER_TOP_RIGHT:
-		return &m_topRightArea;
-	case LADDER_TOP_BEHIND:
-		return &m_topBehindArea;
-	case LADDER_BOTTOM:
-		return &m_bottomArea;
-	}
-
-	return NULL;
-}
-
-
-//--------------------------------------------------------------------------------------------------------------
 void CNavLadder::OnSplit( CNavArea *original, CNavArea *alpha, CNavArea *beta )
 {
-	for ( int con=0; con<NUM_LADDER_CONNECTIONS; ++con )
+	for (auto& connect : m_connections)
 	{
-		CNavArea ** areaConnection = GetConnection( (LadderConnectionType)con );
-
-		if ( areaConnection && *areaConnection == original )
+		if (connect.GetConnectedArea() == original)
 		{
-			*areaConnection = alpha->GetDistanceSquaredToPoint( m_top )
-					< beta->GetDistanceSquaredToPoint( m_top ) ?
-					alpha : beta;
+			if (alpha->GetDistanceSquaredToPoint(m_top) < beta->GetDistanceSquaredToPoint(m_top))
+			{
+				connect.connect = alpha;
+			}
+			else
+			{
+				connect.connect = beta;
+			}
 		}
 	}
 }
@@ -94,47 +76,46 @@ void CNavLadder::OnSplit( CNavArea *original, CNavArea *alpha, CNavArea *beta )
  */
 void CNavLadder::ConnectTo( CNavArea *area )
 {
-	float center = (m_top.z + m_bottom.z) * 0.5f;
+	for (auto& connect : m_connections)
+	{
+		if (connect.GetConnectedArea() == area)
+		{
+			return;
+		}
+	}
+
+	auto& newconnect = m_connections.emplace_back(area);
+	const float center = (m_top.z + m_bottom.z) * 0.5f;
 
 	if (area->GetCenter().z > center)
 	{
-		// connect to top
-		NavDirType dir;
+		// connected area is closer to the ladder top, mark it as a 'top' connection
+		newconnect.bottom = false;
+		newconnect.point.x = m_top.x;
+		newconnect.point.y = m_top.y;
+		Vector close;
+		area->GetClosestPointOnArea(m_top, &close);
+		newconnect.point.z = close.z + (StepHeight / 2.0f);
 
-		Vector dirVector = area->GetCenter() - m_top;
-		if ( fabs( dirVector.x ) > fabs( dirVector.y ) )
+		if (newconnect.point.z > m_top.z)
 		{
-			dir = dirVector.x > 0.0f ?
-					EAST : WEST;
-		}
-		else
-		{
-			dir = dirVector.y > 0.0f ?
-					SOUTH : NORTH;
-		}
-
-		if ( m_dir == dir )
-		{
-			Warning("Bots may not be able to find exit path to \"behind areas\" when climbing ladders.\n");
-			m_topBehindArea = area;
-		}
-		else if ( OppositeDirection( m_dir ) == dir )
-		{
-			m_topForwardArea = area;
-		}
-		else if ( DirectionLeft( m_dir ) == dir )
-		{
-			m_topLeftArea = area;
-		}
-		else
-		{
-			m_topRightArea = area;
+			newconnect.point.z = m_top.z - 1.0f;
 		}
 	}
 	else
 	{
-		// connect to bottom
-		m_bottomArea = area;
+		// mark as bottom
+		newconnect.bottom = true;
+		newconnect.point.x = m_bottom.x;
+		newconnect.point.y = m_bottom.y;
+		Vector close;
+		area->GetClosestPointOnArea(m_bottom, &close);
+		newconnect.point.z = close.z + (StepHeight / 2.0f);
+
+		if (newconnect.point.z < m_bottom.z)
+		{
+			newconnect.point.z = m_bottom.z + 1.0f;
+		}
 	}
 }
 
@@ -167,26 +148,9 @@ void CNavLadder::OnDestroyNotify( CNavArea *dead )
  */
 void CNavLadder::Disconnect( CNavArea *area )
 {
-	if ( m_topForwardArea == area )
-	{
-		m_topForwardArea = NULL;
-	}
-	else if ( m_topLeftArea == area )
-	{
-		m_topLeftArea = NULL;
-	}
-	else if ( m_topRightArea == area )
-	{
-		m_topRightArea = NULL;
-	}
-	else if ( m_topBehindArea == area )
-	{
-		m_topBehindArea = NULL;
-	}
-	else if ( m_bottomArea == area )
-	{
-		m_bottomArea = NULL;
-	}
+	m_connections.erase(std::remove_if(m_connections.begin(), m_connections.end(), [&area](const LadderToAreaConnection& object) {
+		return object.GetConnectedArea() == area;
+	}), m_connections.end());
 }
 
 
@@ -196,25 +160,44 @@ void CNavLadder::Disconnect( CNavArea *area )
  */
 bool CNavLadder::IsConnected( const CNavArea *area, LadderDirectionType dir ) const
 {
-	if ( dir == LADDER_DOWN )
+	for (auto& connect : m_connections)
 	{
-		return area == m_bottomArea;
+		switch (dir)
+		{
+		case CNavLadder::LADDER_UP:
+
+			if (connect.IsConnectedToLadderTop() && connect.GetConnectedArea() == area)
+			{
+				return true;
+			}
+
+			break;
+		case CNavLadder::LADDER_DOWN:
+		default:
+
+			if (connect.IsConnectedToLadderBottom() && connect.GetConnectedArea() == area)
+			{
+				return true;
+			}
+
+			break;
+		}
 	}
-	else if ( dir == LADDER_UP )
+
+	return false;
+}
+
+bool CNavLadder::IsConnected(const CNavArea* area) const
+{
+	for (auto& connect : m_connections)
 	{
-		return ( area == m_topForwardArea ||
-			area == m_topLeftArea ||
-			area == m_topRightArea ||
-			area == m_topBehindArea );
+		if (connect.GetConnectedArea() == area)
+		{
+			return true;
+		}
 	}
-	else
-	{
-		return ( area == m_bottomArea ||
-			area == m_topForwardArea ||
-			area == m_topLeftArea ||
-			area == m_topRightArea ||
-			area == m_topBehindArea );
-	}
+
+	return false;
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -369,32 +352,21 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 		Vector bottom = m_bottom;
 		Vector top = m_top;
 
-		NavDrawLine( top, bottom, NavConnectedTwoWaysColor );
+		NavDrawLine(top, bottom, NavConnectedTwoWaysColor);
 
-		if (m_bottomArea)
+		for (auto& connect : m_connections)
 		{
-			float offset = GenerationStepSize;
-			const Vector& areaBottom = m_bottomArea->GetCenter();
+			CNavArea* area = connect.GetConnectedArea();
 
-			 // don't draw the bottom connection too high if the ladder is very short
-			if ( top.z - bottom.z < GenerationStepSize * 1.5f 			 // don't draw the bottom connection too high if the ladder is high above the area
-					|| bottom.z - areaBottom.z > GenerationStepSize * 1.5f )
-				offset = 0.0f;
-
-			NavDrawLine( bottom + Vector( 0, 0, offset ), areaBottom, ((m_bottomArea->IsConnected( this, LADDER_UP ))?NavConnectedTwoWaysColor:NavConnectedOneWayColor) );
+			if (connect.IsConnectedToLadderTop())
+			{
+				NavDrawLine(connect.point, area->GetCenter(), area->IsConnected(this, LADDER_DOWN) ? NavConnectedTwoWaysColor : NavConnectedOneWayColor);
+			}
+			else
+			{
+				NavDrawLine(connect.point, area->GetCenter(), area->IsConnected(this, LADDER_UP) ? NavConnectedTwoWaysColor : NavConnectedOneWayColor);
+			}
 		}
-
-		if (m_topForwardArea)
-			NavDrawLine( top, m_topForwardArea->GetCenter(), ((m_topForwardArea->IsConnected( this, LADDER_DOWN ))?NavConnectedTwoWaysColor:NavConnectedOneWayColor) );
-
-		if (m_topLeftArea)
-			NavDrawLine( top, m_topLeftArea->GetCenter(), ((m_topLeftArea->IsConnected( this, LADDER_DOWN ))?NavConnectedTwoWaysColor:NavConnectedOneWayColor) );
-
-		if (m_topRightArea)
-			NavDrawLine( top, m_topRightArea->GetCenter(), ((m_topRightArea->IsConnected( this, LADDER_DOWN ))?NavConnectedTwoWaysColor:NavConnectedOneWayColor) );
-
-		if (m_topBehindArea)
-			NavDrawLine( top, m_topBehindArea->GetCenter(), ((m_topBehindArea->IsConnected( this, LADDER_DOWN ))?NavConnectedTwoWaysColor:NavConnectedOneWayColor) );
 	}
 }
 
@@ -402,28 +374,10 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 //--------------------------------------------------------------------------------------------------------------
 void CNavLadder::DrawConnectedAreas( bool isEdit )
 {
-	CUtlVector< CNavArea * > areas;
-	if ( m_topForwardArea )
-		areas.AddToTail( m_topForwardArea );
-	if ( m_topLeftArea )
-		areas.AddToTail( m_topLeftArea );
-	if ( m_topRightArea )
-		areas.AddToTail( m_topRightArea );
-	if ( m_topBehindArea )
-		areas.AddToTail( m_topBehindArea );
-	if ( m_bottomArea )
-		areas.AddToTail( m_bottomArea );
-
-	for ( int i=0; i<areas.Count(); ++i )
+	for (auto& connect : m_connections)
 	{
-		CNavArea *adj = areas[i];
-
-		adj->Draw();
-
-		if ( !isEdit )
-		{
-			adj->DrawHidingSpots();
-		}
+		connect.GetConnectedArea()->Draw();
+		connect.GetConnectedArea()->DrawHidingSpots();
 	}
 }
 
@@ -478,11 +432,6 @@ void CNavLadder::BuildUseableLadder(CBaseEntity* ladder)
 	m_width = 24.0f; // temporary, player hull width
 	UpdateUseableLadderDir(NORTH);
 
-	m_topBehindArea = nullptr;
-	m_topForwardArea = nullptr;
-	m_topLeftArea = nullptr;
-	m_topRightArea = nullptr;
-	m_bottomArea = nullptr;
 	ConnectGeneratedLadder(10.0f);
 }
 
@@ -496,6 +445,37 @@ void CNavLadder::UpdateUseableLadderDir(NavDirType dir)
 	AddDirectionVector(&m_normal, OppositeDirection(m_dir), 1.0f);
 
 	NDebugOverlay::HorzArrow(m_useableOrigin, m_useableOrigin + (m_normal * 256.0f), 6.0f, 255, 0, 0, 255, true, 20.0f);
+}
+
+const LadderToAreaConnection* CNavLadder::GetConnectionToArea(const CNavArea* area) const
+{
+	for (auto& connect : m_connections)
+	{
+		if (connect.GetConnectedArea() == area)
+		{
+			return &connect;
+		}
+	}
+
+	return nullptr;
+}
+
+void CNavLadder::GetConnectedAreas(std::vector<CNavArea*>& topAreas, std::vector<CNavArea*>& bottomAreas) const
+{
+	topAreas.clear();
+	bottomAreas.clear();
+
+	for (auto& connect : m_connections)
+	{
+		if (connect.IsConnectedToLadderTop())
+		{
+			topAreas.push_back(connect.GetConnectedArea());
+		}
+		else
+		{
+			bottomAreas.push_back(connect.GetConnectedArea());
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -573,16 +553,31 @@ void CNavLadder::Save(std::fstream& filestream, uint32_t version)
 	filestream.write(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
 
 	// save IDs of connecting areas
-	unsigned int id = m_topForwardArea ? m_topForwardArea->GetID() : 0;
-	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	id = m_topLeftArea ? m_topLeftArea->GetID() : 0;
-	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	id = m_topRightArea ? m_topRightArea->GetID() : 0;
-	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	id = m_topBehindArea ? m_topBehindArea->GetID() : 0;
-	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	id = m_bottomArea ? m_bottomArea->GetID() : 0;
-	filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+	std::uint8_t count = 0;
+	std::size_t size = m_connections.size();
+
+	if (size >= 254U)
+	{
+		count = 254U; // only save up to 254 connections
+	}
+	else
+	{
+		count = static_cast<std::uint8_t>(size);
+	}
+
+	// save vector size
+	filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint8_t));
+
+	for (auto& connect : m_connections)
+	{
+		// area ID
+		unsigned int id = connect.GetConnectedArea()->GetID();
+		filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+
+		// data
+		filestream.write(reinterpret_cast<char*>(&connect.bottom), sizeof(bool));
+		filestream.write(reinterpret_cast<char*>(&connect.point), sizeof(Vector));
+	}
 }
 
 
@@ -617,36 +612,46 @@ void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t v
 	filestream.read(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
 
 	// load IDs of connecting areas
-	unsigned int id = 0;
-	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topForwardArea = TheNavMesh->GetNavAreaByID(id);
-	id = 0;
-	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topLeftArea = TheNavMesh->GetNavAreaByID(id);
-	id = 0;
-	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topRightArea = TheNavMesh->GetNavAreaByID(id);
-	id = 0;
-	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_topBehindArea = TheNavMesh->GetNavAreaByID(id);
-	id = 0;
-	filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-	m_bottomArea = TheNavMesh->GetNavAreaByID(id);
+	
+	std::uint8_t count = 0;
+	
+	// load vector size
+	filestream.read(reinterpret_cast<char*>(&count), sizeof(std::uint8_t));
 
-	if ( !m_bottomArea )
+	for (std::uint8_t i = 0; i < count; i++)
 	{
-		DevMsg( "ERROR: Unconnected ladder #%d bottom at ( %g, %g, %g )\n", m_id, m_bottom.x, m_bottom.y, m_bottom.z );
-		DevWarning( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
-	}
-	else if (!m_topForwardArea && !m_topLeftArea && !m_topRightArea)	// can't include behind area, since it is not used when going up a ladder
-	{
-		DevMsg( "ERROR: Unconnected ladder #%d top at ( %g, %g, %g )\n", m_id, m_top.x, m_top.y, m_top.z );
-		DevWarning( "nav_unmark; nav_mark ladder %d; nav_warp_to_mark\n", m_id );
+		auto& connect = m_connections.emplace_back();
+
+		// area ID
+		unsigned int id = 0;
+		filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+		connect.connect = id;
+
+		// data
+		filestream.read(reinterpret_cast<char*>(&connect.bottom), sizeof(bool));
+		filestream.read(reinterpret_cast<char*>(&connect.point), sizeof(Vector));
 	}
 }
 
 void CNavLadder::PostLoad(CNavMesh* TheNavMesh, uint32_t version)
 {
+	m_topCount = 0;
+	m_bottomCount = 0;
+
+	for (auto& connect : m_connections)
+	{
+		connect.PostLoad(); // convert ID to pointers
+
+		if (connect.IsConnectedToLadderTop())
+		{
+			m_topCount++;
+		}
+		else
+		{
+			m_bottomCount++;
+		}
+	}
+
 	FindLadderEntity();
 
 	if (m_ladderType == USEABLE_LADDER)
@@ -754,3 +759,16 @@ Vector CNavLadder::GetPosAtHeight( float height ) const
 }
 
 //--------------------------------------------------------------------------------------------------------------
+
+void LadderToAreaConnection::PostLoad()
+{
+	unsigned int id = std::get<unsigned int>(connect);
+	CNavArea* area = TheNavMesh->GetNavAreaByID(id);
+
+	if (area == nullptr)
+	{
+		smutils->LogError(myself, "LadderToAreaConnection::PostLoad Failed to convert Area ID #%i to a CNavArea object!", id);
+	}
+
+	connect = area;
+}
