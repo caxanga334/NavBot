@@ -265,3 +265,33 @@ void IPlayerController::AimAt(const int entity, const LookPriority priority, con
 	edict_t* edict = gamehelpers->EdictOfIndex(entity);
 	AimAt(edict->GetIServerEntity()->GetBaseEntity(), priority, duration, reason);
 }
+
+void IPlayerController::SnapAimAt(const QAngle& angles, const LookPriority priority)
+{
+	if (!m_looktimer.IsElapsed() && m_priority > priority)
+	{
+		return;
+	}
+
+	GetBot()->SnapEyeAngles(angles);
+}
+
+void IPlayerController::SnapAimAt(const Vector& pos, const LookPriority priority)
+{
+	if (!m_looktimer.IsElapsed() && m_priority > priority)
+	{
+		return;
+	}
+
+	QAngle lookAngles;
+	Vector origin = GetBot()->GetEyeOrigin();
+	Vector to = (pos - origin);
+	to.NormalizeInPlace();
+	VectorAngles(to, lookAngles);
+
+	lookAngles.x = AngleNormalize(lookAngles.x);
+	lookAngles.y = AngleNormalize(lookAngles.y);
+
+	SnapAimAt(lookAngles, priority);
+
+}

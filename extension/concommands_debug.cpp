@@ -509,6 +509,18 @@ CON_COMMAND_F(sm_snap_my_angles, "sNAP", FCVAR_CHEAT)
 	player.SnapEyeAngles(angles);
 }
 
+CON_COMMAND_F(sm_snap_to_origin, "Snaps the player view angles to an origin", FCVAR_CHEAT)
+{
+	CBaseExtPlayer player(UtilHelpers::GetListenServerHost());
+	QAngle angles(0.0f, 0.0f, 0.0f);
+	Vector origin = player.GetEyeOrigin();
+	Vector to = (vec3_origin - origin);
+	to.NormalizeInPlace();
+	VectorAngles(to, angles);
+	player.SnapEyeAngles(angles);
+	NDebugOverlay::Line(origin, vec3_origin, 0, 128, 0, true, 15.0f);
+}
+
 CON_COMMAND_F(sm_navbot_debug_entlist, "Debugs the entity list.", FCVAR_CHEAT)
 {
 	UtilHelpers::ForEveryEntity([](int index, edict_t* edict, CBaseEntity* entity) {

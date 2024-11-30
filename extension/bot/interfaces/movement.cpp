@@ -68,7 +68,7 @@ IMovement::~IMovement()
 
 void IMovement::Reset()
 {
-	m_internal_jumptimer = -1;
+	m_jump_zboost_timer.Invalidate();
 	m_jumptimer.Invalidate();
 	m_ladder = nullptr;
 	m_ladderExit = nullptr;
@@ -153,23 +153,18 @@ void IMovement::Update()
 
 void IMovement::Frame()
 {
-	// update crouch-jump timer
-	if (m_internal_jumptimer >= 0)
+	if (m_jump_zboost_timer.HasStarted() && m_jump_zboost_timer.IsElapsed())
 	{
-		m_internal_jumptimer--;
+		Vector vel = GetBot()->GetAbsVelocity();
+		vel.z = GetCrouchJumpZBoost();
+		GetBot()->SetAbsVelocity(vel);
 
-		if (m_internal_jumptimer == 0)
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
-			// GetBot()->GetControlInterface()->PressJumpButton(0.23f);
-			Vector vel = GetBot()->GetAbsVelocity();
-			vel.z = GetCrouchJumpZBoost();
-			GetBot()->SetAbsVelocity(vel);
-
-			if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-			{
-				GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (JUMP) \n", GetBot()->GetDebugIdentifier());
-			}
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (JUMP) \n", GetBot()->GetDebugIdentifier());
 		}
+
+		m_jump_zboost_timer.Invalidate();
 	}
 
 	if (m_braketimer.HasStarted() && !m_braketimer.IsElapsed())
@@ -295,24 +290,6 @@ void IMovement::MoveTowards(const Vector& pos)
 	}
 }
 
-void IMovement::AccelerateTowards(const Vector& pos, const float accSpeedScale, bool noZ)
-{
-	CBaseBot* me = GetBot();
-	Vector origin = me->GetAbsOrigin();
-	Vector velocity = me->GetAbsVelocity();
-	Vector to = (pos - origin);
-	to.NormalizeInPlace();
-	float maxspeed = me->GetMaxSpeed();
-
-	if (noZ)
-	{
-		to.z = 0.0f;
-	}
-
-	velocity = velocity + (to * accSpeedScale);
-	me->SetAbsVelocity(velocity);
-}
-
 void IMovement::FaceTowards(const Vector& pos, const bool important)
 {
 	auto input = GetBot()->GetControlInterface();
@@ -388,8 +365,12 @@ void IMovement::CrouchJump()
 	GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
 	GetBot()->GetControlInterface()->PressJumpButton(0.3f);
 
-	// This is a tick timer, the bot will jump when it reaches 0
-	m_internal_jumptimer = 8; // jump after some time
+	if (IsOnGround()) // prevents adding the Z boost while on the air
+	{
+		// This is a tick timer, the bot will jump when it reaches 0
+		m_jump_zboost_timer.Start(0.150f);
+	}
+
 	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
@@ -405,10 +386,11 @@ void IMovement::CrouchJump()
 */
 void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 {
-	Jump();
-
 	// look towards the jump target
+	GetBot()->GetControlInterface()->SnapAimAt(landing, IPlayerController::LOOK_MOVEMENT);
 	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
+
+	Jump();
 
 	m_isJumpingAcrossGap = true;
 	m_landingGoal = landing;
@@ -1025,27 +1007,7 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 	Vector to = climbPoint - origin;
 	to.z = 0.0f;
 	float mountRange = to.NormalizeInPlace();
-	Vector moveGoal;
-
-	constexpr auto VERY_CLOSE_RANGE = 10.0f;
-	constexpr auto MOVE_DIST = 100.0f;
-	if (mountRange < VERY_CLOSE_RANGE)
-	{
-		// bot is very close to the ladder, just move forward
-		auto& forward = GetMotionVector();
-		moveGoal = origin + MOVE_DIST * forward;
-	}
-	else
-	{
-		if (DotProduct(to, m_ladder->GetNormal()) < 0.0f)
-		{
-			moveGoal = m_ladder->m_top - MOVE_DIST * m_ladder->GetNormal();
-		}
-		else
-		{
-			moveGoal = m_ladder->m_top + MOVE_DIST * m_ladder->GetNormal();
-		}
-	}
+	Vector moveGoal = climbPoint;
 
 	if (debug)
 	{
@@ -1075,11 +1037,6 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 
 		GetBot()->GetControlInterface()->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at ladder mount position!");
 		MoveTowards(moveGoal);
-
-		if (!IsOnGround())
-		{
-			AccelerateTowards(lookAt, 0.2f); // use LookAt
-		}
 
 		if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
 		{
@@ -1212,6 +1169,12 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	Vector goalPos = eyepos + 100.0f * toGoal;
 	input->AimAt(goalPos, IPlayerController::LOOK_MOVEMENT, 0.2f, "Dismount Ladder");
 
+	if (!input->IsAimOnTarget())
+	{
+		// wait until the bot is looking at the dismount position
+		return EXITING_LADDER_UP;
+	}
+
 	MoveTowards(m_ladderExit->GetCenter());
 
 	if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
@@ -1314,6 +1277,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 
 		m_ladderMoveGoal = m_ladder->m_bottom;
 		m_ladderMoveGoal.z = z;
+		GetBot()->GetControlInterface()->SnapAimAt(m_ladderMoveGoal, IPlayerController::LOOK_MOVEMENT);
 		m_ladderTimer.Start(4.0f);
 		return;
 	}
@@ -1328,12 +1292,18 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	case IMovement::APPROACHING_LADDER_DOWN:
 	{
 		m_ladderTimer.Start(4.0f);
+		Vector lookAt = m_ladder->m_top;
+		lookAt.z = m_ladder->ClampZ(GetBot()->GetAbsOrigin().z);
+		GetBot()->GetControlInterface()->SnapAimAt(lookAt, IPlayerController::LOOK_MOVEMENT);
 		return;
 	}
 	case IMovement::USING_LADDER_DOWN:
 	{
 		// calculate Z goal
 		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z + (GetStepHeight() / 4.0f);
+		Vector lookAt = m_ladder->m_top;
+		lookAt.z = m_ladderGoalZ;
+		GetBot()->GetControlInterface()->SnapAimAt(lookAt, IPlayerController::LOOK_MOVEMENT);
 		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
 		m_ladderTimer.Start(time);
 		return;

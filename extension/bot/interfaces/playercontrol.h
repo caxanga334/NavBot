@@ -47,12 +47,37 @@ public:
 	virtual void Frame() override;
 
 	virtual void ProcessButtons(int &buttons) override;
-	virtual void RunLook();
+	
+	/**
+	 * @brief Instructs the aim controller to aim at the given world position.
+	 * @param pos World position to aim at.
+	 * @param priority Aim task priority. If another AimAt task with higher priority is running, this call is rejected.
+	 * @param duration How long in seconds to aim at the given position.
+	 * @param reason Reason for this AimAt call (for debugging).
+	 */
 	virtual void AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason = nullptr);
+	/**
+	 * @brief Instructs the aim controller to aim at the given target entity. The aiming system will track the entity position.
+	 * @param entity Entity to aim at.
+	 * @param priority Aim task priority. If another AimAt task with higher priority is running, this call is rejected.
+	 * @param duration How long in seconds to aim at the given position.
+	 * @param reason Reason for this AimAt call (for debugging).
+	 */
 	virtual void AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	// Translates the given angles into a world position and calls AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason = nullptr)
 	void AimAt(const QAngle& angles, const LookPriority priority, const float duration, const char* reason = nullptr);
+	// Translates the given edict_t into a CBaseEntity and calls AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason = nullptr)
 	void AimAt(edict_t* entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	// Translates the given entity index into a CBaseEntity and calls AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason = nullptr)
 	void AimAt(const int entity, const LookPriority priority, const float duration, const char* reason = nullptr);
+	/**
+	 * @brief Snaps the bot view angles to the given angles.
+	 * @param angles Angles to snap to.
+	 * @param priority Priority to prevent overriding an active AimAt task.
+	 */
+	virtual void SnapAimAt(const QAngle& angles, const LookPriority priority);
+	// Translates the given position into angles and calls SnapAimAt(const QAngle& angles, const LookPriority priority)
+	void SnapAimAt(const Vector& pos, const LookPriority priority);
 	// True if the bot aim is Steady
 	virtual const bool IsAimSteady() const { return m_isSteady; }
 	// True if the bot aim is currently on target
@@ -71,6 +96,8 @@ private:
 		float base; // initial aim speed
 		float acceleration; // how fast to reach max speed
 	};
+
+	void RunLook();
 
 	LookPriority m_priority; // Current look priority
 	CountdownTimer m_looktimer; // Timer for the current look at task

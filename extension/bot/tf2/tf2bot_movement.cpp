@@ -9,8 +9,7 @@ static ConVar sm_navbot_tf_double_jump_z_boost("sm_navbot_tf_double_jump_z_boost
 
 CTF2BotMovement::CTF2BotMovement(CBaseBot* bot) : IMovement(bot)
 {
-	m_doublejumptimer = -1;
-	m_djboosttimer = -1;
+	m_initialJumpWasOnGround = false;
 }
 
 CTF2BotMovement::~CTF2BotMovement()
@@ -19,34 +18,36 @@ CTF2BotMovement::~CTF2BotMovement()
 
 void CTF2BotMovement::Reset()
 {
-	m_doublejumptimer = -1;
-	m_djboosttimer = -1;
+	m_doublejumptimer.Invalidate();
+	m_djboosttimer.Invalidate();
+	m_initialJumpWasOnGround = false;
 	IMovement::Reset();
 }
 
 void CTF2BotMovement::Frame()
 {
-	if (m_doublejumptimer >= 0)
-	{
-		m_doublejumptimer--;
 
-		if (m_doublejumptimer == 0)
+	if (m_doublejumptimer.HasStarted() && m_doublejumptimer.IsElapsed())
+	{
+		if (m_initialJumpWasOnGround)
 		{
-			Jump();
-			m_djboosttimer = 8; // apply boost later
-			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump! \n", GetBot()->GetDebugIdentifier());
+			m_djboosttimer.Start(0.15f);
+			m_initialJumpWasOnGround = false;
 		}
+
+		Jump();
+		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump! \n", GetBot()->GetDebugIdentifier());
+		m_doublejumptimer.Invalidate();
 	}
 
-	if (m_djboosttimer >= 0)
+
+	if (m_djboosttimer.HasStarted() && m_djboosttimer.IsElapsed())
 	{
-		if (--m_djboosttimer == 0)
-		{
-			Vector vel = GetBot()->GetAbsVelocity();
-			vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
-			GetBot()->SetAbsVelocity(vel);
-			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump (Z BOOST)! \n", GetBot()->GetDebugIdentifier());
-		}
+		Vector vel = GetBot()->GetAbsVelocity();
+		vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
+		GetBot()->SetAbsVelocity(vel);
+		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump (Z BOOST)! \n", GetBot()->GetDebugIdentifier());
+		m_djboosttimer.Invalidate();
 	}
 
 	IMovement::Frame();
@@ -96,7 +97,8 @@ float CTF2BotMovement::GetMaxGapJumpDistance() const
 void CTF2BotMovement::DoubleJump()
 {
 	CrouchJump(); // crouch jump first
-	m_doublejumptimer = TIME_TO_TICKS(0.6f); // do the second jump half a second later
+	m_doublejumptimer.Start(0.55f);
+	m_initialJumpWasOnGround = IsOnGround();
 }
 
 bool CTF2BotMovement::IsAbleToDoubleJump()
@@ -146,7 +148,7 @@ void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward
 
 		if (jumplength >= scout_gap_jump_do_double_distance())
 		{
-			m_doublejumptimer = TIME_TO_TICKS(0.5f);
+			m_doublejumptimer.Start(0.5f);
 		}
 	}
 

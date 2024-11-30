@@ -40,8 +40,9 @@ private:
 	// if the gap length on a jump over gap is greater than this, then a scout bot will perform a double jump
 	static constexpr float scout_gap_jump_do_double_distance() { return 280.0f; }
 
-	int m_doublejumptimer;
-	int m_djboosttimer;
+	CountdownTimer m_doublejumptimer;
+	CountdownTimer m_djboosttimer;
+	bool m_initialJumpWasOnGround;
 };
 
 #endif // !NAVBOT_TF2_MOVEMENT_H_

@@ -1357,7 +1357,8 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 
 			float range = to.NormalizeInPlace();
 
-			if (range < LADDER_MOUNT_RANGE || mover->IsOnLadder())
+			// double mount range when going down, the movement interface handles this a lot better than us
+			if (range < (LADDER_MOUNT_RANGE * 2.0f) || mover->IsOnLadder())
 			{
 				mover->DescendLadder(ladder, m_goal->area);
 

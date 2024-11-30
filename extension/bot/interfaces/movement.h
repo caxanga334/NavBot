@@ -149,13 +149,6 @@ public:
 	// Makes the bot walk/run towards the given position
 	virtual void MoveTowards(const Vector& pos);
 	/**
-	 * @brief (CHEAT) Accelerates the bot towards the given position. Clamped by the max speed reported by the bot.
-	 * @param pos Position the bot will accelerate towards.
-	 * @param accSpeedScale The amount of speed the bot gains is the max speed multiplied by this value.
-	 * @param noZ If true, will not apply velocity changes to the Z component.
-	 */
-	virtual void AccelerateTowards(const Vector& pos, const float accSpeedScale = 0.04f, bool noZ = true);
-	/**
 	 * @brief Makes the bot look at the given position (used for movement)
 	 * @param pos Position the bot will look at
 	 * @param important if true, send a high priority look request
@@ -261,7 +254,7 @@ private:
 	float m_groundspeed; // Bot ground (2D) speed
 	Vector m_motionVector; // Unit vector of the bot current movement
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
-	int m_internal_jumptimer; // Tick based jump timer
+	CountdownTimer m_jump_zboost_timer; // Timer for the z boost when jumping
 	float m_basemovespeed;
 
 	LadderState ApproachUpLadder();
