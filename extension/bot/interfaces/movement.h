@@ -149,6 +149,13 @@ public:
 	// Makes the bot walk/run towards the given position
 	virtual void MoveTowards(const Vector& pos);
 	/**
+	 * @brief (CHEAT) Accelerates the bot towards the given position. Clamped by the max speed reported by the bot.
+	 * @param pos Position the bot will accelerate towards.
+	 * @param accSpeedScale The amount of speed the bot gains is the max speed multiplied by this value.
+	 * @param noZ If true, will not apply velocity changes to the Z component.
+	 */
+	virtual void AccelerateTowards(const Vector& pos, const float accSpeedScale = 0.04f, bool noZ = true);
+	/**
 	 * @brief Makes the bot look at the given position (used for movement)
 	 * @param pos Position the bot will look at
 	 * @param important if true, send a high priority look request
@@ -223,6 +230,8 @@ public:
 	virtual void TryToUnstuck();
 	// Called when there is an obstacle on the bot's path.
 	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
+	// Returns the Nav Ladder the bot is using if one.
+	inline const CNavLadder* GetNavLadder() const { return m_ladder; }
 
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
@@ -234,6 +243,8 @@ protected:
 	Vector m_landingGoal; // jump landing goal position
 	LadderState m_ladderState; // ladder operation state
 	CountdownTimer m_ladderWait; // ladder wait timer
+	Vector m_ladderMoveGoal; // ladder move to goal vector
+	float m_ladderGoalZ; // ladder exit Z coordinate
 	bool m_isJumpingAcrossGap;
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
@@ -243,7 +254,7 @@ protected:
 
 	virtual void StuckMonitor();
 
-	virtual bool TraverseLadder();
+	virtual void TraverseLadder();
 
 private:
 	float m_speed; // Bot current speed
@@ -259,6 +270,14 @@ private:
 	LadderState UseLadderDown();
 	LadderState DismountLadderTop();
 	LadderState DismountLadderBottom();
+
+	void ChangeLadderState(LadderState newState)
+	{
+		OnLadderStateChanged(m_ladderState, newState);
+		m_ladderState = newState;
+	}
+
+	void OnLadderStateChanged(LadderState oldState, LadderState newState);
 
 	static constexpr float MIN_LADDER_SPEED = 25.0f;
 };

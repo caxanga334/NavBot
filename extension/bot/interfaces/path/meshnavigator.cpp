@@ -11,7 +11,6 @@
 #include <entities/baseentity.h>
 #include <manager.h>
 #include "meshnavigator.h"
-#include <mathlib.h>
 
 #undef min
 #undef max
@@ -1276,7 +1275,9 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 			return false;
 		}
 
-		Vector2D to = (m_goal->ladder->m_bottom - origin).AsVector2D();
+		Vector goal = m_goal->ladder->m_bottom;
+		goal.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
+		Vector2D to = (goal - origin).AsVector2D();
 		input->AimAt(m_goal->ladder->m_top - 50.0f * m_goal->ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()),
 			IPlayerController::LOOK_MOVEMENT, 2.0f);
 
@@ -1292,7 +1293,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 			if (dot < cos)
 			{
 				// we're facing the ladder, just move straigh to it
-				mover->MoveTowards(m_goal->ladder->m_bottom);
+				mover->MoveTowards(goal);
 
 				if (range < LADDER_MOUNT_RANGE)
 				{
@@ -1306,7 +1307,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 				Vector botperp(-to.y, to.x, 0.0f);
 				Vector2D ladderperp(-ladderNormal2D.y, ladderNormal2D.x);
 
-				Vector goal = m_goal->ladder->m_bottom;
+				Vector aligngoal = m_goal->ladder->m_bottom;
 				float alignrange = LADDER_ALIGN_RANGE;
 
 				if (dot < 0.0f)
@@ -1315,19 +1316,19 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 					alignrange = LADDER_MOUNT_RANGE + (1.0f * dot) * (alignrange - LADDER_MOUNT_RANGE);
 				}
 
-				goal.x -= alignrange * to.x;
-				goal.y -= alignrange * to.y;
+				aligngoal.x -= alignrange * to.x;
+				aligngoal.y -= alignrange * to.y;
 
 				if (DotProduct2D(to, ladderperp) < 0.0f)
 				{
-					goal += 10.0f * botperp;
+					aligngoal += 10.0f * botperp;
 				}
 				else
 				{
-					goal -= 10.0f * botperp;
+					aligngoal -= 10.0f * botperp;
 				}
 
-				mover->MoveTowards(goal);
+				mover->MoveTowards(aligngoal);
 			}
 		}
 		else
@@ -1348,10 +1349,11 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 			auto ladder = m_goal->ladder;
 			auto top = ladder->m_top;
 			auto bottom = ladder->m_bottom;
-			Vector mountPoint = top * 0.5f * mover->GetHullWidth() * ladder->GetNormal();
+			Vector mountPoint = top + (0.5f * mover->GetHullWidth() * ladder->GetNormal());
+			mountPoint.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
 			Vector2D to = (mountPoint - origin).AsVector2D();
 
-			input->AimAt(bottom + 50.0f * ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()), IPlayerController::LOOK_MOVEMENT, 2.0f);
+			input->AimAt(bottom + 50.0f * ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()), IPlayerController::LOOK_MOVEMENT, 0.25f);
 
 			float range = to.NormalizeInPlace();
 

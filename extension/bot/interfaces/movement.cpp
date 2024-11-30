@@ -295,6 +295,24 @@ void IMovement::MoveTowards(const Vector& pos)
 	}
 }
 
+void IMovement::AccelerateTowards(const Vector& pos, const float accSpeedScale, bool noZ)
+{
+	CBaseBot* me = GetBot();
+	Vector origin = me->GetAbsOrigin();
+	Vector velocity = me->GetAbsVelocity();
+	Vector to = (pos - origin);
+	to.NormalizeInPlace();
+	float maxspeed = me->GetMaxSpeed();
+
+	if (noZ)
+	{
+		to.z = 0.0f;
+	}
+
+	velocity = velocity + (to * accSpeedScale);
+	me->SetAbsVelocity(velocity);
+}
+
 void IMovement::FaceTowards(const Vector& pos, const bool important)
 {
 	auto input = GetBot()->GetControlInterface();
@@ -323,10 +341,9 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 	}
 #endif // EXT_DEBUG
 
-
-	m_ladderState = LadderState::APPROACHING_LADDER_UP;
 	m_ladder = ladder;
 	m_ladderExit = dismount;
+	ChangeLadderState(LadderState::APPROACHING_LADDER_UP);
 
 	auto bot = GetBot();
 	
@@ -341,9 +358,9 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 
 void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 {
-	m_ladderState = LadderState::APPROACHING_LADDER_DOWN;
 	m_ladder = ladder;
 	m_ladderExit = dismount;
+	ChangeLadderState(LadderState::APPROACHING_LADDER_DOWN);
 
 	auto bot = GetBot();
 
@@ -889,34 +906,37 @@ void IMovement::StuckMonitor()
 	}
 }
 
-bool IMovement::TraverseLadder()
+void IMovement::TraverseLadder()
 {
+	LadderState newState;
+
 	switch (m_ladderState)
 	{
 	case IMovement::APPROACHING_LADDER_UP:
-		m_ladderState = ApproachUpLadder();
-		return true;
+		newState = ApproachUpLadder();
+		break;
 	case IMovement::EXITING_LADDER_UP:
-		m_ladderState = DismountLadderTop();
-		return true;
+		newState = DismountLadderTop();
+		break;
 	case IMovement::USING_LADDER_UP:
-		m_ladderState = UseLadderUp();
-		return true;
+		newState = UseLadderUp();
+		break;
 	case IMovement::APPROACHING_LADDER_DOWN:
-		m_ladderState = ApproachDownLadder();
-		return true;
+		newState = ApproachDownLadder();
+		break;
 	case IMovement::EXITING_LADDER_DOWN:
-		m_ladderState = DismountLadderBottom();
-		return true;
+		newState = DismountLadderBottom();
+		break;
 	case IMovement::USING_LADDER_DOWN:
-		m_ladderState = UseLadderDown();
-		return true;
+		newState = UseLadderDown();
+		break;
 	default:
-		m_ladder = nullptr;
-		m_ladderExit = nullptr;
-		m_ladderTimer.Invalidate();
+		return;
+	}
 
-		return false;
+	if (newState != m_ladderState)
+	{
+		ChangeLadderState(newState);
 	}
 }
 
@@ -938,19 +958,19 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 		if (!m_ladderWait.HasStarted())
 		{
 			m_ladderWait.Start(0.25f);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (UP)! \n", GetBot()->GetDebugIdentifier());
 		}
 		else if (m_ladderWait.IsElapsed())
 		{
-			float time = m_ladder->m_length / 20.0f; // calculate time based on ladder length
-			m_ladderTimer.Start(time);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s WAIT TIMER EXPIRED (UP)! \n", GetBot()->GetDebugIdentifier());
 			return USING_LADDER_UP; // wait timer expired, we are on a ladder
 		}
 	}
 	else
 	{
 		// move to the ladder connection point (this is on the ladder)
-		MoveTowards(connection->GetConnectionPoint());
-		FaceTowards(connection->GetConnectionPoint() + Vector(0.0f, 0.0f, HumanEyeHeight), true);
+		MoveTowards(m_ladderMoveGoal);
+		FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, HumanEyeHeight), true);
 
 		if (GetBot()->GetRangeTo(connection->GetConnectionPoint()) < CBaseExtPlayer::PLAYER_USE_RADIUS)
 		{
@@ -960,6 +980,12 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 				m_useLadderTimer.Start(0.2f);
 			}
 		}
+	}
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		NDebugOverlay::Cross3D(m_ladderMoveGoal, 24.0f, 0, 128, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Line(GetBot()->GetAbsOrigin(), m_ladderMoveGoal, 0, 128, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
 	return APPROACHING_LADDER_UP;
@@ -991,8 +1017,10 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 	}
 	else
 	{
-		climbPoint = m_ladder->m_top + 0.25f * GetHullWidth() * m_ladder->GetNormal();
+		climbPoint = m_ladder->m_top + (0.25f * GetHullWidth() * m_ladder->GetNormal());
 	}
+
+	climbPoint.z = m_ladder->ClampZ(z - (GetStepHeight() / 4.0f));
 
 	Vector to = climbPoint - origin;
 	to.z = 0.0f;
@@ -1019,24 +1047,6 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 		}
 	}
 
-	FaceTowards(moveGoal, true);
-	MoveTowards(moveGoal);
-
-	if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
-	{
-
-		// useable ladder within use range, press use button.
-		if (GetBot()->GetAbsOrigin().AsVector2D().DistTo(m_ladder->m_top.AsVector2D()) < CBaseExtPlayer::PLAYER_USE_RADIUS)
-		{
-			if (m_useLadderTimer.IsElapsed())
-			{
-				GetBot()->GetControlInterface()->PressUseButton();
-				m_useLadderTimer.Start(0.1f);
-				GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 156, 200, "%s USE LADDER\n", GetBot()->GetDebugIdentifier());
-			}
-		}
-	}
-
 	if (debug)
 	{
 		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), moveGoal, 4.0f, 0, 255, 0, 255, false, 0.2f);
@@ -1045,17 +1055,46 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 
 	if (IsOnLadder())
 	{
-		if (debug)
-		{
-			Vector mins = GetBot()->GetMins();
-			Vector maxs = GetBot()->GetMaxs();
+		GetBot()->GetControlInterface()->ReleaseMovementButtons();
 
-			NDebugOverlay::Box(GetBot()->GetAbsOrigin(), mins, maxs, 0, 0, 255, 255, 5.0f);
-			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (DOWN DIR)! \n", GetBot()->GetDebugIdentifier());
+		if (!m_ladderWait.HasStarted())
+		{
+			m_ladderWait.Start(0.25f);
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (DOWN)! \n", GetBot()->GetDebugIdentifier());
+		}
+		else if (m_ladderWait.IsElapsed())
+		{
+			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s WAIT TIMER EXPIRED (DOWN)! \n", GetBot()->GetDebugIdentifier());
+			return USING_LADDER_DOWN; // wait timer expired, we are on a ladder
+		}
+	}
+	else
+	{
+		Vector lookAt = m_ladder->m_top;
+		lookAt.z = m_ladder->ClampZ(z);
+
+		GetBot()->GetControlInterface()->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at ladder mount position!");
+		MoveTowards(moveGoal);
+
+		if (!IsOnGround())
+		{
+			AccelerateTowards(lookAt, 0.2f); // use LookAt
 		}
 
-		GetBot()->GetControlInterface()->ReleaseMovementButtons();
-		return USING_LADDER_DOWN; // bot grabbed the ladder
+		if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
+		{
+
+			// useable ladder within use range, press use button.
+			if (GetBot()->GetAbsOrigin().AsVector2D().DistTo(m_ladder->m_top.AsVector2D()) < CBaseExtPlayer::PLAYER_USE_RADIUS)
+			{
+				if (m_useLadderTimer.IsElapsed())
+				{
+					GetBot()->GetControlInterface()->PressUseButton();
+					m_useLadderTimer.Start(0.1f);
+					GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 156, 200, "%s USE LADDER\n", GetBot()->GetDebugIdentifier());
+				}
+			}
+		}
 	}
 
 	return APPROACHING_LADDER_DOWN;
@@ -1071,16 +1110,14 @@ IMovement::LadderState IMovement::UseLadderUp()
 	auto input = GetBot()->GetControlInterface();
 	auto origin = GetBot()->GetAbsOrigin();
 	const float z = origin.z;
-	const float landingz = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() / 4.0f);
 
 	// Bot is not at the top of the ladder but is above the landing nav area height plus some offset distance
-	if (z >= landingz)
+	if (z >= m_ladderGoalZ)
 	{
-		m_ladderTimer.Start(4.0f);
 
 		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
-			GetBot()->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (landingz)\n", GetBot()->GetDebugIdentifier());
+			GetBot()->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladderGoalZ)\n", GetBot()->GetDebugIdentifier());
 		}
 
 		return EXITING_LADDER_UP;
@@ -1088,11 +1125,10 @@ IMovement::LadderState IMovement::UseLadderUp()
 	else if (z >= m_ladder->m_top.z)
 	{
 		// reached ladder top
-		m_ladderTimer.Start(2.0f);
 
 		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
-			GetBot()->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (m_ladder->m_top.z)\n", GetBot()->GetDebugIdentifier());
+			GetBot()->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladder->m_top.z)\n", GetBot()->GetDebugIdentifier());
 		}
 
 		return EXITING_LADDER_UP;
@@ -1108,9 +1144,9 @@ IMovement::LadderState IMovement::UseLadderUp()
 			NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
 			NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
 			m_ladderExit->DrawFilled(0, 255, 255, 200);
-			NDebugOverlay::Text(m_ladderExit->GetCenter(), false, 0.1f, "LADDER EXIT AREA %3.2f", landingz);
+			NDebugOverlay::Text(m_ladderExit->GetCenter(), false, 0.1f, "LADDER EXIT AREA %3.2f", m_ladderGoalZ);
 			NDebugOverlay::Text(origin, false, 0.1f, "BOT Z: %3.2f", origin.z);
-			GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Up. Distance to Z goal: %3.2f\n", GetBot()->GetDebugIdentifier(), landingz - z);
+			GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Up. Distance to Z goal: %3.2f\n", GetBot()->GetDebugIdentifier(), m_ladderGoalZ - z);
 		}
 	}
 
@@ -1119,28 +1155,26 @@ IMovement::LadderState IMovement::UseLadderUp()
 
 IMovement::LadderState IMovement::UseLadderDown()
 {
-	if (m_ladder == nullptr)
+	if (m_ladder == nullptr || !IsOnLadder() || m_ladderTimer.IsElapsed())
 	{
 		return NOT_USING_LADDER;
-	}
-
-	if (IsOnLadder() == false)
-	{
-		return NOT_USING_LADDER; // bot fell
 	}
 
 	auto input = GetBot()->GetControlInterface();
 	auto origin = GetBot()->GetAbsOrigin();
 	const float z = origin.z;
-	const float goalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z;
 
-	if (z <= goalZ)
+	if (z <= m_ladderGoalZ)
 	{
-		m_ladderTimer.Start(2.0f);
 		return EXITING_LADDER_DOWN;
 	}
 
-	Vector goal = origin + 100.0f * (m_ladder->GetNormal() + Vector(0.0f, 0.0f, 2.0f));
+	if (z <= m_ladder->m_bottom.z)
+	{
+		return EXITING_LADDER_DOWN;
+	}
+
+	Vector goal = origin + 100.0f * (m_ladder->GetNormal() + Vector(0.0f, 0.0f, -2.0f));
 	input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f);
 	MoveTowards(goal);
 
@@ -1148,7 +1182,7 @@ IMovement::LadderState IMovement::UseLadderDown()
 	{
 		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
 		NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
-		GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Down\n", GetBot()->GetDebugIdentifier());
+		GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Down. Distance to Z goal: %3.2f\n", GetBot()->GetDebugIdentifier(), fabsf(m_ladderGoalZ - z));
 	}
 
 	return USING_LADDER_DOWN;
@@ -1214,6 +1248,19 @@ IMovement::LadderState IMovement::DismountLadderBottom()
 	}
 
 	auto input = GetBot()->GetControlInterface();
+	Vector toExit = (m_ladderExit->GetCenter() - GetBot()->GetAbsOrigin());
+	toExit.z = 0.0f;
+	toExit.NormalizeInPlace();
+	Vector lookAt = GetBot()->GetEyeOrigin() + (toExit * 128.0f);
+
+	input->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at ladder dismount area!");
+	MoveTowards(m_ladderExit->GetCenter());
+
+	if (!input->IsAimOnTarget())
+	{
+		// wait until the bot is looking at the dismount position
+		return EXITING_LADDER_DOWN;
+	}
 
 	if (IsOnLadder())
 	{
@@ -1229,8 +1276,71 @@ IMovement::LadderState IMovement::DismountLadderBottom()
 		// hopefully there is ground below us
 		Jump();
 	}
+	else
+	{
+		return NOT_USING_LADDER;
+	}
 
-	return NOT_USING_LADDER;
+	return EXITING_LADDER_DOWN;
+}
+
+void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
+{
+	// time to climb is the length divided by this value
+	constexpr auto LADDER_TIME_DIVIDER = 20.0f;
+
+	switch (newState)
+	{
+	case IMovement::NOT_USING_LADDER:
+		m_ladder = nullptr;
+		m_ladderExit = nullptr;
+		m_ladderTimer.Invalidate();
+		m_ladderWait.Invalidate();
+		m_ladderGoalZ = 0.0f;
+		m_ladderMoveGoal = vec3_origin;
+		return;
+	case IMovement::EXITING_LADDER_UP:
+	case IMovement::EXITING_LADDER_DOWN:
+	{
+		m_ladderTimer.Start(4.0f);
+		m_ladderWait.Invalidate();
+		return;
+	}
+
+	case IMovement::APPROACHING_LADDER_UP:
+	{
+		float z = GetBot()->GetAbsOrigin().z;
+		z = m_ladder->ClampZ(z);
+
+		m_ladderMoveGoal = m_ladder->m_bottom;
+		m_ladderMoveGoal.z = z;
+		m_ladderTimer.Start(4.0f);
+		return;
+	}
+	case IMovement::USING_LADDER_UP:
+	{
+		// calculate Z goal
+		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() / 4.0f);
+		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
+		m_ladderTimer.Start(time);
+		return;
+	}
+	case IMovement::APPROACHING_LADDER_DOWN:
+	{
+		m_ladderTimer.Start(4.0f);
+		return;
+	}
+	case IMovement::USING_LADDER_DOWN:
+	{
+		// calculate Z goal
+		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z + (GetStepHeight() / 4.0f);
+		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
+		m_ladderTimer.Start(time);
+		return;
+	}
+	default:
+		return;
+	}
 }
 
 

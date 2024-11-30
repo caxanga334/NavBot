@@ -165,6 +165,21 @@ public:
 	std::size_t GetBottomConnectionCount() const { return m_bottomCount; }
 	void GetConnectedAreas(std::vector<CNavArea*>& topAreas, std::vector<CNavArea*>& bottomAreas) const;
 
+	// Clamps a Z coordinate to be between the ladder top and bottom Z
+	inline float ClampZ(const float z) const
+	{
+		if (z > m_top.z)
+		{
+			return m_top.z;
+		}
+		else if (z < m_bottom.z)
+		{
+			return m_bottom.z;
+		}
+
+		return z;
+	}
+
 private:
 	friend class CNavMesh;
 	void FindLadderEntity( void );
