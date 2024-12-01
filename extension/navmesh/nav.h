@@ -12,6 +12,8 @@
 #ifndef _NAV_H_
 #define _NAV_H_
 
+#include <cinttypes>
+
 #include "nav_consts.h"
 
 #include <vector.h>
@@ -398,6 +400,6 @@ typedef CUtlVector<NavLadderConnect> NavLadderConnectVector;
 
 typedef CUtlVector<NavConnect> NavConnectVector;
 
-typedef uint32_t WaypointID;
+typedef std::uint32_t WaypointID;
 
 #endif // _NAV_H_
