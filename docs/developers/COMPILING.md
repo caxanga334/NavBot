@@ -70,3 +70,14 @@ On Windows, you can now compile by opening the solution in VS and compiling it f
 On Linux, you can now compile by running make with the correct configuration.
 
 For a full example, see how [CI] builds NavBot.
+
+## Additional Options
+
+`--instructions-set` enables the use of additional instructions.
+
+| Option | Effect |
+|:---:|:---:|
+| sse2 | Uses SSE2. This is the default value when this option is not set. |
+| sse4 | Enables the use of SSE4.2 instructions. |
+| avx2 | Enables the use of AVX2 instructions. |
+

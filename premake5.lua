@@ -27,6 +27,13 @@ newoption {
     category    = "Paths"
 }
 
+newoption {
+    trigger     = "instructions-set",
+    value       = "empty or sse2 or sse4 or avx2",
+    description = "Allows the compiler to use SSE4 or AVX2 instructions. SSE2 is the default.",
+    category    = "compilers"
+}
+
 Path_HL2SDKROOT = ""
 Path_SM = ""
 Path_MMS = ""
@@ -128,6 +135,12 @@ workspace "navbot"
         toolset "gcc"
     end
 
+    filter { "options:instructions-set=avx2" }
+        vectorextensions "AVX2"
+
+    filter { "options:instructions-set=sse4" }
+        vectorextensions "SSE4.2"
+
     filter { "system:Windows" }
         defines { "_CRT_SECURE_NO_DEPRECATE", "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_DEPRECATE", "_WINDOWS", "_ITERATOR_DEBUG_LEVEL=0" }
         flags { "MultiProcessorCompile" }
@@ -191,6 +204,9 @@ workspace "navbot"
         system "Linux"
         architecture "x86_64"
         defines { "X64BITS", "PLATFORM_64BITS" }
+
+    -- reset filter    
+    filter {}
 
 include("premake/tf2.lua")
 include("premake/dods.lua")
