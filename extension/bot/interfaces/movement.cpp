@@ -329,7 +329,7 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 		bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 0, 200, "%s CLIMBING LADDER! \n", bot->GetDebugIdentifier());
 
 		m_ladderExit->DrawFilled(255, 0, 255, 255, 5.0f, true);
-		NDebugOverlay::Text(m_ladderExit->GetCenter() + Vector(0.0f, 0.0f, StepHeight), "DISMOUNT AREA!", false, 5.0f);
+		NDebugOverlay::Text(m_ladderExit->GetCenter() + Vector(0.0f, 0.0f, navgenparams->step_height), "DISMOUNT AREA!", false, 5.0f);
 	}
 }
 
@@ -346,7 +346,7 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 		bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 0, 200, "%s DESCENDING LADDER! \n", bot->GetDebugIdentifier());
 
 		m_ladderExit->DrawFilled(255, 0, 255, 255, 5.0f, true);
-		NDebugOverlay::Text(m_ladderExit->GetCenter() + Vector(0.0f, 0.0f, StepHeight), "DISMOUNT AREA!", false, 5.0f);
+		NDebugOverlay::Text(m_ladderExit->GetCenter() + Vector(0.0f, 0.0f, navgenparams->step_height), "DISMOUNT AREA!", false, 5.0f);
 	}
 }
 
@@ -952,7 +952,7 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	{
 		// move to the ladder connection point (this is on the ladder)
 		MoveTowards(m_ladderMoveGoal);
-		FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, HumanEyeHeight), true);
+		FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, navgenparams->human_eye_height), true);
 
 		if (GetBot()->GetRangeTo(connection->GetConnectionPoint()) < CBaseExtPlayer::PLAYER_USE_RADIUS)
 		{
@@ -1284,7 +1284,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	case IMovement::USING_LADDER_UP:
 	{
 		// calculate Z goal
-		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() / 4.0f);
+		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() * 0.8f);
 		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
 		m_ladderTimer.Start(time);
 		return;
@@ -1300,7 +1300,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	case IMovement::USING_LADDER_DOWN:
 	{
 		// calculate Z goal
-		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z + (GetStepHeight() / 4.0f);
+		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z + (GetStepHeight() * 0.8f);
 		Vector lookAt = m_ladder->m_top;
 		lookAt.z = m_ladderGoalZ;
 		GetBot()->GetControlInterface()->SnapAimAt(lookAt, IPlayerController::LOOK_MOVEMENT);

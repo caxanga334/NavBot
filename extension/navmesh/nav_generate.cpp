@@ -35,8 +35,8 @@ static unsigned int blockedID[ MAX_BLOCKED_AREAS ];
 static int blockedIDCount = 0;
 static float lastMsgTime = 0.0f;
 
-bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace_t *trace, float zLimit = DeathDrop );
-bool StayOnFloor( trace_t *trace, float zLimit = DeathDrop );
+bool TraceAdjacentNode(int depth, const Vector& start, const Vector& end, trace_t* trace, float zLimit = navgenparams->death_drop );
+bool StayOnFloor( trace_t *trace, float zLimit = navgenparams->death_drop);
 
 ConVar sm_nav_slope_limit( "sm_nav_slope_limit", "0.7", FCVAR_CHEAT, "The ground unit normal's Z component must be greater than this for nav areas to be generated." );
 ConVar sm_nav_slope_tolerance( "sm_nav_slope_tolerance", "0.1", FCVAR_CHEAT, "The ground unit normal's Z component must be this close to the nav area's Z component to be generated." );
@@ -49,9 +49,9 @@ ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "50", FCVAR_CHEAT, "Max are
 
 // Common bounding box for traces
 Vector NavTraceMins( -0.45, -0.45, 0 );
-Vector NavTraceMaxs( 0.45, 0.45, HumanCrouchHeight );
+Vector NavTraceMaxs( 0.45, 0.45, navgenparams->human_crouch_height );
 
-const float MaxTraversableHeight = StepHeight;		// max internal obstacle height that can occur between nav nodes and safely disregarded
+const float MaxTraversableHeight = navgenparams->step_height;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 const float MinObstacleAreaWidth = 10.0f;			// min width of a nav area we will generate on top of an obstacle
 
 extern IVEngineServer* engine;
@@ -107,11 +107,11 @@ inline static CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType
 		ignore = reinterpret_cast<IServerEntity*>(traceIgnore)->GetBaseEntity();
 	}
 
-	int end = (int)((range / GenerationStepSize) + 0.5f);
+	int end = (int)((range / navgenparams->generation_step_size) + 0.5f);
 
 	for( int i=1; i<=end; i++ )
 	{
-		AddDirectionVector( &pos, dir, GenerationStepSize );
+		AddDirectionVector( &pos, dir, navgenparams->generation_step_size );
 
 		// make sure we dont look thru the wall
 		trace_t result;
@@ -182,8 +182,8 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 	{
 		// ladder is facing north or south - determine which way
 		// "pull in" traceline from bottom and top in case ladder abuts floor and/or ceiling
-		Vector from = ladder->m_bottom + Vector( 0.0f, GenerationStepSize, GenerationStepSize/2 );
-		Vector to = ladder->m_top + Vector( 0.0f, GenerationStepSize, -GenerationStepSize/2 );
+		Vector from = ladder->m_bottom + Vector( 0.0f, navgenparams->generation_step_size, navgenparams->generation_step_size/2 );
+		Vector to = ladder->m_top + Vector( 0.0f, navgenparams->generation_step_size, -navgenparams->generation_step_size/2 );
 
 		trace::line(from, to, GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 
@@ -193,8 +193,8 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
 	else
 	{
 		// ladder is facing east or west - determine which way
-		Vector from = ladder->m_bottom + Vector( GenerationStepSize, 0.0f, GenerationStepSize/2 );
-		Vector to = ladder->m_top + Vector( GenerationStepSize, 0.0f, -GenerationStepSize/2 );
+		Vector from = ladder->m_bottom + Vector( navgenparams->generation_step_size, 0.0f, navgenparams->generation_step_size/2 );
+		Vector to = ladder->m_top + Vector( navgenparams->generation_step_size, 0.0f, -navgenparams->generation_step_size/2 );
 
 		trace::line(from, to, GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 		ladder->SetDir( result.fraction != 1.0f || result.startsolid ? WEST : EAST );
@@ -351,8 +351,8 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	//
 
 	// get approximate postion of player on ladder
-	Vector center = m_bottom + Vector( 0, 0, GenerationStepSize );
-	AddDirectionVector( &center, m_dir, HalfHumanWidth );
+	Vector center = m_bottom + Vector( 0, 0, navgenparams->generation_step_size );
+	AddDirectionVector( &center, m_dir, navgenparams->half_human_width );
 
 	CNavArea* bottomArea = TheNavMesh->GetNearestNavArea( center, true );
 	if (!bottomArea)
@@ -370,10 +370,10 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	//
 
 	// get approximate postion of player on ladder
-	center = m_top + Vector( 0, 0, GenerationStepSize );
-	AddDirectionVector( &center, m_dir, HalfHumanWidth );
+	center = m_top + Vector( 0, 0, navgenparams->generation_step_size );
+	AddDirectionVector( &center, m_dir, navgenparams->half_human_width );
 
-	float beneathLimit = MIN( 120.0f, m_top.z - m_bottom.z + HalfHumanWidth );
+	float beneathLimit = MIN( 120.0f, m_top.z - m_bottom.z + navgenparams->half_human_width );
 
 	// find "ahead" area
 	CNavArea* topForwardArea = findFirstAreaInDirection( &center, OppositeDirection( m_dir ), nearLadderRange, beneathLimit, NULL );
@@ -464,7 +464,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	{
 		Vector bottomSpot;
 		bottomArea->GetClosestPointOnArea( m_bottom, &bottomSpot );
-		if (m_bottom.z - bottomSpot.z > HumanHeight)
+		if (m_bottom.z - bottomSpot.z > navgenparams->human_height)
 		{
 			bottomArea->Disconnect( this );
 		}
@@ -565,12 +565,12 @@ private:
 				destArea->GetClosestPointOnArea( center, &destPos );
 
 				// No jumping up from stairs.
-				if ( sourceArea->HasAttributes( NAV_MESH_STAIRS ) && sourcePos.z + StepHeight < destPos.z )
+				if ( sourceArea->HasAttributes( NAV_MESH_STAIRS ) && sourcePos.z + navgenparams->step_height < destPos.z )
 				{
 					continue;
 				}
 
-				if ( (sourcePos-destPos).AsVector2D().IsLengthLessThan( GenerationStepSize * 3 ) )
+				if ( (sourcePos-destPos).AsVector2D().IsLengthLessThan( navgenparams->generation_step_size * 3 ) )
 				{
 					sourceArea->ConnectTo( destArea, outgoingDir );
 //					DevMsg( "Connected %d->%d via %d (len %f)\n",
@@ -629,7 +629,7 @@ void CNavMesh::MarkJumpAreas( void )
 		else if ( lowestNormalZ < sm_nav_slope_limit.GetFloat() + sm_nav_slope_tolerance.GetFloat() )
 		{
 			Vector testPos = area->GetCenter();
-			testPos.z += HalfHumanHeight;
+			testPos.z += navgenparams->human_height;
 			Vector groundNormal;
 			float dummy;
 			if ( GetSimpleGroundHeight( testPos, &dummy, &groundNormal ) )
@@ -722,15 +722,15 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 	{
 		CNavArea *area = TheNavAreas[ it ];
 
-		// any nav area with internal obstacles will be 1x1 (width and height = GenerationStepSize), so
+		// any nav area with internal obstacles will be 1x1 (width and height = navgenparams->generation_step_size), so
 		// only need to consider areas of that size
-		if ( ( area->GetSizeX() != GenerationStepSize ) || (area->GetSizeY() != GenerationStepSize ) )
+		if ( ( area->GetSizeX() != navgenparams->generation_step_size ) || (area->GetSizeY() != navgenparams->generation_step_size ) )
 			continue;
 
 		float obstacleZ[2] = { -FLT_MAX, -FLT_MAX };
 		float obstacleZMax = -FLT_MAX;
 		NavDirType obstacleDir = NORTH;
-		float obstacleStartDist = GenerationStepSize;
+		float obstacleStartDist = navgenparams->generation_step_size;
 		float obstacleEndDist = 0;
 
 		bool isStairNeighbor = false;
@@ -748,7 +748,7 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 			corner[0] = (NavCornerType) ( ( i + 3 ) % NUM_CORNERS );					// lower left-hand corner relative to current direction
 			corner[1] = (NavCornerType) ( ( i + 2 ) % NUM_CORNERS );				// lower right-hand corner relative to current direction			
 			float obstacleZThisDir[2] = { -FLT_MAX, -FLT_MAX };						// absolute Z pos of obstacle for left and right edge in this direction
-			float obstacleStartDistThisDir = GenerationStepSize;					// closest obstacle start distance in this direction
+			float obstacleStartDistThisDir = navgenparams->generation_step_size;					// closest obstacle start distance in this direction
 			float obstacleEndDistThisDir = 0;										// farthest obstacle end distance in this direction
 
 			// consider left and right edges of nav area relative to current direction
@@ -815,7 +815,7 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 		if ( obstacleZMax > -FLT_MAX )
 		{
 			// enforce minimum obstacle width so we don't shrink to become a teensy nav area
-			AdjustObstacleDistances( &obstacleStartDist, &obstacleEndDist, GenerationStepSize );
+			AdjustObstacleDistances( &obstacleStartDist, &obstacleEndDist, navgenparams->generation_step_size );
 			Assert( obstacleEndDist - obstacleStartDist >= MinObstacleAreaWidth );
 
 			// get current corner coords
@@ -941,7 +941,7 @@ bool CNavMesh::CreateObstacleTopAreaIfNecessary( CNavArea *area, CNavArea *areaO
 	float obstacleHeightMax = 0; 
 	float obstacleHeightStart = 0; 
 	float obstacleHeightEnd = 0;
-	float obstacleDistMin = GenerationStepSize;
+	float obstacleDistMin = navgenparams->generation_step_size;
 	float obstacleDistMax = 0;
 
 	Vector center;
@@ -998,9 +998,9 @@ bool CNavMesh::CreateObstacleTopAreaIfNecessary( CNavArea *area, CNavArea *areaO
 							{
 								// if we arrived in the other area, the obstacle height to get here was the peak deltaZ of the node above to get here
 								obstacleHeight = deltaZ;
-								// make a nav area MinObstacleAreaWidth wide centered on the peak node, which is GenerationStepSize away from where we started
-								obstacleDistStartCur = GenerationStepSize - (MinObstacleAreaWidth / 2);
-								obstacleDistEndCur = GenerationStepSize + (MinObstacleAreaWidth / 2);
+								// make a nav area MinObstacleAreaWidth wide centered on the peak node, which is navgenparams->generation_step_size away from where we started
+								obstacleDistStartCur = navgenparams->generation_step_size - (MinObstacleAreaWidth / 2);
+								obstacleDistEndCur = navgenparams->generation_step_size + (MinObstacleAreaWidth / 2);
 							}
 						}
 					}
@@ -1051,7 +1051,7 @@ bool CNavMesh::CreateObstacleTopAreaIfNecessary( CNavArea *area, CNavArea *areaO
 			}					
 
 			// Enforce min area width for new area
-			AdjustObstacleDistances( &obstacleDistMin, &obstacleDistMax, bMultiNode ? GenerationStepSize * 2 : GenerationStepSize );
+			AdjustObstacleDistances( &obstacleDistMin, &obstacleDistMax, bMultiNode ? navgenparams->generation_step_size * 2 : navgenparams->generation_step_size );
 			Assert( obstacleDistMin < obstacleDistMax );
 			Assert( obstacleDistMax - obstacleDistMin >= MinObstacleAreaWidth );
 			float newAreaWidth = obstacleDistMax - obstacleDistMin;
@@ -1257,10 +1257,10 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 		hullMaxs.y = 8;
 	}
 
-	Vector traceOffset( 0, 0, HalfHumanHeight );
+	Vector traceOffset( 0, 0, navgenparams->human_height );
 
 	// total height change must exceed a single step to be stairs
-	if ( fabs( start.z - end.z ) > StepHeight )
+	if ( fabs( start.z - end.z ) > navgenparams->step_height )
 	{
 		// initialize the height delta
 		trace::hull(start + traceOffset, start - traceOffset, hullMins, hullMaxs, MASK_NPCSOLID, &filter, trace);
@@ -1295,9 +1295,9 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 			//NDebugOverlay::Cross3D( ground, 3, 0, 0, 255, true, 100.0f );
 			//NDebugOverlay::Box( ground, hullMins, hullMaxs, 0, 0, 255, 0.0f, 100.0f );
 
-			if ( (t == 0.0f && fabs( height - start.z ) > StepHeight)
+			if ( (t == 0.0f && fabs( height - start.z ) > navgenparams->step_height)
 				// Discontinuity at start
-				|| (t == 1.0f && fabs( height - end.z ) > StepHeight) 	// Discontinuity at end
+				|| (t == 1.0f && fabs( height - end.z ) > navgenparams->step_height) 	// Discontinuity at end
 				|| normal.z < MinStairNormal )
 			{
 				// too steep here
@@ -1307,12 +1307,12 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 
 			float deltaZ = fabs( height - priorHeight );
 
-			if ( deltaZ >= minStepZ && deltaZ <= StepHeight )
+			if ( deltaZ >= minStepZ && deltaZ <= navgenparams->step_height )
 			{
 				// found a step
 				ret = STAIRS_YES;
 			}
-			else if ( deltaZ > StepHeight )
+			else if ( deltaZ > navgenparams->step_height )
 			{
 				// too steep here
 				//NDebugOverlay::Cross3D( ground, 5, 255, 0, 0, true, 10.0f );
@@ -1343,7 +1343,7 @@ bool CNavArea::TestStairs( void )
 	// clear STAIRS attribute
 	SetAttributes( GetAttributes() & ~NAV_MESH_STAIRS );
 
-	if ( GetSizeX() <= GenerationStepSize && GetSizeY() <= GenerationStepSize )
+	if ( GetSizeX() <= navgenparams->generation_step_size && GetSizeY() <= navgenparams->generation_step_size )
 	{
 		// Don't bother with stairs on small areas
 		return false;
@@ -1582,7 +1582,7 @@ static bool testStitchConnection( CNavArea *source, CNavArea *target, const Vect
 	{
 		// test going up ClimbUpHeight
 		bool success = false;
-		for ( float height = StepHeight; height <= ClimbUpHeight; height += 1.0f )
+		for ( float height = navgenparams->step_height; height <= navgenparams->climb_up_height; height += 1.0f )
 		{
 			trace_t tr;
 			Vector start( from );
@@ -1689,7 +1689,7 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 	float dz = fromPos->z - toPos->z;
 
 	// drop can't be too far, or too short (or nonexistant)
-	if (dz <= JumpCrouchHeight || dz >= DeathDrop)
+	if (dz <= navgenparams->jump_crouch_height || dz >= navgenparams->death_drop)
 		return false;
 
 	//
@@ -1707,7 +1707,7 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 	trace_t result;
 
 	// Try to go up and out, up to ClimbUpHeight, to get over obstacles
-	for ( up=1.0f; up<=ClimbUpHeight; up += 1.0f )
+	for ( up = 1.0f; up <= navgenparams->climb_up_height; up += 1.0f )
 	{
 		from = *fromPos;
 		to.Init( fromPos->x, fromPos->y, fromPos->z + up );
@@ -1727,7 +1727,7 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 		break;
 	}
 
-	if ( up > ClimbUpHeight )
+	if ( up > navgenparams->climb_up_height )
 		return false;
 
 	// We've made it up and out, so see if we can drop down
@@ -1736,18 +1736,18 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 	trace::hull(from, to, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 	return result.fraction > 0.0f && !result.startsolid
 	// Allow a little fudge so we can drop down onto stairs
-			&& result.endpos.z <= to.z + StepHeight;
+			&& result.endpos.z <= to.z + navgenparams->step_height;
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
 inline static CNavArea *findJumpDownArea( const Vector *fromPos, NavDirType dir )
 {
-	Vector start( fromPos->x, fromPos->y, fromPos->z + HalfHumanHeight );
-	AddDirectionVector( &start, dir, GenerationStepSize/2.0f );
+	Vector start( fromPos->x, fromPos->y, fromPos->z + navgenparams->human_height );
+	AddDirectionVector( &start, dir, navgenparams->generation_step_size/2.0f );
 
 	Vector toPos;
-	CNavArea *downArea = findFirstAreaInDirection( &start, dir, 4.0f * GenerationStepSize, DeathDrop, NULL, &toPos );
+	CNavArea *downArea = findFirstAreaInDirection( &start, dir, 4.0f * navgenparams->generation_step_size, navgenparams->death_drop, NULL, &toPos );
 
 	return downArea && testJumpDown( fromPos, &toPos ) ?
 			downArea : nullptr;
@@ -1786,24 +1786,24 @@ void CNavMesh::StitchAreaIntoMesh( CNavArea *area, NavDirType dir, Functor &func
 	
 	float edgeLength = edgeDir.NormalizeInPlace();
 	
-	for ( float n=0; n<edgeLength - 1.0f; n += GenerationStepSize )
+	for ( float n=0; n<edgeLength - 1.0f; n += navgenparams->generation_step_size )
 	{
 		Vector sourcePos = corner1 + edgeDir * ( n + 0.5f );
-		sourcePos.z += HalfHumanHeight;
+		sourcePos.z += navgenparams->human_height;
 		
 		Vector targetPos = sourcePos;
 		switch ( dir )
 		{
-			case NORTH:	targetPos.y -= GenerationStepSize * 0.5f; break;
-			case SOUTH:	targetPos.y += GenerationStepSize * 0.5f; break;
-			case EAST:	targetPos.x += GenerationStepSize * 0.5f; break;
-			case WEST:	targetPos.x -= GenerationStepSize * 0.5f; break;
+			case NORTH:	targetPos.y -= navgenparams->generation_step_size * 0.5f; break;
+			case SOUTH:	targetPos.y += navgenparams->generation_step_size * 0.5f; break;
+			case EAST:	targetPos.x += navgenparams->generation_step_size * 0.5f; break;
+			case WEST:	targetPos.x -= navgenparams->generation_step_size * 0.5f; break;
 		}
 		
 		CNavArea *targetArea = TheNavMesh->GetNavArea( targetPos );
 		if ( targetArea && !func( targetArea ) )
 		{
-			targetPos.z = targetArea->GetZ( targetPos.x, targetPos.y ) + HalfHumanHeight;
+			targetPos.z = targetArea->GetZ( targetPos.x, targetPos.y ) + navgenparams->human_height;
 			
 			// outgoing connection
 			if ( testStitchConnection( area, targetArea, sourcePos, targetPos ) )
@@ -1819,7 +1819,7 @@ void CNavMesh::StitchAreaIntoMesh( CNavArea *area, NavDirType dir, Functor &func
 		}
 		else
 		{
-			sourcePos.z -= HalfHumanHeight;
+			sourcePos.z -= navgenparams->human_height;
 			sourcePos.z += 1;
 			CNavArea *downArea = findJumpDownArea( &sourcePos, dir );
 			if ( downArea && downArea != area && !func( downArea ) )
@@ -2017,7 +2017,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ NORTH ][ nit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
+						|| area->GetSizeY() + adjArea->GetSizeY() > navgenparams->generation_step_size * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (area->m_node[ NORTH_WEST ] == adjArea->m_node[ SOUTH_WEST ] &&
@@ -2047,7 +2047,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ SOUTH ][ sit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeY() + adjArea->GetSizeY() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
+						|| area->GetSizeY() + adjArea->GetSizeY() > navgenparams->generation_step_size * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (adjArea->m_node[ NORTH_WEST ] == area->m_node[ SOUTH_WEST ] &&
@@ -2079,7 +2079,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ WEST ][ wit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea ) // pre-existing areas in incremental generates won't have nodes
-						|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
+						|| area->GetSizeX() + adjArea->GetSizeX() > navgenparams->generation_step_size * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (area->m_node[ NORTH_WEST ] == adjArea->m_node[ NORTH_EAST ] &&
@@ -2110,7 +2110,7 @@ void CNavMesh::MergeGeneratedAreas( void )
 			{
 				CNavArea *adjArea = area->m_connect[ EAST ][ eit ].area;
 				if ( !area->IsAbleToMergeWith( adjArea )  // pre-existing areas in incremental generates won't have nodes
-					|| area->GetSizeX() + adjArea->GetSizeX() > GenerationStepSize * sm_nav_area_max_size.GetInt() )
+					|| area->GetSizeX() + adjArea->GetSizeX() > navgenparams->generation_step_size * sm_nav_area_max_size.GetInt() )
 					continue;
 
 				if (adjArea->m_node[ NORTH_WEST ] == area->m_node[ NORTH_EAST ] &&
@@ -2200,7 +2200,7 @@ void CNavMesh::FixConnections( void )
 
 			// Flat edges of stairs need to connect.  It's the slopes we don't want to climb over things for.
 			float cornerDeltaZ = fabs( area->GetCorner( cornerType[0] ).z - area->GetCorner( cornerType[1] ).z );
-			if ( cornerDeltaZ < StepHeight )
+			if ( cornerDeltaZ < navgenparams->step_height )
 				continue;
 
 			const NavConnectVector *connectedAreas = area->GetAdjacentAreas( (NavDirType)dir );
@@ -2228,21 +2228,21 @@ void CNavMesh::FixConnections( void )
 				GetCornerTypesInDirection( OppositeDirection((NavDirType)dir), &adjCornerType[0], &adjCornerType[1] );
 
 				// From the stair's perspective, we can't go up more than step height to reach the adjacent area.
-				// Also, if the adjacent area has to jump up higher than StepHeight above the stair area to reach the stairs,
+				// Also, if the adjacent area has to jump up higher than navgenparams->step_height above the stair area to reach the stairs,
 				// there's an obstruction close to the adjacent area that could prevent walking from the stairs down.
-				if ( node->GetGroundHeightAboveNode( cornerType[0] ) > StepHeight )
+				if ( node->GetGroundHeightAboveNode( cornerType[0] ) > navgenparams->step_height )
 				{
 					areasToDisconnect.AddToTail( adjArea );
 				}
-				else if ( node->GetGroundHeightAboveNode( cornerType[1] ) > StepHeight )
+				else if ( node->GetGroundHeightAboveNode( cornerType[1] ) > navgenparams->step_height )
 				{
 					areasToDisconnect.AddToTail( adjArea );
 				}
-				else if ( adjPos.z + adjNode->GetGroundHeightAboveNode( adjCornerType[0] ) > pos.z + StepHeight )
+				else if ( adjPos.z + adjNode->GetGroundHeightAboveNode( adjCornerType[0] ) > pos.z + navgenparams->step_height )
 				{
 					areasToDisconnect.AddToTail( adjArea );
 				}
-				else if ( adjPos.z + adjNode->GetGroundHeightAboveNode( adjCornerType[1] ) > pos.z + StepHeight )
+				else if ( adjPos.z + adjNode->GetGroundHeightAboveNode( adjCornerType[1] ) > pos.z + navgenparams->step_height )
 				{
 					areasToDisconnect.AddToTail( adjArea );
 				}
@@ -2294,7 +2294,7 @@ void CNavMesh::FixConnections( void )
 */
 void CNavMesh::FixCornerOnCornerAreas( void )
 {
-	const float MaxDrop = StepHeight;	// don't make corner on corner areas that are too steep
+	const float MaxDrop = navgenparams->step_height;	// don't make corner on corner areas that are too steep
 
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
@@ -2345,7 +2345,7 @@ void CNavMesh::FixCornerOnCornerAreas( void )
 				Vector vecDeltaOtherEdge;
 				DirectionToVector2D( dirAlongOtherEdge, (Vector2D *) &vecDeltaOtherEdge );
 				vecDeltaOtherEdge.z = 0;
-				vecDeltaOtherEdge *= GenerationStepSize * 0.5;
+				vecDeltaOtherEdge *= navgenparams->generation_step_size * 0.5;
 				Vector vecOtherEdgePos = cornerPos + vecDeltaOtherEdge;
 
 				// see if there is a nav area at that location
@@ -2368,7 +2368,7 @@ void CNavMesh::FixCornerOnCornerAreas( void )
 				Vector vecDeltaOurEdge;
 				DirectionToVector2D( dirAlongOurEdge, (Vector2D *) &vecDeltaOurEdge );
 				vecDeltaOurEdge.z = 0;
-				vecDeltaOurEdge *= GenerationStepSize * 0.5;
+				vecDeltaOurEdge *= navgenparams->generation_step_size * 0.5;
 				Vector vecOurEdgePos = cornerPos + vecDeltaOurEdge;
 				Vector vecCorner[4];					
 				vecCorner[0] = cornerPos + vecDeltaOtherEdge + vecDeltaOurEdge;		// far corner of new nav area
@@ -2452,7 +2452,7 @@ void CNavMesh::SplitAreasUnderOverhangs( void )
 					{
 						// if the upper area isn't at least crouch height above the lower area, this is some weird minor
 						// overlap, disregard it
-						const float flMinSeparation = HumanCrouchHeight;
+						const float flMinSeparation = navgenparams->human_crouch_height;
 						if ( !( areaExtent.lo.z > otherAreaExtent.hi.z + flMinSeparation ) &&
 							!( otherAreaExtent.lo.z > areaExtent.hi.z + flMinSeparation ) )
 							continue;
@@ -2513,16 +2513,16 @@ void CNavMesh::SplitAreasUnderOverhangs( void )
 						Assert( splitEdgeSize > 0 );
 
 						// if we split the lower nav area right where it's in shadow of the upper nav area, will it create a really tiny strip?
-						if ( splitLen < GenerationStepSize )
+						if ( splitLen < navgenparams->generation_step_size )
 						{
 							// if the "in shadow" part of the lower nav area is really small or the lower nav area is really small to begin with,
 							// don't split it, we're better off as is
-							if ( ( splitLen < GenerationStepSize*0.3 ) || ( splitEdgeSize <= GenerationStepSize * 2 ) )
+							if ( ( splitLen < navgenparams->generation_step_size*0.3 ) || ( splitEdgeSize <= navgenparams->generation_step_size * 2 ) )
 								continue;
 
 							// Move our split point so we don't create a really tiny strip on the lower nav area.  Move the split point away from
-							// the upper nav area so the "in shadow" area expands to be GenerationStepSize.  The checks above ensure we have room to do this.
-							splitCoord += (GenerationStepSize - splitLen)
+							// the upper nav area so the "in shadow" area expands to be navgenparams->generation_step_size.  The checks above ensure we have room to do this.
+							splitCoord += (navgenparams->generation_step_size - splitLen)
 									* ( ( ( dirFromAboveToBelow == NORTH ) || ( dirFromAboveToBelow == WEST ) ) ? -1 : 1 );
 						}
 
@@ -2587,10 +2587,10 @@ static bool TestForValidCrouchArea( CNavNode *node )
 	// the node for a HumanCrouchHeight space.
 	trace_t tr;
 	Vector end( *node->GetPosition() );
-	end.z += JumpCrouchHeight;
+	end.z += navgenparams->human_crouch_height;
 	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING);
 
-	trace::hull(*node->GetPosition(), end, Vector(0.0f, 0.0f, 0.0f), Vector(GenerationStepSize, GenerationStepSize, HumanCrouchHeight),
+	trace::hull(*node->GetPosition(), end, Vector(0.0f, 0.0f, 0.0f), Vector(navgenparams->generation_step_size, navgenparams->generation_step_size, navgenparams->human_crouch_height),
 		TheNavMesh->GetGenerationTraceMask(), &filter, tr);
 
 
@@ -2605,15 +2605,15 @@ static bool TestForValidCrouchArea( CNavNode *node )
 bool IsHeightDifferenceValid( float test, float other1, float other2, float other3 )
 {
 	// Make sure the other nodes are level.
-	const float CloseDelta = StepHeight / 2;
+	const float CloseDelta = navgenparams->step_height / 2;
 	return fabs( other1 - other2 ) > CloseDelta
 			|| fabs( other1 - other3 ) > CloseDelta
 			|| fabs( other2 - other3 ) > CloseDelta
-			// Now make sure the test node is near the others.  If it is more than StepHeight away,
+			// Now make sure the test node is near the others.  If it is more than navgenparams->step_height away,
 			// it'll form a distorted jump area.
-			|| (fabs(test - other1) <= StepHeight
-					&& fabs(test - other2) <= StepHeight
-					&& fabs(test - other3) <= StepHeight);
+			|| (fabs(test - other1) <= navgenparams->step_height
+					&& fabs(test - other2) <= navgenparams->step_height
+					&& fabs(test - other3) <= navgenparams->step_height);
 }
 
 
@@ -2715,18 +2715,18 @@ public:
 		CNavLadder *overlappingLadder = NULL;
 
 		Vector start = m_nw;
-		m_nw.x += GenerationStepSize/2;
-		m_nw.y += GenerationStepSize/2;
+		m_nw.x += navgenparams->generation_step_size/2;
+		m_nw.y += navgenparams->generation_step_size/2;
 
 		while ( start.x < m_se.x )
 		{
-			start.y = m_nw.y + GenerationStepSize/2;
+			start.y = m_nw.y + navgenparams->generation_step_size/2;
 			while ( start.y < m_se.y )
 			{
 				start.z = GetZ( start );
 				Vector end = start;
-				start.z -= StepHeight;
-				end.z += HalfHumanHeight;
+				start.z -= navgenparams->step_height;
+				end.z += navgenparams->human_height;
 
 				if ( TheNavMesh->FindNavAreaOrLadderAlongRay( start, end, &overlappingArea, &overlappingLadder, NULL )
 						&& overlappingArea )
@@ -2734,9 +2734,9 @@ public:
 					return true;
 				}
 
-				start.y += GenerationStepSize;
+				start.y += navgenparams->generation_step_size;
 			}
-			start.x += GenerationStepSize;
+			start.x += navgenparams->generation_step_size;
 		}
 		return false;
 	}
@@ -3748,11 +3748,11 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 					float height;
 					if ( GetGroundHeight( eyePos, &height ) )
 					{
-						eyePos.z = height + HalfHumanHeight - StepHeight;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
+						eyePos.z = height + navgenparams->human_height - navgenparams->step_height;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
 					}
 					else
 					{
-						eyePos.z += HalfHumanHeight - StepHeight;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
+						eyePos.z += navgenparams->human_height - navgenparams->step_height;	// players light from their centers, and we light from slightly below that, to allow for low ceilings
 					}
 
 					// TODO: host->SetAbsOrigin( eyePos );
@@ -3917,7 +3917,7 @@ CNavNode *CNavMesh::AddNode( const Vector &destPos, const Vector &normal, NavDir
 			obstacleHeight = MAX( obstacleHeight + deltaZ, 0 );
 			Assert( obstacleHeight > 0 );
 		}
-		node->ConnectTo( source, OppositeDirection( dir ), obstacleHeight, GenerationStepSize - obstacleEndDist, GenerationStepSize - obstacleStartDist );
+		node->ConnectTo( source, OppositeDirection( dir ), obstacleHeight, navgenparams->generation_step_size - obstacleEndDist, navgenparams->generation_step_size - obstacleStartDist );
 		node->MarkAsVisited( OppositeDirection( dir ) );
 	}
 
@@ -3935,7 +3935,7 @@ CNavNode *CNavMesh::AddNode( const Vector &destPos, const Vector &normal, NavDir
 inline CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
 {
 	Vector center = *pos;
-	AddDirectionVector( &center, mountDir, HalfHumanWidth );
+	AddDirectionVector( &center, mountDir, navgenparams->half_human_width );
 
 	//
 	// Test the ladder dismount point first, then each cardinal direction one and two steps away
@@ -3945,12 +3945,12 @@ inline CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
 		Vector tryPos = center;
 
 		if (d >= NUM_DIRECTIONS)
-			AddDirectionVector( &tryPos, (NavDirType)(d - NUM_DIRECTIONS), 2.0f*GenerationStepSize );
+			AddDirectionVector( &tryPos, (NavDirType)(d - NUM_DIRECTIONS), 2.0f*navgenparams->generation_step_size );
 		else if (d >= 0)
-			AddDirectionVector( &tryPos, (NavDirType)d, GenerationStepSize );
+			AddDirectionVector( &tryPos, (NavDirType)d, navgenparams->generation_step_size );
 
 		// step up a rung, to ensure adjacent floors are below us
-		tryPos.z += GenerationStepSize;
+		tryPos.z += navgenparams->generation_step_size;
 
 		tryPos.x = TheNavMesh->SnapToGrid( tryPos.x );
 		tryPos.y = TheNavMesh->SnapToGrid( tryPos.y );
@@ -3985,11 +3985,11 @@ bool CNavMesh::FindGroundForNode( Vector *pos, Vector *normal ) const
 {
 	trace_t tr;
 	Vector end( *pos );
-	end.z -= DeathDrop;
+	end.z -= navgenparams->death_drop;
 
 	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING);
 
-	trace::hull(Vector(pos->x, pos->y, pos->z + HalfHumanHeight - 0.1f), end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
+	trace::hull(Vector(pos->x, pos->y, pos->z + navgenparams->human_height - 0.1f), end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 
 	*pos = tr.endpos;
 	*normal = tr.plane.normal;
@@ -4058,7 +4058,7 @@ bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace
 
 	// Try to go up as if we stepped up, forward, and down.
 	Vector testEnd( trace->endpos );
-	testEnd.z += StepHeight;
+	testEnd.z += navgenparams->step_height;
 	trace::hull(trace->endpos, testEnd, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
 	DrawTrace( trace );
 
@@ -4071,17 +4071,17 @@ bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace
 //--------------------------------------------------------------------------------------------------------
 static bool IsNodeOverlapped( const Vector& pos, const Vector& offset )
 {
-	bool overlap = TheNavMesh->GetNavArea( pos + offset, HumanHeight ) != NULL;
+	bool overlap = TheNavMesh->GetNavArea( pos + offset, navgenparams->human_height ) != NULL;
 	if ( !overlap )
 	{
 		Vector mins( -0.5f, -0.5f, -0.5f );
 		Vector maxs( 0.5f, 0.5f, 0.5f );
 
 		Vector start = pos;
-		start.z += HalfHumanHeight;
+		start.z += navgenparams->human_height;
 		Vector end = start;
-		end.x += offset.x * GenerationStepSize;
-		end.y += offset.y * GenerationStepSize;
+		end.x += offset.x * navgenparams->generation_step_size;
+		end.y += offset.y * navgenparams->generation_step_size;
 		trace_t trace;
 		CTraceFilterWalkableEntities filter( nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING );
 		trace::hull(start, end, mins, maxs, TheNavMesh->GetGenerationTraceMask(), &filter, trace);
@@ -4092,7 +4092,7 @@ static bool IsNodeOverlapped( const Vector& pos, const Vector& offset )
 		}
 
 		start = trace.endpos;
-		end.z -= HalfHumanHeight * 2;
+		end.z -= navgenparams->human_height * 2;
 		trace::hull(start, end, mins, maxs, TheNavMesh->GetGenerationTraceMask(), &filter, trace);
 		if ( trace.startsolid || trace.allsolid
 				|| trace.fraction == 1.0f
@@ -4171,10 +4171,10 @@ bool CNavMesh::SampleStep( void )
 				// attempt to move to adjacent node
 				switch( dir )
 				{
-					case NORTH:		cy -= GenerationStepSize; break;
-					case SOUTH:		cy += GenerationStepSize; break;
-					case EAST:		cx += GenerationStepSize; break;
-					case WEST:		cx -= GenerationStepSize; break;
+					case NORTH:		cy -= navgenparams->generation_step_size; break;
+					case SOUTH:		cy += navgenparams->generation_step_size; break;
+					case EAST:		cx += navgenparams->generation_step_size; break;
+					case WEST:		cx -= navgenparams->generation_step_size; break;
 				}
 
 				pos.x = cx;
@@ -4216,7 +4216,7 @@ bool CNavMesh::SampleStep( void )
 				Vector from( *m_currentNode->GetPosition() );
 				CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 				Vector to, toNormal;
-				float obstacleHeight = 0, obstacleStartDist = 0, obstacleEndDist = GenerationStepSize;
+				float obstacleHeight = 0, obstacleStartDist = 0, obstacleEndDist = navgenparams->generation_step_size;
 				if ( TraceAdjacentNode( 0, from, pos, &result ) )
 				{
 					to = result.endpos;
@@ -4226,7 +4226,7 @@ bool CNavMesh::SampleStep( void )
 				{
 					// test going up ClimbUpHeight
 					bool success = false;
-					for ( float height = StepHeight; height <= ClimbUpHeight; height += 1.0f )
+					for ( float height = navgenparams->step_height; height <= navgenparams->climb_up_height; height += 1.0f )
 					{						
 						trace_t tr;
 						Vector start( from );
@@ -4262,16 +4262,16 @@ bool CNavMesh::SampleStep( void )
 							// Could not trace from node to node at this height, something is in the way.
 							// Trace in the other direction to see if we hit something
 							Vector vecToObstacleStart = tr.endpos - start;
-							Assert( vecToObstacleStart.LengthSqr() <= Square( GenerationStepSize ) );
-							if ( vecToObstacleStart.LengthSqr() <= Square( GenerationStepSize ) )
+
+							if ( vecToObstacleStart.LengthSqr() <= Square( navgenparams->generation_step_size ) )
 							{
 								trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 								if ( !tr.startsolid && tr.fraction < 1.0 )
 								{
 									// We hit something going the other direction.  There is some obstacle between the two nodes.
 									Vector vecToObstacleEnd = tr.endpos - start;
-									Assert( vecToObstacleEnd.LengthSqr() <= Square( GenerationStepSize ) );
-									if ( vecToObstacleEnd.LengthSqr() <= Square( GenerationStepSize )  )
+
+									if ( vecToObstacleEnd.LengthSqr() <= Square( navgenparams->generation_step_size )  )
 									{
 										// Remember the distances to start and end of the obstacle (with respect to the "from" node).
 										// Keep track of the last distances to obstacle as we keep increasing the height we do a trace for.
@@ -4281,7 +4281,7 @@ bool CNavMesh::SampleStep( void )
 										obstacleEndDist = vecToObstacleEnd.Length();
 										if ( obstacleEndDist == 0 )
 										{
-											obstacleEndDist = GenerationStepSize;
+											obstacleEndDist = navgenparams->generation_step_size;
 										}
 									}								
 								}
@@ -4303,10 +4303,10 @@ bool CNavMesh::SampleStep( void )
 
 				// If we're incrementally generating, don't overlap existing nav areas.
 				Vector testPos( to );
-				if ( IsNodeOverlapped( testPos, Vector(  1,  1, HalfHumanHeight ) )
-						&& IsNodeOverlapped( testPos, Vector( -1,  1, HalfHumanHeight ) )
-						&& IsNodeOverlapped( testPos, Vector(  1, -1, HalfHumanHeight ) )
-						&& IsNodeOverlapped( testPos, Vector( -1, -1, HalfHumanHeight ) )
+				if ( IsNodeOverlapped( testPos, Vector(  1,  1, navgenparams->human_height ) )
+						&& IsNodeOverlapped( testPos, Vector( -1,  1, navgenparams->human_height ) )
+						&& IsNodeOverlapped( testPos, Vector(  1, -1, navgenparams->human_height ) )
+						&& IsNodeOverlapped( testPos, Vector( -1, -1, navgenparams->human_height ) )
 						&& m_generationMode != GENERATE_SIMPLIFY )
 				{
 					return true;
@@ -4348,8 +4348,8 @@ bool CNavMesh::SampleStep( void )
 					{
 						trace::hull(result.endpos, to, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
 						if ( result.fraction < 1
-							// if we made it down to within StepHeight, maybe we're on a static prop
-							&& result.endpos.z > to.z + StepHeight )
+							// if we made it down to within navgenparams->step_height, maybe we're on a static prop
+							&& result.endpos.z > to.z + navgenparams->step_height )
 						{
 							return true;
 						}
@@ -4364,7 +4364,7 @@ bool CNavMesh::SampleStep( void )
 				{
 					obstacleHeight = 0;
 					obstacleStartDist = 0;
-					obstacleEndDist = GenerationStepSize;
+					obstacleEndDist = navgenparams->generation_step_size;
 				}
 
 				// we can move here
@@ -4391,8 +4391,8 @@ void CNavMesh::AddWalkableSeed( const Vector &pos, const Vector &normal )
 {
 	WalkableSeedSpot seed;
 
-	seed.pos.x = RoundToUnits( pos.x, GenerationStepSize );
-	seed.pos.y = RoundToUnits( pos.y, GenerationStepSize );
+	seed.pos.x = RoundToUnits( pos.x, navgenparams->generation_step_size );
+	seed.pos.y = RoundToUnits( pos.y, navgenparams->generation_step_size );
 	seed.pos.z = pos.z;
 	seed.normal = normal;
 
@@ -4477,7 +4477,7 @@ public:
 			
 		float split = area->GetSizeX() / 2.0f;
 		
-		if (split < GenerationStepSize)
+		if (split < navgenparams->generation_step_size)
 		{
 			if (canDivideY)
 			{
@@ -4506,7 +4506,7 @@ public:
 			
 		float split = area->GetSizeY() / 2.0f;
 
-		if (split < GenerationStepSize)
+		if (split < navgenparams->generation_step_size)
 		{
 			if (canDivideX)
 			{

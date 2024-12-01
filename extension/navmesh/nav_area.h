@@ -380,7 +380,7 @@ public:
 
 	void MarkObstacleToAvoid( float obstructionHeight );
 	void UpdateAvoidanceObstacles( void );
-	bool HasAvoidanceObstacle( float maxObstructionHeight = StepHeight ) const; // is there a large, immobile object obstructing this area
+	bool HasAvoidanceObstacle( float maxObstructionHeight = navgenparams->step_height ) const; // is there a large, immobile object obstructing this area
 	float GetAvoidanceObstacleHeight( void ) const; // returns the maximum height of the obstruction above the ground
 
 #ifdef NEXT_BOT

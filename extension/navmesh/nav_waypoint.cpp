@@ -197,7 +197,7 @@ void CWaypoint::Draw() const
 		Vector mins{ -m_radius, -m_radius, 0.0f };
 		Vector maxs{ m_radius, m_radius, CWaypoint::WAYPOINT_HEIGHT };
 
-		NDebugOverlay::Box(m_origin, mins, maxs, r, g, b, 150, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Box(m_origin, mins, maxs, r, g, b, 90, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
 	Vector cStart = m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_CONNECT_HEIGHT);

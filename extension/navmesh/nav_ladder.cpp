@@ -95,7 +95,7 @@ void CNavLadder::ConnectTo( CNavArea *area )
 		newconnect.point.y = m_top.y;
 		Vector close;
 		area->GetClosestPointOnArea(m_top, &close);
-		newconnect.point.z = close.z + (StepHeight / 2.0f);
+		newconnect.point.z = close.z + (navgenparams->step_height / 2.0f);
 
 		if (newconnect.point.z > m_top.z)
 		{
@@ -110,7 +110,7 @@ void CNavLadder::ConnectTo( CNavArea *area )
 		newconnect.point.y = m_bottom.y;
 		Vector close;
 		area->GetClosestPointOnArea(m_bottom, &close);
-		newconnect.point.z = close.z + (StepHeight / 2.0f);
+		newconnect.point.z = close.z + (navgenparams->step_height / 2.0f);
 
 		if (newconnect.point.z < m_bottom.z)
 		{
@@ -333,8 +333,8 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 	while ( bottomRight.z < topRight.z )
 	{
 		NavDrawLine( bottomRight, bottomLeft, ladderColor );
-		bottomRight += up * (GenerationStepSize/2);
-		bottomLeft += up * (GenerationStepSize/2);
+		bottomRight += up * (navgenparams->generation_step_size/2);
+		bottomLeft += up * (navgenparams->generation_step_size/2);
 	}
 
 	if (m_ladderType == USEABLE_LADDER)
@@ -426,8 +426,8 @@ void CNavLadder::BuildUseableLadder(CBaseEntity* ladder)
 
 	m_top = topPosition;
 	m_bottom = bottomPosition;
-	m_top.z += StepHeight;
-	m_bottom.z += (StepHeight / 2.0f);
+	m_top.z += navgenparams->step_height;
+	m_bottom.z += (navgenparams->step_height / 2.0f);
 	m_length = fabsf(topPosition.z - bottomPosition.z);
 	m_width = 24.0f; // temporary, player hull width
 	UpdateUseableLadderDir(NORTH);
@@ -692,10 +692,10 @@ public:
 		// player is on a ladder - is it this one?
 		const Vector& feet = player.GetAbsOrigin();
 
-		if (feet.z > m_ladder->m_top.z + HalfHumanHeight)
+		if (feet.z > m_ladder->m_top.z + navgenparams->human_height)
 			return true;
 
-		if (feet.z + HumanHeight < m_ladder->m_bottom.z - HalfHumanHeight)
+		if (feet.z + navgenparams->human_height < m_ladder->m_bottom.z - navgenparams->human_height)
 			return true;
 
 		Vector2D away(m_ladder->m_bottom.x - feet.x, m_ladder->m_bottom.y - feet.y);

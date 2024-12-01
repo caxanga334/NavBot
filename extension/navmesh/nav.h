@@ -20,42 +20,30 @@
 struct edict_t;
 
 /**
- * Below are several constants used by the navigation system.
- * @todo Move these into TheNavMesh singleton.
+ * @brief Parameters used during nav mesh generation.
  */
-constexpr float GenerationStepSize = 25.0f;			// (30) was 20, but bots can't fit always fit
-constexpr float JumpHeight = 41.8f;					// if delta Z is less than this, we can jump up on it
+class CNavMeshGeneratorParameters
+{
+public:
+	CNavMeshGeneratorParameters();
 
-#if defined(CSTRIKE_DLL)
-constexpr float JumpCrouchHeight = 58.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
-#else
-constexpr float JumpCrouchHeight = 64.0f;			// (48) if delta Z is less than or equal to this, we can jumpcrouch up on it
-#endif
 
-// There are 3 different definitions of StepHeight throughout the code, waiting to produce bugs if the 18.0 is ever changed.
-constexpr float StepHeight = 18.0f;					// if delta Z is greater than this, we have to jump to get up
+	float generation_step_size;
+	float jump_height;
+	float jump_crouch_height;
+	float step_height;
+	float death_drop;
+	float climb_up_height;
+	float half_human_width; // half player standing hull width
+	float half_human_height; // half player standing hull height
+	float human_height; // player standing hull height
+	float human_eye_height; // player standing view height
+	float human_crouch_height; // player crouching hull height
+	float human_crouch_eye_height; // player crouching view height
+};
 
-// TERROR: Increased DeathDrop from 200, since zombies don't take falling damage
-#if defined(CSTRIKE_DLL)
-constexpr float DeathDrop = 200.0f;					// (300) distance at which we will die if we fall - should be about 600, and pay attention to fall damage during pathfind
-#else
-constexpr float DeathDrop = 400.0f;					// (300) distance at which we will die if we fall - should be about 600, and pay attention to fall damage during pathfind
-#endif
-
-#if defined(CSTRIKE_DLL)
-constexpr float ClimbUpHeight = JumpCrouchHeight;	// CSBots assume all jump up links are reachable
-#else
-constexpr float ClimbUpHeight = JumpCrouchHeight; //200.0f;				// height to check for climbing up
-#endif
-
-// TERROR: Converted these values to use the same numbers as the player bounding boxes etc
-constexpr auto HalfHumanWidth = 16.0f;
-constexpr auto HalfHumanHeight = 35.5f;
-constexpr auto HumanHeight = 71.0f;
-constexpr auto HumanEyeHeight = 62.0f;
-constexpr auto HumanCrouchHeight = 55.0f;
-constexpr auto HumanCrouchEyeHeight = 37.0f;
-
+// Global singleton for accessing the Navigation Mesh Generator Parameters
+extern CNavMeshGeneratorParameters* navgenparams;
 
 #define NAV_MAGIC_NUMBER 0xFEEDFACE				// to help identify nav files
 

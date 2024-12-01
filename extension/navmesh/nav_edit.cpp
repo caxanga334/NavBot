@@ -76,7 +76,7 @@ int GetGridSize( bool forceGrid = false )
 {
 	if ( TheNavMesh->IsGenerating() )
 	{
-		return (int)GenerationStepSize;
+		return (int)navgenparams->generation_step_size;
 	}
 
 	int snapVal = sm_nav_snap_to_grid.GetInt();
@@ -90,7 +90,7 @@ int GetGridSize( bool forceGrid = false )
 		return 0;
 	}
 
-	int scale = (int)GenerationStepSize;
+	int scale = (int)navgenparams->generation_step_size;
 	switch ( snapVal )
 	{
 	case 3:
@@ -511,7 +511,7 @@ void CNavMesh::CommandNavBuildLadder( void )
 	Vector rightEdge = m_editCursorPos;
 
 	// trace to the sides to find the width
-	Vector probe = m_surfaceNormal * -HalfHumanWidth;
+	Vector probe = m_surfaceNormal * -navgenparams->half_human_width;
 	const float StepSize = 1.0f;
 	StepAlongClimbableSurface( leftEdge, right * -StepSize, probe );
 	StepAlongClimbableSurface( rightEdge, right * StepSize, probe );
@@ -2073,14 +2073,14 @@ void CNavMesh::CommandNavSelectInvalidAreas( void )
 		if ( area )
 		{
 			area->GetExtent( &areaExtent );
-			for ( float x = areaExtent.lo.x; x + GenerationStepSize <= areaExtent.hi.x; x += GenerationStepSize )
+			for ( float x = areaExtent.lo.x; x + navgenparams->generation_step_size <= areaExtent.hi.x; x += navgenparams->generation_step_size )
 			{
-				for ( float y = areaExtent.lo.y; y + GenerationStepSize <= areaExtent.hi.y; y += GenerationStepSize )
+				for ( float y = areaExtent.lo.y; y + navgenparams->generation_step_size <= areaExtent.hi.y; y += navgenparams->generation_step_size )
 				{
 					float nw = area->GetZ( x, y );
-					float ne = area->GetZ( x + GenerationStepSize, y );
-					float sw = area->GetZ( x, y + GenerationStepSize );
-					float se = area->GetZ( x + GenerationStepSize, y + GenerationStepSize );
+					float ne = area->GetZ( x + navgenparams->generation_step_size, y );
+					float sw = area->GetZ( x, y + navgenparams->generation_step_size );
+					float se = area->GetZ( x + navgenparams->generation_step_size, y + navgenparams->generation_step_size );
 
 					if ( !IsHeightDifferenceValid( nw, ne, sw, se ) ||
 						!IsHeightDifferenceValid( ne, nw, sw, se ) ||
@@ -2271,18 +2271,18 @@ bool MakeSniperSpots( CNavArea *area )
 	float sizeX = area->GetSizeX();
 	float sizeY = area->GetSizeY();
 
-	if ( sizeX > GenerationStepSize && sizeX > sizeY )
+	if ( sizeX > navgenparams->generation_step_size && sizeX > sizeY )
 	{
-		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).x, GenerationStepSize );
+		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).x, navgenparams->generation_step_size );
 		if ( splitEdge < area->GetCorner( NORTH_WEST ).x + minSplitSize )
-			splitEdge += GenerationStepSize;
+			splitEdge += navgenparams->generation_step_size;
 		splitAlongX = false;
 	}
-	else if ( sizeY > GenerationStepSize && sizeY > sizeX )
+	else if ( sizeY > navgenparams->generation_step_size && sizeY > sizeX )
 	{
-		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).y, GenerationStepSize );
+		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).y, navgenparams->generation_step_size );
 		if ( splitEdge < area->GetCorner( NORTH_WEST ).y + minSplitSize )
-			splitEdge += GenerationStepSize;
+			splitEdge += navgenparams->generation_step_size;
 		splitAlongX = true;
 	}
 	else
@@ -2575,12 +2575,12 @@ void CNavMesh::CommandNavEndArea( void )
 		CNavArea *nearby = GetMarkedArea();
 		if ( !nearby )
 		{
-			nearby = TheNavMesh->GetNearestNavArea( m_editCursorPos + Vector( 0, 0, HalfHumanHeight ),
+			nearby = TheNavMesh->GetNearestNavArea( m_editCursorPos + Vector( 0, 0, navgenparams->human_height ),
 					10000.0f, true );
 		}
 		if ( !nearby )
 		{
-			nearby = TheNavMesh->GetNearestNavArea( endPos + Vector( 0, 0, HalfHumanHeight ), 10000.0f, true );
+			nearby = TheNavMesh->GetNearestNavArea( endPos + Vector( 0, 0, navgenparams->human_height ), 10000.0f, true );
 		}
 		if ( !nearby )
 		{
@@ -2667,7 +2667,7 @@ void CNavMesh::CommandNavEndArea( void )
 				bottom = tmp;
 			}
 			CreateLadder( top, bottom, m_ladderAnchor.DistTo( corner2 ), m_surfaceNormal.AsVector2D(),
-					HumanHeight );
+					navgenparams->human_height );
 		}
 		else
 		{
@@ -3374,7 +3374,7 @@ void CNavMesh::CommandNavWarpToMark( void )
 	IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
 	if ( targetArea )
 	{
-		Vector origin = targetArea->GetCenter() + Vector( 0, 0, HumanHeight );
+		Vector origin = targetArea->GetCenter() + Vector( 0, 0, navgenparams->human_height );
 		QAngle angles = player->GetAbsAngles();
 		entities::HBaseEntity be(ent);
 		be.Teleport(origin, &angles, nullptr);
@@ -3386,8 +3386,8 @@ void CNavMesh::CommandNavWarpToMark( void )
 
 		QAngle angles = player->GetAbsAngles();
 		Vector origin = (ladder->m_top + ladder->m_bottom)/2;
-		origin.x += ladder->GetNormal().x * GenerationStepSize;
-		origin.y += ladder->GetNormal().y * GenerationStepSize;
+		origin.x += ladder->GetNormal().x * navgenparams->generation_step_size;
+		origin.y += ladder->GetNormal().y * navgenparams->generation_step_size;
 		entities::HBaseEntity be(ent);
 		be.Teleport(origin, &angles, nullptr);
 		EmitSound(ent, "EDIT_WARP_TO_MARK" );

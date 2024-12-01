@@ -40,21 +40,21 @@ static bool ReduceToComponentAreas( CNavArea *area, bool addToSelectedSet )
 
 	bool didSplit = false;
 
-	if ( sizeX > GenerationStepSize )
+	if ( sizeX > navgenparams->generation_step_size )
 	{
-		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).x, GenerationStepSize );
+		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).x, navgenparams->generation_step_size );
 		if ( splitEdge < area->GetCorner( NORTH_WEST ).x + minSplitSize )
-			splitEdge += GenerationStepSize;
+			splitEdge += navgenparams->generation_step_size;
 		splitAlongX = false;
 
 		didSplit = area->SplitEdit( splitAlongX, splitEdge, &first, &second );
 	}
 
-	if ( sizeY > GenerationStepSize )
+	if ( sizeY > navgenparams->generation_step_size )
 	{
-		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).y, GenerationStepSize );
+		splitEdge = RoundToUnits( area->GetCorner( NORTH_WEST ).y, navgenparams->generation_step_size );
 		if ( splitEdge < area->GetCorner( NORTH_WEST ).y + minSplitSize )
-			splitEdge += GenerationStepSize;
+			splitEdge += navgenparams->generation_step_size;
 		splitAlongX = true;
 
 		if ( didSplit )
@@ -171,8 +171,8 @@ void CNavMesh::SimplifySelectedAreas( void )
 		Extent areaExtent;
 		CNavArea *area = collector.m_area[i];
 		area->GetExtent( &areaExtent );
-		areaExtent.lo.z -= HalfHumanHeight;
-		areaExtent.hi.z += 2 * HumanHeight;
+		areaExtent.lo.z -= navgenparams->human_height;
+		areaExtent.hi.z += 2 * navgenparams->human_height;
 		bounds.Encompass( areaExtent );
 
 		Vector center = area->GetCenter();
@@ -184,7 +184,7 @@ void CNavMesh::SimplifySelectedAreas( void )
 		{
 			AddWalkableSeed( center, normal );
 
-			center.z += HumanHeight;
+			center.z += navgenparams->human_height;
 			bounds.Encompass( center );
 		}
 	}

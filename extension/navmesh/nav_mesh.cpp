@@ -907,11 +907,11 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 		if ( pLastNavArea && pLastNavArea->IsOverlapping( testPos ) )
 		{
 			float flZ = pLastNavArea->GetZ( testPos );
-			if ( ( flZ <= testPos.z + StepHeight ) && ( flZ >= testPos.z - StepHeight ) )
+			if ( ( flZ <= testPos.z + navgenparams->step_height ) && ( flZ >= testPos.z - navgenparams->step_height ) )
 				return pLastNavArea;
 		}
 		 */
-		flStepHeight = StepHeight;
+		flStepHeight = navgenparams->step_height;
 	}
 
 	// get list in cell that contains position
@@ -1005,7 +1005,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 		}
 	}
 
-	source.z += HalfHumanHeight;
+	source.z += navgenparams->human_height;
 
 	// find closest nav area
 
@@ -1063,7 +1063,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 							// don't consider blocked areas
 							|| area->IsBlocked( team )
 							// don't consider area that is overhead
-							|| area->GetCenter().z - pos.z > HumanHeight)
+							|| area->GetCenter().z - pos.z > navgenparams->human_height)
 						continue;
 
 					// mark as visited
@@ -1089,18 +1089,18 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						trace_t result;
 
 						// make sure 'pos' is not embedded in the world
-						trace::line(pos, pos + Vector(0, 0, StepHeight), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+						trace::line(pos, pos + Vector(0, 0, navgenparams->step_height), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 						// it was embedded - move it out
 						Vector safePos = result.startsolid ? result.endpos + Vector( 0, 0, 1.0f )
 									: pos;
 
-						// Don't bother tracing from the nav area up to safePos.z if it's within StepHeight of the area, since areas can be embedded in the ground a bit
+						// Don't bother tracing from the nav area up to safePos.z if it's within navgenparams->step_height of the area, since areas can be embedded in the ground a bit
 						float heightDelta = fabs(areaPos.z - safePos.z);
-						if ( heightDelta > StepHeight )
+						if ( heightDelta > navgenparams->step_height )
 						{
 							// trace to the height of the original point
-							trace::line(areaPos + Vector(0, 0, StepHeight), Vector(areaPos.x, areaPos.y, safePos.z), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+							trace::line(areaPos + Vector(0, 0, navgenparams->step_height), Vector(areaPos.x, areaPos.y, safePos.z), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 							
 							if ( result.fraction != 1.0f )
 							{
@@ -1109,7 +1109,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						}
 
 						// trace to the original point's height above the area
-						trace::line(safePos, Vector(areaPos.x, areaPos.y, safePos.z + StepHeight), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+						trace::line(safePos, Vector(areaPos.x, areaPos.y, safePos.z + navgenparams->step_height), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 						if ( result.fraction != 1.0f )
 						{
@@ -1496,13 +1496,13 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 
 	trace_t result;
 	Vector to( pos.x, pos.y, pos.z - 10000.0f );
-	Vector from( pos.x, pos.y, pos.z + HalfHumanHeight + 1e-3 );
+	Vector from( pos.x, pos.y, pos.z + navgenparams->human_height + 1e-3 );
 
 	while( to.z - pos.z < flMaxOffset ) 
 	{
 		trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, &filter, result);
 
-		if (!result.startsolid && ((result.fraction == 1.0f) || ((from.z - result.endpos.z) >= HalfHumanHeight)))
+		if (!result.startsolid && ((result.fraction == 1.0f) || ((from.z - result.endpos.z) >= navgenparams->human_height)))
 		{
 			*height = result.endpos.z;
 
@@ -1515,7 +1515,7 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 		}
 
 		to.z = ( result.startsolid ) ? from.z : result.endpos.z;
-		from.z = to.z + HalfHumanHeight + 1e-3;
+		from.z = to.z + navgenparams->human_height + 1e-3;
 	}
 
 	*height = 0.0f;
@@ -3268,7 +3268,7 @@ void HidingSpot::Load(std::fstream& filestream, uint32_t version)
 NavErrorType HidingSpot::PostLoad( void )
 {
 	// set our area
-	m_area = TheNavMesh->GetNavArea( m_pos + Vector( 0, 0, HalfHumanHeight ) );
+	m_area = TheNavMesh->GetNavArea( m_pos + Vector( 0, 0, navgenparams->human_height ) );
 
 	if ( !m_area )
 	{

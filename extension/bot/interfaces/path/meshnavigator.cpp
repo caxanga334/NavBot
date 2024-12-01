@@ -103,6 +103,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // goal reached
 	}
 
+	CrouchIfNeeded(bot);
+
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
 	auto input = bot->GetControlInterface();
@@ -1213,6 +1215,16 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 	}
 
 	return nullptr;
+}
+
+void CMeshNavigator::CrouchIfNeeded(CBaseBot* bot)
+{
+	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
+
+	if (m_goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) || bot->GetRangeToSqr(m_goal->goal) <= GOAL_CROUCH_RANGE)
+	{
+		bot->GetControlInterface()->PressCrouchButton(0.1f);
+	}
 }
 
 bool CMeshNavigator::LadderUpdate(CBaseBot* bot)

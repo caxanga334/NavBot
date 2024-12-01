@@ -554,7 +554,7 @@ int CFuncNavObstruction::DrawDebugTextOverlays( void )
 }
 
 float CFuncNavObstruction::GetNavObstructionHeight(void) const {
-	return JumpCrouchHeight;
+	return navgenparams->jump_crouch_height;
 }
 
 //--------------------------------------------------------------------------------------------------------

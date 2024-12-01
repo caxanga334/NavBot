@@ -720,7 +720,7 @@ CON_COMMAND_F(sm_navbot_debug_find_ledge, "finds the ledge", FCVAR_CHEAT)
 		trace_t tr;
 		Vector pos1 = start + (forward * (stepSize * static_cast<float>(it)));
 		Vector pos2 = pos1;
-		pos2.z -= StepHeight;
+		pos2.z -= navgenparams->step_height;
 		trace::hull(pos1, pos2, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
 
 		if (trace::pointoutisdeworld(pos1))

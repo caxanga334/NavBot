@@ -35,6 +35,7 @@ protected:
 	virtual bool JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
 	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
 	virtual edict_t* FindBlocker(CBaseBot* bot);
+	virtual void CrouchIfNeeded(CBaseBot* bot);
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator

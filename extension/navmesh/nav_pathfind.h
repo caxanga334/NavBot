@@ -840,7 +840,7 @@ inline void SearchSurroundingAreas( CNavArea *startArea, ISearchSurroundingAreas
  * Areas in the collection will be "marked", returning true for IsMarked(). 
  * Each area in the collection's GetCostSoFar() will be approximate travel distance from 'startArea'.
  */
-inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector, CNavArea *startArea, float travelDistanceLimit = 1500.0f, float maxStepUpLimit = StepHeight, float maxDropDownLimit = 100.0f )
+inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector, CNavArea *startArea, float travelDistanceLimit = 1500.0f, float maxStepUpLimit = navgenparams->step_height, float maxDropDownLimit = 100.0f )
 {
 	nearbyAreaVector->RemoveAll();
 
@@ -1070,7 +1070,7 @@ void SelectSeparatedShuffleSet( int maxCount, float minSeparation, const CUtlVec
 		T *area = shuffledVector[i];
 
 		CUtlVector< CNavArea * > nearVector;
-		CollectSurroundingAreas( &nearVector, area, minSeparation, 2.0f * StepHeight, 2.0f * StepHeight );
+		CollectSurroundingAreas( &nearVector, area, minSeparation, 2.0f * navgenparams->step_height, 2.0f * navgenparams->step_height );
 
 		for( j=0; j<i; ++j )
 		{

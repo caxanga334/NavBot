@@ -353,7 +353,7 @@ float CNavNode::GetGroundHeightAboveNode( NavCornerType cornerType ) const
 
 //--------------------------------------------------------------------------------------------------------------
 /**
- * Look up to JumpCrouchHeight in the air to see if we can fit a whole HumanHeight box
+ * Look up to JumpCrouchHeight in the air to see if we can fit a whole navgenparams->human_height box
  */
 bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, const Vector& maxs, float *groundHeightAboveNode )
 {
@@ -362,7 +362,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 
 	Vector start( m_pos );
 	Vector end( start );
-	end.z += JumpCrouchHeight;
+	end.z += navgenparams->jump_crouch_height;
 	trace::hull(start, end, NavTraceMins, NavTraceMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
 
 	float maxHeight = tr.endpos.z - start.z;
@@ -374,7 +374,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 		start = m_pos;
 		start.z += height;
 
-		realMaxs.z = HumanCrouchHeight;
+		realMaxs.z = navgenparams->human_crouch_height;
 
 		trace::hull(start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
 
@@ -383,7 +383,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 			*groundHeightAboveNode = start.z - m_pos.z;
 
 			// We found a crouch-sized space.  See if we can stand up.
-			realMaxs.z = HumanHeight;
+			realMaxs.z = navgenparams->human_height;
 
 			trace::hull(start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
 
@@ -411,7 +411,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 		}
 	}
 
-	*groundHeightAboveNode = JumpCrouchHeight;
+	*groundHeightAboveNode = navgenparams->jump_crouch_height;
 	m_isBlocked[ cornerNum ] = true;
 	return false;
 }
@@ -432,26 +432,26 @@ void CNavNode::CheckCrouch( void )
 		Vector2D cornerVec;
 		CornerToVector2D( corner, &cornerVec );
 
-		// Build a mins/maxs pair for the HumanWidth x HalfHumanWidth box facing the appropriate direction
+		// Build a mins/maxs pair for the HumanWidth x navgenparams->half_human_width box facing the appropriate direction
 		Vector mins( 0, 0, 0 );
 		Vector maxs( 0, 0, 0 );
 		if ( cornerVec.x < 0 )
 		{
-			mins.x = -HalfHumanWidth;
+			mins.x = -navgenparams->half_human_width;
 		}
 		else if ( cornerVec.x > 0 )
 		{
-			maxs.x = HalfHumanWidth;
+			maxs.x = navgenparams->half_human_width;
 		}
 		if ( cornerVec.y < 0 )
 		{
-			mins.y = -HalfHumanWidth;
+			mins.y = -navgenparams->half_human_width;
 		}
 		else if ( cornerVec.y > 0 )
 		{
-			maxs.y = HalfHumanWidth;
+			maxs.y = navgenparams->half_human_width;
 		}
-		maxs.z = HumanHeight;
+		maxs.z = navgenparams->human_height;
 
 		// now make sure that mins is smaller than maxs
 		for ( int j=0; j<3; ++j )
@@ -479,10 +479,6 @@ void CNavNode::CheckCrouch( void )
  */
 void CNavNode::ConnectTo( CNavNode *node, NavDirType dir, float obstacleHeight, float obstacleStartDist, float obstacleEndDist )
 {
-	Assert( obstacleStartDist >= 0 && obstacleStartDist <= GenerationStepSize );
-	Assert( obstacleEndDist >= 0 && obstacleStartDist <= GenerationStepSize );
-	Assert( obstacleStartDist < obstacleEndDist );
-
 	m_to[ dir ] = node;
 	m_obstacleHeight[ dir ] = obstacleHeight;
 	m_obstacleStartDist[ dir ] = obstacleStartDist;
@@ -496,7 +492,7 @@ void CNavNode::ConnectTo( CNavNode *node, NavDirType dir, float obstacleHeight, 
  */
 CNavNode *CNavNode::GetNode( const Vector &pos )
 {
-	const float tolerance = 0.45f * GenerationStepSize;			// 1.0f
+	const float tolerance = 0.45f * navgenparams->generation_step_size;			// 1.0f
 	CNavNode *pNode = NULL;
 	if ( g_pNavNodeHash )
 	{

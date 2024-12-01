@@ -29,6 +29,17 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 	AddWalkableEntity("trigger_capture_area", true);
 	AddWalkableEntity("trigger_timer_door", true);
 	AddWalkableEntity("info_powerup_spawn");
+
+	navgenparams->half_human_width = 24.0f;
+	navgenparams->half_human_height = 41.0f;
+	navgenparams->human_height = 82.0f;
+	navgenparams->human_crouch_height = 62.0f;
+	navgenparams->human_eye_height = 74.0f;
+	navgenparams->human_crouch_eye_height = 44.0f;
+	navgenparams->jump_height = 49.0f;
+	navgenparams->jump_crouch_height = 68.0f;
+	navgenparams->climb_up_height = 68.0f;
+	navgenparams->death_drop = 220.0f; // experimental
 }
 
 CTFNavMesh::~CTFNavMesh()
