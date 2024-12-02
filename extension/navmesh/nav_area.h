@@ -18,6 +18,7 @@
 #include <string>
 #include <cstdint>
 #include <vector>
+#include <array>
 #include <cmath>
 
 #include "nav_ladder.h"
@@ -268,44 +269,35 @@ class CNavAreaCriticalData
 protected:
 	// --- Begin critical data, which is heavily hit during pathing operations and carefully arranged for cache performance [7/24/2008 tom] ---
 
-	/* 0  */	Vector m_nwCorner;											// north-west corner position (2D mins)
-	/* 12 */	Vector m_seCorner;											// south-east corner position (2D maxs)
-	/* 24 */	float m_invDxCorners;
-	/* 28 */	float m_invDyCorners;
-	/* 32 */	float m_neZ;												// height of the implicit corner defined by (m_seCorner.x, m_nwCorner.y, m_neZ)
-	/* 36 */	float m_swZ;												// height of the implicit corner defined by (m_nwCorner.x, m_seCorner.y, m_neZ)
-	/* 40 */	Vector m_center;											// centroid of area
+	Vector m_nwCorner;											// north-west corner position (2D mins)
+	Vector m_seCorner;											// south-east corner position (2D maxs)
+	float m_invDxCorners;
+	float m_invDyCorners;
+	float m_neZ;												// height of the implicit corner defined by (m_seCorner.x, m_nwCorner.y, m_neZ)
+	float m_swZ;												// height of the implicit corner defined by (m_nwCorner.x, m_seCorner.y, m_neZ)
+	Vector m_center;											// centroid of area
+	unsigned int m_marker;										// used to flag the area as visited
+	float m_totalCost;											// the distance so far plus an estimate of the distance left
+	float m_costSoFar;											// distance travelled so far
+	std::array<bool, MAX_TEAMS> m_isBlocked;					// Blocked status for each team
 
-	/* 52 */	unsigned char m_playerCount[ MAX_NAV_TEAMS ];				// the number of players currently in this area
-
-	/* 54 */	bool m_isBlocked[ MAX_NAV_TEAMS ];							// if true, some part of the world is preventing movement through this nav area
-
-	/* 56 */	unsigned int m_marker;										// used to flag the area as visited
-	/* 60 */	float m_totalCost;											// the distance so far plus an estimate of the distance left
-	/* 64 */	float m_costSoFar;											// distance travelled so far
-
-	/* 68 */	CNavArea *m_nextOpen, *m_prevOpen;							// only valid if m_openMarker == m_masterMarker
-	/* 76 */	unsigned int m_openMarker;									// if this equals the current marker value, we are on the open list
-
-	/* 80 */	int	m_attributeFlags;										// set of attribute bit flags (see NavAttributeType)
+	CNavArea *m_nextOpen, *m_prevOpen;							// only valid if m_openMarker == m_masterMarker
+	unsigned int m_openMarker;									// if this equals the current marker value, we are on the open list
+	int	m_attributeFlags;										// set of attribute bit flags (see NavAttributeType)
 
 	//- connections to adjacent areas -------------------------------------------------------------------
-	/* 84 */	NavConnectVector m_connect[ NUM_DIRECTIONS ];				// a list of adjacent areas for each direction
-	/* 100*/	NavLadderConnectVector m_ladder[ CNavLadder::NUM_LADDER_DIRECTIONS ];	// list of ladders leading up and down from this area
-	/* 108*/	NavConnectVector m_elevatorAreas;							// a list of areas reachable via elevator from this area
+	NavConnectVector m_connect[ NUM_DIRECTIONS ];				// a list of adjacent areas for each direction
+	NavLadderConnectVector m_ladder[ CNavLadder::NUM_LADDER_DIRECTIONS ];	// list of ladders leading up and down from this area
+	NavConnectVector m_elevatorAreas;							// a list of areas reachable via elevator from this area
 
-	/* 112*/	unsigned int m_nearNavSearchMarker;							// used in GetNearestNavArea()
+	unsigned int m_nearNavSearchMarker;							// used in GetNearestNavArea()
 
-	/* 116*/	CNavArea *m_parent;											// the area just prior to this on in the search path
-	/* 120*/	NavTraverseType m_parentHow;								// how we get from parent to us
+	CNavArea *m_parent;											// the area just prior to this on in the search path
+	NavTraverseType m_parentHow;								// how we get from parent to us
+	float m_pathLengthSoFar;									// length of path so far, needed for limiting pathfind max path length
+	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
 
-	/* 124*/	float m_pathLengthSoFar;									// length of path so far, needed for limiting pathfind max path length
-
-	/* *************** 360 cache line *************** */
-
-	/* 128*/	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
-
-	std::vector<NavSpecialLink> m_speciallinks; // Special 'link' connections
+	std::vector<NavSpecialLink> m_speciallinks;					// Special 'link' connections
 	// --- End critical data --- 
 };
 
@@ -372,6 +364,23 @@ public:
 	virtual void UpdateBlocked( bool force = false, int teamID = NAV_TEAM_ANY );		// Updates the (un)blocked status of the nav area (throttled)
 	virtual bool IsBlocked( int teamID, bool ignoreNavBlockers = false ) const;
 	void UnblockArea( int teamID = NAV_TEAM_ANY );					// clear blocked status for the given team(s)
+
+protected:
+	inline void SetBlocked(bool blocked, int teamID = NAV_TEAM_ANY)
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(m_isBlocked.size()))
+		{
+			for (auto& b : m_isBlocked)
+			{
+				b = blocked;
+			}
+		}
+		else
+		{
+			m_isBlocked[teamID] = blocked;
+		}
+	}
+public:
 
 	void CheckFloor( edict_t *ignore );						// Checks if there is a floor under the nav area, in case a breakable floor is gone
 	// Checks if there is a solid floor on this nav area
@@ -499,11 +508,6 @@ public:
 	//- occupy time ------------------------------------------------------------------------------------
 	float GetEarliestOccupyTime( int teamID ) const;			// returns the minimum time for someone of the given team to reach this spot from their spawn
 	bool IsBattlefront( void ) const	{ return m_isBattlefront; }	// true if this area is a "battlefront" - where rushing teams initially meet
-
-	//- player counting --------------------------------------------------------------------------------
-	void IncrementPlayerCount( int teamID, int entIndex );		// add one player to this area's count
-	void DecrementPlayerCount( int teamID, int entIndex );		// subtract one player from this area's count
-	unsigned char GetPlayerCount( int teamID = 0 ) const;		// return number of players of given team currently within this area (team of zero means any/all)
 
 	//- lighting ----------------------------------------------------------------------------------------
 	float GetLightIntensity( const Vector &pos ) const;			// returns a 0..1 light intensity for the given point
@@ -969,51 +973,6 @@ inline bool CNavArea::HasAvoidanceObstacle( float maxObstructionHeight ) const
 inline float CNavArea::GetAvoidanceObstacleHeight( void ) const
 {
 	return m_avoidanceObstacleHeight;
-}
-
-#ifndef DEBUG_AREA_PLAYERCOUNTS
-inline void CNavArea::IncrementPlayerCount( int teamID, int entIndex )
-{
-	teamID = teamID % MAX_NAV_TEAMS;
-
-	if (m_playerCount[ teamID ] == 255)
-	{
-		DevMsg( "CNavArea::IncrementPlayerCount: Overflow\n" );
-		return;
-	}
-
-	++m_playerCount[ teamID ];
-}
-
-inline void CNavArea::DecrementPlayerCount( int teamID, int entIndex )
-{
-	teamID = teamID % MAX_NAV_TEAMS;
-
-	if (m_playerCount[ teamID ] == 0)
-	{
-		DevMsg( "CNavArea::IncrementPlayerCount: Underflow\n" );
-		return;
-	}
-
-	--m_playerCount[ teamID ];
-}
-#endif // !DEBUG_AREA_PLAYERCOUNTS
-
-inline unsigned char CNavArea::GetPlayerCount( int teamID ) const
-{
-	if (teamID)
-	{
-		return m_playerCount[ teamID % MAX_NAV_TEAMS ];
-	}
-
-	// sum all players
-	unsigned char total = 0;
-	for( int i=0; i<MAX_NAV_TEAMS; ++i )
-	{
-		total += m_playerCount[i];
-	}
-
-	return total;
 }
 
 //--------------------------------------------------------------------------------------------------------------

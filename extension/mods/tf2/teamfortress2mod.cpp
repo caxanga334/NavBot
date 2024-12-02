@@ -171,6 +171,17 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 	}
 }
 
+void CTeamFortress2Mod::Update()
+{
+	using namespace TeamFortress2;
+
+	if (m_gamemode == GameModeType::GM_PL || m_gamemode == GameModeType::GM_PL_RACE)
+	{
+		// some community maps have multiple payloads, we need to update this from time to time.
+		FindPayloadCarts();
+	}
+}
+
 void CTeamFortress2Mod::OnMapStart()
 {
 	CBaseMod::OnMapStart();
@@ -565,6 +576,150 @@ bool CTeamFortress2Mod::DetectPlayerDestruction()
 	return false;
 }
 
+static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress2::TFTeam team, CTeamFortress2Mod* tf2mod)
+{
+	CBaseEntity* pTrigger = nullptr;
+
+#ifdef EXT_DEBUG
+	Msg("Start FindCaptureTriggerForTrain\n");
+#endif // EXT_DEBUG
+
+	// Method 1: On most maps, the trigger is parented to the payload's func_tracktrain entity.
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&pTrigger, &pTrain](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity != nullptr)
+		{
+			tfentities::HTFBaseEntity capture(entity);
+			if (capture.GetMoveParent() == pTrain)
+			{
+#ifdef EXT_DEBUG
+				Msg("Found trigger_capture_area %i parented to train %i\n", index, gamehelpers->EntityToBCompatRef(pTrain));
+#endif
+				pTrigger = entity;
+				return false;
+			}
+		}
+
+		return true;
+	});
+
+#ifdef EXT_DEBUG
+	if (pTrigger == nullptr)
+	{
+		Warning("No trigger_capture_area entity is parented to func_tracktrain <%i>!\n", gamehelpers->EntityToBCompatRef(pTrain));
+	}
+#endif // EXT_DEBUG
+
+	if (pTrigger != nullptr)
+	{
+		return pTrigger;
+	}
+
+	std::vector<CBaseEntity*> attackpoints;
+	tf2mod->CollectControlPointsToAttack(team, attackpoints);
+
+#ifdef EXT_DEBUG
+	if (attackpoints.empty())
+	{
+		Warning("attackpoints.size() == 0!\n");
+	}
+#endif
+
+	// Method 2: On some maps (example: pl_embargo) the capture trigger is parented to a secondary train.
+	// Use the first avaialble trigger_capture_area
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&pTrigger, &pTrain, &attackpoints](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity != nullptr)
+		{
+			tfentities::HTFBaseEntity capture(entity);
+
+			if (capture.IsDisabled())
+			{
+				return true; // skip disabled capture zones
+			}
+
+			char cappointname[64]{};
+			std::size_t len = 0;
+
+			entprops->GetEntPropString(index, Prop_Data, "m_iszCapPointName", cappointname, sizeof(cappointname), len);
+
+			if (len == 0)
+			{
+				return true; // no name?
+			}
+
+			int controlpoint = UtilHelpers::FindEntityByTargetname(INVALID_EHANDLE_INDEX, cappointname);
+			
+			if (controlpoint == INVALID_EHANDLE_INDEX)
+			{
+				return true; // skip this one
+			}
+
+			CBaseEntity* pControlPoint = gamehelpers->ReferenceToEntity(controlpoint);
+
+			for (auto& pAttackControlPoint : attackpoints)
+			{
+				if (pAttackControlPoint == pControlPoint)
+				{
+#ifdef EXT_DEBUG
+					Msg("Method 2 found #%i <%s>\n    %i == %i\n", entity, cappointname, gamehelpers->EntityToBCompatRef(pAttackControlPoint), gamehelpers->EntityToBCompatRef(pControlPoint));
+#endif // EXT_DEBUG
+
+					pTrigger = entity;
+					return false;
+				}
+			}
+		}
+
+		return true;
+	});
+
+#ifdef EXT_DEBUG
+	if (pTrigger == nullptr)
+	{
+		Warning("Method 2 failed to find a trigger_capture_area for func_tracktrain <%i>!\n", gamehelpers->EntityToBCompatRef(pTrain));
+	}
+#endif // EXT_DEBUG
+
+	if (pTrigger != nullptr)
+	{
+		return pTrigger;
+	}
+
+	// As a last resort, use the first enabled trigger_capture_area
+	// This works fine for pl_embargo. Most maps will stop at method 1.
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&pTrigger](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity != nullptr)
+		{
+			tfentities::HTFBaseEntity capture(entity);
+
+			if (capture.IsDisabled())
+			{
+				return true; // skip disabled capture zones
+			}
+
+#ifdef EXT_DEBUG
+			if (pTrigger == nullptr)
+			{
+				Warning("Method 1 and 2 failed. We will be using the first enabled trigger_capture_area found: %i\n", index);
+			}
+#endif // EXT_DEBUG
+
+			pTrigger = entity;
+			return false;
+		}
+
+		return true;
+	});
+
+#ifdef EXT_DEBUG
+	if (pTrigger == nullptr)
+	{
+		Warning("Method 3 failed! Either all trigger_capture_area entities are disabled or they don't exists!\n", gamehelpers->EntityToBCompatRef(pTrain));
+	}
+#endif // EXT_DEBUG
+
+	return pTrigger;
+}
+
 void CTeamFortress2Mod::FindPayloadCarts()
 {
 	m_red_payload.Term();
@@ -595,12 +750,16 @@ void CTeamFortress2Mod::FindPayloadCarts()
 
 				if (pTrain != nullptr)
 				{
+
+					CBaseEntity* pTrigger = FindCaptureTriggerForTrain(pTrain, TeamFortress2::TFTeam::TFTeam_Red, this);
+
 					if (sm_navbot_tf_mod_debug.GetBool())
 					{
-						smutils->LogMessage(myself, "[DEBUG] Found RED payload cart %s<#%i>", targetname.get(), train);
+						smutils->LogMessage(myself, "[DEBUG] Found RED payload cart %s<#%i> Trigger: %p", targetname.get(), train, pTrigger);
 					}
 
-					m_red_payload.Set(pTrain);
+					// if a trigger is found, store it
+					m_red_payload.Set(pTrigger != nullptr ? pTrigger : pTrain);
 				}
 			}
 		}
@@ -617,12 +776,15 @@ void CTeamFortress2Mod::FindPayloadCarts()
 
 				if (pTrain != nullptr)
 				{
+					CBaseEntity* pTrigger = FindCaptureTriggerForTrain(pTrain, TeamFortress2::TFTeam::TFTeam_Blue, this);
+
 					if (sm_navbot_tf_mod_debug.GetBool())
 					{
-						smutils->LogMessage(myself, "[DEBUG] Found BLU payload cart %s<#%i>", targetname.get(), train);
+						smutils->LogMessage(myself, "[DEBUG] Found RED payload cart %s<#%i> Trigger: %p", targetname.get(), train, pTrigger);
 					}
 
-					m_blu_payload.Set(pTrain);
+					// if a trigger is found, store it
+					m_blu_payload.Set(pTrigger != nullptr ? pTrigger : pTrain);
 				}
 			}
 		}
@@ -905,9 +1067,9 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 
 void CTeamFortress2Mod::OnRoundStart()
 {
+	UpdateObjectiveResource(); // call this first
+	FindControlPoints(); // this must be before findpayloadcarts
 	FindPayloadCarts();
-	FindControlPoints();
-	UpdateObjectiveResource();
 
 	extmanager->ForEachBot([](CBaseBot* bot) {
 		bot->OnRoundStateChanged();

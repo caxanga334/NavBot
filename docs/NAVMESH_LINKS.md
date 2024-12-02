@@ -26,7 +26,7 @@ Now use `sm_nav_link_connect <Link type ID>` to create the link.
 
 # Removing Links
 
-Mark the link's startng area, put your crosshair on the destination area and then use `sm_nav_link_disconnect <Link type ID>` to remove the link of given type.
+Mark the link's starting area, put your crosshair on the destination area and then use `sm_nav_link_disconnect <Link type ID>` to remove the link of given type.
 
 # Current Link Types
 

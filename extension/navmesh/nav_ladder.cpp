@@ -429,7 +429,7 @@ void CNavLadder::BuildUseableLadder(CBaseEntity* ladder)
 	m_top.z += navgenparams->step_height;
 	m_bottom.z += (navgenparams->step_height / 2.0f);
 	m_length = fabsf(topPosition.z - bottomPosition.z);
-	m_width = 24.0f; // temporary, player hull width
+	m_width = navgenparams->half_human_width;
 	UpdateUseableLadderDir(NORTH);
 
 	ConnectGeneratedLadder(10.0f);

@@ -48,7 +48,7 @@ NavErrorType CTFNavArea::Load(std::fstream& filestream, uint32_t version, uint32
 
 void CTFNavArea::UpdateBlocked(bool force, int teamID)
 {
-	// TO-DO: Implement for TF
+	CNavArea::UpdateBlocked(force, teamID);
 }
 
 bool CTFNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const

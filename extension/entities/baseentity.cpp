@@ -168,38 +168,30 @@ void entities::HBaseEntity::GetTargetName(char* result, int maxsize) const
 
 CBaseEntity* entities::HBaseEntity::GetOwnerEntity() const
 {
-	CBaseEntity* owner = nullptr;
 	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hOwnerEntity", ref);
-	UtilHelpers::IndexToAThings(ref, &owner, nullptr);
-	return owner;
+	return gamehelpers->ReferenceToEntity(ref);
 }
 
 CBaseEntity* entities::HBaseEntity::GetMoveParent() const
 {
-	CBaseEntity* entity = nullptr;
 	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hMoveParent", ref);
-	UtilHelpers::IndexToAThings(ref, &entity, nullptr);
-	return entity;
+	return gamehelpers->ReferenceToEntity(ref);
 }
 
 CBaseEntity* entities::HBaseEntity::GetMoveChild() const
 {
-	CBaseEntity* entity = nullptr;
 	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hMoveChild", ref);
-	UtilHelpers::IndexToAThings(ref, &entity, nullptr);
-	return entity;
+	return gamehelpers->ReferenceToEntity(ref);
 }
 
 CBaseEntity* entities::HBaseEntity::GetMovePeer() const
 {
-	CBaseEntity* entity = nullptr;
 	int ref = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Data, "m_hMovePeer", ref);
-	UtilHelpers::IndexToAThings(ref, &entity, nullptr);
-	return entity;
+	return gamehelpers->ReferenceToEntity(ref);
 }
 
 MoveType_t entities::HBaseEntity::GetMoveType() const

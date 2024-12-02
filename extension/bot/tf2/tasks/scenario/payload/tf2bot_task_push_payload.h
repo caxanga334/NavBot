@@ -23,6 +23,8 @@ private:
 	CountdownTimer m_repathtimer;
 	CountdownTimer m_updatePayloadTimer;
 	CHandle<CBaseEntity> m_payload;
+
+	CBaseEntity* GetPayload(CTF2Bot* bot);
 };
 
 #endif // !NAVBOT_TF2BOT_TASK_PUSH_PAYLOAD_H_

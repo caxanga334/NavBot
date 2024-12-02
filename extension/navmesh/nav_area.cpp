@@ -303,19 +303,20 @@ CNavArea::CNavArea(unsigned int place)
 
 	ResetNodes();
 
+	for (auto& b : m_isBlocked)
+	{
+		b = false;
+	}
+
 	int i;
 	for ( i=0; i<MAX_NAV_TEAMS; ++i )
 	{
-		m_isBlocked[i] = false;
-
 		m_danger[i] = 0.0f;
 		m_dangerTimestamp[i] = 0.0f;
 
 		m_clearedTimestamp[i] = 0.0f;
 
 		m_earliestOccupyTime[i] = 0.0f;
-	
-		m_playerCount[i] = 0;
 	}
 
 	// set an ID for splitting and other interactive editing - loads will overwrite this
@@ -4629,24 +4630,25 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		return false;
 	}
 
-#ifdef TERROR
-	if ( ( teamID == TEAM_SURVIVOR ) && ( m_attributeFlags & CNavArea::NAV_PLAYERCLIP ) )
-		return true;
-#endif
+	bool result = false;
 
-	if ( teamID == NAV_TEAM_ANY )
+	if (teamID < 0 || teamID >= static_cast<int>(m_isBlocked.size()))
 	{
-		bool isBlocked = false;
-		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
+		for (auto& blocked : m_isBlocked)
 		{
-			isBlocked |= m_isBlocked[ i ];
+			if (blocked)
+			{
+				result = true;
+				break;
+			}
 		}
-
-		return isBlocked;
+	}
+	else
+	{
+		result = m_isBlocked[teamID];
 	}
 
-	int teamIdx = teamID % MAX_NAV_TEAMS;
-	return m_isBlocked[ teamIdx ];
+	return result;
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -4658,20 +4660,25 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	}
 
 	bool wasBlocked = false;
-	if ( teamID == NAV_TEAM_ANY )
+
+	if (teamID < 0 || teamID >= static_cast<int>(m_isBlocked.size()))
 	{
-		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
+		for (auto& blocked : m_isBlocked)
 		{
-			wasBlocked |= m_isBlocked[ i ];
-			m_isBlocked[ i ] = true;
+			if (blocked)
+			{
+				wasBlocked = true;
+			}
+
+			blocked = true;
 		}
 	}
 	else
 	{
-		int teamIdx = teamID % MAX_NAV_TEAMS;
-		wasBlocked |= m_isBlocked[ teamIdx ];
-		m_isBlocked[ teamIdx ] = true;
+		wasBlocked = m_isBlocked[teamID];
+		m_isBlocked[teamID] = true;
 	}
+
 	if ( !wasBlocked )
 	{
 		if (sm_nav_debug_blocked.GetBool() )
@@ -4706,6 +4713,7 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 // checks if any func_nav_blockers are still blocking the area
 void CNavArea::UpdateBlockedFromNavBlockers( void )
 {
+#if 0 // TO-DO
 	Extent bounds;
 	GetExtent( &bounds );
 
@@ -4747,6 +4755,7 @@ void CNavArea::UpdateBlockedFromNavBlockers( void )
 			TheNavMesh->OnAreaUnblocked( this );
 		}
 	}
+#endif
 }
 
 
@@ -4755,17 +4764,16 @@ void CNavArea::UnblockArea( int teamID )
 {
 	bool wasBlocked = IsBlocked( teamID );
 
-	if ( teamID == NAV_TEAM_ANY )
+	if (teamID < 0 || teamID >= MAX_TEAMS)
 	{
-		for ( int i=0; i<MAX_NAV_TEAMS; ++i )
+		for (auto& b : m_isBlocked)
 		{
-			m_isBlocked[ i ] = false;
+			b = false;
 		}
 	}
 	else
 	{
-		int teamIdx = teamID % MAX_NAV_TEAMS;
-		m_isBlocked[ teamIdx ] = false;
+		m_isBlocked[teamID] = false;
 	}
 
 	if ( wasBlocked )
@@ -4778,12 +4786,7 @@ void CNavArea::UnblockArea( int teamID )
 	}
 }
 
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Updates the (un)blocked status of the nav area
- * The semantics of this method have gotten very muddled - needs refactoring (MSB 5/7/09)
- */
+// Updates the (un)blocked status of the nav area
 void CNavArea::UpdateBlocked( bool force, int teamID )
 {
 	if ( !force && !m_blockedTimer.IsElapsed() )
@@ -4791,7 +4794,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		return;
 	}
 
-	const float MaxBlockedCheckInterval = 5;
+	constexpr auto MaxBlockedCheckInterval = 5.0f;
 	float interval = m_blockedTimer.GetCountdownDuration() + 1;
 	if ( interval > MaxBlockedCheckInterval )
 	{
@@ -4808,64 +4811,19 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		return;
 	}
 
-	Vector origin = GetCenter();
-	origin.z += navgenparams->human_height;
-
-	const float sizeX = MAX(1, MIN(GetSizeX() / 2 - 5, navgenparams->half_human_width ));
-	const float sizeY = MAX( 1, MIN( GetSizeY()/2 - 5, navgenparams->half_human_width ) );
-	Extent bounds;
-	bounds.lo.Init( -sizeX, -sizeY, 0 );
-	// duck height - halfhumanheight
-	bounds.hi.Init( sizeX, sizeY, 36.0f - navgenparams->human_height );
-
 	bool wasBlocked = IsBlocked( NAV_TEAM_ANY );
 
-	// See if spot is valid
-#ifdef TERROR
-	// don't unblock func_doors
-	trace::CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, trace::WALK_THRU_PROP_DOORS | trace::WALK_THRU_BREAKABLES);
-#else
-	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_DOORS | WALK_THRU_BREAKABLES);
-#endif
-	trace_t tr;
-
-	trace::hull(origin, origin, bounds.lo, bounds.hi, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
-
-	if ( !tr.startsolid )
+	// run floor and obstruction checks on transient areas
+	if (HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_TRANSIENT)))
 	{
-		// unblock ourself
-#ifdef TERROR
-		extern ConVar DebugZombieBreakables;
-		if ( DebugZombieBreakables.GetBool() )
-#else
-		if ( false )
-#endif
-
+		// A nav area is blocked if there isn't a solid floor underneath it or if something solid is on top of it
+		if (!HasSolidFloor() || HasSolidObstruction())
 		{
-			debugoverlay->AddBoxOverlay(origin, bounds.lo, bounds.hi,
-					QAngle(0.0f, 0.0f, 0.0f), 0, 255, 0, 10, 5.0f);
+			SetBlocked(true, teamID);
 		}
 		else
 		{
-			for ( int i=0; i<MAX_NAV_TEAMS; ++i )
-			{
-				m_isBlocked[ i ] = false;
-			}
-		}
-	}
-	else if ( force )
-	{
-		if ( teamID == NAV_TEAM_ANY )
-		{
-			for ( int i=0; i<MAX_NAV_TEAMS; ++i )
-			{
-				m_isBlocked[ i ] = true;
-			}
-		}
-		else
-		{
-			int teamIdx = teamID % MAX_NAV_TEAMS;
-			m_isBlocked[ teamIdx ] = true;
+			SetBlocked(false, teamID);
 		}
 	}
 
@@ -4880,20 +4838,6 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		else
 		{
 			TheNavMesh->OnAreaUnblocked( this );
-		}
-	}
-
-	if ( TheNavMesh->GetMarkedArea() == this )
-	{
-		if ( IsBlocked( teamID ) )
-		{
-			debugoverlay->AddBoxOverlay(origin, bounds.lo, bounds.hi,
-					QAngle(0.0f, 0.0f, 0.0f), 255, 0, 0, 64, 3.0f);
-		}
-		else
-		{
-			debugoverlay->AddBoxOverlay(origin, bounds.lo, bounds.hi,
-					QAngle(0.0f, 0.0f, 0.0f), 0, 255, 0, 64, 3.0f);
 		}
 	}
 }
@@ -4925,17 +4869,6 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	{
 		MarkAsBlocked( NAV_TEAM_ANY, NULL );
 	}
-
-	/*
-	if ( IsBlocked( NAV_TEAM_ANY ) )
-	{
-		NDebugOverlay::Box( origin, mins, maxs, 255, 0, 0, 64, 3.0f );
-	}
-	else
-	{
-		NDebugOverlay::Box( origin, mins, maxs, 0, 255, 0, 64, 3.0f );
-	}
-	*/
 }
 
 bool CNavArea::HasSolidFloor() const

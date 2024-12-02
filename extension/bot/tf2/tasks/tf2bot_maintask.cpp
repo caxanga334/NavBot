@@ -10,6 +10,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include "bot/tf2/tf2bot.h"
+#include "tf2bot_taunting.h"
 #include "tf2bot_tactical.h"
 #include "tf2bot_maintask.h"
 
@@ -24,6 +25,11 @@ AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	if (tf2lib::IsPlayerInCondition(bot->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
+	{
+		return PauseFor(new CTF2BotTauntingTask, "Taunting!");
+	}
+
 	auto sensor = bot->GetSensorInterface();
 	auto threat = sensor->GetPrimaryKnownThreat();
 

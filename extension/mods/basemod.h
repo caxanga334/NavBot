@@ -26,6 +26,8 @@ public:
 
 	// Called every server frame
 	virtual void Frame() {}
+	// Called at intervals
+	virtual void Update() {}
 	// Called when the map starts
 	virtual void OnMapStart();
 	// Called when the map ends

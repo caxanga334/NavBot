@@ -310,7 +310,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 {
 	m_blockedAreas.RemoveAll();
 	m_avoidanceObstacleAreas.RemoveAll();
-	m_transientAreas.RemoveAll();
+	m_transientAreas.clear();
 
 	if ( !incremental )
 	{
@@ -410,7 +410,7 @@ void CNavMesh::Update( void )
 	if ( m_updateBlockedAreasTimer.HasStarted() && m_updateBlockedAreasTimer.IsElapsed() )
 	{
 		TestAllAreasForBlockedStatus();
-		m_updateBlockedAreasTimer.Invalidate();
+		m_updateBlockedAreasTimer.Start(2.0f);
 	}
 
 	UpdateBlockedAreas();
@@ -658,7 +658,7 @@ void CNavMesh::AddNavArea( CNavArea *area )
 
 	if ( area->GetAttributes() & NAV_MESH_TRANSIENT )
 	{
-		m_transientAreas.AddToTail( area );
+		m_transientAreas.push_back(area);
 	}
 
 	++m_areaCount;
@@ -814,7 +814,7 @@ void CNavMesh::OnRoundRestartPreEntity( void )
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::BuildTransientAreaList( void )
 {
-	m_transientAreas.RemoveAll();
+	m_transientAreas.clear();
 
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
@@ -822,7 +822,7 @@ void CNavMesh::BuildTransientAreaList( void )
 
 		if ( area->GetAttributes() & NAV_MESH_TRANSIENT )
 		{
-			m_transientAreas.AddToTail( area );
+			m_transientAreas.push_back(area);
 		}
 	}
 }

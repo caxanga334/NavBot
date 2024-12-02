@@ -57,6 +57,7 @@ CExtManager::CExtManager() :
 	m_quotatarget = 0;
 	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
 	m_iscreatingbot = false;
+	m_callModUpdateTimer.Start(get_mod_update_interval());
 }
 
 CExtManager::~CExtManager()
@@ -95,6 +96,12 @@ void CExtManager::Frame()
 	*/
 
 	m_mod->Frame();
+
+	if (m_callModUpdateTimer.IsElapsed())
+	{
+		m_callModUpdateTimer.Start(get_mod_update_interval());
+		m_mod->Update();
+	}
 }
 
 void CExtManager::OnClientPutInServer(int client)

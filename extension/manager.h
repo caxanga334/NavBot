@@ -20,6 +20,9 @@ public:
 		QUOTA_FILL, // Fill with N bots, automatically kicked to free space for humans
 	};
 
+	// call CBaseMod::Update every N seconds. Where N is the return value.
+	static constexpr float get_mod_update_interval() { return 10.0f; }
+
 	CExtManager();
 	~CExtManager();
 
@@ -100,6 +103,7 @@ private:
 	int m_quotatarget; // Bot quota target
 	CWeaponInfoManager m_wim;
 	bool m_iscreatingbot; // We are creating a NavBot
+	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
 };
 
 

@@ -26,6 +26,8 @@ public:
 
 	void FireGameEvent(IGameEvent* event) override;
 
+	void Update() override;
+
 	const char* GetModName() override { return "Team Fortress 2"; }
 
 	Mods::ModType GetModType() override { return Mods::ModType::MOD_TF2; }

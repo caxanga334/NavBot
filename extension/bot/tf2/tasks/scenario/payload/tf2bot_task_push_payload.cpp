@@ -40,33 +40,10 @@ TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 		return Continue();
 	}
 
-	CBaseEntity* payload = m_payload.Get();
+	CBaseEntity* payload = GetPayload(bot);
 
 	if (payload == nullptr)
 	{
-		if (m_updatePayloadTimer.IsElapsed())
-		{
-			if (bot->GetMyTFTeam() == TeamFortress2::TFTeam_Red)
-			{
-				payload = CTeamFortress2Mod::GetTF2Mod()->GetREDPayload();
-			}
-			else
-			{
-				payload = CTeamFortress2Mod::GetTF2Mod()->GetBLUPayload();
-			}
-
-			m_payload.Set(payload);
-
-			if (payload != nullptr)
-			{
-				m_updatePayloadTimer.Start(10.0f);
-			}
-			else
-			{
-				m_updatePayloadTimer.Start(0.1f);
-			}
-		}
-
 		return Continue();
 	}
 
@@ -123,4 +100,36 @@ TaskEventResponseResult<CTF2Bot> CTF2BotPushPayloadTask::OnMoveToFailure(CTF2Bot
 TaskEventResponseResult<CTF2Bot> CTF2BotPushPayloadTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
 {
 	return TryContinue();
+}
+
+CBaseEntity* CTF2BotPushPayloadTask::GetPayload(CTF2Bot* bot)
+{
+	CBaseEntity* payload = m_payload.Get();
+
+	// some maps changes the target payload entity so we need to update from time to time.
+	// this is generally not needed unless since the bot behavior is reset when they are killed but this is for edge cases where a bot manages to stay alive
+	if (payload == nullptr || m_updatePayloadTimer.IsElapsed())
+	{
+		if (bot->GetMyTFTeam() == TeamFortress2::TFTeam_Red)
+		{
+			payload = CTeamFortress2Mod::GetTF2Mod()->GetREDPayload();
+		}
+		else
+		{
+			payload = CTeamFortress2Mod::GetTF2Mod()->GetBLUPayload();
+		}
+
+		if (payload == nullptr)
+		{
+			m_updatePayloadTimer.Start(0.1f);
+		}
+		else
+		{
+			m_updatePayloadTimer.Start(10.0f);
+		}
+
+		m_payload.Set(payload);
+	}
+
+	return payload;
 }

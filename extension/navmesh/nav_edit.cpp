@@ -2981,11 +2981,16 @@ void CNavMesh::DoToggleAttribute( CNavArea *area, NavAttributeType attribute )
 	{
 		if ( area->GetAttributes() & NAV_MESH_TRANSIENT )
 		{
-			m_transientAreas.AddToTail( area );
+			m_transientAreas.push_back(area);
 		}
 		else
 		{
-			m_transientAreas.FindAndRemove( area );
+			auto it = std::find(m_transientAreas.begin(), m_transientAreas.end(), area);
+
+			if (it != m_transientAreas.end())
+			{
+				m_transientAreas.erase(it);
+			}
 		}
 	}
 }

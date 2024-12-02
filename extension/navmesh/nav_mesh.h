@@ -751,7 +751,7 @@ public:
 	NavLadderVector& GetLadders( void ) { return m_ladders; }	// Returns the list of ladders
 	CNavLadder *GetLadderByID( unsigned int id ) const;
 
-	CUtlVector< CNavArea * >& GetTransientAreas( void ) { return m_transientAreas; }
+	const std::vector<CNavArea*>& GetTransientAreas() const { return m_transientAreas; }
 
 	enum EditModeType
 	{
@@ -1011,7 +1011,7 @@ private:
 	int m_hostThreadModeRestoreValue;							// stores the value of host_threadmode before we changed it
 
 	void BuildTransientAreaList( void );
-	CUtlVector< CNavArea * > m_transientAreas;
+	std::vector<CNavArea*> m_transientAreas;
 
 	void UpdateAvoidanceObstacleAreas( void );
 	CUtlVector< CNavArea * > m_avoidanceObstacleAreas;
@@ -1026,7 +1026,7 @@ private:
 	void EndVisibilityComputations( void );
 
 	void TestAllAreasForBlockedStatus( void );					// Used to update blocked areas after a round restart. Need to delay so the map logic has all fired.
-	CountdownTimer m_updateBlockedAreasTimer;		
+	CountdownTimer m_updateBlockedAreasTimer;
 	CountdownTimer m_invokeAreaUpdateTimer;
 	CountdownTimer m_invokeWaypointUpdateTimer;
 	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
