@@ -67,7 +67,11 @@ public:
 	 * @brief Retrieves a custom data value from the difficulty profile.
 	 * @tparam T Data type to convert to.
 	 * 
-	 * A static assertion will fail if the data type is not supported.
+	 * If type is not supported, will always return the default value.
+	 * 
+	 * Supported types: bool, int, float, double.
+	 * 
+	 * The data is internally stored as a float.
 	 * @param key Custom data key name
 	 * @param defaultValue Default value to return if the key doesn't exists.
 	 * @return Key value or default if not found
@@ -123,9 +127,25 @@ public:
 				return defaultValue;
 			}
 		}
+		else if constexpr (std::is_same<T, double>::value || std::is_same<T, const double>::value)
+		{
+			auto it = custom_data.find(key);
+
+			if (it != custom_data.end())
+			{
+				return static_cast<double>(it->second);
+
+			}
+			else // not found
+			{
+				return defaultValue;
+			}
+		}
 		else
 		{
-			static_assert(false, "GetCustomData unsupported data type!");
+			// this always fails on Clang
+			// static_assert(false, "GetCustomData unsupported data type!");
+			return defaultValue;
 		}
 	}
 
