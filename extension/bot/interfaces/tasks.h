@@ -329,19 +329,19 @@ public:
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
-	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
+	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override
 	{
-		const CKnownEntity* result = nullptr;
+		std::shared_ptr<const CKnownEntity> result = nullptr;
 
 		if (m_task)
 		{
 			AITask<BotClass>* respondingTask = nullptr;
 			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
 
-			while (respondingTask != nullptr && result == nullptr)
+			while (respondingTask != nullptr && result.get() == nullptr)
 			{
 				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
-				while (respondingTask != nullptr && result == nullptr)
+				while (respondingTask != nullptr && result.get() == nullptr)
 				{
 					result = respondingTask->SelectTargetThreat(me, threat1, threat2);
 					respondingTask = respondingTask->GetTaskBelowMe();

@@ -1,8 +1,11 @@
-#ifndef SMNAV_BOT_DIFFICULTY_PROFILE_H_
-#define SMNAV_BOT_DIFFICULTY_PROFILE_H_
-#pragma once
+#ifndef NAVBOT_BOT_DIFFICULTY_PROFILE_H_
+#define NAVBOT_BOT_DIFFICULTY_PROFILE_H_
 
 #include <vector>
+#include <memory>
+#include <unordered_map>
+#include <type_traits>
+#include <cmath>
 
 #include <ITextParsers.h>
 
@@ -11,8 +14,11 @@ class DifficultyProfile
 {
 public:
 	DifficultyProfile() :
-		skill_level(-1), aimspeed(25.0f), aimacceleration(2.0f), aiminitialspeed(10.0f), fov(90), maxvisionrange(2048), maxhearingrange(512),
-		minrecognitiontime(0.3f) {}
+		skill_level(-1), aimspeed(1200.0f), fov(90), maxvisionrange(2048), maxhearingrange(512),
+		minrecognitiontime(0.3f) 
+	{
+		custom_data.reserve(4);
+	}
 
 	DifficultyProfile(const DifficultyProfile& other)
 	{
@@ -39,8 +45,6 @@ public:
 	inline const int GetMaxVisionRange() const { return maxvisionrange; }
 	inline const int GetMaxHearingRange() const { return maxhearingrange; }
 	inline const float GetMinRecognitionTime() const { return minrecognitiontime; }
-	inline const float GetAimAcceleration() const { return aimacceleration; }
-	inline const float GetAimInitialSpeed() const { return aiminitialspeed; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetAimSpeed(const float speed) { aimspeed = speed; }
@@ -48,30 +52,102 @@ public:
 	inline void SetMaxVisionRange(const int range) { maxvisionrange = range; }
 	inline void SetMaxHearingRange(const int range) { maxhearingrange = range; }
 	inline void SetMinRecognitionTime(const float time) { minrecognitiontime = time; }
-	inline void SetAimAcceleration(const float value) { aimacceleration = value; }
-	inline void SetAimInitialSpeed(const float value) { aiminitialspeed = value; }
+
+	inline void SaveCustomData(std::string key, float data)
+	{
+		custom_data[key] = data;
+	}
+
+	inline bool ContainsCustomData(std::string key) const
+	{
+		return custom_data.count(key) > 0U;
+	}
+
+	/**
+	 * @brief Retrieves a custom data value from the difficulty profile.
+	 * @tparam T Data type to convert to.
+	 * 
+	 * A static assertion will fail if the data type is not supported.
+	 * @param key Custom data key name
+	 * @param defaultValue Default value to return if the key doesn't exists.
+	 * @return Key value or default if not found
+	 */
+	template <typename T>
+	inline T GetCustomData(std::string key, T defaultValue) const
+	{
+		if constexpr (std::is_same<T, bool>::value || std::is_same<T, const bool>::value)
+		{
+			auto it = custom_data.find(key);
+
+			if (it != custom_data.end())
+			{
+				if (it->second > -0.5f && it->second < 0.5f)
+				{
+					return true;
+				}
+				else
+				{
+					return false;
+				}
+			}
+			else // not found
+			{
+				return defaultValue;
+			}
+		}
+		else if constexpr (std::is_same<T, int>::value || std::is_same<T, const int>::value)
+		{
+			auto it = custom_data.find(key);
+
+			if (it != custom_data.end())
+			{
+				return static_cast<int>(std::roundf(it->second));
+				
+			}
+			else // not found
+			{
+				return defaultValue;
+			}
+		}
+		else if constexpr (std::is_same<T, float>::value || std::is_same<T, const float>::value)
+		{
+			auto it = custom_data.find(key);
+
+			if (it != custom_data.end())
+			{
+				return it->second;
+
+			}
+			else // not found
+			{
+				return defaultValue;
+			}
+		}
+		else
+		{
+			static_assert(false, "GetCustomData unsupported data type!");
+		}
+	}
 
 private:
 	int skill_level; // the skill level this profile represents
 	float aimspeed; // Aiming speed cap
-	float aimacceleration; // How fast the bot aim accelerates per tick
-	float aiminitialspeed; // Initial aim speed
 	int fov; // field of view in degrees
 	int maxvisionrange; // maximum distance the bot is able to see
 	int maxhearingrange; // maximum distace the bot is able to hear
 	float minrecognitiontime; // minimum time for the bot to recognize an entity
+	std::unordered_map<std::string, float> custom_data; // allow mods to have custom data on profile without changing this class
 };
 
 // Bot difficulty profile manager
 class CDifficultyManager : public SourceMod::ITextListener_SMC
 {
 public:
-	CDifficultyManager() :
-		m_newprofile(false),
-		m_parser_header(false),
-		m_data()
+	CDifficultyManager()
 	{
-		m_profiles.reserve(64);
+		m_profiles.reserve(32);
+		m_parser_depth = 0;
+		m_current = nullptr;
 	}
 
 	~CDifficultyManager();
@@ -83,7 +159,7 @@ public:
 	 * @param level Skill level
 	 * @return Difficulty profile
 	*/
-	DifficultyProfile GetProfileForSkillLevel(const int level) const;
+	std::shared_ptr<DifficultyProfile> GetProfileForSkillLevel(const int level) const;
 
 	/**
 	 * @brief Called when starting parsing.
@@ -127,36 +203,9 @@ public:
 	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
 
 private:
-	struct ProfileData
-	{
-		int skill_level; // the skill level this profile represents
-		float aimspeed; // how fast the bot aim approaches a given look at vector
-		int fov; // field of view in degrees
-		int maxvisionrange; // maximum distance the bot is able to see
-		int maxhearingrange; // maximum distace the bot is able to hear
-		float minrecognitiontime;
-		float aimacceleration; // How fast the bot aim accelerates per tick
-		float aiminitialspeed; // Initial aim speed
-
-		// Initialize the profile data
-		inline void OnNew()
-		{
-			skill_level = 0;
-			aimspeed = 15;
-			fov = 75;
-			maxvisionrange = 1500;
-			maxhearingrange = 750;
-			minrecognitiontime = 0.3f;
-			aimacceleration = 1.5f;
-			aiminitialspeed = 6.0f;
-		}
-	};
-
-	DifficultyProfile m_default;
-	std::vector<DifficultyProfile> m_profiles;
-	bool m_newprofile; // reading a new profile
-	bool m_parser_header;
-	ProfileData m_data; // data read from the configuration file
+	std::vector<std::shared_ptr<DifficultyProfile>> m_profiles;
+	DifficultyProfile* m_current; // current profile being parsed
+	int m_parser_depth;
 };
 
-#endif // !SMNAV_BOT_DIFFICULTY_PROFILE_H_
+#endif // !NAVBOT_BOT_DIFFICULTY_PROFILE_H_

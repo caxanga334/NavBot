@@ -1,7 +1,8 @@
-#ifndef SMNAV_BOT_SENSOR_INTERFACE_H_
-#define SMNAV_BOT_SENSOR_INTERFACE_H_
+#ifndef NAVBOT_SENSOR_INTERFACE_H_
+#define NAVBOT_SENSOR_INTERFACE_H_
 
 #include <vector>
+#include <memory>
 
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
@@ -11,16 +12,16 @@ class ISensor : public IBotInterface
 {
 public:
 	ISensor(CBaseBot* bot);
-	virtual ~ISensor();
+	~ISensor() override;
 
-	virtual void OnDifficultyProfileChanged() override;
+	void OnDifficultyProfileChanged() override;
 
 	// Reset the interface to it's initial state
-	virtual void Reset();
+	void Reset() override;
 	// Called at intervals
-	virtual void Update();
+	void Update() override;
 	// Called every server frame
-	virtual void Frame();
+	void Frame() override;
 	// Is this entity ignored by the bot?
 	virtual bool IsIgnored(edict_t* entity) { return false; }
 	virtual bool IsFriendly(edict_t* entity) { return false; }
@@ -53,7 +54,8 @@ public:
 	// Returns true if the given entity is already known by the bot
 	virtual bool IsKnown(edict_t* entity);
 	// Gets the Known entity of the given entity or NULL if not known by the bot
-	virtual const CKnownEntity* GetKnown(edict_t* entity);
+	virtual std::shared_ptr<const CKnownEntity> GetKnown(CBaseEntity* entity);
+	std::shared_ptr<const CKnownEntity> GetKnown(edict_t* edict);
 	// Updates the position of a known entity or adds it to the list if not known
 	virtual void UpdateKnownEntity(edict_t* entity);
 
@@ -71,16 +73,17 @@ public:
 	virtual const float GetTimeSinceVisibleThreat() const;
 
 	// Gets the primary known threat to the bot or NULL if none
-	virtual const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
+	virtual std::shared_ptr<const CKnownEntity> GetPrimaryKnownThreat(const bool onlyvisible = false);
 	/**
 	 * @brief Gets the quantity of known entities
 	 * @param teamindex Filter known entities by team or negative number if don't care
 	 * @param onlyvisible Filter known entities by visibility status
-	 * @param rangelimit Filter known entities by distance
+	 * @param rangelimit Filter known entities by distance (SQUARED)
 	 * @return Quantity of known entities
 	*/
 	virtual int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
-	virtual int GetKnownEntityTeamIndex(CKnownEntity* known) { return 0; } // mods implement this
+	// Gets the team index of a known entity since we don't have access to the CBaseEntity functions. Override per mod needs.
+	virtual int GetKnownEntityTeamIndex(CKnownEntity* known);
 	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
 
 	// Events
@@ -96,7 +99,7 @@ public:
 	{
 		for (auto& i : m_knownlist)
 		{
-			const CKnownEntity* known = &i;
+			const CKnownEntity* known = i.get();
 			functor(known);
 		}
 	}
@@ -110,9 +113,9 @@ public:
 	template <typename T>
 	inline void CollectKnownEntities(std::vector<const CKnownEntity*>& outvector, T functor)
 	{
-		for (auto& i : m_knownlist)
+		for (auto& ptr : m_knownlist)
 		{
-			const CKnownEntity* known = &i;
+			const CKnownEntity* known = ptr.get();
 			
 			if (functor(known))
 			{
@@ -129,11 +132,11 @@ protected:
 	virtual void CleanKnownEntities();
 	// Same as GetKnown but it's not const, use this internally when updating known entities
 	CKnownEntity* FindKnownEntity(edict_t* edict);
-	inline std::vector<CKnownEntity>& GetKnownEntityList() { return m_knownlist; }
+	inline std::vector<std::shared_ptr<CKnownEntity>>& GetKnownEntityList() { return m_knownlist; }
 
 private:
-	std::vector<CKnownEntity> m_knownlist;
-	const CKnownEntity* m_primarythreatcache;
+	std::vector<std::shared_ptr<CKnownEntity>> m_knownlist;
+	std::shared_ptr<const CKnownEntity> m_primarythreatcache;
 	float m_fieldofview;
 	float m_coshalfFOV;
 	float m_maxvisionrange;
@@ -142,11 +145,11 @@ private:
 	float m_lastupdatetime;
 	IntervalTimer m_threatvisibletimer;
 
-	inline bool IsAwareOf(const CKnownEntity& known) const
+	inline bool IsAwareOf(const std::shared_ptr<CKnownEntity>& known) const
 	{
-		return known.GetTimeSinceLastVisible() >= GetMinRecognitionTime();
+		return known->GetTimeSinceLastVisible() >= GetMinRecognitionTime();
 	}
 };
 
-#endif // !SMNAV_BOT_SENSOR_INTERFACE_H_
+#endif // !NAVBOT_SENSOR_INTERFACE_H_
 

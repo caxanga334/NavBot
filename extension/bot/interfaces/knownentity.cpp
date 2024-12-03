@@ -50,6 +50,11 @@ bool CKnownEntity::operator==(const CKnownEntity& other)
 	return m_handle == other.m_handle;
 }
 
+bool CKnownEntity::operator==(const CKnownEntity* other)
+{
+	return this->m_handle == other->m_handle;
+}
+
 float CKnownEntity::GetTimeSinceBecomeKnown() const { return gpGlobals->curtime - m_timeknown; }
 
 float CKnownEntity::GetTimeSinceLastVisible() const { return gpGlobals->curtime - m_timelastvisible; }

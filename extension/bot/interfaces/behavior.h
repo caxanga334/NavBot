@@ -31,7 +31,7 @@ public:
 	QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override;
 	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
 	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
-	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
+	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 	QueryAnswerType IsReady(CBaseBot* me) override;
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate) override;

@@ -17,7 +17,7 @@ class IPlayerController : public IBotInterface, public IPlayerInput
 {
 public:
 	IPlayerController(CBaseBot* bot);
-	virtual ~IPlayerController();
+	~IPlayerController() override;
 	
 	// Priority for look calls
 	enum LookPriority
@@ -37,16 +37,16 @@ public:
 		MAX_LOOK_PRIORITY
 	};
 
-	virtual void OnDifficultyProfileChanged() override;
+	void OnDifficultyProfileChanged() override;
 
 	// Reset the interface to it's initial state
-	virtual void Reset() override;
+	void Reset() override;
 	// Called at intervals
-	virtual void Update() override;
+	void Update() override;
 	// Called every server frame
-	virtual void Frame() override;
+	void Frame() override;
 
-	virtual void ProcessButtons(int &buttons) override;
+	void ProcessButtons(int &buttons) override;
 	
 	/**
 	 * @brief Instructs the aim controller to aim at the given world position.
@@ -89,14 +89,6 @@ public:
 
 private:
 
-	struct AimData
-	{
-		float speed; // current aim speed
-		float maxspeed; // aim speed to reach
-		float base; // initial aim speed
-		float acceleration; // how fast to reach max speed
-	};
-
 	void RunLook();
 
 	LookPriority m_priority; // Current look priority
@@ -108,7 +100,7 @@ private:
 	bool m_isOnTarget; // Is the bot looking at it's look target
 	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
 	IntervalTimer m_steadyTimer; // Aim stability timer
-	AimData m_aimdata;
+	float m_aimSpeed;
 };
 
 inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)

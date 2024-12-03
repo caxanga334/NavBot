@@ -22,7 +22,7 @@ public:
 	
 	TaskEventResponseResult<CTF2Bot> OnTestEventPropagation(CTF2Bot* bot) override;
 
-	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
+	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 
 	const char* GetName() const override { return "MainTask"; }
@@ -35,7 +35,7 @@ private:
 	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
 	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
-	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
+	std::shared_ptr<const CKnownEntity> InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
 };
 
 inline bool CTF2BotMainTask::AllowedToSwitchWeapon()

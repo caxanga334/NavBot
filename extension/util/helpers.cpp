@@ -1151,3 +1151,63 @@ bool UtilHelpers::FindSendPropOffset(CBaseEntity* entity, const char* prop, int&
 	return false;
 }
 
+bool UtilHelpers::LineIntersectsAABB(const Vector& lineStart, const Vector& lineEnd, const Vector& origin, const Vector& mins, const Vector& maxs)
+{
+	Vector boxmins = (origin + mins);
+	Vector boxmaxs = (origin + maxs);
+	Vector dir = (lineEnd - lineStart);
+
+	// Initialize the parameter values
+	float tMin = 0.0f;
+	float tMax = 1.0f;
+
+	// Check intersection for each axis
+	for (int i = 0; i < 3; i++)
+	{
+		float invDir = 1.0f / dir[i];
+		float t0 = (boxmins[i] - lineStart[i]) * invDir;
+		float t1 = (boxmaxs[i] - lineStart[i]) * invDir;
+
+		// Ensure t0 is the minimum and t1 is the maximum
+		if (invDir < 0.0f)
+		{
+			float temp = t0;
+			t0 = t1;
+			t1 = temp;
+		}
+
+		// Update tMin and tMax
+		tMin = std::max(tMin, t0);
+		tMax = std::min(tMax, t1);
+
+		// If the ranges do not overlap, there is no intersection
+		if (tMin > tMax)
+		{
+			return false;
+		}
+	}
+
+	// If we reach here, the line intersects the AABB
+	return true;
+}
+
+bool UtilHelpers::PointIsInsideAABB(const Vector& point, const Vector& origin, const Vector& mins, const Vector& maxs)
+{
+	Vector boxmins = (origin + mins);
+	Vector boxmaxs = (origin + maxs);
+
+	return PointIsInsideAABB(point, boxmins, boxmaxs);
+}
+
+bool UtilHelpers::PointIsInsideAABB(const Vector& point, const Vector& mins, const Vector& maxs)
+{
+	if (point.x > mins.x && point.x < maxs.x &&
+		point.y > mins.y && point.y < maxs.y &&
+		point.z > mins.z && point.z < maxs.z)
+	{
+		return true;
+	}
+
+	return false;
+}
+

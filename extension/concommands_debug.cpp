@@ -755,4 +755,51 @@ CON_COMMAND_F(sm_navbot_debug_find_ledge, "finds the ledge", FCVAR_CHEAT)
 	} while (it <= 20);
 }
 
+CON_COMMAND(sm_debug_line_intercept, "intercept")
+{
+	static bool setup = false;
+	static Vector origin = vec3_origin;
+	static Vector mins = vec3_origin;
+	static Vector maxs = vec3_origin;
+
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+
+	if (setup == false)
+	{
+		QAngle eyeAngles = host.GetEyeAngles();
+		Vector forward;
+		AngleVectors(eyeAngles, &forward);
+		forward.NormalizeInPlace();
+
+		origin = host.GetAbsOrigin() + (forward * 256.0f);
+		mins.Init(-64.0f, -64.0f, 0.0f);
+		maxs.Init(64.0f, 64.0f, 128.0f);
+
+		setup = true;
+		NDebugOverlay::Box(origin, mins, maxs, 0, 128, 0, 128, 10.0f);
+		Msg("setup == true\n");
+		return;
+	}
+
+	Vector start = host.GetEyeOrigin();
+	QAngle eyeAngles = host.GetEyeAngles();
+	Vector dir;
+	AngleVectors(eyeAngles, &dir);
+	dir.NormalizeInPlace();
+	Vector end = start + (dir * 1024.0f);
+
+	if (UtilHelpers::LineIntersectsAABB(start, end, origin, mins, maxs))
+	{
+		Msg("HIT!\n");
+		NDebugOverlay::Box(origin, mins, maxs, 0, 128, 0, 128, 10.0f);
+	}
+	else
+	{
+		Msg("MISS!\n");
+		NDebugOverlay::Box(origin, mins, maxs, 255, 0, 0, 128, 10.0f);
+	}
+
+	NDebugOverlay::Line(start, end, 0, 200, 200, true, 10.0f);
+}
+
 #endif // EXT_DEBUG

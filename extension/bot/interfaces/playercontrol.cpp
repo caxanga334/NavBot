@@ -20,10 +20,7 @@ IPlayerController::~IPlayerController()
 
 void IPlayerController::OnDifficultyProfileChanged()
 {
-	auto& profile = GetBot()->GetDifficultyProfile();
-	m_aimdata.maxspeed = profile.GetAimSpeed();
-	m_aimdata.acceleration = profile.GetAimAcceleration();
-	m_aimdata.base = profile.GetAimInitialSpeed();
+	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
 }
 
 void IPlayerController::Reset()
@@ -39,11 +36,7 @@ void IPlayerController::Reset()
 	m_isOnTarget = false;
 	m_didLookAtTarget = false;
 	m_steadyTimer.Invalidate();
-
-	auto& profile = GetBot()->GetDifficultyProfile();
-	m_aimdata.maxspeed = profile.GetAimSpeed();
-	m_aimdata.acceleration = profile.GetAimAcceleration();
-	m_aimdata.base = profile.GetAimInitialSpeed();
+	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
 }
 
 void IPlayerController::Update()
@@ -70,9 +63,15 @@ void IPlayerController::ProcessButtons(int& buttons)
 // This function handles the bot aiming/looking process
 void IPlayerController::RunLook()
 {
+	float deltaTime = gpGlobals->frametime;
+
+	if (deltaTime < 0.00001f)
+	{
+		return;
+	}
+
 	auto me = GetBot();
 	auto currentAngles = me->GetEyeAngles();
-	float deltaTime = gpGlobals->frametime;
 
 	bool isSteady = true;
 
@@ -104,13 +103,6 @@ void IPlayerController::RunLook()
 
 	m_isSteady = isSteady;
 	m_lastangles = currentAngles; // store the last frame angles
-
-	// no need to make changes anymore
-	if (m_looktimer.IsElapsed())
-	{
-		m_aimdata.speed = m_aimdata.base;
-		return;
-	}
 
 	if (m_lookentity.IsValid())
 	{
@@ -162,14 +154,11 @@ void IPlayerController::RunLook()
 		m_isOnTarget = false; // aim is off target
 	}
 
-	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimdata.speed);
-	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimdata.speed);
+	finalAngles.x = ApproachAngle(desiredAngles.x, currentAngles.x, m_aimSpeed * deltaTime);
+	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
 
 	finalAngles.x = AngleNormalize(finalAngles.x);
 	finalAngles.y = AngleNormalize(finalAngles.y);
-
-	// Accelerate our aim
-	m_aimdata.speed = Approach(m_aimdata.maxspeed, m_aimdata.speed, m_aimdata.acceleration);
 
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{

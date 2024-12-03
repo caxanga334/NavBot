@@ -8,6 +8,7 @@ class CBaseExtPlayer;
 class CBotWeapon;
 
 #include "mathlib.h"
+#include <memory>
 
 #undef max
 #undef min
@@ -52,7 +53,7 @@ public:
 	*/
 	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false);
 	// Given two known entities, select which one the bot should target first
-	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
+	virtual std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
 	// Given a entity, returns a vector of where the bot should aim at. The player parameter may be NULL.
 	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr);
 	// If a game mode has a toggle ready feature, this asks if the bot is ready
@@ -105,7 +106,7 @@ inline QueryAnswerType IDecisionQuery::IsBlocker(CBaseBot* me, edict_t* blocker,
 	return ANSWER_UNDEFINED;
 }
 
-inline const CKnownEntity* IDecisionQuery::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
+inline std::shared_ptr<const CKnownEntity> IDecisionQuery::SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
 {
 	return nullptr;
 }

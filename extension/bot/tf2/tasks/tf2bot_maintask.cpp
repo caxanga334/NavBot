@@ -35,8 +35,8 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat != nullptr) // I have an enemy
 	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
-		FireWeaponAtEnemy(bot, threat);
+		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat.get());
+		FireWeaponAtEnemy(bot, threat.get());
 	}
 	else // I don't have an enemy
 	{
@@ -48,7 +48,7 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 		bot->GetMovementInterface()->ClearStuckStatus("PREROUND"); // players are frozen during pre-round, don't get stuck
 	}
 
-	UpdateLook(bot, threat);
+	UpdateLook(bot, threat.get());
 
 	return Continue();
 }
@@ -66,7 +66,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnTestEventPropagation(CTF2Bot
 #endif // EXT_DEBUG
 }
 
-const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
+std::shared_ptr<const CKnownEntity> CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
 {
 	// Handle cases where one of them is NULL
 	if (threat1 && !threat2)
@@ -319,7 +319,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 
 }
 
-const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
+std::shared_ptr<const CKnownEntity> CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
 {
 	// TO-DO: Add threat selection
 

@@ -373,6 +373,20 @@ namespace UtilHelpers
 	 */
 	bool FindSendPropOffset(CBaseEntity* entity, const char* prop, int& out);
 
+	/**
+	 * @brief Checks if a line intersects with an Axis Aligned Bounding Box
+	 * @param lineStart Line start position
+	 * @param lineEnd Line end position
+	 * @param origin AABB origin
+	 * @param mins AABB minimum extent
+	 * @param maxs AABB maximum extent
+	 * @return true if the line intersects with the AABB, false otherwise.
+	 */
+	bool LineIntersectsAABB(const Vector& lineStart, const Vector& lineEnd, const Vector& origin, const Vector& mins, const Vector& maxs);
+
+	bool PointIsInsideAABB(const Vector& point, const Vector& origin, const Vector& mins, const Vector& maxs);
+	bool PointIsInsideAABB(const Vector& point, const Vector& mins, const Vector& maxs);
+
 	inline const char* GetEngineBranchName()
 	{
 		switch (SOURCE_ENGINE)

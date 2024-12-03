@@ -138,8 +138,8 @@ public:
 	virtual void SafeWeaponSelectByClassname(const char* szclassname);
 	void SelectWeaponByCommand(const char* szclassname) const;
 
-	inline const DifficultyProfile& GetDifficultyProfile() const { return m_profile; }
-	inline void SetDifficultyProfile(const DifficultyProfile& profile)
+	inline const DifficultyProfile* GetDifficultyProfile() const { return m_profile.get(); }
+	inline void SetDifficultyProfile(std::shared_ptr<DifficultyProfile> profile)
 	{
 		m_profile = profile;
 
@@ -214,7 +214,7 @@ private:
 	mutable std::unique_ptr<ISensor> m_basesensor; // Base vision and hearing interface
 	mutable std::unique_ptr<IBehavior> m_basebehavior; // Base AI Behavior interface
 	mutable std::unique_ptr<IInventory> m_baseinventory; // Base inventory interface
-	DifficultyProfile m_profile;
+	std::shared_ptr<DifficultyProfile> m_profile;
 	IntervalTimer m_cmdtimer; // Timer to prevent sending more than the string commands per second limit
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
 	int m_cmdsents; // How many string commands this bot has sent within 1 second

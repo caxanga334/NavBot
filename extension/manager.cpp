@@ -340,12 +340,18 @@ void CExtManager::LoadBotNames()
 {
 	char path[PLATFORM_MAX_PATH]{};
 
-	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.cfg");
+	// allow custom file for bot names
+	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.custom.cfg");
 
-	if (std::filesystem::exists(path) == false)
+	if (!std::filesystem::exists(path))
 	{
-		smutils->LogError(myself, "Could not load bot name list, file \"%s\" doesn't exists!", path);
-		return;
+		smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.cfg");
+
+		if (!std::filesystem::exists(path))
+		{
+			smutils->LogError(myself, "Could not load bot name list, file \"%s\" doesn't exists!", path);
+			return;
+		}
 	}
 	
 	m_botnames.clear(); // clear vector if we're reloading the name list

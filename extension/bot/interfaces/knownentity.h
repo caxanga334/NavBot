@@ -17,6 +17,7 @@ public:
 	static constexpr float time_to_become_obsolete() { return 30.0f; }
 
 	bool operator==(const CKnownEntity& other);
+	bool operator==(const CKnownEntity* other);
 	inline bool operator!=(const CKnownEntity& other) { return !(*this == other); }
 
 	// Returns true if the entity was completely visible to the bot at some point

@@ -60,7 +60,7 @@ QueryAnswerType IBehavior::IsBlocker(CBaseBot* me, edict_t* blocker, const bool 
 	return GetDecisionQueryResponder()->IsBlocker(me, blocker, any);
 }
 
-const CKnownEntity* IBehavior::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
+std::shared_ptr<const CKnownEntity> IBehavior::SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
 {
 	return GetDecisionQueryResponder()->SelectTargetThreat(me, threat1, threat2);
 }

@@ -5,6 +5,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"
@@ -39,12 +40,12 @@ bool BotSensorTraceFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, edi
 ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 {
 	m_knownlist.reserve(256);
-	auto& profile = bot->GetDifficultyProfile();
+	auto profile = bot->GetDifficultyProfile();
 
-	SetFieldOfView(profile.GetFOV());
-	m_maxvisionrange = static_cast<float>(profile.GetMaxVisionRange());
-	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
-	m_minrecognitiontime = profile.GetMinRecognitionTime();
+	SetFieldOfView(profile->GetFOV());
+	m_maxvisionrange = static_cast<float>(profile->GetMaxVisionRange());
+	m_maxhearingrange = static_cast<float>(profile->GetMaxHearingRange());
+	m_minrecognitiontime = profile->GetMinRecognitionTime();
 	m_lastupdatetime = 0.0f;
 	m_primarythreatcache = nullptr;
 }
@@ -55,12 +56,12 @@ ISensor::~ISensor()
 
 void ISensor::OnDifficultyProfileChanged()
 {
-	auto& profile = GetBot()->GetDifficultyProfile();
+	auto profile = GetBot()->GetDifficultyProfile();
 
-	SetFieldOfView(profile.GetFOV());
-	m_maxvisionrange = static_cast<float>(profile.GetMaxVisionRange());
-	m_maxhearingrange = static_cast<float>(profile.GetMaxHearingRange());
-	m_minrecognitiontime = profile.GetMinRecognitionTime();
+	SetFieldOfView(profile->GetFOV());
+	m_maxvisionrange = static_cast<float>(profile->GetMaxVisionRange());
+	m_maxhearingrange = static_cast<float>(profile->GetMaxHearingRange());
+	m_minrecognitiontime = profile->GetMinRecognitionTime();
 }
 
 void ISensor::Reset()
@@ -285,12 +286,12 @@ bool ISensor::AddKnownEntity(edict_t* entity)
 
 	CKnownEntity other(entity);
 
-	if (std::find(m_knownlist.begin(), m_knownlist.end(), other) != m_knownlist.end())
+	if (std::find_if(m_knownlist.begin(), m_knownlist.end(), [&other](std::shared_ptr<CKnownEntity>& obj) { return *obj == other; }) != m_knownlist.end())
 	{
 		return true; // Entity is already in the list
 	}
 
-	m_knownlist.emplace_back(entity);
+	m_knownlist.emplace_back(new CKnownEntity(entity));
 
 	return true;
 }
@@ -300,7 +301,9 @@ void ISensor::ForgetKnownEntity(edict_t* entity)
 {
 	CKnownEntity other(entity);
 
-	m_knownlist.erase(std::remove(m_knownlist.begin(), m_knownlist.end(), other), m_knownlist.end());
+	m_knownlist.erase(std::remove_if(m_knownlist.begin(), m_knownlist.end(), [&other](std::shared_ptr<CKnownEntity>& obj) {
+		return *obj == other;
+	}), m_knownlist.end());
 }
 
 void ISensor::ForgetAllKnownEntities()
@@ -312,8 +315,10 @@ bool ISensor::IsKnown(edict_t* entity)
 {
 	CKnownEntity other(entity);
 
-	for (auto& known : m_knownlist)
+	for (auto& ptr : m_knownlist)
 	{
+		auto& known = *ptr;
+
 		if (known == other)
 		{
 			return true;
@@ -323,20 +328,39 @@ bool ISensor::IsKnown(edict_t* entity)
 	return false;
 }
 
+std::shared_ptr<const CKnownEntity> ISensor::GetKnown(CBaseEntity* entity)
+{
+	CKnownEntity other(entity);
+
+	for (auto& ptr : m_knownlist)
+	{
+		auto& known = *ptr;
+
+		if (known == other)
+		{
+			return ptr;
+		}
+	}
+
+	return nullptr;
+}
+
 /**
  * @brief Given an entity, gets a knownentity of it
  * @param entity Entity to search
  * @return Pointer to a Knownentity of the given entity or NULL if the bot doesn't known this entity
 */
-const CKnownEntity* ISensor::GetKnown(edict_t* entity)
+std::shared_ptr<const CKnownEntity> ISensor::GetKnown(edict_t* entity)
 {
 	CKnownEntity other(entity);
 
-	for (auto& known : m_knownlist)
+	for (auto& ptr : m_knownlist)
 	{
+		auto& known = *ptr;
+
 		if (known == other)
 		{
-			return &known;
+			return ptr;
 		}
 	}
 
@@ -368,15 +392,15 @@ const float ISensor::GetTimeSinceVisibleThreat() const
 	return m_threatvisibletimer.GetElapsedTime();
 }
 
-const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
+std::shared_ptr<const CKnownEntity> ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 {
 	if (m_knownlist.empty())
 		return nullptr;
 
-	if (m_primarythreatcache != nullptr)
+	if (m_primarythreatcache)
 		return m_primarythreatcache;
 
-	const CKnownEntity* primarythreat = nullptr;
+	std::shared_ptr<const CKnownEntity> primarythreat = nullptr;
 
 	// get the first valid threat
 
@@ -385,19 +409,19 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 		if (!IsAwareOf(known))
 			continue;
 
-		if (known.IsObsolete())
+		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known.GetEdict()))
+		if (IsIgnored(known->GetEdict()))
 			continue;
 
-		if (!IsEnemy(known.GetEdict()))
+		if (!IsEnemy(known->GetEdict()))
 			continue;
 
-		if (onlyvisible && !known.WasRecentlyVisible())
+		if (onlyvisible && !known->WasRecentlyVisible())
 			continue;
 
-		primarythreat = &known;
+		primarythreat = known;
 		break;
 	}
 
@@ -412,20 +436,20 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 		if (!IsAwareOf(known))
 			continue;
 
-		if (known.IsObsolete())
+		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known.GetEdict()))
+		if (IsIgnored(known->GetEdict()))
 			continue;
 
-		if (!IsEnemy(known.GetEdict()))
+		if (!IsEnemy(known->GetEdict()))
 			continue;
 
-		if (onlyvisible && !known.WasRecentlyVisible())
+		if (onlyvisible && !known->WasRecentlyVisible())
 			continue;
 
 		// Ask behavior for the best threat
-		primarythreat = GetBot()->GetBehaviorInterface()->SelectTargetThreat(GetBot(), primarythreat, &known);
+		primarythreat = GetBot()->GetBehaviorInterface()->SelectTargetThreat(GetBot(), primarythreat, known);
 	}
 
 	m_primarythreatcache = primarythreat; // cache primary threat to skip calculations for multiple GetPrimaryKnownThreat calls, cache is cleared on the next server frame
@@ -443,22 +467,22 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 		if (!IsAwareOf(known))
 			continue;
 
-		if (known.IsObsolete())
+		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known.GetEdict()))
+		if (IsIgnored(known->GetEdict()))
 			continue;
 
-		if (!IsEnemy(known.GetEdict()))
+		if (!IsEnemy(known->GetEdict()))
 			continue;
 
-		if (teamindex >= 0 && GetKnownEntityTeamIndex(&known) != teamindex)
+		if (teamindex >= 0 && GetKnownEntityTeamIndex(known.get()) != teamindex)
 			continue;
 
-		if (onlyvisible && !known.WasRecentlyVisible())
+		if (onlyvisible && !known->WasRecentlyVisible())
 			continue;
 
-		float dist = GetBot()->GetRangeToSqr(known.GetLastKnownPosition());
+		float dist = GetBot()->GetRangeToSqr(known->GetLastKnownPosition());
 
 		if (dist > limit)
 			continue;
@@ -467,6 +491,18 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 	}
 
 	return quantity;
+}
+
+int ISensor::GetKnownEntityTeamIndex(CKnownEntity* known)
+{
+	int* teamNum = entprops->GetPointerToEntData<int>(known->GetEntity(), Prop_Data, "m_iTeamNum");
+
+	if (teamNum != nullptr)
+	{
+		return *teamNum;
+	}
+
+	return 0;
 }
 
 const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
@@ -480,23 +516,23 @@ const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 		if (!IsAwareOf(known))
 			continue;
 
-		if (known.IsObsolete())
+		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known.GetEdict()))
+		if (IsIgnored(known->GetEdict()))
 			continue;
 
-		if (!IsEnemy(known.GetEdict()))
+		if (!IsEnemy(known->GetEdict()))
 			continue;
 
-		if (teamindex >= 0 && GetKnownEntityTeamIndex(&known) != teamindex)
+		if (teamindex >= 0 && GetKnownEntityTeamIndex(known.get()) != teamindex)
 			continue;
 
-		float distance = (origin - known.GetLastKnownPosition()).LengthSqr();
+		float distance = (origin - known->GetLastKnownPosition()).LengthSqr();
 
 		if (distance < smallest)
 		{
-			nearest = &known;
+			nearest = known.get();
 			smallest = distance;
 		}
 	}
@@ -534,8 +570,8 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 		if (known == nullptr) // first time seening this entity
 		{
-			auto& entry = m_knownlist.emplace_back(edict);
-			entry.MarkAsFullyVisible();
+			auto& entry = m_knownlist.emplace_back(new CKnownEntity(edict));
+			entry->MarkAsFullyVisible();
 			continue;
 		}
 		else
@@ -551,17 +587,17 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 	for (auto& known : m_knownlist)
 	{
-		if (known.GetTimeSinceLastInfo() < 0.2f)
+		if (known->GetTimeSinceLastInfo() < 0.2f)
 		{
 			// reaction time check
-			if (known.GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
+			if (known->GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known->GetTimeWhenBecameVisible() < GetMinRecognitionTime())
 			{
-				me->OnSight(known.GetEdict());
+				me->OnSight(known->GetEdict());
 				m_threatvisibletimer.Start();
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					auto edict = known.GetEdict();
+					auto edict = known->GetEdict();
 					rootconsole->ConsolePrint("%s caught line of sight with entity %i (%s)", me->GetDebugIdentifier(), 
 						gamehelpers->IndexOfEdict(edict), gamehelpers->GetEntityClassname(edict));
 
@@ -573,20 +609,20 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 		}
 		else
 		{
-			if (IsAbleToSee(known.GetLastKnownPosition()) == true)
+			if (IsAbleToSee(known->GetLastKnownPosition()) == true)
 			{
-				known.MarkLastKnownPositionAsSeen();
+				known->MarkLastKnownPositionAsSeen();
 			}
 
 			// this entity was visible, mark as not visible and notify the bot lost sight of it
-			if (known.IsVisibleNow() == true)
+			if (known->IsVisibleNow() == true)
 			{
-				known.MarkAsNotVisible();
-				me->OnLostSight(known.GetEdict());
+				known->MarkAsNotVisible();
+				me->OnLostSight(known->GetEdict());
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					auto edict = known.GetEdict();
+					auto edict = known->GetEdict();
 					rootconsole->ConsolePrint("%s lost line of sight with entity %i (%s)", me->GetDebugIdentifier(),
 						gamehelpers->IndexOfEdict(edict), gamehelpers->GetEntityClassname(edict));
 
@@ -684,7 +720,7 @@ void ISensor::CleanKnownEntities()
 {
 	// Removes all obsoletes known entities
 	auto iter = std::remove_if(m_knownlist.begin(), m_knownlist.end(),
-		[](CKnownEntity& known) { return known.IsObsolete(); });
+		[](std::shared_ptr<CKnownEntity>& known) { return known->IsObsolete(); });
 
 	m_knownlist.erase(iter, m_knownlist.end());
 }
@@ -695,9 +731,9 @@ CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
 
 	for (auto& known : m_knownlist)
 	{
-		if (gamehelpers->IndexOfEdict(known.GetEdict()) == index)
+		if (gamehelpers->IndexOfEdict(known->GetEdict()) == index)
 		{
-			return &known;
+			return known.get();
 		}
 	}
 

@@ -16,7 +16,7 @@ public:
 		m_me = bot;
 		m_origin = bot->GetEyeOrigin();
 		SetStartArea(static_cast<CTFNavArea*>(bot->GetLastKnownNavArea()));
-		SetTravelLimit(bot->GetDifficultyProfile().GetMaxVisionRange());
+		SetTravelLimit(bot->GetDifficultyProfile()->GetMaxVisionRange());
 	}
 
 	bool ShouldCollect(CTFNavArea* area) override;
@@ -82,12 +82,12 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask
 
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
 	constexpr auto SNIPER_FIRE_DOT_TOLERANCE = 0.98f;
 
 	EquipAndScope(bot);
 
-	if (threat != nullptr)
+	if (threat)
 	{
 		if (threat->IsVisibleNow())
 		{
