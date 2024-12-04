@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <cmath>
 
 #include <extension.h>
 #include <sdkports/sdk_traces.h>
@@ -1191,6 +1192,44 @@ bool UtilHelpers::LineIntersectsAABB(const Vector& lineStart, const Vector& line
 	return true;
 }
 
+bool UtilHelpers::LineIntersectsAABB(const Vector& lineStart, const Vector& lineEnd, const Vector& mins, const Vector& maxs)
+{
+	Vector dir = (lineEnd - lineStart);
+
+	// Initialize the parameter values
+	float tMin = 0.0f;
+	float tMax = 1.0f;
+
+	// Check intersection for each axis
+	for (int i = 0; i < 3; i++)
+	{
+		float invDir = 1.0f / dir[i];
+		float t0 = (mins[i] - lineStart[i]) * invDir;
+		float t1 = (maxs[i] - lineStart[i]) * invDir;
+
+		// Ensure t0 is the minimum and t1 is the maximum
+		if (invDir < 0.0f)
+		{
+			float temp = t0;
+			t0 = t1;
+			t1 = temp;
+		}
+
+		// Update tMin and tMax
+		tMin = std::max(tMin, t0);
+		tMax = std::min(tMax, t1);
+
+		// If the ranges do not overlap, there is no intersection
+		if (tMin > tMax)
+		{
+			return false;
+		}
+	}
+
+	// If we reach here, the line intersects the AABB
+	return true;
+}
+
 bool UtilHelpers::PointIsInsideAABB(const Vector& point, const Vector& origin, const Vector& mins, const Vector& maxs)
 {
 	Vector boxmins = (origin + mins);
@@ -1209,5 +1248,32 @@ bool UtilHelpers::PointIsInsideAABB(const Vector& point, const Vector& mins, con
 	}
 
 	return false;
+}
+
+bool UtilHelpers::AABBIntersectsAABB(const Vector& mins1, const Vector& maxs1, const Vector& mins2, const Vector& maxs2)
+{
+	if (mins1.x <= maxs2.x &&
+		maxs1.x >= mins2.x &&
+		mins1.y <= maxs2.y &&
+		maxs1.y >= mins2.y &&
+		mins1.z <= maxs2.z &&
+		maxs1.z >= mins2.z)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool UtilHelpers::PointIsInsideSphere(const Vector& point, const Vector& sphereCenter, const float sphereRadius)
+{
+	float distance = std::sqrtf(std::powf((point.x - sphereCenter.x), 2.0f) + std::powf((point.y - sphereCenter.y), 2.0f) + std::powf((point.z - sphereCenter.z), 2.0f));
+	return distance < sphereRadius;
+}
+
+bool UtilHelpers::PointIsInsideSphereSqr(const Vector& point, const Vector& sphereCenter, const float sphereRadius)
+{
+	float distance = std::powf((point.x - sphereCenter.x), 2.0f) + std::powf((point.y - sphereCenter.y), 2.0f) + std::powf((point.z - sphereCenter.z), 2.0f);
+	return distance < sphereRadius * sphereRadius;
 }
 

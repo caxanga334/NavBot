@@ -23,6 +23,7 @@
 #include "nav_area.h"
 #include "nav_node.h"
 #include "nav_waypoint.h"
+#include "nav_volume.h"
 #include "nav_place_loader.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
@@ -46,10 +47,6 @@ ConVar sm_nav_show_func_nav_prefer( "sm_nav_show_func_nav_prefer", "0", FCVAR_GA
 ConVar sm_nav_show_func_nav_prerequisite( "sm_nav_show_func_nav_prerequisite", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prerequisite entities" );
 ConVar sm_nav_max_vis_delta_list_length( "sm_nav_max_vis_delta_list_length", "64", FCVAR_CHEAT );
 
-extern ConVar sm_nav_edit;
-extern ConVar sm_nav_quicksave;
-extern ConVar sm_nav_show_approach_points;
-extern ConVar sm_nav_show_danger;
 
 extern ConVar sm_nav_show_potentially_visible;
 extern NavAreaVector TheNavAreas;
@@ -118,6 +115,7 @@ CNavMesh::CNavMesh( void )
 	// m_placeName = NULL;
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
+	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
 	m_waypoints.reserve(128);
@@ -378,6 +376,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	if (!incremental)
 	{
 		m_waypoints.clear();
+		m_volumes.clear();
 	}
 
 	SetEditMode( NORMAL );
@@ -389,6 +388,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
 	m_selectedWaypoint = nullptr;
+	m_selectedVolume = nullptr;
 
 	extmanager->GetMod()->OnNavMeshDestroyed();
 }
@@ -429,6 +429,11 @@ void CNavMesh::Update( void )
 		if (sm_nav_waypoint_edit.GetBool())
 		{
 			DrawWaypoints();
+		}
+
+		if (sm_nav_volume_edit.GetBool())
+		{
+			DrawVolumes();
 		}
 	}
 	else
@@ -479,15 +484,22 @@ void CNavMesh::Update( void )
 		}
 	}
 
+	if (m_invokeWaypointUpdateTimer.IsElapsed())
 	{
-		if (m_invokeWaypointUpdateTimer.IsElapsed())
-		{
-			m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
+		m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 
-			std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
-				object.second->Update();
-			});
-		}
+		std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+			object.second->Update();
+		});
+	}
+
+	if (m_invokeVolumeUpdateTimer.IsElapsed())
+	{
+		m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
+
+		std::for_each(m_volumes.begin(), m_volumes.end(), [](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
+			object.second->Update();
+		});
 	}
 
 	// draw any walkable seeds that have been marked
@@ -778,6 +790,7 @@ void CNavMesh::OnRoundRestart( void )
 	m_updateBlockedAreasTimer.Start( 1.0f );
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
+	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
@@ -2912,6 +2925,7 @@ void CommandNavCompressID( void )
 	CNavArea::CompressIDs(TheNavMesh);
 	CNavLadder::CompressIDs(TheNavMesh);
 	TheNavMesh->CompressWaypointsIDs();
+	TheNavMesh->CompressVolumesIDs();
 }
 static ConCommand sm_nav_compress_id( "sm_nav_compress_id", CommandNavCompressID, "Re-orders area and ladder ID's so they are continuous.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
@@ -3409,6 +3423,11 @@ std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
 	return std::move(std::make_shared<CWaypoint>());
 }
 
+std::shared_ptr<CNavVolume> CNavMesh::CreateVolume() const
+{
+	return std::move(std::make_shared<CNavVolume>());
+}
+
 void CNavMesh::RebuildWaypointMap()
 {
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> temp;
@@ -3420,6 +3439,22 @@ void CNavMesh::RebuildWaypointMap()
 	for (auto& wpt : temp)
 	{
 		m_waypoints[wpt.second->GetID()] = std::move(wpt.second);
+	}
+
+	temp.clear();
+}
+
+void CNavMesh::RebuildVolumeMap()
+{
+	std::unordered_map<unsigned int, std::shared_ptr<CNavVolume>> temp;
+	temp.reserve(m_volumes.size());
+	temp.swap(m_volumes);
+
+	m_volumes.clear();
+
+	for (auto& volume : temp)
+	{
+		m_volumes[volume.second->GetID()] = std::move(volume.second);
 	}
 
 	temp.clear();
@@ -3445,6 +3480,28 @@ std::optional<const std::shared_ptr<CWaypoint>> CNavMesh::AddWaypoint(const Vect
 	return wpt;
 }
 
+std::optional<const std::shared_ptr<CNavVolume>> CNavMesh::AddNavVolume(const Vector& origin)
+{
+	std::shared_ptr<CNavVolume> volume = CreateVolume();
+
+	if (m_volumes.count(volume->GetID()) > 0)
+	{
+#ifdef EXT_DEBUG
+		Warning("CNavMesh::AddNavVolume duplicate volume ID %i\n", volume->GetID());
+#endif // EXT_DEBUG
+
+		return std::nullopt;
+	}
+
+	volume->SetOrigin(origin);
+	Vector mins(-64.0f, -64.0f, 0.0f);
+	Vector maxs(64.0f, 64.0f, 64.0f);
+	volume->SetBounds(mins, maxs);
+
+	m_volumes[volume->GetID()] = volume;
+	return volume;
+}
+
 void CNavMesh::RemoveWaypoint(CWaypoint* wpt)
 {
 	WaypointID key = wpt->GetID();
@@ -3468,6 +3525,35 @@ void CNavMesh::RemoveWaypoint(CWaypoint* wpt)
 	m_waypoints.erase(key);
 }
 
+void CNavMesh::RemoveSelectedVolume()
+{
+	if (!m_selectedVolume)
+	{
+		return;
+	}
+
+	unsigned int key = m_selectedVolume->GetID();
+	m_volumes.erase(key);
+	m_selectedVolume = nullptr;
+}
+
+void CNavMesh::SetSelectedVolume(CNavVolume* volume)
+{
+	if (volume == nullptr)
+	{
+		m_selectedVolume = nullptr;
+	}
+
+	for (auto& i : m_volumes)
+	{
+		if (i.second.get() == volume)
+		{
+			m_selectedVolume = i.second;
+			return;
+		}
+	}
+}
+
 void CNavMesh::CompressWaypointsIDs()
 {
 	CWaypoint::g_NextWaypointID = 0;
@@ -3480,6 +3566,21 @@ void CNavMesh::CompressWaypointsIDs()
 	}
 
 	RebuildWaypointMap();
+}
+
+void CNavMesh::CompressVolumesIDs()
+{
+	CNavVolume::s_nextID = 0;
+
+	for (auto& pair : m_volumes)
+	{
+		auto& volume = pair.second;
+		volume->m_id = CNavVolume::s_nextID;
+		CNavVolume::s_nextID++;
+	}
+
+
+	RebuildVolumeMap();
 }
 
 void CNavMesh::SelectNearestWaypoint(const Vector& start)

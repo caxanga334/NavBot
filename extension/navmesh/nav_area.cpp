@@ -25,6 +25,7 @@
 #include "nav_area.h"
 #include "nav_mesh.h"
 #include "nav_node.h"
+#include "nav_volume.h"
 #include "nav_entities.h"
 #include "nav_colors.h"
 #include <Color.h>
@@ -354,6 +355,7 @@ CNavArea::CNavArea(unsigned int place)
 	m_nVisTestCounter = (uint32)-1;
 
 	m_speciallinks.reserve(4);
+	m_volume = nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -4630,6 +4632,14 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		return false;
 	}
 
+	if (m_volume != nullptr)
+	{
+		if (m_volume->IsBlocked(teamID))
+		{
+			return true; // we are blocked by a nav volume
+		}
+	}
+
 	bool result = false;
 
 	if (teamID < 0 || teamID >= static_cast<int>(m_isBlocked.size()))
@@ -4764,7 +4774,7 @@ void CNavArea::UnblockArea( int teamID )
 {
 	bool wasBlocked = IsBlocked( teamID );
 
-	if (teamID < 0 || teamID >= MAX_TEAMS)
+	if (teamID < 0 || teamID >= static_cast<int>(m_isBlocked.size()))
 	{
 		for (auto& b : m_isBlocked)
 		{

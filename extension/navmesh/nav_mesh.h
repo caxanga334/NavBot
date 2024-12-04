@@ -559,6 +559,7 @@ public:
 	void CommandNavTestForBlocked() const;
 	void CommandNavSelectNearestUseableLadder();
 	void CommandNavSetUseableLadderDir();
+	void CommandNavMarkVolume(const CCommand& args);
 
 
 	void AddToDragSelectionSet( CNavArea *pArea );
@@ -884,6 +885,7 @@ private:
 	void OnEditModeStart( void );								// called when edit mode has just been enabled
 	void DrawEditMode( void );									// draw navigation areas
 	void DrawWaypoints();										// draw waypoints
+	void DrawVolumes();											// draw nav volumes
 	void OnEditModeEnd( void );									// called when edit mode has just been disabled
 	void UpdateDragSelectionSet( void );							// update which areas are overlapping the drag selected bounds
 	Vector m_editCursorPos;										// current position of the cursor
@@ -1029,6 +1031,7 @@ private:
 	CountdownTimer m_updateBlockedAreasTimer;
 	CountdownTimer m_invokeAreaUpdateTimer;
 	CountdownTimer m_invokeWaypointUpdateTimer;
+	CountdownTimer m_invokeVolumeUpdateTimer;
 	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
 	void BuildAuthorInfo();
 	AuthorInfo m_authorinfo;
@@ -1040,14 +1043,18 @@ private:
 private:
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> m_waypoints;
 	std::shared_ptr<CWaypoint> m_selectedWaypoint; // Selected waypoint for editing
+	std::unordered_map<unsigned int, std::shared_ptr<CNavVolume>> m_volumes;
+	std::shared_ptr<CNavVolume> m_selectedVolume;
 
 protected:
 	// Creates a new waypoint instance
 	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
+	// Creates a new nav volume instance
+	virtual std::shared_ptr<CNavVolume> CreateVolume() const;
 
 	// Rebuilds the waypoint ID map
 	void RebuildWaypointMap();
-
+	void RebuildVolumeMap();
 public:
 	/**
 	 * @brief Adds a new waypoint.
@@ -1071,6 +1078,26 @@ public:
 		return it->second;
 	}
 
+	std::optional<const std::shared_ptr<CNavVolume>> AddNavVolume(const Vector& origin);
+
+	void RemoveSelectedVolume();
+
+	void SetSelectedVolume(CNavVolume* volume);
+	const std::shared_ptr<CNavVolume>& GetSelectedVolume() const { return m_selectedVolume; }
+
+	template <typename T>
+	inline std::optional<const std::shared_ptr<T>> GetVolumeOfID(unsigned int id) const
+	{
+		auto it = m_volumes.find(id);
+
+		if (it == m_volumes.end())
+		{
+			return std::nullopt;
+		}
+
+		return it->second;
+	}
+
 	/**
 	 * @brief Runs a function on every waypoint
 	 * @tparam T Waypoint class
@@ -1080,7 +1107,7 @@ public:
 	template <typename T, typename F>
 	inline void ForEveryWaypoint(F functor)
 	{
-		std::for_each(m_waypoints.begin(), m_waypoints.end(), [&functor](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+		std::for_each(m_waypoints.begin(), m_waypoints.end(), [&functor](const std::pair<const WaypointID, std::shared_ptr<CWaypoint>>& object) {
 			T* wpt = static_cast<T*>(object.second.get());
 			
 			if (functor(wpt) == false)
@@ -1119,6 +1146,29 @@ public:
 	const std::shared_ptr<CWaypoint>& GetSelectedWaypoint() const { return m_selectedWaypoint; }
 	void SelectNearestWaypoint(const Vector& start);
 	void SelectWaypointofID(WaypointID id);
+
+	void CompressVolumesIDs();
+
+	/**
+	 * @brief Runs a function on every Nav Volume
+	 * @tparam T Nav Volume Class
+	 * @tparam F Function to run. bool (T* volume). Return false to end loop.
+	 * @param functor Function to run.
+	 */
+	template <typename T, typename F>
+	inline void ForEveryNavVolume(F functor)
+	{
+		std::for_each(m_volumes.begin(), m_volumes.end(), [&functor](const std::pair<const WaypointID, std::shared_ptr<CNavVolume>>& object) {
+			T* volume = static_cast<T*>(object.second.get());
+
+			if (functor(volume) == false)
+			{
+				return;
+			}
+		});
+	}
+
+	const std::unordered_map<unsigned int, std::shared_ptr<CNavVolume>>& GetNavVolumes() const { return m_volumes; }
 
 };
 

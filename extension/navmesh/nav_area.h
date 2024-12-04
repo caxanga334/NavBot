@@ -279,7 +279,7 @@ protected:
 	unsigned int m_marker;										// used to flag the area as visited
 	float m_totalCost;											// the distance so far plus an estimate of the distance left
 	float m_costSoFar;											// distance travelled so far
-	std::array<bool, MAX_TEAMS> m_isBlocked;					// Blocked status for each team
+	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_isBlocked;					// Blocked status for each team
 
 	CNavArea *m_nextOpen, *m_prevOpen;							// only valid if m_openMarker == m_masterMarker
 	unsigned int m_openMarker;									// if this equals the current marker value, we are on the open list
@@ -787,6 +787,21 @@ private:
 	static uint32 s_nCurrVisTestCounter;
 
 	CUtlVector< CHandle< CFuncNavCost > > m_funcNavCostVector;	// active, overlapping cost entities
+
+	const CNavVolume* m_volume; // Nav volume this area is inside
+
+public:
+	void SetNavVolume(const CNavVolume* volume) { m_volume = volume; }
+	const CNavVolume* GetNavVolume() const { return m_volume; }
+	void NotifyNavVolumeDestruction(const CNavVolume* volume)
+	{
+		if (volume == m_volume)
+		{
+			m_volume = nullptr;
+		}
+	}
+
+
 };
 
 typedef CUtlVector< CNavArea * > NavAreaVector;

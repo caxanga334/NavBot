@@ -223,7 +223,7 @@ struct Ray
 class CNavArea;
 class CNavNode;
 class CWaypoint;
-
+class CNavVolume;
 
 //--------------------------------------------------------------------------------------------------------------
 inline NavDirType OppositeDirection( NavDirType dir )

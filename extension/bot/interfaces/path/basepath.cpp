@@ -15,6 +15,7 @@
 #undef clamp
 
 static ConVar sm_navbot_path_segment_draw_limit("sm_navbot_path_segment_draw_limit", "25", FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Path segment draw limit.");
+static ConVar sm_navbot_path_max_segments("sm_navbot_path_max_segments", "128", FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Maximum number of path segments. Affects performance.");
 
 CPath::CPath() :
 	m_ageTimer()
@@ -321,6 +322,16 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 {
 	IPlayerController* input = bot->GetControlInterface();
 	IMovement* mover = bot->GetMovementInterface();
+
+	// We don't need to process the entire path since path are supposed to be recalculated from time to time
+	// this only affects long paths
+
+	size_t maxSegments = static_cast<size_t>(sm_navbot_path_max_segments.GetInt());
+
+	if (maxSegments >= 32U && m_segments.size() > maxSegments)
+	{
+		m_segments.erase(std::next(m_segments.begin(), maxSegments - 1), m_segments.end());
+	}
 
 	auto& startSeg = m_segments[0];
 

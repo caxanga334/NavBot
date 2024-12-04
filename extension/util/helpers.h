@@ -383,9 +383,62 @@ namespace UtilHelpers
 	 * @return true if the line intersects with the AABB, false otherwise.
 	 */
 	bool LineIntersectsAABB(const Vector& lineStart, const Vector& lineEnd, const Vector& origin, const Vector& mins, const Vector& maxs);
+	/**
+	 * @brief Checks if a line intersects with an Axis Aligned Bounding Box
+	 * @param lineStart Line start position
+	 * @param lineEnd Line end position
+	 * @param mins AABB minimum extent
+	 * @param maxs AABB maximum extent
+	 * @return true if the line intersects with the AABB, false otherwise.
+	 */
+	bool LineIntersectsAABB(const Vector& lineStart, const Vector& lineEnd, const Vector& mins, const Vector& maxs);
 
+	/**
+	 * @brief Checks if the given point is inside an AABB.
+	 * @param point Point to check.
+	 * @param origin AABB origin.
+	 * @param mins AABB minimum extent
+	 * @param maxs AABB maximum extent
+	 * @return True if the point is inside the AABB. False otherwise.
+	 */
 	bool PointIsInsideAABB(const Vector& point, const Vector& origin, const Vector& mins, const Vector& maxs);
+	/**
+	 * @brief Checks if the given point is inside an AABB.
+	 * @param point Point to check.
+	 * @param mins AABB minimum extent
+	 * @param maxs AABB maximum extent
+	 * @return 
+	 */
 	bool PointIsInsideAABB(const Vector& point, const Vector& mins, const Vector& maxs);
+
+	/**
+	 * @brief Checks if an AABB intersects with another AABB.
+	 * @param mins1 First AABB mins.
+	 * @param maxs1 First AABB maxs.
+	 * @param mins2 Second AABB mins.
+	 * @param maxs2 Second AABB maxs.
+	 * @return True if they intersect each other. False otherwise.
+	 */
+	bool AABBIntersectsAABB(const Vector& mins1, const Vector& maxs1, const Vector& mins2, const Vector& maxs2);
+
+	/**
+	 * @brief Checks if a point is inside a sphere.
+	 * @param point Point to check.
+	 * @param sphereCenter Sphere center position.
+	 * @param sphereRadius Sphere radius.
+	 * @return True if the given point is inside the sphere. False otherwise.
+	 */
+	bool PointIsInsideSphere(const Vector& point, const Vector& sphereCenter, const float sphereRadius);
+	/**
+	 * @brief Checks if a point is inside a sphere.
+	 * 
+	 * This version doesn't use square root.
+	 * @param point Point to check.
+	 * @param sphereCenter Sphere center position.
+	 * @param sphereRadius Sphere radius.
+	 * @return True if the given point is inside the sphere. False otherwise.
+	 */
+	bool PointIsInsideSphereSqr(const Vector& point, const Vector& sphereCenter, const float sphereRadius);
 
 	inline const char* GetEngineBranchName()
 	{

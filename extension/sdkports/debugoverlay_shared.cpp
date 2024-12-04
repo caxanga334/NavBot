@@ -287,6 +287,29 @@ void NDebugOverlay::ScreenText( float flXpos, float flYpos, const char *text, in
 	}
 }
 
+void NDebugOverlay::ScreenText(float xpos, float ypos, int r, int g, int b, int a, float duration, const char* fmt, ...)
+{
+	char buffer[512]{};
+	va_list vaargs;
+	va_start(vaargs, fmt);
+	size_t length = ke::SafeVsprintf(buffer, sizeof(buffer), fmt, vaargs);
+
+	if (length >= sizeof(buffer) - 1)
+	{
+		buffer[511] = '\0';
+	}
+	else {
+		buffer[length] = '\0';
+	}
+
+	va_end(vaargs);
+
+	if (debugoverlay)
+	{
+		debugoverlay->AddScreenTextOverlay(xpos, ypos, duration, r, g, b, a, buffer);
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Draw a colored 3D cross of the given hull size at the given position
 //-----------------------------------------------------------------------------

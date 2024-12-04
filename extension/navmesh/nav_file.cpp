@@ -19,6 +19,7 @@
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "nav_waypoint.h"
+#include "nav_volume.h"
 
 #include "tier1/lzmaDecoder.h"
 
@@ -840,34 +841,45 @@ bool CNavMesh::Save(void)
 	{
 		auto& creator = authorinfo.GetCreator();
 
-		uint64_t length = static_cast<uint64_t>(creator.first.length() + 1U);
-		filestream.write(reinterpret_cast<char*>(&length), sizeof(uint64_t));
+		std::uint64_t length = static_cast<std::uint64_t>(creator.first.length() + 1U);
+		filestream.write(reinterpret_cast<char*>(&length), sizeof(std::uint64_t));
 		filestream.write(creator.first.c_str(), length);
-		uint64_t steamid = creator.second;
-		filestream.write(reinterpret_cast<char*>(&steamid), sizeof(uint64_t));
+		std::uint64_t steamid = creator.second;
+		filestream.write(reinterpret_cast<char*>(&steamid), sizeof(std::uint64_t));
 
-		uint64_t count = static_cast<uint64_t>(authorinfo.GetEditorCount());
-		filestream.write(reinterpret_cast<char*>(&count), sizeof(uint64_t));
+		std::uint64_t count = static_cast<std::uint64_t>(authorinfo.GetEditorCount());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint64_t));
 
 		for (auto& naveditor : authorinfo.GetEditors())
 		{
-			length = static_cast<uint64_t>(naveditor.first.length() + 1U);
-			filestream.write(reinterpret_cast<char*>(&length), sizeof(uint64_t));
+			length = static_cast<std::uint64_t>(naveditor.first.length() + 1U);
+			filestream.write(reinterpret_cast<char*>(&length), sizeof(std::uint64_t));
 			filestream.write(naveditor.first.c_str(), length);
 			steamid = naveditor.second;
-			filestream.write(reinterpret_cast<char*>(&steamid), sizeof(uint64_t));
+			filestream.write(reinterpret_cast<char*>(&steamid), sizeof(std::uint64_t));
 		}
 	}
 
 	{
 		// first write the number of waypoints
-		uint64_t count = static_cast<uint64_t>(m_waypoints.size());
-		filestream.write(reinterpret_cast<char*>(&count), sizeof(uint64_t));
+		std::uint64_t count = static_cast<std::uint64_t>(m_waypoints.size());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint64_t));
 
 		for (auto& pair : m_waypoints)
 		{
 			auto& wpt = pair.second;
 			wpt->Save(filestream, CNavMesh::NavMeshVersion);
+		}
+	}
+
+	{
+		std::uint64_t count = static_cast<std::uint64_t>(m_volumes.size());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint64_t));
+
+		for (auto& pair : m_volumes)
+		{
+			auto& volume = pair.second;
+			volume->Save(filestream, CNavMesh::NavMeshVersion);
 		}
 	}
 
@@ -1098,28 +1110,28 @@ NavErrorType CNavMesh::Load( void )
 
 	if (authorisset)
 	{
-		uint64_t length = 0U;
-		filestream.read(reinterpret_cast<char*>(&length), sizeof(uint64_t));
+		std::uint64_t length = 0U;
+		filestream.read(reinterpret_cast<char*>(&length), sizeof(std::uint64_t));
 		std::unique_ptr<char[]> creatornamebuffer = std::make_unique<char[]>(length);
 		filestream.read(creatornamebuffer.get(), length);
-		uint64_t steamid = 0;
-		filestream.read(reinterpret_cast<char*>(&steamid), sizeof(uint64_t));
+		std::uint64_t steamid = 0;
+		filestream.read(reinterpret_cast<char*>(&steamid), sizeof(std::uint64_t));
 
 		std::string cname(creatornamebuffer.get());
 		m_authorinfo.SetCreator(cname, steamid);
 
-		uint64_t count = 0U;
-		filestream.read(reinterpret_cast<char*>(&count), sizeof(uint64_t));
+		std::uint64_t count = 0U;
+		filestream.read(reinterpret_cast<char*>(&count), sizeof(std::uint64_t));
 
-		for (uint64_t i = 0U; i < count; i++)
+		for (std::uint64_t i = 0U; i < count; i++)
 		{
 			length = 0U;
-			filestream.read(reinterpret_cast<char*>(&length), sizeof(uint64_t));
+			filestream.read(reinterpret_cast<char*>(&length), sizeof(std::uint64_t));
 			std::unique_ptr<char[]> editornamebuffer = std::make_unique<char[]>(length);
 			filestream.read(editornamebuffer.get(), length);
 
-			uint64_t steamid = 0;
-			filestream.read(reinterpret_cast<char*>(&steamid), sizeof(uint64_t));
+			std::uint64_t steamid = 0;
+			filestream.read(reinterpret_cast<char*>(&steamid), sizeof(std::uint64_t));
 
 			std::string ename(editornamebuffer.get());
 			m_authorinfo.AddEditor(ename, steamid);
@@ -1127,20 +1139,42 @@ NavErrorType CNavMesh::Load( void )
 	}
 
 	{
-		uint64_t numWaypoints = 0;
+		std::uint64_t numWaypoints = 0;
 		CWaypoint::g_NextWaypointID = 0;
-		filestream.read(reinterpret_cast<char*>(&numWaypoints), sizeof(uint64_t));
+		filestream.read(reinterpret_cast<char*>(&numWaypoints), sizeof(std::uint64_t));
 		Vector tmp{ 0.0f, 0.0f, 0.0f };
 
 		m_waypoints.reserve(static_cast<size_t>(numWaypoints));
 
-		for (uint64_t i = 0; i < numWaypoints; i++)
+		for (std::uint64_t i = 0; i < numWaypoints; i++)
 		{
 			auto wpt = AddWaypoint(tmp);
 
 			if (wpt.has_value())
 			{
-				NavErrorType error = wpt->get()->Load(filestream, CNavMesh::NavMeshVersion, GetSubVersionNumber());
+				NavErrorType error = wpt->get()->Load(filestream, header.version, header.subversion);
+
+				if (error != NAV_OK)
+				{
+					return error;
+				}
+			}
+		}
+	}
+
+	{
+		std::uint64_t numVolumes = 0;
+		CNavVolume::s_nextID = 0;
+		filestream.read(reinterpret_cast<char*>(&numVolumes), sizeof(std::uint64_t));
+		Vector tmp{ 0.0f, 0.0f, 0.0f };
+
+		for (std::uint64_t i = 0; i < numVolumes; i++)
+		{
+			auto volume = AddNavVolume(tmp);
+
+			if (volume.has_value())
+			{
+				NavErrorType error = volume->get()->Load(filestream, header.version, header.subversion);
 
 				if (error != NAV_OK)
 				{
@@ -1294,6 +1328,23 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	}
 
 	CWaypoint::g_NextWaypointID = topID + 1;
+
+	unsigned int nextVolumeID = 0;
+
+	RebuildVolumeMap();
+
+	for (auto& pair : m_volumes)
+	{
+		auto& volume = pair.second;
+		volume->PostLoad();
+
+		if (volume->GetID() >= nextVolumeID)
+		{
+			nextVolumeID = volume->GetID();
+		}
+	}
+
+	CNavVolume::s_nextID = nextVolumeID + 1;
 
 	for (int i = 0; i < m_ladders.Count(); i++)
 	{

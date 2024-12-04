@@ -17,6 +17,7 @@
 #include "nav_trace.h"
 #include "nav_mesh.h"
 #include "nav_waypoint.h"
+#include "nav_volume.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
 #include "nav_node.h"
@@ -1084,6 +1085,32 @@ void CNavMesh::DrawWaypoints()
 		NDebugOverlay::Text(m_selectedWaypoint->GetOrigin() + Vector(0.0f, 0.0f, 24.0f), "SELECTED WAYPOINT", false, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
+}
+
+void CNavMesh::DrawVolumes()
+{
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
+
+	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
+		return;
+
+	CBaseExtPlayer host(ent);
+	Vector origin = host.GetAbsOrigin();
+
+	std::for_each(m_volumes.begin(), m_volumes.end(), [this, &origin](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
+
+		float distance = (object.second->GetOrigin() - origin).Length();
+
+		if (distance <= CNavVolume::MAX_DRAW_RANGE)
+		{
+			object.second->Draw();
+		}
+	});
+
+	if (m_selectedVolume)
+	{
+		m_selectedVolume->ScreenText();
+	}
 }
 
 
@@ -4449,4 +4476,83 @@ void CNavMesh::CommandNavSetUseableLadderDir()
 CON_COMMAND_F(sm_nav_useable_ladder_set_dir, "Sets the direction a useable ladder is facing.", FCVAR_CHEAT)
 {
 	TheNavMesh->CommandNavSetUseableLadderDir();
+}
+
+void CNavMesh::CommandNavMarkVolume(const CCommand& args)
+{
+	if (args.ArgC() > 1)
+	{
+		if (strncasecmp(args[1], "clear", 5) == 0)
+		{
+			m_selectedVolume = nullptr;
+			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+			return;
+		}
+
+		unsigned int id = static_cast<int>(std::atoi(args[1]));
+		auto volume = GetVolumeOfID<CNavVolume>(id);
+
+		if (volume.has_value())
+		{
+			m_selectedVolume = volume.value();
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+			return;
+		}
+
+		Warning("Volume of ID %i (%s) does not exists!\n", id, args[1]);
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+
+	Vector eyePos = host.GetEyeOrigin();
+	Vector forward;
+	host.EyeVectors(&forward);
+
+	Vector end = eyePos + (forward * 2048.0f);
+
+	// first we search for volumes the client is looking at
+	for (auto& i : m_volumes)
+	{
+		auto& volume = i.second;
+
+		if (UtilHelpers::LineIntersectsAABB(eyePos, end, volume->m_calculatedMins, volume->m_calculatedMaxs))
+		{
+			if (m_selectedVolume.get() == volume.get())
+			{
+				m_selectedVolume = nullptr;
+				PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+				return;
+			}
+
+			m_selectedVolume = volume;
+			Msg("Selected volume #%i\n", m_selectedVolume->GetID());
+			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+			return;
+		}
+	}
+
+	// if nothing is found, search by distance
+
+	float best = 9999999.0f;
+	m_selectedVolume = nullptr;
+
+	for (auto& i : m_volumes)
+	{
+		auto& volume = i.second;
+		float distance = (volume->GetOrigin() - host.GetAbsOrigin()).Length();
+		
+		if (distance < best)
+		{
+			best = distance;
+			m_selectedVolume = volume;
+		}
+	}
+
+	if (m_selectedVolume)
+	{
+		Msg("Selected volume #%i\n", m_selectedVolume->GetID());
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+	}
 }
