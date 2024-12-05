@@ -1267,7 +1267,7 @@ bool UtilHelpers::AABBIntersectsAABB(const Vector& mins1, const Vector& maxs1, c
 
 bool UtilHelpers::PointIsInsideSphere(const Vector& point, const Vector& sphereCenter, const float sphereRadius)
 {
-	float distance = std::sqrtf(powf((point.x - sphereCenter.x), 2.0f) + powf((point.y - sphereCenter.y), 2.0f) + powf((point.z - sphereCenter.z), 2.0f));
+	float distance = sqrtf(powf((point.x - sphereCenter.x), 2.0f) + powf((point.y - sphereCenter.y), 2.0f) + powf((point.z - sphereCenter.z), 2.0f));
 	return distance < sphereRadius;
 }
 
