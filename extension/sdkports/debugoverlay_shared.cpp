@@ -81,6 +81,17 @@ void NDebugOverlay::EntityBounds(edict_t *pEntity, int r, int g, int b, int a, f
 	BoxAngles( pCollide->GetCollisionOrigin(), pCollide->OBBMins(), pCollide->OBBMaxs(), pCollide->GetCollisionAngles(), r, g, b, a, flDuration );
 }
 
+void NDebugOverlay::EntityBounds(CBaseEntity* pEntity, int r, int g, int b, int a, float flDuration)
+{
+	IServerEntity* serverent = reinterpret_cast<IServerEntity*>(pEntity);
+	ICollideable* collider = serverent->GetCollideable();
+
+	if (collider)
+	{
+		BoxAngles(collider->GetCollisionOrigin(), collider->OBBMins(), collider->OBBMaxs(), collider->GetCollisionAngles(), r, g, b, a, flDuration);
+	}
+}
+
 //-----------------------------------------------------------------------------
 // Purpose: Draws a line from one position to another
 //-----------------------------------------------------------------------------

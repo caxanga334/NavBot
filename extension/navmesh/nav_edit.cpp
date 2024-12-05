@@ -4512,6 +4512,8 @@ void CNavMesh::CommandNavMarkVolume(const CCommand& args)
 
 	Vector end = eyePos + (forward * 2048.0f);
 
+	std::vector<std::shared_ptr<CNavVolume>> volumesFound;
+
 	// first we search for volumes the client is looking at
 	for (auto& i : m_volumes)
 	{
@@ -4519,18 +4521,38 @@ void CNavMesh::CommandNavMarkVolume(const CCommand& args)
 
 		if (UtilHelpers::LineIntersectsAABB(eyePos, end, volume->m_calculatedMins, volume->m_calculatedMaxs))
 		{
-			if (m_selectedVolume.get() == volume.get())
-			{
-				m_selectedVolume = nullptr;
-				PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
-				return;
-			}
+			volumesFound.push_back(volume);
+		}
+	}
 
-			m_selectedVolume = volume;
-			Msg("Selected volume #%i\n", m_selectedVolume->GetID());
+	// one or more volumes were being aimed at, select the nearest.
+	if (!volumesFound.empty())
+	{
+		std::shared_ptr<CNavVolume> found = nullptr;
+		float nearest = 9999999.0f;
+
+		for (auto& volume : volumesFound)
+		{
+			float distance = (volume->GetOrigin() - host.GetAbsOrigin()).Length();
+
+			if (distance < nearest)
+			{
+				found = volume;
+				nearest = distance;
+			}
+		}
+
+		if (m_selectedVolume.get() == found.get())
+		{
+			m_selectedVolume = nullptr;
 			PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 			return;
 		}
+
+		m_selectedVolume = found;
+		Msg("Selected volume #%i\n", m_selectedVolume->GetID());
+		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
+		return;
 	}
 
 	// if nothing is found, search by distance

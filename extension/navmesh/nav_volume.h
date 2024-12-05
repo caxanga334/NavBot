@@ -19,11 +19,13 @@ public:
 	enum ConditionType : int
 	{
 		CONDITION_NONE = 0, // No condition
-		CONDITION_HULL_COLLISION, // check if there is something solid 
+		CONDITION_SOLID_WORLD, // blocked if there is a solid obstruction (world and props only)
 		CONDITION_ENTITY_EXISTS, // blocked if the target entity exists
 		CONDITION_ENTITY_ENABLED, // blocked if the target entity is enabled
 		CONDITION_ENTITY_LOCKED, // blocked if the target entity is locked
 		CONDITION_DOOR_CLOSED, // blocked if the target door is closed
+		CONDITION_ENTITY_TEAM, // blocked if the target entity is not owned by the team
+		CONDITION_ENTITY_DISTANCE, // blocked if the distance from the volume origin to the entity is less than the data value
 
 		MAX_CONDITION_TYPES
 	};
@@ -31,8 +33,8 @@ public:
 	static constexpr float UPDATE_INTERVAL = 2.0f;
 	static constexpr float MAX_DRAW_RANGE = 1500.0f;
 	static unsigned int s_nextID;
-	static constexpr float BASE_SCREENX = 0.58f;
-	static constexpr float BASE_SCREENY = 0.54f;
+	static constexpr float BASE_SCREENX = 0.52f;
+	static constexpr float BASE_SCREENY = 0.56f;
 
 	static const char* GetNameOfConditionType(ConditionType type);
 	static ConditionType IntToConditionType(int type)
@@ -43,6 +45,33 @@ public:
 		}
 
 		return static_cast<ConditionType>(type);
+	}
+
+	static bool ConditionTypeNeedsTargetEntity(ConditionType type)
+	{
+		switch (type)
+		{
+		case CNavVolume::CONDITION_ENTITY_EXISTS:
+		case CNavVolume::CONDITION_ENTITY_ENABLED:
+		case CNavVolume::CONDITION_ENTITY_LOCKED:
+		case CNavVolume::CONDITION_DOOR_CLOSED:
+		case CNavVolume::CONDITION_ENTITY_TEAM:
+		case CNavVolume::CONDITION_ENTITY_DISTANCE:
+			return true;
+		default:
+			return false;
+		}
+	}
+
+	static bool ConditionTypeUsesFloatData(ConditionType type)
+	{
+		switch (type)
+		{
+		case CNavVolume::CONDITION_ENTITY_DISTANCE:
+			return true;
+		default:
+			return false;
+		}
 	}
 
 	unsigned int GetID() const { return m_id; }
@@ -65,19 +94,13 @@ public:
 
 	void SetTargetEntity(CBaseEntity* entity);
 	CBaseEntity* GetTargetEntity() const;
-	void SetConditionType(ConditionType type)
-	{
-		if (type == CONDITION_NONE || type == CONDITION_HULL_COLLISION)
-		{
-			SetTargetEntity(nullptr);
-		}
-
-		m_blockedConditionType = type;
-	}
+	void SetConditionType(ConditionType type);
 
 	ConditionType GetConditionType() const { return m_blockedConditionType; }
 	void SetInvertedConditionCheck(bool value) { m_inverted = value; }
 	bool IsConditionCheckInverted() const { return m_inverted; }
+	void SetEntFloatData(float v) { m_entDataFloat = v; }
+	float GetEntFloatData() const { return m_entDataFloat; }
 
 	bool IntersectsWith(const CNavVolume* other) const;
 	void SearchForNavAreas();
@@ -110,9 +133,15 @@ protected:
 		}
 	}
 
-	virtual void UpdateCondition_HullCollision();
+	virtual void ValidateTargetEntity();
+
+	virtual void UpdateCondition_SolidWorld();
 	virtual void UpdateCondition_EntityExists();
 	virtual void UpdateCondition_EntityEnabled();
+	virtual void UpdateCondition_EntityLocked();
+	virtual void UpdateCondition_DoorClosed();
+	virtual void UpdateCondition_EntityTeam();
+	virtual void UpdateCondition_EntityDistance();
 
 private:
 	friend class CNavMesh;
@@ -128,6 +157,7 @@ private:
 	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_blockedCache;
 	ConditionType m_blockedConditionType; // condition type
 	bool m_inverted; // condition check is inverted
+	float m_entDataFloat; // float data related to the entity;
 	CHandle<CBaseEntity> m_targetEnt;
 	Vector m_entOrigin;
 	std::string m_entTargetname;

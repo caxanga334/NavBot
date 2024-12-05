@@ -38,6 +38,15 @@
 // Indicates an invalid entity reference/index. Better compat between 32 bits integers and 64 bits integers than INVALID_EHANDLE_INDEX
 #define INVALID_ENT_REFERENCE -1
 
+// Values for m_toggle_state property
+enum TOGGLE_STATE
+{
+	TS_AT_TOP,
+	TS_AT_BOTTOM,
+	TS_GOING_UP,
+	TS_GOING_DOWN
+};
+
 enum PropType
 {
 	Prop_Send = 0,
@@ -209,6 +218,10 @@ inline CBaseEntity *CEntPropUtils::GetEntity(int entity)
 template<typename T>
 inline T* CEntPropUtils::GetPointerToEntData(CBaseEntity* entity, PropType proptype, const char* prop)
 {
+	if (entity == nullptr)
+	{
+		return nullptr;
+	}
 
 	switch (proptype)
 	{

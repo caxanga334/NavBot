@@ -1,5 +1,7 @@
 #include <extension.h>
 #include <util/helpers.h>
+#include <sdkports/debugoverlay_shared.h>
+#include <entities/baseentity.h>
 #include "nav_mesh.h"
 #include "nav_volume.h"
 
@@ -114,7 +116,7 @@ CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned 
 {
 	int team = NAV_TEAM_ANY;
 
-	if (args.ArgC() < 1)
+	if (args.ArgC() < 2)
 	{
 		Msg("No team index specified, setting to NO TEAM.\n");
 	}
@@ -145,7 +147,7 @@ CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned 
 
 CON_COMMAND_F(sm_nav_volume_set_check_condition_type, "Updates the selected nav volume condition type.", FCVAR_CHEAT)
 {
-	if (args.ArgC() < 1)
+	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_check_condition_type <type ID>\n");
 		Msg("Get a list of all types using:\n    sm_nav_volume_list_condition_types\n");
@@ -188,7 +190,7 @@ CON_COMMAND_F(sm_nav_volume_set_check_condition_inverted, "Updates the selected 
 
 CON_COMMAND_F(sm_nav_volume_set_check_target_entity, "Updates the selected nav volume to use inverted condition check logic.", FCVAR_CHEAT)
 {
-	if (args.ArgC() < 1)
+	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_check_target_entity <entity targetname or index>\n");
 		return;
@@ -233,6 +235,58 @@ CON_COMMAND_F(sm_nav_volume_set_check_target_entity, "Updates the selected nav v
 		selectedVolume->SetTargetEntity(pEntity);
 	}
 
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_volume_set_check_float_data, "Updates the selected nav volume entity check float data", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_nav_volume_set_check_float_data <value>\n");
+		return;
+	}
+
+	auto& selectedVolume = TheNavMesh->GetSelectedVolume();
+
+	if (!selectedVolume)
+	{
+		Warning("No volume selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	float value = atof(args[1]);
+	selectedVolume->SetEntFloatData(value);
+	Msg("Entity float data for Nav Volume #%i updated to %3.2f\n", selectedVolume->GetID(), value);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_volume_show_target_entity, "Shows the current target entity of the selected volume.", FCVAR_CHEAT)
+{
+	auto& selectedVolume = TheNavMesh->GetSelectedVolume();
+
+	if (!selectedVolume)
+	{
+		Warning("No volume selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	CBaseEntity* pEntity = selectedVolume->GetTargetEntity();
+
+	if (pEntity == nullptr)
+	{
+		Warning("Target entity is NULL!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	entities::HBaseEntity be(pEntity);
+	Vector center = be.WorldSpaceCenter();
+	NDebugOverlay::EntityBounds(pEntity, 0, 128, 0, 200, 10.0f);
+	NDebugOverlay::Line(selectedVolume->GetOrigin(), center, 255, 0, 255, true, 10.0f);
+	float distance = (selectedVolume->GetOrigin() - center).Length();
+	Msg("Distance from Volume origin to entity center: %3.4f\n", distance);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 

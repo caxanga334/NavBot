@@ -4,6 +4,7 @@
 #include <sdkports/sdk_traces.h>
 #include <entities/baseentity.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "nav_volume.h"
@@ -20,6 +21,7 @@ CNavVolume::CNavVolume() : m_entOrigin(0.0f, 0.0f, 0.0f)
 	m_entClassname.reserve(2);
 	m_blockedConditionType = CONDITION_NONE;
 	m_inverted = false;
+	m_entDataFloat = 0.0f;
 }
 
 CNavVolume::~CNavVolume()
@@ -36,11 +38,13 @@ const char* CNavVolume::GetNameOfConditionType(ConditionType type)
 
 	constexpr std::array keyNames = {
 		"CONDITION_NONE"sv,
-		"CONDITION_HULL_COLLISION"sv,
+		"CONDITION_SOLID_WORLD"sv,
 		"CONDITION_ENTITY_EXISTS"sv,
 		"CONDITION_ENTITY_ENABLED"sv,
 		"CONDITION_ENTITY_LOCKED"sv,
 		"CONDITION_DOOR_CLOSED"sv,
+		"CONDITION_ENTITY_TEAM"sv,
+		"CONDITION_ENTITY_DISTANCE"sv,
 	};
 
 	static_assert(keyNames.size() == static_cast<size_t>(CNavVolume::ConditionType::MAX_CONDITION_TYPES), "ConditionType enum and keyNames array size mismatch!");
@@ -100,6 +104,8 @@ void CNavVolume::SetTargetEntity(CBaseEntity* entity)
 		
 		m_entOrigin = baseent.WorldSpaceCenter(); // use world center in case this is a brush entity
 		m_entClassname.assign(gamehelpers->GetEntityClassname(entity));
+
+		ValidateTargetEntity();
 	}
 	else
 	{
@@ -112,6 +118,25 @@ void CNavVolume::SetTargetEntity(CBaseEntity* entity)
 CBaseEntity* CNavVolume::GetTargetEntity() const
 {
 	return m_targetEnt.Get();
+}
+
+void CNavVolume::SetConditionType(ConditionType type)
+{
+	if (!CNavVolume::ConditionTypeNeedsTargetEntity(type))
+	{
+		SetTargetEntity(nullptr);
+	}
+	else
+	{
+		Msg("Target entity is needed for this type!\nSet with sm_nav_volume_set_check_target_entity\n");
+	}
+
+	if (CNavVolume::ConditionTypeUsesFloatData(type))
+	{
+		Msg("Float data required for this type!\nSet with sm_nav_volume_set_check_float_data\n");
+	}
+
+	m_blockedConditionType = type;
 }
 
 bool CNavVolume::IntersectsWith(const CNavVolume* other) const
@@ -154,9 +179,9 @@ void CNavVolume::Update()
 		}
 	}
 
-	if (m_blockedConditionType == CONDITION_HULL_COLLISION)
+	if (m_blockedConditionType == CONDITION_SOLID_WORLD)
 	{
-		UpdateCondition_HullCollision();
+		UpdateCondition_SolidWorld();
 		return;
 	}
 
@@ -164,8 +189,8 @@ void CNavVolume::Update()
 	{
 	case CNavVolume::CONDITION_NONE:
 		return;
-	case CNavVolume::CONDITION_HULL_COLLISION:
-		UpdateCondition_HullCollision();
+	case CNavVolume::CONDITION_SOLID_WORLD:
+		UpdateCondition_SolidWorld();
 		break;
 	case CNavVolume::CONDITION_ENTITY_EXISTS:
 		UpdateCondition_EntityExists();
@@ -174,8 +199,16 @@ void CNavVolume::Update()
 		UpdateCondition_EntityEnabled();
 		break;
 	case CNavVolume::CONDITION_ENTITY_LOCKED:
+		UpdateCondition_EntityLocked();
 		break;
 	case CNavVolume::CONDITION_DOOR_CLOSED:
+		UpdateCondition_DoorClosed();
+		break;
+	case CNavVolume::CONDITION_ENTITY_TEAM:
+		UpdateCondition_EntityTeam();
+		break;
+	case CNavVolume::CONDITION_ENTITY_DISTANCE:
+		UpdateCondition_EntityDistance();
 		break;
 	case CNavVolume::MAX_CONDITION_TYPES:
 		break;
@@ -203,6 +236,7 @@ void CNavVolume::Save(std::fstream& filestream, uint32_t version)
 	if (hasent)
 	{
 		filestream.write(reinterpret_cast<char*>(&m_entOrigin), sizeof(Vector));
+		filestream.write(reinterpret_cast<char*>(&m_entDataFloat), sizeof(float));
 		std::uint64_t size = static_cast<std::uint64_t>(m_entClassname.size()) + 1;
 		filestream.write(reinterpret_cast<char*>(&size), sizeof(std::uint64_t));
 		filestream.write(m_entClassname.c_str(), size);
@@ -219,15 +253,10 @@ void CNavVolume::Save(std::fstream& filestream, uint32_t version)
 	}
 	else
 	{
-		if (m_blockedConditionType != CONDITION_NONE && m_blockedConditionType != CONDITION_HULL_COLLISION)
+		if (CNavVolume::ConditionTypeNeedsTargetEntity(m_blockedConditionType))
 		{
 			smutils->LogError(myself, "Nav Volume #%i saved without a target entity!", m_id);
 		}
-	}
-
-	if (m_blockedConditionType == CONDITION_NONE)
-	{
-		smutils->LogError(myself, "Nav Volume #%i saved without a blocked condition type!", m_id);
 	}
 }
 
@@ -247,6 +276,7 @@ NavErrorType CNavVolume::Load(std::fstream& filestream, uint32_t version, uint32
 	if (hasent)
 	{
 		filestream.read(reinterpret_cast<char*>(&m_entOrigin), sizeof(Vector));
+		filestream.read(reinterpret_cast<char*>(&m_entDataFloat), sizeof(float));
 		std::uint64_t size = 0;
 		filestream.read(reinterpret_cast<char*>(&size), sizeof(std::uint64_t));
 		std::unique_ptr<char[]> classname = std::make_unique<char[]>(size + 2);
@@ -311,7 +341,8 @@ void CNavVolume::DrawAreas() const
 
 void CNavVolume::ScreenText() const
 {
-	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Selected Nav Volume #%i Team %i", m_id, m_teamIndex);
+	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Selected Nav Volume #%i Team %i Blocked %s", 
+		m_id, m_teamIndex, IsBlocked(m_teamIndex) ? "YES" : "NO");
 	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY + 0.04f, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "%s Inverted %s", GetNameOfConditionType(m_blockedConditionType),
 		m_inverted ? "YES" : "NO");
 
@@ -320,6 +351,22 @@ void CNavVolume::ScreenText() const
 		int index = gamehelpers->EntityToBCompatRef(m_targetEnt.Get());
 		NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY + 0.08f, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Target Entity: #%i Class Name: %s Target Name: %s", 
 			index, m_entClassname.c_str(), !m_entTargetname.empty() ? m_entTargetname.c_str() : "");
+
+		if (m_blockedConditionType == CONDITION_ENTITY_DISTANCE)
+		{
+			float entdist = 0.0f;
+
+			CBaseEntity* pEntity = m_targetEnt.Get();
+
+			if (pEntity != nullptr)
+			{
+				entities::HBaseEntity be(pEntity);
+				Vector center = be.WorldSpaceCenter();
+				entdist = (center - m_origin).Length();
+			}
+
+			NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY + 0.12f, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Test Distance: %3.2f Origin to Entity Center: %3.2f", m_entDataFloat, entdist);
+		}
 	}
 }
 
@@ -409,7 +456,40 @@ void CNavVolume::SearchTargetEntity(bool errorIfNotFound)
 	}
 }
 
-void CNavVolume::UpdateCondition_HullCollision()
+void CNavVolume::ValidateTargetEntity()
+{
+	switch (m_blockedConditionType)
+	{
+	case CNavVolume::CONDITION_ENTITY_ENABLED:
+		if (!entprops->HasEntProp(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_bDisabled"))
+		{
+			Warning("Nav Volume #%i target entity unsupported! Lacks \"m_bDisabled\" property!\n", m_id);
+		}
+		break;
+	case CNavVolume::CONDITION_ENTITY_LOCKED:
+		if (!entprops->HasEntProp(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_bLocked"))
+		{
+			Warning("Nav Volume #%i target entity unsupported! Lacks \"m_bLocked\" property!\n", m_id);
+		}
+		break;
+	case CNavVolume::CONDITION_DOOR_CLOSED:
+		if (!entprops->HasEntProp(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_toggle_state"))
+		{
+			Warning("Nav Volume #%i target entity unsupported! Lacks \"m_toggle_state\" property!\n", m_id);
+		}
+		break;
+	case CNavVolume::CONDITION_ENTITY_TEAM:
+		if (!entprops->HasEntProp(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_iTeamNum"))
+		{
+			Warning("Nav Volume #%i target entity unsupported! Lacks \"m_iTeamNum\" property!\n", m_id);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+void CNavVolume::UpdateCondition_SolidWorld()
 {
 	CTraceFilterWorldAndPropsOnly filter;
 	trace_t tr;
@@ -447,6 +527,108 @@ void CNavVolume::UpdateCondition_EntityEnabled()
 		}
 
 		UpdateBlockedStatus(m_teamIndex, enabled);
+	}
+}
+
+void CNavVolume::UpdateCondition_EntityLocked()
+{
+	bool locked = false;
+
+	if (!entprops->GetEntPropBool(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_bLocked", locked))
+	{
+		UpdateBlockedStatus(m_teamIndex, false);
+	}
+	else
+	{
+		if (m_inverted)
+		{
+			UpdateBlockedStatus(m_teamIndex, !locked);
+		}
+		else
+		{
+			UpdateBlockedStatus(m_teamIndex, locked);
+		}
+	}
+}
+
+void CNavVolume::UpdateCondition_DoorClosed()
+{
+	int toggle_state = 0;
+
+	if (!entprops->GetEntProp(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_toggle_state", toggle_state))
+	{
+		UpdateBlockedStatus(m_teamIndex, false);
+	}
+	else
+	{
+		// block when door is closed
+		// doors are closed when toggle state is TOGGLE_STATE::TS_AT_BOTTOM
+
+		if (m_inverted)
+		{
+			UpdateBlockedStatus(m_teamIndex, toggle_state != static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM));
+		}
+		else
+		{
+			UpdateBlockedStatus(m_teamIndex, toggle_state == static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM));
+		}
+	}
+}
+
+void CNavVolume::UpdateCondition_EntityTeam()
+{
+	int teamNum = 0;
+
+	if (!entprops->GetEntProp(gamehelpers->EntityToBCompatRef(m_targetEnt.Get()), Prop_Data, "m_iTeamNum", teamNum))
+	{
+		UpdateBlockedStatus(m_teamIndex, false);
+	}
+
+	if (m_teamIndex == NAV_TEAM_ANY)
+	{
+		// no specific team
+		// blocked if it's not owned by any team
+		bool blocked = teamNum == TEAM_UNASSIGNED;
+
+		if (m_inverted)
+		{
+			blocked = !blocked;
+		}
+
+		UpdateBlockedStatus(m_teamIndex, blocked);
+	}
+	else
+	{
+		// blocked if the owner team is not the assigned team index to this volume
+		bool blocked = teamNum != m_teamIndex;
+
+		if (m_inverted)
+		{
+			blocked = !blocked;
+		}
+
+		UpdateBlockedStatus(m_teamIndex, blocked);
+	}
+}
+
+void CNavVolume::UpdateCondition_EntityDistance()
+{
+	CBaseEntity* pEntity = m_targetEnt.Get();
+
+	if (pEntity != nullptr)
+	{
+		entities::HBaseEntity be(pEntity);
+		Vector center = be.WorldSpaceCenter();
+		float distance = (center - m_origin).Length();
+
+		if (m_inverted)
+		{
+			UpdateBlockedStatus(m_teamIndex, distance > m_entDataFloat);
+		}
+		else
+		{
+			UpdateBlockedStatus(m_teamIndex, distance < m_entDataFloat);
+		}
 	}
 }
 
