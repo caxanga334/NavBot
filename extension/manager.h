@@ -5,6 +5,7 @@
 #include <bot/interfaces/profile.h>
 #include <bot/interfaces/weaponinfo.h>
 #include <sdkports/sdk_timers.h>
+#include <IForwardSys.h>
 #include "pawn_mem_manager.h"
 
 class CBaseMod;
@@ -100,6 +101,10 @@ private:
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
 	std::unique_ptr<CSourcePawnMemoryManager> m_pawnmemory;
+	SourceMod::IForward* m_prebotaddforward; // SM Forward, on pre bot add
+	SourceMod::IForward* m_postbotaddforward; // SM Forward, post bot add (normal bots)
+	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
+	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
 	size_t m_nextbotname; // Index of the next bot name to use
 	CDifficultyManager m_bdm; // Bot Difficulty Profile Manager
 	int m_botdebugmode;
@@ -111,9 +116,6 @@ private:
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
 };
 
-
-
 extern CExtManager* extmanager;
 
 #endif // !SMNAV_EXT_MANAGER_H_
-

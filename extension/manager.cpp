@@ -66,10 +66,19 @@ CExtManager::CExtManager() :
 CExtManager::~CExtManager()
 {
 	m_bots.clear();
+	forwards->ReleaseForward(m_prebotaddforward);
+	forwards->ReleaseForward(m_postbotaddforward);
+	forwards->ReleaseForward(m_prepluginbotaddforward);
+	forwards->ReleaseForward(m_postpluginbotaddforward);
 }
 
 void CExtManager::OnAllLoaded()
 {
+	m_prebotaddforward = forwards->CreateForward("OnPreNavBotAdd", ET_Event, 0, nullptr);
+	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+
 	AllocateMod();
 
 	LoadBotNames();
@@ -255,6 +264,15 @@ bool CExtManager::IsNavBot(const int client) const
 
 void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 {
+	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
+
+	m_prebotaddforward->Execute(&result);
+
+	if (result > static_cast<cell_t>(SourceMod::ResultType::Pl_Continue))
+	{
+		return;
+	}
+
 	const char* name = nullptr;
 
 	if (newbotname != nullptr)
@@ -325,6 +343,16 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
 {
+	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
+
+	m_prepluginbotaddforward->PushCell(gamehelpers->IndexOfEdict(entity));
+	m_prepluginbotaddforward->Execute(&result);
+
+	if (result > static_cast<cell_t>(SourceMod::ResultType::Pl_Continue))
+	{
+		return nullptr;
+	}
+
 	CBaseBot* newBot = static_cast<CBaseBot*>(new CPluginBot(entity));
 	newBot->PostAdd();
 	m_bots.emplace_back(newBot);

@@ -72,12 +72,18 @@ cell_t natives::bots::AttachNavBot(IPluginContext* context, const cell_t* params
 		return 0;
 	}
 
+	if (player->IsSourceTV() || player->IsReplay())
+	{
+		context->ReportError("Cannot attach NavBot to SourceTV/Replay bots!");
+		return 0;
+	}
+
 	CBaseBot* bot = extmanager->GetBotByIndex(client);
 
 	if (bot != nullptr)
 	{
 		// bot already exists, return the index
-		return params[1];
+		return bot->GetIndex(); // sanity, should be the same as the param passed from the plugin.
 	}
 
 	edict_t* entity = gamehelpers->EdictOfIndex(client);
@@ -89,6 +95,12 @@ cell_t natives::bots::AttachNavBot(IPluginContext* context, const cell_t* params
 	}
 
 	bot = extmanager->AttachBotInstanceToEntity(entity);
+
+	if (bot == nullptr)
+	{
+		return 0;
+	}
+
 	smutils->LogMessage(myself, "Attached NavBot CPluginBot instance to entity #%i.", client);
 
 	return static_cast<cell_t>(bot->GetIndex());

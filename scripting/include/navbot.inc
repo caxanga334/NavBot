@@ -36,6 +36,20 @@ native bool AddNavBot(int& client, const char[] botName = NULL_STRING);
 native bool IsNavMeshLoaded();
 
 /**
+ * Called when a new NavBot instance is about to be created.
+ * 
+ * @return Plugin_Continue to allow the bot to be added. Anything else to prevent the bot from being added.
+ */
+forward Action OnPreNavBotAdd();
+
+/**
+ * Called when a NavBot was just added to the game.
+ * 
+ * @param bot Client index of the bot that was just added.
+ */
+forward void OnNavBotAdded(int bot);
+
+/**
  * Do not edit below this line!
  */
 public Extension __ext_navbot =
