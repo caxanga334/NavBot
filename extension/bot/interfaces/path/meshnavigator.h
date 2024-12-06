@@ -44,6 +44,7 @@ protected:
 	void SetBot(CBaseBot* bot) { m_me = bot; }
 	// Bot using this navigator, may be NULL
 	CBaseBot* GetBot() const { return m_me; }
+	bool IsWaitingForSomething() { return !m_waitTimer.IsElapsed(); }
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator

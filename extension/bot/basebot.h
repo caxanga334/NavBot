@@ -67,6 +67,8 @@ public:
 	bool IsExtensionBot() const final { return true; }
 	// Was this bot created by a sourcemod plugin?
 	virtual bool IsPluginBot() { return false; }
+	// Will PlayerRunCommand be called by the extesion? (Allow plugin bots to manually run them). Always true for base.
+	virtual bool RunPlayerCommands() { return true; }
 	// Pointer to the extension bot class
 	CBaseBot* MyBotPointer() final { return this; }
 

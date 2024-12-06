@@ -1,5 +1,6 @@
 #include <extension.h>
 #include <bot/basebot.h>
+#include <sdkports/debugoverlay_shared.h>
 #include "pluginnavigator.h"
 
 CPluginMeshNavigator::CPluginMeshNavigator()
@@ -19,15 +20,41 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 		return;
 	}
 
+	IMovement* mover = bot->GetMovementInterface();
 	SetBot(bot);
 	bot->SetActiveNavigator(this);
+	const bool runcmd = bot->RunPlayerCommands();
+
+	if (runcmd)
+	{
+		if (mover->IsControllingMovements())
+		{
+			// bot movements are under control of the movement interface, likely performing an advanced movement that requires multiple steps such as a rocket jump.
+			// Wait until it's done to continue moving the bot.
+			return;
+		}
+
+		if (IsWaitingForSomething())
+		{
+			return; // wait for something to stop blocking our path (like a door opening)
+		}
+
+		if (LadderUpdate(bot))
+		{
+			return; // bot is using a ladder
+		}
+	}
 
 	if (!CheckProgress(bot))
 	{
 		return; // goal reached
 	}
 
-	IMovement* mover = bot->GetMovementInterface();
+	if (runcmd)
+	{
+		CrouchIfNeeded(bot);
+	}
+	
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = goal->goal - origin;
 	auto input = bot->GetControlInterface();
@@ -62,6 +89,19 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 
 	forward = CrossProduct(normal, forward);
 	left = CrossProduct(left, normal);
+
+	if (runcmd)
+	{
+		if (!Climbing(bot, goal, forward, left, goalRange))
+		{
+			if (!IsValid())
+			{
+				return; // path might become invalid from a failed climb
+			}
+
+			JumpOverGaps(bot, goal, forward, left, goalRange);
+		}
+	}
 
 	// It's possible that the path become invalid after a jump or climb attempt
 	if (!IsValid())
@@ -131,5 +171,33 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 		}
 	}
 
+	if (mover->IsOnGround())
+	{
+		auto eyes = bot->GetEyeOrigin();
+		Vector lookat(goalPos.x, goalPos.y, eyes.z);
+
+		// low priority look towards movement goal so the bot doesn't walk with a fixed look
+		input->AimAt(lookat, IPlayerController::LOOK_NONE, 0.1f);
+	}
+
+	// move bot along path
+	mover->MoveTowards(goalPos);
 	m_moveGoal = goalPos;
+
+	if (bot->IsDebugging(BOTDEBUG_PATH))
+	{
+		auto start = GetGoalSegment();
+
+		if (start != nullptr)
+		{
+			start = GetPriorSegment(start);
+		}
+
+		if (start != nullptr)
+		{
+			Draw(start, 0.1f);
+		}
+
+		NDebugOverlay::Sphere(goalPos, 5.0f, 255, 255, 0, true, 0.1f);
+	}
 }

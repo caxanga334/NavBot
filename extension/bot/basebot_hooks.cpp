@@ -158,7 +158,7 @@ void CBaseBot::Hook_PhysicsSimulate()
 
 void CBaseBot::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 {
-	if (IsPluginBot())
+	if (!RunPlayerCommands())
 	{
 		RETURN_META(MRES_IGNORED);
 	}

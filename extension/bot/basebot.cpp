@@ -262,7 +262,7 @@ void CBaseBot::RegisterInterface(IBotInterface* iface)
 
 void CBaseBot::BuildUserCommand(const int buttons)
 {
-	if (IsPluginBot())
+	if (!RunPlayerCommands())
 	{
 		return;
 	}

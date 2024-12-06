@@ -12,7 +12,7 @@ Plugin Bot instances are created via the NavBot methodmap constructor.
 
 Example:
 
-`NavBot navbot = NavBot(client);`
+`PluginBot navbot = PluginBot(int client);`
 
 **client** must be a valid client index.
 

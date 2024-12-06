@@ -101,9 +101,9 @@ Action ConCmd_BotMe(int client, int args)
 		return Plugin_Handled;
 	}
 
-	NavBot navbot = NavBot(client);
+	PluginBot navbot = PluginBot(client);
 
-	if (navbot != NULL_NAVBOT)
+	if (!navbot.IsNull)
 	{
 		ReplyToCommand(client, "Attached CPluginBot instance to you!");
 		g_isnavbot[client] = true;

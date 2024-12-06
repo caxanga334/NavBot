@@ -2,6 +2,7 @@
 #include <manager.h>
 #include <util/helpers.h>
 #include <bot/basebot.h>
+#include <bot/pluginbot/pluginbot.h>
 #include "bots.h"
 
 // gets a CBaseBot instance. Throws plugin errors if invalid
@@ -40,12 +41,47 @@
 void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
-		{"NavBot.NavBot", AttachNavBot},
+		{"NavBot.NavBot", AddNavBotMM},
 		{"NavBot.IsPluginBot", IsPluginBot},
+		{"PluginBot.PluginBot", AttachNavBot},
 		{"GetNavBotByIndex", GetNavBotByIndex},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
+}
+
+cell_t natives::bots::AddNavBotMM(IPluginContext* context, const cell_t* params)
+{
+	if (!TheNavMesh->IsLoaded())
+	{
+		context->ReportError("Cannot add bot. Navigation Mesh is not loaded!");
+		return 0;
+	}
+
+	edict_t* edict = nullptr;
+	char* szName = nullptr;
+
+	context->LocalToStringNULL(params[1], &szName);
+
+	if (szName != nullptr)
+	{
+		std::string name(szName);
+
+		extmanager->AddBot(&name, &edict);
+	}
+	else
+	{
+		extmanager->AddBot(nullptr, &edict);
+	}
+
+	if (edict == nullptr)
+	{
+		return 0;
+	}
+
+	CBaseBot* bot = extmanager->GetBotByIndex(gamehelpers->IndexOfEdict(edict));
+
+	return bot->GetIndex();
 }
 
 cell_t natives::bots::AttachNavBot(IPluginContext* context, const cell_t* params)
@@ -82,8 +118,13 @@ cell_t natives::bots::AttachNavBot(IPluginContext* context, const cell_t* params
 
 	if (bot != nullptr)
 	{
+		if (!bot->IsPluginBot())
+		{
+			return 0; // return NULL for non plugin bots.
+		}
+
 		// bot already exists, return the index
-		return bot->GetIndex(); // sanity, should be the same as the param passed from the plugin.
+		return static_cast<cell_t>(bot->GetIndex()); // sanity, should be the same as the param passed from the plugin.
 	}
 
 	edict_t* entity = gamehelpers->EdictOfIndex(client);
@@ -145,4 +186,34 @@ cell_t natives::bots::GetNavBotByIndex(IPluginContext* context, const cell_t* pa
 	}
 
 	return static_cast<cell_t>(bot->GetIndex());
+}
+
+cell_t natives::bots::SetRunPlayerCommands(IPluginContext* context, const cell_t* params)
+{
+	METHODMAP_GETVALIDBOT;
+
+	if (!bot->IsPluginBot())
+	{
+		context->ReportError("%i Not a PluginBot instance!", client);
+		return 0;
+	}
+
+	if (!player->IsFakeClient())
+	{
+		context->ReportError("SetRunPlayerCommands can only be used on fake clients! %i is a human client!", client);
+		return 0;
+	}
+
+	if (bot->GetController() == nullptr)
+	{
+		context->ReportError("Can't enable player commands for %i. NULL IBotController!", client);
+		return 0;
+	}
+
+	CPluginBot* pluginbot = static_cast<CPluginBot*>(bot);
+
+	bool enablecommands = params[2] != 0;
+	pluginbot->SetRunPlayerCommands(enablecommands);
+
+	return 0;
 }

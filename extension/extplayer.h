@@ -34,6 +34,7 @@ public:
 	IHandleEntity* GetHandleEntity() const { return reinterpret_cast<IHandleEntity*>(m_edict->GetIServerEntity()); }
 	IServerNetworkable* GetServerNetworkable() const { return m_edict->GetNetworkable(); }
 	ICollideable* GetCollideable() const { return m_edict->GetCollideable(); }
+	bool IsFakeClient() const { return m_playerinfo->IsFakeClient(); }
 
 	bool operator==(const CBaseExtPlayer& other) const;
 
