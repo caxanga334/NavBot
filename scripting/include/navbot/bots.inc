@@ -19,6 +19,11 @@ methodmap NavBot
 	{
 		public get() { return view_as<int>(this); }
 	}
+
+	property bool IsNull
+	{
+		public get() { return view_as<int>(this) == 0; }
+	}
 }
 
 /**

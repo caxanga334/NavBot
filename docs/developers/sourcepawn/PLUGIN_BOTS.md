@@ -14,11 +14,21 @@ Example:
 
 `NavBot navbot = NavBot(client);`
 
-**client** must be a valid client index;
+**client** must be a valid client index.
+
+## Checking For Plugin Bots
+
+Use `NavBot bot = GetNavBotByIndex(int client)` to get a NavBot instance from the given client index.
+
+To check if it's a valid NavBot instance, use `bot.IsNull`.
+
+If you have a valid NavBot instance, use `bot.IsPluginBot()` to check if this NavBot instance was created by a plugin.
 
 # Mesh Navigator
 
 The `MeshNavigator` is used for navigating NavBot's navigation mesh.
+
+This navigator only works with Plugin Bot instances.
 
 ## Creating a New Mesh Navigator
 
@@ -33,9 +43,9 @@ MeshNavigator nav = MeshNavigator();
 nav.Destroy();
 ```
 
-The `Destroy` native will delete the navigation object from memory.
+The `Destroy` native will delete the navigator object from memory.
 
-After destroy, it's recommended to set the navigation variable to `NULL_MESHNAVIGATOR`.
+After destroy, it's recommended to set the navigator variable to `NULL_MESHNAVIGATOR`.
 
 **Important!** All mesh navigators are automatically destroyed on map end. You should set all navigator variables to `NULL_MESHNAVIGATOR` on map end.
 
