@@ -137,24 +137,23 @@ TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskUpdate(CBaseBot* bot)
 
 CBaseBotBehavior::CBaseBotBehavior(CBaseBot* bot) : IBehavior(bot)
 {
-	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
+	m_manager = std::make_unique<AITaskManager<CBaseBot>>(new CBaseBotTestTask);
 	m_listeners.reserve(2);
-	m_listeners.push_back(m_manager);
+	m_listeners.push_back(m_manager.get());
 }
 
 CBaseBotBehavior::~CBaseBotBehavior()
 {
-	delete m_manager;
 }
 
 void CBaseBotBehavior::Reset()
 {
 	m_listeners.clear();
 
-	delete m_manager;
-	m_manager = new AITaskManager<CBaseBot>(new CBaseBotTestTask);
+	m_manager = nullptr;
+	m_manager = std::make_unique<AITaskManager<CBaseBot>>(new CBaseBotTestTask);
 
-	m_listeners.push_back(m_manager);
+	m_listeners.push_back(m_manager.get());
 }
 
 void CBaseBotBehavior::Update()
@@ -164,13 +163,13 @@ void CBaseBotBehavior::Update()
 
 std::vector<IEventListener*>* CBaseBotBehavior::GetListenerVector()
 {
-	if (m_manager == nullptr)
+	if (!m_manager)
 	{
 		return nullptr;
 	}
 
 	static std::vector<IEventListener*> listeners;
 	listeners.clear();
-	listeners.push_back(m_manager);
+	listeners.push_back(m_manager.get());
 	return &listeners;
 }

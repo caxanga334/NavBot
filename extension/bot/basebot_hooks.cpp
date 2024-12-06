@@ -146,7 +146,7 @@ void CBaseBot::Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInf
 void CBaseBot::Hook_PhysicsSimulate()
 {
 #ifdef EXT_DEBUG
-	if (m_controller == nullptr)
+	if (m_controller == nullptr && !IsPluginBot())
 	{
 		ConColorMsg(Color(255, 0, 0, 255), "CBaseBot::Hook_PhysicsSimulate called with NULL m_controller <%p>\n", this);
 	}
@@ -158,6 +158,11 @@ void CBaseBot::Hook_PhysicsSimulate()
 
 void CBaseBot::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 {
+	if (IsPluginBot())
+	{
+		RETURN_META(MRES_IGNORED);
+	}
+
 	CBotCmd* botcmd = GetUserCommand();
 	BotHookHelpers::CopyBotCmdtoUserCmd(usercmd, botcmd);
 	RETURN_META(MRES_HANDLED);

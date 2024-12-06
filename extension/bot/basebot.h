@@ -65,6 +65,8 @@ public:
 
 	// true if this is a bot managed by this extension
 	bool IsExtensionBot() const final { return true; }
+	// Was this bot created by a sourcemod plugin?
+	virtual bool IsPluginBot() { return false; }
 	// Pointer to the extension bot class
 	CBaseBot* MyBotPointer() final { return this; }
 

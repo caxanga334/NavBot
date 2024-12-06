@@ -1,13 +1,9 @@
-# Nav Bot Developer Documentation
+# NavBot Developer Documention
 
-## Compiling
+* [Extension Development (C++)]
+* [Plugin Development (SourcePawn)]
 
-See [Compiling](COMPILING.md).
+<!-- LINKS -->
 
-## Adding Support To a New Mod
-
-See [Adding support to a new mod](NEW-MOD.md).
-
-## Creating Your New Bot
-
-See [Creating Bots](CREATING-BOTS.md).
+[Extension Development (C++)]: extension/README.md
+[Plugin Development (SourcePawn)]: sourcepawn/README.md

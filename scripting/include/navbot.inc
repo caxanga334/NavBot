@@ -7,6 +7,8 @@
 #endif
 #define _navbot_included
 
+#include "navbot/bots.inc"
+
 /**
  * Checks if the given client is a NavBot managed fake client.
  *

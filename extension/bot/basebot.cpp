@@ -82,6 +82,7 @@ void CBaseBot::PlayerThink()
 	}
 
 	// this needs to be before the sleep check since spectator players are dead
+	// bots created by plugins will have to be handled by the 
 	if (--m_joingametime <= 0)
 	{
 		if (!HasJoinedGame() && CanJoinGame())
@@ -261,6 +262,11 @@ void CBaseBot::RegisterInterface(IBotInterface* iface)
 
 void CBaseBot::BuildUserCommand(const int buttons)
 {
+	if (IsPluginBot())
+	{
+		return;
+	}
+
 	int commandnumber = m_cmd.command_number;
 	auto mover = GetMovementInterface();
 	auto control = GetControlInterface();
@@ -486,4 +492,3 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
 	return !result.DidHit();
 }
-

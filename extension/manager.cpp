@@ -36,6 +36,8 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #endif // SOURCE_ENGINE == SE_DODS
 
+#include <bot/pluginbot/pluginbot.h>
+
 #undef max // valve mathlib conflict fix
 #undef min
 #undef clamp
@@ -58,6 +60,7 @@ CExtManager::CExtManager() :
 	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
 	m_iscreatingbot = false;
 	m_callModUpdateTimer.Start(get_mod_update_interval());
+	m_pawnmemory = std::make_unique<CSourcePawnMemoryManager>();
 }
 
 CExtManager::~CExtManager()
@@ -318,6 +321,14 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	}
 
 	smutils->LogMessage(myself, "NavBot added to the game.");
+}
+
+CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
+{
+	CBaseBot* newBot = static_cast<CBaseBot*>(new CPluginBot(entity));
+	newBot->PostAdd();
+	m_bots.emplace_back(newBot);
+	return newBot;
 }
 
 void CExtManager::RemoveRandomBot(const char* message)

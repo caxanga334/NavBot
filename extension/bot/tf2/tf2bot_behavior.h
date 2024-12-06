@@ -12,13 +12,13 @@ class CTF2BotBehavior : public IBehavior
 {
 public:
 	CTF2BotBehavior(CBaseBot* bot);
-	virtual ~CTF2BotBehavior();
+	~CTF2BotBehavior() override;
 
-	virtual void Reset() override;
-	virtual void Update() override;
+	void Reset() override;
+	void Update() override;
 
-	virtual std::vector<IEventListener*>* GetListenerVector() override;
-	virtual IDecisionQuery* GetDecisionQueryResponder() override;
+	std::vector<IEventListener*>* GetListenerVector() override;
+	IDecisionQuery* GetDecisionQueryResponder() override;
 private:
 	AITaskManager<CTF2Bot>* m_manager;
 	std::vector<IEventListener*> m_listeners;

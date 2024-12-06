@@ -5,6 +5,9 @@
 #include <IExtensionSys.h>
 #include <ISourceMod.h>
 
+#include "natives/bots.h"
+#include "natives/interfaces/path.h"
+
 namespace natives
 {
 	void setup(std::vector<sp_nativeinfo_t>& nv);

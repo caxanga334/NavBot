@@ -256,6 +256,8 @@ void NavBotExt::SDK_OnAllLoaded()
 	sdkcalls->Init();
 
 	natives::setup(m_natives);
+	natives::bots::setup(m_natives);
+	natives::bots::interfaces::path::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });
 	sharesys->AddNatives(myself, m_natives.data());
 	smutils->LogMessage(myself, "Registered %i natives.", m_natives.size() - 1);

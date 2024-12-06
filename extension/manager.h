@@ -5,6 +5,7 @@
 #include <bot/interfaces/profile.h>
 #include <bot/interfaces/weaponinfo.h>
 #include <sdkports/sdk_timers.h>
+#include "pawn_mem_manager.h"
 
 class CBaseMod;
 class CBaseExtPlayer;
@@ -46,6 +47,7 @@ public:
 	bool IsNavBot(const int client) const;
 
 	void AddBot(std::string* newbotname = nullptr, edict_t** newbotedict = nullptr);
+	CBaseBot* AttachBotInstanceToEntity(edict_t* entity);
 	void RemoveRandomBot(const char* message);
 	void RemoveAllBots(const char* message);
 
@@ -91,10 +93,13 @@ public:
 	static void OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
 	static void OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
 
+	CSourcePawnMemoryManager* GetPawnMemoryManager() const { return m_pawnmemory.get(); }
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
+	std::unique_ptr<CSourcePawnMemoryManager> m_pawnmemory;
 	size_t m_nextbotname; // Index of the next bot name to use
 	CDifficultyManager m_bdm; // Bot Difficulty Profile Manager
 	int m_botdebugmode;

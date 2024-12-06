@@ -142,7 +142,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	if (!Climbing(bot, m_goal, forward, left, goalRange))
 	{
-		if (IsValid() == false)
+		if (!IsValid())
 		{
 			return; // path might become invalid from a failed climb
 		}
@@ -151,7 +151,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	}
 
 	// It's possible that the path become invalid after a jump or climb attempt
-	if (IsValid() == false)
+	if (!IsValid())
 	{
 		return; 
 	}
@@ -229,7 +229,6 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	// move bot along path
 	mover->MoveTowards(goalPos);
-
 
 	if (bot->IsDebugging(BOTDEBUG_PATH))
 	{

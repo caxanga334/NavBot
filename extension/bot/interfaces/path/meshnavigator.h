@@ -37,6 +37,14 @@ protected:
 	virtual edict_t* FindBlocker(CBaseBot* bot);
 	virtual void CrouchIfNeeded(CBaseBot* bot);
 
+	bool IsAtGoal(CBaseBot* bot);
+	bool CheckProgress(CBaseBot* bot);
+	const CBasePathSegment* CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const;
+
+	void SetBot(CBaseBot* bot) { m_me = bot; }
+	// Bot using this navigator, may be NULL
+	CBaseBot* GetBot() const { return m_me; }
+
 private:
 	CBaseBot* m_me; // bot that is using this navigator
 	const CBasePathSegment* m_goal; // the segment the bot is currently trying to reach
@@ -46,10 +54,6 @@ private:
 	bool m_didAvoidCheck;
 	float m_goalTolerance;
 	float m_skipAheadDistance;
-
-	bool IsAtGoal(CBaseBot* bot);
-	bool CheckProgress(CBaseBot* bot);
-	const CBasePathSegment* CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const;
 };
 
 #endif // !SMNAV_BOT_NAV_MESH_NAVIGATOR_H_
