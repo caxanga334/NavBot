@@ -338,6 +338,9 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		*newbotedict = edict;
 	}
 
+	m_postbotaddforward->PushCell(gamehelpers->IndexOfEdict(edict));
+	m_postbotaddforward->Execute();
+
 	smutils->LogMessage(myself, "NavBot added to the game.");
 }
 
@@ -356,6 +359,10 @@ CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
 	CBaseBot* newBot = static_cast<CBaseBot*>(new CPluginBot(entity));
 	newBot->PostAdd();
 	m_bots.emplace_back(newBot);
+
+	m_postpluginbotaddforward->PushCell(gamehelpers->IndexOfEdict(entity));
+	m_postpluginbotaddforward->Execute();
+
 	return newBot;
 }
 
