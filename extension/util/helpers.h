@@ -39,6 +39,16 @@ namespace UtilHelpers
 		return edict != nullptr;
 	}
 
+	inline bool IsValidEdict(edict_t* edict)
+	{
+		if (edict == nullptr || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.

@@ -32,7 +32,7 @@ void IInventory::Reset()
 
 	edict_t* weapon = GetBot()->GetActiveWeapon();
 
-	if (weapon != nullptr)
+	if (UtilHelpers::IsValidEdict(weapon))
 	{
 		m_cachedActiveWeapon = std::make_shared<CBotWeapon>(weapon);
 	}
@@ -48,7 +48,7 @@ void IInventory::Update()
 
 	edict_t* weapon = GetBot()->GetActiveWeapon();
 
-	if (weapon != nullptr && m_cachedActiveWeapon->GetEdict() != weapon)
+	if (UtilHelpers::IsValidEdict(weapon) && m_cachedActiveWeapon->GetEdict() != weapon)
 	{
 		m_cachedActiveWeapon = std::make_shared<CBotWeapon>(weapon);
 	}
@@ -95,7 +95,7 @@ void IInventory::BuildInventory()
 
 		edict_t* weapon = gamehelpers->EdictOfIndex(index);
 
-		if (!weapon || weapon->IsFree() || weapon->GetIServerEntity() == nullptr)
+		if (!UtilHelpers::IsValidEdict(weapon))
 			continue;
 
 		m_weapons.emplace_back(new CBotWeapon(weapon));
@@ -168,7 +168,7 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 {
 	edict_t* weapon = GetBot()->GetActiveWeapon();
 
-	if (weapon == nullptr)
+	if (!UtilHelpers::IsValidEdict(weapon))
 	{
 		return nullptr;
 	}
