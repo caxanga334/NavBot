@@ -23,9 +23,8 @@ public:
 	const char* GetName() const override { return "FindHealth"; }
 
 private:
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_failsafetimer;
-	CMeshNavigator m_nav;
+	CMeshNavigatorAutoRepath m_nav;
 	HealthSource m_type;
 	bool m_reached;
 	CBaseHandle m_sourceentity;

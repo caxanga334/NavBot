@@ -37,11 +37,11 @@ private:
 	Vector m_goal;
 
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
-	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint* out);
-	bool FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint* out);
+	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out);
+	bool FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out);
 	bool FindSpotToBuildDispenser(CTF2Bot* me, Vector& out);
-	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint* out);
-	bool FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint* out);
+	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint** out);
+	bool FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint** out);
 	bool GetRandomDispenserSpot(CTF2Bot* me, const Vector& start, Vector& out);
 };
 

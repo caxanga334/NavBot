@@ -32,6 +32,12 @@ CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
 		return;
 	}
 
+	if (strncasecmp(args[1], "all", 3) == 0)
+	{
+		extmanager->RemoveAllBots("Nav Bot: Kicked by admin command.");
+		return;
+	}
+
 	std::string targetname(args[1]);
 	extmanager->ForEachBot([&targetname](CBaseBot* bot) {
 		auto gp = playerhelpers->GetGamePlayer(bot->GetIndex());

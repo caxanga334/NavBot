@@ -368,6 +368,11 @@ CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
 
 void CExtManager::RemoveRandomBot(const char* message)
 {
+	if (m_bots.empty())
+	{
+		return;
+	}
+
 	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
 	auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
 	player->Kick(message);

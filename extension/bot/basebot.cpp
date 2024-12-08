@@ -254,6 +254,11 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 	return false;
 }
 
+bool CBaseBot::IsAlive() const
+{
+	return UtilHelpers::IsEntityAlive(this->GetIndex());
+}
+
 void CBaseBot::RegisterInterface(IBotInterface* iface)
 {
 	m_interfaces.push_back(iface);

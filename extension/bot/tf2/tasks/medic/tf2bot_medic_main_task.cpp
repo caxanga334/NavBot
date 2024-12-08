@@ -7,6 +7,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
+#include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_revive_task.h"
 #include "tf2bot_medic_main_task.h"
@@ -92,6 +93,21 @@ TaskResult<CTF2Bot> CTF2BotMedicMainTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2
 	return Continue();
 }
 
+TaskEventResponseResult<CTF2Bot> CTF2BotMedicMainTask::OnFlagTaken(CTF2Bot* bot, CBaseEntity* player)
+{
+	if (bot->GetEntity() == player)
+	{
+		auto mod = CTeamFortress2Mod::GetTF2Mod();
+
+		if (mod->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_CTF)
+		{
+			return TryPauseFor(new CTF2BotCTFDeliverFlagTask, PRIORITY_HIGH, "I got the flag, delivering it!");
+		}
+	}
+
+	return TryContinue();
+}
+
 bool CTF2BotMedicMainTask::IsCurrentPatientValid()
 {
 	if (m_patient.Get() == nullptr)
@@ -146,6 +162,11 @@ bool CTF2BotMedicMainTask::LookForPatients(CTF2Bot* me)
 		if (!me->GetSensorInterface()->IsLineOfSightClear(entity))
 		{
 			return;
+		}
+
+		if (tf2lib::GetPlayerClassType(client) == TeamFortress2::TFClass_Medic && tf2lib::GetPlayerHealthPercentage(client) >= 0.92f)
+		{
+			return; // temporary until a better solution is made
 		}
 
 		float distance = me->GetRangeTo(entity);

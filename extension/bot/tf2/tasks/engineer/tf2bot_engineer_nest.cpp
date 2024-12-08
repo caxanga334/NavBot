@@ -120,14 +120,14 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 
 	if (me->GetMyTeleporterEntrance() == nullptr)
 	{
-		if (FindSpotToBuildTeleEntrance(me, wpt))
+		if (FindSpotToBuildTeleEntrance(me, &wpt))
 		{
 			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, wpt);
 		}
 	}
 	else if (me->GetMySentryGun() == nullptr)
 	{
-		if (FindSpotToBuildSentryGun(me, wpt))
+		if (FindSpotToBuildSentryGun(me, &wpt))
 		{
 			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, wpt);
 		}
@@ -135,7 +135,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 	else if (me->GetMyDispenser() == nullptr)
 	{
 		// Search for nearby waypoints
-		if (FindSpotToBuildDispenser(me, wpt))
+		if (FindSpotToBuildDispenser(me, &wpt))
 		{
 			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, wpt);
 		}
@@ -148,7 +148,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 	}
 	else if (me->GetMyTeleporterExit() == nullptr)
 	{
-		if (FindSpotToBuildTeleExit(me, wpt))
+		if (FindSpotToBuildTeleExit(me, &wpt))
 		{
 			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, wpt);
 		}
@@ -188,7 +188,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 	return nullptr;
 }
 
-bool CTF2BotEngineerNestTask::FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint* out)
+bool CTF2BotEngineerNestTask::FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out)
 {
 	std::vector<CTFWaypoint*> spots;
 	auto& sentryWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllSentryWaypoints();
@@ -206,11 +206,11 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint*
 		return false;
 	}
 
-	out = librandom::utils::GetRandomElementFromVector(spots);
+	*out = librandom::utils::GetRandomElementFromVector(spots);
 	return true;
 }
 
-bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint* out)
+bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out)
 {
 	std::vector<CTFWaypoint*> spots;
 	auto& dispenserWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllDispenserWaypoints();
@@ -238,11 +238,11 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint*
 		return false;
 	}
 
-	out = librandom::utils::GetRandomElementFromVector(spots);
+	*out = librandom::utils::GetRandomElementFromVector(spots);
 	return true;
 }
 
-bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint* out)
+bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint** out)
 {
 	std::vector<CTFWaypoint*> spots;
 	auto& teleentranceWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllTeleEntranceWaypoints();
@@ -260,11 +260,11 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoi
 		return false;
 	}
 
-	out = librandom::utils::GetRandomElementFromVector(spots);
+	*out = librandom::utils::GetRandomElementFromVector(spots);
 	return true;
 }
 
-bool CTF2BotEngineerNestTask::FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint* out)
+bool CTF2BotEngineerNestTask::FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint** out)
 {
 	std::vector<CTFWaypoint*> spots;
 	auto& teleexitWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllTeleExitWaypoints();
@@ -282,7 +282,7 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint* 
 		return false;
 	}
 
-	out = librandom::utils::GetRandomElementFromVector(spots);
+	*out = librandom::utils::GetRandomElementFromVector(spots);
 	return true;
 }
 

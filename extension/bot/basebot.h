@@ -90,6 +90,7 @@ public:
 	virtual bool IsRangeLessThan(edict_t* edict, const float range) const;
 
 	virtual bool IsAbleToBreak(edict_t* entity);
+	virtual bool IsAlive() const;
 
 	IBotController* GetController() const { return m_controller; }
 
@@ -182,7 +183,7 @@ public:
 
 	// makes the bot hold their fire for the given time in seconds
 	inline void DontAttackEnemies(const float time) { m_holdfire_time.Start(time); }
-	bool IsLineOfFireClear(const Vector& to) const;
+	virtual bool IsLineOfFireClear(const Vector& to) const;
 
 	inline const Vector& GetHomePos() const { return m_homepos; }
 	void SetHomePos(const Vector& home) { m_homepos = home; }

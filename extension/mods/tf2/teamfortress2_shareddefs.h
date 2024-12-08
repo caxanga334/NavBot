@@ -445,6 +445,7 @@ namespace TeamFortress2
 
 	enum TFFlagEvent
 	{
+		TF_FLAGEVENT_INVALID = 0, // the game doesn't use this, this is in case we can't get the correct flag event
 		TF_FLAGEVENT_PICKEDUP = 1,
 		TF_FLAGEVENT_CAPTURED,
 		TF_FLAGEVENT_DEFENDED,

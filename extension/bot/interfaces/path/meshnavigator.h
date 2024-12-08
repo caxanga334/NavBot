@@ -2,9 +2,8 @@
 #define SMNAV_BOT_NAV_MESH_NAVIGATOR_H_
 #pragma once
 
+#include <bot/basebot.h>
 #include "basepath.h"
-
-class CBaseBot;
 
 // Nav Mesh navigator
 class CMeshNavigator : public CPath
@@ -44,6 +43,7 @@ protected:
 	void SetBot(CBaseBot* bot) { m_me = bot; }
 	// Bot using this navigator, may be NULL
 	CBaseBot* GetBot() const { return m_me; }
+	// Waiting for obstacles
 	bool IsWaitingForSomething() { return !m_waitTimer.IsElapsed(); }
 
 private:
@@ -56,5 +56,90 @@ private:
 	float m_goalTolerance;
 	float m_skipAheadDistance;
 };
+
+/**
+ * @brief Nav Mesh navigator that automatically recalculates the path when needed
+ */
+class CMeshNavigatorAutoRepath : public CMeshNavigator
+{
+public:
+	CMeshNavigatorAutoRepath(float repathInterval = 0.5f)
+	{
+		m_repathinterval = repathInterval;
+		m_repathTimer.Invalidate();
+	}
+
+	void Invalidate() override
+	{
+		m_repathTimer.Invalidate();
+	}
+
+	template <typename CF>
+	void Update(CBaseBot* bot, const Vector& goal, CF& costFunctor);
+
+private:
+	float m_repathinterval;
+	CountdownTimer m_repathTimer; // Time until next repath
+	CountdownTimer m_failTimer; // Time to wait if the path failed
+	Vector m_lastGoal; // goal from the last valid path
+
+	template <typename CF>
+	void RefreshPath(CBaseBot* bot, const Vector& goal, CF& costFunctor);
+
+	bool IsRepathNeeded(const Vector& goal);
+
+	void Update(CBaseBot* bot) override
+	{
+		CMeshNavigator::Update(bot);
+	}
+};
+
+template<typename CF>
+inline void CMeshNavigatorAutoRepath::Update(CBaseBot* bot, const Vector& goal, CF& costFunctor)
+{
+	// Refresh path if needed
+	RefreshPath(bot, goal, costFunctor);
+
+	// Move bot along path
+	CMeshNavigator::Update(bot);
+}
+
+template<typename CF>
+inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& goal, CF& costFunctor)
+{
+	if (IsValid() && !m_repathTimer.IsElapsed())
+	{
+		return;
+	}
+
+	auto mover = bot->GetMovementInterface();
+
+	// Don't repath on these conditions but also force a repath as soon as possible.
+	if (mover->IsOnLadder() || mover->IsControllingMovements())
+	{
+		m_repathTimer.Invalidate();
+		return;
+	}
+
+	if (!m_failTimer.IsElapsed())
+	{
+		return;
+	}
+
+	if (!IsValid() || IsRepathNeeded(goal))
+	{
+		bool foundpath = this->ComputePathToPosition<CF>(bot, goal, costFunctor);
+
+		if (!foundpath)
+		{
+			Invalidate();
+			m_failTimer.Start(1.0f); // Wait one second before repath
+		}
+		else
+		{
+			m_repathTimer.Start(m_repathinterval);
+		}
+	}
+}
 
 #endif // !SMNAV_BOT_NAV_MESH_NAVIGATOR_H_

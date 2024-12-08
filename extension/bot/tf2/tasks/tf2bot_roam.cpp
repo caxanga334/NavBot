@@ -7,6 +7,7 @@
 #include <util/librandom.h>
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_roam.h"
+#include "tf2bot_attack.h"
 
 class RoamCollector : public INavAreaCollector<CTFNavArea>
 {
@@ -63,6 +64,18 @@ TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskUpdate(CTF2Bot* bot)
 	if (bot->GetRangeTo(m_goal) <= 48.0f)
 	{
 		return Done("Goal Reached!");
+	}
+
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+	if (threat)
+	{
+		if (randomgen->GetRandomInt<int>(0, 100) >= 80)
+		{
+			m_repathtimer.Invalidate();
+			m_nav.Invalidate();
+			return PauseFor(new CTF2BotAttackTask(threat->GetEntity()), "Attacking visible threat!");
+		}
 	}
 
 	if (m_repathtimer.IsElapsed())

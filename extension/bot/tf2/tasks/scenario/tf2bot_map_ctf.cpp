@@ -4,6 +4,7 @@
 #include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"
+#include <bot/tf2/tasks/tf2bot_roam.h>
 #include "tf2bot_map_ctf.h"
 
 TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
@@ -20,6 +21,11 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			return PauseFor(new CTF2BotCTFFetchFlagTask(flag), "Going to fetch the flag!");
 		}
+	}
+
+	if (randomgen->GetRandomInt<int>(0, 1) == 1)
+	{
+		return PauseFor(new CTF2BotRoamTask(), "No flag to deliver or fetch, roaming!");
 	}
 
 	return Continue();

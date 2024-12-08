@@ -303,11 +303,10 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 		return;
 	}
 
-
 	// Collect weapon item definition indexes
 	std::vector<int> myweaponindexes;
-	m_me->GetInventoryInterface()->ForEveryWeapon([&myweaponindexes](const CBotWeapon& weapon) {
-		myweaponindexes.push_back(weapon.GetWeaponEconIndex());
+	m_me->GetInventoryInterface()->ForEveryWeapon([&myweaponindexes](const CBotWeapon* weapon) {
+		myweaponindexes.push_back(weapon->GetWeaponEconIndex());
 	});
 
 	auto start = std::remove_if(m_tobuylist.begin(), m_tobuylist.end(), [&myweaponindexes](const TF2BotUpgradeInfo_t* upgradeinfo) {

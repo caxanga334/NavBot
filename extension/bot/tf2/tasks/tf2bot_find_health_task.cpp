@@ -12,12 +12,51 @@
 
 TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	return TaskResult<CTF2Bot>();
+	m_type = FindSource(bot);
+
+	if (m_type == HealthSource::NONE)
+	{
+		return Done("Failed to find a health source!");
+	}
+
+	CTF2BotPathCost cost(bot);
+	if (!m_nav.ComputePathToPosition(bot, m_sourcepos, cost))
+	{
+		return Done("Failed to build a path to the Health source!");
+	}
+
+	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	return TaskResult<CTF2Bot>();
+	if (!IsSourceStillValid(bot))
+		return Done("Health Source is invalid!");
+
+	if (m_reached && m_failsafetimer.IsElapsed())
+	{
+		return Done("Health collected!");
+	}
+
+	if (bot->GetHealthPercentage() >= 0.98f)
+	{
+		return Done("I'm at full health!");
+	}
+
+	UpdateSourcePosition();
+
+	// if the bot is this close to the dispenser, stop moving
+	static constexpr auto DISPENSER_TOUCH_RANGE = 64.0f;
+
+	if (m_type == HealthSource::DISPENSER && bot->GetRangeTo(m_sourcepos) < DISPENSER_TOUCH_RANGE)
+	{
+		return Continue();
+	}
+
+	CTF2BotPathCost cost(bot);
+	m_nav.Update(bot, m_sourcepos, cost);
+
+	return Continue();
 }
 
 CTF2BotFindHealthTask::HealthSource CTF2BotFindHealthTask::FindSource(CTF2Bot* me)
@@ -98,10 +137,10 @@ CTF2BotFindHealthTask::HealthSource CTF2BotFindHealthTask::FindSource(CTF2Bot* m
 			if (!evaluatedispenser(edict))
 				continue;
 
-			distance_mul = 0.75f; // prefer dispensers over ammopacks
+			distance_mul = 0.75f; // prefer dispensers over health kits
 			currentsource = HealthSource::DISPENSER;
 		}
-		else if (strncasecmp(classname, "item_ammopack", 13) == 0)
+		else if (strncasecmp(classname, "item_healthkit", 14) == 0)
 		{
 			if (!evaluateammopack(edict))
 				continue;
@@ -145,10 +184,10 @@ CTF2BotFindHealthTask::HealthSource CTF2BotFindHealthTask::FindSource(CTF2Bot* m
 
 		if (me->IsDebugging(BOTDEBUG_TASKS))
 		{
-			me->DebugPrintToConsole(BOTDEBUG_TASKS, 153, 156, 255, "%s Found Ammo Source <%i> at %3.2f, %3.2f, %3.2f", me->GetDebugIdentifier(), static_cast<int>(source),
+			me->DebugPrintToConsole(BOTDEBUG_TASKS, 153, 156, 255, "%s Found Health Source Source <%i> at %3.2f, %3.2f, %3.2f \n", me->GetDebugIdentifier(), static_cast<int>(source),
 				m_sourcepos.x, m_sourcepos.y, m_sourcepos.z);
 
-			NDebugOverlay::Text(m_sourcepos, "Ammo Source!", false, 10.0f);
+			NDebugOverlay::Text(m_sourcepos, "Health Source!", false, 10.0f);
 			NDebugOverlay::Sphere(m_sourcepos, 32.0f, 153, 156, 255, true, 10.0f);
 		}
 

@@ -574,8 +574,8 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type, const int volume) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnRoundStateChanged(BotClass* bot) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnFlagTaken(BotClass* bot, CBaseEntity* flag) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnFlagDropped(BotClass* bot, CBaseEntity* flag) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnFlagTaken(BotClass* bot, CBaseEntity* player) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnFlagDropped(BotClass* bot, CBaseEntity* player) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnControlPointCaptured(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnControlPointLost(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnControlPointContested(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
@@ -1036,14 +1036,14 @@ private:
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnRoundStateChanged);
 	}
 
-	void OnFlagTaken(CBaseEntity* flag) override final
+	void OnFlagTaken(CBaseEntity* player) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagTaken, flag);
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagTaken, player);
 	}
 
-	void OnFlagDropped(CBaseEntity* flag) override final
+	void OnFlagDropped(CBaseEntity* player) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagDropped, flag);
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagDropped, player);
 	}
 
 	void OnControlPointCaptured(CBaseEntity* point) override final

@@ -25,6 +25,8 @@ public:
 	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 
+	TaskEventResponseResult<CTF2Bot> OnKilled(CTF2Bot* bot, const CTakeDamageInfo& info) override;
+
 	const char* GetName() const override { return "MainTask"; }
 
 private:

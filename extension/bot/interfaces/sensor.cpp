@@ -397,8 +397,21 @@ std::shared_ptr<const CKnownEntity> ISensor::GetPrimaryKnownThreat(const bool on
 	if (m_knownlist.empty())
 		return nullptr;
 
+	// cached threat from the last call
 	if (m_primarythreatcache)
-		return m_primarythreatcache;
+	{
+		// only visible and primary threat is visible right now.
+		if (onlyvisible && m_primarythreatcache->IsVisibleNow())
+		{
+			return m_primarythreatcache;
+		}
+		else if (!onlyvisible) // allow non visible and we have a cached threat.
+		{
+			return m_primarythreatcache;
+		}
+
+		// if we want only visible threat and the cache is not visible, allow the code below to run and update the cache
+	}
 
 	std::shared_ptr<const CKnownEntity> primarythreat = nullptr;
 

@@ -117,6 +117,7 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	ListenForGameEvent("controlpoint_initialized");
 	ListenForGameEvent("mvm_begin_wave");
 	ListenForGameEvent("mvm_wave_complete");
+	ListenForGameEvent("teamplay_flag_event");
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -166,6 +167,36 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		if (strncasecmp(name, "teamplay_setup_finished", 23) == 0)
 		{
 			m_bInSetup = false;
+			return;
+		}
+
+		if (strncasecmp(name, "teamplay_flag_event", 19) == 0)
+		{
+			edict_t* edict = gamehelpers->EdictOfIndex(event->GetInt("player", -1));
+			IServerEntity* serverent = edict->GetIServerEntity();
+			
+			if (serverent == nullptr)
+			{
+				return;
+			}
+
+			CBaseEntity* entity = serverent->GetBaseEntity();
+
+			TeamFortress2::TFFlagEvent flagevent = static_cast<TeamFortress2::TFFlagEvent>(event->GetInt("eventtype", 0));
+
+			if (flagevent == TeamFortress2::TF_FLAGEVENT_PICKEDUP)
+			{
+				extmanager->ForEachBot([&entity](CBaseBot* bot) {
+					bot->OnFlagTaken(entity);
+				});
+			}
+			else if (flagevent == TeamFortress2::TF_FLAGEVENT_DROPPED)
+			{
+				extmanager->ForEachBot([&entity](CBaseBot* bot) {
+					bot->OnFlagDropped(entity);
+				});
+			}
+
 			return;
 		}
 	}

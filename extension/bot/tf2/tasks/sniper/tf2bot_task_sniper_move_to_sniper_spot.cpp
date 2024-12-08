@@ -65,10 +65,10 @@ void CTF2BotSniperMoveToSnipingSpotTask::FindSniperSpot(CTF2Bot* bot)
 {
 	// TO-DO: Add game mode sniping spots
 
-	GetRandomSnipingSpot(bot, m_goal);
+	GetRandomSnipingSpot(bot);
 }
 
-void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot, Vector& out)
+void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot)
 {
 	std::vector<CTFWaypoint*> spots;
 	auto& thewaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllSniperWaypoints();

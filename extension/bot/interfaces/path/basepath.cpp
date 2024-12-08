@@ -533,6 +533,8 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, std::shared_pt
 
 				// Sometimes there is a railing between the drop and the ground
 
+
+#if PROBLEMATIC
 				trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 				trace_t result;
 				Vector mins(-halfWidth, -halfWidth, mover->GetStepHeight());
@@ -547,8 +549,21 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, std::shared_pt
 					seg2->CopySegment(to.get());
 					seg2->goal = startDrop + Vector(0.0f, 0.0f, mover->GetStepHeight());
 					seg2->type = AIPath::SegmentType::SEGMENT_CLIMB_UP;
-					pathinsert.emplace(newSegment, std::move(seg2), false);
+
+					std::shared_ptr<CBasePathSegment> jumpRunSegment = CreateNewSegment();
+					jumpRunSegment->CopySegment(from.get());
+					jumpRunSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
+
+					Vector runDir = (jumpRunSegment->goal - result.endpos);
+					runDir.z = 0.0f;
+					runDir.NormalizeInPlace();
+					jumpRunSegment->goal = result.endpos + (runDir * (mover->GetHullWidth() * 1.2f));
+
+					pathinsert.emplace(seg2, jumpRunSegment, false);
+					pathinsert.emplace(newSegment, seg2, false);
 				}
+
+#endif
 
 				pathinsert.emplace(to, newSegment, true);
 			}

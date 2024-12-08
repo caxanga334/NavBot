@@ -31,20 +31,20 @@ public:
 
 	/**
 	 * @brief Runs a function on every valid bot weapon
-	 * @tparam T a class with operator() overload with 1 parameter: (const CBotWeapon& weapon)
+	 * @tparam T a class with operator() overload with 1 parameter: (const CBotWeapon* weapon)
 	 * @param functor function to run on every valid weapon
 	 */
 	template <typename T>
 	inline void ForEveryWeapon(T functor) const
 	{
-		for (const CBotWeapon& weapon : m_weapons)
+		for (auto& weapon : m_weapons)
 		{
-			if (!weapon.IsValid())
+			if (!weapon->IsValid())
 			{
 				continue;
 			}
 
-			functor(weapon);
+			functor(weapon.get());
 		}
 	}
 
@@ -62,10 +62,11 @@ public:
 
 	virtual void SelectBestWeaponForThreat(const CKnownEntity* threat);
 
-	virtual const CBotWeapon* GetActiveBotWeapon();
+	virtual std::shared_ptr<CBotWeapon> GetActiveBotWeapon();
 
 private:
-	std::vector<CBotWeapon> m_weapons;
+	std::vector<std::shared_ptr<CBotWeapon>> m_weapons;
+	std::shared_ptr<CBotWeapon> m_cachedActiveWeapon;
 
 protected:
 	CountdownTimer m_updateWeaponsTimer;

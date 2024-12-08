@@ -10,6 +10,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include "bot/tf2/tf2bot.h"
+#include "tf2bot_dead.h"
 #include "tf2bot_taunting.h"
 #include "tf2bot_tactical.h"
 #include "tf2bot_maintask.h"
@@ -102,6 +103,11 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtP
 	return aimat;
 }
 
+TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const CTakeDamageInfo& info)
+{
+	return TrySwitchTo(new CTF2BotDeadTask, PRIORITY_MANDATORY, "I am dead!");
+}
+
 void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 {
 	if (me->GetPlayerInfo()->IsDead())
@@ -152,6 +158,12 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	auto& max = threat->GetEdict()->GetCollideable()->OBBMaxs();
 	Vector top = origin;
 	top.z += max.z - 1.0f;
+
+	// basic general direction check
+	if (!me->IsLookingTowards(center, 0.94f))
+	{
+		return;
+	}
 
 	if (!me->IsLineOfFireClear(origin))
 	{
@@ -213,12 +225,13 @@ void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 
 void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result)
 {
-	const CBotWeapon* myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
-	if (!myweapon) // how?
+	// inventory does't update on every frame, this check is important. generally happens post spawn.
+	if (myweapon.get() == nullptr)
 	{
 #ifdef EXT_DEBUG
-		smutils->LogError(myself, "CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result) -- CBaseBot::GetActiveBotWeapon() is NULL!");
+		Warning("%s CTF2BotMainTask::InternalAimAtEnemyPlayer -- GetActiveBotWeapon() is NULL!", me->GetDebugIdentifier());
 #endif // EXT_DEBUG
 
 		result = player->WorldSpaceCenter();

@@ -29,6 +29,13 @@ void IInventory::Reset()
 	m_weapons.clear();
 	m_weaponSwitchCooldown.Invalidate();
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
+
+	edict_t* weapon = GetBot()->GetActiveWeapon();
+
+	if (weapon != nullptr)
+	{
+		m_cachedActiveWeapon = std::make_shared<CBotWeapon>(weapon);
+	}
 }
 
 void IInventory::Update()
@@ -37,6 +44,13 @@ void IInventory::Update()
 	{
 		m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL);
 		BuildInventory();
+	}
+
+	edict_t* weapon = GetBot()->GetActiveWeapon();
+
+	if (weapon != nullptr && m_cachedActiveWeapon->GetEdict() != weapon)
+	{
+		m_cachedActiveWeapon = std::make_shared<CBotWeapon>(weapon);
 	}
 }
 
@@ -48,10 +62,10 @@ bool IInventory::HasWeapon(std::string classname)
 {
 	for (auto& weapon : m_weapons)
 	{
-		if (!weapon.IsValid())
+		if (!weapon->IsValid())
 			continue;
 
-		const char* clname = weapon.GetBaseCombatWeapon().GetClassname();
+		const char* clname = weapon->GetBaseCombatWeapon().GetClassname();
 
 		if (clname != nullptr)
 		{
@@ -84,7 +98,7 @@ void IInventory::BuildInventory()
 		if (!weapon || weapon->IsFree() || weapon->GetIServerEntity() == nullptr)
 			continue;
 
-		m_weapons.emplace_back(weapon);
+		m_weapons.emplace_back(new CBotWeapon(weapon));
 	}
 }
 
@@ -107,34 +121,34 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 	const CBotWeapon* best = nullptr;
 	int priority = std::numeric_limits<int>::min();
 
-	ForEveryWeapon([&bot, &priority, &rangeToThreat, &best](const CBotWeapon& weapon) {
+	ForEveryWeapon([&bot, &priority, &rangeToThreat, &best](const CBotWeapon* weapon) {
 		
 		// weapon must be usable against enemies
-		if (!weapon.GetWeaponInfo()->IsCombatWeapon())
+		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
 		{
 			return;
 		}
 
 		// Must have ammo
-		if (weapon.GetBaseCombatWeapon().GetClip1() == 0 && bot->GetAmmoOfIndex(weapon.GetBaseCombatWeapon().GetPrimaryAmmoType()) == 0)
+		if (weapon->GetBaseCombatWeapon().GetClip1() == 0 && bot->GetAmmoOfIndex(weapon->GetBaseCombatWeapon().GetPrimaryAmmoType()) == 0)
 		{
 			return;
 		}
 
-		if (rangeToThreat > weapon.GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+		if (rangeToThreat > weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
 		{
 			return; // outside max range
 		}
-		else if (rangeToThreat < weapon.GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
+		else if (rangeToThreat < weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
 		{
 			return; // too close
 		}
 
-		int currentprio = weapon.GetWeaponInfo()->GetPriority();
+		int currentprio = weapon->GetWeaponInfo()->GetPriority();
 
 		if (currentprio > priority)
 		{
-			best = &weapon;
+			best = weapon;
 			priority = currentprio;
 		}
 	});
@@ -150,7 +164,7 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 	}
 }
 
-const CBotWeapon* IInventory::GetActiveBotWeapon()
+std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 {
 	edict_t* weapon = GetBot()->GetActiveWeapon();
 
@@ -159,13 +173,19 @@ const CBotWeapon* IInventory::GetActiveBotWeapon()
 		return nullptr;
 	}
 
-	int index = gamehelpers->IndexOfEdict(weapon);
-
-	for (auto& weapon : m_weapons)
+	if (m_cachedActiveWeapon)
 	{
-		if (weapon.GetIndex() == index)
+		if (m_cachedActiveWeapon->GetEdict() == weapon)
 		{
-			return &weapon;
+			return m_cachedActiveWeapon;
+		}
+	}
+
+	for (auto& weaponptr : m_weapons)
+	{
+		if (weaponptr->GetEdict() == weapon)
+		{
+			return weaponptr;
 		}
 	}
 

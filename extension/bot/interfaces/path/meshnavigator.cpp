@@ -3,9 +3,6 @@
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
-#include <bot/basebot.h>
-#include <bot/interfaces/movement.h>
-#include <bot/interfaces/playercontrol.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <entities/baseentity.h>
@@ -1384,4 +1381,11 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 	}
 
 	return false;
+}
+
+bool CMeshNavigatorAutoRepath::IsRepathNeeded(const Vector& goal)
+{
+	float tolerance = GetGoalTolerance() * GetGoalTolerance();
+
+	return (goal - m_lastGoal).LengthSqr() > tolerance;
 }

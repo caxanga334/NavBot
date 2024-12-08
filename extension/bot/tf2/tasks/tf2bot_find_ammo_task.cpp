@@ -87,13 +87,17 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 
 TaskEventResponseResult<CTF2Bot> CTF2BotFindAmmoTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	bot->GetMovementInterface()->ClearStuckStatus("Repath!");
-	m_repathtimer.Start(0.5f);
+	// don't clear stuck status here, can cause bots to get stuck forever
 
-	CTF2BotPathCost cost(bot);
-	if (!m_nav.ComputePathToPosition(bot, m_sourcepos, cost))
+	if (m_repathtimer.IsElapsed())
 	{
-		return TryDone(PRIORITY_HIGH, "Failed to build a path to the ammo source!");
+		m_repathtimer.Start(0.5f);
+
+		CTF2BotPathCost cost(bot);
+		if (!m_nav.ComputePathToPosition(bot, m_sourcepos, cost))
+		{
+			return TryDone(PRIORITY_HIGH, "Failed to build a path to the ammo source!");
+		}
 	}
 
 	return TryContinue();

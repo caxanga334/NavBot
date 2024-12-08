@@ -167,10 +167,10 @@ void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 {
 	if (m_waypoint != nullptr)
 	{
-		// This should never return NULL for most entities, especially players.
-		Vector* view_ofs = entprops->GetPointerToEntData<Vector>(me->GetEntity(), Prop_Data, "m_vecviewoffset");
-		// use the waypoint origin at eye level as a start point so aim angles are consistent
-		Vector start = m_waypoint->GetOrigin() + *view_ofs;
+		// Use waypoint origin but the eye's Z coordinate.
+		Vector eyePos = me->GetEyeOrigin();
+		Vector start = m_waypoint->GetOrigin();
+		start.z = eyePos.z;
 
 		m_waypoint->ForEveryAngle([this, &me, &start](const QAngle& angle) {
 			Vector forward;

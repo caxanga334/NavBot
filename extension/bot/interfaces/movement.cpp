@@ -482,6 +482,7 @@ bool IMovement::IsGap(const Vector& pos, const Vector& forward)
  * @param fraction trace result fraction
  * @param now When true, check if the bot is able to move right now. Otherwise check if the bot is able to move in the future 
  * (ie: blocked by an entity that can be destroyed)
+ * @param obstacle The obstacle entity will be stored here.
  * @return true if the bot can walk, false otherwise
 */
 bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now, CBaseEntity** obstacle)

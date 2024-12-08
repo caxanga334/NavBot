@@ -52,8 +52,8 @@ public:
 	virtual void OnLostSight(edict_t* subject); // when the bot loses sight of an entity
 	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume); // when the bot hears an entity
 	virtual void OnRoundStateChanged(); // When the round state changes (IE: round start,end, freeze time end, setup time end, etc...)
-	virtual void OnFlagTaken(CBaseEntity* flag); // CTF: Flag was stolen
-	virtual void OnFlagDropped(CBaseEntity* flag); // CTF: Flag was dropped
+	virtual void OnFlagTaken(CBaseEntity* player); // CTF: Flag was stolen
+	virtual void OnFlagDropped(CBaseEntity* player); // CTF: Flag was dropped
 	virtual void OnControlPointCaptured(CBaseEntity* point); // When a control point is captured
 	virtual void OnControlPointLost(CBaseEntity* point); // When a control point is lost
 	virtual void OnControlPointContested(CBaseEntity* point); // When a control point is under siege
@@ -241,7 +241,7 @@ inline void IEventListener::OnRoundStateChanged()
 	}
 }
 
-inline void IEventListener::OnFlagTaken(CBaseEntity* flag)
+inline void IEventListener::OnFlagTaken(CBaseEntity* player)
 {
 	auto vec = GetListenerVector();
 
@@ -249,12 +249,12 @@ inline void IEventListener::OnFlagTaken(CBaseEntity* flag)
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnFlagTaken(flag);
+			listener->OnFlagTaken(player);
 		}
 	}
 }
 
-inline void IEventListener::OnFlagDropped(CBaseEntity* flag)
+inline void IEventListener::OnFlagDropped(CBaseEntity* player)
 {
 	auto vec = GetListenerVector();
 
@@ -262,7 +262,7 @@ inline void IEventListener::OnFlagDropped(CBaseEntity* flag)
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnFlagDropped(flag);
+			listener->OnFlagDropped(player);
 		}
 	}
 }
