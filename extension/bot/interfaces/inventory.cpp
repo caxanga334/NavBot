@@ -18,6 +18,7 @@ IInventory::IInventory(CBaseBot* bot) : IBotInterface(bot)
 {
 	m_weapons.reserve(MAX_WEAPONS);
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
+	m_cachedActiveWeapon = nullptr;
 }
 
 IInventory::~IInventory()
@@ -29,13 +30,6 @@ void IInventory::Reset()
 	m_weapons.clear();
 	m_weaponSwitchCooldown.Invalidate();
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
-
-	edict_t* weapon = GetBot()->GetActiveWeapon();
-
-	if (UtilHelpers::IsValidEdict(weapon))
-	{
-		m_cachedActiveWeapon = std::make_shared<CBotWeapon>(weapon);
-	}
 }
 
 void IInventory::Update()
@@ -44,13 +38,6 @@ void IInventory::Update()
 	{
 		m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL);
 		BuildInventory();
-	}
-
-	edict_t* weapon = GetBot()->GetActiveWeapon();
-
-	if (UtilHelpers::IsValidEdict(weapon) && m_cachedActiveWeapon->GetEdict() != weapon)
-	{
-		m_cachedActiveWeapon = std::make_shared<CBotWeapon>(weapon);
 	}
 }
 
@@ -98,7 +85,8 @@ void IInventory::BuildInventory()
 		if (!UtilHelpers::IsValidEdict(weapon))
 			continue;
 
-		m_weapons.emplace_back(new CBotWeapon(weapon));
+		// IsValidEdict checks if GetIServerEntity return is not NULL
+		m_weapons.emplace_back(new CBotWeapon(weapon->GetIServerEntity()->GetBaseEntity()));
 	}
 }
 

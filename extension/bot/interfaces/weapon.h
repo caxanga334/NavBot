@@ -2,16 +2,14 @@
 #define NAVBOT_WEAPON_STORAGE_INTERFACE_H_
 #pragma once
 
-#include <basehandle.h>
+#include <sdkports/sdk_ehandle.h>
 #include "weaponinfo.h"
 #include <entities/basecombatweapon.h>
-
-struct edict_t;
 
 class CBotWeapon
 {
 public:
-	CBotWeapon(edict_t* entity);
+	CBotWeapon(CBaseEntity* entity);
 	~CBotWeapon();
 
 	// True if the weapon entity is valid
@@ -29,9 +27,9 @@ public:
 	inline T GetModWeaponID() const { return static_cast<T>(m_weaponID); }
 	edict_t* GetEdict() const;
 	CBaseEntity* GetEntity() const;
-	inline int GetIndex() const { return m_handle.GetEntryIndex(); }
+	int GetIndex() const;
 private:
-	CBaseHandle m_handle;
+	CHandle<CBaseEntity> m_handle;
 	std::shared_ptr<WeaponInfo> m_info;
 	entities::HBaseCombatWeapon m_bcw;
 	int m_econindex;
