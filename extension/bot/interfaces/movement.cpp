@@ -813,6 +813,11 @@ void IMovement::StuckMonitor()
 	auto origin = bot->GetAbsOrigin();
 	constexpr auto STUCK_RADIUS = 100.0f; // distance the bot has to move to consider not stuck
 
+	if (!bot->IsAlive())
+	{
+		return;
+	}
+
 	if (m_ladderWait.HasStarted() && !m_ladderWait.IsElapsed())
 	{
 		// not stuck, waiting on a ladder
@@ -851,6 +856,12 @@ void IMovement::StuckMonitor()
 				// resend stuck event
 				bot->OnStuck();
 				TryToUnstuck();
+				m_stuck.counter++; // still stuck, increase counter
+
+				if (m_stuck.counter > extmanager->GetMod()->GetModSettings()->GetStuckSuicideThreshold())
+				{
+					bot->DelayedFakeClientCommand("kill");
+				}
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{

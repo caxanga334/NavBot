@@ -48,6 +48,19 @@
 				"linux"		"8"
 				"linux64"	"8"
 			}
+
+			/** https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/team_objectiveresource.h#L220-L223 
+			 * offset to member m_flCapPercentages
+			 * Starting from the offset of the networked property m_iCPGroup
+			 * Generally will be sizeof(int[MAX_CONTROL_POINTS])
+			*/
+			"CBaseTeamObjectiveResource::m_flCapPercentages"
+			{
+				"windows"	"32"
+				"windows64" "32"
+				"linux"		"32"
+				"linux64"	"32"
+			}
 		}
 	}
 }

@@ -129,6 +129,16 @@ public:
 	template <typename T>
 	T* GetPointerToEntData(CBaseEntity* entity, PropType proptype, const char* prop);
 
+	/**
+	 * @brief Gets the address to an entity property at the given offset. No safety checks!
+	 * @tparam T Variable type to cast to.
+	 * @param entity Entity that contains the property
+	 * @param offset Offset to the property (this + offset)
+	 * @return 
+	 */
+	template <typename T>
+	T* GetPointerToEntData(CBaseEntity* entity, unsigned int offset);
+
 private:
 	bool IsNetworkedEntity(CBaseEntity *pEntity);
 	edict_t *BaseEntityToEdict(CBaseEntity *pEntity);
@@ -264,6 +274,17 @@ inline T* CEntPropUtils::GetPointerToEntData(CBaseEntity* entity, PropType propt
 	}
 
 	return nullptr;
+}
+
+template<typename T>
+inline T* CEntPropUtils::GetPointerToEntData(CBaseEntity* entity, unsigned int offset)
+{
+	if (entity == nullptr)
+	{
+		return nullptr;
+	}
+
+	return (T*)((uint8_t*)entity + offset);
 }
 
 

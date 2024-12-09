@@ -12,6 +12,7 @@
 #include "bot/tf2/tf2bot.h"
 #include "tf2bot_dead.h"
 #include "tf2bot_taunting.h"
+#include "tf2bot_setuptime.h"
 #include "tf2bot_tactical.h"
 #include "tf2bot_maintask.h"
 
@@ -26,6 +27,15 @@ AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	if (CTeamFortress2Mod::GetTF2Mod()->IsInSetup())
+	{
+		if (CTeamFortress2Mod::GetTF2Mod()->GetTeamRole(bot->GetMyTFTeam()) == TeamFortress2::TeamRoles::TEAM_ROLE_ATTACKERS &&
+			bot->GetMyClassType() != TeamFortress2::TFClass_Medic)
+		{
+			return SwitchTo(new CTF2BotSetupTimeTask, "In setup time. Starting setup time behavior!");
+		}
+	}
+
 	if (tf2lib::IsPlayerInCondition(bot->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
 	{
 		return PauseFor(new CTF2BotTauntingTask, "Taunting!");

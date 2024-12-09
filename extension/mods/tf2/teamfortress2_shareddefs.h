@@ -498,6 +498,7 @@ namespace TeamFortress2
 			m_bTeamCanCap = nullptr;
 			m_bInMiniRound = nullptr;
 			m_bCPLocked = nullptr;
+			m_flCapPercentages = nullptr;
 			m_iOwner = nullptr;
 		}
 
@@ -507,6 +508,7 @@ namespace TeamFortress2
 		bool* m_bTeamCanCap; // [MAX_CONTROL_POINTS * MAX_CONTROL_POINT_TEAMS]
 		bool* m_bInMiniRound; // [MAX_CONTROL_POINTS]
 		bool* m_bCPLocked; // [MAX_CONTROL_POINTS]
+		float* m_flCapPercentages; // [MAX_CONTROL_POINTS]
 		int* m_iOwner; // [MAX_CONTROL_POINTS]
 
 		bool IsPlayingMiniRounds() const
@@ -543,6 +545,19 @@ namespace TeamFortress2
 		bool TeamCanCapPoint(int index, int team) const
 		{
 			return m_bTeamCanCap[index + (team * MAX_CONTROL_POINTS)];
+		}
+
+		/**
+		 * @brief Gets the control point capture percentage.
+		 * 
+		 * Note: the percentage is inverted. IE: 0.90 means it's 10% towards capture.
+		 * Will be 0 when not capping.
+		 * @param index Control Point index
+		 * @return Capture percentage.
+		 */
+		float GetCapturePercentage(int index) const
+		{
+			return m_flCapPercentages[index];
 		}
 	};
 }

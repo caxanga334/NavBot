@@ -56,10 +56,17 @@ namespace UtilHelpers
 	bool HasDataTable(SendTable* root, const char* name);
 	bool FindDataTable(SendTable* pTable, const char* name, sm_sendprop_info_t* info, unsigned int offset);
 	Vector getOBBCenter(edict_t* pEntity);
-	Vector collisionToWorldSpace(const Vector& in, edict_t* pEntity);
+	Vector collisionToWorldSpace(const Vector& in, edict_t* pEntity); 
+	Vector collisionToWorldSpace(const Vector& in, ICollideable* collider);
 	Vector getWorldSpaceCenter(edict_t* pEntity);
+	Vector getWorldSpaceCenter(CBaseEntity* pEntity);
+	const Vector& getEntityOrigin(edict_t* entity);
+	const Vector& getEntityOrigin(CBaseEntity* entity);
+	void getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs);
+	void getEntityBounds(CBaseEntity* entity, Vector& mins, Vector& maxs);
 	bool pointIsWithinTrigger(edict_t* pEntity, const Vector& vPoint);
 	bool isBoundsDefinedInEntitySpace(edict_t* pEntity);
+	bool isBoundsDefinedInEntitySpace(ICollideable* collider);
 	int FindEntityByClassname(int start, const char* searchname);
 	int FindEntityInSphere(int start, const Vector& center, float radius);
 	int FindEntityByNetClass(int start, const char* classname);
@@ -449,6 +456,39 @@ namespace UtilHelpers
 	 * @return True if the given point is inside the sphere. False otherwise.
 	 */
 	bool PointIsInsideSphereSqr(const Vector& point, const Vector& sphereCenter, const float sphereRadius);
+
+	void GetRandomPointInsideAABB(const Vector& mins, const Vector& maxs, Vector& out, const float margin = 0.0f);
+
+	/**
+	 * @brief Converts a string to boolean.
+	 * 
+	 * Supports the following words: yes no true false
+	 * 
+	 * Any non zero number will be considered as true.
+	 * @param str String to convert.
+	 * @return Boolean output.
+	 */
+	inline bool StringToBoolean(const char* str)
+	{
+		if (strncasecmp(str, "yes", 3) == 0)
+		{
+			return true;
+		}
+		else if (strncasecmp(str, "true", 4) == 0)
+		{
+			return true;
+		}
+		else if (strncasecmp(str, "no", 2) == 0)
+		{
+			return false;
+		}
+		else if (strncasecmp(str, "false", 5) == 0)
+		{
+			return false;
+		}
+
+		return atoi(str) != 0;
+	}
 
 	inline const char* GetEngineBranchName()
 	{

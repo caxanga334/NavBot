@@ -1,8 +1,9 @@
 #ifndef EXT_BASE_MOD_H_
 #define EXT_BASE_MOD_H_
 
+#include <memory>
 #include <optional>
-
+#include <ITextParsers.h>
 #include <sdkports/eventlistenerhelper.h>
 
 class CBaseExtPlayer;
@@ -10,9 +11,10 @@ class CBaseBot;
 class CNavMesh;
 
 #include "gamemods_shared.h"
+#include "modsettings.h"
 
 // Base game mod class
-class CBaseMod : public CEventListenerHelper
+class CBaseMod : public CEventListenerHelper, public ITextListener_SMC
 {
 public:
 	CBaseMod();
@@ -23,6 +25,24 @@ public:
 
 	// Called when a game event is fired
 	void FireGameEvent(IGameEvent* event) override {}
+
+	void ReadSMC_ParseStart() override 
+	{
+		m_parser_depth = 0;
+	}
+
+	void ReadSMC_ParseEnd(bool halted, bool failed) override {}
+
+	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
+
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
+
+	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
+
+	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
+
+	// Creates the mod settings object, override to use mod specific mod settings
+	virtual CModSettings* CreateModSettings() const { return new CModSettings; }
 
 	// Called every server frame
 	virtual void Frame() {}
@@ -58,10 +78,19 @@ public:
 	virtual void OnNavMeshLoaded() {}
 	// Called when the nav mesh is destroyed. Any stored nav mesh data is invalid at this point. Use this to clear anything that's stored on the mod.
 	virtual void OnNavMeshDestroyed() {}
+
+	// Mod settings data. Unavailable until a map is loaded.
+	const CModSettings* GetModSettings() const { return m_modsettings.get(); }
+protected:
+	// SMC parser data
+	int m_parser_depth;
+
 private:
 	CBaseHandle m_playerresourceentity;
-
+	std::unique_ptr<CModSettings> m_modsettings;
 	void InternalFindPlayerResourceEntity();
+
+	void ParseModSettings();
 };
 
 #endif // !EXT_BASE_MOD_H_

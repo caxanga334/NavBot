@@ -211,6 +211,15 @@ void CTeamFortress2Mod::Update()
 		// some community maps have multiple payloads, we need to update this from time to time.
 		FindPayloadCarts();
 	}
+
+	if (m_bInSetup)
+	{
+		if (m_setupExpireTimer.IsElapsed())
+		{
+			Warning("[NAVBOT-TF2] \"teamplay_setup_finished\" game event didn't fire!\n");
+			m_bInSetup = false;
+		}
+	}
 }
 
 void CTeamFortress2Mod::OnMapStart()
@@ -861,8 +870,9 @@ void CTeamFortress2Mod::FindControlPoints()
 void CTeamFortress2Mod::CheckForSetup()
 {
 	bool setup = false;
+	int setuplength = 0;
 
-	UtilHelpers::ForEachEntityOfClassname("team_round_timer", [&setup](int index, edict_t* edict, CBaseEntity* entity) {
+	UtilHelpers::ForEachEntityOfClassname("team_round_timer", [&setup, &setuplength](int index, edict_t* edict, CBaseEntity* entity) {
 		
 		int disabled = 0;
 		entprops->GetEntProp(index, Prop_Send, "m_bIsDisabled", disabled);
@@ -880,7 +890,7 @@ void CTeamFortress2Mod::CheckForSetup()
 			return true; // exit early, keep searching
 		}
 
-		int setuplength = 0;
+		
 		entprops->GetEntProp(index, Prop_Send, "m_nSetupTimeLength", setuplength);
 
 		if (setuplength > 0)
@@ -898,6 +908,15 @@ void CTeamFortress2Mod::CheckForSetup()
 #endif // EXT_DEBUG
 
 	m_bInSetup = setup;
+
+	if (setup)
+	{
+		m_setupExpireTimer.Start(static_cast<float>(setuplength) + 5.0f);
+	}
+	else
+	{
+		m_setupExpireTimer.Invalidate();
+	}
 }
 
 void CTeamFortress2Mod::UpdateObjectiveResource()
@@ -933,6 +952,22 @@ void CTeamFortress2Mod::UpdateObjectiveResource()
 	m_objectiveResourcesData.m_bInMiniRound = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bInMiniRound");
 	m_objectiveResourcesData.m_bCPLocked = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bCPLocked");
 	m_objectiveResourcesData.m_iOwner = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iOwner");
+
+	{
+		unsigned int offset = 0;
+		entprops->HasEntProp(ref, Prop_Send, "m_iCPGroup", &offset);
+
+		int offset_from_gd = 0;
+		
+		if (!extension->GetExtensionGameData()->GetOffset("CBaseTeamObjectiveResource::m_flCapPercentages", &offset_from_gd))
+		{
+			smutils->LogError(myself, "CBaseTeamObjectiveResource::m_flCapPercentages missing from gamedata file! Using hardcoded offset value!");
+
+			offset_from_gd = static_cast<int>(sizeof(int[MAX_CONTROL_POINTS]));
+		}
+
+		m_objectiveResourcesData.m_flCapPercentages = entprops->GetPointerToEntData<float>(entity, offset + static_cast<unsigned int>(offset_from_gd));
+	}
 
 	if (sm_navbot_tf_mod_debug.GetBool())
 	{
@@ -1354,9 +1389,55 @@ CON_COMMAND_F(sm_navbot_tf_list_control_points, "[TF2] Shows a list of control p
 
 #ifdef EXT_DEBUG
 
-CON_COMMAND_F(sm_navbot_tf_debug_update_payload_carts, "[TF2] Forces NavBot to update the current goal payload cart. \n", FCVAR_CHEAT)
+CON_COMMAND_F(sm_navbot_tf_debug_update_payload_carts, "[TF2] Forces NavBot to update the current goal payload cart.", FCVAR_CHEAT)
 {
 	CTeamFortress2Mod::GetTF2Mod()->Debug_UpdatePayload();
+}
+
+CON_COMMAND(sm_navbot_tf_debug_capture_percentages, "Reads cap percentages from memory.")
+{
+	int ref = UtilHelpers::FindEntityByNetClass(INVALID_EHANDLE_INDEX, "CTFObjectiveResource");
+
+	if (ref == INVALID_EHANDLE_INDEX)
+	{
+		if (sm_navbot_tf_mod_debug.GetBool())
+		{
+			Warning("Failed to locate CTFObjectiveResource! \n");
+		}
+		return;
+	}
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(ref);
+
+	if (entity == nullptr)
+	{
+		if (sm_navbot_tf_mod_debug.GetBool())
+		{
+			Warning("Found reference %i but failed to retreive CBaseEntity pointer!\n", ref);
+		}
+		return;
+	}
+
+	unsigned int offset = 0;
+
+	if (entprops->HasEntProp(ref, Prop_Send, "m_iCPGroup", &offset))
+	{
+		Msg("Found m_iCPGroup offset: %i\n", offset);
+
+		// size of m_iCPGroup
+		constexpr size_t offset_to = sizeof(int[MAX_CONTROL_POINTS]);
+
+		float* percentages = entprops->GetPointerToEntData<float>(entity, offset + static_cast<unsigned int>(offset_to));
+
+		for (int i = 0; i < MAX_CONTROL_POINTS; i++)
+		{
+			Msg("Capture Percentage for Point #%i : %3.2f\n", i, percentages[i]);
+		}
+	}
+	else
+	{
+		Warning("No m_iCPGroup ???\n");
+	}
 }
 
 #endif // EXT_DEBUG

@@ -151,6 +151,24 @@ public:
 	bool operator()( CNavArea *area );
 };
 
+
+class CollectOverlappingAreas
+{
+public:
+	bool operator()(CNavArea* area);
+
+	void Reset()
+	{
+		overlapping_areas.clear();
+		added_areas.clear();
+	}
+
+	std::vector<CNavArea*> overlapping_areas;
+
+private:
+	std::unordered_set<unsigned int> added_areas;
+};
+
 //--------------------------------------------------------------------------------------------------------
 abstract_class INavAvoidanceObstacle
 {
@@ -482,6 +500,7 @@ public:
 	// Edit callbacks from ConCommands
 	void CommandNavDelete( void );										// delete current area
 	void CommandNavDeleteMarked( void );								// delete current marked area
+	void CommandNavDeleteOverlappingFromSelectedSet();					// delete overlapping areas from the selected set
 
 	virtual void CommandNavFloodSelect( const CCommand &args );			// select current area and all connected areas, recursively
 	void CommandNavToggleSelectedSet( void );							// toggles all areas into/out of the selected set

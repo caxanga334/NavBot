@@ -94,14 +94,26 @@ TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
+TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	// if the bot was using a rnadom position, find another after resuming.
+	if (!m_hasgoal)
+	{
+		if (!FindRandomGoalPosition(bot))
+		{
+			return Done("Failed to find a random destination!");
+		}
+	}
+
+	return Continue();
+}
+
 TaskEventResponseResult<CTF2Bot> CTF2BotRoamTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
 	if (++m_failcount > 30)
 	{
 		return TryDone(PRIORITY_HIGH, "Stuck limit reached, abandoning!");
 	}
-
-	bot->GetMovementInterface()->ClearStuckStatus("Repath");
 
 	m_repathtimer.Start(randomgen->GetRandomReal<float>(1.0f, 3.0f));
 	CTF2BotPathCost cost(bot);

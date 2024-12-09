@@ -1259,8 +1259,67 @@ void CNavMesh::CommandNavDeleteMarked( void )
 	SetMarkedArea( NULL );				// unmark the mark area 
 	SetMarkedLadder( NULL );			// unmark the mark ladder
 	m_markedCorner = NUM_CORNERS;		// clear the corner selection 
-} 
+}
 
+void CNavMesh::CommandNavDeleteOverlappingFromSelectedSet()
+{
+	if (IsSelectedSetEmpty())
+	{
+		Warning("Selected set is empty!");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	auto& selectedAreas = GetSelectedAreaSet();
+	std::vector<unsigned int> oldareas;
+
+	FOR_EACH_VEC(selectedAreas, i)
+	{
+		CNavArea* area = selectedAreas[i];
+		oldareas.push_back(area->GetID());
+	}
+
+	CollectOverlappingAreas collector;
+
+	CNavMesh::ForAllAreas(collector);
+	int deleted = 0;
+
+	for (auto area : collector.overlapping_areas)
+	{
+		if (IsInSelectedSet(area))
+		{
+			TheNavMesh->OnEditDestroyNotify(area);
+			TheNavAreas.FindAndRemove(area);
+			TheNavMesh->DestroyArea(area);
+			deleted++;
+		}
+	}
+
+	StripNavigationAreas();
+
+	ClearSelectedSet();
+
+	for (auto& id : oldareas)
+	{
+		CNavArea* area = GetNavAreaByID(id);
+
+		if (area != nullptr)
+		{
+			AddToSelectedSet(area);
+		}
+	}
+
+	SetMarkedArea(NULL);				// unmark the mark area 
+	SetMarkedLadder(NULL);			// unmark the mark ladder
+	m_markedCorner = NUM_CORNERS;		// clear the corner selection
+	Msg("Deleted %i overlapping areas!\n", deleted);
+	PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+CON_COMMAND_F(sm_nav_delete_overlapping_from_selected_set, "Deletes overlapping areas from the selected set.", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavDeleteOverlappingFromSelectedSet();
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -4578,3 +4637,4 @@ void CNavMesh::CommandNavMarkVolume(const CCommand& args)
 		PlayEditSound(EditSoundType::SOUND_GENERIC_BLIP);
 	}
 }
+

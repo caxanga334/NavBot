@@ -63,8 +63,12 @@ TaskResult<CTF2Bot> CTF2BotAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Target has escaped me!");
 	}
 
-	CTF2BotPathCost cost(bot);
-	m_nav.Update(bot, pEntity, cost, nullptr);
+	// don't get too close to them
+	if (!bot->GetSensorInterface()->IsAbleToSee(pEntity) || bot->GetRangeTo(pEntity) > 250.0f)
+	{
+		CTF2BotPathCost cost(bot);
+		m_nav.Update(bot, pEntity, cost, nullptr);
+	}
 
 	if (threat && known && threat.get() == known.get())
 	{

@@ -45,11 +45,18 @@ public:
 	class StuckStatus
 	{
 	public:
+		StuckStatus()
+		{
+			isstuck = false;
+			counter = 0;
+		}
+
 		bool isstuck; // is the bot stuck
 		IntervalTimer stucktimer; // how long the bot has been stuck
 		CountdownTimer stuckrechecktimer; // for delays between stuck events
 		Vector stuckpos; // position where the bot got stuck
 		IntervalTimer movementrequesttimer; // Time since last request to move the bot
+		int counter; // how many stuck checks returned as stuck
 
 		inline void ClearStuck(const Vector& pos)
 		{
@@ -58,6 +65,7 @@ public:
 			this->stuckrechecktimer.Invalidate();
 			this->movementrequesttimer.Invalidate();
 			this->stuckpos = pos;
+			this->counter = 0;
 		}
 
 		inline void Stuck(CBaseBot* bot)
@@ -65,6 +73,7 @@ public:
 			this->isstuck = true;
 			this->stucktimer.Start();
 			this->stuckrechecktimer.Start(1.0f);
+			this->counter++;
 		}
 
 		inline void UpdateNotStuck(const Vector& pos)
@@ -73,6 +82,7 @@ public:
 			this->stucktimer.Start();
 			this->stuckrechecktimer.Start(1.0f);
 			this->stuckpos = pos;
+			this->counter = 0;
 		}
 
 		inline bool IsIdle() const
@@ -93,6 +103,7 @@ public:
 			this->stuckrechecktimer.Invalidate();
 			this->movementrequesttimer.Invalidate();
 			this->stuckpos = vec3_origin;
+			this->counter = 0;
 		}
 
 		inline void OnMovementRequested()
@@ -225,7 +236,8 @@ public:
 	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
 	// Returns the Nav Ladder the bot is using if one.
 	inline const CNavLadder* GetNavLadder() const { return m_ladder; }
-
+	
+	inline int GetStuckCount() const { return m_stuck.counter; }
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	CountdownTimer m_braketimer; // Timer for forced braking

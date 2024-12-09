@@ -18,6 +18,7 @@
 #include <bot/tf2/tasks/sniper/tf2bot_task_sniper_move_to_sniper_spot.h>
 #include <bot/tf2/tasks/spy/tf2bot_task_spy_infiltrate.h>
 #include <bot/tf2/tasks/scenario/deathmatch/tf2bot_deathmatch.h>
+#include "scenario/controlpoints/tf2bot_controlpoints_monitor.h"
 #include "scenario/payload/tf2bot_task_push_payload.h"
 #include "scenario/mvm/tf2bot_mvm_idle.h"
 
@@ -130,6 +131,11 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me)
 		return new CTF2BotCTFMonitorTask;
 	case TeamFortress2::GameModeType::GM_PL:
 		return new CTF2BotPushPayloadTask;
+	case TeamFortress2::GameModeType::GM_CP:
+	case TeamFortress2::GameModeType::GM_ADCP:
+	case TeamFortress2::GameModeType::GM_ARENA: // arena may need it's own task
+	case TeamFortress2::GameModeType::GM_TC: // same for TC
+		return new CTF2BotControlPointMonitorTask;
 	default:
 		break;
 	}

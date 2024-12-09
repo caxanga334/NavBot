@@ -67,21 +67,30 @@ public:
 	{
 		m_repathinterval = repathInterval;
 		m_repathTimer.Invalidate();
+		m_failCount = 0;
 	}
 
 	void Invalidate() override
 	{
 		m_repathTimer.Invalidate();
+		CMeshNavigator::Invalidate();
 	}
 
 	template <typename CF>
 	void Update(CBaseBot* bot, const Vector& goal, CF& costFunctor);
+
+	// Resets the path failure counter
+	void ResetFailures() { m_failCount = 0; }
+
+	// Number of times it failed to build a path to the goal position
+	int GetPathBuildFailureCount() const { return m_failCount; }
 
 private:
 	float m_repathinterval;
 	CountdownTimer m_repathTimer; // Time until next repath
 	CountdownTimer m_failTimer; // Time to wait if the path failed
 	Vector m_lastGoal; // goal from the last valid path
+	int m_failCount; // number of times it failed to build a path
 
 	template <typename CF>
 	void RefreshPath(CBaseBot* bot, const Vector& goal, CF& costFunctor);
@@ -134,6 +143,7 @@ inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& g
 		{
 			Invalidate();
 			m_failTimer.Start(1.0f); // Wait one second before repath
+			m_failCount++;
 		}
 		else
 		{

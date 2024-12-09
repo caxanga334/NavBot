@@ -101,7 +101,9 @@ namespace tfentities
 		HTeamControlPoint(CBaseEntity* entity) : HTFBaseEntity(entity) {}
 
 		int GetGroup() const;
+		// Control Point index
 		int GetPointIndex() const;
+		// Same as GetPointIndex, for RCBot2 compat
 		int GetArea() const { return GetPointIndex(); }
 		TeamFortress2::TFTeam GetDefaultOwner() const;
 		bool IsLocked() const;

@@ -164,6 +164,11 @@ float CBaseBot::GetRangeTo(edict_t* edict) const
 	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).Length();
 }
 
+float CBaseBot::GetRangeTo(CBaseEntity* entity) const
+{
+	return (GetAbsOrigin() - reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin()).Length();
+}
+
 float CBaseBot::GetRangeToSqr(const Vector& pos) const
 {
 	return (GetAbsOrigin() - pos).LengthSqr();
@@ -172,6 +177,11 @@ float CBaseBot::GetRangeToSqr(const Vector& pos) const
 float CBaseBot::GetRangeToSqr(edict_t* edict) const
 {
 	return (GetAbsOrigin() - edict->GetCollideable()->GetCollisionOrigin()).LengthSqr();
+}
+
+float CBaseBot::GetRangeToSqr(CBaseEntity* entity) const
+{
+	return (GetAbsOrigin() - reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin()).LengthSqr();
 }
 
 bool CBaseBot::IsRangeGreaterThan(const Vector& pos, const float range) const
@@ -186,6 +196,12 @@ bool CBaseBot::IsRangeGreaterThan(edict_t* edict, const float range) const
 	return to.Length() > range;
 }
 
+bool CBaseBot::IsRangeGreaterThan(CBaseEntity* entity, const float range) const
+{
+	Vector to = (GetAbsOrigin() - reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin());
+	return to.Length() > range;
+}
+
 bool CBaseBot::IsRangeLessThan(const Vector& pos, const float range) const
 {
 	Vector to = (pos - GetAbsOrigin());
@@ -195,6 +211,12 @@ bool CBaseBot::IsRangeLessThan(const Vector& pos, const float range) const
 bool CBaseBot::IsRangeLessThan(edict_t* edict, const float range) const
 {
 	Vector to = (edict->GetCollideable()->GetCollisionOrigin() - GetAbsOrigin());
+	return to.Length() < range;
+}
+
+bool CBaseBot::IsRangeLessThan(CBaseEntity* entity, const float range) const
+{
+	Vector to = (GetAbsOrigin() - reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin());
 	return to.Length() < range;
 }
 

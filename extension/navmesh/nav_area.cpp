@@ -5188,6 +5188,51 @@ bool SelectOverlappingAreas::operator()( CNavArea *area )
 	return true;
 }
 
+bool CollectOverlappingAreas::operator()(CNavArea* area)
+{
+	CNavArea* overlappingArea = NULL;
+	CNavLadder* overlappingLadder = NULL;
+
+	Vector nw = area->GetCorner(NORTH_WEST);
+	Vector se = area->GetCorner(SOUTH_EAST);
+	Vector start = nw;
+	start.x += navgenparams->generation_step_size / 2;
+	start.y += navgenparams->generation_step_size / 2;
+
+	while (start.x < se.x)
+	{
+		start.y = nw.y + navgenparams->generation_step_size / 2;
+		while (start.y < se.y)
+		{
+			start.z = area->GetZ(start.x, start.y);
+			Vector end = start;
+			start.z -= navgenparams->step_height;
+			end.z += navgenparams->human_height;
+
+			if (TheNavMesh->FindNavAreaOrLadderAlongRay(start, end, &overlappingArea, &overlappingLadder, area))
+			{
+				if (overlappingArea)
+				{
+					if (added_areas.find(overlappingArea->GetID()) == added_areas.end())
+					{
+						this->overlapping_areas.push_back(overlappingArea);
+						added_areas.insert(overlappingArea->GetID());
+					}
+
+					if (added_areas.find(area->GetID()) == added_areas.end())
+					{
+						this->overlapping_areas.push_back(area);
+						added_areas.insert(area->GetID());
+					}
+				}
+			}
+
+			start.y += navgenparams->generation_step_size;
+		}
+		start.x += navgenparams->generation_step_size;
+	}
+	return true;
+}
 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavSelectOverlapping( void )

@@ -220,6 +220,22 @@ Vector UtilHelpers::collisionToWorldSpace(const Vector& in, edict_t* pEntity)
 	return result;
 }
 
+Vector UtilHelpers::collisionToWorldSpace(const Vector& in, ICollideable* collider)
+{
+	Vector result;
+
+	if (!isBoundsDefinedInEntitySpace(collider) || collider->GetCollisionAngles() == vec3_angle)
+	{
+		VectorAdd(in, collider->GetCollisionOrigin(), result);
+	}
+	else
+	{
+		VectorTransform(in, collider->CollisionToWorldTransform(), result);
+	}
+
+	return result;
+}
+
 /**
  * Gets the entity world center. Clone of WorldSpaceCenter()
  * @param pEntity	The entity to get the center from
@@ -230,6 +246,43 @@ Vector UtilHelpers::getWorldSpaceCenter(edict_t* pEntity)
 	Vector result = getOBBCenter(pEntity);
 	result = collisionToWorldSpace(result, pEntity);
 	return result;
+}
+
+Vector UtilHelpers::getWorldSpaceCenter(CBaseEntity* pEntity)
+{
+	ICollideable* collider = reinterpret_cast<IServerEntity*>(pEntity)->GetCollideable();
+
+	if (collider == nullptr)
+	{
+		return vec3_origin;
+	}
+
+	Vector result;
+	VectorLerp(collider->OBBMins(), collider->OBBMaxs(), 0.5f, result);
+	result = collisionToWorldSpace(result, collider);
+	return result;
+}
+
+const Vector& UtilHelpers::getEntityOrigin(edict_t* entity)
+{
+	return entity->GetCollideable()->GetCollisionOrigin();
+}
+
+const Vector& UtilHelpers::getEntityOrigin(CBaseEntity* entity)
+{
+	return reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin();
+}
+
+void UtilHelpers::getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs)
+{
+	mins = entity->GetCollideable()->OBBMins();
+	maxs = entity->GetCollideable()->OBBMaxs();
+}
+
+void UtilHelpers::getEntityBounds(CBaseEntity* entity, Vector& mins, Vector& maxs)
+{
+	mins = reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->OBBMins();
+	maxs = reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->OBBMaxs();
 }
 
 /**
@@ -253,6 +306,11 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(edict_t* pEntity)
 {
 	return ((pEntity->GetCollideable()->GetSolidFlags() & FSOLID_FORCE_WORLD_ALIGNED) == 0 &&
 		pEntity->GetCollideable()->GetSolid() != SOLID_BBOX && pEntity->GetCollideable()->GetSolid() != SOLID_NONE);
+}
+
+bool UtilHelpers::isBoundsDefinedInEntitySpace(ICollideable* collider)
+{
+	return ((collider->GetSolidFlags() & FSOLID_FORCE_WORLD_ALIGNED) == 0 && collider->GetSolid() != SOLID_BBOX && collider->GetSolid() != SOLID_NONE);
 }
 
 /// @brief Searches for entities by classname
@@ -399,7 +457,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 	for (int i = ((start != -1) ? start : 0); i < gpGlobals->maxEntities; i++)
 	{
 		current = gamehelpers->EdictOfIndex(i);
-		if (current == nullptr || current->IsFree())
+		if (!IsValidEdict(current))
 		{
 			continue;
 		}
@@ -1275,5 +1333,12 @@ bool UtilHelpers::PointIsInsideSphereSqr(const Vector& point, const Vector& sphe
 {
 	float distance = powf((point.x - sphereCenter.x), 2.0f) + powf((point.y - sphereCenter.y), 2.0f) + powf((point.z - sphereCenter.z), 2.0f);
 	return distance < sphereRadius * sphereRadius;
+}
+
+void UtilHelpers::GetRandomPointInsideAABB(const Vector& mins, const Vector& maxs, Vector& out, const float margin)
+{
+	out.x = randomgen->GetRandomReal<float>(mins.x + margin, maxs.x - margin);
+	out.y = randomgen->GetRandomReal<float>(mins.y + margin, maxs.y - margin);
+	out.z = randomgen->GetRandomReal<float>(mins.z + margin, maxs.z - margin);
 }
 

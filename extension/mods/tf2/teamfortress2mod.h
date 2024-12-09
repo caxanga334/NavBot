@@ -5,6 +5,7 @@
 #include <array>
 #include <unordered_map>
 #include <string>
+#include <sdkports/sdk_timers.h>
 #include <bot/interfaces/weaponinfo.h>
 #include <mods/basemod.h>
 #include <sdkports/sdk_ehandle.h>
@@ -91,6 +92,7 @@ private:
 	CHandle<CBaseEntity> m_objecteResourceEntity;
 	TeamFortress2::TFObjectiveResource m_objectiveResourcesData;
 	bool m_bInSetup;
+	CountdownTimer m_setupExpireTimer; // safety timer in case the setup end event doesn't fire.
 	std::vector<CTFWaypoint*> m_sniperWaypoints;
 	std::vector<CTFWaypoint*> m_sentryWaypoints;
 	std::vector<CTFWaypoint*> m_dispenserWaypoints;
