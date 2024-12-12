@@ -75,11 +75,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5.3.0
         with:
-          python-version: '3.11'
+          python-version: '3.8'
   
       - name: Setup AMBuild
         run: |
-          python -m pip install wheel
+          python -m pip install --upgrade pip setuptools wheel
           pip install git+https://github.com/alliedmodders/ambuild
 
       - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
