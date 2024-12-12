@@ -318,8 +318,8 @@ std::string tfentities::HTeamControlPoint::GetPrintName() const
 	if (entprops->GetEntPropString(GetIndex(), Prop_Data, "m_iszPrintName", result, size, len))
 	{
 		ret.assign(result);
-		return std::move(ret);
+		return ret;
 	}
 
-	return std::move(ret);
+	return ret;
 }

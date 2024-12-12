@@ -3420,12 +3420,12 @@ void CNavMesh::DestroyArea( CNavArea *pArea ) const
 
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
 {
-	return std::move(std::make_shared<CWaypoint>());
+	return std::make_shared<CWaypoint>();
 }
 
 std::shared_ptr<CNavVolume> CNavMesh::CreateVolume() const
 {
-	return std::move(std::make_shared<CNavVolume>());
+	return std::make_shared<CNavVolume>();
 }
 
 void CNavMesh::RebuildWaypointMap()

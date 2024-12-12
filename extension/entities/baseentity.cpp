@@ -381,7 +381,7 @@ matrix3x4_t entities::HBaseEntity::EntityToWorldTransform() const
 
 	matrix3x4_t result;
 	CalcAbsolutePosition(result);
-	return std::move(result);
+	return result;
 }
 
 void entities::HBaseEntity::ComputeAbsPosition(const Vector& vecLocalPosition, Vector* pAbsPosition) const

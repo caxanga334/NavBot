@@ -16,8 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         buildjobs:
-          - windows-x86
-          - windows-x64
+          - windows-latest
           - linux-stable
 
         include:
@@ -25,25 +24,14 @@ jobs:
             sm_branch: "1.12-dev"
             sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm'
           
-          - buildjobs: windows-x86
+          - buildjobs: windows-latest
             os_version: windows-latest
             identifier: 'Windows Latest (x86)'
-            msvc_arch: 'x86'
-            ambuild_target: 'x86'
+            ambuild_target: 'x86,x86_64'
             package_name: 'windows-x86'
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
-
-          - buildjobs: windows-x64
-            os_version: windows-latest
-            identifier: 'Windows Latest (x86-64)'
-            msvc_arch: 'x64'
-            ambuild_target: 'x86_64'
-            package_name: 'windows-x86-64'
-            libsym_ext: 'dll'
-            dbgsym_ext: 'pdb'
-            build_sdks: 'tf2'
 
           - buildjobs: linux-stable
             os_version: ubuntu-20.04
@@ -65,12 +53,6 @@ jobs:
           sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx }} g++-multilib
           echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
           echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
-
-      - name: Install MSVC for ${{ matrix.identifier }}
-        if: runner.os == 'Windows'
-        uses: microsoft/setup-msbuild@v2
-        with:
-          msbuild-architecture: ${{ matrix.msvc_arch }}
 
       - name: Setup Python
         uses: actions/setup-python@v5.3.0
@@ -148,6 +130,17 @@ jobs:
       fail-fast: false
       matrix:
         sm_version: [ '1.12.x' ]
+    env:
+      SOURCEFILES_PATH: ${{ github.workspace }}/sourcefiles
+      TPINCLUDES_PATH: ${{ github.workspace }}/thirdparty/includes
+      NAVBOTINC_PATH: ${{ github.workspace }}/navbot/scripting/include
+      BUILD_PATH: ${{ github.workspace }}/navbot/scripting
+      PACKAGE_PATH: ${{ github.workspace }}/build/package
+      CONFIGS_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/configs
+      SMDATA_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/data
+      GAMEDATA_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/gamedata
+      BINARY_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/plugins
+      LOC_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/translations
 
     steps:
       - name: Fetch Extension
@@ -165,20 +158,6 @@ jobs:
         uses: rumblefrog/setup-sp@master
         with:
           version: ${{ matrix.sm_version }}
-  
-
-      - name: Set environment variables
-        run: |
-          echo "SOURCEFILES_PATH=$GITHUB_WORKSPACE/sourcefiles" >> $GITHUB_ENV
-          echo "TPINCLUDES_PATH=$GITHUB_WORKSPACE/thirdparty/includes" >> $GITHUB_ENV
-          echo "NAVBOTINC_PATH=$GITHUB_WORKSPACE/navbot/scripting/include" >> $GITHUB_ENV
-          echo "BUILD_PATH=$GITHUB_WORKSPACE/navbot/scripting" >> $GITHUB_ENV
-          echo "PACKAGE_PATH=$GITHUB_WORKSPACE/build/package" >> $GITHUB_ENV
-          echo "CONFIGS_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/configs" >> $GITHUB_ENV
-          echo "SMDATA_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/data" >> $GITHUB_ENV
-          echo "GAMEDATA_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/gamedata" >> $GITHUB_ENV
-          echo "BINARY_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/plugins" >> $GITHUB_ENV
-          echo "LOC_PATH=$GITHUB_WORKSPACE/build/package/addons/sourcemod/translations" >> $GITHUB_ENV
       
       - name: Create Folders
         run: |

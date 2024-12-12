@@ -217,6 +217,11 @@ class ExtensionConfig(object):
       '-Wno-non-virtual-dtor',
       '-Wno-overloaded-virtual',
       '-Wno-register',
+      # Workaround SDK warnings
+      '-Wno-inconsistent-missing-override',
+      '-Wno-null-dereference',
+      '-Wno-reorder-ctor',
+      '-Wno-varargs',
       '-fvisibility-inlines-hidden',
       '-std=c++17',
     ]
