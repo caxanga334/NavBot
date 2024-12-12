@@ -1,0 +1,48 @@
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
+import os, pathlib
+
+# Name of your extesion, this will also be it's file name.
+projectName = 'navbot'
+
+# smsdk_ext.cpp will be automatically added later
+sourceFiles = [
+]
+
+def AddSourceFiles():
+  p = pathlib.Path(os.path.join(builder.currentSourcePath, 'extension'))
+  files = p.glob('**/*.cpp')
+
+  for f in files:
+    sourceFiles.append(str(f))
+
+AddSourceFiles()
+
+includesDirs = [
+  os.path.join(builder.currentSourcePath, 'extension'),
+]
+
+project = builder.LibraryProject(projectName)
+
+if os.path.isfile(os.path.join(builder.currentSourcePath, 'sdk', 'smsdk_ext.cpp')):
+  # Use the copy included in the project
+  project.sources += [os.path.join('sdk', 'smsdk_ext.cpp')]
+else:
+  # Use the copy included with SM 1.6 and newer
+  project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
+
+project.sources += sourceFiles
+
+for sdk_name in Extension.sdks:
+  sdk = Extension.sdks[sdk_name]
+  if sdk['name'] in ['mock']:
+    continue
+
+  for cxx in builder.targets:
+    if not cxx.target.arch in sdk['platforms'][cxx.target.platform]:
+      continue
+
+    binary = Extension.HL2ExtConfig(project, builder, cxx, projectName + '.ext.' + sdk['extension'], sdk)
+    binary.compiler.cxxincludes += includesDirs
+
+
+Extension.extensions += builder.Add(project)

@@ -4,7 +4,7 @@
 --
 
 local action = _ACTION or ""
-local todir = "build/" .. action
+local todir = "premake_build/" .. action
 
 newoption {
     trigger     = "hl2sdk-root",
@@ -88,18 +88,6 @@ elseif os.host() == "linux" then
             g_Compiler = "GCC"
             print("GCC selected.")
         end
-    end
-end
-
--- run versioning script
-
-if os.host() == "windows" then
-    if os.execute("python versioning.py") ~= true then
-        error("Failed to run python script versioning.py!")
-    end
-elseif os.host() == "linux" then
-    if os.execute("python3 versioning.py") ~= true then
-        error("Failed to run python script versioning.py! Is Python 3 installed on your system?")
     end
 end
 
