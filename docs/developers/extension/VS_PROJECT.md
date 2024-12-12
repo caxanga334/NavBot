@@ -1,6 +1,6 @@
 # Visual Studio Solution Generation
 
-VS Solutions are generated with [Premake5].
+VS Solutions are generated with [Premake5](https://premake.github.io/).
 
 ## Generating The Solution
 
