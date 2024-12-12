@@ -122,7 +122,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --sm-path="${{ github.workspace }}/sourcemod" --mms-path="${{ github.workspace }}/mmsource" --enable-optimize --enable-lto --targets "${{ matrix.ambuild_target }}" --symbol-files
+          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --sm-path="${{ github.workspace }}/sourcemod" --mms-path="${{ github.workspace }}/mmsource" --enable-optimize --targets "${{ matrix.ambuild_target }}" --symbol-files
           ambuild
 
       - name: Get commit SHA
