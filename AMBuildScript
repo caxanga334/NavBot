@@ -218,10 +218,10 @@ class ExtensionConfig(object):
       '-Wno-overloaded-virtual',
       '-Wno-register',
       # Workaround SDK warnings
-      '-Wno-inconsistent-missing-override',
       '-Wno-null-dereference',
       '-Wno-reorder',
       '-Wno-varargs',
+      '-Wno-expansion-to-defined',
       '-fvisibility-inlines-hidden',
       '-std=c++17',
     ]
@@ -230,9 +230,21 @@ class ExtensionConfig(object):
     have_gcc = cxx.family == 'gcc'
     have_clang = cxx.family == 'clang'
 
-    # Work around errors from smsdk_ext.cpp
+    # Work around errors from smsdk_ext.cpp and HL2 SDK
     if have_clang:
-      cxx.cxxflags += ['-Wno-implicit-exception-spec-mismatch']
+      cxx.cxxflags += [
+        '-Wno-implicit-exception-spec-mismatch',
+        '-Wno-inconsistent-missing-override',
+      ]
+
+    # Work around errors from HL2 SDK
+    if have_gcc:
+      cxx.cxxflags += [
+        '-Wno-class-memaccess',
+        '-Wno-packed-not-aligned',
+        '-Wno-sign-compare',
+        '-Wno-uninitialized',
+      ]
 
     # Work around SDK warnings.
     if cxx.version >= 'clang-10.0' or cxx.version >= 'apple-clang-12.0':

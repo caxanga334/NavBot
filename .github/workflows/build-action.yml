@@ -121,7 +121,7 @@ jobs:
         with:
           name: navbot-dbgsym-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
           path: |
-              navbot/build/extension/**/*.${{ matrix.dbgsym_ext }}
+              navbot/build/**/*.${{ matrix.dbgsym_ext }}
             
   compile_plugins:
     name: Compile Plugins
@@ -204,18 +204,19 @@ jobs:
           mkdir -p ${{ github.workspace }}/download/windows/
           mkdir -p ${{ github.workspace }}/download/linux/
           mkdir -p ${{ github.workspace }}/download/shared/
+          mkdir -p ${{ github.workspace }}/download/symbols/files/
 
       - name: Download Artifacts (Windows)
         uses: actions/download-artifact@v4.1.8
         with:
-          pattern: '*windows*'
+          pattern: 'navbot-windows*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/windows/
 
       - name: Download Artifacts (Linux)
         uses: actions/download-artifact@v4.1.8
         with:
-          pattern: '*linux*'
+          pattern: 'navbot-linux*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/linux/
   
@@ -225,6 +226,13 @@ jobs:
           pattern: '*sm-plugins*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/shared/
+
+      - name: Download Debugging Symbols
+        uses: actions/download-artifact@v4.1.8
+        with:
+          pattern: '*dbgsym*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/symbols/files/
 
       - name: Create Package
         run: |
@@ -238,6 +246,12 @@ jobs:
           tar -czf "navbot-linux-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
           ls -lah
           mv *.tar.gz ${{ github.workspace }}/upload/
+          cd ${{ github.workspace }}/download/symbols/
+          tar -czf "navbot-debug-symbols-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 files
+          ls -lah
+          mv *.tar.gz ${{ github.workspace }}/upload/
+          cd ${{ github.workspace }}/upload/
+          ls -lah
 
       - name: Create Pre-release
         uses: softprops/action-gh-release@v2.1.0
