@@ -141,6 +141,7 @@ jobs:
       GAMEDATA_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/gamedata
       BINARY_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/plugins
       LOC_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/translations
+      RELEASE_PLUGINS: 'navbot_admin.sp'
 
     steps:
       - name: Fetch Extension
@@ -171,9 +172,23 @@ jobs:
           mkdir -p ${{ env.LOC_PATH }}
 
       - name: Compile Plugins
+        if: startsWith(github.ref, 'refs/tags/') == false
         working-directory: ${{ env.BUILD_PATH }}
         run: |
           for file in *.sp; do
+            echo -e "\nCompiling $file..."
+            spcomp -O2 -v2 -i ${{ env.TPINCLUDES_PATH }}/ -i ${{ env.NAVBOTINC_PATH }}/ $file
+          done
+          echo "===OUT FILES==="
+          ls -lah *.smx
+
+      - name: Compile Plugins (Release)
+        if: startsWith(github.ref, 'refs/tags/') == true
+        working-directory: ${{ env.BUILD_PATH }}
+        run: |
+          plugins=(${{ env.RELEASE_PLUGINS }})
+          for file in "${plugins[@]}"
+          do
             echo -e "\nCompiling $file..."
             spcomp -O2 -v2 -i ${{ env.TPINCLUDES_PATH }}/ -i ${{ env.NAVBOTINC_PATH }}/ $file
           done
