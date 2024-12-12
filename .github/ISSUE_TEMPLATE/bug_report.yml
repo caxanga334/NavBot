@@ -123,3 +123,11 @@ body:
         'Text explaining something'
     validations:
       required: false
+  - type: textarea
+    id: in-crash-report-link
+    attributes:
+      label: 'Accelerator Crash Report'
+      description: 'URL to an accelerator crash report'
+      placeholder: 'https://crash.limetech.org/...'
+    validations:
+      required: false
