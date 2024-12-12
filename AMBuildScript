@@ -220,7 +220,7 @@ class ExtensionConfig(object):
       # Workaround SDK warnings
       '-Wno-inconsistent-missing-override',
       '-Wno-null-dereference',
-      '-Wno-reorder-ctor',
+      '-Wno-reorder',
       '-Wno-varargs',
       '-fvisibility-inlines-hidden',
       '-std=c++17',
