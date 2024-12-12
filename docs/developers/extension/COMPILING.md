@@ -3,7 +3,7 @@
 [SourceMod]: https://github.com/alliedmodders/sourcemod
 [MetaMod: Source]: https://github.com/alliedmodders/metamod-source
 [HL2 SDKs]: https://github.com/alliedmodders/hl2sdk
-[Premake5]: https://premake.github.io/
+[AMBuild]: https://github.com/alliedmodders/ambuild
 [CI]: https://github.com/caxanga334/NavBot/blob/main/.github/workflows/build-action.yml
 
 ## Prerequisites
@@ -13,7 +13,8 @@ In order to compile NavBot, you need:
 * A C++ compiler:
   * Windows: MSVC (Visual Studio).
   * Linux: Clang or GCC. Clang is preferred.
-* [Premake5]
+* Python >= 3.8
+* [AMBuild]
 * Git
 
 ## Setup
@@ -47,37 +48,29 @@ git clone https://github.com/alliedmodders/metamod-source.git mmsource-1.12 --re
 git clone https://github.com/alliedmodders/metamod-source.git mmsource-1.11 --recurse-submodules --depth=1 --branch=1.11-dev
 ```
 
-Then clone NavBot.
+## Building
 
-Now you need to generate the project for your system using premake5.
-
-Go to the navbot folder where **premake5.lua** is and run premake5 to generate it.
-
-You need to pass a few parameters to premake5:
-
-* --hl2sdk-root: Full path to the folder where the hl2sdk-* folders.
-* --mms-path: Full path to the Metamod Source folder.
-* --sm-path: Full path to the Sourcemod folder.
-
-Windows Example: `premake5.exe --hl2sdk-root="C:\alliedmodders" --mms-path="C:\alliedmodders\mmsource-2.0" --sm-path="C:\alliedmodders\sourcemod-1.12" vs2022`
-
-Linux Example: `premake5 --hl2sdk-root="/home/user/alliedmodders" --mms-path="/home/user/alliedmodders/mmsource-2.0" --sm-path="/home/user/alliedmodders/sourcemod-1.12" gmake2`
-
-A new folder called `build` will be generated, inside it there will be another folder named after the action choosen for premake5. If generating a Visual Studio 2022 solution, it will be called `vs2022`. If generating a makefile, it will be `gmake2`.
-
-On Windows, you can now compile by opening the solution in VS and compiling it from there or use MSBuild.
-
-On Linux, you can now compile by running make with the correct configuration.
+* Open terminal (linux) or Developer powershell/command prompt (Windows)
+* Clone NavBot: `git clone https://github.com/caxanga334/NavBot.git --recurse-submodules`
+* Open the NavBot folder.
+* Create a new folder called `build`.
+* Enter the `build` folder.
+* Configure the folder for AMBuild: `python ..\configure.py --hl2sdk-root {PATH} --mms-path {PATH} --sm-path {PATH}`
+* Then type `ambuild` to compile.
 
 For a full example, see how [CI] builds NavBot.
 
-## Additional Options
+### Configure.py Parameter list
 
-`--instructions-set` enables the use of additional instructions.
+A full list can be retrieved with `--help`. (This will include AMBuild built-in parameters).
 
-| Option | Effect |
-|:---:|:---:|
-| sse2 | Uses SSE2. This is the default value when this option is not set. |
-| sse4 | Enables the use of SSE4.2 instructions. |
-| avx2 | Enables the use of AVX2 instructions. |
+* `--hl2sdk-root`: Path to the root folder that contains the copies of HL2-SDK.
+* `--mms-path`: Path to Metamod: Source.
+* `--sm-path`: Path to SourceMod.
+* `--targets`: Override the target architecture (use commas to separate multiple targets).
+* `--arch-options`: x86 architecture options.
+  * 0 for default
+  * 1 for SSE4.2
+  * 2 for AVX2
+  * 3 for target native CPU (Linux only)
 
