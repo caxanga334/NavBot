@@ -2,6 +2,7 @@
 #include <filesystem>
 
 #include <extension.h>
+#include <manager.h>
 #include <util/helpers.h>
 #include <extplayer.h>
 #include <bot/basebot.h>
@@ -57,6 +58,12 @@ SourceMod::SMCResult CBaseMod::ReadSMC_KeyValue(const SourceMod::SMCStates* stat
 			v = std::clamp(v, 5, 60);
 			m_modsettings->SetStuckSuicideThreshold(v);
 		}
+		else if (strncasecmp(key, "update_rate", 11) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 0.0f, 0.5f);
+			m_modsettings->SetUpdateRate(v);
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);
@@ -75,6 +82,20 @@ SourceMod::SMCResult CBaseMod::ReadSMC_LeavingSection(const SourceMod::SMCStates
 	}
 
 	return SourceMod::SMCResult_Continue;
+}
+
+void CBaseMod::PostCreation()
+{
+	m_weaponinfomanager.reset(CreateWeaponInfoManager());
+	
+	if (!m_weaponinfomanager->LoadConfigFile())
+	{
+		Warning("Weapon info manager failed to load config file!\n");
+	}
+
+	m_profilemanager.reset(CreateBotDifficultyProfileManager());
+
+	m_profilemanager->LoadProfiles();
 }
 
 void CBaseMod::OnMapStart()
@@ -102,6 +123,30 @@ std::optional<int> CBaseMod::GetPlayerResourceEntity()
 	}
 
 	return std::nullopt;
+}
+
+void CBaseMod::ReloadWeaponInfoConfigFile()
+{
+	if (!m_weaponinfomanager->LoadConfigFile())
+	{
+		Warning("Weapon info config reloaded with errors!\n");
+	}
+	else
+	{
+		Msg("Weapon info config reloaded without errors.\n");
+	}
+}
+
+void CBaseMod::ReloadBotDifficultyProfile()
+{
+	m_profilemanager.reset(CreateBotDifficultyProfileManager());
+	m_profilemanager->LoadProfiles();
+
+	const CDifficultyManager* manager = m_profilemanager.get();
+
+	extmanager->ForEachBot([&manager](CBaseBot* bot) {
+		bot->RefreshDifficulty(manager);
+	});
 }
 
 void CBaseMod::InternalFindPlayerResourceEntity()
@@ -194,4 +239,10 @@ void CBaseMod::ParseModSettings()
 	SourceMod::SMCStates states;
 	textparsers->ParseFile_SMC(path.get(), this, &states);
 
+}
+
+CON_COMMAND(sm_navbot_reload_difficulty_profiles, "Reloads the bot difficulty profile config file.")
+{
+	extmanager->GetMod()->ReloadBotDifficultyProfile();
+	rootconsole->ConsolePrint("Reloaded bot difficulty profile config file!");
 }

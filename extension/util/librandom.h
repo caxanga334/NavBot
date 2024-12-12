@@ -23,8 +23,23 @@ namespace librandom
 		RandomNumberGenerator() {}
 
 		void ReSeed();
+		void ReSeed(S seed);
 		void RandomReSeed();
 
+		template <typename T>
+		T GetRandomInt(T min, T max);
+
+		template <typename T>
+		T GetRandomReal(T min, T max);
+
+	private:
+		E engine;
+	};
+
+	template <typename E = std::random_device>
+	class RandomNumberGeneratorNoSeed
+	{
+	public:
 		template <typename T>
 		T GetRandomInt(T min, T max);
 
@@ -40,6 +55,12 @@ namespace librandom
 	inline void RandomNumberGenerator<E,S>::ReSeed()
 	{
 		S seed = std::chrono::system_clock::now().time_since_epoch().count();
+		engine.seed(seed);
+	}
+
+	template<typename E, typename S>
+	inline void RandomNumberGenerator<E, S>::ReSeed(S seed)
+	{
 		engine.seed(seed);
 	}
 
@@ -61,6 +82,22 @@ namespace librandom
 	template<typename E, typename S>
 	template<typename T>
 	inline T RandomNumberGenerator<E, S>::GetRandomReal(T min, T max)
+	{
+		std::uniform_real_distribution<T> dist(min, max);
+		return dist(engine);
+	}
+
+	template<typename E>
+	template<typename T>
+	inline T RandomNumberGeneratorNoSeed<E>::GetRandomInt(T min, T max)
+	{
+		std::uniform_int_distribution<T> dist(min, max);
+		return dist(engine);
+	}
+
+	template<typename E>
+	template<typename T>
+	inline T RandomNumberGeneratorNoSeed<E>::GetRandomReal(T min, T max)
 	{
 		std::uniform_real_distribution<T> dist(min, max);
 		return dist(engine);

@@ -364,8 +364,11 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		switch (to->how)
 		{
 		case GO_NORTH:
+			[[fallthrough]];
 		case GO_EAST:
+			[[fallthrough]];
 		case GO_SOUTH:
+			[[fallthrough]];
 		case GO_WEST:
 			if (!ProcessGroundPath(bot, start, from, to, insertstack))
 			{
@@ -373,6 +376,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 			}
 			break;
 		case GO_LADDER_UP:
+			[[fallthrough]];
 		case GO_LADDER_DOWN:
 			if (!ProcessLaddersInPath(bot, from, to, insertstack))
 			{
@@ -723,6 +727,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 	switch (link->GetType())
 	{
 	case NavLinkType::LINK_GROUND:
+		[[fallthrough]];
 	case NavLinkType::LINK_TELEPORTER:
 	{
 		// link ends at the destination area's center.

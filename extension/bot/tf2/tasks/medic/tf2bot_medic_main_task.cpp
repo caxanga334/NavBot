@@ -256,7 +256,7 @@ void CTF2BotMedicMainTask::EquipMedigun(CTF2Bot* me) const
 {
 	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
-	if (myweapon && myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>() == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
+	if (myweapon && myweapon->GetWeaponInfo()->GetSlot() == static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary))
 	{
 		return;
 	}
@@ -268,7 +268,7 @@ float CTF2BotMedicMainTask::GetUbercharge(CTF2Bot* me)
 {
 	auto medigun = me->GetInventoryInterface()->GetActiveBotWeapon();
 
-	if (medigun && medigun->GetModWeaponID<TeamFortress2::TFWeaponID>() == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
+	if (medigun && medigun->GetWeaponInfo()->GetSlot() == static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary))
 	{
 		return tf2lib::GetMedigunUberchargePercentage(medigun->GetIndex());
 	}

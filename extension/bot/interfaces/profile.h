@@ -13,27 +13,19 @@
 class DifficultyProfile
 {
 public:
-	DifficultyProfile() :
-		skill_level(-1), aimspeed(1200.0f), fov(90), maxvisionrange(2048), maxhearingrange(512),
-		minrecognitiontime(0.3f) 
+	DifficultyProfile()
 	{
-		custom_data.reserve(4);
-	}
-
-	DifficultyProfile(const DifficultyProfile& other)
-	{
-		*this = other;
-	}
-
-	inline DifficultyProfile& operator=(const DifficultyProfile& other)
-	{
-		this->skill_level = other.skill_level;
-		this->aimspeed = other.aimspeed;
-		this->fov = other.fov;
-		this->maxvisionrange = other.maxvisionrange;
-		this->maxhearingrange = other.maxhearingrange;
-		this->minrecognitiontime = other.minrecognitiontime;
-		return *this;
+		skill_level = -1;
+		aimspeed = 800.0f;
+		fov = 90;
+		maxvisionrange = 2048;
+		maxhearingrange = 750;
+		minrecognitiontime = 0.350f;
+		predict_projectiles = false;
+		allow_headshots = false;
+		aim_lockin_time = 0.3f;
+		aim_moving_error = 0.2f;
+		aim_minspeed_for_error = 250.0f;
 	}
 
 	// user defined skill profiles starts from 0 and are always a positive skill level
@@ -45,6 +37,11 @@ public:
 	inline const int GetMaxVisionRange() const { return maxvisionrange; }
 	inline const int GetMaxHearingRange() const { return maxhearingrange; }
 	inline const float GetMinRecognitionTime() const { return minrecognitiontime; }
+	inline const bool ShouldPredictProjectiles() const { return predict_projectiles; }
+	inline const bool IsAllowedToHeadshot() const { return allow_headshots; }
+	inline const float GetAimLockInTime() const { return aim_lockin_time; }
+	inline const float GetAimMovingError() const { return aim_moving_error; }
+	inline const float GetAimMinSpeedForError() const { return aim_minspeed_for_error; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetAimSpeed(const float speed) { aimspeed = speed; }
@@ -52,102 +49,11 @@ public:
 	inline void SetMaxVisionRange(const int range) { maxvisionrange = range; }
 	inline void SetMaxHearingRange(const int range) { maxhearingrange = range; }
 	inline void SetMinRecognitionTime(const float time) { minrecognitiontime = time; }
-
-	inline void SaveCustomData(std::string key, float data)
-	{
-		custom_data[key] = data;
-	}
-
-	inline bool ContainsCustomData(std::string key) const
-	{
-		return custom_data.count(key) > 0U;
-	}
-
-	/**
-	 * @brief Retrieves a custom data value from the difficulty profile.
-	 * @tparam T Data type to convert to.
-	 * 
-	 * If type is not supported, will always return the default value.
-	 * 
-	 * Supported types: bool, int, float, double.
-	 * 
-	 * The data is internally stored as a float.
-	 * @param key Custom data key name
-	 * @param defaultValue Default value to return if the key doesn't exists.
-	 * @return Key value or default if not found
-	 */
-	template <typename T>
-	inline T GetCustomData(std::string key, T defaultValue) const
-	{
-		if constexpr (std::is_same<T, bool>::value || std::is_same<T, const bool>::value)
-		{
-			auto it = custom_data.find(key);
-
-			if (it != custom_data.end())
-			{
-				if (it->second > -0.5f && it->second < 0.5f)
-				{
-					return true;
-				}
-				else
-				{
-					return false;
-				}
-			}
-			else // not found
-			{
-				return defaultValue;
-			}
-		}
-		else if constexpr (std::is_same<T, int>::value || std::is_same<T, const int>::value)
-		{
-			auto it = custom_data.find(key);
-
-			if (it != custom_data.end())
-			{
-				return static_cast<int>(std::roundf(it->second));
-				
-			}
-			else // not found
-			{
-				return defaultValue;
-			}
-		}
-		else if constexpr (std::is_same<T, float>::value || std::is_same<T, const float>::value)
-		{
-			auto it = custom_data.find(key);
-
-			if (it != custom_data.end())
-			{
-				return it->second;
-
-			}
-			else // not found
-			{
-				return defaultValue;
-			}
-		}
-		else if constexpr (std::is_same<T, double>::value || std::is_same<T, const double>::value)
-		{
-			auto it = custom_data.find(key);
-
-			if (it != custom_data.end())
-			{
-				return static_cast<double>(it->second);
-
-			}
-			else // not found
-			{
-				return defaultValue;
-			}
-		}
-		else
-		{
-			// this always fails on Clang
-			// static_assert(false, "GetCustomData unsupported data type!");
-			return defaultValue;
-		}
-	}
+	inline void SetPredictProjectiles(const bool v) { predict_projectiles = v; }
+	inline void SetAllowHeadshots(const bool v) { allow_headshots = v; }
+	inline void SetAimLockInTime(const float time) { aim_lockin_time = time; }
+	inline void SetAimMovingError(const float error) { aim_moving_error = error; }
+	inline void SetAimMinSpeedForError(const float speed) { aim_minspeed_for_error = speed; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -156,7 +62,11 @@ private:
 	int maxvisionrange; // maximum distance the bot is able to see
 	int maxhearingrange; // maximum distace the bot is able to hear
 	float minrecognitiontime; // minimum time for the bot to recognize an entity
-	std::unordered_map<std::string, float> custom_data; // allow mods to have custom data on profile without changing this class
+	bool predict_projectiles; // if true, bot will lead their targets with projectile weapons
+	bool allow_headshots; // Allow going for headshots
+	float aim_lockin_time; // Time in seconds until the bot aim 'locks' into the target
+	float aim_moving_error; // Aim position error for moving targets
+	float aim_minspeed_for_error; // if the target speed is greater than this, apply error.
 };
 
 // Bot difficulty profile manager
@@ -170,9 +80,11 @@ public:
 		m_current = nullptr;
 	}
 
-	~CDifficultyManager();
+	virtual ~CDifficultyManager();
 
 	void LoadProfiles();
+
+	virtual DifficultyProfile* CreateNewProfile() const { return new DifficultyProfile; }
 
 	/**
 	 * @brief Given a skill level, gets a random difficulty profile for that skill level
@@ -222,10 +134,28 @@ public:
 	 */
 	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
 
+	/**
+	 * @brief Runs a function on every bot difficulty profile.
+	 * @tparam F Functor: void (T* profile)
+	 * @tparam T Difficulty profile class to use.
+	 * @param functor Function to run.
+	 */
+	template <typename T, typename F>
+	void ForEveryProfile(F functor)
+	{
+		for (auto& ptr : m_profiles)
+		{
+			T* profile = static_cast<T*>(ptr.get());
+			functor(profile);
+		}
+	}
+
 private:
 	std::vector<std::shared_ptr<DifficultyProfile>> m_profiles;
-	DifficultyProfile* m_current; // current profile being parsed
+
+protected:
 	int m_parser_depth;
+	DifficultyProfile* m_current; // current profile being parsed
 };
 
 #endif // !NAVBOT_BOT_DIFFICULTY_PROFILE_H_

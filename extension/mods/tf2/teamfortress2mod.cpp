@@ -37,79 +37,6 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	m_gamemode = TeamFortress2::GameModeType::GM_NONE;
 	m_bInSetup = false;
 
-	m_weaponidmap.reserve(72);
-	m_weaponidmap.emplace("tf_weapon_scattergun", TeamFortress2::TFWeaponID::TF_WEAPON_SCATTERGUN);
-	m_weaponidmap.emplace("tf_weapon_handgun_scout_primary", TeamFortress2::TFWeaponID::TF_WEAPON_HANDGUN_SCOUT_PRIMARY);
-	m_weaponidmap.emplace("tf_weapon_soda_popper", TeamFortress2::TFWeaponID::TF_WEAPON_SODA_POPPER);
-	m_weaponidmap.emplace("tf_weapon_pep_brawler_blaster", TeamFortress2::TFWeaponID::TF_WEAPON_PEP_BRAWLER_BLASTER);
-	m_weaponidmap.emplace("tf_weapon_pistol", TeamFortress2::TFWeaponID::TF_WEAPON_PISTOL);
-	m_weaponidmap.emplace("tf_weapon_lunchbox_drink", TeamFortress2::TFWeaponID::TF_WEAPON_LUNCHBOX);
-	m_weaponidmap.emplace("tf_weapon_jar_milk", TeamFortress2::TFWeaponID::TF_WEAPON_JAR_MILK);
-	m_weaponidmap.emplace("tf_weapon_handgun_scout_secondary", TeamFortress2::TFWeaponID::TF_WEAPON_HANDGUN_SCOUT_SEC);
-	m_weaponidmap.emplace("tf_weapon_cleaver", TeamFortress2::TFWeaponID::TF_WEAPON_CLEAVER);
-	m_weaponidmap.emplace("tf_weapon_bat", TeamFortress2::TFWeaponID::TF_WEAPON_BAT);
-	m_weaponidmap.emplace("tf_weapon_bat_wood", TeamFortress2::TFWeaponID::TF_WEAPON_BAT_WOOD);
-	m_weaponidmap.emplace("tf_weapon_bat_fish", TeamFortress2::TFWeaponID::TF_WEAPON_BAT_FISH);
-	m_weaponidmap.emplace("tf_weapon_bat_giftwrap", TeamFortress2::TFWeaponID::TF_WEAPON_BAT_GIFTWRAP);
-	m_weaponidmap.emplace("tf_weapon_rocketlauncher", TeamFortress2::TFWeaponID::TF_WEAPON_ROCKETLAUNCHER);
-	m_weaponidmap.emplace("tf_weapon_rocketlauncher_directhit", TeamFortress2::TFWeaponID::TF_WEAPON_DIRECTHIT);
-	m_weaponidmap.emplace("tf_weapon_particle_cannon", TeamFortress2::TFWeaponID::TF_WEAPON_PARTICLE_CANNON);
-	m_weaponidmap.emplace("tf_weapon_rocketlauncher_airstrike", TeamFortress2::TFWeaponID::TF_WEAPON_ROCKETLAUNCHER);
-	m_weaponidmap.emplace("tf_weapon_shotgun_soldier", TeamFortress2::TFWeaponID::TF_WEAPON_SHOTGUN_SOLDIER);
-	m_weaponidmap.emplace("tf_weapon_buff_item", TeamFortress2::TFWeaponID::TF_WEAPON_BUFF_ITEM);
-	m_weaponidmap.emplace("tf_weapon_raygun", TeamFortress2::TFWeaponID::TF_WEAPON_RAYGUN);
-	m_weaponidmap.emplace("tf_weapon_parachute", TeamFortress2::TFWeaponID::TF_WEAPON_PARACHUTE);
-	m_weaponidmap.emplace("tf_weapon_shovel", TeamFortress2::TFWeaponID::TF_WEAPON_SHOVEL);
-	m_weaponidmap.emplace("tf_weapon_katana", TeamFortress2::TFWeaponID::TF_WEAPON_SWORD);
-	m_weaponidmap.emplace("tf_weapon_flamethrower", TeamFortress2::TFWeaponID::TF_WEAPON_FLAMETHROWER);
-	m_weaponidmap.emplace("tf_weapon_rocketlauncher_fireball", TeamFortress2::TFWeaponID::TF_WEAPON_FLAMETHROWER_ROCKET);
-	m_weaponidmap.emplace("tf_weapon_shotgun_pyro", TeamFortress2::TFWeaponID::TF_WEAPON_SHOTGUN_PYRO);
-	m_weaponidmap.emplace("tf_weapon_flaregun", TeamFortress2::TFWeaponID::TF_WEAPON_FLAREGUN);
-	m_weaponidmap.emplace("tf_weapon_flaregun_revenge", TeamFortress2::TFWeaponID::TF_WEAPON_FLAREGUN);
-	m_weaponidmap.emplace("tf_weapon_rocketpack", TeamFortress2::TFWeaponID::TF_WEAPON_ROCKETPACK);
-	m_weaponidmap.emplace("tf_weapon_jar_gas", TeamFortress2::TFWeaponID::TF_WEAPON_JAR_GAS);
-	m_weaponidmap.emplace("tf_weapon_fireaxe", TeamFortress2::TFWeaponID::TF_WEAPON_FIREAXE);
-	m_weaponidmap.emplace("tf_weapon_breakable_sign", TeamFortress2::TFWeaponID::TF_WEAPON_BREAKABLE_SIGN);
-	m_weaponidmap.emplace("tf_weapon_slap", TeamFortress2::TFWeaponID::TF_WEAPON_SLAP);
-	m_weaponidmap.emplace("tf_weapon_grenadelauncher", TeamFortress2::TFWeaponID::TF_WEAPON_GRENADELAUNCHER);
-	m_weaponidmap.emplace("tf_weapon_cannon", TeamFortress2::TFWeaponID::TF_WEAPON_CANNON);
-	m_weaponidmap.emplace("tf_weapon_pipebomblauncher", TeamFortress2::TFWeaponID::TF_WEAPON_PIPEBOMBLAUNCHER);
-	m_weaponidmap.emplace("tf_weapon_bottle", TeamFortress2::TFWeaponID::TF_WEAPON_BOTTLE);
-	m_weaponidmap.emplace("tf_weapon_sword", TeamFortress2::TFWeaponID::TF_WEAPON_SWORD);
-	m_weaponidmap.emplace("tf_weapon_stickbomb", TeamFortress2::TFWeaponID::TF_WEAPON_STICKBOMB);
-	m_weaponidmap.emplace("tf_weapon_minigun", TeamFortress2::TFWeaponID::TF_WEAPON_MINIGUN);
-	m_weaponidmap.emplace("tf_weapon_shotgun_hwg", TeamFortress2::TFWeaponID::TF_WEAPON_SHOTGUN_HWG);
-	m_weaponidmap.emplace("tf_weapon_lunchbox", TeamFortress2::TFWeaponID::TF_WEAPON_LUNCHBOX);
-	m_weaponidmap.emplace("tf_weapon_fists", TeamFortress2::TFWeaponID::TF_WEAPON_FISTS);
-	m_weaponidmap.emplace("tf_weapon_shotgun_primary", TeamFortress2::TFWeaponID::TF_WEAPON_SHOTGUN_PRIMARY);
-	m_weaponidmap.emplace("tf_weapon_sentry_revenge", TeamFortress2::TFWeaponID::TF_WEAPON_SENTRY_REVENGE);
-	m_weaponidmap.emplace("tf_weapon_drg_pomson", TeamFortress2::TFWeaponID::TF_WEAPON_DRG_POMSON);
-	m_weaponidmap.emplace("tf_weapon_shotgun_building_rescue", TeamFortress2::TFWeaponID::TF_WEAPON_SHOTGUN_BUILDING_RESCUE);
-	m_weaponidmap.emplace("tf_weapon_laser_pointer", TeamFortress2::TFWeaponID::TF_WEAPON_LASER_POINTER);
-	m_weaponidmap.emplace("tf_weapon_mechanical_arm", TeamFortress2::TFWeaponID::TF_WEAPON_MECHANICAL_ARM);
-	m_weaponidmap.emplace("tf_weapon_wrench", TeamFortress2::TFWeaponID::TF_WEAPON_WRENCH);
-	m_weaponidmap.emplace("tf_weapon_robot_arm", TeamFortress2::TFWeaponID::TF_WEAPON_WRENCH);
-	m_weaponidmap.emplace("tf_weapon_pda_engineer_build", TeamFortress2::TFWeaponID::TF_WEAPON_PDA_ENGINEER_BUILD);
-	m_weaponidmap.emplace("tf_weapon_pda_engineer_destroy", TeamFortress2::TFWeaponID::TF_WEAPON_PDA_ENGINEER_DESTROY);
-	m_weaponidmap.emplace("tf_weapon_builder", TeamFortress2::TFWeaponID::TF_WEAPON_BUILDER);
-	m_weaponidmap.emplace("tf_weapon_syringegun_medic", TeamFortress2::TFWeaponID::TF_WEAPON_SYRINGEGUN_MEDIC);
-	m_weaponidmap.emplace("tf_weapon_crossbow", TeamFortress2::TFWeaponID::TF_WEAPON_CROSSBOW);
-	m_weaponidmap.emplace("tf_weapon_medigun", TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN);
-	m_weaponidmap.emplace("tf_weapon_bonesaw", TeamFortress2::TFWeaponID::TF_WEAPON_BONESAW);
-	m_weaponidmap.emplace("tf_weapon_sniperrifle", TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE);
-	m_weaponidmap.emplace("tf_weapon_compound_bow", TeamFortress2::TFWeaponID::TF_WEAPON_COMPOUND_BOW);
-	m_weaponidmap.emplace("tf_weapon_sniperrifle_decap", TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE_DECAP);
-	m_weaponidmap.emplace("tf_weapon_sniperrifle_classic", TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE_CLASSIC);
-	m_weaponidmap.emplace("tf_weapon_smg", TeamFortress2::TFWeaponID::TF_WEAPON_SMG);
-	m_weaponidmap.emplace("tf_weapon_jar", TeamFortress2::TFWeaponID::TF_WEAPON_JAR);
-	m_weaponidmap.emplace("tf_weapon_charged_smg", TeamFortress2::TFWeaponID::TF_WEAPON_CHARGED_SMG);
-	m_weaponidmap.emplace("tf_weapon_club", TeamFortress2::TFWeaponID::TF_WEAPON_CLUB);
-	m_weaponidmap.emplace("tf_weapon_revolver", TeamFortress2::TFWeaponID::TF_WEAPON_REVOLVER);
-	m_weaponidmap.emplace("tf_weapon_sapper", TeamFortress2::TFWeaponID::TF_WEAPON_BUILDER);
-	m_weaponidmap.emplace("tf_weapon_knife", TeamFortress2::TFWeaponID::TF_WEAPON_KNIFE);
-	m_weaponidmap.emplace("tf_weapon_pda_spy", TeamFortress2::TFWeaponID::TF_WEAPON_PDA_SPY);
-	m_weaponidmap.emplace("tf_weapon_invis", TeamFortress2::TFWeaponID::TF_WEAPON_INVIS);
-
 	m_classselector.LoadClassSelectionData();
 
 	ListenForGameEvent("teamplay_round_start");
@@ -254,17 +181,6 @@ CNavMesh* CTeamFortress2Mod::NavMeshFactory()
 int CTeamFortress2Mod::GetWeaponEconIndex(edict_t* weapon) const
 {
 	return tf2lib::GetWeaponItemDefinitionIndex(weapon);
-}
-
-int CTeamFortress2Mod::GetWeaponID(edict_t* weapon) const
-{
-	auto classname = gamehelpers->GetEntityClassname(weapon);
-
-	if (classname == nullptr || classname[0] == 0)
-		return CBaseMod::NO_WEAPON_ID;
-
-	std::string szname(classname);
-	return static_cast<int>(GetTFWeaponID(szname));
 }
 
 bool CTeamFortress2Mod::BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const

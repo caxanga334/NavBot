@@ -3,6 +3,7 @@
 
 #include <extension.h>
 #include <util/librandom.h>
+#include <util/helpers.h>
 #include "profile.h"
 
 #undef min
@@ -108,7 +109,9 @@ std::shared_ptr<DifficultyProfile> CDifficultyManager::GetProfileForSkillLevel(c
 	if (collected.size() == 0)
 	{
 		smutils->LogError(myself, "Difficulty profile for skill level '%i' not found! Using default profile.", level);
-		return std::make_shared<DifficultyProfile>();
+		std::shared_ptr<DifficultyProfile> default_profile;
+		default_profile.reset(CreateNewProfile());
+		return default_profile;
 	}
 
 	return collected[randomgen->GetRandomInt<size_t>(0U, collected.size() - 1U)];
@@ -137,27 +140,19 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_NewSection(const SourceMod::SMC
 	if (m_parser_depth == 1)
 	{
 		// new profile
-		auto& profile = m_profiles.emplace_back(new DifficultyProfile);
+		auto& profile = m_profiles.emplace_back(CreateNewProfile());
 		m_current = profile.get();
 	}
 
 	if (m_parser_depth == 2)
 	{
-		if (strncasecmp(name, "custom_data", 11) == 0)
-		{
-			m_parser_depth++;
-			return SMCResult_Continue;
-		}
-		else
-		{
-			smutils->LogError(myself, "Unexpected section %s at L %i C %i", name, states->line, states->col);
-			return SMCResult_HaltFail;
-		}
+		smutils->LogError(myself, "Unexpected section %s at L %i C %i", name, states->line, states->col);
+		return SMCResult_HaltFail;
 	}
 
-	// max depth should be 3
+	// max depth should be 2
 
-	if (m_parser_depth > 3)
+	if (m_parser_depth > 2)
 	{
 		smutils->LogError(myself, "Unexpected section %s at L %i C %i", name, states->line, states->col);
 		return SMCResult_HaltFail;
@@ -169,21 +164,6 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_NewSection(const SourceMod::SMC
 
 SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
 {
-	if (m_parser_depth == 3) // parsing a custom data block
-	{
-		std::string szKey(key);
-
-		if (m_current->ContainsCustomData(szKey))
-		{
-			smutils->LogError(myself, "Duplicate custom data %s %s at line %i col %i", key, value, states->line, states->col);
-			return SMCResult_Continue;
-		}
-
-		m_current->SaveCustomData(szKey, atof(value));
-
-		return SMCResult_Continue;
-	}
-
 	if (strncasecmp(key, "skill_level", 11) == 0)
 	{
 		int v = atoi(value);
@@ -255,6 +235,34 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		}
 
 		m_current->SetMinRecognitionTime(v);
+	}
+	else if (strncasecmp(key, "predict_projectiles", 19) == 0)
+	{
+		bool predict = UtilHelpers::StringToBoolean(value);
+		m_current->SetPredictProjectiles(predict);
+	}
+	else if (strncasecmp(key, "allow_headshots", 15) == 0)
+	{
+		bool allow = UtilHelpers::StringToBoolean(value);
+		m_current->SetAllowHeadshots(allow);
+	}
+	else if (strncasecmp(key, "aim_lockin_time", 15) == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, 0.0f, 2.0f);
+		m_current->SetAimLockInTime(v);
+	}
+	else if (strncasecmp(key, "aim_moving_error", 16) == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, 0.0f, 0.5f);
+		m_current->SetAimMovingError(v);
+	}
+	else if (strncasecmp(key, "aim_minspeed_for_error", 22) == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, -1.0f, 3000.0f);
+		m_current->SetAimMinSpeedForError(v);
 	}
 	else
 	{

@@ -69,11 +69,15 @@ public:
 		case TASK_CONTINUE:
 			return false;
 		case TASK_PAUSE:
+			[[fallthrough]];
 		case TASK_SWITCH:
+			[[fallthrough]];
 		case TASK_DONE:
 			return true;
 		case TASK_MAINTAIN:
+			[[fallthrough]];
 		case MAX_TASK_TYPES:
+			[[fallthrough]];
 		default:
 			return false;
 		}
@@ -99,6 +103,7 @@ public:
 		case TASK_MAINTAIN:
 			return "MAINTAIN";
 		case MAX_TASK_TYPES:
+			[[fallthrough]];
 		default:
 			return "INVALID TASK TYPE";
 		}
@@ -160,6 +165,7 @@ public:
 		case PRIORITY_MANDATORY:
 			return "MANDATORY";
 		case MAX_EVENT_RESULT_PRIORITY_TYPES:
+			[[fallthrough]];
 		default:
 			return "INVALID EVENT PRIORITY TYPE";
 		}
@@ -1337,6 +1343,7 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 		return taskToResume->RunTask(bot, manager, resumeresult);
 	}
 	case TASK_CONTINUE:
+		[[fallthrough]];
 	case TASK_MAINTAIN:
 		return this;
 	default:

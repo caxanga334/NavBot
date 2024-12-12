@@ -59,7 +59,24 @@ bool CTraceFilterOnlyActors::ShouldHitEntity(int entity, CBaseEntity* pEntity, e
 
 IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 {
-	Reset();
+	m_jump_zboost_timer.Invalidate();
+	m_jumptimer.Invalidate();
+	m_ladder = nullptr;
+	m_ladderExit = nullptr;
+	m_ladderState = NOT_USING_LADDER;
+	m_ladderTimer.Invalidate();
+	m_useLadderTimer.Invalidate();
+	m_landingGoal = vec3_origin;
+	m_isClimbingObstacle = false;
+	m_isJumpingAcrossGap = false;
+	m_isAirborne = false;
+	m_stuck.Reset();
+	m_motionVector = vec3_origin;
+	m_groundMotionVector = vec2_origin;
+	m_speed = 0.0f;
+	m_groundspeed = 0.0f;
+	m_basemovespeed = 0.0f;
+	m_ladderGoalZ = 0.0f;
 }
 
 IMovement::~IMovement()
@@ -84,6 +101,8 @@ void IMovement::Reset()
 	m_groundMotionVector = vec2_origin;
 	m_speed = 0.0f;
 	m_groundspeed = 0.0f;
+	m_basemovespeed = 0.0f;
+	m_ladderGoalZ = 0.0f;
 }
 
 void IMovement::Update()
@@ -451,8 +470,11 @@ bool IMovement::IsAscendingOrDescendingLadder()
 	switch (m_ladderState)
 	{
 	case IMovement::EXITING_LADDER_UP:
+		[[fallthrough]];
 	case IMovement::USING_LADDER_UP:
+		[[fallthrough]];
 	case IMovement::EXITING_LADDER_DOWN:
+		[[fallthrough]];
 	case IMovement::USING_LADDER_DOWN:
 		return true;
 	default:
@@ -613,6 +635,7 @@ bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
 		switch (solidity)
 		{
 		case entities::HFuncBrush::BRUSHSOLID_TOGGLE:
+			[[fallthrough]];
 		case entities::HFuncBrush::BRUSHSOLID_NEVER:
 			return true;
 		case entities::HFuncBrush::BRUSHSOLID_ALWAYS:

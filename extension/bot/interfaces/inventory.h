@@ -26,7 +26,12 @@ public:
 	void Update() override;
 	// Called every server frame
 	void Frame() override;
-
+	// Called to notify that the weapon info configuration file was reloaded.
+	virtual void OnWeaponInfoConfigReloaded();
+protected:
+	// Creates a new bot weapon object, override to use mod specific class
+	virtual CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) { return new CBotWeapon(weapon); }
+public:
 	inline bool HasAnyWeapons() { return !m_weapons.empty(); }
 
 	/**
@@ -59,16 +64,16 @@ public:
 	 * @brief Builds the bot inventory of weapons and items.
 	 */
 	virtual void BuildInventory();
-
+	// Given a known threat, selects the best weapon from the current inventory.
 	virtual void SelectBestWeaponForThreat(const CKnownEntity* threat);
-
+	// Gets the CBotWeapon pointer for the bot current active weapon. Can return NULL if the bot doesn't have an active weapon or the current weapon lacks a CBotWeapon.
 	virtual std::shared_ptr<CBotWeapon> GetActiveBotWeapon();
-
-private:
-	std::vector<std::shared_ptr<CBotWeapon>> m_weapons;
-	std::shared_ptr<CBotWeapon> m_cachedActiveWeapon;
+	// Requests the bot inventory to be refreshed
+	virtual void RequestRefresh() { m_updateWeaponsTimer.Invalidate(); }
 
 protected:
+	std::vector<std::shared_ptr<CBotWeapon>> m_weapons;
+	std::shared_ptr<CBotWeapon> m_cachedActiveWeapon;
 	CountdownTimer m_updateWeaponsTimer;
 	CountdownTimer m_weaponSwitchCooldown; // cooldown between weapon switches
 };

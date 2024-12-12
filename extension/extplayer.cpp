@@ -23,6 +23,15 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 	m_playerinfo = playerinfomanager->GetPlayerInfo(edict);
 	m_lastnavarea = nullptr;
 	m_navupdatetimer = 6;
+
+#ifdef EXT_DEBUG
+	if (!UtilHelpers::IsPlayerIndex(m_index))
+	{
+		// this class only supports players, on debug mode, log this if it happens
+		// place a breakpoint here to catch in debugger
+		smutils->LogError(myself, "CBaseExtPlayer constructed on non-player entity!");
+	}
+#endif // EXT_DEBUG
 }
 
 CBaseExtPlayer::~CBaseExtPlayer()

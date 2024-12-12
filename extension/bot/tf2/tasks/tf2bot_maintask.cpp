@@ -6,6 +6,7 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <util/prediction.h>
+#include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_traces.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
@@ -44,22 +45,21 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 	auto sensor = bot->GetSensorInterface();
 	auto threat = sensor->GetPrimaryKnownThreat();
 
-	if (threat != nullptr) // I have an enemy
+	if (threat.get() != nullptr) // I have an enemy
 	{
+		UpdateLook(bot, threat.get());
 		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat.get());
 		FireWeaponAtEnemy(bot, threat.get());
 	}
 	else // I don't have an enemy
 	{
-		
+		UpdateLook(bot, nullptr);
 	}
 
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
 	{
 		bot->GetMovementInterface()->ClearStuckStatus("PREROUND"); // players are frozen during pre-round, don't get stuck
 	}
-
-	UpdateLook(bot, threat.get());
 
 	return Continue();
 }
@@ -132,19 +132,21 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (myweapon == nullptr)
+	{
+		// makes the next Update call to refresh the bot inventory.
+		me->GetInventoryInterface()->RequestRefresh();
 		return;
+	}
 
 	if (me->GetBehaviorInterface()->ShouldAttack(me, threat) == ANSWER_NO)
 		return;
 
-	if (threat->GetEdict() == nullptr)
+	if (!threat->IsValid())
 		return;
-
-	TeamFortress2::TFWeaponID id = myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>();
 
 	if (me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Medic)
 	{
-		if (id == TeamFortress2::TFWeaponID::TF_WEAPON_MEDIGUN)
+		if (myweapon->GetWeaponInfo()->GetSlot() == static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary))
 		{
 			return; // medigun is handled in the medic behavior
 		}
@@ -168,12 +170,6 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	auto& max = threat->GetEdict()->GetCollideable()->OBBMaxs();
 	Vector top = origin;
 	top.z += max.z - 1.0f;
-
-	// basic general direction check
-	if (!me->IsLookingTowards(center, 0.94f))
-	{
-		return;
-	}
 
 	if (!me->IsLineOfFireClear(origin))
 	{
@@ -204,7 +200,7 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 		me->GetControlInterface()->PressAttackButton();
 	}
 
-	if (id == TeamFortress2::TFWeaponID::TF_WEAPON_PIPEBOMBLAUNCHER)
+	if (myweapon->GetWeaponInfo()->GetSlot() == static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary))
 	{
 		me->GetControlInterface()->PressSecondaryAttackButton(); // make stickies detonate as soon as possible
 	}
@@ -217,7 +213,7 @@ void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 	{
 		if (threat->IsVisibleNow())
 		{
-			me->GetControlInterface()->AimAt(threat->GetEdict(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at current threat!"); // look at my enemies
+			me->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at current threat!"); // look at my enemies
 			return;
 		}
 
@@ -241,7 +237,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	if (myweapon.get() == nullptr)
 	{
 #ifdef EXT_DEBUG
-		Warning("%s CTF2BotMainTask::InternalAimAtEnemyPlayer -- GetActiveBotWeapon() is NULL!", me->GetDebugIdentifier());
+		Warning("%s CTF2BotMainTask::InternalAimAtEnemyPlayer -- GetActiveBotWeapon() is NULL! \n", me->GetDebugIdentifier());
 #endif // EXT_DEBUG
 
 		result = player->WorldSpaceCenter();
@@ -252,53 +248,46 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	std::string classname(myweapon->GetBaseCombatWeapon().GetClassname());
 	auto mod = CTeamFortress2Mod::GetTF2Mod();
 	auto& weaponinfo = myweapon->GetWeaponInfo(); // every tf2 weapon should have a valid weapon info, just let it crash if it doesn't have it for some reason
-	TeamFortress2::TFWeaponID id = myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>();
 	auto sensor = me->GetSensorInterface();
+	auto& primaryAttack = weaponinfo->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+	const bool predict = me->GetDifficultyProfile()->ShouldPredictProjectiles();
 
-	switch (id)
+	if (predict && primaryAttack.IsProjectile() && !primaryAttack.IsBallistic())
 	{
-	case TeamFortress2::TFWeaponID::TF_WEAPON_ROCKETLAUNCHER:
-	case TeamFortress2::TFWeaponID::TF_WEAPON_DIRECTHIT:
-	case TeamFortress2::TFWeaponID::TF_WEAPON_PARTICLE_CANNON:
-	{
+		// current weapon fires a projectile that moves in a straight line (IE: rockets)
 		InternalAimWithRocketLauncher(me, player, result, weaponinfo.get(), sensor);
-		break;
-	}
-	case TeamFortress2::TFWeaponID::TF_WEAPON_GRENADELAUNCHER:
-	{
-		const float rangeTo = me->GetRangeTo(player->WorldSpaceCenter());
-		const float speed = weaponinfo->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
-		const float time = pred::GetProjectileTravelTime(speed, rangeTo);
-		Vector velocity = player->GetAbsVelocity();
-		const float velocitymod = RemapValClamped(rangeTo, 600.0f, 1500.0f, 1.0f, 1.5f);
-		velocity *= velocitymod;
-		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), velocity, speed, rangeTo);
-		const float gravmod = RemapValClamped(rangeTo, 600.0f, 1750.0f, 0.9f, 1.2f);
-		const float z = pred::SimpleGravityCompensation(time, gravmod);
-		targetPos.z += z;
-
-		result = std::move(targetPos);
 		return;
 	}
-	case TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE:
-	case TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE_DECAP:
-	case TeamFortress2::TFWeaponID::TF_WEAPON_SNIPERRIFLE_CLASSIC:
+	else if (predict && primaryAttack.IsProjectile() && primaryAttack.IsBallistic())
 	{
-		auto headpos = player->GetEyeOrigin();
+		// current weapon fires a projectile the moves in an arc (IE: grenade launcher, arrows)
+		InternalAimWithBallisticWeapon(me, player, result, weaponinfo.get(), sensor);
+		return;
+	}
+	else if (weaponinfo->CanHeadShot() && me->GetDifficultyProfile()->IsAllowedToHeadshot())
+	{
+		// weapon can headshot (sniper rifles)
+		Vector headpos = player->GetEyeOrigin();
 
 		if (sensor->IsAbleToSee(headpos, false)) // if visible, go for headshots
 		{
+
 			result = headpos;
-			result.z += 2.0f;
+			const Vector& offset = weaponinfo->GetHeadShotAimOffset();
+			result.x += offset.x;
+			result.y += offset.y;
+			result.z += offset.z;
 			return;
 		}
 
 		result = player->WorldSpaceCenter();
-		break;
+		return;
 	}
-	default:
+	else
+	{
+		// hitscan weapon that can't headshot, or the bot is not allowed to predict
 		result = player->WorldSpaceCenter();
-		break;
+		return;
 	}
 }
 
@@ -340,6 +329,28 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 	result = player->GetEyeOrigin();
 	return;
 
+}
+
+void CTF2BotMainTask::InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor)
+{
+	const WeaponAttackFunctionInfo& primaryattack = info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+	
+	// if the weapon can headshot, aim at head level
+	Vector enemyPos = (info->CanHeadShot() && me->GetDifficultyProfile()->IsAllowedToHeadshot()) ? player->GetEyeOrigin() : player->WorldSpaceCenter();
+	Vector myEyePos = me->GetEyeOrigin();
+	Vector enemyVel = player->GetAbsVelocity();
+	float rangeTo = (myEyePos - enemyPos).Length();
+	const float projSpeed = primaryattack.GetProjectileSpeed();
+	const float gravity = primaryattack.GetGravity();
+
+	Vector aimPos = pred::SimpleProjectileLead(enemyPos, enemyVel, projSpeed, rangeTo);
+	rangeTo = (myEyePos - aimPos).Length();
+
+	const float elevation_rate = RemapValClamped(rangeTo, primaryattack.GetBallisticElevationStartRange(), primaryattack.GetBallisticElevationEndRange(), primaryattack.GetBallisticElevationMinRate(), primaryattack.GetBallisticElevationMaxRate());
+	float z = pred::GravityComp(rangeTo, gravity, elevation_rate);
+	aimPos.z += z;
+
+	result = aimPos;
 }
 
 std::shared_ptr<const CKnownEntity> CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)

@@ -202,6 +202,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
+	if (gamehelpers->GetGlobalEntityList() == nullptr)
+	{
+		ke::SafeSprintf(error, maxlen, "NULL g_EntList from IGameHelpers!");
+		return false;
+	}
+
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	ConVar_Register(0, this);
 	playerhelpers->AddClientListener(this);

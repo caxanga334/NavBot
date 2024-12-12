@@ -3,6 +3,9 @@
 #include <algorithm>
 
 #include <extension.h>
+#include <manager.h>
+#include <mods/basemod.h>
+#include <bot/basebot.h>
 
 #include "weaponinfo.h"
 
@@ -12,29 +15,41 @@
 
 bool CWeaponInfoManager::LoadConfigFile()
 {
-	char fullpath[PLATFORM_MAX_PATH];
-	auto gamefolder = smutils->GetGameFolderName();
-	smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s/weapons.cfg", gamefolder);
+	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
 
-	if (!std::filesystem::exists(fullpath))
+	auto gamefolder = smutils->GetGameFolderName();
+	smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/weapons.custom.cfg", gamefolder);
+
+	if (!std::filesystem::exists(path.get()))
 	{
-		smutils->LogError(myself, "Failed to load Weapon Info configuration file \"%s\". File does not exists!", fullpath);
-		return false;
+		smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/weapons.cfg", gamefolder);
+
+		if (!std::filesystem::exists(path.get()))
+		{
+			smutils->LogError(myself, "Failed to load Weapon Info configuration file \"%s\". File does not exists!", path.get());
+			return false;
+		}
 	}
+
+	m_weapons.clear();
 
 	InitParserData();
 	SourceMod::SMCStates state;
-	auto errorcode = textparsers->ParseFile_SMC(fullpath, this, &state);
+	auto errorcode = textparsers->ParseFile_SMC(path.get(), this, &state);
 
 	if (errorcode != SourceMod::SMCError::SMCError_Okay)
 	{
 		smutils->LogError(myself, "Failed to parse Weapon Info configuration file \"%s\". Parser received error %i (%s)", 
-			fullpath, static_cast<int>(errorcode), textparsers->GetSMCErrorString(errorcode));
+			path.get(), static_cast<int>(errorcode), textparsers->GetSMCErrorString(errorcode));
 
 		return false;
 	}
 
 	PostParseAnalysis();
+
+	extmanager->ForEachBot([](CBaseBot* bot) {
+		bot->GetInventoryInterface()->OnWeaponInfoConfigReloaded();
+	});
 
 	return true;
 }
@@ -81,6 +96,9 @@ void CWeaponInfoManager::PostParseAnalysis()
 			smutils->LogError(myself, "Weapon Info entry with missing classname! \"%s\" ", entry.c_str());
 		}
 	}
+
+	// was on the constructor, moved here so the default is created using the derived class type
+	m_default.reset(CreateWeaponInfo());
 }
 
 std::shared_ptr<WeaponInfo> CWeaponInfoManager::GetWeaponInfo(std::string classname, const int index) const
@@ -147,24 +165,15 @@ SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const 
 			return SMCResult_Halt;
 		}
 	}
-	else if (strncmp(name, "custom_data", 11) == 0)
-	{
-		m_section_customdata = true;
-
-		if (!m_section_weapon)
-		{
-			return SMCResult_Halt;
-		}
-	}
 
 	if (!m_section_weapon) // weapon section can be anything
 	{
 		m_section_weapon = true;
-		auto& newinfo = m_weapons.emplace_back(new WeaponInfo());
+		auto& newinfo = m_weapons.emplace_back(CreateWeaponInfo());
 		m_current = newinfo.get();
 		m_current->SetConfigEntryName(name);
 	}
-	else if (IsParserInWeaponAttackSection() || m_section_customdata)
+	else if (IsParserInWeaponAttackSection())
 	{
 		return SMCResult_Continue;
 	}
@@ -179,19 +188,6 @@ SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const 
 
 SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const char* key, const char* value)
 {
-	if (m_section_customdata)
-	{
-		if (m_current->HasData(key))
-		{
-			smutils->LogError(myself, "Duplicate custom data '%s' for weapon entry '%s'. Line %d col %d", key, m_current->GetConfigEntryName(), states->line, states->col);
-			return SourceMod::SMCResult_Continue;
-		}
-
-		float data = atof(value);
-		m_current->AddCustomData(key, data);
-		return SourceMod::SMCResult_Continue;
-	}
-
 	if (strncmp(key, "classname", 9) == 0)
 	{
 		m_current->SetClassname(value);
@@ -221,6 +217,16 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		hsrange = std::clamp(hsrange, 0.0f, 1.0f);
 		m_current->SetHeadShotRangeMultiplier(hsrange);
 	}
+	else if (strncmp(key, "headshot_aim_offset", 19) == 0)
+	{
+		Vector offset;
+		int num_found = sscanf(value, "%f %f %f", &offset.x, &offset.y, &offset.z);
+
+		if (num_found == 3)
+		{
+			m_current->SetHeadShotAimOffset(offset);
+		}
+	}
 	else if (strncmp(key, "maxclip1", 8) == 0)
 	{
 		m_current->SetMaxClip1(atoi(value));
@@ -240,6 +246,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	else if (strncmp(key, "slot", 4) == 0)
 	{
 		m_current->SetSlot(atoi(value));
+	}
+	else if (!IsParserInWeaponAttackSection())
+	{
+		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair <%s - %s> at line %i col %i", key, value, states->line, states->col);
 	}
 
 	if (IsParserInWeaponAttackSection())
@@ -271,6 +281,22 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		{
 			m_current->GetAttackInfoForEditing(type)->SetGravity(atof(value));
 		}
+		else if (strncmp(key, "ballistic_elevation_range_start", 31) == 0)
+		{
+			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationStartRange(atof(value));
+		}
+		else if (strncmp(key, "ballistic_elevation_range_end", 30) == 0)
+		{
+			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationEndRange(atof(value));
+		}
+		else if (strncmp(key, "ballistic_elevation_min", 23) == 0)
+		{
+			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationMin(atof(value));
+		}
+		else if (strncmp(key, "ballistic_elevation_max", 23) == 0)
+		{
+			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationMax(atof(value));
+		}
 		else if (strncmp(key, "melee", 5) == 0)
 		{
 			if (strncmp(value, "true", 4) == 0)
@@ -293,6 +319,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 				m_current->GetAttackInfoForEditing(type)->SetExplosive(false);
 			}
 		}
+		else
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair (Attack Info %i) <%s - %s> at line %i col %i", 
+				static_cast<int>(type), key, value, states->line, states->col);
+		}
 	}
 
 	return SMCResult_Continue;
@@ -308,14 +339,13 @@ SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SMCStates* states)
 			return SMCResult_Continue;
 		}
 
-		if (m_section_customdata)
-		{
-			m_section_customdata = false;
-			return SMCResult_Continue;
-		}
-
 		m_section_weapon = false;
 	}
 
 	return SMCResult_Continue;
+}
+
+CON_COMMAND(sm_navbot_reload_weaponinfo_config, "Reloads the weapon info configuration file.")
+{
+	extmanager->GetMod()->ReloadWeaponInfoConfigFile();
 }

@@ -13,6 +13,8 @@ namespace pred
 	}
 
 	float GetGrenadeZ(const float rangeBetween, const float projectileSpeed);
+
+	float GravityComp(const float rangeBetween, const float projGravity, const float elevationRate);
 }
 
 #endif // !NAVBOT_PREDICTION_LIB_H_

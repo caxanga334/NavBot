@@ -112,6 +112,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotFindAmmoTask::OnMoveToSuccess(CTF2Bot* b
 		switch (m_type)
 		{
 		case CTF2BotFindAmmoTask::AmmoSource::AMMOPACK:
+			[[fallthrough]];
 		case CTF2BotFindAmmoTask::AmmoSource::RESUPPLY:
 			m_failsafetimer.Start(1.5f);
 			break;

@@ -17,6 +17,10 @@ class CTF2BotSensor;
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
 public:
+	CTF2BotMainTask()
+	{
+	}
+
 	AITask<CTF2Bot>* InitialNextTask(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	
@@ -37,6 +41,7 @@ private:
 	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
 	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
+	void InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
 	std::shared_ptr<const CKnownEntity> InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
 };
 

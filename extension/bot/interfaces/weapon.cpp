@@ -11,10 +11,8 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 
 	auto classname = gamehelpers->GetEntityClassname(entity);
 	m_econindex = extmanager->GetMod()->GetWeaponEconIndex(edict);
-	m_weaponID = extmanager->GetMod()->GetWeaponID(edict);
-
-	m_info = extmanager->GetWeaponInfoManager().GetWeaponInfo(classname, m_econindex);
-	UtilHelpers::SetHandleEntity(m_handle, entity);
+	m_info = extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(classname, m_econindex);
+	m_handle = entity;
 }
 
 CBotWeapon::~CBotWeapon()

@@ -48,8 +48,7 @@ static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMED
 
 static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 
-CExtManager::CExtManager() :
-	m_bdm()
+CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods
 	m_botnames.reserve(256); // reserve space for 256 bot names, vector size will increase if needed
@@ -82,11 +81,8 @@ void CExtManager::OnAllLoaded()
 	AllocateMod();
 
 	LoadBotNames();
-	m_bdm.LoadProfiles();
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%s'. Detected Mod: '%s'", UtilHelpers::GetEngineBranchName(), m_mod->GetModName());
-	
-	m_wim.LoadConfigFile();
 }
 
 void CExtManager::Frame()
@@ -228,6 +224,8 @@ void CExtManager::AllocateMod()
 #else
 	m_mod = std::make_unique<CBaseMod>();
 #endif // SOURCE_ENGINE == SE_TF2
+
+	m_mod->PostCreation();
 }
 
 CBaseMod* CExtManager::GetMod()

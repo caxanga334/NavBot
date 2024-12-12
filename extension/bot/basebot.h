@@ -8,6 +8,7 @@
 
 #include <IGameConfigs.h>
 #include <extplayer.h>
+#include <util/librandom.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
 #include <bot/interfaces/sensor.h>
@@ -71,6 +72,8 @@ public:
 	virtual bool RunPlayerCommands() { return true; }
 	// Pointer to the extension bot class
 	CBaseBot* MyBotPointer() final { return this; }
+
+	void RefreshDifficulty(const CDifficultyManager* manager);
 
 	// Reset the bot to it's initial state
 	virtual void Reset();
@@ -210,7 +213,7 @@ protected:
 	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
 
 private:
-	int m_nextupdatetime;
+	CountdownTimer m_nextupdatetime;
 	int m_joingametime; // delay between joingame attempts
 	IBotController* m_controller;
 	std::list<IBotInterface*> m_interfaces;

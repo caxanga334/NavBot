@@ -39,7 +39,6 @@ public:
 	CNavMesh* NavMeshFactory() override;
 
 	int GetWeaponEconIndex(edict_t* weapon) const override;
-	int GetWeaponID(edict_t* weapon) const override;
 	bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const override;
 
 	void OnNavMeshLoaded() override;
@@ -47,7 +46,6 @@ public:
 
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
-	TeamFortress2::TFWeaponID GetTFWeaponID(std::string& classname) const;
 	bool ShouldSwitchClass(CTF2Bot* bot) const;
 	TeamFortress2::TFClassType SelectAClassForBot(CTF2Bot* bot) const;
 	TeamFortress2::TeamRoles GetTeamRole(TeamFortress2::TFTeam team) const;
@@ -83,7 +81,7 @@ public:
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
-	std::unordered_map<std::string, TeamFortress2::TFWeaponID> m_weaponidmap;
+	std::unordered_map<std::string, int> m_weaponidmap;
 	CTF2ClassSelection m_classselector;
 	CMvMUpgradeManager m_upgrademanager;
 	CHandle<CBaseEntity> m_red_payload;
@@ -111,17 +109,5 @@ private:
 	void UpdateObjectiveResource();
 	bool TeamMayCapturePoint(int team, int pointindex) const;
 };
-
-inline TeamFortress2::TFWeaponID CTeamFortress2Mod::GetTFWeaponID(std::string& classname) const
-{
-	auto it = m_weaponidmap.find(classname);
-
-	if (it != m_weaponidmap.end())
-	{
-		return it->second;
-	}
-
-	return TeamFortress2::TFWeaponID::TF_WEAPON_NONE;
-}
 
 #endif // !SMNAV_TF2_MOD_H_

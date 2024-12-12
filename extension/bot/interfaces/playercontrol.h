@@ -101,6 +101,14 @@ private:
 	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
 	IntervalTimer m_steadyTimer; // Aim stability timer
 	float m_aimSpeed;
+
+	/* Aim Error Vars */
+	CHandle<CBaseEntity> m_lastlookent; // last entity tracked by the aim error system
+	IntervalTimer m_aimerrorintervaltime; // time the bot started to track the target
+	CountdownTimer m_aimlockintimer; // aim lock in time (zero error)
+	float m_currentAimError; // current aim error
+
+	void UpdateAimError();
 };
 
 inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)

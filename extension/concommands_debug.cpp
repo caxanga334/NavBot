@@ -38,6 +38,8 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 	Msg("Current Mod (Extension): %s\n", mod->GetModName());
 	Msg("Current Map: %s\n", STRING(gpGlobals->mapname));
 	Msg("Nav Mesh:\n    Status: %s\n    Version: %i\n    Subversion: %i\n", TheNavMesh->IsLoaded() ? "Loaded" : "NOT Loaded", CNavMesh::NavMeshVersion, TheNavMesh->GetSubVersionNumber());
+	Msg("Update Rate: %3.5f\n", mod->GetModSettings()->GetUpdateRate());
+	Msg("Tick Rate: %3.2f\n", (1.0f / gpGlobals->interval_per_tick));
 	Msg("--- END NavBot Info ---\n");
 }
 
@@ -383,6 +385,7 @@ CON_COMMAND_F(sm_navbot_debug_sdkcalls, "Debug new SDKCalls functions.", FCVAR_C
 {
 	edict_t* ent = gamehelpers->EdictOfIndex(1);
 	CBaseExtPlayer player(ent);
+	CBaseEntity* baseent = gamehelpers->ReferenceToEntity(1);
 
 	for (int i = 0; i <= 5; i++)
 	{
@@ -397,6 +400,16 @@ CON_COMMAND_F(sm_navbot_debug_sdkcalls, "Debug new SDKCalls functions.", FCVAR_C
 	{
 		player.SelectWeapon(newWeapon);
 	}
+
+	Vector eyepos = sdkcalls->CBaseEntity_EyePosition(baseent);
+	Vector eyepos2 = player.GetEyeOrigin();
+
+	Msg("Eye Position: \n    SDK Call: %3.2f %3.2f %3.2f\n    IPlayerInfo: %3.2f, %3.2f, %3.2f\n", eyepos.x, eyepos.y, eyepos.z, eyepos2.x, eyepos2.y, eyepos2.z);
+
+	QAngle angles1 = sdkcalls->CBaseEntity_EyeAngles(baseent);
+	QAngle angles2 = player.GetEyeAngles();
+
+	Msg("Eye Angles:\n    SDK Call: %3.2f %3.2f %3.2f\n    CUserCMD: %3.2f %3.2f %3.2f\n", angles1.x, angles1.y, angles1.z, angles2.x, angles2.y, angles2.z);
 }
 
 CON_COMMAND(sm_navbot_debug_tests, "Debug stuff")
@@ -801,5 +814,84 @@ CON_COMMAND(sm_debug_line_intercept, "intercept")
 
 	NDebugOverlay::Line(start, end, 0, 200, 200, true, 10.0f);
 }
+
+#if SOURCE_ENGINE == SE_TF2 && (defined(WIN32) || defined(WIN64))
+
+CON_COMMAND(sm_tf_projectile_weapon_data, "Gets the projectile speed and gravity for your current weapon.")
+{
+	using namespace SourceMod;
+	static bool setup = false;
+	static ICallWrapper* getspeed = nullptr;
+	static ICallWrapper* getgravity = nullptr;
+
+	if (!setup)
+	{
+		{
+			PassInfo ret;
+			ret.flags = PASSFLAG_BYVAL;
+			ret.size = sizeof(float);
+			ret.type = PassType_Float;
+			
+			getspeed = g_pBinTools->CreateVCall(481, 0, 0, &ret, nullptr, 0);
+		}
+
+		{
+			PassInfo ret;
+			ret.flags = PASSFLAG_BYVAL;
+			ret.size = sizeof(float);
+			ret.type = PassType_Float;
+
+			getgravity = g_pBinTools->CreateVCall(482, 0, 0, &ret, nullptr, 0);
+		}
+
+		setup = true;
+		Msg("Setup = true!\n");
+	}
+
+	CBaseExtPlayer player(UtilHelpers::GetListenServerHost());
+	edict_t* edict = player.GetActiveWeapon();
+
+	if (UtilHelpers::IsValidEdict(edict))
+	{
+		CBaseEntity* pEntity = edict->GetIServerEntity()->GetBaseEntity();
+
+		ServerClass* pClass = gamehelpers->FindEntityServerClass(pEntity);
+
+		if (pClass == nullptr)
+		{
+			Warning("NULL ServerClass!\n");
+			return;
+		}
+
+		if (!UtilHelpers::HasDataTable(pClass->m_pTable, "DT_TFWeaponBaseGun"))
+		{
+			Warning("Current weapon does not derives from CTFWeaponBaseGun!\n");
+			return;
+		}
+		
+		unsigned char params[sizeof(void*)];
+		unsigned char* vptr = params;
+		QAngle* result = nullptr;
+		QAngle ret;
+
+		*(CBaseEntity**)vptr = pEntity;
+
+		float speed = -1.0f;
+		float gravity = -1.0f;
+
+		getspeed->Execute(params, &speed);
+		getgravity->Execute(params, &gravity);
+
+		const char* name = gamehelpers->GetEntityClassname(pEntity);
+		int index = gamehelpers->EntityToBCompatRef(pEntity);
+
+		Msg("Weapon #%i <%s> (%s) (%s)\n", index, name, pClass->GetName(), pClass->m_pNetworkName ? pClass->m_pNetworkName : "");
+		Msg("    Projectile Speed: %3.4f\n", speed);
+		Msg("    Projectile Gravity: %3.4f\n", gravity);
+	}
+
+}
+
+#endif // !SOURCE_ENGINE == SE_TF2 && (defined(WIN32) || defined(WIN64))
 
 #endif // EXT_DEBUG

@@ -3,7 +3,6 @@
 #include <extplayer.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
-#include <util/librandom.h>
 #include <util/sdkcalls.h>
 #include <mods/basemod.h>
 #include <tier1/convar.h>
@@ -20,9 +19,9 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
 {
-	m_profile = extmanager->GetBotDifficultyProfileManager().GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
+	m_profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
-	m_nextupdatetime = 64;
+	m_nextupdatetime.Invalidate();
 	m_joingametime = 64;
 	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet.
 	m_listeners.reserve(8);
@@ -107,9 +106,9 @@ void CBaseBot::PlayerThink()
 	int buttons = 0;
 	auto control = GetControlInterface();
 
-	if (--m_nextupdatetime <= 0)
+	if (m_nextupdatetime.IsElapsed())
 	{
-		m_nextupdatetime = TIME_TO_TICKS(BOT_UPDATE_INTERVAL);
+		m_nextupdatetime.Start(extmanager->GetMod()->GetModSettings()->GetUpdateRate());
 
 		Update(); // Run period update
 
@@ -128,9 +127,19 @@ void CBaseBot::PlayerThink()
 	ExecuteQueuedCommands(); // Run queue commands
 }
 
+void CBaseBot::RefreshDifficulty(const CDifficultyManager* manager)
+{
+	m_profile = manager->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
+
+	for (auto iface : m_interfaces)
+	{
+		iface->OnDifficultyProfileChanged();
+	}
+}
+
 void CBaseBot::Reset()
 {
-	m_nextupdatetime = 1;
+	m_nextupdatetime.Invalidate();
 
 	for (auto iface : m_interfaces)
 	{
@@ -241,6 +250,7 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 		switch (takedamage)
 		{
 		case DAMAGE_NO:
+			[[fallthrough]];
 		case DAMAGE_EVENTS_ONLY:
 		{
 			return false; // entity doesn't take damage

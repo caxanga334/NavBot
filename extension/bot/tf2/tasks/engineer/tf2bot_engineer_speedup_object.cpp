@@ -38,7 +38,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerSpeedUpObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
-	if (myweapon && myweapon->GetModWeaponID<TeamFortress2::TFWeaponID>() != TeamFortress2::TFWeaponID::TF_WEAPON_WRENCH)
+	if (myweapon && myweapon->GetWeaponInfo()->GetSlot() != static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee))
 	{
 		CBaseEntity* wrench = bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee);
 

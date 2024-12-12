@@ -5,6 +5,8 @@
 #include <optional>
 #include <ITextParsers.h>
 #include <sdkports/eventlistenerhelper.h>
+#include <bot/interfaces/weaponinfo.h>
+#include <bot/interfaces/profile.h>
 
 class CBaseExtPlayer;
 class CBaseBot;
@@ -21,7 +23,8 @@ public:
 	virtual ~CBaseMod();
 
 	static constexpr auto NO_ECON_INDEX = -1;
-	static constexpr auto NO_WEAPON_ID = -1;
+
+protected:
 
 	// Called when a game event is fired
 	void FireGameEvent(IGameEvent* event) override {}
@@ -41,9 +44,17 @@ public:
 
 	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
 
+
 	// Creates the mod settings object, override to use mod specific mod settings
 	virtual CModSettings* CreateModSettings() const { return new CModSettings; }
+	// Creates the mod weapon info manager object, override to use a custom class
+	virtual CWeaponInfoManager* CreateWeaponInfoManager() const { return new CWeaponInfoManager; }
+	// Creates the bot difficulty profile manager object, override to use a custom class
+	virtual CDifficultyManager* CreateBotDifficultyProfileManager() const { return new CDifficultyManager; }
 
+public:
+	// Called once after the manager has allocated the mod class
+	virtual void PostCreation();
 	// Called every server frame
 	virtual void Frame() {}
 	// Called at intervals
@@ -64,8 +75,6 @@ public:
 	virtual std::optional<int> GetPlayerResourceEntity();
 	// Returns the economy item index for the given weapon if the mod uses it (IE: TF2)
 	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
-	// Returns the weapon ID, used for quick identification of the weapon
-	virtual int GetWeaponID(edict_t* weapon) const { return NO_WEAPON_ID; }
 	// True if the given client should not count towards the number of clients in the server when checking the bot quota
 	virtual bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const { return false; }
 	// A new round has started
@@ -81,6 +90,13 @@ public:
 
 	// Mod settings data. Unavailable until a map is loaded.
 	const CModSettings* GetModSettings() const { return m_modsettings.get(); }
+	// Reloads the weapon info config file
+	void ReloadWeaponInfoConfigFile();
+	// Mod weapon info manager
+	const CWeaponInfoManager* GetWeaponInfoManager() const { return m_weaponinfomanager.get(); }
+	void ReloadBotDifficultyProfile();
+	// Bot profile difficulty manager
+	const CDifficultyManager* GetBotDifficultyManager() const { return m_profilemanager.get(); }
 protected:
 	// SMC parser data
 	int m_parser_depth;
@@ -88,6 +104,8 @@ protected:
 private:
 	CBaseHandle m_playerresourceentity;
 	std::unique_ptr<CModSettings> m_modsettings;
+	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;
+	std::unique_ptr<CDifficultyManager> m_profilemanager;
 	void InternalFindPlayerResourceEntity();
 
 	void ParseModSettings();

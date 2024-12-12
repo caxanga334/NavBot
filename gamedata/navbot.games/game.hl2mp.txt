@@ -24,6 +24,16 @@
 				"windows"	"270"
 				"linux"		"271"
 			}
+			"CBaseEntity_EyePosition"
+			{
+				"windows"	"133"
+				"linux"		"134"
+			}
+			"CBaseEntity_EyeAngles"
+			{
+				"windows"	"134"
+				"linux"		"135"
+			}
 		}
 	}
 }

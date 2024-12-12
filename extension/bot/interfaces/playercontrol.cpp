@@ -3,6 +3,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
+#include <util/sdkcalls.h>
 #include <entities/baseentity.h>
 #include "playercontrol.h"
 
@@ -11,7 +12,22 @@ ConVar smnav_bot_aim_lookat_settle_duration("sm_navbot_aim_lookat_settle_duratio
 
 IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlayerInput()
 {
-	Reset();
+	ReleaseAllButtons();
+	ResetInputData();
+	m_looktimer.Invalidate();
+	m_lookentity.Term();
+	m_looktarget.Init();
+	m_lastangles.Init();
+	m_priority = LOOK_NONE;
+	m_isSteady = false;
+	m_isOnTarget = false;
+	m_didLookAtTarget = false;
+	m_steadyTimer.Invalidate();
+	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
+	m_lastlookent = nullptr;
+	m_aimerrorintervaltime.Invalidate();
+	m_aimlockintimer.Invalidate();
+	m_currentAimError = 0.0f;
 }
 
 IPlayerController::~IPlayerController()
@@ -37,6 +53,10 @@ void IPlayerController::Reset()
 	m_didLookAtTarget = false;
 	m_steadyTimer.Invalidate();
 	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
+	m_lastlookent = nullptr;
+	m_aimerrorintervaltime.Invalidate();
+	m_aimlockintimer.Invalidate();
+	m_currentAimError = 0.0f;
 }
 
 void IPlayerController::Update()
@@ -104,6 +124,12 @@ void IPlayerController::RunLook()
 	m_isSteady = isSteady;
 	m_lastangles = currentAngles; // store the last frame angles
 
+	// Bot aimed at the last call target and the look timer expired
+	if (m_didLookAtTarget && m_looktimer.IsElapsed())
+	{
+		return;
+	}
+
 	if (m_lookentity.IsValid())
 	{
 		auto lookatentity = gamehelpers->GetHandleEntity(m_lookentity);
@@ -124,6 +150,21 @@ void IPlayerController::RunLook()
 			{
 				// For non player entities, just aim at the center
 				m_looktarget = UtilHelpers::getWorldSpaceCenter(lookatentity);
+			}
+
+			UpdateAimError();
+
+			// if it's elapsed, the bot has locked in (no aim error)
+			if (!m_aimlockintimer.IsElapsed())
+			{
+				entities::HBaseEntity be(m_lookentity.Get());
+				Vector targetvel = be.GetAbsVelocity();
+
+				if (targetvel.Length() > me->GetDifficultyProfile()->GetAimMinSpeedForError())
+				{
+					// apply error
+					m_looktarget = (m_looktarget + targetvel * m_currentAimError);
+				}
 			}
 		}
 	}
@@ -162,10 +203,10 @@ void IPlayerController::RunLook()
 
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{
-		constexpr auto DRAW_TIME = 0.2f;
+		constexpr auto DRAW_TIME = 0.0f;
 		NDebugOverlay::Line(eyepos, eyepos + 256.0f * forward, 255, 255, 0, true, DRAW_TIME);
 
-		float width = isSteady ? 2.0f : 4.0f;
+		float width = isSteady ? 2.0f : 6.0f;
 		int red = m_isOnTarget ? 255 : 0;
 		int green = m_lookentity.IsValid() ? 255 : 0;
 
@@ -174,6 +215,45 @@ void IPlayerController::RunLook()
 
 	// Updates the bot view angle, this is later sent on the User Command
 	me->SetViewAngles(finalAngles);
+}
+
+void IPlayerController::UpdateAimError()
+{
+	CBaseBot* me = GetBot();
+
+	if (me->GetDifficultyProfile()->GetAimLockInTime() < 0.02f)
+	{
+		m_currentAimError = 0.0f;
+		m_aimlockintimer.Invalidate();
+		return;
+	}
+
+	CBaseEntity* last = m_lastlookent.Get();
+	CBaseEntity* current = m_lookentity.Get();
+
+	if (last != current || m_aimerrorintervaltime.IsGreaterThen(me->GetDifficultyProfile()->GetAimLockInTime()))
+	{
+		// new target, recalculate error
+		float errorvar = me->GetDifficultyProfile()->GetAimMovingError();
+		m_currentAimError = randomgen->GetRandomReal<float>((errorvar * -1.0f), errorvar);
+		m_aimlockintimer.Start(me->GetDifficultyProfile()->GetAimLockInTime());
+		m_lastlookent = current;
+
+		if (me->IsDebugging(BOTDEBUG_LOOK))
+		{
+			me->DebugPrintToConsole(230, 230, 250, "%s Aim Error: New Target! Current Error: %3.4f (%3.4f - %3.4f)\n", me->GetDebugIdentifier(), 
+				m_currentAimError, (errorvar * -1.0f), errorvar);
+		}
+	}
+	else
+	{
+		if (m_aimlockintimer.IsElapsed())
+		{
+			m_currentAimError = 0.0f;
+		}
+	}
+
+	m_aimerrorintervaltime.Start();
 }
 
 void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason)

@@ -468,7 +468,6 @@ namespace TeamFortress2
 	constexpr auto TF_FLAGINFO_STOLEN = 1;
 	constexpr auto TF_FLAGINFO_DROPPED = 2;
 
-
 	enum class GameModeType
 	{
 		GM_NONE = 0, // No/generic mode

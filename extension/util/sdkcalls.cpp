@@ -64,6 +64,18 @@ bool CSDKCaller::Init()
 		fail = true;
 	}
 
+	if (!cfg_navbot->GetOffset("CBaseEntity_EyePosition", &m_offsetof_cbe_eyeposition))
+	{
+		smutils->LogError(myself, "Failed to get offset for CBaseEntity::EyePosition!");
+		fail = true;
+	}
+
+	if (!cfg_navbot->GetOffset("CBaseEntity_EyeAngles", &m_offsetof_cbe_eyeangles))
+	{
+		smutils->LogError(myself, "Failed to get offset for CBaseEntity::EyeAngles!");
+		fail = true;
+	}
+
 	gameconfs->CloseGameConfigFile(cfg_navbot);
 	gameconfs->CloseGameConfigFile(cfg_sdktools);
 	cfg_navbot = nullptr;
@@ -106,15 +118,62 @@ bool CSDKCaller::CGameRules_ShouldCollide(CGameRules* pGR, int collisionGroup0, 
 	return result;
 }
 
+Vector CSDKCaller::CBaseEntity_EyePosition(CBaseEntity* entity)
+{
+	unsigned char params[sizeof(void*)];
+	unsigned char* vptr = params;
+	Vector* result = nullptr;
+
+	*(CBaseEntity**)vptr = entity;
+
+	m_call_cbe_eyeposition->Execute(params, &result);
+
+	if (result == nullptr)
+	{
+		return vec3_origin;
+	}
+
+	Vector ret = *result;
+
+	return ret;
+}
+
+QAngle CSDKCaller::CBaseEntity_EyeAngles(CBaseEntity* entity)
+{
+	unsigned char params[sizeof(void*)];
+	unsigned char* vptr = params;
+	QAngle* result = nullptr;
+	QAngle ret;
+
+	*(CBaseEntity**)vptr = entity;
+
+	m_call_cbe_eyeangles->Execute(params, &result);
+
+	if (result == nullptr)
+	{
+		ret.Init(0.0f, 0.0f, 0.0f);
+		return ret;
+	}
+
+	ret = *result;
+
+	return ret;
+}
+
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
 	SetupCBCWeaponSlot();
 	SetupCGRShouldCollide();
+	SetupCBEEyePosition();
+	SetupCBEEyeAngles();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
-		m_call_cgr_shouldcollide == nullptr)
+		m_call_cgr_shouldcollide == nullptr ||
+		m_call_cbe_eyeposition == nullptr ||
+		m_call_cbe_eyeangles == nullptr)
 	{
 		return false;
 	}
@@ -185,4 +244,32 @@ void CSDKCaller::SetupCGRShouldCollide()
 	params[1].type = PassType_Basic;
 
 	m_call_cgr_shouldcollide = g_pBinTools->CreateVCall(m_offsetof_cgr_shouldcollide, 0, 0, &ret, params, 2);
+}
+
+void CSDKCaller::SetupCBEEyePosition()
+{
+	using namespace SourceMod;
+
+	/* Vector CBaseEntity::EyePosition() */
+
+	PassInfo ret;
+	ret.flags = PASSFLAG_BYVAL;
+	ret.size = sizeof(void*);
+	ret.type = PassType_Basic;
+
+	m_call_cbe_eyeposition = g_pBinTools->CreateVCall(m_offsetof_cbe_eyeposition, 0, 0, &ret, nullptr, 0);
+}
+
+void CSDKCaller::SetupCBEEyeAngles()
+{
+	using namespace SourceMod;
+
+	/* const QAngle& CBaseEntity::EyeAngles() */
+
+	PassInfo ret;
+	ret.flags = PASSFLAG_BYVAL;
+	ret.size = sizeof(void*);
+	ret.type = PassType_Basic;
+
+	m_call_cbe_eyeangles = g_pBinTools->CreateVCall(m_offsetof_cbe_eyeangles, 0, 0, &ret, nullptr, 0);
 }

@@ -30,6 +30,7 @@ void IInventory::Reset()
 	m_weapons.clear();
 	m_weaponSwitchCooldown.Invalidate();
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
+	m_cachedActiveWeapon = nullptr;
 }
 
 void IInventory::Update()
@@ -43,6 +44,13 @@ void IInventory::Update()
 
 void IInventory::Frame()
 {
+}
+
+void IInventory::OnWeaponInfoConfigReloaded()
+{
+	m_weapons.clear();
+	m_cachedActiveWeapon = nullptr;
+	BuildInventory();
 }
 
 bool IInventory::HasWeapon(std::string classname)
@@ -86,7 +94,7 @@ void IInventory::BuildInventory()
 			continue;
 
 		// IsValidEdict checks if GetIServerEntity return is not NULL
-		m_weapons.emplace_back(new CBotWeapon(weapon->GetIServerEntity()->GetBaseEntity()));
+		m_weapons.emplace_back(CreateBotWeapon(weapon->GetIServerEntity()->GetBaseEntity()));
 	}
 }
 
@@ -161,7 +169,7 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 		return nullptr;
 	}
 
-	if (m_cachedActiveWeapon)
+	if (m_cachedActiveWeapon && m_cachedActiveWeapon->IsValid())
 	{
 		if (m_cachedActiveWeapon->GetEdict() == weapon)
 		{
@@ -171,7 +179,7 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 
 	for (auto& weaponptr : m_weapons)
 	{
-		if (weaponptr->GetEdict() == weapon)
+		if (weaponptr->IsValid() && weaponptr->GetEdict() == weapon)
 		{
 			return weaponptr;
 		}

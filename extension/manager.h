@@ -3,7 +3,6 @@
 #pragma once
 
 #include <bot/interfaces/profile.h>
-#include <bot/interfaces/weaponinfo.h>
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
 #include "pawn_mem_manager.h"
@@ -57,8 +56,6 @@ public:
 
 	void LoadBotNames();
 
-	inline const CDifficultyManager& GetBotDifficultyProfileManager() const { return m_bdm; }
-
 	inline void StopAllDebugging() { m_botdebugmode = 0; }
 	inline void ToggleDebugOption(int bits)
 	{
@@ -86,8 +83,6 @@ public:
 		}
 	}
 
-	const CWeaponInfoManager& GetWeaponInfoManager() const { return m_wim; }
-
 	void SetBotQuotaMode(BotQuotaMode mode) { m_quotamode = mode; }
 	void SetBotQuotaTarget(int target) { m_quotatarget = target; }
 
@@ -106,12 +101,10 @@ private:
 	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
 	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
 	size_t m_nextbotname; // Index of the next bot name to use
-	CDifficultyManager m_bdm; // Bot Difficulty Profile Manager
 	int m_botdebugmode;
 	int m_quotaupdatetime; // Bot quota timer
 	BotQuotaMode m_quotamode; // Bot quota mode
 	int m_quotatarget; // Bot quota target
-	CWeaponInfoManager m_wim;
 	bool m_iscreatingbot; // We are creating a NavBot
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
 };

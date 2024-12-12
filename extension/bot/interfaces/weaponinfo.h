@@ -21,29 +21,12 @@ public:
 		minrange = -1.0f;
 		projectilespeed = -1.0f;
 		gravity = -1.0f;
+		ballistic_elevation_range_start = -1.0f;
+		ballistic_elevation_range_end = -1.0f;
+		ballistic_elevation_min = -1.0f;
+		ballistic_elevation_max = -1.0f;
 		ismelee = false;
 		isexplosive = false;
-	}
-
-	inline WeaponAttackFunctionInfo(float max, float min = -1.0f, float spd = -1.0f, float grav = -1.0f, bool melee = false, bool exp = false)
-	{
-		maxrange = max;
-		minrange = min;
-		projectilespeed = spd;
-		gravity = grav;
-		ismelee = melee;
-		isexplosive = exp;
-	}
-
-	inline WeaponAttackFunctionInfo& operator=(const WeaponAttackFunctionInfo& other)
-	{
-		this->maxrange = other.maxrange;
-		this->minrange = other.minrange;
-		this->projectilespeed = other.projectilespeed;
-		this->gravity = other.gravity;
-		this->ismelee = other.ismelee;
-		this->isexplosive = other.isexplosive;
-		return *this;
 	}
 
 	inline void Reset()
@@ -52,6 +35,10 @@ public:
 		minrange = -1.0f;
 		projectilespeed = -1.0f;
 		gravity = -1.0f;
+		ballistic_elevation_range_start = -1.0f;
+		ballistic_elevation_range_end = -1.0f;
+		ballistic_elevation_min = -1.0f;
+		ballistic_elevation_max = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
@@ -60,9 +47,17 @@ public:
 	inline float GetMinRange() const { return minrange; }
 	inline float GetProjectileSpeed() const { return projectilespeed; }
 	inline float GetGravity() const { return gravity; }
+	inline float GetBallisticElevationStartRange() const { return ballistic_elevation_range_start; }
+	inline float GetBallisticElevationEndRange() const { return ballistic_elevation_range_end; }
+	inline float GetBallisticElevationMinRate() const { return ballistic_elevation_min; }
+	inline float GetBallisticElevationMaxRate() const { return ballistic_elevation_max; }
 	inline bool IsMelee() const { return ismelee; }
 	inline bool IsExplosive() const { return isexplosive; }
 	inline bool IsHitscan() const { return projectilespeed <= 0.0f; }
+	// fires a projectile?
+	inline bool IsProjectile() const { return projectilespeed > 0.0f; }
+	// fires a projectile that is affected by gravity?
+	inline bool IsBallistic() const { return gravity > 0.0f; }
 	inline bool HasMaxRange() const { return maxrange > 0.0f; }
 	inline bool HasMinRange() const { return minrange > 0.0f; }
 	inline bool InRangeTo(const float dist) const { return dist >= minrange && dist <= maxrange; }
@@ -74,6 +69,10 @@ public:
 	inline void SetMinRange(float v) { minrange = v; }
 	inline void SetProjectileSpeed(float v) { projectilespeed = v; }
 	inline void SetGravity(float v) { gravity = v; }
+	inline void SetBallisticElevationStartRange(float v) { ballistic_elevation_range_start = v; }
+	inline void SetBallisticElevationEndRange(float v) { ballistic_elevation_range_end = v; }
+	inline void SetBallisticElevationMin(float v) { ballistic_elevation_min = v; }
+	inline void SetBallisticElevationMax(float v) { ballistic_elevation_max = v; }
 	inline void SetMelee(bool v) { ismelee = v; }
 	inline void SetExplosive(bool v) { isexplosive = v; }
 
@@ -82,6 +81,10 @@ private:
 	float minrange;
 	float projectilespeed;
 	float gravity;
+	float ballistic_elevation_range_start;
+	float ballistic_elevation_range_end;
+	float ballistic_elevation_min;
+	float ballistic_elevation_max;
 	bool ismelee;
 	bool isexplosive;
 };
@@ -116,6 +119,8 @@ public:
 		slot = INVALID_WEAPON_SLOT;
 	}
 
+	virtual ~WeaponInfo() {}
+
 	inline void Reset()
 	{
 		classname.clear();
@@ -124,6 +129,7 @@ public:
 		priority = 0;
 		can_headshot = false;
 		headshot_range_mult = 1.0f;
+		headshot_aim_offset.Init(0.0f, 0.0f, 0.0f);
 		maxclip1 = 0;
 		maxclip2 = 0;
 		primammolow = 0;
@@ -162,6 +168,7 @@ public:
 
 	inline void SetCanHeadShot(bool v) { can_headshot = v; }
 	inline void SetHeadShotRangeMultiplier(float v) { headshot_range_mult = v; }
+	inline void SetHeadShotAimOffset(const Vector& offset) { headshot_aim_offset = offset; }
 
 	WeaponAttackFunctionInfo* GetAttackInfoForEditing(AttackFunctionType type)
 	{
@@ -178,6 +185,7 @@ public:
 	inline bool CanHeadShot() const { return can_headshot; }
 	inline float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
 	inline float GetMaxPrimaryHeadShotRange() const { return attacksinfo[PRIMARY_ATTACK].GetMaxRange() * headshot_range_mult; }
+	inline const Vector& GetHeadShotAimOffset() const { return headshot_aim_offset; }
 
 	inline void SetEconItemIndex(int index) { econindex = index; }
 	inline void SetPriority(int pri) { priority = pri; }
@@ -186,7 +194,6 @@ public:
 	inline void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
 	inline void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	inline void SetSlot(int s) { slot = s; }
-	inline void AddCustomData(std::string key, float data) { custom_data[key] = data; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -205,66 +212,12 @@ public:
 	inline int GetLowSecondaryAmmoThreshold() const { return secammolow; }
 	inline int GetSlot() const { return slot; }
 	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
-	inline bool HasData(std::string key) const { return custom_data.count(key) > 0; }
-	inline bool HasAnyCustomData() const { return !custom_data.empty(); }
 
-	/**
-	 * @brief Gets a custom stored data as float
-	 * @param key Data key to look
-	 * @return Data if found or NULL optional if not found.
-	 */
-	inline std::optional<float> GetData(std::string key) const
-	{
-		if (custom_data.count(key) > 0)
-		{
-			return custom_data.at(key);
-		}
-		
-		return std::nullopt;
-	}
-
-	/**
-	 * @brief Gets a custom stored data as int
-	 * @param key Data key to look
-	 * @return Data if found or NULL optional if not found.
-	 */
-	inline std::optional<int> GetDataInt(std::string key) const
-	{
-		if (custom_data.count(key) > 0)
-		{
-			return static_cast<int>(std::roundf(custom_data.at(key)));
-		}
-
-		return std::nullopt;
-	}
-
-	/**
-	 * @brief Gets a custom stored data as bool
-	 * @param key Data key to look
-	 * @return true if data exists and is equal or greater than 1.0, false otherwise. NULL optional if data is not found.
-	 */
-	inline std::optional<bool> GetDataBool(std::string key) const
-	{
-		if (custom_data.count(key) > 0)
-		{
-			const float& value = custom_data.at(key);
-
-			if (value >= 0.9f)
-			{
-				return true;
-			}
-
-			return false;
-		}
-
-		return std::nullopt;
-	}
-
-
-private:
+protected:
 	std::string classname;
 	std::string configentry;
 	WeaponAttackFunctionInfo attacksinfo[MAX_WEAPON_ATTACKS];
+	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
 	bool can_headshot;
@@ -274,7 +227,6 @@ private:
 	int primammolow; // Threshold for low primary ammo
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
-	std::unordered_map<std::string, float> custom_data; // Custom data for mods
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
@@ -288,10 +240,14 @@ public:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
-		m_section_customdata = false;
 		m_current = nullptr;
-		m_default = std::make_shared<WeaponInfo>();
 	}
+
+	virtual ~CWeaponInfoManager() {}
+
+protected:
+	virtual WeaponInfo* CreateWeaponInfo() const { return new WeaponInfo; }
+public:
 
 	inline bool WeaponEntryExists(std::string& entry) const
 	{
@@ -312,7 +268,7 @@ public:
 	 * @param index Econ index to search
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
-	std::shared_ptr<WeaponInfo> GetWeaponInfo(std::string classname, const int index) const;
+	virtual std::shared_ptr<WeaponInfo> GetWeaponInfo(std::string classname, const int index) const;
 
 	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
@@ -346,7 +302,7 @@ public:
 
 	bool LoadConfigFile();
 
-private:
+protected:
 	std::vector<std::shared_ptr<WeaponInfo>> m_weapons;
 	std::shared_ptr<WeaponInfo> m_default; // Default weapon info for when lookup fails
 
@@ -357,7 +313,6 @@ private:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
-		m_section_customdata = false;
 	}
 
 	// parser data
@@ -366,7 +321,6 @@ private:
 	bool m_section_prim; // primary attack section
 	bool m_section_sec; // secondary attack section
 	bool m_section_ter; // tertiary attack section
-	bool m_section_customdata; // parsing custom data section
 
 	WeaponInfo* m_current; // Current weapon info being parsed
 
@@ -381,7 +335,6 @@ private:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
-		m_section_customdata = false;
 	}
 
 	inline std::shared_ptr<WeaponInfo> LookUpWeaponInfoByClassname(std::string classname) const
@@ -412,7 +365,7 @@ private:
 		return nullptr;
 	}
 
-	void PostParseAnalysis();
+	virtual void PostParseAnalysis();
 };
 
 #endif // !NAVBOT_WEAPON_INFO_H_
