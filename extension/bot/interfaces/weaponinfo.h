@@ -262,6 +262,7 @@ public:
 		return false;
 	}
 
+
 	/**
 	 * @brief Gets a weapon info by classname or econ index. Econ index has priority
 	 * @param classname Classname to search
@@ -272,6 +273,7 @@ public:
 
 	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
+protected:
 	/**
 	 * @brief Called when entering a new section
 	 *
@@ -299,6 +301,8 @@ public:
 	 * @return				SMCResult directive.
 	 */
 	SMCResult ReadSMC_LeavingSection(const SMCStates* states) override;
+
+public:
 
 	bool LoadConfigFile();
 

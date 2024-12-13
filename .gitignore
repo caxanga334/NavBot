@@ -35,3 +35,4 @@
 build/
 versioning/
 output/
+premake5_build/

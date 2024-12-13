@@ -21,6 +21,7 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2controller = std::make_unique<CTF2BotPlayerController>(this);
 	m_tf2sensor = std::make_unique<CTF2BotSensor>(this);
 	m_tf2behavior = std::make_unique<CTF2BotBehavior>(this);
+	m_tf2inventory = std::make_unique<CTF2BotInventory>(this);
 	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
 	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
 	m_upgrademan.SetMe(this);

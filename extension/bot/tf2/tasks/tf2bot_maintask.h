@@ -8,11 +8,10 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #endif // EXT_DEBUG
 
-
 class CTF2Bot;
-class WeaponInfo;
+class CTF2BotWeapon;
+class CKnownEntity;
 class CTF2BotSensor;
-
 
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
@@ -40,8 +39,8 @@ private:
 	void FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat);
 	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
 	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
-	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
-	void InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor);
+	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const CTF2BotWeapon* weapon, CTF2BotSensor* sensor);
+	void InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const CTF2BotWeapon* weapon, CTF2BotSensor* sensor);
 	std::shared_ptr<const CKnownEntity> InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
 };
 

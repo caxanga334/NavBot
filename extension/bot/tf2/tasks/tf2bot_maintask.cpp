@@ -129,9 +129,9 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	if (tf2lib::IsPlayerInCondition(me->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
 
-	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+	auto myweapon = me->GetInventoryInterface()->GetActiveTFWeapon();
 
-	if (myweapon == nullptr)
+	if (myweapon.get() == nullptr || !myweapon->IsValid())
 	{
 		// makes the next Update call to refresh the bot inventory.
 		me->GetInventoryInterface()->RequestRefresh();
@@ -150,6 +150,18 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 		{
 			return; // medigun is handled in the medic behavior
 		}
+	}
+
+	if (myweapon->GetBaseCombatWeapon().GetClip1() == 0)
+	{
+		me->GetControlInterface()->ReleaseAllAttackButtons();
+
+		if (me->GetAmmoOfIndex(myweapon->GetBaseCombatWeapon().GetPrimaryAmmoType()) > 0)
+		{
+			me->GetControlInterface()->PressReloadButton();
+		}
+
+		return;
 	}
 
 	if (me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Heavy && me->GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) <= 50 &&
@@ -197,7 +209,22 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 
 	if (me->GetControlInterface()->IsAimOnTarget())
 	{
-		me->GetControlInterface()->PressAttackButton();
+		if (myweapon->GetTF2Info()->CanCharge())
+		{
+			if (myweapon->GetChargePercentage() >= 0.99f)
+			{
+				me->GetControlInterface()->ReleaseAllAttackButtons();
+			}
+			else
+			{
+				// Hold attack, wait for max charge
+				me->GetControlInterface()->PressAttackButton(1.0f);
+			}
+		}
+		else
+		{
+			me->GetControlInterface()->PressAttackButton();
+		}
 	}
 
 	if (myweapon->GetWeaponInfo()->GetSlot() == static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary))
@@ -231,7 +258,7 @@ void CTF2BotMainTask::UpdateLook(CTF2Bot* me, const CKnownEntity* threat)
 
 void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result)
 {
-	auto myweapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+	auto myweapon = me->GetInventoryInterface()->GetActiveTFWeapon();
 
 	// inventory does't update on every frame, this check is important. generally happens post spawn.
 	if (myweapon.get() == nullptr)
@@ -247,7 +274,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	int index = myweapon->GetWeaponEconIndex();
 	std::string classname(myweapon->GetBaseCombatWeapon().GetClassname());
 	auto mod = CTeamFortress2Mod::GetTF2Mod();
-	auto& weaponinfo = myweapon->GetWeaponInfo(); // every tf2 weapon should have a valid weapon info, just let it crash if it doesn't have it for some reason
+	auto weaponinfo = myweapon->GetTF2Info(); // every tf2 weapon should have a valid weapon info, just let it crash if it doesn't have it for some reason
 	auto sensor = me->GetSensorInterface();
 	auto& primaryAttack = weaponinfo->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
 	const bool predict = me->GetDifficultyProfile()->ShouldPredictProjectiles();
@@ -255,13 +282,13 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	if (predict && primaryAttack.IsProjectile() && !primaryAttack.IsBallistic())
 	{
 		// current weapon fires a projectile that moves in a straight line (IE: rockets)
-		InternalAimWithRocketLauncher(me, player, result, weaponinfo.get(), sensor);
+		InternalAimWithRocketLauncher(me, player, result, myweapon.get(), sensor);
 		return;
 	}
 	else if (predict && primaryAttack.IsProjectile() && primaryAttack.IsBallistic())
 	{
 		// current weapon fires a projectile the moves in an arc (IE: grenade launcher, arrows)
-		InternalAimWithBallisticWeapon(me, player, result, weaponinfo.get(), sensor);
+		InternalAimWithBallisticWeapon(me, player, result, myweapon.get(), sensor);
 		return;
 	}
 	else if (weaponinfo->CanHeadShot() && me->GetDifficultyProfile()->IsAllowedToHeadshot())
@@ -291,7 +318,7 @@ void CTF2BotMainTask::InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* play
 	}
 }
 
-void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor)
+void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const CTF2BotWeapon* weapon, CTF2BotSensor* sensor)
 {
 	if (player->GetGroundEntity() == nullptr) // target is airborne
 	{
@@ -313,7 +340,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 	constexpr float veryCloseRange = 150.0f;
 	if (rangeBetween > veryCloseRange)
 	{
-		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
+		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), weapon->GetProjectileSpeed(), rangeBetween);
 
 		if (sensor->IsLineOfSightClear(targetPos))
 		{
@@ -322,7 +349,7 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 		}
 
 		// try their head and hope
-		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), rangeBetween);
+		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), weapon->GetProjectileSpeed(), rangeBetween);
 		return;
 	}
 
@@ -331,17 +358,18 @@ void CTF2BotMainTask::InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer*
 
 }
 
-void CTF2BotMainTask::InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const WeaponInfo* info, CTF2BotSensor* sensor)
+void CTF2BotMainTask::InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const CTF2BotWeapon* weapon, CTF2BotSensor* sensor)
 {
-	const WeaponAttackFunctionInfo& primaryattack = info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+	const WeaponAttackFunctionInfo& primaryattack = weapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+	auto info = weapon->GetTF2Info();
 	
 	// if the weapon can headshot, aim at head level
 	Vector enemyPos = (info->CanHeadShot() && me->GetDifficultyProfile()->IsAllowedToHeadshot()) ? player->GetEyeOrigin() : player->WorldSpaceCenter();
 	Vector myEyePos = me->GetEyeOrigin();
 	Vector enemyVel = player->GetAbsVelocity();
 	float rangeTo = (myEyePos - enemyPos).Length();
-	const float projSpeed = primaryattack.GetProjectileSpeed();
-	const float gravity = primaryattack.GetGravity();
+	const float projSpeed = weapon->GetProjectileSpeed();
+	const float gravity = weapon->GetProjectileGravity();
 
 	Vector aimPos = pred::SimpleProjectileLead(enemyPos, enemyVel, projSpeed, rangeTo);
 	rangeTo = (myEyePos - aimPos).Length();

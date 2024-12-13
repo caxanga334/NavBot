@@ -45,6 +45,7 @@ protected:
 	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
 
 
+
 	// Creates the mod settings object, override to use mod specific mod settings
 	virtual CModSettings* CreateModSettings() const { return new CModSettings; }
 	// Creates the mod weapon info manager object, override to use a custom class

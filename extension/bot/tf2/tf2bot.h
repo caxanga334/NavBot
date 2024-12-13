@@ -14,6 +14,7 @@
 #include "tf2bot_controller.h"
 #include "tf2bot_movement.h"
 #include "tf2bot_sensor.h"
+#include "tf2bot_inventory.h"
 #include "tf2bot_spymonitor.h"
 #include "tf2bot_upgrades.h"
 
@@ -41,6 +42,7 @@ public:
 	CTF2BotSensor* GetSensorInterface() const override { return m_tf2sensor.get(); }
 	CTF2BotBehavior* GetBehaviorInterface() const override { return m_tf2behavior.get(); }
 	CTF2BotSpyMonitor* GetSpyMonitorInterface() const { return m_tf2spymonitor.get(); }
+	CTF2BotInventory* GetInventoryInterface() const { return m_tf2inventory.get(); }
 	int GetMaxHealth() const override;
 
 	TeamFortress2::TFClassType GetMyClassType() const;
@@ -121,6 +123,7 @@ private:
 	std::unique_ptr<CTF2BotSensor> m_tf2sensor;
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	std::unique_ptr<CTF2BotSpyMonitor> m_tf2spymonitor;
+	std::unique_ptr<CTF2BotInventory> m_tf2inventory;
 	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
 	IntervalTimer m_classswitchtimer;
 	CBaseHandle m_mySentryGun;

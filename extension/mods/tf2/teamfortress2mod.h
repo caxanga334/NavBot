@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <string>
 #include <sdkports/sdk_timers.h>
-#include <bot/interfaces/weaponinfo.h>
+#include <bot/tf2/tf2bot_weaponinfo.h>
 #include <mods/basemod.h>
 #include <sdkports/sdk_ehandle.h>
 #include "tf2_class_selection.h"
@@ -25,7 +25,13 @@ public:
 
 	static CTeamFortress2Mod* GetTF2Mod();
 
+protected:
+
 	void FireGameEvent(IGameEvent* event) override;
+
+	CWeaponInfoManager* CreateWeaponInfoManager() const override { return new CTF2WeaponInfoManager; }
+
+public:
 
 	void Update() override;
 
