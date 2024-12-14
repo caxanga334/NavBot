@@ -100,14 +100,13 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		if (strncasecmp(name, "teamplay_flag_event", 19) == 0)
 		{
 			edict_t* edict = gamehelpers->EdictOfIndex(event->GetInt("player", -1));
-			IServerEntity* serverent = edict->GetIServerEntity();
-			
-			if (serverent == nullptr)
+
+			if (!UtilHelpers::IsValidEdict(edict))
 			{
 				return;
 			}
 
-			CBaseEntity* entity = serverent->GetBaseEntity();
+			CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
 
 			TeamFortress2::TFFlagEvent flagevent = static_cast<TeamFortress2::TFFlagEvent>(event->GetInt("eventtype", 0));
 

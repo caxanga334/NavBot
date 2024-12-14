@@ -27,6 +27,8 @@
  *
  */
 
+#include <array>
+#include <string_view>
 #include <exception>
 #include "entprops.h"
 
@@ -259,6 +261,8 @@ void CEntPropUtils::Init(bool reset)
 		smutils->LogMessage(myself, "CEntPropUtils::Init -- Retrieved game rules proxy classname \"%s\".", grclassname);
 	}
 
+	BuildCache();
+
 	gameconfs->CloseGameConfigFile(gamedata);
 	initialized = true;
 	smutils->LogMessage(myself, "CEntPropUtils::Init -- Done.");
@@ -335,6 +339,31 @@ bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, 
 
 
 	return false;
+}
+
+const char* CEntPropUtils::GetEntityClassname(CBaseEntity* entity)
+{
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_iClassname", &info))
+		{
+			return nullptr;
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	string_t s = *(string_t*)((uint8_t*)entity + s_offset);
+
+	if (s == NULL_STRING)
+	{
+		return nullptr;
+	}
+
+	return STRING(s);
 }
 
 /// @brief Checks if the given entity is a networked entity
@@ -2125,4 +2154,52 @@ RoundState CEntPropUtils::GameRules_GetRoundState()
 	int roundstate = 0;
 	GameRules_GetProp("m_iRoundState", roundstate);
 	return static_cast<RoundState>(roundstate);
+}
+
+struct NetPropBuildCacheData
+{
+	constexpr NetPropBuildCacheData(const char* clname, const char* prop, CEntPropUtils::CacheIndex i) :
+		classname(clname), propname(prop), index(i)
+	{
+	}
+	
+	std::string_view classname;
+	std::string_view propname;
+	CEntPropUtils::CacheIndex index;
+};
+
+void CEntPropUtils::BuildCache()
+{
+	/**
+	* Build a cache of SendProp (Networked Properties) offsets. This cache is built when the game loads for the first time.
+	* This give us a fast way to read these.
+	* Important: This is only for networked properties. If you need to cache a datamap, see CEntPropUtils::GetEntityClassname as an example.
+	*/
+
+	constexpr std::array properties = {
+		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCond", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCOND),
+		NetPropBuildCacheData("CTFPlayer", "_condition_bits", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDBITS),
+		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX1),
+		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx2", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX2),
+		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx3", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX3),
+		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx4", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX4),
+		NetPropBuildCacheData("CBaseCombatCharacter", "m_hActiveWeapon", CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_ACTIVEWEAPON),
+		NetPropBuildCacheData("CBaseCombatCharacter", "m_hMyWeapons", CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_MYWEAPONS),
+		NetPropBuildCacheData("CBaseCombatWeapon", "m_iClip1", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1),
+		NetPropBuildCacheData("CBaseCombatWeapon", "m_iClip2", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP2),
+		NetPropBuildCacheData("CBaseCombatWeapon", "m_iPrimaryAmmoType", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE),
+		NetPropBuildCacheData("CBaseCombatWeapon", "m_iSecondaryAmmoType", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_SECONDARYAMMOTYPE),
+		NetPropBuildCacheData("CBaseCombatWeapon", "m_iState", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_STATE),
+		NetPropBuildCacheData("CBaseCombatWeapon", "m_hOwner", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER),
+	};
+
+	SourceMod::sm_sendprop_info_t info;
+
+	for (auto& data : properties)
+	{
+		if (gamehelpers->FindSendPropInfo(data.classname.data(), data.propname.data(), &info))
+		{
+			cached_offsets[static_cast<int>(data.index)] = info.actual_offset;
+		}
+	}
 }

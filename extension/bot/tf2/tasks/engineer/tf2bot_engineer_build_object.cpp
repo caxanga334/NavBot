@@ -216,7 +216,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		// crouch while placing
 		bot->GetControlInterface()->PressCrouchButton();
 
-		edict_t* weapon = bot->GetActiveWeapon();
+		CBaseEntity* weapon = bot->GetActiveWeapon();
 
 		if (weapon != nullptr)
 		{

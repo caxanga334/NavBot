@@ -39,9 +39,9 @@ CTF2BotSensor::~CTF2BotSensor()
 
 bool CTF2BotSensor::IsIgnored(edict_t* entity)
 {
-	auto classname = gamehelpers->GetEntityClassname(entity);
+	auto classname = entprops->GetEntityClassname(entity->GetIServerEntity()->GetBaseEntity());
 
-	if (!classname)
+	if (classname == nullptr)
 		return true;
 
 	int index = gamehelpers->IndexOfEdict(entity);
@@ -160,4 +160,14 @@ bool CTF2BotSensor::IgnoredConditionsInternal(int player)
 	}
 
 	return false;
+}
+
+bool CTF2BotSensor::IsClassnameIgnored(const char* classname)
+{
+	static std::string key;
+
+	key.assign(classname);
+
+	// classname filter contains a list of classnames the bot cares about, if not found on the list, ignore it
+	return m_classname_filter.find(key) == m_classname_filter.end();
 }

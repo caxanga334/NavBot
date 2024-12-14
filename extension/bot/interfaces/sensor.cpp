@@ -1,6 +1,8 @@
 #include <limits>
 
 #include <extension.h>
+#include <manager.h>
+#include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
@@ -48,8 +50,8 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	m_minrecognitiontime = profile->GetMinRecognitionTime();
 	m_lastupdatetime = 0.0f;
 	m_primarythreatcache = nullptr;
-	m_updateVisibleTimer.Invalidate();
-	m_updateNonPlayerTimer.Start(UPDATE_NONPLAYERS_DELAY);
+	m_updateNonPlayerTimer.Invalidate();
+	m_cachedNPCupdaterate = extmanager->GetMod()->GetModSettings()->GetVisionNPCUpdateRate();
 }
 
 ISensor::~ISensor()
@@ -71,17 +73,12 @@ void ISensor::Reset()
 	m_knownlist.clear();
 	m_lastupdatetime = 0.0f;
 	m_threatvisibletimer.Invalidate();
-	m_updateVisibleTimer.Invalidate();
-	m_updateNonPlayerTimer.Start(UPDATE_NONPLAYERS_DELAY);
+	m_updateNonPlayerTimer.Invalidate();
 }
 
 void ISensor::Update()
 {
-	if (m_updateVisibleTimer.IsElapsed())
-	{
-		m_updateVisibleTimer.Start(UPDATE_VISION_DELAY);
-		UpdateKnownEntities();
-	}
+	UpdateKnownEntities();
 }
 
 void ISensor::Frame()
@@ -570,7 +567,7 @@ void ISensor::UpdateKnownEntities()
 
 	if (m_updateNonPlayerTimer.IsElapsed())
 	{
-		m_updateNonPlayerTimer.Start(UPDATE_NONPLAYERS_DELAY);
+		m_updateNonPlayerTimer.Start(m_cachedNPCupdaterate);
 		CollectNonPlayerEntities(visibleVec);
 	}
 

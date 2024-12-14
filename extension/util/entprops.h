@@ -30,6 +30,7 @@
 #define SMNAV_UTIL_ENT_PROPS_H_
 #pragma once
 
+#include <unordered_map>
 #include <extension.h>
 #include <dt_send.h>
 #include <server_class.h>
@@ -87,7 +88,33 @@ enum RoundState
 class CEntPropUtils
 {
 public:
+
+	enum CacheIndex : int
+	{
+		CBASEENTITY_PLACEHOLDER = 0,
+		CTFPLAYER_PLAYERCOND, // m_nPlayerCond
+		CTFPLAYER_PLAYERCONDBITS, // _condition_bits
+		CTFPLAYER_PLAYERCONDEX1, // m_nPlayerCondEx
+		CTFPLAYER_PLAYERCONDEX2, // m_nPlayerCondEx2
+		CTFPLAYER_PLAYERCONDEX3, // m_nPlayerCondEx3
+		CTFPLAYER_PLAYERCONDEX4, // m_nPlayerCondEx4
+		CBASECOMBATCHARACTER_ACTIVEWEAPON, // m_hActiveWeapon
+		CBASECOMBATCHARACTER_MYWEAPONS, // m_hMyWeapons
+		CBASECOMBATWEAPON_CLIP1, // m_iClip1
+		CBASECOMBATWEAPON_CLIP2, // m_iClip2
+		CBASECOMBATWEAPON_PRIMARYAMMOTYPE, // m_iPrimaryAmmoType
+		CBASECOMBATWEAPON_SECONDARYAMMOTYPE, // m_iSecondaryAmmoType
+		CBASECOMBATWEAPON_STATE, // m_iState
+		CBASECOMBATWEAPON_OWNER, // m_hOwner
+	};
+
 	void Init(bool reset = false);
+
+	// The functions below are a little bit slow for constant calls.
+	// If there is a variable that you need to read frequently (IE: on a think/game frame hook), you have to cache the offset
+	// Note: SM does have it's own cache however the profiler (VS) reported some high self CPU time on Sourcemod's functions related to the offset search.
+	// It's faster to just cache locally.
+
 	bool HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
 	bool GetEntProp(int entity, PropType proptype, const char *prop, int &result, int size = 4, int element = 0);
 	bool GetEntPropBool(int entity, PropType proptype, const char *prop, bool& result, int element = 0);
@@ -139,6 +166,29 @@ public:
 	template <typename T>
 	T* GetPointerToEntData(CBaseEntity* entity, unsigned int offset);
 
+	/**
+	 * @brief Gets the address to an entity property using the cached offset. Only supports SendProps (Networked Properties)
+	 * @tparam T Variable type at the offset.
+	 * @param entity Entity to read.
+	 * @param index Cache index.
+	 * @return Pointer to entity property.
+	 */
+	template <typename T>
+	T* GetCachedDataPtr(CBaseEntity* entity, CacheIndex index);
+
+	/**
+	 * @brief Gets the value to an entity property using the cached offset. Only supports SendProps (Networked Properties)
+	 * @tparam T Variable type at the offset.
+	 * @param entity Entity to read.
+	 * @param index Cache index.
+	 * @return Value of entity property.
+	 */
+	template <typename T>
+	T GetCachedData(CBaseEntity* entity, CacheIndex index);
+
+	// Gets an entity classname, offset is cached localy
+	const char* GetEntityClassname(CBaseEntity* entity);
+
 private:
 	bool IsNetworkedEntity(CBaseEntity *pEntity);
 	edict_t *BaseEntityToEdict(CBaseEntity *pEntity);
@@ -152,6 +202,10 @@ private:
 
 	const char *grclassname; // game rules proxy net class
 	bool initialized;
+
+	std::unordered_map<int, unsigned int> cached_offsets;
+
+	void BuildCache();
 };
 
 inline int CEntPropUtils::MatchTypeDescAsInteger(_fieldtypes type, int flags)
@@ -287,6 +341,17 @@ inline T* CEntPropUtils::GetPointerToEntData(CBaseEntity* entity, unsigned int o
 	return (T*)((uint8_t*)entity + offset);
 }
 
+template<typename T>
+inline T* CEntPropUtils::GetCachedDataPtr(CBaseEntity* entity, CacheIndex index)
+{
+	return (T*)((uint8_t*)entity + cached_offsets[static_cast<std::size_t>(index)]);
+}
+
+template<typename T>
+inline T CEntPropUtils::GetCachedData(CBaseEntity* entity, CacheIndex index)
+{
+	return *(T*)((uint8_t*)entity + cached_offsets[static_cast<std::size_t>(index)]);
+}
 
 // Global singleton for accessing the Ent Prop Utils
 extern CEntPropUtils *entprops;

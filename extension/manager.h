@@ -90,7 +90,9 @@ public:
 	static void OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
 
 	CSourcePawnMemoryManager* GetPawnMemoryManager() const { return m_pawnmemory.get(); }
-
+	
+	// Gets the value of sv_gravity cached at map start
+	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
@@ -107,6 +109,9 @@ private:
 	int m_quotatarget; // Bot quota target
 	bool m_iscreatingbot; // We are creating a NavBot
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
+
+	// Getting horrible performance at vstdlib.dll from a function called by ConVarRef::Init, so we are caching the sv_gravity value here
+	static float s_sv_gravity;
 };
 
 extern CExtManager* extmanager;

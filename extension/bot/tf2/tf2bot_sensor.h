@@ -29,12 +29,7 @@ private:
 		m_classname_filter.emplace(classname);
 	}
 
-	inline bool IsClassnameIgnored(const char* classname)
-	{
-		std::string szname(classname);
-		// classname filter contains a list of classnames the bot cares about, if not found on the list, ignore it
-		return m_classname_filter.find(szname) == m_classname_filter.end();
-	}
+	bool IsClassnameIgnored(const char* classname);
 };
 
 #endif // !NAVBOT_TF2_SENSOR_INTERFACE_H_

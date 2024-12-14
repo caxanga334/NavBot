@@ -19,6 +19,7 @@ constexpr auto NEAREST_AREA_MAX_DISTANCE = 128.0f;
 CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 {
 	m_edict = edict;
+	m_pEntity = edict->GetIServerEntity()->GetBaseEntity();
 	m_index = gamehelpers->IndexOfEdict(edict);
 	m_playerinfo = playerinfomanager->GetPlayerInfo(edict);
 	m_lastnavarea = nullptr;
@@ -36,13 +37,6 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 
 CBaseExtPlayer::~CBaseExtPlayer()
 {
-}
-
-CBaseEntity* CBaseExtPlayer::GetEntity() const
-{
-	CBaseEntity* entity = nullptr;
-	UtilHelpers::IndexToAThings(GetIndex(), &entity, nullptr);
-	return entity;
 }
 
 bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other) const
@@ -279,17 +273,9 @@ bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
 	return false;
 }
 
-edict_t* CBaseExtPlayer::GetActiveWeapon() const
+CBaseEntity* CBaseExtPlayer::GetActiveWeapon() const
 {
-	edict_t* weapon = nullptr;
-	int entity = -1;
-
-	if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hActiveWeapon", entity) == true)
-	{
-		weapon = gamehelpers->EdictOfIndex(entity);
-	}
-
-	return weapon;
+	return entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(GetEntity(), CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_ACTIVEWEAPON)->Get();
 }
 
 bool CBaseExtPlayer::IsActiveWeapon(const char* classname) const

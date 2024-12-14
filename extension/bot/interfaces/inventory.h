@@ -58,7 +58,7 @@ public:
 	 * @param classname Weapon classname.
 	 * @return true if the bot has the weapon.
 	 */
-	bool HasWeapon(std::string classname);
+	bool HasWeapon(const char* classname);
 
 	/**
 	 * @brief Builds the bot inventory of weapons and items.

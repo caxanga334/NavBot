@@ -2,6 +2,7 @@
 #define NAVBOT_WEAPON_STORAGE_INTERFACE_H_
 #pragma once
 
+#include <string>
 #include <sdkports/sdk_ehandle.h>
 #include "weaponinfo.h"
 #include <entities/basecombatweapon.h>
@@ -26,6 +27,8 @@ public:
 	CBaseEntity* GetEntity() const;
 	int GetIndex() const;
 
+	const std::string& GetClassname() const { return m_classname; }
+
 protected:
 	std::shared_ptr<WeaponInfo> m_info;
 
@@ -33,6 +36,7 @@ private:
 	CHandle<CBaseEntity> m_handle;
 	entities::HBaseCombatWeapon m_bcw;
 	int m_econindex;
+	std::string m_classname;
 };
 
 #endif // !NAVBOT_WEAPON_STORAGE_INTERFACE_H_

@@ -21,8 +21,10 @@ ModSettings
 
 These settings are used by all mods.
 
-| Key | Description | Range |
-|:---:|:---:|:---:|
-| update_rate | How frequently the bot internal state is updated. Lower values improves the bot responsiveness, higher values will decrease CPU usage. Default is `0.11`. | 0.0 - 0.5 |
-| defend_rate | Used by bots to determine if they should defend or attack. | 0 - 100 |
-| stuck_suicide_threshold | If a bot gets this many stuck events on a roll, they will use the kill command. | 5 - 60 |
+| Key | Description | Range | Default |
+|:---:|:---:|:---:|:---:|
+| update_rate | How frequently in seconds the bot internal state is updated. Lower values improves the bot responsiveness, higher values will decrease CPU usage. | 0.0 - 0.5 | 0.1 |
+| vision_npc_update_rate | How frequently in seconds the bot will scan for visible non player entities. Lower values improves the bot responsiveness to detecting NPC entities, higher values will decreate CPU usage. This value is capped by the primary `update_rate` value. | 0.0 - 2.0 | 0.250 |
+| inventory_update_rate | How frequently in seconds the bot will update the weapon inventory. Lower values allows the bots to detect new weapons faster, higher values will decrease CPU usage. | 0.1 - 60.0 | 1.0 |
+| defend_rate | Used by bots to determine if they should defend or attack. | 0 - 100 | 33 |
+| stuck_suicide_threshold | If a bot gets this many stuck events on a roll, they will use the kill command. | 5 - 60 | 15 |

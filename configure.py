@@ -18,6 +18,8 @@ parser.options.add_argument('--enable-debug', action='store_const', const='1', d
                        help='Enable debugging symbols')
 parser.options.add_argument('--enable-optimize', action='store_const', const='1', dest='opt',
                        help='Enable optimization')
+parser.options.add_argument('--enable-link-time-optimization', action='store_const', const='1', dest='lto',
+                       help='Enable Link Time Optimization (LTO)')
 parser.options.add_argument('-s', '--sdks', default='present', dest='sdks',
                        help='Build against specified SDKs; valid args are "none", "all", "present",'
                             ' or comma-delimited list of engine names')

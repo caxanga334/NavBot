@@ -28,7 +28,8 @@ public:
 	inline edict_t* GetEdict() const { return m_edict; }
 	// Gets the player entity index
 	inline int GetIndex() const { return m_index; }
-	CBaseEntity* GetEntity() const;
+	// Gets the player CBaseEntity pointer
+	CBaseEntity* GetEntity() const { return m_pEntity; }
 	IServerEntity* GetServerEntity() const { return m_edict->GetIServerEntity(); }
 	IServerUnknown* GetServerUnknown() const { return m_edict->GetUnknown(); }
 	IHandleEntity* GetHandleEntity() const { return reinterpret_cast<IHandleEntity*>(m_edict->GetIServerEntity()); }
@@ -80,7 +81,7 @@ public:
 	virtual edict_t* GetGroundEntity() const;
 	virtual bool Weapon_OwnsThisType(const char* weapon, edict_t** result = nullptr);
 	// Gets the current active weapon or NULL if none
-	virtual edict_t* GetActiveWeapon() const;
+	virtual CBaseEntity* GetActiveWeapon() const;
 	// True if the current active weapon matches the given classname
 	virtual bool IsActiveWeapon(const char* classname) const;
 	virtual int GetHealth() const { return m_playerinfo->GetHealth(); }
@@ -138,7 +139,8 @@ public:
 protected:
 
 private:
-	edict_t* m_edict;
+	edict_t* m_edict; // my edict pointer
+	CBaseEntity* m_pEntity; // my cbaseentity pointer
 	int m_index; // Index of this player
 	IPlayerInfo* m_playerinfo;
 	CNavArea* m_lastnavarea;

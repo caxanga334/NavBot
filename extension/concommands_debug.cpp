@@ -847,12 +847,10 @@ CON_COMMAND(sm_tf_projectile_weapon_data, "Gets the projectile speed and gravity
 	}
 
 	CBaseExtPlayer player(UtilHelpers::GetListenServerHost());
-	edict_t* edict = player.GetActiveWeapon();
+	CBaseEntity* pEntity = player.GetActiveWeapon();
 
-	if (UtilHelpers::IsValidEdict(edict))
+	if (pEntity != nullptr)
 	{
-		CBaseEntity* pEntity = edict->GetIServerEntity()->GetBaseEntity();
-
 		ServerClass* pClass = gamehelpers->FindEntityServerClass(pEntity);
 
 		if (pClass == nullptr)

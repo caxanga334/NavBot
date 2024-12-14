@@ -1,5 +1,8 @@
 #include <limits>
+#include <algorithm>
 #include <extension.h>
+#include <manager.h>
+#include <mods/basemod.h>
 #include <util/entprops.h>
 #include <bot/basebot.h>
 #include "behavior.h"
@@ -11,8 +14,7 @@
 #undef max
 #undef clamp
 
-constexpr auto UPDATE_WEAPONS_INTERVAL = 15.0f;
-constexpr auto UPDATE_WEAPONS_INTERVAL_AFTER_RESET = 0.5f;
+constexpr auto UPDATE_WEAPONS_INTERVAL_AFTER_RESET = 0.1f;
 
 IInventory::IInventory(CBaseBot* bot) : IBotInterface(bot)
 {
@@ -37,7 +39,7 @@ void IInventory::Update()
 {
 	if (m_updateWeaponsTimer.IsElapsed())
 	{
-		m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL);
+		m_updateWeaponsTimer.Start(extmanager->GetMod()->GetModSettings()->GetInventoryUpdateRate());
 		BuildInventory();
 	}
 }
@@ -53,48 +55,31 @@ void IInventory::OnWeaponInfoConfigReloaded()
 	BuildInventory();
 }
 
-bool IInventory::HasWeapon(std::string classname)
+bool IInventory::HasWeapon(const char* classname)
 {
-	for (auto& weapon : m_weapons)
-	{
-		if (!weapon->IsValid())
-			continue;
-
-		const char* clname = weapon->GetBaseCombatWeapon().GetClassname();
-
-		if (clname != nullptr)
-		{
-			std::string szName(clname);
-
-			if (szName == classname)
-			{
-				return true;
-			}
-		}
-	}
-
-	return false;
+	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::shared_ptr<CBotWeapon>& weaponptr) {
+		return weaponptr->IsValid() && (strcmp(weaponptr->GetClassname().c_str(), classname) == 0);
+	});
 }
 
 void IInventory::BuildInventory()
 {
 	m_weapons.clear();
 
+	// array CHandle<CBaseEntity> weapons[MAX_WEAPONS]
+	CHandle<CBaseEntity>* myweapons = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(GetBot()->GetEntity(), CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_MYWEAPONS);
+
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
-		int index = INVALID_EHANDLE_INDEX;
-		entprops->GetEntPropEnt(GetBot()->GetIndex(), Prop_Send, "m_hMyWeapons", index, i);
+		CBaseEntity* weapon = myweapons[i].Get();
 
-		if (index == INVALID_EHANDLE_INDEX)
+		if (weapon == nullptr)
+		{
 			continue;
-
-		edict_t* weapon = gamehelpers->EdictOfIndex(index);
-
-		if (!UtilHelpers::IsValidEdict(weapon))
-			continue;
+		}
 
 		// IsValidEdict checks if GetIServerEntity return is not NULL
-		m_weapons.emplace_back(CreateBotWeapon(weapon->GetIServerEntity()->GetBaseEntity()));
+		m_weapons.emplace_back(CreateBotWeapon(weapon));
 	}
 }
 
@@ -119,14 +104,31 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 
 	ForEveryWeapon([&bot, &priority, &rangeToThreat, &best](const CBotWeapon* weapon) {
 		
+		if (!weapon->IsValid())
+		{
+			return;
+		}
+
 		// weapon must be usable against enemies
 		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
 		{
 			return;
 		}
 
+		CBaseEntity* pWeapon = weapon->GetEntity();
+		CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
+
+		// I must be the weapon's owner
+		if (bot->GetEntity() != owner)
+		{
+			return;
+		}
+
+		int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
+		int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
+
 		// Must have ammo
-		if (weapon->GetBaseCombatWeapon().GetClip1() == 0 && bot->GetAmmoOfIndex(weapon->GetBaseCombatWeapon().GetPrimaryAmmoType()) == 0)
+		if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
 		{
 			return;
 		}
@@ -162,16 +164,16 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 
 std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 {
-	edict_t* weapon = GetBot()->GetActiveWeapon();
+	CBaseEntity* weapon = GetBot()->GetActiveWeapon();
 
-	if (!UtilHelpers::IsValidEdict(weapon))
+	if (weapon == nullptr)
 	{
 		return nullptr;
 	}
 
 	if (m_cachedActiveWeapon && m_cachedActiveWeapon->IsValid())
 	{
-		if (m_cachedActiveWeapon->GetEdict() == weapon)
+		if (m_cachedActiveWeapon->GetEntity() == weapon)
 		{
 			return m_cachedActiveWeapon;
 		}
@@ -179,7 +181,7 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 
 	for (auto& weaponptr : m_weapons)
 	{
-		if (weaponptr->IsValid() && weaponptr->GetEdict() == weapon)
+		if (weaponptr->IsValid() && weaponptr->GetEntity() == weapon)
 		{
 			return weaponptr;
 		}

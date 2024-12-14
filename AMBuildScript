@@ -259,6 +259,9 @@ class ExtensionConfig(object):
 
     if builder.options.opt == '1':
       cxx.cflags += ['-O3']
+      if builder.options.lto == '1':
+        cxx.cflags += ['-flto']
+        cxx.linkflags += ['-flto']
 
     if builder.options.archoptions == 1:
       cxx.cflags += ['-msse4.2']
@@ -308,8 +311,12 @@ class ExtensionConfig(object):
     ]
 
     if builder.options.opt == '1':
-      cxx.cflags += ['/O2', '/Zo']
+      # /Ob3 needs to be after /Ox, enables aggressive function inling
+      cxx.cflags += ['/Ox', '/Zo', '/Ob3', '/GF']
       cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
+      if builder.options.lto == '1':
+        cxx.cflags += ['/GL', '/Gy']
+        cxx.linkflags += ['/LTCG']
 
     if builder.options.debug == '1':
       cxx.cflags += ['/Od', '/RTC1']

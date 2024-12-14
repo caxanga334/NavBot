@@ -6,6 +6,7 @@
 
 bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 {
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(player);
 	int iCond = static_cast<int>(cond);
 	int value = 0;
 
@@ -14,13 +15,13 @@ bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 	case 0:
 	{
 		int bit = 1 << iCond;
-		entprops->GetEntProp(player, Prop_Send, "m_nPlayerCond", value);
+		value = entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCOND);
 		if ((value & bit) == bit)
 		{
 			return true;
 		}
 
-		entprops->GetEntProp(player, Prop_Send, "_condition_bits", value);
+		value = entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDBITS);
 		if ((value & bit) == bit)
 		{
 			return true;
@@ -30,7 +31,7 @@ bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 	case 1:
 	{
 		int bit = (1 << (iCond - 32));
-		entprops->GetEntProp(player, Prop_Send, "m_nPlayerCondEx", value);
+		value = entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX1);
 		if ((value & bit) == bit)
 		{
 			return true;
@@ -40,7 +41,7 @@ bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 	case 2:
 	{
 		int bit = (1 << (iCond - 64));
-		entprops->GetEntProp(player, Prop_Send, "m_nPlayerCondEx2", value);
+		value = entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX2);
 		if ((value & bit) == bit)
 		{
 			return true;
@@ -50,7 +51,7 @@ bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 	case 3:
 	{
 		int bit = (1 << (iCond - 96));
-		entprops->GetEntProp(player, Prop_Send, "m_nPlayerCondEx3", value);
+		value = entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX3);
 		if ((value & bit) == bit)
 		{
 			return true;
@@ -60,7 +61,7 @@ bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 	case 4:
 	{
 		int bit = (1 << (iCond - 128));
-		entprops->GetEntProp(player, Prop_Send, "m_nPlayerCondEx4", value);
+		value = entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX4);
 		if ((value & bit) == bit)
 		{
 			return true;

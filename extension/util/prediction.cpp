@@ -1,6 +1,7 @@
 #include <algorithm>
 
 #include <extension.h>
+#include <manager.h>
 #include <bot/basebot.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
@@ -11,8 +12,6 @@
 #undef min
 #undef max
 #undef clamp
-
-static ConVarRef s_sv_gravity("sv_gravity");
 
 Vector pred::SimpleProjectileLead(const Vector& targetPosition, const Vector& targetVelocity, const float projectileSpeed, const float rangeBetween)
 {
@@ -26,26 +25,22 @@ Vector pred::SimpleProjectileLead(const Vector& targetPosition, const Vector& ta
 
 float pred::SimpleGravityCompensation(const float time, const float proj_gravity)
 {
-	ConVarRef s_sv_gravity("sv_gravity");
-
-	return (s_sv_gravity.GetFloat() / 2.0f) * (time * time) * proj_gravity;
+	return (CExtManager::GetSvGravityValue() / 2.0f) * (time * time) * proj_gravity;
 }
 
 float pred::GetGrenadeZ(const float rangeBetween, const float projectileSpeed)
 {
-	ConVarRef s_sv_gravity("sv_gravity");
 	constexpr auto PROJECTILE_SPEED_CONST = 0.707f;
 
 	const float time = GetProjectileTravelTime(projectileSpeed * PROJECTILE_SPEED_CONST, rangeBetween);
-	return std::min(0.0f, ((powf(2.0f, time) - 1.0f) * (s_sv_gravity.GetFloat() * 0.1f)));
+	return std::min(0.0f, ((powf(2.0f, time) - 1.0f) * (CExtManager::GetSvGravityValue() * 0.1f)));
 }
 
 float pred::GravityComp(const float rangeBetween, const float projGravity, const float elevationRate)
 {
-	ConVarRef s_sv_gravity("sv_gravity");
 	constexpr auto STEP_DIVIDER = 50.0f;
 	float steps = rangeBetween / STEP_DIVIDER;
-	float z = (s_sv_gravity.GetFloat() * projGravity) * (elevationRate * steps);
+	float z = (CExtManager::GetSvGravityValue() * projGravity) * (elevationRate * steps);
 
 	return z;
 }
