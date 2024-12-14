@@ -30,7 +30,7 @@ static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_per
 
 AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask(CTF2Bot* bot)
 {
-	return SelectScenarioTask(bot);
+	return CTF2BotTacticalTask::SelectScenarioTask(bot);
 }
 
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -100,16 +100,49 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 	return ANSWER_UNDEFINED;
 }
 
-AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me)
+AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipClassBehavior)
 {
 	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
 	auto gm = tf2mod->GetCurrentGameMode();
-	auto myclass = me->GetMyClassType();
 
 	if (gm == TeamFortress2::GameModeType::GM_MVM)
 	{
 		return new CTF2BotMvMIdleTask; // In MvM, all bots start with this
 	}
+
+	if (!skipClassBehavior)
+	{
+		AITask<CTF2Bot>* task = CTF2BotTacticalTask::SelectClassTask(me);
+
+		if (task != nullptr)
+		{
+			return task;
+		}
+	}
+
+	switch (gm)
+	{
+	case TeamFortress2::GameModeType::GM_CTF:
+		return new CTF2BotCTFMonitorTask;
+	case TeamFortress2::GameModeType::GM_PL:
+		return new CTF2BotPushPayloadTask;
+	case TeamFortress2::GameModeType::GM_CP:
+	case TeamFortress2::GameModeType::GM_ADCP:
+	case TeamFortress2::GameModeType::GM_ARENA: // arena may need it's own task
+	case TeamFortress2::GameModeType::GM_TC: // same for TC
+		return new CTF2BotControlPointMonitorTask;
+	case TeamFortress2::GameModeType::GM_MVM:
+		return new CTF2BotMvMIdleTask;
+	default:
+		break;
+	}
+
+	return new CTF2BotDeathmatchScenarioTask;
+}
+
+AITask<CTF2Bot>* CTF2BotTacticalTask::SelectClassTask(CTF2Bot* me)
+{
+	auto myclass = me->GetMyClassType();
 
 	switch (myclass)
 	{
@@ -125,21 +158,6 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me)
 		break;
 	}
 
-	switch (gm)
-	{
-	case TeamFortress2::GameModeType::GM_CTF:
-		return new CTF2BotCTFMonitorTask;
-	case TeamFortress2::GameModeType::GM_PL:
-		return new CTF2BotPushPayloadTask;
-	case TeamFortress2::GameModeType::GM_CP:
-	case TeamFortress2::GameModeType::GM_ADCP:
-	case TeamFortress2::GameModeType::GM_ARENA: // arena may need it's own task
-	case TeamFortress2::GameModeType::GM_TC: // same for TC
-		return new CTF2BotControlPointMonitorTask;
-	default:
-		break;
-	}
-
-	return new CTF2BotDeathmatchScenarioTask;
+	return nullptr;
 }
 

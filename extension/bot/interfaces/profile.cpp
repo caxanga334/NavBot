@@ -176,6 +176,12 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 
 		m_current->SetSkillLevel(v);
 	}
+	else if (strncasecmp(key, "game_awareness", 14) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 0, 100);
+		m_current->SetGameAwareness(v);
+	}
 	else if (strncasecmp(key, "aimspeed", 8) == 0)
 	{
 		float v = atof(value);

@@ -13,8 +13,6 @@
 #undef min
 #undef clamp
 
-static ConVar sm_navbot_tf_medic_patient_scan_range("sm_navbot_tf_medic_patient_scan_range", "1500", FCVAR_GAMEDLL, "Medic AI: Distance to search for patients to heal.", true, 512.0f, true, 16384.0f);
-
 CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 {
 	m_tf2movement = std::make_unique<CTF2BotMovement>(this);
@@ -267,128 +265,6 @@ bool CTF2Bot::IsAmmoLow() const
 	});
 
 	return haslowammoweapon;
-}
-
-edict_t* CTF2Bot::MedicFindBestPatient() const
-{
-	const float max_scan_range = sm_navbot_tf_medic_patient_scan_range.GetFloat();
-
-	// filter for getting potential teammates to heal
-	auto functor = [this, &max_scan_range](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> bool {
-		auto myteam = GetMyTFTeam();
-		auto theirteam = tf2lib::GetEntityTFTeam(client);
-
-		if (client == GetIndex())
-		{
-			return false; // can't heal self
-		}
-
-		if (tf2lib::GetPlayerClassType(client) == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(client))
-		{
-			theirteam = tf2lib::GetDisguiseTeam(client);
-		}
-
-		if (myteam != theirteam) // can only heal teammates
-		{
-			return false;
-		}
-
-		if (tf2lib::IsPlayerInvisible(client))
-		{
-			return false; // can't heal invisible players
-		}
-
-		if (!UtilHelpers::IsPlayerAlive(client))
-		{
-			return false;
-		}
-
-		Vector mypos = WorldSpaceCenter();
-		Vector theirpos = UtilHelpers::getWorldSpaceCenter(entity);
-		float range = (theirpos - mypos).Length();
-		
-
-		if (range > max_scan_range)
-		{
-			return false;
-		}
-
-		// Don't do LOS checks, medic has an autocall feature that can be used to find teammates
-
-		return true;
-	};
-
-	std::vector<int> players;
-	players.reserve(100);
-	UtilHelpers::CollectPlayers(players, functor);
-
-	if (players.size() == 0)
-	{
-		return nullptr; // no player to heal
-	}
-
-	edict_t* best = nullptr;
-	float bestrange = std::numeric_limits<float>::max();
-	Vector mypos = WorldSpaceCenter();
-
-	for (auto& client : players)
-	{
-		auto them = gamehelpers->EdictOfIndex(client);
-		Vector theirpos = UtilHelpers::getWorldSpaceCenter(them);
-		float distance = (theirpos - mypos).Length();
-		float health_percent = tf2lib::GetPlayerHealthPercentage(client);
-
-		if (health_percent >= 1.0f)
-		{
-			distance *= 1.25f; // at max health or overhealed
-		}
-
-		if (health_percent <= medic_patient_health_critical_level())
-		{
-			distance *= 0.5f;
-		}
-
-		if (health_percent <= medic_patient_health_low_level())
-		{
-			distance *= 0.75f;
-		}
-
-		if (tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_OnFire) ||
-			tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Bleeding))
-		{
-			distance *= 0.8f;
-		}
-
-		switch (tf2lib::GetPlayerClassType(client))
-		{
-		case TeamFortress2::TFClass_DemoMan:
-		case TeamFortress2::TFClass_Soldier:
-		case TeamFortress2::TFClass_Heavy:
-		case TeamFortress2::TFClass_Medic:
-			distance *= 0.6f; // big preference for these classes
-			break;
-		case TeamFortress2::TFClass_Scout:
-		case TeamFortress2::TFClass_Sniper:
-			distance *= 1.3f; // low priority for these classes
-			break;
-		default:
-			break;
-		}
-
-		if (distance < bestrange)
-		{
-			bestrange = distance;
-			best = them;
-		}
-	}
-
-	if (best != nullptr)
-	{
-		DebugPrintToConsole(BOTDEBUG_TASKS, 0, 102, 0, "%s MEDIC: Found patient %s, range factor: %3.4f \n", GetDebugIdentifier(), 
-			UtilHelpers::GetPlayerDebugIdentifier(best), bestrange);
-	}
-
-	return best;
 }
 
 edict_t* CTF2Bot::GetMySentryGun() const

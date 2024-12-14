@@ -4,6 +4,7 @@
 #include <vector>
 #include <memory>
 
+#include <sdkports/sdk_timers.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
 
@@ -134,9 +135,14 @@ protected:
 	CKnownEntity* FindKnownEntity(edict_t* edict);
 	inline std::vector<std::shared_ptr<CKnownEntity>>& GetKnownEntityList() { return m_knownlist; }
 
+	static constexpr auto UPDATE_NONPLAYERS_DELAY = 0.7f;
+	static constexpr auto UPDATE_VISION_DELAY = 0.3f;
+
 private:
 	std::vector<std::shared_ptr<CKnownEntity>> m_knownlist;
 	std::shared_ptr<const CKnownEntity> m_primarythreatcache;
+	CountdownTimer m_updateVisibleTimer;
+	CountdownTimer m_updateNonPlayerTimer;
 	float m_fieldofview;
 	float m_coshalfFOV;
 	float m_maxvisionrange;

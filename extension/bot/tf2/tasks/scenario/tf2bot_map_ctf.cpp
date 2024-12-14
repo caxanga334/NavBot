@@ -54,7 +54,7 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 		return Done("Failed to find a path to the flag!");
 	}
 
-	m_repathtimer.Start(0.5f);
+	m_repathtimer.StartRandom(1.0f, 1.5f);
 
 	return Continue();
 }

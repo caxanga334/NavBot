@@ -21,8 +21,22 @@
 #undef min
 #undef clamp
 
+#ifdef EXT_DEBUG
+static ConVar tf_disable_ai("tf_disable_ai", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Disable the CTF2Bot AI.");
+#endif // EXT_DEBUG
+
+
+
 AITask<CTF2Bot>* CTF2BotMainTask::InitialNextTask(CTF2Bot* bot)
 {
+#ifdef EXT_DEBUG
+	// TO-DO: Add a mod settings for this later since this helps when testing weapons
+	if (tf_disable_ai.GetBool())
+	{
+		return nullptr;
+	}
+#endif // EXT_DEBUG
+
 	return new CTF2BotTacticalTask;
 }
 

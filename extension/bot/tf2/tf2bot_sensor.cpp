@@ -8,7 +8,7 @@
 #include "tf2bot_sensor.h"
 
 #if SOURCE_ENGINE == SE_TF2
-ConVar sm_navbot_tf_attack_nextbots("sm_navbot_tf_attack_nextbots", "1", FCVAR_GAMEDLL, "If enabled, allow bots to attacks NextBot entities.");
+// ConVar sm_navbot_tf_attack_nextbots("sm_navbot_tf_attack_nextbots", "1", FCVAR_GAMEDLL, "If enabled, allow bots to attacks NextBot entities.");
 #endif // SOURCE_ENGINE == SE_TF2
 
 
@@ -52,6 +52,7 @@ bool CTF2BotSensor::IsIgnored(edict_t* entity)
 	}
 
 #if SOURCE_ENGINE == SE_TF2
+/* Causes bad CPU perf, look for a better solution (probably an SDK call)
 	if (sm_navbot_tf_attack_nextbots.GetBool())
 	{
 		CBaseEntity* be = reinterpret_cast<CBaseEntity*>(entity->GetIServerEntity());
@@ -65,6 +66,7 @@ bool CTF2BotSensor::IsIgnored(edict_t* entity)
 			}
 		}
 	}
+*/
 #endif // SOURCE_ENGINE == SE_TF2
 
 	if (IsClassnameIgnored(classname))

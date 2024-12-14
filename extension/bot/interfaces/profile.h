@@ -16,6 +16,7 @@ public:
 	DifficultyProfile()
 	{
 		skill_level = -1;
+		game_awareness = 40;
 		aimspeed = 800.0f;
 		fov = 90;
 		maxvisionrange = 2048;
@@ -32,6 +33,8 @@ public:
 	inline bool IsDefaultProfile() const { return skill_level < 0; }
 
 	inline const int GetSkillLevel() const { return skill_level; }
+	// Bot game awareness skill. Range: 0 - 100
+	inline const int GetGameAwareness() const { return game_awareness; }
 	inline const float GetAimSpeed() const { return aimspeed; }
 	inline const int GetFOV() const { return fov; }
 	inline const int GetMaxVisionRange() const { return maxvisionrange; }
@@ -44,6 +47,7 @@ public:
 	inline const float GetAimMinSpeedForError() const { return aim_minspeed_for_error; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
+	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
 	inline void SetAimSpeed(const float speed) { aimspeed = speed; }
 	inline void SetFOV(const int v) { fov = v; }
 	inline void SetMaxVisionRange(const int range) { maxvisionrange = range; }
@@ -57,6 +61,7 @@ public:
 
 private:
 	int skill_level; // the skill level this profile represents
+	int game_awareness; // general purpose game awareness skill
 	float aimspeed; // Aiming speed cap
 	int fov; // field of view in degrees
 	int maxvisionrange; // maximum distance the bot is able to see

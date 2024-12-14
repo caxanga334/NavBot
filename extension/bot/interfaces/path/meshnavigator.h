@@ -63,7 +63,7 @@ private:
 class CMeshNavigatorAutoRepath : public CMeshNavigator
 {
 public:
-	CMeshNavigatorAutoRepath(float repathInterval = 0.5f)
+	CMeshNavigatorAutoRepath(float repathInterval = 1.0f)
 	{
 		m_repathinterval = repathInterval;
 		m_repathTimer.Invalidate();

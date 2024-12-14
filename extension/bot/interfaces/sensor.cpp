@@ -48,6 +48,8 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	m_minrecognitiontime = profile->GetMinRecognitionTime();
 	m_lastupdatetime = 0.0f;
 	m_primarythreatcache = nullptr;
+	m_updateVisibleTimer.Invalidate();
+	m_updateNonPlayerTimer.Start(UPDATE_NONPLAYERS_DELAY);
 }
 
 ISensor::~ISensor()
@@ -69,11 +71,17 @@ void ISensor::Reset()
 	m_knownlist.clear();
 	m_lastupdatetime = 0.0f;
 	m_threatvisibletimer.Invalidate();
+	m_updateVisibleTimer.Invalidate();
+	m_updateNonPlayerTimer.Start(UPDATE_NONPLAYERS_DELAY);
 }
 
 void ISensor::Update()
 {
-	UpdateKnownEntities();
+	if (m_updateVisibleTimer.IsElapsed())
+	{
+		m_updateVisibleTimer.Start(UPDATE_VISION_DELAY);
+		UpdateKnownEntities();
+	}
 }
 
 void ISensor::Frame()
@@ -102,8 +110,7 @@ bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
 {
 	auto me = GetBot();
 	auto start = me->GetEyeOrigin();
-	entities::HBaseEntity be(entity);
-	auto pos = be.WorldSpaceCenter();
+	auto pos = UtilHelpers::getWorldSpaceCenter(entity);
 	const auto maxdist = GetMaxVisionRange() * GetMaxVisionRange();
 	float distance = (start - pos).LengthSqr();
 
@@ -225,7 +232,7 @@ bool ISensor::IsLineOfSightClear(edict_t* entity)
 
 	if (result.DidHit())
 	{
-		trace::line(start, baseent.WorldSpaceCenter(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+		trace::line(start, UtilHelpers::getWorldSpaceCenter(entity), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 
 		if (result.DidHit())
 		{
@@ -247,7 +254,7 @@ bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
 
 	if (result.DidHit())
 	{
-		trace::line(start, baseent.WorldSpaceCenter(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+		trace::line(start, UtilHelpers::getWorldSpaceCenter(entity), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 
 		if (result.DidHit())
 		{
@@ -560,7 +567,12 @@ void ISensor::UpdateKnownEntities()
 
 	// Vision Update - Phase 1 - Collect entities
 	CollectPlayers(visibleVec);
-	CollectNonPlayerEntities(visibleVec);
+
+	if (m_updateNonPlayerTimer.IsElapsed())
+	{
+		m_updateNonPlayerTimer.Start(UPDATE_NONPLAYERS_DELAY);
+		CollectNonPlayerEntities(visibleVec);
+	}
 
 	// Vision Update - Phase 2 - Clean current database of known entities
 	CleanKnownEntities();
@@ -579,7 +591,6 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 	{
 		// all entities inside visibleVec are visible to the bot RIGHT NOW!
 		auto known = FindKnownEntity(edict);
-		auto pos = UtilHelpers::getWorldSpaceCenter(edict);
 
 		if (known == nullptr) // first time seening this entity
 		{
@@ -652,16 +663,8 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 	{
 		auto edict = gamehelpers->EdictOfIndex(i);
 
-		if (edict == nullptr) {
-			continue;
-		}
-
-		if (edict->IsFree())
+		if (!UtilHelpers::IsValidEdict(edict)) 
 		{
-			continue;
-		}
-
-		if (edict->GetUnknown() == nullptr) {
 			continue;
 		}
 
@@ -704,16 +707,8 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 	{
 		auto edict = gamehelpers->EdictOfIndex(i);
 
-		if (edict == nullptr) {
-			continue;
-		}
-
-		if (edict->IsFree())
+		if (!UtilHelpers::IsValidEdict(edict))
 		{
-			continue;
-		}
-
-		if (edict->GetUnknown() == nullptr) {
 			continue;
 		}
 

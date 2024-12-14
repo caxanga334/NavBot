@@ -53,6 +53,7 @@ namespace UtilHelpers
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(CBaseEntity* entity);
+	// Checks if the given sendtable contains a networked table. WARNING: BAD CPU PERF
 	bool HasDataTable(SendTable* root, const char* name);
 	bool FindDataTable(SendTable* pTable, const char* name, sm_sendprop_info_t* info, unsigned int offset);
 	Vector getOBBCenter(edict_t* pEntity);

@@ -114,8 +114,10 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 		return;
 	}
 
+	const int skill = me->GetDifficultyProfile()->GetGameAwareness();
+
 	// Detection: Recent memory of known spy
-	if (m_detectionLevel == DETECTION_SUSPICIOUS && m_blownTime.IsLessThen(SUSPICIOUS_TIME))
+	if (skill >= 10 && m_detectionLevel == DETECTION_SUSPICIOUS && m_blownTime.IsLessThen(SUSPICIOUS_TIME))
 	{
 		OnDetected();
 		return;
@@ -131,14 +133,14 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	int target = gamehelpers->IndexOfEdict(pTarget);
 
 	// Detection: Disguised as me
-	if (target == me->GetIndex())
+	if (skill >= 5 && target == me->GetIndex())
 	{
 		OnDetected();
 		return;
 	}
 
 	// Detection: Target is dead
-	if (!UtilHelpers::IsPlayerAlive(target))
+	if (skill >= 15 && !UtilHelpers::IsPlayerAlive(target))
 	{
 		OnDetected();
 		return;
@@ -147,14 +149,14 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	auto disguiseClass = tf2lib::GetDisguiseClass(client);
 
 	// Detection: Spy disguise class doesn't match the target current class
-	if (tf2lib::GetPlayerClassType(target) != disguiseClass)
+	if (skill >= 50 && tf2lib::GetPlayerClassType(target) != disguiseClass)
 	{
 		OnDetected();
 		return;
 	}
 
 	// Detection: Disguised as a scout while moving
-	if (disguiseClass == TeamFortress2::TFClass_Scout)
+	if (skill >= 25 && disguiseClass == TeamFortress2::TFClass_Scout)
 	{
 		tfentities::HTFBaseEntity be(spy);
 		Vector velocity = be.GetAbsVelocity();
@@ -168,8 +170,7 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	}
 
 	// Detection: Medics should be healing
-	// TO-DO: Make this be based on the bot skill
-	if (disguiseClass == TeamFortress2::TFClass_Medic)
+	if (skill >= 75 && disguiseClass == TeamFortress2::TFClass_Medic)
 	{
 		OnDetected();
 		return;

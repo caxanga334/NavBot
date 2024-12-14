@@ -183,11 +183,7 @@ bool UtilHelpers::FindDataTable(SendTable* pTable, const char* name, sm_sendprop
 				return true;
 			}
 
-			if (FindDataTable(table,
-				name,
-				info,
-				offset + prop->GetOffset())
-				)
+			if (FindDataTable(table, name, info, offset + prop->GetOffset()))
 			{
 				return true;
 			}

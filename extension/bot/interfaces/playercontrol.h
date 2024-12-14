@@ -27,8 +27,10 @@ public:
 		LOOK_INTERESTING, // Something interesting
 		LOOK_ALERT, // Something that alerts, gunfire, explosions
 		LOOK_DANGER, // Something dangerous
+		LOOK_ALLY, // Look at my teammate
 		LOOK_OPERATE, // Operating a machine, buttons, levers, etc
 		LOOK_COMBAT, // Enemies
+		LOOK_SUPPORT, // Combat support, more important than enemies
 		LOOK_VERY_IMPORTANT, // Something very important, more than enemies
 		LOOK_MOVEMENT, // Movement that requires looking in a specific direction (ie: ladders, jumps)
 		LOOK_CRITICAL, // Something of very high importance
@@ -121,8 +123,10 @@ inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)
 		"INTERESTING"sv,
 		"ALERT"sv,
 		"DANGER"sv,
+		"ALLY"sv,
 		"OPERATE"sv,
 		"COMBAT"sv,
+		"SUPPORT"sv,
 		"VERY IMPORTANT"sv,
 		"MOVEMENT"sv,
 		"CRITICAL"sv,

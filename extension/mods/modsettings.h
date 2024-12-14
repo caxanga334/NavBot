@@ -8,7 +8,7 @@ public:
 	{
 		defendrate = 33;
 		stucksuicidethreshold = 15; // stuck events happens every 1 second, this will be about 15 seconds
-		updaterate = 0.07f;
+		updaterate = 0.11f;
 	}
 
 	~CModSettings()
