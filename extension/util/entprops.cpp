@@ -341,31 +341,6 @@ bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, 
 	return false;
 }
 
-const char* CEntPropUtils::GetEntityClassname(CBaseEntity* entity)
-{
-	static int s_offset = -1;
-
-	if (s_offset < 0)
-	{
-		SourceMod::sm_datatable_info_t info;
-		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_iClassname", &info))
-		{
-			return nullptr;
-		}
-
-		s_offset = static_cast<int>(info.actual_offset);
-	}
-
-	string_t s = *(string_t*)((uint8_t*)entity + s_offset);
-
-	if (s == NULL_STRING)
-	{
-		return nullptr;
-	}
-
-	return STRING(s);
-}
-
 /// @brief Checks if the given entity is a networked entity
 /// @param pEntity Entity to check
 /// @return true if the entity is networked, false otherwise
@@ -375,7 +350,7 @@ bool CEntPropUtils::IsNetworkedEntity(CBaseEntity *pEntity)
 
 	if (!pNet)
 	{
-		return true;
+		return false;
 	}
 
 	edict_t* edict = pNet->GetEdict();
@@ -2183,6 +2158,7 @@ void CEntPropUtils::BuildCache()
 		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx2", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX2),
 		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx3", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX3),
 		NetPropBuildCacheData("CTFPlayer", "m_nPlayerCondEx4", CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX4),
+		NetPropBuildCacheData("CTFPlayer", "m_iClass", CEntPropUtils::CacheIndex::CTFPLAYER_CLASSTYPE),
 		NetPropBuildCacheData("CBaseCombatCharacter", "m_hActiveWeapon", CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_ACTIVEWEAPON),
 		NetPropBuildCacheData("CBaseCombatCharacter", "m_hMyWeapons", CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_MYWEAPONS),
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_iClip1", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1),
@@ -2191,6 +2167,7 @@ void CEntPropUtils::BuildCache()
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_iSecondaryAmmoType", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_SECONDARYAMMOTYPE),
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_iState", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_STATE),
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_hOwner", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER),
+		NetPropBuildCacheData("CBasePlayer", "m_nWaterLevel", CEntPropUtils::CacheIndex::CBASEPLAYER_WATERLEVEL),
 	};
 
 	SourceMod::sm_sendprop_info_t info;
@@ -2202,4 +2179,133 @@ void CEntPropUtils::BuildCache()
 			cached_offsets[static_cast<int>(data.index)] = info.actual_offset;
 		}
 	}
+}
+
+const char* entityprops::GetEntityClassname(CBaseEntity* entity)
+{
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_iClassname", &info))
+		{
+			return nullptr;
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	string_t s = *(string_t*)((uint8_t*)entity + s_offset);
+
+	if (s == NULL_STRING)
+	{
+		return nullptr;
+	}
+
+	return STRING(s);
+}
+
+int entityprops::GetEntityTeamNum(CBaseEntity* entity)
+{
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		SourceMod::sm_datatable_info_t info;
+
+		datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+		if (datamap == nullptr)
+		{
+			return TEAM_UNASSIGNED;
+		}
+
+		if (!gamehelpers->FindDataMapInfo(datamap, "m_iTeamNum", &info))
+		{
+			return TEAM_UNASSIGNED;
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	return *(int*)((uint8_t*)entity + s_offset);
+}
+
+std::int8_t entityprops::GetEntityLifeState(CBaseEntity* entity)
+{
+	/*
+	 * This function should be pretty safe to use, on TF2 and CSS datamap dump, m_lifestate offset was the same for every entity.
+	 * TO-DO: This is generally a signed char, if some mods change the variable type, type detection will be required for this.
+	*/
+
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_lifeState", &info))
+		{
+			return LIFE_ALIVE;
+		}
+
+		if (info.prop->fieldType != FIELD_CHARACTER)
+		{
+			// this will warn if any mods have changed the variable type
+			smutils->LogError(myself, "[NAVBOT] m_lifeState datamap is not a FIELD_CHARACTER!");
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	return *(std::int8_t*)((uint8_t*)entity + s_offset);
+}
+
+int entityprops::GetEntityHealth(CBaseEntity* entity)
+{
+	/* Like life state, the offset was the same for every entity in the game (TF2, CSS) */
+
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_iHealth", &info))
+		{
+			return LIFE_ALIVE;
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	return *(int*)((uint8_t*)entity + s_offset);
+}
+
+std::int8_t entityprops::GetEntityWaterLevel(CBaseEntity* entity)
+{
+	/*
+	 * Offset is the same for every entity on TF2 datamap dump.
+	 * TO-DO: This is generally a signed char, if some mods change the variable type, type detection will be required for this.
+	*/
+
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_nWaterLevel", &info))
+		{
+			return LIFE_ALIVE;
+		}
+
+		if (info.prop->fieldType != FIELD_CHARACTER)
+		{
+			// this will warn if any mods have changed the variable type
+			smutils->LogError(myself, "[NAVBOT] m_nWaterLevel datamap is not a FIELD_CHARACTER!");
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	return *(std::int8_t*)((uint8_t*)entity + s_offset);
 }

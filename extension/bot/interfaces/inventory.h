@@ -59,17 +59,42 @@ public:
 	 * @return true if the bot has the weapon.
 	 */
 	bool HasWeapon(const char* classname);
+	/**
+	 * @brief Checks if the bot owns this weapon.
+	 * @param weapon Weapon entity;
+	 * @return true if the bot owns this weapon.
+	 */
+	bool HasWeapon(CBaseEntity* weapon);
+
+	/**
+	 * @brief Registers the given weapon to the bot inventory.
+	 * @param weapon Weapon entity.
+	 */
+	virtual void AddWeaponToInventory(CBaseEntity* weapon);
 
 	/**
 	 * @brief Builds the bot inventory of weapons and items.
 	 */
 	virtual void BuildInventory();
-	// Given a known threat, selects the best weapon from the current inventory.
+	/**
+	 * @brief Given a known threat, selects the best weapon from the current inventory.
+	 * @param threat Threat, NULL is NOT accepted.
+	 */
 	virtual void SelectBestWeaponForThreat(const CKnownEntity* threat);
+	/**
+	 * @brief Selects the best weapon from the bot inventory.
+	 */
+	virtual void SelectBestWeapon();
+	/**
+	 * @brief Selects the best weapon from the bot inventory to attack breakable entities (func_breakable, prop_physics, etc...)
+	 */
+	virtual void SelectBestWeaponForBreakables();
 	// Gets the CBotWeapon pointer for the bot current active weapon. Can return NULL if the bot doesn't have an active weapon or the current weapon lacks a CBotWeapon.
 	virtual std::shared_ptr<CBotWeapon> GetActiveBotWeapon();
 	// Requests the bot inventory to be refreshed
 	virtual void RequestRefresh() { m_updateWeaponsTimer.Invalidate(); }
+
+	void OnWeaponEquip(CBaseEntity* weapon) override;
 
 protected:
 	std::vector<std::shared_ptr<CBotWeapon>> m_weapons;

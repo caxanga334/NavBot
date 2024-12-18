@@ -1263,6 +1263,26 @@ void CTeamFortress2Mod::Command_ShowControlPoints() const
 	}
 }
 
+void CTeamFortress2Mod::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args)
+{
+	if (args.ArgC() > 2)
+	{
+		if (strncasecmp(args[0], "voicemenu", 9) == 0)
+		{
+			int command = TeamFortress2::GetVoiceCommandID(atoi(args[1]), atoi(args[2]));
+			CBaseEntity* pEntity = pEdict->GetIServerEntity()->GetBaseEntity();
+
+			extmanager->ForEachBot([&pEntity, &command](CBaseBot* bot) {
+				// send voice commands for all bots
+				if (bot->GetEntity() != pEntity)
+				{
+					bot->OnVoiceCommand(pEntity, command);
+				}
+			});
+		}
+	}
+}
+
 #if SOURCE_ENGINE == SE_TF2
 
 CON_COMMAND(sm_navbot_tf_show_upgrades, "[TF2] List all MvM Upgrades known by the bots.")

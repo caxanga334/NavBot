@@ -17,6 +17,7 @@
 #include <bot/interfaces/profile.h>
 #include <bot/interfaces/weapon.h>
 #include <bot/interfaces/inventory.h>
+#include <bot/interfaces/squads.h>
 #include <sdkports/sdk_timers.h>
 
 // Interval between calls to Update()
@@ -54,6 +55,7 @@ private:
 	void Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInfo& info);
 	void Hook_PhysicsSimulate();
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
+	void Hook_Weapon_Equip_Post(CBaseEntity* weapon);
 
 public:
 
@@ -112,6 +114,7 @@ public:
 	virtual ISensor* GetSensorInterface() const;
 	virtual IBehavior* GetBehaviorInterface() const;
 	virtual IInventory* GetInventoryInterface() const;
+	virtual ISquad* GetSquadInterface() const;
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 
@@ -122,7 +125,7 @@ public:
 	// Called when this bot touches another entity
 	virtual void Touch(CBaseEntity* pOther) {}
 	// Called when this bot dies
-	virtual void Killed() {}
+	virtual void Killed();
 	// Called by the OnTakeDamage_Alive hook.
 	virtual void OnTakeDamage_Alive(const CTakeDamageInfo& info);
 	// Called to check if the bot can join the game
@@ -173,23 +176,13 @@ public:
 	void FakeClientCommand(const char* command) const;
 	bool IsDebugging(int bits) const;
 	virtual const char* GetDebugIdentifier() const;
+	// Gets the bot client (player) name.
+	const char* GetClientName() const;
 	void DebugPrintToConsole(const int bits, const int red, const int green, const int blue, const char* fmt, ...) const;
 	void DebugPrintToConsole(const int red, const int green, const int blue, const char* fmt, ...) const;
 	void DebugDisplayText(const char* text);
 	void DebugFrame();
 
-	virtual bool WantsToShootAtEnemies()
-	{
-		if (m_holdfire_time.HasStarted() && !m_holdfire_time.IsElapsed())
-		{
-			return false;
-		}
-		
-		return true;
-	}
-
-	// makes the bot hold their fire for the given time in seconds
-	inline void DontAttackEnemies(const float time) { m_holdfire_time.Start(time); }
 	virtual bool IsLineOfFireClear(const Vector& to) const;
 
 	inline const Vector& GetHomePos() const { return m_homepos; }
@@ -206,6 +199,9 @@ public:
 		}
 	}
 
+	int GetWaterLevel() const;
+	bool IsUnderWater() const;
+
 protected:
 	bool m_isfirstspawn;
 
@@ -213,6 +209,7 @@ protected:
 	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
 
 private:
+	int m_simulationtick;
 	CountdownTimer m_nextupdatetime;
 	int m_joingametime; // delay between joingame attempts
 	IBotController* m_controller;
@@ -226,12 +223,12 @@ private:
 	mutable std::unique_ptr<ISensor> m_basesensor; // Base vision and hearing interface
 	mutable std::unique_ptr<IBehavior> m_basebehavior; // Base AI Behavior interface
 	mutable std::unique_ptr<IInventory> m_baseinventory; // Base inventory interface
+	mutable std::unique_ptr<ISquad> m_basesquad; // Base Squad interface
 	std::shared_ptr<DifficultyProfile> m_profile;
 	IntervalTimer m_cmdtimer; // Timer to prevent sending more than the string commands per second limit
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
 	int m_cmdsents; // How many string commands this bot has sent within 1 second
 	int m_debugtextoffset;
-	CountdownTimer m_holdfire_time; // Timer for the bot to not attack enemies
 	Vector m_homepos; // Position where the bot spawned
 	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
 	IntervalTimer m_burningtimer;

@@ -559,6 +559,71 @@ namespace TeamFortress2
 			return m_flCapPercentages[index];
 		}
 	};
+
+	enum VoiceCommandsID : int
+	{
+		/* voicemenu 0 x */
+
+		VC_INVALID = -1,
+		VC_MENU0START = 0,
+		VC_MEDIC = 0,
+		VC_THANKS,
+		VC_GOGOGO,
+		VC_MOVEUP,
+		VC_GOLEFT,
+		VC_GORIGHT,
+		VC_YES,
+		VC_NO,
+		VC_PASSTOME,
+
+		/* voicemenu 1 x */
+
+		VC_MENU1START = VC_PASSTOME + 1,
+		VC_INCOMING = VC_MENU1START,
+		VC_SPY,
+		VC_SENTRYAHEAD,
+		VC_PLACETPHERE,
+		VC_PLACEDISPENSERHERE,
+		VC_PLACESENTRYHERE,
+		VC_DEPLOYUBER,
+		VC_UBERREADY,
+		VC_PASSTOME2,
+
+		/* voicemenu 2 x */
+
+		VC_MENU2START = VC_PASSTOME2 + 1,
+		VC_HELP = VC_MENU2START,
+		VC_BATTLECRY,
+		VC_CHEERS,
+		VC_JEERS,
+		VC_POSITIVE,
+		VC_NEGATIVE,
+		VC_NICESHOT,
+		VC_GOODJOB
+	};
+
+	/**
+	 * @brief Tranlates a voice command menu and selection index into a value from the enum above.
+	 * 
+	 * See: https://wiki.teamfortress.com/wiki/Scripting#Voice_Menu
+	 * @param menu Menu index
+	 * @param index Menu selection index
+	 * @return Voice Command ID
+	 */
+	inline int GetVoiceCommandID(int menu, int index)
+	{
+		switch (menu)
+		{
+		case 0:
+			return static_cast<int>(VoiceCommandsID::VC_MENU0START) - index;
+		case 1:
+			return static_cast<int>(VoiceCommandsID::VC_MENU1START) - index;
+		case 2:
+			return static_cast<int>(VoiceCommandsID::VC_MENU2START) - index;
+		default:
+			return static_cast<int>(VoiceCommandsID::VC_INVALID);
+		}
+	}
 }
 
 

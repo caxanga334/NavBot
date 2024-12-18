@@ -130,8 +130,6 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 					Invalidate();
 				}
 
-				mover->ClearStuckStatus();
-
 				return;
 			}
 		}

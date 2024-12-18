@@ -33,6 +33,7 @@ public:
 	{
 	public:
 		KnownSpy(edict_t* spy);
+		KnownSpy(CBaseEntity* spy);
 		KnownSpy(int spy);
 
 		static constexpr auto FORGET_SPY_TIME = 25.0f;
@@ -43,7 +44,8 @@ public:
 
 		bool operator==(const KnownSpy& other);
 		bool operator()(edict_t* spy);
-		edict_t* GetEdict() const { return m_handle.Get(); }
+		bool operator()(CBaseEntity* spy);
+		edict_t* GetEdict() const { return m_handle.ToEdict(); }
 		bool IsObsolete() const { return m_handle.Get() == nullptr || m_detectionLevel == DETECTION_INVALID || (m_forgetTime.HasStarted() && m_forgetTime.IsElapsed()); }
 		void Invalidate() { m_handle.Term(); }
 		bool IsHostile() const { return m_detectionLevel == DETECTION_BLOWN; }
@@ -51,7 +53,7 @@ public:
 		void NotifyTouch() { OnDetected(); }
 
 	private:
-		CHandleEdict m_handle;
+		CHandle<CBaseEntity> m_handle;
 		SpyDetectionLevel m_detectionLevel;
 		IntervalTimer m_initialDetectionTime; // Time since the spy has been added to the known database
 		IntervalTimer m_blownTime; // Time since the spy has been detected as an enemy spy
@@ -69,6 +71,7 @@ public:
 	void Frame() override;
 
 	const KnownSpy& GetKnownSpy(edict_t* spy);
+	const KnownSpy& GetKnownSpy(CBaseEntity* spy);
 
 private:
 	std::vector<KnownSpy> m_knownspylist;

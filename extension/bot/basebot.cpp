@@ -19,6 +19,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
 {
+	m_simulationtick = -1;
 	m_profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
 	m_nextupdatetime.Invalidate();
@@ -288,7 +289,7 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 
 bool CBaseBot::IsAlive() const
 {
-	return UtilHelpers::IsEntityAlive(this->GetIndex());
+	return UtilHelpers::IsEntityAlive(this->GetEntity());
 }
 
 void CBaseBot::RegisterInterface(IBotInterface* iface)
@@ -417,6 +418,16 @@ IInventory* CBaseBot::GetInventoryInterface() const
 	return m_baseinventory.get();
 }
 
+ISquad* CBaseBot::GetSquadInterface() const
+{
+	if (!m_basesquad)
+	{
+		m_basesquad = std::make_unique<ISquad>(const_cast<CBaseBot*>(this));
+	}
+
+	return m_basesquad.get();
+}
+
 void CBaseBot::Spawn()
 {
 	if (m_isfirstspawn == false)
@@ -442,6 +453,10 @@ void CBaseBot::Spawn()
 }
 
 void CBaseBot::FirstSpawn()
+{
+}
+
+void CBaseBot::Killed()
 {
 }
 
@@ -524,8 +539,18 @@ void CBaseBot::ExecuteQueuedCommands()
 
 bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 {
-	trace::CTraceFilterNoNPCsOrPlayers filter(GetEntity(), COLLISION_GROUP_NONE);
+	CTraceFilterWorldAndPropsOnly filter;
 	trace_t result;
 	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
 	return !result.DidHit();
+}
+
+int CBaseBot::GetWaterLevel() const
+{
+	return static_cast<int>(entityprops::GetEntityWaterLevel(GetEntity()));
+}
+
+bool CBaseBot::IsUnderWater() const
+{
+	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(WaterLevel::WL_Eyes);
 }

@@ -104,7 +104,6 @@ TaskEventResponseResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnMoveToFailure(CTF2Bo
 	}
 
 	m_repathtimer.Start(0.5f);
-	bot->GetMovementInterface()->ClearStuckStatus();
 
 	return TryContinue();
 }
@@ -181,7 +180,6 @@ TaskEventResponseResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnMoveToFailure(CTF2
 	}
 
 	m_repathtimer.Start(0.5f);
-	bot->GetMovementInterface()->ClearStuckStatus();
 
 	return TryContinue();
 }

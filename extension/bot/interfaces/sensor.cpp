@@ -279,25 +279,42 @@ bool ISensor::IsEntityHidden(edict_t* entity)
  * @param entity Entity to be added to the list
  * @return true if the entity was added or already exists, false if it was not possible to add
 */
-bool ISensor::AddKnownEntity(edict_t* entity)
+CKnownEntity* ISensor::AddKnownEntity(edict_t* entity)
 {
 	auto index = gamehelpers->IndexOfEdict(entity);
 
 	if (index <= 0) // filter invalid edicts and worldspawn entity.
 	{
-		return false;
+		return nullptr;
 	}
 
-	CKnownEntity other(entity);
-
-	if (std::find_if(m_knownlist.begin(), m_knownlist.end(), [&other](std::shared_ptr<CKnownEntity>& obj) { return *obj == other; }) != m_knownlist.end())
+	for (auto& known : m_knownlist)
 	{
-		return true; // Entity is already in the list
+		if (known->GetEdict() == entity)
+		{
+			return known.get();
+		}
 	}
 
-	m_knownlist.emplace_back(new CKnownEntity(entity));
+	auto& known = m_knownlist.emplace_back(new CKnownEntity(entity));
 
-	return true;
+	return known.get();
+}
+
+CKnownEntity* ISensor::AddKnownEntity(CBaseEntity* entity)
+{
+	for (auto& knownptr : m_knownlist)
+	{
+		if (knownptr->GetEntity() == entity)
+		{
+			return knownptr.get();
+		}
+	}
+
+	// new
+	auto& known = m_knownlist.emplace_back(new CKnownEntity(entity));
+
+	return known.get();
 }
 
 // Removes a entity from the known list
@@ -373,13 +390,9 @@ std::shared_ptr<const CKnownEntity> ISensor::GetKnown(edict_t* entity)
 
 void ISensor::UpdateKnownEntity(edict_t* entity)
 {
-	auto known = FindKnownEntity(entity);
+	auto known = AddKnownEntity(entity);
 
-	if (known == nullptr)
-	{
-		AddKnownEntity(entity);
-	}
-	else
+	if (known != nullptr)
 	{
 		known->UpdatePosition();
 	}
@@ -429,10 +442,10 @@ std::shared_ptr<const CKnownEntity> ISensor::GetPrimaryKnownThreat(const bool on
 		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known->GetEdict()))
+		if (IsIgnored(known->GetEntity()))
 			continue;
 
-		if (!IsEnemy(known->GetEdict()))
+		if (!IsEnemy(known->GetEntity()))
 			continue;
 
 		if (onlyvisible && !known->WasRecentlyVisible())
@@ -456,10 +469,10 @@ std::shared_ptr<const CKnownEntity> ISensor::GetPrimaryKnownThreat(const bool on
 		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known->GetEdict()))
+		if (IsIgnored(known->GetEntity()))
 			continue;
 
-		if (!IsEnemy(known->GetEdict()))
+		if (!IsEnemy(known->GetEntity()))
 			continue;
 
 		if (onlyvisible && !known->WasRecentlyVisible())
@@ -487,10 +500,10 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known->GetEdict()))
+		if (IsIgnored(known->GetEntity()))
 			continue;
 
-		if (!IsEnemy(known->GetEdict()))
+		if (!IsEnemy(known->GetEntity()))
 			continue;
 
 		if (teamindex >= 0 && GetKnownEntityTeamIndex(known.get()) != teamindex)
@@ -536,13 +549,51 @@ const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known->GetEdict()))
+		if (IsIgnored(known->GetEntity()))
 			continue;
 
-		if (!IsEnemy(known->GetEdict()))
+		if (!IsEnemy(known->GetEntity()))
 			continue;
 
 		if (teamindex >= 0 && GetKnownEntityTeamIndex(known.get()) != teamindex)
+			continue;
+
+		float distance = (origin - known->GetLastKnownPosition()).LengthSqr();
+
+		if (distance < smallest)
+		{
+			nearest = known.get();
+			smallest = distance;
+		}
+	}
+
+	return nearest;
+}
+
+const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
+{
+	const CKnownEntity* nearest = nullptr;
+	float smallest = std::numeric_limits<float>::max();
+	Vector origin = GetBot()->GetEyeOrigin();
+
+	for (auto& known : m_knownlist)
+	{
+		if (!IsAwareOf(known))
+			continue;
+
+		if (known->IsObsolete())
+			continue;
+
+		if (!known->WasEverHeard())
+			continue;
+
+		if (IsIgnored(known->GetEntity()))
+			continue;
+
+		if (!IsEnemy(known->GetEntity()))
+			continue;
+
+		if (teamIndex >= TEAM_UNASSIGNED && GetKnownEntityTeamIndex(known.get()) != teamIndex)
 			continue;
 
 		float distance = (origin - known->GetLastKnownPosition()).LengthSqr();
@@ -685,7 +736,7 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 			continue; // Ignore dead players
 		}
 
-		if (IsIgnored(edict)) {
+		if (IsIgnored(edict->GetIServerEntity()->GetBaseEntity())) {
 			continue; // Ignored player
 		}
 
@@ -709,11 +760,14 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
-		if (IsIgnored(edict)) {
+		CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
+
+		if (IsIgnored(entity)) 
+		{
 			continue;
 		}
 
-		if (IsAbleToSee(edict))
+		if (IsAbleToSee(entity))
 		{
 			visibleVec.push_back(edict);
 		}

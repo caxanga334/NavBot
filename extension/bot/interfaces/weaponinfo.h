@@ -111,6 +111,7 @@ public:
 		econindex = -1;
 		priority = 0;
 		can_headshot = false;
+		inf_ammo = false;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
 		maxclip2 = 0;
@@ -167,6 +168,7 @@ public:
 	}
 
 	inline void SetCanHeadShot(bool v) { can_headshot = v; }
+	inline void SetInfiniteAmmo(bool v) { inf_ammo = v; }
 	inline void SetHeadShotRangeMultiplier(float v) { headshot_range_mult = v; }
 	inline void SetHeadShotAimOffset(const Vector& offset) { headshot_aim_offset = offset; }
 
@@ -183,6 +185,7 @@ public:
 	// Returns true if this is the default weapon info profile
 	inline bool IsDefault() const { return configentry.size() == 0; }
 	inline bool CanHeadShot() const { return can_headshot; }
+	inline bool HasInfiniteAmmo() const { return inf_ammo; }
 	inline float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
 	inline float GetMaxPrimaryHeadShotRange() const { return attacksinfo[PRIMARY_ATTACK].GetMaxRange() * headshot_range_mult; }
 	inline const Vector& GetHeadShotAimOffset() const { return headshot_aim_offset; }
@@ -221,6 +224,7 @@ protected:
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
 	bool can_headshot;
+	bool inf_ammo; // Infinite ammo?
 	float headshot_range_mult;
 	int maxclip1; // Maximum ammo stored in clip1
 	int maxclip2; // Maximum ammo stored in clip2

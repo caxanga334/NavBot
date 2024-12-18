@@ -54,7 +54,7 @@ public:
 		m_candoublejump = mover->IsAbleToDoubleJump();
 	}
 
-	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const override;
+	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const override;
 
 private:
 	CBaseBot* m_me;
@@ -66,7 +66,7 @@ private:
 	bool m_candoublejump;
 };
 
-float CPluginBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const
+float CPluginBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const
 {
 	if (fromArea == nullptr)
 	{
@@ -135,7 +135,7 @@ float CPluginBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const
 	else
 	{
 		// Don't use double jump links if we can't perform a double jump
-		if (link->GetType() == NavLinkType::LINK_DOUBLE_JUMP && !m_candoublejump)
+		if (link->GetType() == OffMeshConnectionType::OFFMESH_DOUBLE_JUMP && !m_candoublejump)
 		{
 			return -1.0f;
 		}

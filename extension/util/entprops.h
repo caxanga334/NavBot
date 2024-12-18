@@ -30,6 +30,7 @@
 #define SMNAV_UTIL_ENT_PROPS_H_
 #pragma once
 
+#include <cinttypes>
 #include <unordered_map>
 #include <extension.h>
 #include <dt_send.h>
@@ -52,6 +53,15 @@ enum PropType
 {
 	Prop_Send = 0,
 	Prop_Data
+};
+
+// Water level values for m_nWaterLevel, from src/game/shared/imovehelper.h
+enum WaterLevel : std::int8_t
+{
+	WL_NotInWater = 0,
+	WL_Feet,
+	WL_Waist,
+	WL_Eyes
 };
 
 // from sourcemod
@@ -98,6 +108,7 @@ public:
 		CTFPLAYER_PLAYERCONDEX2, // m_nPlayerCondEx2
 		CTFPLAYER_PLAYERCONDEX3, // m_nPlayerCondEx3
 		CTFPLAYER_PLAYERCONDEX4, // m_nPlayerCondEx4
+		CTFPLAYER_CLASSTYPE, // m_iClass
 		CBASECOMBATCHARACTER_ACTIVEWEAPON, // m_hActiveWeapon
 		CBASECOMBATCHARACTER_MYWEAPONS, // m_hMyWeapons
 		CBASECOMBATWEAPON_CLIP1, // m_iClip1
@@ -106,6 +117,7 @@ public:
 		CBASECOMBATWEAPON_SECONDARYAMMOTYPE, // m_iSecondaryAmmoType
 		CBASECOMBATWEAPON_STATE, // m_iState
 		CBASECOMBATWEAPON_OWNER, // m_hOwner
+		CBASEPLAYER_WATERLEVEL, // m_nWaterLevel
 	};
 
 	void Init(bool reset = false);
@@ -185,10 +197,6 @@ public:
 	 */
 	template <typename T>
 	T GetCachedData(CBaseEntity* entity, CacheIndex index);
-
-	// Gets an entity classname, offset is cached localy
-	const char* GetEntityClassname(CBaseEntity* entity);
-
 private:
 	bool IsNetworkedEntity(CBaseEntity *pEntity);
 	edict_t *BaseEntityToEdict(CBaseEntity *pEntity);
@@ -355,5 +363,19 @@ inline T CEntPropUtils::GetCachedData(CBaseEntity* entity, CacheIndex index)
 
 // Global singleton for accessing the Ent Prop Utils
 extern CEntPropUtils *entprops;
+
+namespace entityprops
+{
+	// Gets an entity classname, offset is cached localy
+	const char* GetEntityClassname(CBaseEntity* entity);
+	// Gets an entity team number (m_iTeamNum) via datamaps
+	int GetEntityTeamNum(CBaseEntity* entity);
+	// Gets an entity life state (m_lifeState) via datamaps
+	std::int8_t GetEntityLifeState(CBaseEntity* entity);
+	// Gets an entity health (m_iHealth) via datamaps
+	int GetEntityHealth(CBaseEntity* entity);
+
+	std::int8_t GetEntityWaterLevel(CBaseEntity* entity);
+}
 
 #endif

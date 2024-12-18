@@ -860,7 +860,7 @@ void IMovement::StuckMonitor()
 		// bot is stuck
 		if (bot->IsRangeGreaterThan(m_stuck.GetStuckPos(), STUCK_RADIUS))
 		{
-			ClearStuckStatus();
+			ClearStuckStatus("Stuck Monitor: No longer stuck.");
 			bot->OnUnstuck();
 			m_stuck.UpdateNotStuck(origin);
 

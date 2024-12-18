@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <sdkports/sdk_timers.h>
+#include <sdkports/sdk_ehandle.h>
 #include <mods/tf2/teamfortress2_shareddefs.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/path/basepath.h>
@@ -19,6 +20,7 @@
 #include "tf2bot_upgrades.h"
 
 struct edict_t;
+class CTFWaypoint;
 
 class CTF2Bot : public CBaseBot
 {
@@ -52,17 +54,9 @@ public:
 	edict_t* GetItem() const;
 	bool IsCarryingAFlag() const;
 	edict_t* GetFlagToFetch() const;
+	edict_t* GetFlagToDefend(bool stolenOnly = false) const;
 	edict_t* GetFlagCaptureZoreToDeliver() const;
 	bool IsAmmoLow() const;
-	edict_t* MedicFindBestPatient() const;
-	edict_t* GetMySentryGun() const;
-	edict_t* GetMyDispenser() const;
-	edict_t* GetMyTeleporterEntrance() const;
-	edict_t* GetMyTeleporterExit() const;
-	void SetMySentryGun(edict_t* entity);
-	void SetMyDispenser(edict_t* entity);
-	void SetMyTeleporterEntrance(edict_t* entity);
-	void SetMyTeleporterExit(edict_t* entity);
 	void FindMyBuildings();
 	bool IsDisguised() const;
 	bool IsCloaked() const;
@@ -117,6 +111,23 @@ public:
 
 	bool IsInsideSpawnRoom() const;
 
+	CBaseEntity* GetMySentryGun() const;
+	CBaseEntity* GetMyDispenser() const;
+	CBaseEntity* GetMyTeleporterEntrance() const;
+	CBaseEntity* GetMyTeleporterExit() const;
+	void SetMySentryGun(CBaseEntity* entity);
+	void SetMyDispenser(CBaseEntity* entity);
+	void SetMyTeleporterEntrance(CBaseEntity* entity);
+	void SetMyTeleporterExit(CBaseEntity* entity);
+	CTFWaypoint* GetMySentryGunWaypoint() const;
+	CTFWaypoint* GetMyDispenserWaypoint() const;
+	CTFWaypoint* GetMyTeleporterEntranceWaypoint() const;
+	CTFWaypoint* GetMyTeleporterExitWaypoint() const;
+	void SetMySentryGunWaypoint(CTFWaypoint* wpt);
+	void SetMyDispenserWaypoint(CTFWaypoint* wpt);
+	void SetMyTeleporterEntranceWaypoint(CTFWaypoint* wpt);
+	void SetMyTeleporterExitWaypoint(CTFWaypoint* wpt);
+
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -126,10 +137,14 @@ private:
 	std::unique_ptr<CTF2BotInventory> m_tf2inventory;
 	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
 	IntervalTimer m_classswitchtimer;
-	CBaseHandle m_mySentryGun;
-	CBaseHandle m_myDispenser;
-	CBaseHandle m_myTeleporterEntrance;
-	CBaseHandle m_myTeleporterExit;
+	CHandle<CBaseEntity> m_mySentryGun;
+	CHandle<CBaseEntity> m_myDispenser;
+	CHandle<CBaseEntity> m_myTeleporterEntrance;
+	CHandle<CBaseEntity> m_myTeleporterExit;
+	CTFWaypoint* m_sgWaypoint; // sentry gun waypoint
+	CTFWaypoint* m_dispWaypoint; // dispenser waypoint
+	CTFWaypoint* m_tpentWaypoint; // teleporter entrance waypoint
+	CTFWaypoint* m_tpextWaypoint; // teleporter exit waypoint
 	CTF2BotUpgradeManager m_upgrademan;
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
@@ -141,7 +156,7 @@ class CTF2BotPathCost : public IPathCost
 public:
 	CTF2BotPathCost(CTF2Bot* bot, RouteType routetype = FASTEST_ROUTE);
 
-	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const override;
+	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const override;
 
 private:
 	CTF2Bot* m_me;

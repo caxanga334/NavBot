@@ -6,6 +6,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <mods/tf2/nav/tfnavarea.h>
+#include <mods/tf2/nav/tfnav_waypoint.h>
 #include <entities/tf2/tf_entities.h>
 #include "tf2bot.h"
 
@@ -23,6 +24,10 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
 	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
 	m_upgrademan.SetMe(this);
+	m_sgWaypoint = nullptr;
+	m_dispWaypoint = nullptr;
+	m_tpentWaypoint = nullptr;
+	m_tpextWaypoint = nullptr;
 }
 
 CTF2Bot::~CTF2Bot()
@@ -65,12 +70,32 @@ void CTF2Bot::Spawn()
 {
 	FindMyBuildings();
 
-	CBaseBot::Spawn();
-
 	if (GetMyClassType() > TeamFortress2::TFClass_Unknown)
 	{
 		m_upgrademan.OnBotSpawn();
 	}
+
+	if (GetMySentryGun() == nullptr)
+	{
+		SetMySentryGunWaypoint(nullptr);
+	}
+
+	if (GetMyDispenser() == nullptr)
+	{
+		SetMyDispenserWaypoint(nullptr);
+	}
+
+	if (GetMyTeleporterEntrance() == nullptr)
+	{
+		SetMyTeleporterEntranceWaypoint(nullptr);
+	}
+
+	if (GetMyTeleporterExit() == nullptr)
+	{
+		SetMyTeleporterExitWaypoint(nullptr);
+	}
+
+	CBaseBot::Spawn();
 }
 
 void CTF2Bot::FirstSpawn()
@@ -193,6 +218,52 @@ edict_t* CTF2Bot::GetFlagToFetch() const
 	return gamehelpers->EdictOfIndex(flag);
 }
 
+edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly) const
+{
+	std::vector<edict_t*> collectedflags;
+	collectedflags.reserve(16);
+	auto myteam = GetMyTFTeam();
+
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&collectedflags, &myteam, &stolenOnly](int index, edict_t* edict, CBaseEntity* entity) {
+
+		if (edict == nullptr)
+		{
+			return true; // keep loop
+		}
+
+		tfentities::HCaptureFlag flag(edict);
+
+		if (flag.IsDisabled())
+		{
+			return true; // keep loop
+		}
+
+		if (stolenOnly && !flag.IsStolen())
+		{
+			return true; // keep loop
+		}
+
+		if (flag.GetTFTeam() == myteam)
+		{
+			collectedflags.push_back(edict);
+		}
+
+		return true;
+	});
+
+	if (collectedflags.empty())
+	{
+		return nullptr;
+	}
+
+	if (collectedflags.size() == 1)
+	{
+		return collectedflags[0];
+	}
+
+	return librandom::utils::GetRandomElementFromVector<edict_t*>(collectedflags);
+}
+
 /**
  * @brief Gets the capture zone position to deliver the flag
  * @return Capture zone position Vector
@@ -245,6 +316,11 @@ bool CTF2Bot::IsAmmoLow() const
 			return; // don't bother with ammo for non combat weapons
 		}
 
+		if (weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		{
+			return;
+		}
+
 		if (weapon->GetWeaponInfo()->HasLowPrimaryAmmoThreshold())
 		{
 			if (GetAmmoOfIndex(weapon->GetBaseCombatWeapon().GetPrimaryAmmoType()) < weapon->GetWeaponInfo()->GetLowPrimaryAmmoThreshold())
@@ -267,44 +343,44 @@ bool CTF2Bot::IsAmmoLow() const
 	return haslowammoweapon;
 }
 
-edict_t* CTF2Bot::GetMySentryGun() const
+CBaseEntity* CTF2Bot::GetMySentryGun() const
 {
-	return UtilHelpers::GetEdictFromCBaseHandle(m_mySentryGun);
+	return m_mySentryGun.Get();
 }
 
-edict_t* CTF2Bot::GetMyDispenser() const
+CBaseEntity* CTF2Bot::GetMyDispenser() const
 {
-	return UtilHelpers::GetEdictFromCBaseHandle(m_myDispenser);
+	return m_myDispenser.Get();
 }
 
-edict_t* CTF2Bot::GetMyTeleporterEntrance() const
+CBaseEntity* CTF2Bot::GetMyTeleporterEntrance() const
 {
-	return UtilHelpers::GetEdictFromCBaseHandle(m_myTeleporterEntrance);
+	return m_myTeleporterEntrance.Get();
 }
 
-edict_t* CTF2Bot::GetMyTeleporterExit() const
+CBaseEntity* CTF2Bot::GetMyTeleporterExit() const
 {
-	return UtilHelpers::GetEdictFromCBaseHandle(m_myTeleporterExit);
+	return m_myTeleporterExit.Get();
 }
 
-void CTF2Bot::SetMySentryGun(edict_t* entity)
+void CTF2Bot::SetMySentryGun(CBaseEntity* entity)
 {
-	UtilHelpers::SetHandleEntity(m_mySentryGun, entity);
+	m_mySentryGun = entity;
 }
 
-void CTF2Bot::SetMyDispenser(edict_t* entity)
+void CTF2Bot::SetMyDispenser(CBaseEntity* entity)
 {
-	UtilHelpers::SetHandleEntity(m_myDispenser, entity);
+	m_myDispenser = entity;
 }
 
-void CTF2Bot::SetMyTeleporterEntrance(edict_t* entity)
+void CTF2Bot::SetMyTeleporterEntrance(CBaseEntity* entity)
 {
-	UtilHelpers::SetHandleEntity(m_myTeleporterEntrance, entity);
+	m_myTeleporterEntrance = entity;
 }
 
-void CTF2Bot::SetMyTeleporterExit(edict_t* entity)
+void CTF2Bot::SetMyTeleporterExit(CBaseEntity* entity)
 {
-	UtilHelpers::SetHandleEntity(m_myTeleporterExit, entity);
+	m_myTeleporterExit = entity;
 }
 
 void CTF2Bot::FindMyBuildings()
@@ -320,29 +396,20 @@ void CTF2Bot::FindMyBuildings()
 		{
 			auto edict = gamehelpers->EdictOfIndex(i);
 
-			if (edict == nullptr || edict->IsFree() || edict->GetIServerEntity() == nullptr)
+			if (!UtilHelpers::IsValidEdict(edict))
 				continue;
 
-			auto classname = gamehelpers->GetEntityClassname(edict);
+			CBaseEntity* pEntity = edict->GetIServerEntity()->GetBaseEntity();
+
+			auto classname = entityprops::GetEntityClassname(pEntity);
 
 			if (classname == nullptr || classname[0] == 0)
 				continue;
 
-			tfentities::HBaseObject object(edict);
-			CBaseEntity* entity;
+			if (strncasecmp(classname, "obj_", 4) != 0)
+				continue;
 
-			if (object.GetEntity(&entity, nullptr))
-			{
-				ServerClass* svclss = gamehelpers->FindEntityServerClass(entity);
-
-				if (svclss != nullptr)
-				{
-					if (!UtilHelpers::HasDataTable(svclss->m_pTable, "DT_BaseObject"))
-					{
-						continue;
-					}
-				}
-			}
+			tfentities::HBaseObject object(pEntity);
 
 			// Placing means it still a blueprint
 			if (object.IsPlacing())
@@ -352,14 +419,14 @@ void CTF2Bot::FindMyBuildings()
 			{
 				if (object.GetBuilderIndex() == GetIndex())
 				{
-					SetMySentryGun(edict);
+					SetMySentryGun(pEntity);
 				}
 			}
 			else if (strncasecmp(classname, "obj_dispenser", 13) == 0)
 			{
 				if (object.GetBuilderIndex() == GetIndex())
 				{
-					SetMyDispenser(edict);
+					SetMyDispenser(pEntity);
 				}
 			}
 			else if (strncasecmp(classname, "obj_teleporter", 14) == 0)
@@ -368,11 +435,11 @@ void CTF2Bot::FindMyBuildings()
 				{
 					if (object.GetMode() == TeamFortress2::TFObjectMode_Entrance)
 					{
-						SetMyTeleporterEntrance(edict);
+						SetMyTeleporterEntrance(pEntity);
 					}
 					else
 					{
-						SetMyTeleporterExit(edict);
+						SetMyTeleporterExit(pEntity);
 					}
 				}
 			}
@@ -382,17 +449,17 @@ void CTF2Bot::FindMyBuildings()
 
 bool CTF2Bot::IsDisguised() const
 {
-	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Disguised);
+	return tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond_Disguised);
 }
 
 bool CTF2Bot::IsCloaked() const
 {
-	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Cloaked);
+	return tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond_Cloaked);
 }
 
 bool CTF2Bot::IsInvisible() const
 {
-	return tf2lib::IsPlayerInvisible(GetIndex());
+	return tf2lib::IsPlayerInvisible(GetEntity());
 }
 
 int CTF2Bot::GetCurrency() const
@@ -454,7 +521,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
 }
 
-float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const
+float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const
 {
 	if (fromArea == nullptr)
 	{
@@ -525,7 +592,7 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	else
 	{
 		// Don't use double jump links if we can't perform a double jump
-		if (link->GetType() == NavLinkType::LINK_DOUBLE_JUMP && !m_candoublejump)
+		if (link->GetType() == OffMeshConnectionType::OFFMESH_DOUBLE_JUMP && !m_candoublejump)
 		{
 			return -1.0f;
 		}
@@ -553,4 +620,44 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	float cost = dist + fromArea->GetCostSoFar();
 
 	return cost;
+}
+
+CTFWaypoint* CTF2Bot::GetMySentryGunWaypoint() const
+{
+	return m_sgWaypoint;
+}
+
+CTFWaypoint* CTF2Bot::GetMyDispenserWaypoint() const
+{
+	return m_dispWaypoint;
+}
+
+CTFWaypoint* CTF2Bot::GetMyTeleporterEntranceWaypoint() const
+{
+	return m_tpentWaypoint;
+}
+
+CTFWaypoint* CTF2Bot::GetMyTeleporterExitWaypoint() const
+{
+	return m_tpextWaypoint;
+}
+
+void CTF2Bot::SetMySentryGunWaypoint(CTFWaypoint* wpt)
+{
+	m_sgWaypoint = wpt;
+}
+
+void CTF2Bot::SetMyDispenserWaypoint(CTFWaypoint* wpt)
+{
+	m_dispWaypoint = wpt;
+}
+
+void CTF2Bot::SetMyTeleporterEntranceWaypoint(CTFWaypoint* wpt)
+{
+	m_tpentWaypoint = wpt;
+}
+
+void CTF2Bot::SetMyTeleporterExitWaypoint(CTFWaypoint* wpt)
+{
+	m_tpextWaypoint = wpt;
 }

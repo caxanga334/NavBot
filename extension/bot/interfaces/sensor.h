@@ -24,9 +24,9 @@ public:
 	// Called every server frame
 	void Frame() override;
 	// Is this entity ignored by the bot?
-	virtual bool IsIgnored(edict_t* entity) { return false; }
-	virtual bool IsFriendly(edict_t* entity) { return false; }
-	virtual bool IsEnemy(edict_t* entity) { return false; }
+	virtual bool IsIgnored(CBaseEntity* entity) { return false; }
+	virtual bool IsFriendly(CBaseEntity* entity) { return false; }
+	virtual bool IsEnemy(CBaseEntity* entity) { return false; }
 	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
 	bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
 	bool IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV = true);
@@ -46,7 +46,8 @@ public:
 	// Is the given position obscured by fog, smoke, etc?
 	virtual bool IsPositionObscured(const Vector& pos) { return false; }
 	// Adds a known entity to the list
-	virtual bool AddKnownEntity(edict_t* entity);
+	virtual CKnownEntity* AddKnownEntity(edict_t* entity);
+	virtual CKnownEntity* AddKnownEntity(CBaseEntity* entity);
 	// Removes a specific entity from the known entity list
 	virtual void ForgetKnownEntity(edict_t* entity);
 	// Removes all known entities from the list
@@ -86,6 +87,8 @@ public:
 	// Gets the team index of a known entity since we don't have access to the CBaseEntity functions. Override per mod needs.
 	virtual int GetKnownEntityTeamIndex(CKnownEntity* known);
 	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
+
+	virtual const CKnownEntity* GetNearestHeardKnown(int teamIndex);
 
 	// Events
 	// virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
@@ -150,7 +153,7 @@ private:
 
 	inline bool IsAwareOf(const std::shared_ptr<CKnownEntity>& known) const
 	{
-		return known->GetTimeSinceLastVisible() >= GetMinRecognitionTime();
+		return known->GetTimeSinceBecomeKnown() >= GetMinRecognitionTime();
 	}
 };
 

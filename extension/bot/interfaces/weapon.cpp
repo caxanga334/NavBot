@@ -9,7 +9,7 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 {
 	edict_t* edict = reinterpret_cast<IServerEntity*>(entity)->GetNetworkable()->GetEdict();
 
-	auto classname = entprops->GetEntityClassname(entity);
+	auto classname = entityprops::GetEntityClassname(entity);
 	m_econindex = extmanager->GetMod()->GetWeaponEconIndex(edict);
 	m_info = extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(classname, m_econindex);
 	m_handle = entity;

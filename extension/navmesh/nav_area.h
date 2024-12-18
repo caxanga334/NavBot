@@ -199,29 +199,29 @@ struct SpotEncounter
 };
 typedef CUtlVector< SpotEncounter * > SpotEncounterVector;
 
-enum class NavLinkType : uint32_t
+enum class OffMeshConnectionType : std::uint32_t
 {
-	LINK_INVALID = 0,
-	LINK_GROUND, // solid ground
-	LINK_TELEPORTER, // map based teleporter (trigger_teleport)
-	LINK_BLAST_JUMP, // Blast/Rocket Jump
-	LINK_DOUBLE_JUMP,
+	OFFMESH_INVALID = 0,
+	OFFMESH_GROUND, // solid ground
+	OFFMESH_TELEPORTER, // map based teleporter (trigger_teleport)
+	OFFMESH_BLAST_JUMP, // Blast/Rocket Jump
+	OFFMESH_DOUBLE_JUMP,
 
-	MAX_LINK_TYPES // max known link types
+	MAX_OFFMESH_CONNECTION_TYPES // max known link types
 };
 
 /**
- * @brief Link connections between two Nav Areas. "Off-Mesh" connections.
+ * @brief Off-mesh connection between two nav areas.
  */
-class NavSpecialLink
+class NavOffMeshConnection
 {
 public:
-	NavSpecialLink()
+	NavOffMeshConnection()
 	{
-		m_type = NavLinkType::LINK_INVALID;
+		m_type = OffMeshConnectionType::OFFMESH_INVALID;
 	}
 
-	NavSpecialLink(NavLinkType type, CNavArea* other, const Vector& start, const Vector& end)
+	NavOffMeshConnection(OffMeshConnectionType type, CNavArea* other, const Vector& start, const Vector& end)
 	{
 		m_type = type;
 		m_link.area = other;
@@ -229,7 +229,7 @@ public:
 		m_end = end;
 	}
 
-	NavSpecialLink(NavLinkType type, unsigned int id, const Vector& start, const Vector& end)
+	NavOffMeshConnection(OffMeshConnectionType type, unsigned int id, const Vector& start, const Vector& end)
 	{
 		m_type = type;
 		m_link.id = id;
@@ -237,23 +237,23 @@ public:
 		m_end = end;
 	}
 
-	static const char* LinkTypeToString(NavLinkType type);
+	static const char* OffMeshConnectionTypeToString(OffMeshConnectionType type);
 
-	inline bool IsOfType(NavLinkType type) const { return m_type == type; }
+	inline bool IsOfType(OffMeshConnectionType type) const { return m_type == type; }
 	inline bool IsConnectedTo(CNavArea* area) const { return m_link.area == area; }
-	inline NavLinkType GetType() const { return m_type; }
+	inline OffMeshConnectionType GetType() const { return m_type; }
 	inline const Vector& GetStart() const { return m_start; }
 	inline const Vector& GetEnd() const { return m_end; }
 	inline const CNavArea* GetConnectedArea() const { return m_link.area; }
 	inline void SetArea(CNavArea* area) { m_link.area = area; }
 	inline float GetConnectionLength() const { return m_link.length; }
 
-	bool operator==(const NavSpecialLink& other) const
+	bool operator==(const NavOffMeshConnection& other) const
 	{
 		return other.IsOfType(m_type) && other.m_link == m_link;
 	}
 
-	NavLinkType m_type; // Link type
+	OffMeshConnectionType m_type; // Link type
 	NavConnect m_link; // Link connection
 	Vector m_start; // Link start
 	Vector m_end; // Link end
@@ -297,7 +297,7 @@ protected:
 	float m_pathLengthSoFar;									// length of path so far, needed for limiting pathfind max path length
 	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
 
-	std::vector<NavSpecialLink> m_speciallinks;					// Special 'link' connections
+	std::vector<NavOffMeshConnection> m_offmeshconnections;					// Offmesh connections
 	// --- End critical data --- 
 };
 
@@ -342,15 +342,15 @@ public:
 	void ConnectTo( CNavLadder *ladder );						// connect this area to given ladder
 	void Disconnect( CNavLadder *ladder );						// disconnect this area from given ladder
 
-	bool ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& origin, const Vector& end); // connect via special link
-	void Disconnect(CNavArea* area, NavLinkType linktype); // remove special link connection
+	bool ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const Vector& origin, const Vector& end); // connect via off mesh connection
+	void Disconnect(CNavArea* area, OffMeshConnectionType linktype); // remove off mesh connection
 
 	unsigned int GetID( void ) const	{ return m_id; }		// return this area's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							// re-orders area ID's so they are continuous
 	unsigned int GetDebugID( void ) const { return m_debugid; }
 
-	size_t GetSpecialLinkCount() const { return m_speciallinks.size(); }
-	const std::vector<NavSpecialLink>& GetSpecialLinks() const { return m_speciallinks; }
+	size_t GetOffMeshConnectionCount() const { return m_offmeshconnections.size(); }
+	const std::vector<NavOffMeshConnection>& GetOffMeshConnections() const { return m_offmeshconnections; }
 
 	void SetAttributes( int bits )			{ m_attributeFlags = bits; }
 	int GetAttributes( void ) const			{ return m_attributeFlags; }
@@ -448,7 +448,7 @@ public:
 	const NavConnectVector *GetAdjacentAreas( NavDirType dir ) const	{ return &m_connect[dir]; }
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
 	bool IsConnected( const CNavLadder *ladder, CNavLadder::LadderDirectionType dir ) const;	// return true if given ladder is connected in given direction
-	bool IsConnected(const CNavArea* area, NavLinkType linktype) const; // returns true if the given area is connected via the given link typ
+	bool IsConnected(const CNavArea* area, OffMeshConnectionType linktype) const; // returns true if the given area is connected via the given link typ
 	// true if there is at least 1 form of connection to the other area
 	inline bool HasAnyConnectionsTo(const CNavArea* other) const
 	{
@@ -579,7 +579,7 @@ public:
 
 	inline bool IsConnectedToBySpecialLink(const CNavArea* other) const
 	{
-		for (auto& link : m_speciallinks)
+		for (auto& link : m_offmeshconnections)
 		{
 			if (link.GetConnectedArea() == other)
 			{
@@ -590,9 +590,9 @@ public:
 		return false;
 	}
 
-	const NavSpecialLink* GetSpecialLinkConnectionToArea(const CNavArea* other) const
+	const NavOffMeshConnection* GetOffMeshConnectionToArea(const CNavArea* other) const
 	{
-		for (auto& link : m_speciallinks)
+		for (auto& link : m_offmeshconnections)
 		{
 			if (link.GetConnectedArea() == other)
 			{
@@ -680,7 +680,7 @@ public:
 			}
 		}
 
-		for (auto& link : m_speciallinks)
+		for (auto& link : m_offmeshconnections)
 		{
 			CNavArea* connectedArea = link.m_link.area;
 			functor(connectedArea);

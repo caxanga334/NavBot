@@ -585,6 +585,8 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnControlPointCaptured(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnControlPointLost(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnControlPointContested(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnWeaponEquip(BotClass* bot, CBaseEntity* weapon) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnVoiceCommand(BotClass* bot, CBaseEntity* subject, int command) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1065,6 +1067,16 @@ private:
 	void OnControlPointContested(CBaseEntity* point) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointContested, point);
+	}
+
+	void OnWeaponEquip(CBaseEntity* weapon) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnWeaponEquip, weapon);
+	}
+
+	void OnVoiceCommand(CBaseEntity* subject, int command) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnVoiceCommand, subject, command);
 	}
 };
 

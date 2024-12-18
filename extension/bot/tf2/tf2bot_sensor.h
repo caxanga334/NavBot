@@ -13,16 +13,16 @@ public:
 	CTF2BotSensor(CBaseBot* bot);
 	virtual ~CTF2BotSensor();
 
-	bool IsIgnored(edict_t* entity) override;
-	bool IsFriendly(edict_t* entity) override;
-	bool IsEnemy(edict_t* entity) override;
+	bool IsIgnored(CBaseEntity* entity) override;
+	bool IsFriendly(CBaseEntity* entity) override;
+	bool IsEnemy(CBaseEntity* entity) override;
 	int GetKnownEntityTeamIndex(CKnownEntity* known) override;
 
 private:
 	std::unordered_set<std::string> m_classname_filter;
 
-	bool IsPlayerIgnoredInternal(edict_t* entity);
-	bool IgnoredConditionsInternal(int player);
+	bool IsPlayerIgnoredInternal(CBaseEntity* entity);
+	bool IgnoredConditionsInternal(CBaseEntity* player);
 
 	inline void AddClassnametoFilter(const char* classname)
 	{

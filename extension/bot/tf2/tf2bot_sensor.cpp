@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
+#include <util/sdkcalls.h>
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
 
@@ -37,16 +38,14 @@ CTF2BotSensor::~CTF2BotSensor()
 {
 }
 
-bool CTF2BotSensor::IsIgnored(edict_t* entity)
+bool CTF2BotSensor::IsIgnored(CBaseEntity* entity)
 {
-	auto classname = entprops->GetEntityClassname(entity->GetIServerEntity()->GetBaseEntity());
+	auto classname = entityprops::GetEntityClassname(entity);
 
 	if (classname == nullptr)
 		return true;
 
-	int index = gamehelpers->IndexOfEdict(entity);
-
-	if (UtilHelpers::IsPlayerIndex(index))
+	if (sdkcalls->CBaseEntity_IsPlayer(entity))
 	{
 		return IsPlayerIgnoredInternal(entity);
 	}
@@ -83,11 +82,11 @@ bool CTF2BotSensor::IsIgnored(edict_t* entity)
 	return false;
 }
 
-bool CTF2BotSensor::IsFriendly(edict_t* entity)
+bool CTF2BotSensor::IsFriendly(CBaseEntity* entity)
 {
 	CTF2Bot* me = static_cast<CTF2Bot*>(GetBot());
-	int index = gamehelpers->IndexOfEdict(entity);
-	auto theirteam = tf2lib::GetEntityTFTeam(index);
+
+	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
 
 	if (theirteam == me->GetMyTFTeam())
 	{
@@ -97,23 +96,22 @@ bool CTF2BotSensor::IsFriendly(edict_t* entity)
 	return false;
 }
 
-bool CTF2BotSensor::IsEnemy(edict_t* entity)
+bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 {
 	CTF2Bot* me = static_cast<CTF2Bot*>(GetBot());
 	auto spymonitor = me->GetSpyMonitorInterface();
-	int index = gamehelpers->IndexOfEdict(entity);
-	auto theirteam = tf2lib::GetEntityTFTeam(index);
+	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
 	
 	if (theirteam == me->GetMyTFTeam())
 	{
 		return false;
 	}
 
-	if (UtilHelpers::IsPlayerIndex(index))
+	if (sdkcalls->CBaseEntity_IsPlayer(entity))
 	{
-		auto theirclass = tf2lib::GetPlayerClassType(index);
+		TeamFortress2::TFClassType theirclass = static_cast<TeamFortress2::TFClassType>(entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_CLASSTYPE));
 
-		if (theirclass == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(index))
+		if (theirclass == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(entity))
 		{
 			auto& knownspy = spymonitor->GetKnownSpy(entity);
 			return knownspy.IsHostile();
@@ -134,16 +132,14 @@ int CTF2BotSensor::GetKnownEntityTeamIndex(CKnownEntity* known)
 	return theirteam;
 }
 
-bool CTF2BotSensor::IsPlayerIgnoredInternal(edict_t* entity)
+bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)
 {
-	int player = gamehelpers->IndexOfEdict(entity);
-
-	if (IgnoredConditionsInternal(player))
+	if (IgnoredConditionsInternal(entity))
 	{
 		return true;
 	}
 
-	if (!IsFriendly(entity) && tf2lib::IsPlayerInvisible(player))
+	if (!IsFriendly(entity) && tf2lib::IsPlayerInvisible(entity))
 	{
 		return true; // Don't see invisible enemies
 	}
@@ -152,7 +148,7 @@ bool CTF2BotSensor::IsPlayerIgnoredInternal(edict_t* entity)
 }
 
 // TFConds that the bots should always ignore
-bool CTF2BotSensor::IgnoredConditionsInternal(int player)
+bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player)
 {
 	if (tf2lib::IsPlayerInCondition(player, TeamFortress2::TFCond::TFCond_HalloweenGhostMode))
 	{

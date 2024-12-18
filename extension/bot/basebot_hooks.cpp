@@ -29,6 +29,7 @@ SH_DECL_MANUALHOOK1_void(CBaseBot_Event_Killed, 0, 0, 0, const CTakeDamageInfo&)
 SH_DECL_MANUALHOOK2_void(CBaseBot_Event_KilledOther, 0, 0, 0, CBaseEntity*, const CTakeDamageInfo&)
 SH_DECL_MANUALHOOK0_void(CBaseBot_PhysicsSimulate, 0, 0, 0)
 SH_DECL_MANUALHOOK2_void(CBaseBot_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*)
+SH_DECL_MANUALHOOK1_void(CBaseBot_Weapon_Equip, 0, 0, 0, CBaseEntity*)
 
 bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools)
 {
@@ -51,6 +52,9 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 
 	if (!gd_navbot->GetOffset("PhysicsSimulate", &offset)) { return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_PhysicsSimulate, offset, 0, 0);
+
+	if (!gd_sdkhooks->GetOffset("Weapon_Equip", &offset)) { return false; }
+	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Weapon_Equip, offset, 0, 0);
 
 	// This mod needs to hook CBasePlayer::PlayerRunCommand
 	if (extension->ShouldHookRunPlayerCommand())
@@ -81,6 +85,7 @@ void CBaseBot::AddHooks()
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_Killed, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_Killed), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_KilledOther, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_KilledOther), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_PhysicsSimulate, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_PhysicsSimulate), false));
+	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Weapon_Equip, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Weapon_Equip_Post), true));
 
 	if (extension->ShouldHookRunPlayerCommand())
 	{
@@ -152,6 +157,13 @@ void CBaseBot::Hook_PhysicsSimulate()
 	}
 #endif // EXT_DEBUG
 
+	// Don't simulate the bot more than once per frame.
+	if (m_simulationtick == gpGlobals->tickcount)
+	{
+		RETURN_META(MRES_IGNORED);
+	}
+
+	m_simulationtick = gpGlobals->tickcount;
 	PlayerThink();
 	RETURN_META(MRES_IGNORED);
 }
@@ -166,4 +178,11 @@ void CBaseBot::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 	CBotCmd* botcmd = GetUserCommand();
 	BotHookHelpers::CopyBotCmdtoUserCmd(usercmd, botcmd);
 	RETURN_META(MRES_HANDLED);
+}
+
+void CBaseBot::Hook_Weapon_Equip_Post(CBaseEntity* weapon)
+{
+	this->OnWeaponEquip(weapon);
+
+	RETURN_META(MRES_IGNORED);
 }

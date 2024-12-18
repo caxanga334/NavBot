@@ -22,18 +22,18 @@ public:
 
 	// Returns true if the entity was completely visible to the bot at some point
 	inline bool WasEverFullyVisible() const { return m_timelastvisible > 0.0f; }
-	// Returns true if the bot heard this entity at some point
-	inline bool WasEverHeard() const { return m_volume > 0; }
+	// Returns true if the entity was heard by the bot at some point
+	inline bool WasEverHeard() const { return m_timesincelastnoise > 0.0f; }
 	// Returns how many seconds have passed since this entity became known to the bot
 	float GetTimeSinceBecomeKnown() const;
 	// Returns how many seconds have passed since this entity was completely visible
 	float GetTimeSinceLastVisible() const;
 	// Returns how many seconds have passed since some info about this entity was received
 	float GetTimeSinceLastInfo() const;
+	// Returns how many seconds have passed since this entity was heard for the last time
+	float GetTimeSinceLastHeard() const;
 	// Returns the timestamp of the last time this entity was visible
 	inline float GetTimeWhenBecameVisible() const { return m_timelastvisible; }
-	// Returns the volume of the last sound made by this entity
-	inline int GetVolume() const { return m_volume; }
 	// Gets the entity last known position
 	inline const Vector& GetLastKnownPosition() const { return m_lastknownposition; }
 	// Gets the entity last known velocity
@@ -46,10 +46,10 @@ public:
 	bool IsValid() const;
 	// Updates the last known position of this entity
 	void UpdatePosition();
-
+	// Bot heard this entity
+	void UpdateHeard();
 	// Marks this entity as fully visible
 	void MarkAsFullyVisible();
-
 	// true if the given entity is stored on this handle
 	bool IsEntity(edict_t* entity) const;
 	// true if the given entity is stored on this handle
@@ -85,7 +85,7 @@ private:
 	float m_timeknown; // Timestamp when this entity became known
 	float m_timelastvisible; // Timestamp of when this entity was fully visible to the bot
 	float m_timelastinfo; // Timestamp of the last time the bot received some info about this
-	int m_volume; // How loud the sound made by this entity was
+	float m_timesincelastnoise; // Timestamp of the last time the bot heard this entity
 	bool m_visible; // This entity is visible right now
 	bool m_lkpwasseen; // Last known position was seen by the bot
 	

@@ -197,6 +197,13 @@ public:
 	 * @return True if controlling the bot's movements. False otherwise.
 	 */
 	virtual bool IsControllingMovements();
+	/**
+	 * @brief Current movement action needs to control the bot weapons (IE: use the rocket launcher to rocket jump)
+	 * 
+	 * Returning true will stop bots from firing their weapons at their enemies. False to allow normal behavior.
+	 * @return True if the bot should let the movement interface control the weapons. False otherwise.
+	 */
+	virtual bool NeedsWeaponControl() { return false; }
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return m_basemovespeed; }

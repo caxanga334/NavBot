@@ -98,6 +98,7 @@ namespace UtilHelpers
 
 		return GetEntityHealth(entity) > 0;
 	}
+	bool IsEntityAlive(CBaseEntity* entity);
 	int GetNumberofPlayersOnTeam(const int team, const bool ignore_dead = false, const bool ignore_bots = false);
 	std::optional<int> GetTeamManagerEntity(const int team, const char* classname);
 	std::optional<int> GetOwnerEntity(const int entity);

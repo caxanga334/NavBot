@@ -137,8 +137,8 @@ void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 	if (me->GetPlayerInfo()->IsDead())
 		return;
 
-	if (!me->WantsToShootAtEnemies())
-		return;
+	if (me->GetMovementInterface()->NeedsWeaponControl())
+		return; // Movement needs to control my weapons
 
 	if (tf2lib::IsPlayerInCondition(me->GetIndex(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
@@ -459,7 +459,6 @@ TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToFailure(CTF2Bot* bot, C
 		return TryDone(PRIORITY_HIGH, "Failed to compute path!");
 	}
 
-	bot->GetMovementInterface()->ClearStuckStatus();
 	return TryContinue();
 }
 

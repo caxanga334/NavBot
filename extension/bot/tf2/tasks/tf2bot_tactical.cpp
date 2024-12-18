@@ -6,7 +6,7 @@
 #include <util/librandom.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
-#include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_takedamageinfo.h>
 #include <mods/tf2/tf2lib.h>
 #include "bot/tf2/tf2bot.h"
 #include "tf2bot_tactical.h"
@@ -159,5 +159,56 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectClassTask(CTF2Bot* me)
 	}
 
 	return nullptr;
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnInjured(CTF2Bot* bot, const CTakeDamageInfo& info)
+{
+	if (bot->GetDifficultyProfile()->GetGameAwareness() >= 15)
+	{
+		CBaseEntity* inflictor = info.GetInflictor();
+
+		if (inflictor != nullptr)
+		{
+			int index = gamehelpers->EntityToBCompatRef(inflictor);
+
+			if (index > 0 && index <= MAX_EDICTS)
+			{
+				Vector pos = UtilHelpers::getWorldSpaceCenter(inflictor);
+				bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_DANGER, 2.0f, "Aiming at damage source!");
+			}
+		}
+	}
+
+	return TryContinue(PRIORITY_IGNORED);
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)
+{
+	int skill = bot->GetDifficultyProfile()->GetGameAwareness();
+
+	if (skill <= 5)
+	{
+		return TryContinue(PRIORITY_IGNORED); // this one doesn't know about VCs yet
+	}
+
+	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(subject));
+
+	if (skill >= 75 && theirteam != bot->GetMyTFTeam())
+	{
+		if (bot->GetRangeTo(subject) < bot->GetSensorInterface()->GetMaxHearingRange())
+		{
+			CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(subject);
+			Vector pos = UtilHelpers::getWorldSpaceCenter(subject);
+			bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_ALERT, 2.0f, "Looking at hostile voice command source position!");
+
+			if (known)
+			{
+				// this will update the entity position and mark it as heard
+				known->UpdateHeard();
+			}
+		}
+	} // TO-DO: Allow bots to respond to some voice commands (IE: help)
+
+	return TryContinue(PRIORITY_IGNORED);
 }
 

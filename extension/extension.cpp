@@ -85,6 +85,7 @@ ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCV
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
+SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*, const CCommand&);
 
 // SDKs that requires a runplayercommand hook
 
@@ -309,7 +310,8 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 
 	g_pCVar = icvar; // TO-DO: add #if source engine here
 
-	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), false);
+	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), true);
+	SH_ADD_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
 
 	return true;
 }
@@ -356,6 +358,21 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 	if (extmanager)
 	{
 		extmanager->Frame();
+	}
+
+	RETURN_META(MRES_IGNORED);
+}
+
+void NavBotExt::Hook_ClientCommand(edict_t* pEntity, const CCommand& args)
+{
+	if (extmanager != nullptr && UtilHelpers::IsValidEdict(pEntity))
+	{
+		auto player = playerhelpers->GetGamePlayer(pEntity);
+
+		if (player != nullptr && player->IsInGame())
+		{
+			extmanager->GetMod()->OnClientCommand(pEntity, player, args);
+		}
 	}
 
 	RETURN_META(MRES_IGNORED);

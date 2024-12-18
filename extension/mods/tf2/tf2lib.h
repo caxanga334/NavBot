@@ -12,10 +12,12 @@ struct edict_t;
 namespace tf2lib
 {
 	bool IsPlayerInCondition(int player, TeamFortress2::TFCond cond);
+	bool IsPlayerInCondition(CBaseEntity* player, TeamFortress2::TFCond cond);
 	bool IsPlayerInvulnerable(int player);
-	bool IsPlayerRevealed(int player); // is player in an effect that reveals invisible players?
-	bool IsPlayerInvisible(int player);
+	bool IsPlayerRevealed(CBaseEntity* player); // is player in an effect that reveals invisible players?
+	bool IsPlayerInvisible(CBaseEntity* player);
 	inline bool IsPlayerDisguised(int player) { return IsPlayerInCondition(player, TeamFortress2::TFCond_Disguised); }
+	inline bool IsPlayerDisguised(CBaseEntity* player) { return IsPlayerInCondition(player, TeamFortress2::TFCond_Disguised); }
 	TeamFortress2::TFClassType GetPlayerClassType(int player);
 	int GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass);
 	int GetPlayerMaxHealth(int player);
@@ -27,6 +29,11 @@ namespace tf2lib
 	TeamFortress2::TFTeam GetEnemyTFTeam(TeamFortress2::TFTeam team);
 	int GetClassDefaultPrimaryMaxAmmo(TeamFortress2::TFClassType type);
 	int GetClassDefaultSecondaryMaxAmmo(TeamFortress2::TFClassType type);
+	/**
+	 * @brief Gets the player health as a percentage.
+	 * @param player Player to get the health from.
+	 * @return Player health percentage. Ranges from 0.0 to 1.0. Values higher than 1.0 means the player is overhealed.
+	 */
 	float GetPlayerHealthPercentage(int player);
 	TeamFortress2::TFTeam GetDisguiseTeam(int player);
 	TeamFortress2::TFClassType GetDisguiseClass(int player);

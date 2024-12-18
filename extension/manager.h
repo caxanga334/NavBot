@@ -44,6 +44,7 @@ public:
 	CBaseMod* GetMod();
 
 	CBaseBot* GetBotByIndex(int index);
+	CBaseBot* GetBotFromEntity(CBaseEntity* entity);
 	bool IsNavBot(const int client) const;
 
 	void AddBot(std::string* newbotname = nullptr, edict_t** newbotedict = nullptr);

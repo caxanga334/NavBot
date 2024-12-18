@@ -85,6 +85,8 @@ public:
 	const std::vector<CTFWaypoint*>& GetAllTeleEntranceWaypoints() const { return m_teleentranceWaypoints; }
 	const std::vector<CTFWaypoint*>& GetAllTeleExitWaypoints() const { return m_teleexitWaypoints; }
 
+	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) override;
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, int> m_weaponidmap;

@@ -112,7 +112,7 @@ bool UtilHelpers::IsEntNetworkable(int index)
 
 	if (!pNet)
 	{
-		return true;
+		return false;
 	}
 
 	edict_t* edict = pNet->GetEdict();
@@ -125,7 +125,7 @@ bool UtilHelpers::IsEntNetworkable(CBaseEntity* entity)
 
 	if (!pNet)
 	{
-		return true;
+		return false;
 	}
 
 	edict_t* edict = pNet->GetEdict();
@@ -838,6 +838,11 @@ bool UtilHelpers::IsPlayerAlive(const int player)
 
 
 	return GetEntityHealth(player) > 0;
+}
+
+bool UtilHelpers::IsEntityAlive(CBaseEntity* entity)
+{
+	return entityprops::GetEntityLifeState(entity) == LIFE_ALIVE;
 }
 
 int UtilHelpers::GetNumberofPlayersOnTeam(const int team, const bool ignore_dead, const bool ignore_bots)

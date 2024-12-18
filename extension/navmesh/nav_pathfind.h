@@ -53,7 +53,7 @@ enum RouteType
 class ShortestPathCost
 {
 public:
-	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length ) const
+	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CFuncElevator *elevator, float length ) const
 	{
 		if ( fromArea == NULL )
 		{
@@ -156,7 +156,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 	/// @todo Cost might work as "manhattan distance"
 	startArea->SetTotalCost( (startArea->GetCenter() - actualGoalPos).Length() );
 
-	/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length */
+	/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CFuncElevator *elevator, float length */
 	float initCost = costFunc( startArea, nullptr, nullptr, nullptr, nullptr, -1.0f );	
 	if (initCost < 0.0f)
 		return false;
@@ -207,8 +207,8 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 		int dir = NORTH;
 		const NavConnectVector *floorList = area->GetAdjacentAreas( NORTH );
-		auto& linklist = area->GetSpecialLinks();
-		size_t maxlinks = area->GetSpecialLinkCount();
+		auto& linklist = area->GetOffMeshConnections();
+		size_t maxlinks = area->GetOffMeshConnectionCount();
 
 		bool ladderUp = true;
 		const NavLadderConnectVector *ladderList = nullptr;
@@ -223,7 +223,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 			NavTraverseType how;
 			const CNavLadder *ladder = nullptr;
 			const CFuncElevator *elevator = nullptr;
-			const NavSpecialLink* currentlink = nullptr;
+			const NavOffMeshConnection* currentlink = nullptr;
 
 			//
 			// Get next adjacent area - either on floor or via ladder
@@ -393,7 +393,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					currentlink = &linklist[linkIndex];
 					newArea = currentlink->m_link.area;
 					length = currentlink->GetConnectionLength();
-					how = GO_SPECIAL_LINK;
+					how = GO_OFF_MESH_CONNECTION;
 					linkIndex++;
 				}
 			}
@@ -406,7 +406,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				|| newArea->IsBlocked( teamID, ignoreNavBlockers ) )
 				continue;
 
-			/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavSpecialLink *link, const CFuncElevator *elevator, float length */
+			/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CFuncElevator *elevator, float length */
 			float newCostSoFar = costFunc( newArea, area, ladder, currentlink, elevator, length );
 
 			// NaNs really mess this function up causing tough to track down hangs. If
@@ -633,7 +633,7 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 					}
 				}
 
-				auto& alllinks = area->GetSpecialLinks();
+				auto& alllinks = area->GetOffMeshConnections();
 
 				for (auto& link : alllinks)
 				{
@@ -746,7 +746,7 @@ public:
 			}
 		}
 
-		auto& links = area->GetSpecialLinks();
+		auto& links = area->GetOffMeshConnections();
 
 		for (auto& speciallink : links)
 		{
@@ -763,7 +763,7 @@ public:
 	virtual void PostSearch( void ) { }
 
 	// consider 'area' in upcoming search steps
-	void IncludeInSearch(CNavArea *area, CNavArea *priorArea, const NavSpecialLink* link = nullptr)
+	void IncludeInSearch(CNavArea *area, CNavArea *priorArea, const NavOffMeshConnection* link = nullptr)
 	{
 		if ( area == NULL )
 			return;
@@ -901,7 +901,7 @@ inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector,
 				}
 			}
 
-			for (auto& links : area->GetSpecialLinks())
+			for (auto& links : area->GetOffMeshConnections())
 			{
 				CNavArea* adjArea = links.m_link.area;
 
@@ -911,7 +911,7 @@ inline void CollectSurroundingAreas( CUtlVector< CNavArea * > *nearbyAreaVector,
 				}
 
 				adjArea->SetTotalCost(0.0f);
-				adjArea->SetParent(area, GO_SPECIAL_LINK);
+				adjArea->SetParent(area, GO_OFF_MESH_CONNECTION);
 				adjArea->SetCostSoFar(area->GetCostSoFar() + links.GetConnectionLength());
 				adjArea->AddToOpenList();
 			}
@@ -1251,7 +1251,7 @@ inline float INavAreaCollector<T>::ComputeCostBetweenAreas(T* prevArea, T* nextA
 		return 0.0f;
 	}
 
-	auto link = prevArea->GetSpecialLinkConnectionToArea(nextArea);
+	auto link = prevArea->GetOffMeshConnectionToArea(nextArea);
 
 	if (link != nullptr)
 	{
@@ -1326,7 +1326,7 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 
 	// Special links
 
-	auto& links = area->GetSpecialLinks();
+	auto& links = area->GetOffMeshConnections();
 	for (auto& link : links)
 	{
 		T* other = static_cast<T*>(link.m_link.area);

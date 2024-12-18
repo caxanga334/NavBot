@@ -78,6 +78,79 @@ bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
 	return false;
 }
 
+bool tf2lib::IsPlayerInCondition(CBaseEntity* player, TeamFortress2::TFCond cond)
+{
+	int iCond = static_cast<int>(cond);
+	int value = 0;
+
+	switch (iCond / 32)
+	{
+	case 0:
+	{
+		int bit = 1 << iCond;
+		value = entprops->GetCachedData<int>(player, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCOND);
+		if ((value & bit) == bit)
+		{
+			return true;
+		}
+
+		value = entprops->GetCachedData<int>(player, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDBITS);
+		if ((value & bit) == bit)
+		{
+			return true;
+		}
+		break;
+	}
+	case 1:
+	{
+		int bit = (1 << (iCond - 32));
+		value = entprops->GetCachedData<int>(player, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX1);
+		if ((value & bit) == bit)
+		{
+			return true;
+		}
+		break;
+	}
+	case 2:
+	{
+		int bit = (1 << (iCond - 64));
+		value = entprops->GetCachedData<int>(player, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX2);
+		if ((value & bit) == bit)
+		{
+			return true;
+		}
+		break;
+	}
+	case 3:
+	{
+		int bit = (1 << (iCond - 96));
+		value = entprops->GetCachedData<int>(player, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX3);
+		if ((value & bit) == bit)
+		{
+			return true;
+		}
+		break;
+	}
+	case 4:
+	{
+		int bit = (1 << (iCond - 128));
+		value = entprops->GetCachedData<int>(player, CEntPropUtils::CacheIndex::CTFPLAYER_PLAYERCONDEX4);
+		if ((value & bit) == bit)
+		{
+			return true;
+		}
+		break;
+	}
+	default:
+	{
+		return false;
+		break;
+	}
+	}
+
+	return false;
+}
+
 bool tf2lib::IsPlayerInvulnerable(int player)
 {
 	if (IsPlayerInCondition(player, TeamFortress2::TFCond_Ubercharged) ||
@@ -90,7 +163,7 @@ bool tf2lib::IsPlayerInvulnerable(int player)
 	return false;
 }
 
-bool tf2lib::IsPlayerRevealed(int player)
+bool tf2lib::IsPlayerRevealed(CBaseEntity* player)
 {
 	if (IsPlayerInCondition(player, TeamFortress2::TFCond_CloakFlicker) ||
 		IsPlayerInCondition(player, TeamFortress2::TFCond_OnFire) ||
@@ -105,7 +178,7 @@ bool tf2lib::IsPlayerRevealed(int player)
 	return false;
 }
 
-bool tf2lib::IsPlayerInvisible(int player)
+bool tf2lib::IsPlayerInvisible(CBaseEntity* player)
 {
 	if (IsPlayerRevealed(player))
 		return false;

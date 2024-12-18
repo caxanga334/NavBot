@@ -57,6 +57,8 @@ public:
 	virtual void OnControlPointCaptured(CBaseEntity* point); // When a control point is captured
 	virtual void OnControlPointLost(CBaseEntity* point); // When a control point is lost
 	virtual void OnControlPointContested(CBaseEntity* point); // When a control point is under siege
+	virtual void OnWeaponEquip(CBaseEntity* weapon); // When a weapon is equipped (invoked by a CBasePlayer::Weapon_Equip post hook)
+	virtual void OnVoiceCommand(CBaseEntity* subject, int command); // When a player uses voice commands (mod specific)
 };
 
 inline void IEventListener::OnTestEventPropagation()
@@ -302,6 +304,32 @@ inline void IEventListener::OnControlPointContested(CBaseEntity* point)
 		for (auto listener : *vec)
 		{
 			listener->OnControlPointContested(point);
+		}
+	}
+}
+
+inline void IEventListener::OnWeaponEquip(CBaseEntity* weapon)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnWeaponEquip(weapon);
+		}
+	}
+}
+
+inline void IEventListener::OnVoiceCommand(CBaseEntity* subject, int command)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnVoiceCommand(subject, command);
 		}
 	}
 }

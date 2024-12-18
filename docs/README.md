@@ -10,7 +10,7 @@ Welcome to the NavBot extension documentation index.
 - [For Developers]
 - [Nav Mesh Editing Basics]
 - [Nav Mesh Places]
-- [Nav Mesh Link Connections]
+- [Nav Mesh Off-Mesh Link Connections]
 - [Nav Mesh Volumes]
 - [Nav Mesh Editing Tips]
 - [Waypoint Editing Basics]
@@ -27,7 +27,7 @@ Welcome to the NavBot extension documentation index.
 [For Developers]: developers/README.md
 [Questions and Answers]: QAA.md
 [Nav Mesh Places]: NAVMESH_PLACES.md
-[Nav Mesh Link Connections]: NAVMESH_LINKS.md
+[Nav Mesh Off-Mesh Link Connections]: NAVMESH_OFFMESHLINKS.md
 [Nav Mesh Editing Tips]: NAVMESH_EDITING_TIPS.md
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md
 [Bot Names Configuration]: BOT_NAMES.md

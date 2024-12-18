@@ -17,6 +17,12 @@ CSDKCaller::CSDKCaller()
 	m_call_cbc_weaponslot = nullptr;
 	m_offsetof_cgr_shouldcollide = invalid_offset();
 	m_call_cgr_shouldcollide = nullptr;
+	m_offsetof_cbe_eyeangles = invalid_offset();
+	m_call_cbe_eyeangles = nullptr;
+	m_offsetof_cbe_eyeposition = invalid_offset();
+	m_call_cbe_eyeposition = nullptr;
+	m_offsetof_cbe_isplayer = invalid_offset();
+	m_call_cbe_isplayer = nullptr;
 }
 
 CSDKCaller::~CSDKCaller()
@@ -71,6 +77,12 @@ bool CSDKCaller::Init()
 	}
 
 	if (!cfg_navbot->GetOffset("CBaseEntity_EyeAngles", &m_offsetof_cbe_eyeangles))
+	{
+		smutils->LogError(myself, "Failed to get offset for CBaseEntity::EyeAngles!");
+		fail = true;
+	}
+
+	if (!cfg_navbot->GetOffset("CBaseEntity_IsPlayer", &m_offsetof_cbe_isplayer))
 	{
 		smutils->LogError(myself, "Failed to get offset for CBaseEntity::EyeAngles!");
 		fail = true;
@@ -160,6 +172,19 @@ QAngle CSDKCaller::CBaseEntity_EyeAngles(CBaseEntity* entity)
 	return ret;
 }
 
+bool CSDKCaller::CBaseEntity_IsPlayer(CBaseEntity* entity)
+{
+	unsigned char params[sizeof(void*)];
+	unsigned char* vptr = params;
+	bool result = false;
+
+	*(CBaseEntity**)vptr = entity;
+
+	m_call_cbe_isplayer->Execute(params, &result);
+
+	return result;
+}
+
 
 bool CSDKCaller::SetupCalls()
 {
@@ -168,12 +193,14 @@ bool CSDKCaller::SetupCalls()
 	SetupCGRShouldCollide();
 	SetupCBEEyePosition();
 	SetupCBEEyeAngles();
+	SetupCBEIsPlayer();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
 		m_call_cgr_shouldcollide == nullptr ||
 		m_call_cbe_eyeposition == nullptr ||
-		m_call_cbe_eyeangles == nullptr)
+		m_call_cbe_eyeangles == nullptr ||
+		m_call_cbe_isplayer == nullptr)
 	{
 		return false;
 	}
@@ -272,4 +299,18 @@ void CSDKCaller::SetupCBEEyeAngles()
 	ret.type = PassType_Basic;
 
 	m_call_cbe_eyeangles = g_pBinTools->CreateVCall(m_offsetof_cbe_eyeangles, 0, 0, &ret, nullptr, 0);
+}
+
+void CSDKCaller::SetupCBEIsPlayer()
+{
+	using namespace SourceMod;
+
+	/* bool CBaseEntity::IsPlayer() const */
+
+	PassInfo ret;
+	ret.flags = PASSFLAG_BYVAL;
+	ret.size = sizeof(bool);
+	ret.type = PassType_Basic;
+
+	m_call_cbe_isplayer = g_pBinTools->CreateVCall(m_offsetof_cbe_isplayer, 0, 0, &ret, nullptr, 0);
 }

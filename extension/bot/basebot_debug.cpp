@@ -35,6 +35,12 @@ const char* CBaseBot::GetDebugIdentifier() const
 	return debug;
 }
 
+const char* CBaseBot::GetClientName() const
+{
+	auto player = playerhelpers->GetGamePlayer(GetIndex());
+	return player->GetName();
+}
+
 void CBaseBot::DebugPrintToConsole(const int bits,const int red,const int green,const int blue, const char* fmt, ...) const
 {
 	if (!IsDebugging(bits))

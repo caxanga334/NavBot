@@ -571,8 +571,8 @@ public:
 	void CommandNavMergeMesh( const CCommand &args );					// Merge a saved selected set into the current mesh
 	void CommandNavMarkWalkable( void );
 	void CommandNavSeedWalkableSpots(void);
-	void CommandNavConnectSpecialLink(uint32_t linktype);
-	void CommandNavDisconnectSpecialLink(uint32_t linktype);
+	void CommandNavConnectViaOffMeshLink(uint32_t linktype);
+	void CommandNavDisconnectOffMeshLink(uint32_t linktype);
 	void CommandNavSetLinkOrigin();
 	void CommandNavWarpToLinkOrigin() const;
 	void CommandNavTestForBlocked() const;

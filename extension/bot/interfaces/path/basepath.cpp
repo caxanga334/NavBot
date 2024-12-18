@@ -370,7 +370,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		case GO_SOUTH:
 			[[fallthrough]];
 		case GO_WEST:
-			if (!ProcessGroundPath(bot, start, from, to, insertstack))
+			if (!ProcessGroundPath(bot, i, start, from, to, insertstack))
 			{
 				failed = true;
 			}
@@ -384,9 +384,9 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 			}
 			break;
 
-		case GO_SPECIAL_LINK:
+		case GO_OFF_MESH_CONNECTION:
 		{
-			if (!ProcessSpecialLinksInPath(bot, from, to, insertstack))
+			if (!ProcessOffMeshConnectionsInPath(bot, i, from, to, insertstack))
 			{
 				failed = true;
 			}
@@ -414,7 +414,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 			if (to->how > GO_WEST || to->type != AIPath::SegmentType::SEGMENT_GROUND)
 				continue;
 
-			if (to->how == GO_SPECIAL_LINK)
+			if (to->how == GO_OFF_MESH_CONNECTION)
 				continue;
 
 			if (ProcessPathJumps(bot, from, to, insertstack) == false)
@@ -465,7 +465,7 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	return true;
 }
 
-bool CPath::ProcessGroundPath(CBaseBot* bot, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
+bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
 	IMovement* mover = bot->GetMovementInterface();
 
@@ -714,22 +714,41 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 	return true;
 }
 
-bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
+bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
-	auto link = from->area->GetSpecialLinkConnectionToArea(to->area);
+	auto link = from->area->GetOffMeshConnectionToArea(to->area);
 
 	if (!link)
 	{
-		Warning("to->how == GO_SPECIAL_LINK but from->area nas no special link to to->area! \n");
+		Warning("to->how == GO_OFF_MESH_CONNECTION but from->area nas no special link to to->area! \n");
 		return false;
 	}
 
 	switch (link->GetType())
 	{
-	case NavLinkType::LINK_GROUND:
+	case OffMeshConnectionType::OFFMESH_GROUND:
 		[[fallthrough]];
-	case NavLinkType::LINK_TELEPORTER:
+	case OffMeshConnectionType::OFFMESH_TELEPORTER:
 	{
+		// The path finding uses the bot last known nav area as a starting point.
+		// If the bot is following a long off mesh link, it's possible the bot will enter a loop of going back to the starting area.
+		// This is only a problem at the very start of the path
+
+		if (index <= 1)
+		{
+			// Vector point;
+			// CalcClosestPointOnLine(bot->GetAbsOrigin(), link->GetStart(), link->GetEnd(), point);
+			from->goal = bot->GetAbsOrigin();
+
+			auto segpoint_to_end = CreateNewSegment();
+			segpoint_to_end->CopySegment(from);
+			segpoint_to_end->how = GO_OFF_MESH_CONNECTION;
+			segpoint_to_end->type = AIPath::SEGMENT_GROUND;
+			segpoint_to_end->goal = link->GetEnd();
+			pathinsert.emplace(to, std::move(segpoint_to_end), false);
+			break;
+		}
+
 		// link ends at the destination area's center.
 		to->goal = to->area->GetCenter();
 
@@ -737,7 +756,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 
 		between->CopySegment(from);
 		between->goal = link->GetStart();
-		between->how = GO_SPECIAL_LINK;
+		between->how = GO_OFF_MESH_CONNECTION;
 		between->type = AIPath::SEGMENT_GROUND;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
@@ -746,7 +765,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 		auto post = CreateNewSegment();
 
 		post->CopySegment(between);
-		post->how = GO_SPECIAL_LINK;
+		post->how = GO_OFF_MESH_CONNECTION;
 		post->goal = link->GetEnd();
 		post->type = AIPath::SEGMENT_GROUND;
 
@@ -754,28 +773,34 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
 		break;
 	}
-	case NavLinkType::LINK_BLAST_JUMP:
+	case OffMeshConnectionType::OFFMESH_BLAST_JUMP:
 	{
 		// link ends at the destination area's center.
 		to->goal = to->area->GetCenter();
-		// 'to' starts at the link position and ends at it's area center
-		// change it to a blast jump segment type
-		to->type = AIPath::SEGMENT_BLAST_JUMP;
+		to->type = AIPath::SEGMENT_GROUND;
 
 		auto between = CreateNewSegment();
 
 		between->CopySegment(from);
 		between->goal = link->GetStart();
-		between->how = GO_SPECIAL_LINK;
+		between->how = GO_OFF_MESH_CONNECTION;
 		between->type = AIPath::SEGMENT_GROUND;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
 
+		// Create the blast jump segment that goes from the link start to the link end position.
+		auto rjseg = CreateNewSegment();
+		rjseg->CopySegment(from);
+		rjseg->goal = link->GetEnd();
+		rjseg->how = GO_OFF_MESH_CONNECTION;
+		rjseg->type = AIPath::SEGMENT_BLAST_JUMP;
+
 		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
+		pathinsert.emplace(to, std::move(rjseg), false);
 		break;
 	}
-	case NavLinkType::LINK_DOUBLE_JUMP:
+	case OffMeshConnectionType::OFFMESH_DOUBLE_JUMP:
 	{
 		// link ends at the destination area's center.
 		to->goal = to->area->GetCenter();
@@ -784,7 +809,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 
 		between->CopySegment(from);
 		between->goal = link->GetStart();
-		between->how = GO_SPECIAL_LINK;
+		between->how = GO_OFF_MESH_CONNECTION;
 		between->type = AIPath::SEGMENT_GROUND;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
@@ -793,7 +818,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 		auto post = CreateNewSegment();
 
 		post->CopySegment(between);
-		post->how = GO_SPECIAL_LINK;
+		post->how = GO_OFF_MESH_CONNECTION;
 		post->goal = link->GetEnd();
 		post->type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
 
@@ -802,7 +827,7 @@ bool CPath::ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSe
 		break;
 	}
 	default:
-		Warning("CPath::ProcessSpecialLinksInPath unhandled link type!");
+		Warning("CPath::ProcessOffMeshConnectionsInPath unhandled link type!");
 		return false;
 	}
 

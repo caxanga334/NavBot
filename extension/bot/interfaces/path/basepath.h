@@ -79,12 +79,12 @@ public:
 	 * @param toArea Current nav area
 	 * @param fromArea Nav area the bot will be moving from, can be NULL for the first area
 	 * @param ladder Ladder the bot will be using
-	 * @param link If 'how' refers to GO_SPECIAL_LINK, this is the link or NULL if not using special links
+	 * @param link If 'how' refers to GO_OFF_MESH_CONNECTION, this is the link or NULL if not using special links
 	 * @param elevator Not used, to be replaced when proper elevator supported is added to the extension version of the nav mesh
 	 * @param length Path length
 	 * @return path cost
 	*/
-	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavSpecialLink* link, const CFuncElevator* elevator, float length) const = 0;
+	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const = 0;
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments
@@ -427,10 +427,10 @@ public:
 
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
-	virtual bool ProcessGroundPath(CBaseBot* bot, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
-	virtual bool ProcessSpecialLinksInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
 	virtual void PostProcessPath();
 	

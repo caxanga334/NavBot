@@ -82,7 +82,7 @@ void CTF2BotMedicHealTask::UpdateFollowTarget(CTF2Bot* bot)
 
 	if (follow != nullptr)
 	{
-		if (UtilHelpers::IsEntityAlive(gamehelpers->EntityToBCompatRef(follow)))
+		if (UtilHelpers::IsEntityAlive(follow))
 		{
 			return; // Follow target until death
 		}
@@ -145,6 +145,7 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 		if (UtilHelpers::IsEntityAlive(entindex) && (tf2lib::GetPlayerHealthPercentage(entindex) < 0.99f || 
 			tf2lib::IsPlayerInCondition(entindex, TeamFortress2::TFCond_Ubercharged)))
 		{
+			// Don't change heal targets until at max health or if uber is active
 			return;
 		}
 	}
@@ -193,15 +194,19 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 				return;
 			}
 
-			if (distance >= 1024.0f * 1024.0f)
+			constexpr auto MAX_DISTANCE_SQR = (800.0f * 800.0f);
+
+			if (distance >= MAX_DISTANCE_SQR)
 			{
 				return;
 			}
 
+			/* Medic auto call features works through walls, so simulate that by not checking for LOS
 			if (!bot->GetSensorInterface()->IsLineOfSightClear(entity))
 			{
 				return;
 			}
+			*/
 
 			float hp = tf2lib::GetPlayerHealthPercentage(client);
 
@@ -212,13 +217,48 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 			{
 				distance *= 0.25f; // priorize players in these conditions
 			}
-			else if (hp > 0.99f)
-			{
-				distance *= 5.0f;
-			}
 			else
 			{
-				float mult = std::clamp(hp, 0.1f, 1.0f);
+				switch (theirclass)
+				{
+				case TeamFortress2::TFClass_Sniper:
+				{
+					if (hp > 0.99f)
+					{
+						return; // razorback doesn't allow overheal so don't get stuck trying to overheal one
+					}
+
+					break;
+				}
+				case TeamFortress2::TFClass_Medic:
+				{
+					if (hp > 1.1f)
+					{
+						return; // Don't get stuck overhealing another medic
+					}
+
+					if (hp < 0.3f)
+					{
+						distance *= 0.25f; // extra priority for other medics near death
+					}
+
+					break;
+				}
+				case TeamFortress2::TFClass_Spy:
+					[[fallthrough]];
+				case TeamFortress2::TFClass_Engineer:
+				{
+					if (hp > 1.2f)
+					{
+						distance += (500.0f * 500.0f); // don't stick to these ones
+					}
+					break;
+				}
+				default:
+					break;
+				}
+
+				float mult = std::clamp(hp, 0.05f, 2.0f);
 				distance *= mult; // multiply distance based on health percentage
 			}
 

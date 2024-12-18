@@ -3,6 +3,7 @@
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
+#include <util/entprops.h>
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <entities/baseentity.h>
@@ -174,8 +175,6 @@ void CMeshNavigator::Update(CBaseBot* bot)
 					Invalidate();
 				}
 
-				mover->ClearStuckStatus();
-
 				return;
 			}
 		}
@@ -215,13 +214,17 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		}
 	}
 
-	if (mover->IsOnGround())
+	if (m_goal->area->IsUnderwater() || bot->GetWaterLevel() >= static_cast<int>(WaterLevel::WL_Waist))
+	{
+		input->AimAt(m_goal->goal, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at move goal (Underwater).");
+	}
+	else if (mover->IsOnGround())
 	{
 		auto eyes = bot->GetEyeOrigin();
 		Vector lookat(goalPos.x, goalPos.y, eyes.z);
 
 		// low priority look towards movement goal so the bot doesn't walk with a fixed look
-		input->AimAt(lookat, IPlayerController::LOOK_NONE, 0.1f);
+		input->AimAt(lookat, IPlayerController::LOOK_NONE, 0.1f, "Looking at move goal (Ground).");
 	}
 
 	// move bot along path
@@ -249,7 +252,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 {
 	IMovement* mover = bot->GetMovementInterface();
 	auto current = GetPriorSegment(m_goal);
-	auto origin = bot->GetAbsOrigin();
+	Vector origin = bot->GetAbsOrigin();
 	Vector toGoal = m_goal->goal - origin;
 
 	// m_goal is the segment the bot is moving towards, if there is no prior segment, the bot is at the goal
@@ -1217,7 +1220,7 @@ void CMeshNavigator::CrouchIfNeeded(CBaseBot* bot)
 {
 	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
 
-	if (m_goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) || bot->GetRangeToSqr(m_goal->goal) <= GOAL_CROUCH_RANGE)
+	if (m_goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) && bot->GetRangeToSqr(m_goal->goal) <= GOAL_CROUCH_RANGE)
 	{
 		bot->GetControlInterface()->PressCrouchButton(0.1f);
 	}

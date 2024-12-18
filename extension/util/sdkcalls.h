@@ -56,6 +56,13 @@ public:
 	 */
 	QAngle CBaseEntity_EyeAngles(CBaseEntity* entity);
 
+	/**
+	 * @brief Checks if an entity is a CBasePlayer instance.
+	 * @param entity Entity to check.
+	 * @return true if it's a player, false otherwise.
+	 */
+	bool CBaseEntity_IsPlayer(CBaseEntity* entity);
+
 private:
 	static constexpr int invalid_offset() { return -1; }
 
@@ -81,12 +88,17 @@ private:
 	int m_offsetof_cbe_eyeangles;
 	SourceMod::ICallWrapper* m_call_cbe_eyeangles;
 
+	// bool CBaseEntity::IsPlayer() const
+	int m_offsetof_cbe_isplayer;
+	SourceMod::ICallWrapper* m_call_cbe_isplayer;
+
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
 	void SetupCBCWeaponSlot();
 	void SetupCGRShouldCollide();
 	void SetupCBEEyePosition();
 	void SetupCBEEyeAngles();
+	void SetupCBEIsPlayer();
 };
 
 extern CSDKCaller* sdkcalls;

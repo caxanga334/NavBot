@@ -43,6 +43,7 @@ Example profile
 | Key | Description |
 |:---:|:---:|
 | skill_level | Which skill level this profile part of. You can have multiple profiles with the same skill level. A random profile will be selected for the bot. |
+| game_awareness | The bot game awareness skill. Ranges from 0 to 100. |
 | aimspeed | The bot aim turn rate in degrees per second. |
 | fov | The bot field of view in degrees. |
 | maxvisionrange | The bot maximum vision range in hammer units. |

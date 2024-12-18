@@ -942,7 +942,7 @@ void CNavMesh::DrawEditMode( void )
 					connected += m_selectedArea->GetAdjacentCount( SOUTH );
 					connected += m_selectedArea->GetAdjacentCount( EAST );
 					connected += m_selectedArea->GetAdjacentCount( WEST );
-					connected += static_cast<int>(m_selectedArea->GetSpecialLinkCount());
+					connected += static_cast<int>(m_selectedArea->GetOffMeshConnectionCount());
 					Q_strncat( attrib, UTIL_VarArgs( "%d Connections ", connected ), sizeof( attrib ), -1 );
 				}
 
@@ -2538,7 +2538,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 						connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 						connected += GetMarkedArea()->GetAdjacentCount( EAST );
 						connected += GetMarkedArea()->GetAdjacentCount( WEST );
-						connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
+						connected += static_cast<int>(GetMarkedArea()->GetOffMeshConnectionCount());
 
 						Msg( "Marked Area is connected to %d other Areas\n", connected );
 					}
@@ -2557,7 +2557,7 @@ void CNavMesh::CommandNavMark( const CCommand &args )
 		connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 		connected += GetMarkedArea()->GetAdjacentCount( EAST );
 		connected += GetMarkedArea()->GetAdjacentCount( WEST );
-		connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
+		connected += static_cast<int>(GetMarkedArea()->GetOffMeshConnectionCount());
 
 		Msg( "Marked Area is connected to %d other Areas\n", connected );
 	}
@@ -3263,7 +3263,7 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 				connected += GetMarkedArea()->GetAdjacentCount( SOUTH );
 				connected += GetMarkedArea()->GetAdjacentCount( EAST );
 				connected += GetMarkedArea()->GetAdjacentCount( WEST );
-				connected += static_cast<int>(GetMarkedArea()->GetSpecialLinkCount());
+				connected += static_cast<int>(GetMarkedArea()->GetOffMeshConnectionCount());
 
 				int totalUnnamedAreas = 0;
 				FOR_EACH_VEC( TheNavAreas, it )
@@ -3510,38 +3510,38 @@ void CNavMesh::CommandNavLadderFlip( void )
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
-CON_COMMAND(sm_nav_link_list_all, "List all available 'Link' connection types.")
+CON_COMMAND(sm_nav_offmesh_list_all, "List all available 'Link' connection types.")
 {
-	Msg("Link Types: \n");
-	for (int i = 1; i < static_cast<int>(NavLinkType::MAX_LINK_TYPES); i++)
+	Msg("Off-Mesh Connection Types: \n");
+	for (int i = 1; i < static_cast<int>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES); i++)
 	{
-		Msg("ID %i : %s \n", i, NavSpecialLink::LinkTypeToString(static_cast<NavLinkType>(i)));
+		Msg("ID %i : %s \n", i, NavOffMeshConnection::OffMeshConnectionTypeToString(static_cast<OffMeshConnectionType>(i)));
 	}
 }
 
-CON_COMMAND_F(sm_nav_link_connect, "Connect nav areas via special link connections.", FCVAR_CHEAT)
+CON_COMMAND_F(sm_nav_offmesh_connect, "Connect nav areas via special link connections.", FCVAR_CHEAT)
 {
 	if (args.ArgC() < 2)
 	{
-		Msg("Usage: sm_nav_link_connect <link type ID> \n");
+		Msg("Usage: sm_nav_offmesh_connect <offmesh type ID> \n");
 		return;
 	}
 
 	long long input = atoll(args[1]);
 
-	if (input <= static_cast<long long>(NavLinkType::LINK_INVALID) || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
+	if (input <= static_cast<long long>(OffMeshConnectionType::OFFMESH_INVALID) || input >= static_cast<long long>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES))
 	{
 		Warning("Link type is invalid!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
-	uint32_t linktype = static_cast<uint32_t>(input);
+	std::uint32_t linktype = static_cast<std::uint32_t>(input);
 
-	TheNavMesh->CommandNavConnectSpecialLink(linktype);
+	TheNavMesh->CommandNavConnectViaOffMeshLink(linktype);
 }
 
-void CNavMesh::CommandNavConnectSpecialLink(uint32_t linktype)
+void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 {
 	edict_t* ent = UTIL_GetListenServerEnt();
 
@@ -3579,13 +3579,20 @@ void CNavMesh::CommandNavConnectSpecialLink(uint32_t linktype)
 
 	if (!endArea->Contains(linkEnd))
 	{
-		Warning("Link destination outside destination nav area!\n");
+		Warning("OffMesh destination outside destination nav area!\n");
 	}
 
-	startArea->ConnectTo(endArea, static_cast<NavLinkType>(linktype), m_linkorigin, linkEnd);
+	if (startArea == endArea)
+	{
+		Warning("Start area and end area are the same! %p == %p \n", startArea, endArea);
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	startArea->ConnectTo(endArea, static_cast<OffMeshConnectionType>(linktype), m_linkorigin, linkEnd);
 	NDebugOverlay::SweptBox(linkEnd, linkEnd, player.GetMins(), player.GetMaxs(), vec3_angle, 0, 128, 0, 255, 10.0f);
 	NDebugOverlay::Line(m_linkorigin, linkEnd, 0, 0, 200, true, 10.0f);
-	Msg("Creating a new link connection between area #%i and area #%i", startArea->GetID(), endArea->GetID());
+	Msg("Creating a new offmesh connection between area #%i and area #%i \n", startArea->GetID(), endArea->GetID());
 	PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 
 	SetMarkedArea(nullptr);			// unmark the mark area
@@ -3593,17 +3600,17 @@ void CNavMesh::CommandNavConnectSpecialLink(uint32_t linktype)
 	ClearSelectedSet();
 }
 
-CON_COMMAND_F(sm_nav_link_disconnect, "Disconnect nav areas via special link connections.", FCVAR_CHEAT)
+CON_COMMAND_F(sm_nav_offmesh_disconnect, "Disconnect nav areas via special link connections.", FCVAR_CHEAT)
 {
 	if (args.ArgC() < 2)
 	{
-		Msg("Usage: sm_nav_link_disconnect <link type ID> \n");
+		Msg("Usage: sm_nav_offmesh_disconnect <link type ID> \n");
 		return;
 	}
 
 	long long input = atoll(args[1]);
 
-	if (input <= static_cast<long long>(NavLinkType::LINK_INVALID) || input >= static_cast<long long>(NavLinkType::MAX_LINK_TYPES))
+	if (input <= static_cast<long long>(OffMeshConnectionType::OFFMESH_INVALID) || input >= static_cast<long long>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES))
 	{
 		Warning("Link type is invalid!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -3612,10 +3619,10 @@ CON_COMMAND_F(sm_nav_link_disconnect, "Disconnect nav areas via special link con
 
 	uint32_t linktype = static_cast<uint32_t>(input);
 
-	TheNavMesh->CommandNavDisconnectSpecialLink(linktype);
+	TheNavMesh->CommandNavDisconnectOffMeshLink(linktype);
 }
 
-void CNavMesh::CommandNavDisconnectSpecialLink(uint32_t linktype)
+void CNavMesh::CommandNavDisconnectOffMeshLink(uint32_t linktype)
 {
 	edict_t* player = UTIL_GetListenServerEnt();
 	if (player == NULL || !IsEditMode(NORMAL))
@@ -3632,7 +3639,7 @@ void CNavMesh::CommandNavDisconnectSpecialLink(uint32_t linktype)
 			CNavArea* first = m_selectedSet[0];
 			CNavArea* second = m_selectedSet[i];
 
-			first->Disconnect(second, static_cast<NavLinkType>(linktype));
+			first->Disconnect(second, static_cast<OffMeshConnectionType>(linktype));
 			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 		}
 	}
@@ -3640,7 +3647,7 @@ void CNavMesh::CommandNavDisconnectSpecialLink(uint32_t linktype)
 	{
 		if (m_markedArea)
 		{
-			m_markedArea->Disconnect(m_selectedArea, static_cast<NavLinkType>(linktype));
+			m_markedArea->Disconnect(m_selectedArea, static_cast<OffMeshConnectionType>(linktype));
 			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 		}
 		else
@@ -3648,7 +3655,7 @@ void CNavMesh::CommandNavDisconnectSpecialLink(uint32_t linktype)
 			if (m_selectedSet.Count() == 1)
 			{
 				CNavArea* area = m_selectedSet[0];
-				area->Disconnect(m_selectedArea, static_cast<NavLinkType>(linktype));
+				area->Disconnect(m_selectedArea, static_cast<OffMeshConnectionType>(linktype));
 				PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 			}
 			else
@@ -3664,7 +3671,7 @@ void CNavMesh::CommandNavDisconnectSpecialLink(uint32_t linktype)
 	ClearSelectedSet();
 }
 
-CON_COMMAND_F(sm_nav_link_set_origin, "Set the connection origin for creating new nav special links", FCVAR_CHEAT)
+CON_COMMAND_F(sm_nav_offmesh_set_origin, "Set the connection origin for creating new nav special links", FCVAR_CHEAT)
 {
 	TheNavMesh->CommandNavSetLinkOrigin();
 }
@@ -3680,7 +3687,7 @@ void CNavMesh::CommandNavSetLinkOrigin()
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-CON_COMMAND_F(sm_nav_link_warp_to_origin, "Teleports to the connection origin for creating new nav special links", FCVAR_CHEAT)
+CON_COMMAND_F(sm_nav_offmesh_warp_to_origin, "Teleports to the connection origin for creating new nav special links", FCVAR_CHEAT)
 {
 	TheNavMesh->CommandNavWarpToLinkOrigin();
 }

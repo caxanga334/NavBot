@@ -62,6 +62,21 @@ bool IInventory::HasWeapon(const char* classname)
 	});
 }
 
+bool IInventory::HasWeapon(CBaseEntity* weapon)
+{
+	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&weapon](const std::shared_ptr<CBotWeapon>& weaponptr) {
+		return weaponptr->GetEntity() == weapon;
+	});
+}
+
+void IInventory::AddWeaponToInventory(CBaseEntity* weapon)
+{
+	if (!HasWeapon(weapon))
+	{
+		m_weapons.emplace_back(CreateBotWeapon(weapon));
+	}
+}
+
 void IInventory::BuildInventory()
 {
 	m_weapons.clear();
@@ -124,13 +139,16 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			return;
 		}
 
-		int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
-		int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
-
-		// Must have ammo
-		if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
+		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
 		{
-			return;
+			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
+			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
+
+			// Must have ammo
+			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
+			{
+				return;
+			}
 		}
 
 		if (rangeToThreat > weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
@@ -148,6 +166,163 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 		{
 			best = weapon;
 			priority = currentprio;
+		}
+	});
+
+	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
+
+	if (best != nullptr)
+	{
+		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
+		{
+			bot->SelectWeapon(best->GetEntity());
+		}
+	}
+}
+
+void IInventory::SelectBestWeapon()
+{
+	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
+	{
+		return;
+	}
+
+	if (m_weapons.empty())
+	{
+		BuildInventory();
+		m_weaponSwitchCooldown.Start(0.250f);
+		return;
+	}
+
+	CBaseBot* bot = GetBot();
+	const CBotWeapon* best = nullptr;
+	int priority = std::numeric_limits<int>::min();
+
+	ForEveryWeapon([&bot, &priority, &best](const CBotWeapon* weapon) {
+
+		if (!weapon->IsValid())
+		{
+			return;
+		}
+
+		// weapon must be usable against enemies
+		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
+		{
+			return;
+		}
+
+		CBaseEntity* pWeapon = weapon->GetEntity();
+		CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
+
+		// I must be the weapon's owner
+		if (bot->GetEntity() != owner)
+		{
+			return;
+		}
+
+		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		{
+			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
+			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
+
+			// Must have ammo
+			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
+			{
+				return;
+			}
+		}
+
+		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+
+		if (currentprio > priority)
+		{
+			best = weapon;
+			priority = currentprio;
+		}
+	});
+
+	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
+
+	if (best != nullptr)
+	{
+		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
+		{
+			bot->SelectWeapon(best->GetEntity());
+		}
+	}
+}
+
+void IInventory::SelectBestWeaponForBreakables()
+{
+	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
+	{
+		return;
+	}
+
+	if (m_weapons.empty())
+	{
+		BuildInventory();
+		m_weaponSwitchCooldown.Start(0.250f);
+		return;
+	}
+
+	CBaseBot* bot = GetBot();
+	const CBotWeapon* best = nullptr;
+	int priority = std::numeric_limits<int>::min();
+	bool found_melee = false;
+
+	// Find the best melee weapon
+	ForEveryWeapon([&bot, &priority, &best, &found_melee](const CBotWeapon* weapon) {
+
+		if (!weapon->IsValid())
+		{
+			return;
+		}
+
+		// weapon must be usable against enemies
+		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
+		{
+			return;
+		}
+
+		CBaseEntity* pWeapon = weapon->GetEntity();
+		CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
+
+		// I must be the weapon's owner
+		if (bot->GetEntity() != owner)
+		{
+			return;
+		}
+
+		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		{
+			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
+			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
+
+			// Must have ammo
+			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
+			{
+				return;
+			}
+		}
+
+		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee();
+
+		if (!is_melee && found_melee)
+		{
+			return; // if a melee was found, only test for priority if the other weapon is also a melee weapon.
+		}
+
+		if (currentprio > priority || (!found_melee && is_melee))
+		{
+			best = weapon;
+			priority = currentprio;
+
+			if (is_melee)
+			{
+				found_melee = true;
+			}
 		}
 	});
 
@@ -188,4 +363,9 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 	}
 
 	return nullptr;
+}
+
+void IInventory::OnWeaponEquip(CBaseEntity* weapon)
+{
+	this->AddWeaponToInventory(weapon);
 }

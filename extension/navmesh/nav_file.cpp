@@ -284,18 +284,18 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 
 	// Save special links
 
-	uint64_t linksize = static_cast<uint64_t>(m_speciallinks.size()); // size_t changes sizes between 32/64 bits, use a fixed unsigned 64 bit integer for compatibility
+	uint64_t linksize = static_cast<uint64_t>(m_offmeshconnections.size()); // size_t changes sizes between 32/64 bits, use a fixed unsigned 64 bit integer for compatibility
 	filestream.write(reinterpret_cast<char*>(&linksize), sizeof(uint64_t));
 
-	for (auto& link : m_speciallinks)
+	for (auto& link : m_offmeshconnections)
 	{
 		// write connecting area ID
 		unsigned int id = link.m_link.area->GetID();
 		filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
 
 		// write link type
-		NavLinkType type = link.m_type;
-		filestream.write(reinterpret_cast<char*>(&type), sizeof(NavLinkType));
+		OffMeshConnectionType type = link.m_type;
+		filestream.write(reinterpret_cast<char*>(&type), sizeof(OffMeshConnectionType));
 
 		// write position
 		Vector start = link.m_start;
@@ -462,8 +462,8 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		unsigned int id = 0;
 		filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
 
-		NavLinkType type = NavLinkType::LINK_INVALID;
-		filestream.read(reinterpret_cast<char*>(&type), sizeof(NavLinkType));
+		OffMeshConnectionType type = OffMeshConnectionType::OFFMESH_INVALID;
+		filestream.read(reinterpret_cast<char*>(&type), sizeof(OffMeshConnectionType));
 
 		Vector start;
 		filestream.read(reinterpret_cast<char*>(&start), sizeof(Vector));
@@ -471,7 +471,7 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		Vector end;
 		filestream.read(reinterpret_cast<char*>(&end), sizeof(Vector));
 
-		m_speciallinks.emplace_back(type, id, start, end);
+		m_offmeshconnections.emplace_back(type, id, start, end);
 	}
 
 	return NAV_OK;
@@ -532,15 +532,15 @@ NavErrorType CNavArea::PostLoad( void )
 
 	// special links, convert IDs to CNavArea pointers
 
-	for (auto& i : m_speciallinks)
+	for (auto& i : m_offmeshconnections)
 	{
-		NavSpecialLink* link = &i;
+		NavOffMeshConnection* link = &i;
 		auto id = link->m_link.id;
 		CNavArea* area = TheNavMesh->GetNavAreaByID(id);
 
 		if (!area)
 		{
-			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Nav Area #%i Special Link <%s> is missing connecting area!", GetID(), NavSpecialLink::LinkTypeToString(link->m_type));
+			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Nav Area #%i Special Link <%s> is missing connecting area!", GetID(), NavOffMeshConnection::OffMeshConnectionTypeToString(link->m_type));
 			error = NAV_CORRUPT_DATA;
 			continue;
 		}
@@ -549,10 +549,10 @@ NavErrorType CNavArea::PostLoad( void )
 
 		switch (link->m_type)
 		{
-		case NavLinkType::LINK_TELEPORTER:
+		case OffMeshConnectionType::OFFMESH_TELEPORTER:
 			link->m_link.length = 0.1f; // teleports are instant
 			break;
-		case NavLinkType::LINK_BLAST_JUMP:
+		case OffMeshConnectionType::OFFMESH_BLAST_JUMP:
 		{
 			float length = (area->GetCenter() - GetCenter()).Length();
 			length += 350.0f; // extra length to compensate for the blast jump

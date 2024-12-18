@@ -126,24 +126,24 @@ ConVar sm_nav_selected_set_color( "sm_nav_selected_set_color", "255 255 200 96",
 
 ConVar sm_nav_selected_set_border_color( "sm_nav_selected_set_border_color", "100 100 0 255", FCVAR_CHEAT, "Color used to draw the selected set borders while editing.", false, 0.0f, false, 0.0f, SelectedSetColorChaged );
 
-const char* NavSpecialLink::LinkTypeToString(NavLinkType type)
+const char* NavOffMeshConnection::OffMeshConnectionTypeToString(OffMeshConnectionType type)
 {
 	using namespace std::literals::string_view_literals;
 
-	if (type >= NavLinkType::MAX_LINK_TYPES)
+	if (type >= OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES)
 	{
 		return "ERROR";
 	}
 
 	constexpr std::array linkNames = {
-		"INVALID_LINK"sv,
-		"GROUND_LINK"sv,
-		"TELEPORTER_LINK"sv,
-		"BLAST_JUMP_LINK"sv,
-		"LINK_DOUBLE_JUMP"sv,
+		"INVALID"sv,
+		"GROUND"sv,
+		"TELEPORTER"sv,
+		"BLAST_JUMP"sv,
+		"DOUBLE_JUMP"sv,
 	};
 
-	static_assert(linkNames.size() == static_cast<size_t>(NavLinkType::MAX_LINK_TYPES), "linkNames and NavLinkType enum mismatch!");
+	static_assert(linkNames.size() == static_cast<size_t>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES), "linkNames and OffMeshConnectionType enum mismatch!");
 
 	return linkNames.at(static_cast<size_t>(type)).data();
 }
@@ -354,7 +354,7 @@ CNavArea::CNavArea(unsigned int place)
 
 	m_nVisTestCounter = (uint32)-1;
 
-	m_speciallinks.reserve(4);
+	m_offmeshconnections.reserve(4);
 	m_volume = nullptr;
 }
 
@@ -607,7 +607,7 @@ public:
  */
 CNavArea::~CNavArea()
 {
-	m_speciallinks.clear();
+	m_offmeshconnections.clear();
 
 	// if we are resetting the system, don't bother cleaning up - all areas are being destroyed
 	if (m_isReset)
@@ -836,8 +836,8 @@ void CNavArea::OnDestroyNotify( CNavArea *dead )
 		m_incomingConnect[ d ].FindAndRemove( con );
 	}
 
-	m_speciallinks.erase(std::remove_if(m_speciallinks.begin(), m_speciallinks.end(),
-		[dead](const NavSpecialLink& link) { return link.IsConnectedTo(dead); }), m_speciallinks.end());
+	m_offmeshconnections.erase(std::remove_if(m_offmeshconnections.begin(), m_offmeshconnections.end(),
+		[dead](const NavOffMeshConnection& link) { return link.IsConnectedTo(dead); }), m_offmeshconnections.end());
 }
 
 
@@ -905,30 +905,32 @@ void CNavArea::ConnectTo( CNavLadder *ladder )
 	}
 }
 
-bool CNavArea::ConnectTo(CNavArea* area, NavLinkType linktype, const Vector& start, const Vector& end)
+bool CNavArea::ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const Vector& start, const Vector& end)
 {
+	if (area == this)
+	{
+		return false;
+	}
+
 	Vector pos;
 
 	if (IsConnectedToBySpecialLink(area))
 	{
-		Warning("Only one link per area connection! \n");
+		Warning("Only one off-mesh link per area connection! \n");
 		return false;
 	}
 
 	if (!Contains(start))
 	{
-		Warning("Connect Area via link error: Link start is outside nav area boundaries! \n");
-		return false;
+		Warning("Connect Area via off-mesh connection: Off-mesh connection start point is outside nav area boundaries! \n");
 	}
-
-	float z = GetZ(start);
 
 	pos.x = start.x;
 	pos.y = start.y;
-	pos.z = z;
+	pos.z = start.z;
 
-	m_speciallinks.emplace_back(linktype, area, pos, end);
-	DevMsg("Added special link between area #%i and #%i \n", GetID(), area->GetID());
+	m_offmeshconnections.emplace_back(linktype, area, pos, end);
+	Msg("Added off-mesh connection between area #%i and #%i \n", GetID(), area->GetID());
 	NDebugOverlay::HorzArrow(pos + Vector(0.0f, 0.0f, 72.0f), pos, 4.0f, 0, 255, 255, 255, true, 10.0f);
 
 	return true;
@@ -980,16 +982,13 @@ void CNavArea::Disconnect( CNavLadder *ladder )
 	}
 }
 
-void CNavArea::Disconnect(CNavArea* area, NavLinkType linktype)
+void CNavArea::Disconnect(CNavArea* area, OffMeshConnectionType linktype)
 {
-	NavSpecialLink link(linktype, area, vec3_origin, vec3_origin);
-	auto it = std::find(m_speciallinks.begin(), m_speciallinks.end(), link);
+	m_offmeshconnections.erase(std::remove_if(m_offmeshconnections.begin(), m_offmeshconnections.end(), [&area, &linktype](const NavOffMeshConnection& connection) {
+		return connection.GetConnectedArea() == area && connection.m_type == linktype;
+	}), m_offmeshconnections.end());
 
-	if (it != m_speciallinks.end())
-	{
-		DevMsg("Removing special link of type %i between areas #%i and #%i. \n", static_cast<int>(linktype), GetID(), area->GetID());
-		m_speciallinks.erase(it);
-	}
+	Msg("Removing special link of type %i between areas #%i and #%i. \n", static_cast<int>(linktype), GetID(), area->GetID());
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -1439,9 +1438,9 @@ bool CNavArea::IsConnected( const CNavArea *area, NavDirType dir ) const
 	return false;
 }
 
-bool CNavArea::IsConnected(const CNavArea* area, NavLinkType linktype) const
+bool CNavArea::IsConnected(const CNavArea* area, OffMeshConnectionType linktype) const
 {
-	for (auto& link : m_speciallinks)
+	for (auto& link : m_offmeshconnections)
 	{
 		if (link.IsOfType(linktype))
 		{
@@ -2695,7 +2694,7 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 		// no direction, check special links
 		if (IsConnectedToBySpecialLink(destinationArea))
 		{
-			return GetSpecialLinkConnectionToArea(destinationArea)->GetConnectionLength();
+			return GetOffMeshConnectionToArea(destinationArea)->GetConnectionLength();
 		}
 
 		return FLT_MAX;
@@ -2726,7 +2725,7 @@ float CNavArea::ComputeAdjacentConnectionGapDistance(const CNavArea* destination
 		// no direction, check special links
 		if (IsConnectedToBySpecialLink(destinationArea))
 		{
-			return GetSpecialLinkConnectionToArea(destinationArea)->GetConnectionLength();
+			return GetOffMeshConnectionToArea(destinationArea)->GetConnectionLength();
 		}
 
 		return FLT_MAX;
@@ -3479,14 +3478,14 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 		}
 	}
 
-	for (auto& link : m_speciallinks)
+	for (auto& link : m_offmeshconnections)
 	{
 		const Vector& start = link.m_start;
 		const Vector& end = link.m_end;
 		link.m_link.area->Draw();
 		NDebugOverlay::Line(start, end, 0, 255, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 		char message[64];
-		ke::SafeSprintf(message, sizeof(message), "Nav Link <%s>", NavSpecialLink::LinkTypeToString(link.m_type));
+		ke::SafeSprintf(message, sizeof(message), "Nav Link <%s>", NavOffMeshConnection::OffMeshConnectionTypeToString(link.m_type));
 		NDebugOverlay::Text(start, message, false, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 }

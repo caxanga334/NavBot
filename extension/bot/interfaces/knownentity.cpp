@@ -1,10 +1,10 @@
 #include <extension.h>
 #include <bot/interfaces/base_interface.h>
-#include <bot/interfaces/knownentity.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <util/helpers.h>
+#include <util/sdkcalls.h>
 #include <entities/baseentity.h>
 #include "knownentity.h"
 
@@ -40,7 +40,7 @@ void CKnownEntity::Init()
 	m_timeknown = gpGlobals->curtime;
 	m_timelastvisible = -9999.0f;
 	m_timelastinfo = -9999.0f;
-	m_volume = 0;
+	m_timesincelastnoise = -9999.0f;
 	m_visible = false;
 	m_lkpwasseen = false;
 }
@@ -61,9 +61,11 @@ float CKnownEntity::GetTimeSinceLastVisible() const { return gpGlobals->curtime 
 
 float CKnownEntity::GetTimeSinceLastInfo() const { return gpGlobals->curtime - m_timelastinfo; }
 
+float CKnownEntity::GetTimeSinceLastHeard() const { return gpGlobals->curtime - m_timesincelastnoise; }
+
 bool CKnownEntity::IsObsolete() const
 {
-	return !m_handle.IsValid() || m_handle.Get() == nullptr || GetTimeSinceLastInfo() > time_to_become_obsolete() || !UtilHelpers::IsEntityAlive(m_handle.GetEntryIndex());
+	return !m_handle.IsValid() || m_handle.Get() == nullptr || GetTimeSinceLastInfo() > time_to_become_obsolete() || !UtilHelpers::IsEntityAlive(m_handle.Get());
 }
 
 bool CKnownEntity::IsValid() const
@@ -85,6 +87,12 @@ void CKnownEntity::UpdatePosition()
 		m_lastknownvelocity = be.GetAbsVelocity();
 		m_lastknownarea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
 	}
+}
+
+void CKnownEntity::UpdateHeard()
+{
+	UpdatePosition();
+	m_timesincelastnoise = gpGlobals->curtime;
 }
 
 void CKnownEntity::MarkAsFullyVisible()

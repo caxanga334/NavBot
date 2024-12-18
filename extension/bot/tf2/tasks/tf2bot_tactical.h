@@ -32,6 +32,9 @@ public:
 	// Selects a class specific behavior
 	static AITask<CTF2Bot>* SelectClassTask(CTF2Bot* me);
 
+	TaskEventResponseResult<CTF2Bot> OnInjured(CTF2Bot* bot, const CTakeDamageInfo& info) override;
+	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
+
 private:
 	CountdownTimer m_ammochecktimer;
 	CountdownTimer m_healthchecktimer;

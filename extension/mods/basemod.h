@@ -12,6 +12,7 @@ class CBaseExtPlayer;
 class CBaseBot;
 class CNavMesh;
 
+#include <IPlayerHelpers.h>
 #include "gamemods_shared.h"
 #include "modsettings.h"
 
@@ -96,6 +97,8 @@ public:
 	void ReloadBotDifficultyProfile();
 	// Bot profile difficulty manager
 	const CDifficultyManager* GetBotDifficultyManager() const { return m_profilemanager.get(); }
+
+	virtual void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) {}
 protected:
 	// SMC parser data
 	int m_parser_depth;

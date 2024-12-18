@@ -59,7 +59,30 @@ const CTF2BotSpyMonitor::KnownSpy& CTF2BotSpyMonitor::GetKnownSpy(edict_t* spy)
 	return ret;
 }
 
+const CTF2BotSpyMonitor::KnownSpy& CTF2BotSpyMonitor::GetKnownSpy(CBaseEntity* spy)
+{
+	for (auto& known : m_knownspylist)
+	{
+		if (known(spy))
+		{
+			return known;
+		}
+	}
+
+	// not found
+	auto& ret = m_knownspylist.emplace_back(spy);
+	ret.Update(static_cast<CTF2Bot*>(GetBot())); // New spy, update it
+	return ret;
+}
+
 CTF2BotSpyMonitor::KnownSpy::KnownSpy(edict_t* spy) :
+	m_handle(spy->GetIServerEntity()->GetBaseEntity())
+{
+	m_detectionLevel = DETECTION_NEW;
+	m_initialDetectionTime.Start();
+}
+
+CTF2BotSpyMonitor::KnownSpy::KnownSpy(CBaseEntity* spy) :
 	m_handle(spy)
 {
 	m_detectionLevel = DETECTION_NEW;
@@ -68,14 +91,14 @@ CTF2BotSpyMonitor::KnownSpy::KnownSpy(edict_t* spy) :
 
 CTF2BotSpyMonitor::KnownSpy::KnownSpy(int spy)
 {
-	m_handle.Set(gamehelpers->EdictOfIndex(spy));
+	m_handle.Set(gamehelpers->ReferenceToEntity(spy));
 	m_detectionLevel = DETECTION_NEW;
 	m_initialDetectionTime.Start();
 }
 
 void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 {
-	edict_t* spy = m_handle.Get();
+	edict_t* spy = m_handle.ToEdict();
 
 	if (spy == nullptr)
 	{
@@ -181,12 +204,12 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 
 bool CTF2BotSpyMonitor::KnownSpy::operator==(const KnownSpy& other)
 {
-	if (m_handle.Get() == nullptr || other.GetEdict() == nullptr)
+	if (m_handle.Get() == nullptr || other.m_handle.Get() == nullptr)
 	{
 		return false;
 	}
 
-	return gamehelpers->IndexOfEdict(m_handle.Get()) == gamehelpers->IndexOfEdict(other.GetEdict());
+	return m_handle.Get() == other.m_handle.Get();
 }
 
 bool CTF2BotSpyMonitor::KnownSpy::operator()(edict_t* spy)
@@ -196,6 +219,11 @@ bool CTF2BotSpyMonitor::KnownSpy::operator()(edict_t* spy)
 		return false;
 	}
 
-	return gamehelpers->IndexOfEdict(m_handle.Get()) == gamehelpers->IndexOfEdict(spy);
+	return gamehelpers->IndexOfEdict(m_handle.ToEdict()) == gamehelpers->IndexOfEdict(spy);
+}
+
+bool CTF2BotSpyMonitor::KnownSpy::operator()(CBaseEntity* spy)
+{
+	return m_handle.Get() == spy;
 }
 

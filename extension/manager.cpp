@@ -253,6 +253,22 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 	return nullptr;
 }
 
+CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
+{
+	if (entity == nullptr) { return nullptr; }
+
+	for (auto& botptr : m_bots)
+	{
+		auto bot = botptr.get();
+		if (bot->GetEntity() == entity)
+		{
+			return bot;
+		}
+	}
+
+	return nullptr;
+}
+
 bool CExtManager::IsNavBot(const int client) const
 {
 	for (auto& botptr : m_bots)
@@ -326,16 +342,13 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 	bot->PostAdd();
 
-#ifdef EXT_DEBUG
-	// the base bot doesn't allocate these on the constructor
-	// to allow debugging these interface, we have to call these functions at least once to create them
-
+	// The base bot doesn't create these interfaces until something uses them, so we call these functions here to do that.
 	bot->GetControlInterface();
 	bot->GetMovementInterface();
 	bot->GetSensorInterface();
 	bot->GetBehaviorInterface();
 	bot->GetInventoryInterface();
-#endif // EXT_DEBUG
+	bot->GetSquadInterface();
 
 	if (newbotedict != nullptr)
 	{

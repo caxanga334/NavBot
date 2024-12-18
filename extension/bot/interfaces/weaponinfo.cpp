@@ -211,6 +211,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			m_current->SetCanHeadShot(false);
 		}
 	}
+	else if (strncmp(key, "infinite_ammo", 13) == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetInfiniteAmmo(v);
+	}
 	else if (strncmp(key, "headshot_range_multiplier", 25) == 0)
 	{
 		float hsrange = atof(value);

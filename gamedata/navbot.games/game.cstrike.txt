@@ -34,6 +34,11 @@
 				"windows"	"131"
 				"linux"		"132"
 			}
+			"CBaseEntity_IsPlayer"
+			{
+				"windows"	"80"
+				"linux"		"81"
+			}
 		}
 	}
 }
