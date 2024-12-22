@@ -905,6 +905,7 @@ private:
 	void DrawEditMode( void );									// draw navigation areas
 	void DrawWaypoints();										// draw waypoints
 	void DrawVolumes();											// draw nav volumes
+	void DrawElevators();										// draw nav elevators
 	void OnEditModeEnd( void );									// called when edit mode has just been disabled
 	void UpdateDragSelectionSet( void );							// update which areas are overlapping the drag selected bounds
 	Vector m_editCursorPos;										// current position of the cursor
@@ -1051,6 +1052,7 @@ private:
 	CountdownTimer m_invokeAreaUpdateTimer;
 	CountdownTimer m_invokeWaypointUpdateTimer;
 	CountdownTimer m_invokeVolumeUpdateTimer;
+	CountdownTimer m_invokeElevatorUpdateTimer;
 	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
 	void BuildAuthorInfo();
 	AuthorInfo m_authorinfo;
@@ -1064,16 +1066,21 @@ private:
 	std::shared_ptr<CWaypoint> m_selectedWaypoint; // Selected waypoint for editing
 	std::unordered_map<unsigned int, std::shared_ptr<CNavVolume>> m_volumes;
 	std::shared_ptr<CNavVolume> m_selectedVolume;
+	std::unordered_map<unsigned int, std::shared_ptr<CNavElevator>> m_elevators;
+	std::shared_ptr<CNavElevator> m_selectedElevator;
 
 protected:
 	// Creates a new waypoint instance
 	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
 	// Creates a new nav volume instance
 	virtual std::shared_ptr<CNavVolume> CreateVolume() const;
+	// Creates a new nav elevator isntance
+	virtual std::shared_ptr<CNavElevator> CreateElevator() const;
 
 	// Rebuilds the waypoint ID map
 	void RebuildWaypointMap();
 	void RebuildVolumeMap();
+	void RebuildElevatorMap();
 public:
 	/**
 	 * @brief Adds a new waypoint.
@@ -1189,6 +1196,26 @@ public:
 
 	const std::unordered_map<unsigned int, std::shared_ptr<CNavVolume>>& GetNavVolumes() const { return m_volumes; }
 
+	std::optional<const std::shared_ptr<CNavElevator>> AddNavElevator(CBaseEntity* elevator);
+
+	template <typename T>
+	inline std::optional<const std::shared_ptr<T>> GetElevatorOfID(unsigned int id) const
+	{
+		auto it = m_elevators.find(id);
+
+		if (it == m_elevators.end())
+		{
+			return std::nullopt;
+		}
+
+		return it->second;
+	}
+
+	void SetSelectedElevator(CNavElevator* elevator);
+	const std::shared_ptr<CNavElevator>& GetSelectedElevator() const { return m_selectedElevator; }
+	void SelectNearestElevator(const Vector& point);
+	void DeleteElevator(CNavElevator* elevator);
+	void CompressElevatorsIDs();
 };
 
 // the global singleton interface

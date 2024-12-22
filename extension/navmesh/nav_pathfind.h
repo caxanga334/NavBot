@@ -22,6 +22,7 @@
 
 #include <util/librandom.h>
 #include "nav_area.h"
+#include "nav_elevator.h"
 
 
 #undef max
@@ -53,7 +54,7 @@ enum RouteType
 class ShortestPathCost
 {
 public:
-	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CFuncElevator *elevator, float length ) const
+	float operator() ( CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CNavElevator *elevator, float length ) const
 	{
 		if ( fromArea == NULL )
 		{
@@ -68,6 +69,17 @@ public:
 			if (link)
 			{
 				dist = link->GetConnectionLength();
+			}
+			else if (elevator)
+			{
+				auto fromFloor = fromArea->GetMyElevatorFloor();
+
+				if (!fromFloor->HasCallButton() && !fromFloor->is_here)
+				{
+					return -1.0f; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
+				}
+
+				dist = elevator->GetLengthBetweenFloors(fromArea, area);
 			}
 			else if ( ladder )
 			{
@@ -214,6 +226,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 		const NavLadderConnectVector *ladderList = nullptr;
 		std::size_t ladderConnIndex = 0;
 		const std::vector<LadderToAreaConnection>* ladderAreaList = nullptr;
+		std::size_t elevFloorIndex = 0;
 		bool bHaveMaxPathLength = ( maxPathLength > 0.0f );
 		float length = -1;
 		
@@ -222,7 +235,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 			CNavArea *newArea = nullptr;
 			NavTraverseType how;
 			const CNavLadder *ladder = nullptr;
-			const CFuncElevator *elevator = nullptr;
+			const CNavElevator *elevator = nullptr;
 			const NavOffMeshConnection* currentlink = nullptr;
 
 			//
@@ -358,20 +371,27 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 			}
 			else if ( searchWhere == SEARCH_ELEVATORS )
 			{
-				const NavConnectVector &elevatorAreas = area->GetElevatorAreas();
-
 				elevator = area->GetElevator();
 
-				if ( elevator == NULL || searchIndex >= elevatorAreas.Count() )
+				if (elevator == nullptr || elevFloorIndex >= elevator->GetFloors().size())
 				{
 					// done searching connected areas
-					elevator = NULL;
+					elevator = nullptr;
 					searchWhere = SEARCH_LINKS;
+					elevFloorIndex = 0;
 					continue;
 				}
 
-				newArea = elevatorAreas[ searchIndex++ ].area;
+				newArea = elevator->GetFloors()[elevFloorIndex].GetArea();
+
+				if (newArea == area)
+				{
+					elevFloorIndex++; // skip self
+					continue;
+				}
+
 				how = newArea->GetCenter().z > area->GetCenter().z ? GO_ELEVATOR_UP : GO_ELEVATOR_DOWN;
+				elevFloorIndex++;
 
 				length = -1.0f;
 			}
@@ -399,19 +419,19 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 			}
 
 			// don't backtrack
-			Assert( newArea );
+			// Assert( newArea );
 			if ( newArea == area->GetParent()
 				|| newArea == area // self neighbor?
 				// don't consider blocked areas
 				|| newArea->IsBlocked( teamID, ignoreNavBlockers ) )
 				continue;
 
-			/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CFuncElevator *elevator, float length */
+			/* CNavArea *area, CNavArea *fromArea, const CNavLadder *ladder, const NavOffMeshConnection *link, const CNavElevator *elevator, float length */
 			float newCostSoFar = costFunc( newArea, area, ladder, currentlink, elevator, length );
 
 			// NaNs really mess this function up causing tough to track down hangs. If
 			//  we get inf back, clamp it down to a really high number.
-			DebuggerBreakOnNaN_StagingOnly( newCostSoFar );
+			// DebuggerBreakOnNaN_StagingOnly( newCostSoFar );
 			if ( IS_NAN( newCostSoFar ) )
 				newCostSoFar = 1e30f;
 
@@ -421,7 +441,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 			// Safety check against a bogus functor.  The cost of the path
 			// A...B, C should always be at least as big as the path A...B.
-			Assert( newCostSoFar >= area->GetCostSoFar() );
+			// Assert( newCostSoFar >= area->GetCostSoFar() );
 
 			// And now that we've asserted, let's be a bit more defensive.
 			// Make sure that any jump to a new area incurs some pathfinsing
@@ -694,10 +714,19 @@ void SearchSurroundingAreas( CNavArea *startArea, const Vector &startPos, Functo
 
 			if ( (options & EXCLUDE_ELEVATORS) == 0 )
 			{
-				const NavConnectVector &elevatorList = area->GetElevatorAreas();
-				FOR_EACH_VEC( elevatorList, it )
+				const CNavElevator* elevator = area->GetElevator();
+				
+				if (elevator != nullptr)
 				{
-					AddAreaToOpenList( elevatorList[ it ].area, area, startPos, maxRange );
+					auto& floors = elevator->GetFloors();
+
+					for (auto& floor : floors)
+					{
+						if (floor.GetArea() != area)
+						{
+							AddAreaToOpenList(floor.GetArea(), area, startPos, maxRange);
+						}
+					}
 				}
 			}
 		}

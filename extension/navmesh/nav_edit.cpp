@@ -1097,7 +1097,7 @@ void CNavMesh::DrawVolumes()
 	CBaseExtPlayer host(ent);
 	Vector origin = host.GetAbsOrigin();
 
-	std::for_each(m_volumes.begin(), m_volumes.end(), [this, &origin](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
+	std::for_each(m_volumes.begin(), m_volumes.end(), [&origin](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
 
 		float distance = (object.second->GetOrigin() - origin).Length();
 
@@ -1110,6 +1110,32 @@ void CNavMesh::DrawVolumes()
 	if (m_selectedVolume)
 	{
 		m_selectedVolume->ScreenText();
+	}
+}
+
+void CNavMesh::DrawElevators()
+{
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
+
+	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
+		return;
+
+	CBaseExtPlayer host(ent);
+	Vector origin = host.GetAbsOrigin();
+
+	std::for_each(m_elevators.begin(), m_elevators.end(), [&origin](const std::pair<unsigned int, std::shared_ptr<CNavElevator>>& object) {
+
+		float distance = (object.second->GetElevatorOrigin() - origin).Length();
+
+		if (distance <= CNavElevator::MAX_DRAW_RANGE)
+		{
+			object.second->Draw();
+		}
+	});
+
+	if (m_selectedElevator)
+	{
+		m_selectedElevator->ScreenText();
 	}
 }
 
@@ -4347,6 +4373,11 @@ void CNavMesh::OnEditDestroyNotify( CNavArea *deadArea )
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
 		TheNavAreas[ it ]->OnEditDestroyNotify( deadArea );
+	}
+
+	for (auto& elevator : m_elevators)
+	{
+		elevator.second->NotifyNavAreaDestruction(deadArea);
 	}
 
 	EditDestroyNotification notification( deadArea );

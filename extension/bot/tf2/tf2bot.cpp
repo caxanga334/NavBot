@@ -521,7 +521,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
 }
 
-float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const
+float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
 {
 	if (fromArea == nullptr)
 	{
@@ -541,6 +541,17 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	if (link != nullptr)
 	{
 		dist = link->GetConnectionLength();
+	}
+	else if (elevator != nullptr)
+	{
+		auto fromFloor = fromArea->GetMyElevatorFloor();
+
+		if (!fromFloor->HasCallButton() && !fromFloor->is_here)
+		{
+			return -1.0f; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
+		}
+
+		dist = elevator->GetLengthBetweenFloors(fromArea, toArea);
 	}
 	else if (length > 0.0f)
 	{

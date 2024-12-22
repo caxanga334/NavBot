@@ -504,6 +504,7 @@ NavErrorType CNavArea::PostLoad( void )
 			{
 				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation ladder data. Cannot connect Navigation Areas.");
 				error = NAV_CORRUPT_DATA;
+				return error;
 			}
 		}
 	}
@@ -522,7 +523,9 @@ NavErrorType CNavArea::PostLoad( void )
 			{
 				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas.");
 				error = NAV_CORRUPT_DATA;
+				return error;
 			}
+
 			connect->length = ( connect->area->GetCenter() - GetCenter() ).Length();
 		}
 	}
@@ -542,7 +545,7 @@ NavErrorType CNavArea::PostLoad( void )
 		{
 			smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Nav Area #%i Special Link <%s> is missing connecting area!", GetID(), NavOffMeshConnection::OffMeshConnectionTypeToString(link->m_type));
 			error = NAV_CORRUPT_DATA;
-			continue;
+			return error;
 		}
 
 		link->m_link.area = area;
@@ -883,6 +886,17 @@ bool CNavMesh::Save(void)
 		}
 	}
 
+	{
+		std::uint64_t count = static_cast<std::uint64_t>(m_elevators.size());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint64_t));
+
+		for (auto& pair : m_elevators)
+		{
+			auto& elevator = pair.second;
+			elevator->Save(filestream, CNavMesh::NavMeshVersion);
+		}
+	}
+
 	//
 	// Build a directory of the Places in this map
 	//
@@ -1184,6 +1198,27 @@ NavErrorType CNavMesh::Load( void )
 		}
 	}
 
+	{
+		std::uint64_t numElevators = 0;
+		CNavElevator::s_nextID = 0;
+		filestream.read(reinterpret_cast<char*>(&numElevators), sizeof(std::uint64_t));
+
+		for (std::uint64_t i = 0; i < numElevators; i++)
+		{
+			auto elevator = AddNavElevator(nullptr);
+
+			if (elevator.has_value())
+			{
+				NavErrorType error = elevator->get()->Load(filestream, header.version, header.subversion);
+
+				if (error != NAV_OK)
+				{
+					return error;
+				}
+			}
+		}
+	}
+
 	placeDirectory.Load(filestream, header.version);
 	LoadCustomDataPreArea(filestream, header.subversion);
 
@@ -1327,7 +1362,14 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 		}
 	}
 
-	CWaypoint::g_NextWaypointID = topID + 1;
+	if (m_waypoints.empty())
+	{
+		CWaypoint::g_NextWaypointID = 0;
+	}
+	else
+	{
+		CWaypoint::g_NextWaypointID = topID + 1;
+	}
 
 	unsigned int nextVolumeID = 0;
 
@@ -1344,7 +1386,38 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 		}
 	}
 
-	CNavVolume::s_nextID = nextVolumeID + 1;
+	if (m_volumes.empty())
+	{
+		CNavVolume::s_nextID = 0;
+	}
+	else
+	{
+		CNavVolume::s_nextID = nextVolumeID + 1;
+	}
+
+	RebuildElevatorMap();
+
+	unsigned int nextElevatorID = 0;
+
+	for (auto& pair : m_elevators)
+	{
+		auto& elevator = pair.second;
+		elevator->PostLoad();
+
+		if (elevator->GetID() >= nextElevatorID)
+		{
+			nextElevatorID = elevator->GetID();
+		}
+	}
+
+	if (m_elevators.empty())
+	{
+		CNavElevator::s_nextID = 0;
+	}
+	else
+	{
+		CNavElevator::s_nextID = nextElevatorID + 1;
+	}
 
 	for (int i = 0; i < m_ladders.Count(); i++)
 	{

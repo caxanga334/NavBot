@@ -4,6 +4,7 @@
 #include <bot/interfaces/base_interface.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
+#include <navmesh/nav_elevator.h>
 
 class CNavLadder;
 class CNavArea;
@@ -126,6 +127,21 @@ public:
 		MAX_LADDER_STATES
 	};
 
+	// States for the use elevator finite state machine
+	enum ElevatorState : int
+	{
+		NOT_USING_ELEVATOR = 0, // not using an elevator
+		MOVE_TO_WAIT_POS, // moving to wait position
+		CALL_ELEVATOR, // call the elevator if needed
+		WAIT_FOR_ELEVATOR, // waiting for the elevator to arrive on this floor
+		ENTER_ELEVATOR, // enter the elevator
+		OPERATE_ELEVATOR, // operate the elevator
+		RIDE_ELEVATOR, // wait for the elevator to move
+		EXIT_ELEVATOR, // move out of the elevator
+
+		MAX_ELEVATOR_STATES,
+	};
+
 	// Reset the interface to it's initial state
 	void Reset() override;
 	// Called at intervals
@@ -242,9 +258,10 @@ public:
 	// Called when there is an obstacle on the bot's path.
 	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
 	// Returns the Nav Ladder the bot is using if one.
-	inline const CNavLadder* GetNavLadder() const { return m_ladder; }
-	
+	inline const CNavLadder* GetNavLadder() const { return m_ladder; }	
 	inline int GetStuckCount() const { return m_stuck.counter; }
+	virtual bool IsUsingElevator() const;
+	virtual void UseElevator(const CNavElevator* elevator, const CNavArea* from, const CNavArea* to);
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	CountdownTimer m_braketimer; // Timer for forced braking
@@ -260,14 +277,26 @@ protected:
 	bool m_isJumpingAcrossGap;
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
+	const CNavElevator* m_elevator;
+	const CNavElevator::ElevatorFloor* m_fromFloor;
+	const CNavElevator::ElevatorFloor* m_toFloor;
+	ElevatorState m_elevatorState;
+	CountdownTimer m_elevatorTimeout;
 
 	// stuck monitoring
 	StuckStatus m_stuck;
 
 	virtual void StuckMonitor();
-
 	virtual void TraverseLadder();
+	virtual void ElevatorUpdate();
 
+	void CleanUpElevator()
+	{
+		m_elevator = nullptr;
+		m_fromFloor = nullptr;
+		m_toFloor = nullptr;
+		m_elevatorTimeout.Invalidate();
+	}
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed
@@ -292,6 +321,19 @@ private:
 	void OnLadderStateChanged(LadderState oldState, LadderState newState);
 
 	static constexpr float MIN_LADDER_SPEED = 25.0f;
+
+	/* Elevator FSM */
+
+	ElevatorState EState_MoveToWaitPosition();
+	ElevatorState EState_CallElevator();
+	ElevatorState EState_WaitForElevator();
+	ElevatorState EState_EnterElevator();
+	ElevatorState EState_OperateElevator();
+	ElevatorState EState_RideElevator();
+	ElevatorState EState_ExitElevator();
+
+	static constexpr float ELEV_MOVE_RANGE = 24.0f;
+	static constexpr float ELEV_SPEED_DIV = 400.0f; // timeout is this value divided by speed
 };
 
 inline bool IMovement::IsControllingMovements()
@@ -299,6 +341,10 @@ inline bool IMovement::IsControllingMovements()
 	if (m_ladderState != NOT_USING_LADDER)
 	{
 		return true; // take full control when doing ladder operations
+	}
+	else if (m_elevatorState != NOT_USING_ELEVATOR)
+	{
+		return true; // take full control when doing elevator operations
 	}
 
 	return false;

@@ -89,6 +89,11 @@ public:
 	 * @brief Selects the best weapon from the bot inventory to attack breakable entities (func_breakable, prop_physics, etc...)
 	 */
 	virtual void SelectBestWeaponForBreakables();
+	/**
+	 * @brief Selects the best hitscan weapon from the bot inventory.
+	 * @param meleeIsHitscan If true, consider melee weapon as hitscan.
+	 */
+	virtual void SelectBestHitscanWeapon(const bool meleeIsHitscan = true);
 	// Gets the CBotWeapon pointer for the bot current active weapon. Can return NULL if the bot doesn't have an active weapon or the current weapon lacks a CBotWeapon.
 	virtual std::shared_ptr<CBotWeapon> GetActiveBotWeapon();
 	// Requests the bot inventory to be refreshed

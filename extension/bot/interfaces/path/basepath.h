@@ -31,6 +31,7 @@ namespace AIPath
 		SEGMENT_LADDER_DOWN, // Going down a ladder
 		SEGMENT_CLIMB_DOUBLE_JUMP, // Climbing over an obstacle that requires a double jump
 		SEGMENT_BLAST_JUMP, // Blast/Rocket jump to the next segment
+		SEGMENT_ELEVATOR,// Use an elevator
 
 		MAX_SEGMENT_TYPES
 	};
@@ -62,6 +63,8 @@ namespace AIPath
 			return "CLIMB_DOUBLE_JUMP";
 		case AIPath::SEGMENT_BLAST_JUMP:
 			return "BLAST_JUMP";
+		case SEGMENT_ELEVATOR:
+			return "ELEVATOR";
 		case AIPath::MAX_SEGMENT_TYPES:
 			return "MAX_SEGMENT_TYPES";
 		default:
@@ -84,7 +87,7 @@ public:
 	 * @param length Path length
 	 * @return path cost
 	*/
-	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const = 0;
+	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const = 0;
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments
@@ -429,6 +432,7 @@ protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
 	virtual bool ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	virtual bool ProcessElevatorsInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual bool ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);

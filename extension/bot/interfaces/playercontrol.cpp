@@ -279,11 +279,18 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 			pos.x, pos.y, pos.z, duration, GetLookPriorityName(priority), reason ? reason : "");
 	}
 
+	// experimental
+	if (m_looktarget.DistTo(pos) > 64.0f)
+	{
+		m_isOnTarget = false;
+	}
+
 	m_priority = priority;
 	m_looktimer.Start(duration);
 	m_looktarget = pos;
 	m_lookentity = nullptr;
 	m_didLookAtTarget = false;
+
 }
 
 void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason)
@@ -307,6 +314,12 @@ void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, 
 	{
 		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"%s\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
 			gamehelpers->GetEntityClassname(entity), duration, GetLookPriorityName(priority), reason ? reason : "");
+	}
+
+	// Experimental
+	if (m_lookentity.Get() != entity)
+	{
+		m_isOnTarget = false;
 	}
 
 	m_priority = priority;

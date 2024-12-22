@@ -77,6 +77,11 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_groundspeed = 0.0f;
 	m_basemovespeed = 0.0f;
 	m_ladderGoalZ = 0.0f;
+	m_elevator = nullptr;
+	m_fromFloor = nullptr;
+	m_toFloor = nullptr;
+	m_elevatorTimeout.Invalidate();
+	m_elevatorState = NOT_USING_ELEVATOR;
 }
 
 IMovement::~IMovement()
@@ -103,6 +108,11 @@ void IMovement::Reset()
 	m_groundspeed = 0.0f;
 	m_basemovespeed = 0.0f;
 	m_ladderGoalZ = 0.0f;
+	m_elevator = nullptr;
+	m_fromFloor = nullptr;
+	m_toFloor = nullptr;
+	m_elevatorTimeout.Invalidate();
+	m_elevatorState = NOT_USING_ELEVATOR;
 }
 
 void IMovement::Update()
@@ -195,6 +205,7 @@ void IMovement::Frame()
 
 	// Was on Update, moved to frame
 	TraverseLadder();
+	ElevatorUpdate();
 }
 
 float IMovement::GetHullWidth()
@@ -613,7 +624,7 @@ bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
 	if (UtilHelpers::FClassnameIs(entity, "prop_door*") == true)
 	{
 		int doorstate = 0;
-		if (entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate) == false)
+		if (!entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate))
 		{
 			return true; // lookup failed, assume it's walkable
 		}
@@ -830,6 +841,31 @@ void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, con
 	}
 }
 
+bool IMovement::IsUsingElevator() const
+{
+	return m_elevator != nullptr;
+}
+
+void IMovement::UseElevator(const CNavElevator* elevator, const CNavArea* from, const CNavArea* to)
+{
+	if (from->GetMyElevatorFloor() == nullptr || to->GetMyElevatorFloor() == nullptr)
+	{
+		return;
+	}
+
+	m_elevator = elevator;
+	m_fromFloor = from->GetMyElevatorFloor();
+	m_toFloor = to->GetMyElevatorFloor();
+	m_elevatorTimeout.Invalidate();
+	m_elevatorState = ElevatorState::MOVE_TO_WAIT_POS;
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		GetBot()->DebugPrintToConsole(255, 105, 180, "%s Use Elevator #%i to go from area #%i to area #%i!\n", GetBot()->GetDebugIdentifier(), 
+			m_elevator->GetID(), from->GetID(), to->GetID());
+	}
+}
+
 void IMovement::StuckMonitor()
 {
 	auto bot = GetBot();
@@ -954,6 +990,55 @@ void IMovement::TraverseLadder()
 	if (newState != m_ladderState)
 	{
 		ChangeLadderState(newState);
+	}
+}
+
+void IMovement::ElevatorUpdate()
+{
+	if (m_elevatorState == NOT_USING_ELEVATOR)
+	{
+		return;
+	}
+
+	ElevatorState initialState = m_elevatorState;
+
+	switch (m_elevatorState)
+	{
+	case IMovement::MOVE_TO_WAIT_POS:
+		m_elevatorState = EState_MoveToWaitPosition();
+		break;
+	case IMovement::CALL_ELEVATOR:
+		m_elevatorState = EState_CallElevator();
+		break;
+	case IMovement::WAIT_FOR_ELEVATOR:
+		m_elevatorState = EState_WaitForElevator();
+		break;
+	case IMovement::ENTER_ELEVATOR:
+		m_elevatorState = EState_EnterElevator();
+		break;
+	case IMovement::OPERATE_ELEVATOR:
+		m_elevatorState = EState_OperateElevator();
+		break;
+	case IMovement::RIDE_ELEVATOR:
+		m_elevatorState = EState_RideElevator();
+		break;
+	case IMovement::EXIT_ELEVATOR:
+		m_elevatorState = EState_ExitElevator();
+		break;
+	default:
+		CleanUpElevator();
+		return;
+	}
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT) && initialState != m_elevatorState)
+	{
+		GetBot()->DebugPrintToConsole(255, 105, 180, "%s Elevator State Transition From [%i] to [%i]!\n", GetBot()->GetDebugIdentifier(), static_cast<int>(initialState), static_cast<int>(m_elevatorState));
+	}
+
+	// transition to not using elevator state
+	if (m_elevatorState == NOT_USING_ELEVATOR)
+	{
+		CleanUpElevator();
 	}
 }
 
@@ -1346,6 +1431,312 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	default:
 		return;
 	}
+}
+
+IMovement::ElevatorState IMovement::EState_MoveToWaitPosition()
+{
+	/* The first state for riding elevators. 
+	* The bot will move to the wait position first for aligment purposes.
+	*/
+
+	CBaseBot* me = GetBot();
+
+	if (m_fromFloor->wait_position.IsZero(0.5f))
+	{
+		m_elevatorTimeout.Invalidate();
+		return ElevatorState::CALL_ELEVATOR;
+	}
+
+	if (me->GetRangeTo(m_fromFloor->wait_position) < IMovement::ELEV_MOVE_RANGE)
+	{
+		if (m_elevator->GetType() == CNavElevator::ElevatorType::AUTO_TRIGGER)
+		{
+			return ElevatorState::ENTER_ELEVATOR; // activated by a trigger, just enter it
+		}
+
+		m_elevatorTimeout.Invalidate();
+		return ElevatorState::CALL_ELEVATOR;
+	}
+	else
+	{
+		MoveTowards(m_fromFloor->wait_position);
+	}
+
+	return ElevatorState::MOVE_TO_WAIT_POS;
+}
+
+IMovement::ElevatorState IMovement::EState_CallElevator()
+{
+	/* Move towars the elevator call button and press it. Fails if the call button is invalid. */
+
+	if (!m_elevatorTimeout.HasStarted())
+	{
+		float time = m_fromFloor->GetDistanceTo(m_toFloor) / m_elevator->GetSpeed();
+		float extra = m_elevator->IsMultiFloorElevator() ? 10.0f : 5.0f; // 10 extra seconds for multi floor type, else 5
+
+		m_elevatorTimeout.Start(time + extra);
+	}
+
+	if (m_elevatorTimeout.IsElapsed())
+	{
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			GetBot()->DebugPrintToConsole(255, 105, 180, "%s Call Elevator timed out!\n", GetBot()->GetDebugIdentifier());
+		}
+
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
+	if (m_fromFloor->is_here)
+	{
+		m_elevatorTimeout.Invalidate();
+		return ElevatorState::ENTER_ELEVATOR;
+	}
+
+	CBaseEntity* callbutton = m_fromFloor->call_button.handle.Get();
+	CBaseBot* bot = GetBot();
+	float minrange = (CBaseExtPlayer::PLAYER_USE_RADIUS * 0.7f);
+
+	if (m_fromFloor->shootable_button)
+	{
+		bot->GetInventoryInterface()->SelectBestHitscanWeapon();
+		auto weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+		if (weapon.get() != nullptr)
+		{
+			minrange = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
+		}
+	}
+
+	if (callbutton == nullptr)
+	{
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+	else
+	{
+		Vector pos = UtilHelpers::getWorldSpaceCenter(callbutton);
+		MoveTowards(pos);
+		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at elevator call button!");
+
+		if (bot->GetRangeTo(pos) < minrange)
+		{
+			if (bot->GetControlInterface()->IsAimOnTarget())
+			{
+				if (m_fromFloor->shootable_button)
+				{
+					bot->GetControlInterface()->PressAttackButton(0.2f);
+				}
+				else
+				{
+					bot->GetControlInterface()->PressUseButton();
+				}
+
+				return ElevatorState::WAIT_FOR_ELEVATOR;
+			}
+		}
+	}
+
+	return ElevatorState::CALL_ELEVATOR;
+}
+
+IMovement::ElevatorState IMovement::EState_WaitForElevator()
+{
+	/* 
+	 * The call button has been pressed, wait for the elevator to arrive at my current floor 
+	 * Timeout timer for safety.
+	 */
+
+	if (!m_elevatorTimeout.HasStarted())
+	{
+		float time = m_fromFloor->GetDistanceTo(m_toFloor) / m_elevator->GetSpeed();
+		float extra = m_elevator->IsMultiFloorElevator() ? 10.0f : 5.0f; // 10 extra seconds for multi floor type, else 5
+
+		m_elevatorTimeout.Start(time + extra);
+	}
+
+	if (m_elevatorTimeout.IsElapsed())
+	{
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			GetBot()->DebugPrintToConsole(255, 105, 180, "%s Wait Elevator timed out!\n", GetBot()->GetDebugIdentifier());
+		}
+
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
+	CBaseBot* me = GetBot();
+
+	// elevator has arrived, time to enter it
+	if (m_fromFloor->is_here)
+	{
+		m_elevatorTimeout.Invalidate();
+		return ElevatorState::ENTER_ELEVATOR;
+	}
+
+	// move back to wait position
+	if (m_fromFloor->wait_position.IsZero(0.5f))
+	{
+		return ElevatorState::WAIT_FOR_ELEVATOR;
+	}
+	else
+	{
+		if (me->GetRangeTo(m_fromFloor->wait_position) > IMovement::ELEV_MOVE_RANGE)
+		{
+			MoveTowards(m_fromFloor->wait_position);
+		}
+	}
+
+	return ElevatorState::WAIT_FOR_ELEVATOR;
+}
+
+IMovement::ElevatorState IMovement::EState_EnterElevator()
+{
+	// get inside the elevator (elevator nav area center)
+
+	CBaseBot* me = GetBot();
+
+	const Vector& pos = m_fromFloor->GetArea()->GetCenter();
+	MoveTowards(pos);
+
+	if (me->GetRangeTo(pos) <= ELEV_MOVE_RANGE)
+	{
+		return ElevatorState::OPERATE_ELEVATOR;
+	}
+
+	return ElevatorState::ENTER_ELEVATOR;
+}
+
+IMovement::ElevatorState IMovement::EState_OperateElevator()
+{
+	// press the elevator use button, fail if it doesn't have one
+
+	CBaseEntity* button = m_fromFloor->use_button.handle.Get();
+
+	if (button == nullptr)
+	{
+		return NOT_USING_ELEVATOR;
+	}
+
+	CBaseBot* me = GetBot();
+	Vector pos = UtilHelpers::getWorldSpaceCenter(button);
+	float minrange = (CBaseExtPlayer::PLAYER_USE_RADIUS * 0.7f);
+
+	if (m_fromFloor->shootable_button)
+	{
+		me->GetInventoryInterface()->SelectBestHitscanWeapon();
+		auto weapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+
+		if (weapon.get() != nullptr)
+		{
+			minrange = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
+		}
+	}
+
+	MoveTowards(pos);
+	me->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at elevator use button!");
+
+	if (me->GetRangeTo(pos) < minrange)
+	{
+		if (me->GetControlInterface()->IsAimOnTarget())
+		{
+			if (m_fromFloor->shootable_button)
+			{
+				me->GetControlInterface()->PressAttackButton(0.2f);
+			}
+			else
+			{
+				me->GetControlInterface()->PressUseButton();
+			}
+
+			m_elevatorTimeout.Invalidate();
+			return ElevatorState::RIDE_ELEVATOR;
+		}
+	}
+
+	return ElevatorState::OPERATE_ELEVATOR;
+}
+
+IMovement::ElevatorState IMovement::EState_RideElevator()
+{
+	// ride the elevator by standing still
+	// fail on timeout
+
+	if (!m_elevatorTimeout.HasStarted())
+	{
+		float time = m_fromFloor->GetDistanceTo(m_toFloor) / m_elevator->GetSpeed();
+		float extra = m_elevator->IsMultiFloorElevator() ? 10.0f : 5.0f; // 10 extra seconds for multi floor type, else 5
+
+		m_elevatorTimeout.Start(time + extra);
+		GetBot()->GetControlInterface()->AimAt(m_toFloor->GetArea()->GetCenter(), IPlayerController::LOOK_MOVEMENT, 0.5f, "Riding elevator!");
+	}
+
+	if (m_elevatorTimeout.IsElapsed())
+	{
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			GetBot()->DebugPrintToConsole(255, 105, 180, "%s Ride Elevator timed out!\n", GetBot()->GetDebugIdentifier());
+		}
+
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
+	// additional checks for multi floor elevators
+	if (m_elevator->IsMultiFloorElevator())
+	{
+		// get the floor the elevator is stopped at
+		auto currentFloor = m_elevator->GetStoppedFloor();
+
+		// if the elevator is stopped and is not my goal floor or my initial floor, operate it again
+		if (currentFloor != nullptr && currentFloor != m_toFloor && currentFloor != m_fromFloor)
+		{
+			// A multifloor elevator has stopped, press the use button again
+
+			if (!currentFloor->HasUseButton())
+			{
+				return ElevatorState::NOT_USING_ELEVATOR;
+			}
+
+			if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+			{
+				GetBot()->DebugPrintToConsole(255, 105, 180, "%s Multi-Floor elevator is stopped but I am not at my destination! Operating elevator again!\n", GetBot()->GetDebugIdentifier());
+			}
+
+			m_fromFloor = currentFloor; // update from floor to the current floor
+			m_elevatorTimeout.Invalidate();
+			return ElevatorState::OPERATE_ELEVATOR; // go to operate state to press the new use button
+		}
+	}
+
+	// elevator arrived at my target, exit it!
+	if (m_toFloor->is_here)
+	{
+		m_elevatorTimeout.Invalidate();
+		return ElevatorState::EXIT_ELEVATOR;
+	}
+
+	return ElevatorState::RIDE_ELEVATOR;
+}
+
+IMovement::ElevatorState IMovement::EState_ExitElevator()
+{
+	CBaseBot* me = GetBot();
+
+	// if no wait position, just end it.
+	if (m_toFloor->wait_position.IsZero(0.5f))
+	{
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
+	// move to exit position
+	MoveTowards(m_toFloor->wait_position);
+
+	// exit position reached, time to go back to normal navigation
+	if (me->GetRangeTo(m_toFloor->wait_position) < IMovement::ELEV_MOVE_RANGE)
+	{
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
+	return ElevatorState::EXIT_ELEVATOR;
 }
 
 

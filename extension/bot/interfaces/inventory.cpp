@@ -337,6 +337,90 @@ void IInventory::SelectBestWeaponForBreakables()
 	}
 }
 
+void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
+{
+	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
+	{
+		return;
+	}
+
+	if (m_weapons.empty())
+	{
+		BuildInventory();
+		m_weaponSwitchCooldown.Start(0.250f);
+		return;
+	}
+
+	CBaseBot* bot = GetBot();
+	const CBotWeapon* best = nullptr;
+	int priority = std::numeric_limits<int>::min();
+
+	// Find the best melee weapon
+	ForEveryWeapon([&bot, &priority, &best, &meleeIsHitscan](const CBotWeapon* weapon) {
+
+		if (!weapon->IsValid())
+		{
+			return;
+		}
+
+		// weapon must be usable against enemies
+		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
+		{
+			return;
+		}
+
+		if (!weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsHitscan())
+		{
+			return;
+		}
+
+		CBaseEntity* pWeapon = weapon->GetEntity();
+		CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
+
+		// I must be the weapon's owner
+		if (bot->GetEntity() != owner)
+		{
+			return;
+		}
+
+		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		{
+			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
+			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
+
+			// Must have ammo
+			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
+			{
+				return;
+			}
+		}
+
+		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee();
+
+		if (is_melee && !meleeIsHitscan)
+		{
+			return;
+		}
+
+		if (currentprio > priority)
+		{
+			best = weapon;
+			priority = currentprio;
+		}
+	});
+
+	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
+
+	if (best != nullptr)
+	{
+		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
+		{
+			bot->SelectWeapon(best->GetEntity());
+		}
+	}
+}
+
 std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 {
 	CBaseEntity* weapon = GetBot()->GetActiveWeapon();

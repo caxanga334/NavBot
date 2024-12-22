@@ -169,12 +169,19 @@ CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 
 		NDebugOverlay::HorzArrow(from->GetCenter(), to->GetCenter(), 4.0f, 0, 255, 0, 255, true, 40.0f);
 
-		rootconsole->ConsolePrint("Path: from #%i to #%i. gap: %3.2f", from->GetID(), to->GetID(), from->ComputeAdjacentConnectionGapDistance(to));
+		rootconsole->ConsolePrint("Path: from #%i to #%i. gap: %3.2f", from->GetID(), to->GetID(), to->ComputeAdjacentConnectionGapDistance(from));
 
 		from = to;
 	}
 
-	rootconsole->ConsolePrint("Path found!");
+	if (path)
+	{
+		rootconsole->ConsolePrint("Path found!");
+	}
+	else
+	{
+		rootconsole->ConsolePrint("Path failed!");
+	}
 }
 
 CON_COMMAND(sm_navbot_debug_botpath, "Debug bot path")

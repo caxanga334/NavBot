@@ -96,6 +96,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // bot is using a ladder
 	}
 
+	if (ElevatorUpdate(bot))
+	{
+		return; // bot is using an elevator
+	}
+
 	if (!CheckProgress(bot))
 	{
 		return; // goal reached
@@ -1381,6 +1386,31 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 				return false; // move towards the ladder top using normal pathing
 			}
 		}
+	}
+
+	return false;
+}
+
+bool CMeshNavigator::ElevatorUpdate(CBaseBot* bot)
+{
+	if (bot->GetMovementInterface()->IsUsingElevator())
+	{
+		return true;
+	}
+
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_ELEVATOR)
+	{
+		const CNavElevator* elevator = m_goal->area->GetElevator();
+
+		auto next = GetNextSegment(m_goal);
+
+		if (!next)
+		{
+			return false;
+		}
+
+		bot->GetMovementInterface()->UseElevator(elevator, m_goal->area, next->area);
+		return true;
 	}
 
 	return false;

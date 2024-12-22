@@ -156,7 +156,7 @@ class CTF2BotPathCost : public IPathCost
 public:
 	CTF2BotPathCost(CTF2Bot* bot, RouteType routetype = FASTEST_ROUTE);
 
-	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const override;
+	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
 private:
 	CTF2Bot* m_me;

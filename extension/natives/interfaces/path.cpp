@@ -54,7 +54,7 @@ public:
 		m_candoublejump = mover->IsAbleToDoubleJump();
 	}
 
-	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const override;
+	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
 private:
 	CBaseBot* m_me;
@@ -66,7 +66,7 @@ private:
 	bool m_candoublejump;
 };
 
-float CPluginBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CFuncElevator* elevator, float length) const
+float CPluginBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
 {
 	if (fromArea == nullptr)
 	{
@@ -84,6 +84,10 @@ float CPluginBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const
 	if (link != nullptr)
 	{
 		dist = link->GetConnectionLength();
+	}
+	else if (elevator != nullptr)
+	{
+		dist = elevator->GetLengthBetweenFloors(fromArea, toArea);
 	}
 	else if (length > 0.0f)
 	{

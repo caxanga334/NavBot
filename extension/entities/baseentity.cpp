@@ -160,10 +160,15 @@ void entities::HBaseEntity::CalcNearestPoint(const Vector& worldPos, Vector& out
 	CollisionToWorldSpace(localClosestPt, out);
 }
 
-void entities::HBaseEntity::GetTargetName(char* result, int maxsize) const
+size_t entities::HBaseEntity::GetTargetName(char* result, int maxsize) const
 {
 	size_t size = 0;
-	entprops->GetEntPropString(GetIndex(), Prop_Data, "m_iName", result, maxsize, size);
+	if (!entprops->GetEntPropString(GetIndex(), Prop_Data, "m_iName", result, maxsize, size))
+	{
+		ke::SafeStrcpy(result, static_cast<size_t>(maxsize), "");
+	}
+
+	return size;
 }
 
 CBaseEntity* entities::HBaseEntity::GetOwnerEntity() const

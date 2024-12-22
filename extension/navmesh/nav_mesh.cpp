@@ -24,6 +24,7 @@
 #include "nav_node.h"
 #include "nav_waypoint.h"
 #include "nav_volume.h"
+#include "nav_elevator.h"
 #include "nav_place_loader.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
@@ -116,6 +117,7 @@ CNavMesh::CNavMesh( void )
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
+	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
 	m_waypoints.reserve(128);
@@ -278,7 +280,6 @@ void CNavMesh::Reset( void )
 
 	m_updateBlockedAreasTimer.Invalidate();
 
-
 	m_walkableSeeds.RemoveAll();
 }
 
@@ -306,6 +307,18 @@ CNavArea *CNavMesh::GetMarkedArea( void ) const
  */
 void CNavMesh::DestroyNavigationMesh( bool incremental )
 {
+	// these might need valid nav area pointers so set them null first.
+	m_selectedWaypoint = nullptr;
+	m_selectedVolume = nullptr;
+	m_selectedElevator = nullptr;
+
+	if (!incremental)
+	{
+		m_waypoints.clear();
+		m_volumes.clear();
+		m_elevators.clear();
+	}
+
 	m_blockedAreas.RemoveAll();
 	m_avoidanceObstacleAreas.RemoveAll();
 	m_transientAreas.clear();
@@ -373,12 +386,6 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 		m_isLoaded = false;
 	}
 
-	if (!incremental)
-	{
-		m_waypoints.clear();
-		m_volumes.clear();
-	}
-
 	SetEditMode( NORMAL );
 
 	m_markedArea = NULL;
@@ -387,8 +394,6 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	m_climbableSurface = false;
 	m_markedLadder = NULL;
 	m_selectedLadder = NULL;
-	m_selectedWaypoint = nullptr;
-	m_selectedVolume = nullptr;
 
 	extmanager->GetMod()->OnNavMeshDestroyed();
 }
@@ -434,6 +439,11 @@ void CNavMesh::Update( void )
 		if (sm_nav_volume_edit.GetBool())
 		{
 			DrawVolumes();
+		}
+
+		if (sm_nav_elevator_edit.GetBool())
+		{
+			DrawElevators();
 		}
 	}
 	else
@@ -498,6 +508,15 @@ void CNavMesh::Update( void )
 		m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
 
 		std::for_each(m_volumes.begin(), m_volumes.end(), [](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
+			object.second->Update();
+		});
+	}
+
+	if (m_invokeElevatorUpdateTimer.IsElapsed())
+	{
+		m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
+
+		std::for_each(m_elevators.begin(), m_elevators.end(), [](const std::pair<unsigned int, std::shared_ptr<CNavElevator>>& object) {
 			object.second->Update();
 		});
 	}
@@ -593,6 +612,10 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 		ForAllLadders(restart);
 
 		std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+			object.second->OnRoundRestart();
+		});
+
+		std::for_each(m_elevators.begin(), m_elevators.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavElevator>>& object) {
 			object.second->OnRoundRestart();
 		});
 	}
@@ -744,6 +767,9 @@ void CNavMesh::OnServerActivate( void )
 	}
 
 	BuildTransientAreaList();
+
+	// Some mods may not have round start events, call this at least once on every new map load
+	OnRoundRestart();
 }
 
 #ifdef NEXT_BOT
@@ -791,6 +817,7 @@ void CNavMesh::OnRoundRestart( void )
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
+	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
@@ -3428,6 +3455,11 @@ std::shared_ptr<CNavVolume> CNavMesh::CreateVolume() const
 	return std::make_shared<CNavVolume>();
 }
 
+std::shared_ptr<CNavElevator> CNavMesh::CreateElevator() const
+{
+	return std::make_shared<CNavElevator>();
+}
+
 void CNavMesh::RebuildWaypointMap()
 {
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> temp;
@@ -3455,6 +3487,22 @@ void CNavMesh::RebuildVolumeMap()
 	for (auto& volume : temp)
 	{
 		m_volumes[volume.second->GetID()] = std::move(volume.second);
+	}
+
+	temp.clear();
+}
+
+void CNavMesh::RebuildElevatorMap()
+{
+	std::unordered_map<unsigned int, std::shared_ptr<CNavElevator>> temp;
+	temp.reserve(m_elevators.size());
+	temp.swap(m_elevators);
+
+	m_elevators.clear();
+
+	for (auto& elevator : temp)
+	{
+		m_elevators[elevator.second->GetID()] = std::move(elevator.second);
 	}
 
 	temp.clear();
@@ -3500,6 +3548,29 @@ std::optional<const std::shared_ptr<CNavVolume>> CNavMesh::AddNavVolume(const Ve
 
 	m_volumes[volume->GetID()] = volume;
 	return volume;
+}
+
+std::optional<const std::shared_ptr<CNavElevator>> CNavMesh::AddNavElevator(CBaseEntity* elevator)
+{
+	std::shared_ptr<CNavElevator> navelev = CreateElevator();
+
+	if (m_elevators.count(navelev->GetID()) > 0)
+	{
+#ifdef EXT_DEBUG
+		Warning("CNavMesh::AddNavElevator duplicate elevator ID %i\n", navelev->GetID());
+#endif // EXT_DEBUG
+
+		return std::nullopt;
+	}
+
+	// entity will be null when loading from a save
+	if (elevator != nullptr)
+	{
+		navelev->AssignElevatorEntity(elevator);
+	}
+
+	m_elevators[navelev->GetID()] = navelev;
+	return navelev;
 }
 
 void CNavMesh::RemoveWaypoint(CWaypoint* wpt)
@@ -3583,6 +3654,43 @@ void CNavMesh::CompressVolumesIDs()
 	RebuildVolumeMap();
 }
 
+void CNavMesh::CompressElevatorsIDs()
+{
+	CNavElevator::s_nextID = 0;
+
+	for (auto& pair : m_elevators)
+	{
+		auto& elevator = pair.second;
+		elevator->m_id = CNavElevator::s_nextID;
+		CNavElevator::s_nextID++;
+	}
+
+	RebuildElevatorMap();
+}
+
+void CNavMesh::SetSelectedElevator(CNavElevator* elevator)
+{
+	if (elevator == nullptr)
+	{
+		m_selectedElevator = nullptr;
+	}
+
+	if (m_selectedElevator.get() == elevator)
+	{
+		m_selectedElevator = nullptr;
+	}
+
+	for (auto& pair : m_elevators)
+	{
+		if (pair.second.get() == elevator)
+		{
+			m_selectedElevator = pair.second;
+			Msg("Selected elevator %i\n", pair.second->GetID());
+			return;
+		}
+	}
+}
+
 void CNavMesh::SelectNearestWaypoint(const Vector& start)
 {
 	std::shared_ptr<CWaypoint> nearest = nullptr;
@@ -3623,6 +3731,37 @@ void CNavMesh::SelectWaypointofID(WaypointID id)
 	}
 
 	Warning("Waypoint of ID %i not found! \n", id);
+}
+
+void CNavMesh::SelectNearestElevator(const Vector& point)
+{
+	float dist = FLT_MAX;
+	std::shared_ptr<CNavElevator> nearest = nullptr;
+
+	std::for_each(m_elevators.begin(), m_elevators.end(), [&dist, &nearest, &point](const std::pair<unsigned int, std::shared_ptr<CNavElevator>>& object) {
+		float d = (object.second->GetElevatorOrigin() - point).Length();
+
+		if (d < dist)
+		{
+			dist = d;
+			nearest = object.second;
+		}
+	});
+
+	if (nearest != nullptr)
+	{
+		Msg("Selected elevator #%i\n", nearest->GetID());
+	}
+
+	m_selectedElevator = nearest;
+}
+
+void CNavMesh::DeleteElevator(CNavElevator* elevator)
+{
+	m_selectedElevator = nullptr;
+
+	unsigned int id = elevator->GetID();
+	m_elevators.erase(id);
 }
 
 bool CNavMesh::IsClimbableSurface(const trace_t& tr)

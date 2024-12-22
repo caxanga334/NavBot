@@ -48,8 +48,6 @@ static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMED
 
 static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 
-float CExtManager::s_sv_gravity = 800.0f;
-
 CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods

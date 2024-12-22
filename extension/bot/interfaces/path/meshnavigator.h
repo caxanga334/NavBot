@@ -30,6 +30,7 @@ public:
 protected:
 	// true while the bot is using ladders
 	virtual bool LadderUpdate(CBaseBot* bot);
+	virtual bool ElevatorUpdate(CBaseBot* bot);
 	virtual bool Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
 	virtual bool JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
 	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);

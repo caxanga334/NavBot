@@ -7,6 +7,7 @@
 #include <bot/interfaces/movement.h>
 #include <mods/basemod.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <navmesh/nav_elevator.h>
 
 #include "basepath.h"
 
@@ -392,6 +393,16 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 			}
 			break;
 		}
+		case GO_ELEVATOR_UP:
+			[[fallthrough]];
+		case GO_ELEVATOR_DOWN:
+		{
+			if (!ProcessElevatorsInPath(bot, from, to, insertstack))
+			{
+				failed = true;
+			}
+			break;
+		}
 		default: // other types are not supported right now
 			break;
 		}
@@ -642,6 +653,33 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 	default:
 		break;
 	}
+
+	return true;
+}
+
+bool CPath::ProcessElevatorsInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
+{
+	const CNavElevator* elevator = from->area->GetElevator();
+
+#ifdef EXT_DEBUG
+	if (elevator == nullptr)
+	{
+		smutils->LogError(myself, "CPath::ProcessElevatorsInPath from->area elevator == nullptr");
+	}
+#endif // EXT_DEBUG
+
+	const CNavElevator::ElevatorFloor* fromFloor = from->area->GetMyElevatorFloor();
+
+	from->goal = fromFloor->wait_position;
+
+	auto segment = CreateNewSegment();
+	segment->CopySegment(from);
+	segment->goal = from->area->GetCenter();
+	segment->type = AIPath::SegmentType::SEGMENT_ELEVATOR;
+	pathinsert.emplace(to, std::move(segment), false); // Insert before to
+
+	to->goal = to->area->GetCenter();
+	to->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 	return true;
 }
@@ -951,6 +989,11 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_BLAST_JUMP:
 	{
 		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 0, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_ELEVATOR:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 255, 255, true, duration);
 		break;
 	}
 	default:

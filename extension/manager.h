@@ -112,7 +112,7 @@ private:
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
 
 	// Getting horrible performance at vstdlib.dll from a function called by ConVarRef::Init, so we are caching the sv_gravity value here
-	static float s_sv_gravity;
+	static inline float s_sv_gravity{ 800.0f };
 };
 
 extern CExtManager* extmanager;

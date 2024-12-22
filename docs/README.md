@@ -12,6 +12,7 @@ Welcome to the NavBot extension documentation index.
 - [Nav Mesh Places]
 - [Nav Mesh Off-Mesh Link Connections]
 - [Nav Mesh Volumes]
+- [Nav Mesh Elevators]
 - [Nav Mesh Editing Tips]
 - [Waypoint Editing Basics]
 - [Bot Difficulty Configuration]
@@ -30,5 +31,6 @@ Welcome to the NavBot extension documentation index.
 [Nav Mesh Off-Mesh Link Connections]: NAVMESH_OFFMESHLINKS.md
 [Nav Mesh Editing Tips]: NAVMESH_EDITING_TIPS.md
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md
+[Nav Mesh Elevators]: NAVMESH_ELEVATORS.md
 [Bot Names Configuration]: BOT_NAMES.md
 [Bot Difficulty Configuration]: BOT_DIFFICULTY_PROFILES.md

@@ -41,7 +41,7 @@ namespace entities
 		void SetAbsVelocity(const Vector& velocity) const;
 		Vector GetViewOffset() const;
 		void CalcNearestPoint(const Vector& worldPos, Vector& out) const;
-		void GetTargetName(char* result, int maxsize) const;
+		size_t GetTargetName(char* result, int maxsize) const;
 		CBaseEntity* GetOwnerEntity() const;
 		CBaseEntity* GetMoveParent() const;
 		CBaseEntity* GetMoveChild() const;

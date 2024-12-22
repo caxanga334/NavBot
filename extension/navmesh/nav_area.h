@@ -22,6 +22,7 @@
 #include <cmath>
 
 #include "nav_ladder.h"
+#include "nav_elevator.h"
 #include <sdkports/sdk_timers.h>
 #include <shareddefs.h>
 #include <networkvar.h>
@@ -288,14 +289,14 @@ protected:
 	//- connections to adjacent areas -------------------------------------------------------------------
 	NavConnectVector m_connect[ NUM_DIRECTIONS ];				// a list of adjacent areas for each direction
 	NavLadderConnectVector m_ladder[ CNavLadder::NUM_LADDER_DIRECTIONS ];	// list of ladders leading up and down from this area
-	NavConnectVector m_elevatorAreas;							// a list of areas reachable via elevator from this area
 
 	unsigned int m_nearNavSearchMarker;							// used in GetNearestNavArea()
 
 	CNavArea *m_parent;											// the area just prior to this on in the search path
 	NavTraverseType m_parentHow;								// how we get from parent to us
 	float m_pathLengthSoFar;									// length of path so far, needed for limiting pathfind max path length
-	CFuncElevator *m_elevator;									// if non-NULL, this area is in an elevator's path. The elevator can transport us vertically to another area.
+	const CNavElevator* m_elevator;								// elevator assigned to this area
+	const CNavElevator::ElevatorFloor* m_elevfloor;				// elevator floor of this area
 
 	std::vector<NavOffMeshConnection> m_offmeshconnections;					// Offmesh connections
 	// --- End critical data --- 
@@ -474,8 +475,21 @@ public:
 	void AddIncomingConnection( CNavArea *source, NavDirType incomingEdgeDir );
 
 	const NavLadderConnectVector *GetLadders( CNavLadder::LadderDirectionType dir ) const	{ return &m_ladder[dir]; }
-	CFuncElevator *GetElevator( void ) const												{ Assert( !( m_attributeFlags & NAV_MESH_HAS_ELEVATOR ) == (m_elevator == NULL) ); return ( m_attributeFlags & NAV_MESH_HAS_ELEVATOR ) ? m_elevator : NULL; }
-	const NavConnectVector &GetElevatorAreas( void ) const									{ return m_elevatorAreas; }	// return collection of areas reachable via elevator from this area
+	const CNavElevator* GetElevator() const { return m_elevator; }
+	const CNavElevator::ElevatorFloor* GetMyElevatorFloor() const { return m_elevfloor; }
+	void SetElevator(const CNavElevator* elevator, const CNavElevator::ElevatorFloor* floor)
+	{
+		m_elevator = elevator;
+		m_elevfloor = floor;
+	}
+	void NotifyElevatorDestruction(const CNavElevator* elevator, const bool force = false)
+	{
+		if (force || elevator == m_elevator)
+		{
+			m_elevator = nullptr;
+			m_elevfloor = nullptr;
+		}
+	}
 
 	void ComputePortal( const CNavArea *to, NavDirType dir, Vector *center, float *halfWidth ) const;		// compute portal to adjacent area
 	NavDirType ComputeLargestPortal( const CNavArea *to, Vector *center, float *halfWidth ) const;		// compute largest portal to adjacent area, returning direction
@@ -777,8 +791,6 @@ private:
 #endif
 
 	CNavArea *m_prevHash, *m_nextHash;							// for hash table in CNavMesh
-
-	void ConnectElevators( void );								// find elevator connections between areas
 
 	int m_damagingTickCount;									// this area is damaging through this tick count
 	
