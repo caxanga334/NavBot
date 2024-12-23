@@ -26,9 +26,9 @@ jobs:
           
           - buildjobs: windows-latest
             os_version: windows-latest
-            identifier: 'Windows Latest (x86)'
+            identifier: 'Windows'
             ambuild_target: 'x86,x86_64'
-            package_name: 'windows-x86'
+            package_name: 'windows'
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
@@ -39,7 +39,7 @@ jobs:
             cc: clang-9
             cxx: clang++-9
             ambuild_target: 'x86,x86_64'
-            package_name: 'linux-stable'
+            package_name: 'linux'
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
