@@ -3,6 +3,7 @@
 #pragma once
 
 #include <bot/interfaces/path/meshnavigator.h>
+#include <bot/interfaces/path/chasenavigator.h>
 
 class CTF2Bot;
 struct edict_t;
@@ -49,6 +50,21 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goalpos;
 	CountdownTimer m_repathtimer;
+};
+
+class CTF2BotCTFDefendFlag : public AITask<CTF2Bot>
+{
+public:
+	CTF2BotCTFDefendFlag(CBaseEntity* flag);
+
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+
+	const char* GetName() const override { return "DefendFlag"; }
+private:
+	CMeshNavigatorAutoRepath m_nav;
+	CHandle<CBaseEntity> m_flag;
+	CountdownTimer m_giveupTimer;
 };
 
 #endif // !NAVBOT_TF2BOT_MAP_CTF_TASK_H_

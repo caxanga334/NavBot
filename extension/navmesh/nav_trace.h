@@ -25,4 +25,16 @@ private:
 	unsigned int m_flags;
 };
 
+class CTraceFilterTransientAreas : public trace::CTraceFilterSimple
+{
+public:
+	CTraceFilterTransientAreas(CBaseEntity* passEnt, int collgroup) :
+		trace::CTraceFilterSimple(passEnt, collgroup)
+	{
+
+	}
+
+	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+};
+
 #endif // !NAV_TRACE_H_

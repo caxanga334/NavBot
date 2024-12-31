@@ -54,7 +54,7 @@ public:
 	edict_t* GetItem() const;
 	bool IsCarryingAFlag() const;
 	edict_t* GetFlagToFetch() const;
-	edict_t* GetFlagToDefend(bool stolenOnly = false) const;
+	edict_t* GetFlagToDefend(bool stolenOnly = false, bool ignoreHome = false) const;
 	edict_t* GetFlagCaptureZoreToDeliver() const;
 	bool IsAmmoLow() const;
 	void FindMyBuildings();
@@ -119,14 +119,6 @@ public:
 	void SetMyDispenser(CBaseEntity* entity);
 	void SetMyTeleporterEntrance(CBaseEntity* entity);
 	void SetMyTeleporterExit(CBaseEntity* entity);
-	CTFWaypoint* GetMySentryGunWaypoint() const;
-	CTFWaypoint* GetMyDispenserWaypoint() const;
-	CTFWaypoint* GetMyTeleporterEntranceWaypoint() const;
-	CTFWaypoint* GetMyTeleporterExitWaypoint() const;
-	void SetMySentryGunWaypoint(CTFWaypoint* wpt);
-	void SetMyDispenserWaypoint(CTFWaypoint* wpt);
-	void SetMyTeleporterEntranceWaypoint(CTFWaypoint* wpt);
-	void SetMyTeleporterExitWaypoint(CTFWaypoint* wpt);
 
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
@@ -141,10 +133,6 @@ private:
 	CHandle<CBaseEntity> m_myDispenser;
 	CHandle<CBaseEntity> m_myTeleporterEntrance;
 	CHandle<CBaseEntity> m_myTeleporterExit;
-	CTFWaypoint* m_sgWaypoint; // sentry gun waypoint
-	CTFWaypoint* m_dispWaypoint; // dispenser waypoint
-	CTFWaypoint* m_tpentWaypoint; // teleporter entrance waypoint
-	CTFWaypoint* m_tpextWaypoint; // teleporter exit waypoint
 	CTF2BotUpgradeManager m_upgrademan;
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }

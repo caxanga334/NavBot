@@ -154,7 +154,7 @@ public:
 	 * @param func Function to run.
 	 */
 	template <typename T>
-	void ForEveryAngle(T func)
+	void ForEveryAngle(T func) const
 	{
 		for (std::size_t i = 0U; i < GetNumOfAvailableAngles(); i++)
 		{
@@ -195,16 +195,17 @@ public:
 
 	void NotifyWaypointDestruction(const CWaypoint* other);
 
+	const bool HasConnections() const { return !m_connections.empty(); }
 	const std::vector<WaypointConnect>& GetConnections() const { return m_connections; }
 
 	/**
 	 * @brief Runs a function on every connected waypoint.
 	 * @tparam T Waypoint class.
 	 * @tparam F Function to run. bool (const T* waypoint)
-	 * @param functor Functiob to run. Return false to end loop early.
+	 * @param functor Function to run. Return false to end loop early.
 	 */
 	template <typename T, typename F>
-	void ForEveryConnectedWaypoint(F functor)
+	void ForEveryConnectedWaypoint(F functor) const
 	{
 		for (auto& connect : m_connections)
 		{

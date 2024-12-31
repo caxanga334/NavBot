@@ -35,7 +35,7 @@ bool CMovementTraverseFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, 
 
 		if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
 		{
-			return !m_mover->IsEntityTraversable(pEdict, m_now);
+			return !m_mover->IsEntityTraversable(entity, pEdict, pEntity, m_now);
 		}
 	}
 
@@ -82,6 +82,10 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_toFloor = nullptr;
 	m_elevatorTimeout.Invalidate();
 	m_elevatorState = NOT_USING_ELEVATOR;
+	m_lastMoveWeight = 0;
+	m_isBreakingObstacle = false;
+	m_obstacleBreakTimeout.Invalidate();
+	m_obstacleEntity = nullptr;
 }
 
 IMovement::~IMovement()
@@ -113,6 +117,10 @@ void IMovement::Reset()
 	m_toFloor = nullptr;
 	m_elevatorTimeout.Invalidate();
 	m_elevatorState = NOT_USING_ELEVATOR;
+	m_lastMoveWeight = 0;
+	m_isBreakingObstacle = false;
+	m_obstacleBreakTimeout.Invalidate();
+	m_obstacleEntity = nullptr;
 }
 
 void IMovement::Update()
@@ -120,6 +128,7 @@ void IMovement::Update()
 	m_basemovespeed = GetBot()->GetMaxSpeed();
 
 	StuckMonitor();
+	ObstacleBreakUpdate();
 
 	auto velocity = GetBot()->GetAbsVelocity();
 	m_speed = velocity.Length();
@@ -176,7 +185,7 @@ void IMovement::Update()
 			}
 		}
 
-		MoveTowards(m_landingGoal);
+		MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
 	}
 }
 
@@ -236,8 +245,15 @@ unsigned int IMovement::GetMovementTraceMask()
 	return MASK_PLAYERSOLID;
 }
 
-void IMovement::MoveTowards(const Vector& pos)
+void IMovement::MoveTowards(const Vector& pos, const int weight)
 {
+	if (m_lastMoveWeight > weight)
+	{
+		return;
+	}
+
+	m_lastMoveWeight = weight;
+
 	auto me = GetBot();
 	auto input = me->GetControlInterface();
 	auto origin = me->GetAbsOrigin();
@@ -607,10 +623,8 @@ bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float& fra
 	return false;
 }
 
-bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
+bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)
 {
-	int index = gamehelpers->IndexOfEdict(entity);
-
 	if (index == 0) // index 0 is the world
 	{
 		return false;
@@ -660,7 +674,7 @@ bool IMovement::IsEntityTraversable(edict_t* entity, const bool now)
 		return false;
 	}
 
-	return GetBot()->IsAbleToBreak(entity);
+	return GetBot()->IsAbleToBreak(edict);
 }
 
 bool IMovement::IsOnGround()
@@ -866,6 +880,28 @@ void IMovement::UseElevator(const CNavElevator* elevator, const CNavArea* from, 
 	}
 }
 
+bool IMovement::BreakObstacle(CBaseEntity* obstacle)
+{
+	if (obstacle == nullptr)
+	{
+		return false;
+	}
+
+	int index = gamehelpers->EntityToBCompatRef(obstacle);
+
+	// Don't break worldspawn
+	if (index == 0) { return false; }
+
+	constexpr auto MIN_DAMAGE = 45.0f;
+	int health = UtilHelpers::GetEntityHealth(index);
+	float timeout = (static_cast<float>(health) / MIN_DAMAGE) + 2.0f;
+
+	m_obstacleEntity = obstacle;
+	m_isBreakingObstacle = true;
+	m_obstacleBreakTimeout.Start(timeout);
+	return true;
+}
+
 void IMovement::StuckMonitor()
 {
 	auto bot = GetBot();
@@ -1042,6 +1078,37 @@ void IMovement::ElevatorUpdate()
 	}
 }
 
+void IMovement::ObstacleBreakUpdate()
+{
+	if (!m_isBreakingObstacle)
+	{
+		return;
+	}
+
+	CBaseEntity* obstacle = m_obstacleEntity.Get();
+
+	if (m_obstacleBreakTimeout.IsElapsed() || obstacle == nullptr)
+	{
+		m_obstacleBreakTimeout.Invalidate();
+		m_isBreakingObstacle = false;
+		m_obstacleEntity = nullptr;
+		GetBot()->GetControlInterface()->ReleaseAllAttackButtons();
+		return;
+	}
+
+	CBaseBot* bot = GetBot();
+	Vector pos = UtilHelpers::getWorldSpaceCenter(obstacle);
+	bot->GetInventoryInterface()->SelectBestWeaponForBreakables();
+
+	bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at breakable entity!");
+	MoveTowards(pos, MOVEWEIGHT_CRITICAL);
+
+	if (bot->GetControlInterface()->IsAimOnTarget())
+	{
+		bot->GetControlInterface()->PressAttackButton();
+	}
+}
+
 // approach a ladder that we will go up
 IMovement::LadderState IMovement::ApproachUpLadder()
 {
@@ -1071,7 +1138,7 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	else
 	{
 		// move to the ladder connection point (this is on the ladder)
-		MoveTowards(m_ladderMoveGoal);
+		MoveTowards(m_ladderMoveGoal, MOVEWEIGHT_CRITICAL);
 		FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, navgenparams->human_eye_height), true);
 
 		if (GetBot()->GetRangeTo(connection->GetConnectionPoint()) < CBaseExtPlayer::PLAYER_USE_RADIUS)
@@ -1156,7 +1223,7 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 		lookAt.z = m_ladder->ClampZ(z);
 
 		GetBot()->GetControlInterface()->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at ladder mount position!");
-		MoveTowards(moveGoal);
+		MoveTowards(moveGoal, MOVEWEIGHT_CRITICAL);
 
 		if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
 		{
@@ -1214,7 +1281,7 @@ IMovement::LadderState IMovement::UseLadderUp()
 	{
 		Vector goal = origin + 100.0f * (-m_ladder->GetNormal() + Vector(0.0f, 0.0f, 2.0f));
 		input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f, "Going up a ladder.");
-		MoveTowards(goal);
+		MoveTowards(goal, MOVEWEIGHT_CRITICAL);
 
 		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
@@ -1253,7 +1320,7 @@ IMovement::LadderState IMovement::UseLadderDown()
 
 	Vector goal = origin + 100.0f * (m_ladder->GetNormal() + Vector(0.0f, 0.0f, -2.0f));
 	input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f);
-	MoveTowards(goal);
+	MoveTowards(goal, MOVEWEIGHT_CRITICAL);
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
@@ -1295,7 +1362,7 @@ IMovement::LadderState IMovement::DismountLadderTop()
 		return EXITING_LADDER_UP;
 	}
 
-	MoveTowards(m_ladderExit->GetCenter());
+	MoveTowards(m_ladderExit->GetCenter(), MOVEWEIGHT_CRITICAL);
 
 	if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
 	{
@@ -1337,7 +1404,7 @@ IMovement::LadderState IMovement::DismountLadderBottom()
 	Vector lookAt = GetBot()->GetEyeOrigin() + (toExit * 128.0f);
 
 	input->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at ladder dismount area!");
-	MoveTowards(m_ladderExit->GetCenter());
+	MoveTowards(m_ladderExit->GetCenter(), MOVEWEIGHT_CRITICAL);
 
 	if (!input->IsAimOnTarget())
 	{
@@ -1459,7 +1526,7 @@ IMovement::ElevatorState IMovement::EState_MoveToWaitPosition()
 	}
 	else
 	{
-		MoveTowards(m_fromFloor->wait_position);
+		MoveTowards(m_fromFloor->wait_position, MOVEWEIGHT_CRITICAL);
 	}
 
 	return ElevatorState::MOVE_TO_WAIT_POS;
@@ -1515,7 +1582,7 @@ IMovement::ElevatorState IMovement::EState_CallElevator()
 	else
 	{
 		Vector pos = UtilHelpers::getWorldSpaceCenter(callbutton);
-		MoveTowards(pos);
+		MoveTowards(pos, MOVEWEIGHT_CRITICAL);
 		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at elevator call button!");
 
 		if (bot->GetRangeTo(pos) < minrange)
@@ -1582,7 +1649,7 @@ IMovement::ElevatorState IMovement::EState_WaitForElevator()
 	{
 		if (me->GetRangeTo(m_fromFloor->wait_position) > IMovement::ELEV_MOVE_RANGE)
 		{
-			MoveTowards(m_fromFloor->wait_position);
+			MoveTowards(m_fromFloor->wait_position, MOVEWEIGHT_CRITICAL);
 		}
 	}
 
@@ -1596,7 +1663,7 @@ IMovement::ElevatorState IMovement::EState_EnterElevator()
 	CBaseBot* me = GetBot();
 
 	const Vector& pos = m_fromFloor->GetArea()->GetCenter();
-	MoveTowards(pos);
+	MoveTowards(pos, MOVEWEIGHT_CRITICAL);
 
 	if (me->GetRangeTo(pos) <= ELEV_MOVE_RANGE)
 	{
@@ -1632,7 +1699,7 @@ IMovement::ElevatorState IMovement::EState_OperateElevator()
 		}
 	}
 
-	MoveTowards(pos);
+	MoveTowards(pos, MOVEWEIGHT_CRITICAL);
 	me->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at elevator use button!");
 
 	if (me->GetRangeTo(pos) < minrange)
@@ -1728,7 +1795,7 @@ IMovement::ElevatorState IMovement::EState_ExitElevator()
 	}
 
 	// move to exit position
-	MoveTowards(m_toFloor->wait_position);
+	MoveTowards(m_toFloor->wait_position, MOVEWEIGHT_CRITICAL);
 
 	// exit position reached, time to go back to normal navigation
 	if (me->GetRangeTo(m_toFloor->wait_position) < IMovement::ELEV_MOVE_RANGE)

@@ -179,7 +179,7 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 	}
 
 	// move bot along path
-	mover->MoveTowards(goalPos);
+	mover->MoveTowards(goalPos, IMovement::MOVEWEIGHT_NAVIGATOR);
 	m_moveGoal = goalPos;
 
 	if (bot->IsDebugging(BOTDEBUG_PATH))

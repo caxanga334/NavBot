@@ -639,6 +639,26 @@ public:
 		return nullptr;
 	}
 
+	const CNavElevator* GetElevatorConnectionToArea(const CNavArea* other) const
+	{
+		if (m_elevator == nullptr)
+		{
+			return nullptr;
+		}
+		else
+		{
+			for (auto& floor : m_elevator->GetFloors())
+			{
+				if (floor.GetArea() == other)
+				{
+					return m_elevator;
+				}
+			}
+		}
+
+		return nullptr;
+	}
+
 	/**
 	 * @brief Runs a function on each nav area connected to this area
 	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)
@@ -698,6 +718,21 @@ public:
 		{
 			CNavArea* connectedArea = link.m_link.area;
 			functor(connectedArea);
+		}
+
+		if (m_elevator != nullptr)
+		{
+			auto& floors = m_elevator->GetFloors();
+
+			for (auto& floor : floors)
+			{
+				CNavArea* connectedArea = floor.GetArea();
+
+				if (connectedArea != this)
+				{
+					functor(connectedArea);
+				}
+			}
 		}
 	}
 

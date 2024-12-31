@@ -179,7 +179,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnInjured(CTF2Bot* bot, co
 		}
 	}
 
-	return TryContinue(PRIORITY_IGNORED);
+	return TryContinue(PRIORITY_DONT_CARE);
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)
@@ -188,7 +188,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 
 	if (skill <= 5)
 	{
-		return TryContinue(PRIORITY_IGNORED); // this one doesn't know about VCs yet
+		return TryContinue(PRIORITY_DONT_CARE); // this one doesn't know about VCs yet
 	}
 
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(subject));
@@ -209,6 +209,6 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 		}
 	} // TO-DO: Allow bots to respond to some voice commands (IE: help)
 
-	return TryContinue(PRIORITY_IGNORED);
+	return TryContinue(PRIORITY_DONT_CARE);
 }
 

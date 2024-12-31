@@ -1,10 +1,13 @@
 #include <extension.h>
+#include <manager.h>
 #include <util/helpers.h>
+#include <util/librandom.h>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"
 #include <bot/tf2/tasks/tf2bot_roam.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include "tf2bot_map_ctf.h"
 
 TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
@@ -15,9 +18,31 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		auto flag = bot->GetFlagToFetch();
+		// get dropped and stolen flags
+		edict_t* flag_to_defend = bot->GetFlagToDefend(false, true);
+		edict_t* flag = bot->GetFlagToFetch();
+		int defrate = CTeamFortress2Mod::GetTF2Mod()->GetModSettings()->GetDefendRate();
 
-		if (flag)
+		if (flag != nullptr && flag_to_defend != nullptr)
+		{
+			// I have both a flag to attack and defend
+			if (randomgen->GetRandomInt<int>(0, 100) < defrate)
+			{
+				CBaseEntity* ent = flag_to_defend->GetIServerEntity()->GetBaseEntity();
+				return PauseFor(new CTF2BotCTFDefendFlag(ent), "Defending a dropped/stolen flag!");
+			}
+			else
+			{
+				return PauseFor(new CTF2BotCTFFetchFlagTask(flag), "Going to fetch the flag!");
+			}
+		}
+		else if (flag == nullptr && flag_to_defend != nullptr)
+		{
+			CBaseEntity* ent = flag_to_defend->GetIServerEntity()->GetBaseEntity();
+			return PauseFor(new CTF2BotCTFDefendFlag(ent), "Defending a dropped/stolen flag!");
+		}
+	
+		if (flag != nullptr)
 		{
 			return PauseFor(new CTF2BotCTFFetchFlagTask(flag), "Going to fetch the flag!");
 		}
@@ -182,4 +207,53 @@ TaskEventResponseResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnMoveToFailure(CTF2
 	m_repathtimer.Start(0.5f);
 
 	return TryContinue();
+}
+
+CTF2BotCTFDefendFlag::CTF2BotCTFDefendFlag(CBaseEntity* flag)
+{
+	m_flag = flag;
+}
+
+TaskResult<CTF2Bot> CTF2BotCTFDefendFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	if (m_flag.Get() == nullptr)
+	{
+		return Done("Flag is invalid!");
+	}
+
+	m_giveupTimer.StartRandom(90.0f, 180.0f);
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotCTFDefendFlag::OnTaskUpdate(CTF2Bot* bot)
+{
+	if (m_giveupTimer.IsElapsed())
+	{
+		return Done("Defend timer elapsed!");
+	}
+
+	CBaseEntity* ent = m_flag.Get();
+
+	if (ent == nullptr)
+	{
+		return Done("Flag is invalid!");
+	}
+
+	tfentities::HCaptureFlag flag(ent);
+
+	if (flag.IsHome())
+	{
+		return Done("Flag returned home!");
+	}
+	
+	// if the flag is stolen, this will return the player's position
+	Vector pos = flag.GetPosition();
+	
+	if (bot->GetRangeTo(pos) > 512.0f || !bot->GetSensorInterface()->IsAbleToSee(pos))
+	{
+		CTF2BotPathCost cost(bot);
+		m_nav.Update(bot, pos, cost); // go after the flag
+	}
+
+	return Continue();
 }

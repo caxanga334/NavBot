@@ -47,7 +47,8 @@ namespace TeamFortress2
 		TFTeam_Unassigned = 0,
 		TFTeam_Spectator = 1,
 		TFTeam_Red = 2,
-		TFTeam_Blue = 3
+		TFTeam_Blue = 3,
+		TFTeam_Halloween = 5
 	};
 
 	enum TeamRoles

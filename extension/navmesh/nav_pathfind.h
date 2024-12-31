@@ -15,10 +15,13 @@
 #include <algorithm>
 #include <vector>
 #include <stack>
+#include <queue>
 #include <unordered_set>
 #include <unordered_map>
 #include <functional>
+#include <stdexcept>
 #include <cstdlib>
+#include <cinttypes>
 
 #include <util/librandom.h>
 #include "nav_area.h"
@@ -1436,6 +1439,369 @@ inline T* INavAreaCollector<T>::GetRandomCollectedArea(F functor) const
 	return out[randomgen->GetRandomInt<size_t>(0, out.size() - 1)];
 }
 
+class NavAStarHeuristicCost
+{
+public:
+
+	// Calculates a heuristic cost between two areas
+	float operator()(CNavArea* from, CNavArea* goal) const
+	{
+		return (from->GetCenter() - goal->GetCenter()).Length();
+	}
+
+	// Calculates a heuristic cost between an area and a goal position
+	float operator()(CNavArea* from, Vector goal) const
+	{
+		return (from->GetCenter() - goal).Length();
+	}
+};
+
+class NavAStarPathCost
+{
+public:
+	/**
+	 * @brief This function calculates the travel cost to go from 'fromArea' to 'area'.
+	 * @param area Destination area.
+	 * @param fromArea Start area.
+	 * @param ladder If the area is reached via ladder, this is the ladder.
+	 * @param link If the area is reached via Off-Mesh connection, this is it.
+	 * @param elevator If the are ais reached via elevator, this is the elevator.
+	 * @return Travel cost
+	 */
+	float operator() (CNavArea* area, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator) const
+	{
+		if (fromArea == nullptr)
+		{
+			return 0.0f; // null from, this is the first area being searched
+		}
+
+		float distance = 0.0f;
+		
+		if (link != nullptr)
+		{
+			distance = link->GetConnectionLength();
+		}
+		else if (ladder != nullptr)
+		{
+			distance = ladder->m_length;
+		}
+		else if (elevator != nullptr)
+		{
+			distance = elevator->GetLengthBetweenFloors(fromArea, area);
+		}
+		else
+		{
+			distance = (area->GetCenter() - fromArea->GetCenter()).Length();
+		}
+
+		return distance;
+	}
+};
+
+class NavAStarNode
+{
+public:
+	enum class NodeStatus : std::uint8_t
+	{
+		NEW = 0, // new node
+		OPEN,
+		CLOSED,
+	};
+
+	NavAStarNode()
+	{
+		area = nullptr;
+		g = 0.0f;
+		h = 0.0f;
+		status = NodeStatus::NEW;
+		parent = nullptr;
+	}
+
+	template <typename T = CNavArea>
+	NavAStarNode(T* pArea)
+	{
+		area = static_cast<CNavArea*>(pArea);
+		g = 0.0f;
+		h = 0.0f;
+		status = NodeStatus::NEW;
+		parent = nullptr;
+	}
+
+	void SetArea(CNavArea* pArea) { area = pArea; }
+	bool IsOpen() const { return status == NodeStatus::OPEN; }
+	bool IsClosed() const { return status == NodeStatus::CLOSED; }
+	bool IsStatusUndefined() const { return status == NodeStatus::NEW; }
+	void Close() { status = NodeStatus::CLOSED; }
+	void Open() { status = NodeStatus::OPEN; }
+	float GetGCost() const { return g; }
+	float GetHCost() const { return h; }
+	float GetFCost() const { return g + h; }
+
+	CNavArea* area;
+	float g; // g cost
+	float h; // h cost
+	NodeStatus status;
+	NavAStarNode* parent; // parent node
+};
+
+class NavNodeSmallestCost
+{
+public:
+
+	/* std::greater implementation, for searching the node with the smallest total (f) cost */
+
+	bool operator()(const NavAStarNode* lhs, const NavAStarNode* rhs)
+	{
+		if (lhs->GetFCost() > rhs->GetFCost())
+		{
+			return true;
+		}
+		else if (lhs->GetFCost() == rhs->GetFCost())
+		{
+			return lhs->GetHCost() > rhs->GetHCost();
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	bool operator()(const NavAStarNode& lhs, const NavAStarNode& rhs)
+	{
+		if (lhs.GetFCost() > rhs.GetFCost())
+		{
+			return true;
+		}
+		else if (lhs.GetFCost() == rhs.GetFCost())
+		{
+			return lhs.GetHCost() > rhs.GetHCost();
+		}
+		else
+		{
+			return false;
+		}
+	}
+};
+
+template <typename T = CNavArea>
+class INavAStarSearch
+{
+public:
+	INavAStarSearch();
+	virtual ~INavAStarSearch();
+
+	void SetStart(T* area) { startArea = area; }
+	void SetGoalArea(T* area) { goalArea = area; }
+	void SetGoalPosition(const Vector& pos) { goalPosition = pos; goalArea = nullptr; }
+
+	template <typename CF, typename HF>
+	void DoSearch(CF& gCostFunctor, HF& hCostFunctor);
+	void Clear();
+	bool FoundPath() const { return lastResult; }
+	const std::vector<CNavArea*>& GetPath() const { return path; }
+
+	virtual void OnSuccess() {}
+	virtual void OnFailure() {}
+
+private:
+	T* startArea;
+	T* goalArea;
+	Vector goalPosition;
+	bool lastResult;
+
+	NavAStarNode* GetNodeForArea(T* area);
+	void BuildPath(NavAStarNode* endnode);
+
+	std::unordered_map<unsigned int, NavAStarNode> nodes;
+	std::vector<CNavArea*> path;
+};
+
+template<typename T>
+inline INavAStarSearch<T>::INavAStarSearch()
+{
+	startArea = nullptr;
+	goalArea = nullptr;
+	goalPosition.Init(0.0f, 0.0f, 0.0f);
+	lastResult = false;
+	nodes.reserve(1024);
+}
+
+template<typename T>
+inline INavAStarSearch<T>::~INavAStarSearch()
+{
+}
+
+template<typename T>
+inline NavAStarNode* INavAStarSearch<T>::GetNodeForArea(T* area)
+{
+	unsigned int id = area->GetID();
+
+	auto it = nodes.find(id);
+
+	if (it == nodes.end())
+	{
+		auto& node = nodes.emplace(id, area);
+
+		if (node.second)
+		{
+			return &node.first->second;
+		}
+
+		return nullptr;
+	}
+
+	return &it->second;
+}
+
+template<typename T>
+template<typename CF, typename HF>
+inline void INavAStarSearch<T>::DoSearch(CF& gCostFunctor, HF& hCostFunctor)
+{
+	std::priority_queue<NavAStarNode*, std::vector<NavAStarNode*>, NavNodeSmallestCost> openList;
+	Vector searchGoal = goalArea != nullptr ? goalArea->GetCenter() : goalPosition;
+	std::vector<CNavArea*> neighborAreas;
+	CNavArea* endArea = goalArea;
+
+	if (endArea == nullptr)
+	{
+		endArea = TheNavMesh->GetNearestNavArea(searchGoal, 1024.0f);
+
+		if (endArea == nullptr)
+		{
+			// fail
+			this->lastResult = false;
+			OnFailure();
+			return;
+		}
+	}
+
+	// initialize
+	{
+		NavAStarNode* startNode = GetNodeForArea(startArea);
+
+		startNode->g = gCostFunctor(startNode->area, nullptr, nullptr, nullptr, nullptr);
+		startNode->h = hCostFunctor(startNode->area, searchGoal);
+		startNode->parent = nullptr;
+		startNode->Open();
+
+		if (startNode->GetGCost() < 0.0f)
+		{
+			// fail
+			this->lastResult = false;
+			OnFailure();
+			return;
+		}
+
+		openList.push(startNode);
+	}
+
+	// search loop
+	while (!openList.empty())
+	{
+		neighborAreas.clear();
+		NavAStarNode* current = openList.top();
+		CNavArea* area = current->area;
+		openList.pop(); // remove current from openList
+		current->Close(); // mark as closed
+
+		if (current->area == endArea)
+		{
+			// reached
+			this->lastResult = true;
+			BuildPath(current);
+			OnSuccess();
+			return;
+		}
+
+		// Collect neighbors
+		area->ForEachConnectedArea([&neighborAreas](CNavArea* other) {
+			neighborAreas.push_back(other);
+		});
+
+		for (auto neighbor : neighborAreas)
+		{
+			NavAStarNode* node = GetNodeForArea(neighbor);
+
+			if (node->IsClosed())
+			{
+				continue; // skip closed nodes
+			}
+
+			const NavOffMeshConnection* offmeshlink = area->GetOffMeshConnectionToArea(neighbor);
+			const CNavLadder* ladder = area->GetLadderConnectionToArea(neighbor);
+			const CNavElevator* elevator = area->GetElevatorConnectionToArea(neighbor);
+
+			float costf = gCostFunctor(neighbor, area, ladder, offmeshlink, elevator);
+
+			if (costf < 0.0f)
+			{
+				// dead end
+				node->Close();
+				continue;
+			}
+
+			float newCost = current->GetGCost() + costf;
+
+			if (newCost < node->GetGCost() || node->IsStatusUndefined())
+			{
+				node->g = newCost;
+				node->h = hCostFunctor(neighbor, searchGoal);
+				node->parent = current;
+
+				if (node->IsStatusUndefined())
+				{
+					node->Open();
+					openList.push(node);
+				}
+			}
+		}
+	}
+
+	this->lastResult = false;
+	OnFailure();
+}
+
+template<typename T>
+inline void INavAStarSearch<T>::Clear()
+{
+	this->path.clear();
+	this->nodes.clear();
+	this->lastResult = false;
+}
+
+template<typename T>
+inline void INavAStarSearch<T>::BuildPath(NavAStarNode* endnode)
+{
+#ifdef EXT_DEBUG
+	size_t i = 0;
+#endif
+
+	NavAStarNode* next = endnode;
+	path.reserve(nodes.size());
+
+	for (;;)
+	{
+		this->path.push_back(next->area);
+
+		if (next->area == this->startArea)
+		{
+			return;
+		}
+
+		next = next->parent;
+
+#ifdef EXT_DEBUG
+		if (++i >= (nodes.size() + 10U))
+		{
+			throw std::runtime_error("Infinite Loop!");
+		}
+#endif
+
+		if (next == nullptr)
+		{
+			return;
+		}
+	}
+}
+
 #endif // _NAV_PATHFIND_H_
-
-

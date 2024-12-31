@@ -77,11 +77,6 @@ CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type,
 
 TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 150)
-	{
-		return PauseFor(new CTF2BotFindAmmoTask(150), "Need more metal to build!");
-	}
-
 	CTF2BotPathCost cost(bot);
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 	{
@@ -119,6 +114,11 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 
 TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 150)
+	{
+		return PauseFor(new CTF2BotFindAmmoTask(150), "Need more metal to build!");
+	}
+
 	switch (m_type)
 	{
 	case CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN:

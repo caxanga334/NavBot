@@ -32,7 +32,7 @@ public:
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
 	bool IsAbleToBlastJump() override;
 	void JumpAcrossGap(const Vector& landing, const Vector& forward) override;
-	bool IsEntityTraversable(edict_t* entity, const bool now = true) override;
+	bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true) override;
 
 private:
 	CTF2Bot* GetTF2Bot() const;

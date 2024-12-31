@@ -162,12 +162,14 @@ CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 		if (from == nullptr) // set starting area;
 		{
 			from = area;
+			area->DrawFilled(0, 128, 0, 255, 40.0f);
 			continue;
 		}
 
 		to = area;
 
 		NDebugOverlay::HorzArrow(from->GetCenter(), to->GetCenter(), 4.0f, 0, 255, 0, 255, true, 40.0f);
+		to->DrawFilled(0, 128, 0, 255, 40.0f);
 
 		rootconsole->ConsolePrint("Path: from #%i to #%i. gap: %3.2f", from->GetID(), to->GetID(), to->ComputeAdjacentConnectionGapDistance(from));
 
@@ -175,6 +177,77 @@ CON_COMMAND(sm_navbot_debug_pathfind, "Path finding debug.")
 	}
 
 	if (path)
+	{
+		rootconsole->ConsolePrint("Path found!");
+	}
+	else
+	{
+		rootconsole->ConsolePrint("Path failed!");
+	}
+}
+
+CON_COMMAND(sm_navbot_debug_pathfind2, "Path finding debug (new function).")
+{
+	static Vector start;
+	static Vector end;
+	static bool reset = false;
+
+	auto edict = gamehelpers->EdictOfIndex(1);
+
+	if (edict == nullptr)
+	{
+		return;
+	}
+
+	// CBaseExtPlayer can be used for both players and bots
+	CBaseExtPlayer player(edict);
+
+	if (reset == false)
+	{
+		start = player.GetAbsOrigin();
+		reset = true;
+		NDebugOverlay::SweptBox(start, start, player.GetMins(), player.GetMaxs(), vec3_angle, 0, 220, 255, 255, 15.0f);
+		rootconsole->ConsolePrint("Start position set to <%3.2f, %3.2f, %3.2f>", start.x, start.y, start.z);
+		return;
+	}
+
+	reset = false;
+	end = player.GetAbsOrigin();
+
+	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, 512.0f, true, true);
+
+	if (startArea == nullptr)
+	{
+		rootconsole->ConsolePrint("Path find: Failed to get starting area!");
+		return;
+	}
+
+	CNavArea* goalArea = TheNavMesh->GetNearestNavArea(end, 512.0f, true, true);
+
+	NavAStarPathCost cost;
+	NavAStarHeuristicCost heuristic;
+	INavAStarSearch<CNavArea> search;
+	search.SetStart(startArea);
+	search.SetGoalArea(goalArea);
+
+	auto tstart = std::chrono::high_resolution_clock::now();
+	search.DoSearch(cost, heuristic);
+	auto tend = std::chrono::high_resolution_clock::now();
+
+	const std::chrono::duration<double, std::milli> millis = (tend - tstart);
+
+	Msg("INavAStarSearch<CNavArea>::DoSearch() took %f ms.\n", millis.count());
+
+	auto& path = search.GetPath();
+
+	int i = 0;
+	for (auto area : path)
+	{
+		NDebugOverlay::Text(area->GetCenter(), false, 40.0f, "#%i", i++);
+		area->DrawFilled(0, 128, 0, 255, 40.0f);
+	}
+
+	if (search.FoundPath())
 	{
 		rootconsole->ConsolePrint("Path found!");
 	}
@@ -417,63 +490,6 @@ CON_COMMAND_F(sm_navbot_debug_sdkcalls, "Debug new SDKCalls functions.", FCVAR_C
 	Msg("Eye Angles:\n    SDK Call: %3.2f %3.2f %3.2f\n    CUserCMD: %3.2f %3.2f %3.2f\n", angles1.x, angles1.y, angles1.z, angles2.x, angles2.y, angles2.z);
 }
 
-CON_COMMAND(sm_navbot_debug_tests, "Debug stuff")
-{
-	using namespace SourceMod;
-
-	int index = UtilHelpers::FindEntityByClassname(-1, "item_teamflag");
-	CBaseEntity* entity = gamehelpers->ReferenceToEntity(index);
-
-	if (entity == nullptr)
-	{
-		Warning("Failed to get a pointer to a item_teamflag entity!\n");
-		return;
-	}
-
-	ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
-	sm_sendprop_info_t info;
-
-	if (pClass != nullptr && gamehelpers->FindSendPropInfo(pClass->GetName(), "m_flTimeToSetPoisonous", &info))
-	{
-		static constexpr auto size = sizeof(EHANDLE) + sizeof(int);
-		int offset = info.actual_offset + size;
-		Msg("Computed offset for CCaptureFlag::m_vecResetPos %i\n", offset);
-
-		Vector res;
-		
-		if (entprops->GetEntDataVector(index, offset, res))
-		{
-			Msg("Value at offset: %3.2f %3.2f %3.2f\n", res.x, res.y, res.z);
-
-			entities::HBaseEntity be(entity);
-			res = be.GetAbsOrigin();
-			Msg("Abs origin: %3.2f %3.2f %3.2f\n", res.x, res.y, res.z);
-		}
-	}
-
-	tfentities::HCaptureFlag flag(entity);
-
-	Vector out = flag.GetReturnPosition();
-	Msg("Flag return position: %3.2f %3.2f %3.2f\n", out.x, out.y, out.z);
-}
-
-CON_COMMAND_F(sm_navbot_debug_server_class, "Debug ServerClass class.", FCVAR_CHEAT)
-{
-	CBaseEntity* entity = gamehelpers->ReferenceToEntity(1);
-	ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
-
-	auto name = pClass->GetName();
-	auto id = pClass->m_ClassID;
-	auto netname = pClass->m_pNetworkName;
-	auto table = pClass->m_pTable;
-	const char* tablename = table ? table->GetName() : "NULL";
-
-	Msg("Name: %s\n", name ? name : "NULL");
-	Msg("ID: %i\n", id);
-	Msg("Network Name: %s\n", netname ? netname : "NULL");
-	Msg("Table Name: %s\n", tablename ? tablename : "NULL");
-}
-
 CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs NavMeshCollector", FCVAR_CHEAT)
 {
 	CBaseExtPlayer player(gamehelpers->EdictOfIndex(1));
@@ -542,7 +558,7 @@ CON_COMMAND_F(sm_snap_to_origin, "Snaps the player view angles to an origin", FC
 CON_COMMAND_F(sm_navbot_debug_entlist, "Debugs the entity list.", FCVAR_CHEAT)
 {
 	UtilHelpers::ForEveryEntity([](int index, edict_t* edict, CBaseEntity* entity) {
-		Msg("Entity #%i: %s (%p <%p>) \n", index, gamehelpers->GetEntityClassname(entity) ? gamehelpers->GetEntityClassname(entity) : "NULL CLASSNAME", entity, edict);
+		Msg("Entity #%i: %s (%p <%p>) [%i] \n", index, gamehelpers->GetEntityClassname(entity) ? gamehelpers->GetEntityClassname(entity) : "NULL CLASSNAME", entity, edict, reinterpret_cast<IServerUnknown*>(entity)->GetRefEHandle().GetEntryIndex());
 	});
 }
 
@@ -896,5 +912,19 @@ CON_COMMAND(sm_tf_projectile_weapon_data, "Gets the projectile speed and gravity
 }
 
 #endif // !SOURCE_ENGINE == SE_TF2 && (defined(WIN32) || defined(WIN64))
+
+CON_COMMAND(sm_navbot_debug_gamerules_ptr, "Tests if the extension is able to get a valid game rules pointer.")
+{
+	void* pGameRules = g_pSDKTools->GetGameRules();
+	META_CONPRINTF("pGameRules = %p\n", pGameRules);
+
+	if (pGameRules != nullptr)
+	{
+		META_CONPRINT("Testing pointer with SDKCall\n");
+		bool result = sdkcalls->CGameRules_ShouldCollide(reinterpret_cast<CGameRules*>(pGameRules), COLLISION_GROUP_PLAYER, COLLISION_GROUP_NPC);
+
+		META_CONPRINTF("SDK Call Result: %s\n", result ? "TRUE" : "FALSE");
+	}
+}
 
 #endif // EXT_DEBUG

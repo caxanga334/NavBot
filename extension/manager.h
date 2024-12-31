@@ -94,6 +94,9 @@ public:
 	
 	// Gets the value of sv_gravity cached at map start
 	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
+
+	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args);
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots

@@ -1,5 +1,5 @@
-#ifndef NAVBOT_TF2BOT_TASKS_ENGINEER_MAIN_H_
-#define NAVBOT_TF2BOT_TASKS_ENGINEER_MAIN_H_
+#ifndef NAVBOT_TF2BOT_TASKS_ENGINEER_UPGRADE_OBJECT_H_
+#define NAVBOT_TF2BOT_TASKS_ENGINEER_UPGRADE_OBJECT_H_
 
 #include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/path/meshnavigator.h>
@@ -23,4 +23,4 @@ private:
 };
 
 
-#endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_MAIN_H_
+#endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_UPGRADE_OBJECT_H_

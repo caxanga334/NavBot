@@ -107,6 +107,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	}
 
 	CrouchIfNeeded(bot);
+	BreakIfNeeded(bot);
 
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
@@ -233,7 +234,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	}
 
 	// move bot along path
-	mover->MoveTowards(goalPos);
+	mover->MoveTowards(goalPos, IMovement::MOVEWEIGHT_NAVIGATOR);
 
 	if (bot->IsDebugging(BOTDEBUG_PATH))
 	{
@@ -335,7 +336,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	}
 
 	// Check distance to goal
-	if (toGoal.IsLengthLessThan(GetGoalTolerance()) == true)
+	if (toGoal.AsVector2D().IsLengthLessThan(GetGoalTolerance()))
 	{
 		return true;
 	}
@@ -1231,6 +1232,26 @@ void CMeshNavigator::CrouchIfNeeded(CBaseBot* bot)
 	}
 }
 
+void CMeshNavigator::BreakIfNeeded(CBaseBot* bot)
+{
+	constexpr auto CHECK_DIST = 300.0f * 300.0f;
+
+	if (bot->GetRangeToSqr(m_goal->goal) > CHECK_DIST)
+	{
+		return;
+	}
+
+	CBaseEntity* obstacle = nullptr;
+
+	if (!bot->GetMovementInterface()->IsPotentiallyTraversable(bot->GetAbsOrigin(), m_goal->goal, nullptr, true, &obstacle))
+	{
+		if (obstacle != nullptr && bot->IsAbleToBreak(reinterpret_cast<IServerUnknown*>(obstacle)->GetNetworkable()->GetEdict()))
+		{
+			bot->GetMovementInterface()->BreakObstacle(obstacle);
+		}
+	}
+}
+
 bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 {
 	auto input = bot->GetControlInterface();
@@ -1309,7 +1330,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 			if (dot < cos)
 			{
 				// we're facing the ladder, just move straigh to it
-				mover->MoveTowards(goal);
+				mover->MoveTowards(goal, IMovement::MOVEWEIGHT_PRIORITY);
 
 				if (range < LADDER_MOUNT_RANGE)
 				{
@@ -1344,7 +1365,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 					aligngoal -= 10.0f * botperp;
 				}
 
-				mover->MoveTowards(aligngoal);
+				mover->MoveTowards(aligngoal, IMovement::MOVEWEIGHT_PRIORITY);
 			}
 		}
 		else

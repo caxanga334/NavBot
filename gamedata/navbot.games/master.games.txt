@@ -28,4 +28,9 @@
 	{
 		"game"		"bms"
 	}
+	// Half-Life 1 Deathmatch Source
+	"game.hl1mp.txt"
+	{
+		"game"		"hl1mp"
+	}
 }

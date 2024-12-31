@@ -49,6 +49,8 @@ namespace UtilHelpers
 		return true;
 	}
 
+	int IndexOfEntity(CBaseEntity* entity);
+
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.
@@ -358,6 +360,18 @@ namespace UtilHelpers
 	 * @return CBaseEntity pointer of the entity or NULL if none is found.
 	 */
 	CBaseEntity* GetNearestEntityOfClassname(const Vector& source, const char* classname, float maxRange = 65535.0f);
+	/**
+	 * @brief Searches for an entity with a matching hammer ID.
+	 * @param iHammerID Hammer id to search.
+	 * @return Entity if found. NULL if not found.
+	 */
+	CBaseEntity* FindEntityByHammerID(int iHammerID);
+	/**
+	 * @brief Gets an entity hammer ID.
+	 * @param entity Entity to read the hammer ID from.
+	 * @return Hammer ID or -1 on failure.
+	 */
+	int GetEntityHammerID(CBaseEntity* entity);
 
 	/**
 	 * @brief Calls ClientCommandKeyValues for the given client. Throws an exception if the engine branch doesn't support keyvalue commands.

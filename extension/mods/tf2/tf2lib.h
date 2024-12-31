@@ -40,6 +40,12 @@ namespace tf2lib
 	edict_t* GetDisguiseTarget(int player);
 	float GetMedigunUberchargePercentage(int medigun);
 	bool MVM_ShouldBotsReadyUp();
+	// Given a building, checks if it needs to be repaired.
+	bool BuildingNeedsToBeRepaired(CBaseEntity* entity);
+	// returns true if a building has already been placed
+	bool IsBuildingPlaced(CBaseEntity* entity);
+	CBaseEntity* GetBuildingBuilder(CBaseEntity* entity);
+	bool IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)

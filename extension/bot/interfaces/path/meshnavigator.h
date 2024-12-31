@@ -36,6 +36,7 @@ protected:
 	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
 	virtual edict_t* FindBlocker(CBaseBot* bot);
 	virtual void CrouchIfNeeded(CBaseBot* bot);
+	virtual void BreakIfNeeded(CBaseBot* bot);
 
 	bool IsAtGoal(CBaseBot* bot);
 	bool CheckProgress(CBaseBot* bot);

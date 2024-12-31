@@ -24,6 +24,8 @@ private:
 
 	void FindSniperSpot(CTF2Bot* bot);
 	void GetRandomSnipingSpot(CTF2Bot* bot);
+	Vector GetRandomSnipingPosition(CTF2Bot* bot);
+	Vector GetSnipingSearchStartPosition(CTF2Bot* bot);
 };
 
 #endif // !NAVBOT_TF2_TASK_SNIPER_MOVE_TO_SPOT_H_

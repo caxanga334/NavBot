@@ -1,0 +1,44 @@
+"Games"
+{
+	"hl1mp"
+	{
+		"Offsets"
+		{
+			"Event_Killed"
+			{
+				"windows"	"66"
+				"linux"		"67"
+			}
+			"Event_KilledOther"
+			{
+				"windows"	"67"
+				"linux"		"68"
+			}
+			"PhysicsSimulate"
+			{
+				"windows"	"104"
+				"linux"		"105"
+			}
+			"Weapon_Switch"
+			{
+				"windows"	"264"
+				"linux"		"265"
+			}
+			"CBaseEntity_EyePosition"
+			{
+				"windows"	"130"
+				"linux"		"131"
+			}
+			"CBaseEntity_EyeAngles"
+			{
+				"windows"	"131"
+				"linux"		"132"
+			}
+			"CBaseEntity_IsPlayer"
+			{
+				"windows"	"80"
+				"linux"		"81"
+			}
+		}
+	}
+}

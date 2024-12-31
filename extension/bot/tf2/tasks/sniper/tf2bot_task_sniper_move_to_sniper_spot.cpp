@@ -7,6 +7,43 @@
 #include "tf2bot_task_sniper_snipe_area.h"
 #include "tf2bot_task_sniper_move_to_sniper_spot.h"
 
+class TF2SniperSpotAreaCollector : public INavAreaCollector<CTFNavArea>
+{
+public:
+	TF2SniperSpotAreaCollector(CTF2Bot* me, CTFNavArea* startArea) :
+		INavAreaCollector<CTFNavArea>(startArea, 8000.0f)
+	{
+		m_me = me;
+	}
+
+	bool ShouldCollect(CTFNavArea* area) override;
+private:
+	CTF2Bot* m_me;
+};
+
+bool TF2SniperSpotAreaCollector::ShouldCollect(CTFNavArea* area)
+{
+	if (area->GetSizeX() < 16.0f || area->GetSizeY() < 16.0f)
+	{
+		// don't snipe in small areas
+		return false;
+	}
+
+	if (area->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM))
+	{
+		// don't snipe inside spawnrooms
+		return false;
+	}
+
+	if (area->IsBlocked(m_me->GetCurrentTeamIndex()))
+	{
+		// don't snipe on blocked areas
+		return false;
+	}
+
+	return true;
+}
+
 TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	FindSniperSpot(bot);
@@ -83,8 +120,7 @@ void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot)
 
 	if (spots.empty())
 	{
-		bot->DebugPrintToConsole(BOTDEBUG_ERRORS, 255, 0, 0, "Bot %s failed to find a valid Sniper waypoint to snipe from!", bot->GetDebugIdentifier());
-		m_goal = bot->GetAbsOrigin();
+		m_goal = GetRandomSnipingPosition(bot);
 		m_waypoint = nullptr;
 		return;
 	}
@@ -93,4 +129,36 @@ void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot)
 	goal->Use(bot); // prevent other bots from selecting
 	m_waypoint = goal;
 	m_goal = goal->GetRandomPoint();
+}
+
+Vector CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingPosition(CTF2Bot* bot)
+{
+	Vector startPos = GetSnipingSearchStartPosition(bot);
+	CNavArea* start = TheNavMesh->GetNearestNavArea(startPos, 256.0f);
+
+	if (start == nullptr)
+	{
+		start = bot->GetLastKnownNavArea();
+
+		if (start == nullptr)
+		{
+			return bot->GetAbsOrigin();
+		}
+	}
+
+	TF2SniperSpotAreaCollector collector(bot, static_cast<CTFNavArea*>(start));
+	collector.Execute();
+
+	if (collector.IsCollectedAreasEmpty())
+	{
+		return bot->GetAbsOrigin();
+	}
+
+	CTFNavArea* randomArea = collector.GetRandomCollectedArea();
+	return randomArea->GetRandomPoint();
+}
+
+Vector CTF2BotSniperMoveToSnipingSpotTask::GetSnipingSearchStartPosition(CTF2Bot* bot)
+{
+	return bot->GetAbsOrigin();
 }

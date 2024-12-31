@@ -162,18 +162,38 @@ void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward
 	}
 }
 
-bool CTF2BotMovement::IsEntityTraversable(edict_t* entity, const bool now)
+bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)
 {
-	int index = gamehelpers->IndexOfEdict(entity);
-	auto team = tf2lib::GetEntityTFTeam(index);
+	auto theirteam = tf2lib::GetEntityTFTeam(index);
+	auto myteam = GetTF2Bot()->GetMyTFTeam();
 
-	/* TO-DO: check solid teammates cvar */
-	if (UtilHelpers::IsPlayerIndex(index) && GetTF2Bot()->GetMyTFTeam() == team)
+	if (myteam == theirteam)
 	{
-		return true;
+		/* TO-DO: check solid teammates cvar */
+		if (UtilHelpers::IsPlayerIndex(index))
+		{
+			return true;
+		}
+
+		if (UtilHelpers::FClassnameIs(entity, "obj_*"))
+		{
+			if (GetTF2Bot()->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Engineer)
+			{
+				CBaseEntity* builder = tf2lib::GetBuildingBuilder(entity);
+
+				if (builder == GetTF2Bot()->GetEntity())
+				{
+					return false; // my own buildings are solid to me
+				}
+
+				return true; // not my own buildings, not solid
+			}
+
+			return true; // not an engineer, friendly buildings are not solid (the telepoter is solid but we can generally walk over it)
+		}
 	}
 
-	return IMovement::IsEntityTraversable(entity, now);
+	return IMovement::IsEntityTraversable(index, edict, entity, now);
 }
 
 CTF2Bot* CTF2BotMovement::GetTF2Bot() const

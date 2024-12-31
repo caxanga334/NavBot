@@ -31,10 +31,13 @@ public:
 	static constexpr auto max_travel_distance() { return 2048.0f; }
 	static constexpr auto behind_sentry_distance() { return 96.0f; }
 	static constexpr auto max_dispenser_to_sentry_range() { return 750.0f; }
+	static constexpr auto random_exit_spot_travel_limit() { return 900.0f; }
 
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
+	CTFWaypoint* m_sentryWaypoint; // last waypoint used for building sentry guns
+	CountdownTimer m_boredTimer;
 
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
 	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
@@ -46,6 +49,7 @@ private:
 	bool GetRandomSentrySpot(CTF2Bot* me, Vector* out);
 	Vector GetSentryNestBuildPos(CTF2Bot* me);
 	bool GetRandomEntranceSpot(CTF2Bot* me, Vector* out);
+	bool GetRandomExitSpot(CTF2Bot* me, Vector* out);
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_NEST_H_

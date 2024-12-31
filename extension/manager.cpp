@@ -79,7 +79,6 @@ void CExtManager::OnAllLoaded()
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 
 	AllocateMod();
-
 	LoadBotNames();
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%s'. Detected Mod: '%s'", UtilHelpers::GetEngineBranchName(), m_mod->GetModName());
@@ -597,9 +596,13 @@ void CExtManager::OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, 
 	extmanager->SetBotQuotaTarget(target);
 }
 
+void CExtManager::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args)
+{
+	m_mod->OnClientCommand(pEdict, player, args);
+}
+
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {
-	extern CExtManager* extmanager;
 	extmanager->LoadBotNames();
 }
 
@@ -611,8 +614,6 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 		rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTION1> <OPTION2> ...");
 		return;
 	}
-
-	extern CExtManager* extmanager;
 	
 	for (int i = 1; i < args.ArgC(); i++)
 	{
@@ -660,10 +661,15 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 			extmanager->ToggleDebugOption(BOTDEBUG_ERRORS);
 			rootconsole->ConsolePrint("Toggle Debugging Bot Error");
 		}
+		else if (strncasecmp(option, "SQUADS", 6) == 0)
+		{
+			extmanager->ToggleDebugOption(BOTDEBUG_SQUADS);
+			rootconsole->ConsolePrint("Toggle Debugging Bot Squads");
+		}
 		else
 		{
 			rootconsole->ConsolePrint("Unknown option \"%s\".", option);
-			rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS");
+			rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS, SQUADS");
 			rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTION1> <OPTION2> ...");
 		}
 	}

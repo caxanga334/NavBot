@@ -373,3 +373,82 @@ bool tf2lib::MVM_ShouldBotsReadyUp()
 
 	return readyup;
 }
+
+bool tf2lib::BuildingNeedsToBeRepaired(CBaseEntity* entity)
+{
+	int* health = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iHealth");
+	int* maxhealth = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iMaxHealth");
+
+	if (health && maxhealth)
+	{
+		if (*health < *maxhealth)
+		{
+			return true;
+		}
+	}
+
+	bool* sapper = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bHasSapper");
+
+	if (sapper)
+	{
+		return *sapper;
+	}
+
+	return false;
+}
+
+bool tf2lib::IsBuildingPlaced(CBaseEntity* entity)
+{
+	bool* placing = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bPlacing");
+	bool* carried = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bCarried");
+
+	if (placing && *placing == true)
+	{
+		return false;
+	}
+
+	if (carried && *carried == true)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+CBaseEntity* tf2lib::GetBuildingBuilder(CBaseEntity* entity)
+{
+	CHandle<CBaseEntity>* handle = entprops->GetPointerToEntData<CHandle<CBaseEntity>>(entity, Prop_Send, "m_hBuilder");
+
+	if (handle != nullptr)
+	{
+		return handle->Get();
+	}
+
+	return nullptr;
+}
+
+bool tf2lib::IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity)
+{
+	int level = 3; // default to 3 as a fail safe if look up fails
+	int maxlevel = 3;
+	int index = UtilHelpers::IndexOfEntity(entity);
+	entprops->GetEntProp(index, Prop_Send, "m_iUpgradeLevel", level);
+	
+	bool mini = false;
+	entprops->GetEntPropBool(index, Prop_Send, "m_bMiniBuilding", mini);
+
+	if (mini)
+	{
+		return true;
+	}
+
+	bool disposable = false;
+	entprops->GetEntPropBool(index, Prop_Send, "m_bDisposableBuilding", disposable);
+
+	if (disposable)
+	{
+		return true;
+	}
+
+	return level >= maxlevel;
+}

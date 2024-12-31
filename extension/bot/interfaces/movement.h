@@ -142,6 +142,13 @@ public:
 		MAX_ELEVATOR_STATES,
 	};
 
+	/* Common Move Weights */
+	static constexpr auto MOVEWEIGHT_DEFAULT = 100;
+	static constexpr auto MOVEWEIGHT_NAVIGATOR = 1000; // for calls from the navigator
+	static constexpr auto MOVEWEIGHT_DODGE = 2000; // trying to dodge something
+	static constexpr auto MOVEWEIGHT_PRIORITY = 5000; // priority move toward calls
+	static constexpr auto MOVEWEIGHT_CRITICAL = 900000; // priority move toward calls
+
 	// Reset the interface to it's initial state
 	void Reset() override;
 	// Called at intervals
@@ -173,8 +180,12 @@ public:
 	// Trace mask for collision detection
 	virtual unsigned int GetMovementTraceMask();
 
-	// Makes the bot walk/run towards the given position
-	virtual void MoveTowards(const Vector& pos);
+	/**
+	 * @brief Instructs the movement interface to generate the inputs necessary to cause the bot to move towars the given position.
+	 * @param pos Position to move towards.
+	 * @param weight Move call weight. If another call was made with a higher weight than the current call, then the current is ignored.
+	 */
+	virtual void MoveTowards(const Vector& pos, const int weight = MOVEWEIGHT_DEFAULT);
 	/**
 	 * @brief Makes the bot look at the given position (used for movement)
 	 * @param pos Position the bot will look at
@@ -219,7 +230,7 @@ public:
 	 * Returning true will stop bots from firing their weapons at their enemies. False to allow normal behavior.
 	 * @return True if the bot should let the movement interface control the weapons. False otherwise.
 	 */
-	virtual bool NeedsWeaponControl() { return false; }
+	virtual bool NeedsWeaponControl() { return m_isBreakingObstacle; }
 
 	// The speed the bot will move at (capped by the game player movements)
 	virtual float GetMovementSpeed() { return m_basemovespeed; }
@@ -234,7 +245,7 @@ public:
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float& fraction);
 
-	virtual bool IsEntityTraversable(edict_t* entity, const bool now = true);
+	virtual bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true);
 
 	virtual bool IsOnGround();
 
@@ -262,6 +273,10 @@ public:
 	inline int GetStuckCount() const { return m_stuck.counter; }
 	virtual bool IsUsingElevator() const;
 	virtual void UseElevator(const CNavElevator* elevator, const CNavArea* from, const CNavArea* to);
+	void ClearMoveWeight() { m_lastMoveWeight = 0; }
+	int GetLastMoveWeight() const { return m_lastMoveWeight; }
+	virtual bool IsBreakingObstacle() const { return m_isBreakingObstacle; }
+	virtual bool BreakObstacle(CBaseEntity* obstacle);
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	CountdownTimer m_braketimer; // Timer for forced braking
@@ -277,11 +292,15 @@ protected:
 	bool m_isJumpingAcrossGap;
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
+	bool m_isBreakingObstacle;
 	const CNavElevator* m_elevator;
 	const CNavElevator::ElevatorFloor* m_fromFloor;
 	const CNavElevator::ElevatorFloor* m_toFloor;
 	ElevatorState m_elevatorState;
 	CountdownTimer m_elevatorTimeout;
+	int m_lastMoveWeight;
+	CHandle<CBaseEntity> m_obstacleEntity;
+	CountdownTimer m_obstacleBreakTimeout;
 
 	// stuck monitoring
 	StuckStatus m_stuck;
@@ -289,6 +308,7 @@ protected:
 	virtual void StuckMonitor();
 	virtual void TraverseLadder();
 	virtual void ElevatorUpdate();
+	virtual void ObstacleBreakUpdate();
 
 	void CleanUpElevator()
 	{
@@ -345,6 +365,10 @@ inline bool IMovement::IsControllingMovements()
 	else if (m_elevatorState != NOT_USING_ELEVATOR)
 	{
 		return true; // take full control when doing elevator operations
+	}
+	else if (m_isBreakingObstacle)
+	{
+		return true; // take full control when breaking an obstacle on my path
 	}
 
 	return false;

@@ -99,6 +99,11 @@ bool UtilHelpers::IndexToAThings(int num, CBaseEntity** pEntData, edict_t** pEdi
 	return true;
 }
 
+int UtilHelpers::IndexOfEntity(CBaseEntity* entity)
+{
+	return gamehelpers->EntityToBCompatRef(entity);
+}
+
 bool UtilHelpers::IsEntNetworkable(int index)
 {
 	CBaseEntity* entity = gamehelpers->ReferenceToEntity(index);
@@ -992,6 +997,41 @@ CBaseEntity* UtilHelpers::GetNearestEntityOfClassname(const Vector& source, cons
 	}
 
 	return pBest;
+}
+
+CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)
+{
+#ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
+	return servertools->FindEntityByHammerID(iHammerID);
+#else
+	CBaseEntity* entity = servertools->FirstEntity();
+
+	while (entity != nullptr)
+	{
+		int* hammerid = entprops->GetPointerToEntData<int>(entity, Prop_Data, "m_iHammerID");
+
+		if (hammerid && *hammerid == iHammerID)
+		{
+			return entity;
+		}
+
+		entity = servertools->NextEntity(entity);
+	}
+
+	return nullptr;
+#endif // SDKIFACE_SERVERTOOLSV2_AVAILABLE
+}
+
+int UtilHelpers::GetEntityHammerID(CBaseEntity* entity)
+{
+	int* hammerid = entprops->GetPointerToEntData<int>(entity, Prop_Data, "m_iHammerID");
+
+	if (hammerid == nullptr)
+	{
+		return -1;
+	}
+
+	return *hammerid;
 }
 
 void UtilHelpers::FakeClientCommandKeyValues(edict_t* client, KeyValues* kv)

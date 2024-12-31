@@ -39,14 +39,9 @@
 #undef max
 #undef clamp // mathlib compat hack
 
-extern IVDebugOverlay* debugoverlay;
 extern ConVar sm_nav_quicksave;
-extern IVEngineServer* engine;
-extern IPlayerInfoManager *playerinfomanager;
-
 unsigned int CNavArea::m_nextID = 1;
 NavAreaVector TheNavAreas;
-extern CGlobalVars *gpGlobals;
 
 unsigned int CNavArea::m_masterMarker = 1;
 CNavArea *CNavArea::m_openList = NULL;
@@ -4815,7 +4810,7 @@ bool CNavArea::HasSolidFloor() const
 
 bool CNavArea::HasSolidObstruction() const
 {
-	trace::CTraceFilterNoNPCsOrPlayers filter(nullptr, COLLISION_GROUP_NONE);
+	CTraceFilterTransientAreas filter(nullptr, COLLISION_GROUP_NONE);
 	trace_t result;
 	Vector origin = GetCenter();
 	origin.z += navgenparams->human_height;

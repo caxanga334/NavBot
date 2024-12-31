@@ -371,7 +371,7 @@ void NavBotExt::Hook_ClientCommand(edict_t* pEntity, const CCommand& args)
 
 		if (player != nullptr && player->IsInGame())
 		{
-			extmanager->GetMod()->OnClientCommand(pEntity, player, args);
+			extmanager->OnClientCommand(pEntity, player, args);
 		}
 	}
 

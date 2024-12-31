@@ -77,6 +77,8 @@ namespace AIPath
 class IPathCost
 {
 public:
+	/* This is the original nav mesh cost function used by NavAreaBuildPath */
+
 	/**
 	 * @brief Computes the cost to go from 'fromArea' to 'toArea'
 	 * @param toArea Current nav area

@@ -36,6 +36,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmdsents = 0;
 	m_debugtextoffset = 0;
 	m_shhooks.reserve(32);
+	m_randomChatMessageTimer.Start(9999.0f);
 
 	AddHooks();
 }
@@ -101,6 +102,9 @@ void CBaseBot::PlayerThink()
 		BuildUserCommand(0); // Still send empty usercommands while dead
 		return;
 	}
+
+	// Clear the move weight from the last frame
+	GetMovementInterface()->ClearMoveWeight();
 
 	Frame(); // Call bot frame
 
@@ -553,4 +557,132 @@ int CBaseBot::GetWaterLevel() const
 bool CBaseBot::IsUnderWater() const
 {
 	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(WaterLevel::WL_Eyes);
+}
+
+void CBaseBot::SendChatMessage(const char* message)
+{
+	constexpr std::size_t MAX_SIZE = 300U;
+
+	std::unique_ptr<char[]> cmd = std::make_unique<char[]>(MAX_SIZE);
+
+	ke::SafeSprintf(cmd.get(), MAX_SIZE, "say %s", message);
+	DelayedFakeClientCommand(cmd.get());
+}
+
+void CBaseBot::SendTeamChatMessage(const char* message)
+{
+	constexpr std::size_t MAX_SIZE = 300U;
+
+	std::unique_ptr<char[]> cmd = std::make_unique<char[]>(MAX_SIZE);
+
+	ke::SafeSprintf(cmd.get(), MAX_SIZE, "say_team %s", message);
+	DelayedFakeClientCommand(cmd.get());
+}
+
+BaseBotPathCost::BaseBotPathCost(CBaseBot* bot)
+{
+	m_bot = bot;
+	m_stepheight = bot->GetMovementInterface()->GetStepHeight();
+	m_maxjumpheight = bot->GetMovementInterface()->GetMaxJumpHeight();
+	m_maxdropheight = bot->GetMovementInterface()->GetMaxDropHeight();
+	m_maxdjheight = bot->GetMovementInterface()->GetMaxDoubleJumpHeight();
+	m_maxgapjumpdistance = bot->GetMovementInterface()->GetMaxGapJumpDistance();
+	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
+}
+
+float BaseBotPathCost::operator()(CNavArea* area, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
+{
+	if (fromArea == nullptr)
+	{
+		// first area in path, no cost
+		return 0.0f;
+	}
+
+	if (!m_bot->GetMovementInterface()->IsAreaTraversable(area))
+	{
+		return -1.0f;
+	}
+
+	float dist = 0.0f;
+
+	if (link != nullptr)
+	{
+		dist = link->GetConnectionLength();
+	}
+	else if (ladder != nullptr)
+	{
+		dist = ladder->m_length;
+	}
+	else if (elevator != nullptr)
+	{
+		auto fromFloor = fromArea->GetMyElevatorFloor();
+
+		if (!fromFloor->HasCallButton() && !fromFloor->is_here)
+		{
+			return -1.0f; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
+		}
+
+		dist = elevator->GetLengthBetweenFloors(fromArea, area);
+	}
+	else if (length > 0.0f)
+	{
+		dist = length;
+	}
+	else
+	{
+		dist = (area->GetCenter() + fromArea->GetCenter()).Length();
+	}
+
+	// only check gap and height on common connections
+	if (link == nullptr)
+	{
+		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
+
+		if (deltaZ >= m_stepheight)
+		{
+			if (deltaZ >= m_maxjumpheight && !m_candoublejump) // can't double jump
+			{
+				// too high to reach
+				return -1.0f;
+			}
+
+			if (deltaZ >= m_maxdjheight) // can double jump
+			{
+				// too high to reach
+				return -1.0f;
+			}
+
+			// jump type is resolved by the navigator
+
+			// add jump penalty
+			constexpr auto jumpPenalty = 2.0f;
+			dist *= jumpPenalty;
+		}
+		else if (deltaZ < -m_maxdropheight)
+		{
+			// too far to drop
+			return -1.0f;
+		}
+
+		float gap = fromArea->ComputeAdjacentConnectionGapDistance(area);
+
+		if (gap >= m_maxgapjumpdistance)
+		{
+			return -1.0f; // can't jump over this gap
+		}
+	}
+	else
+	{
+		// Don't use double jump links if we can't perform a double jump
+		if (link->GetType() == OffMeshConnectionType::OFFMESH_DOUBLE_JUMP && !m_candoublejump)
+		{
+			return -1.0f;
+		}
+
+		// TO-DO: Same check for when rocket jumps are implemented.
+	}
+
+	float cost = dist + fromArea->GetCostSoFar();
+
+	return cost;
 }

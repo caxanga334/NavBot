@@ -24,10 +24,6 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
 	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
 	m_upgrademan.SetMe(this);
-	m_sgWaypoint = nullptr;
-	m_dispWaypoint = nullptr;
-	m_tpentWaypoint = nullptr;
-	m_tpextWaypoint = nullptr;
 }
 
 CTF2Bot::~CTF2Bot()
@@ -73,26 +69,6 @@ void CTF2Bot::Spawn()
 	if (GetMyClassType() > TeamFortress2::TFClass_Unknown)
 	{
 		m_upgrademan.OnBotSpawn();
-	}
-
-	if (GetMySentryGun() == nullptr)
-	{
-		SetMySentryGunWaypoint(nullptr);
-	}
-
-	if (GetMyDispenser() == nullptr)
-	{
-		SetMyDispenserWaypoint(nullptr);
-	}
-
-	if (GetMyTeleporterEntrance() == nullptr)
-	{
-		SetMyTeleporterEntranceWaypoint(nullptr);
-	}
-
-	if (GetMyTeleporterExit() == nullptr)
-	{
-		SetMyTeleporterExitWaypoint(nullptr);
 	}
 
 	CBaseBot::Spawn();
@@ -218,13 +194,14 @@ edict_t* CTF2Bot::GetFlagToFetch() const
 	return gamehelpers->EdictOfIndex(flag);
 }
 
-edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly) const
+edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly, bool ignoreHome) const
 {
 	std::vector<edict_t*> collectedflags;
 	collectedflags.reserve(16);
 	auto myteam = GetMyTFTeam();
+	const float now = gpGlobals->curtime;
 
-	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&collectedflags, &myteam, &stolenOnly](int index, edict_t* edict, CBaseEntity* entity) {
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&collectedflags, &myteam, &stolenOnly, &ignoreHome, &now](int index, edict_t* edict, CBaseEntity* entity) {
 
 		if (edict == nullptr)
 		{
@@ -238,7 +215,24 @@ edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly) const
 			return true; // keep loop
 		}
 
+		if (flag.IsDropped())
+		{
+			float time;
+			if (entprops->GetEntPropFloat(index, Prop_Send, "m_flResetTime", time))
+			{
+				if (time - now > 90.0f)
+				{
+					return true; // skip flags with long return time
+				}
+			}
+		}
+
 		if (stolenOnly && !flag.IsStolen())
+		{
+			return true; // keep loop
+		}
+
+		if (ignoreHome && flag.IsHome())
 		{
 			return true; // keep loop
 		}
@@ -507,8 +501,6 @@ bool CTF2Bot::IsInsideSpawnRoom() const
 	return result > 0;
 }
 
-
-
 CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 {
 	m_me = bot;
@@ -541,6 +533,10 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	if (link != nullptr)
 	{
 		dist = link->GetConnectionLength();
+	}
+	else if (ladder != nullptr) // experimental, very few maps have 'true' ladders
+	{
+		dist = ladder->m_length;
 	}
 	else if (elevator != nullptr)
 	{
@@ -631,44 +627,4 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	float cost = dist + fromArea->GetCostSoFar();
 
 	return cost;
-}
-
-CTFWaypoint* CTF2Bot::GetMySentryGunWaypoint() const
-{
-	return m_sgWaypoint;
-}
-
-CTFWaypoint* CTF2Bot::GetMyDispenserWaypoint() const
-{
-	return m_dispWaypoint;
-}
-
-CTFWaypoint* CTF2Bot::GetMyTeleporterEntranceWaypoint() const
-{
-	return m_tpentWaypoint;
-}
-
-CTFWaypoint* CTF2Bot::GetMyTeleporterExitWaypoint() const
-{
-	return m_tpextWaypoint;
-}
-
-void CTF2Bot::SetMySentryGunWaypoint(CTFWaypoint* wpt)
-{
-	m_sgWaypoint = wpt;
-}
-
-void CTF2Bot::SetMyDispenserWaypoint(CTFWaypoint* wpt)
-{
-	m_dispWaypoint = wpt;
-}
-
-void CTF2Bot::SetMyTeleporterEntranceWaypoint(CTFWaypoint* wpt)
-{
-	m_tpentWaypoint = wpt;
-}
-
-void CTF2Bot::SetMyTeleporterExitWaypoint(CTFWaypoint* wpt)
-{
-	m_tpextWaypoint = wpt;
 }

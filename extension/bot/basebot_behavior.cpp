@@ -28,14 +28,21 @@ public:
 class CBaseBotPathTestTask : public AITask<CBaseBot>
 {
 public:
+	CBaseBotPathTestTask()
+	{
+		m_failcount = 0;
+	}
+
 	TaskResult<CBaseBot> OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
 	TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
+	TaskEventResponseResult<CBaseBot> OnMoveToFailure(CBaseBot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	const char* GetName() const override { return "CBaseBotPathTestTask"; }
 
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
+	int m_failcount;
 };
 
 class CBaseBotSwitchTestTask : public AITask<CBaseBot>
@@ -74,7 +81,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBa
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1); // get listen server host
 	CBaseExtPlayer player(host);
-	ShortestPathCost cost;
+	BaseBotPathCost cost{ bot };
 
 	m_goal = player.GetAbsOrigin();
 	m_nav.SetSkipAheadDistance(350.0f);
@@ -99,7 +106,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 
 	if (m_nav.GetAge() > 1.0f)
 	{
-		ShortestPathCost cost;
+		BaseBotPathCost cost{ bot };
 		bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
 
 		if (result == false)
@@ -115,6 +122,16 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnMoveToSuccess(CBaseBot* bot, CPath* path)
 {
 	return TryDone(PRIORITY_HIGH, "Returning to previous task!");
+}
+
+TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnMoveToFailure(CBaseBot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	if (++m_failcount > 20)
+	{
+		return TryDone(PRIORITY_HIGH, "Too many pathing failures, giving up!");
+	}
+
+	return TryContinue(PRIORITY_DONT_CARE);
 }
 
 TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)
