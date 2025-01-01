@@ -7,6 +7,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
+#include <bot/tf2/tasks/tf2bot_attack.h>
 #include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_revive_task.h"
 #include "tf2bot_medic_heal_task.h"
@@ -33,13 +34,23 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	UpdateHealTarget(bot);
 
 	CBaseEntity* patient = m_healTarget.Get();
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	if (patient == nullptr)
 	{
+		if (threat)
+		{
+			return PauseFor(new CTF2BotAttackTask(threat->GetEntity()), "Nobody to heal. Attacking visible threat!");
+		}
+
 		return Continue();
 	}
 
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	// patient is dead and an enemy is visible, retreat!
+	if (!UtilHelpers::IsEntityAlive(patient) && threat && threat->IsVisibleNow())
+	{
+		return PauseFor(new CTF2BotMedicRetreatTask(), "Patient died, retreating from enemy!");
+	}
 
 	UpdateMovePosition(bot, threat.get());
 	EquipMedigun(bot);
@@ -54,6 +65,30 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	else
 	{
 		bot->GetControlInterface()->ReleaseAllAttackButtons();
+	}
+
+	if (GetUbercharge(bot) > 0.9999f)
+	{
+		int visiblethreats = 0;
+
+		bot->GetSensorInterface()->ForEveryKnownEntity([&visiblethreats](const CKnownEntity* known) {
+			if (known->IsVisibleNow())
+			{
+				visiblethreats++;
+			}
+		});
+
+		int min_threats = 3; // always deploy if there are 3 enemies visible
+
+		if (bot->GetHealthPercentage() < 0.7f || tf2lib::GetPlayerHealthPercentage(m_healTarget.GetEntryIndex()) < 0.7f)
+		{
+			min_threats = 1; // if me or my patient is getting low on health, deploy even with 1 enemy
+		}
+
+		if (visiblethreats >= min_threats)
+		{
+			bot->GetControlInterface()->PressSecondaryAttackButton();
+		}
 	}
 
 	return Continue();
@@ -74,6 +109,50 @@ QueryAnswerType CTF2BotMedicHealTask::ShouldSwitchToWeapon(CBaseBot* me, const C
 	}
 
 	return ANSWER_NO;
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)
+{
+	if (subject == nullptr || tf2lib::GetEntityTFTeam(subject) != bot->GetMyTFTeam())
+	{
+		return TryContinue();
+	}
+
+	TeamFortress2::VoiceCommandsID vcmd = static_cast<TeamFortress2::VoiceCommandsID>(command);
+
+	if (bot->GetBehaviorInterface()->ShouldAssistTeammate(bot, subject) == ANSWER_NO)
+	{
+		return TryContinue();
+	}
+
+	if (vcmd == TeamFortress2::VoiceCommandsID::VC_DEPLOYUBER)
+	{
+		if (m_healTarget.Get() == subject && GetUbercharge(bot) > 0.9999f)
+		{
+			auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+			if (threat) // only accept the deploy uber command if I can see at least one enemy
+			{
+				bot->GetControlInterface()->PressSecondaryAttackButton();
+			}
+		}
+	}
+	else if (vcmd == TeamFortress2::VoiceCommandsID::VC_HELP || vcmd == TeamFortress2::VoiceCommandsID::VC_MEDIC)
+	{
+		float maxrange = std::clamp<float>(bot->GetSensorInterface()->GetMaxHearingRange(), 512.0f, 1024.0f);
+
+		if (m_healTarget.Get() != subject && bot->GetRangeTo(subject) <= maxrange)
+		{
+			if (m_respondToCallsTimer.IsElapsed())
+			{
+				m_respondToCallsTimer.StartRandom(2.0f, 4.0f);
+				m_patientScanTimer.Reset();
+				m_healTarget = subject;
+			}
+		}
+	}
+
+	return TryContinue();
 }
 
 void CTF2BotMedicHealTask::UpdateFollowTarget(CTF2Bot* bot)
@@ -143,7 +222,7 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 		int entindex = gamehelpers->EntityToBCompatRef(heal);
 
 		if (UtilHelpers::IsEntityAlive(entindex) && (tf2lib::GetPlayerHealthPercentage(entindex) < 0.99f || 
-			tf2lib::IsPlayerInCondition(entindex, TeamFortress2::TFCond_Ubercharged)))
+			tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_Ubercharged)))
 		{
 			// Don't change heal targets until at max health or if uber is active
 			return;

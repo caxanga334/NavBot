@@ -1,3 +1,4 @@
+#include <extension.h>
 #include "behavior.h"
 
 IBehavior::IBehavior(CBaseBot* bot) : IBotInterface(bot)
@@ -75,7 +76,7 @@ QueryAnswerType IBehavior::IsReady(CBaseBot* me)
 	return GetDecisionQueryResponder()->IsReady(me);
 }
 
-QueryAnswerType IBehavior::ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate)
+QueryAnswerType IBehavior::ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate)
 {
 	return GetDecisionQueryResponder()->ShouldAssistTeammate(me, teammate);
 }

@@ -34,7 +34,7 @@ public:
 	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override;
 	QueryAnswerType IsReady(CBaseBot* me) override;
-	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate) override;
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
 
 private:

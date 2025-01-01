@@ -19,6 +19,7 @@
 #include <bot/tf2/tasks/spy/tf2bot_task_spy_infiltrate.h>
 #include <bot/tf2/tasks/scenario/deathmatch/tf2bot_deathmatch.h>
 #include "scenario/controlpoints/tf2bot_controlpoints_monitor.h"
+#include "scenario/payload/tf2bot_task_defend_payload.h"
 #include "scenario/payload/tf2bot_task_push_payload.h"
 #include "scenario/mvm/tf2bot_mvm_idle.h"
 
@@ -104,6 +105,8 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipC
 {
 	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
 	auto gm = tf2mod->GetCurrentGameMode();
+	bool defend = (randomgen->GetRandomInt<int>(1, 100) < tf2mod->GetModSettings()->GetDefendRate());
+
 
 	if (gm == TeamFortress2::GameModeType::GM_MVM)
 	{
@@ -125,11 +128,40 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipC
 	case TeamFortress2::GameModeType::GM_CTF:
 		return new CTF2BotCTFMonitorTask;
 	case TeamFortress2::GameModeType::GM_PL:
-		return new CTF2BotPushPayloadTask;
+	{
+		if (tf2mod->GetTeamRole(me->GetMyTFTeam()) == TeamFortress2::TEAM_ROLE_DEFENDERS)
+		{
+			return new CTF2BotDefendPayloadTask;
+		}
+		else
+		{
+			return new CTF2BotPushPayloadTask;
+		}
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_PL_RACE:
+	{
+		if (defend)
+		{
+			return new CTF2BotDefendPayloadTask;
+		}
+		else
+		{
+			return new CTF2BotPushPayloadTask;
+		}
+
+		break;
+	}
 	case TeamFortress2::GameModeType::GM_CP:
+		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_ADCP:
+		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_ARENA: // arena may need it's own task
+		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_TC: // same for TC
+		[[fallthrough]];
+	case TeamFortress2::GameModeType::GM_KOTH:
 		return new CTF2BotControlPointMonitorTask;
 	case TeamFortress2::GameModeType::GM_MVM:
 		return new CTF2BotMvMIdleTask;

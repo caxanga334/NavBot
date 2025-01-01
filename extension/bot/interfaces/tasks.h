@@ -390,7 +390,7 @@ public:
 		PROPAGATE_DECISION_WITH_1ARG(IsReady, me);
 	}
 
-	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate) override
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldAssistTeammate, me, teammate);
 	}

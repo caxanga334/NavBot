@@ -19,12 +19,17 @@ CTF2ClassSelection::~CTF2ClassSelection()
 void CTF2ClassSelection::LoadClassSelectionData()
 {
 	char filepath[PLATFORM_MAX_PATH];
-	smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/tf/class_selection.cfg");
+	smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/tf/class_selection.custom.cfg");
 
 	if (!std::filesystem::exists(filepath))
 	{
-		smutils->LogError(myself, "Failed to load Class Selection config file! File \"%s\" does not exists!", filepath);
-		return;
+		smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/tf/class_selection.cfg");
+
+		if (!std::filesystem::exists(filepath))
+		{
+			smutils->LogError(myself, "Failed to load Class Selection config file! File \"%s\" does not exists!", filepath);
+			return;
+		}
 	}
 
 	m_parserdata.BeginParse();

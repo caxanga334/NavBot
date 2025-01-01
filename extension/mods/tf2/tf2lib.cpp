@@ -269,8 +269,20 @@ int tf2lib::GetWeaponItemDefinitionIndex(edict_t* weapon)
 TeamFortress2::TFTeam tf2lib::GetEntityTFTeam(int entity)
 {
 	int team = 0;
-	entprops->GetEntProp(entity, Prop_Send, "m_iTeamNum", team);
+	entprops->GetEntProp(entity, Prop_Data, "m_iTeamNum", team);
 	return static_cast<TeamFortress2::TFTeam>(team);
+}
+
+TeamFortress2::TFTeam tf2lib::GetEntityTFTeam(CBaseEntity* entity)
+{
+	int* teamNum = entprops->GetPointerToEntData<int>(entity, Prop_Data, "m_iTeamNum");
+
+	if (teamNum)
+	{
+		return static_cast<TeamFortress2::TFTeam>(*teamNum);
+	}
+
+	return TeamFortress2::TFTeam::TFTeam_Unassigned;
 }
 
 int tf2lib::GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team, const bool ignore_bots)

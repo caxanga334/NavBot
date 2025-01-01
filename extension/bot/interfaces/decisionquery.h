@@ -59,7 +59,7 @@ public:
 	// If a game mode has a toggle ready feature, this asks if the bot is ready
 	virtual QueryAnswerType IsReady(CBaseBot* me);
 	// Should the bot help a specific teammate?
-	virtual QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate);
+	virtual QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate);
 	// Should the bot switch to this weapon?
 	virtual QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon);
 private:
@@ -121,7 +121,7 @@ inline QueryAnswerType IDecisionQuery::IsReady(CBaseBot* me)
 	return ANSWER_UNDEFINED;
 }
 
-inline QueryAnswerType IDecisionQuery::ShouldAssistTeammate(CBaseBot* me, CBaseExtPlayer& teammate)
+inline QueryAnswerType IDecisionQuery::ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate)
 {
 	return ANSWER_UNDEFINED;
 }

@@ -19,9 +19,6 @@ public:
 
 	TaskEventResponseResult<CTF2Bot> OnFlagTaken(CTF2Bot* bot, CBaseEntity* player) override;
 
-	// medics never attack
-	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
-
 	const char* GetName() const override { return "MedicMain"; }
 
 private:

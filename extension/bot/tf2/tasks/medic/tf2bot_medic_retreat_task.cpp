@@ -5,6 +5,7 @@
 #include <util/librandom.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/tf2lib.h>
+#include <bot/tf2/tasks/tf2bot_roam.h>
 #include "tf2bot_medic_retreat_task.h"
 
 #undef max
@@ -14,6 +15,7 @@
 TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	m_goal = GetRetreatPosition(bot);
+	m_atHomeTimer.Invalidate();
 
 	CTF2BotPathCost cost(bot);
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost, 0.0f, true))
@@ -40,7 +42,16 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		return Done("Home reached!");
+		if (!m_atHomeTimer.HasStarted())
+		{
+			m_atHomeTimer.StartRandom(5.0f, 20.0f);
+		}
+
+		if (m_atHomeTimer.IsElapsed())
+		{
+			m_atHomeTimer.Invalidate();
+			return PauseFor(new CTF2BotRoamTask(), "No patient nearby, roaming the map!");
+		}
 	}
 
 	bool visibleteammate = false;
@@ -61,6 +72,27 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotMedicRetreatTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)
+{
+	if (subject == nullptr || tf2lib::GetEntityTFTeam(subject) != bot->GetMyTFTeam())
+	{
+		return TryContinue();
+	}
+
+	if (bot->GetRangeTo(subject) <= 900.0f)
+	{
+		bot->GetControlInterface()->AimAt(UtilHelpers::getEntityOrigin(subject), IPlayerController::LOOK_ALERT, 1.0f, "Looking at potential teammate location.");
+		auto known = bot->GetSensorInterface()->AddKnownEntity(subject);
+
+		if (known)
+		{
+			known->UpdateHeard();
+		}
+	}
+
+	return TryContinue();
 }
 
 // Retreat to the nearest alive teammate or to my spawn point if none is found

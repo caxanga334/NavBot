@@ -14,7 +14,11 @@ public:
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 
+	// don't attack enemies if I healing my team
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
+
+	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 
 	const char* GetName() const override { return "MedicHeal"; }
 private:
@@ -22,6 +26,7 @@ private:
 	CHandle<CBaseEntity> m_followTarget; // Player I want to follow
 	CHandle<CBaseEntity> m_healTarget; // Player I am healing
 	CountdownTimer m_patientScanTimer; // Time to scan for people to heal
+	CountdownTimer m_respondToCallsTimer;
 	Vector m_moveGoal;
 
 	void UpdateFollowTarget(CTF2Bot* bot);
