@@ -9,7 +9,6 @@
 #include <mods/tf2/teamfortress2_shareddefs.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/path/basepath.h>
-#include <sdkports/sdk_ehandle.h>
 
 #include "tf2bot_behavior.h"
 #include "tf2bot_controller.h"

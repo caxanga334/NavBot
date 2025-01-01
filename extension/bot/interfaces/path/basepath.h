@@ -16,7 +16,9 @@
 
 class CNavArea;
 class CNavLadder;
+class CNavElevator;
 class CFuncElevator;
+class NavOffMeshConnection;
 
 namespace AIPath
 {

@@ -18,13 +18,10 @@
 #include <bot/interfaces/weapon.h>
 #include <bot/interfaces/inventory.h>
 #include <bot/interfaces/squads.h>
-#include <bot/interfaces/path/basepath.h>
 #include <sdkports/sdk_timers.h>
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
-
-// TO-DO: Add a convar to control update interval
 
 class IBotController;
 class IBotInterface;
@@ -240,24 +237,6 @@ private:
 	CountdownTimer m_randomChatMessageTimer;
 
 	void ExecuteQueuedCommands();
-};
-
-class BaseBotPathCost : public IPathCost
-{
-public:
-	BaseBotPathCost(CBaseBot* bot);
-
-	// For NavAreaBuildPath
-	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
-
-private:
-	CBaseBot* m_bot;
-	float m_stepheight;
-	float m_maxjumpheight;
-	float m_maxdropheight;
-	float m_maxdjheight; // max double jump height
-	float m_maxgapjumpdistance;
-	bool m_candoublejump;
 };
 
 #endif // !EXT_BASE_BOT_H_

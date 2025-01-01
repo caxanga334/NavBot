@@ -1004,7 +1004,7 @@ CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	return servertools->FindEntityByHammerID(iHammerID);
 #else
-	CBaseEntity* entity = servertools->FirstEntity();
+	CBaseEntity* entity = static_cast<CBaseEntity*>(servertools->FirstEntity());
 
 	while (entity != nullptr)
 	{
@@ -1015,7 +1015,7 @@ CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)
 			return entity;
 		}
 
-		entity = servertools->NextEntity(entity);
+		entity = static_cast<CBaseEntity*>(servertools->NextEntity(static_cast<void*>(entity)));
 	}
 
 	return nullptr;

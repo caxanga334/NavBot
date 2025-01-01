@@ -1640,7 +1640,7 @@ inline NavAStarNode* INavAStarSearch<T>::GetNodeForArea(T* area)
 
 	if (it == nodes.end())
 	{
-		auto& node = nodes.emplace(id, area);
+		auto node = nodes.emplace(id, area);
 
 		if (node.second)
 		{

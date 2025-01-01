@@ -7,14 +7,12 @@
 #include <sdkports/eventlistenerhelper.h>
 #include <bot/interfaces/weaponinfo.h>
 #include <bot/interfaces/profile.h>
-
-class CBaseExtPlayer;
-class CBaseBot;
-class CNavMesh;
-
 #include <IPlayerHelpers.h>
 #include "gamemods_shared.h"
 #include "modsettings.h"
+
+class CNavMesh;
+class CBaseBot;
 
 // Base game mod class
 class CBaseMod : public CEventListenerHelper, public ITextListener_SMC

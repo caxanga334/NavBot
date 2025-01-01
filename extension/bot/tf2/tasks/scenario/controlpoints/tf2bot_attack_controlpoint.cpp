@@ -3,7 +3,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
-#include "bot/tf2/tf2bot.h"
+#include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_attack.h>
 #include "tf2bot_attack_controlpoint.h"
 

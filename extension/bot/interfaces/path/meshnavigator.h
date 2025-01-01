@@ -2,7 +2,6 @@
 #define SMNAV_BOT_NAV_MESH_NAVIGATOR_H_
 #pragma once
 
-#include <bot/basebot.h>
 #include "basepath.h"
 
 // Nav Mesh navigator
