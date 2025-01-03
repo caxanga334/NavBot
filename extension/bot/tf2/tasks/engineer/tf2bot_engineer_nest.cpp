@@ -560,6 +560,10 @@ Vector CTF2BotEngineerNestTask::GetSentryNestBuildPos(CTF2Bot* me)
 
 	switch (gm)
 	{
+	case TeamFortress2::GameModeType::GM_TC:
+		[[fallthrough]];
+	case TeamFortress2::GameModeType::GM_KOTH:
+		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_CP:
 		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_ADCP:

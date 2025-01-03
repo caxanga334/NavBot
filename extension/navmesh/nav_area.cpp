@@ -1820,7 +1820,7 @@ void CNavArea::InheritAttributes( CNavArea *first, CNavArea *second )
 		else
 		{
 			// both have valid, but different places - pick on at random
-			if (librandom::random_chance(50))
+			if (randomgen->GetRandomInt<int>(0, 1) == 1)
 				SetPlace( first->GetPlace() );
 			else
 				SetPlace( second->GetPlace() );
@@ -2242,7 +2242,7 @@ float CNavArea::GetDistanceSquaredToPoint( const Vector &pos ) const
 CNavArea *CNavArea::GetRandomAdjacentArea( NavDirType dir ) const
 {
 	int count = m_connect[ dir ].Count();
-	int which = librandom::generate_random_int(0, count-1);
+	int which = randomgen->GetRandomInt<int>(0, count - 1);
 
 	int i = 0;
 	FOR_EACH_VEC( m_connect[ dir ], it )

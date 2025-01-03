@@ -92,11 +92,18 @@ public:
 		}
 	}
 
-	inline void DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam = false)
+	void DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam = false);
+
+	inline void DisguiseAs(TeamFortress2::TFClassType classtype, TeamFortress2::TFTeam team)
 	{
-		std::unique_ptr<char[]> buffer = std::make_unique<char[]>(128);
-		ke::SafeSprintf(buffer.get(), 128, "disguise %i %i", static_cast<int>(classtype), myTeam ? -2 : -1);
-		DelayedFakeClientCommand(buffer.get());
+		if (team == TeamFortress2::TFTeam_Red)
+		{
+			SetImpulseCommand(220 + static_cast<int>(classtype));
+		}
+		else
+		{
+			SetImpulseCommand(230 + static_cast<int>(classtype));
+		}
 	}
 
 	/**

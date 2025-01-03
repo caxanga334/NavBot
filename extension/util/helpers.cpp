@@ -104,6 +104,11 @@ int UtilHelpers::IndexOfEntity(CBaseEntity* entity)
 	return gamehelpers->EntityToBCompatRef(entity);
 }
 
+bool UtilHelpers::IsPlayer(CBaseEntity* entity)
+{
+	return IsPlayerIndex(IndexOfEntity(entity));
+}
+
 bool UtilHelpers::IsEntNetworkable(int index)
 {
 	CBaseEntity* entity = gamehelpers->ReferenceToEntity(index);

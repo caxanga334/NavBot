@@ -16,7 +16,7 @@
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
 #include <bot/tf2/tasks/sniper/tf2bot_task_sniper_move_to_sniper_spot.h>
-#include <bot/tf2/tasks/spy/tf2bot_task_spy_infiltrate.h>
+#include <bot/tf2/tasks/spy/tf2bot_spy_tasks.h>
 #include <bot/tf2/tasks/scenario/deathmatch/tf2bot_deathmatch.h>
 #include "scenario/controlpoints/tf2bot_controlpoints_monitor.h"
 #include "scenario/payload/tf2bot_task_defend_payload.h"
@@ -36,8 +36,8 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	m_ammochecktimer.Start(librandom::generate_random_float(5.0f, 10.0f));
-	m_healthchecktimer.Start(librandom::generate_random_float(1.0f, 4.0f));
+	m_ammochecktimer.Start(5.0f);
+	m_healthchecktimer.Start(5.0f);
 
 	return Continue();
 }
@@ -49,7 +49,7 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (m_healthchecktimer.IsElapsed())
 		{
-			m_healthchecktimer.Start(librandom::generate_random_float(1.0f, 4.0f));
+			m_healthchecktimer.StartRandom(1.0f, 5.0f);
 
 			if (bot->GetHealthPercentage() <= sm_navbot_tf_ai_low_health_percent.GetFloat())
 			{
@@ -59,7 +59,7 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (m_ammochecktimer.IsElapsed())
 		{
-			m_ammochecktimer.Start(librandom::generate_random_float(5.0f, 10.0f));
+			m_ammochecktimer.StartRandom(1.0f, 5.0f);
 
 			if (bot->IsAmmoLow())
 			{
@@ -183,7 +183,7 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectClassTask(CTF2Bot* me)
 	case TeamFortress2::TFClass_Medic:
 		return new CTF2BotMedicMainTask;
 	case TeamFortress2::TFClass_Spy:
-		break; // TODO
+		return new CTF2BotSpyInfiltrateTask;
 	case TeamFortress2::TFClass_Engineer:
 		return new CTF2BotEngineerMainTask;
 	default:

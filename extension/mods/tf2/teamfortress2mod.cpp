@@ -1048,6 +1048,7 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 
 void CTeamFortress2Mod::OnRoundStart()
 {
+	randomgen->RandomReSeed(); // change seed on round start
 	UpdateObjectiveResource(); // call this first
 	FindControlPoints(); // this must be before findpayloadcarts
 	FindPayloadCarts();

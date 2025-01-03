@@ -351,6 +351,11 @@ bool ISensor::IsKnown(edict_t* entity)
 
 std::shared_ptr<const CKnownEntity> ISensor::GetKnown(CBaseEntity* entity)
 {
+	if (entity == nullptr)
+	{
+		return nullptr;
+	}
+
 	CKnownEntity other(entity);
 
 	for (auto& ptr : m_knownlist)
@@ -373,6 +378,11 @@ std::shared_ptr<const CKnownEntity> ISensor::GetKnown(CBaseEntity* entity)
 */
 std::shared_ptr<const CKnownEntity> ISensor::GetKnown(edict_t* entity)
 {
+	if (entity == nullptr)
+	{
+		return nullptr;
+	}
+
 	CKnownEntity other(entity);
 
 	for (auto& ptr : m_knownlist)

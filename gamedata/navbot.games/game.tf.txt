@@ -40,27 +40,6 @@
 				"linux"		"30"
 				"linux64"	"30"
 			}
-			"CBaseEntity_EyePosition"
-			{
-				"windows"	"136"
-				"windows64" "136"
-				"linux"		"137"
-				"linux64"	"137"
-			}
-			"CBaseEntity_EyeAngles"
-			{
-				"windows"	"137"
-				"windows64" "137"
-				"linux"		"138"
-				"linux64"	"138"
-			}
-			"CBaseEntity_IsPlayer"
-			{
-				"windows"	"82"
-				"windows64" "82"
-				"linux"		"83"
-				"linux64"	"83"
-			}
 
 			/* offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos */
 			"CCaptureFlag::m_vecResetPos"

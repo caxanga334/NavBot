@@ -1804,4 +1804,281 @@ inline void INavAStarSearch<T>::BuildPath(NavAStarNode* endnode)
 	}
 }
 
+template <typename T = CNavArea>
+class INavFloodFill
+{
+public:
+	INavFloodFill()
+	{
+		m_startArea = nullptr;
+		m_travelLimit = -1.0f;
+		m_searchedAreas.reserve(4096);
+		m_travelCost.reserve(4096);
+		m_parents.reserve(4096);
+		m_searchLadders = true;
+		m_searchOffmeshLinks = true;
+		m_searchElevators = true;
+	}
+
+	INavFloodFill(T* start)
+	{
+		m_startArea = start;
+		m_travelLimit = -1.0f;
+		m_searchedAreas.reserve(4096);
+		m_travelCost.reserve(4096);
+		m_parents.reserve(4096);
+		m_searchLadders = true;
+		m_searchOffmeshLinks = true;
+		m_searchElevators = true;
+	}
+
+	INavFloodFill(T* start, float travelLimit)
+	{
+		m_startArea = start;
+		m_travelLimit = travelLimit;
+		m_searchedAreas.reserve(4096);
+		m_travelCost.reserve(4096);
+		m_parents.reserve(4096);
+		m_searchLadders = true;
+		m_searchOffmeshLinks = true;
+		m_searchElevators = true;
+	}
+
+	INavFloodFill(T* start, float travelLimit, bool searchLadders, bool searchOffMeshLinks, bool searchElevators)
+	{
+		m_startArea = start;
+		m_travelLimit = travelLimit;
+		m_searchedAreas.reserve(4096);
+		m_travelCost.reserve(4096);
+		m_parents.reserve(4096);
+		m_searchLadders = searchLadders;
+		m_searchOffmeshLinks = searchOffMeshLinks;
+		m_searchElevators = searchElevators;
+	}
+
+	virtual ~INavFloodFill() {}
+
+	// Reset for a new search
+	void Reset()
+	{
+		m_searchedAreas.clear();
+		m_travelCost.clear();
+		m_parents.clear();
+
+		while (!m_searchAreas.empty())
+		{
+			m_searchAreas.pop();
+		}
+	}
+
+	void SetStartArea(T* area) { m_startArea = area; }
+	void SetTravelLimit(float limit) { m_travelLimit = limit; }
+	void SetSearchLadders(bool search) { m_searchLadders = search; }
+	void SetSearchOffmeshLinks(bool search) { m_searchOffmeshLinks = search; }
+	void SetSearchElevators(bool search) { m_searchElevators = search; }
+
+	void Execute();
+
+	/**
+	 * @brief Called to each area in the flood fill.
+	 * @param area Current area.
+	 * @param parent Parent to area. NULL if it's the first area.
+	 * @param parentCost Travel cost of the parent area.
+	 */
+	virtual void operator()(T* area, T* parent, const float parentCost) {}
+
+	/**
+	 * @brief Called to calculate the travel cost between from and to areas.
+	 * @param toArea Destination area.
+	 * @param fromArea Parent area.
+	 * @param fromCost Cost of parent area.
+	 * @param link Off-Mesh link if any.
+	 * @param ladder Ladder if any.
+	 * @param elevator Elevator if any.
+	 * @return cost to go from parent area to destination area.
+	 */
+	virtual float operator()(T* toArea, T* fromArea, const float fromCost, const NavOffMeshConnection* link, const CNavLadder* ladder, const CNavElevator* elevator);
+
+private:
+	T* m_startArea; // flood start area
+	float m_travelLimit;
+	std::unordered_set<unsigned int> m_searchedAreas;
+	std::unordered_map<unsigned int, float> m_travelCost;
+	std::unordered_map<unsigned int, T*> m_parents;
+	std::queue<T*> m_searchAreas;
+	bool m_searchLadders;
+	bool m_searchOffmeshLinks;
+	bool m_searchElevators;
+
+	bool AlreadySearched(T* area)
+	{
+		return m_searchedAreas.find(area->GetID()) != m_searchedAreas.end();
+	}
+
+	T* GetParentForArea(T* area)
+	{
+		return m_parents[area->GetID()];
+	}
+
+	void OnAreaBeingSearched(T* area, T* parent, const float parentCost, const NavOffMeshConnection* offmeshlink = nullptr, const CNavLadder* ladder = nullptr, const CNavElevator* elevator = nullptr);
+};
+
+template<typename T>
+inline void INavFloodFill<T>::Execute()
+{
+	if (m_startArea == nullptr)
+	{
+		return;
+	}
+
+	m_searchAreas.push(m_startArea);
+	m_searchedAreas.insert(m_startArea->GetID());
+	m_travelCost[m_startArea->GetID()] = this->operator()(m_startArea, nullptr, 0.0f, nullptr, nullptr, nullptr);
+	m_parents[m_startArea->GetID()] = nullptr;
+
+
+	while (!m_searchAreas.empty())
+	{
+		T* nextArea = m_searchAreas.front();
+		unsigned int nextID = nextArea->GetID();
+		m_searchAreas.pop();
+		T* parentArea = GetParentForArea(nextArea);
+		float currentCost = m_travelCost[nextArea->GetID()];
+
+		if (m_travelLimit > 0.0f && currentCost > m_travelLimit)
+		{
+			continue; // do not search this area, over travel cost limit
+		}
+
+		if (parentArea == nullptr)
+		{
+			this->operator()(nextArea, nullptr, 0.0f);
+		}
+		else
+		{
+			float cost = m_travelCost[parentArea->GetID()];
+			this->operator()(nextArea, parentArea, cost);
+		}
+
+		// search normal connections
+		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			auto vec = nextArea->GetAdjacentAreas(static_cast<NavDirType>(dir));
+
+			for (int i = 0; i < vec->Count(); i++)
+			{
+				T* other = static_cast<T*>(vec->Element(i).area);
+
+				if (!AlreadySearched(other))
+				{
+					OnAreaBeingSearched(other, nextArea, currentCost);
+				}
+			}
+		}
+
+		if (m_searchLadders)
+		{
+			// search ladders
+			for (int dir = 0; dir < static_cast<int>(CNavLadder::NUM_LADDER_DIRECTIONS); dir++)
+			{
+				auto vec = nextArea->GetLadders(static_cast<CNavLadder::LadderDirectionType>(dir));
+
+				for (int i = 0; i < vec->Count(); i++)
+				{
+					CNavLadder* ladder = vec->Element(i).ladder;
+					auto& conns = ladder->GetConnections();
+
+					for (auto& connect : conns)
+					{
+						T* other = static_cast<T*>(connect.GetConnectedArea());
+
+						if (other != nextArea && !AlreadySearched(other))
+						{
+							OnAreaBeingSearched(other, nextArea, currentCost, nullptr, ladder, nullptr);
+						}
+					}
+				}
+			}
+		}
+
+		if (m_searchOffmeshLinks)
+		{
+			// search offmesh links
+			auto& offmeshlinks = nextArea->GetOffMeshConnections();
+
+			for (auto& link : offmeshlinks)
+			{
+				T* other = static_cast<T*>(link.m_link.area);
+
+				if (!AlreadySearched(other))
+				{
+					OnAreaBeingSearched(other, nextArea, currentCost, &link, nullptr, nullptr);
+				}
+			}
+		}
+
+		if (m_searchElevators)
+		{
+			const CNavElevator* elevator = nextArea->GetElevator();
+
+			// search elevators
+			if (elevator != nullptr)
+			{
+				auto& floors = elevator->GetFloors();
+
+				for (auto& floor : floors)
+				{
+					T* other = static_cast<T*>(floor.GetArea());
+
+					if (other != nextArea && !AlreadySearched(other))
+					{
+						OnAreaBeingSearched(other, nextArea, currentCost, nullptr, nullptr, elevator);
+					}
+				}
+			}
+		}
+	}
+}
+
+template<typename T>
+inline float INavFloodFill<T>::operator()(T* toArea, T* fromArea, const float fromCost, const NavOffMeshConnection* link, const CNavLadder* ladder, const CNavElevator* elevator)
+{
+	if (fromArea == nullptr)
+	{
+		return 0.0f;
+	}
+	else
+	{
+		float dist = 0.0f;
+
+		if (link != nullptr)
+		{
+			dist = link->GetConnectionLength();
+		}
+		else if (ladder != nullptr)
+		{
+			dist = ladder->m_length;
+		}
+		else if (elevator != nullptr)
+		{
+			dist = elevator->GetLengthBetweenFloors(static_cast<CNavArea*>(fromArea), static_cast<CNavArea*>(toArea));
+		}
+		else
+		{
+			dist = (fromArea->GetCenter() - toArea->GetCenter()).Length();
+		}
+
+		return fromCost + dist;
+	}
+}
+
+template<typename T>
+inline void INavFloodFill<T>::OnAreaBeingSearched(T* area, T* parent, const float parentCost, const NavOffMeshConnection* offmeshlink, const CNavLadder* ladder, const CNavElevator* elevator)
+{
+	m_searchedAreas.insert(area->GetID());
+	m_travelCost[area->GetID()] = this->operator()(area, parent, parentCost, offmeshlink, ladder, elevator);
+	m_parents[area->GetID()] = parent;
+	m_searchAreas.push(area);
+}
+
 #endif // _NAV_PATHFIND_H_

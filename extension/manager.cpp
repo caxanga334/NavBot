@@ -301,7 +301,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		if (m_botnames.empty())
 		{
 			char botname[30]{};
-			std::sprintf(botname, "NavBot #%04d", librandom::generate_random_int(0, 9999));
+			std::sprintf(botname, "NavBot #%04d", randomgen->GetRandomInt<int>(0, 9999));
 			name = botname;
 		}
 		else

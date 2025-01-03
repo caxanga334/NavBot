@@ -8,13 +8,8 @@
 
 namespace librandom
 {
+	// for some static variables from the nav mesh, for everything else use the classes below
 	int generate_random_int(int min, int max);
-	unsigned int generate_random_uint(unsigned int min, unsigned int max);
-	// 50% chance for true
-	bool generate_random_bool();
-	float generate_random_float(float min, float max);
-	double generate_random_double(double min, double max);
-	bool random_chance(int chance = 50);
 
 	template <typename E, typename S = unsigned int>
 	class RandomNumberGenerator
@@ -67,7 +62,8 @@ namespace librandom
 	template<typename E, typename S>
 	inline void RandomNumberGenerator<E, S>::RandomReSeed()
 	{
-		S seed = engine();
+		std::random_device seedgenerator;
+		S seed = static_cast<S>(seedgenerator());
 		engine.seed(seed);
 	}
 

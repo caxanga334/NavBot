@@ -44,7 +44,7 @@ bool SnipingAreaCollector::ShouldCollect(CTFNavArea* area)
 	area->ForEachConnectedArea([this, &isEdgeArea](CNavArea* connectedArea) {
 		if (isEdgeArea)
 		{
-			return; // skip trace if edge id found
+			return; // skip trace if edge is found
 		}
 
 		trace::line(m_origin, connectedArea->GetCenter() + m_offset, MASK_SHOT, &m_filter, m_tr);

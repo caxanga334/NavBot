@@ -296,15 +296,6 @@ CON_COMMAND(sm_navbot_debug_botpath, "Debug bot path")
 	rootconsole->ConsolePrint("Showing path from bot position to your position.");
 }
 
-CON_COMMAND(sm_navbot_debug_rng, "Debug random number generator")
-{
-	for (int i = 0; i < 15; i++)
-	{
-		int n = librandom::generate_random_int(0, 100);
-		rootconsole->ConsolePrint("Random Number: %i", n);
-	}
-}
-
 CON_COMMAND_F(free_nullptr_crash_for_everyone, "Crashes your game LMAO", FCVAR_CHEAT)
 {
 	auto edict = gamehelpers->EdictOfIndex(2040);
@@ -478,16 +469,6 @@ CON_COMMAND_F(sm_navbot_debug_sdkcalls, "Debug new SDKCalls functions.", FCVAR_C
 	{
 		player.SelectWeapon(newWeapon);
 	}
-
-	Vector eyepos = sdkcalls->CBaseEntity_EyePosition(baseent);
-	Vector eyepos2 = player.GetEyeOrigin();
-
-	Msg("Eye Position: \n    SDK Call: %3.2f %3.2f %3.2f\n    IPlayerInfo: %3.2f, %3.2f, %3.2f\n", eyepos.x, eyepos.y, eyepos.z, eyepos2.x, eyepos2.y, eyepos2.z);
-
-	QAngle angles1 = sdkcalls->CBaseEntity_EyeAngles(baseent);
-	QAngle angles2 = player.GetEyeAngles();
-
-	Msg("Eye Angles:\n    SDK Call: %3.2f %3.2f %3.2f\n    CUserCMD: %3.2f %3.2f %3.2f\n", angles1.x, angles1.y, angles1.z, angles2.x, angles2.y, angles2.z);
 }
 
 CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs NavMeshCollector", FCVAR_CHEAT)

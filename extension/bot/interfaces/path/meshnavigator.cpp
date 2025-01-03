@@ -976,7 +976,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	if (blocker != nullptr)
 	{
 		// wait for some time
-		m_waitTimer.Start(avoidInterval * librandom::generate_random_float(1.0f, 2.0f));
+		m_waitTimer.Start(avoidInterval * randomgen->GetRandomReal<float>(1.0f, 2.0f));
 		gamehelpers->SetHandleEntity(m_blocker, blocker);
 
 		return bot->GetAbsOrigin();

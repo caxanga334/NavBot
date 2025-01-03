@@ -202,12 +202,23 @@ public:
 
 	void SendChatMessage(const char* message);
 	void SendTeamChatMessage(const char* message);
+	void SetImpulseCommand(int impulse)
+	{
+		if (impulse > 0 && impulse < 256)
+		{
+			m_impulse = impulse;
+		}
+	}
 
+	// Gets the bot random number generator
+	librandom::RandomNumberGenerator<std::mt19937, unsigned int>& GetRandomNumberGenerator() { return m_rng; }
 protected:
 	bool m_isfirstspawn;
 
 	// Adds a SourceHook Hook into the hook list to be removed when this is destroyed
 	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
+
+	librandom::RandomNumberGenerator<std::mt19937, unsigned int> m_rng; // the bot random number generator
 
 private:
 	int m_simulationtick;
@@ -219,6 +230,7 @@ private:
 	CBotCmd m_cmd; // User command to send
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;
+	int m_impulse; // impulse to send on the next PlayerRunCommand
 	mutable std::unique_ptr<IPlayerController> m_basecontrol; // Base controller interface
 	mutable std::unique_ptr<IMovement> m_basemover; // Base movement interface
 	mutable std::unique_ptr<ISensor> m_basesensor; // Base vision and hearing interface
@@ -238,5 +250,7 @@ private:
 
 	void ExecuteQueuedCommands();
 };
+
+extern ConVar cvar_bot_disable_behavior;
 
 #endif // !EXT_BASE_BOT_H_

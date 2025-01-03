@@ -99,7 +99,7 @@ inline void CChaseNavigator::RefreshPath(CBaseBot* bot, CBaseEntity* subject, CF
 
 		if (bot->IsDebugging(BOTDEBUG_PATH))
 		{
-			bot->DebugPrintToConsole(255, 165, 0, "%s CChaseNavigator target subject changed from %p to %p!\n", m_subject.Get(), subject);
+			bot->DebugPrintToConsole(255, 165, 0, "%s CChaseNavigator target subject changed from %p to %p!\n", bot->GetDebugIdentifier(), m_subject.Get(), subject);
 		}
 
 		Invalidate();

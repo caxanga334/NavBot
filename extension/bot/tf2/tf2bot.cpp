@@ -475,6 +475,24 @@ bool CTF2Bot::IsUsingSniperScope() const
 	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Zoomed);
 }
 
+void CTF2Bot::DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam)
+{
+	// std::unique_ptr<char[]> buffer = std::make_unique<char[]>(128);
+	// ke::SafeSprintf(buffer.get(), 128, "disguise %i %i", static_cast<int>(classtype), myTeam ? -2 : -1);
+	// DelayedFakeClientCommand(buffer.get());
+
+	// disguise is a client side command, bots can't use it since they're simulated server side
+
+	if (myTeam)
+	{
+		DisguiseAs(classtype, GetMyTFTeam());
+	}
+	else
+	{
+		DisguiseAs(classtype, tf2lib::GetEnemyTFTeam(GetMyTFTeam()));
+	}
+}
+
 void CTF2Bot::ToggleTournamentReadyStatus(bool isready) const
 {
 	char command[64];

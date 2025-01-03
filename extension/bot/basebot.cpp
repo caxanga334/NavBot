@@ -12,6 +12,7 @@
 #include "basebot.h"
 
 ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty.");
+ConVar cvar_bot_disable_behavior("sm_navbot_debug_disable_gamemode_ai", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "When set to 1, disables game mode behavior for the bot AI.");
 
 int CBaseBot::m_maxStringCommandsPerSecond = 20;
 
@@ -37,6 +38,8 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_debugtextoffset = 0;
 	m_shhooks.reserve(32);
 	m_randomChatMessageTimer.Start(9999.0f);
+	m_impulse = 0;
+	m_rng.RandomReSeed();
 
 	AddHooks();
 }
@@ -89,7 +92,7 @@ void CBaseBot::PlayerThink()
 		if (!HasJoinedGame() && CanJoinGame())
 		{
 			TryJoinGame();
-			m_joingametime = TIME_TO_TICKS(librandom::generate_random_float(1.0f, 5.0f));
+			m_joingametime = TIME_TO_TICKS(1.0f);
 		}
 		else if (HasJoinedGame())
 		{
@@ -318,11 +321,12 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	commandnumber++;
 	m_cmd.command_number = commandnumber;
 	m_cmd.tick_count = gpGlobals->tickcount;
-	m_cmd.impulse = 0;
+	m_cmd.impulse = static_cast<byte>(m_impulse);
 	m_cmd.viewangles = m_viewangles; // set view angles
 	m_cmd.weaponselect = m_weaponselect; // send weapon select
 	// TO-DO: weaponsubtype
 	m_cmd.buttons = buttons; // send buttons
+	m_cmd.random_seed = m_rng.GetRandomInt<int>(0, 0x7fffffff);
 
 	float forwardspeed = 0.0f;
 	float sidespeed = 0.0f;
@@ -360,6 +364,7 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	RunUserCommand(&m_cmd);
 
 	m_weaponselect = 0;
+	m_impulse = 0;
 }
 
 void CBaseBot::RunUserCommand(CBotCmd* ucmd)
@@ -454,6 +459,7 @@ void CBaseBot::Spawn()
 
 	Reset();
 	m_homepos = GetAbsOrigin();
+	m_rng.RandomReSeed();
 }
 
 void CBaseBot::FirstSpawn()

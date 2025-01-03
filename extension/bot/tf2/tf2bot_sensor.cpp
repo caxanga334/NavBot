@@ -40,12 +40,13 @@ CTF2BotSensor::~CTF2BotSensor()
 
 bool CTF2BotSensor::IsIgnored(CBaseEntity* entity)
 {
+	int index = gamehelpers->EntityToBCompatRef(entity);
 	auto classname = entityprops::GetEntityClassname(entity);
 
 	if (classname == nullptr)
 		return true;
 
-	if (sdkcalls->CBaseEntity_IsPlayer(entity))
+	if (UtilHelpers::IsPlayerIndex(index))
 	{
 		return IsPlayerIgnoredInternal(entity);
 	}
@@ -107,7 +108,8 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 		return false;
 	}
 
-	if (sdkcalls->CBaseEntity_IsPlayer(entity))
+	int index = gamehelpers->EntityToBCompatRef(entity);
+	if (UtilHelpers::IsPlayerIndex(index))
 	{
 		TeamFortress2::TFClassType theirclass = static_cast<TeamFortress2::TFClassType>(entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_CLASSTYPE));
 

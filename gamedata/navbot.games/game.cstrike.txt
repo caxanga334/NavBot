@@ -24,21 +24,6 @@
 				"windows"	"264"
 				"linux"		"265"
 			}
-			"CBaseEntity_EyePosition"
-			{
-				"windows"	"130"
-				"linux"		"131"
-			}
-			"CBaseEntity_EyeAngles"
-			{
-				"windows"	"131"
-				"linux"		"132"
-			}
-			"CBaseEntity_IsPlayer"
-			{
-				"windows"	"80"
-				"linux"		"81"
-			}
 		}
 	}
 }
