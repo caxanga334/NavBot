@@ -1,7 +1,9 @@
 #include <memory>
 #include <stdexcept>
+#include <cstring>
 
 #include <extension.h>
+#include <usercmd.h>
 #include <sm_argbuffer.h>
 #include "sdkcalls.h"
 
@@ -17,6 +19,8 @@ CSDKCaller::CSDKCaller()
 	m_call_cbc_weaponslot = nullptr;
 	m_offsetof_cgr_shouldcollide = invalid_offset();
 	m_call_cgr_shouldcollide = nullptr;
+	m_offsetof_cbp_processusercmds = invalid_offset();
+	m_call_cbp_processusercmds = nullptr;
 }
 
 CSDKCaller::~CSDKCaller()
@@ -64,6 +68,12 @@ bool CSDKCaller::Init()
 		fail = true;
 	}
 
+	if (!cfg_navbot->GetOffset("CBasePlayer_ProcessUsercmds", &m_offsetof_cbp_processusercmds))
+	{
+		// don't fail, this is optional
+		m_offsetof_cbp_processusercmds = -1;
+	}
+
 	gameconfs->CloseGameConfigFile(cfg_navbot);
 	gameconfs->CloseGameConfigFile(cfg_sdktools);
 	cfg_navbot = nullptr;
@@ -106,15 +116,45 @@ bool CSDKCaller::CGameRules_ShouldCollide(CGameRules* pGR, int collisionGroup0, 
 	return result;
 }
 
+void CSDKCaller::CBasePlayer_ProcessUsercmds(CBaseEntity* pBP, CBotCmd* botcmd)
+{
+	CUserCmd ucmd;
+
+	ucmd.command_number = botcmd->command_number;
+	ucmd.tick_count = botcmd->tick_count;
+	ucmd.viewangles = botcmd->viewangles;
+	ucmd.forwardmove = botcmd->forwardmove;
+	ucmd.sidemove = botcmd->sidemove;
+	ucmd.upmove = botcmd->upmove;
+	ucmd.impulse = botcmd->impulse;
+	ucmd.buttons = botcmd->buttons;
+	ucmd.weaponselect = botcmd->weaponselect;
+	ucmd.weaponsubtype = botcmd->weaponsubtype;
+	ucmd.random_seed = botcmd->random_seed;
+
+	/* void CBasePlayer::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds, int dropped_packets, bool paused ) */
+
+	ArgBuffer<void*, void*, int, int, int, bool> vstk(pBP, static_cast<void*>(&ucmd), 1, 1, 0, false);
+
+	m_call_cbp_processusercmds->Execute(vstk, nullptr);
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
 	SetupCBCWeaponSlot();
 	SetupCGRShouldCollide();
+	SetupCBPProcessUserCmds();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
 		m_call_cgr_shouldcollide == nullptr)
+	{
+		return false;
+	}
+
+	// this is optional
+	if (m_offsetof_cbp_processusercmds > 0 && m_call_cbp_processusercmds == nullptr)
 	{
 		return false;
 	}
@@ -185,4 +225,35 @@ void CSDKCaller::SetupCGRShouldCollide()
 	params[1].type = PassType_Basic;
 
 	m_call_cgr_shouldcollide = g_pBinTools->CreateVCall(m_offsetof_cgr_shouldcollide, 0, 0, &ret, params, 2);
+}
+
+void CSDKCaller::SetupCBPProcessUserCmds()
+{
+	using namespace SourceMod;
+
+	if (m_offsetof_cbp_processusercmds <= 0)
+	{
+		return; // this is optional
+	}
+
+	/* void CBasePlayer::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds, int dropped_packets, bool paused ) */
+
+	PassInfo params[5];
+	params[0].flags = PASSFLAG_BYVAL;
+	params[0].size = sizeof(CUserCmd*);
+	params[0].type = PassType_Basic;
+	params[1].flags = PASSFLAG_BYVAL;
+	params[1].size = sizeof(int);
+	params[1].type = PassType_Basic;
+	params[2].flags = PASSFLAG_BYVAL;
+	params[2].size = sizeof(int);
+	params[2].type = PassType_Basic;
+	params[3].flags = PASSFLAG_BYVAL;
+	params[3].size = sizeof(int);
+	params[3].type = PassType_Basic;
+	params[4].flags = PASSFLAG_BYVAL;
+	params[4].size = sizeof(bool);
+	params[4].type = PassType_Basic;
+
+	m_call_cbp_processusercmds = g_pBinTools->CreateVCall(m_offsetof_cbp_processusercmds, 0, 0, nullptr, params, 5);
 }

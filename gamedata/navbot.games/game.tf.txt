@@ -40,6 +40,13 @@
 				"linux"		"30"
 				"linux64"	"30"
 			}
+			"CBasePlayer_ProcessUsercmds"
+			{
+				"windows"	"429"
+				"windows64" "429"
+				"linux"		"430"
+				"linux64"	"430"
+			}
 
 			/* offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos */
 			"CCaptureFlag::m_vecResetPos"

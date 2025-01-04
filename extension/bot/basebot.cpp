@@ -374,7 +374,14 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 		return;
 	}
 
-	m_controller->RunPlayerMove(ucmd);
+	if (sdkcalls->IsProcessUsercmdsAvailable())
+	{
+		sdkcalls->CBasePlayer_ProcessUsercmds(GetEntity(), ucmd);
+	}
+	else
+	{
+		m_controller->RunPlayerMove(ucmd);
+	}
 }
 
 IPlayerController* CBaseBot::GetControlInterface() const

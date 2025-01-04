@@ -5,6 +5,7 @@
 
 class CBaseEntity;
 class CGameRules;
+class CBotCmd;
 
 /**
  * @brief Class to manager SDK Calls
@@ -42,6 +43,10 @@ public:
 	 */
 	bool CGameRules_ShouldCollide(CGameRules* pGR, int collisionGroup0, int collisionGroup1);
 
+	void CBasePlayer_ProcessUsercmds(CBaseEntity* pBP, CBotCmd* botcmd);
+
+	inline bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
+
 private:
 	static constexpr int invalid_offset() { return -1; }
 
@@ -59,10 +64,16 @@ private:
 	int m_offsetof_cgr_shouldcollide;
 	SourceMod::ICallWrapper* m_call_cgr_shouldcollide;
 
+	// https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/player.h#L577
+	//  void CBasePlayer::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds, int dropped_packets, bool paused )
+	int m_offsetof_cbp_processusercmds;
+	SourceMod::ICallWrapper* m_call_cbp_processusercmds;
+
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
 	void SetupCBCWeaponSlot();
 	void SetupCGRShouldCollide();
+	void SetupCBPProcessUserCmds();
 };
 
 extern CSDKCaller* sdkcalls;
