@@ -377,6 +377,7 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 	if (sdkcalls->IsProcessUsercmdsAvailable())
 	{
 		sdkcalls->CBasePlayer_ProcessUsercmds(GetEntity(), ucmd);
+		SnapEyeAngles(ucmd->viewangles);
 	}
 	else
 	{

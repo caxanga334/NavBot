@@ -71,7 +71,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		int visiblethreats = 0;
 
-		bot->GetSensorInterface()->ForEveryKnownEntity([&visiblethreats](const CKnownEntity* known) {
+		bot->GetSensorInterface()->ForEveryKnownEnemy([&visiblethreats](const CKnownEntity* known) {
 			if (known->IsVisibleNow())
 			{
 				visiblethreats++;

@@ -28,8 +28,6 @@ namespace tf2lib
 	TeamFortress2::TFTeam GetEntityTFTeam(CBaseEntity* entity);
 	int GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned, const bool ignore_bots = false);
 	TeamFortress2::TFTeam GetEnemyTFTeam(TeamFortress2::TFTeam team);
-	int GetClassDefaultPrimaryMaxAmmo(TeamFortress2::TFClassType type);
-	int GetClassDefaultSecondaryMaxAmmo(TeamFortress2::TFClassType type);
 	/**
 	 * @brief Gets the player health as a percentage.
 	 * @param player Player to get the health from.
@@ -47,6 +45,13 @@ namespace tf2lib
 	bool IsBuildingPlaced(CBaseEntity* entity);
 	CBaseEntity* GetBuildingBuilder(CBaseEntity* entity);
 	bool IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity);
+	bool IsBuildingSapped(CBaseEntity* entity);
+}
+
+namespace tf2lib::mvm
+{
+	// returns the most dangerous in mvm
+	CBaseEntity* GetMostDangerousFlag(bool ignoreDropped = false);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
@@ -111,60 +116,6 @@ inline TeamFortress2::TFTeam tf2lib::GetEnemyTFTeam(TeamFortress2::TFTeam team)
 		return TeamFortress2::TFTeam::TFTeam_Red;
 	default:
 		return TeamFortress2::TFTeam::TFTeam_Unassigned;
-	}
-}
-
-inline int tf2lib::GetClassDefaultPrimaryMaxAmmo(TeamFortress2::TFClassType type)
-{
-	switch (type)
-	{
-	case TeamFortress2::TFClass_Scout:
-		return 32;
-	case TeamFortress2::TFClass_Sniper:
-		return 25;
-	case TeamFortress2::TFClass_Soldier:
-		return 20;
-	case TeamFortress2::TFClass_DemoMan:
-		return 16;
-	case TeamFortress2::TFClass_Medic:
-		return 150;
-	case TeamFortress2::TFClass_Heavy:
-		return 200;
-	case TeamFortress2::TFClass_Pyro:
-		return 200;
-	case TeamFortress2::TFClass_Spy:
-		return 1; // The revolver uses secondary ammo type
-	case TeamFortress2::TFClass_Engineer:
-		return 32;
-	default:
-		return 20;
-	}
-}
-
-inline int tf2lib::GetClassDefaultSecondaryMaxAmmo(TeamFortress2::TFClassType type)
-{
-	switch (type)
-	{
-	case TeamFortress2::TFClass_Scout:
-		return 36;
-	case TeamFortress2::TFClass_Sniper:
-		return 75;
-	case TeamFortress2::TFClass_Soldier:
-		return 32;
-	case TeamFortress2::TFClass_DemoMan:
-		return 24;
-	case TeamFortress2::TFClass_Medic:
-		return 1;
-	case TeamFortress2::TFClass_Heavy:
-		return 32;
-	case TeamFortress2::TFClass_Pyro:
-		return 32;
-	case TeamFortress2::TFClass_Spy:
-		return 24; // Spy's revolver is a secondary weapon and uses secondary ammo type
-	case TeamFortress2::TFClass_Engineer:
-		return 200;
-	default:
-		return 20;
 	}
 }
 

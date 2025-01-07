@@ -21,7 +21,7 @@
 #include "scenario/controlpoints/tf2bot_controlpoints_monitor.h"
 #include "scenario/payload/tf2bot_task_defend_payload.h"
 #include "scenario/payload/tf2bot_task_push_payload.h"
-#include "scenario/mvm/tf2bot_mvm_idle.h"
+#include "scenario/mvm/tf2bot_mvm_monitor.h"
 
 #undef max
 #undef min
@@ -110,7 +110,7 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipC
 
 	if (gm == TeamFortress2::GameModeType::GM_MVM)
 	{
-		return new CTF2BotMvMIdleTask; // In MvM, all bots start with this
+		return new CTF2BotMvMMonitorTask; // In MvM, all bots start with this
 	}
 
 	if (!skipClassBehavior)
@@ -163,8 +163,6 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipC
 		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_KOTH:
 		return new CTF2BotControlPointMonitorTask;
-	case TeamFortress2::GameModeType::GM_MVM:
-		return new CTF2BotMvMIdleTask;
 	default:
 		break;
 	}

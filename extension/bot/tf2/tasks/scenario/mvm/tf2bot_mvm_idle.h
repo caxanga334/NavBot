@@ -13,6 +13,7 @@ public:
 	CTF2BotMvMIdleTask()
 	{
 		m_goal.Init();
+		m_upgradeDuringWave = false;
 	}
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
@@ -29,6 +30,11 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	CountdownTimer m_repathtimer;
+	bool m_upgradeDuringWave;
+	
+	void FindIdlePosition();
+
+	static constexpr auto BUY_UPGRADE_DURING_WAVE_MIN_CURRENCY = 600;
 };
 
 #endif // !NAVBOT_TF2BOT_TASK_MVM_IDLE_H_

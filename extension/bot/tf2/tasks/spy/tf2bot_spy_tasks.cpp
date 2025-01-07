@@ -1,3 +1,4 @@
+#include <cstring>
 #include <extension.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavarea.h>
@@ -8,6 +9,7 @@
 #include <util/helpers.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_takedamageinfo.h>
+#include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include "tf2bot_spy_tasks.h"
 
 class TF2SpyLurkAreaCollector : public INavAreaCollector<CTFNavArea>
@@ -82,7 +84,7 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (UtilHelpers::FClassnameIs(entity, "obj_*"))
 		{
-			// TO-DO: Sap objects
+			return PauseFor(new CTF2BotSpySapObjectTask(entity), "Sapping visible enemy buildings!");
 		}
 		else
 		{
@@ -146,6 +148,25 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	FindLurkPosition(bot);
+	m_lurkTimer.Invalidate();
+
+	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnFlagTaken(CTF2Bot* bot, CBaseEntity* player)
+{
+	// need to change this when adding support for player destruction game mode
+	if (bot->GetEntity() == player)
+	{
+		return TryPauseFor(new CTF2BotCTFDeliverFlagTask(), PRIORITY_HIGH, "I have the flag, going to deliver it");
+	}
+
+	return TryContinue(PRIORITY_LOW);
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnControlPointCaptured(CTF2Bot* bot, CBaseEntity* point)
@@ -459,4 +480,124 @@ QueryAnswerType CTF2BotSpyAttackTask::ShouldSwitchToWeapon(CBaseBot* me, const C
 	}
 
 	return ANSWER_UNDEFINED;
+}
+
+CTF2BotSpySapObjectTask::CTF2BotSpySapObjectTask(CBaseEntity* object) :
+	m_nav(CChaseNavigator::DONT_LEAD_SUBJECT)
+{
+	m_object = object;
+	m_isSentryGun = false;
+}
+
+TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	CBaseEntity* object = m_object.Get();
+
+	if (object == nullptr)
+	{
+		return Done("Object is gone!");
+	}
+
+	const char* classname = gamehelpers->GetEntityClassname(object);
+
+	if (strncasecmp(classname, "obj_", 4) != 0)
+	{
+		return Done("Object is gone!");
+	}
+
+	if (std::strcmp(classname, "obj_sentrygun") == 0)
+	{
+		m_isSentryGun = true;
+	}
+
+	// equip sapper
+	bot->DelayedFakeClientCommand("build 3 0");
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
+{
+	CBaseEntity* object = m_object.Get();
+
+	if (object == nullptr)
+	{
+		return Done("Object is gone!");
+	}
+
+	if (!bot->IsDisguised())
+	{
+		bot->DisguiseAs(TeamFortress2::TFClass_Engineer, false);
+	}
+
+	auto weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+	// the sapper uses slot 1
+	if (weapon && weapon->GetWeaponInfo()->GetSlot() != static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary))
+	{
+		// equip sapper
+		bot->DelayedFakeClientCommand("build 3 0");
+	}
+
+	tfentities::HBaseObject bo(object);
+
+	if (bo.IsSapped())
+	{
+		if (m_isSentryGun)
+		{
+			auto engineer = bo.GetBuilder();
+
+			if (engineer)
+			{
+				auto known = bot->GetSensorInterface()->GetKnown(engineer);
+
+				if (known && known->IsVisibleNow())
+				{
+					return SwitchTo(new CTF2BotSpyAttackTask(known->GetEntity()), "Sentry is sapped, attacking the engineer!");
+				}
+			}
+		}
+
+		// sap other nearby objects
+
+		CBaseEntity* nextObject = nullptr;
+
+		bot->GetSensorInterface()->ForEveryKnownEntity([&nextObject](const CKnownEntity* known) {
+			if (nextObject == nullptr)
+			{
+				if (!known->IsObsolete() && known->IsVisibleNow())
+				{
+					CBaseEntity* ent = known->GetEntity();
+
+					if (UtilHelpers::FClassnameIs(ent, "obj_*") && !tf2lib::IsBuildingSapped(ent))
+					{
+						nextObject = ent;
+					}
+				}
+			}
+		});
+
+		if (nextObject == nullptr)
+		{
+			return Done("Object is sapped!");
+		}
+		else
+		{
+			m_object = nextObject;
+		}
+	}
+
+	bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(object), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to sap!");
+
+	if (bot->GetRangeTo(object) < 72.0f)
+	{
+		bot->GetControlInterface()->PressAttackButton();
+	}
+	else
+	{
+		CTF2BotPathCost cost(bot);
+		m_nav.Update(bot, object, cost);
+	}
+
+	return Continue();
 }

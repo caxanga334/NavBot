@@ -25,6 +25,8 @@ public:
 
 	// Engineers don't retreat for health and ammo
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	// for mvm
+	QueryAnswerType IsReady(CBaseBot* me) override;
 
 	const char* GetName() const override { return "EngineerNest"; }
 

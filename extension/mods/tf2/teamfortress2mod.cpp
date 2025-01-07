@@ -158,6 +158,11 @@ void CTeamFortress2Mod::OnMapStart()
 	smutils->LogMessage(myself, "Detected game mode \"%s\" for map \"%s\".", mode, map);
 	m_upgrademanager.ParseUpgradeFile();
 	m_upgrademanager.ParseBotUpgradeInfoFile();
+
+	if (m_gamemode == TeamFortress2::GameModeType::GM_MVM)
+	{
+		FindMvMBombHatchPosition();
+	}
 }
 
 void CTeamFortress2Mod::OnMapEnd()
@@ -924,6 +929,19 @@ bool CTeamFortress2Mod::TeamMayCapturePoint(int team, int pointindex) const
 	}
 
 	return true;
+}
+
+void CTeamFortress2Mod::FindMvMBombHatchPosition()
+{
+	int capzone = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "func_capturezone");
+
+	if (capzone == INVALID_EHANDLE_INDEX)
+	{
+		rootconsole->ConsolePrint("[NavBot] Mann vs Machine: Failed to find the bomb hatch position! (func_capturezone)");
+	}
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(capzone);
+	m_MvMHatchPos = UtilHelpers::getWorldSpaceCenter(entity);
 }
 
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const

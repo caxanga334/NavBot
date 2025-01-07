@@ -19,6 +19,8 @@ public:
 
 	TaskEventResponseResult<CTF2Bot> OnFlagTaken(CTF2Bot* bot, CBaseEntity* player) override;
 
+	QueryAnswerType IsReady(CBaseBot* me) override;
+
 	const char* GetName() const override { return "MedicMain"; }
 
 private:

@@ -87,6 +87,8 @@ public:
 
 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) override;
 
+	const Vector& GetMvMBombHatchPosition() const { return m_MvMHatchPos; }
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, int> m_weaponidmap;
@@ -104,6 +106,7 @@ private:
 	std::vector<CTFWaypoint*> m_dispenserWaypoints;
 	std::vector<CTFWaypoint*> m_teleentranceWaypoints;
 	std::vector<CTFWaypoint*> m_teleexitWaypoints;
+	Vector m_MvMHatchPos; // bomb hatch position in MvM
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();
@@ -116,6 +119,7 @@ private:
 	void CheckForSetup();
 	void UpdateObjectiveResource();
 	bool TeamMayCapturePoint(int team, int pointindex) const;
+	void FindMvMBombHatchPosition();
 };
 
 #endif // !SMNAV_TF2_MOD_H_

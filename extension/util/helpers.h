@@ -50,7 +50,7 @@ namespace UtilHelpers
 	}
 
 	int IndexOfEntity(CBaseEntity* entity);
-	inline bool IsPlayer(CBaseEntity* entity);
+	bool IsPlayer(CBaseEntity* entity);
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.

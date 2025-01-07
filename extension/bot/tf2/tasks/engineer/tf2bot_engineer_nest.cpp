@@ -140,6 +140,19 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnMoveToSuccess(CTF2Bo
 	return TryContinue();
 }
 
+QueryAnswerType CTF2BotEngineerNestTask::IsReady(CBaseBot* me)
+{
+	CTF2Bot* tf2bot = static_cast<CTF2Bot*>(me);
+
+	if (tf2bot->GetMySentryGun() != nullptr && tf2bot->GetMyDispenser() != nullptr &&
+		tf2bot->GetMyTeleporterEntrance() != nullptr && tf2bot->GetMyTeleporterExit() != nullptr)
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_NO;
+}
+
 AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 {
 	Vector goal; // used if no waypoints are available

@@ -95,6 +95,8 @@ public:
 
 	/**
 	 * @brief Runs a function on every known entity.
+	 * 
+	 * Note: This is unfiltered and includes invalid and obsolete known entities.
 	 * @tparam T A class with void operator() overload with the following parameters: (const CKnownEntity* known)
 	 * @param functor Function to run on every known entity
 	 */
@@ -105,6 +107,44 @@ public:
 		{
 			const CKnownEntity* known = i.get();
 			functor(known);
+		}
+	}
+
+	/**
+	 * @brief Runs a function on every enemy known entity.
+	 * @tparam T A class with void operator() overload with the following parameters: (const CKnownEntity* known)
+	 * @param functor Function to run on every known entity
+	 */
+	template <typename T>
+	inline void ForEveryKnownEnemy(T functor)
+	{
+		for (auto& i : m_knownlist)
+		{
+			const CKnownEntity* known = i.get();
+
+			if (known->IsValid() && !IsIgnored(known->GetEntity()) && IsEnemy(known->GetEntity()))
+			{
+				functor(known);
+			}
+		}
+	}
+
+	/**
+	 * @brief Runs a function on every allied known entity.
+	 * @tparam T A class with void operator() overload with the following parameters: (const CKnownEntity* known)
+	 * @param functor Function to run on every known entity
+	 */
+	template <typename T>
+	inline void ForEveryKnownAlly(T functor)
+	{
+		for (auto& i : m_knownlist)
+		{
+			const CKnownEntity* known = i.get();
+
+			if (known->IsValid() && !IsIgnored(known->GetEntity()) && IsFriendly(known->GetEntity()))
+			{
+				functor(known);
+			}
 		}
 	}
 

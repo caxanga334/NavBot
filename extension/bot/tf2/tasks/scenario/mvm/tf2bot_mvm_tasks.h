@@ -1,0 +1,6 @@
+#ifndef NAVBOT_TF2_BOT_MVM_TASKS_H_
+#define NAVBOT_TF2_BOT_MVM_TASKS_H_
+
+
+
+#endif // !NAVBOT_TF2_BOT_MVM_TASKS_H_

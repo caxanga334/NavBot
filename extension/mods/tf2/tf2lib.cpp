@@ -2,6 +2,7 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include <entities/tf2/tf_entities.h>
 #include "tf2lib.h"
 
 bool tf2lib::IsPlayerInCondition(int player, TeamFortress2::TFCond cond)
@@ -463,4 +464,67 @@ bool tf2lib::IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity)
 	}
 
 	return level >= maxlevel;
+}
+
+bool tf2lib::IsBuildingSapped(CBaseEntity* entity)
+{
+	bool* sapper = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bHasSapper");
+
+	if (sapper)
+	{
+		return *sapper;
+	}
+
+	return false;
+}
+
+CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
+{
+	const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
+
+	// find the flag closests to the bomb hatch position
+
+	CBaseEntity* flag = nullptr;
+	float distance = 1e10f;
+
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&hatch, &flag, &distance, &ignoreDropped](int index, edict_t* edict, CBaseEntity* entity) {
+		
+		if (entity != nullptr)
+		{
+			tfentities::HCaptureFlag captureflag(entity);
+
+			if (captureflag.IsDisabled() || captureflag.GetTFTeam() != TeamFortress2::TFTeam::TFTeam_Blue || captureflag.IsHome())
+			{
+				return true;
+			}
+
+			if (ignoreDropped && captureflag.IsDropped())
+			{
+				return true;
+			}
+
+			CBaseEntity* carrier = captureflag.GetOwnerEntity();
+
+			if (carrier && UtilHelpers::IsPlayer(carrier))
+			{
+				if (tf2lib::IsPlayerInCondition(carrier, TeamFortress2::TFCond::TFCond_UberchargedHidden))
+				{
+					return true; // skip this one, carrier is inside spawn
+				}
+			}
+
+			Vector origin = captureflag.GetPosition();
+			float range = (hatch - origin).Length();
+			
+			if (range < distance)
+			{
+				distance = range;
+				flag = entity;
+			}
+		}
+
+		return true;
+	});
+
+	return flag;
 }

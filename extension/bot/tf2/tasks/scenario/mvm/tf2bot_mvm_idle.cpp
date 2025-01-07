@@ -1,6 +1,7 @@
 #include <vector>
 #include <extension.h>
 #include <util/entprops.h>
+#include <util/librandom.h>
 #include <mods/tf2/tf2lib.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/nav/tfnavmesh.h>
@@ -11,8 +12,46 @@
 #include "tf2bot_mvm_upgrade.h"
 #include "tf2bot_mvm_idle.h"
 
+class CTF2BotMvMIdleSelectRandomFrontlineArea
+{
+public:
+
+	bool operator()(CNavArea* area)
+	{
+		CTFNavArea* tfarea = static_cast<CTFNavArea*>(area);
+
+		if (tfarea->HasMVMAttributes(CTFNavArea::MvMNavAttributes::MVMNAV_FRONTLINES))
+		{
+			frontlines.push_back(tfarea);
+		}
+
+		return true;
+	}
+
+	CTFNavArea* GetRandomFrontlineArea()
+	{
+		if (frontlines.empty()) { return nullptr; }
+
+		return librandom::utils::GetRandomElementFromVector(frontlines);
+	}
+
+private:
+	std::vector<CTFNavArea*> frontlines;
+};
+
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	FindIdlePosition();
+
+	if (entprops->GameRules_GetRoundState() == RoundState_RoundRunning)
+	{
+		if (bot->GetCurrency() >= BUY_UPGRADE_DURING_WAVE_MIN_CURRENCY)
+		{
+			bot->GetUpgradeManager().OnWaveEnd(); // force the manager to think it's ok to upgrade
+			m_upgradeDuringWave = true; // TO-DO: Check if we don't need to rush to defend the bomb
+		}
+	}
+
 	return Continue();
 }
 
@@ -20,27 +59,32 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	if (entprops->GameRules_GetRoundState() == RoundState_RoundRunning)
 	{
+		if (m_upgradeDuringWave)
+		{
+			// Should the bot buy upgrades? Always buy upgrades if allowed
+			if (!bot->GetUpgradeManager().IsManagerReady() || bot->GetUpgradeManager().ShouldGoToAnUpgradeStation())
+			{
+				// Buy upgrades
+				return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
+			}
+		}
+
 		// Wave has started!
-		// TO-DO: Switch to combat task
-		return Continue();
+		return Done("Wave started."); // unpause the main mvm task
 	}
 
 	// Wave has not started yet
 	if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
 	{
-		// Should the bot buy upgrades?
+		// Should the bot buy upgrades? Always buy upgrades if allowed
 		if (!bot->GetUpgradeManager().IsManagerReady() || bot->GetUpgradeManager().ShouldGoToAnUpgradeStation())
 		{
 			// Buy upgrades
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
 		}
-		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer)
+		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer || bot->GetMyClassType() == TeamFortress2::TFClass_Medic)
 		{
-			return SwitchTo(new CTF2BotEngineerMainTask, "Starting engineer behavior!");
-		}
-		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Medic)
-		{
-			return SwitchTo(new CTF2BotMedicMainTask, "Starting medic behavior!");
+			return Done("Done upgrading, returning to class behavior!");
 		}
 
 		if (bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)
@@ -52,15 +96,26 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	// TO-DO: Move to defensive positions near the robot spawn
-	// TO-DO: Engineer
-	// TO-DO: Add ready up logic
+	if (bot->GetRangeTo(m_goal) > 72.0f)
+	{
+		if (m_repathtimer.IsElapsed())
+		{
+			m_repathtimer.Start(1.0f);
+			CTF2BotPathCost cost(bot);
+			m_nav.ComputePathToPosition(bot, m_goal, cost);
+		}
+
+		m_nav.Update(bot);
+	}
 
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	m_nav.Invalidate();
+	m_repathtimer.Invalidate();
+
 	return Continue();
 }
 
@@ -84,24 +139,28 @@ QueryAnswerType CTF2BotMvMIdleTask::IsReady(CBaseBot* me)
 		return ANSWER_NO;
 	}
 
-	auto myclass = tf2bot->GetMyClassType();
-
-	if (myclass == TeamFortress2::TFClass_Medic)
-	{
-		// medic logic here
-		// check uber%
-	}
-	else if (myclass == TeamFortress2::TFClass_Engineer)
-	{
-		// all buildings must be level 3 and health, also check their position
-	}
-
-	CTFNavArea* area = static_cast<CTFNavArea*>(me->GetLastKnownNavArea());
-
-	if (area && !area->HasMVMAttributes(CTFNavArea::MVMNAV_FRONTLINES))
+	if (tf2bot->GetRangeTo(m_goal) > 128.0f)
 	{
 		return ANSWER_NO;
 	}
 
 	return ANSWER_YES;
+}
+
+void CTF2BotMvMIdleTask::FindIdlePosition()
+{
+	CTF2BotMvMIdleSelectRandomFrontlineArea frontlineAreas;
+
+	CNavMesh::ForAllAreas(frontlineAreas);
+
+	CTFNavArea* goalArea = frontlineAreas.GetRandomFrontlineArea();
+
+	if (goalArea == nullptr)
+	{
+		m_goal = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
+	}
+	else
+	{
+		m_goal = goalArea->GetCenter();
+	}
 }
