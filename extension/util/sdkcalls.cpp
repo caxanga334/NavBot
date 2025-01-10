@@ -37,6 +37,7 @@ bool CSDKCaller::Init()
 	bool fail = false;
 	IGameConfig* cfg_navbot = nullptr;
 	IGameConfig* cfg_sdktools = nullptr;
+	IGameConfig* cfg_sdkhooks = nullptr;
 	
 	if (!gameconfs->LoadGameConfigFile("navbot.games", &cfg_navbot, error.get(), size))
 	{
@@ -50,7 +51,13 @@ bool CSDKCaller::Init()
 		return false;
 	}
 
-	if (!cfg_navbot->GetOffset("Weapon_Switch", &m_offsetof_cbc_weaponswitch))
+	if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &cfg_sdkhooks, error.get(), size))
+	{
+		smutils->LogError(myself, "Failed to initialize SDK Caller! Error: %s", error.get());
+		return false;
+	}
+
+	if (!cfg_sdkhooks->GetOffset("Weapon_Switch", &m_offsetof_cbc_weaponswitch))
 	{
 		smutils->LogError(myself, "Failed to get offset for CBaseCombatCharacter::Weapon_Switch!");
 		fail = true;
@@ -62,13 +69,13 @@ bool CSDKCaller::Init()
 		fail = true;
 	}
 
-	if (!cfg_navbot->GetOffset("CGameRules_ShouldCollide", &m_offsetof_cgr_shouldcollide))
+	if (!cfg_navbot->GetOffset("CGameRules::ShouldCollide", &m_offsetof_cgr_shouldcollide))
 	{
 		smutils->LogError(myself, "Failed to get offset for CGameRules::ShouldCollide!");
 		fail = true;
 	}
 
-	if (!cfg_navbot->GetOffset("CBasePlayer_ProcessUsercmds", &m_offsetof_cbp_processusercmds))
+	if (!cfg_navbot->GetOffset("CBasePlayer::ProcessUsercmds", &m_offsetof_cbp_processusercmds))
 	{
 		// don't fail, this is optional
 		m_offsetof_cbp_processusercmds = -1;
@@ -76,8 +83,10 @@ bool CSDKCaller::Init()
 
 	gameconfs->CloseGameConfigFile(cfg_navbot);
 	gameconfs->CloseGameConfigFile(cfg_sdktools);
+	gameconfs->CloseGameConfigFile(cfg_sdkhooks);
 	cfg_navbot = nullptr;
 	cfg_sdktools = nullptr;
+	cfg_sdkhooks = nullptr;
 
 	if (fail == false)
 	{

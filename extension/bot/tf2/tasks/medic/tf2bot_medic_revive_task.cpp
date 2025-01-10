@@ -59,6 +59,13 @@ TaskResult<CTF2Bot> CTF2BotMedicReviveTask::OnTaskStart(CTF2Bot* bot, AITask<CTF
 	bot->GetControlInterface()->ReleaseAttackButton();
 	m_repathTimer.Start(1.2f);
 
+	CBaseEntity* medigun = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary));
+
+	if (medigun)
+	{
+		bot->SelectWeapon(medigun);
+	}
+
 	return Continue();
 }
 
@@ -93,15 +100,18 @@ TaskResult<CTF2Bot> CTF2BotMedicReviveTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		CTF2BotPathCost cost(bot, SAFEST_ROUTE);
-		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+		if (m_repathTimer.IsElapsed())
 		{
-			return Done("Failed to build path to revive marker!");
+			m_repathTimer.Start(1.2f);
+
+			CTF2BotPathCost cost(bot, SAFEST_ROUTE);
+			if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
+			{
+				return Done("Failed to build path to revive marker!");
+			}
 		}
 
 		bot->GetControlInterface()->ReleaseAttackButton();
-		m_repathTimer.Start(1.2f);
-
 		m_nav.Update(bot);
 	}
 

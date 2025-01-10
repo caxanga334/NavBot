@@ -271,6 +271,11 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
+void CTF2BotEngineerBuildObjectTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
+{
+	bot->GetInventoryInterface()->SelectBestWeapon();
+}
+
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
 	CTF2BotPathCost cost(bot);

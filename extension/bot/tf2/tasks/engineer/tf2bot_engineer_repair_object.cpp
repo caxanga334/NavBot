@@ -1,6 +1,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <entities/tf2/tf_entities.h>
+#include <util/entprops.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
@@ -41,7 +42,20 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	tfentities::HBaseObject object(m_object.Get());
 
-	const bool needsRepair = object.GetHealthPercentage() < 0.9999f || object.IsSapped();
+	bool needsRepair = object.GetHealthPercentage() < 0.9999f || object.IsSapped();
+
+	if (m_sentry)
+	{
+		int shells = 999;
+		entprops->GetEntProp(object.GetIndex(), Prop_Send, "m_iAmmoShells", shells);
+		int rockets = 999;
+		entprops->GetEntProp(object.GetIndex(), Prop_Send, "m_iAmmoRockets", rockets);
+
+		if (shells <= 120 || rockets <= 15)
+		{
+			needsRepair = true;
+		}
+	}
 
 	if (!needsRepair)
 	{

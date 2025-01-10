@@ -14,6 +14,7 @@ public:
 	CTFNavMesh();
 	virtual ~CTFNavMesh();
 
+	void FireGameEvent(IGameEvent* event) override;
 	virtual void OnRoundRestart(void) override;
 	virtual CNavArea* CreateArea(void) const override;
 	virtual uint32_t GetSubVersionNumber(void) const override;

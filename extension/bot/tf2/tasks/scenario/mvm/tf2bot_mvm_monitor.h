@@ -20,6 +20,13 @@ public:
 	const char* GetName() const override { return "MvMMonitor"; }
 private:
 	bool m_hasUpgradedInThisWave;
+
+	CountdownTimer m_currencyScan;
+
+	// cvar cache
+	static inline bool s_collect{ false };
+
+	void ScanForDroppedCurrency(std::vector<CHandle<CBaseEntity>>& currencyPacks);
 };
 
 #endif // !NAVBOT_TF2_BOT_MVM_MONITOR_TASK_H_

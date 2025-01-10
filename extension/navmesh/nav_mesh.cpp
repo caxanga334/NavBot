@@ -606,18 +606,7 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 	if (strncmp(name, "round_start", 11) == 0 || strncmp(name, "dod_round_start", 15) == 0 || strncmp(name, "teamplay_round_start", 20) == 0)
 	{
 		OnRoundRestart();
-
-		NavRoundRestart restart;
-		ForAllAreas(restart);
-		ForAllLadders(restart);
-
-		std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
-			object.second->OnRoundRestart();
-		});
-
-		std::for_each(m_elevators.begin(), m_elevators.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavElevator>>& object) {
-			object.second->OnRoundRestart();
-		});
+		PropagateOnRoundRestart();
 	}
 }
 
@@ -850,6 +839,20 @@ void CNavMesh::OnRoundRestartPreEntity( void )
 {
 }
 
+void CNavMesh::PropagateOnRoundRestart()
+{
+	NavRoundRestart restart;
+	ForAllAreas(restart);
+	ForAllLadders(restart);
+
+	std::for_each(m_waypoints.begin(), m_waypoints.end(), [](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
+		object.second->OnRoundRestart();
+	});
+
+	std::for_each(m_elevators.begin(), m_elevators.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavElevator>>& object) {
+		object.second->OnRoundRestart();
+	});
+}
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::BuildTransientAreaList( void )

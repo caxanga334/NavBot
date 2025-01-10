@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdexcept>
 #include <memory>
+#include <string>
 
 #include <am-string.h>
 #include <tier1/strtools.h>
@@ -553,18 +554,18 @@ public:
 	// These functions are used to trigger a state change on a Task.
 	
 	// Keep the current task running
-	TaskResult<BotClass> Continue() const;
+	[[nodiscard]] TaskResult<BotClass> Continue() const;
 	// Switch to a new task, the current task will be destroyed
-	TaskResult<BotClass> SwitchTo(AITask<BotClass>* newTask, const char* reason) const;
+	[[nodiscard]] TaskResult<BotClass> SwitchTo(AITask<BotClass>* newTask, const char* reason) const;
 	// Put the current task on pause and begin running another one on it's place, the current task will be kept and returned to when the new task ends
-	TaskResult<BotClass> PauseFor(AITask<BotClass>* newTask, const char* reason) const;
+	[[nodiscard]] TaskResult<BotClass> PauseFor(AITask<BotClass>* newTask, const char* reason) const;
 	// Ends and destroy the current task
-	TaskResult<BotClass> Done(const char* reason) const;
+	[[nodiscard]] TaskResult<BotClass> Done(const char* reason) const;
 
-	TaskEventResponseResult<BotClass> TryContinue(EventResultPriorityType priority = PRIORITY_DONT_CARE) const;
-	TaskEventResponseResult<BotClass> TrySwitchTo(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
-	TaskEventResponseResult<BotClass> TryPauseFor(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
-	TaskEventResponseResult<BotClass> TryDone(EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
+	[[nodiscard]] TaskEventResponseResult<BotClass> TryContinue(EventResultPriorityType priority = PRIORITY_DONT_CARE) const;
+	[[nodiscard]] TaskEventResponseResult<BotClass> TrySwitchTo(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
+	[[nodiscard]] TaskEventResponseResult<BotClass> TryPauseFor(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
+	[[nodiscard]] TaskEventResponseResult<BotClass> TryDone(EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
 
 	virtual TaskEventResponseResult<BotClass> OnTestEventPropagation(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) { return TryContinue(); }
@@ -611,6 +612,10 @@ private:
 	mutable TaskEventResponseResult<BotClass> m_pendingEventResult;
 	bool m_hasStarted;
 	bool m_isPaused;
+
+#ifdef EXT_DEBUG
+	std::string m_debugName;
+#endif
 
 	// Macros to help with repetitive code for event propagation between tasks
 
@@ -1225,6 +1230,10 @@ template<typename BotClass>
 inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<BotClass>* manager, TaskResult<BotClass> result)
 {
 	AITask<BotClass>* newTask = result.GetNextTask();
+
+#ifdef EXT_DEBUG
+	this->m_debugName.assign(this->GetName());
+#endif
 
 	switch (result.GetType())
 	{

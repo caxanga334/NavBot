@@ -46,6 +46,7 @@ namespace tf2lib
 	CBaseEntity* GetBuildingBuilder(CBaseEntity* entity);
 	bool IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity);
 	bool IsBuildingSapped(CBaseEntity* entity);
+	CBaseEntity* GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team);
 }
 
 namespace tf2lib::mvm

@@ -19,12 +19,17 @@
 CTF2BotMedicHealTask::CTF2BotMedicHealTask() :
 	m_moveGoal(0.0f, 0.0f, 0.0f)
 {
+	m_isMvM = false;
 }
 
 TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	UpdateFollowTarget(bot);
 	m_patientScanTimer.Invalidate();
+
+	m_isMvM = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM;
+	m_reviveMarkerScanTimer.Start(10.0f);
+
 	return Continue();
 }
 
@@ -32,6 +37,19 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	UpdateFollowTarget(bot);
 	UpdateHealTarget(bot);
+
+	if (m_isMvM && m_reviveMarkerScanTimer.IsElapsed())
+	{
+		m_reviveMarkerScanTimer.StartRandom(2.0f, 5.0f);
+
+		CBaseEntity* marker = nullptr;
+		Vector center = bot->GetAbsOrigin();
+
+		if (ScanForReviveMarkers(center, &marker))
+		{
+			return PauseFor(new CTF2BotMedicReviveTask(marker), "Reviving dead teammate!");
+		}
+	}
 
 	CBaseEntity* patient = m_healTarget.Get();
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
@@ -410,6 +428,30 @@ void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* 
 		m_nav.Update(bot, m_moveGoal, cost);
 	}
 }
+
+bool CTF2BotMedicHealTask::ScanForReviveMarkers(const Vector& center, CBaseEntity** marker)
+{
+	float best = std::numeric_limits<float>::max();
+
+	UtilHelpers::ForEachEntityOfClassname("entity_revive_marker", [&marker, &center, &best](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			const Vector& origin = UtilHelpers::getEntityOrigin(entity);
+			float range = (origin - center).LengthSqr();
+
+			if (range < best)
+			{
+				*marker = entity;
+				best = range;
+			}
+		}
+
+		return true;
+	});
+
+	return *marker != nullptr;
+}
+
 
 void CTF2BotMedicHealTask::EquipMedigun(CTF2Bot* me)
 {

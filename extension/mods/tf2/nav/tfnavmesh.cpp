@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <extension.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <sdkports/sdk_timers.h>
@@ -40,10 +42,33 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 	navgenparams->jump_crouch_height = 68.0f;
 	navgenparams->climb_up_height = 68.0f;
 	navgenparams->death_drop = 220.0f; // experimental
+
+	ListenForGameEvent("mvm_wave_failed");
+	ListenForGameEvent("mvm_wave_complete");
 }
 
 CTFNavMesh::~CTFNavMesh()
 {
+}
+
+void CTFNavMesh::FireGameEvent(IGameEvent* event)
+{
+	if (event != nullptr)
+	{
+		const char* name = event->GetName();
+
+		if (name)
+		{
+			if (std::strcmp(name, "mvm_wave_failed") == 0 || std::strcmp(name, "mvm_wave_complete") == 0)
+			{
+				OnRoundRestart();
+				PropagateOnRoundRestart();
+				return;
+			}
+		}
+	}
+
+	CNavMesh::FireGameEvent(event);
 }
 
 void CTFNavMesh::OnRoundRestart(void)

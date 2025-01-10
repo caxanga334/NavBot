@@ -126,6 +126,24 @@ public:
 	void SetMyTeleporterEntrance(CBaseEntity* entity);
 	void SetMyTeleporterExit(CBaseEntity* entity);
 
+	/**
+	 * @brief Gets the spy cloak meter percentage retrieved by reading the 'm_flCloakMeter' property.
+	 * @return Cloak percentage (range: 0 - 100) or -1 if we don't have a valid pointer to the property.
+	 */
+	float GetCloakPercentage() const
+	{
+		if (m_cloakMeter)
+		{
+			return *m_cloakMeter;
+		}
+		
+		return -1.0f;
+	}
+
+	bool IsCarryingObject() const;
+	CBaseEntity* GetObjectBeingCarriedByMe() const;
+	// Makes the bot run the upgrade logic on the next Update call
+	void DoMvMUpgrade() { m_doMvMUpgrade = true; }
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -140,6 +158,8 @@ private:
 	CHandle<CBaseEntity> m_myTeleporterEntrance;
 	CHandle<CBaseEntity> m_myTeleporterExit;
 	CTF2BotUpgradeManager m_upgrademan;
+	float* m_cloakMeter;
+	bool m_doMvMUpgrade;
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
 	static constexpr float medic_patient_health_low_level() { return 0.6f; }

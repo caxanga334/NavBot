@@ -19,11 +19,6 @@
 				"windows"	"113"
 				"linux"		"114"
 			}
-			"Weapon_Switch"
-			{
-				"windows"	"284"
-				"linux"		"285"
-			}
 		}
 	}
 }

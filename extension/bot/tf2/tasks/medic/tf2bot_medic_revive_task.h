@@ -19,6 +19,7 @@ public:
 
 	// medics never attack
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
 
 	const char* GetName() const override { return "MedicRevive"; }
 

@@ -31,6 +31,7 @@ public:
 private:
 	CountdownTimer m_repathtimer;
 	CountdownTimer m_failsafetimer;
+	CountdownTimer m_reachTimer;
 	CMeshNavigator m_nav;
 	AmmoSource m_type;
 	bool m_reached;

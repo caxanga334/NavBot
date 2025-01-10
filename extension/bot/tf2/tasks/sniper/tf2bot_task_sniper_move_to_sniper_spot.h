@@ -24,6 +24,7 @@ private:
 
 	void FindSniperSpot(CTF2Bot* bot);
 	void GetRandomSnipingSpot(CTF2Bot* bot);
+	void FilterWaypoints(CTF2Bot* bot, std::vector<CTFWaypoint*>& waypoints);
 	Vector GetRandomSnipingPosition(CTF2Bot* bot);
 	Vector GetSnipingSearchStartPosition(CTF2Bot* bot);
 };

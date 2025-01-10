@@ -20,6 +20,7 @@ private:
 	CMeshNavigator m_nav;
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_updateGoalTimer;
+
 };
 
 #endif // !NAVBOT_TF2_BOT_MVM_DEFEND_TASKS_H_

@@ -22,6 +22,7 @@ public:
 
 	TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
+	TaskEventResponseResult<CTF2Bot> OnRoundStateChanged(CTF2Bot* bot) override;
 
 	// Engineers don't retreat for health and ammo
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
@@ -34,12 +35,16 @@ public:
 	static constexpr auto behind_sentry_distance() { return 96.0f; }
 	static constexpr auto max_dispenser_to_sentry_range() { return 750.0f; }
 	static constexpr auto random_exit_spot_travel_limit() { return 900.0f; }
+	static constexpr auto mvm_sentry_to_bomb_range_limit() { return 1500.0f; }
 
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	CTFWaypoint* m_sentryWaypoint; // last waypoint used for building sentry guns
 	CountdownTimer m_boredTimer;
+	CountdownTimer m_sentryEnemyScanTimer;
+	CountdownTimer m_moveBuildingCheckTimer;
+	bool m_isMvM;
 
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
 	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
@@ -52,6 +57,7 @@ private:
 	Vector GetSentryNestBuildPos(CTF2Bot* me);
 	bool GetRandomEntranceSpot(CTF2Bot* me, Vector* out);
 	bool GetRandomExitSpot(CTF2Bot* me, Vector* out);
+	AITask<CTF2Bot>* MoveBuildingsIfNeeded(CTF2Bot* bot);
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_NEST_H_

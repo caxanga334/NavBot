@@ -11,8 +11,10 @@
 #include "tf2lib.h"
 #include "teamfortress2mod.h"
 
+#if SOURCE_ENGINE == SE_TF2
 static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
 static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
+#endif
 
 static const char* s_tf2gamemodenames[] = {
 	"NONE/DEFAULT",
@@ -44,6 +46,7 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	ListenForGameEvent("controlpoint_initialized");
 	ListenForGameEvent("mvm_begin_wave");
 	ListenForGameEvent("mvm_wave_complete");
+	ListenForGameEvent("mvm_wave_failed");
 	ListenForGameEvent("teamplay_flag_event");
 }
 
@@ -81,7 +84,23 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 
 		if (strncasecmp(name, "mvm_wave_complete", 17) == 0)
 		{
+			extmanager->ForEachBot([](CBaseBot* baseBot) {
+				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveEnd();
+			});
+
 			OnRoundStart();
+
+			return;
+		}
+
+		if (strncasecmp(name, "mvm_wave_failed", 15) == 0)
+		{
+			extmanager->ForEachBot([](CBaseBot* baseBot) {
+				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveFailed();
+			});
+
+			OnRoundStart();
+
 			return;
 		}
 
@@ -713,10 +732,12 @@ void CTeamFortress2Mod::FindPayloadCarts()
 
 					CBaseEntity* pTrigger = FindCaptureTriggerForTrain(pTrain, TeamFortress2::TFTeam::TFTeam_Red, this);
 
+#if SOURCE_ENGINE == SE_TF2
 					if (sm_navbot_tf_mod_debug.GetBool())
 					{
 						smutils->LogMessage(myself, "[DEBUG] Found RED payload cart %s<#%i> Trigger: %p", targetname.get(), train, pTrigger);
 					}
+#endif
 
 					// if a trigger is found, store it
 					m_red_payload.Set(pTrigger != nullptr ? pTrigger : pTrain);
@@ -738,10 +759,12 @@ void CTeamFortress2Mod::FindPayloadCarts()
 				{
 					CBaseEntity* pTrigger = FindCaptureTriggerForTrain(pTrain, TeamFortress2::TFTeam::TFTeam_Blue, this);
 
+#if SOURCE_ENGINE == SE_TF2
 					if (sm_navbot_tf_mod_debug.GetBool())
 					{
 						smutils->LogMessage(myself, "[DEBUG] Found RED payload cart %s<#%i> Trigger: %p", targetname.get(), train, pTrigger);
 					}
+#endif
 
 					// if a trigger is found, store it
 					m_blu_payload.Set(pTrigger != nullptr ? pTrigger : pTrain);
@@ -773,6 +796,7 @@ void CTeamFortress2Mod::FindControlPoints()
 		return true;
 	});
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_mod_debug.GetBool())
 	{
 		smutils->LogMessage(myself, "[DEBUG] Found %i control points.", i);
@@ -785,6 +809,7 @@ void CTeamFortress2Mod::FindControlPoints()
 			}
 		}
 	}
+#endif
 }
 
 void CTeamFortress2Mod::CheckForSetup()
@@ -845,10 +870,12 @@ void CTeamFortress2Mod::UpdateObjectiveResource()
 
 	if (ref == INVALID_EHANDLE_INDEX)
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_mod_debug.GetBool())
 		{
 			Warning("Failed to locate CTFObjectiveResource! \n");
 		}
+#endif
 		return;
 	}
 
@@ -856,10 +883,12 @@ void CTeamFortress2Mod::UpdateObjectiveResource()
 
 	if (entity == nullptr)
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_mod_debug.GetBool())
 		{
 			Warning("Found reference %i but failed to retreive CBaseEntity pointer!\n", ref);
 		}
+#endif
 		return;
 	}
 
@@ -889,10 +918,12 @@ void CTeamFortress2Mod::UpdateObjectiveResource()
 		m_objectiveResourcesData.m_flCapPercentages = entprops->GetPointerToEntData<float>(entity, offset + static_cast<unsigned int>(offset_from_gd));
 	}
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_mod_debug.GetBool())
 	{
 		ConColorMsg(Color(0, 128, 0, 255), "Found CTFObjectiveResource #%i <%p> \n", ref, entity);
 	}
+#endif
 }
 
 bool CTeamFortress2Mod::TeamMayCapturePoint(int team, int pointindex) const
@@ -946,6 +977,8 @@ void CTeamFortress2Mod::FindMvMBombHatchPosition()
 
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 {
+// convar is behind ifdef to prevent registering TF2 convars outside of TF2
+#if SOURCE_ENGINE == SE_TF2
 	std::string classname(sm_navbot_tf_force_class.GetString());
 	auto forcedclass = tf2lib::GetClassTypeFromName(classname);
 
@@ -953,12 +986,14 @@ bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 	{
 		return forcedclass != bot->GetMyClassType();
 	}
+#endif
 
 	return m_classselector.IsClassAboveLimit(bot->GetMyClassType(), bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam()));
 }
 
 TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) const
 {
+#if SOURCE_ENGINE == SE_TF2
 	std::string classname(sm_navbot_tf_force_class.GetString());
 	auto forcedclass = tf2lib::GetClassTypeFromName(classname);
 
@@ -966,6 +1001,7 @@ TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) c
 	{
 		return forcedclass;
 	}
+#endif
 
 	return m_classselector.SelectAClass(bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam()));
 }
@@ -1354,10 +1390,12 @@ CON_COMMAND(sm_navbot_tf_debug_capture_percentages, "Reads cap percentages from 
 
 	if (ref == INVALID_EHANDLE_INDEX)
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_mod_debug.GetBool())
 		{
 			Warning("Failed to locate CTFObjectiveResource! \n");
 		}
+#endif
 		return;
 	}
 
@@ -1365,10 +1403,12 @@ CON_COMMAND(sm_navbot_tf_debug_capture_percentages, "Reads cap percentages from 
 
 	if (entity == nullptr)
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_mod_debug.GetBool())
 		{
 			Warning("Found reference %i but failed to retreive CBaseEntity pointer!\n", ref);
 		}
+#endif
 		return;
 	}
 

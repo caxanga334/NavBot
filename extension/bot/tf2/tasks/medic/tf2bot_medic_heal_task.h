@@ -27,12 +27,14 @@ private:
 	CHandle<CBaseEntity> m_healTarget; // Player I am healing
 	CountdownTimer m_patientScanTimer; // Time to scan for people to heal
 	CountdownTimer m_respondToCallsTimer;
+	CountdownTimer m_reviveMarkerScanTimer;
 	Vector m_moveGoal;
+	bool m_isMvM;
 
 	void UpdateFollowTarget(CTF2Bot* bot);
 	void UpdateHealTarget(CTF2Bot* bot);
 	void UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat);
-
+	bool ScanForReviveMarkers(const Vector& center, CBaseEntity** marker);
 	void EquipMedigun(CTF2Bot* me);
 	float GetUbercharge(CTF2Bot* me);
 };

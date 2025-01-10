@@ -25,22 +25,15 @@
 				"linux"		"110"
 				"linux64"	"110"
 			}
-			"Weapon_Switch"
-			{
-				"windows"	"274"
-				"windows64" "274"
-				"linux"		"275"
-				"linux64"	"275"
-			}
 			/* vtable offset for CGameRules::ShouldCollide(int, int) */
-			"CGameRules_ShouldCollide"
+			"CGameRules::ShouldCollide"
 			{
 				"windows"	"29"
 				"windows64" "29"
 				"linux"		"30"
 				"linux64"	"30"
 			}
-			"CBasePlayer_ProcessUsercmds"
+			"CBasePlayer::ProcessUsercmds"
 			{
 				"windows"	"429"
 				"windows64" "429"

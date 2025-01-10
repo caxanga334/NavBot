@@ -52,6 +52,8 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot
 		}
 	}
 
+	m_readyCheck.Start(1.0f);
+
 	return Continue();
 }
 
@@ -87,11 +89,17 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 			return Done("Done upgrading, returning to class behavior!");
 		}
 
-		if (bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)
+		if (m_readyCheck.IsElapsed())
 		{
-			if (!bot->TournamentIsReady() && tf2lib::MVM_ShouldBotsReadyUp())
+			// Misc: randomize a bit how frequently bots will toggle ready to make it a bit more human
+			m_readyCheck.StartRandom(2.0f, 5.0f);
+
+			if (bot->GetBehaviorInterface()->IsReady(bot) == ANSWER_YES)
 			{
-				bot->ToggleTournamentReadyStatus(true);
+				if (!bot->TournamentIsReady() && tf2lib::MVM_ShouldBotsReadyUp())
+				{
+					bot->ToggleTournamentReadyStatus(true);
+				}
 			}
 		}
 	}

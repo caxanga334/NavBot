@@ -6,6 +6,7 @@
 #include <mods/tf2/nav/tfnavarea.h>
 #include <bot/tf2/tf2bot.h>
 #include <entities/tf2/tf_entities.h>
+#include "tf2bot_mvm_tasks.h"
 #include "tf2bot_mvm_defend.h"
 
 TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -28,6 +29,13 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 
 TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+	if (threat)
+	{
+		return PauseFor(new CTF2BotMvMCombatTask, "Attacking enemies!");
+	}
+
 	CBaseEntity* ent = m_flag.Get();
 
 	if (m_updateGoalTimer.IsElapsed())
@@ -39,7 +47,7 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (ent == nullptr)
 	{
-		Continue();
+		return Continue();
 	}
 
 	tfentities::HCaptureFlag flag(ent);

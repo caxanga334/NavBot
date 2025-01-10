@@ -30,6 +30,7 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	CountdownTimer m_repathtimer;
+	CountdownTimer m_readyCheck;
 	bool m_upgradeDuringWave;
 	
 	void FindIdlePosition();

@@ -152,7 +152,10 @@ bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)
 // TFConds that the bots should always ignore
 bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player)
 {
-	if (tf2lib::IsPlayerInCondition(player, TeamFortress2::TFCond::TFCond_HalloweenGhostMode))
+	// ignore halloween ghost, ignore robots inside spawn
+
+	if (tf2lib::IsPlayerInCondition(player, TeamFortress2::TFCond::TFCond_HalloweenGhostMode) ||
+		tf2lib::IsPlayerInCondition(player, TeamFortress2::TFCond::TFCond_UberchargedHidden))
 	{
 		return true;
 	}

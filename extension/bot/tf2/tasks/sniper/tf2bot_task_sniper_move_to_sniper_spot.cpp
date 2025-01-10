@@ -4,6 +4,8 @@
 #include <mods/tf2/nav/tfnav_waypoint.h>
 #include <navmesh/nav_pathfind.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include <entities/tf2/tf_entities.h>
+#include <mods/tf2/tf2lib.h>
 #include "tf2bot_task_sniper_snipe_area.h"
 #include "tf2bot_task_sniper_move_to_sniper_spot.h"
 
@@ -118,6 +120,11 @@ void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot)
 		}
 	}
 
+	if (!spots.empty())
+	{
+		FilterWaypoints(bot, spots);
+	}
+
 	if (spots.empty())
 	{
 		m_goal = GetRandomSnipingPosition(bot);
@@ -129,6 +136,32 @@ void CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingSpot(CTF2Bot* bot)
 	goal->Use(bot); // prevent other bots from selecting
 	m_waypoint = goal;
 	m_goal = goal->GetRandomPoint();
+}
+
+void CTF2BotSniperMoveToSnipingSpotTask::FilterWaypoints(CTF2Bot* bot, std::vector<CTFWaypoint*>& waypoints)
+{
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() != TeamFortress2::GameModeType::GM_MVM)
+	{
+		return; // only mvm needs filtering for now
+	}
+
+	CBaseEntity* pEntity = tf2lib::mvm::GetMostDangerousFlag();
+	Vector pos = bot->GetAbsOrigin();
+
+	if (pEntity == nullptr)
+	{
+		tfentities::HCaptureFlag flag(pEntity);
+		pos = flag.GetPosition();
+	}
+
+	waypoints.erase(std::remove_if(waypoints.begin(), waypoints.end(), [&pos](const CTFWaypoint* waypoint) {
+		if ((waypoint->GetOrigin() - pos).Length() > 1500.0f)
+		{
+			return true;
+		}
+
+		return false;
+	}), waypoints.end());
 }
 
 Vector CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingPosition(CTF2Bot* bot)
@@ -160,5 +193,31 @@ Vector CTF2BotSniperMoveToSnipingSpotTask::GetRandomSnipingPosition(CTF2Bot* bot
 
 Vector CTF2BotSniperMoveToSnipingSpotTask::GetSnipingSearchStartPosition(CTF2Bot* bot)
 {
+	switch (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode())
+	{
+	case TeamFortress2::GameModeType::GM_MVM:
+	{
+		CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
+
+		if (flag)
+		{
+			tfentities::HCaptureFlag cf(flag);
+			Vector pos = cf.GetPosition();
+			CNavArea* area = TheNavMesh->GetNearestNavArea(pos, 256.0f);
+
+			if (area)
+			{
+				return area->GetCenter();
+			}
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
+
+
 	return bot->GetAbsOrigin();
 }

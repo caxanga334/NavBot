@@ -478,6 +478,34 @@ bool tf2lib::IsBuildingSapped(CBaseEntity* entity)
 	return false;
 }
 
+CBaseEntity* tf2lib::GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team)
+{
+	CBaseEntity* spawn = nullptr;
+
+	UtilHelpers::ForEachEntityOfClassname("info_player_teamspawn", [&spawn, &team](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			bool disabled = false;
+			entprops->GetEntPropBool(index, Prop_Data, "m_bDisabled", disabled);
+			
+			if (disabled)
+			{
+				return true; // keep loop
+			}
+
+			if (tf2lib::GetEntityTFTeam(index) == team)
+			{
+				spawn = entity;
+				return false; // end loop
+			}
+		}
+
+		return true;
+	});
+
+	return spawn;
+}
+
 CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 {
 	const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();

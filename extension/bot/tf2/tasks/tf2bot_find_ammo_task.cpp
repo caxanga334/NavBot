@@ -39,7 +39,11 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 		return Done("Failed to build a path to the ammo source!");
 	}
 
+	float range = bot->GetRangeTo(m_sourcepos);
+
 	m_repathtimer.Start(0.5f);
+	float time = range / (bot->GetMaxSpeed() * 0.25f);
+	m_reachTimer.Start(time + 4.0f);
 
 	return Continue();
 }
@@ -48,6 +52,11 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	if (!IsSourceStillValid(bot))
 		return Done("Ammo Source is invalid!");
+
+	if (!m_reached && m_reachTimer.IsElapsed())
+	{
+		return Done("Failed to reach ammo source withtin time limit!");
+	}
 
 	if (m_reached && m_failsafetimer.IsElapsed())
 	{
@@ -77,6 +86,12 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (m_type == AmmoSource::DISPENSER && bot->GetRangeTo(m_sourcepos) < DISPENSER_TOUCH_RANGE)
 	{
+		if (!m_reached)
+		{
+			m_reached = true;
+			m_failsafetimer.StartRandom(5.0f, 10.0f);
+		}
+
 		return Continue();
 	}
 

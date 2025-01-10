@@ -24,6 +24,7 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
 	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
 	m_upgrademan.SetMe(this);
+	m_cloakMeter = nullptr;
 }
 
 CTF2Bot::~CTF2Bot()
@@ -45,6 +46,14 @@ void CTF2Bot::Update()
 		{
 			m_upgrademan.Update();
 		}
+	}
+
+	if (m_doMvMUpgrade)
+	{
+		// refunds triggers a respawn, this triggers Reset in the middle of a task execution which results in crashes
+		// to fix this, we run the manager before the base class update (which runs the behavior system).
+		m_upgrademan.Update();
+		m_doMvMUpgrade = false;
 	}
 
 	CBaseBot::Update();
@@ -70,6 +79,8 @@ void CTF2Bot::Spawn()
 	{
 		m_upgrademan.OnBotSpawn();
 	}
+
+	m_cloakMeter = entprops->GetPointerToEntData<float>(GetEntity(), Prop_Send, "m_flCloakMeter");
 
 	CBaseBot::Spawn();
 }
@@ -375,6 +386,20 @@ void CTF2Bot::SetMyTeleporterEntrance(CBaseEntity* entity)
 void CTF2Bot::SetMyTeleporterExit(CBaseEntity* entity)
 {
 	m_myTeleporterExit = entity;
+}
+
+bool CTF2Bot::IsCarryingObject() const
+{
+	bool carrying = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bCarryingObject", carrying);
+	return carrying;
+}
+
+CBaseEntity* CTF2Bot::GetObjectBeingCarriedByMe() const
+{
+	int ent = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hCarriedObject", ent);
+	return gamehelpers->ReferenceToEntity(ent);
 }
 
 void CTF2Bot::FindMyBuildings()

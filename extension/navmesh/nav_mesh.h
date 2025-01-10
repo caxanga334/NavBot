@@ -411,6 +411,9 @@ public:
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
 	virtual void OnRoundRestart( void );								// invoked when a game round restarts
 	virtual void OnRoundRestartPreEntity( void );						// invoked when a game round restarts, but before entities are deleted and recreated
+protected:
+	void PropagateOnRoundRestart();
+public:
 	virtual void OnBreakableCreated( edict_t *breakable ) { }		// invoked when a breakable is created
 	virtual void OnBreakableBroken( edict_t *broken ) { }			// invoked when a breakable is broken
 	virtual void OnAreaBlocked( CNavArea *area );						// invoked when the area becomes blocked
