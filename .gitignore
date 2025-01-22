@@ -36,3 +36,6 @@ build/
 versioning/
 output/
 premake5_build/
+
+# Visual Studio Code files and paths
+.vscode/
