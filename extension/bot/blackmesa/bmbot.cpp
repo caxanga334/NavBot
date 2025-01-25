@@ -18,12 +18,12 @@ bool CBlackMesaBot::HasJoinedGame()
 {
 	if (CBlackMesaDeathmatchMod::GetBMMod()->IsTeamPlay())
 	{
-		return GetMyBMTeam() >= blackmesa::BMTeam::Team_Marines;
+		return GetCurrentTeamIndex() > TEAM_SPECTATOR;
 	}
 
 	// in deathmatch mode, all players are on team unassigned
 
-	return GetMyBMTeam() != blackmesa::BMTeam::Team_Spectator;
+	return GetCurrentTeamIndex() != TEAM_SPECTATOR;
 }
 
 void CBlackMesaBot::TryJoinGame()

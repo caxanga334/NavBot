@@ -908,4 +908,45 @@ CON_COMMAND(sm_navbot_debug_gamerules_ptr, "Tests if the extension is able to ge
 	}
 }
 
+CON_COMMAND(sm_navbot_debug_cvar_value, "Reports the value of ConVars.")
+{
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_cvar_value <convar name>\n");
+		return;
+	}
+
+	const char* name = args[1];
+
+	ConVarRef cvref(name, false);
+
+	if (!cvref.IsValid())
+	{
+		META_CONPRINTF("Invalid convar named \"%s\"!\n", name);
+		return;
+	}
+
+	int iValue = cvref.GetInt();
+	bool bValue = cvref.GetBool();
+	float flValue = cvref.GetFloat();
+	const char* szValue = cvref.GetString();
+
+	META_CONPRINTF("Values for ConVar \"%s\": \n", name);
+	META_CONPRINTF("    Integer: %i\n    Float: %f\n    Bool: %s\n    String: %s\n", iValue, flValue, bValue ? "TRUE" : "FALSE", szValue);
+
+	ConVar* cvar = g_pCVar->FindVar(name);
+
+	if (cvar != nullptr)
+	{
+		META_CONPRINT("Got valid ConVar pointer from ICVar interface!\n");
+
+		iValue = cvar->GetInt();
+		bValue = cvar->GetBool();
+		flValue = cvar->GetFloat();
+		szValue = cvar->GetString();
+
+		META_CONPRINTF("    Integer: %i\n    Float: %f\n    Bool: %s\n    String: %s\n", iValue, flValue, bValue ? "TRUE" : "FALSE", szValue);
+	}
+}
+
 #endif // EXT_DEBUG

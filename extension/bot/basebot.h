@@ -37,7 +37,7 @@ public:
 
 	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools);
 
-	static int m_maxStringCommandsPerSecond;
+	inline static int m_maxStringCommandsPerSecond{ 20 };
 
 	// Called when the bot is added to the game
 	void PostAdd();
