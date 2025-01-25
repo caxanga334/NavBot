@@ -556,3 +556,33 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 
 	return flag;
 }
+
+CBaseEntity* tf2lib::mvm::GetMostDangerousTank()
+{
+	const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
+
+	// find the tank closests to the bomb hatch position
+	// not the best metric due to map design, we could follow the tank's path and see which tank is closests to the last path node
+
+	CBaseEntity* tank = nullptr;
+	float distance = 1e10f;
+
+	UtilHelpers::ForEachEntityOfClassname("tank_boss", [&hatch, &tank, &distance](int index, edict_t* edict, CBaseEntity* entity) {
+
+		if (entity != nullptr)
+		{
+			const Vector& origin = UtilHelpers::getEntityOrigin(entity);
+			float range = (hatch - origin).Length();
+
+			if (range < distance)
+			{
+				distance = range;
+				tank = entity;
+			}
+		}
+
+		return true;
+	});
+
+	return tank;
+}

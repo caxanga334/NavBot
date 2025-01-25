@@ -25,7 +25,7 @@
 		"Offsets"
 		{
 			// vtable offset for CGameRules::ShouldCollide(int, int)
-			"CGameRules_ShouldCollide"
+			"CGameRules::ShouldCollide"
 			{
 				"windows"	"29"
 				"linux"		"30"

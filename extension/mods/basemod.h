@@ -5,6 +5,7 @@
 #include <optional>
 #include <ITextParsers.h>
 #include <sdkports/eventlistenerhelper.h>
+#include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/weaponinfo.h>
 #include <bot/interfaces/profile.h>
 #include <IPlayerHelpers.h>
@@ -15,7 +16,7 @@ class CNavMesh;
 class CBaseBot;
 
 // Base game mod class
-class CBaseMod : public CEventListenerHelper, public ITextListener_SMC
+class CBaseMod : public CEventListenerHelper, public SourceMod::ITextListener_SMC
 {
 public:
 	CBaseMod();

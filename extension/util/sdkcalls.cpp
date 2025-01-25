@@ -95,6 +95,7 @@ bool CSDKCaller::Init()
 
 	if (fail)
 	{
+		smutils->LogError(myself, "Failed to initialize SDK Caller gamedata!");
 		throw std::runtime_error("Failed to initialize SDK Caller gamedata!");
 	}
 

@@ -36,6 +36,10 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #endif // SOURCE_ENGINE == SE_DODS
 
+#if SOURCE_ENGINE == SE_BMS
+#include <mods/blackmesa/blackmesadm_mod.h>
+#endif // SOURCE_ENGINE == SE_BMS
+
 #include <bot/pluginbot/pluginbot.h>
 
 #undef max // valve mathlib conflict fix
@@ -224,6 +228,8 @@ void CExtManager::AllocateMod()
 	m_mod = std::make_unique<CTeamFortress2Mod>();
 #elif SOURCE_ENGINE == SE_DODS
 	m_mod = std::make_unique<CDayOfDefeatSourceMod>();
+#elif SOURCE_ENGINE == SE_BMS
+	m_mod = std::make_unique<CBlackMesaDeathmatchMod>();
 #else
 	m_mod = std::make_unique<CBaseMod>();
 #endif // SOURCE_ENGINE == SE_TF2

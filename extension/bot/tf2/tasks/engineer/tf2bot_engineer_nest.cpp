@@ -172,6 +172,16 @@ bool CTF2BotEngineerNestTask::OnTaskPause(CTF2Bot* bot, AITask<CTF2Bot>* nextTas
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	if (pastTask)
+	{
+		CTF2BotEngineerMoveObjectTask* moveTask = dynamic_cast<CTF2BotEngineerMoveObjectTask*>(pastTask);
+
+		if (moveTask != nullptr)
+		{
+			m_moveBuildingCheckTimer.StartRandom(4.0f, 10.0f);
+		}
+	}
+
 	return Continue();
 }
 

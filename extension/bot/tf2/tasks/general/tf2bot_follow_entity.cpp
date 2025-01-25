@@ -131,12 +131,12 @@ TaskEventResponseResult<CTF2Bot> CTF2BotFollowEntityTask::OnMoveToFailure(CTF2Bo
 {
 	if (++m_pathfailures > 20)
 	{
-		TryDone(PRIORITY_HIGH, "Too many path failures!");
+		return TryDone(PRIORITY_HIGH, "Too many path failures!");
 	}
 
 	if (!ValidateFollowEntity(bot))
 	{
-		TryDone(PRIORITY_HIGH, "Entity is no longer valid!");
+		return TryDone(PRIORITY_HIGH, "Entity is no longer valid!");
 	}
 
 	GetEntityPosition(bot, m_followgoal);

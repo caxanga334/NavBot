@@ -126,3 +126,14 @@ CON_COMMAND_F(sm_navbot_tool_build_path_new, "Builds a path from your current po
 		area->DrawFilled(0, 128, 0, 64, 30.0f);
 	}
 }
+
+CON_COMMAND_F(sm_navbot_tool_report_hull_sizes, "Prints the player's hull size to the console.", FCVAR_CHEAT)
+{
+	edict_t* host = UtilHelpers::GetListenServerHost();
+
+	const Vector& mins = host->GetCollideable()->OBBMins();
+	const Vector& maxs = host->GetCollideable()->OBBMaxs();
+
+	META_CONPRINTF("Mins: %3.2f %3.2f %3.2f\n", mins.x, mins.y, mins.z);
+	META_CONPRINTF("Maxs: %3.2f %3.2f %3.2f\n", maxs.x, maxs.y, maxs.z);
+}

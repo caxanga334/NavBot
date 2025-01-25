@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <extension.h>
 #include <util/entprops.h>
+#include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/nav/tfnavmesh.h>
@@ -158,6 +159,80 @@ TaskResult<CTF2Bot> CTF2BotMvMCombatTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	m_nav.Update(bot);
+
+	return Continue();
+}
+
+CTF2BotMvMTankBusterTask::CTF2BotMvMTankBusterTask(CBaseEntity* tank) :
+	m_nav(CChaseNavigator::LEAD_SUBJECT, 650.0f), m_tank(tank)
+{
+}
+
+TaskResult<CTF2Bot> CTF2BotMvMTankBusterTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	m_rescanTimer.Start(2.0f);
+
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotMvMTankBusterTask::OnTaskUpdate(CTF2Bot* bot)
+{
+	CBaseEntity* tank = m_tank.Get();
+
+	if (tank == nullptr || !UtilHelpers::IsEntityAlive(tank))
+	{
+		return Done("Tank destroyed!");
+	}
+
+	if (m_rescanTimer.IsElapsed())
+	{
+		m_rescanTimer.Start(2.0f);
+
+		CBaseEntity* othertank = tf2lib::mvm::GetMostDangerousTank();
+		CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(true);
+		const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
+		const Vector& pos1 = UtilHelpers::getEntityOrigin(tank);
+
+		if (flag)
+		{
+			tfentities::HCaptureFlag cf(flag);
+			Vector pos2 = cf.GetPosition();
+
+			// bomb is closer to the hatch and the tank
+			if ((hatch - pos2).LengthSqr() < (hatch - pos1).LengthSqr())
+			{
+				CBaseEntity* owner = cf.GetOwnerEntity();
+
+				if (owner)
+				{
+					auto threat = bot->GetSensorInterface()->AddKnownEntity(owner);
+
+					if (threat)
+					{
+						threat->UpdatePosition();
+					}
+				}
+
+				return Done("Priority threat: bomb is closer to the hatch than the tank!");
+			}
+
+			if (othertank && othertank != tank)
+			{
+				const Vector& otherPos = UtilHelpers::getEntityOrigin(othertank);
+
+				// another tank is closer to the hatch!
+				if ((hatch - otherPos).LengthSqr() < (hatch - pos1).LengthSqr())
+				{
+					m_tank = othertank;
+					tank = othertank;
+				}
+			}
+		}
+	}
+
+	CTF2BotPathCost cost(bot);
+	m_nav.Update(bot, tank, cost, nullptr);
+	bot->GetControlInterface()->AimAt(tank, IPlayerController::LOOK_INTERESTING, 1.0f, "Looking at the tank position!");
 
 	return Continue();
 }

@@ -30,6 +30,26 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	CBaseEntity* tank = tf2lib::mvm::GetMostDangerousTank();
+
+	if (tank)
+	{
+		auto myclass = bot->GetMyClassType();
+
+		switch (myclass)
+		{
+		case TeamFortress2::TFClass_Soldier:
+			[[fallthrough]];
+		case TeamFortress2::TFClass_DemoMan:
+			[[fallthrough]];
+		case TeamFortress2::TFClass_Pyro:
+		{
+			return PauseFor(new CTF2BotMvMTankBusterTask(tank), "Destroying tanks!");
+		}
+		default:
+			break;
+		}
+	}
 
 	if (threat)
 	{
@@ -70,7 +90,7 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (range < 512.0f)
 	{
-		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_ALERT, 0.2f, "Looking at flag position!");
+		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_INTERESTING, 0.2f, "Looking at flag position!");
 	}
 
 	return Continue();

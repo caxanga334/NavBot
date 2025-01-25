@@ -53,6 +53,7 @@ namespace tf2lib::mvm
 {
 	// returns the most dangerous in mvm
 	CBaseEntity* GetMostDangerousFlag(bool ignoreDropped = false);
+	CBaseEntity* GetMostDangerousTank();
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)

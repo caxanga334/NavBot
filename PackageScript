@@ -15,6 +15,7 @@ folder_list = [
   'addons/sourcemod/gamedata/navbot.games',
   'addons/sourcemod/configs/navbot',
   'addons/sourcemod/configs/navbot/tf',
+  'addons/sourcemod/configs/navbot/bms',
 ]
 
 if 'x86_64' in Extension.target_archs:
@@ -92,6 +93,12 @@ CopyFiles('configs/tf', 'addons/sourcemod/configs/navbot/tf',
   [ 
     'class_selection.cfg',
     'mvm_upgrades.cfg',
+    'weapons.cfg'
+  ]
+)
+
+CopyFiles('configs/bms', 'addons/sourcemod/configs/navbot/bms',
+  [ 
     'weapons.cfg'
   ]
 )
