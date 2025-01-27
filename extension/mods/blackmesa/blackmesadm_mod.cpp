@@ -52,24 +52,21 @@ void CBlackMesaDeathmatchMod::OnMapStart()
 {
 	CBaseMod::OnMapStart();
 
-	// ConVarRef is partially broken on Black Mesa
-	ConVar* teamplay = g_pCVar->FindVar("mp_teamplay");
+	ConVarRef mp_teamplay("mp_teamplay");
 
-	if (teamplay == nullptr)
+	if (mp_teamplay.IsValid())
 	{
-		smutils->LogError(myself, "Failed to get ConVar pointer for \"mp_teamplay\"!");
+		m_isTeamPlay = mp_teamplay.GetBool();
 	}
 	else
 	{
-		if (teamplay->GetInt() != 0)
-		{
-			m_isTeamPlay = true;
-		}
-		else
-		{
-			m_isTeamPlay = false;
-		}
+		m_isTeamPlay = false;
+		smutils->LogError(myself, "Failed to find ConVar \"mp_teamplay\"!");
 	}
+
+#ifdef EXT_DEBUG
+	rootconsole->ConsolePrint("Team Play is %s", m_isTeamPlay ? "ON" : "OFF");
+#endif // EXT_DEBUG
 }
 
 void CBlackMesaDeathmatchMod::OnRoundStart()
