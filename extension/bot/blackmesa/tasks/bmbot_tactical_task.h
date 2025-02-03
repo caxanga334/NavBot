@@ -14,11 +14,12 @@ public:
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
 	TaskResult<CBlackMesaBot> OnTaskResume(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask) override;
 
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
+
 	const char* GetName() const override { return "TacticalMonitor"; }
 private:
 	CountdownTimer m_healthScanTimer;
-	CountdownTimer m_armorScanTimer;
-	CountdownTimer m_weaponScanTimer;
+	CountdownTimer m_deployTripminesTimer;
 };
 
 #endif // !NAVBOT_BLACK_MESA_BOT_TACTICAL_TASK_H_

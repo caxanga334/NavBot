@@ -9,7 +9,6 @@ CBlackMesaNavMesh::CBlackMesaNavMesh() :
 	AddWalkableEntity("info_player_marine");
 	AddWalkableEntity("info_player_scientist");
 
-	navgenparams->generation_step_size = 20.0f; // experimental
 	navgenparams->half_human_width = 16.0f;
 	navgenparams->half_human_height = 35.0f;
 	navgenparams->human_height = 71.0f;

@@ -67,6 +67,13 @@ public:
 	bool HasWeapon(CBaseEntity* weapon);
 
 	/**
+	 * @brief Gets a weapon CBaseEntity pointer (if owned by the bot)
+	 * @param classname Weapon classname to search.
+	 * @return Weapon entity pointer or NULL if the bot doesn't own a weapon of the given classname.
+	 */
+	CBaseEntity* GetWeaponEntity(const char* classname);
+
+	/**
 	 * @brief Registers the given weapon to the bot inventory.
 	 * @param weapon Weapon entity.
 	 */

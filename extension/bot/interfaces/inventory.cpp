@@ -69,6 +69,20 @@ bool IInventory::HasWeapon(CBaseEntity* weapon)
 	});
 }
 
+CBaseEntity* IInventory::GetWeaponEntity(const char* classname)
+{
+	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::shared_ptr<CBotWeapon>& weaponptr) {
+		return weaponptr->IsValid() && (strcmp(weaponptr->GetClassname().c_str(), classname) == 0);
+	});
+
+	if (it != m_weapons.end())
+	{
+		return it->get()->GetEntity();
+	}
+
+	return nullptr;
+}
+
 void IInventory::AddWeaponToInventory(CBaseEntity* weapon)
 {
 	if (!HasWeapon(weapon))

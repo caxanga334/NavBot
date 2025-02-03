@@ -1514,6 +1514,20 @@ IMovement::ElevatorState IMovement::EState_MoveToWaitPosition()
 		return ElevatorState::CALL_ELEVATOR;
 	}
 
+	Vector myPos = me->GetAbsOrigin();
+	float zDiff = std::fabs(myPos.z - m_fromFloor->wait_position.z);
+
+	if (zDiff > GetStepHeight())
+	{
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 0, 0, "%s <Elevator Move to Wait Position> Z diff > step height!\n    %3.2f > %3.2f \n    (%3.2f, %3.2f, %3.2f) (%3.2f, %3.2f, %3.2f) \n", 
+				me->GetDebugIdentifier(), zDiff, GetStepHeight(), myPos.x, myPos.y, myPos.z, m_fromFloor->wait_position.x, m_fromFloor->wait_position.y, m_fromFloor->wait_position.z);
+		}
+
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
 	if (me->GetRangeTo(m_fromFloor->wait_position) < IMovement::ELEV_MOVE_RANGE)
 	{
 		if (m_elevator->GetType() == CNavElevator::ElevatorType::AUTO_TRIGGER)

@@ -12,7 +12,8 @@ public:
 
 	const char* GetName() const override { return "DeathmatchScenario"; }
 private:
-
+	IntervalTimer m_searchWeaponTimer;
+	IntervalTimer m_searchArmorTimer;
 
 };
 
