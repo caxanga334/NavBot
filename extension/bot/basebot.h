@@ -210,15 +210,55 @@ public:
 		}
 	}
 
-	// Gets the bot random number generator
-	librandom::RandomNumberGenerator<std::mt19937, unsigned int>& GetRandomNumberGenerator() { return m_rng; }
+	/**
+	 * @brief Fires the currently held weapon at the given enemy.
+	 * @param enemy The enemy the bot will fire at.
+	 * @param doAim If set to true, this function will also make the bot aim at the current enemy.
+	 */
+	virtual void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true);
+	/**
+	 * @brief If the bot was unable to fire their weapon, this function will be called to handle a possible need for reloads.
+	 * @param weapon Weapon that the bot was unable to fire.
+	 */
+	virtual void ReloadIfNeeded(CBotWeapon* weapon);
+
+	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_usercmdrng{}; // random number generator bot user commands
+	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_botrng{}; // random number generator for bot stuff
 protected:
 	bool m_isfirstspawn;
 
 	// Adds a SourceHook Hook into the hook list to be removed when this is destroyed
 	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
 
-	librandom::RandomNumberGenerator<std::mt19937, unsigned int> m_rng; // the bot random number generator
+	/**
+	 * @brief Determines if the weapon can be fired for the given range and determines which attack type is possible to use.
+	 * @param weapon Weapon that the bot will fire.
+	 * @param range Range to the target.
+	 * @param allowSecondary Allow secondary attacks?
+	 * @param doPrimary Set to true to perform a primary attack or false for secondary.
+	 * @return true if the bot can fire their weapon. false otherwise.
+	 */
+	virtual bool CanFireWeapon(CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary);
+	/**
+	 * @brief Called to handle the given weapon.
+	 * @param weapon Weapon that the bot wants to fire.
+	 * @return true if the weapon can be fired, false if not.
+	 */
+	virtual bool HandleWeapon(CBotWeapon* weapon);
+	/**
+	 * @brief This function has two purposes:
+	 * 
+	 * 1. Check if the line of fire is clear to the enemy. Return false if the line of fire is blocked.
+	 * 
+	 * 2. If 'doAim' is true, instruct the player controller interface to aim at the current enemy. Determine the best spot to aim at.
+	 * @param enemy Current enemy.
+	 * @param weapon Weapon that the bot will be aiming with.
+	 * @param doAim If true, send AimAt commands to the control interface.
+	 * @param range Distance between the bot and the enemy.
+	 * @param isPrimary True if using primary attack, false if secondary attack.
+	 * @return True if the line of fire is clear. False if not.
+	 */
+	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
 
 private:
 	int m_simulationtick;
@@ -247,6 +287,7 @@ private:
 	IntervalTimer m_burningtimer;
 	CMeshNavigator* m_activeNavigator;
 	CountdownTimer m_randomChatMessageTimer;
+	CountdownTimer m_reloadCheckDelay;
 
 	void ExecuteQueuedCommands();
 };

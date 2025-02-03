@@ -154,6 +154,8 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	m_cfg_sdkhooks = nullptr;
 	m_cfg_sdktools = nullptr;
 	randomgen->RandomReSeed(); // uses std::random_device to generate a random seed
+	CBaseBot::s_usercmdrng.RandomReSeed();
+	CBaseBot::s_botrng.RandomReSeed();
 
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();
@@ -209,6 +211,13 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
+	// Init will grab the offset values from the gamedata files.
+	if (!sdkcalls->Init())
+	{
+		ke::SafeSprintf(error, maxlen, "Failed to initialize SDK calls!");
+		return false;
+	}
+
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	ConVar_Register(0, this);
 	playerhelpers->AddClientListener(this);
@@ -260,7 +269,7 @@ void NavBotExt::SDK_OnAllLoaded()
 	}
 
 	entprops->Init(true);
-	sdkcalls->Init();
+	sdkcalls->PostInit(); // setup the calls
 
 	natives::setup(m_natives);
 	natives::bots::setup(m_natives);

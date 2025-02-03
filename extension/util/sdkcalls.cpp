@@ -21,6 +21,8 @@ CSDKCaller::CSDKCaller()
 	m_call_cgr_shouldcollide = nullptr;
 	m_offsetof_cbp_processusercmds = invalid_offset();
 	m_call_cbp_processusercmds = nullptr;
+	m_offsetof_cba_getbonetransform = invalid_offset();
+	m_call_cba_getbonetransform = nullptr;
 }
 
 CSDKCaller::~CSDKCaller()
@@ -78,7 +80,13 @@ bool CSDKCaller::Init()
 	if (!cfg_navbot->GetOffset("CBasePlayer::ProcessUsercmds", &m_offsetof_cbp_processusercmds))
 	{
 		// don't fail, this is optional
-		m_offsetof_cbp_processusercmds = -1;
+		m_offsetof_cbp_processusercmds = invalid_offset();
+	}
+
+	if (!cfg_navbot->GetOffset("CBaseAnimating::GetBoneTransform", &m_offsetof_cba_getbonetransform))
+	{
+		// don't fail, this is optional
+		m_offsetof_cba_getbonetransform = invalid_offset();
 	}
 
 	gameconfs->CloseGameConfigFile(cfg_navbot);
@@ -88,18 +96,16 @@ bool CSDKCaller::Init()
 	cfg_sdktools = nullptr;
 	cfg_sdkhooks = nullptr;
 
-	if (fail == false)
-	{
-		fail = !SetupCalls();
-	}
+	return !fail;
+}
 
-	if (fail)
+void CSDKCaller::PostInit()
+{
+	if (!SetupCalls())
 	{
-		smutils->LogError(myself, "Failed to initialize SDK Caller gamedata!");
-		throw std::runtime_error("Failed to initialize SDK Caller gamedata!");
+		smutils->LogError(myself, "One or more SDK calls setup failed!");
+		throw std::runtime_error("SDK calls setup failed!");
 	}
-
-	return true;
 }
 
 bool CSDKCaller::CBaseCombatCharacter_Weapon_Switch(CBaseEntity* pBCC, CBaseEntity* pWeapon)
@@ -149,12 +155,21 @@ void CSDKCaller::CBasePlayer_ProcessUsercmds(CBaseEntity* pBP, CBotCmd* botcmd)
 	m_call_cbp_processusercmds->Execute(vstk, nullptr);
 }
 
+void CSDKCaller::CBaseAnimating_GetBoneTransform(CBaseEntity* pBA, int bone, matrix3x4_t* result)
+{
+	/* void CBaseAnimating::GetBoneTransform( int iBone, matrix3x4_t &pBoneToWorld ) */
+
+	ArgBuffer<void*, int, void*> vstk(pBA, bone, result);
+	m_call_cba_getbonetransform->Execute(vstk, nullptr);
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
 	SetupCBCWeaponSlot();
 	SetupCGRShouldCollide();
 	SetupCBPProcessUserCmds();
+	SetupCBAGetBoneTransform();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
@@ -165,6 +180,11 @@ bool CSDKCaller::SetupCalls()
 
 	// this is optional
 	if (m_offsetof_cbp_processusercmds > 0 && m_call_cbp_processusercmds == nullptr)
+	{
+		return false;
+	}
+
+	if (m_offsetof_cba_getbonetransform > 0 && m_call_cba_getbonetransform == nullptr)
 	{
 		return false;
 	}
@@ -266,4 +286,27 @@ void CSDKCaller::SetupCBPProcessUserCmds()
 	params[4].type = PassType_Basic;
 
 	m_call_cbp_processusercmds = g_pBinTools->CreateVCall(m_offsetof_cbp_processusercmds, 0, 0, nullptr, params, 5);
+}
+
+void CSDKCaller::SetupCBAGetBoneTransform()
+{
+	using namespace SourceMod;
+
+	if (m_offsetof_cba_getbonetransform <= 0)
+	{
+		return;
+	}
+
+	/* void CBaseAnimating::GetBoneTransform( int iBone, matrix3x4_t &pBoneToWorld ) */
+
+	PassInfo params[2];
+	params[0].flags = PASSFLAG_BYVAL;
+	params[0].size = sizeof(int);
+	params[0].type = PassType_Basic;
+	params[1].flags = PASSFLAG_BYVAL;
+	params[1].size = sizeof(void*);
+	params[1].type = PassType_Basic;
+
+
+	m_call_cba_getbonetransform = g_pBinTools->CreateVCall(m_offsetof_cba_getbonetransform, 0, 0, nullptr, params, 2);
 }

@@ -101,7 +101,7 @@ std::shared_ptr<const CKnownEntity> CTF2BotMainTask::SelectTargetThreat(CBaseBot
 	return InternalSelectTargetThreat(static_cast<CTF2Bot*>(me), threat1, threat2);
 }
 
-Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player)
+Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
 {
 	Vector aimat(0.0f, 0.0f, 0.0f);
 	CTF2Bot* tf2bot = static_cast<CTF2Bot*>(me);
@@ -125,6 +125,8 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const C
 
 void CTF2BotMainTask::FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat)
 {
+	/* TO-DO: Fire Weapon was added to the base bot class. Migrate to there. */
+
 	if (me->GetPlayerInfo()->IsDead())
 		return;
 

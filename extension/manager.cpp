@@ -169,6 +169,8 @@ void CExtManager::OnMapStart()
 {
 	TheNavMesh->OnMapStart();
 	m_mod->OnMapStart();
+	CBaseBot::s_usercmdrng.RandomReSeed();
+	CBaseBot::s_botrng.RandomReSeed();
 
 	if (m_botnames.size() != 0)
 	{

@@ -8,10 +8,9 @@
 #include <util/sdkcalls.h>
 #include "extplayer.h"
 
-extern CGlobalVars* gpGlobals;
-extern IPlayerInfoManager* playerinfomanager;
-extern IServerGameClients* gameclients;
-extern CNavMesh* TheNavMesh;
+#ifdef EXT_DEBUG
+#include <sdkports/debugoverlay_shared.h>
+#endif // EXT_DEBUG
 
 constexpr auto PLAYER_NAV_UPDATE_TIME = 0.1f; // Interval of nav mesh data updates
 constexpr auto NEAREST_AREA_MAX_DISTANCE = 128.0f;
@@ -388,6 +387,17 @@ CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone por
 		return;
 	}
 
+	std::unique_ptr<char[]> bonename = std::make_unique<char[]>(256);
+
+	if (args.ArgC() >= 2)
+	{
+		ke::SafeStrcpy(bonename.get(), 256U, args[1]);
+	}
+	else
+	{
+		ke::SafeStrcpy(bonename.get(), 256U, "ValveBiped.Bip01_Head1");
+	}
+
 	auto model = UtilHelpers::GetEntityModelPtr(player);
 
 	if (!model)
@@ -396,10 +406,28 @@ CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone por
 		return;
 	}
 
-	int bone = UtilHelpers::LookupBone(model, "ValveBiped.Bip01_Head1");
+	int bone = UtilHelpers::LookupBone(model.get(), bonename.get());
 
-	rootconsole->ConsolePrint("Bone Lookup result = %i", bone);
-	delete model;
+	rootconsole->ConsolePrint("Bone \"%s\" Lookup result = %i", bonename.get(), bone);
+
+	if (bone < 0)
+	{
+		return;
+	}
+
+	Vector mins{ -1.0f, -1.0f, -1.0f };
+	Vector maxs{ 1.0f, 1.0f, 1.0f };
+
+	Vector pos;
+	QAngle angles;
+	
+	if (!UtilHelpers::GetBonePosition(player->GetIServerEntity()->GetBaseEntity(), bone, pos, angles))
+	{
+		rootconsole->ConsolePrint("Warning: GetBonePosition is not available for the current mod!");
+		return;
+	}
+
+	NDebugOverlay::Box(pos, mins, maxs, 255, 0, 0, 255, 10.0f);
 }
 
 CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
@@ -441,4 +469,22 @@ CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 
 	rootconsole->ConsolePrint("String Var: '%s' Length: %i", string_var, length);
 }
+
+CON_COMMAND(sm_navbot_debug_player_positions, "Shows the player's Eye Origin, World Space Center and Absolute Origin")
+{
+	edict_t* player = UtilHelpers::GetListenServerHost();
+
+	Vector eyes;
+	gameclients->ClientEarPosition(player, &eyes);
+	Vector center = UtilHelpers::getWorldSpaceCenter(player);
+	const Vector& origin = player->GetCollideable()->GetCollisionOrigin();
+
+	Vector mins{ -1.0f, -1.0f, -1.0f };
+	Vector maxs{ 1.0f, 1.0f, 1.0f };
+
+	NDebugOverlay::Box(eyes, mins, maxs, 255, 0, 0, 255, 10.0f);
+	NDebugOverlay::Box(center, mins, maxs, 0, 255, 0, 255, 10.0f);
+	NDebugOverlay::Box(origin, mins, maxs, 0, 0, 255, 255, 10.0f);
+}
+
 #endif // EXT_DEBUG

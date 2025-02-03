@@ -17,6 +17,7 @@ public:
 	bool IsEnemy(CBaseEntity* entity) override;
 
 protected:
+	void CollectPlayers(std::vector<edict_t*>& visibleVec) override;
 	void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec) override;
 };
 

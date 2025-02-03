@@ -361,7 +361,7 @@ public:
 		return result;
 	}
 
-	Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr) override
+	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player = nullptr, DesiredAimSpot desiredAim = AIMSPOT_NONE) override
 	{
 		Vector result = vec3_origin;
 
@@ -375,7 +375,7 @@ public:
 				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
 				while (respondingTask != nullptr && result == vec3_origin)
 				{
-					result = respondingTask->GetTargetAimPos(me, entity, player);
+					result = respondingTask->GetTargetAimPos(me, entity, player, desiredAim);
 					respondingTask = respondingTask->GetTaskBelowMe();
 				}
 

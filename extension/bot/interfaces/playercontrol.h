@@ -3,12 +3,14 @@
 #pragma once
 
 #include <string_view>
+#include <string>
 #include <array>
 
 #include <mathlib/vector.h>
 #include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/playerinput.h>
+#include <bot/interfaces/decisionquery.h>
 
 struct edict_t;
 
@@ -89,6 +91,23 @@ public:
 	// How long the bot aim has been steady
 	virtual const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
 
+	void SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot spot) { m_desiredAimSpot = spot; }
+	void SetDesiredAimBone(const char* boneName)
+	{
+		if (boneName == nullptr)
+		{
+			m_desiredAimBone.clear();
+		}
+		else
+		{
+			m_desiredAimBone.assign(boneName);
+		}
+	}
+	void SetDesiredAimOffset(const Vector& offset) { m_desiredAimOffset = offset; }
+	IDecisionQuery::DesiredAimSpot GetCurrentDesiredAimSpot() const { return m_desiredAimSpot; }
+	const std::string& GetCurrentDesiredAimBone() const { return m_desiredAimBone; }
+	const Vector& GetCurrentDesiredAimOffset() const { return m_desiredAimOffset; }
+
 private:
 
 	void RunLook();
@@ -109,6 +128,10 @@ private:
 	IntervalTimer m_aimerrorintervaltime; // time the bot started to track the target
 	CountdownTimer m_aimlockintimer; // aim lock in time (zero error)
 	float m_currentAimError; // current aim error
+
+	IDecisionQuery::DesiredAimSpot m_desiredAimSpot;
+	std::string m_desiredAimBone; // bone name
+	Vector m_desiredAimOffset; // offset for aim by offset
 
 	void UpdateAimError();
 };

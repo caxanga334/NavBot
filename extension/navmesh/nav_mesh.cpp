@@ -2956,6 +2956,7 @@ void CommandNavCompressID( void )
 	CNavLadder::CompressIDs(TheNavMesh);
 	TheNavMesh->CompressWaypointsIDs();
 	TheNavMesh->CompressVolumesIDs();
+	TheNavMesh->CompressElevatorsIDs();
 }
 static ConCommand sm_nav_compress_id( "sm_nav_compress_id", CommandNavCompressID, "Re-orders area and ladder ID's so they are continuous.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 

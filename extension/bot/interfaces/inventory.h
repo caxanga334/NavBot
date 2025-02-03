@@ -98,8 +98,17 @@ public:
 	virtual std::shared_ptr<CBotWeapon> GetActiveBotWeapon();
 	// Requests the bot inventory to be refreshed
 	virtual void RequestRefresh() { m_updateWeaponsTimer.Invalidate(); }
+	/**
+	 * @brief @brief Checks if any weapon has low ammo.
+	 * @param heldOnly If true, only checks the currently held weapon.
+	 * @return True if the bot contains any weapons with low ammo. False otherwise.
+	 */
+	virtual bool IsAmmoLow(const bool heldOnly = true);
 
 	void OnWeaponEquip(CBaseEntity* weapon) override;
+	
+	// Number of valid weapons this bot owns
+	int GetOwnedWeaponCount() const;
 
 protected:
 	std::vector<std::shared_ptr<CBotWeapon>> m_weapons;

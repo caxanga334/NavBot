@@ -45,7 +45,52 @@ bool CBlackMesaBotSensor::IsEnemy(CBaseEntity* entity)
 	return true;
 }
 
+void CBlackMesaBotSensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
+{
+	for (int i = 1; i <= gpGlobals->maxClients; i++)
+	{
+		auto edict = gamehelpers->EdictOfIndex(i);
+
+		if (!UtilHelpers::IsValidEdict(edict))
+		{
+			continue;
+		}
+
+		if (i == GetBot()->GetIndex())
+			continue; // skip self
+
+		auto gp = playerhelpers->GetGamePlayer(i);
+
+		if (!gp->IsInGame())
+		{
+			continue; // Client must be fully connected
+		}
+
+		auto info = gp->GetPlayerInfo();
+
+		if (info && info->GetTeamIndex() == TEAM_SPECTATOR) {
+			continue; // On deathmatch mode, all players are on team unnasigned
+		}
+
+		if (info && info->IsDead()) {
+			continue; // Ignore dead players
+		}
+
+		if (IsIgnored(edict->GetIServerEntity()->GetBaseEntity())) {
+			continue; // Ignored player
+		}
+
+		CBaseExtPlayer player(edict);
+
+		if (IsAbleToSee(player))
+		{
+			visibleVec.push_back(edict);
+		}
+	}
+}
+
 void CBlackMesaBotSensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 {
 	// empty for now
+	return;
 }

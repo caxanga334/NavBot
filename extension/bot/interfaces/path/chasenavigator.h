@@ -159,6 +159,7 @@ inline void CChaseNavigator::RefreshPath(CBaseBot* bot, CBaseEntity* subject, CF
 			time = std::min(time, 3.0f); // allow a maximum fail time of 3 seconds.
 
 			m_failTimer.Start(time);
+			bot->OnMoveToFailure(this, IEventListener::MovementFailureType::FAIL_NO_PATH);
 
 			if (bot->IsDebugging(BOTDEBUG_PATH))
 			{

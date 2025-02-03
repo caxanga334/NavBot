@@ -37,7 +37,6 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_shhooks.reserve(32);
 	m_randomChatMessageTimer.Start(9999.0f);
 	m_impulse = 0;
-	m_rng.RandomReSeed();
 
 	AddHooks();
 }
@@ -146,6 +145,7 @@ void CBaseBot::RefreshDifficulty(const CDifficultyManager* manager)
 void CBaseBot::Reset()
 {
 	m_nextupdatetime.Invalidate();
+	m_reloadCheckDelay.Invalidate();
 
 	for (auto iface : m_interfaces)
 	{
@@ -324,7 +324,7 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	m_cmd.weaponselect = m_weaponselect; // send weapon select
 	// TO-DO: weaponsubtype
 	m_cmd.buttons = buttons; // send buttons
-	m_cmd.random_seed = m_rng.GetRandomInt<int>(0, 0x7fffffff);
+	m_cmd.random_seed = CBaseBot::s_usercmdrng.GetRandomInt<int>(0, 0x7fffffff);
 
 	float forwardspeed = 0.0f;
 	float sidespeed = 0.0f;
@@ -465,7 +465,6 @@ void CBaseBot::Spawn()
 
 	Reset();
 	m_homepos = GetAbsOrigin();
-	m_rng.RandomReSeed();
 }
 
 void CBaseBot::FirstSpawn()
@@ -589,4 +588,205 @@ void CBaseBot::SendTeamChatMessage(const char* message)
 
 	ke::SafeSprintf(cmd.get(), MAX_SIZE, "say_team %s", message);
 	DelayedFakeClientCommand(cmd.get());
+}
+
+void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
+{
+	if (!IsAlive())
+		return;
+
+	if (GetMovementInterface()->NeedsWeaponControl())
+		return;
+
+	if (!enemy->IsValid())
+		return;
+
+	auto weapon = GetInventoryInterface()->GetActiveBotWeapon();
+
+	if (!weapon || !weapon->IsValid())
+		return;
+
+	if (GetBehaviorInterface()->ShouldAttack(this, enemy) == ANSWER_NO)
+		return;
+
+	if (doAim && !GetControlInterface()->IsAimOnTarget())
+		return;
+
+	const float range = GetRangeTo(enemy->GetEdict());
+	bool primary = true; // primary attack by default
+
+	if (CanFireWeapon(weapon.get(), range, true, primary) && HandleWeapon(weapon.get()))
+	{
+		if (!AimWeaponAtEnemy(enemy, weapon.get(), doAim, range, primary))
+			return;
+
+		if (doAim && !GetControlInterface()->IsAimOnTarget())
+			return;
+
+		if (primary)
+		{
+			GetControlInterface()->PressAttackButton();
+		}
+		else
+		{
+			GetControlInterface()->PressSecondaryAttackButton();
+		}
+	}
+	else
+	{
+		ReloadIfNeeded(weapon.get());
+	}
+}
+
+bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
+{
+	auto& primaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+	auto& secondaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::SECONDARY_ATTACK);
+	bool candoprimary = false;
+	bool candosecondary = false;
+
+	if (primaryinfo.HasFunction() && (weapon->GetBaseCombatWeapon().GetClip1() > 0 || primaryinfo.IsMelee()))
+	{
+		if (range >= primaryinfo.GetMinRange() && range <= primaryinfo.GetMaxRange())
+		{
+			candoprimary = true;
+		}
+	}
+
+	if (secondaryinfo.HasFunction() && (weapon->GetBaseCombatWeapon().GetClip2() > 0 || secondaryinfo.IsMelee()))
+	{
+		if (range >= secondaryinfo.GetMinRange() && range <= secondaryinfo.GetMaxRange())
+		{
+			candosecondary = true;
+		}
+	}
+
+	if (!candoprimary && !candosecondary)
+	{
+		return false;
+	}
+
+	if (candoprimary && !candosecondary)
+	{
+		doPrimary = true;
+	}
+	else if (!candoprimary && candosecondary)
+	{
+		doPrimary = false;
+	}
+	else
+	{
+		// can do both primary and seconadary
+		// 20% to use secondary attack
+		if (CBaseBot::s_botrng.GetRandomInt<int>(0, 5) == 5)
+		{
+			doPrimary = false;
+		}
+		else
+		{
+			doPrimary = true;
+		}
+	}
+
+	return true;
+}
+
+bool CBaseBot::HandleWeapon(CBotWeapon* weapon)
+{
+	// this function is used for stuff like hold primary attack for N seconds then release to fire
+	// or a weapon that must be deployed to be used
+	// etc...
+	// base just returns true
+
+	return true;
+}
+
+void CBaseBot::ReloadIfNeeded(CBotWeapon* weapon)
+{
+	// Most mods only needs to reload the primary ammo
+
+	if (m_reloadCheckDelay.IsElapsed())
+	{
+		auto& primaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+		int primarytype = weapon->GetBaseCombatWeapon().GetPrimaryAmmoType();
+
+		if (primarytype < 0)
+			return;
+
+		if (primaryinfo.HasFunction() && weapon->GetBaseCombatWeapon().GetClip1() == 0 && !primaryinfo.IsMelee())
+		{
+			if (GetAmmoOfIndex(primarytype) > 0 || weapon->GetWeaponInfo()->HasInfiniteAmmo())
+			{
+				GetControlInterface()->ReleaseAllAttackButtons();
+				GetControlInterface()->PressReloadButton();
+				m_reloadCheckDelay.Start(0.2f);
+			}
+		}
+	}
+}
+
+bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary)
+{
+	IDecisionQuery::DesiredAimSpot desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
+
+	auto& origin = enemy->GetEdict()->GetCollideable()->GetCollisionOrigin();
+	auto center = UtilHelpers::getWorldSpaceCenter(enemy->GetEdict());
+	auto& max = enemy->GetEdict()->GetCollideable()->OBBMaxs();
+	Vector top = origin;
+	top.z += max.z - 1.0f;
+
+	bool headisclear = IsLineOfFireClear(top);
+	bool canheadshot = false;
+	const WeaponAttackFunctionInfo* funcinfo = nullptr;
+
+	if (isPrimary)
+	{
+		funcinfo = &weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+	}
+	else
+	{
+		funcinfo = &weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK);
+	}
+
+	// allowed to headshot when: the bot is allowed by the difficulty profile, the weapon is capable of headshots
+	// and the enemy is within headshot range limits
+	if (GetDifficultyProfile()->IsAllowedToHeadshot() && weapon->GetWeaponInfo()->CanHeadShot() &&
+		range <= (funcinfo->GetMaxRange() * weapon->GetWeaponInfo()->GetHeadShotRangeMultiplier()))
+	{
+		canheadshot = true;
+	}
+
+	// priorize headshots if allowed
+	if (canheadshot && headisclear)
+	{
+		// head is clear
+		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
+	}
+	else if (IsLineOfFireClear(center))
+	{
+		// center is clear
+		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER;
+	}
+	else if (IsLineOfFireClear(origin))
+	{
+		// abs origin is clear
+		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN;
+	}
+	else if (GetDifficultyProfile()->IsAllowedToHeadshot() && headisclear)
+	{
+		// this handles cases where the weapon can't headshot but every body part minus the head is blocked
+		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
+	}
+	else
+	{
+		return false; // all lines of fire are obstructed
+	}
+
+	if (doAim)
+	{
+		GetControlInterface()->SetDesiredAimSpot(desiredSpot);
+		GetControlInterface()->AimAt(enemy->GetEntity(), IPlayerController::LOOK_COMBAT, 1.0f, "Aiming my weapon at the current visible threat!");
+	}
+
+	return true;
 }

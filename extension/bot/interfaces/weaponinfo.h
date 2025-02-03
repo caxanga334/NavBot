@@ -104,7 +104,8 @@ public:
 		MAX_WEAPON_ATTACKS
 	};
 
-	inline WeaponInfo()
+	inline WeaponInfo() :
+		headshot_aim_offset(0.0f, 0.0f, 0.0f)
 	{
 		classname.reserve(64);
 		configentry.reserve(64);

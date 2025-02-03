@@ -145,6 +145,7 @@ inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& g
 			Invalidate();
 			m_failTimer.Start(1.0f); // Wait one second before repath
 			m_failCount++;
+			bot->OnMoveToFailure(this, IEventListener::MovementFailureType::FAIL_NO_PATH);
 		}
 		else
 		{

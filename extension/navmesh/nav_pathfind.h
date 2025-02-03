@@ -1166,6 +1166,9 @@ public:
 		m_travelLimit = 999999.0f;
 		m_nodes.reserve(4096);
 		m_collected.reserve(4096);
+		m_searchLadders = true;
+		m_searchLinks = true;
+		m_searchElevators = true;
 	}
 
 	INavAreaCollector(T* start, const float limit = 999999.0f)
@@ -1174,6 +1177,20 @@ public:
 		m_travelLimit = limit;
 		m_nodes.reserve(4096);
 		m_collected.reserve(4096);
+		m_searchLadders = true;
+		m_searchLinks = true;
+		m_searchElevators = true;
+	}
+
+	INavAreaCollector(T* start, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators)
+	{
+		m_startArea = start;
+		m_travelLimit = limit;
+		m_nodes.reserve(4096);
+		m_collected.reserve(4096);
+		m_searchLadders = searchLadders;
+		m_searchLinks = searchLinks;
+		m_searchElevators = searchElevators;
 	}
 
 	virtual ~INavAreaCollector() {}
@@ -1181,6 +1198,13 @@ public:
 	void SetStartArea(T* start) { m_startArea = start; }
 	void SetTravelLimit(float limit) { m_travelLimit = limit; }
 	float GetTravelLimit() const { return m_travelLimit; }
+
+	void SetSearchLadders(const bool search) { m_searchLadders = search; }
+	void SetSearchLinks(const bool search) { m_searchLinks = search; }
+	void SetSearchElevators(const bool search) { m_searchElevators = search; }
+	bool CanSearchLadders() const { return m_searchLadders; }
+	bool CanSearchLinks() const { return m_searchLinks; }
+	bool CanSearchElevators() const { return m_searchElevators; }
 
 	// Execute the search
 	void Execute();
@@ -1224,6 +1248,9 @@ private:
 	std::stack<T*> m_searchlist;
 	std::unordered_map<unsigned int, INavSearchNode<T>> m_nodes;
 	std::vector<T*> m_collected;
+	bool m_searchLadders;
+	bool m_searchLinks;
+	bool m_searchElevators;
 
 	void InitSearch();
 
@@ -1322,47 +1349,76 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 
 	// ladders
 	
-	auto upconns = area->GetLadders(CNavLadder::LADDER_UP);
-
-	for (int it = 0; it < upconns->Count(); it++)
+	if (CanSearchLadders())
 	{
-		auto& connect = upconns->Element(it);
-		const CNavLadder* ladder = connect.ladder;
+		auto upconns = area->GetLadders(CNavLadder::LADDER_UP);
 
-		for (auto& ladderconn : ladder->GetConnections())
+		for (int it = 0; it < upconns->Count(); it++)
 		{
-			if (ladderconn.IsConnectedToLadderTop())
+			auto& connect = upconns->Element(it);
+			const CNavLadder* ladder = connect.ladder;
+
+			for (auto& ladderconn : ladder->GetConnections())
 			{
-				T* other = static_cast<T*>(ladderconn.GetConnectedArea());
-				IncludeInSearch(area, other);
+				if (ladderconn.IsConnectedToLadderTop())
+				{
+					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
+					IncludeInSearch(area, other);
+				}
 			}
 		}
-	}
 
-	auto downconns = area->GetLadders(CNavLadder::LADDER_DOWN);
+		auto downconns = area->GetLadders(CNavLadder::LADDER_DOWN);
 
-	for (int it = 0; it < downconns->Count(); it++)
-	{
-		auto& connect = upconns->Element(it);
-		const CNavLadder* ladder = connect.ladder;
-
-		for (auto& ladderconn : ladder->GetConnections())
+		for (int it = 0; it < downconns->Count(); it++)
 		{
-			if (ladderconn.IsConnectedToLadderBottom())
+			auto& connect = downconns->Element(it);
+			const CNavLadder* ladder = connect.ladder;
+
+			for (auto& ladderconn : ladder->GetConnections())
 			{
-				T* other = static_cast<T*>(ladderconn.GetConnectedArea());
-				IncludeInSearch(area, other);
+				if (ladderconn.IsConnectedToLadderBottom())
+				{
+					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
+					IncludeInSearch(area, other);
+				}
 			}
 		}
 	}
 
 	// Special links
 
-	auto& links = area->GetOffMeshConnections();
-	for (auto& link : links)
+	if (CanSearchLinks())
 	{
-		T* other = static_cast<T*>(link.m_link.area);
-		IncludeInSearch(area, other);
+		auto& links = area->GetOffMeshConnections();
+		for (auto& link : links)
+		{
+			T* other = static_cast<T*>(link.m_link.area);
+			IncludeInSearch(area, other);
+		}
+	}
+
+	// Elevators
+
+	if (CanSearchElevators())
+	{
+		const CNavElevator* elevator = area->GetElevator();
+		if (elevator)
+		{
+			auto& floors = elevator->GetFloors();
+
+			for (auto& floor : floors)
+			{
+				T* other = static_cast<T*>(floor.GetArea());
+
+				if (other == area)
+				{
+					continue;
+				}
+
+				IncludeInSearch(area, other);
+			}
+		}
 	}
 }
 

@@ -449,7 +449,95 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 	return nullptr;
 }
 
+bool IInventory::IsAmmoLow(const bool heldOnly)
+{
+	CBaseBot* me = GetBot();
+
+	if (heldOnly)
+	{
+		auto weapon = GetActiveBotWeapon();
+
+		if (!weapon || !weapon->IsValid())
+		{
+			return false;
+		}
+
+		auto& bcw = weapon->GetBaseCombatWeapon();
+
+		int primaryammotype = bcw.GetPrimaryAmmoType();
+		int secondaryammotype = bcw.GetSecondaryAmmoType();
+		int lowprimary = weapon->GetWeaponInfo()->GetLowPrimaryAmmoThreshold();
+		int lowsecondary = weapon->GetWeaponInfo()->GetLowSecondaryAmmoThreshold();
+
+		if (primaryammotype > 0)
+		{
+			if (me->GetAmmoOfIndex(primaryammotype) <= lowprimary)
+			{
+				return true;
+			}
+		}
+
+		if (secondaryammotype > 0)
+		{
+			if (me->GetAmmoOfIndex(secondaryammotype) <= lowsecondary)
+			{
+				return true;
+			}
+		}
+	}
+	else
+	{
+		for (auto& weapon : m_weapons)
+		{
+			if (!weapon->IsValid())
+			{
+				continue;
+			}
+
+			auto& bcw = weapon->GetBaseCombatWeapon();
+
+			int primaryammotype = bcw.GetPrimaryAmmoType();
+			int secondaryammotype = bcw.GetSecondaryAmmoType();
+			int lowprimary = weapon->GetWeaponInfo()->GetLowPrimaryAmmoThreshold();
+			int lowsecondary = weapon->GetWeaponInfo()->GetLowSecondaryAmmoThreshold();
+
+			if (primaryammotype > 0)
+			{
+				if (me->GetAmmoOfIndex(primaryammotype) <= lowprimary)
+				{
+					return true;
+				}
+			}
+
+			if (secondaryammotype > 0)
+			{
+				if (me->GetAmmoOfIndex(secondaryammotype) <= lowsecondary)
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
 void IInventory::OnWeaponEquip(CBaseEntity* weapon)
 {
 	this->AddWeaponToInventory(weapon);
+}
+
+int IInventory::GetOwnedWeaponCount() const
+{
+	int count = 0;
+
+	for (auto& weapon : m_weapons)
+	{
+		if (weapon->IsValid())
+		{
+			count++;
+		}
+	}
+
+	return count;
 }

@@ -554,6 +554,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_maxdjheight = bot->GetMovementInterface()->GetMaxDoubleJumpHeight();
 	m_maxgapjumpdistance = bot->GetMovementInterface()->GetMaxGapJumpDistance();
 	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
+	m_canblastjump = bot->GetMovementInterface()->IsAbleToBlastJump();
 }
 
 float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
@@ -601,22 +602,22 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 		dist = (toArea->GetCenter() + fromArea->GetCenter()).Length();
 	}
 
+
 	// only check gap and height on common connections
-	if (link == nullptr)
+	if (link == nullptr && elevator == nullptr && ladder == nullptr)
 	{
-		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
+		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(toArea);
 
 		if (deltaZ >= m_stepheight)
 		{
-			if (deltaZ >= m_maxjumpheight && !m_candoublejump) // can't double jump
+			if (m_candoublejump && deltaZ > m_maxdjheight)
 			{
-				// too high to reach
+				// too high to reach with double jumps
 				return -1.0f;
 			}
-
-			if (deltaZ >= m_maxdjheight) // can double jump
+			else if (deltaZ > m_maxjumpheight)
 			{
-				// too high to reach
+				// too high to reach with regular jumps
 				return -1.0f;
 			}
 
@@ -632,22 +633,24 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 			return -1.0f;
 		}
 
-		float gap = fromArea->ComputeAdjacentConnectionGapDistance(area);
+		float gap = fromArea->ComputeAdjacentConnectionGapDistance(toArea);
 
 		if (gap >= m_maxgapjumpdistance)
 		{
 			return -1.0f; // can't jump over this gap
 		}
 	}
-	else
+	else if (link != nullptr)
 	{
 		// Don't use double jump links if we can't perform a double jump
 		if (link->GetType() == OffMeshConnectionType::OFFMESH_DOUBLE_JUMP && !m_candoublejump)
 		{
 			return -1.0f;
 		}
-
-		// TO-DO: Same check for when rocket jumps are implemented.
+		else if (link->GetType() == OffMeshConnectionType::OFFMESH_BLAST_JUMP && !m_canblastjump)
+		{
+			return -1.0f;
+		}
 	}
 
 	if (area->HasTFPathAttributes(CTFNavArea::TFNAV_PATH_NO_CARRIERS))

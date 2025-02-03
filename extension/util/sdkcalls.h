@@ -17,6 +17,7 @@ public:
 	~CSDKCaller();
 
 	bool Init();
+	void PostInit();
 
 	/**
 	 * @brief Calls the game's CBaseCombatCharacter::Weapon_Switch function.
@@ -45,7 +46,10 @@ public:
 
 	void CBasePlayer_ProcessUsercmds(CBaseEntity* pBP, CBotCmd* botcmd);
 
+	void CBaseAnimating_GetBoneTransform(CBaseEntity* pBA, int bone, matrix3x4_t* result);
+
 	inline bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
+	inline bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
 
 private:
 	static constexpr int invalid_offset() { return -1; }
@@ -69,11 +73,17 @@ private:
 	int m_offsetof_cbp_processusercmds;
 	SourceMod::ICallWrapper* m_call_cbp_processusercmds;
 
+	// https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/baseanimating.h#L136
+	//  void CBaseAnimating::GetBoneTransform( int iBone, matrix3x4_t &pBoneToWorld )
+	int m_offsetof_cba_getbonetransform;
+	SourceMod::ICallWrapper* m_call_cba_getbonetransform;
+
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
 	void SetupCBCWeaponSlot();
 	void SetupCGRShouldCollide();
 	void SetupCBPProcessUserCmds();
+	void SetupCBAGetBoneTransform();
 };
 
 extern CSDKCaller* sdkcalls;

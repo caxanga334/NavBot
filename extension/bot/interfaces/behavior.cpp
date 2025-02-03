@@ -66,9 +66,9 @@ std::shared_ptr<const CKnownEntity> IBehavior::SelectTargetThreat(CBaseBot* me, 
 	return GetDecisionQueryResponder()->SelectTargetThreat(me, threat1, threat2);
 }
 
-Vector IBehavior::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player)
+Vector IBehavior::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
 {
-	return GetDecisionQueryResponder()->GetTargetAimPos(me, entity, player);
+	return GetDecisionQueryResponder()->GetTargetAimPos(me, entity, player, desiredAim);
 }
 
 QueryAnswerType IBehavior::IsReady(CBaseBot* me)

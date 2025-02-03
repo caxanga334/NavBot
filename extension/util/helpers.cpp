@@ -7,6 +7,7 @@
 #include <server_class.h>
 #include <studio.h>
 #include "helpers.h"
+#include "sdkcalls.h"
 #include "entprops.h"
 
 #undef max // undef mathlib defs to avoid comflicts with STD
@@ -620,7 +621,7 @@ float UtilHelpers::GetForwardViewCone(float angle)
  * @param pEntity Entity to get the model from
  * @return CStudioHdr pointer. IT MUST BE DELETED AFTER USE. Returns NULL on failure
 */
-CStudioHdr* UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
+std::unique_ptr<CStudioHdr> UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 {
 	auto collide = pEntity->GetCollideable();
 
@@ -644,7 +645,7 @@ CStudioHdr* UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 	}
 
 	// TO-DO: Smart Pointers
-	return new CStudioHdr(studiomodel, imdlcache);
+	return std::make_unique<CStudioHdr>(studiomodel, imdlcache);
 }
 
 /**
@@ -679,6 +680,47 @@ int UtilHelpers::LookupBone(CStudioHdr* hdr, const char* bonename)
 	}
 
 	return -1;
+}
+
+bool UtilHelpers::GetBonePosition(CBaseEntity* entity, int bone, Vector& origin, QAngle& angles)
+{
+	if (!sdkcalls->IsGetBoneTransformAvailable())
+	{
+#ifdef EXT_DEBUG
+		// alert developers
+		smutils->LogError(myself, "UtilHelpers::GetBonePosition called but SDK Call to GetBoneTransform is not available!");
+#endif // EXT_DEBUG
+
+		return false;
+	}
+
+	matrix3x4_t matrix;
+	sdkcalls->CBaseAnimating_GetBoneTransform(entity, bone, &matrix);
+	MatrixAngles(matrix, angles, origin);
+	return true;
+}
+
+bool UtilHelpers::GetBonePosition(CBaseEntity* entity, CStudioHdr* hdr, int bone, Vector& origin, QAngle& angles)
+{
+	if (!sdkcalls->IsGetBoneTransformAvailable())
+	{
+#ifdef EXT_DEBUG
+		// alert developers
+		smutils->LogError(myself, "UtilHelpers::GetBonePosition called but SDK Call to GetBoneTransform is not available!");
+#endif // EXT_DEBUG
+
+		return false;
+	}
+
+	if (bone < 0 || bone >= hdr->numbones())
+	{
+		return false;
+	}
+
+	matrix3x4_t matrix;
+	sdkcalls->CBaseAnimating_GetBoneTransform(entity, bone, &matrix);
+	MatrixAngles(matrix, angles, origin);
+	return true;
 }
 
 /**

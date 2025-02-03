@@ -2,6 +2,7 @@
 #define UTIL_HELPERS_H_
 #pragma once
 
+#include <memory>
 #include <vector>
 #include <optional>
 #include <extension.h>
@@ -77,11 +78,49 @@ namespace UtilHelpers
 	int FindNamedEntityByClassname(int start, const char* targetname, const char* classname);
 	bool PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV);
 	float GetForwardViewCone(float angle);
-	CStudioHdr* GetEntityModelPtr(edict_t* pEntity);
+	std::unique_ptr<CStudioHdr> GetEntityModelPtr(edict_t* pEntity);
 	int LookupBone(CStudioHdr* hdr, const char* bonename);
-	// TO-DO: Investigate but the bone cache might complicate things
-	// bool GetBoneTransform(CStudioHdr* hdr, int iBone, matrix3x4_t& pBoneToWorld);
-	// bool GetBonePosition(CStudioHdr* hdr, int iBone, Vector& origin, QAngle& angles);
+
+	/**
+	 * @brief Retrieves a bone position and angles.
+	 * 
+	 * This function does NOT validates the bone index.
+	 * @param entity Entity to get the bone from (Must derive from CBaseAnimating).
+	 * @param bone Bone index.
+	 * @param origin Bone position result.
+	 * @param angles Bone angle result.
+	 * @return Returns false on failure.
+	 */
+	bool GetBonePosition(CBaseEntity* entity, int bone, Vector& origin, QAngle& angles);
+	/**
+	 * @brief Retrieves a bone position and angles.
+	 * 
+	 * This function validates the bone index.
+	 * @param entity Entity to get the bone from (Must derive from CBaseAnimating).
+	 * @param hdr Entity's CStudioHdr pointer.
+	 * @param bone Bone index.
+	 * @param origin Bone position result.
+	 * @param angles Bone angles result.
+	 * @return Returns false on failure.
+	 */
+	bool GetBonePosition(CBaseEntity* entity, CStudioHdr* hdr, int bone, Vector& origin, QAngle& angles);
+
+	/**
+	 * @brief Retrieves a bone position and angles.
+	 *
+	 * This function validates the bone index.
+	 * @param entity Entity to get the bone from (Must derive from CBaseAnimating).
+	 * @param hdr Entity's CStudioHdr pointer.
+	 * @param name Bone name.
+	 * @param origin Bone position result.
+	 * @param angles Bone angles result.
+	 * @return Returns false on failure.
+	 */
+	inline bool GetBonePosition(CBaseEntity* entity, CStudioHdr* hdr, const char* name, Vector& origin, QAngle& angles)
+	{
+		int bone = LookupBone(hdr, name);
+		return GetBonePosition(entity, hdr, bone, origin, angles);
+	}
 
 	bool IsPlayerIndex(const int index);
 	bool FindNestedDataTable(SendTable* pTable, const char* name);

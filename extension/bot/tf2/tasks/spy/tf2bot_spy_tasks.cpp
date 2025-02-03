@@ -140,7 +140,7 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 				{
 					m_lookAround.StartRandom(2.0f, 6.0f);
 
-					QAngle angle{ 0.0f, bot->GetRandomNumberGenerator().GetRandomReal<float>(0.0f, 360.0f), 0.0f };
+					QAngle angle{ 0.0f, CBaseBot::s_botrng.GetRandomReal<float>(0.0f, 360.0f), 0.0f };
 					bot->GetControlInterface()->AimAt(angle, IPlayerController::LOOK_INTERESTING, 1.0f, "Looking around.");
 				}
 			}

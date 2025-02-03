@@ -181,6 +181,7 @@ private:
 	float m_maxdjheight; // max double jump height
 	float m_maxgapjumpdistance;
 	bool m_candoublejump;
+	bool m_canblastjump;
 };
 
 #endif // !NAVBOT_TEAM_FORTRESS_2_BOT_H_

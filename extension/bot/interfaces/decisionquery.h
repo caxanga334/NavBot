@@ -54,8 +54,24 @@ public:
 	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false);
 	// Given two known entities, select which one the bot should target first
 	virtual std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
+
+	/**
+	 * @brief Desired aim spot when aiming weapons at enemies
+	 */
+	enum DesiredAimSpot : int
+	{
+		AIMSPOT_NONE = 0, // No preference
+		AIMSPOT_ABSORIGIN, // Prefer aiming at abs origin
+		AIMSPOT_CENTER, // Prefer aiming at World Space Center
+		AIMSPOT_HEAD, // Prefer aiming at the head/eye origin
+		AIMSPOT_OFFSET, // Aim at abs origin + given offset (stored at IPlayerController)
+		AIMSPOT_BONE, // Aim at a specific bone (stoed at IPlayerController)
+
+		MAX_DESIRED_AIM_SPOTS
+	};
+
 	// Given a entity, returns a vector of where the bot should aim at. The player parameter may be NULL.
-	virtual Vector GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player = nullptr);
+	virtual Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player = nullptr, DesiredAimSpot desiredAim = AIMSPOT_NONE);
 	// If a game mode has a toggle ready feature, this asks if the bot is ready
 	virtual QueryAnswerType IsReady(CBaseBot* me);
 	// Should the bot help a specific teammate?
@@ -111,7 +127,7 @@ inline std::shared_ptr<const CKnownEntity> IDecisionQuery::SelectTargetThreat(CB
 	return nullptr;
 }
 
-inline Vector IDecisionQuery::GetTargetAimPos(CBaseBot* me, edict_t* entity, CBaseExtPlayer* player)
+inline Vector IDecisionQuery::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
 {
 	return vec3_origin;
 }

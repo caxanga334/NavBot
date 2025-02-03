@@ -14,6 +14,7 @@
 #include <sdkports/sdk_traces.h>
 #include "basebot_behavior.h"
 #include "basebot.h"
+#include "basebot_pathcost.h"
 
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
@@ -81,7 +82,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBa
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1); // get listen server host
 	CBaseExtPlayer player(host);
-	ShortestPathCost cost;
+	CBaseBotPathCost cost(bot);
 
 	m_goal = player.GetAbsOrigin();
 	m_nav.SetSkipAheadDistance(350.0f);
@@ -106,7 +107,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 
 	if (m_nav.GetAge() > 1.0f)
 	{
-		ShortestPathCost cost;
+		CBaseBotPathCost cost(bot);
 		bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
 
 		if (result == false)

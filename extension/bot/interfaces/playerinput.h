@@ -43,14 +43,28 @@ class IPlayerInput
 public:
 	IPlayerInput();
 
+	/**
+	 * @brief Which attack type was last used by the bot?
+	 */
+	enum class AttackType : int
+	{
+		ATTACK_NONE,
+		ATTACK_PRIMARY,
+		ATTACK_SECONDARY,
+
+		MAX_ATTACK_TYPES
+	};
+
 	void ReleaseAllButtons();
 	void ReleaseMovementButtons(const bool uncrouch = false);
 	void ReleaseAllAttackButtons();
 	void ResetInputData();
 	void PressAttackButton(const float duration = -1.0f);
 	void ReleaseAttackButton();
+	bool IsPressingAttackButton();
 	void PressSecondaryAttackButton(const float duration = -1.0f);
 	void ReleaseSecondaryAttackButton();
+	bool IsPressingSecondaryAttackButton();
 	void PressSpecialAttackButton(const float duration = -1.0f);
 	void ReleaseSpecialAttackButton();
 	void PressJumpButton(const float duration = -1.0f);
@@ -84,6 +98,8 @@ public:
 
 	virtual void ProcessButtons(int& buttons) = 0;
 
+	inline AttackType GetLastUsedAttackType() const { return m_lastUsedAttackType; }
+
 protected:
 	int m_buttons; // Buttons to be sent in the next user command
 	int m_oldbuttons; // Buttons that were pressed in the last user command sent
@@ -101,6 +117,7 @@ protected:
 	CountdownTimer m_moverightbuttontimer;
 	CountdownTimer m_reloadbuttontimer;
 	CountdownTimer m_buttonscaletimer;
+	AttackType m_lastUsedAttackType;
 
 	// Updates m_buttons with a list of button currently held down
 	void CompileButtons();
@@ -112,6 +129,7 @@ inline IPlayerInput::IPlayerInput()
 	m_oldbuttons = 0;
 	m_forwardscale = 1.0f;
 	m_sidescale = 1.0f;
+	m_lastUsedAttackType = AttackType::ATTACK_NONE;
 }
 
 inline void IPlayerInput::ReleaseAllButtons()
@@ -149,6 +167,7 @@ inline void IPlayerInput::ReleaseAllAttackButtons()
 	ReleaseAttackButton();
 	ReleaseSecondaryAttackButton();
 	ReleaseSpecialAttackButton();
+	m_lastUsedAttackType = AttackType::ATTACK_NONE;
 }
 
 inline void IPlayerInput::ResetInputData()
@@ -157,12 +176,14 @@ inline void IPlayerInput::ResetInputData()
 	m_forwardscale = 1.0f;
 	m_sidescale = 1.0f;
 	m_buttonscaletimer.Invalidate();
+	m_lastUsedAttackType = AttackType::ATTACK_NONE;
 }
 
 inline void IPlayerInput::PressAttackButton(const float duration)
 {
 	m_buttons |= INPUT_ATTACK;
 	m_leftmousebuttontimer.Start(duration);
+	m_lastUsedAttackType = AttackType::ATTACK_PRIMARY;
 }
 
 inline void IPlayerInput::ReleaseAttackButton()
@@ -171,16 +192,27 @@ inline void IPlayerInput::ReleaseAttackButton()
 	m_leftmousebuttontimer.Invalidate();
 }
 
+inline bool IPlayerInput::IsPressingAttackButton()
+{
+	return m_leftmousebuttontimer.HasStarted() && !m_leftmousebuttontimer.IsElapsed();
+}
+
 inline void IPlayerInput::PressSecondaryAttackButton(const float duration)
 {
 	m_buttons |= INPUT_ATTACK2;
 	m_rightmousebuttontimer.Start(duration);
+	m_lastUsedAttackType = AttackType::ATTACK_SECONDARY;
 }
 
 inline void IPlayerInput::ReleaseSecondaryAttackButton()
 {
 	m_buttons &= ~INPUT_ATTACK2;
 	m_rightmousebuttontimer.Invalidate();
+}
+
+inline bool IPlayerInput::IsPressingSecondaryAttackButton()
+{
+	return m_rightmousebuttontimer.HasStarted() && !m_rightmousebuttontimer.IsElapsed();
 }
 
 inline void IPlayerInput::PressSpecialAttackButton(const float duration)

@@ -19,6 +19,11 @@
 				"windows"	"113"
 				"linux"		"114"
 			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"217"
+				"linux"		"218"
+			}
 		}
 	}
 }

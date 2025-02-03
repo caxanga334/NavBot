@@ -28,6 +28,9 @@ IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlaye
 	m_aimerrorintervaltime.Invalidate();
 	m_aimlockintimer.Invalidate();
 	m_currentAimError = 0.0f;
+	m_desiredAimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
+	m_desiredAimBone.reserve(32);
+	m_desiredAimOffset.Init();
 }
 
 IPlayerController::~IPlayerController()
@@ -57,6 +60,9 @@ void IPlayerController::Reset()
 	m_aimerrorintervaltime.Invalidate();
 	m_aimlockintimer.Invalidate();
 	m_currentAimError = 0.0f;
+	m_desiredAimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
+	m_desiredAimBone.clear();
+	m_desiredAimOffset.Init();
 }
 
 void IPlayerController::Update()
@@ -144,7 +150,7 @@ void IPlayerController::RunLook()
 				// For players, we want to ask the bot behavior interface for a desired aim position
 				// It will handle stuff like proper aiming for the current weapon, etc
 				CBaseExtPlayer player(lookatentity);
-				m_looktarget = GetBot()->GetBehaviorInterface()->GetTargetAimPos(GetBot(), lookatentity, &player);
+				m_looktarget = GetBot()->GetBehaviorInterface()->GetTargetAimPos(GetBot(), lookatentity->GetIServerEntity()->GetBaseEntity(), &player, m_desiredAimSpot);
 			}
 			else
 			{

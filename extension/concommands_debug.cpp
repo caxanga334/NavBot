@@ -52,6 +52,42 @@ CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 	});
 }
 
+CON_COMMAND(sm_navbot_debug_bot_impulse, "All bots sends a specific impulse command.")
+{
+	if (args.ArgC() < 2)
+	{
+		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_impulse <impulse number>");
+		return;
+	}
+
+	int impulse = atoi(args[1]);
+
+	if (impulse <= 0 || impulse > 255)
+	{
+		rootconsole->ConsolePrint("Invalid impulse command number %i", impulse);
+		return;
+	}
+
+	extmanager->ForEachBot([&impulse](CBaseBot* bot) {
+		bot->SetImpulseCommand(impulse);
+	});
+}
+
+CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command.")
+{
+	if (args.ArgC() < 2)
+	{
+		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_send_command <command>");
+		return;
+	}
+
+	const char* command = args[1];
+
+	extmanager->ForEachBot([&command](CBaseBot* bot) {
+		bot->DelayedFakeClientCommand(command);
+	});
+}
+
 CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 {
 	auto edict = gamehelpers->EdictOfIndex(1);
