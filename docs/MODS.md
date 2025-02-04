@@ -7,7 +7,8 @@ Any game/mod not listed is considered **Not Implemented**.
 
 | Mod | Status |
 |:-----------:|:------:|
-|Team Fortress 2|Alpha Stage|
+|Team Fortress 2|Basic Support|
+|Black Mesa Deathmatch|Basic Support|
 |Half-Life 2: Deathmatch|Planned|
 |Day of Defeat: Source|Planned|
 |Counter-Strike: Source|Planned|
