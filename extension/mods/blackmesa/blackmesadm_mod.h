@@ -1,6 +1,7 @@
 #ifndef NAVBOT_BLACKMESA_DEATHMATCH_MOD_H_
 #define NAVBOT_BLACKMESA_DEATHMATCH_MOD_H_
 
+#include <utility>
 #include <array>
 #include <mods/basemod.h>
 #include <shareddefs.h>
@@ -15,7 +16,7 @@ public:
 	static CBlackMesaDeathmatchMod* GetBMMod();
 
 	void FireGameEvent(IGameEvent* event) override;
-
+	void PostCreation() override;
 	// Mod name (IE: Team Fortress 2)
 	const char* GetModName() override { return "Black Mesa Deathmatch"; }
 	// Mod ID
@@ -26,12 +27,15 @@ public:
 	void OnRoundStart() override;
 	bool IsTeamPlay() const { return m_isTeamPlay; }
 	int GetMaxCarryForAmmoType(blackmesa::BMAmmoIndex index) const { return m_maxCarry[static_cast<int>(index)]; }
+	const std::pair<std::string, int>* GetRandomPlayerModel() const;
 
 private:
 	bool m_isTeamPlay;
 	std::array<int, MAX_AMMO_TYPES> m_maxCarry;
+	std::vector<std::pair<std::string, int>> m_playermodels; // pair of model name and skin count
 
 	void BuildMaxCarryArray();
+	void ParsePlayerModelsConfigFile();
 };
 
 #endif // !NAVBOT_BLACKMESA_DEATHMATCH_MOD_H_

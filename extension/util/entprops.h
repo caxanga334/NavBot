@@ -30,6 +30,7 @@
 #define SMNAV_UTIL_ENT_PROPS_H_
 #pragma once
 
+#include <string>
 #include <cinttypes>
 #include <unordered_map>
 #include <extension.h>
@@ -98,6 +99,7 @@ enum RoundState
 class CEntPropUtils
 {
 public:
+	CEntPropUtils();
 
 	enum CacheIndex : int
 	{
@@ -208,7 +210,7 @@ private:
 	CBaseEntity *GetEntity(int entity);
 	CBaseEntity *GetGameRulesProxyEntity();
 
-	const char *grclassname; // game rules proxy net class
+	std::string grclassname; // game rules proxy net class
 	bool initialized;
 
 	std::unordered_map<int, unsigned int> cached_offsets;

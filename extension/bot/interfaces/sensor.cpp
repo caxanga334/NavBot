@@ -16,6 +16,8 @@
 #undef min
 #undef clamp
 
+ConVar cvar_navbot_notarget("sm_navbot_debug_blind", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "When set to 1, disables the bot's vision.");
+
 class BotSensorTraceFilter : public trace::CTraceFilterSimple
 {
 public:
@@ -623,13 +625,16 @@ void ISensor::UpdateKnownEntities()
 	std::vector<edict_t*> visibleVec;
 	visibleVec.reserve(1024);
 
-	// Vision Update - Phase 1 - Collect entities
-	CollectPlayers(visibleVec);
-
-	if (m_updateNonPlayerTimer.IsElapsed())
+	if (cvar_navbot_notarget.GetInt() == 0)
 	{
-		m_updateNonPlayerTimer.Start(m_cachedNPCupdaterate);
-		CollectNonPlayerEntities(visibleVec);
+		// Vision Update - Phase 1 - Collect entities
+		CollectPlayers(visibleVec);
+
+		if (m_updateNonPlayerTimer.IsElapsed())
+		{
+			m_updateNonPlayerTimer.Start(m_cachedNPCupdaterate);
+			CollectNonPlayerEntities(visibleVec);
+		}
 	}
 
 	// Vision Update - Phase 2 - Clean current database of known entities

@@ -99,7 +99,8 @@ CopyFiles('configs/tf', 'addons/sourcemod/configs/navbot/tf',
 
 CopyFiles('configs/bms', 'addons/sourcemod/configs/navbot/bms',
   [ 
-    'weapons.cfg'
+    'weapons.cfg',
+    'player_models.ini'
   ]
 )
 

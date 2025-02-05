@@ -216,6 +216,8 @@ public:
 	inline int GetLowSecondaryAmmoThreshold() const { return secammolow; }
 	inline int GetSlot() const { return slot; }
 	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
+	inline bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
+	inline bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
 
 protected:
 	std::string classname;
@@ -232,6 +234,8 @@ protected:
 	int primammolow; // Threshold for low primary ammo
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
+
+	static constexpr auto CLIP_USES_RESERVE = -2; // if maxclip is equal to this constant, then the weapon doesn't use clips and the actual ammo in the 'clip' is the reserve ammo.
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC

@@ -701,9 +701,11 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 	const float halfstepsize = fullstepsize * 0.5f;
 	const float hullwidth = mover->GetHullWidth() * HULL_WIDTH_SAFETY_MARGIN;
 	const float halfwidth = hullwidth * 0.5f;
+	const float halfjumpheight = mover->GetMaxJumpHeight() * 0.5f;
 
 	// not too high and gap is greater than the bot hull (with some tolerance)
-	if (gaplength > hullwidth && fabsf(zdiff) < halfstepsize)
+	// height difference within half step size or half jump height if from Z is higher than to Z
+	if (gaplength > hullwidth && (fabs(zdiff) < halfstepsize || (closefrom.z > closeto.z && fabs(zdiff) <= halfjumpheight)))
 	{
 		Vector landing;
 		to->area->GetClosestPointOnArea(to->goal, &landing);

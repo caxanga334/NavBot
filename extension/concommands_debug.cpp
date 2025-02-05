@@ -985,4 +985,10 @@ CON_COMMAND(sm_navbot_debug_cvar_value, "Reports the value of ConVars.")
 	}
 }
 
+CON_COMMAND(sm_navbot_debug_roundstate, "Debug the game rules round state.")
+{
+	RoundState state = entprops->GameRules_GetRoundState();
+	rootconsole->ConsolePrint("Got round state %i", static_cast<int>(state));
+}
+
 #endif // EXT_DEBUG

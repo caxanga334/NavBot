@@ -645,16 +645,68 @@ bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool a
 	bool candoprimary = false;
 	bool candosecondary = false;
 
-	if (primaryinfo.HasFunction() && (weapon->GetBaseCombatWeapon().GetClip1() > 0 || primaryinfo.IsMelee()))
+	if (primaryinfo.HasFunction())
 	{
-		if (range >= primaryinfo.GetMinRange() && range <= primaryinfo.GetMaxRange())
+		bool hasammo = true;
+
+		if (!primaryinfo.IsMelee())
+		{
+			int ammo = 0;
+
+			if (weapon->GetWeaponInfo()->Clip1IsReserveAmmo())
+			{
+				int index = weapon->GetBaseCombatWeapon().GetPrimaryAmmoType();
+
+				if (index >= 0)
+				{
+					ammo = GetAmmoOfIndex(index);
+				}
+			}
+			else
+			{
+				ammo = weapon->GetBaseCombatWeapon().GetClip1();
+			}
+
+			if (ammo <= 0)
+			{
+				hasammo = false;
+			}
+		}
+
+		if (hasammo && range >= primaryinfo.GetMinRange() && range <= primaryinfo.GetMaxRange())
 		{
 			candoprimary = true;
 		}
 	}
 
-	if (secondaryinfo.HasFunction() && (weapon->GetBaseCombatWeapon().GetClip2() > 0 || secondaryinfo.IsMelee()))
+	if (secondaryinfo.HasFunction())
 	{
+		bool hasammo = true;
+
+		if (!secondaryinfo.IsMelee())
+		{
+			int ammo = 0;
+
+			if (weapon->GetWeaponInfo()->Clip2IsReserveAmmo())
+			{
+				int index = weapon->GetBaseCombatWeapon().GetSecondaryAmmoType();
+
+				if (index >= 0)
+				{
+					ammo = GetAmmoOfIndex(index);
+				}
+			}
+			else
+			{
+				ammo = weapon->GetBaseCombatWeapon().GetClip2();
+			}
+
+			if (ammo <= 0)
+			{
+				hasammo = false;
+			}
+		}
+
 		if (range >= secondaryinfo.GetMinRange() && range <= secondaryinfo.GetMaxRange())
 		{
 			candosecondary = true;

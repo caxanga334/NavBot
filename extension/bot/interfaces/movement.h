@@ -352,7 +352,7 @@ private:
 	ElevatorState EState_RideElevator();
 	ElevatorState EState_ExitElevator();
 
-	static constexpr float ELEV_MOVE_RANGE = 24.0f;
+	static constexpr float ELEV_MOVE_RANGE = 32.0f;
 	static constexpr float ELEV_SPEED_DIV = 400.0f; // timeout is this value divided by speed
 };
 

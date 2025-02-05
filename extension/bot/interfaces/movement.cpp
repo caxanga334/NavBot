@@ -824,6 +824,12 @@ void IMovement::TryToUnstuck()
 
 void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left)
 {
+	// Wait for the bot to be actually stuck by the obstacle, prevents excessive jumping on slope/ramps
+	if (GetGroundSpeed() > 16.0f)
+	{
+		return;
+	}
+
 	Vector mins(-8, -8, -8);
 	Vector maxs(8, 8, 4);
 	Vector start = GetBot()->GetEyeOrigin();

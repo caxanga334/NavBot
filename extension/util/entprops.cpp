@@ -159,8 +159,10 @@ CEntPropUtils *entprops = &s_entprops;
 #define GAMERULES_FIND_PROP_SEND(type, type_name, retval) \
 	SourceMod::sm_sendprop_info_t info;\
 	SendProp *pProp; \
-	if (!gamehelpers->FindSendPropInfo(grclassname, prop, &info)) \
+	if (!gamehelpers->FindSendPropInfo(grclassname.c_str(), prop, &info)) \
 	{ \
+	\
+		smutils->LogError(myself, "Game Rules property \"%s\" not found on the gamerules proxy.", prop); \
 		return retval; \
 	} \
 	\
@@ -234,6 +236,13 @@ CEntPropUtils *entprops = &s_entprops;
 		return retval; \
 	}
 
+CEntPropUtils::CEntPropUtils()
+{
+	grclassname.reserve(64);
+	cached_offsets.reserve(32);
+	initialized = false;
+}
+
 void CEntPropUtils::Init(bool reset)
 {
 	if (initialized && !reset)
@@ -242,7 +251,7 @@ void CEntPropUtils::Init(bool reset)
 	SourceMod::IGameConfig *gamedata;
 	char *error = nullptr;
 	size_t maxlength = 0;
-	grclassname = nullptr;
+	grclassname.clear();
 
 	if (!gameconfs->LoadGameConfigFile("sdktools.games", &gamedata, error, maxlength))
 	{
@@ -250,15 +259,16 @@ void CEntPropUtils::Init(bool reset)
 		return;
 	}
 
-	grclassname = gamedata->GetKeyValue("GameRulesProxy");
+	const char* value = gamedata->GetKeyValue("GameRulesProxy");
 
-	if (!grclassname)
+	if (!value)
 	{
 		smutils->LogError(myself, "CEntPropUtils::Init -- Failed to get game rules proxy classname.");
 	}
 	else
 	{
-		smutils->LogMessage(myself, "CEntPropUtils::Init -- Retrieved game rules proxy classname \"%s\".", grclassname);
+		smutils->LogMessage(myself, "CEntPropUtils::Init -- Retrieved game rules proxy classname \"%s\".", value);
+		grclassname.assign(value);
 	}
 
 	BuildCache();
@@ -1924,7 +1934,7 @@ CBaseEntity *CEntPropUtils::GetGameRulesProxyEntity()
 	CBaseEntity *pProxy = nullptr;
 	if (proxyEntRef == -1 || (pProxy = gamehelpers->ReferenceToEntity(proxyEntRef)) == NULL)
 	{
-		pProxy = GetEntity(UtilHelpers::FindEntityByNetClass(playerhelpers->GetMaxClients(), grclassname));
+		pProxy = GetEntity(UtilHelpers::FindEntityByNetClass(playerhelpers->GetMaxClients(), grclassname.c_str()));
 		if (pProxy)
 			proxyEntRef = gamehelpers->EntityToReference(pProxy);
 	}
@@ -1944,7 +1954,7 @@ bool CEntPropUtils::GameRules_GetProp(const char *prop, int& result, int size, i
 	bool is_unsigned = false;
 	void *pGameRules = g_pSDKTools->GetGameRules();
 
-	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
+	if (!pGameRules || grclassname.empty())
 	{
 		return false;
 	}
@@ -2017,7 +2027,7 @@ bool CEntPropUtils::GameRules_GetPropFloat(const char *prop, float& result, int 
 	int bit_count;
 	void *pGameRules = g_pSDKTools->GetGameRules();
 
-	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
+	if (!pGameRules || grclassname.empty())
 	{
 		return false;
 	}
@@ -2039,7 +2049,7 @@ bool CEntPropUtils::GameRules_GetPropEnt(const char *prop, int& result, int elem
 	int bit_count;
 	void *pGameRules = g_pSDKTools->GetGameRules();
 
-	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
+	if (!pGameRules || grclassname.empty())
 	{
 		return false;
 	}
@@ -2069,7 +2079,7 @@ bool CEntPropUtils::GameRules_GetPropVector(const char *prop, Vector& result, in
 	int bit_count;
 	void *pGameRules = g_pSDKTools->GetGameRules();
 
-	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
+	if (!pGameRules || grclassname.empty())
 	{
 		return false;
 	}
@@ -2094,7 +2104,7 @@ bool CEntPropUtils::GameRules_GetPropString(const char* prop, char* result, size
 	int bit_count;
 	void *pGameRules = g_pSDKTools->GetGameRules();
 
-	if (!pGameRules || !grclassname || !strcmp(grclassname, ""))
+	if (!pGameRules || grclassname.empty())
 	{
 		return false;
 	}

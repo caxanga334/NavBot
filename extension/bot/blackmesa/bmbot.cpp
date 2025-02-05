@@ -41,7 +41,28 @@ void CBlackMesaBot::FirstSpawn()
 	engine->SetFakeClientConVarValue(GetEdict(), "cl_defaultweapon", "weapon_glock");
 	engine->SetFakeClientConVarValue(GetEdict(), "cl_weapon_autoswitch", "0");
 	engine->SetFakeClientConVarValue(GetEdict(), "cl_auto_crouch_jump", "1");
-	engine->SetFakeClientConVarValue(GetEdict(), "cl_charactertype", "mp_scientist_female");
+
+	auto model = CBlackMesaDeathmatchMod::GetBMMod()->GetRandomPlayerModel();
+
+	if (model)
+	{
+		int skin = 0;
+
+		if (model->second > 1)
+		{
+			skin = CBaseBot::s_botrng.GetRandomInt<int>(0, model->second - 1);
+		}
+
+		std::unique_ptr<char[]> skinstring = std::make_unique<char[]>(32);
+		ke::SafeSprintf(skinstring.get(), 32, "%i", skin);
+		engine->SetFakeClientConVarValue(GetEdict(), "cl_charactertype", model->first.c_str());
+		engine->SetFakeClientConVarValue(GetEdict(), "cl_characterskin", skinstring.get());
+	}
+	else
+	{
+		engine->SetFakeClientConVarValue(GetEdict(), "cl_charactertype", "mp_scientist_hev");
+		engine->SetFakeClientConVarValue(GetEdict(), "cl_characterskin", "0");
+	}
 }
 
 blackmesa::BMTeam CBlackMesaBot::GetMyBMTeam() const

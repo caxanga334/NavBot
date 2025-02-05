@@ -1,7 +1,8 @@
 #include <stdexcept>
 #include <cstring>
 #include <algorithm>
-
+#include <memory>
+#include <filesystem>
 #include <extension.h>
 #include <manager.h>
 #include <util/sdkcalls.h>
@@ -9,10 +10,28 @@
 #include "nav/bm_nav_mesh.h"
 #include "blackmesadm_mod.h"
 
+class BMPlayerModelsFileParser : public ITextListener_INI
+{
+public:
+	BMPlayerModelsFileParser()
+	{
+		playermodels.reserve(32);
+		current = nullptr;
+	}
+
+	bool ReadINI_NewSection(const char* section, bool invalid_tokens, bool close_bracket, bool extra_tokens, unsigned int* curtok) override;
+	bool ReadINI_KeyValue(const char* key, const char* value, bool invalid_tokens, bool equal_token, bool quotes, unsigned int* curtok) override;
+
+	std::vector<std::pair<std::string, int>> playermodels;
+	std::pair<std::string, int>* current;
+};
+
+
 CBlackMesaDeathmatchMod::CBlackMesaDeathmatchMod()
 {
 	m_isTeamPlay = false;
 	std::fill(m_maxCarry.begin(), m_maxCarry.end(), 0);
+	m_playermodels.reserve(32);
 
 	ListenForGameEvent("round_start");
 }
@@ -40,6 +59,13 @@ void CBlackMesaDeathmatchMod::FireGameEvent(IGameEvent* event)
 			OnRoundStart();
 		}
 	}
+}
+
+void CBlackMesaDeathmatchMod::PostCreation()
+{
+	CBaseMod::PostCreation();
+
+	ParsePlayerModelsConfigFile();
 }
 
 CBaseBot* CBlackMesaDeathmatchMod::AllocateBot(edict_t* edict)
@@ -87,6 +113,22 @@ void CBlackMesaDeathmatchMod::OnRoundStart()
 	randomgen->RandomReSeed();
 	CBaseBot::s_usercmdrng.RandomReSeed();
 	CBaseBot::s_botrng.RandomReSeed();
+}
+
+const std::pair<std::string, int>* CBlackMesaDeathmatchMod::GetRandomPlayerModel() const
+{
+	if (m_playermodels.empty())
+	{
+		return nullptr;
+	}
+
+	if (m_playermodels.size() == 1)
+	{
+		return &m_playermodels[0];
+	}
+
+	const std::pair<std::string, int>* result = &m_playermodels[CBaseBot::s_botrng.GetRandomInt<size_t>(0U, m_playermodels.size() - 1U)];
+	return result;
 }
 
 void CBlackMesaDeathmatchMod::BuildMaxCarryArray()
@@ -174,4 +216,69 @@ void CBlackMesaDeathmatchMod::BuildMaxCarryArray()
 	{
 		m_maxCarry[static_cast<int>(blackmesa::Ammo_Snarks)] = sk_ammo_snark_max.GetInt();
 	}
+}
+
+void CBlackMesaDeathmatchMod::ParsePlayerModelsConfigFile()
+{
+	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+	const char* modfolder = smutils->GetGameFolderName();
+
+	smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/player_models.custom.ini", modfolder);
+	
+	if (!std::filesystem::exists(path.get()))
+	{
+		smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/player_models.ini", modfolder);
+	}
+
+	if (!std::filesystem::exists(path.get()))
+	{
+		smutils->LogError(myself, "Failed to parse Black Mesa player models configuration file. File \"%s\" does not exists!", path.get());
+		return;
+	}
+
+	BMPlayerModelsFileParser parser;
+	unsigned int line = 0;
+	unsigned int col = 0;
+	bool result = textparsers->ParseFile_INI(path.get(), &parser, &line, &col);
+
+	if (!result)
+	{
+		smutils->LogError(myself, "Failed to parse Black Mesa player models configuration file. Parser failed to for \"%s\"! Line %i col %i", path.get(), line, col);
+		return;
+	}
+
+	if (parser.playermodels.empty())
+	{
+		return;
+	}
+
+	m_playermodels.swap(parser.playermodels);
+}
+
+bool BMPlayerModelsFileParser::ReadINI_NewSection(const char* section, bool invalid_tokens, bool close_bracket, bool extra_tokens, unsigned int* curtok)
+{
+	if (!section || strcmp(section, "") == 0 || strlen(section) < 2)
+	{
+		return true;
+	}
+
+	current = &playermodels.emplace_back(section, 0);
+
+	return true;
+}
+
+bool BMPlayerModelsFileParser::ReadINI_KeyValue(const char* key, const char* value, bool invalid_tokens, bool equal_token, bool quotes, unsigned int* curtok)
+{
+	if (!equal_token)
+	{
+		return true;
+	}
+
+	if (key && strncasecmp(key, "skin_count", 10) == 0)
+	{
+		int quantity = atoi(value);
+		current->second = quantity;
+	}
+
+	return true;
 }
