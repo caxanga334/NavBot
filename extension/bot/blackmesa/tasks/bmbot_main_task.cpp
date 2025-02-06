@@ -1,5 +1,6 @@
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
+#include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
 #include "bmbot_tactical_task.h"
 #include "bmbot_main_task.h"
 
@@ -140,42 +141,11 @@ bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer* them, CBlackMesaBot
 	return true;
 }
 
-#ifdef EXT_DEBUG
-
 TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTestEventPropagation(CBlackMesaBot* bot)
 {
 	edict_t* host = UtilHelpers::GetListenServerHost();
+	const Vector& goal = host->GetCollideable()->GetCollisionOrigin();
 
-	return TryPauseFor(new CBlackMesaBotDebugMoveToOriginTask(host->GetCollideable()->GetCollisionOrigin()), PRIORITY_CRITICAL, "Debug command received!");
+	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, goal), PRIORITY_CRITICAL, "Debug command received!");
 }
 
-CBlackMesaBotDebugMoveToOriginTask::CBlackMesaBotDebugMoveToOriginTask(const Vector& destination)
-{
-	m_goal = destination;
-	m_failures = 0;
-}
-
-TaskResult<CBlackMesaBot> CBlackMesaBotDebugMoveToOriginTask::OnTaskUpdate(CBlackMesaBot* bot)
-{
-	CBlackMesaBotPathCost cost(bot);
-	m_nav.Update(bot, m_goal, cost);
-
-	return Continue();
-}
-
-TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotDebugMoveToOriginTask::OnMoveToFailure(CBlackMesaBot* bot, CPath* path, IEventListener::MovementFailureType reason)
-{
-	if (++m_failures > 20)
-	{
-		return TryDone(PRIORITY_HIGH, "Too many path failures, aborting!");
-	}
-
-	return TryContinue();
-}
-
-TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotDebugMoveToOriginTask::OnMoveToSuccess(CBlackMesaBot* bot, CPath* path)
-{
-	return TryDone(PRIORITY_HIGH, "Goal reached!");
-}
-
-#endif

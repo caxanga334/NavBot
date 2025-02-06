@@ -3,7 +3,6 @@
 #pragma once
 
 #include <extension.h>
-#include <mathlib/mathlib.h>
 
 inline float UTIL_VecToYaw(const Vector& vec)
 {

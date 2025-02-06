@@ -11,7 +11,6 @@
 #endif
 
 #include "engine/ivdebugoverlay.h"
-#include "mathlib/vector.h"
 
 // When used as a duration by a server-side NDebugOverlay:: call, 
 // causes the overlay to persist until the next server update.

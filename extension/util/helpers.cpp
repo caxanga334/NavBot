@@ -327,6 +327,59 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
+#elif SOURCE_ENGINE == SE_EPISODEONE
+	CBaseEntity* pEntity = nullptr;
+	CBaseHandle hCurrent;
+
+	if (start == -1)
+	{
+		hCurrent = g_EntList->FirstHandle();
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(start);
+
+		if (!pEntity)
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		hCurrent = g_EntList->NextHandle(hCurrent);
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+	
+	if (!pEntity)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	const char* classname = nullptr;
+	int lastletterpos = 0;
+
+	while (pEntity)
+	{
+		classname = entityprops::GetEntityClassname(pEntity);
+
+		lastletterpos = strlen(searchname) - 1;
+		if (searchname[lastletterpos] == '*')
+		{
+			if (strncasecmp(searchname, classname, lastletterpos) == 0)
+			{
+				return gamehelpers->EntityToBCompatRef(pEntity);
+			}
+		}
+		else if (strcasecmp(searchname, classname) == 0)
+		{
+			return gamehelpers->EntityToBCompatRef(pEntity);
+		}
+
+		hCurrent = g_EntList->NextHandle(hCurrent);
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+
+	return INVALID_EHANDLE_INDEX;
+
 #else
 
 	// from: https://cs.alliedmods.net/sourcemod/source/extensions/sdktools/vnatives.cpp#873
@@ -408,6 +461,54 @@ int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radiu
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
+#elif SOURCE_ENGINE == SE_EPISODEONE
+	CBaseEntity* pEntity = nullptr;
+	CBaseHandle hCurrent;
+
+	if (start == -1)
+	{
+		hCurrent = g_EntList->FirstHandle();
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(start);
+
+		if (!pEntity)
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		hCurrent = g_EntList->NextHandle(hCurrent);
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+
+	if (!pEntity)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	Vector pos(0.0f, 0.0f, 0.0f);
+
+	while (pEntity)
+	{
+		int index = gamehelpers->EntityToBCompatRef(pEntity);
+
+		if (entprops->GetEntPropVector(index, Prop_Data, "m_vecOrigin", pos) == true)
+		{
+			float distancesqr = (center - pos).LengthSqr();
+
+			if (distancesqr <= radius * radius)
+			{
+				return gamehelpers->EntityToBCompatRef(pEntity);
+			}
+		}
+
+		hCurrent = g_EntList->NextHandle(hCurrent);
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+
+	return INVALID_EHANDLE_INDEX;
 #else
 	CBaseEntity* pEntity = nullptr;
 
@@ -500,6 +601,81 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	auto result = servertools->FindEntityByName(UtilHelpers::GetEntity(start), targetname);
 	return gamehelpers->EntityToBCompatRef(result);
+#elif SOURCE_ENGINE == SE_EPISODEONE
+
+	if (!targetname || targetname[0] == 0)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	if (targetname[0] == '!')
+	{
+		// I don't see a need to implement this, throw an exception to alert the programmer
+		throw std::runtime_error("Procedural entity search not supported!");
+	}
+
+	CBaseEntity* pEntity = nullptr;
+	CBaseHandle hCurrent;
+
+	if (start == -1)
+	{
+		hCurrent = g_EntList->FirstHandle();
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(start);
+
+		if (!pEntity)
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		hCurrent = g_EntList->NextHandle(hCurrent);
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+
+	if (!pEntity)
+	{
+		return INVALID_EHANDLE_INDEX;
+	}
+
+	const char* name = nullptr;
+	static int offset = -1;
+	if (offset == -1)
+	{
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(pEntity), "m_iName", &info))
+		{
+			return INVALID_EHANDLE_INDEX;
+		}
+
+		offset = info.actual_offset;
+	}
+
+	string_t s;
+
+	while (pEntity)
+	{
+		if ((s = *(string_t*)((uint8_t*)pEntity + offset)) == NULL_STRING)
+		{
+			hCurrent = g_EntList->NextHandle(hCurrent);
+			pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+			continue;
+		}
+
+		name = STRING(s);
+
+		if (strcasecmp(name, targetname) == 0)
+		{
+			return gamehelpers->EntityToBCompatRef(pEntity);
+		}
+
+		hCurrent = g_EntList->NextHandle(hCurrent);
+		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
+	}
+
+	return INVALID_EHANDLE_INDEX;
 #else
 
 	if (!targetname || targetname[0] == 0)
@@ -1050,6 +1226,8 @@ CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)
 {
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	return servertools->FindEntityByHammerID(iHammerID);
+#elif SOURCE_ENGINE == SE_EPISODEONE
+	return nullptr;
 #else
 	CBaseEntity* entity = static_cast<CBaseEntity*>(servertools->FirstEntity());
 

@@ -11,6 +11,11 @@ class CBaseMod;
 class CBaseExtPlayer;
 class CBaseBot;
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+#define IConVar ConVar
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
+
 // Primary Extension Manager
 class CExtManager
 {

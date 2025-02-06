@@ -36,6 +36,7 @@
 #include <extension.h>
 #include <dt_send.h>
 #include <server_class.h>
+#include <datamap.h>
 #include "helpers.h"
 
 // Indicates an invalid entity reference/index. Better compat between 32 bits integers and 64 bits integers than INVALID_EHANDLE_INDEX

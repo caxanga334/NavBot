@@ -6,7 +6,6 @@
 #include <string>
 #include <array>
 
-#include <mathlib/vector.h>
 #include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/playerinput.h>

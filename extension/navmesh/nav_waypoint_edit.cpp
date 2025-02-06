@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/commandargs_episode1.h>
 #include <extplayer.h>
 #include <sdkports/sdk_traces.h>
 #include "nav_mesh.h"
@@ -99,6 +100,8 @@ CON_COMMAND_F(sm_nav_waypoint_mark_nearest, "Marks/select the waypoint nearest t
 
 CON_COMMAND_F(sm_nav_waypoint_mark_id, "Marks/select the waypoint of the given ID.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_mark_id <ID>\n");
@@ -120,6 +123,8 @@ CON_COMMAND_F(sm_nav_waypoint_unmark, "Clears the selected/marked waypoint.", FC
 
 CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 3)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_connect <from ID> <to ID>\n");
@@ -160,6 +165,8 @@ CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.
 
 CON_COMMAND_F(sm_nav_waypoint_disconnect, "Removes a connection between two waypoints.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 3)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_disconnect <from ID> <to ID>\n");
@@ -215,6 +222,8 @@ CON_COMMAND_F(sm_nav_waypoint_info, "Shows information about the selected waypoi
 
 CON_COMMAND_F(sm_nav_waypoint_set_radius, "Sets the waypoint radius.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_set_radius <radius>\n");
@@ -265,6 +274,8 @@ CON_COMMAND_F(sm_nav_waypoint_add_angle, "Adds a new angle to an waypoint.", FCV
 
 CON_COMMAND_F(sm_nav_waypoint_update_angle, "Updates an existing angle on an waypoint.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_update_angle <angle index>\n");
@@ -322,6 +333,8 @@ CON_COMMAND_F(sm_nav_waypoint_clear_angles, "Removes all angles from an waypoint
 
 CON_COMMAND_F(sm_nav_waypoint_set_team, "Sets the waypoint owning team.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_set_team <team index>\n");
@@ -369,6 +382,8 @@ CON_COMMAND_F(sm_nav_waypoint_warp_to, "Teleports you to the selected waypoint."
 
 CON_COMMAND_F(sm_nav_waypoint_view_angle, "Sets your current angle to the given angle index", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_waypoint_view_angle <angle index>\n");

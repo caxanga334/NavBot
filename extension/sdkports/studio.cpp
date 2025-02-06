@@ -1,6 +1,8 @@
 #include <extension.h>
 #include <studio.h>
 
+#if SOURCE_ENGINE != SE_EPISODEONE
+
 ////////////////////////////////////////////////////////////////////////
 const studiohdr_t* studiohdr_t::FindModel(void** cache, char const* modelname) const
 {
@@ -126,3 +128,5 @@ const virtualmodel_t* CStudioHdr::ResetVModel(const virtualmodel_t* pVModel) con
 		return NULL;
 	}
 }
+
+#endif // SOURCE_ENGINE != SE_EPISODEONE

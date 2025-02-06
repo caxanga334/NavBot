@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/commandargs_episode1.h>
 #include <util/helpers.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <entities/baseentity.h>
@@ -29,6 +30,8 @@ CON_COMMAND_F(sm_nav_volume_create, "Creates a new Nav Volume at your position",
 
 CON_COMMAND_F(sm_nav_volume_select, "Selects a nav volume.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	TheNavMesh->CommandNavMarkVolume(args);
 }
 
@@ -81,6 +84,8 @@ CON_COMMAND_F(sm_nav_volume_set_origin, "Updates the selected nav volume origin 
 
 CON_COMMAND_F(sm_nav_volume_set_bounds, "Updates the selected nav volume bounds.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 6)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_bounds <mins x> <mins y> <mins z> <maxs x> <maxs y> <maxs z>\n");
@@ -114,6 +119,8 @@ CON_COMMAND_F(sm_nav_volume_set_bounds, "Updates the selected nav volume bounds.
 
 CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned team.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	int team = NAV_TEAM_ANY;
 
 	if (args.ArgC() < 2)
@@ -147,6 +154,8 @@ CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned 
 
 CON_COMMAND_F(sm_nav_volume_set_check_condition_type, "Updates the selected nav volume condition type.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_check_condition_type <type ID>\n");
@@ -190,6 +199,8 @@ CON_COMMAND_F(sm_nav_volume_set_check_condition_inverted, "Updates the selected 
 
 CON_COMMAND_F(sm_nav_volume_set_check_target_entity, "Updates the selected nav volume to use inverted condition check logic.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_check_target_entity <entity targetname or index>\n");
@@ -240,6 +251,8 @@ CON_COMMAND_F(sm_nav_volume_set_check_target_entity, "Updates the selected nav v
 
 CON_COMMAND_F(sm_nav_volume_set_check_float_data, "Updates the selected nav volume entity check float data", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_check_float_data <value>\n");

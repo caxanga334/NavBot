@@ -7,7 +7,6 @@
 
 #include <extension.h>
 #include "debugoverlay_shared.h"
-#include "mathlib/mathlib.h"
 #include "sdk_traces.h"
 #include "sdk_utils.h"
 #include <extplayer.h>
