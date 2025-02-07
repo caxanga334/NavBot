@@ -60,6 +60,8 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindArmorTask::OnTaskUpdate(CBlackMesaBot
 	{
 		if (m_repathtimer.IsElapsed())
 		{
+			m_repathtimer.Start(1.0f);
+
 			CBlackMesaBotPathCost cost(bot);
 
 			if (!m_nav.ComputePathToPosition(bot, m_goal, cost))

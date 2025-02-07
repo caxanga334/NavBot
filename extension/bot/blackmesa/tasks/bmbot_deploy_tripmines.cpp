@@ -15,6 +15,7 @@ bool CBlackMesaBotDeployTripminesTask::IsPossible(CBlackMesaBot* bot, Vector& wa
 	if (bot->GetInventoryInterface()->HasWeapon("weapon_tripmine") && bot->GetAmmoOfIndex(static_cast<int>(blackmesa::BMAmmoIndex::Ammo_Tripmines)) > 0)
 	{
 		Vector start = bot->GetAbsOrigin();
+		start.z += 16.0f;
 
 		std::array<QAngle, 4> angles{ {
 			{0.0f, 0.0f, 0.0f},

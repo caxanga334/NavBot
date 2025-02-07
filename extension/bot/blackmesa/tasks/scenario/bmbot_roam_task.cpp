@@ -43,7 +43,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnTaskStart(CBlackMesaBot* bot,
 		return Done("No path to random roam goal!");
 	}
 
-	m_repathTimer.Start(0.5f);
+	m_repathTimer.Start(1.0f);
 	m_failCount = 0;
 
 	return Continue();
@@ -53,7 +53,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnTaskUpdate(CBlackMesaBot* bot
 {
 	if (m_repathTimer.IsElapsed())
 	{
-		m_repathTimer.Start(0.5f);
+		m_repathTimer.Start(1.0f);
 		CBlackMesaBotPathCost cost(bot);
 		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 		{

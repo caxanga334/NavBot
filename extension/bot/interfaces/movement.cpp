@@ -363,6 +363,12 @@ void IMovement::AdjustSpeedForPath(CMeshNavigator* path)
 	auto& data = path->GetCursorData();
 	auto goal = path->GetGoalSegment();
 
+	if (GetBot()->IsUnderWater())
+	{
+		SetDesiredSpeed(GetRunSpeed());
+		return;
+	}
+
 	if (!goal)
 	{
 		SetDesiredSpeed(GetRunSpeed());
@@ -581,8 +587,14 @@ bool IMovement::IsGap(const Vector& pos, const Vector& forward)
 bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now, CBaseEntity** obstacle)
 {
 	float heightdiff = to.z - from.z;
+	float jumplimit = GetMaxJumpHeight();
 
-	if (heightdiff >= GetMaxJumpHeight())
+	if (GetMaxDoubleJumpHeight() > jumplimit && IsAbleToDoubleJump())
+	{
+		jumplimit = GetMaxDoubleJumpHeight();
+	}
+
+	if (heightdiff >= jumplimit)
 	{
 		Vector along = to - from;
 		along.NormalizeInPlace();
@@ -1734,6 +1746,13 @@ IMovement::ElevatorState IMovement::EState_EnterElevator()
 
 	const Vector& pos = m_fromFloor->GetArea()->GetCenter();
 	MoveTowards(pos, MOVEWEIGHT_CRITICAL);
+
+	float zDiff = fabs(pos.z - me->GetAbsOrigin().z);
+
+	if (zDiff > GetMaxJumpHeight())
+	{
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
 
 	if (me->GetRangeTo(pos) <= ELEV_MOVE_RANGE)
 	{

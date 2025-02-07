@@ -111,7 +111,7 @@ void CPath::DrawFullPath(const float duration)
 
 	constexpr float ARROW_WIDTH = 4.0f;
 
-	for (auto segment : m_segments)
+	for (auto& segment : m_segments)
 	{
 		if (isstart == true)
 		{

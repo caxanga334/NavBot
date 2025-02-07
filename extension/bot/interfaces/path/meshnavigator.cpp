@@ -15,7 +15,7 @@
 #undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
 
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
-ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "25", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
+ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
 ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 
 CMeshNavigator::CMeshNavigator() : CPath()
@@ -1442,9 +1442,13 @@ bool CMeshNavigator::ElevatorUpdate(CBaseBot* bot)
 	
 	auto next = GetNextSegment(m_goal);
 
+	// Skip some distance when entering elevators
 	if (next && next->type == AIPath::SegmentType::SEGMENT_ELEVATOR)
 	{
-		if (bot->GetRangeTo(next->goal) <= 32.0f)
+		const float range = bot->GetRangeTo(next->goal);
+		Vector origin = bot->GetAbsOrigin();
+
+		if (bot->GetMovementInterface()->IsPotentiallyTraversable(origin, next->goal, nullptr, true, nullptr) && range <= m_skipAheadDistance)
 		{
 			if (GetNextSegment(next) != nullptr)
 			{

@@ -79,7 +79,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindAmmoTask::OnTaskUpdate(CBlackMesaBot*
 			return Done("Failed to find a path to the ammo entity!");
 		}
 
-		m_repathtimer.Start(0.5f);
+		m_repathtimer.Start(1.0f);
 	}
 
 	m_nav.Update(bot);
