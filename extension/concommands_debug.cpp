@@ -8,7 +8,7 @@
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <bot/interfaces/behavior.h>
-#include <bot/interfaces/path/basepath.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include <entities/tf2/tf_entities.h>
 #include <navmesh/nav.h>
 #include <navmesh/nav_area.h>
@@ -86,6 +86,65 @@ CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command."
 	extmanager->ForEachBot([&command](CBaseBot* bot) {
 		bot->DelayedFakeClientCommand(command);
 	});
+}
+
+CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path to the console.")
+{
+	CBaseBot* bot = nullptr;
+
+	// start at 2 since 1 is the listen server host
+	for (int i = 2; i <= gpGlobals->maxClients; i++)
+	{
+		bot = extmanager->GetBotByIndex(i);
+
+		if (bot)
+		{
+			break; // stop at the first bot found
+		}
+	}
+
+	if (!bot)
+	{
+		return;
+	}
+
+	CMeshNavigator* nav = bot->GetActiveNavigator();
+
+	if (!nav)
+	{
+		Msg("Bot doesn't have an active navigator!\n");
+		return;
+	}
+
+	auto goal = nav->GetGoalSegment();
+
+	if (!goal)
+	{
+		Warning("NULL goal segment!\n");
+		return;
+	}
+
+	Msg("Path Dump for %s\n", bot->GetClientName());
+
+	int counter = 0;
+	float range = (bot->GetAbsOrigin() - goal->goal).AsVector2D().Length();
+	Msg("Range to Goal: %3.2f \n", range);
+	Msg("[%i] Current Goal: <%3.2f, %3.2f, %3.2f> type #%i\n", counter, goal->goal.x, goal->goal.y, goal->goal.z, static_cast<int>(goal->type));
+
+	const CBasePathSegment* next = goal;
+
+	for (;;)
+	{
+		next = nav->GetNextSegment(next);
+
+		if (!next)
+		{
+			return;
+		}
+
+		counter++;
+		Msg("[%i] Path Segment: <%3.2f, %3.2f, %3.2f> type #%i\n", counter, next->goal.x, next->goal.y, next->goal.z, static_cast<int>(next->type));
+	}
 }
 
 CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")

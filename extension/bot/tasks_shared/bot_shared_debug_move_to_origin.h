@@ -45,13 +45,13 @@ inline TaskResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnTaskUpdate(BT* 
 	{
 		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathCost))
 		{
-			return Done("No path to goal!");
+			return AITask<BT>::Done("No path to goal!");
 		}
 	}
 
 	m_nav.Update(bot);
 
-	return Continue();
+	return AITask<BT>::Continue();
 }
 
 template<typename BT, typename CT>
@@ -59,16 +59,16 @@ inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMo
 {
 	if (++m_failCount > 20)
 	{
-		return TryDone(PRIORITY_HIGH, "Too many path failures!");
+		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
 	}
 
-	return TryContinue();
+	return AITask<BT>::TryContinue();
 }
 
 template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMoveToSuccess(BT* bot, CPath* path)
 {
-	return TryDone(PRIORITY_HIGH, "Goal reached");
+	return AITask<BT>::TryDone(PRIORITY_HIGH, "Goal reached");
 }
 
 #endif // !NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_

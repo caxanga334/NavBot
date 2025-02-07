@@ -328,23 +328,24 @@ void CBaseBot::BuildUserCommand(const int buttons)
 
 	float forwardspeed = 0.0f;
 	float sidespeed = 0.0f;
+	const float desiredspeed = mover->GetDesiredSpeed();
 
 	if ((buttons & INPUT_FORWARD) != 0)
 	{
-		forwardspeed = mover->GetMovementSpeed();
+		forwardspeed = desiredspeed;
 	}
 	else if ((buttons & INPUT_BACK) != 0)
 	{
-		forwardspeed = -mover->GetMovementSpeed();
+		forwardspeed = -desiredspeed;
 	}
 
 	if ((buttons & INPUT_MOVERIGHT) != 0)
 	{
-		sidespeed = mover->GetMovementSpeed();
+		sidespeed = desiredspeed;
 	}
 	else if ((buttons & INPUT_MOVELEFT) != 0)
 	{
-		sidespeed = -mover->GetMovementSpeed();
+		sidespeed = -desiredspeed;
 	}
 
 	// TO-DO: Up speed

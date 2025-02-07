@@ -108,6 +108,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	CrouchIfNeeded(bot);
 	BreakIfNeeded(bot);
+	mover->AdjustSpeedForPath(this);
 
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
@@ -1427,11 +1428,30 @@ bool CMeshNavigator::ElevatorUpdate(CBaseBot* bot)
 
 		if (!next)
 		{
+			if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+			{
+				bot->DebugPrintToConsole(255, 0, 0, "%s CMeshNavigator::ElevatorUpdate next == nullptr! \n", bot->GetDebugIdentifier());
+			}
+
 			return false;
 		}
 
 		bot->GetMovementInterface()->UseElevator(elevator, m_goal->area, next->area);
 		return true;
+	}
+	
+	auto next = GetNextSegment(m_goal);
+
+	if (next && next->type == AIPath::SegmentType::SEGMENT_ELEVATOR)
+	{
+		if (bot->GetRangeTo(next->goal) <= 32.0f)
+		{
+			if (GetNextSegment(next) != nullptr)
+			{
+				bot->GetMovementInterface()->UseElevator(next->area->GetElevator(), m_goal->area, next->area);
+				return true;
+			}
+		}
 	}
 
 	return false;

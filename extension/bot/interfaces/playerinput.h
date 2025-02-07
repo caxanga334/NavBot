@@ -84,7 +84,7 @@ public:
 	void ReleaseMoveRightButton();
 	void PressReloadButton(const float duration = -1.0f);
 	void ReleaseReloadButton();
-	void SetMovementScale(const float forward, const float side, const float duration = 0.05f);
+	void SetMovementScale(const float forward, const float side, const float duration = 0.01f);
 	
 	inline const float GetForwardScale() const { return m_forwardscale; }
 	inline const float GetSideScale() const { return m_sidescale; }

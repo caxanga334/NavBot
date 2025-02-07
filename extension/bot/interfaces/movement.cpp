@@ -75,7 +75,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_groundMotionVector = vec2_origin;
 	m_speed = 0.0f;
 	m_groundspeed = 0.0f;
-	m_basemovespeed = 0.0f;
+	m_maxspeed = 0.0f;
 	m_ladderGoalZ = 0.0f;
 	m_elevator = nullptr;
 	m_fromFloor = nullptr;
@@ -86,6 +86,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_isBreakingObstacle = false;
 	m_obstacleBreakTimeout.Invalidate();
 	m_obstacleEntity = nullptr;
+	m_desiredspeed = 0.0f;
 }
 
 IMovement::~IMovement()
@@ -110,7 +111,8 @@ void IMovement::Reset()
 	m_groundMotionVector = vec2_origin;
 	m_speed = 0.0f;
 	m_groundspeed = 0.0f;
-	m_basemovespeed = 0.0f;
+	m_maxspeed = GetBot()->GetMaxSpeed();
+	m_desiredspeed = m_maxspeed;
 	m_ladderGoalZ = 0.0f;
 	m_elevator = nullptr;
 	m_fromFloor = nullptr;
@@ -125,7 +127,7 @@ void IMovement::Reset()
 
 void IMovement::Update()
 {
-	m_basemovespeed = GetBot()->GetMaxSpeed();
+	m_maxspeed = GetBot()->GetMaxSpeed();
 
 	StuckMonitor();
 	ObstacleBreakUpdate();
@@ -245,6 +247,16 @@ unsigned int IMovement::GetMovementTraceMask()
 	return MASK_PLAYERSOLID;
 }
 
+float IMovement::GetDesiredSpeed() const
+{
+	return m_desiredspeed;
+}
+
+void IMovement::SetDesiredSpeed(float speed)
+{
+	m_desiredspeed = std::clamp(speed, 0.0f, m_maxspeed);
+}
+
 void IMovement::MoveTowards(const Vector& pos, const int weight)
 {
 	if (m_lastMoveWeight > weight)
@@ -344,6 +356,38 @@ void IMovement::FaceTowards(const Vector& pos, const bool important)
 
 	Vector lookAt(pos.x, pos.y, eyes.z);
 	input->AimAt(lookAt, priority, 0.1f, "IMovement::FaceTowards");
+}
+
+void IMovement::AdjustSpeedForPath(CMeshNavigator* path)
+{
+	auto& data = path->GetCursorData();
+	auto goal = path->GetGoalSegment();
+
+	if (!goal)
+	{
+		SetDesiredSpeed(GetRunSpeed());
+		return;
+	}
+
+	auto next = path->GetNextSegment(goal);
+
+	if (goal->type == AIPath::SEGMENT_LADDER_UP || goal->type == AIPath::SEGMENT_LADDER_DOWN)
+	{
+		SetDesiredSpeed(GetWalkSpeed());
+		return;
+	}
+
+	if (goal->type == AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP || goal->type == AIPath::SegmentType::SEGMENT_BLAST_JUMP ||
+		goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || 
+		goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP || (next && next->type == AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP))
+	{
+		// on these conditions, always move at max speed
+		SetDesiredSpeed(GetRunSpeed());
+		return;
+	}
+
+	// adjust speed based on the path's curvature
+	SetDesiredSpeed(GetRunSpeed() + fabs(data.curvature) * (GetWalkSpeed() - GetRunSpeed()));
 }
 
 void IMovement::Stop()
@@ -878,6 +922,7 @@ void IMovement::UseElevator(const CNavElevator* elevator, const CNavArea* from, 
 	m_toFloor = to->GetMyElevatorFloor();
 	m_elevatorTimeout.Invalidate();
 	m_elevatorState = ElevatorState::MOVE_TO_WAIT_POS;
+	SetDesiredSpeed(GetRunSpeed() * IMovement::ELEV_MOVESPEED_SCALE);
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
@@ -1460,6 +1505,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	{
 		m_ladderTimer.Start(4.0f);
 		m_ladderWait.Invalidate();
+		SetDesiredSpeed(GetRunSpeed());
 		return;
 	}
 
@@ -1472,6 +1518,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		m_ladderMoveGoal.z = z;
 		GetBot()->GetControlInterface()->SnapAimAt(m_ladderMoveGoal, IPlayerController::LOOK_MOVEMENT);
 		m_ladderTimer.Start(4.0f);
+		SetDesiredSpeed(GetWalkSpeed());
 		return;
 	}
 	case IMovement::USING_LADDER_UP:
@@ -1480,6 +1527,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() * 0.8f);
 		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
 		m_ladderTimer.Start(time);
+		SetDesiredSpeed(GetRunSpeed());
 		return;
 	}
 	case IMovement::APPROACHING_LADDER_DOWN:
@@ -1488,6 +1536,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		Vector lookAt = m_ladder->m_top;
 		lookAt.z = m_ladder->ClampZ(GetBot()->GetAbsOrigin().z);
 		GetBot()->GetControlInterface()->SnapAimAt(lookAt, IPlayerController::LOOK_MOVEMENT);
+		SetDesiredSpeed(GetWalkSpeed());
 		return;
 	}
 	case IMovement::USING_LADDER_DOWN:
@@ -1499,6 +1548,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		GetBot()->GetControlInterface()->SnapAimAt(lookAt, IPlayerController::LOOK_MOVEMENT);
 		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
 		m_ladderTimer.Start(time);
+		SetDesiredSpeed(GetRunSpeed());
 		return;
 	}
 	default:
@@ -1810,6 +1860,13 @@ IMovement::ElevatorState IMovement::EState_ExitElevator()
 
 	// if no wait position, just end it.
 	if (m_toFloor->wait_position.IsZero(0.5f))
+	{
+		return ElevatorState::NOT_USING_ELEVATOR;
+	}
+
+	float zDiff = fabs(m_toFloor->wait_position.z - me->GetAbsOrigin().z);
+
+	if (zDiff > GetMaxJumpHeight())
 	{
 		return ElevatorState::NOT_USING_ELEVATOR;
 	}

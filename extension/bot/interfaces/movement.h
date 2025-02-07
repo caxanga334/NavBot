@@ -9,6 +9,7 @@
 class CNavLadder;
 class CNavArea;
 class IMovement;
+class CMeshNavigator;
 
 class CMovementTraverseFilter : public trace::CTraceFilterSimple
 {
@@ -179,7 +180,13 @@ public:
 	virtual float GetProneHullHeigh();
 	// Trace mask for collision detection
 	virtual unsigned int GetMovementTraceMask();
-
+	// Gets the bot running speed
+	virtual float GetRunSpeed() const { return m_maxspeed; }
+	// Gets the bot walking speed
+	virtual float GetWalkSpeed() const { return m_maxspeed * 0.30f; }
+	// Gets the bot desired move speed
+	virtual float GetDesiredSpeed() const;
+	virtual void SetDesiredSpeed(float speed);
 	/**
 	 * @brief Instructs the movement interface to generate the inputs necessary to cause the bot to move towars the given position.
 	 * @param pos Position to move towards.
@@ -192,6 +199,11 @@ public:
 	 * @param important if true, send a high priority look request
 	*/
 	virtual void FaceTowards(const Vector& pos, const bool important = false);
+	/**
+	 * @brief Called by the Navigator to adjust the bot's speed for the current path.
+	 * @param path Path navigator that called this.
+	 */
+	virtual void AdjustSpeedForPath(CMeshNavigator* path);
 	// Makes the bot releases all movement keys, keeping momentum
 	virtual void Stop();
 	// Makes the bot loses it's momentum. Use if you need the bot to stop immediately
@@ -231,10 +243,7 @@ public:
 	 * @return True if the bot should let the movement interface control the weapons. False otherwise.
 	 */
 	virtual bool NeedsWeaponControl() { return m_isBreakingObstacle; }
-
-	// The speed the bot will move at (capped by the game player movements)
-	virtual float GetMovementSpeed() { return m_basemovespeed; }
-	virtual float GetMinimumMovementSpeed() { return m_basemovespeed * 0.4f; }
+	virtual float GetMinimumMovementSpeed() { return m_maxspeed * 0.4f; }
 	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
 	virtual bool IsClimbingOrJumping();
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
@@ -272,6 +281,12 @@ public:
 	inline const CNavLadder* GetNavLadder() const { return m_ladder; }	
 	inline int GetStuckCount() const { return m_stuck.counter; }
 	virtual bool IsUsingElevator() const;
+	/**
+	 * @brief Makes the bot uses the given elevator.
+	 * @param elevator Elevator the bot will use.
+	 * @param from Nav area to enter the elevator.
+	 * @param to Nav area of the destination floor.
+	 */
 	virtual void UseElevator(const CNavElevator* elevator, const CNavArea* from, const CNavArea* to);
 	void ClearMoveWeight() { m_lastMoveWeight = 0; }
 	int GetLastMoveWeight() const { return m_lastMoveWeight; }
@@ -316,6 +331,7 @@ protected:
 		m_fromFloor = nullptr;
 		m_toFloor = nullptr;
 		m_elevatorTimeout.Invalidate();
+		SetDesiredSpeed(GetRunSpeed());
 	}
 private:
 	float m_speed; // Bot current speed
@@ -323,7 +339,8 @@ private:
 	Vector m_motionVector; // Unit vector of the bot current movement
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
 	CountdownTimer m_jump_zboost_timer; // Timer for the z boost when jumping
-	float m_basemovespeed;
+	float m_maxspeed; // the bot's maximum speed
+	float m_desiredspeed; // speed the bot wants to move at
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();
@@ -354,6 +371,7 @@ private:
 
 	static constexpr float ELEV_MOVE_RANGE = 32.0f;
 	static constexpr float ELEV_SPEED_DIV = 400.0f; // timeout is this value divided by speed
+	static constexpr float ELEV_MOVESPEED_SCALE = 0.7f; // move at 70% of run speed
 };
 
 inline bool IMovement::IsControllingMovements()

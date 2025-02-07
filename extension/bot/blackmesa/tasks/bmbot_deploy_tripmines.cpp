@@ -69,11 +69,10 @@ TaskResult<CBlackMesaBot> CBlackMesaBotDeployTripminesTask::OnTaskStart(CBlackMe
 
 TaskResult<CBlackMesaBot> CBlackMesaBotDeployTripminesTask::OnTaskUpdate(CBlackMesaBot* bot)
 {
-	if (m_timeout >= gpGlobals->curtime)
+	if (m_timeout < gpGlobals->curtime)
 	{
 		return Done("Timed out!");
 	}
-
 
 	bot->GetMovementInterface()->MoveTowards(m_wallPosition);
 	bot->GetControlInterface()->AimAt(m_wallPosition, IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at wall to deploy tripmine.");

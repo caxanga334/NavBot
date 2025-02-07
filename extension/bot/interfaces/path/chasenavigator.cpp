@@ -53,7 +53,7 @@ Vector CChaseNavigator::PredictSubjectPosition(CBaseBot* bot, CBaseEntity* subje
 	to /= (range + 0.0001f);	// avoid divide by zero
 
 	// estimate time to reach subject, assuming maximum speed
-	float leadTime = 0.5f + (range / (mover->GetMovementSpeed() + 0.0001f));
+	float leadTime = 0.5f + (range / (mover->GetDesiredSpeed() + 0.0001f));
 
 	// estimate amount to lead the subject	
 	Vector lead = leadTime * sbjEntity.GetAbsVelocity();
