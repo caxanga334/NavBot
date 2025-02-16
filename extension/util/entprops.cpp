@@ -379,7 +379,11 @@ bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntit
 
 	if (!gamehelpers->FindSendPropInfo(pServerClass->GetName(), prop, info))
 	{
-		throw std::invalid_argument("Entity does not have given prop!");
+#ifdef EXT_DEBUG
+		// Log errors on debug so programmers can fix it if needed
+		const char* classname = entityprops::GetEntityClassname(pEntity);
+		smutils->LogError(myself, "Entity #%i <%s> [%s] does not have networked property named \"%s\"!", entity, classname, pServerClass->GetName(), prop);
+#endif // EXT_DEBUG
 		return false;
 	}
 
@@ -398,7 +402,11 @@ bool CEntPropUtils::FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_in
 
 	if (!gamehelpers->FindDataMapInfo(pMap, prop, &dinfo))
 	{
-		throw std::invalid_argument("Entity does not have given DataMap Property!");
+#ifdef EXT_DEBUG
+		// Log errors on debug so programmers can fix it if needed
+		const char* classname = entityprops::GetEntityClassname(pEntity);
+		smutils->LogError(myself, "Entity <%s> [%s] does not have datamap property named \"%s\"!", classname, pMap->dataClassName, prop);
+#endif // EXT_DEBUG
 		return false;
 	}
 
@@ -2318,4 +2326,38 @@ std::int8_t entityprops::GetEntityWaterLevel(CBaseEntity* entity)
 	}
 
 	return *(std::int8_t*)((uint8_t*)entity + s_offset);
+}
+
+const char* entityprops::GetEntityTargetname(CBaseEntity* entity)
+{
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		CBaseEntity* worldspawn = gamehelpers->ReferenceToEntity(0);
+
+		if (!worldspawn)
+		{
+			smutils->LogError(myself, "entityprops::GetEntityTargetname -- Failed to get a CBaseEntity ptr to worldspawn!");
+			worldspawn = entity; // use the given entity if it fails
+		}
+
+		// Use worldspawn for the look up
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(worldspawn), "m_iName", &info))
+		{
+			return nullptr;
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	string_t s = *(string_t*)((uint8_t*)entity + s_offset);
+
+	if (s == NULL_STRING)
+	{
+		return nullptr;
+	}
+
+	return STRING(s);
 }

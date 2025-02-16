@@ -225,6 +225,7 @@ class CNavNode;
 class CWaypoint;
 class CNavVolume;
 class CNavElevator;
+class CNavPrerequisite;
 
 //--------------------------------------------------------------------------------------------------------------
 inline NavDirType OppositeDirection( NavDirType dir )

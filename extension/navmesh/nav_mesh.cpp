@@ -26,6 +26,7 @@
 #include "nav_volume.h"
 #include "nav_elevator.h"
 #include "nav_place_loader.h"
+#include "nav_prereq.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
 #include <generichash.h>
@@ -121,7 +122,13 @@ CNavMesh::CNavMesh( void )
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
 	m_waypoints.reserve(128);
+	m_volumes.reserve(8);
+	m_elevators.reserve(8);
+	m_prerequisites.reserve(8);
 	m_selectedWaypoint = nullptr;
+	m_selectedVolume = nullptr;
+	m_selectedElevator = nullptr;
+	m_selectedPrerequisite = nullptr;
 		
 	Reset();
 
@@ -212,7 +219,24 @@ void CNavMesh::OnMapStart()
 {
 	LoadPlaceDatabase();
 
-	auto error = Load();
+	NavErrorType error = NAV_CORRUPT_DATA;
+	
+	try
+	{
+		error = Load();
+	}
+	catch (const std::ios_base::failure& ex)
+	{
+		smutils->LogError(myself, "Exception throw while reading navigation mesh file: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "Failed to load navigation mesh: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
 
 	switch (error)
 	{
@@ -307,16 +331,18 @@ CNavArea *CNavMesh::GetMarkedArea( void ) const
  */
 void CNavMesh::DestroyNavigationMesh( bool incremental )
 {
-	// these might need valid nav area pointers so set them null first.
+	// these needs the nav area pointers to still be valid since some of them notify their destruction via the destructor
 	m_selectedWaypoint = nullptr;
 	m_selectedVolume = nullptr;
 	m_selectedElevator = nullptr;
+	m_selectedPrerequisite = nullptr;
 
 	if (!incremental)
 	{
 		m_waypoints.clear();
 		m_volumes.clear();
 		m_elevators.clear();
+		m_prerequisites.clear();
 	}
 
 	m_blockedAreas.RemoveAll();
@@ -444,6 +470,11 @@ void CNavMesh::Update( void )
 		if (sm_nav_elevator_edit.GetBool())
 		{
 			DrawElevators();
+		}
+
+		if (sm_nav_prerequisite_edit.GetBool())
+		{
+			DrawPrerequisites();
 		}
 	}
 	else
@@ -802,6 +833,10 @@ void CNavMesh::TestAllAreasForBlockedStatus( void )
  */
 void CNavMesh::OnRoundRestart( void )
 {
+#ifdef EXT_DEBUG
+	Msg("CNavMesh::OnRoundRestart\n");
+#endif // EXT_DEBUG
+
 	m_updateBlockedAreasTimer.Start( 1.0f );
 	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
@@ -841,6 +876,10 @@ void CNavMesh::OnRoundRestartPreEntity( void )
 
 void CNavMesh::PropagateOnRoundRestart()
 {
+#ifdef EXT_DEBUG
+	Msg("CNavMesh::PropagateOnRoundRestart\n");
+#endif // EXT_DEBUG
+
 	NavRoundRestart restart;
 	ForAllAreas(restart);
 	ForAllLadders(restart);
@@ -850,6 +889,14 @@ void CNavMesh::PropagateOnRoundRestart()
 	});
 
 	std::for_each(m_elevators.begin(), m_elevators.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavElevator>>& object) {
+		object.second->OnRoundRestart();
+	});
+
+	std::for_each(m_volumes.begin(), m_volumes.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavVolume>>& object) {
+		object.second->OnRoundRestart();
+	});
+
+	std::for_each(m_prerequisites.begin(), m_prerequisites.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavPrerequisite>>& object) {
 		object.second->OnRoundRestart();
 	});
 }
@@ -2957,6 +3004,7 @@ void CommandNavCompressID( void )
 	TheNavMesh->CompressWaypointsIDs();
 	TheNavMesh->CompressVolumesIDs();
 	TheNavMesh->CompressElevatorsIDs();
+	TheNavMesh->CompressPrerequisiteIDs();
 }
 static ConCommand sm_nav_compress_id( "sm_nav_compress_id", CommandNavCompressID, "Re-orders area and ladder ID's so they are continuous.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
@@ -3464,6 +3512,11 @@ std::shared_ptr<CNavElevator> CNavMesh::CreateElevator() const
 	return std::make_shared<CNavElevator>();
 }
 
+std::shared_ptr<CNavPrerequisite> CNavMesh::CreatePrerequisite() const
+{
+	return std::make_shared<CNavPrerequisite>();
+}
+
 void CNavMesh::RebuildWaypointMap()
 {
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> temp;
@@ -3507,6 +3560,22 @@ void CNavMesh::RebuildElevatorMap()
 	for (auto& elevator : temp)
 	{
 		m_elevators[elevator.second->GetID()] = std::move(elevator.second);
+	}
+
+	temp.clear();
+}
+
+void CNavMesh::RebuildPrerequisiteMap()
+{
+	std::unordered_map<unsigned int, std::shared_ptr<CNavPrerequisite>> temp;
+	temp.reserve(m_prerequisites.size());
+	temp.swap(m_prerequisites);
+
+	m_prerequisites.clear();
+
+	for (auto& prerequisite : temp)
+	{
+		m_prerequisites[prerequisite.second->GetID()] = std::move(prerequisite.second);
 	}
 
 	temp.clear();
@@ -3627,6 +3696,28 @@ void CNavMesh::SetSelectedVolume(CNavVolume* volume)
 			return;
 		}
 	}
+}
+
+std::optional<const std::shared_ptr<CNavPrerequisite>> CNavMesh::AddNavPrerequisite(const Vector* origin)
+{
+	std::shared_ptr<CNavPrerequisite> prereq = CreatePrerequisite();
+
+	if (m_prerequisites.count(prereq->GetID()) > 0)
+	{
+#ifdef EXT_DEBUG
+		Warning("CNavMesh::AddNavPrerequisite duplicate prerequisite ID %i\n", prereq->GetID());
+#endif // EXT_DEBUG
+
+		return std::nullopt;
+	}
+
+	if (origin)
+	{
+		prereq->SetOrigin(*origin);
+	}
+
+	m_prerequisites[prereq->GetID()] = prereq;
+	return prereq;
 }
 
 void CNavMesh::CompressWaypointsIDs()
@@ -3766,6 +3857,74 @@ void CNavMesh::DeleteElevator(CNavElevator* elevator)
 
 	unsigned int id = elevator->GetID();
 	m_elevators.erase(id);
+}
+
+void CNavMesh::SetSelectedPrerequisite(CNavPrerequisite* prereq)
+{
+	if (prereq == nullptr)
+	{
+		m_selectedPrerequisite = nullptr;
+		return;
+	}
+
+	for (auto& pair : m_prerequisites)
+	{
+		if (pair.second.get() == prereq)
+		{
+			m_selectedPrerequisite = pair.second;
+			return;
+		}
+	}
+}
+
+bool CNavMesh::SelectPrerequisiteByID(unsigned int id)
+{
+	auto it = m_prerequisites.find(id);
+
+	if (it == m_prerequisites.end())
+	{
+		return false;
+	}
+
+	m_selectedPrerequisite = it->second;
+	return true;
+}
+
+void CNavMesh::SelectNearestPrerequisite(const Vector& point)
+{
+	float best = 9999999.0f;
+
+	for (auto& pair : m_prerequisites)
+	{
+		const Vector& end = pair.second->GetOrigin();
+		float range = (point - end).Length();
+		
+		if (range < best)
+		{
+			m_selectedPrerequisite = pair.second;
+			best = range;
+		}
+	}
+}
+
+void CNavMesh::DeletePrerequisite(CNavPrerequisite* prereq)
+{
+	unsigned int id = prereq->GetID();
+	m_prerequisites.erase(id);
+	m_selectedPrerequisite = nullptr;
+}
+
+void CNavMesh::CompressPrerequisiteIDs()
+{
+	CNavPrerequisite::s_nextID = 0;
+
+	for (auto& pair : m_prerequisites)
+	{
+		pair.second->m_id = CNavPrerequisite::s_nextID;
+		CNavPrerequisite::s_nextID++;
+	}
+
+	RebuildPrerequisiteMap();
 }
 
 bool CNavMesh::IsClimbableSurface(const trace_t& tr)

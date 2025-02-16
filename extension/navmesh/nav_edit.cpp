@@ -18,6 +18,7 @@
 #include "nav_mesh.h"
 #include "nav_waypoint.h"
 #include "nav_volume.h"
+#include "nav_prereq.h"
 #include "nav_entities.h"
 #include "nav_pathfind.h"
 #include "nav_node.h"
@@ -936,6 +937,7 @@ void CNavMesh::DrawEditMode( void )
 					if ( m_selectedArea->HasAvoidanceObstacle() )	Q_strncat( attrib, "OBSTRUCTED ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsDamaging() )		Q_strncat( attrib, "DAMAGING ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsUnderwater() )	Q_strncat( attrib, "UNDERWATER ", sizeof( attrib ), -1 );
+					if ( m_selectedArea->HasPrerequisite() )	Q_strncat(attrib, "PREREQUISITE ", sizeof(attrib), -1);
 
 					int connected = 0;
 					connected += m_selectedArea->GetAdjacentCount( NORTH );
@@ -1136,6 +1138,31 @@ void CNavMesh::DrawElevators()
 	if (m_selectedElevator)
 	{
 		m_selectedElevator->ScreenText();
+	}
+}
+
+void CNavMesh::DrawPrerequisites()
+{
+	edict_t* ent = gamehelpers->EdictOfIndex(1);
+
+	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
+		return;
+
+	const Vector& origin = ent->GetCollideable()->GetCollisionOrigin();
+
+	std::for_each(m_prerequisites.begin(), m_prerequisites.end(), [&origin](const std::pair<unsigned int, std::shared_ptr<CNavPrerequisite>>& object) {
+
+		float distance = (object.second->GetOrigin() - origin).Length();
+
+		if (distance <= CNavPrerequisite::MAX_EDIT_DRAW_DISTANCE)
+		{
+			object.second->Draw();
+		}
+	});
+
+	if (m_selectedPrerequisite)
+	{
+		m_selectedPrerequisite->ScreenText();
 	}
 }
 
@@ -4676,3 +4703,12 @@ void CNavMesh::CommandNavMarkVolume(const CCommand& args)
 	}
 }
 
+CON_COMMAND_F(sm_nav_scripting_list_conditions, "Lists all available conditions type for scripting.", FCVAR_CHEAT)
+{
+	Msg("Nav Scripting Condition Types: \n");
+
+	for (int i = static_cast<int>(navscripting::ToggleCondition::TCTypes::TYPE_NOT_SET); i < static_cast<int>(navscripting::ToggleCondition::TCTypes::MAX_TOGGLE_TYPES); i++)
+	{
+		Msg("%i : %s \n", i, navscripting::ToggleCondition::TCTypeToString(static_cast<navscripting::ToggleCondition::TCTypes>(i)));
+	}
+}

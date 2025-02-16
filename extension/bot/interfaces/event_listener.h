@@ -10,6 +10,7 @@ class CBaseEntity;
 class Vector;
 class CTakeDamageInfo;
 struct edict_t;
+class CNavArea;
 
 // Interface for receiving events
 class IEventListener
@@ -39,6 +40,7 @@ public:
 	virtual std::vector<IEventListener*>* GetListenerVector() { return nullptr; }
 
 	virtual void OnTestEventPropagation();
+	virtual void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea);
 	virtual void OnStuck(); // bot is stuck
 	virtual void OnUnstuck(); // bot was stuck and is no longer stuck
 	virtual void OnMoveToFailure(CPath* path, MovementFailureType reason);
@@ -70,6 +72,19 @@ inline void IEventListener::OnTestEventPropagation()
 		for (auto listener : *vec)
 		{
 			listener->OnTestEventPropagation();
+		}
+	}
+}
+
+inline void IEventListener::OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnNavAreaChanged(oldArea, newArea);
 		}
 	}
 }

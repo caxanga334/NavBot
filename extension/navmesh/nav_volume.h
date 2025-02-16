@@ -8,6 +8,7 @@
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_timers.h>
 #include "nav.h"
+#include "nav_scripting.h"
 
 class CNavVolume
 {
@@ -36,44 +37,6 @@ public:
 	static constexpr float BASE_SCREENX = 0.52f;
 	static constexpr float BASE_SCREENY = 0.56f;
 
-	static const char* GetNameOfConditionType(ConditionType type);
-	static ConditionType IntToConditionType(int type)
-	{
-		if (type < 0 || type >= MAX_CONDITION_TYPES)
-		{
-			return CONDITION_NONE;
-		}
-
-		return static_cast<ConditionType>(type);
-	}
-
-	static bool ConditionTypeNeedsTargetEntity(ConditionType type)
-	{
-		switch (type)
-		{
-		case CNavVolume::CONDITION_ENTITY_EXISTS:
-		case CNavVolume::CONDITION_ENTITY_ENABLED:
-		case CNavVolume::CONDITION_ENTITY_LOCKED:
-		case CNavVolume::CONDITION_DOOR_CLOSED:
-		case CNavVolume::CONDITION_ENTITY_TEAM:
-		case CNavVolume::CONDITION_ENTITY_DISTANCE:
-			return true;
-		default:
-			return false;
-		}
-	}
-
-	static bool ConditionTypeUsesFloatData(ConditionType type)
-	{
-		switch (type)
-		{
-		case CNavVolume::CONDITION_ENTITY_DISTANCE:
-			return true;
-		default:
-			return false;
-		}
-	}
-
 	unsigned int GetID() const { return m_id; }
 	void SetOrigin(const Vector& origin);
 	const Vector& GetOrigin() const;
@@ -92,25 +55,37 @@ public:
 	}
 	int GetTeam() const { return m_teamIndex; }
 
-	void SetTargetEntity(CBaseEntity* entity);
-	CBaseEntity* GetTargetEntity() const;
-	void SetConditionType(ConditionType type);
+	void SetTargetEntity(CBaseEntity* entity) { m_toggle_condition.SetTargetEntity(entity); }
+	CBaseEntity* GetTargetEntity() const { return m_toggle_condition.GetTargetEntity(); }
 
-	ConditionType GetConditionType() const { return m_blockedConditionType; }
-	void SetInvertedConditionCheck(bool value) { m_inverted = value; }
-	bool IsConditionCheckInverted() const { return m_inverted; }
-	void SetEntFloatData(float v) { m_entDataFloat = v; }
-	float GetEntFloatData() const { return m_entDataFloat; }
+	void SetInvertedConditionCheck(bool value)
+	{
+		if (value)
+		{
+			if (!IsConditionCheckInverted())
+			{
+				m_toggle_condition.ToggleInvertedCondition();
+			}
+		}
+		else
+		{
+			if (IsConditionCheckInverted())
+			{
+				m_toggle_condition.ToggleInvertedCondition();
+			}
+		}
+	}
+	bool IsConditionCheckInverted() const { return m_toggle_condition.IsTestConditionInverted(); }
 
 	bool IntersectsWith(const CNavVolume* other) const;
 	void SearchForNavAreas();
-	void SearchTargetEntity(bool errorIfNotFound = false);
+	void SearchTargetEntity() { m_toggle_condition.SearchForEntities(); }
 	
 	virtual void Update();
 	virtual void OnRoundRestart()
 	{
-		m_targetEnt = nullptr;
 		m_scanTimer.Start(1.0f);
+		m_toggle_condition.OnRoundRestart();
 	}
 	virtual void Save(std::fstream& filestream, uint32_t version);
 	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);
@@ -119,6 +94,15 @@ public:
 	void DrawAreas() const;
 	virtual void ScreenText() const; // screen text for this volume, only called on the selected volume
 	virtual bool IsBlocked(int teamID) const;
+
+	void SetToggleData(float data) { m_toggle_condition.SetFloatData(data); }
+	void SetToggleData(int data) { m_toggle_condition.SetIntegerData(data); }
+	void SetToggleData(const Vector& data) { m_toggle_condition.SetVectorData(data); }
+	void SetToggleData(CBaseEntity* data) { m_toggle_condition.SetTargetEntity(data); }
+	void SetToggleData(navscripting::ToggleCondition::TCTypes data) { m_toggle_condition.SetToggleConditionType(data); }
+	bool IsToggleConditionInverted() const { return m_toggle_condition.IsTestConditionInverted(); }
+	void InvertToggleCondition() { m_toggle_condition.ToggleInvertedCondition(); }
+	void ClearToggleData() { m_toggle_condition.clear(); }
 
 protected:
 	void UpdateBlockedStatus(int teamID, bool blocked)
@@ -133,16 +117,6 @@ protected:
 		}
 	}
 
-	virtual void ValidateTargetEntity();
-
-	virtual void UpdateCondition_SolidWorld();
-	virtual void UpdateCondition_EntityExists();
-	virtual void UpdateCondition_EntityEnabled();
-	virtual void UpdateCondition_EntityLocked();
-	virtual void UpdateCondition_DoorClosed();
-	virtual void UpdateCondition_EntityTeam();
-	virtual void UpdateCondition_EntityDistance();
-
 private:
 	friend class CNavMesh;
 
@@ -155,13 +129,7 @@ private:
 	std::vector<CNavArea*> m_areas; // vector of nav areas inside this volume
 	int m_teamIndex; // team index
 	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_blockedCache;
-	ConditionType m_blockedConditionType; // condition type
-	bool m_inverted; // condition check is inverted
-	float m_entDataFloat; // float data related to the entity;
-	CHandle<CBaseEntity> m_targetEnt;
-	Vector m_entOrigin;
-	std::string m_entTargetname;
-	std::string m_entClassname;
+	navscripting::ToggleCondition m_toggle_condition;
 	CountdownTimer m_scanTimer;
 
 	class FindAreasInVolume

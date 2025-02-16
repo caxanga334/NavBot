@@ -35,8 +35,8 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmdsents = 0;
 	m_debugtextoffset = 0;
 	m_shhooks.reserve(32);
-	m_randomChatMessageTimer.Start(9999.0f);
 	m_impulse = 0;
+	m_lastPrerequisite = nullptr;
 
 	AddHooks();
 }
@@ -132,6 +132,16 @@ void CBaseBot::PlayerThink()
 	ExecuteQueuedCommands(); // Run queue commands
 }
 
+void CBaseBot::NavAreaChanged(CNavArea* old, CNavArea* current)
+{
+	/* 
+	 * Called by the base class when updating the last known nav area 
+	 * Propagate the event to the behavior
+	*/
+
+	this->OnNavAreaChanged(old, current);
+}
+
 void CBaseBot::RefreshDifficulty(const CDifficultyManager* manager)
 {
 	m_profile = manager->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
@@ -146,6 +156,8 @@ void CBaseBot::Reset()
 {
 	m_nextupdatetime.Invalidate();
 	m_reloadCheckDelay.Invalidate();
+	m_lastPrerequisite = nullptr;
+	m_clearLastPrerequisiteTimer.Invalidate();
 
 	for (auto iface : m_interfaces)
 	{
@@ -155,6 +167,12 @@ void CBaseBot::Reset()
 
 void CBaseBot::Update()
 {
+	if (m_clearLastPrerequisiteTimer.HasStarted() && m_clearLastPrerequisiteTimer.IsElapsed())
+	{
+		m_clearLastPrerequisiteTimer.Invalidate();
+		m_lastPrerequisite = nullptr;
+	}
+
 	for (auto iface : m_interfaces)
 	{
 		iface->Update();

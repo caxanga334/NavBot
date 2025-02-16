@@ -26,6 +26,7 @@
 #include "nav_mesh.h"
 #include "nav_node.h"
 #include "nav_volume.h"
+#include "nav_prereq.h"
 #include "nav_entities.h"
 #include "nav_colors.h"
 #include <Color.h>
@@ -351,6 +352,7 @@ CNavArea::CNavArea(unsigned int place)
 
 	m_offmeshconnections.reserve(4);
 	m_volume = nullptr;
+	m_prerequisite = nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------------------

@@ -101,6 +101,9 @@ public:
 	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
 
 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args);
+	// Tells the manager that bots cannot be added due to lack of support
+	void NotifyBotsAreUnsupported() { m_allowbots = false; }
+	bool AreBotsSupported() const { return m_allowbots; }
 
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
@@ -117,6 +120,7 @@ private:
 	BotQuotaMode m_quotamode; // Bot quota mode
 	int m_quotatarget; // Bot quota target
 	bool m_iscreatingbot; // We are creating a NavBot
+	bool m_allowbots; // allow bots to be created
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
 
 	// Getting horrible performance at vstdlib.dll from a function called by ConVarRef::Init, so we are caching the sv_gravity value here

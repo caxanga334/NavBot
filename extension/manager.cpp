@@ -64,6 +64,7 @@ CExtManager::CExtManager()
 	m_iscreatingbot = false;
 	m_callModUpdateTimer.Start(get_mod_update_interval());
 	m_pawnmemory = std::make_unique<CSourcePawnMemoryManager>();
+	m_allowbots = true;
 }
 
 CExtManager::~CExtManager()
@@ -289,6 +290,11 @@ bool CExtManager::IsNavBot(const int client) const
 
 void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 {
+	if (!m_allowbots)
+	{
+		return;
+	}
+
 	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
 
 	m_prebotaddforward->Execute(&result);
@@ -368,6 +374,11 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
 {
+	if (!m_allowbots)
+	{
+		return nullptr;
+	}
+
 	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
 
 	m_prepluginbotaddforward->PushCell(gamehelpers->IndexOfEdict(entity));
@@ -479,10 +490,7 @@ void CExtManager::LoadBotNames()
 
 void CExtManager::UpdateBotQuota()
 {
-	if (m_quotatarget == 0)
-		return;
-
-	if (!TheNavMesh->IsLoaded())
+	if (!m_allowbots || m_quotatarget == 0 || !TheNavMesh->IsLoaded())
 		return;
 
 	int humans = 0;

@@ -20,6 +20,7 @@
 #include "nav_area.h"
 #include "nav_waypoint.h"
 #include "nav_volume.h"
+#include "nav_prereq.h"
 
 #include "tier1/lzmaDecoder.h"
 
@@ -40,7 +41,7 @@ public:
 
 	NavMeshFileHeader(uint32_t sb) // for writing
 	{
-		memset(&header, 0, sizeof(header));
+		memset(header, 0, sizeof(header));
 		strcpy(header, NAV_FILE_HEADER);
 		version = CNavMesh::NavMeshVersion;
 		subversion = sb;
@@ -67,6 +68,39 @@ public:
 };
 
 static_assert(sizeof(NavMeshFileHeader) == 28U, "Changing this will invalidate all existing nav mesh files!");
+
+/**
+ * @brief Header that stores information about the current mod and map.
+ */
+class NavMeshInfoHeader
+{
+public:
+	NavMeshInfoHeader()
+	{
+		memset(mapname, 0, sizeof(mapname));
+		memset(modfolder, 0, sizeof(modfolder));
+		memset(modname, 0, sizeof(modname));
+		mapversion = 0;
+	}
+
+	inline void Init()
+	{
+		const char* map = STRING(gpGlobals->mapname);
+		ke::SafeStrcpy(mapname, sizeof(mapname), map);
+		const char* gamefolder = smutils->GetGameFolderName();
+		ke::SafeStrcpy(modfolder, sizeof(modfolder), gamefolder);
+		const char* mod = extmanager->GetMod()->GetModName();
+		ke::SafeStrcpy(modname, sizeof(modname), mod);
+		mapversion = gpGlobals->mapversion;
+	}
+
+	char mapname[128];
+	char modfolder[64];
+	char modname[128];
+	int mapversion;
+};
+
+static_assert(sizeof(NavMeshInfoHeader) == 324U, "Changing this will invalidate all existing nav mesh files!");
 
 //--------------------------------------------------------------------------------------------------------------
 /// The current version of the nav file format
@@ -833,6 +867,10 @@ bool CNavMesh::Save(void)
 
 	NavMeshFileHeader header(GetSubVersionNumber());
 	filestream.write(reinterpret_cast<char*>(&header), sizeof(NavMeshFileHeader));
+	NavMeshInfoHeader info;
+	info.Init();
+	filestream.write(reinterpret_cast<char*>(&info), sizeof(NavMeshInfoHeader));
+
 	filestream.write(reinterpret_cast<char*>(&m_isAnalyzed), sizeof(bool));
 
 	// store author information
@@ -894,6 +932,17 @@ bool CNavMesh::Save(void)
 		{
 			auto& elevator = pair.second;
 			elevator->Save(filestream, CNavMesh::NavMeshVersion);
+		}
+	}
+
+	{
+		std::uint64_t count = static_cast<std::uint64_t>(m_prerequisites.size());
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint64_t));
+
+		for (auto& pair : m_prerequisites)
+		{
+			auto& prerequisite = pair.second;
+			prerequisite->Save(filestream, CNavMesh::NavMeshVersion);
 		}
 	}
 
@@ -1092,29 +1141,55 @@ NavErrorType CNavMesh::Load( void )
 	if (!header.IsHeaderValid())
 	{
 		filestream.close();
-		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad header!", path.c_str());
+		std::string str = path.string();
+		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad header!", str.c_str());
 		return NAV_INVALID_FILE;
 	}
 
 	if (!header.IsMagicValid())
 	{
 		filestream.close();
-		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad magic number!", path.c_str());
+		std::string str = path.string();
+		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad magic number!", str.c_str());
 		return NAV_INVALID_FILE;
 	}
 
 	if (!header.IsVersionValid())
 	{
 		filestream.close();
-		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad version number! Got '%i', should be '%i' or lower!", path.c_str(), header.version, CNavMesh::NavMeshVersion);
+		std::string str = path.string();
+		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad version number! Got '%i', should be '%i' or lower!", str.c_str(), header.version, CNavMesh::NavMeshVersion);
 		return NAV_INVALID_FILE;
 	}
 
 	if (!header.IsSubVersionValid(GetSubVersionNumber()))
 	{
 		filestream.close();
-		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad sub version number! Got '%i', should be '%i' or lower!", path.c_str(), header.subversion, GetSubVersionNumber());
+		std::string str = path.string();
+		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad sub version number! Got '%i', should be '%i' or lower!", str.c_str(), header.subversion, GetSubVersionNumber());
 		return NAV_INVALID_FILE;
+	}
+
+	NavMeshInfoHeader info;
+	filestream.read(reinterpret_cast<char*>(&info), sizeof(NavMeshInfoHeader));
+
+	if (info.mapversion != gpGlobals->mapversion)
+	{
+		Warning("Navigation Mesh map version mismatch! \n");
+	}
+
+	const char* gpMap = STRING(gpGlobals->mapname);
+
+	if (Q_strcmp(info.mapname, gpMap) != 0)
+	{
+		Warning("Navigation Mesh was generated for another map! %s != %s \n", info.mapname, gpMap);
+	}
+
+	const char* mod = smutils->GetGameFolderName();
+
+	if (Q_strcmp(info.modfolder, mod) != 0)
+	{
+		Warning("Navigation Mesh was generated from another game! %s != %s \n", info.modfolder, mod);
 	}
 
 	filestream.read(reinterpret_cast<char*>(&m_isAnalyzed), sizeof(bool));
@@ -1210,6 +1285,28 @@ NavErrorType CNavMesh::Load( void )
 			if (elevator.has_value())
 			{
 				NavErrorType error = elevator->get()->Load(filestream, header.version, header.subversion);
+
+				if (error != NAV_OK)
+				{
+					return error;
+				}
+			}
+		}
+	}
+
+	{
+		std::uint64_t numPrerequisites = 0;
+		CNavPrerequisite::s_nextID = 0;
+
+		filestream.read(reinterpret_cast<char*>(&numPrerequisites), sizeof(std::uint64_t));
+
+		for (std::uint64_t i = 0; i < numPrerequisites; i++)
+		{
+			auto prereq = AddNavPrerequisite(nullptr);
+
+			if (prereq.has_value())
+			{
+				NavErrorType error = prereq->get()->Load(filestream, header.version, header.subversion);
 
 				if (error != NAV_OK)
 				{
@@ -1419,6 +1516,29 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 		CNavElevator::s_nextID = nextElevatorID + 1;
 	}
 
+	RebuildPrerequisiteMap();
+
+	unsigned int nextPrerequisiteID = 0;
+
+	for (auto& pair : m_prerequisites)
+	{
+		pair.second->PostLoad();
+
+		if (pair.second->GetID() >= nextPrerequisiteID)
+		{
+			nextPrerequisiteID = pair.second->GetID();
+		}
+	}
+
+	if (m_prerequisites.empty())
+	{
+		CNavPrerequisite::s_nextID = 0;
+	}
+	else
+	{
+		CNavPrerequisite::s_nextID = nextPrerequisiteID + 1;
+	}
+
 	for (int i = 0; i < m_ladders.Count(); i++)
 	{
 		m_ladders[i]->PostLoad(this, version);
@@ -1497,8 +1617,7 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 std::string CNavMesh::GetMapFileName() const
 {
 	auto mapname = gamehelpers->GetCurrentMap();
-	std::string name(mapname);
-	return name;
+	return std::string{ mapname };
 }
 
 std::filesystem::path CNavMesh::GetFullPathToNavMeshFile() const

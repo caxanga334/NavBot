@@ -103,8 +103,7 @@ void CSDKCaller::PostInit()
 {
 	if (!SetupCalls())
 	{
-		smutils->LogError(myself, "One or more SDK calls setup failed!");
-		throw std::runtime_error("SDK calls setup failed!");
+		smutils->LogError(myself, "One or more SDK calls setup failed! Extension will probably crash!");
 	}
 }
 
@@ -196,6 +195,8 @@ void CSDKCaller::SetupCBCWeaponSwitch()
 {
 	using namespace SourceMod;
 
+	if (m_offsetof_cbc_weaponswitch <= 0) { return; }
+
 	/* bool CBaseCombatCharacter::Weapon_Switch(CBaseCombatWeapon *pWeapon, int viewmodelindex) */
 
 	PassInfo ret;
@@ -220,6 +221,8 @@ void CSDKCaller::SetupCBCWeaponSlot()
 {
 	using namespace SourceMod;
 
+	if (m_offsetof_cbc_weaponslot <= 0) { return; }
+
 	/* CBaseCombatWeapon *CBaseCombatCharacter::Weapon_GetSlot( int slot ) */
 
 	PassInfo ret;
@@ -238,6 +241,8 @@ void CSDKCaller::SetupCBCWeaponSlot()
 void CSDKCaller::SetupCGRShouldCollide()
 {
 	using namespace SourceMod;
+
+	if (m_offsetof_cgr_shouldcollide <= 0) { return; }
 
 	/* bool CGameRules::ShouldCollide(int, int) */
 
@@ -261,10 +266,8 @@ void CSDKCaller::SetupCBPProcessUserCmds()
 {
 	using namespace SourceMod;
 
-	if (m_offsetof_cbp_processusercmds <= 0)
-	{
-		return; // this is optional
-	}
+	// this is optional
+	if (m_offsetof_cbp_processusercmds <= 0) { return; }
 
 	/* void CBasePlayer::ProcessUsercmds( CUserCmd *cmds, int numcmds, int totalcmds, int dropped_packets, bool paused ) */
 
@@ -292,10 +295,7 @@ void CSDKCaller::SetupCBAGetBoneTransform()
 {
 	using namespace SourceMod;
 
-	if (m_offsetof_cba_getbonetransform <= 0)
-	{
-		return;
-	}
+	if (m_offsetof_cba_getbonetransform <= 0) { return; }
 
 	/* void CBaseAnimating::GetBoneTransform( int iBone, matrix3x4_t &pBoneToWorld ) */
 

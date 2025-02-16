@@ -568,6 +568,7 @@ public:
 	[[nodiscard]] TaskEventResponseResult<BotClass> TryDone(EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
 
 	virtual TaskEventResponseResult<BotClass> OnTestEventPropagation(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnNavAreaChanged(BotClass* bot, CNavArea* oldArea, CNavArea* newArea) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnUnstuck(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnMoveToFailure(BotClass* bot, CPath* path, IEventListener::MovementFailureType reason) { return TryContinue(); }
@@ -982,6 +983,11 @@ private:
 	void OnTestEventPropagation() override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnTestEventPropagation);
+	}
+
+	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnNavAreaChanged, oldArea, newArea);
 	}
 
 	void OnStuck() override final

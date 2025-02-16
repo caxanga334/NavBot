@@ -5,8 +5,6 @@ Welcome to the NavBot extension documentation index.
 ## Docs
 
 - [Installing NavBot]
-- [SDK Compatibility]
-- [Mod Compatibility]
 - [For Developers]
 - [Nav Mesh Editing Basics]
 - [Nav Mesh Places]
@@ -20,8 +18,6 @@ Welcome to the NavBot extension documentation index.
 - [Questions and Answers]
 
 <!-- Links -->
-[SDK Compatibility]: SDKS.md
-[Mod Compatibility]: MODS.md
 [Installing NavBot]: INSTALL.md
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md

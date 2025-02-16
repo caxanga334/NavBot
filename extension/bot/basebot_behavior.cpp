@@ -15,6 +15,10 @@
 #include "basebot_behavior.h"
 #include "basebot.h"
 #include "basebot_pathcost.h"
+#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
+#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
+#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
+#include <bot/tasks_shared/bot_shared_prereq_wait.h>
 
 class CBaseBotTestTask : public AITask<CBaseBot>
 {
@@ -38,6 +42,7 @@ public:
 	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
 	TaskEventResponseResult<CBaseBot> OnMoveToSuccess(CBaseBot* bot, CPath* path) override;
 	TaskEventResponseResult<CBaseBot> OnMoveToFailure(CBaseBot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
+	TaskEventResponseResult<CBaseBot> OnNavAreaChanged(CBaseBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
 	const char* GetName() const override { return "CBaseBotPathTestTask"; }
 
 private:
@@ -133,6 +138,35 @@ TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnMoveToFailure(CBaseBot
 	}
 
 	return TryContinue(PRIORITY_DONT_CARE);
+}
+
+TaskEventResponseResult<CBaseBot> CBaseBotPathTestTask::OnNavAreaChanged(CBaseBot* bot, CNavArea* oldArea, CNavArea* newArea)
+{
+	if (newArea && newArea->HasPrerequisite())
+	{
+		const CNavPrerequisite* prereq = newArea->GetPrerequisite();
+
+		if (prereq->IsEnabled() && prereq != bot->GetLastUsedPrerequisite())
+		{
+			CNavPrerequisite::PrerequisiteTask task = prereq->GetTask();
+
+			switch (task)
+			{
+			case CNavPrerequisite::TASK_WAIT:
+				return TryPauseFor(new CBotSharedPrereqWaitTask<CBaseBot>(prereq->GetFloatData()), PRIORITY_HIGH, "Prerequisite tells me to wait!");
+			case CNavPrerequisite::TASK_MOVE_TO_POS:
+				return TryPauseFor(new CBotSharedPrereqMoveToPositionTask<CBaseBot, CBaseBotPathCost>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to move to a position!");
+			case CNavPrerequisite::TASK_DESTROY_ENT:
+				return TryPauseFor(new CBotSharedPrereqDestroyEntityTask<CBaseBot, CBaseBotPathCost>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to destroy an entity!");
+			case CNavPrerequisite::TASK_USE_ENT:
+				return TryPauseFor(new CBotSharedPrereqUseEntityTask<CBaseBot, CBaseBotPathCost>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to use an entity!");
+			default:
+				break;
+			}
+		}
+	}
+
+	return TryContinue();
 }
 
 TaskResult<CBaseBot> CBaseBotSwitchTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)

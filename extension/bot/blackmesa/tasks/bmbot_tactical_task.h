@@ -16,6 +16,8 @@ public:
 
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
 
+	TaskEventResponseResult<CBlackMesaBot> OnNavAreaChanged(CBlackMesaBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
+
 	const char* GetName() const override { return "TacticalMonitor"; }
 private:
 	CountdownTimer m_healthScanTimer;

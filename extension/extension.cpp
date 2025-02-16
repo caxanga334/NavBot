@@ -141,6 +141,7 @@ namespace Utils
 NavBotExt::NavBotExt()
 {
 	m_hookruncmd = false;
+	m_botsAreSupported = true; // default to true, set to false on failures
 	m_cfg_navbot = nullptr;
 	m_cfg_sdktools = nullptr;
 	m_cfg_sdkhooks = nullptr;
@@ -184,12 +185,25 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
-	auto value = m_cfg_navbot->GetKeyValue("HookPlayerRunCMD");
+	const char* value = m_cfg_navbot->GetKeyValue("HookPlayerRunCMD");
 
 	if (value)
 	{
 		int i = atoi(value);
 		m_hookruncmd = (i != 0);
+	}
+
+	value = m_cfg_navbot->GetKeyValue("NoBots");
+
+	if (value)
+	{
+		int i = atoi(value);
+
+		if (i != 0)
+		{
+			smutils->LogMessage(myself, "Bot support disabled: NoBots == true on gamedata file.");
+			m_botsAreSupported = false;
+		}
 	}
 
 	int offset = 0;
@@ -201,8 +215,8 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	if (!CBaseBot::InitHooks(m_cfg_navbot, m_cfg_sdkhooks, m_cfg_sdktools))
 	{
-		ke::SafeSprintf(error, maxlen, "Failed to setup SourceHooks (CBaseBot)!");
-		return false;
+		smutils->LogMessage(myself, "Bot support disabled: Failed to setup virtual hooks used by bots.");
+		m_botsAreSupported = false;
 	}
 
 	if (gamehelpers->GetGlobalEntityList() == nullptr)
@@ -214,7 +228,15 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	// Init will grab the offset values from the gamedata files.
 	if (!sdkcalls->Init())
 	{
-		ke::SafeSprintf(error, maxlen, "Failed to initialize SDK calls!");
+		smutils->LogMessage(myself, "Bot support disabled: Failed to setup virtual SDK Calls used by bots.");
+		m_botsAreSupported = false;
+	}
+
+	value = m_cfg_navbot->GetKeyValue("FailIfNoBots");
+
+	if (value && atoi(value) != 0 && !m_botsAreSupported)
+	{
+		ke::SafeSprintf(error, maxlen, "Bot support is not available but gamedata tell us that bots should be supported for this mod!");
 		return false;
 	}
 
@@ -259,13 +281,26 @@ void NavBotExt::SDK_OnAllLoaded()
 	{
 		extmanager = new CExtManager;
 		extmanager->OnAllLoaded();
+
+		if (!m_botsAreSupported)
+		{
+			extmanager->NotifyBotsAreUnsupported();
+		}
 	}
 
 	if (TheNavMesh == nullptr)
 	{
 		auto mod = extmanager->GetMod();
 		TheNavMesh = mod->NavMeshFactory();
-		TheNavMesh->LoadEditSounds(m_cfg_navbot);
+
+		try
+		{
+			TheNavMesh->LoadEditSounds(m_cfg_navbot);
+		}
+		catch (const std::exception& ex)
+		{
+			smutils->LogError(myself, "Exception throw by CNavMesh::LoadEditSounds! %s", ex.what());
+		}
 	}
 
 	entprops->Init(true);

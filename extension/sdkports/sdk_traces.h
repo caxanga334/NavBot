@@ -1,6 +1,7 @@
 #ifndef NAVBOT_SDKPORTS_TRACES_H_
 #define NAVBOT_SDKPORTS_TRACES_H_
 
+#include <vector>
 #include <functional>
 #include <eiface.h>
 #include <IEngineTrace.h>
@@ -134,6 +135,40 @@ namespace trace
 		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
 
 	private:
+	};
+
+	/**
+	 * @brief Trace filter that supports ignoring multiple entities stored on an std::vector
+	 */
+	class CTraceFilterIgnoreVector : public CTraceFilterSimple
+	{
+	public:
+		CTraceFilterIgnoreVector() :
+			CTraceFilterSimple(nullptr, COLLISION_GROUP_NONE)
+		{
+		}
+
+		CTraceFilterIgnoreVector(std::vector<CBaseEntity*>&& ignoreVec) :
+			CTraceFilterSimple(nullptr, COLLISION_GROUP_NONE)
+		{
+			m_ignoreList = ignoreVec;
+		}
+
+		void AddEntityToIgnore(CBaseEntity* ignore)
+		{
+			for (auto ent : m_ignoreList)
+			{
+				if (ent == ignore)
+				{
+					return;
+				}
+			}
+
+			m_ignoreList.push_back(ignore);
+		}
+
+	private:
+		std::vector<CBaseEntity*> m_ignoreList;
 	};
 
 	inline void line(const Vector& start, const Vector& end, unsigned int mask, trace_t& result)

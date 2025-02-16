@@ -17,6 +17,15 @@ It utilizes a modified version of [Valve's NavMesh] for navigation.
 
 The NavMesh is also standalone and can be used in games that doesn't already have one such as [Day of Defeat: Source].
 
+## Supported Games/Mods
+
+List of game/mods that NavBot supports.
+
+| Game/Mod Name | Support Status | Notes |
+|:---:|:---:|:---:|
+| Team Fortress 2 | Partial Support | Lacks supports for some game modes. |
+| Black Mesa | Partial Support | Supports DM & TDM modes. |
+
 ## Downloads
 
 See [Installing NavBot].
@@ -24,9 +33,7 @@ See [Installing NavBot].
 ## Links
 
 - [Documentation]
-- [Supported Games/Mods List]
 - [Discord]
-
 
 ## Credits
 

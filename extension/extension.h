@@ -296,6 +296,7 @@ public:
 
 private:
 	bool m_hookruncmd;
+	bool m_botsAreSupported; // true if it's possible to add bots
 	SourceMod::IGameConfig* m_cfg_navbot;
 	SourceMod::IGameConfig* m_cfg_sdktools;
 	SourceMod::IGameConfig* m_cfg_sdkhooks;

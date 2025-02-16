@@ -1,11 +1,12 @@
-#ifndef NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_
-#define NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_
+#ifndef NAVBOT_BOT_SHARED_PREREQ_MOVE_TO_POS_TASK_H_
+#define NAVBOT_BOT_SHARED_PREREQ_MOVE_TO_POS_TASK_H_
 
 #include <extension.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <sdkports/sdk_timers.h>
+#include <navmesh/nav_prereq.h>
 
 /**
  * @brief Shared bot debug task for moving to a specific coordinates.
@@ -13,13 +14,13 @@
  * @tparam CT Bot path cost class.
  */
 template <typename BT, typename CT = CBaseBotPathCost>
-class CBotSharedDebugMoveToOriginTask : public AITask<BT>
+class CBotSharedPrereqMoveToPositionTask : public AITask<BT>
 {
 public:
-	CBotSharedDebugMoveToOriginTask(BT* bot, const Vector& origin) :
+	CBotSharedPrereqMoveToPositionTask(BT* bot, const CNavPrerequisite* prereq) :
 		AITask<BT>(), m_pathCost(bot)
 	{
-		m_goal = origin;
+		m_goal = prereq->GetGoalPosition();
 		m_failCount = 0;
 	}
 
@@ -28,7 +29,7 @@ public:
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 
-	const char* GetName() const override { return "DebugMoveToOrigin"; }
+	const char* GetName() const override { return "MoveToGoalPosition"; }
 
 private:
 	CT m_pathCost;
@@ -39,7 +40,7 @@ private:
 };
 
 template<typename BT, typename CT>
-inline TaskResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnTaskUpdate(BT* bot)
+inline TaskResult<BT> CBotSharedPrereqMoveToPositionTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
 	if (m_repathTimer.IsElapsed())
 	{
@@ -57,7 +58,7 @@ inline TaskResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnTaskUpdate(BT* 
 }
 
 template<typename BT, typename CT>
-inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
+inline TaskEventResponseResult<BT> CBotSharedPrereqMoveToPositionTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
 	if (++m_failCount > 20)
 	{
@@ -68,9 +69,9 @@ inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMo
 }
 
 template<typename BT, typename CT>
-inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMoveToSuccess(BT* bot, CPath* path)
+inline TaskEventResponseResult<BT> CBotSharedPrereqMoveToPositionTask<BT, CT>::OnMoveToSuccess(BT* bot, CPath* path)
 {
 	return AITask<BT>::TryDone(PRIORITY_HIGH, "Goal reached");
 }
 
-#endif // !NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_
+#endif // !NAVBOT_BOT_SHARED_PREREQ_MOVE_TO_POS_TASK_H_

@@ -1,3 +1,4 @@
+#include <cstring>
 #include <extension.h>
 #include <util/commandargs_episode1.h>
 #include <util/helpers.h>
@@ -152,125 +153,95 @@ CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned 
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-CON_COMMAND_F(sm_nav_volume_set_check_condition_type, "Updates the selected nav volume condition type.", FCVAR_CHEAT)
+CON_COMMAND_F(sm_nav_volume_set_toggle_condition, "Updates the selected nav prerequisite toggle condition", FCVAR_CHEAT)
 {
-	DECLARE_COMMAND_ARGS;
-
 	if (args.ArgC() < 2)
 	{
-		Msg("[SM] Usage: sm_nav_volume_set_check_condition_type <type ID>\n");
-		Msg("Get a list of all types using:\n    sm_nav_volume_list_condition_types\n");
+		Msg("[SM] Usage: sm_nav_volume_set_toggle_condition clear\n   Clears all toggle condition data. \n");
+		Msg("[SM] Usage: sm_nav_volume_set_toggle_condition <int data> <float data> <ent index> <test condition> <inverted>\n   Set toggle condition values \n");
+		Msg("[SM] Usage: sm_nav_volume_set_toggle_condition setvectordata\n    Sets the toggle condition vector data to your current position. \n");
+		Msg("For a list of condition types, use sm_nav_scripting_list_conditions. \n");
 		return;
 	}
 
-	auto& selectedVolume = TheNavMesh->GetSelectedVolume();
+	auto& selected = TheNavMesh->GetSelectedVolume();
 
-	if (!selectedVolume)
+	if (!selected)
 	{
-		Warning("No volume selected!\n");
+		Warning("No prerequisite selected!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
-	auto type = CNavVolume::IntToConditionType(atoi(args[1]));
+	const char* arg1 = args[1];
 
-	selectedVolume->SetConditionType(type);
-	Msg("Condition type for Nav Volume #%i changed to %s\n", selectedVolume->GetID(), CNavVolume::GetNameOfConditionType(type));
-	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-}
-
-CON_COMMAND_F(sm_nav_volume_set_check_condition_inverted, "Updates the selected nav volume to use inverted condition check logic.", FCVAR_CHEAT)
-{
-	auto& selectedVolume = TheNavMesh->GetSelectedVolume();
-
-	if (!selectedVolume)
+	if (std::strcmp(arg1, "clear") == 0)
 	{
-		Warning("No volume selected!\n");
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		selected->ClearToggleData();
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+		return;
+	}
+	else if (std::strcmp(arg1, "setvectordata") == 0)
+	{
+		edict_t* host = gamehelpers->EdictOfIndex(1);
+		const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
+		selected->SetToggleData(origin);
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 		return;
 	}
 
-	bool inverted = selectedVolume->IsConditionCheckInverted();
-
-	selectedVolume->SetInvertedConditionCheck(!inverted);
-	Msg("Inverted condition logic for Nav Volume #%i\n", selectedVolume->GetID());
-	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-}
-
-CON_COMMAND_F(sm_nav_volume_set_check_target_entity, "Updates the selected nav volume to use inverted condition check logic.", FCVAR_CHEAT)
-{
-	DECLARE_COMMAND_ARGS;
-
-	if (args.ArgC() < 2)
+	if (args.ArgC() < 5)
 	{
-		Msg("[SM] Usage: sm_nav_volume_set_check_target_entity <entity targetname or index>\n");
+		Msg("[SM] Usage: sm_nav_volume_set_toggle_condition <int data> <float data> <ent index> <test condition> <inverted>\n   Set toggle condition values \n");
 		return;
 	}
 
-	auto& selectedVolume = TheNavMesh->GetSelectedVolume();
+	int i = atoi(args[1]);
+	float f = atof(args[2]);
+	int ent = atoi(args[3]);
+	int test = atoi(args[4]);
+	bool inv = !!atoi(args[5]);
 
-	if (!selectedVolume)
+	selected->SetToggleData(i);
+	selected->SetToggleData(f);
+
+	CBaseEntity* pEntity;
+
+	if (ent == 0)
 	{
-		Warning("No volume selected!\n");
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
-		return;
+		pEntity = nullptr;
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(ent);
 	}
 
-	int entindex = atoi(args[1]);
+	selected->SetToggleData(pEntity);
 
-	if (entindex != 0) // do not allow world
+	navscripting::ToggleCondition::TCTypes type = navscripting::ToggleCondition::TCTypes::TYPE_NOT_SET;
+
+	if (test > static_cast<int>(navscripting::ToggleCondition::TCTypes::TYPE_NOT_SET) && test < static_cast<int>(navscripting::ToggleCondition::TCTypes::MAX_TOGGLE_TYPES))
 	{
-		CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entindex);
+		type = static_cast<navscripting::ToggleCondition::TCTypes>(test);
+	}
 
-		if (pEntity == nullptr)
+	selected->SetToggleData(type);
+
+	if (inv)
+	{
+		if (!selected->IsToggleConditionInverted())
 		{
-			Warning("Entity of index #%i could not be found!\n", entindex);
-			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
-			return;
+			selected->InvertToggleCondition();
 		}
-
-		selectedVolume->SetTargetEntity(pEntity);
 	}
-	else // atoi returned 0, assume it's a targetname
+	else
 	{
-		entindex = UtilHelpers::FindEntityByTargetname(INVALID_EHANDLE_INDEX, args[1]);
-		CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entindex);
-
-		if (pEntity == nullptr)
+		if (selected->IsToggleConditionInverted())
 		{
-			Warning("Entity with targetname \"%s\" could not be found!\n", args[1]);
-			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
-			return;
+			selected->InvertToggleCondition();
 		}
-
-		selectedVolume->SetTargetEntity(pEntity);
 	}
 
-	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-}
-
-CON_COMMAND_F(sm_nav_volume_set_check_float_data, "Updates the selected nav volume entity check float data", FCVAR_CHEAT)
-{
-	DECLARE_COMMAND_ARGS;
-
-	if (args.ArgC() < 2)
-	{
-		Msg("[SM] Usage: sm_nav_volume_set_check_float_data <value>\n");
-		return;
-	}
-
-	auto& selectedVolume = TheNavMesh->GetSelectedVolume();
-
-	if (!selectedVolume)
-	{
-		Warning("No volume selected!\n");
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
-		return;
-	}
-
-	float value = atof(args[1]);
-	selectedVolume->SetEntFloatData(value);
-	Msg("Entity float data for Nav Volume #%i updated to %3.2f\n", selectedVolume->GetID(), value);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
@@ -320,15 +291,4 @@ CON_COMMAND_F(sm_nav_volume_check_for_conflicts, "Checks if there are volume con
 	});
 
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-}
-
-CON_COMMAND(sm_nav_volume_list_condition_types, "Shows a list of condition types IDs.")
-{
-	Msg("All available nav volume condition types: \n");
-
-	for (int i = 0; i < static_cast<int>(CNavVolume::ConditionType::MAX_CONDITION_TYPES); i++)
-	{
-		const char* name = CNavVolume::GetNameOfConditionType(static_cast<CNavVolume::ConditionType>(i));
-		Msg("  #%i : %s\n", i, name);
-	}
 }

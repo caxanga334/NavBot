@@ -379,6 +379,8 @@ namespace entityprops
 	int GetEntityHealth(CBaseEntity* entity);
 
 	std::int8_t GetEntityWaterLevel(CBaseEntity* entity);
+	// Gets an entity targetname (name given by the level designer for I/O)
+	const char* GetEntityTargetname(CBaseEntity* entity);
 }
 
 #endif

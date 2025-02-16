@@ -913,6 +913,7 @@ private:
 	void DrawWaypoints();										// draw waypoints
 	void DrawVolumes();											// draw nav volumes
 	void DrawElevators();										// draw nav elevators
+	void DrawPrerequisites();									// draw nav prerequisites
 	void OnEditModeEnd( void );									// called when edit mode has just been disabled
 	void UpdateDragSelectionSet( void );							// update which areas are overlapping the drag selected bounds
 	Vector m_editCursorPos;										// current position of the cursor
@@ -1075,19 +1076,24 @@ private:
 	std::shared_ptr<CNavVolume> m_selectedVolume;
 	std::unordered_map<unsigned int, std::shared_ptr<CNavElevator>> m_elevators;
 	std::shared_ptr<CNavElevator> m_selectedElevator;
+	std::unordered_map<unsigned int, std::shared_ptr<CNavPrerequisite>> m_prerequisites;
+	std::shared_ptr<CNavPrerequisite> m_selectedPrerequisite;
 
 protected:
 	// Creates a new waypoint instance
 	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
 	// Creates a new nav volume instance
 	virtual std::shared_ptr<CNavVolume> CreateVolume() const;
-	// Creates a new nav elevator isntance
+	// Creates a new nav elevator instance
 	virtual std::shared_ptr<CNavElevator> CreateElevator() const;
+	// Creates a new nav prerequisite instance
+	virtual std::shared_ptr<CNavPrerequisite> CreatePrerequisite() const;
 
 	// Rebuilds the waypoint ID map
 	void RebuildWaypointMap();
 	void RebuildVolumeMap();
 	void RebuildElevatorMap();
+	void RebuildPrerequisiteMap();
 public:
 	/**
 	 * @brief Adds a new waypoint.
@@ -1130,6 +1136,9 @@ public:
 
 		return it->second;
 	}
+
+	std::optional<const std::shared_ptr<CNavPrerequisite>> AddNavPrerequisite(const Vector* origin = nullptr);
+	const std::shared_ptr<CNavPrerequisite>& GetSelectedPrerequisite() const { return m_selectedPrerequisite; }
 
 	/**
 	 * @brief Runs a function on every waypoint
@@ -1223,6 +1232,24 @@ public:
 	void SelectNearestElevator(const Vector& point);
 	void DeleteElevator(CNavElevator* elevator);
 	void CompressElevatorsIDs();
+
+	void SetSelectedPrerequisite(CNavPrerequisite* prereq);
+	// returns true if the given ID was found
+	bool SelectPrerequisiteByID(unsigned int id);
+	void SelectNearestPrerequisite(const Vector& point);
+	void DeletePrerequisite(CNavPrerequisite* prereq);
+	void CompressPrerequisiteIDs();
+	const std::shared_ptr<CNavPrerequisite> GetPrerequisiteOfID(unsigned int id) const
+	{
+		auto it = m_prerequisites.find(id);
+
+		if (it == m_prerequisites.end())
+		{
+			return nullptr;
+		}
+
+		return it->second;
+	}
 };
 
 // the global singleton interface

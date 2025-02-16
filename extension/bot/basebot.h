@@ -28,6 +28,7 @@ class IBotInterface;
 class CUserCmd;
 class IMoveHelper;
 class CMeshNavigator;
+class CNavPrerequisite;
 
 class CBaseBot : public CBaseExtPlayer, public IEventListener
 {
@@ -63,7 +64,7 @@ public:
 	// Called by the manager for all players every server frame.
 	// Overriden to call bot functions
 	void PlayerThink() final;
-
+	void NavAreaChanged(CNavArea* old, CNavArea* current) final;
 	// true if this is a bot managed by this extension
 	bool IsExtensionBot() const final { return true; }
 	// Was this bot created by a sourcemod plugin?
@@ -222,6 +223,9 @@ public:
 	 */
 	virtual void ReloadIfNeeded(CBotWeapon* weapon);
 
+	const CNavPrerequisite* GetLastUsedPrerequisite() const { return m_lastPrerequisite; }
+	void SetLastUsedPrerequisite(const CNavPrerequisite* prereq) { m_lastPrerequisite = prereq; m_clearLastPrerequisiteTimer.Start(60.0f); }
+
 	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_usercmdrng{}; // random number generator bot user commands
 	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_botrng{}; // random number generator for bot stuff
 protected:
@@ -286,8 +290,9 @@ private:
 	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
 	IntervalTimer m_burningtimer;
 	CMeshNavigator* m_activeNavigator;
-	CountdownTimer m_randomChatMessageTimer;
 	CountdownTimer m_reloadCheckDelay;
+	const CNavPrerequisite* m_lastPrerequisite; // Last prerequisite this bot used
+	CountdownTimer m_clearLastPrerequisiteTimer;
 
 	void ExecuteQueuedCommands();
 };
