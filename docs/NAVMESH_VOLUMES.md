@@ -44,27 +44,9 @@ Volumes can be assigned to a specific team with `sm_nav_volume_set_team <team In
 
 Use `-2` to make the volume neutral.
 
-## Block Condition Check Type
+## Volume Toggle Condition
 
-Block condition determines when the volume will be considered blocked.
-
-The condition check type is set by the command `sm_nav_volume_set_check_condition_type <type ID>`.
-
-Use the command `sm_nav_volume_list_condition_types` to get a list of all IDs.
-
-Use the command `sm_nav_volume_set_check_condition_inverted` to enable/disable inverted logic mode.
-
-## Target Entity
-
-Some block conditions requires a target entity.
-
-To set the target entity, use the command `sm_nav_volume_set_check_target_entity <index or targetname>`.
-
-Hint: Built-in dev commands like `ent_text` can be used to retrieve both index and targetname.
-
-## Block Condition Float Data
-
-Some block conditions requires additiona data, to set it, use this command: `sm_nav_volume_set_check_float_data <value>`.
+The volume's toggle condition can be updated using `sm_nav_volume_set_toggle_condition`.
 
 ## Visualize The Target Entity
 

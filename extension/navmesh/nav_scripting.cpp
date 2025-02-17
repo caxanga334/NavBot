@@ -425,7 +425,8 @@ bool navscripting::ToggleCondition::TestCondition_EntityDistance() const
 
 	if (pEntity)
 	{
-		const Vector& origin = UtilHelpers::getEntityOrigin(pEntity);
+		// Needs to be world space center since a brush entity origin will most likely be at 0,0,0
+		const Vector origin = UtilHelpers::getWorldSpaceCenter(pEntity);
 		float range = (m_vecData - origin).Length();
 
 		return range < m_flData;
