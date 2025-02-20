@@ -4,20 +4,29 @@
 	{
 		"Offsets"
 		{
+			/* CDODPlayer::Event_Killed */
 			"Event_Killed"
 			{
-				"windows"	"68"
-				"linux"		"69"
+				"windows"		"68"
+				"windows64"		"68"
+				"linux"			"69"
+				"linux64"		"69"
 			}
+			/* CBasePlayer::Event_KilledOther */
 			"Event_KilledOther"
 			{
-				"windows"	"69"
-				"linux"		"70"
+				"windows"		"69"
+				"windows64"		"69"
+				"linux"			"70"
+				"linux64"		"70"
 			}
+			/* CBasePlayer::PhysicsSimulate */
 			"PhysicsSimulate"
 			{
-				"windows"	"106"
-				"linux"		"107"
+				"windows"		"106"
+				"windows64"		"106"
+				"linux"			"107"
+				"linux64"		"107"
 			}
 		}
 	}
