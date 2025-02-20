@@ -723,7 +723,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 			float ledgeTopLookAheadRange = ledgeLookAheadDist;
 			Vector climbHullMin(-halfWidth, -halfWidth, 0.0f);
 			Vector climbHullMax(halfWidth, halfWidth, minHullHeight);
-			Vector wallPos;
+			// Vector wallPos;
 			float wallDepth = 0.0f;
 
 			bool isLastIteration = false;
@@ -895,8 +895,8 @@ bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment
 		return false;
 	}
 
-	trace_t result;
-	CMovementTraverseFilter filter(bot, mover, true);
+	// trace_t result;
+	// CMovementTraverseFilter filter(bot, mover, true);
 
 	const float hullWidth = mover->GetHullWidth();
 

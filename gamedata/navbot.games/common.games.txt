@@ -24,11 +24,13 @@
 		}
 		"Offsets"
 		{
-			// vtable offset for CGameRules::ShouldCollide(int, int)
+			/* vtable offset for CGameRules::ShouldCollide(int, int) */
 			"CGameRules::ShouldCollide"
 			{
 				"windows"	"29"
+				"windows64" "29"
 				"linux"		"30"
+				"linux64"	"30"
 			}
 		}
 	}

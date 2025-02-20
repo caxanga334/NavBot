@@ -22,18 +22,6 @@
 extern CNavMesh *TheNavMesh;
 extern NavAreaVector TheNavAreas;
 
-#if SOURCE_ENGINE == SE_DODS
-
-inline static char* V_strdup(const char* pSrc)
-{
-	int nLen = V_strlen(pSrc);
-	char* pResult = new char[nLen + 1];
-	V_memcpy(pResult, pSrc, nLen + 1);
-	return pResult;
-}
-
-#endif
-
 //--------------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------------
 

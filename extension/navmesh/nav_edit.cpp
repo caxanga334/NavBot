@@ -160,7 +160,7 @@ void CNavMesh::GetEditVectors( Vector *pos, Vector *forward )
 
 	CBaseExtPlayer player(ent);
 
-	Vector dir;
+	// Vector dir;
 	AngleVectors(player.GetEyeAngles() /* + player->GetPunchAngle() */, forward);
 	*pos = player.GetEyeOrigin();
 }

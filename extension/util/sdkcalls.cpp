@@ -3,6 +3,11 @@
 #include <cstring>
 
 #include <extension.h>
+
+#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM
+class CBasePlayer;
+#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM
+
 #include <usercmd.h>
 #include <sm_argbuffer.h>
 #include "sdkcalls.h"

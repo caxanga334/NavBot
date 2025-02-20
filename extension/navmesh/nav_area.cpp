@@ -2061,7 +2061,7 @@ bool CNavArea::IsFlat( void ) const
  */
 bool CNavArea::IsCoplanar( const CNavArea *area ) const
 {
-	Vector u, v;
+	// Vector u, v;
 
 	bool isOnDisplacement = ( m_node[ NORTH_WEST ] && m_node[ NORTH_WEST ]->IsOnDisplacement() ) ||
 		( m_node[ NORTH_EAST ] && m_node[ NORTH_EAST ]->IsOnDisplacement() ) ||
@@ -4152,6 +4152,8 @@ float CNavArea::GetLightIntensity( void ) const
  */
 bool CNavArea::ComputeLighting( void )
 {
+	return true;
+/*
 	if ( engine->IsDedicatedServer() )
 	{
 		for ( int i=0; i<NUM_CORNERS; ++i )
@@ -4185,6 +4187,7 @@ bool CNavArea::ComputeLighting( void )
 	}
 
 	return true;
+*/
 }
 
 
@@ -4403,8 +4406,8 @@ float FindGroundZ( const Vector& original, const Vector& corner1, const Vector& 
  */
 void CNavArea::PlaceOnGround( NavCornerType corner, float inset )
 {
-	trace_t result;
-	Vector from, to;
+	// trace_t result;
+	// Vector from, to;
 
 	Vector nw = m_nwCorner + Vector ( inset, inset, 0 );
 	Vector se = m_seCorner + Vector ( -inset, -inset, 0 );

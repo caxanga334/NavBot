@@ -1,6 +1,11 @@
 #include <extension.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include "basebot.h"
+
+#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM
+class CBasePlayer;
+#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM
+
 // Need this for CUserCmd class definition
 #include <usercmd.h>
 
