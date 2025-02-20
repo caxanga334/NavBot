@@ -206,6 +206,8 @@ class ExtensionConfig(object):
       '-Wno-unused',
       '-Wno-switch',
       '-Wno-array-bounds',
+      '-Wno-unknown-pragmas',
+      '-Wno-dangling-else',
       '-fvisibility=hidden',
     ]
 

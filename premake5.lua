@@ -182,7 +182,7 @@ workspace "navbot"
     filter { "platforms:Win64" }
         system "Windows"
         architecture "x86_64"
-        defines { "WIN64", "COMPILER_MSVC", "COMPILER_MSVC64", "X64BITS", "PLATFORM_64BITS" }
+        defines { "WIN32", "WIN64", "COMPILER_MSVC", "COMPILER_MSVC64", "X64BITS" }
 
     filter { "platforms:Linux32" }
         system "Linux"
@@ -191,7 +191,7 @@ workspace "navbot"
     filter { "platforms:Linux64" }
         system "Linux"
         architecture "x86_64"
-        defines { "X64BITS", "PLATFORM_64BITS" }
+        defines { "X64BITS" }
 
     -- reset filter    
     filter {}
