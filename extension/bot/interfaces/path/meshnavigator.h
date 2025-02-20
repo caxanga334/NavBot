@@ -36,6 +36,7 @@ protected:
 	virtual edict_t* FindBlocker(CBaseBot* bot);
 	virtual void CrouchIfNeeded(CBaseBot* bot);
 	virtual void BreakIfNeeded(CBaseBot* bot);
+	virtual void SearchForUseableObstacles(CBaseBot* bot);
 
 	bool IsAtGoal(CBaseBot* bot);
 	bool CheckProgress(CBaseBot* bot);
@@ -52,6 +53,7 @@ private:
 	const CBasePathSegment* m_goal; // the segment the bot is currently trying to reach
 	CountdownTimer m_waitTimer; // timer for the bot to wait for stuff (lifts, doors, obstacles, ...)
 	CountdownTimer m_avoidTimer; // timer for collision avoidance
+	CountdownTimer m_useableTimer; // timer for checking for useable obstacles on the path
 	CBaseHandle m_blocker; // Entity blocking my path
 	bool m_didAvoidCheck;
 	float m_goalTolerance;

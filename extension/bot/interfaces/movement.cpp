@@ -1,3 +1,4 @@
+#include <cstring>
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <bot/interfaces/playercontrol.h>
@@ -963,6 +964,32 @@ bool IMovement::BreakObstacle(CBaseEntity* obstacle)
 	m_isBreakingObstacle = true;
 	m_obstacleBreakTimeout.Start(timeout);
 	return true;
+}
+
+bool IMovement::IsUseableObstacle(CBaseEntity* entity)
+{
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+
+	if (std::strcmp(classname, "func_door") == 0 || std::strcmp(classname, "func_door_rotating") == 0)
+	{
+		constexpr int SF_USEOPENS = 256; // spawn flag to allow +USE on brush doors. See: https://developer.valvesoftware.com/wiki/Func_door
+
+		int spawnflags = 0;
+		entprops->GetEntProp(gamehelpers->EntityToBCompatRef(entity), Prop_Data, "m_spawnflags", spawnflags);
+
+		if ((spawnflags & SF_USEOPENS) != 0)
+		{
+			return true;
+		}
+
+		return false;
+	}
+	else if (std::strcmp(classname, "prop_door_rotating") == 0)
+	{
+		return true;
+	}
+
+	return false;
 }
 
 void IMovement::StuckMonitor()

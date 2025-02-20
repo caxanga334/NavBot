@@ -292,6 +292,14 @@ public:
 	int GetLastMoveWeight() const { return m_lastMoveWeight; }
 	virtual bool IsBreakingObstacle() const { return m_isBreakingObstacle; }
 	virtual bool BreakObstacle(CBaseEntity* obstacle);
+	/**
+	 * @brief Called by the navigation when scanning for obstacle that can be dealt with by pressing the USE key.
+	 * 
+	 * Example: Closed doors that can be open with the USE key.
+	 * @param entity Entity blocking the bot's path.
+	 * @return true if this entity is useable.
+	 */
+	virtual bool IsUseableObstacle(CBaseEntity* entity);
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	CountdownTimer m_braketimer; // Timer for forced braking

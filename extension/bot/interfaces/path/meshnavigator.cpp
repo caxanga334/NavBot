@@ -15,8 +15,9 @@
 #undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
 
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
-ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator goal tolerance");
-ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_CHEAT | FCVAR_DONTRECORD, "Default navigator skip ahead distance");
+ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_DONTRECORD, "Default navigator goal tolerance");
+ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
+ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "0.5", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
 
 CMeshNavigator::CMeshNavigator() : CPath()
 {
@@ -104,6 +105,12 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	if (!CheckProgress(bot))
 	{
 		return; // goal reached
+	}
+
+	if (m_useableTimer.IsElapsed())
+	{
+		m_useableTimer.Start(sm_navbot_path_useable_scan.GetFloat());
+		SearchForUseableObstacles(bot);
 	}
 
 	CrouchIfNeeded(bot);
@@ -1249,6 +1256,32 @@ void CMeshNavigator::BreakIfNeeded(CBaseBot* bot)
 		if (obstacle != nullptr && bot->IsAbleToBreak(reinterpret_cast<IServerUnknown*>(obstacle)->GetNetworkable()->GetEdict()))
 		{
 			bot->GetMovementInterface()->BreakObstacle(obstacle);
+		}
+	}
+}
+
+void CMeshNavigator::SearchForUseableObstacles(CBaseBot* bot)
+{
+	auto goal = GetGoalSegment();
+
+	if (!goal) { return; }
+
+	Vector eyePos = bot->GetEyeOrigin();
+	Vector to = (goal->goal - eyePos);
+	to.NormalizeInPlace();
+	Vector endPos = eyePos + (to * CBaseExtPlayer::PLAYER_USE_RADIUS);
+	trace_t tr;
+	trace::line(eyePos, endPos, MASK_PLAYERSOLID, bot->GetEntity(), COLLISION_GROUP_PLAYER, tr);
+
+	CBaseEntity* obstacle = tr.m_pEnt;
+
+	if (obstacle && tr.DidHitNonWorldEntity())
+	{
+		if (bot->GetMovementInterface()->IsUseableObstacle(obstacle))
+		{
+			Vector aimPos = UtilHelpers::getWorldSpaceCenter(obstacle);
+			bot->GetControlInterface()->AimAt(aimPos, IPlayerController::LOOK_OPERATE, sm_navbot_path_useable_scan.GetFloat() + 0.2f, "Looking at useable obstacle on my path!");
+			bot->GetControlInterface()->PressUseButton();
 		}
 	}
 }
