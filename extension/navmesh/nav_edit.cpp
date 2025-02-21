@@ -10,6 +10,7 @@
 // Author: Michael Booth, 2003-2004
 
 #include <string_view>
+#include <cinttypes>
 
 #include <extension.h>
 #include <entities/baseentity.h>
@@ -4433,7 +4434,7 @@ CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded 
 
 	auto& op = authorinfo.GetCreator();
 
-	Msg("Nav Mesh created by %s (%lu) \n", op.first.c_str(), op.second);
+	Msg("Nav Mesh created by %s (%" PRIu64 ") \n", op.first.c_str(), op.second);
 
 	if (authorinfo.GetEditorCount() > 0)
 	{
@@ -4442,7 +4443,7 @@ CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded 
 
 	for (auto& naveditor : authorinfo.GetEditors())
 	{
-		Msg("%s (%lu) \n", naveditor.first.c_str(), naveditor.second);
+		Msg("%s (%" PRIu64 ") \n", naveditor.first.c_str(), naveditor.second);
 	}
 }
 

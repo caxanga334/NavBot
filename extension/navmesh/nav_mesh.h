@@ -324,7 +324,7 @@ public:
 	static constexpr uint32_t NavMeshVersion = 1;
 	static constexpr uint32_t NavMagicNumber = 0x20110FC0;
 
-	typedef std::pair<std::string, uint64_t> NavEditor; // name & steamid pair
+	typedef std::pair<std::string, std::uint64_t> NavEditor; // name & steamid pair
 
 	class AuthorInfo
 	{
@@ -336,21 +336,21 @@ public:
 		}
 
 		inline bool HasCreatorBeenSet() const { return creator.second != 0; }
-		inline void SetCreator(std::string name, uint64_t steamid)
+		inline void SetCreator(std::string name, std::uint64_t steamid)
 		{
 			creator = std::make_pair(name, steamid);
 		}
 
-		inline void AddEditor(std::string name, uint64_t steamid)
+		inline void AddEditor(std::string name, std::uint64_t steamid)
 		{
 			editors.emplace_back(name, steamid);
 		}
 
-		inline bool IsCreator(uint64_t steamid) const { return creator.second == steamid; }
+		inline bool IsCreator(std::uint64_t steamid) const { return creator.second == steamid; }
 		inline const NavEditor& GetCreator() const { return creator; }
 		inline size_t GetEditorCount() const { return editors.size(); }
 		inline const std::vector<NavEditor>& GetEditors() const { return editors; }
-		inline bool IsEditor(uint64_t steamid) const
+		inline bool IsEditor(std::uint64_t steamid) const
 		{
 			for (auto& naveditor : editors)
 			{

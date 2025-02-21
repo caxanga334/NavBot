@@ -22,7 +22,7 @@ jobs:
         include:
           - meta_branch: "1.12-dev"
             sm_branch: "1.12-dev"
-            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm'
+            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm l4d l4d2'
           
           - buildjobs: windows-latest
             os_version: windows-latest
