@@ -49,7 +49,7 @@ CON_COMMAND_F(sm_tf_nav_waypoint_set_hint, "Assings a TF hint to the selected wa
 
 	if (!CTFWaypoint::IsValidTFHint(hint))
 	{
-		Warning("Invalid TF Hint %ill", hint);
+		Warning("Invalid TF Hint %lli", hint);
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}

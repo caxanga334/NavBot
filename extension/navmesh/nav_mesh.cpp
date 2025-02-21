@@ -2700,7 +2700,7 @@ void CommandNavPlaceList( void )
 		}
 	}
 
-	Msg("Map uses %d place names:\n", allplaces.size());
+	Msg("Map uses %d place names:\n", static_cast<int>(allplaces.size()));
 
 	for (auto& place : allplaces)
 	{

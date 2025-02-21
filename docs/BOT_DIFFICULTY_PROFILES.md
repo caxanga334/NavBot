@@ -33,10 +33,6 @@ Example profile
     "maxvisionrange"			"1024"
     "maxhearingrange"			"350"
     "minrecognitiontime"		"1.0"
-    "custom_data"
-    {
-        "Foobar"                "12.5"
-    }
 }
 ```
 
@@ -49,5 +45,4 @@ Example profile
 | maxvisionrange | The bot maximum vision range in hammer units. |
 | maxhearingrange | The bot maximum hearing range in hammer units. |
 | minrecognitiontime | The minimum amount of time in seconds an entity must be visible for the bot to it be recognized by the bot's systems. (Reaction time) |
-| custom_data | This is a block of custom data used by mod specific bots. |
 

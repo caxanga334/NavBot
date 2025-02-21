@@ -398,7 +398,7 @@ void CWaypoint::NotifyWaypointDestruction(const CWaypoint* other)
 void CWaypoint::PrintInfo()
 {
 	Msg("Waypoint #%i\n  Team: %i\n  Radius: %3.2f\n  ", m_ID, m_teamNum, m_radius);
-	Msg("Waypoint is connected to %i waypoints.\n", m_connections.size());
+	Msg("Waypoint is connected to %zu waypoints.\n", m_connections.size());
 
 	for (auto& connect : m_connections)
 	{

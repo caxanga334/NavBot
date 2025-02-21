@@ -4433,7 +4433,7 @@ CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded 
 
 	auto& op = authorinfo.GetCreator();
 
-	Msg("Nav Mesh created by %s (%lli) \n", op.first.c_str(), op.second);
+	Msg("Nav Mesh created by %s (%lu) \n", op.first.c_str(), op.second);
 
 	if (authorinfo.GetEditorCount() > 0)
 	{
@@ -4442,7 +4442,7 @@ CON_COMMAND(sm_nav_list_editors, "Shows a list of editors of the current loaded 
 
 	for (auto& naveditor : authorinfo.GetEditors())
 	{
-		Msg("%s (%lli) \n", naveditor.first.c_str(), naveditor.second);
+		Msg("%s (%lu) \n", naveditor.first.c_str(), naveditor.second);
 	}
 }
 

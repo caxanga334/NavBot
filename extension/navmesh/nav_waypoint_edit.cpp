@@ -286,7 +286,7 @@ CON_COMMAND_F(sm_nav_waypoint_update_angle, "Updates an existing angle on an way
 
 	if (index < 0 || index >= static_cast<int>(CWaypoint::MAX_AIM_ANGLES))
 	{
-		Warning("Index must be between 0 and %i\n", CWaypoint::MAX_AIM_ANGLES);
+		Warning("Index must be between 0 and %i\n", static_cast<int>(CWaypoint::MAX_AIM_ANGLES));
 		return;
 	}
 
@@ -394,7 +394,7 @@ CON_COMMAND_F(sm_nav_waypoint_view_angle, "Sets your current angle to the given 
 
 	if (index < 0 || index >= static_cast<int>(CWaypoint::MAX_AIM_ANGLES))
 	{
-		Warning("Index must be between 0 and %i\n", CWaypoint::MAX_AIM_ANGLES);
+		Warning("Index must be between 0 and %i\n", static_cast<int>(CWaypoint::MAX_AIM_ANGLES));
 		return;
 	}
 

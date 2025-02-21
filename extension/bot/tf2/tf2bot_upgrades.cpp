@@ -288,7 +288,7 @@ void CTF2BotUpgradeManager::FetchUpgrades()
 
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
-		ConColorMsg(Color(0, 128, 0, 255), "%s: Collected %i upgrades for class %s. Current Priority: %i\n", m_me->GetDebugIdentifier(), m_tobuylist.size(), tf2lib::GetClassNameFromType(m_me->GetMyClassType()), m_nextpriority);
+		ConColorMsg(Color(0, 128, 0, 255), "%s: Collected %i upgrades for class %s. Current Priority: %i\n", m_me->GetDebugIdentifier(), static_cast<int>(m_tobuylist.size()), tf2lib::GetClassNameFromType(m_me->GetMyClassType()), m_nextpriority);
 	}
 
 	FilterUpgrades();
