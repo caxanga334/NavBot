@@ -32,6 +32,13 @@
 				"linux"		"430"
 				"linux64"	"430"
 			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"209"
+				"windows64"	"209"
+				"linux"		"210"
+				"linux64"	"210"
+			}
 
 			/* offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos */
 			"CCaptureFlag::m_vecResetPos"
@@ -42,7 +49,7 @@
 				"linux64"	"8"
 			}
 
-			/** https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/team_objectiveresource.h#L220-L223 
+			/** https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/server/team_objectiveresource.h#L225
 			 * offset to member m_flCapPercentages
 			 * Starting from the offset of the networked property m_iCPGroup
 			 * Generally will be sizeof(int[MAX_CONTROL_POINTS])
