@@ -87,7 +87,7 @@ public:
 	// Is this waypoint enabled?
 	virtual bool IsEnabled() const { return true; }
 	// Can this team use this waypoint
-	virtual bool IsAvailableToTeam(const int teamNum)
+	virtual bool IsAvailableToTeam(const int teamNum) const
 	{
 		if (m_teamNum < TEAM_UNASSIGNED)
 		{

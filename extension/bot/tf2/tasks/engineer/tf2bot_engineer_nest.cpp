@@ -5,6 +5,8 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tf2/tf2bot_utils.h>
+#include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <mods/tf2/nav/tfnav_waypoint.h>
 #include <navmesh/nav_pathfind.h>
@@ -15,20 +17,6 @@
 #include "tf2bot_engineer_upgrade_object.h"
 #include "tf2bot_engineer_move_object.h"
 #include "tf2bot_engineer_nest.h"
-
-class EngineerBuildableLocationCollector : public INavAreaCollector<CTFNavArea>
-{
-public:
-	EngineerBuildableLocationCollector(CTF2Bot* engineer, CTFNavArea* startArea) :
-		INavAreaCollector<CTFNavArea>(startArea, 4096.0f)
-	{
-		m_me = engineer;
-	}
-
-	bool ShouldCollect(CTFNavArea* area) override;
-private:
-	CTF2Bot* m_me;
-};
 
 inline static Vector GetSpotBehindSentry(CBaseEntity* sentry)
 {
@@ -44,49 +32,11 @@ inline static Vector GetSpotBehindSentry(CBaseEntity* sentry)
 	return trace::getground(point);
 }
 
-inline static CTFNavArea* GetRandomFrontlineArea()
-{
-	std::vector<CTFNavArea*> frontlineAreas;
-
-	auto collectFrontLineAreas = [&frontlineAreas](CNavArea* area) {
-
-		CTFNavArea* tfarea = static_cast<CTFNavArea*>(area);
-
-		if (tfarea->HasMVMAttributes(CTFNavArea::MvMNavAttributes::MVMNAV_FRONTLINES))
-		{
-			frontlineAreas.push_back(tfarea);
-		}
-
-		return true;
-	};
-
-	CNavMesh::ForAllAreas<decltype(collectFrontLineAreas)>(collectFrontLineAreas);
-
-	if (!frontlineAreas.empty())
-	{
-		CTFNavArea* tfarea = librandom::utils::GetRandomElementFromVector(frontlineAreas);
-		return tfarea;
-	}
-
-	return nullptr;
-}
-
-bool EngineerBuildableLocationCollector::ShouldCollect(CTFNavArea* area)
-{
-	if (!area->IsBuildable())
-	{
-		return false;
-	}
-
-	return true;
-}
-
 CTF2BotEngineerNestTask::CTF2BotEngineerNestTask()
 {
 	m_goal.Init(0.0f, 0.0f, 0.0f);
 	m_sentryWaypoint = nullptr;
 	m_boredTimer.Invalidate();
-	m_isMvM = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM;
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
@@ -201,7 +151,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnMoveToSuccess(CTF2Bo
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnRoundStateChanged(CTF2Bot* bot)
 {
-	if (m_isMvM)
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
 	{
 		if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
 		{
@@ -255,10 +205,12 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 		{
 			if (wpt != nullptr)
 			{
+				m_sentryWaypoint = wpt;
 				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, wpt);
 			}
 			else
 			{
+				m_sentryWaypoint = nullptr;
 				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, goal);
 			}
 		}
@@ -413,74 +365,33 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out, Vector& pos)
 {
-	std::vector<CTFWaypoint*> spots;
-	auto& sentryWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllSentryWaypoints();
+	Vector spot;
 
-	for (auto waypoint : sentryWaypoints)
+	if (tf2botutils::GetSentrySearchStartPosition(me, spot))
 	{
-		if (waypoint->IsEnabled() && waypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())) && waypoint->CanBeUsedByBot(me))
+		*out = tf2botutils::SelectWaypointForSentryGun(me, tf2botutils::GetSentrySearchMaxRange(true), &spot);
+
+		if (*out != nullptr)
 		{
-			spots.push_back(waypoint);
+			return true;
 		}
+
+		CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, tf2botutils::GetSentrySearchMaxRange(false), &spot, false);
+
+		if (!area)
+		{
+			return false;
+		}
+
+		pos = area->GetCenter();
+		return true;
 	}
 
-	if (m_isMvM && !spots.empty())
-	{
-		// in MvM, filter by waypoints
-
-		Vector center;
-
-		if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
-		{
-			CTFNavArea* area = GetRandomFrontlineArea();
-
-			if (area)
-			{
-				center = area->GetCenter();
-			}
-			else
-			{
-				center = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
-			}
-		}
-		else
-		{
-			CBaseEntity* pFlag = tf2lib::mvm::GetMostDangerousFlag();
-			tfentities::HCaptureFlag flag(pFlag);
-			center = flag.GetPosition();
-		}
-
-		if (!center.IsZero(0.5f))
-		{
-			// remove waypoints that are not close to the bomb
-			spots.erase(std::remove_if(spots.begin(), spots.end(), [&center](const CTFWaypoint* waypoint) {
-				if ((waypoint->GetOrigin() - center).Length() > CTF2BotEngineerNestTask::mvm_sentry_to_bomb_range_limit())
-				{
-					return true;
-				}
-
-				return false;
-			}), spots.end());
-		}
-	}
-
-	if (spots.empty())
-	{
-		m_sentryWaypoint = nullptr;
-		return GetRandomSentrySpot(me, &pos);
-	}
-
-	CTFWaypoint* waypoint = librandom::utils::GetRandomElementFromVector(spots);
-
-	*out = waypoint;
-	m_sentryWaypoint = waypoint;
-	return true;
+	return false;
 }
 
-bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out)
+bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out) const
 {
-	std::vector<CTFWaypoint*> spots;
-	auto& dispenserWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllDispenserWaypoints();
 	CBaseEntity* mySentry = me->GetMySentryGun();
 
 	if (mySentry == nullptr)
@@ -489,113 +400,80 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint*
 	}
 
 	Vector origin = UtilHelpers::getWorldSpaceCenter(mySentry);
+	*out = tf2botutils::SelectWaypointForDispenser(me, -1.0f, &origin, m_sentryWaypoint);
 
-	if (m_sentryWaypoint != nullptr && m_sentryWaypoint->HasConnections())
-	{
-		auto& connections = m_sentryWaypoint->GetConnections();
-
-		for (auto& conn : connections)
-		{
-			CTFWaypoint* waypoint = static_cast<CTFWaypoint*>(conn.GetOther());
-
-			if (waypoint->IsEnabled() && waypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())) && waypoint->CanBeUsedByBot(me) &&
-				waypoint->GetTFHint() == CTFWaypoint::TFHINT_DISPENSER)
-			{
-				spots.push_back(waypoint);
-			}
-		}
-	}
-
-	// no useable dispenser waypoint found connected to the sentry waypoint.
-	if (spots.empty())
-	{
-		for (auto waypoint : dispenserWaypoints)
-		{
-
-			if (waypoint->IsEnabled() && waypoint->DistanceTo(origin) <= max_dispenser_to_sentry_range() &&
-				waypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())) && waypoint->CanBeUsedByBot(me))
-			{
-				spots.push_back(waypoint);
-			}
-		}
-	}
-
-	if (spots.empty())
-	{
-		return false;
-	}
-
-	*out = librandom::utils::GetRandomElementFromVector(spots);
-	return true;
+	return (*out != nullptr);
 }
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint** out, Vector& pos)
 {
-	std::vector<CTFWaypoint*> spots;
-	auto& teleentranceWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllTeleEntranceWaypoints();
+	*out = tf2botutils::SelectWaypointForTeleEntrance(me);
 
-	for (auto waypoint : teleentranceWaypoints)
+	if (*out != nullptr)
 	{
-		if (waypoint->IsEnabled() && waypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())) && waypoint->CanBeUsedByBot(me))
+		return true;
+	}
+
+	// bot spawned recently, probably inside a spawnroom, use their position as the search start.
+	if (me->GetTimeSinceLastSpawn() < 1.0f)
+	{
+		CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 2048.0f, nullptr, true);
+
+		if (area)
 		{
-			spots.push_back(waypoint);
+			pos = area->GetCenter();
+			return true;
+		}
+	}
+	else
+	{
+		// use an active spawnpoint as a base for our search
+		CBaseEntity* spawnpoint = tf2lib::GetFirstValidSpawnPointForTeam(me->GetMyTFTeam());
+
+		if (spawnpoint)
+		{
+			const Vector& searchStart = UtilHelpers::getEntityOrigin(spawnpoint);
+			CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 2048.0f, &searchStart, true);
+
+			if (area)
+			{
+				pos = area->GetCenter();
+				return true;
+			}
 		}
 	}
 
-	if (spots.empty())
-	{
-		return GetRandomEntranceSpot(me, &pos);
-	}
-
-	*out = librandom::utils::GetRandomElementFromVector(spots);
-	return true;
+	return false;
 }
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint** out, Vector& pos)
 {
-	std::vector<CTFWaypoint*> spots;
-	auto& teleexitWaypoints = CTeamFortress2Mod::GetTF2Mod()->GetAllTeleExitWaypoints();
+	CBaseEntity* mysentry = me->GetMySentryGun();
 
-	if (m_sentryWaypoint != nullptr && m_sentryWaypoint->HasConnections())
+	if (mysentry == nullptr)
 	{
-		auto& connections = m_sentryWaypoint->GetConnections();
-
-		for (auto& conn : connections)
-		{
-			CTFWaypoint* waypoint = static_cast<CTFWaypoint*>(conn.GetOther());
-
-			if (waypoint->IsEnabled() && waypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())) && waypoint->CanBeUsedByBot(me) &&
-				waypoint->GetTFHint() == CTFWaypoint::TFHINT_TELE_EXIT)
-			{
-				spots.push_back(waypoint);
-			}
-		}
-	}
-
-	// no exit waypoints connected to my sentry waypoint
-	if (spots.empty())
-	{
-		for (auto waypoint : teleexitWaypoints)
-		{
-			if (waypoint->IsEnabled() && waypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())) && waypoint->CanBeUsedByBot(me))
-			{
-				spots.push_back(waypoint);
-			}
-		}
-	}
-
-	if (spots.empty())
-	{
-		if (GetRandomExitSpot(me, &pos))
-		{
-			return true;
-		}
-
+		// Must build sentry first
 		return false;
 	}
 
-	*out = librandom::utils::GetRandomElementFromVector(spots);
-	return true;
+	const Vector& sentryPos = UtilHelpers::getEntityOrigin(mysentry);
+
+	*out = tf2botutils::SelectWaypointForTeleExit(me, 2048.0f, &sentryPos, m_sentryWaypoint);
+
+	if (*out != nullptr)
+	{
+		return true;
+	}
+
+	CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 1500.0f, &sentryPos, true);
+
+	if (area)
+	{
+		pos = area->GetCenter();
+		return true;
+	}
+
+	return false;
 }
 
 bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, Vector& out)
@@ -641,251 +519,15 @@ bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, Vector& out)
 	}
 
 	// Random nearby nav area if there is no space behind the sentry
-	return GetRandomDispenserSpot(me, origin, out);
-}
+	CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 1024.0f, &origin, false);
 
-bool CTF2BotEngineerNestTask::GetRandomDispenserSpot(CTF2Bot* me, const Vector& Vecstart, Vector& out)
-{
-	CNavArea* start = TheNavMesh->GetNearestNavArea(Vecstart, max_dispenser_to_sentry_range(), false, true, me->GetCurrentTeamIndex());
-
-	if (start == nullptr)
+	if (area)
 	{
-		return false;
+		out = area->GetCenter();
+		return true;
 	}
-
-	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
-
-	collector.SetTravelLimit(max_dispenser_to_sentry_range());
-	collector.Execute();
-
-	if (collector.IsCollectedAreasEmpty())
-	{
-		return false;
-	}
-
-	auto& areas = collector.GetCollectedAreas();
-
-	CTFNavArea* buildGoal = nullptr;
-
-	buildGoal = areas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
-
-	out = buildGoal->GetRandomPoint();
-
-	if (me->IsDebugging(BOTDEBUG_TASKS))
-	{
-		buildGoal->DrawFilled(0, 128, 64, 255, 5.0f, true);
-	}
-
-	return true;
-}
-
-bool CTF2BotEngineerNestTask::GetRandomSentrySpot(CTF2Bot* me, Vector* out)
-{
-	Vector buildPoint = GetSentryNestBuildPos(me);
-
-	CNavArea* start = TheNavMesh->GetNearestNavArea(buildPoint, 1024.0f, false, true, me->GetCurrentTeamIndex());
-
-	if (start == nullptr)
-	{
-		return false;
-	}
-
-	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
-
-	collector.SetTravelLimit(4096.0f);
-	collector.Execute();
-
-	if (collector.IsCollectedAreasEmpty())
-	{
-		return false;
-	}
-
-	auto& areas = collector.GetCollectedAreas();
-
-	CTFNavArea* buildGoal = nullptr;
-
-	buildGoal = areas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
-
-	*out = buildGoal->GetRandomPoint();
-
-	if (me->IsDebugging(BOTDEBUG_TASKS))
-	{
-		buildGoal->DrawFilled(0, 128, 64, 255, 5.0f, true);
-	}
-
-	return true;
-}
-
-Vector CTF2BotEngineerNestTask::GetSentryNestBuildPos(CTF2Bot* me)
-{
-	Vector build = me->GetAbsOrigin();
-	auto mod = CTeamFortress2Mod::GetTF2Mod();
-
-	auto gm = mod->GetCurrentGameMode();
-
-	switch (gm)
-	{
-	case TeamFortress2::GameModeType::GM_TC:
-		[[fallthrough]];
-	case TeamFortress2::GameModeType::GM_KOTH:
-		[[fallthrough]];
-	case TeamFortress2::GameModeType::GM_CP:
-		[[fallthrough]];
-	case TeamFortress2::GameModeType::GM_ADCP:
-	{
-		std::vector<CBaseEntity*> points;
-		points.reserve(MAX_CONTROL_POINTS);
-		mod->CollectControlPointsToAttack(me->GetMyTFTeam(), points);
-		mod->CollectControlPointsToDefend(me->GetMyTFTeam(), points);
-
-		if (points.empty())
-		{
-			return build;
-		}
-
-		CBaseEntity* pEntity = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(points);
-
-		build = UtilHelpers::getWorldSpaceCenter(pEntity);
-
-		return build;
-	}
-	case TeamFortress2::GameModeType::GM_CTF:
-	{
-		edict_t* flag = me->GetFlagToDefend();
-		return UtilHelpers::getEntityOrigin(flag);
-	}
-	case TeamFortress2::GameModeType::GM_MVM:
-	{
-		if (entprops->GameRules_GetRoundState() == RoundState::RoundState_BetweenRounds)
-		{
-			std::vector<CTFNavArea*> frontlineAreas;
-
-			auto collectFrontLineAreas = [&frontlineAreas](CNavArea* area) {
-
-				CTFNavArea* tfarea = static_cast<CTFNavArea*>(area);
-
-				if (tfarea->HasMVMAttributes(CTFNavArea::MvMNavAttributes::MVMNAV_FRONTLINES))
-				{
-					frontlineAreas.push_back(tfarea);
-				}
-
-				return true;
-			};
-
-			CNavMesh::ForAllAreas<decltype(collectFrontLineAreas)>(collectFrontLineAreas);
-
-			if (!frontlineAreas.empty())
-			{
-				CTFNavArea* tfarea = librandom::utils::GetRandomElementFromVector(frontlineAreas);
-				return tfarea->GetCenter();
-			}
-		}
-
-
-		CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
-		
-		if (flag)
-		{
-			tfentities::HCaptureFlag cf(flag);
-			Vector pos = cf.GetPosition();
-			CTFNavArea* area = static_cast<CTFNavArea*>(TheNavMesh->GetNearestNavArea(pos, 256.0f));
-
-			if (area && area->IsBuildable())
-			{
-				return area->GetCenter();
-			}
-		}
-		
-
-		break;
-	}
-	default:
-		break;
-	}
-
-	return build;
-}
-
-bool CTF2BotEngineerNestTask::GetRandomEntranceSpot(CTF2Bot* me, Vector* out)
-{
-	Vector buildPoint = me->GetHomePos();
-
-	CNavArea* start = TheNavMesh->GetNearestNavArea(buildPoint, 1024.0f, false, true, me->GetCurrentTeamIndex());
-
-	if (start == nullptr)
-	{
-		return false;
-	}
-
-	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
-
-	collector.SetTravelLimit(1500.0f);
-	collector.Execute();
-
-	if (collector.IsCollectedAreasEmpty())
-	{
-		return false;
-	}
-
-	auto& areas = collector.GetCollectedAreas();
-
-	CTFNavArea* buildGoal = nullptr;
-
-	buildGoal = areas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
-
-	*out = buildGoal->GetRandomPoint();
-
-	if (me->IsDebugging(BOTDEBUG_TASKS))
-	{
-		buildGoal->DrawFilled(0, 128, 64, 255, 5.0f, true);
-	}
-
-	return true;
-}
-
-bool CTF2BotEngineerNestTask::GetRandomExitSpot(CTF2Bot* me, Vector* out)
-{
-	CBaseEntity* mysentry = me->GetMySentryGun();
-
-	if (mysentry == nullptr)
-	{
-		// Must build sentry first
-		return false;
-	}
-
-	Vector vecstart = UtilHelpers::getEntityOrigin(mysentry);
-
-	CNavArea* start = TheNavMesh->GetNearestNavArea(vecstart, 256.0f, false, true, me->GetCurrentTeamIndex());
-
-	if (start == nullptr)
-	{
-		return false;
-	}
-
-	EngineerBuildableLocationCollector collector(me, static_cast<CTFNavArea*>(start));
-
-	collector.SetTravelLimit(random_exit_spot_travel_limit());
-	collector.Execute();
-
-	if (collector.IsCollectedAreasEmpty())
-	{
-		return false;
-	}
-
-	auto& areas = collector.GetCollectedAreas();
-
-	CTFNavArea* buildGoal = nullptr;
-
-	buildGoal = areas[randomgen->GetRandomInt<size_t>(0, areas.size() - 1)];
-
-	*out = buildGoal->GetRandomPoint();
-
-	if (me->IsDebugging(BOTDEBUG_TASKS))
-	{
-		buildGoal->DrawFilled(0, 128, 64, 255, 5.0f, true);
-	}
-
-	return true;
+	
+	return false;
 }
 
 AITask<CTF2Bot>* CTF2BotEngineerNestTask::MoveBuildingsIfNeeded(CTF2Bot* bot)

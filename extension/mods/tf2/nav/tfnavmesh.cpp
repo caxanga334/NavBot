@@ -132,6 +132,32 @@ std::string CTFNavMesh::GetMapFileName() const
 	return finalname;
 }
 
+CTFNavArea* CTFNavMesh::GetRandomFrontLineArea() const
+{
+	std::vector<CTFNavArea*> frontlineAreas;
+
+	auto collectFrontLineAreas = [&frontlineAreas](CNavArea* area) {
+
+		CTFNavArea* tfarea = static_cast<CTFNavArea*>(area);
+
+		if (tfarea->HasMVMAttributes(CTFNavArea::MvMNavAttributes::MVMNAV_FRONTLINES))
+		{
+			frontlineAreas.push_back(tfarea);
+		}
+
+		return true;
+	};
+
+	CNavMesh::ForAllAreas<decltype(collectFrontLineAreas)>(collectFrontLineAreas);
+
+	if (!frontlineAreas.empty())
+	{
+		return librandom::utils::GetRandomElementFromVector(frontlineAreas);
+	}
+
+	return nullptr;
+}
+
 void CTFNavMesh::PostCustomAnalysis(void)
 {
 	CTeamFortress2Mod* mod = CTeamFortress2Mod::GetTF2Mod();

@@ -44,19 +44,13 @@ private:
 	CountdownTimer m_boredTimer;
 	CountdownTimer m_sentryEnemyScanTimer;
 	CountdownTimer m_moveBuildingCheckTimer;
-	bool m_isMvM;
 
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
 	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
-	bool FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out);
+	bool FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out) const;
 	bool FindSpotToBuildDispenser(CTF2Bot* me, Vector& out);
 	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
 	bool FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
-	bool GetRandomDispenserSpot(CTF2Bot* me, const Vector& start, Vector& out);
-	bool GetRandomSentrySpot(CTF2Bot* me, Vector* out);
-	Vector GetSentryNestBuildPos(CTF2Bot* me);
-	bool GetRandomEntranceSpot(CTF2Bot* me, Vector* out);
-	bool GetRandomExitSpot(CTF2Bot* me, Vector* out);
 	AITask<CTF2Bot>* MoveBuildingsIfNeeded(CTF2Bot* bot);
 };
 

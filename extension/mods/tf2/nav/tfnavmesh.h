@@ -7,6 +7,7 @@
 
 class CountdownTimer;
 class CTFWaypoint;
+class CTFNavArea;
 
 class CTFNavMesh : public CNavMesh
 {
@@ -27,6 +28,8 @@ public:
 	virtual bool Save(void) override;
 
 	virtual std::string GetMapFileName() const override;
+	// Returns a random nav area marked with the frontline attribute for MvM
+	CTFNavArea* GetRandomFrontLineArea() const;
 
 protected:
 	void PostCustomAnalysis(void) override;

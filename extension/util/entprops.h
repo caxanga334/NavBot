@@ -137,6 +137,7 @@ public:
 	bool GetEntPropFloat(int entity, PropType proptype, const char *prop, float &result, int element = 0);
 	bool SetEntPropFloat(int entity, PropType proptype, const char *prop, float value, int element = 0);
 	bool GetEntPropEnt(int entity, PropType proptype, const char *prop, int &result, int element = 0);
+	CBaseEntity* GetEntPropEnt(CBaseEntity* entity, PropType proptype, const char* prop, int element = 0);
 	bool SetEntPropEnt(int entity, PropType proptype, const char *prop, int other, int element = 0);
 	bool GetEntPropVector(int entity, PropType proptype, const char *prop, Vector &result, int element = 0);
 	bool SetEntPropVector(int entity, PropType proptype, const char *prop, Vector value, int element = 0);

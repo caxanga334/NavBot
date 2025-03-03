@@ -1009,6 +1009,122 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 	return false;
 }
 
+CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptype, const char* prop, int element)
+{
+	SourceMod::sm_sendprop_info_t info;
+	SendProp* pProp = nullptr;
+	int bit_count;
+	int offset;
+	PropEntType type = PropEnt_Unknown;
+
+	switch (proptype)
+	{
+	case Prop_Data:
+		typedescription_t* td;
+		SourceMod::sm_datatable_info_t dinfo;
+
+		if (!FindDataMap(pEntity, dinfo, prop))
+		{
+			return false;
+		}
+
+		td = dinfo.prop;
+
+		switch (td->fieldType)
+		{
+		case FIELD_EHANDLE:
+			type = PropEnt_Handle;
+			break;
+		case FIELD_CLASSPTR:
+			type = PropEnt_Entity;
+			break;
+		case FIELD_EDICT:
+			type = PropEnt_Edict;
+			break;
+		case FIELD_CUSTOM:
+			if ((td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
+			{
+				type = PropEnt_Variant;
+			}
+			break;
+		}
+
+		if (type == PropEnt_Unknown)
+		{
+			return false;
+		}
+
+		CHECK_SET_PROP_DATA_OFFSET(nullptr);
+
+		CHECK_TYPE_VALID_IF_VARIANT(FIELD_EHANDLE, "ehandle", nullptr);
+
+		break;
+
+	case Prop_Send:
+
+		type = PropEnt_Handle;
+		int entity = gamehelpers->EntityToBCompatRef(pEntity);
+
+		if (!FindSendProp(&info, pEntity, prop, entity))
+		{
+			return false;
+		}
+
+		offset = info.actual_offset;
+		pProp = info.prop;
+		bit_count = pProp->m_nBits;
+
+		PROP_TYPE_SWITCH(DPT_Int, "integer", nullptr);
+
+		break;
+
+	default:
+		return nullptr;
+		break;
+	}
+
+	switch (type)
+	{
+	case PropEnt_Handle:
+	case PropEnt_Variant:
+	{
+		CBaseHandle* hndl;
+		if (type == PropEnt_Handle)
+		{
+			hndl = (CBaseHandle*)((uint8_t*)pEntity + offset);
+		}
+		else // PropEnt_Variant
+		{
+			auto* pVariant = (variant_t*)((intptr_t)pEntity + offset);
+			hndl = &pVariant->eVal;
+		}
+
+		CBaseEntity* pHandleEntity = gamehelpers->ReferenceToEntity(hndl->GetEntryIndex());
+
+		if (!pHandleEntity || *hndl != reinterpret_cast<IHandleEntity*>(pHandleEntity)->GetRefEHandle())
+			return nullptr;
+
+		return pHandleEntity;
+	}
+	case PropEnt_Entity:
+	{
+		CBaseEntity* pPropEntity = *(CBaseEntity**)((uint8_t*)pEntity + offset);
+		return pPropEntity;
+	}
+	case PropEnt_Edict:
+	{
+		edict_t* _pEdict = *(edict_t**)((uint8_t*)pEntity + offset);
+		if (!_pEdict || _pEdict->IsFree() || _pEdict->GetIServerEntity() == nullptr) {
+			return nullptr;
+		}
+
+		return _pEdict->GetIServerEntity()->GetBaseEntity();
+	}
+	}
+
+	return nullptr;
+}
+
 /// @brief Sets an entity index in an entity's property.
 /// @param entity Entity/edict index.
 /// @param proptype Property type.

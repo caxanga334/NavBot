@@ -5,6 +5,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <bot/tf2/tf2bot.h>
 #include "tfnavmesh.h"
 #include "tfnav_waypoint.h"
 
@@ -78,7 +79,7 @@ NavErrorType CTFWaypoint::Load(std::fstream& filestream, uint32_t version, uint3
 	return filestream.good() ? NAV_OK : NAV_CORRUPT_DATA;
 }
 
-bool CTFWaypoint::IsAvailableToTeam(const int teamNum)
+bool CTFWaypoint::IsAvailableToTeam(const int teamNum) const
 {
 	using namespace tfentities;
 
@@ -109,6 +110,11 @@ bool CTFWaypoint::IsAvailableToTeam(const int teamNum)
 
 	// Else just use base
 	return CWaypoint::IsAvailableToTeam(teamNum);
+}
+
+bool CTFWaypoint::CanBuildHere(CTF2Bot* bot) const
+{
+	return IsEnabled() && IsAvailableToTeam(static_cast<int>(bot->GetMyTFTeam())) && CanBeUsedByBot(bot);
 }
 
 void CTFWaypoint::DrawModText() const

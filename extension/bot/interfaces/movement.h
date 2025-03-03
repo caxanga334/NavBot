@@ -47,7 +47,8 @@ public:
 	class StuckStatus
 	{
 	public:
-		StuckStatus()
+		StuckStatus() :
+			stuckpos(0.0f, 0.0f, 0.0f)
 		{
 			isstuck = false;
 			counter = 0;
@@ -147,8 +148,9 @@ public:
 	static constexpr auto MOVEWEIGHT_DEFAULT = 100;
 	static constexpr auto MOVEWEIGHT_NAVIGATOR = 1000; // for calls from the navigator
 	static constexpr auto MOVEWEIGHT_DODGE = 2000; // trying to dodge something
-	static constexpr auto MOVEWEIGHT_PRIORITY = 5000; // priority move toward calls
-	static constexpr auto MOVEWEIGHT_CRITICAL = 900000; // priority move toward calls
+	static constexpr auto MOVEWEIGHT_COUNTERSTRAFE = 250000; // counterstrafe move calls
+	static constexpr auto MOVEWEIGHT_PRIORITY = 500000; // priority move toward calls
+	static constexpr auto MOVEWEIGHT_CRITICAL = 900000; // critical move toward calls
 
 	// Reset the interface to it's initial state
 	void Reset() override;
@@ -300,6 +302,13 @@ public:
 	 * @return true if this entity is useable.
 	 */
 	virtual bool IsUseableObstacle(CBaseEntity* entity);
+	/**
+	 * @brief Tell the movement interface to perform a counter-strafe. (Move in the opposite direction of motion).
+	 * @param time How long to keep counter-strafing. Disabled automatically once the bot reaches near zero speed.
+	 */
+	void DoCounterStrafe(const float time = 0.1f) { m_counterStrafeTimer.Start(time); }
+	// Is the bot counter-strafing?
+	bool IsCounterStrafing() const { return m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed(); }
 protected:
 	CountdownTimer m_jumptimer; // Jump timer
 	CountdownTimer m_braketimer; // Timer for forced braking
@@ -324,6 +333,7 @@ protected:
 	int m_lastMoveWeight;
 	CHandle<CBaseEntity> m_obstacleEntity;
 	CountdownTimer m_obstacleBreakTimeout;
+	CountdownTimer m_counterStrafeTimer;
 
 	// stuck monitoring
 	StuckStatus m_stuck;

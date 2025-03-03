@@ -47,6 +47,8 @@ namespace tf2lib
 	bool IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity);
 	bool IsBuildingSapped(CBaseEntity* entity);
 	CBaseEntity* GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team);
+	// gets the position of an item_teamflag
+	const Vector& GetFlagPosition(CBaseEntity* flag);
 }
 
 namespace tf2lib::mvm

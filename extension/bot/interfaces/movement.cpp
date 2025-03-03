@@ -133,7 +133,7 @@ void IMovement::Update()
 	StuckMonitor();
 	ObstacleBreakUpdate();
 
-	auto velocity = GetBot()->GetAbsVelocity();
+	Vector velocity = GetBot()->GetAbsVelocity();
 	m_speed = velocity.Length();
 	m_groundspeed = velocity.AsVector2D().Length();
 
@@ -150,7 +150,7 @@ void IMovement::Update()
 		m_groundMotionVector.y = velocity.y / m_speed;
 	}
 
-	if (IsUsingLadder())
+	if (IsUsingLadder() || IsUsingElevator())
 	{
 		return;
 	}
@@ -189,6 +189,23 @@ void IMovement::Update()
 		}
 
 		MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
+	}
+
+	if (m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed())
+	{
+		constexpr auto DISABLE_COUNTERSTRAFE_SPEED = 32.0f;
+
+		if (m_groundspeed <= DISABLE_COUNTERSTRAFE_SPEED)
+		{
+			m_counterStrafeTimer.Invalidate();
+		}
+		else
+		{
+			Vector forward = UtilHelpers::GetNormalizedVector(velocity);
+			Vector strafeTo = GetBot()->GetAbsOrigin();
+			strafeTo += (forward * -256.0f);
+			MoveTowards(strafeTo, MOVEWEIGHT_COUNTERSTRAFE);
+		}
 	}
 }
 

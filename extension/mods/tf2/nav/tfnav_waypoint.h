@@ -35,13 +35,15 @@ public:
 	void Save(std::fstream& filestream, uint32_t version) override;
 	NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion) override;
 
-	bool IsAvailableToTeam(const int teamNum) override;
+	bool IsAvailableToTeam(const int teamNum) const override;
 
 	void SetControlPointIndex(int val = CTFWaypoint::NO_CONTROL_POINT) { m_cpindex = val; }
 	int GetControlPointIndex() const { return m_cpindex; }
 
 	void SetTFHint(CTFWaypoint::TFHint hint) { m_tfhint = hint; }
 	CTFWaypoint::TFHint GetTFHint() const { return m_tfhint; }
+	// Checks if the given bot can 
+	bool CanBuildHere(CTF2Bot* bot) const;
 
 private:
 	int m_cpindex; // Control point index assigned to this waypoint

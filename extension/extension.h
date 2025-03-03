@@ -282,7 +282,7 @@ public:
 	{
 	}
 
-	void Hook_GameFrame(bool simulating);
+	void Hook_GameFrame(bool simulating); // Post hook
 	void Hook_ClientCommand(edict_t* pEntity, const CCommand& args);
 
 	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }

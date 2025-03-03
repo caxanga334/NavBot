@@ -40,7 +40,10 @@
 				"linux64"	"210"
 			}
 
-			/* offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos */
+			/**
+			 * offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/aea94b32cbefeba5d16ef6fc70eff9508cf11673/src/game/shared/tf/entity_capture_flag.h#L413
+			*/
 			"CCaptureFlag::m_vecResetPos"
 			{
 				"windows"	"8"

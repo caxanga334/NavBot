@@ -18,6 +18,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f)
 {
+	m_spawnTime = -1.0f;
 	m_simulationtick = -1;
 	m_profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
@@ -64,6 +65,11 @@ void CBaseBot::PostAdd()
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(0, 255, 60, 255), "CBaseBot::PostAdd m_controller = %p \n", m_controller);
 #endif // EXT_DEBUG
+}
+
+float CBaseBot::GetTimeSinceLastSpawn() const
+{
+	return gpGlobals->curtime - m_spawnTime;
 }
 
 std::vector<IEventListener*>* CBaseBot::GetListenerVector()
@@ -482,8 +488,9 @@ void CBaseBot::Spawn()
 
 #endif // EXT_DEBUG
 
-	Reset();
+	m_spawnTime = gpGlobals->curtime;
 	m_homepos = GetAbsOrigin();
+	Reset();
 }
 
 void CBaseBot::FirstSpawn()

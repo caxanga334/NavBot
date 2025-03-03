@@ -326,6 +326,25 @@ namespace trace
 		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
 		return tr.endpos;
 	}
+
+	/**
+	 * @brief Gets the ground surface normal.
+	 * @param point Point to trace downwards to get the ground from.
+	 * @param normal Vector to store the normal result at.
+	 * @return true if the trace hit something (ground was found). false otherwise.
+	 */
+	inline bool getgroundnormal(const Vector& point, Vector& normal)
+	{
+		Vector end = point;
+		end.z -= 16384.0f;
+		CTraceFilterWorldAndPropsOnly filter;
+		Ray_t ray;
+		ray.Init(point, end);
+		trace_t tr;
+		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+		normal = tr.plane.normal;
+		return tr.fraction < 1.0f;
+	}
 }
 
 #endif // !NAVBOT_SDKPORTS_TRACES_H_

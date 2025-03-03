@@ -37,11 +37,15 @@ public:
 	~CBaseBot() override;
 
 	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools);
-
 	inline static int m_maxStringCommandsPerSecond{ 20 };
 
 	// Called when the bot is added to the game
 	void PostAdd();
+
+	// Returns the time the bot has spawned (Spawn() function called)
+	inline float GetLastSpawnTime() const { return m_spawnTime; }
+	// How many seconds have passed since the bot last spawned.
+	float GetTimeSinceLastSpawn() const;
 
 private:
 	void AddHooks();
@@ -265,6 +269,7 @@ protected:
 	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
 
 private:
+	float m_spawnTime;
 	int m_simulationtick;
 	CountdownTimer m_nextupdatetime;
 	int m_joingametime; // delay between joingame attempts

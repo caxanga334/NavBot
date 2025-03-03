@@ -506,6 +506,18 @@ CBaseEntity* tf2lib::GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team)
 	return spawn;
 }
 
+const Vector& tf2lib::GetFlagPosition(CBaseEntity* flag)
+{
+	CBaseEntity* owner = entprops->GetEntPropEnt(flag, Prop_Data, "m_hOwnerEntity");
+
+	if (!owner)
+	{
+		return UtilHelpers::getEntityOrigin(flag);
+	}
+	
+	return UtilHelpers::getEntityOrigin(owner);
+}
+
 CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 {
 	const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
