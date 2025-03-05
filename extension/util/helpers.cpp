@@ -280,6 +280,16 @@ const Vector& UtilHelpers::getEntityOrigin(CBaseEntity* entity)
 	return reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin();
 }
 
+const QAngle& UtilHelpers::getEntityAngles(edict_t* entity)
+{
+	return entity->GetCollideable()->GetCollisionAngles();
+}
+
+const QAngle& UtilHelpers::getEntityAngles(CBaseEntity* entity)
+{
+	return reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionAngles();
+}
+
 void UtilHelpers::getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs)
 {
 	mins = entity->GetCollideable()->OBBMins();
@@ -824,12 +834,6 @@ std::unique_ptr<CStudioHdr> UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 	return std::make_unique<CStudioHdr>(studiomodel, imdlcache);
 }
 
-/**
- * @brief Gets the index of a bone from the given model.
- * @param hdr CStudioHDR pointer of the model you want to get the bone from
- * @param bonename Name of the bone
- * @return Bone index or -1 on failure
-*/
 int UtilHelpers::LookupBone(CStudioHdr* hdr, const char* bonename)
 {
 	// binary search for the bone matching pName

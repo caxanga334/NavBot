@@ -13,6 +13,35 @@
 #include "teamfortress2_shareddefs.h"
 #include "mvm_upgrade_manager.h"
 
+class CTF2ModSettings : public CModSettings
+{
+public:
+	CTF2ModSettings() : CModSettings()
+	{
+		engineer_nest_dispenser_range = 900.0f;
+		engineer_nest_exit_range = 1200.0f;
+		entrance_spawn_range = 2048.0f;
+		mvm_sentry_to_bomb_range = 1500.0f;
+	}
+
+	void SetEngineerNestDispenserRange(float range) { engineer_nest_dispenser_range = range; }
+	void SetEngineerNestExitRange(float range) { engineer_nest_exit_range = range; }
+	void SetEntranceSpawnRange(float range) { entrance_spawn_range = range; }
+	void SetMvMSentryToBombRange(float range) { mvm_sentry_to_bomb_range = range; }
+
+
+	float GetEngineerNestDispenserRange() const { return engineer_nest_dispenser_range; }
+	float GetEngineerNestExitRange() const { return engineer_nest_exit_range; }
+	float GetEntranceSpawnRange() const { return entrance_spawn_range; }
+	float GetMvMSentryToBombRange() const { return mvm_sentry_to_bomb_range; }
+
+private:
+	float engineer_nest_dispenser_range; // maximum distance between the dispenser and the sentry gun
+	float engineer_nest_exit_range; // maximum distance between the teleporter exit and the sentry gun
+	float entrance_spawn_range; // maximum distance between the teleporter entrance and the active spawn point
+	float mvm_sentry_to_bomb_range; // MvM: maximum sentry build distance
+};
+
 class CTF2Bot;
 class CTFWaypoint;
 struct edict_t;
@@ -28,7 +57,8 @@ public:
 protected:
 
 	void FireGameEvent(IGameEvent* event) override;
-
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
+	virtual CModSettings* CreateModSettings() const override { return new CTF2ModSettings; }
 	CWeaponInfoManager* CreateWeaponInfoManager() const override { return new CTF2WeaponInfoManager; }
 
 public:
@@ -86,7 +116,7 @@ public:
 	const std::vector<CTFWaypoint*>& GetAllTeleExitWaypoints() const { return m_teleexitWaypoints; }
 
 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) override;
-
+	const CTF2ModSettings* GetTF2ModSettings() const { return static_cast<const CTF2ModSettings*>(CBaseMod::GetModSettings()); }
 	const Vector& GetMvMBombHatchPosition() const { return m_MvMHatchPos; }
 
 private:

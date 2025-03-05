@@ -54,7 +54,50 @@ namespace tf2botutils
 	CTFWaypoint* SelectWaypointForTeleEntrance(CTF2Bot* bot, const float maxRange = -1.0f, const Vector* searchCenter = nullptr);
 	// Determines the search start position for sentry gun build spot search.
 	bool GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot);
+	// Determines the maximum search range for sentry gun spots.
 	float GetSentrySearchMaxRange(bool isWaypointSearch);
+	/**
+	 * @brief Finds a spot to build a sentry gun.
+	 * @param bot Engineer bot.
+	 * @param out Waypoint to build if found.
+	 * @param area Nav area to build if found.
+	 * @return true if a spot is found. false otherwise.
+	 */
+	bool FindSpotToBuildSentryGun(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area);
+	/**
+	 * @brief Check if it's possible to build a dispenser behind the sentry gun.
+	 * @param bot Engineer bot. 
+	 * @param spot Build position.
+	 * @param distance Distance from the sentry gun. (MUST BE A POSITIVE NUMBER)
+	 * @return true if possible. false otherwise.
+	 */
+	bool FindSpotToBuildDispenserBehindSentry(CTF2Bot* bot, Vector& spot, const float distance = 128.0f);
+	/**
+	 * @brief Finds a spot to build a dispenser gun.
+	 * @param bot Engineer bot.
+	 * @param out Waypoint to build if found.
+	 * @param area Nav area to build if found.
+	 * @param sentryGunWaypoint Waypoint to search for connections.
+	 * @return true if a spot is found. false otherwise.
+	 */
+	bool FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint);
+	/**
+	 * @brief Finds a spot to build a teleporter entrance.
+	 * @param bot Engineer bot.
+	 * @param out Waypoint to build if found.
+	 * @param area Nav area to build if found.
+	 * @return true if a spot is found. false otherwise.
+	 */
+	bool FindSpotToBuildTeleEntrance(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area);
+	/**
+	 * @brief Finds a spot to build a teleporter exit.
+	 * @param bot Engineer bot.
+	 * @param out Waypoint to build if found.
+	 * @param area Nav area to build if found.
+	 * @param sentryGunWaypoint Waypoint to search for connections.
+	 * @return true if a spot is found. false otherwise.
+	 */
+	bool FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint);
 }
 
 #endif // !TF2BOT_UTILS_H_

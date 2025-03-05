@@ -415,6 +415,7 @@ public:
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
 	virtual void OnRoundRestart( void );								// invoked when a game round restarts
 	virtual void OnRoundRestartPreEntity( void );						// invoked when a game round restarts, but before entities are deleted and recreated
+	static void NotifyRoundRestart();									// notify the nav mesh that the round has just been restarted
 protected:
 	void PropagateOnRoundRestart();
 public:

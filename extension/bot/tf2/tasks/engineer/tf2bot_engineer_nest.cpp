@@ -36,7 +36,7 @@ CTF2BotEngineerNestTask::CTF2BotEngineerNestTask()
 {
 	m_goal.Init(0.0f, 0.0f, 0.0f);
 	m_sentryWaypoint = nullptr;
-	m_boredTimer.Invalidate();
+	m_justMovedSentry = false;
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
@@ -54,7 +54,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat.get() != nullptr)
 	{
-		m_boredTimer.Invalidate();
+		m_noThreatTimer.Invalidate();
 	}
 	else
 	{
@@ -64,26 +64,23 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 			return PauseFor(new CTF2BotFindAmmoTask(200), "Need more metal to build!");
 		}
 
-		if (!m_boredTimer.HasStarted())
-		{
-			m_boredTimer.StartRandom(90.0f, 180.0f);
-		}
-		else if (m_boredTimer.IsElapsed())
-		{
-			Vector goal; // used if no waypoints are available
-			CTFWaypoint* wpt = nullptr;
+		CBaseEntity* sentryGun = bot->GetMySentryGun();
 
-			if (FindSpotToBuildSentryGun(bot, &wpt, goal))
+		if (sentryGun && ShouldMoveSentryGun())
+		{
+			CTFWaypoint* waypoint = nullptr;
+			CTFNavArea* area = nullptr;
+
+			if (tf2botutils::FindSpotToBuildSentryGun(bot, &waypoint, &area))
 			{
-				m_boredTimer.Invalidate();
-				m_moveBuildingCheckTimer.Invalidate();
-				if (wpt != nullptr)
+				m_justMovedSentry = true;
+				if (waypoint)
 				{
-					return PauseFor(new CTF2BotEngineerMoveObjectTask(bot->GetMySentryGun(), wpt), "Moving my sentry gun!");
+					return PauseFor(new CTF2BotEngineerMoveObjectTask(sentryGun, waypoint), "Moving my sentry gun!");
 				}
 				else
 				{
-					return PauseFor(new CTF2BotEngineerMoveObjectTask(bot->GetMySentryGun(), goal), "Moving my sentry gun!");
+					return PauseFor(new CTF2BotEngineerMoveObjectTask(sentryGun, area->GetCenter()), "Moving my sentry gun!");
 				}
 			}
 		}
@@ -155,8 +152,8 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnRoundStateChanged(CT
 	{
 		if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
 		{
-			m_boredTimer.Start(0.5f);
-			m_moveBuildingCheckTimer.Start(5.0f);
+			m_noThreatTimer.Start(0.1f);
+			m_moveBuildingCheckTimer.Start(0.2f);
 		}
 	}
 
@@ -176,16 +173,33 @@ QueryAnswerType CTF2BotEngineerNestTask::IsReady(CBaseBot* me)
 	return ANSWER_NO;
 }
 
+bool CTF2BotEngineerNestTask::ShouldMoveSentryGun()
+{
+	if (!m_noThreatTimer.HasStarted())
+	{
+		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(90.0f, 180.0f));
+		return false;
+		
+	}
+	else if (m_noThreatTimer.IsElapsed())
+	{
+		// it has been a while since I saw an enemy, time to move my sentry gun.
+		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(90.0f, 180.0f)); // start the timer again so the bot doesn't enter a move loop
+		return true;
+	}
+
+	return false;
+}
+
 AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 {
 	Vector goal; // used if no waypoints are available
 	CTFWaypoint* wpt = nullptr;
+	CTFNavArea* area = nullptr;
 
 	if (me->GetMyTeleporterEntrance() == nullptr)
 	{
-		m_boredTimer.Invalidate();
-		m_moveBuildingCheckTimer.StartRandom(60.0, 95.0f);
-		if (FindSpotToBuildTeleEntrance(me, &wpt, goal))
+		if (tf2botutils::FindSpotToBuildTeleEntrance(me, &wpt, &area))
 		{
 			if (wpt != nullptr)
 			{
@@ -193,15 +207,13 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 			}
 			else
 			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, goal);
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, area->GetCenter());
 			}
 		}
 	}
 	else if (me->GetMySentryGun() == nullptr)
 	{
-		m_boredTimer.Invalidate();
-		m_moveBuildingCheckTimer.StartRandom(60.0, 95.0f);
-		if (FindSpotToBuildSentryGun(me, &wpt, goal))
+		if (tf2botutils::FindSpotToBuildSentryGun(me, &wpt, &area))
 		{
 			if (wpt != nullptr)
 			{
@@ -211,31 +223,33 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 			else
 			{
 				m_sentryWaypoint = nullptr;
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, goal);
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, area->GetCenter());
 			}
 		}
 	}
 	else if (me->GetMyDispenser() == nullptr)
 	{
-		m_boredTimer.Invalidate();
-		m_moveBuildingCheckTimer.StartRandom(60.0, 95.0f);
-		// Search for nearby waypoints
-		if (FindSpotToBuildDispenser(me, &wpt))
-		{
-			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, wpt);
-		}
+		bool canplacebehind = tf2botutils::FindSpotToBuildDispenserBehindSentry(me, goal);
 
-		// Try building behind the sentry
-		if (FindSpotToBuildDispenser(me, goal))
+		if (tf2botutils::FindSpotToBuildDispenser(me, &wpt, &area, m_sentryWaypoint))
 		{
-			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, goal);
+			if (wpt != nullptr) // place at waypoints if available
+			{
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, wpt);
+			}
+			else if (canplacebehind) // place behind the sentry gun
+			{
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, goal);
+			}
+			else // place in a random area near the sentry gun
+			{
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, area->GetCenter());
+			}
 		}
 	}
 	else if (me->GetMyTeleporterExit() == nullptr)
 	{
-		m_boredTimer.Invalidate();
-		m_moveBuildingCheckTimer.StartRandom(60.0, 95.0f);
-		if (FindSpotToBuildTeleExit(me, &wpt, goal))
+		if (tf2botutils::FindSpotToBuildTeleExit(me, &wpt, &area, m_sentryWaypoint))
 		{
 			if (wpt != nullptr)
 			{
@@ -243,7 +257,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 			}
 			else
 			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, goal);
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, area->GetCenter());
 			}
 		}
 	}
@@ -363,266 +377,94 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
 	return nullptr;
 }
 
-bool CTF2BotEngineerNestTask::FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out, Vector& pos)
-{
-	Vector spot;
-
-	if (tf2botutils::GetSentrySearchStartPosition(me, spot))
-	{
-		*out = tf2botutils::SelectWaypointForSentryGun(me, tf2botutils::GetSentrySearchMaxRange(true), &spot);
-
-		if (*out != nullptr)
-		{
-			return true;
-		}
-
-		CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, tf2botutils::GetSentrySearchMaxRange(false), &spot, false);
-
-		if (!area)
-		{
-			return false;
-		}
-
-		pos = area->GetCenter();
-		return true;
-	}
-
-	return false;
-}
-
-bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out) const
-{
-	CBaseEntity* mySentry = me->GetMySentryGun();
-
-	if (mySentry == nullptr)
-	{
-		return false;
-	}
-
-	Vector origin = UtilHelpers::getWorldSpaceCenter(mySentry);
-	*out = tf2botutils::SelectWaypointForDispenser(me, -1.0f, &origin, m_sentryWaypoint);
-
-	return (*out != nullptr);
-}
-
-bool CTF2BotEngineerNestTask::FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint** out, Vector& pos)
-{
-	*out = tf2botutils::SelectWaypointForTeleEntrance(me);
-
-	if (*out != nullptr)
-	{
-		return true;
-	}
-
-	// bot spawned recently, probably inside a spawnroom, use their position as the search start.
-	if (me->GetTimeSinceLastSpawn() < 1.0f)
-	{
-		CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 2048.0f, nullptr, true);
-
-		if (area)
-		{
-			pos = area->GetCenter();
-			return true;
-		}
-	}
-	else
-	{
-		// use an active spawnpoint as a base for our search
-		CBaseEntity* spawnpoint = tf2lib::GetFirstValidSpawnPointForTeam(me->GetMyTFTeam());
-
-		if (spawnpoint)
-		{
-			const Vector& searchStart = UtilHelpers::getEntityOrigin(spawnpoint);
-			CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 2048.0f, &searchStart, true);
-
-			if (area)
-			{
-				pos = area->GetCenter();
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
-bool CTF2BotEngineerNestTask::FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint** out, Vector& pos)
-{
-	CBaseEntity* mysentry = me->GetMySentryGun();
-
-	if (mysentry == nullptr)
-	{
-		// Must build sentry first
-		return false;
-	}
-
-	const Vector& sentryPos = UtilHelpers::getEntityOrigin(mysentry);
-
-	*out = tf2botutils::SelectWaypointForTeleExit(me, 2048.0f, &sentryPos, m_sentryWaypoint);
-
-	if (*out != nullptr)
-	{
-		return true;
-	}
-
-	CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 1500.0f, &sentryPos, true);
-
-	if (area)
-	{
-		pos = area->GetCenter();
-		return true;
-	}
-
-	return false;
-}
-
-bool CTF2BotEngineerNestTask::FindSpotToBuildDispenser(CTF2Bot* me, Vector& out)
-{
-	CBaseEntity* mysentry = me->GetMySentryGun();
-
-	if (mysentry == nullptr)
-	{
-		// Must build sentry first
-		return false;
-	}
-
-	tfentities::HBaseObject sentrygun(mysentry);
-	Vector origin = sentrygun.GetAbsOrigin();
-	QAngle angle = sentrygun.GetAbsAngles();
-	Vector forward;
-
-	AngleVectors(angle, &forward);
-	forward.NormalizeInPlace();
-
-	static constexpr auto DISPENSER_OFFSET = 32.0f;
-	Vector point = (origin - (forward * (behind_sentry_distance() + DISPENSER_OFFSET)));
-	trace::CTraceFilterNoNPCsOrPlayers filter(me->GetEntity(), COLLISION_GROUP_NONE);
-	Vector mins(-36.0f, -36.0f, 0.0f);
-	Vector maxs(36.0f, 36.0f, 84.0f);
-	trace_t tr;
-	trace::hull(point, point, mins, maxs, MASK_SOLID, &filter, tr);
-	Vector ground = trace::getground(point);
-
-	if (!tr.DidHit() && fabsf(point.z - ground.z) < 10.0f)
-	{
-		if (me->IsDebugging(BOTDEBUG_TASKS))
-		{
-			debugoverlay->AddLineOverlay(point, point + Vector(0.0f, 0.0f, 64.0f), 0, 128, 0, true, 5.0f);
-		}
-
-		out = point;
-		return true;
-	}
-	else if (me->IsDebugging(BOTDEBUG_TASKS))
-	{
-		debugoverlay->AddLineOverlay(point, point + Vector(0.0f, 0.0f, 64.0f), 200, 0, 0, true, 5.0f);
-	}
-
-	// Random nearby nav area if there is no space behind the sentry
-	CTFNavArea* area = tf2botutils::FindRandomNavAreaToBuild(me, 1024.0f, &origin, false);
-
-	if (area)
-	{
-		out = area->GetCenter();
-		return true;
-	}
-	
-	return false;
-}
-
 AITask<CTF2Bot>* CTF2BotEngineerNestTask::MoveBuildingsIfNeeded(CTF2Bot* bot)
 {
-	if (m_moveBuildingCheckTimer.IsElapsed())
+	if (!m_moveBuildingCheckTimer.IsElapsed())
 	{
-		m_moveBuildingCheckTimer.StartRandom(2.0f, 5.0f);
+		return nullptr;
+	}
 
-		CBaseEntity* entrance = bot->GetMyTeleporterEntrance();
+	m_moveBuildingCheckTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(5.0f, 15.0f));
 
-		if (entrance)
+	CBaseEntity* sentry = bot->GetMySentryGun();
+	CBaseEntity* dispenser = bot->GetMyDispenser();
+	CBaseEntity* entrance = bot->GetMyTeleporterEntrance();
+	CBaseEntity* exit = bot->GetMyTeleporterExit();
+
+	// must have all 4 buildings
+	if (sentry == nullptr || dispenser == nullptr || entrance == nullptr || exit == nullptr)
+	{
+		m_moveBuildingCheckTimer.Start(90.0f); // must build and upgrade, wait a longer time
+		return nullptr;
+	}
+
+	constexpr auto DISTANCE_MARGIN = 200.0f;
+	const CTF2ModSettings* settings = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings();
+	const Vector& sentryPos = UtilHelpers::getEntityOrigin(sentry);
+	const Vector& dispenserPos = UtilHelpers::getEntityOrigin(dispenser);
+	CTFWaypoint* waypoint = nullptr;
+	CTFNavArea* area = nullptr;
+
+	// dispenser first
+	float range = (sentryPos - dispenserPos).Length();
+
+	if (m_justMovedSentry || range > (settings->GetEngineerNestDispenserRange() + DISTANCE_MARGIN))
+	{
+		m_justMovedSentry = false;
+		Vector spot;
+
+		// time to move
+		if (tf2botutils::FindSpotToBuildDispenserBehindSentry(bot, spot))
 		{
-			Vector pos = UtilHelpers::getEntityOrigin(entrance);
-			Vector home;
-			CBaseEntity* spawn = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
-
-			if (spawn)
+			return new CTF2BotEngineerMoveObjectTask(dispenser, spot);
+		}
+		else if (tf2botutils::FindSpotToBuildDispenser(bot, &waypoint, &area, m_sentryWaypoint))
+		{
+			if (waypoint)
 			{
-				home = UtilHelpers::getEntityOrigin(spawn);
+				return new CTF2BotEngineerMoveObjectTask(dispenser, waypoint);
 			}
 			else
 			{
-				home = bot->GetHomePos();
-			}
-
-			float range = (home - pos).Length();
-
-			if (range > 1200.0f)
-			{
-				Vector goal; // used if no waypoints are available
-				CTFWaypoint* wpt = nullptr;
-
-				if (FindSpotToBuildTeleEntrance(bot, &wpt, goal))
-				{
-					if (wpt != nullptr)
-					{
-						return new CTF2BotEngineerMoveObjectTask(entrance, wpt);
-					}
-					else
-					{
-						return new CTF2BotEngineerMoveObjectTask(entrance, goal);
-					}
-				}
+				return new CTF2BotEngineerMoveObjectTask(dispenser, area->GetCenter());
 			}
 		}
+	}
+	
+	const Vector& exitPos = UtilHelpers::getEntityOrigin(exit);
+	range = (sentryPos - exitPos).Length();
 
-		CBaseEntity* sentrygun = bot->GetMySentryGun();
-		CBaseEntity* dispenser = bot->GetMyDispenser();
-
-		if (dispenser && sentrygun)
+	if (range > (settings->GetEngineerNestExitRange() + DISTANCE_MARGIN))
+	{
+		if (tf2botutils::FindSpotToBuildTeleExit(bot, &waypoint, &area, m_sentryWaypoint))
 		{
-			const Vector& vSentry = UtilHelpers::getEntityOrigin(sentrygun);
-			const Vector& vDispenser = UtilHelpers::getEntityOrigin(dispenser);
-			float range = (vSentry - vDispenser).Length();
-
-			if (range > max_dispenser_to_sentry_range() + 512.0f)
+			if (waypoint)
 			{
-				Vector goal; // used if no waypoints are available
-				CTFWaypoint* wpt = nullptr;
-
-				if (FindSpotToBuildDispenser(bot, &wpt))
-				{
-					return new CTF2BotEngineerMoveObjectTask(dispenser, wpt);
-				}
-				else if (FindSpotToBuildDispenser(bot, goal))
-				{
-					return new CTF2BotEngineerMoveObjectTask(dispenser, goal);
-				}
+				return new CTF2BotEngineerMoveObjectTask(exit, waypoint);
+			}
+			else
+			{
+				return new CTF2BotEngineerMoveObjectTask(exit, area->GetCenter());
 			}
 		}
+	}
 
-		CBaseEntity* exit = bot->GetMyTeleporterExit();
+	const Vector& entrancePos = UtilHelpers::getEntityOrigin(entrance);
+	CBaseEntity* spawnPoint = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
+	const Vector& spawnPos = UtilHelpers::getEntityOrigin(spawnPoint);
+	range = (spawnPos - entrancePos).Length();
 
-		if (exit && sentrygun)
+	if (range > (settings->GetEntranceSpawnRange() + DISTANCE_MARGIN))
+	{
+		if (tf2botutils::FindSpotToBuildTeleExit(bot, &waypoint, &area, m_sentryWaypoint))
 		{
-			const Vector& vSentry = UtilHelpers::getEntityOrigin(sentrygun);
-			const Vector& vExit = UtilHelpers::getEntityOrigin(exit);
-			float range = (vSentry - vExit).Length();
-
-			if (range > random_exit_spot_travel_limit() + 512.0f)
+			if (waypoint)
 			{
-				Vector goal; // used if no waypoints are available
-				CTFWaypoint* wpt = nullptr;
-
-				if (FindSpotToBuildTeleExit(bot, &wpt, goal))
-				{
-					if (wpt != nullptr)
-					{
-						return new CTF2BotEngineerMoveObjectTask(exit, wpt);
-					}
-					else
-					{
-						return new CTF2BotEngineerMoveObjectTask(exit, goal);
-					}
-				}
+				return new CTF2BotEngineerMoveObjectTask(entrance, waypoint);
+			}
+			else
+			{
+				return new CTF2BotEngineerMoveObjectTask(entrance, area->GetCenter());
 			}
 		}
 	}

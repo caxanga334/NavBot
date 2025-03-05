@@ -101,12 +101,12 @@ public:
 protected:
 	// SMC parser data
 	int m_parser_depth;
-
-private:
-	CBaseHandle m_playerresourceentity;
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;
 	std::unique_ptr<CDifficultyManager> m_profilemanager;
+
+private:
+	CBaseHandle m_playerresourceentity;
 
 	void InternalFindPlayerResourceEntity();
 	void ParseModSettings();

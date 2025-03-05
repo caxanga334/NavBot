@@ -25,6 +25,7 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
 	m_upgrademan.SetMe(this);
 	m_cloakMeter = nullptr;
+	m_doMvMUpgrade = false;
 }
 
 CTF2Bot::~CTF2Bot()
@@ -400,6 +401,26 @@ CBaseEntity* CTF2Bot::GetObjectBeingCarriedByMe() const
 	int ent = INVALID_EHANDLE_INDEX;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hCarriedObject", ent);
 	return gamehelpers->ReferenceToEntity(ent);
+}
+
+void CTF2Bot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
+{
+	if (tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_Taunting))
+		return;
+
+	// use base
+	CBaseBot::FireWeaponAtEnemy(enemy, doAim);
+
+	auto tfweapon = GetInventoryInterface()->GetActiveTFWeapon();
+
+	// for weapons like the huntsman, release the fire button when the charge hits maximum.
+	if (tfweapon && tfweapon->GetTF2Info()->CanCharge())
+	{
+		if (tfweapon->GetChargePercentage() >= 0.99f)
+		{
+			GetControlInterface()->ReleaseAllAttackButtons();
+		}
+	}
 }
 
 void CTF2Bot::FindMyBuildings()

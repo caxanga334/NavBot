@@ -239,8 +239,8 @@ CEntPropUtils *entprops = &s_entprops;
 CEntPropUtils::CEntPropUtils()
 {
 	grclassname.reserve(64);
-	cached_offsets.reserve(32);
 	initialized = false;
+	std::fill(std::begin(cached_offsets), std::end(cached_offsets), 0);
 }
 
 void CEntPropUtils::Init(bool reset)
@@ -1025,7 +1025,7 @@ CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptyp
 
 		if (!FindDataMap(pEntity, dinfo, prop))
 		{
-			return false;
+			return nullptr;
 		}
 
 		td = dinfo.prop;
@@ -1051,7 +1051,7 @@ CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptyp
 
 		if (type == PropEnt_Unknown)
 		{
-			return false;
+			return nullptr;
 		}
 
 		CHECK_SET_PROP_DATA_OFFSET(nullptr);
@@ -1061,13 +1061,13 @@ CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptyp
 		break;
 
 	case Prop_Send:
-
+	{
 		type = PropEnt_Handle;
 		int entity = gamehelpers->EntityToBCompatRef(pEntity);
 
 		if (!FindSendProp(&info, pEntity, prop, entity))
 		{
-			return false;
+			return nullptr;
 		}
 
 		offset = info.actual_offset;
@@ -1077,7 +1077,7 @@ CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptyp
 		PROP_TYPE_SWITCH(DPT_Int, "integer", nullptr);
 
 		break;
-
+	}
 	default:
 		return nullptr;
 		break;
@@ -2303,6 +2303,8 @@ void CEntPropUtils::BuildCache()
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_hOwner", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER),
 		NetPropBuildCacheData("CBasePlayer", "m_nWaterLevel", CEntPropUtils::CacheIndex::CBASEPLAYER_WATERLEVEL),
 	};
+
+	static_assert(properties.size() == static_cast<size_t>(CacheIndex::CACHEINDEX_SIZE), "CEntPropUtils::BuildCache properties array size mismatch!");
 
 	SourceMod::sm_sendprop_info_t info;
 

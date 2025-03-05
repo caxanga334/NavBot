@@ -33,6 +33,7 @@
 #include <string>
 #include <cinttypes>
 #include <unordered_map>
+#include <array>
 #include <extension.h>
 #include <dt_send.h>
 #include <server_class.h>
@@ -104,7 +105,6 @@ public:
 
 	enum CacheIndex : int
 	{
-		CBASEENTITY_PLACEHOLDER = 0,
 		CTFPLAYER_PLAYERCOND, // m_nPlayerCond
 		CTFPLAYER_PLAYERCONDBITS, // _condition_bits
 		CTFPLAYER_PLAYERCONDEX1, // m_nPlayerCondEx
@@ -121,6 +121,8 @@ public:
 		CBASECOMBATWEAPON_STATE, // m_iState
 		CBASECOMBATWEAPON_OWNER, // m_hOwner
 		CBASEPLAYER_WATERLEVEL, // m_nWaterLevel
+
+		CACHEINDEX_SIZE
 	};
 
 	void Init(bool reset = false);
@@ -215,7 +217,7 @@ private:
 	std::string grclassname; // game rules proxy net class
 	bool initialized;
 
-	std::unordered_map<int, unsigned int> cached_offsets;
+	std::array<unsigned int, static_cast<size_t>(CACHEINDEX_SIZE)> cached_offsets;
 
 	void BuildCache();
 };

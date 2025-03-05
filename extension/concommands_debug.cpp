@@ -598,7 +598,7 @@ CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs NavMeshCollector", FCVAR_CHEA
 
 	auto& collected = collector.GetCollectedAreas();
 
-	Msg("Collected %i areas, travel limit: %3.2f\n", collected.size(), limit);
+	Msg("Collected %zu areas, travel limit: %3.2f\n", collected.size(), limit);
 
 	Vector startPos = player.GetEyeOrigin();
 
@@ -660,7 +660,7 @@ CON_COMMAND_F(sm_get_entity_size, "Returns the entity size", FCVAR_CHEAT)
 
 	size_t size = factory->GetEntitySize();
 
-	Msg("Entity (%s) class size is: %i \n", classname, size);
+	Msg("Entity (%s) class size is: %zu \n", classname, size);
 }
 
 #endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
@@ -967,7 +967,6 @@ CON_COMMAND(sm_tf_projectile_weapon_data, "Gets the projectile speed and gravity
 		unsigned char params[sizeof(void*)];
 		unsigned char* vptr = params;
 		QAngle* result = nullptr;
-		QAngle ret;
 
 		*(CBaseEntity**)vptr = pEntity;
 

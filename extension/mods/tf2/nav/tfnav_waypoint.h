@@ -3,6 +3,8 @@
 
 #include <navmesh/nav_waypoint.h>
 
+class CTF2Bot;
+
 class CTFWaypoint : public CWaypoint
 {
 public:

@@ -143,6 +143,33 @@ const Vector CBaseExtPlayer::GetMaxs() const
 	return vec3_origin;
 }
 
+void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) const
+{
+	std::unique_ptr<CStudioHdr> studiohdr = UtilHelpers::GetEntityModelPtr(GetEdict());
+
+	if (studiohdr)
+	{
+		int bone = UtilHelpers::LookupBone(studiohdr.get(), bonename);
+
+		if (bone >= 0)
+		{
+			Vector position;
+			QAngle angle;
+
+			if (UtilHelpers::GetBonePosition(GetEntity(), bone, position, angle))
+			{
+				result = position; // aim at the head bone
+				return;
+			}
+		}
+	}
+
+	// bone aim failed
+	result = GetEyeOrigin();
+	result.z -= 0.5f;
+	return;
+}
+
 void CBaseExtPlayer::EyeVectors(Vector* pForward) const
 {
 	auto eyeangles = GetEyeAngles();

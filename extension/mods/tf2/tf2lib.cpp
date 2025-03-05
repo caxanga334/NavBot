@@ -443,7 +443,7 @@ CBaseEntity* tf2lib::GetBuildingBuilder(CBaseEntity* entity)
 bool tf2lib::IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity)
 {
 	int level = 3; // default to 3 as a fail safe if look up fails
-	int maxlevel = 3;
+	constexpr int maxlevel = 3; // only way to get max level is via SDK Call
 	int index = UtilHelpers::IndexOfEntity(entity);
 	entprops->GetEntProp(index, Prop_Send, "m_iUpgradeLevel", level);
 	

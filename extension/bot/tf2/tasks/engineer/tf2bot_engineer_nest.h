@@ -41,16 +41,13 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	CTFWaypoint* m_sentryWaypoint; // last waypoint used for building sentry guns
-	CountdownTimer m_boredTimer;
+	CountdownTimer m_noThreatTimer;
 	CountdownTimer m_sentryEnemyScanTimer;
 	CountdownTimer m_moveBuildingCheckTimer;
+	bool m_justMovedSentry; // recently moved the sentry
 
+	bool ShouldMoveSentryGun();
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
-	bool FindSpotToBuildSentryGun(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
-	bool FindSpotToBuildDispenser(CTF2Bot* me, CTFWaypoint** out) const;
-	bool FindSpotToBuildDispenser(CTF2Bot* me, Vector& out);
-	bool FindSpotToBuildTeleEntrance(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
-	bool FindSpotToBuildTeleExit(CTF2Bot* me, CTFWaypoint** out, Vector& pos);
 	AITask<CTF2Bot>* MoveBuildingsIfNeeded(CTF2Bot* bot);
 };
 

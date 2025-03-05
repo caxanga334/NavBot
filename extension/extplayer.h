@@ -59,6 +59,12 @@ public:
 	const QAngle GetEyeAngles() const;
 	const Vector GetMins() const;
 	const Vector GetMaxs() const;
+	/**
+	 * @brief Utility function for finding a position to aim at for headshots.
+	 * @param bonename Name of the head bone.
+	 * @param result Vector to store the result at.
+	 */
+	void GetHeadShotPosition(const char* bonename, Vector& result) const;
 	void EyeVectors(Vector* pForward) const;
 	void EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const;
 	const Vector GetAbsVelocity() const;

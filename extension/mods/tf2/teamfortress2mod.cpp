@@ -1,3 +1,6 @@
+#include <cstring>
+#include <algorithm>
+
 #include <extension.h>
 #include <manager.h>
 #include <extplayer.h>
@@ -15,6 +18,10 @@
 static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
 static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
 #endif
+
+#undef min
+#undef max
+#undef clamp
 
 static const char* s_tf2gamemodenames[] = {
 	"NONE/DEFAULT",
@@ -38,6 +45,7 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 {
 	m_gamemode = TeamFortress2::GameModeType::GM_NONE;
 	m_bInSetup = false;
+	m_MvMHatchPos = vec3_origin;
 
 	m_classselector.LoadClassSelectionData();
 
@@ -145,6 +153,45 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 			return;
 		}
 	}
+}
+
+SourceMod::SMCResult CTeamFortress2Mod::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
+{
+	if (m_parser_depth == 1)
+	{
+		CTF2ModSettings* settings = static_cast<CTF2ModSettings*>(m_modsettings.get());
+
+		if (strncasecmp(key, "engineer_nest_dispenser_range", 29) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 600.0f, 4096.0f);
+			settings->SetEngineerNestDispenserRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "engineer_nest_exit_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 600.0f, 4096.0f);
+			settings->SetEngineerNestExitRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "entrance_spawn_range", 20) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 1500.0f, 6000.0f);
+			settings->SetEntranceSpawnRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "mvm_sentry_to_bomb_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 1000.0f, 3000.0f);
+			settings->SetMvMSentryToBombRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+	}
+
+	return CBaseMod::ReadSMC_KeyValue(states, key, value);
 }
 
 void CTeamFortress2Mod::Update()
@@ -639,7 +686,7 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 				if (pAttackControlPoint == pControlPoint)
 				{
 #ifdef EXT_DEBUG
-					Msg("Method 2 found #%i <%s>\n    %i == %i\n", entity, cappointname, gamehelpers->EntityToBCompatRef(pAttackControlPoint), gamehelpers->EntityToBCompatRef(pControlPoint));
+					Msg("Method 2 found #%i <%s>\n    %i == %i\n", index, cappointname, gamehelpers->EntityToBCompatRef(pAttackControlPoint), gamehelpers->EntityToBCompatRef(pControlPoint));
 #endif // EXT_DEBUG
 
 					pTrigger = entity;
@@ -692,7 +739,7 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 #ifdef EXT_DEBUG
 	if (pTrigger == nullptr)
 	{
-		Warning("Method 3 failed! Either all trigger_capture_area entities are disabled or they don't exists!\n", gamehelpers->EntityToBCompatRef(pTrain));
+		Warning("Method 3 failed! Either all trigger_capture_area entities are disabled or they don't exists!\n");
 	}
 #endif // EXT_DEBUG
 
@@ -1103,6 +1150,8 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 void CTeamFortress2Mod::OnRoundStart()
 {
 	randomgen->RandomReSeed(); // change seed on round start
+	CBaseBot::s_botrng.RandomReSeed();
+	CBaseBot::s_usercmdrng.RandomReSeed();
 	UpdateObjectiveResource(); // call this first
 	FindControlPoints(); // this must be before findpayloadcarts
 	FindPayloadCarts();

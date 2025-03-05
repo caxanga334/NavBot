@@ -397,7 +397,7 @@ float tf2botutils::GetSentrySearchMaxRange(bool isWaypointSearch)
 		switch (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode())
 		{
 		case GameModeType::GM_MVM:
-			return 1500.0f;
+			return CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetMvMSentryToBombRange();
 		default:
 			return -1.0f; // no limit
 		}
@@ -406,9 +406,162 @@ float tf2botutils::GetSentrySearchMaxRange(bool isWaypointSearch)
 	switch (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode())
 	{
 	case GameModeType::GM_MVM:
-		return 1500.0f;
+		return CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetMvMSentryToBombRange();
 	default:
 		return 4096.0f; // don't search the entire map when searching nav areas
 	}
 }
 
+bool tf2botutils::FindSpotToBuildSentryGun(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area)
+{
+	Vector spot;
+
+	if (tf2botutils::GetSentrySearchStartPosition(bot, spot))
+	{
+		*waypoint = tf2botutils::SelectWaypointForSentryGun(bot, tf2botutils::GetSentrySearchMaxRange(true), &spot);
+
+		if (*waypoint != nullptr)
+		{
+			return true;
+		}
+
+		*area = tf2botutils::FindRandomNavAreaToBuild(bot, tf2botutils::GetSentrySearchMaxRange(false), &spot, false);
+
+		if (*area != nullptr)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool tf2botutils::FindSpotToBuildDispenserBehindSentry(CTF2Bot* bot, Vector& spot, const float distance)
+{
+	CBaseEntity* sentryGun = bot->GetMySentryGun();
+
+	if (!sentryGun)
+	{
+		return false;
+	}
+
+	const Vector& sentryPos = UtilHelpers::getEntityOrigin(sentryGun);
+	const QAngle& sentryAngles = UtilHelpers::getEntityAngles(sentryGun);
+	Vector forward;
+	AngleVectors(sentryAngles, &forward);
+	forward.NormalizeInPlace();
+	spot = sentryPos + (forward * (distance * -1.0f));
+	spot = trace::getground(spot);
+
+	Vector mins(-16.0f, -16.0f, 0.0f);
+	Vector maxs(16.0f, 16.0f, 72.0f);
+
+	trace_t tr;
+	trace::hull(spot, spot, mins, maxs, MASK_SOLID, bot->GetEntity(), COLLISION_GROUP_NONE, tr);
+
+	if (!tr.startsolid && tr.fraction == 1.0f)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool tf2botutils::FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint)
+{
+	CBaseEntity* sentryGun = bot->GetMySentryGun();
+
+	if (!sentryGun)
+	{
+		return false;
+	}
+
+	const Vector& sentryPos = UtilHelpers::getEntityOrigin(sentryGun);
+	const float maxRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerNestDispenserRange();
+
+	*waypoint = SelectWaypointForDispenser(bot, maxRange, &sentryPos, sentryGunWaypoint);
+
+	if (*waypoint != nullptr)
+	{
+		return true;
+	}
+
+	*area = FindRandomNavAreaToBuild(bot, maxRange, &sentryPos, false);
+
+	if (*area != nullptr)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool tf2botutils::FindSpotToBuildTeleEntrance(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area)
+{
+	*waypoint = tf2botutils::SelectWaypointForTeleEntrance(bot);
+
+	if (*waypoint != nullptr)
+	{
+		return true;
+	}
+
+	const float maxRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEntranceSpawnRange();
+
+	// bot spawned recently, probably inside a spawnroom, use their position as the search start.
+	if (bot->GetTimeSinceLastSpawn() < 1.0f)
+	{
+		*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, nullptr, true);
+
+		if (*area != nullptr)
+		{
+			return true;
+		}
+	}
+	else
+	{
+		// use an active spawnpoint as a base for our search
+		CBaseEntity* spawnpoint = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
+
+		if (spawnpoint)
+		{
+			const Vector& searchStart = UtilHelpers::getEntityOrigin(spawnpoint);
+			*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, &searchStart, true);
+
+			if (*area != nullptr)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool tf2botutils::FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint)
+{
+	CBaseEntity* mysentry = bot->GetMySentryGun();
+
+	if (mysentry == nullptr)
+	{
+		return false;
+	}
+
+	const Vector& sentryPos = UtilHelpers::getEntityOrigin(mysentry);
+	const float maxRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerNestExitRange();
+
+	*waypoint = tf2botutils::SelectWaypointForTeleExit(bot, maxRange, &sentryPos, sentryGunWaypoint);
+
+	if (*waypoint != nullptr)
+	{
+		return true;
+	}
+
+	*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, &sentryPos, true);
+
+	if (*area != nullptr)
+	{
+		return true;
+	}
+
+	return false;
+}

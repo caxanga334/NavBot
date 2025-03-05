@@ -12,6 +12,7 @@ class CTF2Bot;
 class CTF2BotWeapon;
 class CKnownEntity;
 class CTF2BotSensor;
+class WeaponAttackFunctionInfo;
 
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
@@ -33,24 +34,13 @@ public:
 	const char* GetName() const override { return "MainTask"; }
 
 private:
-	CountdownTimer m_weaponswitchtimer;
 
-	bool AllowedToSwitchWeapon();
-	void FireWeaponAtEnemy(CTF2Bot* me, const CKnownEntity* threat);
-	void UpdateLook(CTF2Bot* me, const CKnownEntity* threat);
-	void InternalAimAtEnemyPlayer(CTF2Bot* me, CBaseExtPlayer* player, Vector& result);
-	void InternalAimWithRocketLauncher(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const CTF2BotWeapon* weapon, CTF2BotSensor* sensor);
-	void InternalAimWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, const CTF2BotWeapon* weapon, CTF2BotSensor* sensor);
+	void AimAtPlayerWithHitScanWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
+	void AimAtPlayerWithProjectileWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
+	void AimAtPlayerWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
+
 	std::shared_ptr<const CKnownEntity> InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
 };
-
-inline bool CTF2BotMainTask::AllowedToSwitchWeapon()
-{
-	if (!m_weaponswitchtimer.HasStarted() || m_weaponswitchtimer.IsElapsed())
-		return true;
-
-	return false;
-}
 
 #ifdef EXT_DEBUG
 

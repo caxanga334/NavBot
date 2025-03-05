@@ -66,6 +66,8 @@ namespace UtilHelpers
 	Vector getWorldSpaceCenter(CBaseEntity* pEntity);
 	const Vector& getEntityOrigin(edict_t* entity);
 	const Vector& getEntityOrigin(CBaseEntity* entity);
+	const QAngle& getEntityAngles(edict_t* entity);
+	const QAngle& getEntityAngles(CBaseEntity* entity);
 	void getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs);
 	void getEntityBounds(CBaseEntity* entity, Vector& mins, Vector& maxs);
 	bool pointIsWithinTrigger(edict_t* pEntity, const Vector& vPoint);
@@ -79,6 +81,12 @@ namespace UtilHelpers
 	bool PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV);
 	float GetForwardViewCone(float angle);
 	std::unique_ptr<CStudioHdr> GetEntityModelPtr(edict_t* pEntity);
+	/**
+	 * @brief Gets the index of a bone from the given model.
+	 * @param hdr CStudioHDR pointer of the model you want to get the bone from
+	 * @param bonename Name of the bone
+	 * @return Bone index or -1 on failure
+	*/
 	int LookupBone(CStudioHdr* hdr, const char* bonename);
 
 	/**

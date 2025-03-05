@@ -144,6 +144,8 @@ public:
 	CBaseEntity* GetObjectBeingCarriedByMe() const;
 	// Makes the bot run the upgrade logic on the next Update call
 	void DoMvMUpgrade() { m_doMvMUpgrade = true; }
+
+	void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true) override;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;

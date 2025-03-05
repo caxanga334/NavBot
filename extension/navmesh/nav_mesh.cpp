@@ -790,6 +790,7 @@ void CNavMesh::OnServerActivate( void )
 
 	// Some mods may not have round start events, call this at least once on every new map load
 	OnRoundRestart();
+	PropagateOnRoundRestart();
 }
 
 #ifdef NEXT_BOT
@@ -872,6 +873,12 @@ void CNavMesh::OnRoundRestart( void )
  */
 void CNavMesh::OnRoundRestartPreEntity( void )
 {
+}
+
+void CNavMesh::NotifyRoundRestart()
+{
+	TheNavMesh->OnRoundRestart();
+	TheNavMesh->PropagateOnRoundRestart();
 }
 
 void CNavMesh::PropagateOnRoundRestart()
