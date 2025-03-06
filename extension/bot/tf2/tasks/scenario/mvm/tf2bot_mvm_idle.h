@@ -31,6 +31,7 @@ private:
 	Vector m_goal;
 	CountdownTimer m_repathtimer;
 	CountdownTimer m_readyCheck;
+	CountdownTimer m_currencyScanTimer;
 	bool m_upgradeDuringWave;
 	
 	void FindIdlePosition();

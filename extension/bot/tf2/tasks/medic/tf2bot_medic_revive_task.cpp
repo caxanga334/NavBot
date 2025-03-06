@@ -3,6 +3,7 @@
 
 #include <extension.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
 #include <bot/tf2/tf2bot.h>
@@ -33,7 +34,7 @@ static bool IsLineOfHealClearToMarker(const Vector& from, const Vector& to, CBas
 }
 
 CTF2BotMedicReviveTask::CTF2BotMedicReviveTask(CBaseEntity* marker) :
-	m_marker(marker)
+	m_marker(marker), m_aimpos(0.0f, 0.0f, 0.0f), m_goal(0.0f, 0.0f, 0.0f)
 {
 }
 
@@ -80,6 +81,14 @@ TaskResult<CTF2Bot> CTF2BotMedicReviveTask::OnTaskUpdate(CTF2Bot* bot)
 	* TO-DO:
 	* Once the medigun beam is attached to the marker entity, deploy shield if possible and look towards the nearest visible threat
 	*/
+
+	float rage = 0.0f;
+	entprops->GetEntPropFloat(bot->GetIndex(), Prop_Send, "m_flRageMeter", rage);
+
+	if (rage > 0.99f)
+	{
+		bot->GetControlInterface()->PressSpecialAttackButton();
+	}
 
 	Vector from = bot->GetEyeOrigin();
 

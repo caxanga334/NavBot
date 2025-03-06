@@ -11,6 +11,7 @@
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include "tf2bot_mvm_upgrade.h"
 #include "tf2bot_mvm_idle.h"
+#include "tf2bot_mvm_tasks.h"
 
 class CTF2BotMvMIdleSelectRandomFrontlineArea
 {
@@ -41,6 +42,7 @@ private:
 
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	m_currencyScanTimer.Start(-1.0f);
 	FindIdlePosition();
 
 	if (entprops->GameRules_GetRoundState() == RoundState_RoundRunning)
@@ -59,6 +61,23 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot
 
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	if (m_currencyScanTimer.IsElapsed())
+	{
+		m_currencyScanTimer.Start(15.0f);
+
+		if (CTF2BotCollectMvMCurrencyTask::IsAllowedToCollectCurrency())
+		{
+			std::vector<CHandle<CBaseEntity>> currencypacks;
+			currencypacks.reserve(64);
+			CTF2BotCollectMvMCurrencyTask::ScanForDroppedCurrency(currencypacks);
+
+			if (!currencypacks.empty())
+			{
+				return PauseFor(new CTF2BotCollectMvMCurrencyTask(currencypacks), "Collecting currency!");
+			}
+		}
+	}
+
 	if (entprops->GameRules_GetRoundState() == RoundState_RoundRunning)
 	{
 		if (m_upgradeDuringWave)

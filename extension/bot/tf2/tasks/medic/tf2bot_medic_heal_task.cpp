@@ -3,7 +3,9 @@
 
 #include <extension.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tf2/tf2bot_utils.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
@@ -85,7 +87,15 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 		bot->GetControlInterface()->ReleaseAllAttackButtons();
 	}
 
-	if (GetUbercharge(bot) > 0.9999f)
+	float uber = GetUbercharge(bot);
+	float rage = 0.0f;
+
+	if (m_isMvM)
+	{
+		entprops->GetEntPropFloat(bot->GetIndex(), Prop_Send, "m_flRageMeter", rage);
+	}
+
+	if (uber > 0.9999f || rage > 0.9999f)
 	{
 		int visiblethreats = 0;
 
@@ -105,7 +115,14 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (visiblethreats >= min_threats)
 		{
-			bot->GetControlInterface()->PressSecondaryAttackButton();
+			if (uber > 0.9999f)
+			{
+				bot->GetControlInterface()->PressSecondaryAttackButton();
+			}
+			else
+			{
+				bot->GetControlInterface()->PressSpecialAttackButton();
+			}
 		}
 	}
 
@@ -257,115 +274,7 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 		return;
 	}
 
-	CBaseEntity* nextHealTarget = nullptr;
-	float best = std::numeric_limits<float>::max();
-
-	UtilHelpers::ForEachPlayer([&bot, &best, &nextHealTarget](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
-
-		if (client != bot->GetIndex() && player->IsInGame() && UtilHelpers::IsPlayerAlive(client))
-		{
-			auto theirclass = tf2lib::GetPlayerClassType(client);
-
-			if (tf2lib::GetEntityTFTeam(client) == tf2lib::GetEnemyTFTeam(bot->GetMyTFTeam()))
-			{
-				if (theirclass != TeamFortress2::TFClassType::TFClass_Spy)
-				{
-					return; // not a spy, don't heal
-				}
-
-				// player is from enemy team and is a spy.
-
-				auto& spy = bot->GetSpyMonitorInterface()->GetKnownSpy(entity);
-
-				if (spy.GetDetectionLevel() != CTF2BotSpyMonitor::SpyDetectionLevel::DETECTION_FOOLED)
-				{
-					return; // only heal spies that fooled me
-				}
-			}
-
-
-			float distance = bot->GetRangeToSqr(entity);
-
-			if (tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Cloaked))
-			{
-				return;
-			}
-
-			constexpr auto MAX_DISTANCE_SQR = (800.0f * 800.0f);
-
-			if (distance >= MAX_DISTANCE_SQR)
-			{
-				return;
-			}
-
-			/* Medic auto call features works through walls, so simulate that by not checking for LOS
-			if (!bot->GetSensorInterface()->IsLineOfSightClear(entity))
-			{
-				return;
-			}
-			*/
-
-			float hp = tf2lib::GetPlayerHealthPercentage(client);
-
-			if (tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_OnFire) ||
-				tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Bleeding) ||
-				tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Jarated) ||
-				tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond_Milked))
-			{
-				distance *= 0.25f; // priorize players in these conditions
-			}
-			else
-			{
-				switch (theirclass)
-				{
-				case TeamFortress2::TFClass_Sniper:
-				{
-					if (hp > 0.99f)
-					{
-						return; // razorback doesn't allow overheal so don't get stuck trying to overheal one
-					}
-
-					break;
-				}
-				case TeamFortress2::TFClass_Medic:
-				{
-					if (hp > 1.1f)
-					{
-						return; // Don't get stuck overhealing another medic
-					}
-
-					if (hp < 0.3f)
-					{
-						distance *= 0.25f; // extra priority for other medics near death
-					}
-
-					break;
-				}
-				case TeamFortress2::TFClass_Spy:
-					[[fallthrough]];
-				case TeamFortress2::TFClass_Engineer:
-				{
-					if (hp > 1.2f)
-					{
-						distance += (500.0f * 500.0f); // don't stick to these ones
-					}
-					break;
-				}
-				default:
-					break;
-				}
-
-				float mult = std::clamp(hp, 0.05f, 2.0f);
-				distance *= mult; // multiply distance based on health percentage
-			}
-
-			if (distance < best)
-			{
-				best = distance;
-				nextHealTarget = entity->GetIServerEntity()->GetBaseEntity();
-			}
-		}
-	});
+	CBaseEntity* nextHealTarget = tf2botutils::MedicSelectBestPatientToHeal(bot, CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetMedicPatientScanRange());
 
 	if (nextHealTarget == nullptr)
 	{
@@ -376,7 +285,7 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 		m_healTarget = nextHealTarget;
 	}
 
-	m_patientScanTimer.Start(0.5f);
+	m_patientScanTimer.Start(2.0f);
 }
 
 void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat)

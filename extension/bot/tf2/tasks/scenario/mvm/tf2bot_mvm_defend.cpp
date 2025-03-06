@@ -8,90 +8,131 @@
 #include <entities/tf2/tf_entities.h>
 #include "tf2bot_mvm_tasks.h"
 #include "tf2bot_mvm_defend.h"
+#include "tf2bot_mvm_guard_dropped_bomb_task.h"
+
+CTF2BotMvMDefendTask::CTF2BotMvMDefendTask() :
+	m_targetPos()
+{
+}
 
 TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
-
-	m_flag = flag;
-
-	if (flag == nullptr)
-	{
-		m_updateGoalTimer.Invalidate();
-	}
-	else
-	{
-		m_updateGoalTimer.StartRandom(2.0f, 5.0f);
-	}
+	m_updateTargetTimer.Invalidate();
+	UpdateTarget();
 
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
-	CBaseEntity* tank = tf2lib::mvm::GetMostDangerousTank();
+	UpdateTarget();
 
-	if (tank)
+	CBaseEntity* target = m_target.Get();
+
+	if (!target)
 	{
-		auto myclass = bot->GetMyClassType();
+		auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
 
-		switch (myclass)
+		if (!threat)
 		{
-		case TeamFortress2::TFClass_Soldier:
-			[[fallthrough]];
-		case TeamFortress2::TFClass_DemoMan:
-			[[fallthrough]];
-		case TeamFortress2::TFClass_Pyro:
-		{
-			return PauseFor(new CTF2BotMvMTankBusterTask(tank), "Destroying tanks!");
+			return Continue();
 		}
-		default:
-			break;
-		}
+
+		target = threat->GetEntity();
 	}
 
-	if (threat)
+	TeamFortress2::TFClassType myclass = bot->GetMyClassType();
+
+	// soldiers, pyros and demos go after the tank
+	if ((myclass == TeamFortress2::TFClass_Soldier || myclass == TeamFortress2::TFClass_DemoMan || myclass == TeamFortress2::TFClass_Pyro) && UtilHelpers::FClassnameIs(target, "tank_boss"))
 	{
-		return PauseFor(new CTF2BotMvMCombatTask, "Attacking enemies!");
+		return PauseFor(new CTF2BotMvMTankBusterTask(target), "Seek and destroy MvM tank!");
 	}
 
-	CBaseEntity* ent = m_flag.Get();
-
-	if (m_updateGoalTimer.IsElapsed())
-	{
-		m_updateGoalTimer.StartRandom(2.0f, 5.0f);
-		ent = tf2lib::mvm::GetMostDangerousFlag(false);
-		m_flag = ent;
-	}
-
-	if (ent == nullptr)
-	{
-		return Continue();
-	}
-
-	tfentities::HCaptureFlag flag(ent);
-	Vector pos = flag.GetPosition();
+	bool isFlag = UtilHelpers::FClassnameIs(target, "item_teamflag");
 
 	if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
 	{
-		m_repathTimer.Start(0.5f);
-		
+		if (isFlag)
+		{
+			m_targetPos = tf2lib::GetFlagPosition(target);
+		}
+		else
+		{
+			m_targetPos = UtilHelpers::getEntityOrigin(target);
+		}
+
+		m_repathTimer.Start(1.0f);
 		CTF2BotPathCost cost(bot);
-		m_nav.ComputePathToPosition(bot, pos, cost);
+		m_nav.ComputePathToPosition(bot, m_targetPos, cost);
 	}
 
-	float range = bot->GetRangeTo(pos);
+	float range = bot->GetRangeTo(m_targetPos);
 
-	if (range > 300.0f || !bot->GetSensorInterface()->IsLineOfSightClear(pos))
+	if (range > 128.0f && m_lookAtTimer.IsElapsed())
+	{
+		m_lookAtTimer.Start(5.0f);
+		bot->GetControlInterface()->AimAt(m_targetPos, IPlayerController::LOOK_ALERT, 1.0f, "Looking at mvm target!");
+	}
+
+	if (range > 64.0f)
 	{
 		m_nav.Update(bot);
 	}
-
-	if (range < 512.0f)
+	else if (isFlag)
 	{
-		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_INTERESTING, 0.2f, "Looking at flag position!");
+		tfentities::HCaptureFlag cf(target);
+
+		if (cf.IsDropped())
+		{
+			return PauseFor(new CTF2BotMvMGuardDroppedBombTask(target), "Guarding dropped bomb!");
+		}
 	}
 
 	return Continue();
+}
+
+void CTF2BotMvMDefendTask::UpdateTarget()
+{
+	if (m_updateTargetTimer.IsElapsed())
+	{
+		m_updateTargetTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(2.0f, 5.0f));
+		const Vector& hatchPos = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
+
+		CBaseEntity* tank = tf2lib::mvm::GetMostDangerousTank();
+
+		if (tank)
+		{
+			// a tank is present, see if the bomb carrier is closer to the hatch
+			CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(true);
+
+			if (!flag)
+			{
+				m_target = tank;
+			}
+			else
+			{
+				const Vector& tankPos = UtilHelpers::getEntityOrigin(tank);
+				const Vector& flagPos = tf2lib::GetFlagPosition(flag);
+
+				if ((hatchPos - tankPos).LengthSqr() < (hatchPos - flagPos).LengthSqr())
+				{
+					m_target = tank;
+				}
+				else
+				{
+					m_target = flag;
+				}
+			}
+		}
+		else
+		{
+			CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
+
+			if (flag)
+			{
+				m_target = flag;
+			}
+		}
+	}
 }

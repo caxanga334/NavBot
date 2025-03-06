@@ -50,6 +50,17 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 		return PauseFor(nestTask, "Taking care of my own nest!");
 	}
 
+	if (m_roundStateTimer.HasStarted() && m_roundStateTimer.IsElapsed())
+	{
+		if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
+		{
+			m_noThreatTimer.Start(0.1f);
+			m_moveBuildingCheckTimer.Start(0.2f);
+		}
+
+		m_roundStateTimer.Invalidate();
+	}
+
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	if (threat.get() != nullptr)
@@ -150,11 +161,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnRoundStateChanged(CT
 {
 	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
 	{
-		if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
-		{
-			m_noThreatTimer.Start(0.1f);
-			m_moveBuildingCheckTimer.Start(0.2f);
-		}
+		m_roundStateTimer.Start(5.0f);
 	}
 
 	return TryContinue();

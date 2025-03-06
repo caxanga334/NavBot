@@ -565,3 +565,95 @@ bool tf2botutils::FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, 
 
 	return false;
 }
+
+CBaseEntity* tf2botutils::MedicSelectBestPatientToHeal(CTF2Bot* bot, const float maxSearchRange)
+{
+	std::vector<std::pair<CBaseEntity*, int>> patients;
+	patients.reserve(static_cast<size_t>(gpGlobals->maxClients));
+
+	// the functor is only called if player is not NULL.
+	UtilHelpers::ForEachPlayer([&bot, &maxSearchRange, &patients](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		// must be in-game, must not be the bot itself and must be alive
+		if (player->IsInGame() && client != bot->GetIndex() && UtilHelpers::IsPlayerAlive(client))
+		{
+			if (bot->GetRangeTo(entity) > maxSearchRange)
+			{
+				return; // out of range
+			}
+
+			TeamFortress2::TFClassType theirclass = tf2lib::GetPlayerClassType(client);
+
+			// handle enemy spies
+			if (tf2lib::GetEntityTFTeam(client) != bot->GetMyTFTeam())
+			{
+				if (theirclass != TeamFortress2::TFClassType::TFClass_Spy)
+				{
+					return; // not a spy, don't heal
+				}
+
+				// player is from enemy team and is a spy.
+
+				auto& spy = bot->GetSpyMonitorInterface()->GetKnownSpy(entity);
+
+				if (spy.GetDetectionLevel() != CTF2BotSpyMonitor::SpyDetectionLevel::DETECTION_FOOLED)
+				{
+					return; // only heal spies that fooled me
+				}
+			}
+
+			CBaseEntity* pEnt = entity->GetIServerEntity()->GetBaseEntity();
+
+			// don't heal invisible players
+			if (tf2lib::IsPlayerInvisible(pEnt))
+			{
+				return;
+			}
+
+			// all patients have a base score of 1000
+			auto& pair = patients.emplace_back(pEnt, 1000);
+			bool inCond = false; // in a condition that priorizes healing (fire/bleed)
+
+			if (tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond::TFCond_Bleeding) ||
+				tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond::TFCond_OnFire))
+			{
+				pair.second += 500; // priorize bleeding and burning patients
+				inCond = true;
+			}
+
+			if (tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond::TFCond_Milked) ||
+				tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond::TFCond_Jarated) ||
+				tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond::TFCond_Gas))
+			{
+				pair.second += 100; // priorize removing these effects
+			}
+
+			float health = tf2lib::GetPlayerHealthPercentage(client);
+			float score = RemapValClamped(health, 0.1f, 1.5f, 1300.0f, -800.0f);
+			score = std::round(score);
+			pair.second += static_cast<int>(score);
+
+			if (theirclass == TeamFortress2::TFClass_Sniper && !inCond && health >= 0.99f)
+			{
+				pair.second = -1; // don't heal full health snipers unless they are bleeding or on fire
+			}
+			else if (theirclass == TeamFortress2::TFClass_Medic && health >= 0.5f)
+			{
+				pair.second -= 800; // prevents two medics getting stuck healing each other
+			}
+		}
+	});
+
+	int bestscore = 0; // if a target ends up with a negative score, don't heal them
+	CBaseEntity* ret = nullptr;
+
+	for (auto& pair : patients)
+	{
+		if (pair.second > bestscore)
+		{
+			bestscore = pair.second;
+			ret = pair.first;
+		}
+	}
+
+	return ret;
+}

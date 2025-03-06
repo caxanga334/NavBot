@@ -69,7 +69,7 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
 			Vector origin = m_me->GetAbsOrigin();
-			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::ExecuteBuy called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f>", m_me->GetDebugIdentifier(),
+			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::ExecuteBuy called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f> \n", m_me->GetDebugIdentifier(),
 				origin.x, origin.y, origin.z);
 		}
 
@@ -80,7 +80,7 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 	{
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
-			ConColorMsg(Color(0, 128, 0, 255), "%s: CTF2BotUpgradeManager::ExecuteBuy - Buy list is empty!", m_me->GetDebugIdentifier());
+			ConColorMsg(Color(0, 128, 0, 255), "%s: CTF2BotUpgradeManager::ExecuteBuy - Buy list is empty! \n", m_me->GetDebugIdentifier());
 			ConColorMsg(Color(0, 128, 128, 255), "Advancing from priority %i to %i!\n", m_nextpriority, (m_nextpriority + 1));
 		}
 
@@ -219,6 +219,11 @@ void CTF2BotUpgradeManager::ExecuteState_Upgrade()
 			OnDoneUpgrading(); // List is not empty, not enough currency to but anything, done for the current wave
 			return;
 		}
+	}
+	else
+	{
+		OnDoneUpgrading();
+		return;
 	}
 
 	ExecuteBuy();

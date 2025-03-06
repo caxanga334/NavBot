@@ -189,6 +189,13 @@ SourceMod::SMCResult CTeamFortress2Mod::ReadSMC_KeyValue(const SourceMod::SMCSta
 			settings->SetMvMSentryToBombRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
+		else if (strncasecmp(key, "medic_patient_scan_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 750.0f, 5000.0f);
+			settings->SetMedicPatientScanRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
 	}
 
 	return CBaseMod::ReadSMC_KeyValue(states, key, value);

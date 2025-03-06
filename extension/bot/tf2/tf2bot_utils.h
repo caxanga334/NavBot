@@ -98,6 +98,13 @@ namespace tf2botutils
 	 * @return true if a spot is found. false otherwise.
 	 */
 	bool FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint);
+	/**
+	 * @brief Finds a player for medic bots to heal.
+	 * @param bot The medic bot.
+	 * @param maxSearchRange Maximum search range.
+	 * @return Player entity to heal or NULL if no player is suitable.
+	 */
+	CBaseEntity* MedicSelectBestPatientToHeal(CTF2Bot* bot, const float maxSearchRange);
 }
 
 #endif // !TF2BOT_UTILS_H_

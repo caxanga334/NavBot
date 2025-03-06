@@ -9,6 +9,10 @@
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_mvm_tasks.h"
 
+#if SOURCE_ENGINE == SE_TF2
+static ConVar cvar_collect_currency("sm_navbot_tf_mvm_collect_currency", "0", FCVAR_GAMEDLL, "Set to 1 to allow bots to collect MvM currency.");
+#endif
+
 CTF2BotCollectMvMCurrencyTask::CTF2BotCollectMvMCurrencyTask(std::vector<CHandle<CBaseEntity>>& packs)
 {
 	m_currencypacks = packs;
@@ -99,72 +103,41 @@ TaskResult<CTF2Bot> CTF2BotCollectMvMCurrencyTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
-TaskResult<CTF2Bot> CTF2BotMvMCombatTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+bool CTF2BotCollectMvMCurrencyTask::IsAllowedToCollectCurrency()
 {
-
-	switch (bot->GetMyClassType())
-	{
-	case TeamFortress2::TFClass_Heavy:
-		[[fallthrough]];
-	case TeamFortress2::TFClass_Pyro:
-		m_idealCombatRange = 200.0f;
-		break;
-	default:
-		m_idealCombatRange = 600.0f;
-		break;
-	}
-
-	return Continue();
+#if SOURCE_ENGINE == SE_TF2
+	return cvar_collect_currency.GetBool();
+#else
+	return false;
+#endif
 }
 
-TaskResult<CTF2Bot> CTF2BotMvMCombatTask::OnTaskUpdate(CTF2Bot* bot)
+void CTF2BotCollectMvMCurrencyTask::ScanForDroppedCurrency(std::vector<CHandle<CBaseEntity>>& currencyPacks)
 {
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(false);
+	for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
+	{
+		edict_t* edict = gamehelpers->EdictOfIndex(i);
 
-	if (!threat)
-	{
-		return Done("No more enemies!");
-	}
+		if (!UtilHelpers::IsValidEdict(edict))
+			continue;
 
-	if (!threat->IsVisibleNow())
-	{
-		bot->GetControlInterface()->AimAt(m_moveGoal, IPlayerController::LOOK_ALERT, 0.5f, "Looking at threat position!");
-		m_moveGoal = UtilHelpers::getEntityOrigin(threat->GetEntity());
-	}
-	else
-	{
-		const Vector myPos = bot->GetAbsOrigin();
-		const Vector& theirPos = UtilHelpers::getEntityOrigin(threat->GetEntity());
-		Vector to = (theirPos - myPos);
-		to.NormalizeInPlace();
-		m_moveGoal = theirPos + (to * m_idealCombatRange);
-	}
+		CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
 
-	if (m_repathTimer.IsElapsed())
-	{
-		m_repathTimer.Start(0.5f);
-		CTF2BotPathCost cost(bot);
-		
-		if (!m_nav.ComputePathToPosition(bot, m_moveGoal, cost))
+		if (UtilHelpers::FClassnameIs(entity, "item_currencypack*"))
 		{
-			if (bot->IsDebugging(BOTDEBUG_TASKS))
-			{
-				bot->DebugPrintToConsole(255, 0, 0, "%s CTF2BotMvMCombatTask Failed to compute path to threat! <%3.2f, %3.2f, %3.2f> \n", bot->GetDebugIdentifier(),
-					m_moveGoal.x, m_moveGoal.y, m_moveGoal.z);
-			}
+			bool distributed = false;
+			entprops->GetEntPropBool(i, Prop_Send, "m_bDistributed", distributed);
 
-			m_repathTimer.Start(1.0f);
-			m_nav.Invalidate();
+			if (distributed) // this one doesn't need to be collected (IE: killed by sniper)
+				continue;
+
+			currencyPacks.emplace_back(entity);
 		}
 	}
-
-	m_nav.Update(bot);
-
-	return Continue();
 }
 
-CTF2BotMvMTankBusterTask::CTF2BotMvMTankBusterTask(CBaseEntity* tank) :
-	m_nav(CChaseNavigator::LEAD_SUBJECT, 650.0f), m_tank(tank)
+CTF2BotMvMTankBusterTask::CTF2BotMvMTankBusterTask(CBaseEntity* tank) : 
+	m_tank(tank)
 {
 }
 
@@ -184,6 +157,8 @@ TaskResult<CTF2Bot> CTF2BotMvMTankBusterTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Tank destroyed!");
 	}
 
+	const Vector& pos1 = UtilHelpers::getEntityOrigin(tank);
+
 	if (m_rescanTimer.IsElapsed())
 	{
 		m_rescanTimer.Start(2.0f);
@@ -191,7 +166,6 @@ TaskResult<CTF2Bot> CTF2BotMvMTankBusterTask::OnTaskUpdate(CTF2Bot* bot)
 		CBaseEntity* othertank = tf2lib::mvm::GetMostDangerousTank();
 		CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(true);
 		const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();
-		const Vector& pos1 = UtilHelpers::getEntityOrigin(tank);
 
 		if (flag)
 		{
@@ -230,8 +204,18 @@ TaskResult<CTF2Bot> CTF2BotMvMTankBusterTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	CTF2BotPathCost cost(bot);
-	m_nav.Update(bot, tank, cost, nullptr);
+	if (m_repathTimer.IsElapsed())
+	{
+		CTF2BotPathCost cost(bot);
+		m_nav.ComputePathToPosition(bot, pos1, cost);
+		m_repathTimer.Start(1.0f);
+	}
+
+	if (bot->GetRangeTo(pos1) > 500.0f)
+	{
+		m_nav.Update(bot);
+	}
+
 	bot->GetControlInterface()->AimAt(tank, IPlayerController::LOOK_INTERESTING, 1.0f, "Looking at the tank position!");
 
 	return Continue();

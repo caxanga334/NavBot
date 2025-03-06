@@ -411,12 +411,16 @@ void CExtManager::RemoveRandomBot(const char* message)
 	player->Kick(message);
 }
 
-void CExtManager::RemoveAllBots(const char* message)
+void CExtManager::RemoveAllBots(const char* message) const
 {
-	for (auto& botptr : m_bots)
+	for (int client = 1; client <= gpGlobals->maxClients; client++)
 	{
-		auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
-		player->Kick(message);
+		IGamePlayer* player = playerhelpers->GetGamePlayer(client);
+
+		if (player && IsNavBot(client))
+		{
+			player->Kick(message);
+		}
 	}
 }
 

@@ -44,6 +44,7 @@ private:
 	CountdownTimer m_noThreatTimer;
 	CountdownTimer m_sentryEnemyScanTimer;
 	CountdownTimer m_moveBuildingCheckTimer;
+	CountdownTimer m_roundStateTimer;
 	bool m_justMovedSentry; // recently moved the sentry
 
 	bool ShouldMoveSentryGun();

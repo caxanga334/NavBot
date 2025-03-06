@@ -4,7 +4,7 @@
 #include <vector>
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_ehandle.h>
-#include <bot/interfaces/path/chasenavigator.h>
+#include <bot/interfaces/path/meshnavigator.h>
 
 class CTF2Bot;
 
@@ -26,6 +26,9 @@ public:
 		return ANSWER_NO;
 	}
 
+	static bool IsAllowedToCollectCurrency();
+	static void ScanForDroppedCurrency(std::vector<CHandle<CBaseEntity>>& currencyPacks);
+
 	const char* GetName() const override { return "CollectMvMCurrency"; }
 private:
 	CountdownTimer m_repathTimer;
@@ -35,21 +38,6 @@ private:
 	bool m_allowattack;
 };
 
-class CTF2BotMvMCombatTask : public AITask<CTF2Bot>
-{
-public:
-	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
-	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
-
-
-	const char* GetName() const override { return "MvMCombat"; }
-private:
-	CountdownTimer m_repathTimer;
-	CMeshNavigator m_nav;
-	Vector m_moveGoal;
-	float m_idealCombatRange;
-};
-
 class CTF2BotMvMTankBusterTask : public AITask<CTF2Bot>
 {
 public:
@@ -57,10 +45,10 @@ public:
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
-
 	const char* GetName() const override { return "TankBuster"; }
 private:
-	CChaseNavigator m_nav;
+	CMeshNavigator m_nav;
+	CountdownTimer m_repathTimer;
 	CHandle<CBaseEntity> m_tank;
 	CountdownTimer m_rescanTimer;
 };

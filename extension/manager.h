@@ -55,7 +55,7 @@ public:
 	void AddBot(std::string* newbotname = nullptr, edict_t** newbotedict = nullptr);
 	CBaseBot* AttachBotInstanceToEntity(edict_t* entity);
 	void RemoveRandomBot(const char* message);
-	void RemoveAllBots(const char* message);
+	void RemoveAllBots(const char* message) const;
 
 	// Gets a vector of all bots currently in game
 	const auto &GetAllBots() const { return m_bots; }

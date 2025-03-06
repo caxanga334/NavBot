@@ -11,10 +11,6 @@
 #include "tf2bot_mvm_tasks.h"
 #include "tf2bot_mvm_monitor.h"
 
-#if SOURCE_ENGINE == SE_TF2
-static ConVar cvar_collect_currency("sm_navbot_tf_mvm_collect_currency", "0", FCVAR_GAMEDLL, "Set to 1 to allow bots to collect MvM currency.");
-#endif
-
 AITask<CTF2Bot>* CTF2BotMvMMonitorTask::InitialNextTask(CTF2Bot* bot)
 {
 	auto classTask = CTF2BotTacticalTask::SelectClassTask(bot);
@@ -30,17 +26,6 @@ AITask<CTF2Bot>* CTF2BotMvMMonitorTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotMvMMonitorTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-#if SOURCE_ENGINE == SE_TF2
-	if (cvar_collect_currency.GetBool() == true)
-	{
-		CTF2BotMvMMonitorTask::s_collect = true;
-	}
-	else
-	{
-		CTF2BotMvMMonitorTask::s_collect = false;
-	}
-#endif
-
 	return Continue();
 }
 
@@ -48,22 +33,28 @@ TaskResult<CTF2Bot> CTF2BotMvMMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
+#if SOURCE_ENGINE == SE_TF2
 	// always runs this since there might be currency dropped after the wave has ended
-	if (CTF2BotMvMMonitorTask::s_collect && m_currencyScan.IsElapsed())
+	if (CTF2BotCollectMvMCurrencyTask::IsAllowedToCollectCurrency() && m_currencyScan.IsElapsed())
 	{
-		m_currencyScan.StartRandom(1.0f, 2.0f);
+		m_currencyScan.StartRandom(3.0f, 6.0f);
 		std::vector<CHandle<CBaseEntity>> currencypacks;
 		currencypacks.reserve(64);
-		ScanForDroppedCurrency(currencypacks);
+		CTF2BotCollectMvMCurrencyTask::ScanForDroppedCurrency(currencypacks);
 
 		if (!currencypacks.empty())
 		{
 			// scouts always collect, other classes collect if no visible enemy
-			bool collect = bot->GetMyClassType() == TeamFortress2::TFClass_Scout || threat.get() == nullptr;
-			
+			bool collect = bot->GetMyClassType() == TeamFortress2::TFClass_Scout;
+
 			// special conditions for spies to help scouts
-			if (currencypacks.size() > 12 && bot->GetMyClassType() == TeamFortress2::TFClass_Spy)
+			if (currencypacks.size() > 6 && bot->GetMyClassType() == TeamFortress2::TFClass_Spy)
 			{
+				collect = true;
+			}
+			else if (!threat && currencypacks.size() > 9)
+			{
+				// other classes will collect if there are more than 9 dropped
 				collect = true;
 			}
 
@@ -73,6 +64,7 @@ TaskResult<CTF2Bot> CTF2BotMvMMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
 	{
@@ -109,28 +101,4 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMvMMonitorTask::OnRoundStateChanged(CTF2
 	m_hasUpgradedInThisWave = false;
 
 	return TryContinue(PRIORITY_DONT_CARE);
-}
-
-void CTF2BotMvMMonitorTask::ScanForDroppedCurrency(std::vector<CHandle<CBaseEntity>>& currencyPacks)
-{
-	for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
-	{
-		edict_t* edict = gamehelpers->EdictOfIndex(1);
-
-		if (!UtilHelpers::IsValidEdict(edict))
-			continue;
-
-		CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
-
-		if (UtilHelpers::FClassnameIs(entity, "item_currencypack*"))
-		{
-			bool distributed = false;
-			entprops->GetEntPropBool(i, Prop_Send, "m_bDistributed", distributed);
-
-			if (distributed) // this one doesn't need to be collected (IE: killed by sniper)
-				continue;
-
-			currencyPacks.emplace_back(entity);
-		}
-	}
 }

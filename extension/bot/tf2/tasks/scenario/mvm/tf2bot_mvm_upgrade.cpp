@@ -162,7 +162,10 @@ void CTF2BotMvMUpgradeTask::SetGoalPosition()
 	std::vector<CTFNavArea*> nearbyAreas;
 	nearbyAreas.reserve(64);
 
-	navutils::CollectNavAreasInRadius(center, 512.0f, [](CTFNavArea* area) {
+	// collect radius was 512 but on mvm_mannworks there is only 1 upgrade station made by two brushes so this fucks things up.
+	// maybe the bot should just move to a random nav area with the upgrade station attribute instead
+
+	navutils::CollectNavAreasInRadius(center, 4096.0f, [](CTFNavArea* area) {
 		if (area->HasMVMAttributes(CTFNavArea::MVMNAV_UPGRADESTATION))
 		{
 			return true;

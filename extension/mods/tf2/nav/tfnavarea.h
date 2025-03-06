@@ -14,6 +14,7 @@ public:
 		m_tfattributes = 0;
 		m_mvmattributes = 0;
 		m_spawnroomteam = 0;
+		m_rtattributes = 0;
 	}
 
 	void Save(std::fstream& filestream, uint32_t version) override;
