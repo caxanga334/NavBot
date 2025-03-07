@@ -61,6 +61,7 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot
 
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 {
+#if SOURCE_ENGINE == SE_TF2
 	if (m_currencyScanTimer.IsElapsed())
 	{
 		m_currencyScanTimer.Start(15.0f);
@@ -77,6 +78,7 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	if (entprops->GameRules_GetRoundState() == RoundState_RoundRunning)
 	{

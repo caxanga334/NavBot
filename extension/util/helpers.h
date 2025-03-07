@@ -388,6 +388,32 @@ namespace UtilHelpers
 
 	}
 
+	/**
+	 * @brief Runs a function on every edict (networked entity).
+	 * @tparam T A lambda or class with operator() overload. bool (int index, edict_t* edict, CBaseEntity* entity).
+	 * 
+	 * Return false to exit the loop early.
+	 * @param functor Functor to run.
+	 */
+	template <typename T>
+	inline void ForEveryEdict(T functor)
+	{
+		for (int i = 0; i < gpGlobals->maxEntities; i++)
+		{
+			edict_t* pEdict = gamehelpers->EdictOfIndex(i);
+
+			if (UtilHelpers::IsValidEdict(pEdict))
+			{
+				CBaseEntity* pEntity = pEdict->GetIServerEntity()->GetBaseEntity();
+
+				if (!functor(i, pEdict, pEntity))
+				{
+					return;
+				}
+			}
+		}
+	}
+
 	// Gets the listen server host entity. NULL if on dedicated server.
 	inline edict_t* GetListenServerHost()
 	{

@@ -95,14 +95,14 @@ namespace Utils
 {
 	inline static void CreateDataDirectory(const char* mod)
 	{
-		char fullpath[PLATFORM_MAX_PATH + 1];
-		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s", mod);
+		std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+		smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "data/navbot/%s", mod);
 
-		auto exists = std::filesystem::exists(fullpath);
+		auto exists = std::filesystem::exists(path.get());
 
 		if (!exists)
 		{
-			auto result = std::filesystem::create_directories(fullpath);
+			auto result = std::filesystem::create_directories(path.get());
 
 			if (!result)
 			{
@@ -117,14 +117,14 @@ namespace Utils
 
 	inline static void CreateConfigDirectory(const char* mod)
 	{
-		char fullpath[PLATFORM_MAX_PATH + 1];
-		smutils->BuildPath(SourceMod::Path_SM, fullpath, sizeof(fullpath), "configs/navbot/%s", mod);
+		std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+		smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s", mod);
 
-		auto exists = std::filesystem::exists(fullpath);
+		auto exists = std::filesystem::exists(path.get());
 
 		if (!exists)
 		{
-			auto result = std::filesystem::create_directories(fullpath);
+			auto result = std::filesystem::create_directories(path.get());
 
 			if (!result)
 			{

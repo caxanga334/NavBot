@@ -426,6 +426,9 @@ class ExtensionConfig(object):
     self.ConfigureForExtension(context, binary.compiler)
     return binary
 
+if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.environ:
+  raise Exception("--breakpad-upload passed to configure.py but environment variable 'BREAKPAD_SYMBOL_SERVER' isn't set!")
+
 Extension = ExtensionConfig()
 Extension.detectSDKs()
 Extension.configure()
@@ -438,6 +441,9 @@ BuildScripts = [
   'AMBuilder',
   'PackageScript',
 ]
+
+if builder.options.breakpadupload == '1':
+  BuildScripts += ['BreakpadSymbols']
 
 builder.Build(BuildScripts, { 'Extension': Extension })
 
