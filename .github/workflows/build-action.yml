@@ -45,6 +45,7 @@ jobs:
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
     env:
       USER_BIN_PATH: ${{ github.workspace }}/bins
+      BREAKPAD_SYMBOL_SERVER: "http://crash.limetech.org/symbols/submit"
 
     steps:
       - name: Install Packages (Linux)
