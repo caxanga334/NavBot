@@ -155,6 +155,8 @@ CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned 
 
 CON_COMMAND_F(sm_nav_volume_set_toggle_condition, "Updates the selected nav prerequisite toggle condition", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_volume_set_toggle_condition clear\n   Clears all toggle condition data. \n");

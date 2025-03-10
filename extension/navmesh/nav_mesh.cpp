@@ -203,10 +203,19 @@ bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 	if (UtilHelpers::FClassnameIs(pEntity, "func_playerinfected_clip") == true)
 		return true;
 
+	
+
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 	ConVarRef solidprops("sm_nav_solid_props", false);
 
 	if (solidprops.GetBool() && UtilHelpers::FClassnameIs(pEntity, "prop_*"))
 		return true;
+#else
+	extern ConVar sm_nav_solid_props;
+
+	if (sm_nav_solid_props.GetBool() && UtilHelpers::FClassnameIs(pEntity, "prop_*"))
+		return true;
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
 	return false;
 }
@@ -1877,6 +1886,8 @@ CON_COMMAND_F(sm_nav_flood_select, "Selects the current Area and all Areas conne
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
+	DECLARE_COMMAND_ARGS;
+
 	TheNavMesh->CommandNavFloodSelect( args );
 }
 
@@ -1930,6 +1941,8 @@ CON_COMMAND_F(sm_nav_add_to_selected_set_by_id, "Add specified area id to the se
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	TheNavMesh->CommandNavAddToSelectedSetByID( args );
 }
@@ -2046,6 +2059,8 @@ CON_COMMAND_F(sm_nav_select_larger_than, "Select nav areas where both dimensions
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	if ( args.ArgC() > 1 )
 	{
@@ -2229,6 +2244,8 @@ CON_COMMAND_F(sm_nav_select_half_space, "Selects any areas that intersect the gi
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
+	DECLARE_COMMAND_ARGS;
+
 	TheNavMesh->CommandNavSelectHalfSpace( args );
 }
 
@@ -2350,10 +2367,16 @@ static ConCommand sm_nav_merge( "sm_nav_merge", CommandNavMerge, "To merge two A
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavMark( const CCommand &args )
+#if SOURCE_ENGINE >= SE_ORANGEBOX
+void CommandNavMark(const CCommand& args)
+#else
+void CommandNavMark()
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	TheNavMesh->CommandNavMark( args );
 }
@@ -2622,10 +2645,16 @@ static int PlaceNameAutocompleteCallback( char const *partial, char commands[ CO
 
 
 //--------------------------------------------------------------------------------------------------------------
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 void CommandNavUsePlace( const CCommand &args )
+#else
+void CommandNavUsePlace(void)
+#endif
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() == 1)
 	{
@@ -2652,10 +2681,16 @@ static ConCommand sm_nav_use_place( "sm_nav_use_place", CommandNavUsePlace, "If 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavPlaceReplace( const CCommand &args )
+#if SOURCE_ENGINE >= SE_ORANGEBOX
+void CommandNavPlaceReplace(const CCommand& args)
+#else
+void CommandNavPlaceReplace(void)
+#endif
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() != 3)
 	{
@@ -2729,10 +2764,16 @@ static ConCommand sm_nav_toggle_place_mode( "sm_nav_toggle_place_mode", CommandN
 
 
 //--------------------------------------------------------------------------------------------------------------
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 void CommandNavSetPlaceMode( const CCommand &args )
+#else
+void CommandNavSetPlaceMode(void)
+#endif
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	bool on = true;
 	if ( args.ArgC() == 2 )
@@ -2820,6 +2861,8 @@ CON_COMMAND_F(sm_nav_corner_raise, "Raise the selected corner of the currently m
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
+	DECLARE_COMMAND_ARGS;
+
 	TheNavMesh->CommandNavCornerRaise( args );
 }
 
@@ -2830,6 +2873,8 @@ CON_COMMAND_F(sm_nav_corner_lower, "Lower the selected corner of the currently m
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
+	DECLARE_COMMAND_ARGS;
+
 	TheNavMesh->CommandNavCornerLower( args );
 }
 
@@ -2839,6 +2884,8 @@ CON_COMMAND_F(sm_nav_corner_place_on_ground, "Places the selected corner of the 
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	TheNavMesh->CommandNavCornerPlaceOnGround( args );
 }
@@ -2900,33 +2947,34 @@ static ConCommand sm_nav_analyze( "sm_nav_analyze", CommandNavAnalyze, "Re-analy
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavAnalyzeScripted( const CCommand &args )
+#if SOURCE_ENGINE >= SE_ORANGEBOX
+void CommandNavAnalyzeScripted(const CCommand& args)
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if (!UTIL_IsCommandIssuedByServerAdmin())
 		return;
 
-	const char *pszCmd = NULL;
+	const char* pszCmd = NULL;
 	int count = args.ArgC();
-	if ( count > 0 )
+	if (count > 0)
 	{
 		pszCmd = args[1];
 	}
 
-	bool bForceAnalyze = pszCmd && !Q_stricmp( pszCmd, "force" );
+	bool bForceAnalyze = pszCmd && !Q_stricmp(pszCmd, "force");
 
-	if ( TheNavMesh->IsAnalyzed() && !bForceAnalyze )
+	if (TheNavMesh->IsAnalyzed() && !bForceAnalyze)
 	{
-		engine->ServerCommand( "quit\n" );
+		engine->ServerCommand("quit\n");
 		return;
 	}
 
 	if (sm_nav_edit.GetBool())
 	{
-		TheNavMesh->BeginAnalysis( true );
+		TheNavMesh->BeginAnalysis(true);
 	}
 }
-static ConCommand sm_nav_analyze_scripted( "sm_nav_analyze_scripted", CommandNavAnalyzeScripted, "commandline hook to run a nav_analyze and then quit.", FCVAR_GAMEDLL | FCVAR_CHEAT | FCVAR_HIDDEN );
-
+static ConCommand sm_nav_analyze_scripted("sm_nav_analyze_scripted", CommandNavAnalyzeScripted, "commandline hook to run a nav_analyze and then quit.", FCVAR_GAMEDLL | FCVAR_CHEAT | FCVAR_HIDDEN);
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavMarkWalkable( void )
@@ -3157,8 +3205,14 @@ NavAttributeType NameToNavAttribute( const char *name )
 
 
 //--------------------------------------------------------------------------------------------------------
-void NavEditClearAttribute( const CCommand &args )
+#if SOURCE_ENGINE >= SE_ORANGEBOX
+void NavEditClearAttribute(const CCommand& args)
+#else
+void NavEditClearAttribute(void)
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 {
+	DECLARE_COMMAND_ARGS;
+
 	if ( args.ArgC() != 2 )
 	{
 		Msg( "Usage: %s <attribute>\n", args[0] );
@@ -3177,12 +3231,18 @@ void NavEditClearAttribute( const CCommand &args )
 	
 	Msg( "Unknown attribute '%s'", args[1] );		
 }
-static ConCommand SMNavClearAttribute( "sm_nav_clear_attribute", NavEditClearAttribute, "Remove given nav attribute from all areas in the selected set.", FCVAR_CHEAT, NavAttributeAutocomplete );
+static ConCommand SMNavClearAttribute( "sm_nav_clear_attribute", NavEditClearAttribute, "Remove given nav attribute from all areas in the selected set.", FCVAR_CHEAT);
 
 
 //--------------------------------------------------------------------------------------------------------
-void NavEditMarkAttribute( const CCommand &args )
+#if SOURCE_ENGINE >= SE_ORANGEBOX
+void NavEditMarkAttribute(const CCommand& args)
+#else
+void NavEditMarkAttribute(void)
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 {
+	DECLARE_COMMAND_ARGS;
+
 	if ( args.ArgC() != 2 )
 	{
 		Msg( "Usage: %s <attribute>\n", args[0] );

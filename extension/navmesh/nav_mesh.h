@@ -31,10 +31,7 @@
 #include <optional>
 #include <algorithm>
 
-#if SOURCE_ENGINE == SE_EPISODEONE
 #include <util/commandargs_episode1.h>
-#endif // SOURCE_ENGINE == SE_EPISODEONE
-
 #include "nav.h"
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>

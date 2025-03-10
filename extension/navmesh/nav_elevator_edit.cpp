@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/commandargs_episode1.h>
 #include <util/entprops.h>
 #include "nav_mesh.h"
 #include "nav_area.h"
@@ -36,6 +37,8 @@ ConVar sm_nav_elevator_edit("sm_nav_elevator_edit", "0", FCVAR_GAMEDLL | FCVAR_C
 
 CON_COMMAND_F(sm_nav_elevator_create, "Creates a new Nav Elevator", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_create <elevator entity index>\n");
@@ -78,6 +81,8 @@ CON_COMMAND_F(sm_nav_elevator_select_nearest, "Selects the nearest elevator to y
 
 CON_COMMAND_F(sm_nav_elevator_select_id, "Selects an elevator by id", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_select_id <id>\n");
@@ -203,6 +208,8 @@ CON_COMMAND_F(sm_nav_elevator_add_floor, "Selects the nearest elevator to your p
 
 CON_COMMAND_F(sm_nav_elevator_set_floor_detection_distance, "Sets the minimum distance between the elevator and the floor position.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_set_floor_detection_distance <distance>\n");
@@ -226,6 +233,8 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_detection_distance, "Sets the minimum di
 
 CON_COMMAND_F(sm_nav_elevator_set_team, "Sets the elevator team number.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_set_team <int>\n");
@@ -277,6 +286,8 @@ CON_COMMAND_F(sm_nav_elevator_delete_all_floors, "Deletes all elevator floors", 
 
 CON_COMMAND_F(sm_nav_elevator_set_floor_toggle_state, "Sets the floor toggle state.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_set_floor_toggle_state <toggle state>\n");
@@ -321,6 +332,8 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_position, "Sets the position used for de
 
 CON_COMMAND_F(sm_nav_elevator_set_floor_call_button, "Sets the entity used for calling the elevator to this floor.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_set_floor_call_button <entity index>\n");
@@ -344,6 +357,8 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_call_button, "Sets the entity used for c
 
 CON_COMMAND_F(sm_nav_elevator_set_floor_use_button, "Sets the entity used for operating the elevator.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_elevator_set_floor_use_button <entity index>\n");

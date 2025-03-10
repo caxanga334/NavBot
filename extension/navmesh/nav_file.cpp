@@ -22,8 +22,6 @@
 #include "nav_volume.h"
 #include "nav_prereq.h"
 
-#include "tier1/lzmaDecoder.h"
-
 #include <utlbuffer.h>
 #include <filesystem.h>
 #include <eiface.h>
@@ -1553,7 +1551,11 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 
 
 	OneWayLink_t oneWayLink;
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 	CUtlVectorFixedGrowable<OneWayLink_t, 512> oneWayLinks;
+#else
+	CUtlVector<OneWayLink_t> oneWayLinks;
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
 	FOR_EACH_VEC( TheNavAreas, oit )
 	{

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <memory>
 #include <algorithm>
+#include <cstring>
 
 #include "extension.h"
 
@@ -39,6 +40,10 @@
 #if SOURCE_ENGINE == SE_BMS
 #include <mods/blackmesa/blackmesadm_mod.h>
 #endif // SOURCE_ENGINE == SE_BMS
+
+#if SOURCE_ENGINE == SE_HL2DM
+#include <mods/hl2dm/hl2dm_mod.h>
+#endif // SOURCE_ENGINE == SE_HL2DM
 
 #include <bot/pluginbot/pluginbot.h>
 
@@ -233,6 +238,21 @@ void CExtManager::AllocateMod()
 	m_mod = std::make_unique<CDayOfDefeatSourceMod>();
 #elif SOURCE_ENGINE == SE_BMS
 	m_mod = std::make_unique<CBlackMesaDeathmatchMod>();
+#elif SOURCE_ENGINE == SE_HL2DM
+	{
+		const char* gamefolder = smutils->GetGameFolderName();
+
+		// Mods based on the new version of the Source 2013 SDK are detected as HL2DM engine.
+		// See: https://github.com/alliedmodders/metamod-source/pull/210
+		if (strncasecmp(gamefolder, "hl2mp", 5) == 0)
+		{
+			m_mod = std::make_unique<CHalfLife2DeathMatchMod>();
+		}
+		else
+		{
+			m_mod = std::make_unique<CBaseMod>();
+		}
+	}
 #else
 	m_mod = std::make_unique<CBaseMod>();
 #endif // SOURCE_ENGINE == SE_TF2

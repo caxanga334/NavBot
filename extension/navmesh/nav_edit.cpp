@@ -667,8 +667,6 @@ void EmitSound(edict_t *player, const char* soundName) {
 ConVar sm_nav_show_compass( "sm_nav_show_compass", "0", FCVAR_CHEAT );
 void CNavMesh::DrawEditMode( void )
 {
-	extern IVDebugOverlay* debugoverlay;
-	VPROF( "CNavMesh::DrawEditMode" );
 	edict_t* ent = UTIL_GetListenServerEnt();
 	if (ent == NULL)
 		return;
@@ -676,9 +674,11 @@ void CNavMesh::DrawEditMode( void )
 	if ( player == nullptr || IsGenerating() )
 		return;
 
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 	// TODO: remove this when host_thread_mode 1 stops breaking NDEBUG_PERSIST_FOR_ONE_TICK overlays
 	static ConVarRef host_thread_mode( "host_thread_mode" );
 	host_thread_mode.SetValue( 0 );
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
 	const float maxRange = 1000.0f;		// 500
 
@@ -2099,6 +2099,8 @@ void CNavMesh::CommandNavEndShiftXY( void )
 //--------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_shift, "Shifts the selected areas by the specified amount", FCVAR_CHEAT )
 {
+	DECLARE_COMMAND_ARGS;
+
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
@@ -3575,6 +3577,8 @@ CON_COMMAND(sm_nav_offmesh_list_all, "List all available 'Link' connection types
 
 CON_COMMAND_F(sm_nav_offmesh_connect, "Connect nav areas via special link connections.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_nav_offmesh_connect <offmesh type ID> \n");
@@ -3656,6 +3660,8 @@ void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 
 CON_COMMAND_F(sm_nav_offmesh_disconnect, "Disconnect nav areas via special link connections.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_nav_offmesh_disconnect <link type ID> \n");
@@ -3831,6 +3837,8 @@ public:
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_radius, "Adds all areas in a radius to the selection set", FCVAR_CHEAT )
 {
+	DECLARE_COMMAND_ARGS;
+
 	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;
 
@@ -4712,4 +4720,55 @@ CON_COMMAND_F(sm_nav_scripting_list_conditions, "Lists all available conditions 
 	{
 		Msg("%i : %s \n", i, navscripting::ToggleCondition::TCTypeToString(static_cast<navscripting::ToggleCondition::TCTypes>(i)));
 	}
+}
+
+CON_COMMAND_F(sm_nav_select_potentially_obstructed_areas, "Selects nav areas that are obstructed.", FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		Msg("[SM] Usage: sm_nav_select_potentially_obstructed_areas <trace lower limit> <trace upper limit> <radius> \n");
+		return;
+	}
+
+	float height1 = atof(args[1]);
+	float height2 = atof(args[2]);
+	float radius = atof(args[3]);
+
+	if (height1 < 1.0f || height2 < 5.0f || radius < 32.0f)
+	{
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	TheNavMesh->ClearSelectedSet();
+	TheNavMesh->SetMarkedArea(nullptr);
+
+	const Vector& origin = gamehelpers->EdictOfIndex(1)->GetCollideable()->GetCollisionOrigin();
+
+	auto addObstructedAreasToSelectedSet = [&height1, &height2, &radius, &origin](CNavArea* area) -> bool {
+		const Vector& center = area->GetCenter();
+
+		if ((origin - center).Length() <= radius)
+		{
+			Vector start = center;
+			Vector end = center;
+			start.z += height2;
+			end.z += height1;
+			
+			trace_t tr;
+			trace::line(start, end, MASK_PLAYERSOLID, tr);
+
+			if (tr.DidHit())
+			{
+				TheNavMesh->AddToSelectedSet(area);
+			}
+		}
+
+		return true;
+	};
+
+	CNavMesh::ForAllAreas<decltype(addObstructedAreasToSelectedSet)>(addObstructedAreasToSelectedSet);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
 }

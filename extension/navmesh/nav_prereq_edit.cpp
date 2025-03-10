@@ -27,6 +27,8 @@ CON_COMMAND_F(sm_nav_prereq_create, "Creates a new prerequisite.", FCVAR_CHEAT)
 
 CON_COMMAND_F(sm_nav_prereq_mark, "Selects/Deselects a nav prerequisite.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	auto& selected = TheNavMesh->GetSelectedPrerequisite();
 
 	if (selected)
@@ -102,6 +104,8 @@ CON_COMMAND_F(sm_nav_prereq_set_origin, "Updates the selected nav prerequisite o
 
 CON_COMMAND_F(sm_nav_prereq_set_bounds, "Updates the selected nav prerequisite bounds.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 6)
 	{
 		Msg("[SM] Usage: sm_nav_prereq_set_bounds <mins x> <mins y> <mins z> <maxs x> <maxs y> <maxs z>\n");
@@ -135,6 +139,8 @@ CON_COMMAND_F(sm_nav_prereq_set_bounds, "Updates the selected nav prerequisite b
 
 CON_COMMAND_F(sm_nav_prereq_set_team, "Updates the selected nav prerequisite assigned team.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_prereq_set_team <team index>\n");
@@ -158,6 +164,8 @@ CON_COMMAND_F(sm_nav_prereq_set_team, "Updates the selected nav prerequisite ass
 
 CON_COMMAND_F(sm_nav_prereq_set_task, "Updates the selected nav prerequisite goal task.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_prereq_set_task <task id>\n");
@@ -209,6 +217,8 @@ CON_COMMAND_F(sm_nav_prereq_set_goal_position, "Updates the selected nav prerequ
 
 CON_COMMAND_F(sm_nav_prereq_set_goal_entity, "Updates the selected nav prerequisite task goal entity.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_prereq_set_goal_entity <entity index>\n");
@@ -243,6 +253,8 @@ CON_COMMAND_F(sm_nav_prereq_set_goal_entity, "Updates the selected nav prerequis
 
 CON_COMMAND_F(sm_nav_prereq_set_goal_data, "Updates the selected nav prerequisite task goal data.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_prereq_set_goal_data <value>\n");
@@ -265,6 +277,8 @@ CON_COMMAND_F(sm_nav_prereq_set_goal_data, "Updates the selected nav prerequisit
 
 CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prerequisite toggle condition", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_nav_prereq_set_toggle_condition clear\n   Clears all toggle condition data. \n");

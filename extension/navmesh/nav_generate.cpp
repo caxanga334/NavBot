@@ -9,6 +9,10 @@
 // Auto-generate a Navigation Mesh by sampling the current map
 // Author: Michael S. Booth (mike@turtlerockstudios.com), 2003
 
+#include <algorithm>
+#include <vector>
+#include <unordered_set>
+
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
@@ -29,6 +33,10 @@
 #ifdef TERROR
 #include "func_simpleladder.h"
 #endif
+
+#undef min
+#undef max
+#undef clamp
 
 enum { MAX_BLOCKED_AREAS = 256 };
 static unsigned int blockedID[ MAX_BLOCKED_AREAS ];
@@ -839,7 +847,7 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 				corner[SOUTH_EAST].y = corner[NORTH_EAST].y + obstacleEndDist;
 				corner[NORTH_WEST].y += obstacleStartDist;
 				corner[NORTH_EAST].y += obstacleStartDist;
-				::V_swap( obstacleZ[0], obstacleZ[1] );			// swap left and right Z heights for obstacle so we can run common code below
+				std::swap(obstacleZ[0], obstacleZ[1]); // swap left and right Z heights for obstacle so we can run common code below
 				break;
 			case EAST:
 				corner[NORTH_EAST].x = corner[NORTH_WEST].x + obstacleEndDist;
@@ -852,7 +860,7 @@ void CNavMesh::RaiseAreasWithInternalObstacles()
 				corner[SOUTH_WEST].x = corner[SOUTH_EAST].x - obstacleEndDist;				
 				corner[NORTH_EAST].x -= obstacleStartDist;
 				corner[SOUTH_EAST].x -= obstacleStartDist;
-				::V_swap( obstacleZ[0], obstacleZ[1] );			// swap left and right Z heights for obstacle so we can run common code below
+				std::swap( obstacleZ[0], obstacleZ[1] ); // swap left and right Z heights for obstacle so we can run common code below
 				break;
 			}
 
@@ -1046,8 +1054,8 @@ bool CNavMesh::CreateObstacleTopAreaIfNecessary( CNavArea *area, CNavArea *areaO
 			// for south and west, swap "start" and "end" values of edges so we can use common code below
 			if ( dir == SOUTH || dir == WEST )
 			{
-				::V_swap( obstacleHeightStart, obstacleHeightEnd );
-				::V_swap( zStart, zEnd );
+				std::swap( obstacleHeightStart, obstacleHeightEnd );
+				std::swap( zStart, zEnd );
 			}					
 
 			// Enforce min area width for new area
@@ -1122,71 +1130,72 @@ void CNavMesh::RemoveOverlappingObstacleTopAreas()
 	// them so there is generally a path to get over any obstacle.
 
 	// make a list of just the obstacle top areas to reduce the N of the N squared operation we're about to do
-	CUtlVector<CNavArea *> vecObstacleTopAreas;
+	std::vector<CNavArea*> obstacleTopAreas;
+	obstacleTopAreas.reserve(2048);
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
 		CNavArea *area = TheNavAreas[ it ];
 		if ( area->GetAttributes() & NAV_MESH_OBSTACLE_TOP ) 
 		{
-			vecObstacleTopAreas.AddToTail( area );
+			obstacleTopAreas.push_back(area);
 		}
 	}
 
 	// look at every pair of obstacle top areas
-	CUtlVector<CNavArea *> vecAreasToRemove;
-	FOR_EACH_VEC( vecObstacleTopAreas, it )
-	{
-		CNavArea *area = vecObstacleTopAreas[it];
+	std::unordered_set<unsigned int> areasToRemove;
+	areasToRemove.reserve(obstacleTopAreas.size() * 2);
 
+	for (size_t it = 0; it < obstacleTopAreas.size(); it++)
+	{
+		CNavArea* area = obstacleTopAreas[it];
 		Vector normal, otherNormal;
-		area->ComputeNormal( &normal );
-		area->ComputeNormal( &otherNormal, true );
+		area->ComputeNormal(&normal);
+		area->ComputeNormal(&otherNormal, true);
 
 		// Remove any obstacle areas that are steep enough to be jump areas
-		float lowestNormalZ = MIN( normal.z, otherNormal.z );
-		if ( lowestNormalZ < sm_nav_slope_limit.GetFloat() )
+		float lowestNormalZ = MIN(normal.z, otherNormal.z);
+		if (lowestNormalZ < sm_nav_slope_limit.GetFloat())
 		{
-			vecAreasToRemove.AddToTail( area );
+			areasToRemove.insert(area->GetID());
 		}
 
-		for ( int it2 = it+1; it2 < vecObstacleTopAreas.Count(); it2++ )
+		for (size_t it2 = it + 1; it2 < obstacleTopAreas.size(); it2++)
 		{
-			CNavArea *areaOther = vecObstacleTopAreas[it2];
-			if ( area->IsOverlapping( areaOther ) )
-			{		
-				if ( area->Contains( areaOther ) )
+			CNavArea* areaOther = obstacleTopAreas[it2];
+			if (area->IsOverlapping(areaOther))
+			{
+				if (area->Contains(areaOther))
 				{
 					// if one entirely contains the other, mark the other for removal
-					vecAreasToRemove.AddToTail( areaOther );					
+					areasToRemove.insert(areaOther->GetID());
 				}
-				else if ( areaOther->Contains( area ) )
+				else if (areaOther->Contains(area))
 				{
 					// if one entirely contains the other, mark the other for removal
-					vecAreasToRemove.AddToTail( area );
+					areasToRemove.insert(area->GetID());
 				}
 				else
 				{
 					// if they overlap without one being a superset of the other, just remove the smaller area
-					vecAreasToRemove.AddToTail( ( area->GetSizeX() * area->GetSizeY() > areaOther->GetSizeX()
-							* areaOther->GetSizeY() ? areaOther : area ) );
+					areasToRemove.insert((area->GetSizeX()* area->GetSizeY() > areaOther->GetSizeX()
+						* areaOther->GetSizeY() ? areaOther->GetID() : area->GetID()));
 				}
 			}
 		}
 	}
 
-	// now go delete all the areas we want to remove
-	while ( vecAreasToRemove.Count() > 0 )
+	for (auto& areaID : areasToRemove)
 	{
-		CNavArea *areaToDelete = vecAreasToRemove[0];
-		RemoveFromSelectedSet( areaToDelete );
-		TheNavMesh->OnEditDestroyNotify( areaToDelete );
-		TheNavAreas.FindAndRemove( areaToDelete );
-		TheNavMesh->DestroyArea( areaToDelete );
+		CNavArea* areaToDelete = TheNavMesh->GetNavAreaByID(areaID);
 
-		// remove duplicates so we don't double-delete
-		while ( vecAreasToRemove.FindAndRemove( areaToDelete ) );
+		if (areaToDelete)
+		{
+			RemoveFromSelectedSet(areaToDelete);
+			TheNavMesh->OnEditDestroyNotify(areaToDelete);
+			TheNavAreas.FindAndRemove(areaToDelete);
+			TheNavMesh->DestroyArea(areaToDelete);
+		}
 	}
-
 }
 
 static void CommandNavCheckStairs( void )
@@ -3498,7 +3507,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 	static CUtlVector<CNavArea *> s_unlitAreas;
 	static CUtlVector<CNavArea *> s_unlitSeedAreas;
 
-	static ConVarRef host_thread_mode( "host_thread_mode" );
+	// static ConVarRef host_thread_mode( "host_thread_mode" );
 
 	switch( m_generationState )
 	{
@@ -3707,7 +3716,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case FIND_LIGHT_INTENSITY:
 		{
-			host_thread_mode.SetValue( 0 );	// need non-threaded server for light calcs
+			// host_thread_mode.SetValue( 0 );	// need non-threaded server for light calcs
 			if ( !s_unlitAreas.Count() || !UTIL_GetListenServerEnt() )
 			{
 				Msg( "Finding light intensity...DONE\n" );
@@ -3814,9 +3823,9 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 
 			m_generationState = SAVE_NAV_MESH;
 			m_generationIndex = 0;
-			ConVarRef mat_queue_mode( "mat_queue_mode" );
-			mat_queue_mode.SetValue( -1 );
-			host_thread_mode.SetValue( m_hostThreadModeRestoreValue );	// restore this
+			// ConVarRef mat_queue_mode( "mat_queue_mode" );
+			// mat_queue_mode.SetValue( -1 );
+			// host_thread_mode.SetValue( m_hostThreadModeRestoreValue );	// restore this
 			return true;
 		}
 
@@ -4295,11 +4304,19 @@ bool CNavMesh::SampleStep( void )
 					}
 				}
 
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 				// Don't generate nodes if we spill off the end of the world onto skybox
-				if ( result.surface.flags & ( SURF_SKY|SURF_SKY2D ) )
+				if (result.surface.flags & (SURF_SKY | SURF_SKY2D))
 				{
 					return true;
 				}
+#else
+				// Don't generate nodes if we spill off the end of the world onto skybox
+				if (result.surface.flags & (SURF_SKY))
+				{
+					return true;
+				}
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
 				// If we're incrementally generating, don't overlap existing nav areas.
 				Vector testPos( to );
@@ -4545,6 +4562,8 @@ CON_COMMAND_F(sm_nav_subdivide, "Subdivides all selected areas.", FCVAR_GAMEDLL 
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
+	DECLARE_COMMAND_ARGS;
 
 	TheNavMesh->CommandNavSubdivide( args );
 }
