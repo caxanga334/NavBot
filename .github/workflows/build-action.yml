@@ -72,6 +72,7 @@ jobs:
           mkdir -p ${{ env.USER_BIN_PATH }}
           cd ${{ env.USER_BIN_PATH }}
           curl -LO https://github.com/mozilla/dump_syms/releases/download/v2.3.4/dump_syms-x86_64-unknown-linux-gnu.tar.xz
+          tar -xvf dump_syms-x86_64-unknown-linux-gnu.tar.xz
           mv dump_syms-x86_64-unknown-linux-gnu/dump_syms ./dump_syms
           echo "${{ env.USER_BIN_PATH }}" >> $GITHUB_PATH
 
