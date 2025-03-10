@@ -442,8 +442,10 @@ BuildScripts = [
   'PackageScript',
 ]
 
-if builder.options.breakpadupload == '1':
-  BuildScripts += ['BreakpadSymbols']
+
 
 builder.Build(BuildScripts, { 'Extension': Extension })
 
+if builder.options.breakpadupload == '1':
+  BreakPadScripts = ['BreakpadSymbols']
+  builder.Build(BreakPadScripts, { 'Extension': Extension })

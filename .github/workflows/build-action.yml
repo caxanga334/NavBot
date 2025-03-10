@@ -43,6 +43,8 @@ jobs:
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
+    env:
+      USER_BIN_PATH: ${{ github.workspace }}/bins
 
     steps:
       - name: Install Packages (Linux)
@@ -63,6 +65,25 @@ jobs:
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install git+https://github.com/alliedmodders/ambuild
+
+      - name: Install Breakpad dump_syms (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p ${{ env.USER_BIN_PATH }}
+          cd ${{ env.USER_BIN_PATH }}
+          curl -LO https://github.com/mozilla/dump_syms/releases/download/v2.3.4/dump_syms-x86_64-unknown-linux-gnu.tar.xz
+          mv dump_syms-x86_64-unknown-linux-gnu/dump_syms ./dump_syms
+          echo "${{ env.USER_BIN_PATH }}" >> $GITHUB_PATH
+
+      - name: Install Breakpad dump_syms (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          mkdir -p ${{ env.USER_BIN_PATH }}
+          cd ${{ env.USER_BIN_PATH }}
+          curl -LO https://github.com/mozilla/dump_syms/releases/download/v2.3.4/dump_syms-x86_64-pc-windows-msvc.zip
+          unzip dump_syms-x86_64-pc-windows-msvc.zip
+          echo "${{ env.USER_BIN_PATH }}" >> $GITHUB_PATH
 
       - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
         uses: actions/checkout@v4.2.2
@@ -102,7 +123,7 @@ jobs:
         run: |
           mkdir build
           cd build
-          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --sm-path="${{ github.workspace }}/sourcemod" --mms-path="${{ github.workspace }}/mmsource" --enable-optimize --targets "${{ matrix.ambuild_target }}" --symbol-files
+          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --sm-path="${{ github.workspace }}/sourcemod" --mms-path="${{ github.workspace }}/mmsource" --enable-optimize --targets "${{ matrix.ambuild_target }}" --symbol-files --breakpad-upload
           ambuild
 
       - name: Get commit SHA
