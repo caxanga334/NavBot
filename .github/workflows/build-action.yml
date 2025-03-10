@@ -86,7 +86,7 @@ jobs:
           Invoke-WebRequest -Uri 'https://github.com/mozilla/dump_syms/releases/download/v2.3.4/dump_syms-x86_64-pc-windows-msvc.zip' -OutFile 'dump_syms-x86_64-pc-windows-msvc.zip'
           7z x dump_syms-x86_64-pc-windows-msvc.zip
           echo "${{ env.USER_BIN_PATH }}" >> "$GITHUB_PATH"
-          ls -lah
+          ls
 
       - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
         uses: actions/checkout@v4.2.2
