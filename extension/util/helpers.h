@@ -18,7 +18,10 @@ class ServerClass;
 
 namespace UtilHelpers
 {
-	edict_t* BaseEntityToEdict(CBaseEntity* pEntity);
+	inline edict_t* BaseEntityToEdict(CBaseEntity* pEntity)
+	{
+		return servergameents->BaseEntityToEdict(pEntity);
+	}
 	edict_t* GetEdict(int entity);
 	CBaseEntity* GetEntity(int entity);
 	bool IndexToAThings(int num, CBaseEntity** pEntData, edict_t** pEdictData);
@@ -51,7 +54,8 @@ namespace UtilHelpers
 	}
 
 	int IndexOfEntity(CBaseEntity* entity);
-	bool IsPlayer(CBaseEntity* entity);
+	bool IsPlayerIndex(const int index);
+	inline bool IsPlayer(CBaseEntity* entity) { return IsPlayerIndex(IndexOfEntity(entity)); }
 	// Returns whether or not an entity has a valid networkable edict.
 	bool IsEntNetworkable(int index);
 	// Returns whether or not an entity has a valid networkable edict.
@@ -130,7 +134,6 @@ namespace UtilHelpers
 		return GetBonePosition(entity, hdr, bone, origin, angles);
 	}
 
-	bool IsPlayerIndex(const int index);
 	bool FindNestedDataTable(SendTable* pTable, const char* name);
 	float GetEntityGravity(int entity);
 	MoveType_t GetEntityMoveType(int entity);

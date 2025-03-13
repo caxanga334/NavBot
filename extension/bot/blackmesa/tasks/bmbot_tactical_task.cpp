@@ -9,6 +9,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
 
 AITask<CBlackMesaBot>* CBlackMesaBotTacticalTask::InitialNextTask(CBlackMesaBot* bot)
 {
@@ -48,6 +49,13 @@ TaskResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnTaskUpdate(CBlackMesaBot*
 		{
 			return PauseFor(new CBlackMesaBotDeployTripminesTask(pos), "Opportunistically deploying tripmines!");
 		}
+	}
+
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+	if (threat && bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat.get()) != ANSWER_NO)
+	{
+		return PauseFor(new CBotSharedPursueAndDestroyTask(bot, threat->GetEntity()), "Pursuing visible threat!");
 	}
 
 	return Continue();

@@ -111,8 +111,10 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 	const float range = (eyePos - entPos).Length();
 	m_inRange = (m_prereq->GetFloatData() < 0.5f || range <= m_prereq->GetFloatData());
 
-	auto passFunc = [targetEnt](int index, CBaseEntity* entity, edict_t* edict, const int contentMask) -> bool {
-		if (entity == targetEnt)
+	auto passFunc = [targetEnt](IHandleEntity* pHandleEntity, int contentsMask) -> bool {
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+		if (pEntity == targetEnt)
 		{
 			return false;
 		}
@@ -120,7 +122,7 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 		return true;
 	};
 
-	trace::CTraceFilterSimple filter(bot->GetEntity(), COLLISION_GROUP_NONE, passFunc);
+	trace::CTraceFilterSimple filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 	trace_t tr;
 	trace::line(eyePos, entPos, MASK_SHOT, &filter, tr);
 

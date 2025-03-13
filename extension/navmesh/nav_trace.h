@@ -19,22 +19,21 @@ public:
 		m_flags = flags;
 	}
 
-	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 
 private:
 	unsigned int m_flags;
 };
 
-class CTraceFilterTransientAreas : public trace::CTraceFilterSimple
+class CTraceFilterTransientAreas : public trace::CTraceFilterNoNPCsOrPlayers
 {
 public:
 	CTraceFilterTransientAreas(CBaseEntity* passEnt, int collgroup) :
-		trace::CTraceFilterSimple(passEnt, collgroup)
+		trace::CTraceFilterNoNPCsOrPlayers(passEnt, collgroup)
 	{
-
 	}
 
-	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 };
 
 #endif // !NAV_TRACE_H_

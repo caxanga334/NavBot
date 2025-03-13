@@ -11,43 +11,14 @@ struct edict_t;
 
 namespace trace
 {
+	// Converts an IHandleEntity* to CBaseEntity*
+	const CBaseEntity* EntityFromEntityHandle(const IHandleEntity* pConstHandleEntity);
+	// Converts an IHandleEntity* to CBaseEntity*
+	CBaseEntity* EntityFromEntityHandle(IHandleEntity* pHandleEntity);
+	// Converts an IHandleEntity* to CBaseEntity*, edict_t* and entity index
+	void ExtractHandleEntity(IHandleEntity* pHandleEntity, CBaseEntity** outEntity, edict_t** outEdict, int& entity);
 
-	/**
-	 * @brief Extended trace filter interface that provides a custom should hit function with entity index, BE and Edict pointers.
-	 */
-	class IExtendedTraceFilter : public ITraceFilter
-	{
-	public:
-		/**
-		 * @brief Should the trace collide with this entity?
-		 * @param entity Entity index
-		 * @param pEntity CBaseEntity pointer
-		 * @param pEdict edict_t pointer
-		 * @param contentsMask Mask
-		 * @return true if the trace should collide, false otherwise
-		 * @note The entity will be NULL if colliding with a static prop!
-		 */
-		virtual bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) = 0;
-	};
-
-	class CBaseTraceFilter : public IExtendedTraceFilter
-	{
-	public:
-		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override
-		{
-			return true;
-		}
-
-		TraceType_t	GetTraceType() const override
-		{
-			return TRACE_EVERYTHING;
-		}
-
-	private:
-		bool ShouldHitEntity(IHandleEntity* pEntity, int contentsMask) override final;
-	};
-
-	class CTraceFilterSimple : public CBaseTraceFilter
+	class CTraceFilterSimple : public CTraceFilter
 	{
 	public:
 		CTraceFilterSimple()
@@ -79,7 +50,7 @@ namespace trace
 			m_extraHitFunc = extrafunc;
 		}
 
-		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+		bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 
 		void SetCollisionGroup(int group) { m_collisiongroup = group; }
 		void SetPassEntity(CBaseEntity* ent) { m_passEntity = ent; }
@@ -94,8 +65,24 @@ namespace trace
 
 	private:
 		CBaseEntity* m_passEntity;
-		std::function<bool(int, CBaseEntity*, edict_t*, const int)> m_extraHitFunc;
+		std::function<bool(IHandleEntity* pHandleEntity, int contentsMask)> m_extraHitFunc;
 		int m_collisiongroup;
+	};
+
+	class CTraceFilterOnlyNPCsAndPlayer : public CTraceFilterSimple
+	{
+	public:
+		CTraceFilterOnlyNPCsAndPlayer() :
+			CTraceFilterSimple(nullptr, COLLISION_GROUP_NONE)
+		{
+		}
+
+		CTraceFilterOnlyNPCsAndPlayer(CBaseEntity* pPass, int collisionGroup) :
+			CTraceFilterSimple(pPass, collisionGroup)
+		{
+		}
+
+		bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 	};
 
 	class CTraceFilterPlayersOnly : public CTraceFilterSimple
@@ -113,7 +100,7 @@ namespace trace
 			m_team = team;
 		}
 
-		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+		bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 
 		TraceType_t	GetTraceType() const override
 		{
@@ -132,7 +119,7 @@ namespace trace
 		{
 		}
 
-		bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+		bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 
 	private:
 	};

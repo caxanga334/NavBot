@@ -5,30 +5,32 @@
 #include "nav_mesh.h"
 #include "nav_trace.h"
 
-bool CTraceFilterWalkableEntities::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
+
+
+bool CTraceFilterWalkableEntities::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
-	if (CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
+	if (trace::CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(pHandleEntity, contentsMask))
 	{
-		return !TheNavMesh->IsEntityWalkable(pEntity, m_flags);
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+		return !(TheNavMesh->IsEntityWalkable(pEntity, m_flags));
 	}
 
 	return false;
 }
 
-bool CTraceFilterTransientAreas::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
+bool CTraceFilterTransientAreas::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
-	if (trace::CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
+	if (trace::CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(pHandleEntity, contentsMask))
 	{
-		if (entity > 0 && entity <= gpGlobals->maxClients)
-		{
-			return false; // players doesn't block areas
-		}
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
 
-		if (entity == 0)
+		if (gamehelpers->EntityToBCompatRef(pEntity) == 0)
 		{
 			return true; // always hit worldspawn
 		}
 
+		// TO-DO: Allow derived nav mesh classes to customize this
 		if (UtilHelpers::FClassnameIs(pEntity, "func_brush") ||
 			UtilHelpers::FClassnameIs(pEntity, "func_door*") ||
 			UtilHelpers::FClassnameIs(pEntity, "prop_dynamic*") ||

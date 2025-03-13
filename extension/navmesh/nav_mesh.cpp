@@ -1578,19 +1578,21 @@ public:
 	{
 	}
 
-	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override
 	{
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
 		if (pEntity != nullptr)
 		{
-			if (UtilHelpers::FClassnameIs(pEntity, "prop_door") || 
-				UtilHelpers::FClassnameIs(pEntity, "prop_door_rotating") || 
+			if (UtilHelpers::FClassnameIs(pEntity, "prop_door") ||
+				UtilHelpers::FClassnameIs(pEntity, "prop_door_rotating") ||
 				UtilHelpers::FClassnameIs(pEntity, "func_breakable"))
 			{
 				return false;
 			}
 		}
 
-		return BaseClass::ShouldHitEntity(entity, pEntity, pEdict, contentsMask);
+		return BaseClass::ShouldHitEntity(pHandleEntity, contentsMask);
 	}
 };
 

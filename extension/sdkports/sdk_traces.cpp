@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/sdkcalls.h>
+#include <util/entprops.h>
 #include <ISDKTools.h>
 #include <server_class.h>
 #include <sm_argbuffer.h>
@@ -11,12 +12,35 @@
 
 namespace trace
 {
-	inline static void ExtractHandleEntity(IHandleEntity* pHE, CBaseEntity** outEntity, edict_t** outEdict, int& entity)
+	const CBaseEntity* EntityFromEntityHandle(const IHandleEntity* pConstHandleEntity)
 	{
-		IServerUnknown* unk = reinterpret_cast<IServerUnknown*>(pHE);
-		IServerNetworkable* net = unk->GetNetworkable();
+		IHandleEntity* pHandleEntity = const_cast<IHandleEntity*>(pConstHandleEntity);
 
-		if (staticpropmgr->IsStaticProp(pHE))
+		if (staticpropmgr->IsStaticProp(pHandleEntity))
+		{
+			return nullptr;
+		}
+
+		IServerUnknown* pUnk = reinterpret_cast<IServerUnknown*>(pHandleEntity);
+		return pUnk->GetBaseEntity();
+	}
+
+	CBaseEntity* EntityFromEntityHandle(IHandleEntity* pHandleEntity)
+	{
+		if (staticpropmgr->IsStaticProp(pHandleEntity))
+		{
+			return nullptr;
+		}
+
+		IServerUnknown* pUnk = reinterpret_cast<IServerUnknown*>(pHandleEntity);
+		return pUnk->GetBaseEntity();
+	}
+
+	void ExtractHandleEntity(IHandleEntity* pHandleEntity, CBaseEntity** outEntity, edict_t** outEdict, int& entity)
+	{
+		CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+
+		if (!pEntity) // static prop
 		{
 			entity = INVALID_EHANDLE_INDEX;
 			*outEntity = nullptr;
@@ -24,34 +48,27 @@ namespace trace
 			return;
 		}
 
-		if (net != nullptr)
-		{
-			*outEdict = net->GetEdict();
-		}
-
-		*outEntity = unk->GetBaseEntity();
-		entity = gamehelpers->EntityToBCompatRef(unk->GetBaseEntity());
+		*outEntity = pEntity;
+		*outEdict = servergameents->BaseEntityToEdict(pEntity);
+		entity = gamehelpers->EntityToBCompatRef(pEntity);
 	}
 
-	inline static bool StandardFilterRules(edict_t* pEntity, int contentsMask)
+	static bool StandardFilterRules(IHandleEntity* pHandleEntity, int contentsMask)
 	{
-		// For now we get the ICollideable from edicts
-		if (pEntity == nullptr)
+		CBaseEntity* pCollide = EntityFromEntityHandle(pHandleEntity);
+
+		// Static prop case
+		if (!pCollide)
 		{
-			return false;
+			return true;
 		}
 
-		ICollideable* collide = pEntity->GetCollideable();
+		ICollideable* collider = reinterpret_cast<IServerEntity*>(pCollide)->GetCollideable();
 
-		if (collide == nullptr)
-		{
-			return false;
-		}
+		SolidType_t solid = collider->GetSolid();
+		const model_t* pModel = collider->GetCollisionModel();
 
-		SolidType_t solid = collide->GetSolid();
-		auto model = collide->GetCollisionModel();
-
-		if ((modelinfo->GetModelType(model) != mod_brush) || (solid != SOLID_BSP && solid != SOLID_VPHYSICS))
+		if (modelinfo->GetModelType(pModel) != static_cast<int>(modtype_t::mod_brush) || (solid != SolidType_t::SOLID_BSP && solid != SolidType_t::SOLID_VPHYSICS))
 		{
 			if ((contentsMask & CONTENTS_MONSTER) == 0)
 			{
@@ -59,50 +76,47 @@ namespace trace
 			}
 		}
 
-		entities::HBaseEntity baseentity(pEntity);
+		entities::HBaseEntity baseentity(pCollide);
 
 		// This code is used to cull out tests against see-thru entities
-		if (!(contentsMask & CONTENTS_WINDOW) && baseentity.GetRenderMode() != kRenderNormal)
-		{
+		if (!(contentsMask & CONTENTS_WINDOW) && baseentity.IsTransparent())
 			return false;
-		}
 
 		// FIXME: this is to skip BSP models that are entities that can be 
 		// potentially moved/deleted, similar to a monster but doors don't seem to 
 		// be flagged as monsters
 		// FIXME: the FL_WORLDBRUSH looked promising, but it needs to be set on 
 		// everything that's actually a worldbrush and it currently isn't
-		if (!(contentsMask & CONTENTS_MOVEABLE) && (baseentity.GetMoveType() == MOVETYPE_PUSH))// !(touch->flags & FL_WORLDBRUSH) )
-		{
+		if (!(contentsMask & CONTENTS_MOVEABLE) && (baseentity.GetMoveType() == MoveType_t::MOVETYPE_PUSH))// !(touch->flags & FL_WORLDBRUSH) )
 			return false;
-		}
 		
 		return true;
 	}
 
-	inline static bool PassServerEntityFilter(CBaseEntity* pTouch, CBaseEntity* pPass)
+	inline static bool PassServerEntityFilter(IHandleEntity* pTouch, IHandleEntity* pPass)
 	{
-		if (!pTouch || !pPass)
+		if (!pPass)
 			return true;
 
 		if (pTouch == pPass)
 			return false;
 
-		entities::HBaseEntity hTouch(pTouch);
+		CBaseEntity* pEntTouch = EntityFromEntityHandle(pTouch);
+		CBaseEntity* pEntPass = EntityFromEntityHandle(pPass);
+		if (!pEntTouch || !pEntPass)
+			return true;
+
+		entities::HBaseEntity bTouch(pEntTouch);
+		entities::HBaseEntity bPass(pEntPass);
 
 		// don't clip against own missiles
-		if (hTouch.GetOwnerEntity() == pPass)
-		{
+		if (bTouch.GetOwnerEntity() == pEntPass)
 			return false;
-		}
 
-		entities::HBaseEntity hPass(pPass);
-		
 		// don't clip against owner
-		if (hPass.GetOwnerEntity() == pTouch)
-		{
+		if (bPass.GetOwnerEntity() == pEntTouch)
 			return false;
-		}
+
 
 		return true;
 	}
@@ -281,90 +295,59 @@ namespace trace
 		return true;
 	}
 
-	bool CBaseTraceFilter::ShouldHitEntity(IHandleEntity* pEntity, int contentsMask)
+	bool CTraceFilterSimple::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
-		int entityindex = INVALID_EHANDLE_INDEX;
-		CBaseEntity* baseentity = nullptr;
-		edict_t* edict = nullptr;
-
-		ExtractHandleEntity(pEntity, &baseentity, &edict, entityindex);
-
-		return ShouldHitEntity(entityindex, baseentity, edict, contentsMask);
-	}
-
-	bool CTraceFilterPlayersOnly::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
-	{
-		if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
-		{
-			if (entity > 0 && entity <= gpGlobals->maxClients)
-			{
-				if (m_team >= 0 && pEdict != nullptr)
-				{
-					IPlayerInfo* info = playerinfomanager->GetPlayerInfo(pEdict);
-
-					if (info != nullptr && info->GetTeamIndex() == m_team)
-					{
-						return false; // don't hit players from this team
-					}
-				}
-
-				return true; // Hit players
-			}
-		}
-
-		return false; // Don't hit anything else
-	}
-
-	bool CTraceFilterSimple::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
-	{
-		if (pEntity == nullptr)
+		if (!StandardFilterRules(pHandleEntity, contentsMask))
 		{
 			return false;
 		}
 
-		if (pEdict != nullptr && !StandardFilterRules(pEdict, contentsMask))
+		if (m_passEntity)
 		{
-			return false;
-		}
+			IHandleEntity* pPass = reinterpret_cast<IHandleEntity*>(m_passEntity);
 
-		if (m_passEntity != nullptr)
-		{
-			if (!PassServerEntityFilter(pEntity, m_passEntity))
+			if (!PassServerEntityFilter(pHandleEntity, pPass))
 			{
 				return false;
 			}
 		}
 
-		// Virtual call to CBaseEntity::ShouldCollide
+		CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+
+		if (!pEntity)
+		{
+			return false;
+		}
+
 		if (!CBaseEntity_ShouldCollide(pEntity, m_collisiongroup, contentsMask))
 		{
 			return false;
 		}
 
-		if (pEdict != nullptr && pEdict->GetCollideable() != nullptr)
-		{
-			CGameRules* gamerules = reinterpret_cast<CGameRules*>(g_pSDKTools->GetGameRules());
+		CGameRules* pGameRules = reinterpret_cast<CGameRules*>(g_pSDKTools->GetGameRules());
 
-			if (gamerules == nullptr)
+		if (pGameRules)
+		{
+			ICollideable* collider = reinterpret_cast<IServerEntity*>(pEntity)->GetCollideable();
+
+			if (!sdkcalls->CGameRules_ShouldCollide(pGameRules, m_collisiongroup, collider->GetCollisionGroup()))
 			{
-				// If gamerules is not available from SDKTools, fallback to our local implementation
-				if (!CGameRules_ShouldCollide(m_collisiongroup, pEdict->GetCollideable()->GetCollisionGroup()))
-				{
-					return false;
-				}
+				return false;
 			}
-			else
+		}
+		else
+		{
+			ICollideable* collider = reinterpret_cast<IServerEntity*>(pEntity)->GetCollideable();
+
+			if (!CGameRules_ShouldCollide(m_collisiongroup, collider->GetCollisionGroup()))
 			{
-				if (!sdkcalls->CGameRules_ShouldCollide(gamerules, m_collisiongroup, pEdict->GetCollideable()->GetCollisionGroup()))
-				{
-					return false;
-				}
+				return false;
 			}
 		}
 
 		if (m_extraHitFunc)
 		{
-			if (!m_extraHitFunc(entity, pEntity, pEdict, contentsMask))
+			if (!m_extraHitFunc(pHandleEntity, contentsMask))
 			{
 				return false;
 			}
@@ -373,61 +356,121 @@ namespace trace
 		return true;
 	}
 
-	inline static bool IsNPC(CBaseEntity* npc)
+	bool trace::CTraceFilterOnlyNPCsAndPlayer::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
-		// New gamehelpers function, see: https://github.com/alliedmodders/sourcemod/commit/7df2f8e0457ce00426f8fa414166db41939c3efd
-		// This will make navbot require a very recent build of SM 1.12
-		ServerClass* pServerClass = UtilHelpers::FindEntityServerClass(npc);
-
-		if (pServerClass == nullptr)
+		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
+			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+
+			if (!pEntity)
+			{
+				return false;
+			}
+
+#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_CSGO
+			// CSS/CSGO: Hostages doesn't derive from CAI_BaseNPC class
+			if (UtilHelpers::FClassnameIs(pEntity, "hostage_entity"))
+			{
+				return true;
+			}
+#endif // SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_CSGO
+
+			int index = gamehelpers->EntityToBCompatRef(pEntity);
+
+			// is player
+			if (index > 0 && index <= gpGlobals->maxClients)
+			{
+				return true;
+			}
+
+			datamap_t* pDataMap = gamehelpers->GetDataMap(pEntity);
+			SourceMod::sm_datatable_info_t info;
+
+			if (pDataMap && gamehelpers->FindDataMapInfo(pDataMap, "m_NPCState", &info))
+			{
+				// if m_NPCState exists, this entity derives from CAI_BaseNPC
+				return true;
+			}
+
 			return false;
 		}
 
-		if (UtilHelpers::HasDataTable(pServerClass->m_pTable, "DT_AI_BaseNPC"))
-		{
-			return true;
-		}
-
-#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_CSGO
-		// CS Hostages
-		if (UtilHelpers::HasDataTable(pServerClass->m_pTable, "DT_CHostage"))
-		{
-			return true;
-		}
-#endif // SOURCE_ENGINE == SE_CSS
-
-#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_LEFT4DEAD || SOURCE_ENGINE == SE_LEFT4DEAD2
-		// Also ignore NextBot NPCs
-		if (UtilHelpers::HasDataTable(pServerClass->m_pTable, "DT_NextBot"))
-		{
-			return true;
-		}
-#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_LEFT4DEAD || SOURCE_ENGINE == SE_LEFT4DEAD2
-		
 		return false;
 	}
 
-	bool CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
+	bool trace::CTraceFilterPlayersOnly::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
-		if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
+		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
-			// Don't hit players
-			if (entity > 0 && entity <= gpGlobals->maxClients)
+			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+
+			if (!pEntity)
 			{
 				return false;
 			}
 
-			// Don't hit NPCs
-			if (IsNPC(pEntity))
+			int index = gamehelpers->EntityToBCompatRef(pEntity);
+
+			// is player
+			if (index > 0 && index <= gpGlobals->maxClients)
 			{
-				return false;
+				if (m_team >= 0)
+				{
+					if (entityprops::GetEntityTeamNum(pEntity) == m_team)
+					{
+						// don't hit players from the passed team index
+						return false;
+					}
+				}
+
+				return true;
 			}
 
-			return true; // hit else
+			return false;
 		}
 
-		return false; // base class didn't hit
+		return false;
+	}
+
+	bool trace::CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	{
+		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+		{
+			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+
+			if (!pEntity)
+			{
+				return false;
+			}
+
+#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_CSGO
+			if (UtilHelpers::FClassnameIs(pEntity, "hostage_entity"))
+			{
+				return false;
+			}
+#endif // SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_CSGO
+
+			int index = gamehelpers->EntityToBCompatRef(pEntity);
+
+			// is player
+			if (index > 0 && index <= gpGlobals->maxClients)
+			{
+				return false;
+			}
+
+			datamap_t* pDataMap = gamehelpers->GetDataMap(pEntity);
+			SourceMod::sm_datatable_info_t info;
+
+			if (pDataMap && gamehelpers->FindDataMapInfo(pDataMap, "m_NPCState", &info))
+			{
+				// if m_NPCState exists, this entity derives from CAI_BaseNPC
+				return false;
+			}
+
+			return true;
+		}
+
+		return false;
 	}
 }
 

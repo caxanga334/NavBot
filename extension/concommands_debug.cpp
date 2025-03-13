@@ -24,10 +24,18 @@
 #include <util/sdkcalls.h>
 #include <util/entprops.h>
 #include <sm_argbuffer.h>
+#include <am-platform.h>
 
 CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 {
 	Msg("--- BEGIN NavBot Info ---\n");
+
+#if defined(KE_ARCH_X64)
+	Msg("Arch: x86-64\n");
+#elif defined(KE_ARCH_X86)
+	Msg("Arch: x86\n");
+#endif // KE_ARCH_X64
+
 	Msg("Extension Version: %s\n", SMEXT_CONF_VERSION);
 	Msg("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
 	Msg("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");

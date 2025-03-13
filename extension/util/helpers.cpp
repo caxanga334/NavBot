@@ -22,20 +22,6 @@ SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013
 
 #endif 
 
-
-edict_t* UtilHelpers::BaseEntityToEdict(CBaseEntity* pEntity)
-{
-	IServerUnknown* pUnk = (IServerUnknown*)pEntity;
-	IServerNetworkable* pNet = pUnk->GetNetworkable();
-
-	if (!pNet)
-	{
-		return nullptr;
-	}
-
-	return pNet->GetEdict();
-}
-
 edict_t* UtilHelpers::GetEdict(int entity)
 {
 
@@ -103,11 +89,6 @@ bool UtilHelpers::IndexToAThings(int num, CBaseEntity** pEntData, edict_t** pEdi
 int UtilHelpers::IndexOfEntity(CBaseEntity* entity)
 {
 	return gamehelpers->EntityToBCompatRef(entity);
-}
-
-bool UtilHelpers::IsPlayer(CBaseEntity* entity)
-{
-	return IsPlayerIndex(IndexOfEntity(entity));
 }
 
 bool UtilHelpers::IsEntNetworkable(int index)

@@ -16,7 +16,7 @@ class CMovementTraverseFilter : public trace::CTraceFilterSimple
 public:
 	CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now = true);
 
-	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 
 private:
 	CBaseBot* m_me;
@@ -34,7 +34,7 @@ public:
 		return TRACE_ENTITIES_ONLY;
 	}
 
-	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 };
 
 // Interface responsible for managing the bot's momvement and sending proper inputs to IPlayerController

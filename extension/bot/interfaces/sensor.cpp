@@ -23,14 +23,21 @@ class BotSensorTraceFilter : public trace::CTraceFilterSimple
 public:
 	BotSensorTraceFilter(int collisionGroup) : trace::CTraceFilterSimple(collisionGroup, nullptr) {}
 
-	bool ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask) override;
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 };
 
-bool BotSensorTraceFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
+bool BotSensorTraceFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
-	if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
+	if (trace::CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 	{
-		if (UtilHelpers::IsPlayerIndex(entity))
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+		if (!pEntity)
+		{
+			return true;
+		}
+
+		if (UtilHelpers::IsPlayer(pEntity))
 		{
 			return false; // don't hit players
 		}
@@ -40,6 +47,7 @@ bool BotSensorTraceFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, edi
 
 	return false;
 }
+
 
 ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 {

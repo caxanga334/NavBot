@@ -25,19 +25,22 @@ CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover
 	m_now = now;
 }
 
-bool CMovementTraverseFilter::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
+bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
-	if (pEntity != nullptr && pEdict != nullptr)
-	{
-		if (pEntity == m_me->GetEntity())
-		{
-			return false; // Don't hit myself
-		}
+	edict_t* pEdict = nullptr;
+	CBaseEntity* pEntity = nullptr;
+	int index = INVALID_EHANDLE_INDEX;
 
-		if (CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
-		{
-			return !m_mover->IsEntityTraversable(entity, pEdict, pEntity, m_now);
-		}
+	trace::ExtractHandleEntity(pHandleEntity, &pEntity, &pEdict, index);
+
+	if (pEntity == m_me->GetEntity())
+	{
+		return false; // Don't hit the bot itself
+	}
+
+	if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+	{
+		return !(m_mover->IsEntityTraversable(index, pEdict, pEntity, m_now));
 	}
 
 	return false;
@@ -48,11 +51,16 @@ CTraceFilterOnlyActors::CTraceFilterOnlyActors(CBaseEntity* pPassEnt, int collis
 {
 }
 
-bool CTraceFilterOnlyActors::ShouldHitEntity(int entity, CBaseEntity* pEntity, edict_t* pEdict, const int contentsMask)
+bool CTraceFilterOnlyActors::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
-	if (trace::CTraceFilterSimple::ShouldHitEntity(entity, pEntity, pEdict, contentsMask))
+	if (trace::CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 	{
-		return UtilHelpers::IsPlayerIndex(entity);
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+		if (pEntity && UtilHelpers::IsPlayer(pEntity))
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -702,6 +710,11 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 	if (index == 0) // index 0 is the world
 	{
 		return false;
+	}
+
+	if (UtilHelpers::IsPlayerIndex(index))
+	{
+		return true; // assume players are walkable since they will either move out of the way or get killed
 	}
 
 	if (UtilHelpers::FClassnameIs(entity, "func_door*") == true)

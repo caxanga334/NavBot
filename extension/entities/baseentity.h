@@ -69,6 +69,10 @@ namespace entities
 		int GetTakeDamage() const;
 		matrix3x4_t EntityToWorldTransform() const;
 		void ComputeAbsPosition(const Vector& vecLocalPosition, Vector* pAbsPosition) const;
+		bool IsTransparent() const
+		{
+			return GetRenderMode() != RenderMode_t::kRenderNormal;
+		}
 
 	private:
 		void CalcAbsolutePosition(matrix3x4_t& result) const;
