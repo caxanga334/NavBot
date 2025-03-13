@@ -34,10 +34,10 @@ jobs:
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
 
           - buildjobs: linux-stable
-            os_version: ubuntu-20.04
+            os_version: ubuntu-22.04
             identifier: 'Linux'
-            cc: clang-9
-            cxx: clang++-9
+            cc: clang-15
+            cxx: clang++-15
             ambuild_target: 'x86,x86_64'
             package_name: 'linux'
             libsym_ext: 'so'
