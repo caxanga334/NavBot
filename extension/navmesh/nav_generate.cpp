@@ -57,10 +57,10 @@ ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "50", FCVAR_CHEAT, "Max are
 
 // Common bounding box for traces
 Vector NavTraceMins( -0.45, -0.45, 0 );
-Vector NavTraceMaxs( 0.45, 0.45, navgenparams->human_crouch_height );
+Vector NavTraceMaxs( 0.45, 0.45, 64.0f /* navgenparams->human_crouch_height */);
 
-const float MaxTraversableHeight = navgenparams->step_height;		// max internal obstacle height that can occur between nav nodes and safely disregarded
-const float MinObstacleAreaWidth = 10.0f;			// min width of a nav area we will generate on top of an obstacle
+constexpr float MaxTraversableHeight = 18.0f;		// max internal obstacle height that can occur between nav nodes and safely disregarded
+constexpr float MinObstacleAreaWidth = 10.0f;		// min width of a nav area we will generate on top of an obstacle
 
 extern IVEngineServer* engine;
 extern CGlobalVars *gpGlobals;
@@ -102,41 +102,39 @@ public:
 /**
  * Start at given position and find first area in given direction
  */
-inline static CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType dir,
-		float range, float beneathLimit, IHandleEntity *traceIgnore = nullptr,
-		Vector *closePos = nullptr) {
-	CNavArea *area = NULL;
+static CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType dir, float range, float beneathLimit, IHandleEntity *traceIgnore = nullptr, Vector *closePos = nullptr) 
+{
+	CNavArea* area = nullptr;
 
 	Vector pos = *start;
-	CBaseEntity* ignore = nullptr;
-
-	if (traceIgnore != nullptr)
-	{
-		ignore = reinterpret_cast<IServerEntity*>(traceIgnore)->GetBaseEntity();
-	}
 
 	int end = (int)((range / navgenparams->generation_step_size) + 0.5f);
 
-	for( int i=1; i<=end; i++ )
+	for (int i = 1; i <= end; i++)
 	{
-		AddDirectionVector( &pos, dir, navgenparams->generation_step_size );
+		AddDirectionVector(&pos, dir, navgenparams->generation_step_size);
+		CBaseEntity* pIgnore = nullptr;
+
+		if (traceIgnore)
+		{
+			pIgnore = reinterpret_cast<IServerUnknown*>(traceIgnore)->GetBaseEntity();
+		}
 
 		// make sure we dont look thru the wall
 		trace_t result;
-
-		trace::hull(*start, pos, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), ignore, COLLISION_GROUP_NONE, result);
+		trace::hull(*start, pos, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), pIgnore, COLLISION_GROUP_NONE, result);
 
 		if (result.fraction < 1.0f)
 			break;
 
-		area = TheNavMesh->GetNavArea( pos, beneathLimit );
+		area = TheNavMesh->GetNavArea(pos, beneathLimit);
 		if (area)
 		{
 			if (closePos)
 			{
 				closePos->x = pos.x;
 				closePos->y = pos.y;
-				closePos->z = area->GetZ( pos.x, pos.y );
+				closePos->z = area->GetZ(pos.x, pos.y);
 			}
 
 			break;
@@ -150,7 +148,8 @@ inline static CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType
 /**
  * For each ladder in the map, create a navigation representation of it.
  */
-void CNavMesh::BuildLadders(void) {
+void CNavMesh::BuildLadders(void) 
+{
 	// remove any left-over ladders
 	DestroyLadders();
 
@@ -4354,30 +4353,36 @@ bool CNavMesh::SampleStep( void )
 
 				bool isOnDisplacement = result.IsDispSurface();
 
-				if (sm_nav_displacement_test.GetInt() > 0 )
+				if (sm_nav_displacement_test.GetInt() > 0)
 				{
 					// Test for nodes under displacement surfaces.
 					// This happens during development, and is a pain because the space underneath a displacement
 					// is not 'solid'.
-					trace::hull(to, to + Vector(0, 0, sm_nav_displacement_test.GetInt()), NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
+					Vector start = to + Vector(0.0f, 0.0f, 0.0f);
+					Vector end = start + Vector(0.0f, 0.0f, sm_nav_displacement_test.GetInt());
+					trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
 
-					if ( result.fraction > 0 )
+					if (result.fraction > 0)
 					{
-						trace::hull(result.endpos, to, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
-						if ( result.fraction < 1
-							// if we made it down to within navgenparams->step_height, maybe we're on a static prop
-							&& result.endpos.z > to.z + navgenparams->step_height )
+						end = start;
+						start = result.endpos;
+						trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
+						if (result.fraction < 1)
 						{
-							return true;
+							// if we made it down to within StepHeight, maybe we're on a static prop
+							if (result.endpos.z > to.z + navgenparams->step_height)
+							{
+								return true;
+							}
 						}
 					}
 				}
 
+				float deltaZ = to.z - m_currentNode->GetPosition()->z;
 				// If there's an obstacle in the way and it's traversable, or the obstacle is not higher than the destination node itself minus a small epsilon
 				// (meaning the obstacle was just the height change to get to the destination node, no extra obstacle between the two), clear obstacle height
 				// and distances
-				if ( obstacleHeight < MaxTraversableHeight
-						|| to.z - m_currentNode->GetPosition()->z > obstacleHeight - 2.0f )
+				if ((obstacleHeight < MaxTraversableHeight) || (deltaZ > (obstacleHeight - 2.0f)))
 				{
 					obstacleHeight = 0;
 					obstacleStartDist = 0;
@@ -4386,9 +4391,7 @@ bool CNavMesh::SampleStep( void )
 
 				// we can move here
 				// create a new navigation node, and update current node pointer
-				AddNode(to, toNormal, m_generationDir, m_currentNode,
-						isOnDisplacement, obstacleHeight, obstacleStartDist,
-						obstacleEndDist);
+				AddNode(to, toNormal, m_generationDir, m_currentNode, isOnDisplacement, obstacleHeight, obstacleStartDist, obstacleEndDist);
 
 				return true;
 			}
@@ -4420,16 +4423,21 @@ void CNavMesh::AddWalkableSeed( const Vector &pos, const Vector &normal )
 /**
  * Return the next walkable seed as a node
  */
-CNavNode* CNavMesh::GetNextWalkableSeedNode(void) {
-	for (;m_seedIdx < m_walkableSeeds.Count(); ++m_seedIdx) {
-		const auto& spot = m_walkableSeeds[m_seedIdx];
-		// check if a node exists at this location
-		if (CNavNode::GetNode(spot.pos) == nullptr) {
-			m_seedIdx++;
-			return new CNavNode(spot.pos, spot.normal, NULL, false);
-		}
-	}
-	return nullptr;
+CNavNode* CNavMesh::GetNextWalkableSeedNode(void) 
+{
+	if (m_seedIdx >= m_walkableSeeds.Count())
+		return nullptr;
+
+	WalkableSeedSpot spot = m_walkableSeeds[m_seedIdx];
+	++m_seedIdx;
+
+	// check if a node exists at this location
+	CNavNode* node = CNavNode::GetNode(spot.pos);
+
+	if (node)
+		return nullptr;
+
+	return new CNavNode(spot.pos, spot.normal, NULL, false);
 }
 
 
@@ -4437,7 +4445,7 @@ CNavNode* CNavMesh::GetNextWalkableSeedNode(void) {
 /**
  * Check LOS, ignoring any entities that we can walk through
  */
-bool IsWalkableTraceLineClear( const Vector &from, const Vector &to, unsigned int flags )
+static bool IsWalkableTraceLineClear( const Vector &from, const Vector &to, unsigned int flags )
 {
 	trace_t result;
 	// edict_t *ignore = NULL;
@@ -4650,4 +4658,3 @@ void CNavMesh::ValidateNavAreaConnections( void )
 		}
 	}
 }
-

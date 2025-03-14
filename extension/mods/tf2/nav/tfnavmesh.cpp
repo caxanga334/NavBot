@@ -40,8 +40,8 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 	navgenparams->human_crouch_eye_height = 44.0f;
 	navgenparams->jump_height = 49.0f;
 	navgenparams->jump_crouch_height = 68.0f;
-	navgenparams->climb_up_height = 68.0f;
-	navgenparams->death_drop = 220.0f; // experimental
+	navgenparams->climb_up_height = 128.0f;
+	navgenparams->death_drop = 300.0f; // experimental
 
 	ListenForGameEvent("mvm_wave_failed");
 	ListenForGameEvent("mvm_wave_complete");
