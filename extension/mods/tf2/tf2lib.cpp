@@ -598,3 +598,15 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousTank()
 
 	return tank;
 }
+
+// these are written based on the official SD map
+
+CBaseEntity* tf2lib::sd::GetSpecialDeliveryFlag()
+{
+	return gamehelpers->ReferenceToEntity(UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "item_teamflag"));
+}
+
+CBaseEntity* tf2lib::sd::GetSpecialDeliveryCaptureZone()
+{
+	return gamehelpers->ReferenceToEntity(UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "func_capturezone"));
+}

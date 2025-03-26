@@ -58,6 +58,17 @@ namespace tf2lib::mvm
 	CBaseEntity* GetMostDangerousTank();
 }
 
+/**
+ * @brief Special Delivery game mode functions
+ */
+namespace tf2lib::sd
+{
+	// find and return the flag on special delivery game mode
+	CBaseEntity* GetSpecialDeliveryFlag();
+	// find and return the capture zone for the special delivery game mode
+	CBaseEntity* GetSpecialDeliveryCaptureZone();
+}
+
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
 {
 	switch (tfclass)

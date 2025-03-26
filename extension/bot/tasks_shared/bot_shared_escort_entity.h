@@ -84,7 +84,7 @@ inline TaskResult<BT> CBotSharedEscortEntityTask<BT, CT>::OnTaskUpdate(BT* bot)
 		if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
 		{
 			m_repathTimer.Start(0.5f);
-			m_nav.ComputePathToPosition(bot, m_goal, m_pathCost);
+			m_nav.ComputePathToPosition(bot, pos, m_pathCost);
 		}
 
 		m_nav.Update(bot);
