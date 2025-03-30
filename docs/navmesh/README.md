@@ -16,6 +16,10 @@
 - [Nav Mesh Places]
 - [Nav Mesh Scripting]
 
+## Game Specific
+
+- [Team Fortress 2 Nav Mesh Editing]
+
 <!-- Links -->
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md
@@ -26,3 +30,4 @@
 [Nav Mesh Elevators]: NAVMESH_ELEVATORS.md
 [Nav Mesh Prerequisites]: NAVMESH_PREREQUISITES.md
 [Nav Mesh Scripting]: NAVMESH_SCRIPTING.md
+[Team Fortress 2 Nav Mesh Editing]: TF2_EDITING.md
