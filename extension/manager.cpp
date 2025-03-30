@@ -509,6 +509,11 @@ void CExtManager::LoadBotNames()
 	}
 #endif // EXT_DEBUG
 
+	// shuffle the names
+	std::random_device rd;
+	std::mt19937 g(rd());
+	std::shuffle(m_botnames.begin(), m_botnames.end(), g);
+
 	rootconsole->ConsolePrint("[NavBot] Bot name list loaded with %i names.", m_botnames.size());
 }
 

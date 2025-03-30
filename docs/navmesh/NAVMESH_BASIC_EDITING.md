@@ -26,6 +26,12 @@ Then walk around the map with noclip and add more walkable seeds (command: `sm_n
 
 To generate the mesh, run the following command: `sm_nav_generate_incremental`.
 
+## Clean Overlapping Areas Post Incremental Generation
+
+Sometimes the generator creates overlapping areas post an incremental generation. These areas can be cleaned up with the `sm_nav_delete_overlapping_from_selected_set` command.
+
+After an incremental generation, if you see any overlapping areas, keep the currently selected areas and run the command, the overlapping areas should get deleted, then check if there are any connections that needs to be created.
+
 ## Saving
 
 Use `sm_nav_save` to perform a quick save. 

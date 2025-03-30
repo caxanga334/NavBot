@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <optional>
+#include <functional>
 #include <extension.h>
 
 struct edict_t;
@@ -21,6 +22,10 @@ namespace UtilHelpers
 	inline edict_t* BaseEntityToEdict(CBaseEntity* pEntity)
 	{
 		return servergameents->BaseEntityToEdict(pEntity);
+	}
+	inline CBaseEntity* EdictToBaseEntity(edict_t* edict)
+	{
+		return servergameents->EdictToBaseEntity(edict);
 	}
 	edict_t* GetEdict(int entity);
 	CBaseEntity* GetEntity(int entity);
@@ -597,11 +602,13 @@ namespace UtilHelpers
 		case SE_SDK2013:
 			return "Source SDK 2013 Branch";
 		case SE_HL2DM:
-			return "Half-Life 2: Deathmatch Branch";
+			return "Half-Life 2: Deathmatch/Source SDK 2013 (2025) Branch";
 		case SE_DODS:
 			return "Day of Defeat: Source Branch";
 		case SE_EPISODEONE:
 			return "Episode One/Original Branch";
+		case SE_DARKMESSIAH:
+			return "Dark Messiah Branch";
 		case SE_BMS:
 			return "Black Mesa Branch";
 		case SE_LEFT4DEAD:
@@ -614,10 +621,75 @@ namespace UtilHelpers
 			return "Alien Swarm Branch";
 		case SE_INSURGENCY:
 			return "Insurgency Branch";
+		case SE_DOI:
+			return "Day of Infamy Branch";
+		case SE_MCV:
+			return "Military Conflict: Vietnam Branch";
 		default:
 			return "Unknown";
 		}
 	}
+
+	/**
+	 * @brief Entity Enumerator implementation for IPartitionEnumerator
+	 */
+	class CEntityEnumerator : public IPartitionEnumerator
+	{
+	public:
+		CEntityEnumerator();
+
+		/**
+		 * @brief 
+		 * @tparam F Filter function bool (IHandleEntity* entity) return true to include the entity
+		 * @param filterfunctor 
+		 */
+		template <typename F>
+		inline CEntityEnumerator(F filterfunctor)
+		{
+			m_filter = filterfunctor;
+			m_ents.reserve(256);
+		}
+
+		// Inherited via IPartitionEnumerator
+		IterationRetval_t EnumElement(IHandleEntity* pHandleEntity) override;
+		// Number of entities collected
+		inline std::size_t Count() const { return m_ents.size(); }
+		const std::vector<CBaseEntity*>& GetEntityVector() { return m_ents; }
+
+		/**
+		 * @brief Runs a function on every collected entity
+		 * @tparam F bool (CBaseEntity* entity)
+		 * @param func function to run. Return false to stop looping
+		 */
+		template <typename F>
+		inline void ForEach(F func)
+		{
+			for (CBaseEntity* entity : m_ents)
+			{
+				if (!func(entity))
+				{
+					return;
+				}
+			}
+		}
+
+	private:
+		std::vector<CBaseEntity*> m_ents;
+		std::function<bool(IHandleEntity*)> m_filter;
+	};
+
+	/**
+	 * @brief Gets all entities in a particular volume... Port of UTIL_EntitiesInBox from game/server/util.h
+	 * @param mins Min bounds.
+	 * @param maxs Max bounds.
+	 * @param enumerator Entity Enumerator.
+	 * @param mask Mask to use.
+	 * @param coarseTest if coarseTest == true, it'll return all elements that are in spatial partitions that intersect the box 
+	 * 
+	 * if coarseTest == false, it'll return only elements that truly intersect
+	 * @return Number of entities collected.
+	 */
+	std::size_t EntitiesInBox(const Vector& mins, const Vector& maxs, CEntityEnumerator& enumerator, SpatialPartitionListMask_t mask = static_cast<SpatialPartitionListMask_t>(PARTITION_ENGINE_NON_STATIC_EDICTS), bool coarseTest = false);
 }
 
 template<typename T>

@@ -3863,6 +3863,14 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			}
 			else if ( restart )
 			{
+				// sm_nextmap keeps overriding the map
+				ConVar* sm_nextmap = g_pCVar->FindVar("sm_nextmap");
+
+				if (sm_nextmap)
+				{
+					sm_nextmap->SetValue(STRING(gpGlobals->mapname));
+				}
+
 				engine->ChangeLevel( STRING( gpGlobals->mapname ), NULL );
 			}
 			else

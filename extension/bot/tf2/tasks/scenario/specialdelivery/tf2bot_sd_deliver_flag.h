@@ -23,6 +23,7 @@ private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
 	CountdownTimer m_repathTimer;
+	CHandle<CBaseEntity> m_capzone;
 };
 
 #endif // !__NAVBOT_TF2BOT_SD_DELIVER_FLAG_TASK_H_

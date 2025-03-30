@@ -1593,3 +1593,27 @@ void UtilHelpers::GetRandomPointInsideAABB(const Vector& mins, const Vector& max
 	out.z = randomgen->GetRandomReal<float>(mins.z + margin, maxs.z - margin);
 }
 
+std::size_t UtilHelpers::EntitiesInBox(const Vector& mins, const Vector& maxs, CEntityEnumerator& enumerator, SpatialPartitionListMask_t mask, bool coarseTest)
+{
+	partition->EnumerateElementsInBox(mask, mins, maxs, coarseTest, &enumerator);
+	return enumerator.Count();
+}
+
+UtilHelpers::CEntityEnumerator::CEntityEnumerator()
+{
+	m_ents.reserve(256);
+}
+
+IterationRetval_t UtilHelpers::CEntityEnumerator::EnumElement(IHandleEntity* pHandleEntity)
+{
+	if (m_filter)
+	{
+		if (m_filter(pHandleEntity) == false)
+		{
+			return IterationRetval_t::ITERATION_CONTINUE;
+		}
+	}
+
+	m_ents.push_back(reinterpret_cast<CBaseEntity*>(pHandleEntity));
+	return IterationRetval_t::ITERATION_CONTINUE;
+}

@@ -1,7 +1,7 @@
 #include <extension.h>
 #include <studio.h>
 
-#if SOURCE_ENGINE != SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH && SOURCE_ENGINE < SE_ALIENSWARM
 
 ////////////////////////////////////////////////////////////////////////
 const studiohdr_t* studiohdr_t::FindModel(void** cache, char const* modelname) const
@@ -129,4 +129,4 @@ const virtualmodel_t* CStudioHdr::ResetVModel(const virtualmodel_t* pVModel) con
 	}
 }
 
-#endif // SOURCE_ENGINE != SE_EPISODEONE
+#endif

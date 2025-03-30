@@ -67,6 +67,7 @@ ICvar* icvar = nullptr;
 IServerTools* servertools = nullptr;
 IServerPluginHelpers* serverpluginhelpers = nullptr;
 IStaticPropMgrServer* staticpropmgr = nullptr;
+ISpatialPartition* partition = nullptr;
 
 IBinTools* g_pBinTools = nullptr;
 ISDKTools* g_pSDKTools = nullptr;
@@ -333,6 +334,7 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	GET_V_IFACE_CURRENT(GetServerFactory, servertools, IServerTools, VSERVERTOOLS_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, staticpropmgr, IStaticPropMgrServer, INTERFACEVERSION_STATICPROPMGR_SERVER);
+	GET_V_IFACE_CURRENT(GetEngineFactory, partition, ISpatialPartition, INTERFACEVERSION_SPATIALPARTITION);
 
 	debugoverlay = reinterpret_cast<IVDebugOverlay*>(ismm->VInterfaceMatch(ismm->GetEngineFactory(), VDEBUG_OVERLAY_INTERFACE_VERSION));
 
@@ -348,6 +350,7 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	}
 #endif // EXT_DEBUG
 
+	
 
 	GET_V_IFACE_CURRENT(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
 

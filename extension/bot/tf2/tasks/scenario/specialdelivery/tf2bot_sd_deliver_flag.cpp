@@ -2,6 +2,7 @@
 
 #include <extension.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/meshnavigator.h>
@@ -17,6 +18,7 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 	}
 
 	m_goal = UtilHelpers::getWorldSpaceCenter(capturezone);
+	m_capzone = capturezone;
 
 	return Continue();
 }
@@ -28,6 +30,21 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Flag delivered!");
 	}
 
+	CBaseEntity* capzone = m_capzone.Get();
+
+	if (!capzone)
+	{
+		capzone = tf2lib::sd::GetSpecialDeliveryCaptureZone();
+
+		if (!capzone)
+		{
+			return Done("No capture zone!");
+		}
+
+		m_goal = UtilHelpers::getWorldSpaceCenter(capzone);
+		m_capzone = capzone;
+	}
+
 	edict_t* groundent = bot->GetGroundEntity();
 
 	if (groundent && !bot->GetMovementInterface()->IsUsingElevator())
@@ -37,7 +54,19 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskUpdate(CTF2Bot* bot)
 		// when riding the elevator on sd_doomsday, don't use navigation
 		if (std::strcmp(classname, "func_tracktrain") == 0)
 		{
-			bot->GetMovementInterface()->MoveTowards(m_goal, 500);
+			bool disabled = false;
+			entprops->GetEntPropBool(gamehelpers->EntityToBCompatRef(capzone), Prop_Data, "m_bDisabled", disabled);
+
+			if (disabled) // while the cap zone is disabled, move towards the elevator center
+			{
+				Vector goal = UtilHelpers::getWorldSpaceCenter(groundent);
+				bot->GetMovementInterface()->MoveTowards(goal, 500);
+			}
+			else
+			{
+				bot->GetMovementInterface()->MoveTowards(m_goal, 500);
+			}
+			
 			bot->GetMovementInterface()->ClearStuckStatus("Special Delivery: Riding Elevator!");
 			return Continue();
 		}

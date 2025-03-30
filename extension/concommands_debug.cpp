@@ -1057,4 +1057,40 @@ CON_COMMAND(sm_navbot_debug_roundstate, "Debug the game rules round state.")
 	rootconsole->ConsolePrint("Got round state %i", static_cast<int>(state));
 }
 
+CON_COMMAND(sm_navbot_debug_entsinbox, "Debug EntitiesInBox implementation.")
+{
+	CBaseExtPlayer host(UtilHelpers::GetListenServerHost());
+
+	QAngle eyeAngles = host.GetEyeAngles();
+	Vector position = host.GetAbsOrigin();
+	Vector mins(-512.0f, -512.0f, -256.0f);
+	Vector maxs(512.0f, 512.0f, 128.0f);
+
+	mins = mins + position;
+	maxs = maxs + position;
+
+	UtilHelpers::CEntityEnumerator enumerator;
+	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
+
+	int i = 0;
+
+	Msg("Entities In Box: \n");
+	NDebugOverlay::Box(vec3_origin, mins, maxs, 0, 128, 0, 96, 30.0f);
+
+	enumerator.ForEach([&i](CBaseEntity* entity) {
+		Msg("#%i ", reinterpret_cast<IHandleEntity*>(entity)->GetRefEHandle().GetEntryIndex());
+		i++;
+
+		NDebugOverlay::EntityBounds(entity, 0, 50, 235, 180, 30.0f);
+
+		if (i > 9)
+		{
+			Msg("\n");
+			i = 0;
+		}
+
+		return true;
+	});
+}
+
 #endif // EXT_DEBUG

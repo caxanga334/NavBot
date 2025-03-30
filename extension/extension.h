@@ -59,6 +59,7 @@ class CTakeDamageInfo;
 #include <ISDKTools.h>
 #include <IBinTools.h>
 #include <ISDKHooks.h>
+#include <ispatialpartition.h>
 #include "navmesh/nav_mesh.h"
 
 /**
@@ -322,6 +323,7 @@ extern ICvar* icvar;
 extern IServerTools* servertools;
 extern IServerPluginHelpers* serverpluginhelpers;
 extern IStaticPropMgrServer* staticpropmgr;
+extern ISpatialPartition* partition;
 extern CBaseEntityList* g_EntList;
 
 extern IBinTools* g_pBinTools;
