@@ -141,7 +141,7 @@ bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer* them, CBlackMesaBot
 	return true;
 }
 
-TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTestEventPropagation(CBlackMesaBot* bot)
+TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnDebugMoveToHostCommand(CBlackMesaBot* bot)
 {
 	edict_t* host = UtilHelpers::GetListenServerHost();
 	const Vector& goal = host->GetCollideable()->GetCollisionOrigin();

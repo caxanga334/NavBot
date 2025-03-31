@@ -2302,6 +2302,7 @@ void CEntPropUtils::BuildCache()
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_iState", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_STATE),
 		NetPropBuildCacheData("CBaseCombatWeapon", "m_hOwner", CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER),
 		NetPropBuildCacheData("CBasePlayer", "m_nWaterLevel", CEntPropUtils::CacheIndex::CBASEPLAYER_WATERLEVEL),
+		NetPropBuildCacheData("CDODPlayer", "m_iPlayerClass", CEntPropUtils::CacheIndex::CDODPLAYER_PLAYERCLASS),
 	};
 
 	static_assert(properties.size() == static_cast<size_t>(CacheIndex::CACHEINDEX_SIZE), "CEntPropUtils::BuildCache properties array size mismatch!");

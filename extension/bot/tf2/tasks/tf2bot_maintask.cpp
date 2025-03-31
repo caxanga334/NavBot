@@ -64,7 +64,7 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
-TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnTestEventPropagation(CTF2Bot* bot)
+TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnDebugMoveToHostCommand(CTF2Bot* bot)
 {
 #ifdef EXT_DEBUG
 	auto host = gamehelpers->EdictOfIndex(1);

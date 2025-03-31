@@ -39,7 +39,7 @@ public:
 	// Gets a vector containing all event listeners
 	virtual std::vector<IEventListener*>* GetListenerVector() { return nullptr; }
 
-	virtual void OnTestEventPropagation();
+	virtual void OnDebugMoveToHostCommand();
 	virtual void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea);
 	virtual void OnStuck(); // bot is stuck
 	virtual void OnUnstuck(); // bot was stuck and is no longer stuck
@@ -63,7 +63,7 @@ public:
 	virtual void OnVoiceCommand(CBaseEntity* subject, int command); // When a player uses voice commands (mod specific)
 };
 
-inline void IEventListener::OnTestEventPropagation()
+inline void IEventListener::OnDebugMoveToHostCommand()
 {
 	auto vec = GetListenerVector();
 
@@ -71,7 +71,7 @@ inline void IEventListener::OnTestEventPropagation()
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnTestEventPropagation();
+			listener->OnDebugMoveToHostCommand();
 		}
 	}
 }

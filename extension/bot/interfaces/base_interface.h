@@ -15,7 +15,8 @@ public:
 	IBotInterface(CBaseBot* bot);
 	virtual ~IBotInterface();
 
-	virtual CBaseBot* GetBot() const { return m_bot; }
+	template<typename T = CBaseBot>
+	inline T* GetBot() const { return static_cast<T*>(m_bot); }
 
 	virtual void OnDifficultyProfileChanged() {}
 

@@ -22,7 +22,7 @@ void CBlackMesaBotBehavior::Reset()
 
 void CBlackMesaBotBehavior::Update()
 {
-	m_manager->Update(static_cast<CBlackMesaBot*>(GetBot()));
+	m_manager->Update(GetBot<CBlackMesaBot>());
 }
 
 std::vector<IEventListener*>* CBlackMesaBotBehavior::GetListenerVector()

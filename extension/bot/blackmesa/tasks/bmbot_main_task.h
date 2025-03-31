@@ -11,7 +11,7 @@ public:
 	AITask<CBlackMesaBot>* InitialNextTask(CBlackMesaBot* bot) override;
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
 
-	TaskEventResponseResult<CBlackMesaBot> OnTestEventPropagation(CBlackMesaBot* bot) override;
+	TaskEventResponseResult<CBlackMesaBot> OnDebugMoveToHostCommand(CBlackMesaBot* bot) override;
 
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player = nullptr, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
 	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override;

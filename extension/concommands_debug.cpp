@@ -204,7 +204,7 @@ CON_COMMAND(sm_navbot_debug_event_propagation, "Event propagation test")
 	for (auto& botptr : bots)
 	{
 		auto bot = botptr.get();
-		bot->OnTestEventPropagation();
+		bot->OnDebugMoveToHostCommand();
 		bot->GetBehaviorInterface()->ShouldFreeRoam(bot);
 	}
 }

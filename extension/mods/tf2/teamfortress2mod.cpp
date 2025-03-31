@@ -1385,6 +1385,8 @@ CON_COMMAND(sm_navbot_tf_reload_upgrades, "[TF2] Reload MvM Upgrades")
 	rootconsole->ConsolePrint("Reloaded MvM Upgrades.");
 }
 
+#ifdef EXT_DEBUG
+
 CON_COMMAND_F(sm_navbot_tf_debug_control_points, "[TF2] Show control point data.", FCVAR_CHEAT)
 {
 	CTeamFortress2Mod::GetTF2Mod()->DebugInfo_ControlPoints();
@@ -1405,6 +1407,8 @@ CON_COMMAND_F(sm_navbot_tf_debug_payload_carts, "[TF2] Shows which payload cart 
 		Msg("Found BLU payload #%i \n", gamehelpers->EntityToReference(blupayload));
 	}
 }
+
+#endif // EXT_DEBUG
 
 CON_COMMAND_F(sm_navbot_tf_list_control_points, "[TF2] Shows a list of control points on this map", FCVAR_CHEAT)
 {

@@ -26,7 +26,7 @@ void CTF2BotBehavior::Reset()
 
 void CTF2BotBehavior::Update()
 {
-	m_manager->Update(static_cast<CTF2Bot*>(GetBot()));
+	m_manager->Update(GetBot<CTF2Bot>());
 }
 
 std::vector<IEventListener*>* CTF2BotBehavior::GetListenerVector()
