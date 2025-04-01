@@ -14,6 +14,13 @@ namespace dodslib
 	 * @return Client command name to join the given class.
 	 */
 	const char* GetJoinClassCommand(dayofdefeatsource::DoDClassType classtype, dayofdefeatsource::DoDTeam team);
+	/**
+	 * @brief Reads the control point index from the entity's memory.
+	 * @param entity Entity to read. Must be a dod_control_point.
+	 * @return Control point index. Returns -1 on failure.
+	 */
+	int GetControlPointIndex(CBaseEntity* entity);
+	dayofdefeatsource::DoDRoundState GetRoundState();
 }
 
 

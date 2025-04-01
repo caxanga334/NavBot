@@ -35,6 +35,25 @@
 				"linux"			"107"
 				"linux64"		"107"
 			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"205"
+				"windows64"	"205"
+				"linux"		"206"
+				"linux64"	"206"
+			}
+
+			/**
+			 * relative offset starting from m_iCPGroup to get to m_iPointIndex
+			 * https://github.com/lua9520/source-engine-2018-hl2_src/blob/3bf9df6b2785fa6d951086978a3e66f49427166a/game/server/dod/dod_control_point.h#L137
+			*/
+			"CControlPoint::m_iPointIndex"
+			{
+				"windows"	"-4"
+				"windows64" "-4"
+				"linux"		"-4"
+				"linux64"	"-4"
+			}
 		}
 	}
 }

@@ -3,6 +3,7 @@
 
 #include <bot/interfaces/behavior.h>
 
+class CDoDSBot;
 
 class CDoDSBotBehavior : public IBehavior
 {

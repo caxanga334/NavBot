@@ -9,6 +9,8 @@ public:
 
 	TaskResult<CDoDSBot> OnTaskUpdate(CDoDSBot* bot) override;
 
+	TaskEventResponseResult<CDoDSBot> OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
+
 	const char* GetName() const override { return "TacticalMonitor"; }
 private:
 	

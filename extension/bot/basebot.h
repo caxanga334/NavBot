@@ -268,7 +268,11 @@ protected:
 	 */
 	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
 
+	inline void SetJustFiredMyWeapon(bool v = true) { m_justfiredmyweapon = v; }
+	bool HasJustFiredMyWeapon() const { return m_justfiredmyweapon; }
+
 private:
+	bool m_justfiredmyweapon;
 	float m_spawnTime;
 	int m_simulationtick;
 	CountdownTimer m_nextupdatetime;

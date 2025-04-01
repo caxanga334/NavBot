@@ -1,7 +1,7 @@
 #include <extension.h>
-#include "tasks/dodsbot_main_task.h"
 #include "dodsbot.h"
 #include "dodsbot_behavior.h"
+#include "tasks/dodsbot_main_task.h"
 
 CDoDSBotBehavior::CDoDSBotBehavior(CBaseBot* bot) :
 	IBehavior(bot)

@@ -56,3 +56,59 @@ const char* dodslib::GetJoinClassCommand(dayofdefeatsource::DoDClassType classty
 		}
 	}
 }
+
+int dodslib::GetControlPointIndex(CBaseEntity* entity)
+{
+#ifdef EXT_DEBUG
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+
+	if (strcasecmp(classname, "dod_control_point") != 0)
+	{
+		smutils->LogError(myself, "dodslib::GetControlPointIndex called with invalid entity %s", classname);
+	}
+#endif // EXT_DEBUG
+
+	static unsigned int offset = 0;
+
+	if (offset == 0)
+	{
+		// initialize
+
+		SourceMod::IGameConfig* cfg = nullptr;
+		char buffer[256];
+		int offset_to = 0;
+
+		if (!gameconfs->LoadGameConfigFile("navbot.games", &cfg, buffer, sizeof(buffer)))
+		{
+			smutils->LogError(myself, "%s", buffer);
+			return -1;
+		}
+
+		if (!cfg->GetOffset("CControlPoint::m_iPointIndex", &offset_to))
+		{
+			gameconfs->CloseGameConfigFile(cfg);
+			smutils->LogError(myself, "Failed to get CControlPoint::m_iPointIndex offset from NavBot's gamedata file!");
+			return -1;
+		}
+
+		gameconfs->CloseGameConfigFile(cfg);
+		datamap_t* datamap = gamehelpers->GetDataMap(entity);
+		SourceMod::sm_datatable_info_t info;
+
+		if (gamehelpers->FindDataMapInfo(datamap, "m_iCPGroup", &info))
+		{
+			offset = info.actual_offset + static_cast<unsigned int>(offset_to);
+			smutils->LogMessage(myself, "Computed offset for CControlPoint::m_iPointIndex: %u", offset);
+		}
+	}
+
+	int* index = entprops->GetPointerToEntData<int>(entity, offset);
+	return *index;
+}
+
+dayofdefeatsource::DoDRoundState dodslib::GetRoundState()
+{
+	int roundstate = 0;
+	entprops->GameRules_GetProp("m_iRoundState", roundstate);
+	return static_cast<dayofdefeatsource::DoDRoundState>(roundstate);
+}

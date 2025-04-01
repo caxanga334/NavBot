@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/entprops.h>
 #include <mods/dods/dodslib.h>
 #include "dodsbot.h"
 
@@ -7,6 +8,9 @@ CDoDSBot::CDoDSBot(edict_t* edict) :
 {
 	m_dodsensor = std::make_unique<CDoDSBotSensor>(this);
 	m_dodbehavior = std::make_unique<CDoDSBotBehavior>(this);
+	m_dodinventory = std::make_unique<CDoDSBotInventory>(this);
+	m_dodmovement = std::make_unique<CDoDSBotMovement>(this);
+	m_droppedAmmo = false;
 }
 
 CDoDSBot::~CDoDSBot()
@@ -24,6 +28,13 @@ void CDoDSBot::TryJoinGame()
 	DelayedFakeClientCommand("cls_random"); // Random Class
 }
 
+void CDoDSBot::Spawn()
+{
+	CBaseBot::Spawn();
+
+	m_droppedAmmo = false;
+}
+
 dayofdefeatsource::DoDTeam CDoDSBot::GetMyDoDTeam() const
 {
 	return dodslib::GetDoDTeam(GetEntity());
@@ -32,6 +43,46 @@ dayofdefeatsource::DoDTeam CDoDSBot::GetMyDoDTeam() const
 dayofdefeatsource::DoDClassType CDoDSBot::GetMyClassType() const
 {
 	return dodslib::GetPlayerClassType(GetEntity());
+}
+
+int CDoDSBot::GetControlPointIndex() const
+{
+	int index = dayofdefeatsource::INVALID_CONTROL_POINT;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iCPIndex", index);
+	return 0;
+}
+
+bool CDoDSBot::IsCapturingAPoint() const
+{
+	return GetControlPointIndex() != dayofdefeatsource::INVALID_CONTROL_POINT;
+}
+
+bool CDoDSBot::IsProne() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bProne", result);
+	return result;
+}
+
+bool CDoDSBot::IsSprinting() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bIsSprinting", result);
+	return result;
+}
+
+bool CDoDSBot::IsPlantingBomb() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bPlanting", result);
+	return result;
+}
+
+bool CDoDSBot::IsDefusingBomb() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bDefusing", result);
+	return result;
 }
 
 CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type)

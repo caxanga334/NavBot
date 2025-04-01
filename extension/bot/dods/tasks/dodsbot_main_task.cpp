@@ -1,5 +1,6 @@
 #include <extension.h>
 #include <bot/dods/dodsbot.h>
+#include <mods/dods/dodslib.h>
 #include "dodsbot_tactical_monitor_task.h"
 #include "dodsbot_main_task.h"
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
@@ -16,6 +17,20 @@ AITask<CDoDSBot>* CDoDSBotMainTask::InitialNextTask(CDoDSBot* bot)
 
 TaskResult<CDoDSBot> CDoDSBotMainTask::OnTaskUpdate(CDoDSBot* bot)
 {
+	if (dodslib::GetRoundState() == dayofdefeatsource::DoDRoundState::DODROUNDSTATE_PREROUND)
+	{
+		bot->GetMovementInterface()->ClearStuckStatus("PREROUND");
+		return Continue();
+	}
+
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+	if (threat)
+	{
+		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat.get());
+		bot->FireWeaponAtEnemy(threat.get(), true);
+	}
+
 	return Continue();
 }
 

@@ -32,7 +32,7 @@ protected:
 	// Creates a new bot weapon object, override to use mod specific class
 	virtual CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) { return new CBotWeapon(weapon); }
 public:
-	inline bool HasAnyWeapons() { return !m_weapons.empty(); }
+	inline bool HasAnyWeapons() const { return !m_weapons.empty(); }
 
 	/**
 	 * @brief Runs a function on every valid bot weapon

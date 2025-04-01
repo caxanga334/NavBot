@@ -22,6 +22,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_simulationtick = -1;
 	m_profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
+	m_justfiredmyweapon = false;
 	m_nextupdatetime.Invalidate();
 	m_joingametime = 64;
 	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet.
@@ -490,6 +491,7 @@ void CBaseBot::Spawn()
 
 	m_spawnTime = gpGlobals->curtime;
 	m_homepos = GetAbsOrigin();
+	m_justfiredmyweapon = false;
 	Reset();
 }
 
@@ -649,6 +651,8 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 		if (doAim && !GetControlInterface()->IsAimOnTarget())
 			return;
 
+		SetJustFiredMyWeapon(true);
+
 		if (primary)
 		{
 			GetControlInterface()->PressAttackButton();
@@ -774,7 +778,13 @@ bool CBaseBot::HandleWeapon(CBotWeapon* weapon)
 	// this function is used for stuff like hold primary attack for N seconds then release to fire
 	// or a weapon that must be deployed to be used
 	// etc...
-	// base just returns true
+
+	if (HasJustFiredMyWeapon() && weapon->GetWeaponInfo()->IsSemiAuto())
+	{
+		SetJustFiredMyWeapon(false);
+		GetControlInterface()->ReleaseAllAttackButtons();
+		return false;
+	}
 
 	return true;
 }

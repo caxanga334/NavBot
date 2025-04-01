@@ -96,7 +96,7 @@ void IPlayerController::RunLook()
 		return;
 	}
 
-	auto me = GetBot();
+	CBaseBot* me = GetBot<CBaseBot>();
 	auto currentAngles = me->GetEyeAngles();
 
 	bool isSteady = true;

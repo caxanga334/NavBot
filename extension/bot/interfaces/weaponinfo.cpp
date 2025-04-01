@@ -252,6 +252,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetSlot(atoi(value));
 	}
+	else if (strncmp(key, "semiauto", 8) == 0)
+	{
+		m_current->SetIsSemiAuto(UtilHelpers::StringToBoolean(value));
+	}
 	else if (!IsParserInWeaponAttackSection())
 	{
 		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair <%s - %s> at line %i col %i", key, value, states->line, states->col);

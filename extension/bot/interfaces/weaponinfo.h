@@ -113,6 +113,7 @@ public:
 		priority = 0;
 		can_headshot = false;
 		inf_ammo = false;
+		semiauto = false;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
 		maxclip2 = 0;
@@ -198,6 +199,7 @@ public:
 	inline void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
 	inline void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	inline void SetSlot(int s) { slot = s; }
+	inline void SetIsSemiAuto(bool v) { semiauto = v; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -216,6 +218,7 @@ public:
 	inline int GetLowSecondaryAmmoThreshold() const { return secammolow; }
 	inline int GetSlot() const { return slot; }
 	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
+	inline bool IsSemiAuto() const { return semiauto; }
 	inline bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
 	inline bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
 
@@ -228,6 +231,7 @@ protected:
 	int priority; // Priority for weapon selection
 	bool can_headshot;
 	bool inf_ammo; // Infinite ammo?
+	bool semiauto; // The weapon is semi auto (needs to release attack in order to fire again)
 	float headshot_range_mult;
 	int maxclip1; // Maximum ammo stored in clip1
 	int maxclip2; // Maximum ammo stored in clip2
