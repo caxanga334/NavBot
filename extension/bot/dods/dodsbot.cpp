@@ -49,7 +49,7 @@ int CDoDSBot::GetControlPointIndex() const
 {
 	int index = dayofdefeatsource::INVALID_CONTROL_POINT;
 	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iCPIndex", index);
-	return 0;
+	return index;
 }
 
 bool CDoDSBot::IsCapturingAPoint() const

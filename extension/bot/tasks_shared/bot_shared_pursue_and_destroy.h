@@ -91,18 +91,19 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 		return AITask<BT>::Done("Enemy is dead or invalid!");
 	}
 
-	auto known = bot->GetSensorInterface()->GetKnown(enemy);
+	const CKnownEntity* known = bot->GetSensorInterface()->GetKnown(enemy);
 
 	if (!known)
 	{
 		if (m_hasSixthSense)
 		{
 			// make sure the enemy is in the bot's sensor database
-			auto known = bot->GetSensorInterface()->AddKnownEntity(enemy);
+			CKnownEntity* known2 = bot->GetSensorInterface()->AddKnownEntity(enemy);
 
-			if (known)
+			if (known2)
 			{
-				known->UpdatePosition();
+				known2->UpdatePosition();
+				known = known2;
 			}
 		}
 		else
@@ -185,6 +186,8 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 			bot->GetControlInterface()->AimAt(m_moveGoal, IPlayerController::LOOK_ALERT, 1.0f, "Looking for the enemy!");
 		}
 	}
+
+	m_nav.Update(bot);
 
 	return AITask<BT>::Continue();
 }

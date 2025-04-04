@@ -14,6 +14,7 @@
 #include <unordered_set>
 
 #include <extension.h>
+#include <manager.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
@@ -3276,7 +3277,7 @@ void CNavMesh::BeginGeneration( bool incremental )
 		}
 	}
 #else
-	// TODO engine->ServerCommand( "bot_kick\n" );
+	extmanager->RemoveAllBots("Kicking all bots to begin nav mesh generation!");
 #endif
 
 	// Right now, incrementally-generated areas won't connect to existing areas automatically.

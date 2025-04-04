@@ -165,11 +165,11 @@ inline QueryAnswerType CBotSharedPrereqDestroyEntityTask<BT, CT>::ShouldAttack(C
 		return ANSWER_UNDEFINED;
 	}
 
-	auto target = me->GetSensorInterface()->GetKnown(goalEnt);
+	const CKnownEntity* target = me->GetSensorInterface()->GetKnown(goalEnt);
 
 	if (target)
 	{
-		if (them == target.get())
+		if (them == target)
 		{
 			return ANSWER_YES; // only attack the target entity
 		}

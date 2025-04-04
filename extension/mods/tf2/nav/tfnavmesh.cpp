@@ -45,6 +45,8 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 
 	ListenForGameEvent("mvm_wave_failed");
 	ListenForGameEvent("mvm_wave_complete");
+	ListenForGameEvent("teamplay_round_start");
+	ListenForGameEvent("arena_round_start");
 }
 
 CTFNavMesh::~CTFNavMesh()
@@ -64,6 +66,11 @@ void CTFNavMesh::FireGameEvent(IGameEvent* event)
 				OnRoundRestart();
 				PropagateOnRoundRestart();
 				return;
+			}
+			else if (std::strcmp(name, "teamplay_round_start") == 0 || std::strcmp(name, "arena_round_start") == 0)
+			{
+				OnRoundRestart();
+				PropagateOnRoundRestart();
 			}
 		}
 	}

@@ -48,12 +48,12 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	auto sensor = bot->GetSensorInterface();
-	auto threat = sensor->GetPrimaryKnownThreat();
+	const CKnownEntity* threat = sensor->GetPrimaryKnownThreat();
 
-	if (threat.get() != nullptr) // I have an enemy
+	if (threat) // I have an enemy
 	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat.get());
-		bot->FireWeaponAtEnemy(threat.get(), true);
+		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
+		bot->FireWeaponAtEnemy(threat, true);
 	}
 
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
@@ -77,7 +77,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnDebugMoveToHostCommand(CTF2B
 #endif // EXT_DEBUG
 }
 
-std::shared_ptr<const CKnownEntity> CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
+const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	// Handle cases where one of them is NULL
 	if (threat1 && !threat2)
@@ -96,7 +96,7 @@ std::shared_ptr<const CKnownEntity> CTF2BotMainTask::SelectTargetThreat(CBaseBot
 	return InternalSelectTargetThreat(static_cast<CTF2Bot*>(me), threat1, threat2);
 }
 
-Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
+Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
 	Vector aimat(0.0f, 0.0f, 0.0f);
 	CTF2Bot* tf2bot = static_cast<CTF2Bot*>(me);
@@ -119,19 +119,21 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBase
 		attackFunc = &(tfweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK));
 	}
 
-	if (player)
+	if (UtilHelpers::IsPlayer(entity))
 	{
+		std::unique_ptr<CBaseExtPlayer> player = std::make_unique<CBaseExtPlayer>(UtilHelpers::BaseEntityToEdict(entity));
+
 		if (attackFunc->IsBallistic())
 		{
-			AimAtPlayerWithBallisticWeapon(tf2bot, player, aimat, desiredAim, tfweapon.get(), attackFunc);
+			AimAtPlayerWithBallisticWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon.get(), attackFunc);
 		}
 		else if (attackFunc->IsProjectile())
 		{
-			AimAtPlayerWithProjectileWeapon(tf2bot, player, aimat, desiredAim, tfweapon.get(), attackFunc);
+			AimAtPlayerWithProjectileWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon.get(), attackFunc);
 		}
 		else
 		{
-			AimAtPlayerWithHitScanWeapon(tf2bot, player, aimat, desiredAim, tfweapon.get(), attackFunc);
+			AimAtPlayerWithHitScanWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon.get(), attackFunc);
 		}
 	}
 	else
@@ -229,7 +231,7 @@ void CTF2BotMainTask::AimAtPlayerWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer
 	result = aimPos;
 }
 
-std::shared_ptr<const CKnownEntity> CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
+const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	// TO-DO: Add threat selection
 

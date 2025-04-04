@@ -51,9 +51,9 @@ TaskResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnTaskUpdate(CBlackMesaBot*
 		}
 	}
 
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
-	if (threat && bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat.get()) != ANSWER_NO)
+	if (threat && bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
 	{
 		return PauseFor(new CBotSharedPursueAndDestroyTask(bot, threat->GetEntity()), "Pursuing visible threat!");
 	}

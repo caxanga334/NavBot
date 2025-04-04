@@ -61,9 +61,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 		m_roundStateTimer.Invalidate();
 	}
 
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
-	if (threat.get() != nullptr)
+	if (threat != nullptr)
 	{
 		m_noThreatTimer.Invalidate();
 	}

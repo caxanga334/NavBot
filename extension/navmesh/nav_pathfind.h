@@ -1197,6 +1197,7 @@ public:
 
 	void SetStartArea(T* start) { m_startArea = start; }
 	void SetTravelLimit(float limit) { m_travelLimit = limit; }
+	T* GetStartArea() const { return m_startArea; }
 	float GetTravelLimit() const { return m_travelLimit; }
 
 	void SetSearchLadders(const bool search) { m_searchLadders = search; }

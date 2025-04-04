@@ -134,11 +134,12 @@ CNavMesh::CNavMesh( void )
 
 	ListenForGameEvent("round_start");
 	ListenForGameEvent("dod_round_start");
-	ListenForGameEvent("teamplay_round_start");
+	
 
 	// Default walkable entities for generation
 	AddWalkableEntity("info_player_start");
 	AddWalkableEntity("info_player_teamspawn");
+	AddWalkableEntity("info_player_deathmatch");
 }
 
 //--------------------------------------------------------------------------------------------------------------

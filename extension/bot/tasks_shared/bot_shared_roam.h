@@ -77,6 +77,8 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	if (m_repathtimer.IsElapsed())
 	{
+		m_repathtimer.Start(2.0f);
+
 		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathcost))
 		{
 			if (++m_moveFailures > 20)

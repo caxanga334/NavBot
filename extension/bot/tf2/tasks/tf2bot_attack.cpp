@@ -54,11 +54,11 @@ TaskResult<CTF2Bot> CTF2BotAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Target is dead!");
 	}
 
-	auto known = bot->GetSensorInterface()->GetKnown(pEntity);
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* known = bot->GetSensorInterface()->GetKnown(pEntity);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	// if sensor lost track of it, it's gone.
-	if (known.get() == nullptr)
+	if (known == nullptr)
 	{
 		return Done("Target has escaped me!");
 	}
@@ -70,7 +70,7 @@ TaskResult<CTF2Bot> CTF2BotAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		m_nav.Update(bot, pEntity, cost, nullptr);
 	}
 
-	if (threat && known && threat.get() == known.get())
+	if (threat && known && threat == known)
 	{
 		// don't use combat look priority in case another more important threat is visible to us
 		bot->GetControlInterface()->AimAt(pEntity, IPlayerController::LOOK_DANGER, 0.25f, "Looking at target entity!");

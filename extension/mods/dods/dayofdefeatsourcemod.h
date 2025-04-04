@@ -1,9 +1,12 @@
-#ifndef SMNAV_DODS_MOD_H_
-#define SMNAV_DODS_MOD_H_
+#ifndef __NAVBOT_DODS_MOD_H_
+#define __NAVBOT_DODS_MOD_H_
 #pragma once
 
+#include <array>
+#include <vector>
 #include <mods/basemod.h>
 #include <sdkports/sdk_ehandle.h>
+#include "dods_shareddefs.h"
 
 class CDODObjectiveResource
 {
@@ -48,6 +51,42 @@ public:
 	CDayOfDefeatSourceMod();
 	~CDayOfDefeatSourceMod() override;
 
+	static CDayOfDefeatSourceMod* GetDODMod();
+
+	struct DoDControlPoint
+	{
+		DoDControlPoint()
+		{
+			point.Term();
+			capture_trigger.Term();
+
+			for (auto& handle : bomb_targets)
+			{
+				handle.Term();
+			}
+
+			index = dayofdefeatsource::INVALID_CONTROL_POINT;
+		}
+
+		CHandle<CBaseEntity> point; // handle to dod_control_point
+		CHandle<CBaseEntity> capture_trigger; // handle to dod_capture_area
+		std::array<CHandle<CBaseEntity>, 2U> bomb_targets; // bomb targets assigned to this control point
+		int index; // control point index
+
+		inline void Reset()
+		{
+			point.Term();
+			capture_trigger.Term();
+
+			for (auto& handle : bomb_targets)
+			{
+				handle.Term();
+			}
+
+			index = dayofdefeatsource::INVALID_CONTROL_POINT;
+		}
+	};
+
 	void FireGameEvent(IGameEvent* event) override;
 
 	const char* GetModName() override { return "Day of Defeat: Source"; }
@@ -55,16 +94,23 @@ public:
 
 	// Called by the manager when allocating a new bot instance
 	CBaseBot* AllocateBot(edict_t* edict) override;
-
+	CNavMesh* NavMeshFactory() override;
 	void OnRoundStart() override;
 	// NULL if the objective resource entity is invalid
 	const CDODObjectiveResource* GetDODObjectiveResource() const;
+	const CDayOfDefeatSourceMod::DoDControlPoint* GetControlPointByIndex(int index) const;
+	void CollectControlPointsToAttack(dayofdefeatsource::DoDTeam team, std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*>& points) const;
+	void CollectControlPointsToDefend(dayofdefeatsource::DoDTeam team, std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*>& points) const;
 
 private:
 	CDODObjectiveResource m_objectiveres;
 	CHandle<CBaseEntity> m_objectiveentity;
+	std::array<DoDControlPoint, MAX_CONTROL_POINTS> m_controlpoints;
 
 	void FindObjectiveResourceEntity();
+	void FindControlPoints();
+	void FindAndAssignCaptureAreas();
+	void FindAndAssignBombTargets();
 };
 
-#endif // !SMNAV_DODS_MOD_H_
+#endif // !__NAVBOT_DODS_MOD_H_

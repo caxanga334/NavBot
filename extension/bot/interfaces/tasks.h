@@ -336,19 +336,19 @@ public:
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}
 
-	std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2) override
+	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
 	{
-		std::shared_ptr<const CKnownEntity> result = nullptr;
+		const CKnownEntity* result = nullptr;
 
 		if (m_task)
 		{
 			AITask<BotClass>* respondingTask = nullptr;
 			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
 
-			while (respondingTask != nullptr && result.get() == nullptr)
+			while (respondingTask != nullptr && result == nullptr)
 			{
 				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
-				while (respondingTask != nullptr && result.get() == nullptr)
+				while (respondingTask != nullptr && result == nullptr)
 				{
 					result = respondingTask->SelectTargetThreat(me, threat1, threat2);
 					respondingTask = respondingTask->GetTaskBelowMe();
@@ -361,7 +361,7 @@ public:
 		return result;
 	}
 
-	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player = nullptr, DesiredAimSpot desiredAim = AIMSPOT_NONE) override
+	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override
 	{
 		Vector result = vec3_origin;
 
@@ -375,7 +375,7 @@ public:
 				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
 				while (respondingTask != nullptr && result == vec3_origin)
 				{
-					result = respondingTask->GetTargetAimPos(me, entity, player, desiredAim);
+					result = respondingTask->GetTargetAimPos(me, entity, desiredAim);
 					respondingTask = respondingTask->GetTaskBelowMe();
 				}
 

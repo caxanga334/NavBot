@@ -4,11 +4,16 @@
 class CDoDSBotScenarioMonitorTask : public AITask<CDoDSBot>
 {
 public:
+	AITask<CDoDSBot>* InitialNextTask(CDoDSBot* bot) override;
+
 	TaskResult<CDoDSBot> OnTaskUpdate(CDoDSBot* bot) override;
+
+	TaskEventResponseResult<CDoDSBot> OnRoundStateChanged(CDoDSBot* bot) override;
 
 	const char* GetName() const override { return "ScenarioMonitor"; }
 private:
 
+	void FindControlPointToDefend(CDoDSBot* bot, CBaseEntity** defuse, const CDayOfDefeatSourceMod::DoDControlPoint** defend);
 };
 
 #endif // !__NAVBOT_DODSBOT_SCENARIO_MONITOR_TASK_H_

@@ -61,14 +61,14 @@ QueryAnswerType IBehavior::IsBlocker(CBaseBot* me, edict_t* blocker, const bool 
 	return GetDecisionQueryResponder()->IsBlocker(me, blocker, any);
 }
 
-std::shared_ptr<const CKnownEntity> IBehavior::SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
+const CKnownEntity* IBehavior::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return GetDecisionQueryResponder()->SelectTargetThreat(me, threat1, threat2);
 }
 
-Vector IBehavior::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
+Vector IBehavior::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	return GetDecisionQueryResponder()->GetTargetAimPos(me, entity, player, desiredAim);
+	return GetDecisionQueryResponder()->GetTargetAimPos(me, entity, desiredAim);
 }
 
 QueryAnswerType IBehavior::IsReady(CBaseBot* me)

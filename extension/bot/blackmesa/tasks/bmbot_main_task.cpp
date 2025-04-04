@@ -20,18 +20,18 @@ AITask<CBlackMesaBot>* CBlackMesaBotMainTask::InitialNextTask(CBlackMesaBot* bot
 
 TaskResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTaskUpdate(CBlackMesaBot* bot)
 {
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	if (threat)
 	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat.get());
-		bot->FireWeaponAtEnemy(threat.get(), true);
+		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
+		bot->FireWeaponAtEnemy(threat, true);
 	}
 
 	return Continue();
 }
 
-Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
+Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
 	auto weapon = static_cast<CBlackMesaBot*>(me)->GetInventoryInterface()->GetActiveBotWeapon();
 
@@ -40,9 +40,10 @@ Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity,
 		return vec3_origin;
 	}
 
-	if (player != nullptr)
+	if (UtilHelpers::IsPlayer(entity))
 	{
 		Vector result;
+		CBaseExtPlayer player(UtilHelpers::BaseEntityToEdict(entity));
 
 		bool secondary = false;
 
@@ -61,7 +62,7 @@ Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity,
 	return UtilHelpers::getWorldSpaceCenter(entity);
 }
 
-std::shared_ptr<const CKnownEntity> CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
+const CKnownEntity* CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	CBlackMesaBot* me = static_cast<CBlackMesaBot*>(baseBot);
 
@@ -74,6 +75,10 @@ std::shared_ptr<const CKnownEntity> CBlackMesaBotMainTask::SelectTargetThreat(CB
 	else if (!threat1 && threat2)
 	{
 		return threat2;
+	}
+	else if (threat1 == threat2)
+	{
+		return threat1; // if both are the same, return threat1
 	}
 
 	// both are valids now
@@ -89,25 +94,25 @@ std::shared_ptr<const CKnownEntity> CBlackMesaBotMainTask::SelectTargetThreat(CB
 	return threat2;
 }
 
-bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer* them, CBlackMesaBot* me, Vector& out, CBotWeapon* weapon, DesiredAimSpot desiredAim, bool isSecondaryAttack)
+bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer& them, CBlackMesaBot* me, Vector& out, CBotWeapon* weapon, DesiredAimSpot desiredAim, bool isSecondaryAttack)
 {
 	/* TO-DO: Ballistics */
 
-	float range = me->GetRangeTo(them->GetEntity());
+	float range = me->GetRangeTo(them.GetEntity());
 	Vector aimat;
 
 	switch (desiredAim)
 	{
 	case IDecisionQuery::AIMSPOT_ABSORIGIN:
-		aimat = them->GetAbsOrigin();
+		aimat = them.GetAbsOrigin();
 		break;
 	case IDecisionQuery::AIMSPOT_HEAD:
 	{
-		auto hdr = UtilHelpers::GetEntityModelPtr(them->GetEdict());
+		auto hdr = UtilHelpers::GetEntityModelPtr(them.GetEdict());
 
 		if (!hdr)
 		{
-			aimat = them->WorldSpaceCenter();
+			aimat = them.WorldSpaceCenter();
 			break;
 		}
 
@@ -118,21 +123,21 @@ bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer* them, CBlackMesaBot
 		if (bone < 0)
 		{
 #ifdef EXT_DEBUG
-			const char* modelname = them->GetEdict()->GetIServerEntity()->GetModelName().ToCStr();
+			const char* modelname = them.GetEdict()->GetIServerEntity()->GetModelName().ToCStr();
 			smutils->LogError(myself, "Model \"%s\" doesn't have head bone \"ValveBiped.Bip01_Head1\"!", modelname);
 #endif // EXT_DEBUG
 
-			aimat = them->GetEyeOrigin();
+			aimat = them.GetEyeOrigin();
 			break;
 		}
 
 		QAngle angles;
-		UtilHelpers::GetBonePosition(them->GetEntity(), bone, aimat, angles);
+		UtilHelpers::GetBonePosition(them.GetEntity(), bone, aimat, angles);
 		aimat = aimat + weapon->GetWeaponInfo()->GetHeadShotAimOffset();
 		break;
 	}
 	default:
-		aimat = them->WorldSpaceCenter();
+		aimat = them.WorldSpaceCenter();
 		break;
 	}
 

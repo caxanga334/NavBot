@@ -54,7 +54,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	CBaseEntity* patient = m_healTarget.Get();
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	if (patient == nullptr)
 	{
@@ -72,7 +72,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 		return PauseFor(new CTF2BotMedicRetreatTask(), "Patient died, retreating from enemy!");
 	}
 
-	UpdateMovePosition(bot, threat.get());
+	UpdateMovePosition(bot, threat);
 	EquipMedigun(bot);
 
 	Vector center = UtilHelpers::getWorldSpaceCenter(patient);

@@ -1,0 +1,161 @@
+#include <vector>
+#include <extension.h>
+#include <util/helpers.h>
+#include <util/entprops.h>
+#include <sdkports/sdk_ehandle.h>
+#include <sdkports/sdk_timers.h>
+#include <mods/dods/dayofdefeatsourcemod.h>
+#include <bot/dods/dodsbot.h>
+#include <bot/interfaces/path/meshnavigator.h>
+#include "dodsbot_attack_control_point_task.h"
+#include "dodsbot_fetch_bomb_task.h"
+#include "dodsbot_deploy_bomb_task.h"
+
+CDoDSBotAttackControlPointTask::CDoDSBotAttackControlPointTask(const CDayOfDefeatSourceMod::DoDControlPoint* controlpoint)
+{
+	m_controlpoint = controlpoint;
+}
+
+bool CDoDSBotAttackControlPointTask::IsPossible(CDoDSBot* bot, const CDayOfDefeatSourceMod::DoDControlPoint** controlpoint)
+{
+	std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*> points;
+	points.reserve(MAX_CONTROL_POINTS);
+	dayofdefeatsource::DoDTeam team = bot->GetMyDoDTeam();
+
+	CDayOfDefeatSourceMod::GetDODMod()->CollectControlPointsToAttack(team, points);
+
+	if (points.empty())
+	{
+		return false;
+	}
+
+	if (controlpoint)
+	{
+		// no need to NULL check here, CollectControlPointsToAttack returns early if it's NULL so the points.empty() will catch it
+		const CDODObjectiveResource* objres = CDayOfDefeatSourceMod::GetDODMod()->GetDODObjectiveResource();
+
+		for (auto point : points)
+		{
+			if (team == dayofdefeatsource::DoDTeam::DODTEAM_ALLIES)
+			{
+				// Someone from my team is trying to cap this point and there isn't enough players to cap it, priorize the first point found
+				if (objres->GetAlliesRequiredCappers(point->index) > 1 && objres->GetNumAlliesOnPoint(point->index) > 0 &&
+					objres->GetNumAlliesOnPoint(point->index) < objres->GetAlliesRequiredCappers(point->index))
+				{
+					*controlpoint = point;
+					return true;
+				}
+			}
+			else
+			{
+				if (objres->GetAxisRequiredCappers(point->index) > 1 && objres->GetNumAxisOnPoint(point->index) > 0 &&
+					objres->GetNumAxisOnPoint(point->index) < objres->GetAxisRequiredCappers(point->index))
+				{
+					*controlpoint = point;
+					return true;
+				}
+			}
+		}
+
+		if (points.size() == 1U)
+		{
+			*controlpoint = points[0];
+		}
+		else
+		{
+			*controlpoint = points[CBaseBot::s_botrng.GetRandomInt<std::size_t>(0U, points.size() - 1U)];
+		}
+	}
+
+	return true;
+}
+
+TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
+{
+	const CDODObjectiveResource* objres = CDayOfDefeatSourceMod::GetDODMod()->GetDODObjectiveResource();
+
+	if (m_controlpoint->capture_trigger.Get() == nullptr)
+	{
+		if (!objres || objres->GetNumBombsRequired(m_controlpoint->index) == 0)
+		{
+			return Done("Can't capture target control point!");
+		}
+	}
+
+	if (objres && objres->GetNumBombsRemaining(m_controlpoint->index) > 0)
+	{
+		// need bombs
+
+		CBaseEntity* target = nullptr;
+
+		for (auto& handle : m_controlpoint->bomb_targets)
+		{
+			CBaseEntity* ent = handle.Get();
+
+			if (!ent)
+			{
+				continue;
+			}
+
+			int state = 0;
+			entprops->GetEntProp(handle.GetEntryIndex(), Prop_Send, "m_iState", state);
+
+			if (state != static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE))
+			{
+				continue;
+			}
+
+			target = ent;
+			break;
+		}
+
+		if (bot->GetInventoryInterface()->HasBomb())
+		{
+			return SwitchTo(new CDoDSBotDeployBombTask(target), "Bombing the control point!");
+		}
+
+		CDoDSBotDeployBombTask* task = new CDoDSBotDeployBombTask(target);
+		return SwitchTo(new CDoDSBotFetchBombTask(task), "Going to fetch a bomb to plant at the control point!");
+	}
+
+	return Continue();
+}
+
+TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskUpdate(CDoDSBot* bot)
+{
+	CBaseEntity* trigger = m_controlpoint->capture_trigger.Get();
+
+	if (trigger == nullptr || m_controlpoint->point.Get() == nullptr || m_controlpoint->index == dayofdefeatsource::INVALID_CONTROL_POINT)
+	{
+		return Done("Invalid control point!");
+	}
+
+	const CDODObjectiveResource* objres = CDayOfDefeatSourceMod::GetDODMod()->GetDODObjectiveResource();
+
+	if (objres)
+	{
+		if (objres->GetOwnerTeamIndex(m_controlpoint->index) == static_cast<int>(bot->GetMyDoDTeam()) ||
+			(objres->GetNumBombsRequired(m_controlpoint->index) > 0 && objres->GetNumBombsRemaining(m_controlpoint->index) == 0))
+		{
+			// my team owns it or all bombs exploded
+			return Done("Control point has been captured!");
+		}
+	}
+
+	if (bot->GetControlPointIndex() == m_controlpoint->index)
+	{
+		return Continue(); // capturing the point
+	}
+
+	if (m_repathtimer.IsElapsed())
+	{
+		m_repathtimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(1.0f, 2.1f));
+		Vector goal = UtilHelpers::getWorldSpaceCenter(trigger);
+		CDoDSBotPathCost cost(bot);
+		m_nav.ComputePathToPosition(bot, goal, cost);
+	}
+
+	m_nav.Update(bot);
+
+	return Continue();
+}

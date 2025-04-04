@@ -21,6 +21,21 @@ namespace dodslib
 	 */
 	int GetControlPointIndex(CBaseEntity* entity);
 	dayofdefeatsource::DoDRoundState GetRoundState();
+
+	inline const char* GetDoDTeamName(dayofdefeatsource::DoDTeam team)
+	{
+		switch (team)
+		{
+		case dayofdefeatsource::DODTEAM_SPECTATOR:
+			return "SPECTATOR";
+		case dayofdefeatsource::DODTEAM_ALLIES:
+			return "ALLIES";
+		case dayofdefeatsource::DODTEAM_AXIS:
+			return "AXIS";
+		default:
+			return "UNASSIGNED";
+		}
+	}
 }
 
 

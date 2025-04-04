@@ -53,7 +53,7 @@ public:
 	*/
 	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false);
 	// Given two known entities, select which one the bot should target first
-	virtual std::shared_ptr<const CKnownEntity> SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2);
+	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 
 	/**
 	 * @brief Desired aim spot when aiming weapons at enemies
@@ -70,8 +70,14 @@ public:
 		MAX_DESIRED_AIM_SPOTS
 	};
 
-	// Given a entity, returns a vector of where the bot should aim at. The player parameter may be NULL.
-	virtual Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player = nullptr, DesiredAimSpot desiredAim = AIMSPOT_NONE);
+	/**
+	 * @brief Selects the position the bot should aim at a given entity.
+	 * @param me Bot.
+	 * @param entity Entity to aim at.
+	 * @param desiredAim Desired aim spot.
+	 * @return Position the bot should aim at, return vec3_origin for no answer.
+	 */
+	virtual Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE);
 	// If a game mode has a toggle ready feature, this asks if the bot is ready
 	virtual QueryAnswerType IsReady(CBaseBot* me);
 	// Should the bot help a specific teammate?
@@ -122,12 +128,12 @@ inline QueryAnswerType IDecisionQuery::IsBlocker(CBaseBot* me, edict_t* blocker,
 	return ANSWER_UNDEFINED;
 }
 
-inline std::shared_ptr<const CKnownEntity> IDecisionQuery::SelectTargetThreat(CBaseBot* me, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
+inline const CKnownEntity* IDecisionQuery::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return nullptr;
 }
 
-inline Vector IDecisionQuery::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
+inline Vector IDecisionQuery::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
 	return vec3_origin;
 }

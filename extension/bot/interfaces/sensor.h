@@ -56,8 +56,8 @@ public:
 	// Returns true if the given entity is already known by the bot
 	virtual bool IsKnown(edict_t* entity);
 	// Gets the Known entity of the given entity or NULL if not known by the bot
-	virtual std::shared_ptr<const CKnownEntity> GetKnown(CBaseEntity* entity);
-	std::shared_ptr<const CKnownEntity> GetKnown(edict_t* edict);
+	virtual const CKnownEntity* GetKnown(CBaseEntity* entity);
+	const CKnownEntity* GetKnown(edict_t* edict);
 	// Updates the position of a known entity or adds it to the list if not known
 	virtual void UpdateKnownEntity(edict_t* entity);
 
@@ -75,7 +75,7 @@ public:
 	virtual const float GetTimeSinceVisibleThreat() const;
 
 	// Gets the primary known threat to the bot or NULL if none
-	virtual std::shared_ptr<const CKnownEntity> GetPrimaryKnownThreat(const bool onlyvisible = false);
+	virtual const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
 	/**
 	 * @brief Gets the quantity of known entities
 	 * @param teamindex Filter known entities by team or negative number if don't care
@@ -105,7 +105,7 @@ public:
 	{
 		for (auto& i : m_knownlist)
 		{
-			const CKnownEntity* known = i.get();
+			const CKnownEntity* known = &i;
 			functor(known);
 		}
 	}
@@ -120,7 +120,7 @@ public:
 	{
 		for (auto& i : m_knownlist)
 		{
-			const CKnownEntity* known = i.get();
+			const CKnownEntity* known = &i;
 
 			if (known->IsValid() && !IsIgnored(known->GetEntity()) && IsEnemy(known->GetEntity()))
 			{
@@ -139,7 +139,7 @@ public:
 	{
 		for (auto& i : m_knownlist)
 		{
-			const CKnownEntity* known = i.get();
+			const CKnownEntity* known = &i;
 
 			if (known->IsValid() && !IsIgnored(known->GetEntity()) && IsFriendly(known->GetEntity()))
 			{
@@ -157,9 +157,9 @@ public:
 	template <typename T>
 	inline void CollectKnownEntities(std::vector<const CKnownEntity*>& outvector, T functor)
 	{
-		for (auto& ptr : m_knownlist)
+		for (auto& obj : m_knownlist)
 		{
-			const CKnownEntity* known = ptr.get();
+			const CKnownEntity* known = &obj;
 			
 			if (functor(known))
 			{
@@ -176,11 +176,16 @@ protected:
 	virtual void CleanKnownEntities();
 	// Same as GetKnown but it's not const, use this internally when updating known entities
 	CKnownEntity* FindKnownEntity(edict_t* edict);
-	inline std::vector<std::shared_ptr<CKnownEntity>>& GetKnownEntityList() { return m_knownlist; }
+	inline std::vector<CKnownEntity>& GetKnownEntityList() { return m_knownlist; }
+
+	inline bool IsAwareOf(const CKnownEntity* known) const
+	{
+		return known->GetTimeSinceBecomeKnown() >= GetMinRecognitionTime();
+	}
 
 private:
-	std::vector<std::shared_ptr<CKnownEntity>> m_knownlist;
-	std::shared_ptr<const CKnownEntity> m_primarythreatcache;
+	std::vector<CKnownEntity> m_knownlist;
+	const CKnownEntity* m_primarythreatcache;
 	CountdownTimer m_updateNonPlayerTimer;
 	float m_cachedNPCupdaterate;
 	float m_fieldofview;
@@ -190,11 +195,6 @@ private:
 	float m_minrecognitiontime;
 	float m_lastupdatetime;
 	IntervalTimer m_threatvisibletimer;
-
-	inline bool IsAwareOf(const std::shared_ptr<CKnownEntity>& known) const
-	{
-		return known->GetTimeSinceBecomeKnown() >= GetMinRecognitionTime();
-	}
 };
 
 #endif // !NAVBOT_SENSOR_INTERFACE_H_

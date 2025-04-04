@@ -23,12 +23,12 @@ TaskResult<CDoDSBot> CDoDSBotMainTask::OnTaskUpdate(CDoDSBot* bot)
 		return Continue();
 	}
 
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	if (threat)
 	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat.get());
-		bot->FireWeaponAtEnemy(threat.get(), true);
+		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
+		bot->FireWeaponAtEnemy(threat, true);
 	}
 
 	return Continue();
@@ -41,13 +41,13 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotMainTask::OnDebugMoveToHostCommand(CDo
 	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CDoDSBot, CDoDSBotPathCost>(bot, pos), PRIORITY_CRITICAL, "Responding to debug command!");
 }
 
-Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, CBaseExtPlayer* player, DesiredAimSpot desiredAim)
+Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
 	// temporary
 	return UtilHelpers::getWorldSpaceCenter(entity);
 }
 
-std::shared_ptr<const CKnownEntity> CDoDSBotMainTask::SelectTargetThreat(CBaseBot* baseBot, std::shared_ptr<const CKnownEntity> threat1, std::shared_ptr<const CKnownEntity> threat2)
+const CKnownEntity* CDoDSBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	CDoDSBot* me = static_cast<CDoDSBot*>(baseBot);
 
@@ -60,6 +60,10 @@ std::shared_ptr<const CKnownEntity> CDoDSBotMainTask::SelectTargetThreat(CBaseBo
 	else if (!threat1 && threat2)
 	{
 		return threat2;
+	}
+	else if (threat1 == threat2)
+	{
+		return threat1; // if both are the same, return threat1
 	}
 
 	// both are valids now

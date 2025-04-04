@@ -138,32 +138,17 @@ void IPlayerController::RunLook()
 
 	if (m_lookentity.IsValid())
 	{
-		auto lookatentity = gamehelpers->GetHandleEntity(m_lookentity);
+		CBaseEntity* pEntity = m_lookentity.Get();
 
-		if (lookatentity != nullptr)
+		if (pEntity)
 		{
-			auto index = gamehelpers->IndexOfEdict(lookatentity);
-
-			// Look at entity is a player entity
-			if (UtilHelpers::IsPlayerIndex(index))
-			{
-				// For players, we want to ask the bot behavior interface for a desired aim position
-				// It will handle stuff like proper aiming for the current weapon, etc
-				CBaseExtPlayer player(lookatentity);
-				m_looktarget = GetBot()->GetBehaviorInterface()->GetTargetAimPos(GetBot(), lookatentity->GetIServerEntity()->GetBaseEntity(), &player, m_desiredAimSpot);
-			}
-			else
-			{
-				// For non player entities, just aim at the center
-				m_looktarget = UtilHelpers::getWorldSpaceCenter(lookatentity);
-			}
-
+			m_looktarget = GetBot<CBaseBot>()->GetBehaviorInterface()->GetTargetAimPos(GetBot(), pEntity, m_desiredAimSpot);
 			UpdateAimError();
 
 			// if it's elapsed, the bot has locked in (no aim error)
 			if (!m_aimlockintimer.IsElapsed())
 			{
-				entities::HBaseEntity be(m_lookentity.Get());
+				entities::HBaseEntity be(pEntity);
 				Vector targetvel = be.GetAbsVelocity();
 
 				if (targetvel.Length() > me->GetDifficultyProfile()->GetAimMinSpeedForError())
