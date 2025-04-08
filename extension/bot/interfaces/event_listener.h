@@ -28,10 +28,17 @@ public:
 
 	enum SoundType
 	{
-		SOUND_GENERIC = 0,
-		SOUND_WEAPON,
-		SOUND_PLAYER,
-		SOUND_WORLD,
+		SOUND_INVALID = -1,
+		SOUND_GENERIC = 0, // generic sounds
+		SOUND_WEAPON, // weapon sound (except firing)
+		SOUND_GUNFIRE, // gun fire
+		SOUND_PLAYER, // player sounds
+		SOUND_FOOTSTEP, // NPC/player footstep
+		SOUND_VOICE, // NPC/player voice
+		SOUND_WORLD, // world emitted sounds
+		SOUND_DOOR, // door opening/closing
+		SOUND_TURRET, // turret/sentry gun sound
+		SOUND_DANGER, // something dangerous
 
 		MAX_SOUND_TYPES
 	};
@@ -50,9 +57,9 @@ public:
 	virtual void OnInjured(const CTakeDamageInfo& info); // when the bot takes damage
 	virtual void OnKilled(const CTakeDamageInfo& info); // when the bot is killed
 	virtual void OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info); // when another player gets killed
-	virtual void OnSight(edict_t* subject); // when the bot spots an entity
-	virtual void OnLostSight(edict_t* subject); // when the bot loses sight of an entity
-	virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume); // when the bot hears an entity
+	virtual void OnSight(CBaseEntity* subject); // when the bot spots an entity
+	virtual void OnLostSight(CBaseEntity* subject); // when the bot loses sight of an entity
+	virtual void OnSound(CBaseEntity* source, const Vector& position, SoundType type, const float maxRadius); // when the bot hears an entity
 	virtual void OnRoundStateChanged(); // When the round state changes (IE: round start,end, freeze time end, setup time end, etc...)
 	virtual void OnFlagTaken(CBaseEntity* player); // CTF: Flag was stolen
 	virtual void OnFlagDropped(CBaseEntity* player); // CTF: Flag was dropped
@@ -206,7 +213,7 @@ inline void IEventListener::OnOtherKilled(CBaseEntity* pVictim, const CTakeDamag
 	}
 }
 
-inline void IEventListener::OnSight(edict_t* subject)
+inline void IEventListener::OnSight(CBaseEntity* subject)
 {
 	auto vec = GetListenerVector();
 
@@ -219,7 +226,7 @@ inline void IEventListener::OnSight(edict_t* subject)
 	}
 }
 
-inline void IEventListener::OnLostSight(edict_t* subject)
+inline void IEventListener::OnLostSight(CBaseEntity* subject)
 {
 	auto vec = GetListenerVector();
 
@@ -232,7 +239,7 @@ inline void IEventListener::OnLostSight(edict_t* subject)
 	}
 }
 
-inline void IEventListener::OnSound(edict_t* source, const Vector& position, SoundType type, const int volume)
+inline void IEventListener::OnSound(CBaseEntity* source, const Vector& position, SoundType type, const float maxRadius)
 {
 	auto vec = GetListenerVector();
 
@@ -240,7 +247,7 @@ inline void IEventListener::OnSound(edict_t* source, const Vector& position, Sou
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnSound(source, position, type, volume);
+			listener->OnSound(source, position, type, maxRadius);
 		}
 	}
 }

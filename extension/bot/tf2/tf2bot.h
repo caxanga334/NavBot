@@ -63,6 +63,7 @@ public:
 	int GetCurrency() const;
 	bool IsInUpgradeZone() const;
 	bool IsUsingSniperScope() const;
+	bool IsScopedIn() const override { return IsUsingSniperScope(); }
 
 	inline void BeginBuilding(TeamFortress2::TFObjectType type, TeamFortress2::TFObjectMode mode)
 	{

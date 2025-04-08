@@ -578,9 +578,9 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnInjured(BotClass* bot, const CTakeDamageInfo& info) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnKilled(BotClass* bot, const CTakeDamageInfo& info) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnOtherKilled(BotClass* bot, CBaseEntity* pVictim, const CTakeDamageInfo& info) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, edict_t* subject) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, edict_t* source, const Vector& position, SoundType type, const int volume) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnSight(BotClass* bot, CBaseEntity* subject) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnLostSight(BotClass* bot, CBaseEntity* subject) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnSound(BotClass* bot, CBaseEntity* source, const Vector& position, SoundType type, const float maxRadius) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnRoundStateChanged(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnFlagTaken(BotClass* bot, CBaseEntity* player) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnFlagDropped(BotClass* bot, CBaseEntity* player) { return TryContinue(); }
@@ -1035,19 +1035,19 @@ private:
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnOtherKilled, pVictim, info);
 	}
 
-	void OnSight(edict_t* subject) override final
+	void OnSight(CBaseEntity* subject) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSight, subject);
 	}
 
-	void OnLostSight(edict_t* subject) override final
+	void OnLostSight(CBaseEntity* subject) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnLostSight, subject);
 	}
 
-	void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override final
+	void OnSound(CBaseEntity* source, const Vector& position, SoundType type, const float maxRadius) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnSound, source, position, type, volume);
+		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnSound, source, position, type, maxRadius);
 	}
 
 	void OnRoundStateChanged() override final

@@ -190,6 +190,11 @@ inline void IPlayerInput::ReleaseAttackButton()
 {
 	m_buttons &= ~INPUT_ATTACK;
 	m_leftmousebuttontimer.Invalidate();
+
+	if (m_lastUsedAttackType == AttackType::ATTACK_PRIMARY)
+	{
+		m_lastUsedAttackType = AttackType::ATTACK_NONE;
+	}
 }
 
 inline bool IPlayerInput::IsPressingAttackButton()
@@ -208,6 +213,11 @@ inline void IPlayerInput::ReleaseSecondaryAttackButton()
 {
 	m_buttons &= ~INPUT_ATTACK2;
 	m_rightmousebuttontimer.Invalidate();
+
+	if (m_lastUsedAttackType == AttackType::ATTACK_SECONDARY)
+	{
+		m_lastUsedAttackType = AttackType::ATTACK_NONE;
+	}
 }
 
 inline bool IPlayerInput::IsPressingSecondaryAttackButton()

@@ -19,7 +19,7 @@ static ConVar sm_navbot_path_segment_draw_limit("sm_navbot_path_segment_draw_lim
 static ConVar sm_navbot_path_max_segments("sm_navbot_path_max_segments", "128", FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Maximum number of path segments. Affects performance.");
 
 CPath::CPath() :
-	m_ageTimer()
+	m_ageTimer(), m_destination(0.0f, 0.0f, 0.0f)
 {
 	m_segments.reserve(512);
 	m_cursorPos = 0.0f;

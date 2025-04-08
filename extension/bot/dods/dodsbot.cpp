@@ -85,6 +85,19 @@ bool CDoDSBot::IsDefusingBomb() const
 	return result;
 }
 
+bool CDoDSBot::IsScopedIn() const
+{
+	CBaseEntity* weapon = GetActiveWeapon();
+
+	if (!weapon) { return false; }
+
+	bool* bZoomed = entprops->GetPointerToEntData<bool>(weapon, Prop_Send, "m_bZoomed");
+
+	if (!bZoomed) { return false; }
+
+	return *bZoomed;
+}
+
 CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type)
 {
 	m_me = bot;

@@ -41,7 +41,7 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 		return new CDoDSBotAttackControlPointTask(pointToAttack);
 	}
 
-	return new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot);
+	return new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true);
 }
 
 TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)

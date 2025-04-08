@@ -625,6 +625,55 @@ namespace TeamFortress2
 			return static_cast<int>(VoiceCommandsID::VC_INVALID);
 		}
 	}
+
+	//-------------------------
+	// Shared Teleporter State
+	//-------------------------
+	enum DispenserState
+	{
+		DISPENSER_STATE_IDLE,
+		DISPENSER_STATE_UPGRADING,
+
+		//
+		// ADD NEW ITEMS HERE TO AVOID BREAKING DEMOS
+		//
+	};
+
+	//-------------------------
+	// Shared Teleporter State
+	//-------------------------
+	enum TeleporterState
+	{
+		TELEPORTER_STATE_BUILDING = 0,				// Building, not active yet
+		TELEPORTER_STATE_IDLE,						// Does not have a matching teleporter yet
+		TELEPORTER_STATE_READY,						// Found match, charged and ready
+		TELEPORTER_STATE_SENDING,					// Teleporting a player away
+		TELEPORTER_STATE_RECEIVING,
+		TELEPORTER_STATE_RECEIVING_RELEASE,
+		TELEPORTER_STATE_RECHARGING,				// Waiting for recharge
+		TELEPORTER_STATE_UPGRADING,
+
+		//
+		// ADD NEW ITEMS HERE TO AVOID BREAKING DEMOS
+		//
+	};
+
+	//-------------------------
+	// Shared Sentry State
+	//-------------------------
+	enum SentryState
+	{
+		SENTRY_STATE_INACTIVE = 0,
+		SENTRY_STATE_SEARCHING,
+		SENTRY_STATE_ATTACKING,
+		SENTRY_STATE_UPGRADING,
+
+		//
+		// ADD NEW ITEMS HERE TO AVOID BREAKING DEMOS
+		//
+
+		SENTRY_NUM_STATES,
+	};
 }
 
 

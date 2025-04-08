@@ -34,6 +34,7 @@ public:
 	bool IsPlantingBomb() const;
 	bool IsDefusingBomb() const;
 	bool CanDropAmmo() const { return !m_droppedAmmo; } // ammo can only be dropped once per life
+	bool IsScopedIn() const override;
 
 private:
 	std::unique_ptr<CDoDSBotSensor> m_dodsensor;

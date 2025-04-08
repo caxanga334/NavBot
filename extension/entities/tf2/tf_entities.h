@@ -94,6 +94,15 @@ namespace tfentities
 		inline float GetUpgradeProgress() const { return static_cast<float>(GetUpgradeMetal()) / static_cast<float>(GetMaxUpgradeMetal()); }
 	};
 
+	class HObjectTeleporter : public HBaseObject
+	{
+	public:
+		HObjectTeleporter(edict_t* entity);
+		HObjectTeleporter(CBaseEntity* entity);
+
+		TeamFortress2::TeleporterState GetState() const;
+	};
+
 	class HTeamControlPoint : public HTFBaseEntity
 	{
 	public:

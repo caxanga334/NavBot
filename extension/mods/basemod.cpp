@@ -76,6 +76,12 @@ SourceMod::SMCResult CBaseMod::ReadSMC_KeyValue(const SourceMod::SMCStates* stat
 			v = std::clamp(v, 0.05f, 60.0f);
 			m_modsettings->SetInventoryUpdateRate(v);
 		}
+		else if (strncasecmp(key, "vision_statistics_update", 24) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 0.05f, 2.0f);
+			m_modsettings->SetVisionStatisticsUpdateRate(v);
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

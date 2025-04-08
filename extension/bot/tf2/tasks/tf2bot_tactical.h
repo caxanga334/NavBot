@@ -38,6 +38,7 @@ public:
 private:
 	CountdownTimer m_ammochecktimer;
 	CountdownTimer m_healthchecktimer;
+	CountdownTimer m_teleportertimer;
 };
 
 

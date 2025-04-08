@@ -134,6 +134,8 @@ int CBaseBot::Hook_OnTakeDamage_Alive(const CTakeDamageInfo& info)
 			OnIgnited(info);
 		}
 	}
+	
+	m_lasthurttimer.Start();
 
 	OnTakeDamage_Alive(info);
 	OnInjured(info);

@@ -64,7 +64,7 @@ void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
 		return;
 	}
 	
-	edict_t* groundent = GetGroundEntity();
+	CBaseEntity* groundent = GetGroundEntity();
 
 	if (groundent == nullptr)
 	{
@@ -250,15 +250,11 @@ MoveType_t CBaseExtPlayer::GetMoveType() const
 	return static_cast<MoveType_t>(movetype);
 }
 
-edict_t* CBaseExtPlayer::GetGroundEntity() const
+CBaseEntity* CBaseExtPlayer::GetGroundEntity() const
 {
 	int groundent = -1;
-	edict_t* entity = nullptr;
 	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hGroundEntity", groundent);
-
-	UtilHelpers::IndexToAThings(groundent, nullptr, &entity);
-
-	return entity;
+	return gamehelpers->ReferenceToEntity(groundent);
 }
 
 /**

@@ -420,3 +420,63 @@ CON_COMMAND_F(sm_nav_waypoint_view_angle, "Sets your current angle to the given 
 	}
 }
 
+CON_COMMAND_F(sm_nav_waypoint_toggle_flags, "Toggles base waypoint flags", FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 1)
+	{
+		Msg("[SM] Usage: sm_nav_waypoint_toggle_flags <flag> <flag> ... <flag>");
+		return;
+	}
+
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (!waypoint)
+	{
+		Warning("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+
+	bool found = false;
+
+	for (int arg = 1; arg <= args.ArgC(); arg++)
+	{
+		CWaypoint::BaseFlags flag = CWaypoint::StringToBaseFlags(args[arg]);
+
+		if (flag == CWaypoint::BaseFlags::BASEFLAGS_NONE)
+		{
+			Warning("Unknown flag \"%s\"! \n", args[arg]);
+			continue;
+		}
+
+		found = true;
+		
+		if (waypoint->HasFlags(flag))
+		{
+			Msg("Removing flag \"%s\" from waypoint #%i \n", args[arg], waypoint->GetID());
+			waypoint->ClearFlags(flag);
+		}
+		else
+		{
+			Msg("Adding flag \"%s\" to waypoint #%i \n", args[arg], waypoint->GetID());
+			waypoint->SetFlags(flag);
+		}
+	}
+
+	if (found)
+	{
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	}
+	else
+	{
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
+
+CON_COMMAND_F(sm_nav_waypoint_list_base_flags, "List available base flags on the console", FCVAR_CHEAT)
+{
+	Msg("Base Waypoint flags: \n");
+
+	CWaypoint::PrintBaseFlagsToConsole();
+}

@@ -8,20 +8,23 @@
 #include <sdkports/sdk_timers.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
+#include <navmesh/nav_waypoint.h>
+#include "bot_shared_attack_nearest_enemy.h"
 
 template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedRoamTask : public AITask<BT>
 {
 public:
-	CBotSharedRoamTask(BT* bot, const float travellimit = 4096.0f) :
+	CBotSharedRoamTask(BT* bot, const float travellimit = 4096.0f, const bool attackvisiblenemies = false) :
 		m_pathcost(bot), m_goal(0.0f, 0.0f, 0.0f)
 	{
 		m_goalSet = false;
+		m_attackEnemies = attackvisiblenemies;
 		m_travelLimit = travellimit;
 		m_moveFailures = 0;
 	}
 
-	CBotSharedRoamTask(BT* bot, const Vector& goal, const float timeout = -1.0f) :
+	CBotSharedRoamTask(BT* bot, const Vector& goal, const float timeout = -1.0f, const bool attackvisiblenemies = false) :
 		m_pathcost(bot), m_goal(goal)
 	{
 		if (timeout > 0.0f)
@@ -30,6 +33,22 @@ public:
 		}
 
 		m_goalSet = true;
+		m_attackEnemies = attackvisiblenemies;
+		m_moveFailures = 0;
+	}
+
+	CBotSharedRoamTask(BT* bot, CWaypoint* waypoint, const float timeout = -1.0f, const bool attackvisiblenemies = false) :
+		m_pathcost(bot)
+	{
+		if (timeout > 0.0f)
+		{
+			m_timeout.Start(timeout);
+		}
+
+		m_goal = waypoint->GetRandomPoint();
+		waypoint->Use(bot, 30.0f);
+		m_goalSet = true;
+		m_attackEnemies = attackvisiblenemies;
 		m_moveFailures = 0;
 	}
 
@@ -47,6 +66,7 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	bool m_goalSet;
+	bool m_attackEnemies;
 	float m_travelLimit;
 	int m_moveFailures;
 
@@ -73,6 +93,16 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 	if (m_timeout.HasStarted() && m_timeout.IsElapsed())
 	{
 		return AITask<BT>::Done("Task timed out!");
+	}
+
+	if (m_attackEnemies)
+	{
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+		if (threat)
+		{
+			return AITask<BT>::PauseFor(new CBotSharedAttackNearestEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+		}
 	}
 
 	if (m_repathtimer.IsElapsed())

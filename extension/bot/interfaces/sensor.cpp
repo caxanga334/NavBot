@@ -62,6 +62,9 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	m_primarythreatcache = nullptr;
 	m_updateNonPlayerTimer.Invalidate();
 	m_cachedNPCupdaterate = extmanager->GetMod()->GetModSettings()->GetVisionNPCUpdateRate();
+	m_updateStatisticsTimer.Start(extmanager->GetMod()->GetModSettings()->GetVisionStatisticsUpdateRate());
+	m_statsvisibleallies = 0;
+	m_statsvisibleenemies = 0;
 }
 
 ISensor::~ISensor()
@@ -84,6 +87,7 @@ void ISensor::Reset()
 	m_lastupdatetime = 0.0f;
 	m_threatvisibletimer.Invalidate();
 	m_updateNonPlayerTimer.Invalidate();
+	m_updateStatisticsTimer.Reset();
 }
 
 void ISensor::Update()
@@ -658,21 +662,27 @@ void ISensor::UpdateKnownEntities()
 	// Vision Update - Phase 3 - Update database
 	CollectVisibleEntities(visibleVec);
 
+	if (m_updateStatisticsTimer.IsElapsed())
+	{
+		m_updateStatisticsTimer.Reset();
+		UpdateStatistics();
+	}
+
 	m_lastupdatetime = gpGlobals->curtime;
 }
 
 void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 {
-	auto me = GetBot();
+	CBaseBot* me = GetBot<CBaseBot>();
 
-	for (auto edict : visibleVec)
+	for (edict_t* edict : visibleVec)
 	{
 		// all entities inside visibleVec are visible to the bot RIGHT NOW!
-		auto known = FindKnownEntity(edict);
+		CKnownEntity* known = FindKnownEntity(edict);
 
 		if (known == nullptr) // first time seening this entity
 		{
-			auto& entry = m_knownlist.emplace_back(edict);
+			CKnownEntity& entry = m_knownlist.emplace_back(edict);
 			entry.MarkAsFullyVisible();
 			continue;
 		}
@@ -687,23 +697,24 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 		}
 	}
 
-	for (auto& known : m_knownlist)
+	for (CKnownEntity& known : m_knownlist)
 	{
+		CBaseEntity* pEntity = known.GetEntity();
+
 		if (known.GetTimeSinceLastInfo() < 0.2f)
 		{
 			// reaction time check
 			if (known.GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
 			{
-				me->OnSight(known.GetEdict());
+				me->OnSight(pEntity);
 				m_threatvisibletimer.Start();
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					auto edict = known.GetEdict();
-					rootconsole->ConsolePrint("%s caught line of sight with entity %i (%s)", me->GetDebugIdentifier(), 
-						gamehelpers->IndexOfEdict(edict), gamehelpers->GetEntityClassname(edict));
+					me->DebugPrintToConsole(0, 128, 0, "%s caught line of sight with entity %i (%s)", 
+						me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
 
-					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(edict), 4.0f, 0, 255, 0, 255, false, 5.0f);
+					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 0, 255, 0, 255, false, 5.0f);
 				}
 			}
 
@@ -720,15 +731,14 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 			if (known.IsVisibleNow() == true)
 			{
 				known.MarkAsNotVisible();
-				me->OnLostSight(known.GetEdict());
+				me->OnLostSight(pEntity);
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					auto edict = known.GetEdict();
-					rootconsole->ConsolePrint("%s lost line of sight with entity %i (%s)", me->GetDebugIdentifier(),
-						gamehelpers->IndexOfEdict(edict), gamehelpers->GetEntityClassname(edict));
+					me->DebugPrintToConsole(255, 0, 0, "%s lost line of sight with entity %i (%s)",
+						me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
 
-					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(edict), 4.0f, 255, 0, 0, 255, false, 5.0f);
+					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
 				}
 			}
 		}
@@ -827,5 +837,28 @@ CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
 	}
 
 	return nullptr;
+}
+
+void ISensor::UpdateStatistics()
+{
+	m_statsvisibleallies = 0;
+	m_statsvisibleenemies = 0;
+
+	for (CKnownEntity& known : m_knownlist)
+	{
+		if (known.IsVisibleNow())
+		{
+			CBaseEntity* pEntity = known.GetEntity();
+
+			if (IsFriendly(pEntity))
+			{
+				m_statsvisibleallies++;
+			}
+			else if (IsEnemy(pEntity))
+			{
+				m_statsvisibleenemies++;
+			}
+		}
+	}
 }
 

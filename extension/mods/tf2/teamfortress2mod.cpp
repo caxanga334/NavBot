@@ -281,6 +281,11 @@ void CTeamFortress2Mod::OnNavMeshLoaded()
 			m_sniperWaypoints.push_back(waypoint);
 		}
 
+		if (waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_SNIPER) && waypoint->GetNumOfAvailableAngles() > 0)
+		{
+			m_sniperWaypoints.push_back(waypoint);
+		}
+
 		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_SENTRYGUN && waypoint->GetNumOfAvailableAngles() > 0)
 		{
 			m_sentryWaypoints.push_back(waypoint);

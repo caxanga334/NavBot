@@ -232,6 +232,19 @@ public:
 
 	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_usercmdrng{}; // random number generator bot user commands
 	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_botrng{}; // random number generator for bot stuff
+	// Is the bot using a weapon with scopes and is currently scoped in
+	virtual bool IsScopedIn() const { return false; }
+
+	/**
+	 * @brief Checks if the bot took some damage recently.
+	 * @param time How long since the bot took damage
+	 * @return true if the bot has taken some damage within the last 'time' seconds.
+	 */
+	inline bool HasTakenDamageRecently(const float time = 1.0f)
+	{
+		return m_lasthurttimer.IsLessThen(time);
+	}
+
 protected:
 	bool m_isfirstspawn;
 
@@ -298,6 +311,7 @@ private:
 	Vector m_homepos; // Position where the bot spawned
 	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
 	IntervalTimer m_burningtimer;
+	IntervalTimer m_lasthurttimer; // timer for tracking the last time the bot took damage while alive
 	CMeshNavigator* m_activeNavigator;
 	CountdownTimer m_reloadCheckDelay;
 	const CNavPrerequisite* m_lastPrerequisite; // Last prerequisite this bot used

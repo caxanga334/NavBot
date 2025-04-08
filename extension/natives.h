@@ -14,6 +14,7 @@ namespace natives
 	cell_t IsNavBot(IPluginContext* context, const cell_t* params);
 	cell_t AddNavBot(IPluginContext* context, const cell_t* params);
 	cell_t IsNavMeshLoaded(IPluginContext* context, const cell_t* params);
+	cell_t FireNavBotSoundEvent(IPluginContext* context, const cell_t* params);
 }
 
 

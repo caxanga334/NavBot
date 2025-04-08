@@ -64,6 +64,18 @@
 				"linux"		"32"
 				"linux64"	"32"
 			}
+
+			/**
+			 * offset of netprop m_bMatchBuilding + this to get to the offset of m_hMatchingTeleporter
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/0565403b153dfcde602f6f58d8f4d13483696a13/src/game/server/tf/tf_obj_teleporter.h#L138-L140
+			*/
+			"CObjectTeleporter::m_hMatchingTeleporter"
+			{
+				"windows"	"4"
+				"windows64" "4"
+				"linux"		"4"
+				"linux64"	"4"
+			}
 		}
 	}
 }

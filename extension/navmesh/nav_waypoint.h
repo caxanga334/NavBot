@@ -1,6 +1,7 @@
 #ifndef _NAV_WAYPOINT_H_
 #define _NAV_WAYPOINT_H_
 
+#include <cstring>
 #include <vector>
 #include <array>
 #include <variant>
@@ -70,8 +71,36 @@ public:
 
 	enum BaseFlags : int
 	{
-		BASEFLAGS_NONE = 0
+		BASEFLAGS_NONE = 0, // No flags
+		BASEFLAGS_DEFEND = 0x00000001, // This is a good spot to defend a position from
+		BASEFLAGS_SNIPER = 0x00000002, // This is a good spot to snipe from
+		BASEFLAGS_ROAM = 0x00000004, // This is a destination point for roaming bots
+		BASEFLAGS_CROUCH = 0x00000008, // Bots should crouch when using this waypoint
 	};
+
+	inline static BaseFlags StringToBaseFlags(const char* szFlags)
+	{
+		if (std::strcmp(szFlags, "defend") == 0)
+		{
+			return BASEFLAGS_DEFEND;
+		}
+		else if (std::strcmp(szFlags, "sniper") == 0)
+		{
+			return BASEFLAGS_SNIPER;
+		}
+		else if (std::strcmp(szFlags, "roam") == 0)
+		{
+			return BASEFLAGS_ROAM;
+		}
+		else if (std::strcmp(szFlags, "crouch") == 0)
+		{
+			return BASEFLAGS_CROUCH;
+		}
+
+		return BASEFLAGS_NONE;
+	}
+
+	static void PrintBaseFlagsToConsole();
 
 	bool operator==(const CWaypoint& other)
 	{
@@ -154,7 +183,7 @@ public:
 	 * @param func Function to run.
 	 */
 	template <typename T>
-	void ForEveryAngle(T func) const
+	inline void ForEveryAngle(T func) const
 	{
 		for (std::size_t i = 0U; i < GetNumOfAvailableAngles(); i++)
 		{
@@ -163,22 +192,22 @@ public:
 		}
 	}
 
-	void SetFlags(BaseFlags val)
+	inline void SetFlags(BaseFlags val)
 	{
 		m_flags |= val;
 	}
 
-	void ClearFlags(BaseFlags val)
+	inline void ClearFlags(BaseFlags val)
 	{
 		m_flags &= ~val;
 	}
 
-	bool HasFlags(BaseFlags val) const
+	inline bool HasFlags(BaseFlags val) const
 	{
 		return (m_flags & val) ? true : false;
 	}
 
-	void SetTeam(int team)
+	inline void SetTeam(int team)
 	{
 		m_teamNum = team;
 	}

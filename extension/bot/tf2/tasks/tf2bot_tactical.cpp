@@ -23,12 +23,15 @@
 #include "scenario/payload/tf2bot_task_push_payload.h"
 #include "scenario/mvm/tf2bot_mvm_monitor.h"
 #include "scenario/specialdelivery/tf2bot_special_delivery_monitor_task.h"
+#include "tf2bot_use_teleporter.h"
 
 #undef max
 #undef min
 #undef clamp // undef mathlib macros
 
+#if SOURCE_ENGINE == SE_TF2 // only declare the ConVar on TF2 engine
 static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_percent", "0.5", FCVAR_GAMEDLL, "If the bot health is below this percentage, the bot should retreat for health", true, 0.0f, true, 1.0f);
+#endif // SOURCE_ENGINE == SE_TF2
 
 AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask(CTF2Bot* bot)
 {
@@ -39,12 +42,14 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 {
 	m_ammochecktimer.Start(5.0f);
 	m_healthchecktimer.Start(5.0f);
+	m_teleportertimer.Start(3.0f);
 
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 {
+#if SOURCE_ENGINE == SE_TF2
 	// low ammo and health check
 	if (bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
 	{
@@ -68,6 +73,22 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
+
+	if (m_teleportertimer.IsElapsed())
+	{
+		CBaseEntity* teleporter = nullptr;
+
+		if (CTF2BotUseTeleporterTask::IsPossible(bot, &teleporter))
+		{
+			m_teleportertimer.StartRandom(75.0f, 135.0f); // don't search again for a while
+			return PauseFor(new CTF2BotUseTeleporterTask(teleporter), "Using teleporter!");
+		}
+		else
+		{
+			m_teleportertimer.StartRandom(1.0f, 6.0f);
+		}
+	}
 
 	return Continue();
 }
@@ -89,10 +110,12 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 		return ANSWER_NO;
 	}
 
+#if SOURCE_ENGINE == SE_TF2
 	if (me->GetHealthPercentage() <= sm_navbot_tf_ai_low_health_percent.GetFloat())
 	{
 		return ANSWER_YES;
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	if (me->IsAmmoLow())
 	{

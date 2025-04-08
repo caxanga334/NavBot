@@ -98,7 +98,8 @@ public:
 class CBasePathSegment
 {
 public:
-	CBasePathSegment()
+	CBasePathSegment() :
+		forward(0.0f, 0.0f, 0.0f), goal(0.0f, 0.0f, 0.0f), portalcenter(0.0f, 0.0f, 0.0f)
 	{
 		area = nullptr;
 		ladder = nullptr;
@@ -179,7 +180,8 @@ public:
 		const CBasePathSegment* segment; // segment before the cursor position
 		bool outdated; // true if the cursor was changed without updating
 
-		PathCursor()
+		PathCursor() :
+			forward(0.0f, 0.0f, 0.0f), position(0.0f, 0.0f, 0.0f)
 		{
 			curvature = 0.0f;
 			segment = nullptr;
@@ -197,6 +199,9 @@ public:
 	};
 
 	virtual void Invalidate();
+
+	// Returns the path destination since the last ComputePath call.
+	inline const Vector& GetPathDestination() const { return m_destination; }
 
 protected:
 	virtual CBasePathSegment* AllocNewSegment() const { return new CBasePathSegment; }
@@ -222,6 +227,7 @@ public:
 
 		auto start = bot->GetAbsOrigin();
 		auto startArea = bot->GetLastKnownNavArea();
+		m_destination = goal;
 
 		if (startArea == nullptr)
 		{
@@ -450,6 +456,7 @@ private:
 	IntervalTimer m_ageTimer;
 	PathCursor m_cursor;
 	float m_cursorPos;
+	Vector m_destination; // 'Goal' position of the last ComputePath call
 
 	void DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration);
 	void Drawladder(const CNavLadder* ladder, AIPath::SegmentType type, const float duration);
@@ -461,6 +468,7 @@ inline void CPath::Invalidate()
 	m_ageTimer.Invalidate();
 	m_cursorPos = 0.0f;
 	m_cursor.Invalidate();
+	m_destination = vec3_origin;
 }
 
 inline void CPath::MoveCursorToStart(void)

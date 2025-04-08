@@ -6,6 +6,7 @@
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
+#include <bot/bot_shared_utils.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <sdkports/sdk_timers.h>
@@ -187,7 +188,22 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 		}
 	}
 
-	m_nav.Update(bot);
+	std::shared_ptr<CBotWeapon> myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+	bool move = true;
+
+	// Don't move if the bot can see and the enemy is within attack range.
+	if (myweapon && known->IsVisibleNow())
+	{
+		float maxrange = botsharedutils::weapons::GetMaxAttackRangeForCurrentlyHeldWeapon(bot);
+		float dist = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(known->GetEntity()));
+		
+		if (dist < maxrange)
+		{
+			move = false;
+		}
+	}
+
+	if (move) { m_nav.Update(bot); }
 
 	return AITask<BT>::Continue();
 }

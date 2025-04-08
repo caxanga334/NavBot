@@ -1169,6 +1169,7 @@ public:
 		m_searchLadders = true;
 		m_searchLinks = true;
 		m_searchElevators = true;
+		m_endSearch = false;
 	}
 
 	INavAreaCollector(T* start, const float limit = 999999.0f)
@@ -1180,6 +1181,7 @@ public:
 		m_searchLadders = true;
 		m_searchLinks = true;
 		m_searchElevators = true;
+		m_endSearch = false;
 	}
 
 	INavAreaCollector(T* start, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators)
@@ -1191,6 +1193,7 @@ public:
 		m_searchLadders = searchLadders;
 		m_searchLinks = searchLinks;
 		m_searchElevators = searchElevators;
+		m_endSearch = false;
 	}
 
 	virtual ~INavAreaCollector() {}
@@ -1237,11 +1240,17 @@ public:
 	 */
 	template<typename F>
 	T* GetRandomCollectedArea(F functor) const;
+	// Gets the NavSearchNode for the given area. NULL if not found.
+	const INavSearchNode<T>* GetNodeForArea(T* area) const;
+	// Forces the search to end early
+	void EndSearch() { m_endSearch = true; }
 
 protected:
 
 	// Adds an area to search list, pass the previous area
 	void IncludeInSearch(T* prevArea, T* area);
+
+	bool ShouldEndSearchEarly() const { return m_endSearch; }
 
 private:
 	T* m_startArea;
@@ -1252,6 +1261,7 @@ private:
 	bool m_searchLadders;
 	bool m_searchLinks;
 	bool m_searchElevators;
+	bool m_endSearch;
 
 	void InitSearch();
 
@@ -1297,6 +1307,11 @@ inline void INavAreaCollector<T>::Execute()
 		{
 			// Search adjacent areas and add them to the search list if we never searched them
 			SearchAdjacentAreas(next);
+		}
+
+		if (ShouldEndSearchEarly())
+		{
+			break;
 		}
 	}
 
@@ -1436,6 +1451,19 @@ inline void INavAreaCollector<T>::Reset()
 }
 
 template<typename T>
+inline const INavSearchNode<T>* INavAreaCollector<T>::GetNodeForArea(T* area) const
+{
+	auto it = m_nodes.find(area->GetID());
+
+	if (it == m_nodes.end())
+	{
+		return nullptr;
+	}
+
+	return &it->second;
+}
+
+template<typename T>
 inline void INavAreaCollector<T>::IncludeInSearch(T* prevArea, T* area)
 {
 	if (m_nodes.find(area->GetID()) == m_nodes.end())
@@ -1462,7 +1490,7 @@ inline void INavAreaCollector<T>::IncludeInSearch(T* prevArea, T* area)
 template<typename T>
 inline void INavAreaCollector<T>::InitSearch()
 {
-
+	m_endSearch = false;
 	auto status = m_nodes.emplace(m_startArea->GetID(), INavSearchNode<T>(m_startArea));
 
 	if (status.second == true)

@@ -518,6 +518,51 @@ const Vector& tf2lib::GetFlagPosition(CBaseEntity* flag)
 	return UtilHelpers::getEntityOrigin(owner);
 }
 
+CBaseEntity* tf2lib::GetMatchingTeleporter(CBaseEntity* teleporter)
+{
+	static unsigned int offset = 0;
+
+	if (offset == 0)
+	{
+		// initialize
+
+		SourceMod::IGameConfig* cfg = nullptr;
+		char buffer[256];
+		int offset_to = 0;
+
+		if (!gameconfs->LoadGameConfigFile("navbot.games", &cfg, buffer, sizeof(buffer)))
+		{
+			smutils->LogError(myself, "%s", buffer);
+			return nullptr;
+		}
+
+		if (!cfg->GetOffset("CObjectTeleporter::m_hMatchingTeleporter", &offset_to))
+		{
+			gameconfs->CloseGameConfigFile(cfg);
+			smutils->LogError(myself, "Failed to get CObjectTeleporter::m_hMatchingTeleporter offset from NavBot's gamedata file!");
+			return nullptr;
+		}
+
+		gameconfs->CloseGameConfigFile(cfg);
+		SourceMod::sm_sendprop_info_t info;
+		ServerClass* clss = gamehelpers->FindEntityServerClass(teleporter);
+
+		if (!clss)
+		{
+			return nullptr;
+		}
+
+		if (gamehelpers->FindSendPropInfo(clss->GetName(), "m_bMatchBuilding", &info))
+		{
+			offset = info.actual_offset + static_cast<unsigned int>(offset_to);
+			smutils->LogMessage(myself, "Computed offset for CObjectTeleporter::m_hMatchingTeleporter: %u", offset);
+		}
+	}
+
+	CHandle<CBaseEntity>* hMatchingTeleporter = entprops->GetPointerToEntData<CHandle<CBaseEntity>>(teleporter, offset);
+	return hMatchingTeleporter->Get();
+}
+
 CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 {
 	const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();

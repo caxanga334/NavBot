@@ -1,5 +1,6 @@
 #include <filesystem>
 #include <fstream>
+#include <algorithm>
 
 #include <extension.h>
 #include <manager.h>
@@ -25,15 +26,13 @@ void WaypointConnect::ConvertFromIDtoPointer()
 	}
 }
 
-CWaypoint::CWaypoint()
+CWaypoint::CWaypoint() :
+	m_origin(0.0f, 0.0f, 0.0f)
 {
 	m_ID = g_NextWaypointID; // Assing the next ID to this instance
 	g_NextWaypointID++; // Increment ID
 
-	for (auto& angle : m_aimAngles)
-	{
-		angle.Init(0.0f, 0.0f, 0.0f);
-	}
+	std::fill(std::begin(m_aimAngles), std::end(m_aimAngles), QAngle{0.0f, 0.0f, 0.0f});
 
 	m_flags = 0;
 	m_numAimAngles = 0;
@@ -44,6 +43,11 @@ CWaypoint::CWaypoint()
 
 CWaypoint::~CWaypoint()
 {
+}
+
+void CWaypoint::PrintBaseFlagsToConsole()
+{
+	Msg("defend sniper roam crouch \n");
 }
 
 void CWaypoint::Reset()
@@ -211,7 +215,29 @@ void CWaypoint::Draw() const
 	constexpr std::size_t size = 512;
 
 	std::unique_ptr<char[]> text = std::make_unique<char[]>(size);
-	ke::SafeSprintf(text.get(), size, "Waypoint #%i Team #%i Radius %3.1f", m_ID, m_teamNum, m_radius);
+	ke::SafeSprintf(text.get(), size, "Waypoint #%i Team #%i Radius %3.1f Flags ", m_ID, m_teamNum, m_radius);
+
+	if (HasFlags(BASEFLAGS_DEFEND))
+	{
+		ke::SafeStrcat(text.get(), size, "DEFEND ");
+	}
+	if (HasFlags(BASEFLAGS_SNIPER))
+	{
+		ke::SafeStrcat(text.get(), size, "SNIPER ");
+	}
+	if (HasFlags(BASEFLAGS_ROAM))
+	{
+		ke::SafeStrcat(text.get(), size, "ROAM ");
+	}
+	if (HasFlags(BASEFLAGS_CROUCH))
+	{
+		ke::SafeStrcat(text.get(), size, "CROUCH ");
+	}
+	if (m_flags == 0)
+	{
+		ke::SafeStrcat(text.get(), size, "NONE ");
+	}
+
 	NDebugOverlay::Text(m_origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_TEXT_HEIGHT), text.get(), false, NDEBUG_PERSIST_FOR_ONE_TICK);
 
 	DrawModText();
@@ -266,13 +292,7 @@ Vector CWaypoint::GetRandomPoint() const
 		return m_origin;
 	}
 
-	Vector tmp;
-
-	tmp.x = randomgen->GetRandomReal<float>((m_origin.x - m_radius), (m_origin.x + m_radius));
-	tmp.y = randomgen->GetRandomReal<float>((m_origin.y - m_radius), (m_origin.y + m_radius));
-	tmp.z = m_origin.z;
-
-	return tmp;
+	return Vector{ randomgen->GetRandomReal<float>((m_origin.x - m_radius), (m_origin.x + m_radius)), randomgen->GetRandomReal<float>((m_origin.y - m_radius), (m_origin.y + m_radius)), m_origin.z };
 }
 
 float CWaypoint::DistanceTo(const Vector& other) const

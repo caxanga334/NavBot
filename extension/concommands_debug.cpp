@@ -2,11 +2,13 @@
 #include <string>
 #include <sstream>
 #include <chrono>
+#include <queue>
 
 #include <extension.h>
 #include <manager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
+#include <bot/bot_shared_utils.h>
 #include <bot/interfaces/behavior.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <entities/tf2/tf_entities.h>
@@ -1091,6 +1093,46 @@ CON_COMMAND(sm_navbot_debug_entsinbox, "Debug EntitiesInBox implementation.")
 
 		return true;
 	});
+}
+
+CON_COMMAND(sm_navbot_debug_find_cover, "Debugs the find cover utility")
+{
+	if (TheNavMesh->GetNavAreaCount() == 0)
+	{
+		Warning("Find Cover needs a nav mesh to search! \n");
+		return;
+	}
+
+	static bool spot{ false };
+	static Vector vecSpot{ 0.0f, 0.0f, 0.0f };
+
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+
+	if (!spot)
+	{
+		vecSpot = UtilHelpers::getEntityOrigin(host);
+		Msg("Cover From position set to %3.2f %3.2f %3.2f \n", vecSpot.x, vecSpot.y, vecSpot.z);
+		spot = true;
+		return;
+	}
+
+	spot = false;
+	const Vector& origin = UtilHelpers::getEntityOrigin(host);
+	botsharedutils::FindCoverCollector search{ vecSpot, 512.0f, true, true, 2048.0f, origin };
+
+	search.Execute();
+
+	if (search.IsCollectedAreasEmpty())
+	{
+		Warning("Failed to find cover! \n");
+		return;
+	}
+
+	CNavArea* coverArea = search.GetRandomCollectedArea();
+	coverArea->DrawFilled(255, 0, 255, 200, 20.0f);
+
+	NDebugOverlay::Line(origin, coverArea->GetCenter(), 0, 255, 0, true, 20.0f);
+	Msg("Found cover area! %i\n", coverArea->GetID());
 }
 
 #endif // EXT_DEBUG

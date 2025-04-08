@@ -84,7 +84,7 @@ public:
 	inline virtual CBaseBot* MyBotPointer() { return nullptr; }
 
 	virtual MoveType_t GetMoveType() const;
-	virtual edict_t* GetGroundEntity() const;
+	virtual CBaseEntity* GetGroundEntity() const;
 	virtual bool Weapon_OwnsThisType(const char* weapon, edict_t** result = nullptr);
 	// Gets the current active weapon or NULL if none
 	virtual CBaseEntity* GetActiveWeapon() const;

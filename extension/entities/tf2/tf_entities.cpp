@@ -323,3 +323,20 @@ std::string tfentities::HTeamControlPoint::GetPrintName() const
 
 	return ret;
 }
+
+tfentities::HObjectTeleporter::HObjectTeleporter(edict_t* entity) :
+	HBaseObject(entity)
+{
+}
+
+tfentities::HObjectTeleporter::HObjectTeleporter(CBaseEntity* entity) :
+	HBaseObject(entity)
+{
+}
+
+TeamFortress2::TeleporterState tfentities::HObjectTeleporter::GetState() const
+{
+	int state = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iState", state);
+	return static_cast<TeamFortress2::TeleporterState>(state);
+}

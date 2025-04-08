@@ -84,8 +84,8 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotFetchBombTask::OnMoveToSuccess(CDoDSBo
 bool CDoDSBotFetchBombTask::SelectNearestBombDispenser(CDoDSBot* bot)
 {
 	auto cmp = [&bot](CBaseEntity* lhs, CBaseEntity* rhs) {
-		float range1 = bot->GetRangeToSqr(lhs);
-		float range2 = bot->GetRangeToSqr(rhs);
+		float range1 = bot->GetRangeToSqr(UtilHelpers::getWorldSpaceCenter(lhs));
+		float range2 = bot->GetRangeToSqr(UtilHelpers::getWorldSpaceCenter(rhs));
 
 		return range1 > range2;
 	};

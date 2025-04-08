@@ -35,6 +35,34 @@ native bool AddNavBot(int& client, const char[] botName = NULL_STRING);
  */
 native bool IsNavMeshLoaded();
 
+enum NavBotAISoundType
+{
+	NAVBOT_SOUND_INVALID = -1,		// Invalid sound (don't use it)
+	NAVBOT_SOUND_GENERIC = 0, 		// generic sounds
+	NAVBOT_SOUND_WEAPON, 			// weapon sound (except firing)
+	NAVBOT_SOUND_GUNFIRE, 			// gun fire
+	NAVBOT_SOUND_PLAYER, 			// player sounds
+	NAVBOT_SOUND_FOOTSTEP, 			// NPC/player footstep
+	NAVBOT_SOUND_VOICE, 			// NPC/player voice
+	NAVBOT_SOUND_WORLD, 			// world emitted sounds
+	NAVBOT_SOUND_DOOR, 				// door opening/closing
+	NAVBOT_SOUND_TURRET, 			// turret/sentry gun sound
+	NAVBOT_SOUND_DANGER, 			// something dangerous
+
+	NAVBOT_MAX_SOUND_TYPES
+};
+
+/**
+ * Fires an AI sound event for all NavBot's bots.
+ *
+ * @param entity			The entity that made the sound.
+ * @param origin			The sound position uses the entity's WorldSpaceCenter by default, you can pass a position here to override it.
+ * @param soundType			Sound type made by the entity.
+ * @param maxRadius			Maximum distance from origin the sound can be heard. Negative values means it's global.
+ * @error					Invalid entity, invalid sound type or volume value given.
+ */
+native void FireNavBotSoundEvent(int entity, const float origin[3] = NULL_VECTOR, NavBotAISoundType soundType, const float maxRadius);
+
 /**
  * Called when a new NavBot instance is about to be created.
  * 

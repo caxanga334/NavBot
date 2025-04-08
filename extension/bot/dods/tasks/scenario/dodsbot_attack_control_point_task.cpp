@@ -10,6 +10,8 @@
 #include "dodsbot_attack_control_point_task.h"
 #include "dodsbot_fetch_bomb_task.h"
 #include "dodsbot_deploy_bomb_task.h"
+#include <bot/tasks_shared/bot_shared_defend_spot.h>
+#include <bot/tasks_shared/bot_shared_roam.h>
 
 CDoDSBotAttackControlPointTask::CDoDSBotAttackControlPointTask(const CDayOfDefeatSourceMod::DoDControlPoint* controlpoint)
 {
@@ -107,6 +109,43 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 
 			target = ent;
 			break;
+		}
+
+		if (!target)
+		{
+			// all bomb targets are unavailable
+			for (auto& handle : m_controlpoint->bomb_targets)
+			{
+				CBaseEntity* ent = handle.Get();
+
+				if (!ent)
+				{
+					continue;
+				}
+
+				int state = 0;
+				entprops->GetEntProp(handle.GetEntryIndex(), Prop_Send, "m_iState", state);
+
+				// armed bomb that needs to be guarded
+				if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ARMED))
+				{
+					target = ent;
+					break;
+				}
+
+				break;
+			}
+
+			if (target)
+			{
+				const Vector& pos = UtilHelpers::getEntityOrigin(target);
+				return SwitchTo(new CBotSharedDefendSpotTask<CDoDSBot, CDoDSBotPathCost>(bot, pos, 15.0f, true), "Defending armed bomb!");
+			}
+			else
+			{
+				// No point to attack, no bomb to plant or defend
+				return SwitchTo(new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
+			}
 		}
 
 		if (bot->GetInventoryInterface()->HasBomb())

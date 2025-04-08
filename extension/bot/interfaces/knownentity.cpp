@@ -17,7 +17,6 @@ CKnownEntity::CKnownEntity(edict_t* entity)
 
 CKnownEntity::CKnownEntity(int entity)
 {
-	
 	auto edict = gamehelpers->EdictOfIndex(entity);
 	gamehelpers->SetHandleEntity(m_handle, edict);
 	Init();
@@ -83,7 +82,7 @@ void CKnownEntity::UpdatePosition()
 	{
 		entities::HBaseEntity be(pEntity);
 		m_timelastinfo = gpGlobals->curtime;
-		m_lastknownposition = be.GetAbsOrigin();
+		m_lastknownposition = UtilHelpers::getEntityOrigin(pEntity);
 		m_lastknownvelocity = be.GetAbsVelocity();
 		m_lastknownarea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
 	}

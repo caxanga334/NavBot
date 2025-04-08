@@ -6,6 +6,7 @@
 #include <sdkports/sdk_timers.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <navmesh/nav_mesh.h>
+#include <navmesh/nav_waypoint.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include <bot/bot_shared_utils.h>
@@ -30,6 +31,29 @@ public:
 		m_maxtime = maxtime;
 		m_endonthreat = endifenemy;
 		m_reached = false;
+		m_waypoint = nullptr;
+	}
+
+	CBotSharedDefendSpotTask(BT* bot, CWaypoint* waypoint, const float maxtime, const bool endifenemy) :
+		m_pathCost(bot), m_defendSpot(0.0f, 0.0f, 0.0f)
+	{
+		m_watchSpot = waypoint->GetRandomPoint();
+		m_maxtime = maxtime;
+		m_endonthreat = endifenemy;
+		m_reached = false;
+		m_waypoint = waypoint;
+		std::vector<Vector> spots;
+
+		waypoint->ForEveryAngle([&waypoint, &spots](const QAngle& angle) {
+			Vector dir;
+			AngleVectors(angle, &dir);
+			dir.NormalizeInPlace();
+			Vector aimAt = (waypoint->GetOrigin() + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_AIM_HEIGHT)) + (dir * 1024.0f);
+			spots.push_back(aimAt);
+		});
+
+		m_aimSpots.swap(spots);
+		waypoint->Use(bot, maxtime + 10.0f);
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
@@ -48,6 +72,7 @@ private:
 	CountdownTimer m_repathtimer;
 	CountdownTimer m_aimtimer;
 	std::vector<Vector> m_aimSpots;
+	CWaypoint* m_waypoint;
 	bool m_endonthreat;
 	bool m_reached;
 
@@ -136,16 +161,19 @@ inline TaskEventResponseResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnMoveToSuc
 template<typename BT, typename CT>
 inline void CBotSharedDefendSpotTask<BT, CT>::OnReachDestination(BT* bot)
 {
-	botsharedutils::AimSpotCollector collector(bot);
-	collector.Execute();
-	collector.ExtractAimSpots(m_aimSpots);
-
-	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	if (m_aimSpots.empty())
 	{
-		for (const Vector& spot : m_aimSpots)
+		botsharedutils::AimSpotCollector collector(bot);
+		collector.Execute();
+		collector.ExtractAimSpots(m_aimSpots);
+
+		if (bot->IsDebugging(BOTDEBUG_TASKS))
 		{
-			NDebugOverlay::Sphere(spot, 8.0f, 255, 0, 0, true, m_maxtime + 2.0f);
-			NDebugOverlay::Text(spot, "AimSpot", false, m_maxtime + 2.0f);
+			for (const Vector& spot : m_aimSpots)
+			{
+				NDebugOverlay::Sphere(spot, 8.0f, 255, 0, 0, true, m_maxtime + 2.0f);
+				NDebugOverlay::Text(spot, "AimSpot", false, m_maxtime + 2.0f);
+			}
 		}
 	}
 

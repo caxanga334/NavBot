@@ -49,6 +49,8 @@ namespace tf2lib
 	CBaseEntity* GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team);
 	// gets the position of an item_teamflag
 	const Vector& GetFlagPosition(CBaseEntity* flag);
+	// Gets the matching teleporter.
+	CBaseEntity* GetMatchingTeleporter(CBaseEntity* teleporter);
 }
 
 namespace tf2lib::mvm

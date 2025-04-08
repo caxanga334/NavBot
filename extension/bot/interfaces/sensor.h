@@ -90,9 +90,6 @@ public:
 
 	virtual const CKnownEntity* GetNearestHeardKnown(int teamIndex);
 
-	// Events
-	// virtual void OnSound(edict_t* source, const Vector& position, SoundType type, const int volume) override;
-
 	/**
 	 * @brief Runs a function on every known entity.
 	 * 
@@ -168,6 +165,10 @@ public:
 		}
 	}
 
+	// Number of visible allies. The information is updated periodically and cached, it may be out of date.
+	inline int GetVisibleAlliesCount() const { return m_statsvisibleallies; }
+	// Number of visible enemies. The information is updated periodically and cached, it may be out of date.
+	inline int GetVisibleEnemiesCount() const { return m_statsvisibleenemies; }
 protected:
 	virtual void UpdateKnownEntities();
 	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);
@@ -183,10 +184,12 @@ protected:
 		return known->GetTimeSinceBecomeKnown() >= GetMinRecognitionTime();
 	}
 
+	void UpdateStatistics();
 private:
 	std::vector<CKnownEntity> m_knownlist;
 	const CKnownEntity* m_primarythreatcache;
 	CountdownTimer m_updateNonPlayerTimer;
+	CountdownTimer m_updateStatisticsTimer;
 	float m_cachedNPCupdaterate;
 	float m_fieldofview;
 	float m_coshalfFOV;
@@ -195,6 +198,8 @@ private:
 	float m_minrecognitiontime;
 	float m_lastupdatetime;
 	IntervalTimer m_threatvisibletimer;
+	int m_statsvisibleallies;
+	int m_statsvisibleenemies;
 };
 
 #endif // !NAVBOT_SENSOR_INTERFACE_H_

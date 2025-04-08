@@ -217,7 +217,8 @@ enum class OffMeshConnectionType : std::uint32_t
 class NavOffMeshConnection
 {
 public:
-	NavOffMeshConnection()
+	NavOffMeshConnection() :
+		m_start(0.0f, 0.0f, 0.0f), m_end(0.0f, 0.0f, 0.0f)
 	{
 		m_type = OffMeshConnectionType::OFFMESH_INVALID;
 	}

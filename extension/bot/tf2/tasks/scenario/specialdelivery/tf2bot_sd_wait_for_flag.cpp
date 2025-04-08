@@ -55,7 +55,7 @@ TaskResult<CTF2Bot> CTF2BotSDWaitForFlagTask::OnTaskUpdate(CTF2Bot* bot)
 			// 20% roam, 80% escort teammate
 			if (CBaseBot::s_botrng.GetRandomInt<int>(1, 5) == 5)
 			{
-				return SwitchTo(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot), "Teammate has the australium, roaming around!");
+				return SwitchTo(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 4096.0f, true), "Teammate has the australium, roaming around!");
 			}
 			else
 			{

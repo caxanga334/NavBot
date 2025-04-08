@@ -45,7 +45,7 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskUpdate(CTF2Bot* bot)
 		m_capzone = capzone;
 	}
 
-	edict_t* groundent = bot->GetGroundEntity();
+	CBaseEntity* groundent = bot->GetGroundEntity();
 
 	if (groundent && !bot->GetMovementInterface()->IsUsingElevator())
 	{
