@@ -46,14 +46,9 @@ QueryAnswerType IBehavior::ShouldRetreat(CBaseBot* me)
 	return GetDecisionQueryResponder()->ShouldRetreat(me);
 }
 
-QueryAnswerType IBehavior::ShouldUse(CBaseBot* me, edict_t* object)
+QueryAnswerType IBehavior::IsIgnoringMapObjectives(CBaseBot* me)
 {
-	return GetDecisionQueryResponder()->ShouldUse(me, object);
-}
-
-QueryAnswerType IBehavior::ShouldFreeRoam(CBaseBot* me)
-{
-	return GetDecisionQueryResponder()->ShouldFreeRoam(me);
+	return GetDecisionQueryResponder()->IsIgnoringMapObjectives(me);
 }
 
 QueryAnswerType IBehavior::IsBlocker(CBaseBot* me, edict_t* blocker, const bool any)

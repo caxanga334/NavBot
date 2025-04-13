@@ -26,7 +26,6 @@ public:
 	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
 	TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
 	TaskEventResponseResult<CBaseBot> OnDebugMoveToHostCommand(CBaseBot* bot) override;
-	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
 	const char* GetName() const override { return "CBaseBotTestTask"; }
 };
 
@@ -75,12 +74,6 @@ TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnDebugMoveToHostCommand(CBa
 {
 	rootconsole->ConsolePrint("AI Event -- OnDebugMoveToHostCommand");
 	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH, "Event pause test!");
-}
-
-QueryAnswerType CBaseBotTestTask::ShouldFreeRoam(CBaseBot* me)
-{
-	rootconsole->ConsolePrint("AI Query -- ShouldFreeRoam");
-	return ANSWER_YES;
 }
 
 TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBaseBot>* pastTask)

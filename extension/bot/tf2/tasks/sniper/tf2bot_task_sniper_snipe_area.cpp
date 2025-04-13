@@ -3,60 +3,8 @@
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <navmesh/nav_pathfind.h>
+#include <bot/bot_shared_utils.h>
 #include "tf2bot_task_sniper_snipe_area.h"
-
-class SnipingAreaCollector : public INavAreaCollector<CTFNavArea>
-{
-public:
-	SnipingAreaCollector(CTF2Bot* bot) :
-		INavAreaCollector<CTFNavArea>(),
-		m_offset(0.0f, 0.0f, 36.0f),
-		m_filter(bot->GetEntity(), COLLISION_GROUP_NONE)
-	{
-		m_me = bot;
-		m_origin = bot->GetEyeOrigin();
-		SetStartArea(static_cast<CTFNavArea*>(bot->GetLastKnownNavArea()));
-		SetTravelLimit(bot->GetDifficultyProfile()->GetMaxVisionRange());
-	}
-
-	bool ShouldCollect(CTFNavArea* area) override;
-
-private:
-	CTF2Bot* m_me;
-	Vector m_origin;
-	Vector m_offset;
-	trace::CTraceFilterNoNPCsOrPlayers m_filter;
-	trace_t m_tr;
-};
-
-bool SnipingAreaCollector::ShouldCollect(CTFNavArea* area)
-{
-	trace::line(m_origin, area->GetCenter() + m_offset, MASK_SHOT, &m_filter, m_tr);
-
-	if (m_tr.fraction < 1.0f)
-	{
-		return false; // area not visible
-	}
-
-	// if the current Area is visible but any connectedArea, this is an edge area.
-	bool isEdgeArea = false;
-
-	area->ForEachConnectedArea([this, &isEdgeArea](CNavArea* connectedArea) {
-		if (isEdgeArea)
-		{
-			return; // skip trace if edge is found
-		}
-
-		trace::line(m_origin, connectedArea->GetCenter() + m_offset, MASK_SHOT, &m_filter, m_tr);
-
-		if (m_tr.fraction < 1.0f)
-		{
-			isEdgeArea = true; // not visible, mark as edge
-		}
-	});
-
-	return isEdgeArea;
-}
 
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
@@ -93,7 +41,8 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			m_boredTimer.Reset();
 
-			bot->GetControlInterface()->AimAt(threat->GetEdict(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at visible threat!");
+			botsharedutils::aiming::SelectDesiredAimSpotForTarget(bot, threat->GetEntity());
+			bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at visible threat!");
 
 			if (m_fireWeaponDelay.IsElapsed() && bot->IsLookingTowards(threat->GetEntity(), SNIPER_FIRE_DOT_TOLERANCE))
 			{
@@ -184,17 +133,9 @@ void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 		return;
 	}
 
-	SnipingAreaCollector collector(me);
+	botsharedutils::AimSpotCollector collector(me);
 	collector.Execute();
-
-	auto& allareas = collector.GetCollectedAreas();
-	Vector offset(0.0f, 0.0f, 70.0f);
-
-
-	for (auto area : allareas)
-	{
-		m_lookPoints.push_back(area->GetCenter() + offset);
-	}
+	collector.ExtractAimSpots(m_lookPoints);
 }
 
 void CTF2BotSniperSnipeAreaTask::EquipAndScope(CTF2Bot* me)

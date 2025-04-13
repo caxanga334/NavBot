@@ -35,6 +35,8 @@ CTF2Bot::~CTF2Bot()
 void CTF2Bot::Reset()
 {
 	CBaseBot::Reset();
+
+	m_voicecmdtimer.Reset();
 }
 
 void CTF2Bot::Update()
@@ -423,6 +425,41 @@ void CTF2Bot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	}
 }
 
+void CTF2Bot::SendVoiceCommand(TeamFortress2::VoiceCommandsID id)
+{
+	constexpr auto VOICE_COMMAND_COOLDOWN = 5.0f;
+
+	if (m_voicecmdtimer.HasStarted() && m_voicecmdtimer.IsLessThen(VOICE_COMMAND_COOLDOWN))
+	{
+		return;
+	}
+
+	using namespace TeamFortress2;
+	constexpr std::size_t size = 32U;
+	std::unique_ptr<char[]> cmd = std::make_unique<char[]>(size);
+
+	int x, y;
+
+	if (id < VoiceCommandsID::VC_MENU1START)
+	{
+		x = 0;
+		y = static_cast<int>(id);
+	}
+	else if (id >= VoiceCommandsID::VC_MENU1START && id < VoiceCommandsID::VC_MENU2START)
+	{
+		x = 1;
+		y = static_cast<int>(id) - static_cast<int>(VoiceCommandsID::VC_MENU1START);
+	}
+	else /* if (id >= VoiceCommandsID::VC_MENU2START) */
+	{
+		x = 2;
+		y = static_cast<int>(id) - static_cast<int>(VoiceCommandsID::VC_MENU2START);
+	}
+
+	ke::SafeSprintf(cmd.get(), size, "voicemenu %i %i", x, y);
+	DelayedFakeClientCommand(cmd.get()); // DelayedFakeClientCommand copies the string
+}
+
 void CTF2Bot::FindMyBuildings()
 {
 	m_mySentryGun.Term();
@@ -631,15 +668,21 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 
 		if (deltaZ >= m_stepheight)
 		{
-			if (m_candoublejump && deltaZ > m_maxdjheight)
+			if (m_candoublejump)
 			{
-				// too high to reach with double jumps
-				return -1.0f;
+				if (deltaZ > m_maxdjheight)
+				{
+					// too high to reach with double jumps
+					return -1.0f;
+				}
 			}
-			else if (deltaZ > m_maxjumpheight)
+			else
 			{
-				// too high to reach with regular jumps
-				return -1.0f;
+				if (deltaZ > m_maxjumpheight)
+				{
+					// too high to reach with regular jumps
+					return -1.0f;
+				}
 			}
 
 			// jump type is resolved by the navigator

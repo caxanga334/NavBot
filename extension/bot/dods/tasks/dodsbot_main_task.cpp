@@ -1,6 +1,8 @@
+#include <string_view>
 #include <extension.h>
 #include <bot/dods/dodsbot.h>
 #include <mods/dods/dodslib.h>
+#include <bot/bot_shared_utils.h>
 #include "dodsbot_tactical_monitor_task.h"
 #include "dodsbot_main_task.h"
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
@@ -43,7 +45,35 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotMainTask::OnDebugMoveToHostCommand(CDo
 
 Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	// temporary
+	auto weapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+	constexpr std::string_view headbone{ "ValveBiped.Bip01_Head1" };
+
+	if (weapon)
+	{
+		WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
+
+		if (me->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
+		{
+			type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
+		}
+
+		if (UtilHelpers::IsPlayer(entity))
+		{
+			if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsHitscan())
+			{
+				return botsharedutils::aiming::AimAtPlayerWithHitScan(me, entity, desiredAim, weapon.get(), headbone.data());
+			}
+			else if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
+			{
+				return botsharedutils::aiming::AimAtPlayerWithBallistic(me, entity, desiredAim, weapon.get(), headbone.data());
+			}
+			else if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
+			{
+				return botsharedutils::aiming::AimAtPlayerWithProjectile(me, entity, desiredAim, weapon.get(), headbone.data());
+			}
+		}
+	}
+
 	return UtilHelpers::getWorldSpaceCenter(entity);
 }
 

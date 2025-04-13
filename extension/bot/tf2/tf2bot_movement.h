@@ -23,7 +23,8 @@ public:
 	float GetStandingHullHeigh() override;
 	float GetCrouchedHullHeigh() override;
 	// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Mapper%27s_Reference#Jump_Distances
-	float GetMaxDoubleJumpHeight() const override { return 110.0f; } // add some safety margin
+	float GetMaxJumpHeight() const override { return 70.0f; }
+	float GetMaxDoubleJumpHeight() const override { return 112.0f; } // add some safety margin
 	float GetMaxGapJumpDistance() const override;
 
 	void DoubleJump() override;

@@ -18,13 +18,29 @@ public:
 		m_me = me;
 	}
 
+	bool ShouldSearch(CTFNavArea* area) override;
 	bool ShouldCollect(CTFNavArea* area) override;
 private:
 	CTF2Bot* m_me;
 };
 
+bool TF2SniperSpotAreaCollector::ShouldSearch(CTFNavArea* area)
+{
+	if (area->IsBlocked(static_cast<int>(m_me->GetMyTFTeam())))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 bool TF2SniperSpotAreaCollector::ShouldCollect(CTFNavArea* area)
 {
+	if (!m_me->GetMovementInterface()->IsAreaTraversable(area))
+	{
+		return false;
+	}
+
 	if (area->GetSizeX() < 16.0f || area->GetSizeY() < 16.0f)
 	{
 		// don't snipe in small areas
@@ -73,7 +89,8 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 	{
 		// reached sniping goal
 		m_sniping = true;
-		return PauseFor(new CTF2BotSniperSnipeAreaTask(m_waypoint), "Sniping!");
+		bot->GetMovementInterface()->DoCounterStrafe();
+		return SwitchTo(new CTF2BotSniperSnipeAreaTask(m_waypoint), "Sniping!");
 	}
 
 	if (m_repathTimer.IsElapsed() || !m_nav.IsValid())
@@ -148,7 +165,7 @@ void CTF2BotSniperMoveToSnipingSpotTask::FilterWaypoints(CTF2Bot* bot, std::vect
 	CBaseEntity* pEntity = tf2lib::mvm::GetMostDangerousFlag();
 	Vector pos = bot->GetAbsOrigin();
 
-	if (pEntity == nullptr)
+	if (pEntity != nullptr)
 	{
 		tfentities::HCaptureFlag flag(pEntity);
 		pos = flag.GetPosition();
@@ -208,6 +225,142 @@ Vector CTF2BotSniperMoveToSnipingSpotTask::GetSnipingSearchStartPosition(CTF2Bot
 			if (area)
 			{
 				return area->GetCenter();
+			}
+		}
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_ADCP:
+	{
+		std::vector<CBaseEntity*> controlpoints;
+		controlpoints.reserve(8);
+		CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToAttack(bot->GetMyTFTeam(), controlpoints);
+		CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToDefend(bot->GetMyTFTeam(), controlpoints);
+
+		if (!controlpoints.empty())
+		{
+			CBaseEntity* point = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(controlpoints);
+			Vector pos = UtilHelpers::getWorldSpaceCenter(point);
+			pos = trace::getground(pos);
+			return pos;
+		}
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_CP:
+		[[fallthrough]];
+	case TeamFortress2::GameModeType::GM_ARENA:
+		[[fallthrough]];
+	case TeamFortress2::GameModeType::GM_KOTH:
+		[[fallthrough]];
+	case TeamFortress2::GameModeType::GM_TC:
+	{
+		std::vector<CBaseEntity*> controlpoints;
+		controlpoints.reserve(8);
+
+		if (bot->GetDifficultyProfile()->GetAggressiveness() >= 25)
+		{
+			CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToAttack(bot->GetMyTFTeam(), controlpoints);
+		}
+		
+		CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToDefend(bot->GetMyTFTeam(), controlpoints);
+
+		if (!controlpoints.empty())
+		{
+			CBaseEntity* point = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(controlpoints);
+			Vector pos = UtilHelpers::getWorldSpaceCenter(point);
+			pos = trace::getground(pos);
+			return pos;
+		}
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_PL:
+	{
+		CBaseEntity* payload = CTeamFortress2Mod::GetTF2Mod()->GetBLUPayload();
+
+		if (!payload)
+		{
+			// red attacking?
+			payload = CTeamFortress2Mod::GetTF2Mod()->GetREDPayload();
+		}
+
+		if (payload)
+		{
+			return UtilHelpers::getWorldSpaceCenter(payload);
+		}
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_PL_RACE:
+	{
+		CBaseEntity* payload = nullptr;
+
+		if (randomgen->GetRandomInt<int>(0, 1) == 1)
+		{
+			payload = CTeamFortress2Mod::GetTF2Mod()->GetBLUPayload();
+		}
+		else
+		{
+			payload = CTeamFortress2Mod::GetTF2Mod()->GetREDPayload();
+		}
+
+		return UtilHelpers::getWorldSpaceCenter(payload);
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_CTF:
+	{
+		// Random chance to go snipe near the enemy flag
+		if (bot->GetDifficultyProfile()->GetAggressiveness() >= 50 && randomgen->GetRandomInt<int>(1, 3) == 3)
+		{
+			edict_t* entity = bot->GetFlagToFetch();
+
+			if (entity)
+			{
+				tfentities::HCaptureFlag flag(entity);
+				return flag.GetPosition();
+			}
+		}
+
+		edict_t* ent = bot->GetFlagToDefend(false, false);
+
+		if (ent)
+		{
+			tfentities::HCaptureFlag flag(ent);
+			return flag.GetPosition();
+		}
+
+		ent = bot->GetFlagCaptureZoreToDeliver();
+
+		if (ent)
+		{
+			return UtilHelpers::getWorldSpaceCenter(ent);
+		}
+
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_SD:
+	{
+		if (randomgen->GetRandomInt<int>(1, 3) == 3)
+		{
+			CBaseEntity* zone = tf2lib::sd::GetSpecialDeliveryCaptureZone();
+
+			if (zone)
+			{
+				Vector pos = UtilHelpers::getWorldSpaceCenter(zone);
+				pos = trace::getground(pos);
+				return pos;
+			}
+		}
+		else
+		{
+			CBaseEntity* flag = tf2lib::sd::GetSpecialDeliveryFlag();
+
+			if (flag)
+			{
+				tfentities::HCaptureFlag flagent(flag);
+				return flagent.GetPosition();
 			}
 		}
 

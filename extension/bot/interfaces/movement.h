@@ -172,7 +172,7 @@ public:
 
 	inline virtual float GetTraversableSlopeLimit() const { return 0.6f; }
 	// (cheat) Set the bot's Z velocity to this value when crouch jumping
-	inline virtual float GetCrouchJumpZBoost() const { return 282.0f; } // max vel should be around 277 (tf2), we added some extra to help bots
+	inline virtual float GetCrouchJumpZBoost() const { return 298.0f; } // max vel should be around 277 (tf2), we added some extra to help bots
 
 	// Bot collision hull width
 	virtual float GetHullWidth();
@@ -206,6 +206,11 @@ public:
 	 * @param path Path navigator that called this.
 	 */
 	virtual void AdjustSpeedForPath(CMeshNavigator* path);
+	/**
+	 * @brief Called by the Navigator to determine if the bot needs to crouch for the path ahead.
+	 * @param path Path navigator that called this function.
+	 */
+	virtual void DetermineIdealPostureForPath(const CMeshNavigator* path);
 	// Makes the bot releases all movement keys, keeping momentum
 	virtual void Stop();
 	// Makes the bot loses it's momentum. Use if you need the bot to stop immediately

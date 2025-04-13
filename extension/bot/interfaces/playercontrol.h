@@ -119,6 +119,8 @@ private:
 	bool m_isSteady; // Is the bot aim steady?
 	bool m_isOnTarget; // Is the bot looking at it's look target
 	bool m_didLookAtTarget; // Did the bot look at it's current aim target at some point
+	bool m_isSnapingViewAngles; // True if snapview was called
+	QAngle m_snapToAngles;
 	IntervalTimer m_steadyTimer; // Aim stability timer
 	float m_aimSpeed;
 

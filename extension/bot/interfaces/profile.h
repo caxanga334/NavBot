@@ -27,6 +27,8 @@ public:
 		aim_lockin_time = 0.3f;
 		aim_moving_error = 0.2f;
 		aim_minspeed_for_error = 250.0f;
+		aggressiveness = 20;
+		teamwork = 20;
 	}
 
 	// user defined skill profiles starts from 0 and are always a positive skill level
@@ -45,6 +47,8 @@ public:
 	inline const float GetAimLockInTime() const { return aim_lockin_time; }
 	inline const float GetAimMovingError() const { return aim_moving_error; }
 	inline const float GetAimMinSpeedForError() const { return aim_minspeed_for_error; }
+	inline const int GetAggressiveness() const { return aggressiveness; }
+	inline const int GetTeamwork() const { return teamwork; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
@@ -58,6 +62,8 @@ public:
 	inline void SetAimLockInTime(const float time) { aim_lockin_time = time; }
 	inline void SetAimMovingError(const float error) { aim_moving_error = error; }
 	inline void SetAimMinSpeedForError(const float speed) { aim_minspeed_for_error = speed; }
+	inline void SetAggressiveness(const int v) { aggressiveness = v; }
+	inline void SetTeamwork(const int v) { teamwork = v; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -72,6 +78,8 @@ private:
 	float aim_lockin_time; // Time in seconds until the bot aim 'locks' into the target
 	float aim_moving_error; // Aim position error for moving targets
 	float aim_minspeed_for_error; // if the target speed is greater than this, apply error.
+	int aggressiveness; // How aggressive will this bot play
+	int teamwork; // How likely this bot will cooperate with teammates
 };
 
 // Bot difficulty profile manager

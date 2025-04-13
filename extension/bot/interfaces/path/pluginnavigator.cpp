@@ -52,7 +52,8 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 
 	if (runcmd)
 	{
-		CrouchIfNeeded(bot);
+		mover->DetermineIdealPostureForPath(this);
+		mover->AdjustSpeedForPath(this);
 	}
 	
 	Vector origin = bot->GetAbsOrigin();

@@ -98,10 +98,18 @@ CTF2BotSpyMonitor::KnownSpy::KnownSpy(int spy)
 
 void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 {
-	edict_t* spy = m_handle.ToEdict();
+	CBaseEntity* spy = m_handle.Get();
 
 	if (spy == nullptr)
 	{
+		return;
+	}
+
+	int client = UtilHelpers::IndexOfEntity(spy);
+
+	if (tf2lib::GetPlayerClassType(client) != TeamFortress2::TFClassType::TFClass_Spy)
+	{
+		m_handle.Term(); // set the entity to NULL, this known spy instance will be removed by the IsObsolete check.
 		return;
 	}
 
@@ -127,8 +135,6 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 		OnDetected();
 		return;
 	}
-
-	int client = gamehelpers->IndexOfEdict(spy);
 
 	// Detection: Not disguised
 	if (!tf2lib::IsPlayerInCondition(client, TeamFortress2::TFCond::TFCond_Disguised))
@@ -158,6 +164,7 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	// Detection: Disguised as me
 	if (skill >= 5 && target == me->GetIndex())
 	{
+		me->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_SPY);
 		OnDetected();
 		return;
 	}
@@ -165,6 +172,7 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	// Detection: Target is dead
 	if (skill >= 15 && !UtilHelpers::IsPlayerAlive(target))
 	{
+		me->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_SPY);
 		OnDetected();
 		return;
 	}
@@ -174,6 +182,7 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	// Detection: Spy disguise class doesn't match the target current class
 	if (skill >= 50 && tf2lib::GetPlayerClassType(target) != disguiseClass)
 	{
+		me->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_SPY);
 		OnDetected();
 		return;
 	}
@@ -187,6 +196,7 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 
 		if (speed > 100.0f)
 		{
+			me->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_SPY);
 			OnDetected();
 			return;
 		}
@@ -195,6 +205,7 @@ void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 	// Detection: Medics should be healing
 	if (skill >= 75 && disguiseClass == TeamFortress2::TFClass_Medic)
 	{
+		me->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_SPY);
 		OnDetected();
 		return;
 	}

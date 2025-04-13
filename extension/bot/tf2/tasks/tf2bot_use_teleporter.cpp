@@ -22,8 +22,8 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 	UtilHelpers::CEntityEnumerator enumerator;
 
 	Vector origin = bot->GetAbsOrigin();
-	Vector mins = origin + Vector(-300.0f, -300.0f, -32.0f);
-	Vector maxs = origin + Vector(300.0f, 300.0f, 72.0f);
+	Vector mins = origin + Vector(-600.0f, -600.0f, -32.0f);
+	Vector maxs = origin + Vector(600.0f, 600.0f, 72.0f);
 
 	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
 	CBaseEntity* entrance = nullptr;

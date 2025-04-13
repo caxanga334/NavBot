@@ -1,11 +1,15 @@
 #include <chrono>
 
 #include <extension.h>
+#include <manager.h>
+#include <extplayer.h>
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <util/prediction.h>
 
 CON_COMMAND_F(sm_navbot_tool_build_path, "Builds a path from your current position to the marked nav area. (Original Search Method)", FCVAR_CHEAT)
 {
@@ -136,4 +140,87 @@ CON_COMMAND_F(sm_navbot_tool_report_hull_sizes, "Prints the player's hull size t
 
 	META_CONPRINTF("Mins: %3.2f %3.2f %3.2f\n", mins.x, mins.y, mins.z);
 	META_CONPRINTF("Maxs: %3.2f %3.2f %3.2f\n", maxs.x, maxs.y, maxs.z);
+}
+
+CON_COMMAND_F(sm_navbot_tool_projectile_aim, "Tests projectile aim parameters", FCVAR_CHEAT)
+{
+	if (engine->IsDedicatedServer())
+	{
+		Msg("This command can only be used on a Listen Server! \n");
+		return;
+	}
+
+	if (args.ArgC() < 9)
+	{
+		Msg("[SM] Usage: sm_navbot_tool_projectile_aim <target x> <target y> <target z> <projectile speed> <projectile gravity> <ballistics start range> <ballistics end range> <ballistics min rate> <ballistics max rate>\n");
+		return;
+	}
+
+	ConVar* sv_gravity = g_pCVar->FindVar("sv_gravity");
+
+	if (!sv_gravity)
+	{
+		Warning("sm_navbot_tool_projectile_aim FindVar sv_gravity == NULL! \n");
+	}
+
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	const float x = atof(args[1]);
+	const float y = atof(args[2]);
+	const float z = atof(args[3]);
+	const Vector targetPos{ x,y,z };
+	const float projSpeed = atof(args[4]);
+	const float projGrav = atof(args[5]);
+	const float startRange = atof(args[6]);
+	const float endRange = atof(args[7]);
+	const float startRate = atof(args[8]);
+	const float endRate = atof(args[9]);
+	const Vector eyePos = host.GetEyeOrigin();
+	const Vector enemyVel{ 0.0f, 0.0f, 0.0f }; // always zero in this case
+	float rangeTo = (targetPos - eyePos).Length();
+	Vector aimPos = pred::SimpleProjectileLead(targetPos, enemyVel, projSpeed, rangeTo);
+	rangeTo = (eyePos - aimPos).Length(); // update range for gravity compensation
+	const float elevation_rate = RemapValClamped(rangeTo, startRange, endRange, startRate, endRate);
+	const float elevation_Z = pred::GravityComp(rangeTo, projGrav, elevation_rate);
+	aimPos.z += elevation_Z;
+
+	Vector to = (aimPos - eyePos);
+	to.NormalizeInPlace();
+	QAngle viewAngles;
+	VectorAngles(to, viewAngles);
+	host.SnapEyeAngles(viewAngles);
+
+	debugoverlay->AddLineOverlay(eyePos, targetPos, 255, 0, 0, true, 20.0f); // eye to target pos
+	debugoverlay->AddLineOverlay(eyePos, aimPos, 0, 128, 0, true, 20.0f); // eye to calculated pos
+	debugoverlay->AddLineOverlay(aimPos, targetPos, 0, 128, 255, true, 20.0f); // aim pos to target
+}
+
+CON_COMMAND_F(sm_navbot_tool_give_infammo, "Gives infinite reserve ammo to every player", FCVAR_CHEAT)
+{
+	if (engine->IsDedicatedServer())
+	{
+		return;
+	}
+
+	UtilHelpers::ForEachPlayer([](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (player->IsInGame())
+		{
+			for (int i = 0; i < MAX_AMMO_TYPES; i++)
+			{
+				entprops->SetEntProp(client, Prop_Send, "m_iAmmo", 9999, 4, i);
+			}
+		}
+	});
+}
+
+CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current position.", FCVAR_CHEAT)
+{
+	if (engine->IsDedicatedServer())
+	{
+		Msg("This command can only be used on a Listen Server! \n");
+		return;
+	}
+
+	extmanager->ForEachBot([](CBaseBot* bot) {
+		bot->OnDebugMoveToHostCommand();
+	});
 }

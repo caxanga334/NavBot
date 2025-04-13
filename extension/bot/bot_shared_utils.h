@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/sdk_traces.h>
+#include <bot/interfaces/decisionquery.h>
 
 namespace botsharedutils
 {
@@ -50,6 +51,7 @@ namespace botsharedutils
 	public:
 		RandomDefendSpotCollector(const Vector& spot, CBaseBot* bot);
 
+		bool ShouldSearch(CNavArea* area) override;
 		bool ShouldCollect(CNavArea* area) override;
 
 	private:
@@ -73,6 +75,7 @@ namespace botsharedutils
 		 */
 		RandomSnipingSpotCollector(const Vector& spot, CBaseBot* bot, const float maxRange = 4096.0f);
 
+		bool ShouldSearch(CNavArea* area) override;
 		bool ShouldCollect(CNavArea* area) override;
 		void OnDone() override;
 
@@ -142,6 +145,49 @@ namespace botsharedutils::weapons
 	 * @return Weapon's maximum attack range. Returns a large negative value on failure.
 	 */
 	float GetMaxAttackRangeForCurrentlyHeldWeapon(CBaseBot* bot);
+}
+
+namespace botsharedutils::aiming
+{
+	// Gets a position to shoot enemy players
+	Vector GetAimPositionForPlayers(CBaseBot* bot, CBaseExtPlayer* player, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
+	/**
+	 * @brief Utility for bots aiming a hitscan weapon on a player.
+	 * @param bot Bot
+	 * @param target Enemy
+	 * @param desiredAim Desired aim spot.
+	 * @param headbone (optional) Bone to search when going for headshots.
+	 * @return Position to aim at.
+	 */
+	Vector AimAtPlayerWithHitScan(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
+	/**
+	 * @brief Utility for bots aiming a projectile weapon. (Projectile is not affected by gravity, moves in a constant speed).
+	 * @param bot Bot
+	 * @param target Enemy
+	 * @param desiredAim Desired aim spot.
+	 * @param headbone (optional) Bone to search when going for headshots.
+	 * @return Position to aim at.
+	 */
+	Vector AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
+	/**
+	 * @brief Utility for bots aiming a ballistic weapon. (projectile is affected by gravity).
+	 * @param bot Bot
+	 * @param target Enemy
+	 * @param desiredAim Desired aim spot.
+	 * @param headbone (optional) Bone to search when going for headshots.
+	 * @return Position to aim at.
+	 */
+	Vector AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
+	// Gets a position to shoot non-player entities
+	Vector GetAimPositionForEntities(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon);
+	// Same as AimAtPlayerWithProjectile but for non-player entities
+	Vector AimAtEntityWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon);
+	/**
+	 * @brief Basic select between head, center and abs origin for aiming.
+	 * @param bot Bot that will aim at this target.
+	 * @param target Target to aim.
+	 */
+	void SelectDesiredAimSpotForTarget(CBaseBot* bot, CBaseEntity* target);
 }
 
 #endif // !__NAVBOT_BASE_BOT_SHARED_UTILS_H_

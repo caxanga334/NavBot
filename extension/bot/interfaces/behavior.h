@@ -28,8 +28,7 @@ public:
 	QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override;
 	QueryAnswerType ShouldHurry(CBaseBot* me) override;
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
-	QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override;
-	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override;
+	QueryAnswerType IsIgnoringMapObjectives(CBaseBot* me) override;
 	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;

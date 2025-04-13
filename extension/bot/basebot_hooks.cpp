@@ -9,6 +9,10 @@ class CBasePlayer;
 // Need this for CUserCmd class definition
 #include <usercmd.h>
 
+#ifdef EXT_DEBUG
+static ConVar cvar_print_bot_touch("sm_navbot_debug_bot_touch", "Prints entities touched by the bot", FCVAR_GAMEDLL);
+#endif // EXT_DEBUG
+
 namespace BotHookHelpers
 {
 	inline static void CopyBotCmdtoUserCmd(CUserCmd* ucmd, CBotCmd* bcmd)
@@ -119,6 +123,20 @@ void CBaseBot::Hook_Spawn_Post()
 
 void CBaseBot::Hook_Touch(CBaseEntity* pOther)
 {
+#ifdef EXT_DEBUG
+	if (cvar_print_bot_touch.GetBool() && pOther != nullptr)
+	{
+		int index = gamehelpers->EntityToBCompatRef(pOther);
+		const char* classname = gamehelpers->GetEntityClassname(pOther);
+
+		// don't print worldspawn because it will spam the console
+		if (index != 0)
+		{
+			META_CONPRINTF("%s Hook_Touch #%i <%s> \n", GetDebugIdentifier(), index, classname);
+		}
+	}
+#endif // EXT_DEBUG
+
 	Touch(pOther);
 	OnContact(pOther);
 	RETURN_META(MRES_IGNORED);
@@ -162,6 +180,15 @@ void CBaseBot::Hook_PhysicsSimulate()
 	{
 		ConColorMsg(Color(255, 0, 0, 255), "CBaseBot::Hook_PhysicsSimulate called with NULL m_controller <%p>\n", this);
 	}
+
+	// sanity check, see if the hook 'this' pointer isn't the bot itself
+	CBaseEntity* pPlayer = META_IFACEPTR(CBaseEntity);
+
+	if (pPlayer != GetEntity())
+	{
+		Warning(__FUNCTION__ " this != CBaseBot::m_pEntity %p != %p \n", pPlayer, GetEntity());
+	}
+
 #endif // EXT_DEBUG
 
 	// Don't simulate the bot more than once per frame.

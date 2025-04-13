@@ -56,6 +56,8 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	ListenForGameEvent("mvm_wave_complete");
 	ListenForGameEvent("mvm_wave_failed");
 	ListenForGameEvent("teamplay_flag_event");
+	ListenForGameEvent("teamplay_point_startcapture");
+	ListenForGameEvent("teamplay_point_captured");
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -81,16 +83,12 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		{
 			CheckForSetup();
 			OnRoundStart();
-			return;
 		}
-
-		if (strncasecmp(name, "mvm_begin_wave", 14) == 0)
+		else if (strncasecmp(name, "mvm_begin_wave", 14) == 0)
 		{
 			OnRoundStart();
-			return;
 		}
-
-		if (strncasecmp(name, "mvm_wave_complete", 17) == 0)
+		else if (strncasecmp(name, "mvm_wave_complete", 17) == 0)
 		{
 			extmanager->ForEachBot([](CBaseBot* baseBot) {
 				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveEnd();
@@ -98,59 +96,79 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 
 			OnRoundStart();
 
-			return;
 		}
-
-		if (strncasecmp(name, "mvm_wave_failed", 15) == 0)
+		else if (strncasecmp(name, "mvm_wave_failed", 15) == 0)
 		{
 			extmanager->ForEachBot([](CBaseBot* baseBot) {
 				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveFailed();
 			});
 
 			OnRoundStart();
-
-			return;
 		}
-
-		if (strncasecmp(name, "controlpoint_initialized", 24) == 0)
+		else if (strncasecmp(name, "controlpoint_initialized", 24) == 0)
 		{
 			FindControlPoints();
-			return;
 		}
-
-		if (strncasecmp(name, "teamplay_setup_finished", 23) == 0)
+		else if (strncasecmp(name, "teamplay_setup_finished", 23) == 0)
 		{
 			m_bInSetup = false;
-			return;
 		}
-
-		if (strncasecmp(name, "teamplay_flag_event", 19) == 0)
+		else if (strncasecmp(name, "teamplay_flag_event", 19) == 0)
 		{
 			edict_t* edict = gamehelpers->EdictOfIndex(event->GetInt("player", -1));
 
-			if (!UtilHelpers::IsValidEdict(edict))
+			if (UtilHelpers::IsValidEdict(edict))
 			{
-				return;
+				CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
+
+				TeamFortress2::TFFlagEvent flagevent = static_cast<TeamFortress2::TFFlagEvent>(event->GetInt("eventtype", 0));
+
+				if (flagevent == TeamFortress2::TF_FLAGEVENT_PICKEDUP)
+				{
+					extmanager->ForEachBot([&entity](CBaseBot* bot) {
+						bot->OnFlagTaken(entity);
+					});
+				}
+				else if (flagevent == TeamFortress2::TF_FLAGEVENT_DROPPED)
+				{
+					extmanager->ForEachBot([&entity](CBaseBot* bot) {
+						bot->OnFlagDropped(entity);
+					});
+				}
 			}
+		}
+		else if (strncasecmp(name, "teamplay_point_captured", 23) == 0)
+		{
+			int pointID = event->GetInt("cp");
+			int teamWhoCapped = event->GetInt("team");
+			CBaseEntity* entity = GetControlPointByIndex(pointID);
 
-			CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
-
-			TeamFortress2::TFFlagEvent flagevent = static_cast<TeamFortress2::TFFlagEvent>(event->GetInt("eventtype", 0));
-
-			if (flagevent == TeamFortress2::TF_FLAGEVENT_PICKEDUP)
+			if (entity)
 			{
-				extmanager->ForEachBot([&entity](CBaseBot* bot) {
-					bot->OnFlagTaken(entity);
+				extmanager->ForEachBot([&entity, &teamWhoCapped](CBaseBot* bot) {
+
+					if (bot->GetCurrentTeamIndex() == teamWhoCapped)
+					{
+						bot->OnControlPointCaptured(entity);
+					}
+					else
+					{
+						bot->OnControlPointLost(entity);
+					}
 				});
 			}
-			else if (flagevent == TeamFortress2::TF_FLAGEVENT_DROPPED)
+		}
+		else if (strncasecmp(name, "teamplay_point_startcapture", 27) == 0)
+		{
+			int pointID = event->GetInt("cp");
+			CBaseEntity* entity = GetControlPointByIndex(pointID);
+
+			if (entity)
 			{
 				extmanager->ForEachBot([&entity](CBaseBot* bot) {
-					bot->OnFlagDropped(entity);
+					bot->OnControlPointContested(entity);
 				});
 			}
-
-			return;
 		}
 	}
 }

@@ -22,6 +22,8 @@ IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlaye
 	m_isSteady = false;
 	m_isOnTarget = false;
 	m_didLookAtTarget = false;
+	m_isSnapingViewAngles = false;
+	m_snapToAngles = vec3_angle;
 	m_steadyTimer.Invalidate();
 	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
 	m_lastlookent = nullptr;
@@ -54,6 +56,8 @@ void IPlayerController::Reset()
 	m_isSteady = false;
 	m_isOnTarget = false;
 	m_didLookAtTarget = false;
+	m_isSnapingViewAngles = false;
+	m_snapToAngles = vec3_angle;
 	m_steadyTimer.Invalidate();
 	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
 	m_lastlookent = nullptr;
@@ -89,14 +93,22 @@ void IPlayerController::ProcessButtons(int& buttons)
 // This function handles the bot aiming/looking process
 void IPlayerController::RunLook()
 {
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	if (m_isSnapingViewAngles)
+	{
+		m_isSnapingViewAngles = false;
+		me->SetViewAngles(m_snapToAngles);
+		return;
+	}
+
 	float deltaTime = gpGlobals->frametime;
 
 	if (deltaTime < 0.00001f)
 	{
 		return;
 	}
-
-	CBaseBot* me = GetBot<CBaseBot>();
+	
 	auto currentAngles = me->GetEyeAngles();
 
 	bool isSteady = true;
@@ -346,7 +358,8 @@ void IPlayerController::SnapAimAt(const QAngle& angles, const LookPriority prior
 		return;
 	}
 
-	GetBot()->SnapEyeAngles(angles);
+	m_isSnapingViewAngles = true;
+	m_snapToAngles = angles; // runlook will send the angle for us
 }
 
 void IPlayerController::SnapAimAt(const Vector& pos, const LookPriority priority)
@@ -366,5 +379,4 @@ void IPlayerController::SnapAimAt(const Vector& pos, const LookPriority priority
 	lookAngles.y = AngleNormalize(lookAngles.y);
 
 	SnapAimAt(lookAngles, priority);
-
 }

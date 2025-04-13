@@ -321,14 +321,9 @@ public:
 		PROPAGATE_DECISION_WITH_1ARG(ShouldRetreat, me);
 	}
 
-	QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object) override
+	QueryAnswerType IsIgnoringMapObjectives(CBaseBot* me) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldUse, me, object);
-	}
-
-	QueryAnswerType ShouldFreeRoam(CBaseBot* me) override
-	{
-		PROPAGATE_DECISION_WITH_1ARG(ShouldFreeRoam, me);
+		PROPAGATE_DECISION_WITH_1ARG(IsIgnoringMapObjectives, me);
 	}
 
 	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override

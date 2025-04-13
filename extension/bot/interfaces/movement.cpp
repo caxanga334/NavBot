@@ -74,6 +74,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_ladderExit = nullptr;
 	m_ladderState = NOT_USING_LADDER;
 	m_ladderTimer.Invalidate();
+	m_ladderMoveGoal = vec3_origin;
 	m_useLadderTimer.Invalidate();
 	m_landingGoal = vec3_origin;
 	m_isClimbingObstacle = false;
@@ -422,6 +423,17 @@ void IMovement::AdjustSpeedForPath(CMeshNavigator* path)
 	SetDesiredSpeed(GetRunSpeed() + fabs(data.curvature) * (GetWalkSpeed() - GetRunSpeed()));
 }
 
+void IMovement::DetermineIdealPostureForPath(const CMeshNavigator* path)
+{
+	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
+	const CBasePathSegment* goal = path->GetGoalSegment();
+
+	if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) && GetBot<CBaseBot>()->GetRangeToSqr(goal->goal) <= GOAL_CROUCH_RANGE)
+	{
+		GetBot<CBaseBot>()->GetControlInterface()->PressCrouchButton(0.1f);
+	}
+}
+
 void IMovement::Stop()
 {
 	auto input = GetBot()->GetControlInterface();
@@ -474,12 +486,22 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 
 void IMovement::Jump()
 {
+	if (!IsOnGround())
+	{
+		return;
+	}
+
 	GetBot()->GetControlInterface()->PressJumpButton();
 	m_jumptimer.Start(0.8f);
 }
 
 void IMovement::CrouchJump()
 {
+	if (!IsOnGround())
+	{
+		return;
+	}
+
 	// Execute a crouch jump
 	// See shounic's video https://www.youtube.com/watch?v=7z_p_RqLhkA
 
@@ -487,11 +509,7 @@ void IMovement::CrouchJump()
 	GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
 	GetBot()->GetControlInterface()->PressJumpButton(0.3f);
 
-	if (IsOnGround()) // prevents adding the Z boost while on the air
-	{
-		// This is a tick timer, the bot will jump when it reaches 0
-		m_jump_zboost_timer.Start(0.150f);
-	}
+	m_jump_zboost_timer.Start(0.150f);
 
 	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
 
@@ -535,6 +553,9 @@ bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingF
 	m_isClimbingObstacle = true;
 	m_landingGoal = landingGoal;
 	m_isAirborne = false;
+
+	// low priority look
+	GetBot<CBaseBot>()->GetControlInterface()->AimAt(landingGoal, IPlayerController::LOOK_INTERESTING, 1.0f, "Looking at ledge to climb!");
 
 	return true;
 }

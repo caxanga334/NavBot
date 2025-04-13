@@ -34,7 +34,6 @@ protected:
 	virtual bool JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
 	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
 	virtual edict_t* FindBlocker(CBaseBot* bot);
-	virtual void CrouchIfNeeded(CBaseBot* bot);
 	virtual void BreakIfNeeded(CBaseBot* bot);
 	virtual void SearchForUseableObstacles(CBaseBot* bot);
 
@@ -71,6 +70,7 @@ public:
 		m_repathinterval = repathInterval;
 		m_repathTimer.Invalidate();
 		m_failCount = 0;
+		m_lastGoal = vec3_origin;
 	}
 
 	void Invalidate() override

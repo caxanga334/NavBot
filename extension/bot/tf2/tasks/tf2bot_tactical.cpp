@@ -1,4 +1,5 @@
 #include <limits>
+#include <cstring>
 
 #include <extension.h>
 #include <util/helpers.h>
@@ -15,7 +16,7 @@
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
-#include <bot/tf2/tasks/sniper/tf2bot_task_sniper_move_to_sniper_spot.h>
+#include <bot/tf2/tasks/sniper/tf2bot_task_sniper_main.h>
 #include <bot/tf2/tasks/spy/tf2bot_spy_tasks.h>
 #include <bot/tf2/tasks/scenario/deathmatch/tf2bot_deathmatch.h>
 #include "scenario/controlpoints/tf2bot_controlpoints_monitor.h"
@@ -24,6 +25,7 @@
 #include "scenario/mvm/tf2bot_mvm_monitor.h"
 #include "scenario/specialdelivery/tf2bot_special_delivery_monitor_task.h"
 #include "tf2bot_use_teleporter.h"
+#include <bot/tasks_shared/bot_shared_escort_entity.h>
 
 #undef max
 #undef min
@@ -203,7 +205,21 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectClassTask(CTF2Bot* me)
 	switch (myclass)
 	{
 	case TeamFortress2::TFClass_Sniper:
-		return new CTF2BotSniperMoveToSnipingSpotTask;
+	{
+		CBaseEntity* weapon = me->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Primary));
+
+		if (weapon)
+		{
+			const char* classname = gamehelpers->GetEntityClassname(weapon);
+
+			if (std::strcmp(classname, "tf_weapon_compound_bow") == 0)
+			{
+				return nullptr; // snipers with the huntsman will run default behavior
+			}
+		}
+
+		return new CTF2BotSniperMainTask;
+	}
 	case TeamFortress2::TFClass_Medic:
 		return new CTF2BotMedicMainTask;
 	case TeamFortress2::TFClass_Spy:
@@ -248,6 +264,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 	}
 
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(subject));
+	TeamFortress2::VoiceCommandsID vcmd = static_cast<TeamFortress2::VoiceCommandsID>(command);
 
 	if (skill >= 75 && theirteam != bot->GetMyTFTeam())
 	{
@@ -263,7 +280,34 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 				known->UpdateHeard();
 			}
 		}
-	} // TO-DO: Allow bots to respond to some voice commands (IE: help)
+	}
+	else if (!IsPaused() && theirteam == bot->GetMyTFTeam() && skill > 15 && bot->GetBehaviorInterface()->ShouldAssistTeammate(bot, subject) != ANSWER_NO &&
+		CBaseBot::s_botrng.GetRandomInt<int>(0, 100) >= bot->GetDifficultyProfile()->GetTeamwork())
+	{
+		switch (bot->GetMyClassType())
+		{
+		case TeamFortress2::TFClassType::TFClass_Scout:
+			[[fallthrough]];
+		case TeamFortress2::TFClassType::TFClass_Soldier:
+			[[fallthrough]];
+		case TeamFortress2::TFClassType::TFClass_Pyro:
+			[[fallthrough]];
+		case TeamFortress2::TFClassType::TFClass_DemoMan:
+			[[fallthrough]];
+		case TeamFortress2::TFClassType::TFClass_Heavy:
+		{
+			if (bot->GetRangeTo(UtilHelpers::getEntityOrigin(subject)) < 1200.0f)
+			{
+				bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
+				return TryPauseFor(new CBotSharedEscortEntityTask<CTF2Bot, CTF2BotPathCost>(bot, subject, 30.0f), PRIORITY_MEDIUM, "Responding to teammate call for help!");
+			}
+
+			break;
+		}
+		default:
+			break;
+		}
+	}
 
 	return TryContinue(PRIORITY_DONT_CARE);
 }

@@ -1,5 +1,7 @@
 #include <extension.h>
 #include <util/helpers.h>
+#include <util/prediction.h>
+#include <util/entprops.h>
 #include "basebot.h"
 #include "bot_shared_utils.h"
 
@@ -130,6 +132,12 @@ botsharedutils::RandomDefendSpotCollector::RandomDefendSpotCollector(const Vecto
 	SetStartArea(area);
 }
 
+bool botsharedutils::RandomDefendSpotCollector::ShouldSearch(CNavArea* area)
+{
+	// Don't search into blocked areas for my team
+	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
+}
+
 bool botsharedutils::RandomDefendSpotCollector::ShouldCollect(CNavArea* area)
 {
 	if (area == GetStartArea())
@@ -168,6 +176,11 @@ botsharedutils::RandomSnipingSpotCollector::RandomSnipingSpotCollector(const Vec
 
 	CNavArea* area = TheNavMesh->GetNavArea(spot);
 	SetStartArea(area);
+}
+
+bool botsharedutils::RandomSnipingSpotCollector::ShouldSearch(CNavArea* area)
+{
+	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
 }
 
 bool botsharedutils::RandomSnipingSpotCollector::ShouldCollect(CNavArea* area)
@@ -336,4 +349,252 @@ float botsharedutils::weapons::GetMaxAttackRangeForCurrentlyHeldWeapon(CBaseBot*
 	}
 
 	return range;
+}
+
+Vector botsharedutils::aiming::GetAimPositionForPlayers(CBaseBot* bot, CBaseExtPlayer* player, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
+{
+	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
+
+	Vector theirPos = vec3_origin;
+
+	switch (desiredAim)
+	{
+	case IDecisionQuery::AIMSPOT_ABSORIGIN:
+		theirPos = player->GetAbsOrigin();
+		break;
+	case IDecisionQuery::AIMSPOT_CENTER:
+		theirPos = player->WorldSpaceCenter();
+		break;
+	case IDecisionQuery::AIMSPOT_HEAD:
+	{
+		if (headbone)
+		{
+			player->GetHeadShotPosition(headbone, theirPos);
+			theirPos + wepOffset;
+		}
+		else
+		{
+			theirPos = player->GetEyeOrigin() + wepOffset;
+		}
+
+		break;
+	}
+	case IDecisionQuery::AIMSPOT_OFFSET:
+		theirPos = player->GetAbsOrigin() + bot->GetControlInterface()->GetCurrentDesiredAimOffset();
+		break;
+	case IDecisionQuery::AIMSPOT_BONE:
+	{
+		auto model = UtilHelpers::GetEntityModelPtr(player->GetEdict());
+
+		if (model)
+		{
+			QAngle angle;
+			Vector pos;
+
+			if (UtilHelpers::GetBonePosition(player->GetEntity(), model.get(), bot->GetControlInterface()->GetCurrentDesiredAimBone().c_str(), pos, angle))
+			{
+				theirPos = pos;
+			}
+		}
+
+		break;
+	}
+	default:
+		theirPos = player->WorldSpaceCenter();
+		break;
+	}
+
+	return theirPos;
+}
+
+Vector botsharedutils::aiming::AimAtPlayerWithHitScan(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
+{
+	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
+	return botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
+}
+
+Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
+{
+	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
+
+	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
+	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
+
+	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
+
+	if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
+	{
+		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
+	}
+
+	float range = (theirPos - bot->GetEyeOrigin()).Length();
+	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy.GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+
+	return predicted;
+}
+
+Vector botsharedutils::aiming::AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
+{
+	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
+
+	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
+	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
+
+	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
+
+	if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
+	{
+		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
+	}
+
+	float range = (theirPos - bot->GetEyeOrigin()).Length();
+	auto& attackinfo = weapon->GetWeaponInfo()->GetAttackInfo(type);
+	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy.GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+
+	Vector myEyePos = bot->GetEyeOrigin();
+	Vector enemyVel = enemy.GetAbsVelocity();
+	float rangeTo = (myEyePos - theirPos).Length();
+	const float projSpeed = attackinfo.GetProjectileSpeed();
+	const float gravity = attackinfo.GetGravity();
+
+	Vector aimPos = pred::SimpleProjectileLead(theirPos, enemyVel, projSpeed, rangeTo);
+	rangeTo = (myEyePos - aimPos).Length();
+
+	const float elevation_rate = RemapValClamped(rangeTo, attackinfo.GetBallisticElevationStartRange(), attackinfo.GetBallisticElevationEndRange(), attackinfo.GetBallisticElevationMinRate(), attackinfo.GetBallisticElevationMaxRate());
+	float z = pred::GravityComp(rangeTo, gravity, elevation_rate);
+	aimPos.z += z;
+
+	return aimPos;
+}
+
+Vector botsharedutils::aiming::GetAimPositionForEntities(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon)
+{
+	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
+
+	Vector theirPos = vec3_origin;
+
+	switch (desiredAim)
+	{
+	case IDecisionQuery::AIMSPOT_ABSORIGIN:
+		theirPos = UtilHelpers::getEntityOrigin(target);
+		break;
+	case IDecisionQuery::AIMSPOT_CENTER:
+		theirPos = UtilHelpers::getWorldSpaceCenter(target);
+		break;
+	case IDecisionQuery::AIMSPOT_HEAD:
+	{
+		Vector* viewOffset = entprops->GetPointerToEntData<Vector>(target, Prop_Data, "m_vecViewOffset");
+
+		if (viewOffset)
+		{
+			theirPos = UtilHelpers::getEntityOrigin(target);
+			theirPos = theirPos + (*viewOffset);
+		}
+		else
+		{
+			ICollideable* collider = reinterpret_cast<IServerEntity*>(target)->GetCollideable();
+			const Vector& maxs = collider->OBBMaxs();
+			const Vector& mins = collider->OBBMins();
+			float z = abs(maxs.z - mins.z);
+			z *= 0.90;
+			theirPos = UtilHelpers::getEntityOrigin(target);
+			theirPos.z += z;
+		}
+
+		break;
+	}
+	case IDecisionQuery::AIMSPOT_OFFSET:
+		theirPos = UtilHelpers::getEntityOrigin(target) + bot->GetControlInterface()->GetCurrentDesiredAimOffset();
+		break;
+	case IDecisionQuery::AIMSPOT_BONE:
+	{
+		edict_t* edict = UtilHelpers::BaseEntityToEdict(target);
+
+		if (edict)
+		{
+			auto model = UtilHelpers::GetEntityModelPtr(edict);
+
+			if (model)
+			{
+				QAngle angle;
+				Vector pos;
+
+				if (UtilHelpers::GetBonePosition(target, model.get(), bot->GetControlInterface()->GetCurrentDesiredAimBone().c_str(), pos, angle))
+				{
+					return pos;
+				}
+			}
+		}
+
+		// bone look up failed
+		theirPos = UtilHelpers::getWorldSpaceCenter(target);
+		break;
+	}
+	default:
+		theirPos = UtilHelpers::getWorldSpaceCenter(target);
+		break;
+	}
+
+	return theirPos;
+}
+
+Vector botsharedutils::aiming::AimAtEntityWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon)
+{
+	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
+	Vector theirPos = botsharedutils::aiming::GetAimPositionForEntities(bot, target, desiredAim, weapon);
+
+	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
+
+	if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
+	{
+		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
+	}
+
+	float range = (theirPos - bot->GetEyeOrigin()).Length();
+	auto& attackinfo = weapon->GetWeaponInfo()->GetAttackInfo(type);
+	Vector velocity{ 0.0f, 0.0f, 0.0f };
+	entprops->GetEntPropVector(UtilHelpers::IndexOfEntity(target), Prop_Data, "m_vecVelocity", velocity);
+	Vector predicted = pred::SimpleProjectileLead(theirPos, velocity, weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+
+	Vector myEyePos = bot->GetEyeOrigin();
+	float rangeTo = (myEyePos - theirPos).Length();
+	const float projSpeed = attackinfo.GetProjectileSpeed();
+	const float gravity = attackinfo.GetGravity();
+
+	Vector aimPos = pred::SimpleProjectileLead(theirPos, velocity, projSpeed, rangeTo);
+	rangeTo = (myEyePos - aimPos).Length();
+
+	const float elevation_rate = RemapValClamped(rangeTo, attackinfo.GetBallisticElevationStartRange(), attackinfo.GetBallisticElevationEndRange(), attackinfo.GetBallisticElevationMinRate(), attackinfo.GetBallisticElevationMaxRate());
+	float z = pred::GravityComp(rangeTo, gravity, elevation_rate);
+	aimPos.z += z;
+
+	return aimPos;
+}
+
+void botsharedutils::aiming::SelectDesiredAimSpotForTarget(CBaseBot* bot, CBaseEntity* target)
+{
+	const Vector& maxs = reinterpret_cast<IServerEntity*>(target)->GetCollideable()->OBBMaxs();
+	Vector center = UtilHelpers::getWorldSpaceCenter(target);
+	const Vector& origin = UtilHelpers::getEntityOrigin(target);
+	Vector head = origin + maxs;
+	head.z -= 2.0f;
+
+	const bool headisclear = bot->IsLineOfFireClear(head);
+
+	if (bot->GetDifficultyProfile()->IsAllowedToHeadshot() && headisclear)
+	{
+		bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD);
+	}
+	else if (bot->IsLineOfFireClear(center))
+	{
+		bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
+	}
+	else if (bot->IsLineOfFireClear(origin))
+	{
+		bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN);
+	}
+	else if (headisclear) // this is a fallback for when the bot skips the head due to not being allowed to headshot but LOF is blocked for center and origin.
+	{
+		bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
+	}
 }

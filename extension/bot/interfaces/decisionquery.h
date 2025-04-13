@@ -6,6 +6,7 @@ class CBaseBot;
 class CKnownEntity;
 class CBaseExtPlayer;
 class CBotWeapon;
+class CBaseEntity;
 
 #include "mathlib.h"
 #include <memory>
@@ -40,10 +41,8 @@ public:
 	virtual QueryAnswerType ShouldHurry(CBaseBot* me);
 	// Should the bot retreat?
 	virtual QueryAnswerType ShouldRetreat(CBaseBot* me);
-	// Should the bot use/operate this object (a button, door, lever, elevator, ...)
-	virtual QueryAnswerType ShouldUse(CBaseBot* me, edict_t* object);
-	// Should the bot ignore objetives and walk around the map
-	virtual QueryAnswerType ShouldFreeRoam(CBaseBot* me);
+	// Is the bot ignoring the current map's objectives
+	virtual QueryAnswerType IsIgnoringMapObjectives(CBaseBot* me);
 	/**
 	 * @brief Is the given entity a blocker that the bot should wait/avoid?
 	 * @param me Bot itself
@@ -113,12 +112,7 @@ inline QueryAnswerType IDecisionQuery::ShouldRetreat(CBaseBot* me)
 	return ANSWER_UNDEFINED;
 }
 
-inline QueryAnswerType IDecisionQuery::ShouldUse(CBaseBot* me, edict_t* object)
-{
-	return ANSWER_UNDEFINED;
-}
-
-inline QueryAnswerType IDecisionQuery::ShouldFreeRoam(CBaseBot* me)
+inline QueryAnswerType IDecisionQuery::IsIgnoringMapObjectives(CBaseBot* me)
 {
 	return ANSWER_UNDEFINED;
 }

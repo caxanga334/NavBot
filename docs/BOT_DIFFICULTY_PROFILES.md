@@ -45,4 +45,6 @@ Example profile
 | maxvisionrange | The bot maximum vision range in hammer units. |
 | maxhearingrange | The bot maximum hearing range in hammer units. |
 | minrecognitiontime | The minimum amount of time in seconds an entity must be visible for the bot to it be recognized by the bot's systems. (Reaction time) |
+| aggressiveness | How aggressive this bot is. |
+| teamwork | How likely this bot will cooperate with teammates. |
 

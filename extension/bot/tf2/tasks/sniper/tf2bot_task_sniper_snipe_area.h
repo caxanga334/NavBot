@@ -23,6 +23,8 @@ public:
 	const char* GetName() const override { return "SnipeArea"; }
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
+	// I'm busy
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
 
 private:
 	CTFWaypoint* m_waypoint;

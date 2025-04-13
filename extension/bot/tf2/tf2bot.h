@@ -147,6 +147,8 @@ public:
 	void DoMvMUpgrade() { m_doMvMUpgrade = true; }
 
 	void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true) override;
+
+	void SendVoiceCommand(TeamFortress2::VoiceCommandsID id);
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -156,6 +158,7 @@ private:
 	std::unique_ptr<CTF2BotInventory> m_tf2inventory;
 	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
 	IntervalTimer m_classswitchtimer;
+	IntervalTimer m_voicecmdtimer;
 	CHandle<CBaseEntity> m_mySentryGun;
 	CHandle<CBaseEntity> m_myDispenser;
 	CHandle<CBaseEntity> m_myTeleporterEntrance;

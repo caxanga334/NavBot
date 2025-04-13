@@ -270,6 +270,18 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		v = std::clamp(v, -1.0f, 3000.0f);
 		m_current->SetAimMinSpeedForError(v);
 	}
+	else if (strncasecmp(key, "aggressiveness", 14) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 0, 100);
+		m_current->SetAggressiveness(v);
+	}
+	else if (strncasecmp(key, "teamwork", 8) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 0, 100);
+		m_current->SetTeamwork(v);
+	}
 	else
 	{
 		smutils->LogError(myself, "Unknown key \"%s\" with value \"%s\" found while parsing bot difficulty profile!", key, value);

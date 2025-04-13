@@ -20,6 +20,8 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnFlagTaken(CTF2Bot* bot, CBaseEntity* player) override;
 
 	QueryAnswerType IsReady(CBaseBot* me) override;
+	// Don't chase enemies
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 
 	const char* GetName() const override { return "MedicMain"; }
 

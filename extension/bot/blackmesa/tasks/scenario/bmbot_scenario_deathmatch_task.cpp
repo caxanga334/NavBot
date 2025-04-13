@@ -37,10 +37,5 @@ TaskResult<CBlackMesaBot> CBlackMesaBotScenarioDeathmatchTask::OnTaskUpdate(CBla
 		}
 	}
 
-	if (bot->GetBehaviorInterface()->ShouldFreeRoam(bot) != ANSWER_NO)
-	{
-		return PauseFor(new CBlackMesaBotRoamTask, "Roaming!");
-	}
-
-	return Continue();
+	return PauseFor(new CBlackMesaBotRoamTask, "Roaming!");
 }
