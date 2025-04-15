@@ -85,6 +85,8 @@ public:
 
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
+	// This function checks if class changes are allowed (IE: MvM after wave start)
+	bool IsAllowedToChangeClasses() const;
 	bool ShouldSwitchClass(CTF2Bot* bot) const;
 	TeamFortress2::TFClassType SelectAClassForBot(CTF2Bot* bot) const;
 	TeamFortress2::TeamRoles GetTeamRole(TeamFortress2::TFTeam team) const;

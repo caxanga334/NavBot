@@ -98,6 +98,41 @@ CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command."
 	});
 }
 
+CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
+{
+	if (args.ArgC() < 3)
+	{
+		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_send_button <button> <time>");
+		rootconsole->ConsolePrint("  Buttons: jump crouch use attack1");
+		return;
+	}
+
+	const char* button = args[1];
+	float time = atof(args[2]);
+
+	time = std::clamp(time, 1.0f, 10.0f);
+
+	extmanager->ForEachBot([&button, &time](CBaseBot* bot) {
+		
+		if (strcasecmp(button, "jump") == 0)
+		{
+			bot->GetControlInterface()->PressJumpButton(time);
+		}
+		else if (strcasecmp(button, "crouch") == 0)
+		{
+			bot->GetControlInterface()->PressCrouchButton(time);
+		}
+		else if (strcasecmp(button, "use") == 0)
+		{
+			bot->GetControlInterface()->PressUseButton(time);
+		}
+		else if (strcasecmp(button, "attack1") == 0)
+		{
+			bot->GetControlInterface()->PressAttackButton(time);
+		}
+	});
+}
+
 CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path to the console.")
 {
 	CBaseBot* bot = nullptr;

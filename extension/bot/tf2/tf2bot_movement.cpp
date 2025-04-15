@@ -9,7 +9,6 @@ static ConVar sm_navbot_tf_double_jump_z_boost("sm_navbot_tf_double_jump_z_boost
 
 CTF2BotMovement::CTF2BotMovement(CBaseBot* bot) : IMovement(bot)
 {
-	m_initialJumpWasOnGround = false;
 }
 
 CTF2BotMovement::~CTF2BotMovement()
@@ -18,39 +17,7 @@ CTF2BotMovement::~CTF2BotMovement()
 
 void CTF2BotMovement::Reset()
 {
-	m_doublejumptimer.Invalidate();
-	m_djboosttimer.Invalidate();
-	m_initialJumpWasOnGround = false;
 	IMovement::Reset();
-}
-
-void CTF2BotMovement::Frame()
-{
-
-	if (m_doublejumptimer.HasStarted() && m_doublejumptimer.IsElapsed())
-	{
-		if (m_initialJumpWasOnGround)
-		{
-			m_djboosttimer.Start(0.15f);
-			m_initialJumpWasOnGround = false;
-		}
-
-		Jump();
-		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump! \n", GetBot()->GetDebugIdentifier());
-		m_doublejumptimer.Invalidate();
-	}
-
-
-	if (m_djboosttimer.HasStarted() && m_djboosttimer.IsElapsed())
-	{
-		Vector vel = GetBot()->GetAbsVelocity();
-		vel.z = sm_navbot_tf_double_jump_z_boost.GetFloat();
-		GetBot()->SetAbsVelocity(vel);
-		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Double Jump (Z BOOST)! \n", GetBot()->GetDebugIdentifier());
-		m_djboosttimer.Invalidate();
-	}
-
-	IMovement::Frame();
 }
 
 float CTF2BotMovement::GetHullWidth()
@@ -80,25 +47,18 @@ float CTF2BotMovement::GetMaxGapJumpDistance() const
 	case TeamFortress2::TFClass_Scout:
 		return 600.0f; // double jump gap distance
 	case TeamFortress2::TFClass_Soldier:
-		return 214.0f;
+		return 216.0f;
 	case TeamFortress2::TFClass_DemoMan:
 		return 240.0f;
 	case TeamFortress2::TFClass_Medic:
-		return 270.0f;
+		return 272.0f;
 	case TeamFortress2::TFClass_Heavy:
-		return 207.0f;
+		return 209.0f;
 	case TeamFortress2::TFClass_Spy:
-		return 270.0f;
+		return 272.0f;
 	default:
-		return 257.0f; // classes that moves at 'default speed' (engineer, sniper, pyro)
+		return 258.0f; // classes that moves at 'default speed' (engineer, sniper, pyro)
 	}
-}
-
-void CTF2BotMovement::DoubleJump()
-{
-	CrouchJump(); // crouch jump first
-	m_doublejumptimer.Start(0.55f);
-	m_initialJumpWasOnGround = IsOnGround();
 }
 
 bool CTF2BotMovement::IsAbleToDoubleJump()
@@ -133,31 +93,34 @@ bool CTF2BotMovement::IsAbleToBlastJump()
 
 void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 {
+	CTF2Bot* me = GetBot<CTF2Bot>();
+
 	Jump();
 
 	// look towards the jump target
-	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
+	me->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
 
 	m_isJumpingAcrossGap = true;
 	m_landingGoal = landing;
 	m_isAirborne = false;
 
-	if (GetTF2Bot()->GetMyClassType() == TeamFortress2::TFClass_Scout)
+	if (me->GetMyClassType() == TeamFortress2::TFClass_Scout)
 	{
-		float jumplength = (GetBot()->GetAbsOrigin() - landing).Length();
+		float jumplength = (me->GetAbsOrigin() - landing).Length();
 
 		if (jumplength >= scout_gap_jump_do_double_distance())
 		{
-			m_doublejumptimer.Start(0.5f);
+			// FIX ME!
+			// m_doublejumptimer.Start(0.5f);
 		}
 	}
 
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
-		Vector top = GetBot()->GetAbsOrigin();
+		Vector top = me->GetAbsOrigin();
 		top.z += GetMaxJumpHeight();
 
-		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
+		NDebugOverlay::VertArrow(me->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
 		NDebugOverlay::HorzArrow(top, landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
 	}
 }
@@ -165,7 +128,7 @@ void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward
 bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)
 {
 	auto theirteam = tf2lib::GetEntityTFTeam(index);
-	auto myteam = GetTF2Bot()->GetMyTFTeam();
+	auto myteam = GetBot<CTF2Bot>()->GetMyTFTeam();
 
 	if (myteam == theirteam)
 	{
@@ -177,11 +140,11 @@ bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity
 
 		if (UtilHelpers::FClassnameIs(entity, "obj_*"))
 		{
-			if (GetTF2Bot()->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Engineer)
+			if (GetBot<CTF2Bot>()->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Engineer)
 			{
 				CBaseEntity* builder = tf2lib::GetBuildingBuilder(entity);
 
-				if (builder == GetTF2Bot()->GetEntity())
+				if (builder == GetBot<CTF2Bot>()->GetEntity())
 				{
 					return false; // my own buildings are solid to me
 				}
@@ -194,10 +157,5 @@ bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity
 	}
 
 	return IMovement::IsEntityTraversable(index, edict, entity, now);
-}
-
-CTF2Bot* CTF2BotMovement::GetTF2Bot() const
-{
-	return static_cast<CTF2Bot*>(GetBot());
 }
 

@@ -950,6 +950,12 @@ bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment
 
 				// if we're jumping over this gap, make sure our goal is the landing so we aim for it
 				m_goal = landing;
+				
+				if (bot->IsDebugging(BOTDEBUG_PATH))
+				{
+					NDebugOverlay::Cross3D(m_goal->goal, 5.0f, 0, 255, 255, true, 5.0f);
+					bot->DebugPrintToConsole(0, 255, 255, "%s [CMeshNavigator] JUMPING OVER GAP \n", bot->GetDebugIdentifier());
+				}
 
 				return true;
 			}

@@ -169,11 +169,7 @@ public:
 	virtual float GetMaxGapJumpDistance() const { return 200.0f; } // 200 is a generic safe value that should be compatible with most mods
 	// Max height a player can safely fall
 	virtual float GetMaxDropHeight() const { return 450.0f; }
-
 	inline virtual float GetTraversableSlopeLimit() const { return 0.6f; }
-	// (cheat) Set the bot's Z velocity to this value when crouch jumping
-	inline virtual float GetCrouchJumpZBoost() const { return 298.0f; } // max vel should be around 277 (tf2), we added some extra to help bots
-
 	// Bot collision hull width
 	virtual float GetHullWidth();
 	// Bot collision hull heigh
@@ -213,8 +209,6 @@ public:
 	virtual void DetermineIdealPostureForPath(const CMeshNavigator* path);
 	// Makes the bot releases all movement keys, keeping momentum
 	virtual void Stop();
-	// Makes the bot loses it's momentum. Use if you need the bot to stop immediately
-	virtual void Brake(const float brakeTime = 0.1f) { m_braketimer.Start(brakeTime); }
 	// Makes the bot climb the given ladder
 	virtual void ClimbLadder(const CNavLadder* ladder, CNavArea* dismount);
 	// Makes the bot go down a ladder
@@ -224,7 +218,7 @@ public:
 	// Makes the bot perform a crouch jump
 	virtual void CrouchJump();
 	// Makes the bot perform a double jump
-	virtual void DoubleJump() {}
+	virtual void DoubleJump();
 	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward);
 	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
 	// Perform a blast jump
@@ -251,7 +245,6 @@ public:
 	 */
 	virtual bool NeedsWeaponControl() { return m_isBreakingObstacle; }
 	virtual float GetMinimumMovementSpeed() { return m_maxspeed * 0.4f; }
-	virtual bool IsJumping() { return !m_jumptimer.IsElapsed(); }
 	virtual bool IsClimbingOrJumping();
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
 	virtual bool IsAscendingOrDescendingLadder();
@@ -315,8 +308,6 @@ public:
 	// Is the bot counter-strafing?
 	bool IsCounterStrafing() const { return m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed(); }
 protected:
-	CountdownTimer m_jumptimer; // Jump timer
-	CountdownTimer m_braketimer; // Timer for forced braking
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
 	CountdownTimer m_ladderTimer; // Max time to use a ladder
@@ -326,6 +317,10 @@ protected:
 	CountdownTimer m_ladderWait; // ladder wait timer
 	Vector m_ladderMoveGoal; // ladder move to goal vector
 	float m_ladderGoalZ; // ladder exit Z coordinate
+	CountdownTimer m_jumpCooldown;
+	CountdownTimer m_jumpTimer;
+	CountdownTimer m_doMidAirCJ; // do a mid air crouch jump (for double jumps)
+	bool m_isJumping;
 	bool m_isJumpingAcrossGap;
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
@@ -361,7 +356,6 @@ private:
 	float m_groundspeed; // Bot ground (2D) speed
 	Vector m_motionVector; // Unit vector of the bot current movement
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
-	CountdownTimer m_jump_zboost_timer; // Timer for the z boost when jumping
 	float m_maxspeed; // the bot's maximum speed
 	float m_desiredspeed; // speed the bot wants to move at
 
@@ -417,17 +411,18 @@ inline bool IMovement::IsControllingMovements()
 
 inline bool IMovement::IsClimbingOrJumping()
 {
-	if (!m_jumptimer.IsElapsed())
+	if (!m_isJumping)
 	{
-		return true;
+		return false;
 	}
 
-	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
+	if (m_jumpTimer.IsElapsed() && IsOnGround())
 	{
-		return true;
+		m_isJumping = false;
+		return false;
 	}
 
-	return false;
+	return true;
 }
 
 #endif // !SMNAV_BOT_MOVEMENT_INTERFACE_H_

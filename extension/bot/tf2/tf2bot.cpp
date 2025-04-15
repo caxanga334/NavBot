@@ -14,6 +14,10 @@
 #undef min
 #undef clamp
 
+#if SOURCE_ENGINE == SE_TF2
+static ConVar tf2bot_change_class_allowed("sm_navbot_tf_allow_class_changes", "1", FCVAR_GAMEDLL, "Are bots allowed to change classes?");
+#endif // SOURCE_ENGINE == SE_TF2
+
 CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 {
 	m_tf2movement = std::make_unique<CTF2BotMovement>(this);
@@ -22,7 +26,6 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2behavior = std::make_unique<CTF2BotBehavior>(this);
 	m_tf2inventory = std::make_unique<CTF2BotInventory>(this);
 	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
-	m_desiredclass = TeamFortress2::TFClassType::TFClass_Unknown;
 	m_upgrademan.SetMe(this);
 	m_cloakMeter = nullptr;
 	m_doMvMUpgrade = false;
@@ -72,11 +75,18 @@ void CTF2Bot::TryJoinGame()
 	JoinTeam();
 	auto tfclass = CTeamFortress2Mod::GetTF2Mod()->SelectAClassForBot(this);
 	JoinClass(tfclass);
+	m_classswitchtimer.Start(30.0f);
 }
 
 void CTF2Bot::Spawn()
 {
 	FindMyBuildings();
+
+	if (m_classswitchtimer.IsElapsed())
+	{
+		SelectNewClass();
+		m_classswitchtimer.StartRandom(20.0f, 60.0f);
+	}
 
 	if (GetMyClassType() > TeamFortress2::TFClass_Unknown)
 	{
@@ -458,6 +468,40 @@ void CTF2Bot::SendVoiceCommand(TeamFortress2::VoiceCommandsID id)
 
 	ke::SafeSprintf(cmd.get(), size, "voicemenu %i %i", x, y);
 	DelayedFakeClientCommand(cmd.get()); // DelayedFakeClientCommand copies the string
+}
+
+void CTF2Bot::SelectNewClass()
+{
+#if SOURCE_ENGINE == SE_TF2
+	// Not allowed to change classes
+	if (!tf2bot_change_class_allowed.GetBool()) 
+	{
+		return;
+	}
+#endif // SOURCE_ENGINE == SE_TF2
+
+	// change class not possible
+	if (!CTeamFortress2Mod::GetTF2Mod()->IsAllowedToChangeClasses())
+	{
+		return;
+	}
+
+	// Engineers: Don't switch while the sentry gun is alive
+	if (GetMyClassType() == TeamFortress2::TFClassType::TFClass_Engineer && GetMySentryGun() != nullptr)
+	{
+		return;
+	}
+
+	// Change class if needs, or a small random chance
+	if (CTeamFortress2Mod::GetTF2Mod()->ShouldSwitchClass(this) || randomgen->GetRandomInt<int>(1, 10) == 5)
+	{
+		TeamFortress2::TFClassType tfclass = CTeamFortress2Mod::GetTF2Mod()->SelectAClassForBot(this);
+
+		if (TeamFortress2::IsValidTFClass(tfclass) && tfclass != GetMyClassType())
+		{
+			JoinClass(tfclass);
+		}
+	}
 }
 
 void CTF2Bot::FindMyBuildings()

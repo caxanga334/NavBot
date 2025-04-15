@@ -135,6 +135,7 @@ void CBaseBot::PlayerThink()
 
 	// This needs to be the last call on a bot think cycle
 	BuildUserCommand(buttons);
+	control->OnPostRunCommand();
 	// Execute the command at the end of the tick since the BOT AI might queue commands on this tick
 	ExecuteQueuedCommands(); // Run queue commands
 }

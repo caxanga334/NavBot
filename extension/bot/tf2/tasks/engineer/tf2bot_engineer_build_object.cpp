@@ -303,12 +303,12 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnMoveToSuccess
 		bot->Teleport(m_goal); // cheat
 		bot->SnapEyeAngles(m_lookangles);
 		m_strafeTimer.Start(4.0f);
-		bot->GetMovementInterface()->Brake(0.3f);
+		bot->GetMovementInterface()->DoCounterStrafe(0.2f);
 	}
 	else
 	{
 		m_strafeTimer.Start(2.0f);
-		bot->GetMovementInterface()->Brake();
+		bot->GetMovementInterface()->DoCounterStrafe(0.2f);
 	}
 
 	return TryContinue();

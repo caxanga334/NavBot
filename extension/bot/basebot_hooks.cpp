@@ -10,7 +10,7 @@ class CBasePlayer;
 #include <usercmd.h>
 
 #ifdef EXT_DEBUG
-static ConVar cvar_print_bot_touch("sm_navbot_debug_bot_touch", "Prints entities touched by the bot", FCVAR_GAMEDLL);
+static ConVar cvar_print_bot_touch("sm_navbot_debug_bot_touch", "0", FCVAR_GAMEDLL, "Prints entities touched by the bot");
 #endif // EXT_DEBUG
 
 namespace BotHookHelpers

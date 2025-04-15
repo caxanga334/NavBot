@@ -84,10 +84,10 @@ void IPlayerController::Frame()
 */
 void IPlayerController::ProcessButtons(int& buttons)
 {
-	m_oldbuttons = m_buttons;
 	CompileButtons();
+	m_oldbuttons = m_buttons;
 	buttons = m_buttons;
-	m_buttons = 0;
+	// m_buttons = 0;
 }
 
 // This function handles the bot aiming/looking process
@@ -261,8 +261,16 @@ void IPlayerController::UpdateAimError()
 
 void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason)
 {
+	CBaseBot* me = GetBot<CBaseBot>();
+
 	if (!m_looktimer.IsElapsed() && m_priority > priority)
 	{
+		if (me->IsDebugging(BOTDEBUG_LOOK))
+		{
+			me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 0, 0, "%s: AimAt (%3.2f, %3.2f, %3.2f) rejected! Higher priority look is active! Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+				pos.x, pos.y, pos.z, GetLookPriorityName(priority), reason ? reason : "");
+		}
+
 		return;
 	}
 
@@ -271,11 +279,16 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 		// Don't reaim too frequently
 		if (IsAimSteady() == false || GetSteadyTime() < smnav_bot_aim_lookat_settle_duration.GetFloat())
 		{
+			if (me->IsDebugging(BOTDEBUG_LOOK))
+			{
+				me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 0, 0, "%s: AimAt (%3.2f, %3.2f, %3.2f) rejected! Aim is not steady! Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+					pos.x, pos.y, pos.z, GetLookPriorityName(priority), reason ? reason : "");
+			}
+
 			return;
 		}
 	}
 
-	auto me = GetBot();
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{
 		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt (%3.2f, %3.2f, %3.2f) for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
@@ -298,8 +311,16 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 
 void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason)
 {
+	CBaseBot* me = GetBot<CBaseBot>();
+
 	if (!m_looktimer.IsElapsed() && m_priority > priority)
 	{
+		if (me->IsDebugging(BOTDEBUG_LOOK))
+		{
+			me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 0, 0, "%s: AimAt \"%s\" rejected! Higher priority look is active! Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+				gamehelpers->GetEntityClassname(entity), GetLookPriorityName(priority), reason ? reason : "");
+		}
+
 		return;
 	}
 
@@ -308,11 +329,16 @@ void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, 
 		// Don't reaim too frequently
 		if (IsAimSteady() == false || GetSteadyTime() < smnav_bot_aim_lookat_settle_duration.GetFloat())
 		{
+			if (me->IsDebugging(BOTDEBUG_LOOK))
+			{
+				me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 0, 0, "%s: AimAt \"%s\" rejected! Aim is not steady! Priority: %s Reason: %s \n", me->GetDebugIdentifier(),
+					gamehelpers->GetEntityClassname(entity), GetLookPriorityName(priority), reason ? reason : "");
+			}
+
 			return;
 		}
 	}
 
-	auto me = GetBot();
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{
 		me->DebugPrintToConsole(BOTDEBUG_LOOK, 255, 100, 0, "%s: AimAt \"%s\" for %3.2f seconds. Priority: %s Reason: %s \n", me->GetDebugIdentifier(),

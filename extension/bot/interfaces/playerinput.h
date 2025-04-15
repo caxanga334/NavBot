@@ -96,6 +96,11 @@ public:
 		return m_oldbuttons | m_buttons;
 	}
 
+	inline void OnPostRunCommand()
+	{
+		m_buttons = 0;
+	}
+
 	virtual void ProcessButtons(int& buttons) = 0;
 
 	inline AttackType GetLastUsedAttackType() const { return m_lastUsedAttackType; }

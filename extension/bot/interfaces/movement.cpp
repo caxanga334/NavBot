@@ -17,6 +17,10 @@ constexpr auto DEFAULT_PLAYER_STANDING_HEIGHT = 72.0f;
 constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
 constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
 
+#ifdef EXT_DEBUG
+static ConVar cvar_dev_double_jump_timer("sm_navbot_dev_dj_time", "0.3", FCVAR_GAMEDLL);
+#endif // EXT_DEBUG
+
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
 	trace::CTraceFilterSimple(bot->GetEntity(), COLLISION_GROUP_NONE)
 {
@@ -68,8 +72,6 @@ bool CTraceFilterOnlyActors::ShouldHitEntity(IHandleEntity* pHandleEntity, int c
 
 IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 {
-	m_jump_zboost_timer.Invalidate();
-	m_jumptimer.Invalidate();
 	m_ladder = nullptr;
 	m_ladderExit = nullptr;
 	m_ladderState = NOT_USING_LADDER;
@@ -77,6 +79,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_ladderMoveGoal = vec3_origin;
 	m_useLadderTimer.Invalidate();
 	m_landingGoal = vec3_origin;
+	m_isJumping = false;
 	m_isClimbingObstacle = false;
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
@@ -105,14 +108,16 @@ IMovement::~IMovement()
 
 void IMovement::Reset()
 {
-	m_jump_zboost_timer.Invalidate();
-	m_jumptimer.Invalidate();
 	m_ladder = nullptr;
 	m_ladderExit = nullptr;
 	m_ladderState = NOT_USING_LADDER;
 	m_ladderTimer.Invalidate();
 	m_useLadderTimer.Invalidate();
 	m_landingGoal = vec3_origin;
+	m_jumpCooldown.Invalidate();
+	m_jumpTimer.Invalidate();
+	m_doMidAirCJ.Invalidate();
+	m_isJumping = false;
 	m_isClimbingObstacle = false;
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
@@ -137,12 +142,13 @@ void IMovement::Reset()
 
 void IMovement::Update()
 {
-	m_maxspeed = GetBot()->GetMaxSpeed();
+	CBaseBot* me = GetBot<CBaseBot>();
+	m_maxspeed = me->GetMaxSpeed();
 
 	StuckMonitor();
 	ObstacleBreakUpdate();
 
-	Vector velocity = GetBot()->GetAbsVelocity();
+	Vector velocity = me->GetAbsVelocity();
 	m_speed = velocity.Length();
 	m_groundspeed = velocity.AsVector2D().Length();
 
@@ -164,17 +170,23 @@ void IMovement::Update()
 		return;
 	}
 
+	if (m_doMidAirCJ.HasStarted() && m_doMidAirCJ.IsElapsed())
+	{
+		CrouchJump();
+		m_doMidAirCJ.Invalidate();
+	}
+
 	// the code below should not run when the bot is using ladders
 
 	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
 	{
-		Vector toLanding = m_landingGoal - GetBot()->GetAbsOrigin();
+		Vector toLanding = m_landingGoal - me->GetAbsOrigin();
 		toLanding.z = 0.0f;
 		toLanding.NormalizeInPlace();
 
 		if (m_isAirborne)
 		{
-			GetBot()->GetControlInterface()->AimAt(GetBot()->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
+			me->GetControlInterface()->AimAt(me->GetEyeOrigin() + 100.0f * toLanding, IPlayerController::LOOK_MOVEMENT, 0.25f);
 
 			if (IsOnGround())
 			{
@@ -182,13 +194,18 @@ void IMovement::Update()
 				m_isJumpingAcrossGap = false;
 				m_isClimbingObstacle = false;
 				m_isAirborne = false;
+				m_isJumping = false;
+				m_jumpTimer.Invalidate();
+				m_jumpCooldown.Start(0.6f);
+				me->GetControlInterface()->ReleaseJumpButton();
+				me->GetControlInterface()->ReleaseCrouchButton();
 			}
 		}
 		else // not airborne, jump!
 		{
 			if (!IsClimbingOrJumping())
 			{
-				Jump();
+				CrouchJump();
 			}
 
 			if (!IsOnGround())
@@ -211,7 +228,7 @@ void IMovement::Update()
 		else
 		{
 			Vector forward = UtilHelpers::GetNormalizedVector(velocity);
-			Vector strafeTo = GetBot()->GetAbsOrigin();
+			Vector strafeTo = me->GetAbsOrigin();
 			strafeTo += (forward * -256.0f);
 			MoveTowards(strafeTo, MOVEWEIGHT_COUNTERSTRAFE);
 		}
@@ -220,27 +237,6 @@ void IMovement::Update()
 
 void IMovement::Frame()
 {
-	if (m_jump_zboost_timer.HasStarted() && m_jump_zboost_timer.IsElapsed())
-	{
-		Vector vel = GetBot()->GetAbsVelocity();
-		vel.z = GetCrouchJumpZBoost();
-		GetBot()->SetAbsVelocity(vel);
-
-		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-		{
-			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (JUMP) \n", GetBot()->GetDebugIdentifier());
-		}
-
-		m_jump_zboost_timer.Invalidate();
-	}
-
-	if (m_braketimer.HasStarted() && !m_braketimer.IsElapsed())
-	{
-		// Cheat: force velocity to zero. The correct way would be to setup counter-strafing
-		Vector vel(0.0f, 0.0f, 0.0f);
-		GetBot()->SetAbsVelocity(vel);
-	}
-
 	// Was on Update, moved to frame
 	TraverseLadder();
 	ElevatorUpdate();
@@ -486,37 +482,42 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 
 void IMovement::Jump()
 {
-	if (!IsOnGround())
-	{
+	if (!m_jumpCooldown.IsElapsed())
 		return;
-	}
+
+	m_isJumping = true;
+	m_jumpTimer.Start(0.5f);
 
 	GetBot()->GetControlInterface()->PressJumpButton();
-	m_jumptimer.Start(0.8f);
 }
 
 void IMovement::CrouchJump()
 {
-	if (!IsOnGround())
-	{
+	if (!m_jumpCooldown.IsElapsed())
 		return;
-	}
 
-	// Execute a crouch jump
-	// See shounic's video https://www.youtube.com/watch?v=7z_p_RqLhkA
+	m_isJumping = true;
+	m_jumpTimer.Start(0.5f);
 
-	// First the bot will crouch
-	GetBot()->GetControlInterface()->PressCrouchButton(0.7f); // hold the crouch button for a while
-	GetBot()->GetControlInterface()->PressJumpButton(0.3f);
+	GetBot()->GetControlInterface()->PressCrouchButton(3.0f);
+	GetBot()->GetControlInterface()->PressJumpButton(3.0f);
+}
 
-	m_jump_zboost_timer.Start(0.150f);
+void IMovement::DoubleJump()
+{
+	if (!m_jumpCooldown.IsElapsed())
+		return;
 
-	m_jumptimer.Start(0.8f); // Timer for 'Is the bot performing a jump'
+	m_isJumping = true;
+	m_jumpTimer.Start(1.0f);
 
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-	{
-		GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s Crouch Jump! (CROUCH) \n", GetBot()->GetDebugIdentifier());
-	}
+	GetBot()->GetControlInterface()->PressJumpButton(0.1f); // simple jump first
+
+#ifdef EXT_DEBUG
+	m_doMidAirCJ.Start(cvar_dev_double_jump_timer.GetFloat());
+#else
+	m_doMidAirCJ.Start(0.3f);
+#endif // EXT_DEBUG
 }
 
 /**
@@ -527,10 +528,9 @@ void IMovement::CrouchJump()
 void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 {
 	// look towards the jump target
-	GetBot()->GetControlInterface()->SnapAimAt(landing, IPlayerController::LOOK_MOVEMENT);
-	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
+	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f, "Looking at jump over gap landing!");
 
-	Jump();
+	CrouchJump();
 
 	m_isJumpingAcrossGap = true;
 	m_landingGoal = landing;
@@ -570,6 +570,10 @@ bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landi
 	m_isClimbingObstacle = true;
 	m_landingGoal = landingGoal;
 	m_isAirborne = false;
+
+	// The second jump direction is generally requires looking at the direction you want to move
+	GetBot<CBaseBot>()->GetControlInterface()->SnapAimAt(landingGoal, IPlayerController::LOOK_MOVEMENT);
+	GetBot<CBaseBot>()->GetControlInterface()->AimAt(landingGoal, IPlayerController::LOOK_MOVEMENT, 2.0f, "Looking at ledge to climb!");
 
 	return true;
 }

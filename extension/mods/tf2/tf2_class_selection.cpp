@@ -132,8 +132,14 @@ bool CTF2ClassSelection::IsClassAboveLimit(TeamFortress2::TFClassType tfclass, T
 	if (data.HasMaximum())
 	{
 		int asclass = tf2lib::GetNumberOfPlayersAsClass(tfclass, team);
+		int onteam = UtilHelpers::GetNumberofPlayersOnTeam(static_cast<int>(team));
 
 		if (asclass > data.GetMaximum())
+		{
+			return true;
+		}
+
+		if (data.GetTeamSize() > 0 && onteam < data.GetTeamSize())
 		{
 			return true;
 		}

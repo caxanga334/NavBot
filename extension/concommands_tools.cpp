@@ -224,3 +224,16 @@ CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current positio
 		bot->OnDebugMoveToHostCommand();
 	});
 }
+
+CON_COMMAND_F(sm_navbot_tool_reset_bots, "Reset the bot interfaces.", FCVAR_CHEAT)
+{
+	if (engine->IsDedicatedServer())
+	{
+		Msg("This command can only be used on a Listen Server! \n");
+		return;
+	}
+
+	extmanager->ForEachBot([](CBaseBot* bot) {
+		bot->Reset();
+	});
+}

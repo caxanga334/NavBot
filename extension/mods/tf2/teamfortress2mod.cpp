@@ -1030,6 +1030,26 @@ void CTeamFortress2Mod::FindMvMBombHatchPosition()
 	m_MvMHatchPos = UtilHelpers::getWorldSpaceCenter(entity);
 }
 
+bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
+{
+	switch (m_gamemode)
+	{
+	case TeamFortress2::GameModeType::GM_MVM:
+	{
+		if (entprops->GameRules_GetRoundState() == RoundState::RoundState_RoundRunning)
+		{
+			return false;
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
+	return true;
+}
+
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 {
 // convar is behind ifdef to prevent registering TF2 convars outside of TF2

@@ -1687,12 +1687,15 @@ public:
 
 	virtual void OnSuccess() {}
 	virtual void OnFailure() {}
+	// Total path cost
+	const float GetTotalCost() const { return totalCost; }
 
 private:
 	T* startArea;
 	T* goalArea;
 	Vector goalPosition;
 	bool lastResult;
+	float totalCost;
 
 	NavAStarNode* GetNodeForArea(T* area);
 	void BuildPath(NavAStarNode* endnode);
@@ -1708,6 +1711,7 @@ inline INavAStarSearch<T>::INavAStarSearch()
 	goalArea = nullptr;
 	goalPosition.Init(0.0f, 0.0f, 0.0f);
 	lastResult = false;
+	totalCost = 0.0f;
 	nodes.reserve(1024);
 }
 
@@ -1793,6 +1797,7 @@ inline void INavAStarSearch<T>::DoSearch(CF& gCostFunctor, HF& hCostFunctor)
 		{
 			// reached
 			this->lastResult = true;
+			this->totalCost = current->GetGCost();
 			BuildPath(current);
 			OnSuccess();
 			return;

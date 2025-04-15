@@ -156,8 +156,7 @@ private:
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	std::unique_ptr<CTF2BotSpyMonitor> m_tf2spymonitor;
 	std::unique_ptr<CTF2BotInventory> m_tf2inventory;
-	TeamFortress2::TFClassType m_desiredclass; // class the bot wants
-	IntervalTimer m_classswitchtimer;
+	CountdownTimer m_classswitchtimer; // class switch cooldown so we don't spam things
 	IntervalTimer m_voicecmdtimer;
 	CHandle<CBaseEntity> m_mySentryGun;
 	CHandle<CBaseEntity> m_myDispenser;
@@ -169,6 +168,8 @@ private:
 
 	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
 	static constexpr float medic_patient_health_low_level() { return 0.6f; }
+
+	void SelectNewClass();
 };
 
 class CTF2BotPathCost : public IPathCost

@@ -42,6 +42,11 @@ namespace TeamFortress2
 		TFClass_Engineer
 	};
 
+	inline bool IsValidTFClass(TFClassType _class)
+	{
+		return _class > TFClassType::TFClass_Unknown && _class <= TFClassType::TFClass_Engineer;
+	}
+
 	enum TFTeam
 	{
 		TFTeam_Unassigned = 0,
