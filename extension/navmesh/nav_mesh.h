@@ -565,6 +565,7 @@ public:
 	void CommandNavCornerRaise( const CCommand &args );					// raise a corner on the current area
 	void CommandNavCornerLower( const CCommand &args );					// lower a corner on the current area
 	void CommandNavCornerPlaceOnGround( const CCommand &args );			// position a corner on the current area at ground height
+	void CommandNavCornerPlaceAtFeet(const CCommand& args);				// position a corner on the current area at the player's height
 	void CommandNavWarpToMark( void );									// warp a spectating local player to the selected mark
 	void CommandNavLadderFlip( void );									// Flips the direction a ladder faces
 	void CommandNavToggleAttribute( NavAttributeType attribute );		// toggle an attribute on current area

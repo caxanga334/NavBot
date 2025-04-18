@@ -356,7 +356,7 @@ namespace trace
 		return true;
 	}
 
-	bool trace::CTraceFilterOnlyNPCsAndPlayer::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	bool CTraceFilterOnlyNPCsAndPlayer::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
 		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
@@ -398,7 +398,7 @@ namespace trace
 		return false;
 	}
 
-	bool trace::CTraceFilterPlayersOnly::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	bool CTraceFilterPlayersOnly::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
 		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
@@ -432,7 +432,7 @@ namespace trace
 		return false;
 	}
 
-	bool trace::CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	bool CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
 		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{

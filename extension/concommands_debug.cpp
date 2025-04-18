@@ -16,6 +16,7 @@
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
+#include <navmesh/nav_trace.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_traces.h>
@@ -59,6 +60,16 @@ CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 
 	extmanager->ForEachBot([&target](CBaseBot* bot) {
 		bot->GetControlInterface()->AimAt(target, IPlayerController::LOOK_CRITICAL, 10.0f, "Debug command!");
+	});
+}
+
+CON_COMMAND(sm_navbot_debug_bot_snap_look, "Debug the bot look functions.")
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	Vector target = UtilHelpers::getWorldSpaceCenter(host);
+
+	extmanager->ForEachBot([&target](CBaseBot* bot) {
+		bot->GetControlInterface()->SnapAimAt(target, IPlayerController::LOOK_CRITICAL);
 	});
 }
 
@@ -743,82 +754,6 @@ CON_COMMAND(sm_debug_line_intercept, "intercept")
 	NDebugOverlay::Line(start, end, 0, 200, 200, true, 10.0f);
 }
 
-#if SOURCE_ENGINE == SE_TF2 && (defined(WIN32) || defined(WIN64))
-
-CON_COMMAND(sm_tf_projectile_weapon_data, "Gets the projectile speed and gravity for your current weapon.")
-{
-	using namespace SourceMod;
-	static bool setup = false;
-	static ICallWrapper* getspeed = nullptr;
-	static ICallWrapper* getgravity = nullptr;
-
-	if (!setup)
-	{
-		{
-			PassInfo ret;
-			ret.flags = PASSFLAG_BYVAL;
-			ret.size = sizeof(float);
-			ret.type = PassType_Float;
-			
-			getspeed = g_pBinTools->CreateVCall(481, 0, 0, &ret, nullptr, 0);
-		}
-
-		{
-			PassInfo ret;
-			ret.flags = PASSFLAG_BYVAL;
-			ret.size = sizeof(float);
-			ret.type = PassType_Float;
-
-			getgravity = g_pBinTools->CreateVCall(482, 0, 0, &ret, nullptr, 0);
-		}
-
-		setup = true;
-		Msg("Setup = true!\n");
-	}
-
-	CBaseExtPlayer player(UtilHelpers::GetListenServerHost());
-	CBaseEntity* pEntity = player.GetActiveWeapon();
-
-	if (pEntity != nullptr)
-	{
-		ServerClass* pClass = gamehelpers->FindEntityServerClass(pEntity);
-
-		if (pClass == nullptr)
-		{
-			Warning("NULL ServerClass!\n");
-			return;
-		}
-
-		if (!UtilHelpers::HasDataTable(pClass->m_pTable, "DT_TFWeaponBaseGun"))
-		{
-			Warning("Current weapon does not derives from CTFWeaponBaseGun!\n");
-			return;
-		}
-		
-		unsigned char params[sizeof(void*)];
-		unsigned char* vptr = params;
-		QAngle* result = nullptr;
-
-		*(CBaseEntity**)vptr = pEntity;
-
-		float speed = -1.0f;
-		float gravity = -1.0f;
-
-		getspeed->Execute(params, &speed);
-		getgravity->Execute(params, &gravity);
-
-		const char* name = gamehelpers->GetEntityClassname(pEntity);
-		int index = gamehelpers->EntityToBCompatRef(pEntity);
-
-		Msg("Weapon #%i <%s> (%s) (%s)\n", index, name, pClass->GetName(), pClass->m_pNetworkName ? pClass->m_pNetworkName : "");
-		Msg("    Projectile Speed: %3.4f\n", speed);
-		Msg("    Projectile Gravity: %3.4f\n", gravity);
-	}
-
-}
-
-#endif // !SOURCE_ENGINE == SE_TF2 && (defined(WIN32) || defined(WIN64))
-
 CON_COMMAND(sm_navbot_debug_gamerules_ptr, "Tests if the extension is able to get a valid game rules pointer.")
 {
 	void* pGameRules = g_pSDKTools->GetGameRules();
@@ -954,6 +889,107 @@ CON_COMMAND(sm_navbot_debug_find_cover, "Debugs the find cover utility")
 
 	NDebugOverlay::Line(origin, coverArea->GetCenter(), 0, 255, 0, true, 20.0f);
 	Msg("Found cover area! %i\n", coverArea->GetID());
+}
+
+CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
+{
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <filter option>\n");
+		META_CONPRINT("  <mask option> : playersolid npcsolid visible shot all\n");
+		META_CONPRINT("  <filter option> : simple navtransient\n");
+		return;
+	}
+
+	unsigned int mask = 0;
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	std::unique_ptr<ITraceFilter> filter;
+	trace_t tr;
+
+	Vector start = host.GetEyeOrigin();
+	QAngle eyeAngles = host.GetEyeAngles();
+	Vector forward;
+	AngleVectors(eyeAngles, &forward);
+	forward.NormalizeInPlace();
+	Vector end = start + (forward * 4096.0f);
+
+	const char* arg1 = args[1];
+
+	if (strcasecmp(arg1, "playersolid") == 0)
+	{
+		mask = MASK_PLAYERSOLID;
+	}
+	else if (strcasecmp(arg1, "npcsolid") == 0)
+	{
+		mask = MASK_NPCSOLID;
+	}
+	else if (strcasecmp(arg1, "visible") == 0)
+	{
+		mask = MASK_VISIBLE;
+	}
+	else if (strcasecmp(arg1, "shot") == 0)
+	{
+		mask = MASK_SHOT;
+	}
+	else if (strcasecmp(arg1, "all") == 0)
+	{
+		mask = MASK_ALL;
+	}
+	else
+	{
+		META_CONPRINTF("Unknown mask option %s! \n", arg1);
+		return;
+	}
+
+	const char* arg2 = args[2];
+
+	if (strcasecmp(arg2, "simple") == 0)
+	{
+		filter = std::make_unique<trace::CTraceFilterSimple>(host.GetEntity(), COLLISION_GROUP_NONE);
+	}
+	else if (strcasecmp(arg2, "navtransient") == 0)
+	{
+		filter = std::make_unique<CTraceFilterTransientAreas>(host.GetEntity(), COLLISION_GROUP_NONE);
+	}
+	else
+	{
+		META_CONPRINTF("Unknown filter option %s! \n", arg1);
+		return;
+	}
+
+	trace::line(start, end, mask, filter.get(), tr);
+
+	if (tr.DidHit())
+	{
+		META_CONPRINTF("HIT! \n    fraction: %3.4f \n", tr.fraction);
+
+		NDebugOverlay::Sphere(tr.endpos, 8.0f, 255, 0, 0, true, 20.0f);
+
+		CBaseEntity* pEntity = tr.m_pEnt;
+
+		if (pEntity)
+		{
+			const char* classname = gamehelpers->GetEntityClassname(pEntity);
+			int index = reinterpret_cast<IHandleEntity*>(pEntity)->GetRefEHandle().GetEntryIndex();
+
+			META_CONPRINTF("    #%i<%s>", index, classname);
+
+			datamap_t* map = gamehelpers->GetDataMap(pEntity);
+
+			if (map)
+			{
+				META_CONPRINTF(" [%s] \n", map->dataClassName);
+			}
+			else
+			{
+				META_CONPRINTF(" \n");
+			}
+		}
+	}
+	else
+	{
+		META_CONPRINTF("NO ENTITY HIT \n");
+	}
 }
 
 #endif // EXT_DEBUG

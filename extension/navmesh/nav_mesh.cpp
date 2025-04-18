@@ -2893,6 +2893,15 @@ CON_COMMAND_F(sm_nav_corner_place_on_ground, "Places the selected corner of the 
 	TheNavMesh->CommandNavCornerPlaceOnGround( args );
 }
 
+CON_COMMAND_F(sm_nav_corner_place_at_feet, "Places the selected corner of the currently marked Area on the player's Z.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (!UTIL_IsCommandIssuedByServerAdmin())
+		return;
+
+	DECLARE_COMMAND_ARGS;
+
+	TheNavMesh->CommandNavCornerPlaceAtFeet(args);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavWarpToMark( void )

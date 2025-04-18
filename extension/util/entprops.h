@@ -385,6 +385,8 @@ namespace entityprops
 	std::int8_t GetEntityWaterLevel(CBaseEntity* entity);
 	// Gets an entity targetname (name given by the level designer for I/O)
 	const char* GetEntityTargetname(CBaseEntity* entity);
+	// Gets an entity velocity
+	void GetEntityAbsVelocity(CBaseEntity* entity, Vector& result);
 }
 
 #endif

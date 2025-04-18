@@ -11,6 +11,7 @@
 
 #include <string_view>
 #include <cinttypes>
+#include <cmath>
 
 #include <extension.h>
 #include <entities/baseentity.h>
@@ -3513,6 +3514,44 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 		}
 
 		Msg( "Placed %d areas on the ground\n", m_selectedSet.Count() );
+	}
+}
+
+void CNavMesh::CommandNavCornerPlaceAtFeet(const CCommand& args)
+{
+	edict_t* player = UTIL_GetListenServerEnt();
+
+	if (player == NULL || !IsEditMode(NORMAL))
+		return;
+
+
+	const Vector& origin = UtilHelpers::getEntityOrigin(player);
+
+	if (m_markedArea)
+	{
+		if (m_markedCorner == NUM_CORNERS)
+		{
+			for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
+			{
+				Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
+				float z = (origin.z - corner.z);
+				m_markedArea->RaiseCorner(static_cast<NavCornerType>(i), static_cast<int>(std::round(z)));
+			}
+		}
+		else
+		{
+			Vector corner = m_markedArea->GetCorner(m_markedCorner);
+			float z = (origin.z - corner.z);
+			m_markedArea->RaiseCorner(m_markedCorner, static_cast<int>(std::round(z)));
+		}
+
+		Msg("Area corner placed at %3.2f \n", origin.z);
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+	}
+	else
+	{
+		Msg("Mark an area first! \n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 	}
 }
 

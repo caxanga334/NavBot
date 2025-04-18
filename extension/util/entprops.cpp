@@ -2480,3 +2480,34 @@ const char* entityprops::GetEntityTargetname(CBaseEntity* entity)
 
 	return STRING(s);
 }
+
+void entityprops::GetEntityAbsVelocity(CBaseEntity* entity, Vector& result)
+{
+	static int s_offset = -1;
+
+	if (s_offset < 0)
+	{
+		CBaseEntity* worldspawn = gamehelpers->ReferenceToEntity(0);
+
+		if (!worldspawn)
+		{
+			smutils->LogError(myself, "entityprops::GetEntityAbsVelocity -- Failed to get a CBaseEntity ptr to worldspawn!");
+			worldspawn = entity; // use the given entity if it fails
+		}
+
+		// Use worldspawn for the look up
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(worldspawn), "m_vecAbsVelocity", &info))
+		{
+			return;
+		}
+
+		s_offset = static_cast<int>(info.actual_offset);
+	}
+
+	Vector* vel = (Vector*)((uint8_t*)entity + s_offset);
+
+	result = *vel;
+
+	return;
+}

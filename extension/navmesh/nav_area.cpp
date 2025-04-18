@@ -4218,7 +4218,7 @@ void CNavArea::RaiseCorner( NavCornerType corner, int amount, bool raiseAdjacent
  * FindGroundZFromPoint walks from the start position to the end position in navgenparams->generation_step_size increments,
  * checking the ground height along the way.
  */
-float FindGroundZFromPoint( const Vector& end, const Vector& start )
+static float FindGroundZFromPoint( const Vector& end, const Vector& start )
 {
 	Vector step( 0, 0, navgenparams->step_height );
 	if ( fabs( end.x - start.x ) > fabs( end.y - start.y ) )
@@ -4268,7 +4268,7 @@ float FindGroundZFromPoint( const Vector& end, const Vector& start )
  * Finds the Z value for a corner given two other corner points.  This walks along the edges of the nav area
  * in navgenparams->generation_step_size increments, to increase accuracy.
  */
-float FindGroundZ( const Vector& original, const Vector& corner1, const Vector& corner2 )
+static float FindGroundZ( const Vector& original, const Vector& corner1, const Vector& corner2 )
 {
 	float first = FindGroundZFromPoint( original, corner1 );
 	float second = FindGroundZFromPoint( original, corner2 );

@@ -194,6 +194,65 @@ CON_COMMAND_F(sm_navbot_tool_projectile_aim, "Tests projectile aim parameters", 
 	debugoverlay->AddLineOverlay(aimPos, targetPos, 0, 128, 255, true, 20.0f); // aim pos to target
 }
 
+CON_COMMAND_F(sm_navbot_tool_projectile_aim_entity, "Tests projectile aim parameters", FCVAR_CHEAT)
+{
+	if (engine->IsDedicatedServer())
+	{
+		Msg("This command can only be used on a Listen Server! \n");
+		return;
+	}
+
+	if (args.ArgC() < 7)
+	{
+		Msg("[SM] Usage: sm_navbot_tool_projectile_aim <ent index> <projectile speed> <projectile gravity> <ballistics start range> <ballistics end range> <ballistics min rate> <ballistics max rate>\n");
+		return;
+	}
+
+	ConVar* sv_gravity = g_pCVar->FindVar("sv_gravity");
+
+	if (!sv_gravity)
+	{
+		Warning("sm_navbot_tool_projectile_aim FindVar sv_gravity == NULL! \n");
+	}
+
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	const int entindex = atof(args[1]);
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entindex);
+
+	if (!pEntity)
+	{
+		Warning("No entity of index %i \n", entindex);
+		return;
+	}
+
+	const Vector targetPos = UtilHelpers::getWorldSpaceCenter(pEntity);
+	const float projSpeed = atof(args[2]);
+	const float projGrav = atof(args[3]);
+	const float startRange = atof(args[4]);
+	const float endRange = atof(args[5]);
+	const float startRate = atof(args[6]);
+	const float endRate = atof(args[7]);
+	const Vector eyePos = host.GetEyeOrigin();
+	Vector enemyVel{ 0.0f, 0.0f, 0.0f };
+	entityprops::GetEntityAbsVelocity(pEntity, enemyVel);
+	float rangeTo = (targetPos - eyePos).Length();
+	Vector aimPos = pred::SimpleProjectileLead(targetPos, enemyVel, projSpeed, rangeTo);
+	rangeTo = (eyePos - aimPos).Length(); // update range for gravity compensation
+	const float elevation_rate = RemapValClamped(rangeTo, startRange, endRange, startRate, endRate);
+	const float elevation_Z = pred::GravityComp(rangeTo, projGrav, elevation_rate);
+	aimPos.z += elevation_Z;
+
+	Vector to = (aimPos - eyePos);
+	to.NormalizeInPlace();
+	QAngle viewAngles;
+	VectorAngles(to, viewAngles);
+	host.SnapEyeAngles(viewAngles);
+
+	debugoverlay->AddLineOverlay(eyePos, targetPos, 255, 0, 0, true, 20.0f); // eye to target pos
+	debugoverlay->AddLineOverlay(eyePos, aimPos, 0, 128, 0, true, 20.0f); // eye to calculated pos
+	debugoverlay->AddLineOverlay(aimPos, targetPos, 0, 128, 255, true, 20.0f); // aim pos to target
+}
+
 CON_COMMAND_F(sm_navbot_tool_give_infammo, "Gives infinite reserve ammo to every player", FCVAR_CHEAT)
 {
 	if (engine->IsDedicatedServer())
