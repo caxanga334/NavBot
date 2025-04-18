@@ -340,3 +340,96 @@ TeamFortress2::TeleporterState tfentities::HObjectTeleporter::GetState() const
 	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iState", state);
 	return static_cast<TeamFortress2::TeleporterState>(state);
 }
+
+bool tfentities::HTeamRoundTimer::IsTimerPaused() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bTimerPaused", result);
+	return result;
+}
+
+bool tfentities::HTeamRoundTimer::IsTimerDisabled() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bIsDisabled", result);
+	return result;
+}
+
+TeamFortress2::RoundTimerStates tfentities::HTeamRoundTimer::GetState() const
+{
+	int state = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_nState", state);
+	return static_cast<TeamFortress2::RoundTimerStates>(state);
+}
+
+bool tfentities::HTeamRoundTimer::IsWatchingTimeStamps() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bInCaptureWatchState", result);
+	return result;
+}
+
+bool tfentities::HTeamRoundTimer::IsStopWatchTimer() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bStopWatchTimer", result);
+	return result;
+}
+
+float tfentities::HTeamRoundTimer::GetStopWatchTotalTime() const
+{
+	float result = 0.0f;
+	entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flTotalTime", result);
+	return result;
+}
+
+bool tfentities::HTeamRoundTimer::IsRoundMaxTimerSet() const
+{
+	int result = -1;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_nTimerMaxLength", result);
+	return result > 0;
+}
+
+int tfentities::HTeamRoundTimer::GetTimerInitialLength() const
+{
+	int result = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_nTimerInitialLength", result);
+	return result > 0;
+}
+
+int tfentities::HTeamRoundTimer::GetSetupTimeLength() const
+{
+	int result = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_nSetupTimeLength", result);
+	return result > 0;
+}
+
+float tfentities::HTeamRoundTimer::GetTimeRemaining() const
+{
+	float timeremaining = 0.0f;
+
+	if (IsStopWatchTimer() && IsWatchingTimeStamps())
+	{
+		timeremaining = GetStopWatchTotalTime();
+	}
+	else
+	{
+		if (IsTimerPaused())
+		{
+			entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flTimeRemaining", timeremaining);
+		}
+		else
+		{
+			float endtime = 0.0f;
+			entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flTimerEndTime", endtime);
+			timeremaining = endtime - gpGlobals->curtime;
+		}
+	}
+
+	if (timeremaining < 0.0f)
+	{
+		timeremaining = 0.0f;
+	}
+
+	return timeremaining;
+}

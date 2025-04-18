@@ -94,6 +94,11 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 					return PauseFor(new CTF2BotEngineerMoveObjectTask(sentryGun, area->GetCenter()), "Moving my sentry gun!");
 				}
 			}
+			else
+			{
+				// find spot failed, try again
+				m_noThreatTimer.Start(5.0f);
+			}
 		}
 	}
 
@@ -184,14 +189,14 @@ bool CTF2BotEngineerNestTask::ShouldMoveSentryGun()
 {
 	if (!m_noThreatTimer.HasStarted())
 	{
-		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(90.0f, 180.0f));
+		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f));
 		return false;
 		
 	}
 	else if (m_noThreatTimer.IsElapsed())
 	{
 		// it has been a while since I saw an enemy, time to move my sentry gun.
-		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(90.0f, 180.0f)); // start the timer again so the bot doesn't enter a move loop
+		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f)); // start the timer again so the bot doesn't enter a move loop
 		return true;
 	}
 

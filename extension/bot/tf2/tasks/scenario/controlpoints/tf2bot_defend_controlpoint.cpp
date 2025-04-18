@@ -10,7 +10,8 @@
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_defend_controlpoint.h"
 
-CTF2BotDefendControlPointTask::CTF2BotDefendControlPointTask(CBaseEntity* controlpoint)
+CTF2BotDefendControlPointTask::CTF2BotDefendControlPointTask(CBaseEntity* controlpoint) :
+	m_capturePos(0.0f, 0.0f, 0.0f)
 {
 	m_controlpoint = controlpoint;
 }
@@ -187,7 +188,8 @@ private:
 	CTraceFilterWorldAndPropsOnly m_filter;
 };
 
-CTF2BotGuardControlPointTask::CTF2BotGuardControlPointTask(CBaseEntity* controlpoint)
+CTF2BotGuardControlPointTask::CTF2BotGuardControlPointTask(CBaseEntity* controlpoint) :
+	m_lookTarget(0.0f, 0.0f, 0.0f)
 {
 	m_controlpoint = controlpoint;
 	m_currentSpot = 0U;

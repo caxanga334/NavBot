@@ -41,6 +41,10 @@ public:
 
 	// Called when the bot is added to the game
 	void PostAdd();
+	/**
+	 * @brief Called post constructor while still inside the OnClientPutInServer callback.
+	 */
+	virtual void PostConstruct() {}
 
 	// Returns the time the bot has spawned (Spawn() function called)
 	inline float GetLastSpawnTime() const { return m_spawnTime; }
@@ -59,6 +63,15 @@ private:
 	void Hook_PhysicsSimulate();
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
 	void Hook_Weapon_Equip_Post(CBaseEntity* weapon);
+
+protected:
+	/**
+	 * @brief Adds a SourceHook's hook ID to the list of hooks for this bot.
+	 * 
+	 * Hooks are automatically removed on the destructor.
+	 * @param id Hook ID.
+	 */
+	inline void AddHookID(int id) { m_shhooks.push_back(id); }
 
 public:
 
@@ -86,6 +99,11 @@ public:
 	virtual void Update();
 	// Function called every server frame to run the AI
 	virtual void Frame();
+	/**
+	 * @brief Called at every think while dead and sleeping.
+	 * @param buttons Buttons to send.
+	 */
+	virtual void DeadSleepThink(int& buttons) {}
 
 	virtual float GetRangeTo(const Vector& pos) const;
 	virtual float GetRangeTo(edict_t* edict) const;
@@ -245,6 +263,7 @@ public:
 		return m_lasthurttimer.IsLessThen(time);
 	}
 
+	const IntervalTimer& GetLastKilledTimer() const { return m_lastkilledtimer; }
 protected:
 	bool m_isfirstspawn;
 
@@ -312,6 +331,7 @@ private:
 	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
 	IntervalTimer m_burningtimer;
 	IntervalTimer m_lasthurttimer; // timer for tracking the last time the bot took damage while alive
+	IntervalTimer m_lastkilledtimer; // timer for tracing the last time the bot was killed
 	CMeshNavigator* m_activeNavigator;
 	CountdownTimer m_reloadCheckDelay;
 	const CNavPrerequisite* m_lastPrerequisite; // Last prerequisite this bot used

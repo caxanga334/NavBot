@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <extension.h>
 #include <manager.h>
 #include <util/helpers.h>
@@ -468,6 +470,20 @@ void CTF2Bot::SendVoiceCommand(TeamFortress2::VoiceCommandsID id)
 
 	ke::SafeSprintf(cmd.get(), size, "voicemenu %i %i", x, y);
 	DelayedFakeClientCommand(cmd.get()); // DelayedFakeClientCommand copies the string
+}
+
+float CTF2Bot::GetTimeLeftToCapture() const
+{
+	CBaseEntity* pEntity = CTeamFortress2Mod::GetTF2Mod()->GetRoundTimer(tf2lib::GetEnemyTFTeam(GetMyTFTeam()));
+
+	if (pEntity)
+	{
+		tfentities::HTeamRoundTimer timer(pEntity);
+		
+		return timer.GetTimeRemaining();
+	}
+
+	return std::numeric_limits<float>::max();
 }
 
 void CTF2Bot::SelectNewClass()

@@ -145,10 +145,15 @@ public:
 	CBaseEntity* GetObjectBeingCarriedByMe() const;
 	// Makes the bot run the upgrade logic on the next Update call
 	void DoMvMUpgrade() { m_doMvMUpgrade = true; }
-
 	void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true) override;
-
 	void SendVoiceCommand(TeamFortress2::VoiceCommandsID id);
+	/**
+	 * @brief Gets the time left to capture the point before we lose the game.
+	 * 
+	 * Returns a very large number on game modes without timer (or if the timer wasn't found).
+	 * @return Time left on the timer.
+	 */
+	float GetTimeLeftToCapture() const;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;

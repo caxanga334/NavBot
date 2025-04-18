@@ -497,6 +497,8 @@ namespace TeamFortress2
 	public:
 		TFObjectiveResource()
 		{
+			m_iTimerToShowInHUD = nullptr;
+			m_iStopWatchTimer = nullptr;
 			m_bPlayingMiniRounds = nullptr;
 			m_bCPIsVisible = nullptr;
 			m_iPreviousPoints = nullptr;
@@ -507,6 +509,8 @@ namespace TeamFortress2
 			m_iOwner = nullptr;
 		}
 
+		int* m_iTimerToShowInHUD; // ent index to the timer, 0 if no timer
+		int* m_iStopWatchTimer; // ent index to the timer, 0 if no timer
 		bool* m_bPlayingMiniRounds;
 		int* m_bCPIsVisible; // this is an int, don't ask why [MAX_CONTROL_POINTS]
 		int* m_iPreviousPoints; // [MAX_CONTROL_POINTS * MAX_CONTROL_POINT_TEAMS * MAX_PREVIOUS_POINTS]
@@ -515,6 +519,18 @@ namespace TeamFortress2
 		bool* m_bCPLocked; // [MAX_CONTROL_POINTS]
 		float* m_flCapPercentages; // [MAX_CONTROL_POINTS]
 		int* m_iOwner; // [MAX_CONTROL_POINTS]
+
+		// Entity index to the active timer, 0 if no timer.
+		int GetTimerToShowInHUD() const
+		{
+			return *m_iTimerToShowInHUD;
+		}
+
+		// Entity index to the stop watch timer, 0 if no timer.
+		int GetStopWatchTimer() const
+		{
+			return *m_iStopWatchTimer;
+		}
 
 		bool IsPlayingMiniRounds() const
 		{
@@ -678,6 +694,15 @@ namespace TeamFortress2
 		//
 
 		SENTRY_NUM_STATES,
+	};
+
+	//-----------------------------------------------------------------------------
+	// Round timer states
+	//-----------------------------------------------------------------------------
+	enum RoundTimerStates
+	{
+		RT_STATE_SETUP,		// Timer is in setup mode
+		RT_STATE_NORMAL,	// Timer is in normal mode
 	};
 }
 

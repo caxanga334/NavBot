@@ -69,8 +69,10 @@ public:
 	void ReleaseSpecialAttackButton();
 	void PressJumpButton(const float duration = -1.0f);
 	void ReleaseJumpButton();
+	bool IsPressingJumpButton() const;
 	void PressCrouchButton(const float duration = -1.0f);
 	void ReleaseCrouchButton();
+	bool IsPressingCrouchButton() const;
 	void PressForwardButton(const float duration = -1.0f);
 	void ReleaseForwardButton();
 	void PressBackwardsButton(const float duration = -1.0f);
@@ -254,6 +256,11 @@ inline void IPlayerInput::ReleaseJumpButton()
 	m_jumpbuttontimer.Invalidate();
 }
 
+inline bool IPlayerInput::IsPressingJumpButton() const
+{
+	return m_jumpbuttontimer.HasStarted() && !m_jumpbuttontimer.IsElapsed();
+}
+
 inline void IPlayerInput::PressCrouchButton(const float duration)
 {
 	m_buttons |= INPUT_DUCK;
@@ -264,6 +271,11 @@ inline void IPlayerInput::ReleaseCrouchButton()
 {
 	m_buttons &= ~INPUT_DUCK;
 	m_crouchbuttontimer.Invalidate();
+}
+
+inline bool IPlayerInput::IsPressingCrouchButton() const
+{
+	return m_crouchbuttontimer.HasStarted() && !m_crouchbuttontimer.IsElapsed();
 }
 
 inline void IPlayerInput::PressForwardButton(const float duration)

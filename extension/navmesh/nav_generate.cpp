@@ -2685,13 +2685,13 @@ class TestOverlapping
 	Vector m_sw;
 	Vector m_se;
 public:
-	TestOverlapping( const Vector &nw, const Vector &ne, const Vector &sw, const Vector &se ) :
-	  m_nw( nw ), m_ne( ne ), m_sw( sw ), m_se( se )
+	TestOverlapping(const Vector& nw, const Vector& ne, const Vector& sw, const Vector& se) :
+		m_nw(nw), m_ne(ne), m_sw(sw), m_se(se)
 	{
 	}
 
 	// This approximates CNavArea::GetZ, so we can pretend our four corners delineate a nav area
-	float GetZ( const Vector &pos ) const
+	float GetZ(const Vector& pos) const
 	{
 		float dx = m_se.x - m_nw.x;
 		float dy = m_se.y - m_nw.y;
@@ -2715,38 +2715,45 @@ public:
 			v = 1.0f;
 
 		float northZ = m_nw.z + u * (m_ne.z - m_nw.z);
-		return northZ + v * (m_sw.z + u * (m_se.z - m_sw.z) - northZ);
+		float southZ = m_sw.z + u * (m_se.z - m_sw.z);
+
+		return northZ + v * (southZ - northZ);
 	}
 
-	bool OverlapsExistingArea( void )
+	bool OverlapsExistingArea(void) const
 	{
-		CNavArea *overlappingArea = NULL;
-		CNavLadder *overlappingLadder = NULL;
+		CNavArea* overlappingArea = NULL;
+		CNavLadder* overlappingLadder = NULL;
 
-		Vector start = m_nw;
-		m_nw.x += navgenparams->generation_step_size/2;
-		m_nw.y += navgenparams->generation_step_size/2;
+		Vector nw = m_nw;
+		Vector se = m_se;
+		Vector start = nw;
+		start.x += navgenparams->generation_step_size / 2;
+		start.y += navgenparams->generation_step_size / 2;
 
-		while ( start.x < m_se.x )
+		while (start.x < se.x)
 		{
-			start.y = m_nw.y + navgenparams->generation_step_size/2;
-			while ( start.y < m_se.y )
+			start.y = nw.y + navgenparams->generation_step_size / 2;
+			while (start.y < se.y)
 			{
-				start.z = GetZ( start );
+				start.z = GetZ(start);
 				Vector end = start;
 				start.z -= navgenparams->step_height;
-				end.z += navgenparams->human_height;
+				end.z += navgenparams->half_human_height;
 
-				if ( TheNavMesh->FindNavAreaOrLadderAlongRay( start, end, &overlappingArea, &overlappingLadder, NULL )
-						&& overlappingArea )
+				if (TheNavMesh->FindNavAreaOrLadderAlongRay(start, end, &overlappingArea, &overlappingLadder, NULL))
 				{
-					return true;
+					if (overlappingArea)
+					{
+						return true;
+					}
 				}
 
 				start.y += navgenparams->generation_step_size;
 			}
 			start.x += navgenparams->generation_step_size;
 		}
+
 		return false;
 	}
 };
@@ -2761,16 +2768,16 @@ public:
  * All of the nodes must be approximately co-planar w.r.t the NW node's normal, with the
  * exception of 1x1 areas which can be any angle.
  */
-bool CNavMesh::TestArea( CNavNode *node, int width, int height )
+bool CNavMesh::TestArea(CNavNode* node, int width, int height)
 {
 	Vector normal = *node->GetNormal();
-	float d = -DotProduct( normal, *node->GetPosition() );
+	float d = -DotProduct(normal, *node->GetPosition());
 
-	bool nodeCrouch = node->m_crouch[ SOUTH_EAST ];
+	bool nodeCrouch = node->m_crouch[SOUTH_EAST];
 
 	// The area's interior will be the south-east side of this north-west node.
 	// If that interior space is blocked, there's no space to build an area.
-	if ( node->m_isBlocked[ SOUTH_EAST ] )
+	if (node->m_isBlocked[SOUTH_EAST])
 	{
 		return false;
 	}
@@ -2779,15 +2786,15 @@ bool CNavMesh::TestArea( CNavNode *node, int width, int height )
 
 	const float offPlaneTolerance = 5.0f;
 
-	CNavNode *vertNode, *horizNode;
+	CNavNode* vertNode, * horizNode;
 
 	vertNode = node;
-	int x,y;
-	for( y=0; y<height; y++ )
+	int x, y;
+	for (y = 0; y < height; y++)
 	{
 		horizNode = vertNode;
 
-		for( x=0; x<width; x++ )
+		for (x = 0; x < width; x++)
 		{
 			//
 			// Compute the crouch attributes for the test node, taking into account only the side(s) of the node
@@ -2803,76 +2810,76 @@ bool CNavMesh::TestArea( CNavNode *node, int width, int height )
 			bool southEdge = (y == height - 1);
 
 			// Check corners first
-			if ( northEdge && westEdge )
+			if (northEdge && westEdge)
 			{
 				// The area's interior will be the south-east side of this north-west node.
 				// If that interior space is blocked, there's no space to build an area.
-				horizNodeCrouch = horizNode->m_crouch[ SOUTH_EAST ];
-				if ( horizNode->m_isBlocked[ SOUTH_EAST ] )
+				horizNodeCrouch = horizNode->m_crouch[SOUTH_EAST];
+				if (horizNode->m_isBlocked[SOUTH_EAST])
 				{
 					return false;
 				}
 			}
-			else if ( northEdge && eastEdge )
+			else if (northEdge && eastEdge)
 			{
 				// interior space of the area extends one more cell to the east past the easternmost nodes.
 				// This means we need to check to the southeast as well as the southwest.
-				horizNodeCrouch = horizNode->m_crouch[ SOUTH_EAST ] || horizNode->m_crouch[ SOUTH_WEST ];
-				if ( horizNode->m_isBlocked[ SOUTH_EAST ] || horizNode->m_isBlocked[ SOUTH_WEST ] )
+				horizNodeCrouch = horizNode->m_crouch[SOUTH_EAST] || horizNode->m_crouch[SOUTH_WEST];
+				if (horizNode->m_isBlocked[SOUTH_EAST] || horizNode->m_isBlocked[SOUTH_WEST])
 				{
 					return false;
 				}
 			}
-			else if ( southEdge && westEdge )
+			else if (southEdge && westEdge)
 			{
 				// The interior space of the area extends one more cell to the south past the southernmost nodes.
 				// This means we need to check to the southeast as well as the southwest.
-				horizNodeCrouch = horizNode->m_crouch[ SOUTH_EAST ] || horizNode->m_crouch[ NORTH_EAST ];
-				if ( horizNode->m_isBlocked[ SOUTH_EAST ] || horizNode->m_isBlocked[ NORTH_EAST ] )
+				horizNodeCrouch = horizNode->m_crouch[SOUTH_EAST] || horizNode->m_crouch[NORTH_EAST];
+				if (horizNode->m_isBlocked[SOUTH_EAST] || horizNode->m_isBlocked[NORTH_EAST])
 				{
 					return false;
 				}
 			}
-			else if ( southEdge && eastEdge )
+			else if (southEdge && eastEdge)
 			{
 				// This node is completely in the interior of the area, so we need to check in all directions.
 				horizNodeCrouch = (horizNode->GetAttributes() & NAV_MESH_CROUCH) != 0;
-				if ( horizNode->IsBlockedInAnyDirection() )
+				if (horizNode->IsBlockedInAnyDirection())
 				{
 					return false;
 				}
 			}
 			// check sides next
-			else if ( northEdge )
+			else if (northEdge)
 			{
-				horizNodeCrouch = horizNode->m_crouch[ SOUTH_EAST ] || horizNode->m_crouch[ SOUTH_WEST ];
-				if ( horizNode->m_isBlocked[ SOUTH_EAST ] || horizNode->m_isBlocked[ SOUTH_WEST ] )
+				horizNodeCrouch = horizNode->m_crouch[SOUTH_EAST] || horizNode->m_crouch[SOUTH_WEST];
+				if (horizNode->m_isBlocked[SOUTH_EAST] || horizNode->m_isBlocked[SOUTH_WEST])
 				{
 					return false;
 				}
 			}
-			else if ( southEdge )
+			else if (southEdge)
 			{
 				// This node is completely in the interior of the area, so we need to check in all directions.
 				horizNodeCrouch = (horizNode->GetAttributes() & NAV_MESH_CROUCH) != 0;
-				if ( horizNode->IsBlockedInAnyDirection() )
+				if (horizNode->IsBlockedInAnyDirection())
 				{
 					return false;
 				}
 			}
-			else if ( eastEdge )
+			else if (eastEdge)
 			{
 				// This node is completely in the interior of the area, so we need to check in all directions.
 				horizNodeCrouch = (horizNode->GetAttributes() & NAV_MESH_CROUCH) != 0;
-				if ( horizNode->IsBlockedInAnyDirection() )
+				if (horizNode->IsBlockedInAnyDirection())
 				{
 					return false;
 				}
 			}
-			else if ( westEdge )
+			else if (westEdge)
 			{
-				horizNodeCrouch = horizNode->m_crouch[ SOUTH_EAST ] || horizNode->m_crouch[ NORTH_EAST ];
-				if ( horizNode->m_isBlocked[ SOUTH_EAST ] || horizNode->m_isBlocked[ NORTH_EAST ] )
+				horizNodeCrouch = horizNode->m_crouch[SOUTH_EAST] || horizNode->m_crouch[NORTH_EAST];
+				if (horizNode->m_isBlocked[SOUTH_EAST] || horizNode->m_isBlocked[NORTH_EAST])
 				{
 					return false;
 				}
@@ -2882,41 +2889,56 @@ bool CNavMesh::TestArea( CNavNode *node, int width, int height )
 			{
 				// This node is completely in the interior of the area, so we need to check in all directions.
 				horizNodeCrouch = (horizNode->GetAttributes() & NAV_MESH_CROUCH) != 0;
-				if ( horizNode->IsBlockedInAnyDirection() )
+				if (horizNode->IsBlockedInAnyDirection())
 				{
 					return false;
 				}
 			}
 
 			// all nodes must be crouch/non-crouch
-			if ( nodeCrouch != horizNodeCrouch			
-					// all nodes must have the same non-crouch attributes
-					|| (horizNode->GetAttributes() & ~NAV_MESH_CROUCH) != nodeAttributes
-					|| horizNode->IsCovered()
-					|| !horizNode->IsClosedCell()
-					|| !CheckObstacles( horizNode, width, height, x, y ) )
+			if (nodeCrouch != horizNodeCrouch)
 				return false;
 
-			horizNode = horizNode->GetConnectedNode( EAST );
-			if (horizNode == NULL
-			// nodes must lie on/near the plane
-					|| ((width > 1 || height > 1)
-					&& fabs( DotProduct( *horizNode->GetPosition(), normal ) + d )
-					> offPlaneTolerance))
-			{
+			// all nodes must have the same non-crouch attributes
+			int horizNodeAttributes = horizNode->GetAttributes() & ~NAV_MESH_CROUCH;
+			if (horizNodeAttributes != nodeAttributes)
 				return false;
+
+			if (horizNode->IsCovered())
+				return false;
+
+			if (!horizNode->IsClosedCell())
+				return false;
+
+			if (!CheckObstacles(horizNode, width, height, x, y))
+				return false;
+
+			horizNode = horizNode->GetConnectedNode(EAST);
+			if (horizNode == NULL)
+				return false;
+
+			// nodes must lie on/near the plane
+			if (width > 1 || height > 1)
+			{
+				float dist = (float)fabs(DotProduct(*horizNode->GetPosition(), normal) + d);
+				if (dist > offPlaneTolerance)
+					return false;
 			}
 		}
+
 		// Check the final (x=width) node, the above only checks thru x=width-1
-		if ( !CheckObstacles( horizNode, width, height, x, y ) )
+		if (!CheckObstacles(horizNode, width, height, x, y))
 			return false;
 
-		vertNode = vertNode->GetConnectedNode( SOUTH );
-		if (vertNode == NULL
+		vertNode = vertNode->GetConnectedNode(SOUTH);
+		if (vertNode == NULL)
+			return false;
+
 		// nodes must lie on/near the plane
-				|| ((width > 1 || height > 1)
-						&& fabs( DotProduct( *vertNode->GetPosition(), normal ) + d )
-						> offPlaneTolerance)) {
+		if (width > 1 || height > 1)
+		{
+			float dist = (float)fabs(DotProduct(*vertNode->GetPosition(), normal) + d);
+			if (dist > offPlaneTolerance)
 				return false;
 		}
 	}
@@ -2926,72 +2948,80 @@ bool CNavMesh::TestArea( CNavNode *node, int width, int height )
 	{
 		horizNode = vertNode;
 
-		for( x=0; x<width; x++ )
+		for (x = 0; x < width; x++)
 		{
-			if ( !CheckObstacles( horizNode, width, height, x, y ) )
+			if (!CheckObstacles(horizNode, width, height, x, y))
 				return false;
 
-			horizNode = horizNode->GetConnectedNode( EAST );
-			if (horizNode == NULL
+			horizNode = horizNode->GetConnectedNode(EAST);
+			if (horizNode == NULL)
+				return false;
+
 			// nodes must lie on/near the plane
-					|| (float)fabs( DotProduct( *horizNode->GetPosition(), normal ) + d ) > offPlaneTolerance)
+			float dist = (float)fabs(DotProduct(*horizNode->GetPosition(), normal) + d);
+			if (dist > offPlaneTolerance)
 				return false;
 		}
 
 		// Check the final (x=width) node, the above only checks thru x=width-1
-		if ( !CheckObstacles( horizNode, width, height, x, y ) )
+		if (!CheckObstacles(horizNode, width, height, x, y))
 			return false;
 	}
 
 	vertNode = node;
-	for( y=0; y<height; ++y )
+	for (y = 0; y < height; ++y)
 	{
 		horizNode = vertNode;
 
-		for( int x=0; x<width; ++x )
+		for (int x = 0; x < width; ++x)
 		{
 			// look for odd jump areas (3 points on the ground, 1 point floating much higher or lower)
-			if ( !TestForValidJumpArea( horizNode )			// Now that we've done the quick checks, test for a valid crouch area.
-			// This finds pillars etc in the middle of 4 nodes, that weren't found initially.
-					|| (nodeCrouch && !TestForValidCrouchArea( horizNode )) )
+			if (!TestForValidJumpArea(horizNode))
 			{
 				return false;
 			}
 
-			horizNode = horizNode->GetConnectedNode( EAST );
+			// Now that we've done the quick checks, test for a valid crouch area.
+			// This finds pillars etc in the middle of 4 nodes, that weren't found initially.
+			if (nodeCrouch && !TestForValidCrouchArea(horizNode))
+			{
+				return false;
+			}
+
+			horizNode = horizNode->GetConnectedNode(EAST);
 		}
 
-		vertNode = vertNode->GetConnectedNode( SOUTH );
+		vertNode = vertNode->GetConnectedNode(SOUTH);
 	}
 
-	if ( m_generationMode == GENERATE_INCREMENTAL )
+	if (m_generationMode == GENERATE_INCREMENTAL)
 	{
 		// Incremental generation needs to check that it's not overlapping existing areas...
-		const Vector *nw = node->GetPosition();
+		const Vector* nw = node->GetPosition();
 
 		vertNode = node;
-		for( int y=0; y<height; ++y )
+		for (int y = 0; y < height; ++y)
 		{
-			vertNode = vertNode->GetConnectedNode( SOUTH );
+			vertNode = vertNode->GetConnectedNode(SOUTH);
 		}
-		const Vector *sw = vertNode->GetPosition();
+		const Vector* sw = vertNode->GetPosition();
 
 		horizNode = node;
-		for( int x=0; x<width; ++x )
+		for (int x = 0; x < width; ++x)
 		{
-			horizNode = horizNode->GetConnectedNode( EAST );
+			horizNode = horizNode->GetConnectedNode(EAST);
 		}
-		const Vector *ne = horizNode->GetPosition();
+		const Vector* ne = horizNode->GetPosition();
 
 		vertNode = horizNode;
-		for( int y=0; y<height; ++y )
+		for (int y = 0; y < height; ++y)
 		{
-			vertNode = vertNode->GetConnectedNode( SOUTH );
+			vertNode = vertNode->GetConnectedNode(SOUTH);
 		}
-		const Vector *se = vertNode->GetPosition();
+		const Vector* se = vertNode->GetPosition();
 
-		TestOverlapping test( *nw, *ne, *sw, *se );
-		if ( test.OverlapsExistingArea() )
+		TestOverlapping test(*nw, *ne, *sw, *se);
+		if (test.OverlapsExistingArea())
 			return false;
 	}
 

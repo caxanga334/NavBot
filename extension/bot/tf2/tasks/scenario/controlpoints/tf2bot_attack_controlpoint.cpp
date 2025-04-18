@@ -7,7 +7,8 @@
 #include <bot/tf2/tasks/tf2bot_attack.h>
 #include "tf2bot_attack_controlpoint.h"
 
-CTF2BotAttackControlPointTask::CTF2BotAttackControlPointTask(CBaseEntity* controlpoint)
+CTF2BotAttackControlPointTask::CTF2BotAttackControlPointTask(CBaseEntity* controlpoint) :
+	m_capturePos(0.0f, 0.0f, 0.0f)
 {
 	m_controlpoint = controlpoint;
 }
@@ -51,9 +52,13 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskUpdate(CTF2Bot* bot)
 
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
-	if (threat)
+	if (threat && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
 	{
-		return PauseFor(new CTF2BotAttackTask(threat->GetEntity(), 2.0f, 20.0f), "Attacking threat!");
+		// only attack if i'm not close to the control point
+		if (bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity())) + 512.0f < bot->GetRangeTo(m_capturePos))
+		{
+			return PauseFor(new CTF2BotAttackTask(threat->GetEntity(), 2.0f, 20.0f), "Attacking threat!");
+		}
 	}
 
 	tfentities::HTeamControlPoint cp(pEntity);
@@ -95,6 +100,36 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskResume(CTF2Bot* bot, AI
 	}
 
 	return Continue();
+}
+
+QueryAnswerType CTF2BotAttackControlPointTask::ShouldHurry(CBaseBot* me)
+{
+	if (static_cast<CTF2Bot*>(me)->GetTimeLeftToCapture() <= CRITICAL_ROUND_TIME)
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
+QueryAnswerType CTF2BotAttackControlPointTask::ShouldRetreat(CBaseBot* me)
+{
+	if (static_cast<CTF2Bot*>(me)->GetTimeLeftToCapture() <= CRITICAL_ROUND_TIME)
+	{
+		return ANSWER_NO;
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
+QueryAnswerType CTF2BotAttackControlPointTask::ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them)
+{
+	if (static_cast<CTF2Bot*>(me)->GetTimeLeftToCapture() <= CRITICAL_ROUND_TIME)
+	{
+		return ANSWER_NO;
+	}
+
+	return ANSWER_UNDEFINED;
 }
 
 void CTF2BotAttackControlPointTask::FindCaptureTrigger(CBaseEntity* controlpoint)

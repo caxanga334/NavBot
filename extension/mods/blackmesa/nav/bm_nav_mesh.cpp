@@ -18,9 +18,14 @@ CBlackMesaNavMesh::CBlackMesaNavMesh() :
 	navgenparams->jump_height = 49.0f;
 	navgenparams->jump_crouch_height = 70.0f;
 	navgenparams->climb_up_height = 70.0f;
-	navgenparams->death_drop = 220.0f; // experimental
+	navgenparams->death_drop = 300.0f; // experimental
 }
 
 CBlackMesaNavMesh::~CBlackMesaNavMesh()
 {
+}
+
+unsigned int CBlackMesaNavMesh::GetGenerationTraceMask(void) const
+{
+	return MASK_PLAYERSOLID_BRUSHONLY;
 }

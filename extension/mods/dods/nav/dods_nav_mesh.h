@@ -11,6 +11,7 @@ public:
 	CDODSNavMesh();
 	~CDODSNavMesh() override;
 
+	unsigned int GetGenerationTraceMask(void) const override;
 	CNavArea* CreateArea(void) const override;
 
 private:

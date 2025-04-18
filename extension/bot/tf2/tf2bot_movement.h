@@ -25,7 +25,7 @@ public:
 	float GetMaxJumpHeight() const override { return 72.0f; }
 	float GetMaxDoubleJumpHeight() const override { return 116.0f; }
 	float GetMaxGapJumpDistance() const override;
-
+	void CrouchJump() override;
 	bool IsAbleToDoubleJump() override;
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
 	bool IsAbleToBlastJump() override;

@@ -162,6 +162,7 @@ int CBaseBot::Hook_OnTakeDamage_Alive(const CTakeDamageInfo& info)
 
 void CBaseBot::Hook_Event_Killed(const CTakeDamageInfo& info)
 {
+	m_lastkilledtimer.Start();
 	Killed();
 	OnKilled(info);
 	RETURN_META(MRES_IGNORED);

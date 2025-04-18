@@ -118,6 +118,28 @@ namespace tfentities
 		bool IsLocked() const;
 		std::string GetPrintName() const;
 	};
+
+	class HTeamRoundTimer : public HTFBaseEntity
+	{
+	public:
+		HTeamRoundTimer(edict_t* entity) : HTFBaseEntity(entity) {}
+		HTeamRoundTimer(CBaseEntity* entity) : HTFBaseEntity(entity) {}
+
+		bool IsTimerPaused() const;
+		bool IsTimerDisabled() const;
+		bool IsDisabled() const { return IsTimerDisabled(); }
+		TeamFortress2::RoundTimerStates GetState() const;
+		bool IsWatchingTimeStamps() const;
+		bool IsStopWatchTimer() const;
+		float GetStopWatchTotalTime() const;
+		bool IsRoundMaxTimerSet() const;
+		int GetTimerInitialLength() const;
+		int GetSetupTimeLength() const;
+		// Purpose: Gets the seconds left on the timer, paused or not.
+		float GetTimeRemaining() const;
+
+
+	};
 }
 
 #endif // !SMNAV_TFENTITIES_CAPTUREFLAG_H_

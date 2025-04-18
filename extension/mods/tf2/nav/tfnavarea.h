@@ -21,6 +21,7 @@ public:
 	NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion) override;
 	void UpdateBlocked(bool force = false, int teamID = NAV_TEAM_ANY) override;
 	bool IsBlocked(int teamID, bool ignoreNavBlockers = false) const override;
+	inline TeamFortress2::TFTeam GetSpawnRoomTeam() const { return static_cast<TeamFortress2::TFTeam>(m_spawnroomteam); }
 
 	// Pathing flags
 	enum TFNavPathAttributes
@@ -129,7 +130,7 @@ public:
 	// Run Time Attributes, these are set by code and are not saved to file
 	enum RTNavAttributes
 	{
-		RTNAV_INVALID = 0
+		RTNAV_INVALID = 0,
 	};
 
 	void SetRTAttributes(RTNavAttributes attribute)
@@ -157,7 +158,7 @@ public:
 	bool IsBuildable(TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned) const
 	{
 		// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Mapper%27s_Reference
-		static constexpr auto BUILDING_WIDTH = 57.0f;
+		static constexpr auto BUILDING_WIDTH = 32.0f; // was 57
 
 		// Small areas are not buildable
 		if (GetSizeX() < BUILDING_WIDTH || GetSizeY() < BUILDING_WIDTH)

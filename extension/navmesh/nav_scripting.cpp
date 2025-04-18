@@ -411,9 +411,9 @@ bool navscripting::ToggleCondition::TestCondition_EntityToggleState() const
 	{
 		int index = gamehelpers->EntityToBCompatRef(pEntity);
 
-		int team = NAV_TEAM_ANY;
-		entprops->GetEntProp(index, Prop_Data, "m_iTeamNum", team);
-		return team == m_iData;
+		int toggle_state = -1;
+		entprops->GetEntProp(index, Prop_Data, "m_toggle_state", toggle_state);
+		return toggle_state == m_iData;
 	}
 
 	return false;

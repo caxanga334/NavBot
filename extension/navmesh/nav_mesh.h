@@ -654,6 +654,8 @@ public:
 	/**
 	 * Apply the functor to all navigation areas.
 	 * If functor returns false, stop processing and return false.
+	 * 
+	 * bool (CNavArea* area)
 	 */
 	template < typename Functor >
 	static bool ForAllAreas( Functor &func )

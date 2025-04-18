@@ -61,6 +61,23 @@ float CTF2BotMovement::GetMaxGapJumpDistance() const
 	}
 }
 
+void CTF2BotMovement::CrouchJump()
+{
+	CTF2Bot* me = GetBot<CTF2Bot>();
+
+	// TF2: Cannot jump while crouched, if not jumping already, release the crouch button
+	if (!m_jumpCooldown.HasStarted() && !m_isJumping && me->GetControlInterface()->IsPressingCrouchButton())
+	{
+		me->GetControlInterface()->ReleaseCrouchButton();
+		me->GetControlInterface()->ReleaseJumpButton();
+		// start the jump cooldown timer to give some time for the player to uncrouch
+		m_jumpCooldown.Start(0.3f);
+		return;
+	}
+
+	IMovement::CrouchJump();
+}
+
 bool CTF2BotMovement::IsAbleToDoubleJump()
 {
 	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());
@@ -95,7 +112,7 @@ void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward
 {
 	CTF2Bot* me = GetBot<CTF2Bot>();
 
-	Jump();
+	CrouchJump();
 
 	// look towards the jump target
 	me->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);

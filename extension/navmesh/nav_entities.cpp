@@ -16,7 +16,7 @@
 #include "nav_area.h"
 #include <eiface.h>
 #include <iplayerinfo.h>
-#include <collisionutils.h>
+#include <sdkports/sdk_collisionutils.h>
 
 // the global singleton interface
 extern CNavMesh *TheNavMesh;

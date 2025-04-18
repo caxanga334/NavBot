@@ -102,6 +102,12 @@ public:
 	void CollectControlPointsToAttack(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out);
 	void CollectControlPointsToDefend(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out);
 	CBaseEntity* GetControlPointByIndex(const int index) const;
+	/**
+	 * @brief Gets the active round timer.
+	 * @param team For which team? (Only used in KOTH game mode).
+	 * @return Timer entity or NULL if no timer is found.
+	 */
+	CBaseEntity* GetRoundTimer(TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned) const;
 
 	void DebugInfo_ControlPoints();
 

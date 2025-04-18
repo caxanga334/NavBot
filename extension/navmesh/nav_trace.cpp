@@ -32,7 +32,8 @@ bool CTraceFilterTransientAreas::ShouldHitEntity(IHandleEntity* pHandleEntity, i
 
 		// TO-DO: Allow derived nav mesh classes to customize this
 		if (UtilHelpers::FClassnameIs(pEntity, "func_brush") ||
-			UtilHelpers::FClassnameIs(pEntity, "func_door*") ||
+			UtilHelpers::FClassnameIs(pEntity, "func_door") ||
+			UtilHelpers::FClassnameIs(pEntity, "func_door_rotating") ||
 			UtilHelpers::FClassnameIs(pEntity, "prop_dynamic*") ||
 			UtilHelpers::FClassnameIs(pEntity, "prop_static") ||
 			UtilHelpers::FClassnameIs(pEntity, "func_wall_toggle") ||

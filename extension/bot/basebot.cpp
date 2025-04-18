@@ -106,7 +106,9 @@ void CBaseBot::PlayerThink()
 
 	if (SleepWhenDead() && GetPlayerInfo()->IsDead())
 	{
-		BuildUserCommand(0); // Still send empty usercommands while dead
+		int deadbuttons = 0;
+		DeadSleepThink(deadbuttons);
+		BuildUserCommand(deadbuttons); // Still send empty usercommands while dead
 		return;
 	}
 

@@ -296,7 +296,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 			[[fallthrough]];
 		case TeamFortress2::TFClassType::TFClass_Heavy:
 		{
-			if (bot->GetRangeTo(UtilHelpers::getEntityOrigin(subject)) < 1200.0f)
+			if (bot->GetRangeTo(UtilHelpers::getEntityOrigin(subject)) < 1200.0f && vcmd == TeamFortress2::VoiceCommandsID::VC_HELP)
 			{
 				bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
 				return TryPauseFor(new CBotSharedEscortEntityTask<CTF2Bot, CTF2BotPathCost>(bot, subject, 30.0f), PRIORITY_MEDIUM, "Responding to teammate call for help!");

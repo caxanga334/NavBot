@@ -30,7 +30,8 @@ public:
 	virtual std::string GetMapFileName() const override;
 	// Returns a random nav area marked with the frontline attribute for MvM
 	CTFNavArea* GetRandomFrontLineArea() const;
-
+	// Returns a random spawn room exit area of a given team
+	CTFNavArea* GetRandomSpawnRoomExitArea(int team) const;
 protected:
 	void PostCustomAnalysis(void) override;
 

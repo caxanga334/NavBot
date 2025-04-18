@@ -134,7 +134,8 @@ void CExtManager::OnClientPutInServer(int client)
 	if (m_iscreatingbot)
 	{
 		smutils->LogMessage(myself, "Adding NavBot to the game. #%i<%p>", client, edict);
-		m_bots.emplace_back(m_mod->AllocateBot(edict));
+		auto& bot = m_bots.emplace_back(m_mod->AllocateBot(edict));
+		bot->PostConstruct();
 	}
 
 	auto gp = playerhelpers->GetGamePlayer(client);

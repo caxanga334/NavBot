@@ -43,6 +43,12 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 				continue;
 			}
 
+			// Scouts only uses level 3 teleporters
+			if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Scout && tele.GetLevel() < 3)
+			{
+				continue;
+			}
+
 			entrance = entity;
 			exit = tf2lib::GetMatchingTeleporter(entity);
 		}

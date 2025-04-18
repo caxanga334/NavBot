@@ -22,6 +22,7 @@ public:
 		m_avoidSlopes = false;
 	}
 
+	bool ShouldSearch(CTFNavArea* area) override;
 	bool ShouldCollect(CTFNavArea* area) override;
 	void ShouldAvoidSlopes(bool avoid) { m_avoidSlopes = avoid; }
 private:
@@ -29,8 +30,23 @@ private:
 	bool m_avoidSlopes;
 };
 
+bool CTF2EngineerBuildableAreaCollector::ShouldSearch(CTFNavArea* area)
+{
+	if (area->IsBlocked(static_cast<int>(m_me->GetMyTFTeam())))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 bool CTF2EngineerBuildableAreaCollector::ShouldCollect(CTFNavArea* area)
 {
+	if (!m_me->GetMovementInterface()->IsAreaTraversable(area))
+	{
+		return false;
+	}
+
 	if (!area->IsBuildable(m_me->GetMyTFTeam()))
 	{
 		return false;

@@ -13,6 +13,10 @@ public:
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 
+	QueryAnswerType ShouldHurry(CBaseBot* me) override;
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
+
 	const char* GetName() const override { return "AttackControlPoint"; }
 
 private:
@@ -22,6 +26,8 @@ private:
 	CountdownTimer m_refreshPosTimer;
 
 	void FindCaptureTrigger(CBaseEntity* controlpoint);
+
+	static constexpr auto CRITICAL_ROUND_TIME = 60.0f; // if the round time remaining is less than this, rush
 };
 
 #endif // !NAVBOT_TF2BOT_ATTACK_CONTROL_POINT_H_

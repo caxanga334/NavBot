@@ -949,6 +949,8 @@ void CTeamFortress2Mod::UpdateObjectiveResource()
 
 	m_objecteResourceEntity.Set(entity);
 
+	m_objectiveResourcesData.m_iTimerToShowInHUD = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iTimerToShowInHUD");
+	m_objectiveResourcesData.m_iStopWatchTimer = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iStopWatchTimer");
 	m_objectiveResourcesData.m_bPlayingMiniRounds = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bPlayingMiniRounds");
 	m_objectiveResourcesData.m_bCPIsVisible = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_bCPIsVisible");
 	m_objectiveResourcesData.m_iPreviousPoints = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iPreviousPoints");
@@ -1257,6 +1259,7 @@ void CTeamFortress2Mod::CollectControlPointsToDefend(TeamFortress2::TFTeam tftea
 
 	// collect points the enemy team can capture
 	int team = static_cast<int>(tf2lib::GetEnemyTFTeam(tfteam));
+	int myteam = static_cast<int>(tfteam);
 	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
 
 	for (auto& handle : m_controlpoints)
@@ -1281,7 +1284,8 @@ void CTeamFortress2Mod::CollectControlPointsToDefend(TeamFortress2::TFTeam tftea
 			continue;
 		}
 
-		if (m_objectiveResourcesData.GetOwner(index) == team)
+		// Only defend control points owned by my team
+		if (m_objectiveResourcesData.GetOwner(index) != myteam)
 		{
 			continue;
 		}
@@ -1312,6 +1316,49 @@ CBaseEntity* CTeamFortress2Mod::GetControlPointByIndex(const int index) const
 		if (index == controlpoint.GetPointIndex())
 		{
 			return handle.Get();
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseEntity* CTeamFortress2Mod::GetRoundTimer(TeamFortress2::TFTeam team) const
+{
+	if (m_gamemode == TeamFortress2::GameModeType::GM_KOTH)
+	{
+		int entindex = INVALID_EHANDLE_INDEX;
+
+		switch (team)
+		{
+		case TeamFortress2::TFTeam_Red:
+			entprops->GameRules_GetPropEnt("m_hRedKothTimer", entindex);
+			break;
+		case TeamFortress2::TFTeam_Blue:
+			entprops->GameRules_GetPropEnt("m_hBlueKothTimer", entindex);
+			break;
+		default:
+			break;
+		}
+
+		if (entindex == INVALID_EHANDLE_INDEX)
+		{
+			return nullptr;
+		}
+
+		return gamehelpers->ReferenceToEntity(entindex);
+	}
+	else
+	{
+		if (m_objecteResourceEntity.Get() == nullptr)
+		{
+			return nullptr;
+		}
+
+		int entindex = m_objectiveResourcesData.GetTimerToShowInHUD();
+
+		if (entindex > 0)
+		{
+			return gamehelpers->ReferenceToEntity(entindex);
 		}
 	}
 

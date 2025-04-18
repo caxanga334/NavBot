@@ -1,4 +1,6 @@
 #include <cstring>
+#include <unordered_set>
+#include <vector>
 
 #include <extension.h>
 #include <mods/tf2/teamfortress2mod.h>
@@ -13,6 +15,55 @@ extern NavAreaVector TheNavAreas;
 ConVar sm_tf_nav_show_path_attributes("sm_tf_nav_show_path_attributes", "0", FCVAR_GAMEDLL, "Shows TF Path Attributes");
 ConVar sm_tf_nav_show_attributes("sm_tf_nav_show_attributes", "0", FCVAR_GAMEDLL, "Shows TF Attributes");
 ConVar sm_tf_nav_show_mvm_attributes("sm_tf_nav_show_mvm_attributes", "0", FCVAR_GAMEDLL, "Shows TF MvM Attributes");
+
+namespace tfnavmeshutils
+{
+	class TFNavMeshCollectSpawnRoomExits
+	{
+	public:
+		TFNavMeshCollectSpawnRoomExits(int teamNum)
+		{
+			team_index = teamNum;
+			collected_areas.reserve(256);
+			areas.reserve(256);
+		}
+
+		bool operator()(CNavArea* baseArea)
+		{
+			CTFNavArea* tfarea = static_cast<CTFNavArea*>(baseArea);
+
+			if (tfarea->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM) &&
+				tfarea->GetSpawnRoomTeam() == team_index)
+			{
+				// current area is a spawn room area, loop connected areas and add any areas that does not have the spawn room attribute to the list
+				tfarea->ForEachConnectedArea([this](CNavArea* area) {
+					CTFNavArea* connectedArea = static_cast<CTFNavArea*>(area);
+
+					if (!connectedArea->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM))
+					{
+						if (collected_areas.find(connectedArea->GetID()) == collected_areas.end())
+						{
+							collected_areas.insert(connectedArea->GetID());
+							areas.push_back(connectedArea);
+						}
+					}
+				});
+			}
+
+			return true;
+		}
+
+		void GetAreas(std::vector<CTFNavArea*>& vec)
+		{
+			vec.swap(areas);
+		}
+
+	private:
+		int team_index;
+		std::unordered_set<unsigned int> collected_areas;
+		std::vector<CTFNavArea*> areas;
+	};
+}
 
 CTFNavMesh::CTFNavMesh() : CNavMesh()
 {
@@ -163,6 +214,24 @@ CTFNavArea* CTFNavMesh::GetRandomFrontLineArea() const
 	}
 
 	return nullptr;
+}
+
+CTFNavArea* CTFNavMesh::GetRandomSpawnRoomExitArea(int team) const
+{
+
+	tfnavmeshutils::TFNavMeshCollectSpawnRoomExits functor(team);
+
+	CNavMesh::ForAllAreas(functor);
+
+	std::vector<CTFNavArea*> spawnexitareas;
+	functor.GetAreas(spawnexitareas);
+
+	if (spawnexitareas.empty())
+	{
+		return nullptr;
+	}
+
+	return librandom::utils::GetRandomElementFromVector<CTFNavArea*>(spawnexitareas);
 }
 
 void CTFNavMesh::PostCustomAnalysis(void)

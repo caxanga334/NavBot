@@ -31,7 +31,7 @@
 #include <entities/worldspawn.h>
 #include "Color.h"
 #include "tier0/vprof.h"
-#include "collisionutils.h"
+#include <sdkports/sdk_collisionutils.h>
 #include <vphysics_interface.h>
 #include <ivdebugoverlay.h>
 #include <eiface.h>
@@ -56,8 +56,9 @@ ConVar sm_nav_draw_limit( "sm_nav_draw_limit", "500", FCVAR_CHEAT, "The maximum 
 ConVar sm_nav_solid_props( "sm_nav_solid_props", "0", FCVAR_CHEAT, "Make props solid to nav generation/editing" );
 ConVar sm_nav_create_area_at_feet( "sm_nav_create_area_at_feet", "0", FCVAR_CHEAT, "Anchor nav_begin_area Z to editing player's feet" );
 
-ConVar sm_nav_drag_selection_volume_zmax_offset( "sm_nav_drag_selection_volume_zmax_offset", "32", FCVAR_REPLICATED, "The offset of the nav drag volume top from center" );
-ConVar sm_nav_drag_selection_volume_zmin_offset( "sm_nav_drag_selection_volume_zmin_offset", "32", FCVAR_REPLICATED, "The offset of the nav drag volume bottom from center" );
+ConVar sm_nav_drag_selection_volume_zmax_offset( "sm_nav_drag_selection_volume_zmax_offset", "32", FCVAR_CHEAT, "The offset of the nav drag volume top from center" );
+ConVar sm_nav_drag_selection_volume_zmin_offset( "sm_nav_drag_selection_volume_zmin_offset", "32", FCVAR_CHEAT, "The offset of the nav drag volume bottom from center" );
+ConVar sm_nav_show_blocked_filter("sm_nav_show_blocked_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "If enabled, only show areas as blocked if they are blocked for your current team");
 extern IPlayerInfoManager* playerinfomanager;
 extern IServerGameClients* gameclients;
 extern IVEngineServer *engine;
@@ -186,61 +187,66 @@ void CNavMesh::SetEditMode( EditModeType mode )
 
 
 //--------------------------------------------------------------------------------------------------------------
-bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &end, CNavArea **bestArea, CNavLadder **bestLadder, CNavArea *ignore )
+bool CNavMesh::FindNavAreaOrLadderAlongRay(const Vector& start, const Vector& end, CNavArea** bestArea, CNavLadder** bestLadder, CNavArea* ignore)
 {
-	if ( !m_grid.Count() )
+	if (!m_grid.Count())
 		return false;
 
 	Ray_t ray;
-	ray.Init( start, end, vec3_origin, vec3_origin );
+	ray.Init(start, end, vec3_origin, vec3_origin);
 
-	*bestArea = NULL;
-	*bestLadder = NULL;
+	*bestArea = nullptr;
+	*bestLadder = nullptr;
 
 	float bestDist = 1.0f; // 0..1 fraction
 
-	for ( int i=0; i<m_ladders.Count(); ++i )
+	for (int i = 0; i < m_ladders.Count(); ++i)
 	{
-		CNavLadder *ladder = m_ladders[i];
+		CNavLadder* ladder = m_ladders[i];
 
-		Vector left( 0, 0, 0), right(0, 0, 0), up( 0, 0, 0);
-		VectorVectors( ladder->GetNormal(), right, up );
+		Vector left(0, 0, 0), right(0, 0, 0), up(0, 0, 0);
+		VectorVectors(ladder->GetNormal(), right, up);
 		right *= ladder->m_width * 0.5f;
 		left = -right;
 
+		Vector c1 = ladder->m_top + right;
+		Vector c2 = ladder->m_top + left;
+		Vector c3 = ladder->m_bottom + right;
 		Vector c4 = ladder->m_bottom + left;
-		for (int i = 0; i < 2; i++) {
-			float dist = IntersectRayWithTriangle( ray, ladder->m_top + right,
-					i > 0 ? c4 : (ladder->m_top + left),
-					i > 0 ? (ladder->m_bottom + right) : c4, false );
-			if ( dist > 0 && dist < bestDist )
-			{
-				*bestLadder = ladder;
-				bestDist = dist;
-			}
+		float dist = IntersectRayWithTriangle(ray, c1, c2, c4, false);
+		if (dist > 0 && dist < bestDist)
+		{
+			*bestLadder = ladder;
+			bestDist = dist;
+		}
 
+		dist = IntersectRayWithTriangle(ray, c1, c4, c3, false);
+		if (dist > 0 && dist < bestDist)
+		{
+			*bestLadder = ladder;
+			bestDist = dist;
 		}
 	}
 
 	Extent extent;
 	extent.lo = extent.hi = start;
-	extent.Encompass( end );
+	extent.Encompass(end);
 
-	int loX = WorldToGridX( extent.lo.x );
-	int loY = WorldToGridY( extent.lo.y );
-	int hiX = WorldToGridX( extent.hi.x );
-	int hiY = WorldToGridY( extent.hi.y );
+	int loX = WorldToGridX(extent.lo.x);
+	int loY = WorldToGridY(extent.lo.y);
+	int hiX = WorldToGridX(extent.hi.x);
+	int hiY = WorldToGridY(extent.hi.y);
 
-	for( int y = loY; y <= hiY; ++y )
+	for (int y = loY; y <= hiY; ++y)
 	{
-		for( int x = loX; x <= hiX; ++x )
+		for (int x = loX; x <= hiX; ++x)
 		{
-			NavAreaVector &areaGrid = m_grid[ x + y*m_gridSizeX ];
+			NavAreaVector& areaGrid = m_grid[x + y * m_gridSizeX];
 
-			FOR_EACH_VEC( areaGrid, it )
+			FOR_EACH_VEC(areaGrid, it)
 			{
-				CNavArea *area = areaGrid[ it ];
-				if ( area == ignore )
+				CNavArea* area = areaGrid[it];
+				if (area == ignore)
 					continue;
 
 				Vector nw = area->m_nwCorner;
@@ -253,15 +259,15 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 				sw.y = se.y;
 				sw.z = area->m_swZ;
 
-				float dist = IntersectRayWithTriangle( ray, nw, ne, se, false );
-				if ( dist > 0 && dist < bestDist )
+				float dist = IntersectRayWithTriangle(ray, nw, ne, se, false);
+				if (dist > 0 && dist < bestDist)
 				{
 					*bestArea = area;
 					bestDist = dist;
 				}
 
-				dist = IntersectRayWithTriangle( ray, se, sw, nw, false );
-				if ( dist > 0 && dist < bestDist )
+				dist = IntersectRayWithTriangle(ray, se, sw, nw, false);
+				if (dist > 0 && dist < bestDist)
 				{
 					*bestArea = area;
 					bestDist = dist;
@@ -270,7 +276,7 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &e
 		}
 	}
 
-	if ( *bestArea )
+	if (*bestArea)
 	{
 		*bestLadder = NULL;
 	}
@@ -667,11 +673,14 @@ void EmitSound(edict_t *player, const char* soundName) {
 ConVar sm_nav_show_compass( "sm_nav_show_compass", "0", FCVAR_CHEAT );
 void CNavMesh::DrawEditMode( void )
 {
-	edict_t* ent = UTIL_GetListenServerEnt();
-	if (ent == NULL)
+	edict_t* ent = UtilHelpers::GetListenServerHost();
+
+	if (IsGenerating() || !UtilHelpers::IsValidEdict(ent))
 		return;
-	IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
-	if ( player == nullptr || IsGenerating() )
+
+	SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(ent);
+
+	if (player == nullptr || player->GetPlayerInfo() == nullptr)
 		return;
 
 #if SOURCE_ENGINE >= SE_ORANGEBOX
@@ -883,9 +892,9 @@ void CNavMesh::DrawEditMode( void )
 
 			if (m_showAreaInfoTimer.HasStarted() && !m_showAreaInfoTimer.IsElapsed() )
 			{
-				char buffer[80];
-				char attrib[80];
-				char locName[80];
+				char buffer[128];
+				char attrib[128];
+				char locName[128];
 
 				if (m_selectedArea->GetPlace())
 				{
@@ -927,14 +936,16 @@ void CNavMesh::DrawEditMode( void )
 					if ( attributes & NAV_MESH_NO_HOSTAGES )Q_strncat( attrib, "NO HOSTAGES ", sizeof( attrib ), -1 );
 					if ( attributes & NAV_MESH_STAIRS )		Q_strncat( attrib, "STAIRS ", sizeof( attrib ), -1 );
 					if ( attributes & NAV_MESH_OBSTACLE_TOP ) Q_strncat( attrib, "OBSTACLE ", sizeof( attrib ), -1 );
-#ifdef TERROR
-					if ( attributes & TerrorNavArea::NAV_PLAYERCLIP )		Q_strncat( attrib, "PLAYERCLIP ", sizeof( attrib ), -1 );
-					if ( attributes & TerrorNavArea::NAV_BREAKABLEWALL )	Q_strncat( attrib, "BREAKABLEWALL ", sizeof( attrib ), -1 );
-					if ( m_selectedArea->IsBlocked( TEAM_SURVIVOR ) ) Q_strncat( attrib, "BLOCKED_SURVIVOR ", sizeof( attrib ), -1 );
-					if ( m_selectedArea->IsBlocked( TEAM_ZOMBIE ) ) Q_strncat( attrib, "BLOCKED_ZOMBIE ", sizeof( attrib ), -1 );
-#else
-					if ( m_selectedArea->IsBlocked( NAV_TEAM_ANY ) ) Q_strncat( attrib, "BLOCKED ", sizeof( attrib ), -1 );
-#endif
+
+					if (sm_nav_show_blocked_filter.GetBool())
+					{
+						if (m_selectedArea->IsBlocked(player->GetPlayerInfo()->GetTeamIndex())) Q_strncat(attrib, "BLOCKED ", sizeof(attrib), -1);
+					}
+					else
+					{
+						if (m_selectedArea->IsBlocked(NAV_TEAM_ANY)) Q_strncat(attrib, "BLOCKED ", sizeof(attrib), -1);
+					}
+
 					if ( m_selectedArea->HasAvoidanceObstacle() )	Q_strncat( attrib, "OBSTRUCTED ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsDamaging() )		Q_strncat( attrib, "DAMAGING ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsUnderwater() )	Q_strncat( attrib, "UNDERWATER ", sizeof( attrib ), -1 );
@@ -985,7 +996,7 @@ void CNavMesh::DrawEditMode( void )
 				Extent extent;
 				m_selectedArea->GetExtent( &extent );
 
-				float yaw = player->GetAbsAngles().y;
+				float yaw = player->GetPlayerInfo()->GetAbsAngles().y;
 				while( yaw > 360.0f )
 					yaw -= 360.0f;
 
@@ -1049,7 +1060,7 @@ void CNavMesh::DrawEditMode( void )
 				{
 					CNavArea *area = m_selectedSet[ it ];
 
-					float range = (player->GetAbsOrigin() - area->GetCenter()).LengthSqr();
+					float range = (player->GetPlayerInfo()->GetAbsOrigin() - area->GetCenter()).LengthSqr();
 					if (range < nearRange)
 					{
 						nearRange = range;
