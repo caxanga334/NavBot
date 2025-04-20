@@ -489,6 +489,8 @@ bool CTeamFortress2Mod::DetectCommunityGameModes()
 		m_gamemode = TeamFortress2::GameModeType::GM_SF;
 		return true;
 	}
+
+	return false;
 }
 
 bool CTeamFortress2Mod::DetectMapViaGameRules()
