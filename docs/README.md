@@ -11,6 +11,7 @@ Welcome to the NavBot extension documentation index.
 - [Questions and Answers]
 - [Navigation Mesh Documentation]
 - [Weapon Info Config File]
+- [NavBot ConVars]
 
 <!-- Links -->
 [Installing NavBot]: INSTALL.md
@@ -20,3 +21,4 @@ Welcome to the NavBot extension documentation index.
 [Bot Difficulty Configuration]: BOT_DIFFICULTY_PROFILES.md
 [Navigation Mesh Documentation]: navmesh/README.md
 [Weapon Info Config File]: WEAPONINFO_CONFIG.md
+[NavBot ConVars]: CONVARS.md

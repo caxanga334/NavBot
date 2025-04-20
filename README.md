@@ -25,6 +25,7 @@ List of game/mods that NavBot supports.
 |:---:|:---:|:---:|
 | Team Fortress 2 | Partial Support | Lacks supports for some game modes. |
 | Black Mesa | Partial Support | Supports DM & TDM modes. |
+| Day of Defeat: Source | Partial Support | Supports control points and bomb maps. No class selection (always uses rifleman). |
 
 ## Downloads
 

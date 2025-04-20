@@ -17,6 +17,7 @@
 #if SOURCE_ENGINE == SE_TF2
 static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
 static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
+static ConVar sm_navbot_tf_force_gamemode("sm_navbot_tf_force_gamemode", "-1", FCVAR_GAMEDLL, "Skips game mode detection and forces a specific game mode. -1 to disable.");
 #endif
 
 #undef min
@@ -35,7 +36,12 @@ static const char* s_tf2gamemodenames[] = {
 	"PLAYER DESTRUCTION",
 	"SPECIAL DELIVERY",
 	"TERRITORIAL CONTROL",
-	"ARENA"
+	"ARENA",
+	"VERSUS SAXTON HALE",
+	"ZOMBIE INFECTION",
+	"GUN GAME",
+	"DEATHMATCH",
+	"SLENDER FORTRESS"
 };
 
 static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES), 
@@ -340,7 +346,22 @@ const char* CTeamFortress2Mod::GetCurrentGameModeName() const
 
 void CTeamFortress2Mod::DetectCurrentGameMode()
 {
-	// When adding detection for community game mode, detect them first
+#if SOURCE_ENGINE == SE_TF2
+	int forcedmode = sm_navbot_tf_force_gamemode.GetInt();
+
+	if (forcedmode >= 0 && forcedmode < static_cast<int>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES))
+	{
+		m_gamemode = static_cast<TeamFortress2::GameModeType>(forcedmode);
+		smutils->LogMessage(myself, "Using forced game mode via sm_navbot_tf_force_gamemode ConVar: %s", GetCurrentGameModeName());
+		return;
+	}
+#endif
+
+	// Community modes that needs to be detected before game rules method
+	if (DetectCommunityGameModes())
+	{
+		return;
+	}
 
 	if (DetectMapViaGameRules())
 	{
@@ -372,7 +393,7 @@ bool CTeamFortress2Mod::DetectMapViaName()
 	* Detects the map type via the map prefix
 	*/
 
-	std::string map(STRING(gpGlobals->mapname));
+	std::string map = tf2lib::maps::GetMapName();
 
 	if (map.find("ctf_") != std::string::npos)
 	{
@@ -435,6 +456,39 @@ bool CTeamFortress2Mod::DetectMapViaName()
 	}
 
 	return false;
+}
+
+bool CTeamFortress2Mod::DetectCommunityGameModes()
+{
+	/*
+	* Detects the map type via the map prefix
+	*/
+
+	std::string map = tf2lib::maps::GetMapName();
+
+	if (map.find("vsh_") != std::string::npos)
+	{
+		m_gamemode = TeamFortress2::GameModeType::GM_VSH;
+		return true;
+	}
+
+	if (map.find("zi_") != std::string::npos)
+	{
+		m_gamemode = TeamFortress2::GameModeType::GM_ZI;
+		return true;
+	}
+
+	if (map.find("gg_") != std::string::npos)
+	{
+		m_gamemode = TeamFortress2::GameModeType::GM_GG;
+		return true;
+	}
+
+	if (map.find("slender_") != std::string::npos)
+	{
+		m_gamemode = TeamFortress2::GameModeType::GM_SF;
+		return true;
+	}
 }
 
 bool CTeamFortress2Mod::DetectMapViaGameRules()

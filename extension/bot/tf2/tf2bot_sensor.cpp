@@ -10,6 +10,7 @@
 
 #if SOURCE_ENGINE == SE_TF2
 // ConVar sm_navbot_tf_attack_nextbots("sm_navbot_tf_attack_nextbots", "1", FCVAR_GAMEDLL, "If enabled, allow bots to attacks NextBot entities.");
+static ConVar cvar_teammates_are_enemies("sm_navbot_tf_teammates_are_enemies", "0", FCVAR_GAMEDLL, "If enabled, bots will consider players from the same team as enemies.");
 #endif // SOURCE_ENGINE == SE_TF2
 
 
@@ -91,6 +92,13 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity)
 
 	if (theirteam == me->GetMyTFTeam())
 	{
+#if SOURCE_ENGINE == SE_TF2
+		if (cvar_teammates_are_enemies.GetBool())
+		{
+			return false;
+		}
+#endif // SOURCE_ENGINE == SE_TF2
+
 		return true;
 	}
 
@@ -105,6 +113,13 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 	
 	if (theirteam == me->GetMyTFTeam())
 	{
+#if SOURCE_ENGINE == SE_TF2
+		if (cvar_teammates_are_enemies.GetBool())
+		{
+			return true;
+		}
+#endif // SOURCE_ENGINE == SE_TF2
+
 		return false;
 	}
 

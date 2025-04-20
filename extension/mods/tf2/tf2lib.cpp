@@ -655,3 +655,26 @@ CBaseEntity* tf2lib::sd::GetSpecialDeliveryCaptureZone()
 {
 	return gamehelpers->ReferenceToEntity(UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "func_capturezone"));
 }
+
+std::string tf2lib::maps::GetMapName()
+{
+	// TF2 workshop names follows this format: workshop/ctf_harbine.ugc3067683041
+	// this method should be fine for most maps
+	std::string mapname(gamehelpers->GetCurrentMap());
+
+	auto n1 = mapname.find("workshop/");
+	auto n2 = mapname.find(".ugc");
+
+	if (n1 == std::string::npos)
+	{
+		return mapname; // not a workshop map
+	}
+
+	constexpr size_t WORKSHOP_STR_SIZE = 9U;
+	constexpr size_t UGC_STR_SIZE = 4U;
+	auto count = n2 - (n1 + WORKSHOP_STR_SIZE);
+	auto sub1 = mapname.substr(n1 + WORKSHOP_STR_SIZE, count);
+	auto sub2 = mapname.substr(n2 + UGC_STR_SIZE);
+	std::string finalname = sub1 + "_ugc" + sub2; // becomes something like this: ctf_harbine_ugc3067683041
+	return finalname;
+}

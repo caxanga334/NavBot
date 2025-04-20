@@ -170,7 +170,7 @@ bool CTFNavMesh::Save(void)
 std::string CTFNavMesh::GetMapFileName() const
 {
 	// TF2 workshop names follows this format: workshop/ctf_harbine.ugc3067683041
-	// this method should be file for most maps
+	// this method should be fine for most maps
 	std::string mapname(gamehelpers->GetCurrentMap());
 
 	auto n1 = mapname.find("workshop/");

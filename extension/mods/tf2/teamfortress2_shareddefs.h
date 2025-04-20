@@ -488,6 +488,11 @@ namespace TeamFortress2
 		GM_SD, // Special Delivery
 		GM_TC, // Territorial Control
 		GM_ARENA, // Arena
+		GM_VSH, // Versus Saxton Hale
+		GM_ZI, // Zombie Infection
+		GM_GG, // Gun game
+		GM_DM, // Deathmatch
+		GM_SF, // Slender Fortress
 
 		GM_MAX_GAMEMODE_TYPES
 	};

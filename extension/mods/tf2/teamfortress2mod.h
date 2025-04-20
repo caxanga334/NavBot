@@ -129,6 +129,21 @@ public:
 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) override;
 	const CTF2ModSettings* GetTF2ModSettings() const { return static_cast<const CTF2ModSettings*>(CBaseMod::GetModSettings()); }
 	const Vector& GetMvMBombHatchPosition() const { return m_MvMHatchPos; }
+	// If true, bots will only use deathmatch behavior (including spies, medics, engineers and snipers).
+	inline bool UseDeathmatchBehaviorOnly() const
+	{
+		switch (m_gamemode)
+		{
+		case TeamFortress2::GameModeType::GM_NONE:
+			return false;
+		case TeamFortress2::GameModeType::GM_GG:
+			[[fallthrough]];
+		case TeamFortress2::GameModeType::GM_DM:
+			return true;
+		default:
+			return false;
+		}
+	}
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
@@ -151,6 +166,7 @@ private:
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();
+	bool DetectCommunityGameModes();
 	bool DetectMapViaGameRules();
 	bool DetectKoth();
 	bool DetectPlayerDestruction();

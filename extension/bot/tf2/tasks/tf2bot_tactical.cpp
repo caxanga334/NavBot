@@ -9,7 +9,8 @@
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include <mods/tf2/tf2lib.h>
-#include "bot/tf2/tf2bot.h"
+#include <bot/tf2/tf2bot.h>
+#include <bot/bot_shared_convars.h>
 #include "tf2bot_tactical.h"
 #include "tf2bot_find_ammo_task.h"
 #include "tf2bot_find_health_task.h"
@@ -31,10 +32,6 @@
 #undef min
 #undef clamp // undef mathlib macros
 
-#if SOURCE_ENGINE == SE_TF2 // only declare the ConVar on TF2 engine
-static ConVar sm_navbot_tf_ai_low_health_percent("sm_navbot_tf_ai_low_health_percent", "0.5", FCVAR_GAMEDLL, "If the bot health is below this percentage, the bot should retreat for health", true, 0.0f, true, 1.0f);
-#endif // SOURCE_ENGINE == SE_TF2
-
 AITask<CTF2Bot>* CTF2BotTacticalTask::InitialNextTask(CTF2Bot* bot)
 {
 	return CTF2BotTacticalTask::SelectScenarioTask(bot);
@@ -51,21 +48,22 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 {
-#if SOURCE_ENGINE == SE_TF2
 	// low ammo and health check
 	if (bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
 	{
-		if (m_healthchecktimer.IsElapsed())
+		const float healthratio = sm_navbot_bot_low_health_ratio.GetFloat();
+
+		if (healthratio >= 0.1f && m_healthchecktimer.IsElapsed())
 		{
 			m_healthchecktimer.StartRandom(1.0f, 5.0f);
 
-			if (bot->GetHealthPercentage() <= sm_navbot_tf_ai_low_health_percent.GetFloat())
+			if (bot->GetHealthPercentage() <= healthratio)
 			{
 				return PauseFor(new CTF2BotFindHealthTask, "I'm low on health!");
 			}
 		}
 
-		if (m_ammochecktimer.IsElapsed())
+		if (!sm_navbot_bot_no_ammo_check.GetBool() && m_ammochecktimer.IsElapsed())
 		{
 			m_ammochecktimer.StartRandom(1.0f, 5.0f);
 
@@ -75,7 +73,6 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 		}
 	}
-#endif // SOURCE_ENGINE == SE_TF2
 
 	if (m_teleportertimer.IsElapsed())
 	{
@@ -112,12 +109,12 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 		return ANSWER_NO;
 	}
 
-#if SOURCE_ENGINE == SE_TF2
-	if (me->GetHealthPercentage() <= sm_navbot_tf_ai_low_health_percent.GetFloat())
+	const float healthratio = sm_navbot_bot_low_health_ratio.GetFloat();
+
+	if (healthratio >= 0.1f && me->GetHealthPercentage() <= healthratio)
 	{
 		return ANSWER_YES;
 	}
-#endif // SOURCE_ENGINE == SE_TF2
 
 	if (me->IsAmmoLow())
 	{
@@ -133,6 +130,11 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipC
 	auto gm = tf2mod->GetCurrentGameMode();
 	bool defend = (randomgen->GetRandomInt<int>(1, 100) < tf2mod->GetModSettings()->GetDefendRate());
 
+	// Current gamemode is deathmatch, no class specific behavior is used
+	if (tf2mod->UseDeathmatchBehaviorOnly())
+	{
+		return new CTF2BotDeathmatchScenarioTask;
+	}
 
 	if (gm == TeamFortress2::GameModeType::GM_MVM)
 	{

@@ -71,6 +71,12 @@ namespace tf2lib::sd
 	CBaseEntity* GetSpecialDeliveryCaptureZone();
 }
 
+namespace tf2lib::maps
+{
+	// Returns the current map name, removing the 'workshop/' folder from workshop maps
+	std::string GetMapName();
+}
+
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
 {
 	switch (tfclass)

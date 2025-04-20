@@ -7,8 +7,8 @@
 #include <entities/baseentity.h>
 #include "playercontrol.h"
 
-ConVar smnav_bot_aim_stability_max_rate("sm_navbot_aim_stability_max_rate", "100.0", FCVAR_NONE, "Maximum angle change rate to consider the bot aim to be stable.");
-ConVar smnav_bot_aim_lookat_settle_duration("sm_navbot_aim_lookat_settle_duration", "0.3", FCVAR_NONE, "Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.");
+ConVar smnav_bot_aim_stability_max_rate("sm_navbot_aim_stability_max_rate", "100.0", FCVAR_GAMEDLL, "Maximum angle change rate to consider the bot aim to be stable.");
+ConVar smnav_bot_aim_lookat_settle_duration("sm_navbot_aim_lookat_settle_duration", "0.3", FCVAR_GAMEDLL, "Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.");
 
 IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlayerInput()
 {
