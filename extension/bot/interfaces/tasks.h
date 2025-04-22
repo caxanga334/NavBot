@@ -584,6 +584,7 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnControlPointContested(BotClass* bot, CBaseEntity* point) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnWeaponEquip(BotClass* bot, CBaseEntity* weapon) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnVoiceCommand(BotClass* bot, CBaseEntity* subject, int command) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnTruceChanged(BotClass* bot, const bool enabled) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1083,6 +1084,11 @@ private:
 	void OnVoiceCommand(CBaseEntity* subject, int command) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnVoiceCommand, subject, command);
+	}
+
+	void OnTruceChanged(const bool enabled) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnTruceChanged, enabled);
 	}
 };
 

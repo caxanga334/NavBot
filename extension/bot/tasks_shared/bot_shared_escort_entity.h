@@ -36,6 +36,9 @@ public:
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 
+	// Already bush escorting something, don't help teammates.
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
+
 	const char* GetName() const override { return "EscortEntity"; }
 
 private:

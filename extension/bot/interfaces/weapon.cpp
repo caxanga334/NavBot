@@ -1,9 +1,16 @@
+#include <limits>
+
 #include <extension.h>
 #include <manager.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <mods/basemod.h>
 #include "weapon.h"
+
+// undef some macros from mathlib that causes conflicts with std::
+#undef min
+#undef max
+#undef clamp
 
 CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 {
@@ -38,4 +45,58 @@ CBaseEntity* CBotWeapon::GetEntity() const
 int CBotWeapon::GetIndex() const
 {
 	return gamehelpers->EntityToBCompatRef(m_handle.Get());
+}
+
+float CBotWeapon::GetCurrentMinimumAttackRange(CBaseBot* owner) const
+{
+	switch (owner->GetControlInterface()->GetLastUsedAttackType())
+	{
+	case IPlayerInput::AttackType::ATTACK_SECONDARY:
+	{
+		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasMinRange())
+		{
+			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMinRange();
+		}
+		break;
+	}
+	case IPlayerInput::AttackType::ATTACK_PRIMARY:
+		[[fallthrough]];
+	default:
+	{
+		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasMinRange())
+		{
+			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMinRange();
+		}
+		break;
+	}
+	}
+
+	return 0.0f;
+}
+
+float CBotWeapon::GetCurrentMaximumAttackRange(CBaseBot* owner) const
+{
+	switch (owner->GetControlInterface()->GetLastUsedAttackType())
+	{
+	case IPlayerInput::AttackType::ATTACK_SECONDARY:
+	{
+		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasMaxRange())
+		{
+			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMaxRange();
+		}
+		break;
+	}
+	case IPlayerInput::AttackType::ATTACK_PRIMARY:
+		[[fallthrough]];
+	default:
+	{
+		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasMaxRange())
+		{
+			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
+		}
+		break;
+	}
+	}
+
+	return std::numeric_limits<float>::max();
 }

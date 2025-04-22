@@ -3519,11 +3519,19 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 
 void CNavMesh::CommandNavCornerPlaceAtFeet(const CCommand& args)
 {
+	DECLARE_COMMAND_ARGS;
+
 	edict_t* player = UTIL_GetListenServerEnt();
 
 	if (player == NULL || !IsEditMode(NORMAL))
 		return;
 
+	bool raiseadjareas = true;
+
+	if (args.ArgC() > 1)
+	{
+		raiseadjareas = UtilHelpers::StringToBoolean(args[1]);
+	}
 
 	const Vector& origin = UtilHelpers::getEntityOrigin(player);
 
@@ -3535,14 +3543,14 @@ void CNavMesh::CommandNavCornerPlaceAtFeet(const CCommand& args)
 			{
 				Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
 				float z = (origin.z - corner.z);
-				m_markedArea->RaiseCorner(static_cast<NavCornerType>(i), static_cast<int>(std::round(z)));
+				m_markedArea->RaiseCorner(static_cast<NavCornerType>(i), static_cast<int>(std::round(z)), raiseadjareas);
 			}
 		}
 		else
 		{
 			Vector corner = m_markedArea->GetCorner(m_markedCorner);
 			float z = (origin.z - corner.z);
-			m_markedArea->RaiseCorner(m_markedCorner, static_cast<int>(std::round(z)));
+			m_markedArea->RaiseCorner(m_markedCorner, static_cast<int>(std::round(z)), raiseadjareas);
 		}
 
 		Msg("Area corner placed at %3.2f \n", origin.z);
@@ -4821,4 +4829,60 @@ CON_COMMAND_F(sm_nav_select_potentially_obstructed_areas, "Selects nav areas tha
 
 	CNavMesh::ForAllAreas<decltype(addObstructedAreasToSelectedSet)>(addObstructedAreasToSelectedSet);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+void CNavMesh::CommandNavDisconnectDropDownAreas(const float minDrop)
+{
+	std::size_t count = 0U;
+
+	FOR_EACH_VEC(m_selectedSet, it)
+	{
+		CNavArea* area = m_selectedSet[it];
+		std::vector<CNavArea*> toDisconnect;
+
+		area->ForEachAdjacentArea([&area, &minDrop, &toDisconnect](CNavArea* connectedArea) {
+			const float height = area->ComputeAdjacentConnectionHeightChange(connectedArea);
+
+			if (height < 0.0f && std::abs(height) >= minDrop)
+			{
+				toDisconnect.push_back(connectedArea);
+			}
+		});
+
+		for (CNavArea* other : toDisconnect)
+		{
+			area->Disconnect(other);
+			count++;
+		}
+	}
+
+	META_CONPRINTF("Disconnected %zu drop down areas. \n", count);
+	PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+CON_COMMAND_F(sm_nav_disconnect_dropdown_areas, "Disconnect drop down areas within the height limit from the selected set.", FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_disconnect_dropdown_areas <drop down height limit> \n");
+		return;
+	}
+
+	if (TheNavMesh->IsSelectedSetEmpty())
+	{
+		META_CONPRINT("You must add nav areas to the selected set first! \n");
+		return;
+	}
+
+	float limit = atof(args[1]);
+
+	if (limit < navgenparams->step_height)
+	{
+		META_CONPRINT("Invalid height limit value!\n");
+		return;
+	}
+
+	TheNavMesh->CommandNavDisconnectDropDownAreas(limit);
 }

@@ -88,6 +88,11 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskUpdate(CTF2Bot* bot)
 		CBaseEntity* newPoint = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(Vecpoints);
 		return SwitchTo(new CTF2BotAttackControlPointTask(newPoint), "Attacking another control point!");
 	}
+	else
+	{
+		// list of control points to attack is empty
+		return Done("No more control points to attack.");
+	}
 
 	return Continue();
 }

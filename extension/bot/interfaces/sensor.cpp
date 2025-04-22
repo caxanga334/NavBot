@@ -88,6 +88,9 @@ void ISensor::Reset()
 	m_threatvisibletimer.Invalidate();
 	m_updateNonPlayerTimer.Invalidate();
 	m_updateStatisticsTimer.Reset();
+	m_primarythreatcache = nullptr;
+	m_statsvisibleallies = 0;
+	m_statsvisibleenemies = 0;
 }
 
 void ISensor::Update()

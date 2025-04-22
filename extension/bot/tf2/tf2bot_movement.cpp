@@ -71,7 +71,13 @@ void CTF2BotMovement::CrouchJump()
 		me->GetControlInterface()->ReleaseCrouchButton();
 		me->GetControlInterface()->ReleaseJumpButton();
 		// start the jump cooldown timer to give some time for the player to uncrouch
-		m_jumpCooldown.Start(0.3f);
+		m_jumpCooldown.Start(0.9f);
+
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 165, 0, "%s CTF2BotMovement::CrouchJump JUMP REJECTED, BOT IS CROUCHING! \n", me->GetDebugIdentifier());
+		}
+
 		return;
 	}
 

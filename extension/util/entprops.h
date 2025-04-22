@@ -157,6 +157,7 @@ public:
 	bool GetEntDataString(int entity, int offset, int maxlen, char* result, size_t &len);
 	bool SetEntDataString(int entity, int offset, char *value, int maxlen, bool changeState = false);
 	bool GameRules_GetProp(const char *prop, int &result, int size = 4, int element = 0);
+	bool GameRules_GetPropBool(const char* prop, bool& result, int element = 0);
 	bool GameRules_GetPropFloat(const char *prop, float &result, int element = 0);
 	bool GameRules_GetPropEnt(const char *prop, int &result, int element = 0);
 	bool GameRules_GetPropVector(const char *prop, Vector &result, int element = 0);
@@ -292,6 +293,14 @@ inline CBaseEntity *CEntPropUtils::GetEntity(int entity)
 	}
 
 	return pEntity;
+}
+
+inline bool CEntPropUtils::GameRules_GetPropBool(const char* prop, bool& result, int element)
+{
+	int value = 0;
+	const bool found = this->GameRules_GetProp(prop, value, 1, element);
+	result = (value != 0);
+	return found;
 }
 
 template<typename T>

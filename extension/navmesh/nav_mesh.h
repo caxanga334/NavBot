@@ -585,7 +585,7 @@ public:
 	void CommandNavSelectNearestUseableLadder();
 	void CommandNavSetUseableLadderDir();
 	void CommandNavMarkVolume(const CCommand& args);
-
+	void CommandNavDisconnectDropDownAreas(const float minDrop);		// Nav areas with drop down connections of heights greater than the limit are disconnected
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );

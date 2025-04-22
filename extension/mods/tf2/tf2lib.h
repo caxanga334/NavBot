@@ -77,6 +77,18 @@ namespace tf2lib::maps
 	std::string GetMapName();
 }
 
+namespace tf2lib::pd
+{
+	/**
+	 * @brief Returns the leader of the given team for player destrution game mode.
+	 * 
+	 * The leader is determined by the game logic, this function reads the current leader from the tf_logic_player_destruction entity.
+	 * @param team Team to get the leader.
+	 * @return Leader entity or NULL if not found.
+	 */
+	CBaseEntity* GetTeamLeader(TeamFortress2::TFTeam team);
+}
+
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
 {
 	switch (tfclass)

@@ -413,7 +413,7 @@ Vector botsharedutils::aiming::AimAtPlayerWithHitScan(CBaseBot* bot, CBaseEntity
 	return botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
 }
 
-Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
+Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone, const bool checkLOS)
 {
 	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
 
@@ -429,6 +429,12 @@ Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEnt
 
 	float range = (theirPos - bot->GetEyeOrigin()).Length();
 	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy.GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+
+	if (checkLOS && !bot->IsLineOfFireClear(predicted))
+	{
+		// obstruction between the predicted position and the bot, just fire at the enemy's center
+		return enemy.WorldSpaceCenter();
+	}
 
 	return predicted;
 }
@@ -597,4 +603,26 @@ void botsharedutils::aiming::SelectDesiredAimSpotForTarget(CBaseBot* bot, CBaseE
 	{
 		bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
 	}
+}
+
+botsharedutils::RandomDestinationCollector::RandomDestinationCollector(CBaseBot* bot, const float travellimit) :
+	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), travellimit)
+{
+	m_bot = bot;
+}
+
+botsharedutils::RandomDestinationCollector::RandomDestinationCollector(CNavArea* start, const float travellimit) :
+	INavAreaCollector<CNavArea>(start, travellimit)
+{
+	m_bot = nullptr;
+}
+
+bool botsharedutils::RandomDestinationCollector::ShouldSearch(CNavArea* area)
+{
+	if (m_bot)
+	{
+		return m_bot->GetMovementInterface()->IsAreaTraversable(area);
+	}
+
+	return !area->IsBlocked(NAV_TEAM_ANY);
 }

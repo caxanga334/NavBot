@@ -4,6 +4,7 @@
 #include <util/sdkcalls.h>
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
+#include <mods/tf2/teamfortress2mod.h>
 
 #include "tf2bot.h"
 #include "tf2bot_sensor.h"
@@ -126,6 +127,11 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 	int index = gamehelpers->EntityToBCompatRef(entity);
 	if (UtilHelpers::IsPlayerIndex(index))
 	{
+		if (CTeamFortress2Mod::GetTF2Mod()->IsTruceActive())
+		{
+			return false; // halloween truce, players are not enemies
+		}
+
 		TeamFortress2::TFClassType theirclass = static_cast<TeamFortress2::TFClassType>(entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_CLASSTYPE));
 
 		if (theirclass == TeamFortress2::TFClass_Spy && tf2lib::IsPlayerDisguised(entity))
@@ -147,6 +153,15 @@ int CTF2BotSensor::GetKnownEntityTeamIndex(CKnownEntity* known)
 	entprops->GetEntProp(index, Prop_Data, "m_iTeamNum", theirteam);
 
 	return theirteam;
+}
+
+void CTF2BotSensor::OnTruceChanged(const bool enabled)
+{
+	if (enabled)
+	{
+		// Reset sensor because enemy players are no longer enemies
+		Reset();
+	}
 }
 
 bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)

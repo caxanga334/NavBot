@@ -678,3 +678,35 @@ std::string tf2lib::maps::GetMapName()
 	std::string finalname = sub1 + "_ugc" + sub2; // becomes something like this: ctf_harbine_ugc3067683041
 	return finalname;
 }
+
+CBaseEntity* tf2lib::pd::GetTeamLeader(TeamFortress2::TFTeam team)
+{
+	CBaseEntity* leader = nullptr;
+	int entindex = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "tf_logic_player_destruction");
+
+	if (entindex != INVALID_EHANDLE_INDEX)
+	{
+		if (team == TeamFortress2::TFTeam::TFTeam_Red)
+		{
+			int iLeader = INVALID_EHANDLE_INDEX; 
+			entprops->GetEntPropEnt(entindex, Prop_Send, "m_hRedTeamLeader", iLeader);
+
+			if (iLeader != INVALID_EHANDLE_INDEX)
+			{
+				leader = gamehelpers->ReferenceToEntity(iLeader);
+			}
+		}
+		else
+		{
+			int iLeader = INVALID_EHANDLE_INDEX;
+			entprops->GetEntPropEnt(entindex, Prop_Send, "m_hBlueTeamLeader", iLeader);
+
+			if (iLeader != INVALID_EHANDLE_INDEX)
+			{
+				leader = gamehelpers->ReferenceToEntity(iLeader);
+			}
+		}
+	}
+
+	return leader;
+}

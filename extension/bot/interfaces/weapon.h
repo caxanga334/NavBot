@@ -7,6 +7,8 @@
 #include "weaponinfo.h"
 #include <entities/basecombatweapon.h>
 
+class CBaseBot;
+
 class CBotWeapon
 {
 public:
@@ -26,6 +28,11 @@ public:
 	edict_t* GetEdict() const;
 	CBaseEntity* GetEntity() const;
 	int GetIndex() const;
+
+	// Gets the minimum attack range based on the attack type used by the bot
+	virtual float GetCurrentMinimumAttackRange(CBaseBot* owner) const;
+	// Gets the maximum attack range based on the attack type used by the bot
+	virtual float GetCurrentMaximumAttackRange(CBaseBot* owner) const;
 
 	const std::string& GetClassname() const { return m_classname; }
 

@@ -17,7 +17,7 @@
 #if SOURCE_ENGINE == SE_TF2
 static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
 static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
-static ConVar sm_navbot_tf_force_gamemode("sm_navbot_tf_force_gamemode", "-1", FCVAR_GAMEDLL, "Skips game mode detection and forces a specific game mode. -1 to disable.");
+static ConVar sm_navbot_tf_force_gamemode("sm_navbot_tf_force_gamemode", "-1", FCVAR_GAMEDLL, "Skips game mode detection and forces a specific game mode. -1 to disable.", CTeamFortress2Mod::OnForceGameModeConVarChanged);
 #endif
 
 #undef min
@@ -51,6 +51,7 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 {
 	m_gamemode = TeamFortress2::GameModeType::GM_NONE;
 	m_bInSetup = false;
+	m_isTruceActive = false;
 	m_MvMHatchPos = vec3_origin;
 
 	m_classselector.LoadClassSelectionData();
@@ -64,6 +65,7 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	ListenForGameEvent("teamplay_flag_event");
 	ListenForGameEvent("teamplay_point_startcapture");
 	ListenForGameEvent("teamplay_point_captured");
+	ListenForGameEvent("recalculate_truce");
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -176,6 +178,10 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 				});
 			}
 		}
+		else if (strncasecmp(name, "recalculate_truce", 17) == 0)
+		{
+			m_updateTruceStatus.Start(0.5f);
+		}
 	}
 }
 
@@ -224,6 +230,12 @@ SourceMod::SMCResult CTeamFortress2Mod::ReadSMC_KeyValue(const SourceMod::SMCSta
 
 	return CBaseMod::ReadSMC_KeyValue(states, key, value);
 }
+#if SOURCE_ENGINE == SE_TF2
+void CTeamFortress2Mod::OnForceGameModeConVarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	CTeamFortress2Mod::GetTF2Mod()->DetectCurrentGameMode();
+}
+#endif // SOURCE_ENGINE == SE_TF2
 
 void CTeamFortress2Mod::Update()
 {
@@ -231,8 +243,12 @@ void CTeamFortress2Mod::Update()
 
 	if (m_gamemode == GameModeType::GM_PL || m_gamemode == GameModeType::GM_PL_RACE)
 	{
-		// some community maps have multiple payloads, we need to update this from time to time.
-		FindPayloadCarts();
+		if (m_updatePayloadTimer.IsElapsed())
+		{
+			m_updatePayloadTimer.Start(5.0f);
+			// some community maps have multiple payloads, we need to update this from time to time.
+			FindPayloadCarts();
+		}
 	}
 
 	if (m_bInSetup)
@@ -241,6 +257,23 @@ void CTeamFortress2Mod::Update()
 		{
 			Warning("[NAVBOT-TF2] \"teamplay_setup_finished\" game event didn't fire!\n");
 			m_bInSetup = false;
+		}
+	}
+
+	if (m_updateTruceStatus.HasStarted() && m_updateTruceStatus.IsElapsed())
+	{
+		m_updateTruceStatus.Invalidate();
+
+		bool inTruce = false;
+		entprops->GameRules_GetPropBool("m_bTruceActive", inTruce);
+
+		if (m_isTruceActive != inTruce)
+		{
+			m_isTruceActive = inTruce;
+
+			extmanager->ForEachBot([&inTruce](CBaseBot* bot) {
+				bot->OnTruceChanged(inTruce);
+			});
 		}
 	}
 }
@@ -1615,6 +1648,24 @@ CON_COMMAND(sm_navbot_tf_debug_capture_percentages, "Reads cap percentages from 
 	else
 	{
 		Warning("No m_iCPGroup ???\n");
+	}
+}
+
+CON_COMMAND(sm_navbot_tf_debug_pd, "Debug player destruction")
+{
+	int flag = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(1, Prop_Send, "m_hItem", flag);
+
+	if (flag != INVALID_EHANDLE_INDEX)
+	{
+		int points = 0;
+		entprops->GetEntProp(flag, Prop_Send, "m_nPointValue", points);
+
+		Msg("You're carrying a flag worth %i points! entindex %i \n", points, flag);
+	}
+	else
+	{
+		Warning("CTFPlayer::m_hItem == NULL \n");
 	}
 }
 

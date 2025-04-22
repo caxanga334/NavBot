@@ -66,6 +66,10 @@ protected:
 
 public:
 
+#if SOURCE_ENGINE == SE_TF2
+	static void OnForceGameModeConVarChanged(IConVar* var, const char* pOldValue, float flOldValue);
+#endif // SOURCE_ENGINE == SE_TF2
+
 	void Update() override;
 
 	const char* GetModName() override { return "Team Fortress 2"; }
@@ -145,17 +149,22 @@ public:
 		}
 	}
 
+	// Returns true if the halloween boss fight truce is active
+	inline bool IsTruceActive() const { return m_isTruceActive; }
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, int> m_weaponidmap;
 	CTF2ClassSelection m_classselector;
 	CMvMUpgradeManager m_upgrademanager;
+	CountdownTimer m_updatePayloadTimer;
 	CHandle<CBaseEntity> m_red_payload;
 	CHandle<CBaseEntity> m_blu_payload;
 	std::array<CHandle<CBaseEntity>, TeamFortress2::TF_MAX_CONTROL_POINTS> m_controlpoints;
 	CHandle<CBaseEntity> m_objecteResourceEntity;
 	TeamFortress2::TFObjectiveResource m_objectiveResourcesData;
 	bool m_bInSetup;
+	bool m_isTruceActive; // Is the halloween boss fight truce active?
 	CountdownTimer m_setupExpireTimer; // safety timer in case the setup end event doesn't fire.
 	std::vector<CTFWaypoint*> m_sniperWaypoints;
 	std::vector<CTFWaypoint*> m_sentryWaypoints;
@@ -163,6 +172,7 @@ private:
 	std::vector<CTFWaypoint*> m_teleentranceWaypoints;
 	std::vector<CTFWaypoint*> m_teleexitWaypoints;
 	Vector m_MvMHatchPos; // bomb hatch position in MvM
+	CountdownTimer m_updateTruceStatus;
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();

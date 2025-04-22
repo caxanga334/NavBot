@@ -665,6 +665,28 @@ public:
 	}
 
 	/**
+	 * @brief Runs a function on each nav area adjacent to this area.
+	 * 
+	 * These are directly connected areas. Does not includes areas connected via off-mesh links, ladders and elevators.
+	 * @tparam T A class with operator() overload or a lambda expression with 1 parameter void (CNavArea* connectedArea)
+	 * @param functor function to run.
+	 */
+	template <typename T>
+	inline void ForEachAdjacentArea(T functor)
+	{
+		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			auto conn = GetAdjacentAreas(static_cast<NavDirType>(dir));
+
+			for (int i = 0; i < conn->Count(); i++)
+			{
+				CNavArea* connectedArea = conn->Element(i).area;
+				functor(connectedArea);
+			}
+		}
+	}
+
+	/**
 	 * @brief Runs a function on each nav area connected to this area
 	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)
 	 * @param functor function to run on each connected area to this area

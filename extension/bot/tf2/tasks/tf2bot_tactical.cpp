@@ -25,6 +25,7 @@
 #include "scenario/payload/tf2bot_task_push_payload.h"
 #include "scenario/mvm/tf2bot_mvm_monitor.h"
 #include "scenario/specialdelivery/tf2bot_special_delivery_monitor_task.h"
+#include "scenario/pd/tf2bot_pd_monitor_task.h"
 #include "tf2bot_use_teleporter.h"
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 
@@ -193,6 +194,8 @@ AITask<CTF2Bot>* CTF2BotTacticalTask::SelectScenarioTask(CTF2Bot* me, bool skipC
 		return new CTF2BotControlPointMonitorTask;
 	case TeamFortress2::GameModeType::GM_SD:
 		return new CTF2BotSDMonitorTask;
+	case TeamFortress2::GameModeType::GM_PD:
+		return new CTF2BotPDMonitorTask;
 	default:
 		break;
 	}

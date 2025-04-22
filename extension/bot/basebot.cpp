@@ -706,7 +706,7 @@ bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool a
 			}
 		}
 
-		if (hasammo && range >= primaryinfo.GetMinRange() && range <= primaryinfo.GetMaxRange())
+		if (hasammo && (!primaryinfo.HasMinRange() || range >= primaryinfo.GetMinRange()) && (!primaryinfo.HasMaxRange() || range <= primaryinfo.GetMaxRange()))
 		{
 			candoprimary = true;
 		}
@@ -740,7 +740,7 @@ bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool a
 			}
 		}
 
-		if (range >= secondaryinfo.GetMinRange() && range <= secondaryinfo.GetMaxRange())
+		if (hasammo && (!secondaryinfo.HasMinRange() || range >= secondaryinfo.GetMinRange()) && (!secondaryinfo.HasMaxRange() || range <= secondaryinfo.GetMaxRange()))
 		{
 			candosecondary = true;
 		}

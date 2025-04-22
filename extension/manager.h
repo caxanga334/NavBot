@@ -26,8 +26,8 @@ public:
 		QUOTA_FILL, // Fill with N bots, automatically kicked to free space for humans
 	};
 
-	// call CBaseMod::Update every N seconds. Where N is the return value.
-	static constexpr float get_mod_update_interval() { return 10.0f; }
+	static constexpr float MOD_UPDATE_INTERVAL = 1.0f; // interval between CBaseMod::Update calls
+	static constexpr float MOD_UPDATE_AFTER_MAP_LOAD = 5.0f; // interval to call CBaseMod::Update after a level change
 
 	CExtManager();
 	~CExtManager();

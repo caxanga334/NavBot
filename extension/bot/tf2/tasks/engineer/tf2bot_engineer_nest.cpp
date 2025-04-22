@@ -189,14 +189,14 @@ bool CTF2BotEngineerNestTask::ShouldMoveSentryGun()
 {
 	if (!m_noThreatTimer.HasStarted())
 	{
-		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f));
+		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(60.0f, 90.0f));
 		return false;
 		
 	}
 	else if (m_noThreatTimer.IsElapsed())
 	{
 		// it has been a while since I saw an enemy, time to move my sentry gun.
-		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f)); // start the timer again so the bot doesn't enter a move loop
+		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(60.0f, 90.0f)); // start the timer again so the bot doesn't enter a move loop
 		return true;
 	}
 

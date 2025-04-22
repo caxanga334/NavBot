@@ -2,8 +2,10 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
-#include "bot/tf2/tf2bot.h"
+#include <bot/tf2/tf2bot.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include <bot/tf2/tasks/tf2bot_roam.h>
+#include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "tf2bot_attack_controlpoint.h"
 #include "tf2bot_defend_controlpoint.h"
 #include "tf2bot_controlpoints_monitor.h"
@@ -11,6 +13,11 @@
 TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
+
+	if (tf2mod->IsTruceActive())
+	{
+		return PauseFor(new CTF2BotDestroyHalloweenBossTask, "Truce enabled, going to hunt for bosses!");
+	}
 
 	std::vector<CBaseEntity*> attackPoints;
 	std::vector<CBaseEntity*> defendPoints;
@@ -71,4 +78,14 @@ TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTruceChanged(CTF2Bot* bot, const bool enabled)
+{
+	if (enabled)
+	{
+		return TryPauseFor(new CTF2BotDestroyHalloweenBossTask, PRIORITY_CRITICAL, "Truce enabled, going to hunt for bosses!");
+	}
+
+	return TryContinue();
 }

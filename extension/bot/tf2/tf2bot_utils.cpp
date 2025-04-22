@@ -399,6 +399,16 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 
 		return true;
 	}
+	else if (gm == TeamFortress2::GameModeType::GM_PD)
+	{
+		CBaseEntity* myleader = tf2lib::pd::GetTeamLeader(bot->GetMyTFTeam());
+
+		if (myleader)
+		{
+			spot = UtilHelpers::getEntityOrigin(myleader);
+			return true;
+		}
+	}
 
 	spot = bot->GetAbsOrigin();
 	return true;

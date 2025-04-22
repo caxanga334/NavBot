@@ -5,6 +5,7 @@
 - [Nav Mesh Editing Basics]
 - [Nav Mesh Editing Tips]
 - [Waypoint Editing Basics]
+- [Nav Mesh Authors and Editors]
 
 
 ## Advanced
@@ -30,4 +31,5 @@
 [Nav Mesh Elevators]: NAVMESH_ELEVATORS.md
 [Nav Mesh Prerequisites]: NAVMESH_PREREQUISITES.md
 [Nav Mesh Scripting]: NAVMESH_SCRIPTING.md
+[Nav Mesh Authors and Editors]: NAVMESH_AUTHOR_INFO.md
 [Team Fortress 2 Nav Mesh Editing]: TF2_EDITING.md

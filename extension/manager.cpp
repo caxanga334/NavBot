@@ -67,9 +67,13 @@ CExtManager::CExtManager()
 	m_quotatarget = 0;
 	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
 	m_iscreatingbot = false;
-	m_callModUpdateTimer.Start(get_mod_update_interval());
+	m_callModUpdateTimer.Invalidate();
 	m_pawnmemory = std::make_unique<CSourcePawnMemoryManager>();
 	m_allowbots = true;
+	m_prebotaddforward = nullptr;
+	m_postbotaddforward = nullptr;
+	m_prepluginbotaddforward = nullptr;
+	m_postpluginbotaddforward = nullptr;
 }
 
 CExtManager::~CExtManager()
@@ -116,7 +120,7 @@ void CExtManager::Frame()
 
 	if (m_callModUpdateTimer.IsElapsed())
 	{
-		m_callModUpdateTimer.Start(get_mod_update_interval());
+		m_callModUpdateTimer.Start(MOD_UPDATE_INTERVAL);
 		m_mod->Update();
 	}
 }
@@ -220,6 +224,8 @@ void CExtManager::OnMapStart()
 	ConVarRef sv_gravity("sv_gravity");
 
 	CExtManager::s_sv_gravity = sv_gravity.GetFloat();
+	m_callModUpdateTimer.Start(MOD_UPDATE_AFTER_MAP_LOAD);
+	m_quotaupdatetime = TIME_TO_TICKS(10.0f);
 }
 
 void CExtManager::OnMapEnd()

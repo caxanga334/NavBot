@@ -135,6 +135,21 @@ namespace botsharedutils
 		CBaseBot* m_bot;
 		CTraceFilterWorldAndPropsOnly m_filter;
 	};
+
+	/**
+	 * @brief Utility class for selecting random roaming destinations. Filters blocked/unreachable nav areas.
+	 */
+	class RandomDestinationCollector : public INavAreaCollector<CNavArea>
+	{
+	public:
+		RandomDestinationCollector(CBaseBot* bot, const float travellimit = 4096.0f);
+		RandomDestinationCollector(CNavArea* start, const float travellimit = 4096.0f);
+
+		bool ShouldSearch(CNavArea* area) override;
+
+	private:
+		CBaseBot* m_bot;
+	};
 }
 
 namespace botsharedutils::weapons
@@ -166,9 +181,10 @@ namespace botsharedutils::aiming
 	 * @param target Enemy
 	 * @param desiredAim Desired aim spot.
 	 * @param headbone (optional) Bone to search when going for headshots.
+	 * @param checkLOS If true, tests for obstructions on the projectile's path.
 	 * @return Position to aim at.
 	 */
-	Vector AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
+	Vector AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr, const bool checkLOS = true);
 	/**
 	 * @brief Utility for bots aiming a ballistic weapon. (projectile is affected by gravity).
 	 * @param bot Bot

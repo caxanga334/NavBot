@@ -196,9 +196,14 @@ void IMovement::Update()
 				m_isAirborne = false;
 				m_isJumping = false;
 				m_jumpTimer.Invalidate();
-				m_jumpCooldown.Start(0.6f);
+				m_jumpCooldown.Start(0.9f);
 				me->GetControlInterface()->ReleaseJumpButton();
 				me->GetControlInterface()->ReleaseCrouchButton();
+
+				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					me->DebugPrintToConsole(0, 170, 0, "%s JUMP COMPLETE \n", me->GetDebugIdentifier());
+				}
 			}
 		}
 		else // not airborne, jump!
@@ -930,6 +935,12 @@ void IMovement::TryToUnstuck()
 
 	if (!tr.DidHit())
 	{
+		if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			debugoverlay->AddLineOverlay(start, end, 0, 128, 0, true, 3.0f);
+			bot->DebugPrintToConsole(255, 69, 0, "%s IMovement::TryToUnstuck No obstacle on top, crouch jumping! \n", bot->GetDebugIdentifier());
+		}
+
 		CrouchJump();
 	}
 }

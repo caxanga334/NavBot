@@ -17,6 +17,7 @@ public:
 	bool IsFriendly(CBaseEntity* entity) override;
 	bool IsEnemy(CBaseEntity* entity) override;
 	int GetKnownEntityTeamIndex(CKnownEntity* known) override;
+	void OnTruceChanged(const bool enabled) override;
 
 private:
 	std::unordered_set<std::string> m_classname_filter;

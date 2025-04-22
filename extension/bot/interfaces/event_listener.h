@@ -68,6 +68,7 @@ public:
 	virtual void OnControlPointContested(CBaseEntity* point); // When a control point is under siege
 	virtual void OnWeaponEquip(CBaseEntity* weapon); // When a weapon is equipped (invoked by a CBasePlayer::Weapon_Equip post hook)
 	virtual void OnVoiceCommand(CBaseEntity* subject, int command); // When a player uses voice commands (mod specific)
+	virtual void OnTruceChanged(const bool enabled); // When the truce status has changed
 };
 
 inline void IEventListener::OnDebugMoveToHostCommand()
@@ -355,6 +356,20 @@ inline void IEventListener::OnVoiceCommand(CBaseEntity* subject, int command)
 		}
 	}
 }
+
+inline void IEventListener::OnTruceChanged(const bool enabled)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnTruceChanged(enabled);
+		}
+	}
+}
+
 
 
 #endif // !SMNAV_BOT_EVENT_LISTENER_H_
