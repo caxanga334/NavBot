@@ -20,7 +20,7 @@ List of console variables for NavBot.
 |sm_navbot_aim_stability_max_rate|Maximum angle change rate to consider the bot aim to be stable.|Float|N/A|
 |sm_navbot_aim_lookat_settle_duration|Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.|Float|N/A|
 |sm_navbot_quota_mode|Bot quota mode.|String|'normal' to keep N number of bots in the game. 'fill' to fill until there area N players on the server, bots will leave as human players join in this mode.|
-|sm_navbot_quota_mode|The target number of bots.|Integer|N/A|
+|sm_navbot_quota_quantity|The target number of bots.|Integer|N/A|
 
 ## Team Fortress 2 Bot specific ConVars
 

@@ -15,6 +15,7 @@ Welcome to the NavBot extension documentation index.
 
 <!-- Links -->
 [Installing NavBot]: INSTALL.md
+[Using NavBot]: USAGE.md
 [For Developers]: developers/README.md
 [Questions and Answers]: QAA.md
 [Bot Names Configuration]: BOT_NAMES.md
