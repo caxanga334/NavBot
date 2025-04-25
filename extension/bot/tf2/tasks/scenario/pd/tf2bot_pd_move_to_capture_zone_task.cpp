@@ -27,7 +27,7 @@ bool CTF2BotPDMoveToCaptureZoneTask::IsPossible(CTF2Bot* bot, CBaseEntity** capt
 		if (entity && tf2lib::GetEntityTFTeam(index) == bot->GetMyTFTeam())
 		{
 			bool disabled = false;
-			entprops->GetEntPropBool(index, Prop_Send, "m_bDisabled", disabled);
+			entprops->GetEntPropBool(index, Prop_Data, "m_bDisabled", disabled);
 
 			if (disabled)
 			{
@@ -83,7 +83,7 @@ TaskResult<CTF2Bot> CTF2BotPDMoveToCaptureZoneTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	bool disabled = false;
-	entprops->GetEntPropBool(m_capzone.GetEntryIndex(), Prop_Send, "m_bDisabled", disabled);
+	entprops->GetEntPropBool(m_capzone.GetEntryIndex(), Prop_Data, "m_bDisabled", disabled);
 
 	if (disabled)
 	{

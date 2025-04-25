@@ -50,6 +50,7 @@ private:
 	CMeshNavigator m_nav;
 	Vector m_goalpos;
 	CountdownTimer m_repathtimer;
+	CHandle<CBaseEntity> m_capzone;
 };
 
 class CTF2BotCTFDefendFlag : public AITask<CTF2Bot>

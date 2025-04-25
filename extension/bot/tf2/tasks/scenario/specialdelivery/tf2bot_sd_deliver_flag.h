@@ -7,6 +7,7 @@ public:
 	CTF2BotSDDeliverFlag() :
 		m_goal(0.0f, 0.0f, 0.0f)
 	{
+		m_capwasdisabled = false;
 	}
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
@@ -24,6 +25,8 @@ private:
 	CMeshNavigator m_nav;
 	CountdownTimer m_repathTimer;
 	CHandle<CBaseEntity> m_capzone;
+	CHandle<CBaseEntity> m_flagzone;
+	bool m_capwasdisabled;
 };
 
 #endif // !__NAVBOT_TF2BOT_SD_DELIVER_FLAG_TASK_H_

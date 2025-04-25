@@ -56,7 +56,8 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
-CTF2BotCTFFetchFlagTask::CTF2BotCTFFetchFlagTask(edict_t* flag)
+CTF2BotCTFFetchFlagTask::CTF2BotCTFFetchFlagTask(edict_t* flag) :
+	m_goalpos(0.0f, 0.0f, 0.0f)
 {
 	gamehelpers->SetHandleEntity(m_flag, flag);
 }
@@ -167,6 +168,7 @@ TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskStart(CTF2Bot* bot, AITask<
 	}
 
 	m_repathtimer.Start(0.5f);
+	m_capzone = UtilHelpers::EdictToBaseEntity(goalzone);
 
 	return Continue();
 }
@@ -178,9 +180,19 @@ TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Flag delivered!");
 	}
 
+	CBaseEntity* capzone = m_capzone.Get();
+
+	if (!capzone)
+	{
+		return Done("Capture zone is NULL!");
+	}
+
 	if (m_repathtimer.IsElapsed())
 	{
-		m_repathtimer.Start(0.5f);
+		m_repathtimer.Start(1.0f);
+		// refresh pos, some maps have the capture zone parented to a moving entity
+		m_goalpos = UtilHelpers::getWorldSpaceCenter(capzone);
+		m_goalpos = trace::getground(m_goalpos);
 
 		CTF2BotPathCost cost(bot);
 

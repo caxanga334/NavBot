@@ -571,9 +571,39 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 	switch (result)
 	{
 	case TF2GR_GAMETYPE_CTF:
+	{
+		// Some SD maps have m_bPlayingSpecialDeliveryMode set to false
+
+		int num_flags = 0;
+		bool foundrcflag = false; // Resource Control flag
+
+		UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&num_flags, &foundrcflag](int index, edict_t* edict, CBaseEntity* entity) {
+			if (entity)
+			{
+				num_flags++;
+				int type = -1;
+				entprops->GetEntProp(index, Prop_Data, "m_nType", type);
+
+				if (type == static_cast<int>(TeamFortress2::TFFlagType::TF_FLAGTYPE_RESOURCE_CONTROL))
+				{
+					foundrcflag = true;
+				}
+			}
+
+			return true;
+		});
+
+		if (num_flags == 1 && foundrcflag)
+		{
+			m_gamemode = TeamFortress2::GameModeType::GM_SD;
+			rootconsole->ConsolePrint("[NavBot] Gamerules 'm_nGameType' == 1, found only one flag with GameType set to TF_FLAGTYPE_RESOURCE_CONTROL.");
+			return true;
+		}
+
 		m_gamemode = TeamFortress2::GameModeType::GM_CTF;
 		rootconsole->ConsolePrint("[NavBot] Gamerules 'm_nGameType' == 1, game mode is Capture The Flag.");
 		return true;
+	}
 	case TF2GR_GAMETYPE_ARENA: // TO-DO: Some community game modes uses arena as a base
 		m_gamemode = TeamFortress2::GameModeType::GM_ARENA;
 		rootconsole->ConsolePrint("[NavBot] Gamerules 'm_nGameType' == 4, game mode is Arena.");
