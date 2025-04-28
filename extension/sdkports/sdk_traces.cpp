@@ -10,6 +10,10 @@
 #include <model_types.h>
 #include "sdk_traces.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 namespace trace
 {
 	const CBaseEntity* EntityFromEntityHandle(const IHandleEntity* pConstHandleEntity)
@@ -55,6 +59,10 @@ namespace trace
 
 	static bool StandardFilterRules(IHandleEntity* pHandleEntity, int contentsMask)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("trace::StandardFilterRules", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		CBaseEntity* pCollide = EntityFromEntityHandle(pHandleEntity);
 
 		// Static prop case
@@ -95,6 +103,10 @@ namespace trace
 
 	inline static bool PassServerEntityFilter(IHandleEntity* pTouch, IHandleEntity* pPass)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("trace::PassServerEntityFilter", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		if (!pPass)
 			return true;
 
@@ -297,6 +309,10 @@ namespace trace
 
 	bool CTraceFilterSimple::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("trace::CTraceFilterSimple::ShouldHitEntity", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		if (!StandardFilterRules(pHandleEntity, contentsMask))
 		{
 			return false;
@@ -358,6 +374,10 @@ namespace trace
 
 	bool CTraceFilterOnlyNPCsAndPlayer::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("trace::CTraceFilterOnlyNPCsAndPlayer::ShouldHitEntity", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
 			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
@@ -400,6 +420,10 @@ namespace trace
 
 	bool CTraceFilterPlayersOnly::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("trace::CTraceFilterPlayersOnly::ShouldHitEntity", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
 			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
@@ -434,6 +458,10 @@ namespace trace
 
 	bool CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("trace::CTraceFilterNoNPCsOrPlayers::ShouldHitEntity", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 		{
 			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);

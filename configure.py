@@ -27,5 +27,6 @@ parser.options.add_argument('--targets', type=str, dest='targets', default=None,
                           help="Override the target architecture (use commas to separate multiple targets).")
 parser.options.add_argument('--arch-options', type=int, default=0, dest='archoptions', help="Arch options. 0 = none, 1 = SSE4, 2 = AVX2, 3 = native (GCC/Clang only)")
 parser.options.add_argument('--breakpad-upload', action='store_const', const='1', dest='breakpadupload', help="Allow the upload of breakpad symbols to Accelerator.")
+parser.options.add_argument('--valve-profiler', action='store_const', const='1', dest='vprof', help='Enable valve profiler.')
 parser.Configure()
 

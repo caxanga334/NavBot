@@ -6,7 +6,7 @@ class CTF2BotControlPointMonitorTask : public AITask<CTF2Bot>
 public:
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
-	TaskEventResponseResult<CTF2Bot> OnTruceChanged(CTF2Bot* bot, const bool enabled) override;
+	
 
 	const char* GetName() const override { return "ControlPointMonitor"; }
 

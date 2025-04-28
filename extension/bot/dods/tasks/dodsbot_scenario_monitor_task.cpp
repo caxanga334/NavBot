@@ -48,10 +48,8 @@ TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 {
 	if (GetNextTask() == nullptr)
 	{
-		return SwitchTo(new CDoDSBotScenarioMonitorTask, "Restarting ScenarioMonitor");
+		return SwitchTo(new CDoDSBotScenarioMonitorTask, "Restarting Scenario Monitor!");
 	}
-
-
 
 	return Continue();
 }

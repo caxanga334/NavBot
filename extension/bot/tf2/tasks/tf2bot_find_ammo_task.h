@@ -46,7 +46,7 @@ private:
 	Vector GetResupplyPosition(edict_t* resupply);
 
 	// max distance to search for ammo
-	static constexpr float max_distance() { return 2048.0f; }
+	static constexpr float max_distance() { return 4096.0f; }
 };
 
 #endif // !NAVBOT_TF2BOT_FIND_AMMO_TASK_H_

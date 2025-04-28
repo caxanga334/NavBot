@@ -35,7 +35,7 @@ private:
 	bool IsSourceStillValid(CTF2Bot* me);
 
 	// max distance to search for health
-	static constexpr float max_distance() { return 2048.0f; }
+	static constexpr float max_distance() { return 4096.0f; }
 };
 
 #endif // !NAVBOT_TF2BOT_FIND_HEALTH_TASK_H_

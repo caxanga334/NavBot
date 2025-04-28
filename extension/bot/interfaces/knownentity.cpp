@@ -8,6 +8,10 @@
 #include <entities/baseentity.h>
 #include "knownentity.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CKnownEntity::CKnownEntity(edict_t* entity)
 {
 	gamehelpers->SetHandleEntity(m_handle, entity);
@@ -74,6 +78,10 @@ bool CKnownEntity::IsValid() const
 
 void CKnownEntity::UpdatePosition()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CKnownEntity::UpdatePosition", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	constexpr auto NAV_AREA_DIST = 512.0f;
 
 	CBaseEntity* pEntity = m_handle.Get();

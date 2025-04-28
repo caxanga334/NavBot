@@ -11,6 +11,10 @@
 
 #include "basepath.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef min
 #undef max
 #undef clamp
@@ -321,6 +325,10 @@ const CPath::PathCursor& CPath::GetCursorData()
 */
 bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessCurrentPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	IPlayerController* input = bot->GetControlInterface();
 	IMovement* mover = bot->GetMovementInterface();
 
@@ -359,6 +367,10 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	// first iteration
 	for (size_t i = 1; i < m_segments.size(); i++)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("CPath::ProcessCurrentPath( first iteration )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		auto& to = m_segments[i];
 		auto& from = m_segments[i - 1];
 
@@ -416,6 +428,10 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 		// Second iteration, handle jump and climbing
 		for (size_t i = 1; i < m_segments.size(); i++)
 		{
+#ifdef EXT_VPROF_ENABLED
+			VPROF_BUDGET("CPath::ProcessCurrentPath( second iteration )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 			auto& to = m_segments[i];
 			auto& from = m_segments[i - 1];
 
@@ -451,6 +467,10 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 	// process insert stack and add any new needed segments into the path
 	while (insertstack.empty() == false)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("CPath::ProcessCurrentPath( inserting segments )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		auto& insert = insertstack.top(); // get top element
 		auto& seg = insert.Seg;
 		auto it = std::find(m_segments.begin(), m_segments.end(), seg);
@@ -478,6 +498,10 @@ bool CPath::ProcessCurrentPath(CBaseBot* bot, const Vector& start)
 
 bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessGroundPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	IMovement* mover = bot->GetMovementInterface();
 
 	from->area->ComputePortal(to->area, static_cast<NavDirType>(to->how), &to->portalcenter, &to->portalhalfwidth);
@@ -590,6 +614,10 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 
 bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessLaddersInPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	switch (to->how)
 	{
 	case GO_LADDER_UP:
@@ -659,6 +687,10 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 
 bool CPath::ProcessElevatorsInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessElevatorsInPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	const CNavElevator* elevator = from->area->GetElevator();
 
 #ifdef EXT_DEBUG
@@ -686,6 +718,10 @@ bool CPath::ProcessElevatorsInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegme
 
 bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessPathJumps", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto mover = bot->GetMovementInterface();
 	// get closest point from areas to test for a gap
 	Vector closeto, closefrom;
@@ -756,6 +792,10 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 
 bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessOffMeshConnectionsInPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto link = from->area->GetOffMeshConnectionToArea(to->area);
 
 	if (!link)
@@ -876,6 +916,10 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 
 void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ComputeAreaCrossing", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
 	
 	bot->GetMovementInterface()->AdjustPathCrossingPoint(from, to, frompos, crosspoint);
@@ -883,6 +927,10 @@ void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& fro
 
 void CPath::PostProcessPath()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::PostProcessPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_segments.size() == 0)
 		return;
 

@@ -7,6 +7,10 @@
 #include "tf2bot.h"
 #include "tf2bot_spymonitor.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CTF2BotSpyMonitor::CTF2BotSpyMonitor(CBaseBot* bot) :
 	IBotInterface(bot)
 {
@@ -24,6 +28,10 @@ void CTF2BotSpyMonitor::Reset()
 
 void CTF2BotSpyMonitor::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSpyMonitor::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CTF2Bot* me = static_cast<CTF2Bot*>(GetBot());
 	CTF2BotSensor* vision = me->GetSensorInterface();
 	const CKnownEntity* known = nullptr;
@@ -98,6 +106,10 @@ CTF2BotSpyMonitor::KnownSpy::KnownSpy(int spy)
 
 void CTF2BotSpyMonitor::KnownSpy::Update(CTF2Bot* me)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSpyMonitor::KnownSpy::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* spy = m_handle.Get();
 
 	if (spy == nullptr)

@@ -597,6 +597,36 @@ public:
 	AITask<BotClass>* GetTaskAboveMe() const { return m_topTask; }
 	AITask<BotClass>* GetTaskBelowMe() const { return m_bottomTask; }
 
+protected:
+	/**
+	 * @brief (Experimental) Starts a new Next task for this task.
+	 * 
+	 * New tasks will be rejected if a replacement is already pending or a next taska already exists.
+	 * @param bot 
+	 * @param newTask Task to become the new next task.
+	 * @param reason Reason for debugging
+	 */
+	inline void StartNewNextTask(BotClass* bot, AITask<BotClass>* newTask, const char* reason)
+	{
+		if (newTask != nullptr && this->m_hasStarted && this->m_nextTask == nullptr && this->m_replacementNextTask == nullptr)
+		{
+			if (bot->IsDebugging(BOTDEBUG_TASKS))
+			{
+				bot->DebugPrintToConsole(152, 251, 152, "%s TASK %s START NEW NEXT TASK: ACCEPTED NEW TASK %s. REASON: %s", bot->GetDebugIdentifier(), this->GetName(), newTask->GetName(), reason);
+			}
+
+			this->m_replacementNextTask = newTask;
+			return;
+		}
+
+		if (bot->IsDebugging(BOTDEBUG_TASKS))
+		{
+			bot->DebugPrintToConsole(255, 105, 180, "%s TASK %s START NEW NEXT TASK: REJECTING NEW TASK \n", bot->GetDebugIdentifier(), this->GetName());
+		}
+
+		delete newTask; // reject it
+	}
+
 private:
 	friend class AITaskManager<BotClass>;
 	AITaskManager<BotClass>* m_manager;
@@ -604,6 +634,7 @@ private:
 	AITask<BotClass>* m_nextTask; // next task on the list
 	AITask<BotClass>* m_topTask; // top of the stack
 	AITask<BotClass>* m_bottomTask; // bottom of the stack
+	AITask<BotClass>* m_replacementNextTask; // New task to become my next task
 	BotClass* m_bot;
 	std::vector<IEventListener*> m_listener; // Event Listeners
 	mutable TaskEventResponseResult<BotClass> m_pendingEventResult;
@@ -1100,6 +1131,7 @@ inline AITask<BotClass>::AITask() : m_pendingEventResult(PRIORITY_IGNORED, TASK_
 	m_nextTask = nullptr;
 	m_topTask = nullptr;
 	m_bottomTask = nullptr;
+	m_replacementNextTask = nullptr;
 	m_bot = nullptr;
 	m_hasStarted = false;
 	m_isPaused = false;
@@ -1136,6 +1168,12 @@ inline AITask<BotClass>::~AITask()
 	{
 		// Any task above me is also going away
 		delete m_topTask;
+	}
+
+	// replacement task was not used, delete it
+	if (m_replacementNextTask)
+	{
+		delete m_replacementNextTask;
 	}
 
 	m_pendingEventResult.DiscardResult();
@@ -1373,7 +1411,22 @@ inline AITask<BotClass>* AITask<BotClass>::RunTask(BotClass* bot, AITaskManager<
 	case TASK_CONTINUE:
 		[[fallthrough]];
 	case TASK_MAINTAIN:
+	{
+		if (this->m_replacementNextTask)
+		{
+			if (bot->IsDebugging(BOTDEBUG_TASKS))
+			{
+				bot->DebugPrintToConsole(152, 251, 152, "%s TASK %s STARTING REPLACEMENT NEXT TASK: %s \n", bot->GetDebugIdentifier(), this->GetName(), this->m_replacementNextTask->GetName());
+			}
+
+			this->m_nextTask = this->m_replacementNextTask;
+			this->m_nextTask->ProcessTaskStart(bot, manager, nullptr, nullptr);
+			this->m_nextTask->m_prevTask = this;
+			this->m_replacementNextTask = nullptr;
+		}
+
 		return this;
+	}
 	default:
 		throw std::runtime_error("Unknown Task Result Type!");
 		break;

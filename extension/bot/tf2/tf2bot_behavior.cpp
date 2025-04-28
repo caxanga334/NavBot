@@ -4,6 +4,10 @@
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_behavior.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CTF2BotBehavior::CTF2BotBehavior(CBaseBot* bot) : IBehavior(bot)
 {
 	m_manager = new AITaskManager<CTF2Bot>(new CTF2BotMainTask);
@@ -26,6 +30,10 @@ void CTF2BotBehavior::Reset()
 
 void CTF2BotBehavior::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotBehavior::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	m_manager->Update(GetBot<CTF2Bot>());
 }
 

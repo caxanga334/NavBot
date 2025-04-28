@@ -11,6 +11,10 @@
 #include "basebot_behavior.h"
 #include "basebot.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty.");
 ConVar cvar_bot_disable_behavior("sm_navbot_debug_disable_gamemode_ai", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "When set to 1, disables game mode behavior for the bot AI.");
 
@@ -80,6 +84,10 @@ std::vector<IEventListener*>* CBaseBot::GetListenerVector()
 
 void CBaseBot::PlayerThink()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::PlayerThink", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseExtPlayer::PlayerThink(); // Call base class function first
 
 	m_debugtextoffset = 0;
@@ -177,6 +185,10 @@ void CBaseBot::Reset()
 
 void CBaseBot::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_clearLastPrerequisiteTimer.HasStarted() && m_clearLastPrerequisiteTimer.IsElapsed())
 	{
 		m_clearLastPrerequisiteTimer.Invalidate();
@@ -191,6 +203,10 @@ void CBaseBot::Update()
 
 void CBaseBot::Frame()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::Frame", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	for (auto iface : m_interfaces)
 	{
 		iface->Frame();
@@ -585,6 +601,10 @@ void CBaseBot::ExecuteQueuedCommands()
 
 bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::IsLineOfFireClean", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CTraceFilterWorldAndPropsOnly filter;
 	trace_t result;
 	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
@@ -623,6 +643,10 @@ void CBaseBot::SendTeamChatMessage(const char* message)
 
 void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::FireWeaponAtEnemy", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!IsAlive())
 		return;
 
@@ -673,6 +697,10 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 
 bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::CanFireWeapon", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto& primaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
 	auto& secondaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::SECONDARY_ATTACK);
 	bool candoprimary = false;
@@ -778,6 +806,10 @@ bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool a
 
 bool CBaseBot::HandleWeapon(CBotWeapon* weapon)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::HandleWeapon", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// this function is used for stuff like hold primary attack for N seconds then release to fire
 	// or a weapon that must be deployed to be used
 	// etc...
@@ -818,6 +850,10 @@ void CBaseBot::ReloadIfNeeded(CBotWeapon* weapon)
 
 bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::AimWeaponAtEnemy", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	IDecisionQuery::DesiredAimSpot desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 
 	auto& origin = enemy->GetEdict()->GetCollideable()->GetCollisionOrigin();

@@ -47,6 +47,10 @@
 
 #include <bot/pluginbot/pluginbot.h>
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef max // valve mathlib conflict fix
 #undef min
 #undef clamp
@@ -100,6 +104,10 @@ void CExtManager::OnAllLoaded()
 
 void CExtManager::Frame()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CExtManager::Frame", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (--m_quotaupdatetime <= 0)
 	{
 		m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
@@ -526,6 +534,10 @@ void CExtManager::LoadBotNames()
 
 void CExtManager::UpdateBotQuota()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CExtManager::UpdateBotQuota", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!m_allowbots || m_quotatarget == 0 || !TheNavMesh->IsLoaded())
 		return;
 

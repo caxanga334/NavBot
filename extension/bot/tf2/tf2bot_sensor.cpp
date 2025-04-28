@@ -9,6 +9,10 @@
 #include "tf2bot.h"
 #include "tf2bot_sensor.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #if SOURCE_ENGINE == SE_TF2
 // ConVar sm_navbot_tf_attack_nextbots("sm_navbot_tf_attack_nextbots", "1", FCVAR_GAMEDLL, "If enabled, allow bots to attacks NextBot entities.");
 static ConVar cvar_teammates_are_enemies("sm_navbot_tf_teammates_are_enemies", "0", FCVAR_GAMEDLL, "If enabled, bots will consider players from the same team as enemies.");
@@ -42,8 +46,12 @@ CTF2BotSensor::~CTF2BotSensor()
 
 bool CTF2BotSensor::IsIgnored(CBaseEntity* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSensor::IsIgnored", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	int index = gamehelpers->EntityToBCompatRef(entity);
-	auto classname = entityprops::GetEntityClassname(entity);
+	const char* classname = entityprops::GetEntityClassname(entity);
 
 	if (classname == nullptr)
 		return true;
@@ -87,7 +95,11 @@ bool CTF2BotSensor::IsIgnored(CBaseEntity* entity)
 
 bool CTF2BotSensor::IsFriendly(CBaseEntity* entity)
 {
-	CTF2Bot* me = static_cast<CTF2Bot*>(GetBot());
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSensor::IsFriendly", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CTF2Bot* me = GetBot<CTF2Bot>();
 
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
 
@@ -108,7 +120,11 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity)
 
 bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 {
-	CTF2Bot* me = static_cast<CTF2Bot*>(GetBot());
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSensor::IsEnemy", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CTF2Bot* me = GetBot<CTF2Bot>();
 	auto spymonitor = me->GetSpyMonitorInterface();
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
 	
@@ -125,12 +141,26 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 	}
 
 	int index = gamehelpers->EntityToBCompatRef(entity);
+
+	if (CTeamFortress2Mod::GetTF2Mod()->IsTruceActive())
+	{
+		// don't attack players on truce
+		if (UtilHelpers::IsPlayerIndex(index))
+		{
+			return false;
+		}
+
+		const char* classname = entityprops::GetEntityClassname(entity);
+
+		// don't attack enemy buildings on truce
+		if (strncasecmp(classname, "obj_", 4) == 0)
+		{
+			return false;
+		}
+	}
+
 	if (UtilHelpers::IsPlayerIndex(index))
 	{
-		if (CTeamFortress2Mod::GetTF2Mod()->IsTruceActive())
-		{
-			return false; // halloween truce, players are not enemies
-		}
 
 		TeamFortress2::TFClassType theirclass = static_cast<TeamFortress2::TFClassType>(entprops->GetCachedData<int>(entity, CEntPropUtils::CacheIndex::CTFPLAYER_CLASSTYPE));
 
@@ -146,13 +176,7 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
 
 int CTF2BotSensor::GetKnownEntityTeamIndex(CKnownEntity* known)
 {
-	auto entity = known->GetEdict();
-	auto index = gamehelpers->IndexOfEdict(entity);
-	int theirteam = TEAM_UNASSIGNED;
-
-	entprops->GetEntProp(index, Prop_Data, "m_iTeamNum", theirteam);
-
-	return theirteam;
+	return entityprops::GetEntityTeamNum(known->GetEntity());
 }
 
 void CTF2BotSensor::OnTruceChanged(const bool enabled)
@@ -166,6 +190,10 @@ void CTF2BotSensor::OnTruceChanged(const bool enabled)
 
 bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSensor::IsPlayerIgnoredInternal", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (IgnoredConditionsInternal(entity))
 	{
 		return true;
@@ -182,6 +210,10 @@ bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)
 // TFConds that the bots should always ignore
 bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSensor::IgnoredConditionsInternal", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// ignore halloween ghost, ignore robots inside spawn
 
 	if (tf2lib::IsPlayerInCondition(player, TeamFortress2::TFCond::TFCond_HalloweenGhostMode) ||
@@ -195,6 +227,10 @@ bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player)
 
 bool CTF2BotSensor::IsClassnameIgnored(const char* classname)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotSensor::IsClassnameIgnored", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	static std::string key;
 
 	key.assign(classname);

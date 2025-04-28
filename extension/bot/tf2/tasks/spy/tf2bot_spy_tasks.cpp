@@ -1,10 +1,13 @@
 #include <cstring>
+#include <vector>
 #include <extension.h>
 #include <bot/tf2/tf2bot.h>
+#include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <navmesh/nav_pathfind.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
+#include <bot/bot_shared_utils.h>
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <entities/tf2/tf_entities.h>
@@ -19,6 +22,16 @@ public:
 		INavAreaCollector<CTFNavArea>(startArea, 4096.0f)
 	{
 		m_me = me;
+	}
+
+	bool ShouldSearch(CTFNavArea* area) override
+	{
+		if (area->IsBlocked(static_cast<int>(m_me->GetMyTFTeam())))
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	bool ShouldCollect(CTFNavArea* area) override;
@@ -55,7 +68,8 @@ bool TF2SpyLurkAreaCollector::ShouldCollect(CTFNavArea* area)
 	return true;
 }
 
-CTF2BotSpyInfiltrateTask::CTF2BotSpyInfiltrateTask()
+CTF2BotSpyInfiltrateTask::CTF2BotSpyInfiltrateTask() :
+	m_goal(0.0f, 0.0f, 0.0f)
 {
 	m_cloakMeter = nullptr;
 }
@@ -121,6 +135,7 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 		if (!m_lurkTimer.HasStarted())
 		{
 			m_lurkTimer.StartRandom(15.0f, 60.0f);
+			UpdateAimSpots(bot);
 
 			if (tf2lib::IsPlayerInvisible(bot->GetEntity()))
 			{
@@ -136,12 +151,11 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 			else
 			{
-				if (m_lookAround.IsElapsed())
+				if (m_lookAround.IsElapsed() && !m_aimSpots.empty())
 				{
-					m_lookAround.StartRandom(2.0f, 6.0f);
-
-					QAngle angle{ 0.0f, CBaseBot::s_botrng.GetRandomReal<float>(0.0f, 360.0f), 0.0f };
-					bot->GetControlInterface()->AimAt(angle, IPlayerController::LOOK_INTERESTING, 1.0f, "Looking around.");
+					m_lookAround.StartRandom(3.0f, 6.0f);
+					const Vector& aimAt = m_aimSpots[randomgen->GetRandomInt<std::size_t>(0U, m_aimSpots.size() - 1U)];
+					bot->GetControlInterface()->AimAt(aimAt, IPlayerController::LOOK_INTERESTING, 2.0f, "Aiming at potential enemy pos.");
 				}
 			}
 		}
@@ -198,6 +212,7 @@ void CTF2BotSpyInfiltrateTask::FindLurkPosition(CTF2Bot* me)
 {
 	Vector pos;
 	GetLurkSearchStartPos(me, pos);
+	m_aimSpots.clear();
 	
 	CTFNavArea* startArea = static_cast<CTFNavArea*>(TheNavMesh->GetNearestNavArea(pos, 1024.0f));
 
@@ -282,13 +297,123 @@ void CTF2BotSpyInfiltrateTask::GetLurkSearchStartPos(CTF2Bot* me, Vector& out)
 		}
 
 		// no enemy capture zone found
+
+		edict_t* flag = me->GetFlagToFetch();
+
+		if (!flag)
+		{
+			flag = me->GetFlagToDefend(false, true);
+		}
+
+		if (flag)
+		{
+			out = tf2lib::GetFlagPosition(UtilHelpers::EdictToBaseEntity(flag));
+			break;
+		}
+
+		out = me->GetAbsOrigin();
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_PL:
+	{
+		CBaseEntity* cart = mod->GetBLUPayload();
+
+		if (!cart)
+		{
+			cart = mod->GetREDPayload();
+		}
+
+		if (cart)
+		{
+			out = UtilHelpers::getWorldSpaceCenter(cart);
+			break;
+		}
+
+		CTFNavArea* spawnroomExit = TheTFNavMesh()->GetRandomSpawnRoomExitArea(static_cast<int>(tf2lib::GetEnemyTFTeam(me->GetMyTFTeam())));
+
+		if (spawnroomExit)
+		{
+			out = spawnroomExit->GetCenter();
+			break;
+		}
+
+		out = me->GetAbsOrigin();
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_PL_RACE:
+	{
+		CBaseEntity* cart = nullptr;
+
+		if (me->GetMyTFTeam() == TeamFortress2::TFTeam::TFTeam_Blue)
+		{
+			cart = mod->GetREDPayload();
+		}
+		else
+		{
+			cart = mod->GetBLUPayload();
+		}
+
+		if (cart)
+		{
+			out = UtilHelpers::getWorldSpaceCenter(cart);
+			break;
+		}
+
+		CTFNavArea* spawnroomExit = TheTFNavMesh()->GetRandomSpawnRoomExitArea(static_cast<int>(tf2lib::GetEnemyTFTeam(me->GetMyTFTeam())));
+
+		if (spawnroomExit)
+		{
+			out = spawnroomExit->GetCenter();
+			break;
+		}
+
+		out = me->GetAbsOrigin();
+		break;
+	}
+	case TeamFortress2::GameModeType::GM_MVM:
+	{
+		CBaseEntity* bomb = tf2lib::mvm::GetMostDangerousFlag();
+
+		if (!bomb)
+		{
+			CTFNavArea* frontlineArea = TheTFNavMesh()->GetRandomFrontLineArea();
+
+			if (frontlineArea)
+			{
+				out = frontlineArea->GetCenter();
+				break;
+			}
+		}
+		else
+		{
+			out = tf2lib::GetFlagPosition(bomb);
+			break;
+		}
+
 		out = me->GetAbsOrigin();
 		break;
 	}
 	default:
+	{
+		CTFNavArea* spawnroomExit = TheTFNavMesh()->GetRandomSpawnRoomExitArea(static_cast<int>(tf2lib::GetEnemyTFTeam(me->GetMyTFTeam())));
+
+		if (spawnroomExit)
+		{
+			out = spawnroomExit->GetCenter();
+			break;
+		}
+
 		out = me->GetAbsOrigin();
 		break;
 	}
+	}
+}
+
+void CTF2BotSpyInfiltrateTask::UpdateAimSpots(CTF2Bot* me)
+{
+	botsharedutils::AimSpotCollector collector(me);
+	collector.Execute();
+	collector.ExtractAimSpots(m_aimSpots);
 }
 
 CTF2BotSpyAttackTask::CTF2BotSpyAttackTask(CBaseEntity* victim) :
@@ -589,7 +714,7 @@ TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(object), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to sap!");
 
-	if (bot->GetRangeTo(object) < 72.0f)
+	if (bot->GetRangeTo(object) < 90.0f)
 	{
 		bot->GetControlInterface()->PressAttackButton();
 	}

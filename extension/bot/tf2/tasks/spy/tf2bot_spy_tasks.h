@@ -33,6 +33,7 @@ private:
 	CountdownTimer m_repathTimer;
 	CountdownTimer m_lookAround;
 	float* m_cloakMeter;
+	std::vector<Vector> m_aimSpots;
 
 	void DisguiseMe(CTF2Bot* me);
 
@@ -49,6 +50,7 @@ private:
 
 	void FindLurkPosition(CTF2Bot* me);
 	void GetLurkSearchStartPos(CTF2Bot* me, Vector& out);
+	void UpdateAimSpots(CTF2Bot* me);
 };
 
 class CTF2BotSpyAttackTask : public AITask<CTF2Bot>

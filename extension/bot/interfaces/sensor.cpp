@@ -12,6 +12,10 @@
 #include <sdkports/debugoverlay_shared.h>
 #include "sensor.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef max
 #undef min
 #undef clamp
@@ -28,6 +32,10 @@ public:
 
 bool BotSensorTraceFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("BotSensorTraceFilter::ShouldHitEntity", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (trace::CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 	{
 		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
@@ -122,6 +130,10 @@ bool ISensor::IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV)
 
 bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsAbleToSee( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto me = GetBot();
 	auto start = me->GetEyeOrigin();
 	auto pos = UtilHelpers::getWorldSpaceCenter(entity);
@@ -136,13 +148,13 @@ bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
 	// Check FOV
 	if (checkFOV)
 	{
-		if (IsInFieldOfView(pos) == false)
+		if (!IsInFieldOfView(pos))
 		{
 			return false;
 		}
 	}
 
-	if (IsLineOfSightClear(entity) == false)
+	if (!IsLineOfSightClear(entity))
 	{
 		return false;
 	}
@@ -164,6 +176,10 @@ bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
 */
 bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsAbleToSee( Vector )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto me = GetBot();
 	auto start = me->GetEyeOrigin();
 	const auto maxdist = GetMaxVisionRange() * GetMaxVisionRange();
@@ -204,6 +220,10 @@ bool ISensor::IsAbleToHear(edict_t* entity)
 
 bool ISensor::IsLineOfSightClear(const Vector& pos)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsLineOfSightClear( Vector )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto start = GetBot()->GetEyeOrigin();
 
 	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
@@ -216,6 +236,10 @@ bool ISensor::IsLineOfSightClear(const Vector& pos)
 
 bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsLineOfSightClear( CBaseExtPlayer )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto start = GetBot()->GetEyeOrigin();
 	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
 	trace_t result;
@@ -237,6 +261,10 @@ bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player)
 
 bool ISensor::IsLineOfSightClear(edict_t* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsLineOfSightClear( edict_t )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto start = GetBot()->GetEyeOrigin();
 	entities::HBaseEntity baseent(entity);
 	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
@@ -259,6 +287,10 @@ bool ISensor::IsLineOfSightClear(edict_t* entity)
 
 bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsLineOfSightClear( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto start = GetBot()->GetEyeOrigin();
 	entities::HBaseEntity baseent(entity);
 	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
@@ -272,7 +304,7 @@ bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
 
 		if (result.DidHit())
 		{
-			trace::line(start, baseent.GetAbsOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
+			trace::line(start, UtilHelpers::getEntityOrigin(entity), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
 		}
 	}
 
@@ -281,6 +313,10 @@ bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
 
 bool ISensor::IsInFieldOfView(const Vector& pos)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsInFieldOfView( pos )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	Vector forward;
 	GetBot()->EyeVectors(&forward);
 	return UtilHelpers::PointWithinViewAngle(GetBot()->GetEyeOrigin(), pos, forward, m_coshalfFOV);
@@ -435,6 +471,10 @@ const float ISensor::GetTimeSinceVisibleThreat() const
 
 const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::GetPrimaryKnownThreat", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_knownlist.empty())
 		return nullptr;
 
@@ -644,6 +684,10 @@ const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
 
 void ISensor::UpdateKnownEntities()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::UpdateKnownEntities", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	std::vector<edict_t*> visibleVec;
 	visibleVec.reserve(1024);
 
@@ -676,10 +720,18 @@ void ISensor::UpdateKnownEntities()
 
 void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::CollectVisibleEntities", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* me = GetBot<CBaseBot>();
 
 	for (edict_t* edict : visibleVec)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("ISensor::CollectVisibleEntities( collect visible )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		// all entities inside visibleVec are visible to the bot RIGHT NOW!
 		CKnownEntity* known = FindKnownEntity(edict);
 
@@ -702,6 +754,10 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 	for (CKnownEntity& known : m_knownlist)
 	{
+#ifdef EXT_VPROF_ENABLED
+		VPROF_BUDGET("ISensor::CollectVisibleEntities( update status )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 		CBaseEntity* pEntity = known.GetEntity();
 
 		if (known.GetTimeSinceLastInfo() < 0.2f)
@@ -750,50 +806,40 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::CollectPlayers", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	const int myindex = GetBot<CBaseBot>()->GetIndex();
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		auto edict = gamehelpers->EdictOfIndex(i);
-
-		if (!UtilHelpers::IsValidEdict(edict)) 
+		// skip self
+		if (i == myindex)
 		{
 			continue;
 		}
 
-		if (i == GetBot()->GetIndex())
-			continue; // skip self
+		CBaseEntity* entity = gamehelpers->ReferenceToEntity(i);
 
-		auto gp = playerhelpers->GetGamePlayer(i);
-
-		if (!gp->IsInGame())
+		if (!entity || entityprops::GetEntityTeamNum(entity) <= TEAM_SPECTATOR || entityprops::GetEntityLifeState(entity) != LIFE_ALIVE)
 		{
-			continue; // Client must be fully connected
+			continue;
 		}
 
-		auto info = gp->GetPlayerInfo();
-
-		if (info && info->GetTeamIndex() <= TEAM_SPECTATOR) {
-			continue; // Ignore spectators by default
-		}
-
-		if (info && info->IsDead()) {
-			continue; // Ignore dead players
-		}
-
-		if (IsIgnored(edict->GetIServerEntity()->GetBaseEntity())) {
-			continue; // Ignored player
-		}
-
-		CBaseExtPlayer player(edict);
-
-		if (IsAbleToSee(player))
+		if (IsAbleToSee(entity))
 		{
-			visibleVec.push_back(edict);
+			visibleVec.push_back(UtilHelpers::BaseEntityToEdict(entity));
 		}
 	}
 }
 
 void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::CollectNonPlayerEntities", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
 	{
 		auto edict = gamehelpers->EdictOfIndex(i);
@@ -820,6 +866,9 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 // Removes obsolete known entities from the list
 void ISensor::CleanKnownEntities()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::CleanKnownEntities", "NavBot");
+#endif // EXT_VPROF_ENABLED
 	// Removes all obsoletes known entities
 	auto iter = std::remove_if(m_knownlist.begin(), m_knownlist.end(),
 		[](CKnownEntity& known) { return known.IsObsolete(); });
@@ -844,6 +893,10 @@ CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
 
 void ISensor::UpdateStatistics()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::UpdateStatistics", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	m_statsvisibleallies = 0;
 	m_statsvisibleenemies = 0;
 

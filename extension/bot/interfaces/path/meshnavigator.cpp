@@ -10,6 +10,10 @@
 #include <manager.h>
 #include "meshnavigator.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef min
 #undef max
 #undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
@@ -71,6 +75,10 @@ void CMeshNavigator::OnPathChanged(CBaseBot* bot, AIPath::ResultType result)
 
 void CMeshNavigator::Update(CBaseBot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!IsValid() || m_goal == nullptr)
 	{
 		return; // no path or goal
@@ -264,6 +272,10 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::IsAtGoal", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	IMovement* mover = bot->GetMovementInterface();
 	auto current = GetPriorSegment(m_goal);
 	Vector origin = bot->GetAbsOrigin();
@@ -395,6 +407,10 @@ bool CMeshNavigator::CheckProgress(CBaseBot* bot)
 
 const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::CheckSkipPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto mover = bot->GetMovementInterface();
 
 	const CBasePathSegment* skip = nullptr;
@@ -471,6 +487,10 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 
 bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::Climbing", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto mover = bot->GetMovementInterface();
 	auto input = bot->GetControlInterface();
 	auto myarea = bot->GetLastKnownNavArea();
@@ -877,6 +897,10 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::JumpOverGaps", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto mover = bot->GetMovementInterface();
 	auto input = bot->GetControlInterface();
 
@@ -967,6 +991,10 @@ bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment
 
 Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::Avoid", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!m_avoidTimer.IsElapsed())
 	{
 		return goalPos;
@@ -1258,6 +1286,10 @@ void CMeshNavigator::BreakIfNeeded(CBaseBot* bot)
 
 void CMeshNavigator::SearchForUseableObstacles(CBaseBot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::SearchForUseableObstacles", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto goal = GetGoalSegment();
 
 	if (!goal) { return; }
@@ -1284,6 +1316,10 @@ void CMeshNavigator::SearchForUseableObstacles(CBaseBot* bot)
 
 bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::LadderUpdate", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto input = bot->GetControlInterface();
 	auto mover = bot->GetMovementInterface();
 	Vector origin = bot->GetAbsOrigin();

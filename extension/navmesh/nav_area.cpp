@@ -36,6 +36,10 @@
 #include <tslist.h>
 #include <utlhash.h>
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef min
 #undef max
 #undef clamp // mathlib compat hack
@@ -1238,6 +1242,10 @@ bool CNavArea::IsConnected(const CNavArea* area, OffMeshConnectionType linktype)
  */
 float CNavArea::ComputeGroundHeightChange( const CNavArea *area ) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("[NavBot] CNavArea::ComputeGroundHeightChange", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	Vector closeFrom, closeTo;
 	area->GetClosestPointOnArea( GetCenter(), &closeTo );
 	GetClosestPointOnArea( area->GetCenter(), &closeFrom );
@@ -2306,6 +2314,10 @@ NavDirType CNavArea::ComputeLargestPortal( const CNavArea *to, Vector *center, f
  */
 void CNavArea::ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, const Vector &fromPos, Vector *closePos ) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("[NavBot] CNavArea::ComputeClosestPointInPortal", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 //	const float margin = 0.0f; //navgenparams->generation_step_size/2.0f;  // causes trouble with very small/narrow nav areas
 	const float margin = navgenparams->generation_step_size;
 
@@ -2459,6 +2471,10 @@ bool CNavArea::IsContiguous( const CNavArea *other ) const
  */
 float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinationArea ) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("[NavBot] CNavArea::ComputeAdjacentConnectionHeightChange", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// find which side it is connected on
 	int dir;
 	for( dir=0; dir<NUM_DIRECTIONS; ++dir )
@@ -2490,6 +2506,10 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 
 float CNavArea::ComputeAdjacentConnectionGapDistance(const CNavArea* destinationArea) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("[NavBot] CNavArea::ComputeAdjacentConnectionGapDistance", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// find which side it is connected on
 	int dir;
 	for (dir = 0; dir < NUM_DIRECTIONS; ++dir)
@@ -4592,6 +4612,10 @@ void CNavArea::UnblockArea( int teamID )
 // Updates the (un)blocked status of the nav area
 void CNavArea::UpdateBlocked( bool force, int teamID )
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("[NavBot] CNavArea::UpdateBlocked", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if ( !force && !m_blockedTimer.IsElapsed() )
 	{
 		return;

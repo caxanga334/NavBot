@@ -7,6 +7,10 @@
 #include <entities/baseentity.h>
 #include "playercontrol.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 ConVar smnav_bot_aim_stability_max_rate("sm_navbot_aim_stability_max_rate", "100.0", FCVAR_GAMEDLL, "Maximum angle change rate to consider the bot aim to be stable.");
 ConVar smnav_bot_aim_lookat_settle_duration("sm_navbot_aim_lookat_settle_duration", "0.3", FCVAR_GAMEDLL, "Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.");
 
@@ -93,6 +97,10 @@ void IPlayerController::ProcessButtons(int& buttons)
 // This function handles the bot aiming/looking process
 void IPlayerController::RunLook()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IPlayerController::RunLook", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* me = GetBot<CBaseBot>();
 
 	if (m_isSnapingViewAngles)
@@ -222,6 +230,10 @@ void IPlayerController::RunLook()
 
 void IPlayerController::UpdateAimError()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IPlayerController::UpdateAimError", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* me = GetBot();
 
 	if (me->GetDifficultyProfile()->GetAimLockInTime() < 0.02f)

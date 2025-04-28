@@ -5,7 +5,7 @@
 #include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <bot/tf2/tf2bot.h>
-#include <bot/tf2/tasks/tf2bot_tactical.h>
+#include <bot/tf2/tasks/tf2bot_scenario_task.h>
 #include "tf2bot_mvm_idle.h"
 #include "tf2bot_mvm_defend.h"
 #include "tf2bot_mvm_tasks.h"
@@ -13,7 +13,7 @@
 
 AITask<CTF2Bot>* CTF2BotMvMMonitorTask::InitialNextTask(CTF2Bot* bot)
 {
-	auto classTask = CTF2BotTacticalTask::SelectClassTask(bot);
+	auto classTask = CTF2BotScenarioTask::SelectClassTask(bot);
 
 	if (classTask != nullptr)
 	{

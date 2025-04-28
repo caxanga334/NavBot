@@ -9,6 +9,10 @@
 #include "knownentity.h"
 #include "inventory.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 // undef some stuff from valve's mathlib that conflicts with STL
 #undef min
 #undef max
@@ -37,6 +41,10 @@ void IInventory::Reset()
 
 void IInventory::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IInventory::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_updateWeaponsTimer.IsElapsed())
 	{
 		m_updateWeaponsTimer.Start(extmanager->GetMod()->GetModSettings()->GetInventoryUpdateRate());
@@ -93,6 +101,10 @@ void IInventory::AddWeaponToInventory(CBaseEntity* weapon)
 
 void IInventory::BuildInventory()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IInventory::BuildInventory", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	m_weapons.clear();
 
 	// array CHandle<CBaseEntity> weapons[MAX_WEAPONS]
@@ -114,6 +126,10 @@ void IInventory::BuildInventory()
 
 void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IInventory::SelectBestWeaponForThreat", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
 	{
 		return;
@@ -437,6 +453,10 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 
 std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IInventory::GetActiveBotWeapon", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* weapon = GetBot()->GetActiveWeapon();
 
 	if (weapon == nullptr)
@@ -465,6 +485,10 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 
 bool IInventory::IsAmmoLow(const bool heldOnly)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IInventory::IsAmmoLow", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* me = GetBot();
 
 	if (heldOnly)

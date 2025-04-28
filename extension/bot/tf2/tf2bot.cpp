@@ -12,6 +12,10 @@
 #include <entities/tf2/tf_entities.h>
 #include "tf2bot.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef max
 #undef min
 #undef clamp
@@ -46,6 +50,10 @@ void CTF2Bot::Reset()
 
 void CTF2Bot::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CTeamFortress2Mod* mod = CTeamFortress2Mod::GetTF2Mod();
 
 	if (mod->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM)
@@ -163,6 +171,10 @@ bool CTF2Bot::IsCarryingAFlag() const
 
 edict_t* CTF2Bot::GetFlagToFetch() const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::GetFlagToFetch", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	std::vector<int> collectedflags;
 	collectedflags.reserve(16);
 
@@ -222,6 +234,10 @@ edict_t* CTF2Bot::GetFlagToFetch() const
 
 edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly, bool ignoreHome) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::GetFlagToDefend", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	std::vector<edict_t*> collectedflags;
 	collectedflags.reserve(16);
 	auto myteam = GetMyTFTeam();
@@ -290,6 +306,10 @@ edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly, bool ignoreHome) const
 */
 edict_t* CTF2Bot::GetFlagCaptureZoreToDeliver() const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::GetFlagCaptureZoneToDeliver", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	int capturezone = INVALID_EHANDLE_INDEX;
 
 	while ((capturezone = UtilHelpers::FindEntityByClassname(capturezone, "func_capturezone")) != INVALID_EHANDLE_INDEX)
@@ -316,6 +336,10 @@ edict_t* CTF2Bot::GetFlagCaptureZoreToDeliver() const
 
 bool CTF2Bot::IsAmmoLow() const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::IsAmmoLow", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// For engineer, check metal
 	if (GetMyClassType() == TeamFortress2::TFClass_Engineer)
 	{
@@ -522,6 +546,10 @@ void CTF2Bot::SelectNewClass()
 
 void CTF2Bot::FindMyBuildings()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::FindMyBuildings", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	m_mySentryGun.Term();
 	m_myDispenser.Term();
 	m_myTeleporterEntrance.Term();
@@ -677,6 +705,10 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 
 float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotPathCost::operator()", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (fromArea == nullptr)
 	{
 		// first area in path, no cost

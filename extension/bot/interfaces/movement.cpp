@@ -13,12 +13,17 @@
 #include <entities/baseentity.h>
 #include "movement.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 constexpr auto DEFAULT_PLAYER_STANDING_HEIGHT = 72.0f;
 constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
 constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
 
 #ifdef EXT_DEBUG
 static ConVar cvar_dev_double_jump_timer("sm_navbot_dev_dj_time", "0.3", FCVAR_GAMEDLL);
+static ConVar cvar_dev_jump_hold_time("sm_navbot_dev_jump_hold_time", "1.0", FCVAR_GAMEDLL);
 #endif // EXT_DEBUG
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
@@ -142,6 +147,10 @@ void IMovement::Reset()
 
 void IMovement::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* me = GetBot<CBaseBot>();
 	m_maxspeed = me->GetMaxSpeed();
 
@@ -221,6 +230,33 @@ void IMovement::Update()
 
 		MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
 	}
+	else if (m_isJumping) // for simple jumps
+	{
+		if (m_isAirborne || m_jumpTimer.IsElapsed())
+		{
+			if (IsOnGround())
+			{
+				m_isAirborne = false;
+				m_isJumping = false;
+				m_jumpTimer.Invalidate();
+				m_jumpCooldown.Start(0.9f);
+				me->GetControlInterface()->ReleaseJumpButton();
+				me->GetControlInterface()->ReleaseCrouchButton();
+
+				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					me->DebugPrintToConsole(0, 170, 0, "%s JUMP COMPLETE \n", me->GetDebugIdentifier());
+				}
+			}
+		}
+		else
+		{
+			if (!IsOnGround())
+			{
+				m_isAirborne = true;
+			}
+		}
+	}
 
 	if (m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed())
 	{
@@ -242,6 +278,10 @@ void IMovement::Update()
 
 void IMovement::Frame()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::Frame", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// Was on Update, moved to frame
 	TraverseLadder();
 	ElevatorUpdate();
@@ -287,6 +327,10 @@ void IMovement::SetDesiredSpeed(float speed)
 
 void IMovement::MoveTowards(const Vector& pos, const int weight)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::MoveTowards", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_lastMoveWeight > weight)
 	{
 		return;
@@ -388,6 +432,10 @@ void IMovement::FaceTowards(const Vector& pos, const bool important)
 
 void IMovement::AdjustSpeedForPath(CMeshNavigator* path)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::AdjustSpeedForPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto& data = path->GetCursorData();
 	auto goal = path->GetGoalSegment();
 
@@ -490,10 +538,26 @@ void IMovement::Jump()
 	if (!m_jumpCooldown.IsElapsed())
 		return;
 
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	// Cannot start a jump while holding the jump button
+	if (IsOnGround() && me->GetControlInterface()->IsPressingJumpButton())
+	{
+		m_jumpCooldown.Start(0.9f);
+		me->GetControlInterface()->ReleaseJumpButton();
+
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 0, 0, "%s REJECTING JUMP: JUMP KEY IS CURRENTLY BEING PRESSED! \n", me->GetDebugIdentifier());
+		}
+
+		return;
+	}
+
 	m_isJumping = true;
 	m_jumpTimer.Start(0.5f);
 
-	GetBot()->GetControlInterface()->PressJumpButton();
+	me->GetControlInterface()->PressJumpButton();
 }
 
 void IMovement::CrouchJump()
@@ -501,17 +565,55 @@ void IMovement::CrouchJump()
 	if (!m_jumpCooldown.IsElapsed())
 		return;
 
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	// Cannot jump while holding the jump button
+	if (IsOnGround() && me->GetControlInterface()->IsPressingJumpButton())
+	{
+		m_jumpCooldown.Start(0.9f);
+		me->GetControlInterface()->ReleaseJumpButton();
+		me->GetControlInterface()->ReleaseCrouchButton();
+
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 0, 0, "%s REJECTING CROUCH JUMP: JUMP KEY IS CURRENTLY BEING PRESSED! \n", me->GetDebugIdentifier());
+		}
+
+		return;
+	}
+
 	m_isJumping = true;
 	m_jumpTimer.Start(0.5f);
 
-	GetBot()->GetControlInterface()->PressCrouchButton(3.0f);
-	GetBot()->GetControlInterface()->PressJumpButton(3.0f);
+#ifdef EXT_DEBUG
+	me->GetControlInterface()->PressCrouchButton(cvar_dev_jump_hold_time.GetFloat());
+	me->GetControlInterface()->PressJumpButton(cvar_dev_jump_hold_time.GetFloat());
+#else
+	me->GetControlInterface()->PressCrouchButton(1.0f);
+	me->GetControlInterface()->PressJumpButton(1.0f);
+#endif // EXT_DEBUG
 }
 
 void IMovement::DoubleJump()
 {
 	if (!m_jumpCooldown.IsElapsed())
 		return;
+
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	// Cannot jump while holding the jump button
+	if (IsOnGround() && me->GetControlInterface()->IsPressingJumpButton())
+	{
+		m_jumpCooldown.Start(0.9f);
+		me->GetControlInterface()->ReleaseJumpButton();
+
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 0, 0, "%s REJECTING DOUBLE JUMP: JUMP KEY IS CURRENTLY BEING PRESSED! \n", me->GetDebugIdentifier());
+		}
+
+		return;
+	}
 
 	m_isJumping = true;
 	m_jumpTimer.Start(1.0f);
@@ -533,6 +635,7 @@ void IMovement::DoubleJump()
 void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 {
 	// look towards the jump target
+	GetBot()->GetControlInterface()->SnapAimAt(landing, IPlayerController::LOOK_MOVEMENT);
 	GetBot()->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f, "Looking at jump over gap landing!");
 
 	CrouchJump();
@@ -642,6 +745,10 @@ bool IMovement::IsGap(const Vector& pos, const Vector& forward)
 */
 bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now, CBaseEntity** obstacle)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::IsPotentiallyTraversable", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	float heightdiff = to.z - from.z;
 	float jumplimit = GetMaxJumpHeight();
 
@@ -709,6 +816,10 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 
 bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float& fraction)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::HasPotentialGap", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// get movement fraction
 	float traversableFraction = 0.0f;
 	IsPotentiallyTraversable(from, to, &traversableFraction, true);
@@ -737,6 +848,10 @@ bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float& fra
 
 bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::IsEntityTraversable", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (index == 0) // index 0 is the world
 	{
 		return false;
@@ -843,6 +958,10 @@ bool IMovement::IsAreaTraversable(const CNavArea* area) const
 
 void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea* toArea, const Vector& fromPos, Vector* crosspoint)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::AdjustPathCrossingPoint", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// Compute a direction vector point towards the crossing point
 	Vector forward = (*crosspoint - fromPos);
 	forward.z = 0.0f;
@@ -947,6 +1066,10 @@ void IMovement::TryToUnstuck()
 
 void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::ObstacleOnPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// Wait for the bot to be actually stuck by the obstacle, prevents excessive jumping on slope/ramps
 	if (GetGroundSpeed() > 16.0f)
 	{
@@ -1034,6 +1157,10 @@ bool IMovement::BreakObstacle(CBaseEntity* obstacle)
 
 bool IMovement::IsUseableObstacle(CBaseEntity* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::IsUseableObstacle", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	const char* classname = gamehelpers->GetEntityClassname(entity);
 
 	if (std::strcmp(classname, "func_door") == 0 || std::strcmp(classname, "func_door_rotating") == 0)
@@ -1060,6 +1187,10 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity)
 
 void IMovement::StuckMonitor()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::StuckMonitor", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto bot = GetBot();
 	auto origin = bot->GetAbsOrigin();
 	constexpr auto STUCK_RADIUS = 100.0f; // distance the bot has to move to consider not stuck

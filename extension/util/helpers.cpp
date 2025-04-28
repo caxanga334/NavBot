@@ -10,6 +10,10 @@
 #include "sdkcalls.h"
 #include "entprops.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef max // undef mathlib defs to avoid comflicts with STD
 #undef min
 #undef clamp
@@ -126,6 +130,10 @@ bool UtilHelpers::IsEntNetworkable(CBaseEntity* entity)
 
 bool UtilHelpers::HasDataTable(SendTable* root, const char* name)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::HasDataTable", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	const char* pname = nullptr;
 	int props = root->GetNumProps();
 	SendProp* prop = nullptr;
@@ -231,6 +239,10 @@ Vector UtilHelpers::collisionToWorldSpace(const Vector& in, ICollideable* collid
  **/
 Vector UtilHelpers::getWorldSpaceCenter(edict_t* pEntity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::getWorldSpaceCenter( edict )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	Vector result = getOBBCenter(pEntity);
 	result = collisionToWorldSpace(result, pEntity);
 	return result;
@@ -238,6 +250,10 @@ Vector UtilHelpers::getWorldSpaceCenter(edict_t* pEntity)
 
 Vector UtilHelpers::getWorldSpaceCenter(CBaseEntity* pEntity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::getWorldSpaceCenter( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	ICollideable* collider = reinterpret_cast<IServerEntity*>(pEntity)->GetCollideable();
 
 	if (collider == nullptr)
@@ -253,11 +269,19 @@ Vector UtilHelpers::getWorldSpaceCenter(CBaseEntity* pEntity)
 
 const Vector& UtilHelpers::getEntityOrigin(edict_t* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::getEntityOrigin( edict )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	return entity->GetCollideable()->GetCollisionOrigin();
 }
 
 const Vector& UtilHelpers::getEntityOrigin(CBaseEntity* entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::getEntityOrigin( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	return reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin();
 }
 
@@ -292,6 +316,10 @@ void UtilHelpers::getEntityBounds(CBaseEntity* entity, Vector& mins, Vector& max
  **/
 bool UtilHelpers::pointIsWithinTrigger(edict_t* pEntity, const Vector& vPoint)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::pointIsWithinTrigger", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	Ray_t ray;
 	trace_t tr;
 	ICollideable* pCollide = pEntity->GetCollideable();
@@ -315,6 +343,10 @@ bool UtilHelpers::isBoundsDefinedInEntitySpace(ICollideable* collider)
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::FindEntityByClassname", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
@@ -449,6 +481,10 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 /// @return Entity index/reference or INVALID_EHANDLE_INDEX if none is found
 int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radius)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::FindEntityInSphere", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
@@ -762,6 +798,10 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 /// @note https://github.com/ValveSoftware/source-sdk-2013/blob/beaae8ac45a2f322a792404092d4482065bef7ef/sp/src/public/mathlib/vector.h#L462-L477
 bool UtilHelpers::PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::PointWithinViewAngle", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	Vector vecDelta = vecTargetPosition - vecSrcPosition;
 	float cosDiff = DotProduct(vecLookDirection, vecDelta);
 
@@ -790,6 +830,10 @@ float UtilHelpers::GetForwardViewCone(float angle)
 */
 std::unique_ptr<CStudioHdr> UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::GetEntityModelPtr", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto collide = pEntity->GetCollideable();
 
 	if (!collide)
@@ -817,6 +861,10 @@ std::unique_ptr<CStudioHdr> UtilHelpers::GetEntityModelPtr(edict_t* pEntity)
 
 int UtilHelpers::LookupBone(CStudioHdr* hdr, const char* bonename)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::LookupBone", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// binary search for the bone matching pName
 	int start = 0, end = hdr->numbones() - 1;
 	const byte* pBoneTable = hdr->GetBoneTableSortedByName();
@@ -845,6 +893,10 @@ int UtilHelpers::LookupBone(CStudioHdr* hdr, const char* bonename)
 
 bool UtilHelpers::GetBonePosition(CBaseEntity* entity, int bone, Vector& origin, QAngle& angles)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::GetBonePosition", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!sdkcalls->IsGetBoneTransformAvailable())
 	{
 #ifdef EXT_DEBUG
@@ -896,6 +948,10 @@ bool UtilHelpers::IsPlayerIndex(const int index)
 
 bool UtilHelpers::FindNestedDataTable(SendTable* pTable, const char* name)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::FindNestedDataTable", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (strcmp(pTable->GetName(), name) == 0)
 	{
 		return true;
@@ -1344,6 +1400,10 @@ bool UtilHelpers::StringMatchesPattern(const char* source, const char* pattern, 
 
 bool UtilHelpers::StringMatchesPattern(const std::string& source, const std::string& pattern, int nFlags)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::StringMatchesPattern( std::string )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	const char* pszSource = source.c_str();
 	const char* pszPattern = pattern.c_str();
 	bool bExact = true;
@@ -1421,6 +1481,10 @@ bool UtilHelpers::StringMatchesPattern(const std::string& source, const std::str
 
 bool UtilHelpers::FClassnameIs(edict_t* pEntity, const char* szClassname)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::FClassnameIs( edict )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto classname = pEntity->GetClassName();
 
 	if (Q_strcmp(classname, szClassname) == 0) { return true; }
@@ -1433,6 +1497,10 @@ bool UtilHelpers::FClassnameIs(edict_t* pEntity, const char* szClassname)
 
 bool UtilHelpers::FClassnameIs(CBaseEntity* pEntity, const char* szClassname)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::FClassnameIs( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto classname = gamehelpers->GetEntityClassname(pEntity);
 
 	if (Q_strcmp(classname, szClassname) == 0) { return true; }

@@ -12,6 +12,10 @@
 #include <sdkports/debugoverlay_shared.h>
 #endif // EXT_DEBUG
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 constexpr auto PLAYER_NAV_UPDATE_TIME = 0.1f; // Interval of nav mesh data updates
 constexpr auto NEAREST_AREA_MAX_DISTANCE = 128.0f;
 
@@ -46,11 +50,19 @@ bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other) const
 
 void CBaseExtPlayer::PlayerThink()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::PlayerThink", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	UpdateLastKnownNavArea();
 }
 
 void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::UpdateLastKnownNavArea", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	// https://cs.alliedmods.net/hl2sdk-csgo/source/game/server/basecombatcharacter.cpp#3351
 
 	if (forceupdate)
@@ -145,6 +157,10 @@ const Vector CBaseExtPlayer::GetMaxs() const
 
 void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::GetHeadShotPosition", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	std::unique_ptr<CStudioHdr> studiohdr = UtilHelpers::GetEntityModelPtr(GetEdict());
 
 	if (studiohdr)
@@ -265,6 +281,10 @@ CBaseEntity* CBaseExtPlayer::GetGroundEntity() const
 */
 bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::Weapon_OwnsThisType", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	int weapon_entity = -1;
 	edict_t* entity = nullptr;
 	for (int i = 0; i < MAX_WEAPONS; i++)
@@ -378,18 +398,30 @@ void CBaseExtPlayer::SnapEyeAngles(const QAngle& viewAngles) const
 
 bool CBaseExtPlayer::IsLookingTowards(edict_t* edict, const float tolerance) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::IsLookingTowards( edict_t )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	entities::HBaseEntity be(edict);
 	return IsLookingTowards(be.GetAbsOrigin(), tolerance) || IsLookingTowards(be.WorldSpaceCenter(), tolerance) || IsLookingTowards(be.EyePosition(), tolerance);
 }
 
 bool CBaseExtPlayer::IsLookingTowards(CBaseEntity* entity, const float tolerance) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::IsLookingTowards( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	entities::HBaseEntity be(entity);
 	return IsLookingTowards(be.GetAbsOrigin(), tolerance) || IsLookingTowards(be.WorldSpaceCenter(), tolerance) || IsLookingTowards(be.EyePosition(), tolerance);
 }
 
 bool CBaseExtPlayer::IsLookingTowards(const Vector& position, const float tolerance) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::IsLookingTowards( Vector )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	Vector eyepos = GetEyeOrigin();
 	Vector to = position - eyepos;
 	to.NormalizeInPlace();

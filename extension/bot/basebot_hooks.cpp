@@ -2,6 +2,11 @@
 #include <sdkports/sdk_takedamageinfo.h>
 #include "basebot.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
+
 #if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM
 class CBasePlayer;
 #endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM
@@ -176,6 +181,10 @@ void CBaseBot::Hook_Event_KilledOther(CBaseEntity* pVictim, const CTakeDamageInf
 
 void CBaseBot::Hook_PhysicsSimulate()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::Hook_PhysicsSimulate", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 #ifdef EXT_DEBUG
 	if (m_controller == nullptr && !IsPluginBot())
 	{

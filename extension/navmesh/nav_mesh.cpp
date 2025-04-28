@@ -32,6 +32,10 @@
 #include <generichash.h>
 #include <fmtstr.h>
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_PERSIST_FOR_ONE_TICK )
 
 /**
@@ -441,6 +445,10 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
  */
 void CNavMesh::Update( void )
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("[NavBot] CNavMesh::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (IsGenerating())
 	{
 		UpdateGeneration( 0.03 );

@@ -42,6 +42,10 @@
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 /**
  * @file extension.cpp
  * @brief Implement extension code here.
@@ -399,6 +403,10 @@ void NavBotExt::OnClientDisconnecting(int client)
 
 void NavBotExt::Hook_GameFrame(bool simulating)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("NavBotExt::Hook_GameFrame", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (TheNavMesh)
 	{
 		TheNavMesh->Update();
@@ -414,6 +422,10 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 
 void NavBotExt::Hook_ClientCommand(edict_t* pEntity, const CCommand& args)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("NavBotExt::Hook_ClientCommand", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (extmanager != nullptr && UtilHelpers::IsValidEdict(pEntity))
 	{
 		auto player = playerhelpers->GetGamePlayer(pEntity);

@@ -32,6 +32,10 @@
 #include <exception>
 #include "entprops.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 // From game/server/variant_t.h, same on all supported games.
 class variant_t
 {
@@ -288,6 +292,10 @@ void CEntPropUtils::Init(bool reset)
  */
 bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::HasEntProp", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	using namespace SourceMod;
 
 	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
@@ -369,6 +377,10 @@ bool CEntPropUtils::IsNetworkedEntity(CBaseEntity *pEntity)
 
 bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop, int entity)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::FindSendProp", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	ServerClass* pServerClass = FindEntityServerClass(pEntity);
 
 	if (pServerClass == nullptr)
@@ -392,6 +404,10 @@ bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntit
 
 bool CEntPropUtils::FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_info_t& dinfo, const char* prop)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::FindDataMap", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	datamap_t* pMap = gamehelpers->GetDataMap(pEntity);
 
 	if (pMap == nullptr)
@@ -418,6 +434,10 @@ bool CEntPropUtils::FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_in
    If lookup fails, returns false and doesn't touch the params.  */
 bool CEntPropUtils::IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pEdictData)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::IndexToAThings", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity *pEntity = gamehelpers->ReferenceToEntity(num);
 
 	if (!pEntity)
@@ -466,6 +486,10 @@ bool CEntPropUtils::IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pE
 */
 bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, int& result, int size, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntProp", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
@@ -595,6 +619,10 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 */
 bool CEntPropUtils::GetEntPropBool(int entity, PropType proptype, const char* prop, bool& result, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropBool", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	int iresult = 0;
 	bool retv = GetEntProp(entity, proptype, prop, iresult, 1, element);
 
@@ -743,6 +771,10 @@ bool CEntPropUtils::SetEntProp(int entity, PropType proptype, const char *prop, 
 */
 bool CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char* prop, float& result, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropFloat", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
@@ -886,6 +918,10 @@ bool CEntPropUtils::SetEntPropFloat(int entity, PropType proptype, const char *p
 */
 bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* prop, int& result, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropEnt( int )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
@@ -1011,6 +1047,10 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 
 CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptype, const char* prop, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropEnt( CBaseEntity* )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	SourceMod::sm_sendprop_info_t info;
 	SendProp* pProp = nullptr;
 	int bit_count;
@@ -1284,6 +1324,10 @@ bool CEntPropUtils::SetEntPropEnt(int entity, PropType proptype, const char *pro
 /// @return Value at the given property offset.
 bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* prop, Vector& result, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropVector", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
@@ -1451,6 +1495,10 @@ bool CEntPropUtils::SetEntPropVector(int entity, PropType proptype, const char *
 /// @return Value at the given property offset.
 bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropString", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	edict_t *pEdict;
 	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;

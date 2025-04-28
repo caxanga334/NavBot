@@ -181,6 +181,10 @@ class ExtensionConfig(object):
     if builder.options.debug == '1':
       cxx.defines += ['DEBUG', '_DEBUG']
 
+    # Valve Profiler
+    if builder.options.vprof == '1':
+      cxx.defines += ['EXT_VPROF_ENABLED']
+
     # Platform-specifics
     if cxx.target.platform == 'linux':
       self.configure_linux(cxx)
