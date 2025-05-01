@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
