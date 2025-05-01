@@ -20,24 +20,24 @@
 			}
 			"PhysicsSimulate"
 			{
-				"windows"	"109"
-				"windows64" "109"
-				"linux"		"110"
-				"linux64"	"110"
+				"windows"	"110"
+				"windows64" "110"
+				"linux"		"111"
+				"linux64"	"111"
 			}
 			"CBasePlayer::ProcessUsercmds"
 			{
-				"windows"	"429"
-				"windows64" "429"
-				"linux"		"430"
-				"linux64"	"430"
+				"windows"	"430"
+				"windows64" "430"
+				"linux"		"431"
+				"linux64"	"431"
 			}
 			"CBaseAnimating::GetBoneTransform"
 			{
-				"windows"	"209"
-				"windows64"	"209"
-				"linux"		"210"
-				"linux64"	"210"
+				"windows"	"210"
+				"windows64"	"210"
+				"linux"		"211"
+				"linux64"	"211"
 			}
 
 			/**
