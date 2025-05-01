@@ -992,4 +992,66 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 	}
 }
 
+CON_COMMAND(sm_navbot_debug_vis, "Visibility debug")
+{
+	if (args.ArgC() < 2)
+	{
+		Msg("[SM] Usage: sm_navbot_debug_vis <ent index>\n");
+		return;
+	}
+
+	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
+	CBaseEntity* pOther = gamehelpers->ReferenceToEntity(atoi(args[1]));
+	entities::HBaseEntity ent(pOther);
+
+	if (!pOther)
+	{
+		Msg("%s is not a valid entity index! \n", args[1]);
+		return;
+	}
+
+	auto tstart = std::chrono::high_resolution_clock::now();
+	std::array<byte, MAX_MAP_CLUSTERS / 8> pvs;
+	std::fill(std::begin(pvs), std::end(pvs), 0);
+	Vector center = UtilHelpers::getWorldSpaceCenter(pOther);
+	Vector origin = host.GetEyeOrigin();
+	engine->ResetPVS(pvs.data(), static_cast<int>(pvs.size()));
+	engine->AddOriginToPVS(origin);
+	int clusterIndex = engine->GetClusterForOrigin(center);
+	bool inPVS = engine->CheckOriginInPVS(center, pvs.data(), static_cast<int>(pvs.size()));
+	auto tend = std::chrono::high_resolution_clock::now();
+
+	const std::chrono::duration<double, std::milli> millis = (tend - tstart);
+
+	META_CONPRINTF("PVS took %f ms.\n", millis.count());
+
+	
+	tstart = std::chrono::high_resolution_clock::now();
+	trace_t tr;
+	trace::CTraceFilterNoNPCsOrPlayers filter(pOther, COLLISION_GROUP_NONE);
+
+	trace::line(origin, ent.EyePosition(), MASK_VISIBLE, &filter, tr);
+
+	if (tr.DidHit())
+	{
+		trace::line(origin, ent.WorldSpaceCenter(), MASK_VISIBLE, &filter, tr);
+
+		if (tr.DidHit())
+		{
+			trace::line(origin, ent.GetAbsOrigin(), MASK_VISIBLE, &filter, tr);
+		}
+	}
+
+	bool vis = tr.fraction >= 1.0f && !tr.startsolid;
+
+	tend = std::chrono::high_resolution_clock::now();
+
+	const std::chrono::duration<double, std::milli> millis2 = (tend - tstart);
+
+	META_CONPRINTF("Trace took %f ms.\n", millis2.count());
+
+	Msg("inPVS = %s \n", inPVS ? "TRUE" : "FALSE");
+	Msg("VIS = %s \n", vis ? "TRUE" : "FALSE");
+}
+
 #endif // EXT_DEBUG

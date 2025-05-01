@@ -19,7 +19,7 @@ public:
 	const char* GetName() const override { return "MainTask"; }
 private:
 
-	bool AimAtEnemyPlayer(CBaseExtPlayer& them, CBlackMesaBot* me, Vector& out, CBotWeapon* weapon, DesiredAimSpot desiredAim, bool isSecondaryAttack);
+	bool AimAtEnemyPlayer(CBaseExtPlayer& them, CBlackMesaBot* me, Vector& out, const CBotWeapon* weapon, DesiredAimSpot desiredAim, bool isSecondaryAttack);
 };
 
 #endif // !NAVBOT_BLACK_MESA_BOT_MAIN_TASK_H_

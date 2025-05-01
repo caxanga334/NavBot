@@ -65,21 +65,21 @@ void IInventory::OnWeaponInfoConfigReloaded()
 
 bool IInventory::HasWeapon(const char* classname)
 {
-	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::shared_ptr<CBotWeapon>& weaponptr) {
+	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->IsValid() && (strcmp(weaponptr->GetClassname().c_str(), classname) == 0);
 	});
 }
 
 bool IInventory::HasWeapon(CBaseEntity* weapon)
 {
-	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&weapon](const std::shared_ptr<CBotWeapon>& weaponptr) {
+	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&weapon](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->GetEntity() == weapon;
 	});
 }
 
 CBaseEntity* IInventory::GetWeaponEntity(const char* classname)
 {
-	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::shared_ptr<CBotWeapon>& weaponptr) {
+	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->IsValid() && (strcmp(weaponptr->GetClassname().c_str(), classname) == 0);
 	});
 
@@ -106,6 +106,7 @@ void IInventory::BuildInventory()
 #endif // EXT_VPROF_ENABLED
 
 	m_weapons.clear();
+	m_cachedActiveWeapon = nullptr;
 
 	// array CHandle<CBaseEntity> weapons[MAX_WEAPONS]
 	CHandle<CBaseEntity>* myweapons = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(GetBot()->GetEntity(), CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_MYWEAPONS);
@@ -451,7 +452,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 	}
 }
 
-std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
+const CBotWeapon* IInventory::GetActiveBotWeapon() const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IInventory::GetActiveBotWeapon", "NavBot");
@@ -476,7 +477,8 @@ std::shared_ptr<CBotWeapon> IInventory::GetActiveBotWeapon()
 	{
 		if (weaponptr->IsValid() && weaponptr->GetEntity() == weapon)
 		{
-			return weaponptr;
+			m_cachedActiveWeapon = weaponptr.get();
+			return weaponptr.get();
 		}
 	}
 

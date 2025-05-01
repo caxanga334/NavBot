@@ -1,12 +1,14 @@
 #ifndef NAVBOT_SENSOR_INTERFACE_H_
 #define NAVBOT_SENSOR_INTERFACE_H_
 
+#include <array>
 #include <vector>
 #include <memory>
 
 #include <sdkports/sdk_timers.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/interfaces/knownentity.h>
+#include <bspfile.h>
 
 // Sensor interface manages the bot perception (vision and hearing)
 class ISensor : public IBotInterface
@@ -14,6 +16,15 @@ class ISensor : public IBotInterface
 public:
 	ISensor(CBaseBot* bot);
 	~ISensor() override;
+
+	static inline std::array<byte, MAX_MAP_CLUSTERS / 8> s_pvs{};
+
+	// Setups PVS for a given bot.
+	static void SetupPVS(CBaseBot* bot);
+	// Tests an origin for PVS.
+	static bool IsInPVS(const Vector& origin);
+	// Tests a bounding box for PVS.
+	static bool IsInPVS(const Vector& mins, const Vector& maxs);
 
 	void OnDifficultyProfileChanged() override;
 

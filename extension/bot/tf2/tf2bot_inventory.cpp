@@ -11,7 +11,3 @@ CTF2BotInventory::~CTF2BotInventory()
 {
 }
 
-std::shared_ptr<CTF2BotWeapon> CTF2BotInventory::GetActiveTFWeapon()
-{
-	return std::static_pointer_cast<CTF2BotWeapon>(IInventory::GetActiveBotWeapon());
-}

@@ -309,7 +309,7 @@ namespace UtilHelpers
 		{
 			edict_t* edict = gamehelpers->EdictOfIndex(i);
 
-			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr || edict->GetUnknown() == nullptr)
+			if (!edict || edict->IsFree() || edict->GetIServerEntity() == nullptr)
 				continue;
 
 			SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(i);

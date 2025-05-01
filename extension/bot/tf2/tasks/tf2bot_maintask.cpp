@@ -125,15 +125,15 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desir
 
 		if (attackFunc->IsBallistic())
 		{
-			AimAtPlayerWithBallisticWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon.get(), attackFunc);
+			AimAtPlayerWithBallisticWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon, attackFunc);
 		}
 		else if (attackFunc->IsProjectile())
 		{
-			AimAtPlayerWithProjectileWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon.get(), attackFunc);
+			AimAtPlayerWithProjectileWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon, attackFunc);
 		}
 		else
 		{
-			AimAtPlayerWithHitScanWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon.get(), attackFunc);
+			AimAtPlayerWithHitScanWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon, attackFunc);
 		}
 	}
 	else

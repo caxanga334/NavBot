@@ -79,6 +79,33 @@ ISensor::~ISensor()
 {
 }
 
+void ISensor::SetupPVS(CBaseBot* bot)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::SetupPVS", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	engine->ResetPVS(ISensor::s_pvs.data(), static_cast<int>(ISensor::s_pvs.size()));
+	engine->AddOriginToPVS(bot->GetEyeOrigin());
+}
+
+bool ISensor::IsInPVS(const Vector& origin)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsInPVS( Point )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	return engine->CheckOriginInPVS(origin, ISensor::s_pvs.data(), static_cast<int>(ISensor::s_pvs.size()));
+}
+
+bool ISensor::IsInPVS(const Vector& mins, const Vector& maxs)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsInPVS( Bounding Box )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+	return engine->CheckBoxInPVS(mins, maxs, ISensor::s_pvs.data(), static_cast<int>(ISensor::s_pvs.size()));
+}
+
 void ISensor::OnDifficultyProfileChanged()
 {
 	auto profile = GetBot()->GetDifficultyProfile();
@@ -693,6 +720,8 @@ void ISensor::UpdateKnownEntities()
 
 	if (cvar_navbot_notarget.GetInt() == 0)
 	{
+		ISensor::SetupPVS(GetBot<CBaseBot>());
+
 		// Vision Update - Phase 1 - Collect entities
 		CollectPlayers(visibleVec);
 
@@ -827,6 +856,11 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 			continue;
 		}
 
+		if (!ISensor::IsInPVS(UtilHelpers::getEntityOrigin(entity)))
+		{
+			continue;
+		}
+
 		if (IsAbleToSee(entity))
 		{
 			visibleVec.push_back(UtilHelpers::BaseEntityToEdict(entity));
@@ -852,6 +886,12 @@ void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
 		CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
 
 		if (IsIgnored(entity)) 
+		{
+			continue;
+		}
+
+		// Use world space center here since the bot may be testing against a brush entity
+		if (!ISensor::IsInPVS(UtilHelpers::getWorldSpaceCenter(edict)))
 		{
 			continue;
 		}

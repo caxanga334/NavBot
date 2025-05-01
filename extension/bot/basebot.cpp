@@ -656,7 +656,7 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	if (!enemy->IsValid())
 		return;
 
-	auto weapon = GetInventoryInterface()->GetActiveBotWeapon();
+	const CBotWeapon* weapon = GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (!weapon || !weapon->IsValid())
 		return;
@@ -670,9 +670,9 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	const float range = GetRangeTo(enemy->GetEdict());
 	bool primary = true; // primary attack by default
 
-	if (CanFireWeapon(weapon.get(), range, true, primary) && HandleWeapon(weapon.get()))
+	if (CanFireWeapon(weapon, range, true, primary) && HandleWeapon(weapon))
 	{
-		if (!AimWeaponAtEnemy(enemy, weapon.get(), doAim, range, primary))
+		if (!AimWeaponAtEnemy(enemy, weapon, doAim, range, primary))
 			return;
 
 		if (doAim && !GetControlInterface()->IsAimOnTarget())
@@ -691,11 +691,11 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	}
 	else
 	{
-		ReloadIfNeeded(weapon.get());
+		ReloadIfNeeded(weapon);
 	}
 }
 
-bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
+bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CBaseBot::CanFireWeapon", "NavBot");
@@ -804,7 +804,7 @@ bool CBaseBot::CanFireWeapon(CBotWeapon* weapon, const float range, const bool a
 	return true;
 }
 
-bool CBaseBot::HandleWeapon(CBotWeapon* weapon)
+bool CBaseBot::HandleWeapon(const CBotWeapon* weapon)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CBaseBot::HandleWeapon", "NavBot");
@@ -824,7 +824,7 @@ bool CBaseBot::HandleWeapon(CBotWeapon* weapon)
 	return true;
 }
 
-void CBaseBot::ReloadIfNeeded(CBotWeapon* weapon)
+void CBaseBot::ReloadIfNeeded(const CBotWeapon* weapon)
 {
 	// Most mods only needs to reload the primary ammo
 
@@ -848,7 +848,7 @@ void CBaseBot::ReloadIfNeeded(CBotWeapon* weapon)
 	}
 }
 
-bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary)
+bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CBaseBot::AimWeaponAtEnemy", "NavBot");

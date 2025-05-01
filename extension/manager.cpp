@@ -312,6 +312,10 @@ CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
 
 bool CExtManager::IsNavBot(const int client) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CExtManager::IsNavBot", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	for (auto& botptr : m_bots)
 	{
 		if (botptr.get()->GetIndex() == client)
@@ -544,11 +548,19 @@ void CExtManager::UpdateBotQuota()
 	int humans = 0;
 	int navbots = 0;
 	int otherbots = 0;
+	const CBaseMod* mod = m_mod.get();
+	std::array<bool, ABSOLUTE_PLAYER_LIMIT + 1> isnavbot;
+	std::fill(std::begin(isnavbot), std::end(isnavbot), false);
 
-	UtilHelpers::ForEachPlayer([this, &humans, &navbots, &otherbots](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
+	for (auto& ptr : m_bots)
+	{
+		isnavbot[ptr->GetIndex()] = true;
+	}
+
+	UtilHelpers::ForEachPlayer([&mod, &humans, &navbots, &otherbots, &isnavbot](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 		if (player->IsInGame())
 		{
-			if (m_mod->BotQuotaIsClientIgnored(client, entity, player))
+			if (mod->BotQuotaIsClientIgnored(client, entity, player))
 			{
 				return;
 			}
@@ -561,7 +573,7 @@ void CExtManager::UpdateBotQuota()
 
 			if (player->IsFakeClient())
 			{
-				if (IsNavBot(client))
+				if (isnavbot[client])
 				{
 					++navbots;
 				}

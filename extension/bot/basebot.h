@@ -243,7 +243,7 @@ public:
 	 * @brief If the bot was unable to fire their weapon, this function will be called to handle a possible need for reloads.
 	 * @param weapon Weapon that the bot was unable to fire.
 	 */
-	virtual void ReloadIfNeeded(CBotWeapon* weapon);
+	virtual void ReloadIfNeeded(const CBotWeapon* weapon);
 
 	const CNavPrerequisite* GetLastUsedPrerequisite() const { return m_lastPrerequisite; }
 	void SetLastUsedPrerequisite(const CNavPrerequisite* prereq) { m_lastPrerequisite = prereq; m_clearLastPrerequisiteTimer.Start(60.0f); }
@@ -278,13 +278,13 @@ protected:
 	 * @param doPrimary Set to true to perform a primary attack or false for secondary.
 	 * @return true if the bot can fire their weapon. false otherwise.
 	 */
-	virtual bool CanFireWeapon(CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary);
+	virtual bool CanFireWeapon(const CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary);
 	/**
 	 * @brief Called to handle the given weapon.
 	 * @param weapon Weapon that the bot wants to fire.
 	 * @return true if the weapon can be fired, false if not.
 	 */
-	virtual bool HandleWeapon(CBotWeapon* weapon);
+	virtual bool HandleWeapon(const CBotWeapon* weapon);
 	/**
 	 * @brief This function has two purposes:
 	 * 
@@ -298,7 +298,7 @@ protected:
 	 * @param isPrimary True if using primary attack, false if secondary attack.
 	 * @return True if the line of fire is clear. False if not.
 	 */
-	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
+	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
 
 	inline void SetJustFiredMyWeapon(bool v = true) { m_justfiredmyweapon = v; }
 	bool HasJustFiredMyWeapon() const { return m_justfiredmyweapon; }

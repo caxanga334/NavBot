@@ -188,7 +188,7 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 		}
 	}
 
-	std::shared_ptr<CBotWeapon> myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+	const CBotWeapon* myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 	bool move = true;
 
 	// Don't move if the bot can see and the enemy is within attack range.

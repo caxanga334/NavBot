@@ -12,9 +12,11 @@
 
 extern NavAreaVector TheNavAreas;
 
+#if SOURCE_ENGINE == SE_TF2
 ConVar sm_tf_nav_show_path_attributes("sm_tf_nav_show_path_attributes", "0", FCVAR_GAMEDLL, "Shows TF Path Attributes");
 ConVar sm_tf_nav_show_attributes("sm_tf_nav_show_attributes", "0", FCVAR_GAMEDLL, "Shows TF Attributes");
 ConVar sm_tf_nav_show_mvm_attributes("sm_tf_nav_show_mvm_attributes", "0", FCVAR_GAMEDLL, "Shows TF MvM Attributes");
+#endif // SOURCE_ENGINE == SE_TF2
 
 namespace tfnavmeshutils
 {
@@ -271,6 +273,7 @@ void CTFNavMesh::UpdateDebugDraw()
 	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
 		return;
 
+#if SOURCE_ENGINE == SE_TF2
 	FOR_EACH_VEC(TheNavAreas, it)
 	{
 		CTFNavArea* area = static_cast<CTFNavArea*>(TheNavAreas[it]);
@@ -290,5 +293,6 @@ void CTFNavMesh::UpdateDebugDraw()
 			area->Debug_ShowMvMAttributes();
 		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 }
 

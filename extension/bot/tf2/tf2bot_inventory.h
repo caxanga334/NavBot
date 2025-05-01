@@ -10,7 +10,7 @@ public:
 	CTF2BotInventory(CTF2Bot* bot);
 	~CTF2BotInventory();
 
-	std::shared_ptr<CTF2BotWeapon> GetActiveTFWeapon();
+	const CTF2BotWeapon* GetActiveTFWeapon() const { return static_cast<const CTF2BotWeapon*>(IInventory::GetActiveBotWeapon()); }
 
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override { return new CTF2BotWeapon(weapon); }

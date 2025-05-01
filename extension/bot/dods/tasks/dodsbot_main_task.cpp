@@ -61,15 +61,15 @@ Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desi
 		{
 			if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsHitscan())
 			{
-				return botsharedutils::aiming::AimAtPlayerWithHitScan(me, entity, desiredAim, weapon.get(), headbone.data());
+				return botsharedutils::aiming::AimAtPlayerWithHitScan(me, entity, desiredAim, weapon, headbone.data());
 			}
 			else if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
 			{
-				return botsharedutils::aiming::AimAtPlayerWithBallistic(me, entity, desiredAim, weapon.get(), headbone.data());
+				return botsharedutils::aiming::AimAtPlayerWithBallistic(me, entity, desiredAim, weapon, headbone.data());
 			}
 			else if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
 			{
-				return botsharedutils::aiming::AimAtPlayerWithProjectile(me, entity, desiredAim, weapon.get(), headbone.data());
+				return botsharedutils::aiming::AimAtPlayerWithProjectile(me, entity, desiredAim, weapon, headbone.data());
 			}
 		}
 	}

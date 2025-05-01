@@ -14,6 +14,10 @@
 #include "tf2lib.h"
 #include "teamfortress2mod.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #if SOURCE_ENGINE == SE_TF2
 static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
 static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
@@ -239,6 +243,10 @@ void CTeamFortress2Mod::OnForceGameModeConVarChanged(IConVar* var, const char* p
 
 void CTeamFortress2Mod::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	using namespace TeamFortress2;
 
 	if (m_gamemode == GameModeType::GM_PL || m_gamemode == GameModeType::GM_PL_RACE)
@@ -731,6 +739,10 @@ bool CTeamFortress2Mod::DetectPlayerDestruction()
 
 static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress2::TFTeam team, CTeamFortress2Mod* tf2mod)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("FindCaptureTriggerForTrain", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* pTrigger = nullptr;
 
 #ifdef EXT_DEBUG
@@ -875,6 +887,10 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 
 void CTeamFortress2Mod::FindPayloadCarts()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::FindPayloadCarts", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	m_red_payload.Term();
 	m_blu_payload.Term();
 
@@ -952,6 +968,10 @@ void CTeamFortress2Mod::FindPayloadCarts()
 
 void CTeamFortress2Mod::FindControlPoints()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::FindControlPoints", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	for (auto& handle : m_controlpoints)
 	{
 		handle.Term();
@@ -1173,6 +1193,10 @@ bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
 
 bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::ShouldSwitchClass", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 // convar is behind ifdef to prevent registering TF2 convars outside of TF2
 #if SOURCE_ENGINE == SE_TF2
 	std::string classname(sm_navbot_tf_force_class.GetString());
@@ -1189,6 +1213,10 @@ bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 
 TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::SelectAClassForBot", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 #if SOURCE_ENGINE == SE_TF2
 	std::string classname(sm_navbot_tf_force_class.GetString());
 	auto forcedclass = tf2lib::GetClassTypeFromName(classname);
@@ -1322,6 +1350,10 @@ const TeamFortress2::TFObjectiveResource* CTeamFortress2Mod::GetTFObjectiveResou
 
 void CTeamFortress2Mod::CollectControlPointsToAttack(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::CollectControlPointsToAttack", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_objecteResourceEntity.Get() == nullptr)
 	{
 		return;
@@ -1371,6 +1403,10 @@ void CTeamFortress2Mod::CollectControlPointsToAttack(TeamFortress2::TFTeam tftea
 
 void CTeamFortress2Mod::CollectControlPointsToDefend(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::CollectControlPointsToDefend", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_objecteResourceEntity.Get() == nullptr)
 	{
 		return;

@@ -291,10 +291,10 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat)
 {
 	tfentities::HTFBaseEntity patient(m_healTarget.Get());
-	auto myweapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
+	const CTF2BotWeapon* myweapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
 	float moveRange = 150.0f; // default medigun range is around 450
 	
-	if (myweapon.get() != nullptr)
+	if (myweapon)
 	{
 		moveRange = (myweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange() * 0.35f);
 	}

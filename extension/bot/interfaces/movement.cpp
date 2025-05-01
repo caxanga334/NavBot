@@ -1875,7 +1875,7 @@ IMovement::ElevatorState IMovement::EState_CallElevator()
 		bot->GetInventoryInterface()->SelectBestHitscanWeapon();
 		auto weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
-		if (weapon.get() != nullptr)
+		if (weapon)
 		{
 			minrange = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
 		}
@@ -2006,7 +2006,7 @@ IMovement::ElevatorState IMovement::EState_OperateElevator()
 		me->GetInventoryInterface()->SelectBestHitscanWeapon();
 		auto weapon = me->GetInventoryInterface()->GetActiveBotWeapon();
 
-		if (weapon.get() != nullptr)
+		if (weapon)
 		{
 			minrange = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
 		}

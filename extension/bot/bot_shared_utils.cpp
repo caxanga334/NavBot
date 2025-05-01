@@ -329,7 +329,7 @@ bool botsharedutils::FindCoverCollector::ShouldCollect(CNavArea* area)
 
 float botsharedutils::weapons::GetMaxAttackRangeForCurrentlyHeldWeapon(CBaseBot* bot)
 {
-	std::shared_ptr<CBotWeapon> weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (!weapon)
 	{

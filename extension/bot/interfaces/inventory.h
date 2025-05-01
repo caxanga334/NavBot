@@ -102,7 +102,7 @@ public:
 	 */
 	virtual void SelectBestHitscanWeapon(const bool meleeIsHitscan = true);
 	// Gets the CBotWeapon pointer for the bot current active weapon. Can return NULL if the bot doesn't have an active weapon or the current weapon lacks a CBotWeapon.
-	virtual std::shared_ptr<CBotWeapon> GetActiveBotWeapon();
+	virtual const CBotWeapon* GetActiveBotWeapon() const;
 	// Requests the bot inventory to be refreshed
 	virtual void RequestRefresh() { m_updateWeaponsTimer.Invalidate(); }
 	/**
@@ -118,8 +118,8 @@ public:
 	int GetOwnedWeaponCount() const;
 
 protected:
-	std::vector<std::shared_ptr<CBotWeapon>> m_weapons;
-	std::shared_ptr<CBotWeapon> m_cachedActiveWeapon;
+	std::vector<std::unique_ptr<CBotWeapon>> m_weapons;
+	mutable CBotWeapon* m_cachedActiveWeapon;
 	CountdownTimer m_updateWeaponsTimer;
 	CountdownTimer m_weaponSwitchCooldown; // cooldown between weapon switches
 };
