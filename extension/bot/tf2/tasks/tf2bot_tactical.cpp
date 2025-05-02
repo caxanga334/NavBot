@@ -120,15 +120,10 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnInjured(CTF2Bot* bot, co
 	{
 		CBaseEntity* inflictor = info.GetInflictor();
 
-		if (inflictor != nullptr)
+		if (inflictor && !bot->GetSensorInterface()->IsIgnored(inflictor))
 		{
-			int index = gamehelpers->EntityToBCompatRef(inflictor);
-
-			if (index > 0 && index <= MAX_EDICTS)
-			{
-				Vector pos = UtilHelpers::getWorldSpaceCenter(inflictor);
-				bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_DANGER, 2.0f, "Aiming at damage source!");
-			}
+			Vector pos = UtilHelpers::getWorldSpaceCenter(inflictor);
+			bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_DANGER, 2.0f, "Aiming at damage source!");
 		}
 	}
 

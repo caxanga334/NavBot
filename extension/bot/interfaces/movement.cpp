@@ -911,7 +911,11 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 
 bool IMovement::IsOnGround()
 {
-	return GetBot()->GetGroundEntity() != nullptr;
+	// ground ent was not being realiable for some reason.
+	// return GetBot()->GetGroundEntity() != nullptr;
+	int flags = 0;
+	entprops->GetEntProp(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_fFlags", flags);
+	return (flags & FL_ONGROUND);
 }
 
 /**

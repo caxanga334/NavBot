@@ -876,7 +876,7 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		rjseg->how = GO_OFF_MESH_CONNECTION;
 		rjseg->type = AIPath::SEGMENT_BLAST_JUMP;
 
-		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
+		pathinsert.emplace(from, std::move(between), true);
 		pathinsert.emplace(to, std::move(rjseg), false);
 		break;
 	}

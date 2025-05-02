@@ -28,6 +28,24 @@ public:
 	edict_t* GetEdict() const;
 	CBaseEntity* GetEntity() const;
 	int GetIndex() const;
+	/**
+	 * @brief Checks if this weapon is running low on ammo.
+	 * @param owner Bot that owns this weapon.
+	 * @param primaryOnly If true, ignores secondary ammo.
+	 * @param lowThresholdOverride If non zero and positive, overrides the low ammo threshold from the weapon info config.
+	 * @return True if this weapon is running low on ammo, false otherwise.
+	 */
+	bool IsAmmoLow(const CBaseBot* owner, const bool primaryOnly, const int lowThresholdOverride = 0) const;
+	/**
+	 * @brief Checks if this weapon is out of ammo.
+	 * @param owner Bot that owns this weapon.
+	 * @param inClipOnly If true, only checks the weapon clip and ignores reserve ammo.
+	 * @param primaryOnly If true, only checks the primary ammo.
+	 * @return True if out of ammo, false otherwise.
+	 */
+	bool IsOutOfAmmo(const CBaseBot* owner, const bool inClipOnly, const bool primaryOnly) const;
+	// True if this weapon's clip is full. Only checks primary clip ammo.
+	bool IsClipFull() const;
 
 	// Gets the minimum attack range based on the attack type used by the bot
 	virtual float GetCurrentMinimumAttackRange(CBaseBot* owner) const;

@@ -304,6 +304,10 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 
 		break;
 	}
+	case AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP:
+		[[fallthrough]];
+	case AIPath::SEGMENT_BLAST_JUMP:
+		[[fallthrough]];
 	case AIPath::SegmentType::SEGMENT_CLIMB_UP:
 	{
 		auto landing = GetNextSegment(m_goal);
@@ -562,6 +566,20 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 				if (mover->DoubleJumpToLedge(nearClimb, climbDir, nullptr))
 					return true;
+			}
+		}
+		else if (m_goal->type == AIPath::SegmentType::SEGMENT_BLAST_JUMP)
+		{
+			auto seg = GetNextSegment(m_goal);
+
+			if (seg != nullptr)
+			{
+				Vector nearClimb = seg->goal;
+				climbDir = nearClimb - origin;
+				climbDir.z = 0.0f;
+				climbDir.NormalizeInPlace();
+				mover->BlastJumpTo(m_goal->goal, seg->goal, climbDir);
+				return true;
 			}
 		}
 

@@ -170,16 +170,9 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			return;
 		}
 
-		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		if (weapon->IsOutOfAmmo(bot, false, false))
 		{
-			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
-			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
-
-			// Must have ammo
-			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
-			{
-				return;
-			}
+			return;
 		}
 
 		if (rangeToThreat > weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
@@ -251,16 +244,9 @@ void IInventory::SelectBestWeapon()
 			return;
 		}
 
-		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		if (weapon->IsOutOfAmmo(bot, false, false))
 		{
-			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
-			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
-
-			// Must have ammo
-			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
-			{
-				return;
-			}
+			return;
 		}
 
 		int currentprio = weapon->GetWeaponInfo()->GetPriority();
@@ -325,16 +311,9 @@ void IInventory::SelectBestWeaponForBreakables()
 			return;
 		}
 
-		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		if (weapon->IsOutOfAmmo(bot, false, false))
 		{
-			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
-			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
-
-			// Must have ammo
-			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
-			{
-				return;
-			}
+			return;
 		}
 
 		int currentprio = weapon->GetWeaponInfo()->GetPriority();
@@ -414,16 +393,9 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 			return;
 		}
 
-		if (!weapon->GetWeaponInfo()->HasInfiniteAmmo())
+		if (weapon->IsOutOfAmmo(bot, false, false))
 		{
-			int clip1 = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_CLIP1);
-			int primary_ammo_index = entprops->GetCachedData<int>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_PRIMARYAMMOTYPE);
-
-			// Must have ammo
-			if (clip1 == 0 && bot->GetAmmoOfIndex(primary_ammo_index) == 0)
-			{
-				return;
-			}
+			return;
 		}
 
 		int currentprio = weapon->GetWeaponInfo()->GetPriority();
@@ -495,35 +467,14 @@ bool IInventory::IsAmmoLow(const bool heldOnly)
 
 	if (heldOnly)
 	{
-		auto weapon = GetActiveBotWeapon();
+		const CBotWeapon* weapon = GetActiveBotWeapon();
 
 		if (!weapon || !weapon->IsValid())
 		{
 			return false;
 		}
 
-		auto& bcw = weapon->GetBaseCombatWeapon();
-
-		int primaryammotype = bcw.GetPrimaryAmmoType();
-		int secondaryammotype = bcw.GetSecondaryAmmoType();
-		int lowprimary = weapon->GetWeaponInfo()->GetLowPrimaryAmmoThreshold();
-		int lowsecondary = weapon->GetWeaponInfo()->GetLowSecondaryAmmoThreshold();
-
-		if (primaryammotype > 0)
-		{
-			if (me->GetAmmoOfIndex(primaryammotype) <= lowprimary)
-			{
-				return true;
-			}
-		}
-
-		if (secondaryammotype > 0)
-		{
-			if (me->GetAmmoOfIndex(secondaryammotype) <= lowsecondary)
-			{
-				return true;
-			}
-		}
+		return weapon->IsAmmoLow(me, false);
 	}
 	else
 	{
@@ -534,27 +485,9 @@ bool IInventory::IsAmmoLow(const bool heldOnly)
 				continue;
 			}
 
-			auto& bcw = weapon->GetBaseCombatWeapon();
-
-			int primaryammotype = bcw.GetPrimaryAmmoType();
-			int secondaryammotype = bcw.GetSecondaryAmmoType();
-			int lowprimary = weapon->GetWeaponInfo()->GetLowPrimaryAmmoThreshold();
-			int lowsecondary = weapon->GetWeaponInfo()->GetLowSecondaryAmmoThreshold();
-
-			if (primaryammotype > 0)
+			if (weapon->IsAmmoLow(me, false))
 			{
-				if (me->GetAmmoOfIndex(primaryammotype) <= lowprimary)
-				{
-					return true;
-				}
-			}
-
-			if (secondaryammotype > 0)
-			{
-				if (me->GetAmmoOfIndex(secondaryammotype) <= lowsecondary)
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 	}

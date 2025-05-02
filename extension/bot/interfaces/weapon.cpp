@@ -1,4 +1,5 @@
 #include <limits>
+#include <algorithm>
 
 #include <extension.h>
 #include <manager.h>
@@ -45,6 +46,148 @@ CBaseEntity* CBotWeapon::GetEntity() const
 int CBotWeapon::GetIndex() const
 {
 	return gamehelpers->EntityToBCompatRef(m_handle.Get());
+}
+
+bool CBotWeapon::IsAmmoLow(const CBaseBot* owner, const bool primaryOnly, const int lowThresholdOverride) const
+{
+	// Also consider melee primary as infinite ammo weapons
+	if (m_info->HasInfiniteAmmo() || m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	{
+		return false;
+	}
+
+	bool low = false;
+	int ammo = 0;
+	int limit = 0;
+
+	if (lowThresholdOverride > 0)
+	{
+		limit = lowThresholdOverride;
+	}
+	else
+	{
+		limit = m_info->GetLowPrimaryAmmoThreshold();
+	}
+
+	if (!m_info->Clip1IsReserveAmmo())
+	{
+		ammo += m_bcw.GetClip1();
+	}
+
+	int type = m_bcw.GetPrimaryAmmoType();
+
+	if (type >= 0 && type < MAX_AMMO_TYPES)
+	{
+		ammo += owner->GetAmmoOfIndex(type);
+	}
+
+	if (ammo <= limit)
+	{
+		return true;
+	}
+
+	if (!primaryOnly)
+	{
+		if (lowThresholdOverride > 0)
+		{
+			limit = lowThresholdOverride;
+		}
+		else
+		{
+			limit = m_info->GetLowSecondaryAmmoThreshold();
+		}
+
+		ammo = 0;
+
+		if (!m_info->Clip2IsReserveAmmo())
+		{
+			ammo += m_bcw.GetClip2();
+		}
+
+		type = m_bcw.GetSecondaryAmmoType();
+
+		if (type >= 0 && type < MAX_AMMO_TYPES)
+		{
+			ammo += owner->GetAmmoOfIndex(type);
+		}
+
+		if (ammo <= limit)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner, const bool inClipOnly, const bool primaryOnly) const
+{
+	// Also consider melee primary as infinite ammo weapons
+	if (m_info->HasInfiniteAmmo() || m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	{
+		return false;
+	}
+
+	bool low = false;
+	int ammo = 0;
+	int type = -1;
+
+	if (!m_info->Clip1IsReserveAmmo())
+	{
+		ammo += m_bcw.GetClip1();
+	}
+
+	if (!inClipOnly || m_info->Clip1IsReserveAmmo())
+	{
+		type = m_bcw.GetPrimaryAmmoType();
+
+		if (type >= 0 && type < MAX_AMMO_TYPES)
+		{
+			ammo += owner->GetAmmoOfIndex(type);
+		}
+	}
+
+	if (ammo <= 0)
+	{
+		return true;
+	}
+
+	if (!primaryOnly)
+	{
+		ammo = 0;
+
+		if (!m_info->Clip2IsReserveAmmo())
+		{
+			ammo += m_bcw.GetClip2();
+		}
+
+		if (!inClipOnly || m_info->Clip2IsReserveAmmo())
+		{
+			type = m_bcw.GetSecondaryAmmoType();
+
+			if (type >= 0 && type < MAX_AMMO_TYPES)
+			{
+				ammo += owner->GetAmmoOfIndex(type);
+			}
+		}
+
+		if (ammo <= 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CBotWeapon::IsClipFull() const
+{
+	if (m_info->HasMaxClip1())
+	{
+		return m_bcw.GetClip1() >= m_info->GetMaxClip1();
+	}
+
+	return true;
 }
 
 float CBotWeapon::GetCurrentMinimumAttackRange(CBaseBot* owner) const

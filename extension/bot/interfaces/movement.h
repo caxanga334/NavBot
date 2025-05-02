@@ -243,7 +243,7 @@ public:
 	 * Returning true will stop bots from firing their weapons at their enemies. False to allow normal behavior.
 	 * @return True if the bot should let the movement interface control the weapons. False otherwise.
 	 */
-	virtual bool NeedsWeaponControl() { return m_isBreakingObstacle; }
+	virtual bool NeedsWeaponControl() const { return m_isBreakingObstacle; }
 	virtual float GetMinimumMovementSpeed() { return m_maxspeed * 0.4f; }
 	virtual bool IsClimbingOrJumping();
 	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
