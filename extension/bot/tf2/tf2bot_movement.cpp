@@ -265,6 +265,8 @@ bool CTF2BotMovement::DoRocketJumpAim()
 
 #if SOURCE_ENGINE == SE_TF2
 	return me->IsLookingTowards(goal, cvar_rj_dot.GetFloat());
+#else
+	return me->IsLookingTowards(goal, 0.060f);
 #endif // SOURCE_ENGINE == SE_TF2
 }
 
