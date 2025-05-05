@@ -121,6 +121,7 @@ namespace botsharedutils
 		 */
 		FindCoverCollector(const Vector& fromSpot, const float radius, const bool checkLOS, const bool checkCorners, const float maxSearchRange, const Vector& origin);
 
+		bool ShouldSearch(CNavArea* area) override;
 		bool ShouldCollect(CNavArea* area) override;
 
 	private:

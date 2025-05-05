@@ -286,6 +286,11 @@ public:
 	void Hook_GameFrame(bool simulating); // Post hook
 	void Hook_ClientCommand(edict_t* pEntity, const CCommand& args);
 
+#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
+	void Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues);
+#endif // EXT_DEBUG
+
+
 	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
 	// True if we should SourceHook CBasePlayer::PlayerRunCommand
 	bool ShouldHookRunPlayerCommand() const { return m_hookruncmd; }

@@ -268,6 +268,16 @@ botsharedutils::FindCoverCollector::FindCoverCollector(const Vector& fromSpot, c
 	SetSearchElevators(false); // too slow for cover
 }
 
+bool botsharedutils::FindCoverCollector::ShouldSearch(CNavArea* area)
+{
+	if (m_bot)
+	{
+		return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
+	}
+
+	return true;
+}
+
 bool botsharedutils::FindCoverCollector::ShouldCollect(CNavArea* area)
 {
 	if (m_bot)

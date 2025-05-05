@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <extension.h>
 #include <tier1/KeyValues.h>
 #include <mods/tf2/teamfortress2_shareddefs.h>
@@ -418,5 +420,18 @@ TF2BotUpgrade_t* CTF2BotUpgradeManager::GetOrCreateUpgradeData(const MvMUpgrade_
 
 	auto& newdata = m_boughtlist.emplace_back(upgrade);
 	return &newdata;
+}
+
+const bool CTF2BotUpgradeManager::HasBoughtUpgrade(const char* upgrade) const
+{
+	for (auto& data : m_boughtlist)
+	{
+		if (std::strcmp(upgrade, data.upgrade->attribute.c_str()) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 

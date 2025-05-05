@@ -123,18 +123,11 @@ private:
 	QAngle m_snapToAngles;
 	IntervalTimer m_steadyTimer; // Aim stability timer
 	float m_aimSpeed;
-
-	/* Aim Error Vars */
-	CHandle<CBaseEntity> m_lastlookent; // last entity tracked by the aim error system
-	IntervalTimer m_aimerrorintervaltime; // time the bot started to track the target
-	CountdownTimer m_aimlockintimer; // aim lock in time (zero error)
-	float m_currentAimError; // current aim error
+	CountdownTimer m_trackingUpdateTimer; // Timer for tracking entities
 
 	IDecisionQuery::DesiredAimSpot m_desiredAimSpot;
 	std::string m_desiredAimBone; // bone name
 	Vector m_desiredAimOffset; // offset for aim by offset
-
-	void UpdateAimError();
 };
 
 inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)

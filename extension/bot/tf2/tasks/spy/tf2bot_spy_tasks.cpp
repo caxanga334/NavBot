@@ -13,6 +13,8 @@
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
+#include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
+#include "tf2bot_spy_mvm_tasks.h"
 #include "tf2bot_spy_tasks.h"
 
 class TF2SpyLurkAreaCollector : public INavAreaCollector<CTFNavArea>
@@ -72,6 +74,7 @@ CTF2BotSpyInfiltrateTask::CTF2BotSpyInfiltrateTask() :
 	m_goal(0.0f, 0.0f, 0.0f)
 {
 	m_cloakMeter = nullptr;
+	m_isMvM = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM;
 }
 
 TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -102,7 +105,19 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else
 		{
-			return PauseFor(new CTF2BotSpyAttackTask(entity), "Visible enemy, going for the stab.");
+			if (UtilHelpers::IsPlayer(entity))
+			{
+				if (m_isMvM && CTF2BotSpySapMvMRobotTask::IsPossible(bot))
+				{
+					return PauseFor(new CTF2BotSpySapMvMRobotTask(entity), "Going to sap MvM Robot!");
+				}
+
+				return PauseFor(new CTF2BotSpyAttackTask(entity), "Visible enemy, going for the stab.");
+			}
+			else
+			{
+				return PauseFor(new CBotSharedPursueAndDestroyTask<CTF2Bot, CTF2BotPathCost>(bot, entity), "Visible enemy, attacking!");
+			}
 		}
 	}
 
@@ -455,7 +470,7 @@ TaskResult<CTF2Bot> CTF2BotSpyAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	if (!threat || threat->IsObsolete())
+	if (!threat || threat->IsObsolete() || !UtilHelpers::IsPlayer(threat->GetEntity()))
 	{
 		return Done("Victim is obsolete!");
 	}

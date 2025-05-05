@@ -5,6 +5,8 @@
 #include <mods/tf2/nav/tfnavmesh.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/interfaces/path/chasenavigator.h>
+#include <bot/tf2/tasks/engineer/tf2bot_engineer_dodge_sentry_buster.h>
 #include <bot/tf2/tasks/tf2bot_scenario_task.h>
 #include "tf2bot_mvm_idle.h"
 #include "tf2bot_mvm_defend.h"
@@ -26,6 +28,7 @@ AITask<CTF2Bot>* CTF2BotMvMMonitorTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotMvMMonitorTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	m_myclass = bot->GetMyClassType();
 	return Continue();
 }
 
@@ -89,6 +92,23 @@ TaskResult<CTF2Bot> CTF2BotMvMMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 			if (!bot->TournamentIsReady() && tf2lib::MVM_ShouldBotsReadyUp())
 			{
 				bot->ToggleTournamentReadyStatus(true);
+			}
+		}
+	}
+	else
+	{
+		if (m_myclass == TeamFortress2::TFClass_Engineer)
+		{
+			if (m_engineerSBTimer.IsElapsed())
+			{
+				m_engineerSBTimer.StartRandom();
+
+				CBaseEntity* buster = nullptr;
+
+				if (CTF2BotEngineerMvMDodgeSentryBusterTask::IsPossible(bot, &buster))
+				{
+					return PauseFor(new CTF2BotEngineerMvMDodgeSentryBusterTask(buster), "Dodging sentry buster!");
+				}
 			}
 		}
 	}

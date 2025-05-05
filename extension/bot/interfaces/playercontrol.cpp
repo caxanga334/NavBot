@@ -30,10 +30,6 @@ IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlaye
 	m_snapToAngles = vec3_angle;
 	m_steadyTimer.Invalidate();
 	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
-	m_lastlookent = nullptr;
-	m_aimerrorintervaltime.Invalidate();
-	m_aimlockintimer.Invalidate();
-	m_currentAimError = 0.0f;
 	m_desiredAimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 	m_desiredAimBone.reserve(32);
 	m_desiredAimOffset.Init();
@@ -64,10 +60,7 @@ void IPlayerController::Reset()
 	m_snapToAngles = vec3_angle;
 	m_steadyTimer.Invalidate();
 	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
-	m_lastlookent = nullptr;
-	m_aimerrorintervaltime.Invalidate();
-	m_aimlockintimer.Invalidate();
-	m_currentAimError = 0.0f;
+	m_trackingUpdateTimer.Invalidate();
 	m_desiredAimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 	m_desiredAimBone.clear();
 	m_desiredAimOffset.Init();
@@ -162,20 +155,10 @@ void IPlayerController::RunLook()
 
 		if (pEntity)
 		{
-			m_looktarget = GetBot<CBaseBot>()->GetBehaviorInterface()->GetTargetAimPos(GetBot(), pEntity, m_desiredAimSpot);
-			UpdateAimError();
-
-			// if it's elapsed, the bot has locked in (no aim error)
-			if (!m_aimlockintimer.IsElapsed())
+			if (m_trackingUpdateTimer.IsElapsed())
 			{
-				entities::HBaseEntity be(pEntity);
-				Vector targetvel = be.GetAbsVelocity();
-
-				if (targetvel.Length() > me->GetDifficultyProfile()->GetAimMinSpeedForError())
-				{
-					// apply error
-					m_looktarget = (m_looktarget + targetvel * m_currentAimError);
-				}
+				m_looktarget = GetBot<CBaseBot>()->GetBehaviorInterface()->GetTargetAimPos(GetBot<CBaseBot>(), pEntity, m_desiredAimSpot);
+				m_trackingUpdateTimer.Start(GetBot<CBaseBot>()->GetDifficultyProfile()->GetAimTrackingInterval());
 			}
 		}
 	}
@@ -226,49 +209,6 @@ void IPlayerController::RunLook()
 
 	// Updates the bot view angle, this is later sent on the User Command
 	me->SetViewAngles(finalAngles);
-}
-
-void IPlayerController::UpdateAimError()
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("IPlayerController::UpdateAimError", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	CBaseBot* me = GetBot();
-
-	if (me->GetDifficultyProfile()->GetAimLockInTime() < 0.02f)
-	{
-		m_currentAimError = 0.0f;
-		m_aimlockintimer.Invalidate();
-		return;
-	}
-
-	CBaseEntity* last = m_lastlookent.Get();
-	CBaseEntity* current = m_lookentity.Get();
-
-	if (last != current || m_aimerrorintervaltime.IsGreaterThen(me->GetDifficultyProfile()->GetAimLockInTime()))
-	{
-		// new target, recalculate error
-		float errorvar = me->GetDifficultyProfile()->GetAimMovingError();
-		m_currentAimError = randomgen->GetRandomReal<float>((errorvar * -1.0f), errorvar);
-		m_aimlockintimer.Start(me->GetDifficultyProfile()->GetAimLockInTime());
-		m_lastlookent = current;
-
-		if (me->IsDebugging(BOTDEBUG_LOOK))
-		{
-			me->DebugPrintToConsole(230, 230, 250, "%s Aim Error: New Target! Current Error: %3.4f (%3.4f - %3.4f)\n", me->GetDebugIdentifier(), 
-				m_currentAimError, (errorvar * -1.0f), errorvar);
-		}
-	}
-	else
-	{
-		if (m_aimlockintimer.IsElapsed())
-		{
-			m_currentAimError = 0.0f;
-		}
-	}
-
-	m_aimerrorintervaltime.Start();
 }
 
 void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason)

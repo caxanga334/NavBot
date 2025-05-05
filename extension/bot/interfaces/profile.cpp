@@ -252,23 +252,11 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		bool allow = UtilHelpers::StringToBoolean(value);
 		m_current->SetAllowHeadshots(allow);
 	}
-	else if (strncasecmp(key, "aim_lockin_time", 15) == 0)
+	else if (strncasecmp(key, "aim_tracking_interval", 21) == 0)
 	{
 		float v = atof(value);
-		v = std::clamp(v, 0.0f, 2.0f);
-		m_current->SetAimLockInTime(v);
-	}
-	else if (strncasecmp(key, "aim_moving_error", 16) == 0)
-	{
-		float v = atof(value);
-		v = std::clamp(v, 0.0f, 0.5f);
-		m_current->SetAimMovingError(v);
-	}
-	else if (strncasecmp(key, "aim_minspeed_for_error", 22) == 0)
-	{
-		float v = atof(value);
-		v = std::clamp(v, -1.0f, 3000.0f);
-		m_current->SetAimMinSpeedForError(v);
+		v = std::clamp(v, 0.0f, 1.0f);
+		m_current->SetAimTrackingInterval(v);
 	}
 	else if (strncasecmp(key, "aggressiveness", 14) == 0)
 	{

@@ -30,6 +30,7 @@
  */
 
 #include <filesystem>
+#include <string>
 
 #include "extension.h"
 #include "manager.h"
@@ -41,6 +42,10 @@
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
+
+#if defined(EXT_DEBUG)
+#include <tier1/KeyValues.h>
+#endif // defined(EXT_DEBUG)
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
@@ -87,10 +92,21 @@ NavBotExt g_NavBotExt;		/**< Global singleton for extension's main interface */
 
 ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
 
+#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
+static ConVar cvar_dump_kv_cmds("sm_navbot_debug_dump_kv_commands", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, prints keyvalue commands sent by clients into the console.");
+#endif // defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
+
+
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*, const CCommand&);
+
+#ifdef EXT_DEBUG
+
+SH_DECL_HOOK2_void(IServerGameClients, ClientCommandKeyValues, SH_NOATTRIB, 0, edict_t*, KeyValues*);
+
+#endif // EXT_DEBUG
 
 // SDKs that requires a runplayercommand hook
 
@@ -365,12 +381,29 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), true);
 	SH_ADD_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
 
+#ifdef EXT_DEBUG
+
+#if SOURCE_ENGINE >= SE_EYE
+	SH_ADD_HOOK(IServerGameClients, ClientCommandKeyValues, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommandKeyValues), true);
+#endif // SOURCE_ENGINE >= SE_EYE
+
+#endif // EXT_DEBUG
+
 	return true;
 }
 
 bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 {
 	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), false);
+	SH_REMOVE_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
+
+#ifdef EXT_DEBUG
+
+#if SOURCE_ENGINE >= SE_EYE
+	SH_REMOVE_HOOK(IServerGameClients, ClientCommandKeyValues, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommandKeyValues), true);
+#endif // SOURCE_ENGINE >= SE_EYE
+
+#endif // EXT_DEBUG
 
 	return true;
 }
@@ -438,4 +471,16 @@ void NavBotExt::Hook_ClientCommand(edict_t* pEntity, const CCommand& args)
 
 	RETURN_META(MRES_IGNORED);
 }
+
+#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
+void NavBotExt::Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues)
+{
+	if (cvar_dump_kv_cmds.GetBool())
+	{
+		KeyValuesDumpAsDevMsg(pKeyValues);
+	}
+
+	RETURN_META(MRES_IGNORED);
+}
+#endif // EXT_DEBUG
 

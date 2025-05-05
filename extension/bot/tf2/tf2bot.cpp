@@ -539,6 +539,7 @@ void CTF2Bot::SelectNewClass()
 
 		if (TeamFortress2::IsValidTFClass(tfclass) && tfclass != GetMyClassType())
 		{
+			m_upgrademan.DoRefund();
 			JoinClass(tfclass);
 		}
 	}

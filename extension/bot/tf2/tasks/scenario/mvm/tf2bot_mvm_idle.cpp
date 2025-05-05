@@ -9,9 +9,11 @@
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
+#include <bot/tf2/tasks/medic/tf2bot_medic_mvm_build_uber_task.h>
 #include "tf2bot_mvm_upgrade.h"
 #include "tf2bot_mvm_idle.h"
 #include "tf2bot_mvm_tasks.h"
+
 
 class CTF2BotMvMIdleSelectRandomFrontlineArea
 {
@@ -105,9 +107,13 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 			// Buy upgrades
 			return PauseFor(new CTF2BotMvMUpgradeTask, "Going to use an upgrade station!");
 		}
-		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer || bot->GetMyClassType() == TeamFortress2::TFClass_Medic)
+		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer)
 		{
 			return Done("Done upgrading, returning to class behavior!");
+		}
+		else if (bot->GetMyClassType() == TeamFortress2::TFClass_Medic)
+		{
+			return SwitchTo(new CTF2BotMedicMvMBuildUberTask, "Going to build my uber charge!");
 		}
 
 		if (m_readyCheck.IsElapsed())

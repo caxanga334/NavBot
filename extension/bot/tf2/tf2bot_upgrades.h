@@ -87,6 +87,7 @@ public:
 	const bool IsDoneForCurrentWave() const { return m_state == STATE_DONE; }
 	const bool IsManagerReady() const { return m_state >= STATE_REFUND; }
 	BuyUpgradeState GetState() const { return m_state; }
+	const bool HasBoughtUpgrade(const char* upgrade) const;
 
 private:
 	CTF2Bot* m_me;

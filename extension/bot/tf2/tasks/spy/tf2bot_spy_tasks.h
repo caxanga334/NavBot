@@ -34,6 +34,7 @@ private:
 	CountdownTimer m_lookAround;
 	float* m_cloakMeter;
 	std::vector<Vector> m_aimSpots;
+	bool m_isMvM;
 
 	void DisguiseMe(CTF2Bot* me);
 

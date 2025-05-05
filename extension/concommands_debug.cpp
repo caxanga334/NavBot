@@ -1054,4 +1054,19 @@ CON_COMMAND(sm_navbot_debug_vis, "Visibility debug")
 	Msg("VIS = %s \n", vis ? "TRUE" : "FALSE");
 }
 
+CON_COMMAND(sm_navbot_debug_dump_player_models, "Dump the models of every player.")
+{
+	UtilHelpers::ForEachPlayer([](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (player->IsInGame())
+		{
+			const char* model = STRING(entity->GetIServerEntity()->GetModelName());
+
+			if (model)
+			{
+				META_CONPRINTF("Player %s #%i model %s \n", player->GetName(), client, model);
+			}
+		}
+	});
+}
+
 #endif // EXT_DEBUG

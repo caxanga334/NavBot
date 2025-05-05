@@ -24,9 +24,7 @@ public:
 		minrecognitiontime = 0.350f;
 		predict_projectiles = false;
 		allow_headshots = false;
-		aim_lockin_time = 0.3f;
-		aim_moving_error = 0.2f;
-		aim_minspeed_for_error = 250.0f;
+		aim_tracking_interval = 0.25f;
 		aggressiveness = 20;
 		teamwork = 20;
 	}
@@ -44,9 +42,7 @@ public:
 	inline const float GetMinRecognitionTime() const { return minrecognitiontime; }
 	inline const bool ShouldPredictProjectiles() const { return predict_projectiles; }
 	inline const bool IsAllowedToHeadshot() const { return allow_headshots; }
-	inline const float GetAimLockInTime() const { return aim_lockin_time; }
-	inline const float GetAimMovingError() const { return aim_moving_error; }
-	inline const float GetAimMinSpeedForError() const { return aim_minspeed_for_error; }
+	inline const float GetAimTrackingInterval() const { return aim_tracking_interval; }
 	inline const int GetAggressiveness() const { return aggressiveness; }
 	inline const int GetTeamwork() const { return teamwork; }
 
@@ -59,9 +55,7 @@ public:
 	inline void SetMinRecognitionTime(const float time) { minrecognitiontime = time; }
 	inline void SetPredictProjectiles(const bool v) { predict_projectiles = v; }
 	inline void SetAllowHeadshots(const bool v) { allow_headshots = v; }
-	inline void SetAimLockInTime(const float time) { aim_lockin_time = time; }
-	inline void SetAimMovingError(const float error) { aim_moving_error = error; }
-	inline void SetAimMinSpeedForError(const float speed) { aim_minspeed_for_error = speed; }
+	inline void SetAimTrackingInterval(const float v) { aim_tracking_interval = v; }
 	inline void SetAggressiveness(const int v) { aggressiveness = v; }
 	inline void SetTeamwork(const int v) { teamwork = v; }
 
@@ -75,9 +69,7 @@ private:
 	float minrecognitiontime; // minimum time for the bot to recognize an entity
 	bool predict_projectiles; // if true, bot will lead their targets with projectile weapons
 	bool allow_headshots; // Allow going for headshots
-	float aim_lockin_time; // Time in seconds until the bot aim 'locks' into the target
-	float aim_moving_error; // Aim position error for moving targets
-	float aim_minspeed_for_error; // if the target speed is greater than this, apply error.
+	float aim_tracking_interval; // Interval between aim target position updates
 	int aggressiveness; // How aggressive will this bot play
 	int teamwork; // How likely this bot will cooperate with teammates
 };
