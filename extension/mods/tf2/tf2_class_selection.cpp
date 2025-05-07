@@ -48,6 +48,7 @@ void CTF2ClassSelection::LoadClassSelectionData()
 TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTeam team, ClassRosterType roster) const
 {
 	std::vector<TeamFortress2::TFClassType> available_classes;
+	std::vector<TeamFortress2::TFClassType> priority_classes;
 	available_classes.reserve(9);
 	bool has_priority = false; // signals priority
 
@@ -72,7 +73,7 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		{
 			// number of players as class below minimum, priorize!
 			has_priority = true;
-			available_classes.push_back(current_class);
+			priority_classes.push_back(current_class);
 			continue;
 		}
 
@@ -80,7 +81,7 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		{
 			// number of players as class below minimum based on per player class rate, priorize!
 			has_priority = true;
-			available_classes.push_back(current_class);
+			priority_classes.push_back(current_class);
 			continue;
 		}
 
@@ -91,14 +92,19 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		available_classes.push_back(current_class);
 	}
 
-	if (available_classes.size() == 0)
+	if (!priority_classes.empty())
+	{
+		available_classes.swap(priority_classes);
+	}
+
+	if (available_classes.empty())
 	{
 		return TeamFortress2::TFClassType::TFClass_Unknown;
 	}
 
 #ifdef EXT_DEBUG
 	rootconsole->ConsolePrint("Available Classes");
-	rootconsole->ConsolePrint("Team %i Roster %i", static_cast<int>(team), static_cast<int>(roster));
+	rootconsole->ConsolePrint("Team %i Roster %i Priority %s", static_cast<int>(team), static_cast<int>(roster), has_priority ? "YES" : "NO");
 	rootconsole->ConsolePrint("-----------------");
 	for (auto& cls : available_classes)
 	{
@@ -140,6 +146,29 @@ bool CTF2ClassSelection::IsClassAboveLimit(TeamFortress2::TFClassType tfclass, T
 		}
 
 		if (data.GetTeamSize() > 0 && onteam < data.GetTeamSize())
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CTF2ClassSelection::AnyPriorityClass(TeamFortress2::TFTeam team, ClassRosterType roster) const
+{
+	for (int i = 0; i < static_cast<int>(TeamFortress2::TFClassType::TFClass_Engineer); i++)
+	{
+		const auto& data = m_classdata[static_cast<int>(roster)][i];
+		TeamFortress2::TFClassType current_class = static_cast<TeamFortress2::TFClassType>(i + 1);
+		int onteam = UtilHelpers::GetNumberofPlayersOnTeam(static_cast<int>(team));
+		int asclass = tf2lib::GetNumberOfPlayersAsClass(current_class, team);
+		
+		if (data.HasMinimum() && asclass < data.GetMinimum())
+		{
+			return true;
+		}
+
+		if (data.HasRate() && asclass < data.GetMinimumForRate(onteam))
 		{
 			return true;
 		}

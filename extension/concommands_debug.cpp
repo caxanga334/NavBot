@@ -1069,4 +1069,22 @@ CON_COMMAND(sm_navbot_debug_dump_player_models, "Dump the models of every player
 	});
 }
 
+CON_COMMAND(sm_navbot_debug_touching, "List entities you're touching.")
+{
+	edict_t* player = gamehelpers->EdictOfIndex(1);
+
+	Vector mins = player->GetCollideable()->OBBMins() + player->GetCollideable()->GetCollisionOrigin();
+	Vector maxs = player->GetCollideable()->OBBMaxs() + player->GetCollideable()->GetCollisionOrigin();
+
+	UtilHelpers::CEntityEnumerator enumerator;
+	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
+
+	enumerator.ForEach([](CBaseEntity* entity) -> bool {
+
+		META_CONPRINTF("Touching %s \n", gamehelpers->GetEntityClassname(entity));
+
+		return true;
+	});
+}
+
 #endif // EXT_DEBUG

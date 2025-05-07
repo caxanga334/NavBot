@@ -75,16 +75,16 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	UpdateMovePosition(bot, threat);
 	EquipMedigun(bot);
 
-	Vector center = UtilHelpers::getWorldSpaceCenter(patient);
-	bot->GetControlInterface()->AimAt(center, IPlayerController::LOOK_SUPPORT, 0.2f, "Looking at patient to heal them!");
+	bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
+	bot->GetControlInterface()->AimAt(patient, IPlayerController::LOOK_SUPPORT, 0.2f, "Looking at patient to heal them!");
 
-	if (bot->GetControlInterface()->IsAimOnTarget())
+	if (bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(patient)) > 400.0f)
 	{
-		bot->GetControlInterface()->PressAttackButton(0.3f);
+		bot->GetControlInterface()->ReleaseAllAttackButtons();
 	}
 	else
 	{
-		bot->GetControlInterface()->ReleaseAllAttackButtons();
+		bot->GetControlInterface()->PressAttackButton(0.3f);
 	}
 
 	float uber = GetUbercharge(bot);

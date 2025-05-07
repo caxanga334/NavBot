@@ -1208,7 +1208,13 @@ bool CTeamFortress2Mod::ShouldSwitchClass(CTF2Bot* bot) const
 	}
 #endif
 
-	return m_classselector.IsClassAboveLimit(bot->GetMyClassType(), bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam()));
+	if (m_classselector.IsClassAboveLimit(bot->GetMyClassType(), bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam())) ||
+		m_classselector.AnyPriorityClass(bot->GetMyTFTeam(), GetRosterForTeam(bot->GetMyTFTeam())))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 TeamFortress2::TFClassType CTeamFortress2Mod::SelectAClassForBot(CTF2Bot* bot) const

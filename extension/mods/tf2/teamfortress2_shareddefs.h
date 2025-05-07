@@ -642,11 +642,11 @@ namespace TeamFortress2
 		switch (menu)
 		{
 		case 0:
-			return static_cast<int>(VoiceCommandsID::VC_MENU0START) - index;
+			return static_cast<int>(VoiceCommandsID::VC_MENU0START) + index;
 		case 1:
-			return static_cast<int>(VoiceCommandsID::VC_MENU1START) - index;
+			return static_cast<int>(VoiceCommandsID::VC_MENU1START) + index;
 		case 2:
-			return static_cast<int>(VoiceCommandsID::VC_MENU2START) - index;
+			return static_cast<int>(VoiceCommandsID::VC_MENU2START) + index;
 		default:
 			return static_cast<int>(VoiceCommandsID::VC_INVALID);
 		}

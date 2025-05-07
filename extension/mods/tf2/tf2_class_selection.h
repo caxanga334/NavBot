@@ -68,7 +68,21 @@ public:
 	void LoadClassSelectionData();
 
 	TeamFortress2::TFClassType SelectAClass(TeamFortress2::TFTeam team, ClassRosterType roster) const;
+	/**
+	 * @brief Checks if the given class is above the limit for the team.
+	 * @param tfclass Class to check.
+	 * @param team Team to check.
+	 * @param roster Roster type.
+	 * @return True if above limit, false otherwise.
+	 */
 	bool IsClassAboveLimit(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team, ClassRosterType roster) const;
+	/**
+	 * @brief This checks if there are any class below minimum required for the team.
+	 * @param team Team to check.
+	 * @param roster Class roster to check.
+	 * @return True if a class is below minimum required, false otherwise.
+	 */
+	bool AnyPriorityClass(TeamFortress2::TFTeam team, ClassRosterType roster) const;
 
 	/**
 	 * @brief Called when entering a new section

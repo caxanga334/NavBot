@@ -25,6 +25,10 @@ CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type,
 		m_lookangles = angles.value();
 		m_hasangles = true;
 	}
+	else
+	{
+		m_lookangles = QAngle{ 0.0f, 0.0f, 0.0f };
+	}
 
 	switch (type)
 	{
@@ -46,7 +50,8 @@ CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type,
 	}
 }
 
-CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& goal)
+CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const Vector& goal) :
+	m_lookangles(0.0f, 0.0f, 0.0f)
 {
 	m_type = type;
 	m_waypoint = nullptr;

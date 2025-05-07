@@ -22,7 +22,7 @@ constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
 constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
 
 #ifdef EXT_DEBUG
-static ConVar cvar_dev_double_jump_timer("sm_navbot_dev_dj_time", "0.3", FCVAR_GAMEDLL);
+static ConVar cvar_dev_double_jump_timer("sm_navbot_dev_dj_time", "0.5", FCVAR_GAMEDLL);
 static ConVar cvar_dev_jump_hold_time("sm_navbot_dev_jump_hold_time", "1.0", FCVAR_GAMEDLL);
 #endif // EXT_DEBUG
 
@@ -623,7 +623,7 @@ void IMovement::DoubleJump()
 #ifdef EXT_DEBUG
 	m_doMidAirCJ.Start(cvar_dev_double_jump_timer.GetFloat());
 #else
-	m_doMidAirCJ.Start(0.3f);
+	m_doMidAirCJ.Start(0.5f);
 #endif // EXT_DEBUG
 }
 

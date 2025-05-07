@@ -23,6 +23,7 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 	TaskEventResponseResult<CTF2Bot> OnRoundStateChanged(CTF2Bot* bot) override;
+	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 
 	// Engineers don't retreat for health and ammo
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
@@ -45,6 +46,7 @@ private:
 	CountdownTimer m_sentryEnemyScanTimer;
 	CountdownTimer m_moveBuildingCheckTimer;
 	CountdownTimer m_roundStateTimer;
+	CountdownTimer m_respondToVCTimer;
 	bool m_justMovedSentry; // recently moved the sentry
 
 	bool ShouldMoveSentryGun();

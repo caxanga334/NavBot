@@ -29,6 +29,21 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 		return Done("Failed to find a path to the upgrade station");
 	}
 
+	if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Sniper)
+	{
+		if (bot->IsScopedIn())
+		{
+			bot->GetControlInterface()->PressSecondaryAttackButton();
+		}
+	}
+	else if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Spy)
+	{
+		if (bot->IsCloaked())
+		{
+			bot->GetControlInterface()->PressSecondaryAttackButton();
+		}
+	}
+
 	m_repathtimer.Start(2.0f);
 	return Continue();
 }

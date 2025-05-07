@@ -80,6 +80,11 @@ TaskResult<CTF2Bot> CTF2BotSpySapMvMRobotTask::OnTaskStart(CTF2Bot* bot, AITask<
 		return Done("Sapper is invalid!");
 	}
 
+	if (bot->IsCloaked())
+	{
+		bot->GetControlInterface()->PressSecondaryAttackButton();
+	}
+
 	return Continue();
 }
 

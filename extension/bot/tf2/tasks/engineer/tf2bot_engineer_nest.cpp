@@ -18,6 +18,11 @@
 #include "tf2bot_engineer_move_object.h"
 #include "tf2bot_engineer_nest.h"
 
+#if SOURCE_ENGINE == SE_TF2
+static ConVar sm_navbot_tf_engineer_vc_listen_range("sm_navbot_tf_engineer_vc_listen_range", "1500", FCVAR_GAMEDLL, "Maximum distance engineers will listen for teammates voice commands", true, 0.0f, true, 8192.0f);
+#endif // SOURCE_ENGINE == SE_TF2
+
+
 inline static Vector GetSpotBehindSentry(CBaseEntity* sentry)
 {
 	tfentities::HBaseObject sentrygun(sentry);
@@ -168,6 +173,90 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnRoundStateChanged(CT
 	{
 		m_roundStateTimer.Start(5.0f);
 	}
+
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)
+{
+#if SOURCE_ENGINE == SE_TF2
+	if (bot->GetDifficultyProfile()->GetGameAwareness() <= 15)
+	{
+		return TryContinue();
+	}
+
+	TeamFortress2::VoiceCommandsID vcmd = static_cast<TeamFortress2::VoiceCommandsID>(command);
+
+	switch (vcmd)
+	{
+	case TeamFortress2::VC_PLACETPHERE:
+		[[fallthrough]];
+	case TeamFortress2::VC_PLACEDISPENSERHERE:
+		[[fallthrough]];
+	case TeamFortress2::VC_PLACESENTRYHERE:
+		break;
+	default:
+		return TryContinue();
+	}
+
+	if (m_respondToVCTimer.IsElapsed() && subject && tf2lib::GetEntityTFTeam(subject) == bot->GetMyTFTeam() &&
+		bot->GetRangeTo(subject) <= sm_navbot_tf_engineer_vc_listen_range.GetFloat())
+	{
+		if (bot->GetDifficultyProfile()->GetTeamwork() >= CBaseBot::s_botrng.GetRandomInt<int>(1, 100))
+		{
+			m_respondToVCTimer.StartRandom(30.0f, 50.0f);
+			bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
+			const Vector& origin = UtilHelpers::getEntityOrigin(subject);
+			m_noThreatTimer.Invalidate();
+			m_moveBuildingCheckTimer.StartRandom(75.0f, 110.0f);
+
+			switch (vcmd)
+			{
+			case TeamFortress2::VC_PLACETPHERE:
+			{
+				CBaseEntity* exit = bot->GetMyTeleporterExit();
+
+				if (exit)
+				{
+					return TryPauseFor(new CTF2BotEngineerMoveObjectTask(exit, origin), PRIORITY_MEDIUM, "Teammate needs a teleporter here!");
+				}
+
+				return TryPauseFor(new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::eObjectType::OBJECT_TELEPORTER_EXIT, origin), PRIORITY_MEDIUM, "Teammate needs a teleporter here!");
+			}
+			case TeamFortress2::VC_PLACEDISPENSERHERE:
+			{
+				CBaseEntity* dispenser = bot->GetMyDispenser();
+
+				if (dispenser)
+				{
+					return TryPauseFor(new CTF2BotEngineerMoveObjectTask(dispenser, origin), PRIORITY_MEDIUM, "Teammate needs a dispenser here!");
+				}
+
+				return TryPauseFor(new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::eObjectType::OBJECT_DISPENSER, origin), PRIORITY_MEDIUM, "Teammate needs a dispenser here!");
+			}
+			case TeamFortress2::VC_PLACESENTRYHERE:
+			{
+				CBaseEntity* sentry = bot->GetMySentryGun();
+
+				if (sentry)
+				{
+					return TryPauseFor(new CTF2BotEngineerMoveObjectTask(sentry, origin), PRIORITY_MEDIUM, "Teammate needs a sentry here!");
+				}
+
+				return TryPauseFor(new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::eObjectType::OBJECT_SENTRYGUN, origin), PRIORITY_MEDIUM, "Teammate needs a sentry here!");
+			}
+			default:
+				return TryContinue();
+			}
+		}
+		else
+		{
+			bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_NO);
+			m_moveBuildingCheckTimer.StartRandom(15.0f, 30.0f);
+		}
+	}
+
+#endif // SOURCE_ENGINE == SE_TF2
 
 	return TryContinue();
 }

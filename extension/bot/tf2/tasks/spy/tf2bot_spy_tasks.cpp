@@ -440,6 +440,11 @@ CTF2BotSpyAttackTask::CTF2BotSpyAttackTask(CBaseEntity* victim) :
 
 TaskResult<CTF2Bot> CTF2BotSpyAttackTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	if (bot->IsCloaked())
+	{
+		bot->GetControlInterface()->PressSecondaryAttackButton();
+	}
+
 	return Continue();
 }
 

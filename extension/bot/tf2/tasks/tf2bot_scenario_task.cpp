@@ -179,6 +179,12 @@ TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnVoiceCommand(CTF2Bot* bo
 		return TryContinue(PRIORITY_DONT_CARE);
 	}
 
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM && entprops->GameRules_GetRoundState() != RoundState_RoundRunning)
+	{
+		// don't follow teammates between waves in MvM
+		return TryContinue(PRIORITY_DONT_CARE);
+	}
+
 	// these classes never follow teammates
 	switch (bot->GetMyClassType())
 	{
