@@ -58,7 +58,7 @@ TaskResult<CTF2Bot> CTF2BotAttackTask::OnTaskUpdate(CTF2Bot* bot)
 	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 	// if sensor lost track of it, it's gone.
-	if (known == nullptr)
+	if (known == nullptr || !bot->GetSensorInterface()->IsEnemy(known->GetEntity()))
 	{
 		return Done("Target has escaped me!");
 	}

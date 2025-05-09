@@ -35,8 +35,12 @@ private:
 	void UpdateHealTarget(CTF2Bot* bot);
 	void UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat);
 	bool ScanForReviveMarkers(const Vector& center, CBaseEntity** marker);
+	bool IsPatientStable(CTF2Bot* bot, CBaseEntity* patient);
 	void EquipMedigun(CTF2Bot* me);
 	float GetUbercharge(CTF2Bot* me);
+
+	static constexpr float MEDIGUN_LETGO_RANGE = 400.0f;
+	static constexpr float MEDIC_RESPOND_TO_CALL_RANGE = 600.0f;
 };
 
 #endif // !NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_

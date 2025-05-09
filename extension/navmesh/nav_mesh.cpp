@@ -1394,7 +1394,7 @@ void CNavMesh::ParseModPlaceDatabase(NavPlaceDatabaseLoader& loader)
 void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)
 {
 	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
-	std::string mapname = GetMapFileName();
+	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
 	const char* mod = smutils->GetGameFolderName();
 	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/maps/nav_places_%s.cfg", mod, mapname.c_str());
 	std::filesystem::path path{ szPath.get() };

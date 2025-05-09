@@ -24,82 +24,9 @@ CBaseMod::~CBaseMod()
 {
 }
 
-SourceMod::SMCResult CBaseMod::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
+std::string CBaseMod::GetCurrentMapName() const
 {
-	if (m_parser_depth == 0)
-	{
-		if (strncasecmp(name, "ModSettings", 11) == 0)
-		{
-			m_parser_depth++;
-		}
-		else
-		{
-			smutils->LogError(myself, "Invalid mod settings file (%s) at line %i col %i", name, states->line, states->col);
-			return SourceMod::SMCResult_HaltFail;
-		}
-	}
-
-	return SourceMod::SMCResult_Continue;
-}
-
-SourceMod::SMCResult CBaseMod::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
-{
-	if (m_parser_depth == 1)
-	{
-		if (strncasecmp(key, "defend_rate", 11) == 0)
-		{
-			int v = atoi(value);
-			v = std::clamp(v, 0, 100);
-			m_modsettings->SetDefendRate(v);
-		}
-		else if (strncasecmp(key, "stuck_suicide_threshold", 23) == 0)
-		{
-			int v = atoi(value);
-			v = std::clamp(v, 5, 60);
-			m_modsettings->SetStuckSuicideThreshold(v);
-		}
-		else if (strncasecmp(key, "update_rate", 11) == 0)
-		{
-			float v = atof(value);
-			v = std::clamp(v, 0.0f, 0.5f);
-			m_modsettings->SetUpdateRate(v);
-		}
-		else if (strncasecmp(key, "vision_npc_update_rate", 22) == 0)
-		{
-			float v = atof(value);
-			v = std::clamp(v, 0.0f, 2.0f);
-			m_modsettings->SetVisionNPCUpdateRate(v);
-		}
-		else if (strncasecmp(key, "inventory_update_rate", 21) == 0)
-		{
-			float v = atof(value);
-			v = std::clamp(v, 0.05f, 60.0f);
-			m_modsettings->SetInventoryUpdateRate(v);
-		}
-		else if (strncasecmp(key, "vision_statistics_update", 24) == 0)
-		{
-			float v = atof(value);
-			v = std::clamp(v, 0.05f, 2.0f);
-			m_modsettings->SetVisionStatisticsUpdateRate(v);
-		}
-		else
-		{
-			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);
-		}
-	}
-
-	return SourceMod::SMCResult_Continue;
-}
-
-SourceMod::SMCResult CBaseMod::ReadSMC_LeavingSection(const SourceMod::SMCStates* states)
-{
-	if (--m_parser_depth < 0)
-	{
-		smutils->LogError(myself, "Invalid mod settings file at line %i col %i", states->line, states->col);
-		return SourceMod::SMCResult_HaltFail;
-	}
-
-	return SourceMod::SMCResult_Continue;
+	return std::string(STRING(gpGlobals->mapname));
 }
 
 void CBaseMod::PostCreation()
@@ -121,6 +48,7 @@ void CBaseMod::OnMapStart()
 	InternalFindPlayerResourceEntity();
 
 	m_modsettings.reset(CreateModSettings());
+	m_modsettings->ParseConfigFile();
 }
 
 CBaseBot* CBaseMod::AllocateBot(edict_t* edict)
@@ -141,6 +69,12 @@ std::optional<int> CBaseMod::GetPlayerResourceEntity()
 	}
 
 	return std::nullopt;
+}
+
+void CBaseMod::ReloadModSettingsFile()
+{
+	m_modsettings.reset(CreateModSettings());
+	m_modsettings->ParseConfigFile();
 }
 
 void CBaseMod::ReloadWeaponInfoConfigFile()
@@ -239,28 +173,13 @@ void CBaseMod::InternalFindPlayerResourceEntity()
 	gameconfs->CloseGameConfigFile(gamedata);
 }
 
-void CBaseMod::ParseModSettings()
-{
-	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
-	const char* modfolder = smutils->GetGameFolderName();
-
-	smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/settings.cfg", modfolder);
-
-	if (!std::filesystem::exists(path.get()))
-	{
-		rootconsole->ConsolePrint("[NAVBOT] Mod settings file at \"%s\" doesn't exists. Using default values.", path.get());
-		return;
-	}
-
-	rootconsole->ConsolePrint("[NAVBOT] Parsing mod settings file (\"%s\").", path.get());
-
-	SourceMod::SMCStates states;
-	textparsers->ParseFile_SMC(path.get(), this, &states);
-
-}
-
 CON_COMMAND(sm_navbot_reload_difficulty_profiles, "Reloads the bot difficulty profile config file.")
 {
 	extmanager->GetMod()->ReloadBotDifficultyProfile();
 	rootconsole->ConsolePrint("Reloaded bot difficulty profile config file!");
+}
+
+CON_COMMAND(sm_navbot_reload_mod_settings, "Reloads the mod settings config file.")
+{
+	extmanager->GetMod()->ReloadModSettingsFile();
 }

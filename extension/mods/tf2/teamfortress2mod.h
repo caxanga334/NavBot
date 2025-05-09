@@ -37,6 +37,9 @@ public:
 	float GetMvMSentryToBombRange() const { return mvm_sentry_to_bomb_range; }
 	float GetMedicPatientScanRange() const { return medic_patient_scan_range; }
 
+protected:
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
+
 private:
 	float engineer_nest_dispenser_range; // maximum distance between the dispenser and the sentry gun
 	float engineer_nest_exit_range; // maximum distance between the teleporter exit and the sentry gun
@@ -60,11 +63,11 @@ public:
 protected:
 
 	void FireGameEvent(IGameEvent* event) override;
-	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
 	virtual CModSettings* CreateModSettings() const override { return new CTF2ModSettings; }
 	CWeaponInfoManager* CreateWeaponInfoManager() const override { return new CTF2WeaponInfoManager; }
 
 public:
+	virtual std::string GetCurrentMapName() const;
 
 #if SOURCE_ENGINE == SE_TF2
 	static void OnForceGameModeConVarChanged(IConVar* var, const char* pOldValue, float flOldValue);

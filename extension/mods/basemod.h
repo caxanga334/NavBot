@@ -3,7 +3,7 @@
 
 #include <memory>
 #include <optional>
-#include <ITextParsers.h>
+#include <string>
 #include <sdkports/eventlistenerhelper.h>
 #include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/weaponinfo.h>
@@ -16,7 +16,7 @@ class CNavMesh;
 class CBaseBot;
 
 // Base game mod class
-class CBaseMod : public CEventListenerHelper, public SourceMod::ITextListener_SMC
+class CBaseMod : public CEventListenerHelper
 {
 public:
 	CBaseMod();
@@ -29,21 +29,6 @@ protected:
 	// Called when a game event is fired
 	void FireGameEvent(IGameEvent* event) override {}
 
-	void ReadSMC_ParseStart() override 
-	{
-		m_parser_depth = 0;
-	}
-
-	void ReadSMC_ParseEnd(bool halted, bool failed) override {}
-
-	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
-
-	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
-
-	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
-
-	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
-
 	// Creates the mod settings object, override to use mod specific mod settings
 	virtual CModSettings* CreateModSettings() const { return new CModSettings; }
 	// Creates the mod weapon info manager object, override to use a custom class
@@ -52,6 +37,8 @@ protected:
 	virtual CDifficultyManager* CreateBotDifficultyProfileManager() const { return new CDifficultyManager; }
 
 public:
+	// Gets the cleaned up current map name used for loading config files.
+	virtual std::string GetCurrentMapName() const;
 	// Called once after the manager has allocated the mod class
 	virtual void PostCreation();
 	// Called every server frame
@@ -89,6 +76,8 @@ public:
 
 	// Mod settings data. Unavailable until a map is loaded.
 	const CModSettings* GetModSettings() const { return m_modsettings.get(); }
+	// Reparses the mod settings file.
+	void ReloadModSettingsFile();
 	// Reloads the weapon info config file
 	void ReloadWeaponInfoConfigFile();
 	// Mod weapon info manager
@@ -109,7 +98,6 @@ private:
 	CBaseHandle m_playerresourceentity;
 
 	void InternalFindPlayerResourceEntity();
-	void ParseModSettings();
 };
 
 #endif // !EXT_BASE_MOD_H_

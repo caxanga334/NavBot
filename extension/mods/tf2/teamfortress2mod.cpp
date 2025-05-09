@@ -51,6 +51,50 @@ static const char* s_tf2gamemodenames[] = {
 static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES), 
 	"You added or removed a TF2 game mode and forgot to update the game mode name array!");
 
+SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
+{
+	if (cfg_parser_depth == 1)
+	{
+		if (strncasecmp(key, "engineer_nest_dispenser_range", 29) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 600.0f, 4096.0f);
+			SetEngineerNestDispenserRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "engineer_nest_exit_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 600.0f, 4096.0f);
+			SetEngineerNestExitRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "entrance_spawn_range", 20) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 1500.0f, 6000.0f);
+			SetEntranceSpawnRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "mvm_sentry_to_bomb_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 1000.0f, 3000.0f);
+			SetMvMSentryToBombRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "medic_patient_scan_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 750.0f, 5000.0f);
+			SetMedicPatientScanRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+	}
+
+	return CModSettings::ReadSMC_KeyValue(states, key, value);
+}
+
 CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 {
 	m_gamemode = TeamFortress2::GameModeType::GM_NONE;
@@ -189,51 +233,29 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 	}
 }
 
-SourceMod::SMCResult CTeamFortress2Mod::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
+std::string CTeamFortress2Mod::GetCurrentMapName() const
 {
-	if (m_parser_depth == 1)
-	{
-		CTF2ModSettings* settings = static_cast<CTF2ModSettings*>(m_modsettings.get());
+	// TF2 workshop names follows this format: workshop/ctf_harbine.ugc3067683041
+	// this method should be fine for most maps
+	std::string mapname(gamehelpers->GetCurrentMap());
 
-		if (strncasecmp(key, "engineer_nest_dispenser_range", 29) == 0)
-		{
-			float range = atof(value);
-			range = std::clamp(range, 600.0f, 4096.0f);
-			settings->SetEngineerNestDispenserRange(range);
-			return SourceMod::SMCResult_Continue;
-		}
-		else if (strncasecmp(key, "engineer_nest_exit_range", 24) == 0)
-		{
-			float range = atof(value);
-			range = std::clamp(range, 600.0f, 4096.0f);
-			settings->SetEngineerNestExitRange(range);
-			return SourceMod::SMCResult_Continue;
-		}
-		else if (strncasecmp(key, "entrance_spawn_range", 20) == 0)
-		{
-			float range = atof(value);
-			range = std::clamp(range, 1500.0f, 6000.0f);
-			settings->SetEntranceSpawnRange(range);
-			return SourceMod::SMCResult_Continue;
-		}
-		else if (strncasecmp(key, "mvm_sentry_to_bomb_range", 24) == 0)
-		{
-			float range = atof(value);
-			range = std::clamp(range, 1000.0f, 3000.0f);
-			settings->SetMvMSentryToBombRange(range);
-			return SourceMod::SMCResult_Continue;
-		}
-		else if (strncasecmp(key, "medic_patient_scan_range", 24) == 0)
-		{
-			float range = atof(value);
-			range = std::clamp(range, 750.0f, 5000.0f);
-			settings->SetMedicPatientScanRange(range);
-			return SourceMod::SMCResult_Continue;
-		}
+	auto n1 = mapname.find("workshop/");
+	auto n2 = mapname.find(".ugc");
+
+	if (n1 == std::string::npos)
+	{
+		return mapname; // not a workshop map
 	}
 
-	return CBaseMod::ReadSMC_KeyValue(states, key, value);
+	constexpr size_t WORKSHOP_STR_SIZE = 9U;
+	constexpr size_t UGC_STR_SIZE = 4U;
+	auto count = n2 - (n1 + WORKSHOP_STR_SIZE);
+	auto sub1 = mapname.substr(n1 + WORKSHOP_STR_SIZE, count);
+	auto sub2 = mapname.substr(n2 + UGC_STR_SIZE);
+	std::string finalname = sub1 + "_ugc" + sub2; // becomes something like this: ctf_harbine_ugc3067683041
+	return finalname;
 }
+
 #if SOURCE_ENGINE == SE_TF2
 void CTeamFortress2Mod::OnForceGameModeConVarChanged(IConVar* var, const char* pOldValue, float flOldValue)
 {
@@ -1742,6 +1764,5 @@ CON_COMMAND(sm_navbot_tf_debug_pd, "Debug player destruction")
 }
 
 #endif // EXT_DEBUG
-
-
 #endif // SOURCE_ENGINE == SE_TF2
+

@@ -87,7 +87,7 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 
 	CBaseEntity* enemy = m_enemy.Get();
 
-	if (!enemy || !UtilHelpers::IsEntityAlive(enemy))
+	if (!enemy || !UtilHelpers::IsEntityAlive(enemy) || !bot->GetSensorInterface()->IsEnemy(enemy))
 	{
 		return AITask<BT>::Done("Enemy is dead or invalid!");
 	}

@@ -20,7 +20,7 @@ ConVar cvar_bot_disable_behavior("sm_navbot_debug_disable_gamemode_ai", "0", FCV
 
 CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
-	m_viewangles(0.0f, 0.0f, 0.0f)
+	m_viewangles(0.0f, 0.0f, 0.0f), m_homepos(0.0f, 0.0f, 0.0f)
 {
 	m_spawnTime = -1.0f;
 	m_simulationtick = -1;
@@ -43,6 +43,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_shhooks.reserve(32);
 	m_impulse = 0;
 	m_lastPrerequisite = nullptr;
+	m_activeNavigator = nullptr;
 
 	AddHooks();
 }

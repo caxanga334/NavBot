@@ -1616,16 +1616,10 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	return NAV_OK;
 }
 
-std::string CNavMesh::GetMapFileName() const
-{
-	auto mapname = gamehelpers->GetCurrentMap();
-	return std::string{ mapname };
-}
-
 std::filesystem::path CNavMesh::GetFullPathToNavMeshFile() const
 {
 	char fullpath[PLATFORM_MAX_PATH];
-	auto map = GetMapFileName();
+	std::string map = extmanager->GetMod()->GetCurrentMapName();
 	auto mod = smutils->GetGameFolderName();
 	smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod, map.c_str());
 	return std::filesystem::path(fullpath);

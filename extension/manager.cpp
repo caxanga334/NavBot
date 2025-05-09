@@ -61,6 +61,8 @@ static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMED
 
 static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 
+static ConVar sm_navbot_bot_name_prefix("sm_navbot_bot_name_prefix", "", FCVAR_GAMEDLL, "Prefix to add to bot names.");
+
 CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods
@@ -343,6 +345,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		return;
 	}
 
+	char defaultbotname[32]{};
 	const char* name = nullptr;
 
 	if (newbotname != nullptr)
@@ -353,9 +356,8 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	{
 		if (m_botnames.empty())
 		{
-			char botname[30]{};
-			std::sprintf(botname, "NavBot #%04d", randomgen->GetRandomInt<int>(0, 9999));
-			name = botname;
+			std::sprintf(defaultbotname, "NavBot #%04d", randomgen->GetRandomInt<int>(0, 9999));
+			name = defaultbotname;
 		}
 		else
 		{
@@ -371,9 +373,23 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		}
 	}
 
+	char finalname[MAX_PLAYER_NAME_LENGTH + 1]{};
+	const char* prefix = sm_navbot_bot_name_prefix.GetString();
+
+	// add prefix if set
+	if (prefix && prefix[0] && std::strlen(prefix) > 0)
+	{
+		ke::SafeSprintf(finalname, sizeof(finalname), "%s%s", prefix, name);
+	}
+	else
+	{
+		// just copy the name
+		ke::SafeStrcpy(finalname, sizeof(finalname), name);
+	}
+
 	// Tell the bot manager to create a new bot. Now that we are using SourceHooks, we need to catch the bot on 'OnClientPutInServer'.
 	m_iscreatingbot = true;
-	edict_t* edict = botmanager->CreateBot(name);
+	edict_t* edict = botmanager->CreateBot(finalname);
 	m_iscreatingbot = false;
 
 	if (edict == nullptr)
@@ -519,14 +535,6 @@ void CExtManager::LoadBotNames()
 
 		m_botnames.emplace_back(line);
 	}
-
-#ifdef EXT_DEBUG
-	for (auto& name : m_botnames)
-	{
-		auto szname = name.c_str();
-		rootconsole->ConsolePrint("Bot name: %s", szname);
-	}
-#endif // EXT_DEBUG
 
 	// shuffle the names
 	std::random_device rd;

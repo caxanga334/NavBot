@@ -6,6 +6,7 @@
 #include <bot/tf2/tasks/scenario/specialdelivery/tf2bot_sd_deliver_flag.h>
 #include "tf2bot_task_sniper_main.h"
 #include "tf2bot_task_sniper_move_to_sniper_spot.h"
+#include "tf2bot_task_sniper_push.h"
 
 CTF2BotSniperMainTask::CTF2BotSniperMainTask()
 {
@@ -18,8 +19,13 @@ TaskResult<CTF2Bot> CTF2BotSniperMainTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 
 TaskResult<CTF2Bot> CTF2BotSniperMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	/* time to go sniping */
+	// aggressive sniper bots have 50% to push towards the objective
+	if (bot->GetDifficultyProfile()->GetAggressiveness() >= 50 && CBaseBot::s_botrng.GetRandomInt<int>(0, 1) == 1)
+	{
+		return PauseFor(new CTF2BotSniperPushTask, "Pushing to the objective!");
+	}
 
+	/* time to go sniping */
 	return PauseFor(new CTF2BotSniperMoveToSnipingSpotTask, "Sniping!");
 }
 

@@ -800,7 +800,6 @@ public:
 	void SimplifySelectedAreas( void );	// Simplifies the selected set by reducing to 1x1 areas and re-merging them up with loosened tolerances
 
 	// Formats the map filename for save/load
-	virtual std::string GetMapFileName() const;
 	std::filesystem::path GetFullPathToNavMeshFile() const;
 	const AuthorInfo& GetAuthorInfo() const { return m_authorinfo; }
 

@@ -78,13 +78,45 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
 	bot->GetControlInterface()->AimAt(patient, IPlayerController::LOOK_SUPPORT, 0.2f, "Looking at patient to heal them!");
 
-	if (bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(patient)) > 400.0f)
+	CBaseEntity* medigun = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary));
+
+	if (medigun)
 	{
-		bot->GetControlInterface()->ReleaseAllAttackButtons();
-	}
-	else
-	{
-		bot->GetControlInterface()->PressAttackButton(0.3f);
+		float patientRange = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(patient));
+		CBaseEntity* healtarget = entprops->GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
+
+		if (patientRange < MEDIGUN_LETGO_RANGE)
+		{
+			// healing someone, not my patient
+			if (healtarget && healtarget != patient)
+			{
+				// release button
+				bot->GetControlInterface()->ReleaseAllAttackButtons();
+			}
+			else if (healtarget && healtarget == patient)
+			{
+				// healing my patient, keep the button pressed
+				bot->GetControlInterface()->PressAttackButton(0.3f);
+			}
+			else if (!healtarget && bot->GetControlInterface()->IsAimOnTarget())
+			{
+				// not healing, looking at patient
+				bot->GetControlInterface()->PressAttackButton(0.3f);
+			}
+		}
+		else // patient is outside range
+		{
+			if (healtarget)
+			{
+				// keep healing the previous patient
+				bot->GetControlInterface()->PressAttackButton(0.3f);
+			}
+			else
+			{
+				// patient is outside range and i'm not healing anyone, release
+				bot->GetControlInterface()->ReleaseAllAttackButtons();
+			}
+		}
 	}
 
 	float uber = GetUbercharge(bot);
@@ -174,9 +206,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnVoiceCommand(CTF2Bot* b
 	}
 	else if (vcmd == TeamFortress2::VoiceCommandsID::VC_HELP || vcmd == TeamFortress2::VoiceCommandsID::VC_MEDIC)
 	{
-		float maxrange = std::clamp<float>(bot->GetSensorInterface()->GetMaxHearingRange(), 512.0f, 1024.0f);
-
-		if (m_healTarget.Get() != subject && bot->GetRangeTo(subject) <= maxrange)
+		if (m_healTarget.Get() != subject && bot->GetRangeTo(subject) <= MEDIC_RESPOND_TO_CALL_RANGE)
 		{
 			if (m_respondToCallsTimer.IsElapsed())
 			{
@@ -252,14 +282,11 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 {
 	CBaseEntity* heal = m_healTarget.Get();
 
-	if (heal != nullptr)
+	if (heal && UtilHelpers::IsEntityAlive(heal))
 	{
-		int entindex = gamehelpers->EntityToBCompatRef(heal);
-
-		if (UtilHelpers::IsEntityAlive(entindex) && (tf2lib::GetPlayerHealthPercentage(entindex) < 0.99f || 
-			tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_Ubercharged)))
+		if (!IsPatientStable(bot, heal))
 		{
-			// Don't change heal targets until at max health or if uber is active
+			// not stable, keep healing
 			return;
 		}
 	}
@@ -290,13 +317,14 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 
 void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat)
 {
-	tfentities::HTFBaseEntity patient(m_healTarget.Get());
+	CBaseEntity* pPatient = m_healTarget.Get();
+	tfentities::HTFBaseEntity patient(pPatient);
 	const CTF2BotWeapon* myweapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
-	float moveRange = 150.0f; // default medigun range is around 450
+	float moveRange = 250.0f; // default medigun range is around 450
 	
 	if (myweapon)
 	{
-		moveRange = (myweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange() * 0.35f);
+		moveRange = (myweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange() * 0.6f);
 	}
 	else
 	{
@@ -308,8 +336,19 @@ void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* 
 	Vector start = bot->GetAbsOrigin();
 	Vector end = patient.GetAbsOrigin();
 
-	// no enemies, move to the patient
-	if (threat == nullptr)
+	trace::CTraceFilterSimple filter(bot->GetEntity(), COLLISION_GROUP_NONE);
+	trace_t tr;
+	trace::line(bot->GetEyeOrigin(), patient.WorldSpaceCenter(), MASK_SHOT, &filter, tr);
+	bool obstruction = false;
+
+	if (tr.fraction < 1.0f && tr.m_pEnt != pPatient)
+	{
+		obstruction = true;
+		rangeToGoal = 64.0f * 64.0f;
+	}
+
+	// no enemies or obstruction, move to the patient
+	if (threat == nullptr || obstruction)
 	{
 		m_moveGoal = end;
 	}
@@ -359,6 +398,41 @@ bool CTF2BotMedicHealTask::ScanForReviveMarkers(const Vector& center, CBaseEntit
 	});
 
 	return *marker != nullptr;
+}
+
+bool CTF2BotMedicHealTask::IsPatientStable(CTF2Bot* bot, CBaseEntity* patient)
+{
+	if (tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_Ubercharged) || tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_Kritzkrieged) ||
+		tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_MegaHeal))
+	{
+		// uber active, don't change patients
+		return false;
+	}
+
+	if (tf2lib::IsPlayerInvisible(patient))
+	{
+		return true;
+	}
+
+	// Visible enemies, keep healing
+	if (bot->GetSensorInterface()->GetVisibleEnemiesCount() > 0)
+	{
+		return false;
+	}
+
+	int entindex = UtilHelpers::IndexOfEntity(patient);
+
+	if (tf2lib::GetPlayerHealthPercentage(entindex) < 0.99f)
+	{
+		return false;
+	}
+
+	if (tf2lib::IsPlayerInCondition(patient, TeamFortress2::TFCond_OnFire) || tf2lib::IsPlayerInCondition(patient, TeamFortress2::TFCond_Bleeding))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 

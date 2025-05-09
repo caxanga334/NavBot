@@ -444,11 +444,69 @@ CBaseEntity* CTF2Bot::GetObjectBeingCarriedByMe() const
 
 void CTF2Bot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::FireWeaponAtEnemy", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
 
-	// use base
-	CBaseBot::FireWeaponAtEnemy(enemy, doAim);
+	if (!IsAlive())
+		return;
+
+	if (GetMovementInterface()->NeedsWeaponControl())
+		return;
+
+	if (!enemy->IsValid())
+		return;
+
+	const CBotWeapon* weapon = GetInventoryInterface()->GetActiveBotWeapon();
+
+	if (!weapon || !weapon->IsValid())
+		return;
+
+	if (GetBehaviorInterface()->ShouldAttack(this, enemy) == ANSWER_NO)
+		return;
+
+	if (doAim && !GetControlInterface()->IsAimOnTarget())
+		return;
+
+	if (GetMyClassType() == TeamFortress2::TFClassType::TFClass_Heavy && GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) >= 50 &&
+		GetBehaviorInterface()->ShouldHurry(this) != ANSWER_YES)
+	{
+		constexpr auto THREAT_SPIN_TIME = 3.0f;
+		if (GetSensorInterface()->GetTimeSinceVisibleThreat() <= THREAT_SPIN_TIME)
+		{
+			GetControlInterface()->PressSecondaryAttackButton(0.25f); // spin the minigun
+		}
+	}
+
+	const float range = GetRangeTo(enemy->GetEdict());
+	bool primary = true; // primary attack by default
+
+	if (CanFireWeapon(weapon, range, true, primary) && HandleWeapon(weapon))
+	{
+		if (!AimWeaponAtEnemy(enemy, weapon, doAim, range, primary))
+			return;
+
+		if (doAim && !GetControlInterface()->IsAimOnTarget())
+			return;
+
+		SetJustFiredMyWeapon(true);
+
+		if (primary)
+		{
+			GetControlInterface()->PressAttackButton();
+		}
+		else
+		{
+			GetControlInterface()->PressSecondaryAttackButton();
+		}
+	}
+	else
+	{
+		ReloadIfNeeded(weapon);
+	}
 
 	auto tfweapon = GetInventoryInterface()->GetActiveTFWeapon();
 

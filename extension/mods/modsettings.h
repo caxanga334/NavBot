@@ -1,11 +1,14 @@
 #ifndef NAVBOT_MOD_SETTINGS_H_
 #define NAVBOT_MOD_SETTINGS_H_
 
-class CModSettings
+#include <ITextParsers.h>
+
+class CModSettings : public SourceMod::ITextListener_SMC
 {
 public:
 	CModSettings()
 	{
+		cfg_parser_depth = 0;
 		defendrate = 33;
 		stucksuicidethreshold = 15; // stuck events happens every 1 second, this will be about 15 seconds
 		updaterate = 0.10f;
@@ -14,9 +17,28 @@ public:
 		vision_statistics_update = 0.5f;
 	}
 
-	~CModSettings()
+	virtual ~CModSettings() = default;
+
+	virtual void ParseConfigFile();
+
+protected:
+
+	void ReadSMC_ParseStart() override
 	{
+		cfg_parser_depth = 0;
 	}
+
+	void ReadSMC_ParseEnd(bool halted, bool failed) override {}
+
+	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
+
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
+
+	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
+
+	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
+
+public:
 
 	void SetDefendRate(int v) { defendrate = v; }
 	void SetStuckSuicideThreshold(int v) { stucksuicidethreshold = v; }
@@ -39,6 +61,7 @@ protected:
 	float vision_npc_update_rate; // delay in seconds between vision updates of non player entities
 	float inventory_update_rate; // delay in seconds between updates of the weapons being carried by the bot.
 	float vision_statistics_update; // delay in seconds between vision statistics updates
+	int cfg_parser_depth; // config file parser depth
 };
 
 

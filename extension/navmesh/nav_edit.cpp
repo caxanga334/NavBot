@@ -14,6 +14,8 @@
 #include <cmath>
 
 #include <extension.h>
+#include <manager.h>
+#include <mods/basemod.h>
 #include <entities/baseentity.h>
 #include <extplayer.h>
 #include "nav_trace.h"
@@ -4556,7 +4558,7 @@ void CNavMesh::PlayEditSoundInternal(const std::string& sound) const
 
 CON_COMMAND(sm_nav_print_map_name, "Prints the current map name used by the Navigaiton Mesh.")
 {
-	std::string name = TheNavMesh->GetMapFileName();
+	std::string name = extmanager->GetMod()->GetCurrentMapName();
 	rootconsole->ConsolePrint("Map: %s", name.c_str());
 }
 
