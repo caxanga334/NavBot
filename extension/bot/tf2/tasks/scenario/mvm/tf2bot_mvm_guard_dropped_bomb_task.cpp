@@ -9,6 +9,7 @@
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <entities/tf2/tf_entities.h>
+#include <bot/tf2/tasks/tf2bot_find_health_task.h>
 #include "tf2bot_mvm_guard_dropped_bomb_task.h"
 
 class CTF2BotSelectMvMBombGuardArea : public INavAreaCollector<CTFNavArea>
@@ -87,6 +88,13 @@ TaskResult<CTF2Bot> CTF2BotMvMGuardDroppedBombTask::OnTaskStart(CTF2Bot* bot, AI
 	CTF2BotPathCost cost(bot);
 	m_nav.ComputePathToPosition(bot, m_goal, cost);
 	m_repathTimer.Start(2.0f);
+
+	CBaseEntity* health = nullptr;
+
+	if (bot->GetHealthPercentage() < 0.9f && CTF2BotFindHealthTask::IsPossible(bot, &health))
+	{
+		return PauseFor(new CTF2BotFindHealthTask(health), "Healing up first!");
+	}
 
 	return Continue();
 }

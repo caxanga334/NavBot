@@ -220,6 +220,10 @@ public:
 	// Makes the bot perform a double jump
 	virtual void DoubleJump();
 	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward);
+protected:
+	// If true, the bot will perform a double jump over a gap. Called by JumpAcrossGap.
+	virtual bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const { return false; }
+public:
 	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
 	// Perform a blast jump
 	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
@@ -404,6 +408,10 @@ inline bool IMovement::IsControllingMovements()
 	else if (m_isBreakingObstacle)
 	{
 		return true; // take full control when breaking an obstacle on my path
+	}
+	else if (m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed())
+	{
+		return true; // counter strafing
 	}
 
 	return false;

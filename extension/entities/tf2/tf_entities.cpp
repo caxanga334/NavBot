@@ -433,3 +433,17 @@ float tfentities::HTeamRoundTimer::GetTimeRemaining() const
 
 	return timeremaining;
 }
+
+TeamFortress2::DispenserState tfentities::HObjectDispenser::GetState() const
+{
+	int state = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iState", state);
+	return static_cast<TeamFortress2::DispenserState>(state);
+}
+
+int tfentities::HObjectDispenser::GetStoredMetal() const
+{
+	int metal = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmoMetal", metal);
+	return metal;
+}

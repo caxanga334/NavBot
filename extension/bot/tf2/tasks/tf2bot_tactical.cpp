@@ -49,7 +49,12 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 
 			if (bot->GetHealthPercentage() <= healthratio)
 			{
-				return PauseFor(new CTF2BotFindHealthTask, "I'm low on health!");
+				CBaseEntity* source = nullptr;
+
+				if (CTF2BotFindHealthTask::IsPossible(bot, &source))
+				{
+					return PauseFor(new CTF2BotFindHealthTask(source), "I'm low on health!");
+				}
 			}
 		}
 
@@ -57,9 +62,14 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			m_ammochecktimer.StartRandom(1.0f, 5.0f);
 
-			if (bot->IsAmmoLow())
+			if (bot->GetInventoryInterface()->IsAmmoLow())
 			{
-				return PauseFor(new CTF2BotFindAmmoTask, "I'm low on ammo!");
+				CBaseEntity* source = nullptr;
+
+				if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
+				{
+					return PauseFor(new CTF2BotFindAmmoTask(source), "I'm low on ammo!");
+				}
 			}
 		}
 	}

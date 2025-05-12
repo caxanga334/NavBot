@@ -119,11 +119,6 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 
 TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 150)
-	{
-		return PauseFor(new CTF2BotFindAmmoTask(150), "Need more metal to build!");
-	}
-
 	switch (m_type)
 	{
 	case CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN:
@@ -164,6 +159,16 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	default:
 		return Done("Unknown object type!");
+	}
+
+	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 150)
+	{
+		CBaseEntity* source = nullptr;
+
+		if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
+		{
+			return PauseFor(new CTF2BotFindAmmoTask(source, 150), "Need more metal to build!");
+		}
 	}
 
 	if (m_reachedGoal)

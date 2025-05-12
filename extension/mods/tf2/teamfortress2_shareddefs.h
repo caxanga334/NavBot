@@ -28,6 +28,8 @@ namespace TeamFortress2
 
 	constexpr size_t TF_MAX_CONTROL_POINTS = 8;
 
+	constexpr int TF_DEFAULT_MAX_METAL = 200; // default max metal an engineer can have
+
 	enum TFClassType
 	{
 		TFClass_Unknown = 0,

@@ -120,7 +120,7 @@ void CDayOfDefeatSourceMod::CollectControlPointsToAttack(dayofdefeatsource::DoDT
 		// Valid index check, debug only
 		if (controlpoint.index < dayofdefeatsource::INVALID_CONTROL_POINT || controlpoint.index >= MAX_CONTROL_POINTS)
 		{
-			smutils->LogError(myself, __FUNCTION__ " Invalid Control Point index %i", controlpoint.index);
+			smutils->LogError(myself,"CollectControlPointsToAttack Invalid Control Point index %i", controlpoint.index);
 			continue;
 		}
 #endif // EXT_DEBUG
@@ -176,7 +176,7 @@ void CDayOfDefeatSourceMod::CollectControlPointsToDefend(dayofdefeatsource::DoDT
 		// Valid index check, debug only
 		if (controlpoint.index < dayofdefeatsource::INVALID_CONTROL_POINT || controlpoint.index >= MAX_CONTROL_POINTS)
 		{
-			smutils->LogError(myself, __FUNCTION__ " Invalid Control Point index %i", controlpoint.index);
+			smutils->LogError(myself,"CollectControlPointsToDefend Invalid Control Point index %i", controlpoint.index);
 			continue;
 		}
 #endif // EXT_DEBUG

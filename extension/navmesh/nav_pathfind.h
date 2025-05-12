@@ -1148,12 +1148,34 @@ public:
 		total = 0.0f;
 	}
 
+	inline T* GetArea() const { return this->me; }
+	// Returns the travel cost to reach this area from the parent area.
+	inline const float GetTravelCostFromParent() const { return this->cost; }
+	// Returns the total travel cost to reach this area from the start.
+	inline const float GetTravelCostFromStart() const { return this->total; }
+
 	T* parent;
 	T* child;
 	T* me;
 	NavTraverseType how;
-	float cost;
-	float total;
+	float cost; // cost to reach this from parent area
+	float total; // cost to reach this from start
+};
+
+template <typename T>
+class NavSearchNodeSmallestCost
+{
+public:
+
+	bool operator()(const INavSearchNode<T>* lhs, const INavSearchNode<T>* rhs)
+	{
+		return lhs->total > rhs->total;
+	}
+
+	bool operator()(const INavSearchNode<T>& lhs, const INavSearchNode<T>& rhs)
+	{
+		return lhs.total > rhs.total;
+	}
 };
 
 template <typename T>
@@ -1255,7 +1277,7 @@ protected:
 private:
 	T* m_startArea;
 	float m_travelLimit;
-	std::stack<T*> m_searchlist;
+	std::priority_queue<T*, std::vector<T*>, NavSearchNodeSmallestCost<T>> m_searchlist;
 	std::unordered_map<unsigned int, INavSearchNode<T>> m_nodes;
 	std::vector<T*> m_collected;
 	bool m_searchLadders;

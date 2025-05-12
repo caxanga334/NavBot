@@ -77,7 +77,12 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 		// max my metal
 		if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 200)
 		{
-			return PauseFor(new CTF2BotFindAmmoTask(200), "Need more metal to build!");
+			CBaseEntity* source = nullptr;
+
+			if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
+			{
+				return PauseFor(new CTF2BotFindAmmoTask(source, 200), "Need more metal to build!");
+			}
 		}
 
 		CBaseEntity* sentryGun = bot->GetMySentryGun();

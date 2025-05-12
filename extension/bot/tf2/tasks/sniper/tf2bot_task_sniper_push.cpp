@@ -49,7 +49,12 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (weapon->IsAmmoLow(bot, false))
 	{
-		return SwitchTo(new CTF2BotFindAmmoTask, "Need ammo!");
+		CBaseEntity* source = nullptr;
+
+		if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
+		{
+			return SwitchTo(new CTF2BotFindAmmoTask(source), "Need ammo!");
+		}
 	}
 
 	if (threat)

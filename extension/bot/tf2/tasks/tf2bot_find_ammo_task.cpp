@@ -6,61 +6,243 @@
 #include <util/librandom.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_traces.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
-#include "bot/tf2/tf2bot.h"
+#include <bot/tf2/tf2bot.h>
+#include <bot/bot_shared_utils.h>
+#include <navmesh/nav_mesh.h>
+#include <navmesh/nav_area.h>
 #include "tf2bot_find_ammo_task.h"
 
-CTF2BotFindAmmoTask::CTF2BotFindAmmoTask() : m_sourcepos(0.0f, 0.0f, 0.0f),
-m_type(AmmoSource::NONE),
-m_reached(false),
-m_metalLimit(200)
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
+#undef min
+#undef max
+#undef clamp
+
+class CTF2AmmoFilter : public UtilHelpers::IGenericFilter<CBaseEntity*>
 {
+public:
+	CTF2AmmoFilter(CTF2Bot* tfbot)
+	{
+		bot = tfbot;
+		myclass = tfbot->GetMyClassType();
+		ammoarea = nullptr;
+	}
+
+	// Inherited via IGenericFilter
+	bool IsSelected(CBaseEntity* object) override;
+
+	CTF2Bot* bot;
+	TeamFortress2::TFClassType myclass;
+	CNavArea* ammoarea;
+};
+
+bool CTF2AmmoFilter::IsSelected(CBaseEntity* object)
+{
+	Vector position = UtilHelpers::getWorldSpaceCenter(object);
+	position = trace::getground(position);
+	this->ammoarea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA);
+
+	if (this->ammoarea == nullptr)
+	{
+		return false; // no nav area
+	}
+
+	TeamFortress2::TFTeam team = tf2lib::GetEntityTFTeam(object);
+
+	if (team >= TeamFortress2::TFTeam::TFTeam_Red && team != this->bot->GetMyTFTeam())
+	{
+		return false; // not for my team
+	}
+
+	tfentities::HTFBaseEntity baseentity(object);
+
+	if (baseentity.IsEffectActive(EF_NODRAW))
+	{
+		return false;
+	}
+
+	if (UtilHelpers::FClassnameIs(object, "obj_dispenser"))
+	{
+		tfentities::HObjectDispenser dispenser(object);
+
+		if (dispenser.IsDisabled() || dispenser.IsSapped() || dispenser.IsBeingCarried() || dispenser.IsPlacing() || dispenser.IsBuilding())
+		{
+			return false;
+		}
+
+		// Engineers: skip dispensers unless they have at least 200 metal
+		if (this->myclass == TeamFortress2::TFClass_Engineer && dispenser.GetStoredMetal() < TeamFortress2::TF_DEFAULT_MAX_METAL)
+		{
+			return false;
+		}
+	}
+
+	return true;
 }
 
-CTF2BotFindAmmoTask::CTF2BotFindAmmoTask(int maxmetal) : m_sourcepos(0.0f, 0.0f, 0.0f),
-m_type(AmmoSource::NONE),
-m_reached(false)
+bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotFindAmmoTask::IsPossible", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	const float maxrange = CTeamFortress2Mod::GetTF2Mod()->GetModSettings()->GetCollectItemMaxDistance();
+	CTF2AmmoFilter filter(bot);
+	botsharedutils::IsReachableAreas collector(bot, maxrange);
+	auto& staticammosources = CTeamFortress2Mod::GetTF2Mod()->GetAmmoSources();
+
+	CBaseEntity* best = nullptr;
+	float smallest_dist = std::numeric_limits<float>::max();
+
+	collector.Execute();
+
+	for (auto& handle : staticammosources)
+	{
+		CBaseEntity* pEntity = handle.Get();
+
+		if (pEntity)
+		{
+			if (filter.IsSelected(pEntity))
+			{
+				float cost = 0.0f;
+
+				if (collector.IsReachable(filter.ammoarea, &cost))
+				{
+					if (cost < smallest_dist)
+					{
+						smallest_dist = cost;
+						best = pEntity;
+					}
+				}
+			}
+		}
+	}
+
+	// Append dispensers
+	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (filter.IsSelected(entity))
+			{
+				float cost = 0.0f;
+
+				if (collector.IsReachable(filter.ammoarea, &cost))
+				{
+					if (cost < smallest_dist)
+					{
+						smallest_dist = cost;
+						best = entity;
+					}
+				}
+			}
+		}
+
+		return true;
+	});
+
+	// Append dropped ammo packs
+	UtilHelpers::ForEachEntityOfClassname("tf_ammo_pack", [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (filter.IsSelected(entity))
+			{
+				float cost = 0.0f;
+
+				if (collector.IsReachable(filter.ammoarea, &cost))
+				{
+					if (cost < smallest_dist)
+					{
+						smallest_dist = cost;
+						best = entity;
+					}
+				}
+			}
+		}
+
+		return true;
+	});
+
+	if (!best)
+	{
+		return false;
+	}
+
+	*source = best;
+	return true;
+}
+
+CTF2BotFindAmmoTask::CTF2BotFindAmmoTask(CBaseEntity* entity) :
+	m_sourceentity(entity)
+{
+	if (UtilHelpers::FClassnameIs(entity, "obj_dispenser"))
+	{
+		m_type = AmmoSource::DISPENSER;
+	}
+	else if (UtilHelpers::FClassnameIs(entity, "func_regenerate"))
+	{
+		m_type = AmmoSource::RESUPPLY;
+	}
+	else
+	{
+		m_type = AmmoSource::AMMOPACK;
+	}
+
+	m_metalLimit = TeamFortress2::TF_DEFAULT_MAX_METAL;
+}
+
+CTF2BotFindAmmoTask::CTF2BotFindAmmoTask(CBaseEntity* entity, int maxmetal) :
+	m_sourceentity(entity)
+{
+	if (UtilHelpers::FClassnameIs(entity, "obj_dispenser"))
+	{
+		m_type = AmmoSource::DISPENSER;
+	}
+	else if (UtilHelpers::FClassnameIs(entity, "func_regenerate"))
+	{
+		m_type = AmmoSource::RESUPPLY;
+	}
+	else
+	{
+		m_type = AmmoSource::AMMOPACK;
+	}
+
 	m_metalLimit = maxmetal;
 }
 
 TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	m_type = FindSource(bot);
-
-	if (m_type == AmmoSource::NONE)
+	if (!IsSourceStillValid(bot))
 	{
-		return Done("Failed to find an ammo source!");
+		return Done("Ammo Source is invalid!");
 	}
 
-	CTF2BotPathCost cost(bot);
-	if (!m_nav.ComputePathToPosition(bot, m_sourcepos, cost))
-	{
-		return Done("Failed to build a path to the ammo source!");
-	}
-
-	float range = bot->GetRangeTo(m_sourcepos);
-
-	m_repathtimer.Start(0.5f);
+	float range = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(m_sourceentity.Get()));
 	float time = range / (bot->GetMaxSpeed() * 0.25f);
-	m_reachTimer.Start(time + 4.0f);
+	m_failsafetimer.Start(time + 8.0f);
 
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	if (!IsSourceStillValid(bot))
-		return Done("Ammo Source is invalid!");
-
-	if (!m_reached && m_reachTimer.IsElapsed())
+	if (!bot->GetInventoryInterface()->IsAmmoLow())
 	{
-		return Done("Failed to reach ammo source withtin time limit!");
+		return Done("Got ammo!");
 	}
 
-	if (m_reached && m_failsafetimer.IsElapsed())
+	if (!IsSourceStillValid(bot))
 	{
-		return Done("Ammo collected!");
+		return Done("Ammo Source is invalid!");
+	}
+
+	if (m_failsafetimer.IsElapsed())
+	{
+		return Done("Timed out!");
 	}
 
 	if (bot->GetMyClassType() == TeamFortress2::TFClass_Engineer && bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) >= m_metalLimit)
@@ -68,14 +250,16 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Ammo collected!");
 	}
 
-	UpdateSourcePosition();
+	CBaseEntity* source = m_sourceentity.Get();
+	Vector goal = UtilHelpers::getWorldSpaceCenter(source);
 
 	if (m_repathtimer.IsElapsed())
 	{
-		m_repathtimer.Start(0.5f);
+		m_repathtimer.Start(2.0f);
+		
 
 		CTF2BotPathCost cost(bot);
-		if (!m_nav.ComputePathToPosition(bot, m_sourcepos, cost))
+		if (!m_nav.ComputePathToPosition(bot, goal, cost))
 		{
 			return Done("Failed to build a path to the ammo source!");
 		}
@@ -84,14 +268,8 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 	// if the bot is this close to the dispenser, stop moving
 	static constexpr auto DISPENSER_TOUCH_RANGE = 64.0f;
 
-	if (m_type == AmmoSource::DISPENSER && bot->GetRangeTo(m_sourcepos) < DISPENSER_TOUCH_RANGE)
+	if (m_type == AmmoSource::DISPENSER && bot->GetRangeTo(goal) < DISPENSER_TOUCH_RANGE)
 	{
-		if (!m_reached)
-		{
-			m_reached = true;
-			m_failsafetimer.StartRandom(5.0f, 10.0f);
-		}
-
 		return Continue();
 	}
 
@@ -103,189 +281,13 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 TaskEventResponseResult<CTF2Bot> CTF2BotFindAmmoTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
 	// don't clear stuck status here, can cause bots to get stuck forever
-
-	if (m_repathtimer.IsElapsed())
-	{
-		m_repathtimer.Start(0.5f);
-
-		CTF2BotPathCost cost(bot);
-		if (!m_nav.ComputePathToPosition(bot, m_sourcepos, cost))
-		{
-			return TryDone(PRIORITY_HIGH, "Failed to build a path to the ammo source!");
-		}
-	}
-
+	m_repathtimer.Invalidate(); // force repath
 	return TryContinue();
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotFindAmmoTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
 {
-	if (!m_reached)
-	{
-		m_reached = true;
-
-		switch (m_type)
-		{
-		case CTF2BotFindAmmoTask::AmmoSource::AMMOPACK:
-			[[fallthrough]];
-		case CTF2BotFindAmmoTask::AmmoSource::RESUPPLY:
-			m_failsafetimer.Start(1.5f);
-			break;
-		default:
-			m_failsafetimer.Start(10.0f);
-			break;
-		}
-	}
-
 	return TryContinue();
-}
-
-CTF2BotFindAmmoTask::AmmoSource CTF2BotFindAmmoTask::FindSource(CTF2Bot* me)
-{
-	Vector origin = me->GetAbsOrigin();
-	float smallest = std::numeric_limits<float>::max();
-	edict_t* best = nullptr;
-	auto myteam = me->GetMyTFTeam();
-	AmmoSource source = AmmoSource::NONE;
-
-	auto evaluateammopack = [&myteam](edict_t* ammopack) -> bool {
-		tfentities::HTFBaseEntity entity(ammopack);
-
-		if (entity.IsEffectActive(EF_NODRAW))
-			return false;
-
-		if (entity.IsDisabled())
-			return false;
-
-		if (entity.GetTFTeam() != TeamFortress2::TFTeam_Unassigned && entity.GetTFTeam() != myteam)
-			return false;
-
-		return true;
-	};
-
-	auto evaluateresupply = [&myteam](edict_t* resupply) -> bool {
-		tfentities::HFuncRegenerate regen(resupply);
-
-		if (regen.IsDisabled())
-			return false;
-
-		if (regen.GetTFTeam() != TeamFortress2::TFTeam_Unassigned && regen.GetTFTeam() != myteam)
-			return false;
-
-		return true;
-	};
-
-	auto evaluatedispenser = [&myteam](edict_t* dispenser) -> bool {
-		tfentities::HBaseObject object(dispenser);
-
-		if (object.IsSapped() || object.IsDisabled() || object.IsPlacing() || object.IsBuilding() || object.IsBeingCarried() || object.IsRedeploying())
-			return false;
-
-		if (object.GetTFTeam() != myteam)
-			return false;
-
-		return true;
-	};
-
-	for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
-	{
-		edict_t* edict = gamehelpers->EdictOfIndex(i);
-
-		if (!edict)
-			continue;
-
-		if (edict->IsFree())
-			continue;
-
-		auto classname = gamehelpers->GetEntityClassname(edict);
-
-		if (classname == nullptr || classname[0] == 0)
-			continue;
-
-		float distance_mul = 1.0f;
-		AmmoSource currentsource = AmmoSource::NONE;
-
-		if (strncasecmp(classname, "func_regenerate", 15) == 0)
-		{
-			if (!evaluateresupply(edict))
-				continue;
-
-			distance_mul = 0.6f; // prefer resupply lockers
-			currentsource = AmmoSource::RESUPPLY;
-		}
-		else if (strncasecmp(classname, "obj_dispenser", 13) == 0)
-		{
-			if (!evaluatedispenser(edict))
-				continue;
-
-			distance_mul = 0.75f; // prefer dispensers over ammopacks
-			currentsource = AmmoSource::DISPENSER;
-		}
-		else if (strncasecmp(classname, "item_ammopack", 13) == 0)
-		{
-			if (!evaluateammopack(edict))
-				continue;
-
-			currentsource = AmmoSource::AMMOPACK;
-		}
-		else
-		{
-			continue;
-		}
-
-		Vector center = UtilHelpers::getWorldSpaceCenter(edict);
-		float distance = ((center - origin).Length());
-
-		if (distance > max_distance())
-			continue;
-
-		// apply preference
-		distance = distance * distance_mul;
-
-		if (distance < smallest)
-		{
-			smallest = distance;
-			best = edict;
-			source = currentsource;
-		}
-	}
-
-	if (best)
-	{
-		m_sourceentity.Set(best->GetIServerEntity());
-
-		if (source == AmmoSource::RESUPPLY)
-		{
-			m_sourcepos = GetResupplyPosition(best);
-		}
-		else
-		{
-			m_sourcepos = UtilHelpers::getWorldSpaceCenter(best);
-		}
-
-		if (me->IsDebugging(BOTDEBUG_TASKS))
-		{
-			me->DebugPrintToConsole(BOTDEBUG_TASKS, 153, 156, 255, "%s Found Ammo Source <%i> at %3.2f, %3.2f, %3.2f\n", me->GetDebugIdentifier(), static_cast<int>(source),
-				m_sourcepos.x, m_sourcepos.y, m_sourcepos.z);
-
-			NDebugOverlay::Text(m_sourcepos, "Ammo Source!", false, 10.0f);
-			NDebugOverlay::Sphere(m_sourcepos, 32.0f, 153, 156, 255, true, 10.0f);
-		}
-
-		return source;
-	}
-
-	return AmmoSource::NONE;
-}
-
-void CTF2BotFindAmmoTask::UpdateSourcePosition()
-{
-	// the other ammo sources shouldn't move
-	if (m_type == AmmoSource::DISPENSER)
-	{
-		auto edict = gamehelpers->GetHandleEntity(m_sourceentity);
-		m_sourcepos = UtilHelpers::getWorldSpaceCenter(edict);
-	}
 }
 
 bool CTF2BotFindAmmoTask::IsSourceStillValid(CTF2Bot* me)
@@ -339,21 +341,4 @@ bool CTF2BotFindAmmoTask::IsSourceStillValid(CTF2Bot* me)
 	}
 
 	return true;
-}
-
-Vector CTF2BotFindAmmoTask::GetResupplyPosition(edict_t* resupply)
-{
-	Vector center = UtilHelpers::getWorldSpaceCenter(resupply);
-	auto area = TheNavMesh->GetNearestNavArea(center, 1024.0f, false, false);
-
-	if (area == nullptr)
-	{
-		return UtilHelpers::GetGroundPositionFromCenter(resupply);
-	}
-
-	Vector point;
-
-	area->GetClosestPointOnArea(center, &point);
-	point.z = area->GetZ(point.x, point.y);
-	return point;
 }

@@ -2803,6 +2803,7 @@ void CNavMesh::CommandNavEndArea( void )
 		}
 
 		TheNavMesh->OnEditCreateNotify( newArea );
+		Msg("Created new nav area #%u \n", newArea->GetID());
 	}
 	else if ( IsEditMode( CREATING_LADDER ) )
 	{

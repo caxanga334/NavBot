@@ -96,6 +96,12 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			v = std::clamp(v, 0.05f, 2.0f);
 			SetVisionStatisticsUpdateRate(v);
 		}
+		else if (strncasecmp(key, "collect_item_max_distance", 25) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 2048.0f, 16384.0f);
+			SetCollectItemMaxDistance(v);
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

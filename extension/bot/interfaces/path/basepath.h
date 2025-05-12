@@ -210,6 +210,9 @@ protected:
 
 public:
 
+	// Maximum distance when searching for the nearest nav area during path computation.
+	static constexpr float PATH_GOAL_MAX_DISTANCE_TO_AREA = 200.0f;
+
 	/**
 	 * @brief Finds a path via A* search
 	 * @tparam CostFunction Path cost function
@@ -235,8 +238,7 @@ public:
 			return false;
 		}
 
-		constexpr float MaxDistanceToArea = 200.0f;
-		CNavArea* goalArea = TheNavMesh->GetNearestNavArea(goal, MaxDistanceToArea, true, true);
+		CNavArea* goalArea = TheNavMesh->GetNearestNavArea(goal, PATH_GOAL_MAX_DISTANCE_TO_AREA, true, true);
 
 		if (goalArea == startArea)
 		{

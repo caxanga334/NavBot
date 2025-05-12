@@ -164,38 +164,16 @@ bool CTF2BotMovement::IsAbleToBlastJump()
 	return false;
 }
 
-void CTF2BotMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
+bool CTF2BotMovement::GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const
 {
-	CTF2Bot* me = GetBot<CTF2Bot>();
+	float length = (GetBot<CTF2Bot>()->GetAbsOrigin() - landing).Length();
 
-	CrouchJump();
-
-	// look towards the jump target
-	me->GetControlInterface()->AimAt(landing, IPlayerController::LOOK_MOVEMENT, 1.0f);
-
-	m_isJumpingAcrossGap = true;
-	m_landingGoal = landing;
-	m_isAirborne = false;
-
-	if (me->GetMyClassType() == TeamFortress2::TFClass_Scout)
+	if (length >= scout_gap_jump_do_double_distance())
 	{
-		float jumplength = (me->GetAbsOrigin() - landing).Length();
-
-		if (jumplength >= scout_gap_jump_do_double_distance())
-		{
-			// FIX ME!
-			// m_doublejumptimer.Start(0.5f);
-		}
+		return true;
 	}
 
-	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
-	{
-		Vector top = me->GetAbsOrigin();
-		top.z += GetMaxJumpHeight();
-
-		NDebugOverlay::VertArrow(me->GetAbsOrigin(), top, 5.0f, 0, 0, 255, 255, false, 5.0f);
-		NDebugOverlay::HorzArrow(top, landing, 5.0f, 0, 255, 0, 255, false, 5.0f);
-	}
+	return false;
 }
 
 bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)

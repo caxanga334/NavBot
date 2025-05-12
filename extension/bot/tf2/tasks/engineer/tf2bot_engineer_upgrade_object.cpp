@@ -37,7 +37,12 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) == 0)
 	{
-		return PauseFor(new CTF2BotFindAmmoTask(object.GetMetalNeededToUpgrade()), "Need more metal!");
+		CBaseEntity* source = nullptr;
+
+		if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
+		{
+			return PauseFor(new CTF2BotFindAmmoTask(source, object.GetMetalNeededToUpgrade()), "Need more metal!");
+		}
 	}
 
 	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();

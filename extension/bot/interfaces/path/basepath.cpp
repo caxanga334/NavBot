@@ -69,37 +69,31 @@ bool CPath::BuildTrivialPath(const Vector& start, const Vector& goal)
 
 void CPath::Draw(const CBasePathSegment* start, const float duration)
 {
-	bool isstart = true;
-	Vector v1, v2;
 	int i = 0;
 	const int limit = sm_navbot_path_segment_draw_limit.GetInt();
 
 	constexpr float ARROW_WIDTH = 4.0f;
 
-	const CBasePathSegment* next = start;
+	const CBasePathSegment* seg = start != nullptr ? start : GetFirstSegment();
+	const CBasePathSegment* next;
 
-	while (next != nullptr)
+	while (seg != nullptr)
 	{
-		if (isstart == true)
+		next = GetNextSegment(seg);
+
+		if (!next)
 		{
-			v1 = next->goal;
-			isstart = false;
-			next = GetNextSegment(next);
-			continue;
+			return;
 		}
 
-		v2 = next->goal;
-
-		if (next->ladder)
+		if (seg->ladder)
 		{
-			Drawladder(next->ladder, next->type, duration);
+			Drawladder(seg->ladder, seg->type, duration);
 		}
 
-		DrawSingleSegment(v1, v2, next->type, duration);
+		DrawSingleSegment(seg->goal, next->goal, seg->type, duration);
 
-		v1 = next->goal;
-
-		next = GetNextSegment(next);
+		seg = next;
 
 		if (++i > limit)
 		{
@@ -110,30 +104,36 @@ void CPath::Draw(const CBasePathSegment* start, const float duration)
 
 void CPath::DrawFullPath(const float duration)
 {
-	bool isstart = true;
-	Vector v1, v2;
+	int i = 0;
+	const int limit = sm_navbot_path_segment_draw_limit.GetInt();
 
 	constexpr float ARROW_WIDTH = 4.0f;
 
-	for (auto& segment : m_segments)
+	const CBasePathSegment* seg = GetFirstSegment();
+	const CBasePathSegment* next;
+
+	while (seg != nullptr)
 	{
-		if (isstart == true)
+		next = GetNextSegment(seg);
+
+		if (!next)
 		{
-			v1 = segment->goal; // init positions
-			isstart = false;
-			continue;
+			return;
 		}
 
-		v2 = segment->goal; // set second point before drawing
-
-		if (segment->ladder)
+		if (seg->ladder)
 		{
-			Drawladder(segment->ladder, segment->type, duration);
+			Drawladder(seg->ladder, seg->type, duration);
 		}
 
-		DrawSingleSegment(v1, v2, segment->type, duration);
+		DrawSingleSegment(seg->goal, next->goal, seg->type, duration);
 
-		v1 = segment->goal; // set v1 to the current segment position
+		seg = next;
+
+		if (++i > limit)
+		{
+			return;
+		}
 	}
 }
 
@@ -560,7 +560,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 			if (startDrop.z > ground + mover->GetStepHeight())
 			{
 				to->goal = startDrop;
-				to->type = AIPath::SegmentType::SEGMENT_GROUND;
+				to->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
 
 				std::shared_ptr<CBasePathSegment> newSegment = CreateNewSegment();
 				newSegment->CopySegment(to.get());
@@ -568,7 +568,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 				newSegment->goal.x = endDrop.x;
 				newSegment->goal.y = endDrop.y;
 				newSegment->goal.z = ground;
-				newSegment->type = AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE;
+				newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
 
 				// Sometimes there is a railing between the drop and the ground
 
@@ -772,7 +772,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 
 		// when climbing, start from the area center
 		to->goal = to->area->GetCenter();
-		to->type = type; // mark this segment for jumping
+		// to->type = type; // mark this segment for jumping
 
 		Vector jumppos;
 		from->area->GetClosestPointOnArea(to->goal, &jumppos);
@@ -782,7 +782,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 
 		newSegment->CopySegment(from);
 		newSegment->goal = jumppos;
-		newSegment->type = AIPath::SegmentType::SEGMENT_GROUND;
+		newSegment->type = type;
 
 		pathinsert.emplace(from, std::move(newSegment), true);
 	}
@@ -847,6 +847,7 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		post->CopySegment(between);
 		post->how = GO_OFF_MESH_CONNECTION;
 		post->goal = link->GetEnd();
+		post->area = to->area;
 		post->type = AIPath::SEGMENT_GROUND;
 
 		pathinsert.emplace(to, std::move(post), false);
@@ -864,7 +865,7 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		between->CopySegment(from);
 		between->goal = link->GetStart();
 		between->how = GO_OFF_MESH_CONNECTION;
-		between->type = AIPath::SEGMENT_GROUND;
+		between->type = AIPath::SEGMENT_BLAST_JUMP;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
@@ -873,8 +874,9 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		auto rjseg = CreateNewSegment();
 		rjseg->CopySegment(from);
 		rjseg->goal = link->GetEnd();
+		rjseg->area = to->area;
 		rjseg->how = GO_OFF_MESH_CONNECTION;
-		rjseg->type = AIPath::SEGMENT_BLAST_JUMP;
+		rjseg->type = AIPath::SEGMENT_GROUND;
 
 		pathinsert.emplace(from, std::move(between), true);
 		pathinsert.emplace(to, std::move(rjseg), false);
@@ -890,7 +892,7 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		between->CopySegment(from);
 		between->goal = link->GetStart();
 		between->how = GO_OFF_MESH_CONNECTION;
-		between->type = AIPath::SEGMENT_GROUND;
+		between->type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
@@ -900,10 +902,39 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		post->CopySegment(between);
 		post->how = GO_OFF_MESH_CONNECTION;
 		post->goal = link->GetEnd();
-		post->type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
+		post->area = to->area;
+		post->type = AIPath::SEGMENT_GROUND;
 
 		pathinsert.emplace(to, std::move(post), false);
 		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
+		break;
+	}
+	case OffMeshConnectionType::OFFMESH_JUMP_OVER_GAP:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetStart();
+		between->how = GO_OFF_MESH_CONNECTION;
+		between->type = AIPath::SEGMENT_JUMP_OVER_GAP;
+		// add a segments between from and to.
+		// the bot will go to from, them move to between and then move to to.
+		// between goal is the special link position on the nav area.
+
+		// Create the blast jump segment that goes from the link start to the link end position.
+		auto gapseg = CreateNewSegment();
+		gapseg->CopySegment(from);
+		gapseg->area = to->area;
+		gapseg->goal = link->GetEnd();
+		gapseg->how = GO_OFF_MESH_CONNECTION;
+		gapseg->type = AIPath::SEGMENT_GROUND;
+
+		pathinsert.emplace(from, std::move(between), true);
+		pathinsert.emplace(to, std::move(gapseg), false);
 		break;
 	}
 	default:

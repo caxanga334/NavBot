@@ -154,6 +154,8 @@ public:
 
 	// Returns true if the halloween boss fight truce is active
 	inline bool IsTruceActive() const { return m_isTruceActive; }
+	inline const std::vector<CHandle<CBaseEntity>>& GetAmmoSources() const { return m_ammosources; }
+	inline const std::vector<CHandle<CBaseEntity>>& GetHealthSources() const { return m_healthsources; }
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
@@ -176,6 +178,8 @@ private:
 	std::vector<CTFWaypoint*> m_teleexitWaypoints;
 	Vector m_MvMHatchPos; // bomb hatch position in MvM
 	CountdownTimer m_updateTruceStatus;
+	std::vector<CHandle<CBaseEntity>> m_ammosources; // static ammo sources
+	std::vector<CHandle<CBaseEntity>> m_healthsources; // static health sources
 
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();
@@ -183,13 +187,13 @@ private:
 	bool DetectMapViaGameRules();
 	bool DetectKoth();
 	bool DetectPlayerDestruction();
-
 	void FindPayloadCarts();
 	void FindControlPoints();
 	void CheckForSetup();
 	void UpdateObjectiveResource();
 	bool TeamMayCapturePoint(int team, int pointindex) const;
 	void FindMvMBombHatchPosition();
+	void UpdateHealthAndAmmoSources();
 };
 
 #endif // !SMNAV_TF2_MOD_H_

@@ -636,3 +636,31 @@ bool botsharedutils::RandomDestinationCollector::ShouldSearch(CNavArea* area)
 
 	return !area->IsBlocked(NAV_TEAM_ANY);
 }
+
+botsharedutils::IsReachableAreas::IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators) :
+	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), limit, searchLadders, searchLinks, searchElevators)
+{
+	m_bot = bot;
+}
+
+bool botsharedutils::IsReachableAreas::ShouldSearch(CNavArea* area)
+{
+	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
+}
+
+const bool botsharedutils::IsReachableAreas::IsReachable(CNavArea* area, float* cost) const
+{
+	auto node = GetNodeForArea(area);
+
+	if (node)
+	{
+		if (cost)
+		{
+			*cost = node->GetTravelCostFromStart();
+		}
+
+		return true;
+	}
+
+	return false;
+}

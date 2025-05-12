@@ -903,7 +903,7 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 
 	unsigned int mask = 0;
 	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
-	std::unique_ptr<ITraceFilter> filter;
+	ITraceFilter* filter;
 	trace_t tr;
 
 	Vector start = host.GetEyeOrigin();
@@ -943,13 +943,16 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 
 	const char* arg2 = args[2];
 
+	trace::CTraceFilterSimple simplefilter(host.GetEntity(), COLLISION_GROUP_NONE);
+	CTraceFilterTransientAreas navfilter(host.GetEntity(), COLLISION_GROUP_NONE);
+
 	if (strcasecmp(arg2, "simple") == 0)
 	{
-		filter = std::make_unique<trace::CTraceFilterSimple>(host.GetEntity(), COLLISION_GROUP_NONE);
+		filter = &simplefilter;
 	}
 	else if (strcasecmp(arg2, "navtransient") == 0)
 	{
-		filter = std::make_unique<CTraceFilterTransientAreas>(host.GetEntity(), COLLISION_GROUP_NONE);
+		filter = &navfilter;
 	}
 	else
 	{
@@ -957,7 +960,7 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 		return;
 	}
 
-	trace::line(start, end, mask, filter.get(), tr);
+	trace::line(start, end, mask, filter, tr);
 
 	if (tr.DidHit())
 	{

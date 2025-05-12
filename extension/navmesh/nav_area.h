@@ -206,7 +206,8 @@ enum class OffMeshConnectionType : std::uint32_t
 	OFFMESH_GROUND, // solid ground
 	OFFMESH_TELEPORTER, // map based teleporter (trigger_teleport)
 	OFFMESH_BLAST_JUMP, // Blast/Rocket Jump
-	OFFMESH_DOUBLE_JUMP,
+	OFFMESH_DOUBLE_JUMP, // Double jump (climb)
+	OFFMESH_JUMP_OVER_GAP, // Jump over gap
 
 	MAX_OFFMESH_CONNECTION_TYPES // max known link types
 };

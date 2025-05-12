@@ -102,11 +102,9 @@ static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*, const CCommand&);
 
-#ifdef EXT_DEBUG
-
+#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommandKeyValues, SH_NOATTRIB, 0, edict_t*, KeyValues*);
-
-#endif // EXT_DEBUG
+#endif // defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 
 // SDKs that requires a runplayercommand hook
 

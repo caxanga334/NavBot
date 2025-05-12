@@ -129,7 +129,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	Vector forward = m_goal->goal - origin;
 	auto input = bot->GetControlInterface();
 
-	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP || m_goal->type == AIPath::SegmentType::SEGMENT_BLAST_JUMP)
 	{
 		auto next = GetNextSegment(m_goal);
 		if (next != nullptr)
@@ -157,8 +157,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	Vector normal(0.0f, 0.0f, 1.0f);
 
-	forward = CrossProduct(normal, forward);
-	left = CrossProduct(left, normal);
+	forward = CrossProduct(left, normal);
+	left = CrossProduct(normal, forward);
 
 	if (!Climbing(bot, m_goal, forward, left, goalRange))
 	{
@@ -286,10 +286,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	{
 		return true;
 	}
-
-	switch (m_goal->type)
-	{
-	case AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE:
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE)
 	{
 		auto landing = GetNextSegment(m_goal);
 
@@ -301,14 +298,10 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		{
 			return true;
 		}
-
-		break;
 	}
-	case AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP:
-		[[fallthrough]];
-	case AIPath::SEGMENT_BLAST_JUMP:
-		[[fallthrough]];
-	case AIPath::SegmentType::SEGMENT_CLIMB_UP:
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP ||
+		m_goal->type == AIPath::SegmentType::SEGMENT_BLAST_JUMP ||
+		m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP)
 	{
 		auto landing = GetNextSegment(m_goal);
 
@@ -318,43 +311,40 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		}
 		else if (origin.z > m_goal->goal.z + mover->GetStepHeight())
 		{
-			// bot origin Z is above the climb start
+			// bot can step to goal, reached
 			return true;
 		}
-
-		break;
 	}
-	default:
-		break;
-	}
-
-	auto next = GetNextSegment(m_goal);
-
-	if (next != nullptr)
+	else
 	{
-		Vector2D plane;
+		auto next = GetNextSegment(m_goal);
 
-		if (current->ladder != nullptr)
+		if (next)
 		{
-			plane = m_goal->forward.AsVector2D();
-		}
-		else
-		{
-			plane = current->forward.AsVector2D() + m_goal->forward.AsVector2D();
-		}
+			Vector2D plane;
 
-		float dot = DotProduct2D(toGoal.AsVector2D(), plane);
-
-		if (dot < 0.0001f && fabsf(toGoal.z) < mover->GetStandingHullHeigh())
-		{
-			float fraction = 0.0f;
-
-			// If it's reachable, then the bot reached it
-			if (toGoal.z < mover->GetStepHeight() && 
-				mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false) == true && 
-				mover->HasPotentialGap(origin, next->goal, fraction) == false)
+			if (current->ladder != nullptr)
 			{
-				return true;
+				plane = m_goal->forward.AsVector2D();
+			}
+			else
+			{
+				plane = current->forward.AsVector2D() + m_goal->forward.AsVector2D();
+			}
+
+			float dot = DotProduct2D(toGoal.AsVector2D(), plane);
+
+			if (dot < 0.0001f && fabsf(toGoal.z) < mover->GetStandingHullHeigh())
+			{
+				float fraction = 0.0f;
+
+				// If it's reachable, then the bot reached it
+				if (toGoal.z < mover->GetStepHeight() &&
+					mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false) == true &&
+					mover->HasPotentialGap(origin, next->goal, fraction) == false)
+				{
+					return true;
+				}
 			}
 		}
 	}
@@ -438,9 +428,9 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 					break; // only skip ground segments
 				}
 
-				if (fabsf(skip->goal.z - origin.z) > mover->GetStepHeight())
+				if (next->goal.z > origin.z + mover->GetStepHeight())
 				{
-					break; // don't skip heights greater than the bot step height
+					break; // going up a hill/stairs, don't skip
 				}
 
 				if (from->area->HasAttributes(NAV_MESH_PRECISE) || next->area->HasAttributes(NAV_MESH_PRECISE))
@@ -528,6 +518,13 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	}
 
 	if (m_goal == nullptr)
+	{
+		return false;
+	}
+
+	float rangeToGoal = (origin - m_goal->goal).Length();
+
+	if (rangeToGoal - (mover->GetHullWidth() * 0.5f) > GetGoalTolerance())
 	{
 		return false;
 	}

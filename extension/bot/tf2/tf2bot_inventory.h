@@ -10,6 +10,8 @@ public:
 	CTF2BotInventory(CTF2Bot* bot);
 	~CTF2BotInventory();
 
+	bool IsAmmoLow(const bool heldOnly = true) override;
+
 	const CTF2BotWeapon* GetActiveTFWeapon() const { return static_cast<const CTF2BotWeapon*>(IInventory::GetActiveBotWeapon()); }
 
 protected:

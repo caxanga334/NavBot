@@ -15,6 +15,7 @@ public:
 		vision_npc_update_rate = 0.250f;
 		inventory_update_rate = 1.0f;
 		vision_statistics_update = 0.5f;
+		collect_item_max_distance = 5000.0f;
 	}
 
 	virtual ~CModSettings() = default;
@@ -46,6 +47,7 @@ public:
 	void SetVisionNPCUpdateRate(float v) { vision_npc_update_rate = v; }
 	void SetInventoryUpdateRate(float v) { inventory_update_rate = v; }
 	void SetVisionStatisticsUpdateRate(float v) { vision_statistics_update = v; }
+	void SetCollectItemMaxDistance(float v) { collect_item_max_distance = v; }
 
 	const int GetDefendRate() const { return defendrate; }
 	const int GetStuckSuicideThreshold() const { return stucksuicidethreshold; }
@@ -53,6 +55,7 @@ public:
 	const float GetVisionNPCUpdateRate() const { return vision_npc_update_rate; }
 	const float GetInventoryUpdateRate() const { return inventory_update_rate; }
 	const float GetVisionStatisticsUpdateRate() const { return vision_statistics_update; }
+	const float GetCollectItemMaxDistance() const { return collect_item_max_distance; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -61,6 +64,7 @@ protected:
 	float vision_npc_update_rate; // delay in seconds between vision updates of non player entities
 	float inventory_update_rate; // delay in seconds between updates of the weapons being carried by the bot.
 	float vision_statistics_update; // delay in seconds between vision statistics updates
+	float collect_item_max_distance; // maximum travel distance when collecting items (health, ammo, weapons, ...)
 	int cfg_parser_depth; // config file parser depth
 };
 

@@ -101,6 +101,8 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	m_bInSetup = false;
 	m_isTruceActive = false;
 	m_MvMHatchPos = vec3_origin;
+	m_ammosources.reserve(64);
+	m_healthsources.reserve(64);
 
 	m_classselector.LoadClassSelectionData();
 
@@ -400,6 +402,10 @@ void CTeamFortress2Mod::OnNavMeshLoaded()
 void CTeamFortress2Mod::OnNavMeshDestroyed()
 {
 	m_sniperWaypoints.clear();
+	m_sentryWaypoints.clear();
+	m_dispenserWaypoints.clear();
+	m_teleentranceWaypoints.clear();
+	m_teleexitWaypoints.clear();
 }
 
 const char* CTeamFortress2Mod::GetCurrentGameModeName() const
@@ -1193,6 +1199,43 @@ void CTeamFortress2Mod::FindMvMBombHatchPosition()
 	m_MvMHatchPos = UtilHelpers::getWorldSpaceCenter(entity);
 }
 
+void CTeamFortress2Mod::UpdateHealthAndAmmoSources()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTeamFortress2Mod::UpdateHealthAndAmmoSources", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	m_ammosources.clear();
+	m_healthsources.clear();
+
+	for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
+	{
+		edict_t* edict = gamehelpers->EdictOfIndex(i);
+
+		if (!UtilHelpers::IsValidEdict(edict))
+		{
+			return;
+		}
+
+		CBaseEntity* entity = UtilHelpers::EdictToBaseEntity(edict);
+
+		if (!entity)
+		{
+			return;
+		}
+
+		if (UtilHelpers::FClassnameIs(entity, "func_regenerate") || UtilHelpers::FClassnameIs(entity, "item_ammopack*"))
+		{
+			m_ammosources.emplace_back(entity);
+		}
+
+		if (UtilHelpers::FClassnameIs(entity, "func_regenerate") || UtilHelpers::FClassnameIs(entity, "item_healthkit*"))
+		{
+			m_healthsources.emplace_back(entity);
+		}
+	}
+}
+
 bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
 {
 	switch (m_gamemode)
@@ -1360,6 +1403,7 @@ void CTeamFortress2Mod::OnRoundStart()
 	UpdateObjectiveResource(); // call this first
 	FindControlPoints(); // this must be before findpayloadcarts
 	FindPayloadCarts();
+	UpdateHealthAndAmmoSources();
 
 	extmanager->ForEachBot([](CBaseBot* bot) {
 		bot->OnRoundStateChanged();

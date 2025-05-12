@@ -31,7 +31,9 @@ public:
 	bool IsAbleToDoubleJump() override;
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
 	bool IsAbleToBlastJump() override;
-	void JumpAcrossGap(const Vector& landing, const Vector& forward) override;
+protected:
+	bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const override;
+public:
 	bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true) override;
 	bool IsControllingMovements() override;
 	bool NeedsWeaponControl() const override;

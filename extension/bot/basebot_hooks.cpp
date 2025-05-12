@@ -196,7 +196,7 @@ void CBaseBot::Hook_PhysicsSimulate()
 
 	if (pPlayer != GetEntity())
 	{
-		Warning(__FUNCTION__ " this != CBaseBot::m_pEntity %p != %p \n", pPlayer, GetEntity());
+		Warning("CBaseBot::Hook_PhysicsSimulatethis != CBaseBot::m_pEntity %p != %p \n", pPlayer, GetEntity());
 	}
 
 #endif // EXT_DEBUG

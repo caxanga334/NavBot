@@ -151,6 +151,31 @@ namespace botsharedutils
 	private:
 		CBaseBot* m_bot;
 	};
+
+	/**
+	 * @brief Utility class for collecting reachable areas around the bot.
+	 */
+	class IsReachableAreas : public INavAreaCollector<CNavArea>
+	{
+	public:
+		/**
+		 * @brief Constructor.
+		 * @param bot Bot
+		 * @param limit Travel limit.
+		 * @param searchLadders Allow searching ladders?
+		 * @param searchLinks Allow searching off-mesh links?
+		 * @param searchElevators Allow searching elevators?
+		 */
+		IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders = true, const bool searchLinks = true, const bool searchElevators = true);
+
+		bool ShouldSearch(CNavArea* area) override;
+
+		// returns true if this area can be reached.
+		const bool IsReachable(CNavArea* area, float* cost = nullptr) const;
+
+	private:
+		CBaseBot* m_bot;
+	};
 }
 
 namespace botsharedutils::weapons

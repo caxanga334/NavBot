@@ -2,7 +2,7 @@
 #define NAVBOT_TF2BOT_FIND_AMMO_TASK_H_
 #pragma once
 
-#include <basehandle.h>
+#include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_timers.h>
 #include <bot/interfaces/path/meshnavigator.h>
 
@@ -17,8 +17,10 @@ public:
 		DISPENSER // dispenser
 	};
 
-	CTF2BotFindAmmoTask();
-	CTF2BotFindAmmoTask(int maxmetal);
+	static bool IsPossible(CTF2Bot* bot, CBaseEntity** source);
+
+	CTF2BotFindAmmoTask(CBaseEntity* entity);
+	CTF2BotFindAmmoTask(CBaseEntity* entity, int maxmetal);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
@@ -31,22 +33,12 @@ public:
 private:
 	CountdownTimer m_repathtimer;
 	CountdownTimer m_failsafetimer;
-	CountdownTimer m_reachTimer;
 	CMeshNavigator m_nav;
 	AmmoSource m_type;
-	bool m_reached;
-	CBaseHandle m_sourceentity;
-	Vector m_sourcepos;
+	CHandle<CBaseEntity> m_sourceentity;
 	int m_metalLimit;
 
-	AmmoSource FindSource(CTF2Bot* me);
-	void UpdateSourcePosition();
 	bool IsSourceStillValid(CTF2Bot* me);
-
-	Vector GetResupplyPosition(edict_t* resupply);
-
-	// max distance to search for ammo
-	static constexpr float max_distance() { return 4096.0f; }
 };
 
 #endif // !NAVBOT_TF2BOT_FIND_AMMO_TASK_H_

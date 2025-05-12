@@ -103,6 +103,18 @@ namespace tfentities
 		TeamFortress2::TeleporterState GetState() const;
 	};
 
+	class HObjectDispenser : public HBaseObject
+	{
+	public:
+		HObjectDispenser(edict_t* entity) : HBaseObject(entity) {}
+		HObjectDispenser(CBaseEntity* entity) : HBaseObject(entity) {}
+
+		TeamFortress2::DispenserState GetState() const;
+		int GetStoredMetal() const;
+		// Default maximum stored metal
+		static constexpr int GetDefaultMaxStoredMetal() { return 400; }
+	};
+
 	class HTeamControlPoint : public HTFBaseEntity
 	{
 	public:

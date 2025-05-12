@@ -684,12 +684,40 @@ namespace UtilHelpers
 	 * @param maxs Max bounds.
 	 * @param enumerator Entity Enumerator.
 	 * @param mask Mask to use.
-	 * @param coarseTest if coarseTest == true, it'll return all elements that are in spatial partitions that intersect the box 
+	 * @param coarseTest if coarseTest == true, it'll return all elements that are in spatial partitions that intersect the box.
 	 * 
 	 * if coarseTest == false, it'll return only elements that truly intersect
 	 * @return Number of entities collected.
 	 */
 	std::size_t EntitiesInBox(const Vector& mins, const Vector& maxs, CEntityEnumerator& enumerator, SpatialPartitionListMask_t mask = static_cast<SpatialPartitionListMask_t>(PARTITION_ENGINE_NON_STATIC_EDICTS), bool coarseTest = false);
+
+	/**
+	 * @brief Gets all entities in a sphere.
+	 * @param origin Sphere center.
+	 * @param radius Sphere radius.
+	 * @param enumerator Entity enumerator.
+	 * @param mask Mask to use.
+	 * @param coarseTest if coarseTest == true, it'll return all elements that are in spatial partitions that intersect the sphere.
+	 * @return Number of entities collected.
+	 */
+	std::size_t EntitiesInSphere(const Vector& origin, float radius, CEntityEnumerator& enumerator, SpatialPartitionListMask_t mask = static_cast<SpatialPartitionListMask_t>(PARTITION_ENGINE_NON_STATIC_EDICTS), bool coarseTest = false);
+
+	/**
+	 * @brief A general purpose generic filter interface.
+	 * @tparam T Object to filter.
+	 */
+	template <typename T>
+	class IGenericFilter
+	{
+	public:
+
+		/**
+		 * @brief Should this object be selected?
+		 * @param object Object being filtered.
+		 * @return True if it should be selected, false otherwise.
+		 */
+		virtual bool IsSelected(T object) = 0;
+	};
 }
 
 template<typename T>

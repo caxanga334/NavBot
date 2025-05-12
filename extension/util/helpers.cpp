@@ -1667,6 +1667,12 @@ std::size_t UtilHelpers::EntitiesInBox(const Vector& mins, const Vector& maxs, C
 	return enumerator.Count();
 }
 
+std::size_t UtilHelpers::EntitiesInSphere(const Vector& origin, float radius, CEntityEnumerator& enumerator, SpatialPartitionListMask_t mask, bool coarseTest)
+{
+	partition->EnumerateElementsInSphere(mask, origin, radius, coarseTest, &enumerator);
+	return enumerator.Count();
+}
+
 UtilHelpers::CEntityEnumerator::CEntityEnumerator()
 {
 	m_ents.reserve(256);

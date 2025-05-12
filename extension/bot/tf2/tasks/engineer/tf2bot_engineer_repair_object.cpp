@@ -37,7 +37,12 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) == 0)
 	{
-		return PauseFor(new CTF2BotFindAmmoTask, "Need more metal!");
+		CBaseEntity* source = nullptr;
+
+		if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
+		{
+			return PauseFor(new CTF2BotFindAmmoTask(source, 100), "Need more metal!");
+		}
 	}
 
 	tfentities::HBaseObject object(m_object.Get());
