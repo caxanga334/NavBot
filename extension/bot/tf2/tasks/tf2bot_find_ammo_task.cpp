@@ -192,6 +192,7 @@ CTF2BotFindAmmoTask::CTF2BotFindAmmoTask(CBaseEntity* entity) :
 		m_type = AmmoSource::AMMOPACK;
 	}
 
+	m_isDroppedAmmo = UtilHelpers::FClassnameIs(entity, "tf_ammo_pack");
 	m_metalLimit = TeamFortress2::TF_DEFAULT_MAX_METAL;
 }
 
@@ -211,6 +212,7 @@ CTF2BotFindAmmoTask::CTF2BotFindAmmoTask(CBaseEntity* entity, int maxmetal) :
 		m_type = AmmoSource::AMMOPACK;
 	}
 
+	m_isDroppedAmmo = UtilHelpers::FClassnameIs(entity, "tf_ammo_pack");
 	m_metalLimit = maxmetal;
 }
 
@@ -296,6 +298,11 @@ bool CTF2BotFindAmmoTask::IsSourceStillValid(CTF2Bot* me)
 
 	if (!edict)
 		return false; // source entity no longer exists
+
+	if (m_isDroppedAmmo)
+	{
+		return true;
+	}
 
 	switch (m_type)
 	{

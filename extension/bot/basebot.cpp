@@ -696,6 +696,117 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	}
 }
 
+bool CBaseBot::IsAbleToDodgeEnemies(const CKnownEntity* threat) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::IsAbleToDodgeEnemies", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	// Low skill bot not allowed to dodge
+	if (!GetDifficultyProfile()->IsAllowedToDodge())
+	{
+		return false;
+	}
+
+	// Precise movement required for this area, don't dodge
+	const CNavArea* area = GetLastKnownNavArea();
+	if (area && area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)))
+	{
+		return false;
+	}
+
+	// Avoid messing up advanced movements
+	if (GetMovementInterface()->IsControllingMovements())
+	{
+		return false;
+	}
+
+	if (threat)
+	{
+		// Only dodge visible enemies
+		if (!threat->IsVisibleNow())
+		{
+			return false;
+		}
+
+		// Only dodge enemy players
+		if (!threat->IsPlayer())
+		{
+			return false;
+		}
+	}
+
+	// Don't waste time dodging if I am in a hurry.
+	if (GetBehaviorInterface()->ShouldHurry(const_cast<CBaseBot*>(this)) == ANSWER_YES)
+	{
+		return false;
+	}
+
+	const CBotWeapon* activeWeapon = GetInventoryInterface()->GetActiveBotWeapon();
+
+	// Don't dodge if I'm not using a combat weapon
+	if (!activeWeapon || !activeWeapon->GetWeaponInfo()->IsCombatWeapon())
+	{
+		return false;
+	}
+
+	// Don't dodge while scoped
+	if (IsScopedIn())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void CBaseBot::DodgeEnemies(const CKnownEntity* threat)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseBot::DodgeEnemies", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!IsAbleToDodgeEnemies(threat))
+	{
+		return;
+	}
+
+	Vector forward;
+	Vector origin = GetAbsOrigin();
+	EyeVectors(&forward);
+	Vector left(-forward.y, forward.x, 0.0f);
+	left.NormalizeInPlace();
+	IMovement* mover = GetMovementInterface();
+	const float sideStepSize = mover->GetHullWidth();
+
+	int rng = CBaseBot::s_botrng.GetRandomInt<int>(1, 100);
+
+	if (rng < 33)
+	{
+		if (!mover->HasPotentialGap(origin, origin + sideStepSize * left))
+		{
+			GetControlInterface()->PressMoveLeftButton();
+		}
+	}
+	else if (rng > 66)
+	{
+		if (!mover->HasPotentialGap(origin, origin - sideStepSize * left))
+		{
+			GetControlInterface()->PressMoveRightButton();
+		}
+	}
+
+	rng = CBaseBot::s_botrng.GetRandomInt<int>(1, 100);
+
+	if (rng < 11)
+	{
+		GetControlInterface()->PressCrouchButton(0.25f);
+	}
+	else if (rng > 86)
+	{
+		GetControlInterface()->PressJumpButton();
+	}
+}
+
 bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
 {
 #ifdef EXT_VPROF_ENABLED

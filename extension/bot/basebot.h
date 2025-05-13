@@ -264,6 +264,13 @@ public:
 	}
 
 	const IntervalTimer& GetLastKilledTimer() const { return m_lastkilledtimer; }
+	// Is the bot able to dodge enemies in combat?
+	virtual bool IsAbleToDodgeEnemies(const CKnownEntity* threat) const;
+	/**
+	 * @brief Dodge enemies in combat.
+	 * @param threat Enemy to dodge.
+	 */
+	virtual void DodgeEnemies(const CKnownEntity* threat);
 protected:
 	bool m_isfirstspawn;
 

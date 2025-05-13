@@ -26,6 +26,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTaskUpdate(CBlackMesaBot* bot
 	{
 		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
 		bot->FireWeaponAtEnemy(threat, true);
+		bot->DodgeEnemies(threat);
 	}
 
 	return Continue();

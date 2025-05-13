@@ -222,6 +222,29 @@ public:
 	inline bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
 	inline bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
 
+	// Retrieves the smallest minimum range and largest maximum range.
+	inline void GetAbsoluteMinAndMaxRanges(float& min, float& max)
+	{
+		if (attacksinfo[PRIMARY_ATTACK].HasFunction())
+		{
+			min = attacksinfo[PRIMARY_ATTACK].GetMinRange();
+			max = attacksinfo[PRIMARY_ATTACK].GetMaxRange();
+		}
+
+		if (attacksinfo[SECONDARY_ATTACK].HasFunction())
+		{
+			if (attacksinfo[SECONDARY_ATTACK].GetMinRange() < min)
+			{
+				min = attacksinfo[SECONDARY_ATTACK].GetMinRange();
+			}
+
+			if (attacksinfo[SECONDARY_ATTACK].GetMaxRange() > max)
+			{
+				max = attacksinfo[SECONDARY_ATTACK].GetMaxRange();
+			}
+		}
+	}
+
 protected:
 	std::string classname;
 	std::string configentry;

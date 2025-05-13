@@ -54,6 +54,11 @@ TaskResult<CTF2Bot> CTF2BotAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Target is dead!");
 	}
 
+	if (UtilHelpers::IsPlayerIndex(index) && tf2lib::IsPlayerInvisible(pEntity))
+	{
+		return Done("Target is invisible!");
+	}
+
 	const CKnownEntity* known = bot->GetSensorInterface()->GetKnown(pEntity);
 	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
@@ -63,8 +68,17 @@ TaskResult<CTF2Bot> CTF2BotAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Target has escaped me!");
 	}
 
+	float moveToRange = 350.0f;
+
+	const CTF2BotWeapon* weapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
+
+	if (weapon)
+	{
+		moveToRange = weapon->GetCurrentMaximumAttackRange(bot);
+	}
+
 	// don't get too close to them
-	if (!bot->GetSensorInterface()->IsAbleToSee(pEntity) || bot->GetRangeTo(pEntity) > 250.0f)
+	if (!bot->GetSensorInterface()->IsAbleToSee(pEntity) || bot->GetRangeTo(pEntity) > moveToRange)
 	{
 		CTF2BotPathCost cost(bot);
 		m_nav.Update(bot, pEntity, cost, nullptr);

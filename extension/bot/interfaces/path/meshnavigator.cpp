@@ -336,12 +336,10 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 
 			if (dot < 0.0001f && fabsf(toGoal.z) < mover->GetStandingHullHeigh())
 			{
-				float fraction = 0.0f;
-
 				// If it's reachable, then the bot reached it
 				if (toGoal.z < mover->GetStepHeight() &&
-					mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false) == true &&
-					mover->HasPotentialGap(origin, next->goal, fraction) == false)
+					mover->IsPotentiallyTraversable(origin, next->goal, nullptr, false) == true &&
+					mover->HasPotentialGap(origin, next->goal, nullptr) == false)
 				{
 					return true;
 				}
@@ -443,9 +441,8 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 					break; // movement interface disallows skipping the next segment area
 				}
 
-				float fraction;
-				bool IsPotentiallyTraversable = mover->IsPotentiallyTraversable(origin, next->goal, &fraction, false);
-				if (IsPotentiallyTraversable && mover->HasPotentialGap(origin, next->goal, fraction) == false)
+				bool IsPotentiallyTraversable = mover->IsPotentiallyTraversable(origin, next->goal, nullptr, false);
+				if (IsPotentiallyTraversable && mover->HasPotentialGap(origin, next->goal, nullptr) == false)
 				{
 					// only skip a segment if the bot is able to move directly to it from it's current position
 					// and there isn't any holes on the ground

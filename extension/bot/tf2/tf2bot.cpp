@@ -569,6 +569,29 @@ float CTF2Bot::GetTimeLeftToCapture() const
 	return std::numeric_limits<float>::max();
 }
 
+bool CTF2Bot::IsAbleToDodgeEnemies(const CKnownEntity* threat) const
+{
+	// Engineers and snipers don't dodge
+	if (GetMyClassType() == TeamFortress2::TFClassType::TFClass_Engineer || GetMyClassType() == TeamFortress2::TFClassType::TFClass_Sniper)
+	{
+		return false;
+	}
+
+	// Don't dodge while invisible or invulnerable
+	if (tf2lib::IsPlayerInvisible(GetEntity()) || tf2lib::IsPlayerInvulnerable(GetIndex()))
+	{
+		return false;
+	}
+
+	// Don't dodge while disguised
+	if (tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_Disguised))
+	{
+		return false;
+	}
+
+	return CBaseBot::IsAbleToDodgeEnemies(threat);
+}
+
 void CTF2Bot::SelectNewClass()
 {
 #if SOURCE_ENGINE == SE_TF2

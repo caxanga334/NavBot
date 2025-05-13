@@ -154,6 +154,7 @@ public:
 	 * @return Time left on the timer.
 	 */
 	float GetTimeLeftToCapture() const;
+	bool IsAbleToDodgeEnemies(const CKnownEntity* threat) const override;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;

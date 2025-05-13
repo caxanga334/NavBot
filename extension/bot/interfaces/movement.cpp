@@ -858,7 +858,7 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float& fraction)
+bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float* fraction)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::HasPotentialGap", "NavBot");
@@ -879,14 +879,22 @@ bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float& fra
 	{
 		if (IsGap(start, forward))
 		{
-			fraction = (f - step) / (length + step);
+			if (fraction)
+			{
+				*fraction = (f - step) / (length + step);
+			}
+
 			return true;
 		}
 
 		start += delta;
 	}
 
-	fraction = 1.0f;
+	if (fraction)
+	{
+		*fraction = 1.0f;
+	}
+
 	return false;
 }
 

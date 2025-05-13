@@ -37,6 +37,7 @@ private:
 	AmmoSource m_type;
 	CHandle<CBaseEntity> m_sourceentity;
 	int m_metalLimit;
+	bool m_isDroppedAmmo;
 
 	bool IsSourceStillValid(CTF2Bot* me);
 };

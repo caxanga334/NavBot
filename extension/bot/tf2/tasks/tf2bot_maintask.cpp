@@ -54,6 +54,7 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
 		bot->FireWeaponAtEnemy(threat, true);
+		bot->DodgeEnemies(threat);
 	}
 
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)

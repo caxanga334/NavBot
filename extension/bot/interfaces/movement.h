@@ -256,7 +256,7 @@ public:
 	virtual bool IsGap(const Vector& pos, const Vector& forward);
 	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now = true, CBaseEntity** obstacle = nullptr);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
-	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float& fraction);
+	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float* fraction = nullptr);
 
 	virtual bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true);
 

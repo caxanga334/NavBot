@@ -252,6 +252,11 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		bool allow = UtilHelpers::StringToBoolean(value);
 		m_current->SetAllowHeadshots(allow);
 	}
+	else if (strncasecmp(key, "allow_dodging", 13) == 0)
+	{
+		bool allow = UtilHelpers::StringToBoolean(value);
+		m_current->SetIsAllowedToDodge(allow);
+	}
 	else if (strncasecmp(key, "aim_tracking_interval", 21) == 0)
 	{
 		float v = atof(value);
