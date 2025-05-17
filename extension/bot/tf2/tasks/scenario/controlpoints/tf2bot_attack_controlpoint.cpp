@@ -11,6 +11,7 @@ CTF2BotAttackControlPointTask::CTF2BotAttackControlPointTask(CBaseEntity* contro
 	m_capturePos(0.0f, 0.0f, 0.0f)
 {
 	m_controlpoint = controlpoint;
+	m_routeType = DEFAULT_ROUTE;
 }
 
 TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -31,6 +32,28 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskStart(CTF2Bot* bot, AIT
 
 	FindCaptureTrigger(pEntity);
 	m_refreshPosTimer.Start(5.0f);
+
+	if (bot->GetTimeLeftToCapture() <= 90.0f)
+	{
+		m_routeType = FASTEST_ROUTE;
+	}
+	else
+	{
+		int aggression = bot->GetDifficultyProfile()->GetAggressiveness() - 40;
+
+		if (aggression <= 0)
+		{
+			m_routeType = SAFEST_ROUTE;
+		}
+		else if(CBaseBot::s_botrng.GetRandomInt<int>(1, 100) <= aggression)
+		{
+			m_routeType = FASTEST_ROUTE;
+		}
+		else
+		{
+			m_routeType = SAFEST_ROUTE;
+		}
+	}
 
 	return Continue();
 }
@@ -66,7 +89,7 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (!trace::pointwithin(pEntity, pos))
 	{
-		CTF2BotPathCost cost(bot);
+		CTF2BotPathCost cost(bot, m_routeType);
 		m_nav.Update(bot, m_capturePos, cost);
 	}
 

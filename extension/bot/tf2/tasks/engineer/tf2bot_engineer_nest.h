@@ -24,6 +24,8 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 	TaskEventResponseResult<CTF2Bot> OnRoundStateChanged(CTF2Bot* bot) override;
 	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
+	TaskEventResponseResult<CTF2Bot> OnControlPointCaptured(CTF2Bot* bot, CBaseEntity* point) override;
+	TaskEventResponseResult<CTF2Bot> OnControlPointLost(CTF2Bot* bot, CBaseEntity* point) override;
 
 	// Engineers don't retreat for health and ammo
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
@@ -52,6 +54,12 @@ private:
 	bool ShouldMoveSentryGun();
 	AITask<CTF2Bot>* NestTask(CTF2Bot* me);
 	AITask<CTF2Bot>* MoveBuildingsIfNeeded(CTF2Bot* bot);
+
+	inline void ForceMoveBuildings()
+	{
+		m_noThreatTimer.Start(1.0f);
+		m_moveBuildingCheckTimer.Start(3.0f);
+	}
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_NEST_H_

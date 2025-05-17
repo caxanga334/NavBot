@@ -1090,4 +1090,37 @@ CON_COMMAND(sm_navbot_debug_touching, "List entities you're touching.")
 	});
 }
 
+CON_COMMAND(sm_navbot_debug_spread_danger, "Spread danger to nearby areas")
+{
+	edict_t* player = gamehelpers->EdictOfIndex(1);
+	const Vector& origin = UtilHelpers::getEntityOrigin(player);
+	CNavArea* area = TheNavMesh->GetNearestNavArea(origin, 512.0f);
+	float travellimit = 1024.0f;
+	float danger = 5000.0f;
+	float limit = 10000.0f;
+
+	if (args.ArgC() >= 2)
+	{
+		travellimit = atof(args[1]);
+	}
+
+	if (args.ArgC() >= 3)
+	{
+		danger = atof(args[2]);
+	}
+
+	if (args.ArgC() >= 4)
+	{
+		limit = atof(args[3]);
+	}
+
+	if (area)
+	{
+		botsharedutils::SpreadDangerToNearbyAreas spread(area, NAV_TEAM_ANY, travellimit, danger, limit);
+		spread.Execute();
+
+		META_CONPRINTF("Applied %3.2f danger (limit: %3.2f) to %zu nav areas. Travel distance limit: %3.2f \n", danger, limit, spread.GetCollectedAreasCount(), travellimit);
+	}
+}
+
 #endif // EXT_DEBUG

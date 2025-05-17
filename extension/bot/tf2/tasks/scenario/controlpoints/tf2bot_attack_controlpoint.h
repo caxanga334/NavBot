@@ -24,6 +24,7 @@ private:
 	CMeshNavigatorAutoRepath m_nav;
 	Vector m_capturePos; // position the bot should move to to capture the point
 	CountdownTimer m_refreshPosTimer;
+	RouteType m_routeType;
 
 	void FindCaptureTrigger(CBaseEntity* controlpoint);
 

@@ -176,6 +176,32 @@ namespace botsharedutils
 	private:
 		CBaseBot* m_bot;
 	};
+
+	/**
+	 * @brief Utility class for spreading danger around nearby areas.
+	 */
+	class SpreadDangerToNearbyAreas : public INavAreaCollector<CNavArea>
+	{
+	public:
+		/**
+		 * @brief Constructor.
+		 * @param start Starting nav area.
+		 * @param teamid Team Index.
+		 * @param travellimit Max travel to spread danger.
+		 * @param danger Danger amount to add.
+		 * @param maxdanger Max danger.
+		 */
+		SpreadDangerToNearbyAreas(CNavArea* start, int teamid, const float travellimit, const float danger, const float maxdanger);
+
+		bool ShouldSearch(CNavArea* area) override;
+		bool ShouldCollect(CNavArea* area) override;
+		void OnDone() override;
+
+	private:
+		float m_danger;
+		float m_limit;
+		int m_teamid;
+	};
 }
 
 namespace botsharedutils::weapons

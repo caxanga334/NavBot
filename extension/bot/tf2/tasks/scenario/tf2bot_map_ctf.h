@@ -32,6 +32,7 @@ private:
 	CBaseHandle m_flag;
 	Vector m_goalpos;
 	CountdownTimer m_repathtimer;
+	RouteType m_routetype;
 };
 
 class CTF2BotCTFDeliverFlagTask : public AITask<CTF2Bot>

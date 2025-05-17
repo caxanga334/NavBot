@@ -784,6 +784,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_maxgapjumpdistance = bot->GetMovementInterface()->GetMaxGapJumpDistance();
 	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
 	m_canblastjump = bot->GetMovementInterface()->IsAbleToBlastJump();
+	m_teamID = static_cast<int>(bot->GetMyTFTeam());
 }
 
 float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
@@ -890,6 +891,13 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 		{
 			return -1.0f;
 		}
+		else if (link->GetType() == OffMeshConnectionType::OFFMESH_JUMP_OVER_GAP)
+		{
+			if ((link->GetStart() - link->GetEnd()).Length() > m_maxgapjumpdistance)
+			{
+				return -1.0f;
+			}
+		}
 	}
 
 	if (area->HasTFPathAttributes(CTFNavArea::TFNAV_PATH_NO_CARRIERS))
@@ -910,6 +918,11 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	}
 
 	float cost = dist + fromArea->GetCostSoFar();
+
+	if (m_routetype == SAFEST_ROUTE)
+	{
+		cost += area->GetDanger(m_teamID);
+	}
 
 	return cost;
 }

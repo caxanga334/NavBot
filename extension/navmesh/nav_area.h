@@ -317,8 +317,8 @@ public:
 	virtual void OnRoundRestartPreEntity( void ) { }			// invoked for each area when the round restarts, but before entities are deleted and recreated
 	virtual void OnEnter( edict_t *who, CNavArea *areaJustLeft ) { }	// invoked when player enters this area
 	virtual void OnExit( edict_t *who, CNavArea *areaJustEntered ) { }	// invoked when player exits this area
-	virtual void OnFrame() {} // invoked every server frame
-	virtual void OnUpdate() {} // invoked at intervals
+	virtual void OnFrame() {}				// invoked every server frame
+	virtual void OnUpdate();				// invoked at intervals
 
 	virtual void OnDestroyNotify( CNavArea *dead );				// invoked when given area is going away
 	virtual void OnDestroyNotify( CNavLadder *dead );			// invoked when given ladder is going away
@@ -502,17 +502,72 @@ public:
 	void ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, const Vector &fromPos, Vector *closePos ) const; // compute closest point within the "portal" between to adjacent areas
 	NavDirType ComputeDirection( Vector *point ) const;			// return direction from this area to the given point
 
-	//- for hunting algorithm ---------------------------------------------------------------------------
-	void SetClearedTimestamp( int teamID );						// set this area's "clear" timestamp to now
-	float GetClearedTimestamp( int teamID ) const;				// get time this area was marked "clear"
-
 	//- hiding spots ------------------------------------------------------------------------------------
 	const HidingSpotVector *GetHidingSpots( void ) const	{ return &m_hidingSpots; }
 
-	//- "danger" ----------------------------------------------------------------------------------------
-	void IncreaseDanger( int teamID, float amount );			// increase the danger of this area for the given team
-	float GetDanger( int teamID );								// return the danger of this area (decays over time)
-	virtual float GetDangerDecayRate( void ) const;				// return danger decay rate per second
+	/* Danger */
+
+	/**
+	 * @brief Gets the current danger value of this area.
+	 * @param teamID Team ID to get the danger from (required)
+	 * @return Danger value.
+	 */
+	inline const float GetDanger(int teamID) const
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(NAV_TEAMS_ARRAY_SIZE))
+		{
+			return 0.0f;
+		}
+		else
+		{
+			return m_danger[teamID];
+		}
+	}
+
+	/* Common danger amounts */
+	static constexpr float ADD_DANGER_KILLED = 600.0f; // Bot was killed
+	static constexpr float ADD_DANGER_SNIPER = 1100.0f; // Bot was sniped
+	static constexpr float ADD_DANGER_RETREAT = 400.0f; // Bot is retreating from enemies
+
+	/* Common danger limits */
+	static constexpr float MAX_DANGER_ONKILLED = 9000.0f; // Danger limit for bots getting killed
+
+	/**
+	 * @brief Increases the danger amount for this area.
+	 * @param teamID Team to increase for. NAV_TEAM_ANY for all teams.
+	 * @param max Increase danger up to this to avoid excessive danger values.
+	 * @param amount Amount to increase.
+	 */
+	inline void IncreaseDanger(int teamID, const float amount)
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(NAV_TEAMS_ARRAY_SIZE))
+		{
+			for (size_t i = 0; i < NAV_TEAMS_ARRAY_SIZE; i++)
+			{
+				m_danger[i] += amount;
+			}
+		}
+		else
+		{
+			m_danger[teamID] += amount;
+		}
+	}
+	
+	/**
+	 * @brief Clears the danger (sets to 0).
+	 * @param teamID Team to clear the danger for. NAV_TEAM_ANY for all teams.
+	 */
+	inline void ClearDanger(int teamID)
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(NAV_TEAMS_ARRAY_SIZE))
+		{
+			std::fill(m_danger.begin(), m_danger.end(), 0.0f);
+		}
+		else
+		{
+			m_danger[teamID] = 0.0f;
+		}
+	}
 
 	//- extents -----------------------------------------------------------------------------------------
 	float GetSizeX( void ) const			{ return m_seCorner.x - m_nwCorner.x; }
@@ -801,13 +856,10 @@ private:
 	float m_avoidanceObstacleHeight;							// if nonzero, a prop is obstructing movement through this nav area
 	CountdownTimer m_avoidanceObstacleTimer;					// Throttle checks on our obstructed state while obstructed
 
-	//- for hunting -------------------------------------------------------------------------------------
-	float m_clearedTimestamp[ MAX_NAV_TEAMS ];					// time this area was last "cleared" of enemies
-
-	//- "danger" ----------------------------------------------------------------------------------------
-	float m_danger[ MAX_NAV_TEAMS ];							// danger of this area, allowing bots to avoid areas where they died in the past - zero is no danger
-	float m_dangerTimestamp[ MAX_NAV_TEAMS ];					// time when danger value was set - used for decaying
-	void DecayDanger( void );
+	/* Area Danger */
+	std::array<float, NAV_TEAMS_ARRAY_SIZE> m_danger;			// How dangerous this area is for a given team
+	// Decay danger for this area
+	void DecayDanger();
 
 	//- hiding spots ------------------------------------------------------------------------------------
 	HidingSpotVector m_hidingSpots;
@@ -963,13 +1015,6 @@ inline void CNavArea::AddPrerequisite( CFuncNavPrerequisite *prereq )
 #endif
 
 //--------------------------------------------------------------------------------------------------------------
-inline float CNavArea::GetDangerDecayRate( void ) const
-{
-	// one kill == 1.0, which we will forget about in two minutes
-	return 1.0f / 120.0f;
-}
-
-//--------------------------------------------------------------------------------------------------------------
 inline bool CNavArea::IsDegenerate( void ) const
 {
 	return (m_nwCorner.x >= m_seCorner.x || m_nwCorner.y >= m_seCorner.y);
@@ -1036,12 +1081,6 @@ inline void CNavArea::AddToClosedList( void )
 inline void CNavArea::RemoveFromClosedList( void )
 {
 	// since "closed" is defined as visited (marked) and not on open list, do nothing
-}
-
-//--------------------------------------------------------------------------------------------------------------
-inline float CNavArea::GetClearedTimestamp( int teamID ) const
-{ 
-	return m_clearedTimestamp[ teamID % MAX_NAV_TEAMS ];
 }
 
 //--------------------------------------------------------------------------------------------------------------

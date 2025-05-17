@@ -12,6 +12,7 @@
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/sdk_traces.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
+#include <bot/bot_shared_utils.h>
 #include "tf2bot_engineer_build_object.h"
 #include "tf2bot_engineer_repair_object.h"
 #include "tf2bot_engineer_upgrade_object.h"
@@ -262,6 +263,20 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot
 	}
 
 #endif // SOURCE_ENGINE == SE_TF2
+
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnControlPointCaptured(CTF2Bot* bot, CBaseEntity* point)
+{
+	ForceMoveBuildings();
+
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnControlPointLost(CTF2Bot* bot, CBaseEntity* point)
+{
+	ForceMoveBuildings();
 
 	return TryContinue();
 }
@@ -522,17 +537,17 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::MoveBuildingsIfNeeded(CTF2Bot* bot)
 		// time to move
 		if (tf2botutils::FindSpotToBuildDispenserBehindSentry(bot, spot))
 		{
-			return new CTF2BotEngineerMoveObjectTask(dispenser, spot);
+			return new CTF2BotEngineerMoveObjectTask(dispenser, spot, true);
 		}
 		else if (tf2botutils::FindSpotToBuildDispenser(bot, &waypoint, &area, m_sentryWaypoint))
 		{
 			if (waypoint)
 			{
-				return new CTF2BotEngineerMoveObjectTask(dispenser, waypoint);
+				return new CTF2BotEngineerMoveObjectTask(dispenser, waypoint, true);
 			}
 			else
 			{
-				return new CTF2BotEngineerMoveObjectTask(dispenser, area->GetCenter());
+				return new CTF2BotEngineerMoveObjectTask(dispenser, area->GetCenter(), true);
 			}
 		}
 	}
@@ -546,31 +561,55 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::MoveBuildingsIfNeeded(CTF2Bot* bot)
 		{
 			if (waypoint)
 			{
-				return new CTF2BotEngineerMoveObjectTask(exit, waypoint);
+				return new CTF2BotEngineerMoveObjectTask(exit, waypoint, true);
 			}
 			else
 			{
-				return new CTF2BotEngineerMoveObjectTask(exit, area->GetCenter());
+				return new CTF2BotEngineerMoveObjectTask(exit, area->GetCenter(), true);
 			}
 		}
 	}
 
+
 	const Vector& entrancePos = UtilHelpers::getEntityOrigin(entrance);
 	CBaseEntity* spawnPoint = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
 	const Vector& spawnPos = UtilHelpers::getEntityOrigin(spawnPoint);
-	range = (spawnPos - entrancePos).Length();
-
-	if (range > (settings->GetEntranceSpawnRange() + DISTANCE_MARGIN))
+	CNavArea* spawnArea = TheNavMesh->GetNearestNavArea(spawnPos, 512.0f);
+	CNavArea* entranceArea = TheNavMesh->GetNearestNavArea(entrancePos, 512.0f);
+	bool moveEntrance = false;
+	
+	if (spawnArea && entranceArea)
 	{
-		if (tf2botutils::FindSpotToBuildTeleExit(bot, &waypoint, &area, m_sentryWaypoint))
+		botsharedutils::IsReachableAreas collector(bot, settings->GetEntranceSpawnRange() + DISTANCE_MARGIN);
+		collector.SetStartArea(spawnArea); // override, uses the bot position by default
+		collector.Execute();
+
+		float cost;
+		if (collector.IsReachable(entranceArea, &cost))
+		{
+			if (cost > settings->GetEntranceSpawnRange() + DISTANCE_MARGIN)
+			{
+				moveEntrance = true;
+			}
+		}
+		else
+		{
+			// can't reach it
+			moveEntrance = true;
+		}
+	}
+
+	if (moveEntrance)
+	{
+		if (tf2botutils::FindSpotToBuildTeleEntrance(bot, &waypoint, &area))
 		{
 			if (waypoint)
 			{
-				return new CTF2BotEngineerMoveObjectTask(entrance, waypoint);
+				return new CTF2BotEngineerMoveObjectTask(entrance, waypoint, true);
 			}
 			else
 			{
-				return new CTF2BotEngineerMoveObjectTask(entrance, area->GetCenter());
+				return new CTF2BotEngineerMoveObjectTask(entrance, area->GetCenter(), true);
 			}
 		}
 	}

@@ -8,9 +8,12 @@
 #include <util/prediction.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_takedamageinfo.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
-#include "bot/tf2/tf2bot.h"
+#include <bot/bot_shared_utils.h>
+#include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
 #include "tf2bot_dead.h"
 #include "tf2bot_taunting.h"
 #include "tf2bot_setuptime.h"
@@ -67,15 +70,15 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnDebugMoveToHostCommand(CTF2Bot* bot)
 {
-#ifdef EXT_DEBUG
-	auto host = gamehelpers->EdictOfIndex(1);
-	CBaseExtPlayer player(host);
-	Vector goal = player.GetAbsOrigin();
+	edict_t* host = gamehelpers->EdictOfIndex(1);
 
-	return TryPauseFor(new CTF2BotDevTask(goal), PRIORITY_CRITICAL, "Move to Origin debug task!");
-#else
+	if (host)
+	{
+		const Vector& origin = UtilHelpers::getEntityOrigin(host);
+		return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CTF2Bot, CTF2BotPathCost>(bot, origin), PRIORITY_CRITICAL, "Responding to debug command!");
+	}
+
 	return TryContinue();
-#endif // EXT_DEBUG
 }
 
 const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
@@ -147,6 +150,22 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desir
 
 TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const CTakeDamageInfo& info)
 {
+	int teamID = static_cast<int>(bot->GetMyTFTeam());
+	bool isSniper = false;
+	CNavArea* area = bot->GetLastKnownNavArea();
+
+	CBaseEntity* attacker = info.GetAttacker();
+
+	if (attacker && UtilHelpers::IsPlayer(attacker) && tf2lib::GetPlayerClassType(UtilHelpers::IndexOfEntity(attacker)) == TeamFortress2::TFClassType::TFClass_Sniper)
+	{
+		isSniper = true;
+	}
+
+	float danger = isSniper ? CNavArea::ADD_DANGER_SNIPER : CNavArea::ADD_DANGER_KILLED;
+
+	botsharedutils::SpreadDangerToNearbyAreas spread(area, teamID, 600.0f, danger, CNavArea::MAX_DANGER_ONKILLED);
+	spread.Execute();
+
 	return TrySwitchTo(new CTF2BotDeadTask, PRIORITY_MANDATORY, "I am dead!");
 }
 
@@ -247,61 +266,3 @@ const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, con
 
 	return threat2;
 }
-
-#ifdef EXT_DEBUG
-
-CTF2BotDevTask::CTF2BotDevTask(const Vector& moveTo)
-{
-	m_goal = moveTo;
-}
-
-TaskResult<CTF2Bot> CTF2BotDevTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
-{
-	m_repathtimer.Start(0.5f);
-
-	CTF2BotPathCost cost(bot);
-	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
-	{
-		return Done("Failed to compute path!");
-	}
-
-	return Continue();
-}
-
-TaskResult<CTF2Bot> CTF2BotDevTask::OnTaskUpdate(CTF2Bot* bot)
-{
-	if (m_repathtimer.IsElapsed())
-	{
-		m_repathtimer.Reset();
-
-		CTF2BotPathCost cost(bot);
-		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
-		{
-			return Done("Failed to compute path!");
-		}
-	}
-
-	m_nav.Update(bot);
-
-	return Continue();
-}
-
-TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
-{
-	m_repathtimer.Reset();
-
-	CTF2BotPathCost cost(bot);
-	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
-	{
-		return TryDone(PRIORITY_HIGH, "Failed to compute path!");
-	}
-
-	return TryContinue();
-}
-
-TaskEventResponseResult<CTF2Bot> CTF2BotDevTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
-{
-	return TryDone(PRIORITY_HIGH, "Goal reached!");
-}
-
-#endif // EXT_DEBUG

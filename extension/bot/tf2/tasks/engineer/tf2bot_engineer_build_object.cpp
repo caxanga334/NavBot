@@ -82,7 +82,7 @@ CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type,
 
 TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	CTF2BotPathCost cost(bot);
+	CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 	{
 		return Done("Failed to build path to build location.");
@@ -264,7 +264,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			m_repathTimer.Start(2.5f);
 
-			CTF2BotPathCost cost(bot);
+			CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 			if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 			{
 				return Done("Failed to build path to build location.");
@@ -288,7 +288,7 @@ void CTF2BotEngineerBuildObjectTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* ne
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	CTF2BotPathCost cost(bot);
+	CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 	{
 		return TryDone(PRIORITY_HIGH, "Failed to build path to build location.");

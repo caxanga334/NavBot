@@ -62,7 +62,7 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			m_ammochecktimer.StartRandom(1.0f, 5.0f);
 
-			if (bot->GetInventoryInterface()->IsAmmoLow())
+			if (bot->GetInventoryInterface()->IsAmmoLow(false))
 			{
 				CBaseEntity* source = nullptr;
 

@@ -1680,30 +1680,39 @@ bool CNavMesh::GetSimpleGroundHeight( const Vector &pos, float *height, Vector *
  */
 void CNavMesh::DrawDanger( void ) const
 {
-	FOR_EACH_VEC( TheNavAreas, it )
+	edict_t* host = UtilHelpers::GetListenServerHost();
+
+	if (!UtilHelpers::IsValidEdict(host))
 	{
-		CNavArea *area = TheNavAreas[ it ];
+		return;
+	}
 
-		Vector center = area->GetCenter();
-		Vector top;
-		center.z = area->GetZ( center );
+	SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(host);
 
-		float danger = area->GetDanger( 0 );
-		if (danger > 0.1f)
+	if (!player || player->GetPlayerInfo() == nullptr)
+	{
+		return;
+	}
+
+	const Vector origin = player->GetPlayerInfo()->GetAbsOrigin();
+	int team = player->GetPlayerInfo()->GetTeamIndex();
+
+	CNavArea* area = GetNavArea(origin);
+
+	if (!area)
+	{
+		return;
+	}
+
+	INavAreaCollector<CNavArea> collector(area, 1024.0f);
+
+	collector.Execute();
+
+	if (!collector.IsCollectedAreasEmpty())
+	{
+		for (CNavArea* area : collector.GetCollectedAreas())
 		{
-			top.x = center.x;
-			top.y = center.y;
-			top.z = center.z + 10.0f * danger;
-			DrawLine( center, top, 3, 255, 0, 0 );
-		}
-
-		danger = area->GetDanger( 1 );
-		if (danger > 0.1f)
-		{
-			top.x = center.x;
-			top.y = center.y;
-			top.z = center.z + 10.0f * danger;
-			DrawLine( center, top, 3, 0, 0, 255 );
+			NDebugOverlay::Text(area->GetCenter(), true, NDEBUG_PERSIST_FOR_ONE_TICK, "Area Danger Team #%i : %3.2f", team, area->GetDanger(team));
 		}
 	}
 }

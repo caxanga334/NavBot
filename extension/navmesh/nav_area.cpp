@@ -9,9 +9,7 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
-#include <array>
 #include <unordered_set>
-#include <algorithm>
 #include <string_view>
 
 #include <extension.h>
@@ -69,6 +67,7 @@ ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT
 ConVar sm_nav_update_visibility_on_edit( "sm_nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
 ConVar sm_nav_potentially_visible_dot_tolerance( "sm_nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
 ConVar sm_nav_show_potentially_visible( "sm_nav_show_potentially_visible", "0", FCVAR_CHEAT, "Show areas that are potentially visible from the current nav area" );
+static ConVar sm_nav_danger_decay_rate("sm_nav_danger_decay_rate", "20", FCVAR_GAMEDLL, "How much area danger is decayed per second.", true, 1.0f, true, 100.0f);
 
 Color s_selectedSetColor( 255, 255, 200, 96 );
 Color s_selectedSetBorderColor( 100, 100, 0, 255 );
@@ -203,13 +202,10 @@ CNavArea::CNavArea(unsigned int place)
 	int i;
 	for ( i=0; i<MAX_NAV_TEAMS; ++i )
 	{
-		m_danger[i] = 0.0f;
-		m_dangerTimestamp[i] = 0.0f;
-
-		m_clearedTimestamp[i] = 0.0f;
-
 		m_earliestOccupyTime[i] = 0.0f;
 	}
+
+	std::fill(m_danger.begin(), m_danger.end(), 0.0f);
 
 	// set an ID for splitting and other interactive editing - loads will overwrite this
 	m_id = m_nextID++;
@@ -526,8 +522,8 @@ void CNavArea::OnServerActivate( void )
 {
 	m_damagingTickCount = 0;
 	ClearAllNavCostEntities();
+	ClearDanger(NAV_TEAM_ANY);
 }
-
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -537,6 +533,7 @@ void CNavArea::OnRoundRestart( void )
 {
 	m_damagingTickCount = 0;
 	ClearAllNavCostEntities();
+	ClearDanger(NAV_TEAM_ANY);
 }
 
 #ifdef DEBUG_AREA_PLAYERCOUNTS
@@ -602,6 +599,11 @@ bool CNavArea::HasNodes( void ) const
 	}
 
 	return false;
+}
+
+void CNavArea::OnUpdate()
+{
+	DecayDanger();
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3478,13 +3480,6 @@ void CNavArea::RemoveFromOpenList( void )
 }
 
 //--------------------------------------------------------------------------------------------------------------
-inline void CNavArea::SetClearedTimestamp( int teamID )
-{
-	m_clearedTimestamp[ teamID % MAX_NAV_TEAMS ] = gpGlobals->curtime;
-}
-
-
-//--------------------------------------------------------------------------------------------------------------
 bool CNavArea::IsDamaging( void ) const
 {
 	return (gpGlobals->tickcount <= m_damagingTickCount);	
@@ -3604,6 +3599,21 @@ void CNavArea::SetCorner( NavCornerType corner, const Vector& newPosition )
 	CalcDebugID();
 }
 
+
+void CNavArea::DecayDanger()
+{
+	const float decay = sm_nav_danger_decay_rate.GetFloat();
+
+	for (size_t i = 0; i < NAV_TEAMS_ARRAY_SIZE; i++)
+	{
+		m_danger[i] = m_danger[i] - decay;
+
+		if (m_danger[i] < 0.0f)
+		{
+			m_danger[i] = 0.0f;
+		}
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -3964,52 +3974,6 @@ void CNavArea::ComputeSniperSpots( void )
 		ClassifySniperSpot( spot );
 	}
 }
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Decay the danger values
- */
-void CNavArea::DecayDanger( void )
-{
-	for( int i=0; i<MAX_NAV_TEAMS; ++i )
-	{
-		float deltaT = gpGlobals->curtime - m_dangerTimestamp[i];
-		float decayAmount = GetDangerDecayRate() * deltaT;
-
-		m_danger[i] -= decayAmount;
-		if (m_danger[i] < 0.0f)
-			m_danger[i] = 0.0f;
-
-		// update timestamp
-		m_dangerTimestamp[i] = gpGlobals->curtime;
-	}
-}
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Increase the danger of this area for the given team
- */
-void CNavArea::IncreaseDanger( int teamID, float amount )
-{
-	// before we add the new value, decay what's there
-	DecayDanger();
-
-	int teamIdx = teamID % MAX_NAV_TEAMS;
-
-	m_danger[ teamIdx ] += amount;
-	m_dangerTimestamp[ teamIdx ] = gpGlobals->curtime;
-}
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Return the danger of this area (decays over time)
- */
-float CNavArea::GetDanger( int teamID )
-{
-	DecayDanger();
-	return m_danger[ teamID % MAX_NAV_TEAMS ];
-}
-
 
 //--------------------------------------------------------------------------------------------------------------
 /**

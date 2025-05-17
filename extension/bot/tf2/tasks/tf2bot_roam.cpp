@@ -8,6 +8,7 @@
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_roam.h"
 #include "tf2bot_attack.h"
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 
 class RoamCollector : public INavAreaCollector<CTFNavArea>
 {
@@ -70,11 +71,11 @@ TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat)
 	{
-		if (randomgen->GetRandomInt<int>(0, 100) >= 80)
+		if (randomgen->GetRandomInt<int>(1, 100) <= bot->GetDifficultyProfile()->GetAggressiveness())
 		{
 			m_repathtimer.Invalidate();
 			m_nav.Invalidate();
-			return PauseFor(new CTF2BotAttackTask(threat->GetEntity()), "Attacking visible threat!");
+			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot, 5.0f), "Attacking visible threat!");
 		}
 	}
 

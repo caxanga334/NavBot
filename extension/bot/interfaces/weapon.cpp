@@ -58,16 +58,7 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner, const bool primaryOnly, const 
 
 	bool low = false;
 	int ammo = 0;
-	int limit = 0;
-
-	if (lowThresholdOverride > 0)
-	{
-		limit = lowThresholdOverride;
-	}
-	else
-	{
-		limit = m_info->GetLowPrimaryAmmoThreshold();
-	}
+	int limit = lowThresholdOverride > 0 ? lowThresholdOverride : m_info->GetLowPrimaryAmmoThreshold();
 
 	if (!m_info->Clip1IsReserveAmmo())
 	{
@@ -88,15 +79,7 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner, const bool primaryOnly, const 
 
 	if (!primaryOnly)
 	{
-		if (lowThresholdOverride > 0)
-		{
-			limit = lowThresholdOverride;
-		}
-		else
-		{
-			limit = m_info->GetLowSecondaryAmmoThreshold();
-		}
-
+		limit = lowThresholdOverride > 0 ? lowThresholdOverride : m_info->GetLowSecondaryAmmoThreshold();
 		ammo = 0;
 
 		if (!m_info->Clip2IsReserveAmmo())

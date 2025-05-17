@@ -10,9 +10,10 @@ class CTFWaypoint;
 class CTF2BotEngineerMoveObjectTask : public AITask<CTF2Bot>
 {
 public:
-	CTF2BotEngineerMoveObjectTask(CBaseEntity* object, const Vector& goal);
-	CTF2BotEngineerMoveObjectTask(CBaseEntity* object, CTFWaypoint* goal);
+	CTF2BotEngineerMoveObjectTask(CBaseEntity* object, const Vector& goal, const bool allowDestroying = false);
+	CTF2BotEngineerMoveObjectTask(CBaseEntity* object, CTFWaypoint* goal, const bool allowDestroying = false);
 
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	void OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask) override;
 
@@ -29,6 +30,7 @@ private:
 	CMeshNavigatorAutoRepath m_nav;
 	CountdownTimer m_changeAngleTimer;
 	bool m_hasBuilding;
+	bool m_canDestroy;
 };
 
 

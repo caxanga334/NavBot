@@ -9,7 +9,7 @@ class CTF2Bot;
 class CTF2BotRoamTask : public AITask<CTF2Bot>
 {
 public:
-	CTF2BotRoamTask() : m_hasgoal(false), m_failcount(0) {}
+	CTF2BotRoamTask() : m_hasgoal(false), m_failcount(0), m_goal(0.0f, 0.0f, 0.0f) {}
 	CTF2BotRoamTask(const Vector& goal);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;

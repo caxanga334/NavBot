@@ -31,6 +31,7 @@ TaskResult<CDoDSBot> CDoDSBotMainTask::OnTaskUpdate(CDoDSBot* bot)
 	{
 		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
 		bot->FireWeaponAtEnemy(threat, true);
+		bot->DodgeEnemies(threat);
 	}
 
 	return Continue();

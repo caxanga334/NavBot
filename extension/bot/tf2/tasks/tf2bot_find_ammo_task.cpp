@@ -232,7 +232,7 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 
 TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	if (!bot->GetInventoryInterface()->IsAmmoLow())
+	if (!bot->GetInventoryInterface()->IsAmmoLow(false))
 	{
 		return Done("Got ammo!");
 	}

@@ -57,7 +57,7 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 }
 
 CTF2BotCTFFetchFlagTask::CTF2BotCTFFetchFlagTask(edict_t* flag) :
-	m_goalpos(0.0f, 0.0f, 0.0f)
+	m_goalpos(0.0f, 0.0f, 0.0f), m_routetype(DEFAULT_ROUTE)
 {
 	gamehelpers->SetHandleEntity(m_flag, flag);
 }
@@ -69,11 +69,20 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 	if (!edict)
 		return Done("Flag is NULL!");
 
+	if (bot->GetDifficultyProfile()->GetAggressiveness() >= 50)
+	{
+		m_routetype = static_cast<RouteType>(randomgen->GetRandomInt<int>(1, 2));
+	}
+	else
+	{
+		m_routetype = SAFEST_ROUTE;
+	}
+
 	tfentities::HCaptureFlag flag(edict);
 
 	m_goalpos = flag.GetPosition();
 
-	CTF2BotPathCost cost(bot);
+	CTF2BotPathCost cost(bot, m_routetype);
 	
 	if (!m_nav.ComputePathToPosition(bot, m_goalpos, cost))
 	{
@@ -81,6 +90,8 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 	}
 
 	m_repathtimer.StartRandom(1.0f, 1.5f);
+
+
 
 	return Continue();
 }
@@ -109,7 +120,7 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskUpdate(CTF2Bot* bot)
 		m_repathtimer.Reset();
 		m_goalpos = flag.GetPosition();
 
-		CTF2BotPathCost cost(bot);
+		CTF2BotPathCost cost(bot, m_routetype);
 		if (!m_nav.ComputePathToPosition(bot, m_goalpos, cost))
 		{
 			return Done("Failed to find a path to the flag!");

@@ -66,7 +66,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskStart(CTF2Bot* bot
 {
 	FindSniperSpot(bot);
 
-	CTF2BotPathCost cost(bot);
+	CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 	m_nav.ComputePathToPosition(bot, m_goal, cost);
 
 	m_repathTimer.StartRandom();
@@ -102,7 +102,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 	{
 		m_repathTimer.StartRandom();
 
-		CTF2BotPathCost cost(bot);
+		CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 		m_nav.ComputePathToPosition(bot, m_goal, cost);
 	}
 

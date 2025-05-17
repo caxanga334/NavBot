@@ -214,6 +214,7 @@ void IMovement::Update()
 				m_isJumping = false;
 				m_jumpTimer.Invalidate();
 				m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
+				me->UpdateLastKnownNavArea(true);
 				DoCounterStrafe(0.25f); // experimental to regain control post landing
 				me->GetControlInterface()->ReleaseJumpButton();
 				me->GetControlInterface()->ReleaseCrouchButton();
@@ -260,6 +261,7 @@ void IMovement::Update()
 				m_isJumping = false;
 				m_jumpTimer.Invalidate();
 				m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
+				me->UpdateLastKnownNavArea(true);
 				me->GetControlInterface()->ReleaseJumpButton();
 				me->GetControlInterface()->ReleaseCrouchButton();
 
@@ -666,6 +668,11 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 		Jump();
 		
 		m_doMidAirCJ.Start(sm_navbot_movement_gap_dj_time.GetFloat());
+
+		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			GetBot<CBaseBot>()->DebugPrintToConsole(70, 130, 180, "%s JUMP ACROSS GAP REQUIRES DOUBLE JUMP \n", GetBot<CBaseBot>()->GetDebugIdentifier());
+		}
 	}
 	else
 	{

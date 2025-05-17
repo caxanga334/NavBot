@@ -70,6 +70,7 @@ inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMo
 template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMoveToSuccess(BT* bot, CPath* path)
 {
+	bot->GetMovementInterface()->DoCounterStrafe();
 	return AITask<BT>::TryDone(PRIORITY_HIGH, "Goal reached");
 }
 

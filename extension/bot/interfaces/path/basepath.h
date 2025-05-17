@@ -261,6 +261,11 @@ public:
 		CNavArea* closestArea = nullptr;
 		bool pathBuildResult = NavAreaBuildPath(startArea, goalArea, &goal, costFunc, &closestArea, maxPathLength, bot->GetCurrentTeamIndex());
 
+		if (closestArea)
+		{
+			SetTravelDistance(closestArea->GetTotalCost());
+		}
+
 		// count the number of areas in the path
 		int areaCount = 0;
 
@@ -380,6 +385,7 @@ public:
 	virtual void DrawFullPath(const float duration = 0.1f);
 	virtual float GetPathLength() const;
 
+
 	// How many seconds since this path was built
 	virtual float GetAge() const { return m_ageTimer.GetElapsedTime(); }
 	// Checks if the path is valid.
@@ -440,6 +446,9 @@ public:
 		}
 	}
 
+	// Returns the total travel distance since the last ComputePath call.
+	const float GetTravelDistance() const { return m_travelDistance; }
+
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
 	virtual bool ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& start, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
@@ -453,12 +462,15 @@ protected:
 	inline std::vector<std::shared_ptr<CBasePathSegment>>& GetAllSegments() { return m_segments; }
 	bool BuildTrivialPath(const Vector& start, const Vector& goal);
 
+	void SetTravelDistance(const float dist) { m_travelDistance = dist; }
+
 private:
 	std::vector<std::shared_ptr<CBasePathSegment>> m_segments;
 	IntervalTimer m_ageTimer;
 	PathCursor m_cursor;
 	float m_cursorPos;
 	Vector m_destination; // 'Goal' position of the last ComputePath call
+	float m_travelDistance; // Travel distance between start and goal from the last ComputePath Call
 
 	void DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration);
 	void Drawladder(const CNavLadder* ladder, AIPath::SegmentType type, const float duration);

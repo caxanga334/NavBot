@@ -23,6 +23,7 @@ public:
 		entrance_spawn_range = 2048.0f;
 		mvm_sentry_to_bomb_range = 1500.0f;
 		medic_patient_scan_range = 1024.0f;
+		engineer_destroy_travel_range = 4500.0f;
 	}
 
 	void SetEngineerNestDispenserRange(float range) { engineer_nest_dispenser_range = range; }
@@ -30,12 +31,14 @@ public:
 	void SetEntranceSpawnRange(float range) { entrance_spawn_range = range; }
 	void SetMvMSentryToBombRange(float range) { mvm_sentry_to_bomb_range = range; }
 	void SetMedicPatientScanRange(float range) { medic_patient_scan_range = range; }
+	void SetEngineerMoveDestroyBuildingRange(float range) { engineer_destroy_travel_range = range; }
 
 	float GetEngineerNestDispenserRange() const { return engineer_nest_dispenser_range; }
 	float GetEngineerNestExitRange() const { return engineer_nest_exit_range; }
 	float GetEntranceSpawnRange() const { return entrance_spawn_range; }
 	float GetMvMSentryToBombRange() const { return mvm_sentry_to_bomb_range; }
 	float GetMedicPatientScanRange() const { return medic_patient_scan_range; }
+	float GetEngineerMoveDestroyBuildingRange() const { return engineer_destroy_travel_range; }
 
 protected:
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
@@ -46,6 +49,7 @@ private:
 	float entrance_spawn_range; // maximum distance between the teleporter entrance and the active spawn point
 	float mvm_sentry_to_bomb_range; // MvM: maximum sentry build distance
 	float medic_patient_scan_range; // distance medics will scan for patients
+	float engineer_destroy_travel_range; // When moving buildings, if the travel distance is larger than this, destroy it instead
 };
 
 class CTF2Bot;

@@ -93,6 +93,39 @@ public:
 		}
 	}
 
+	/**
+	 * @brief Makes engineers destroy a building.
+	 * @param type Object type
+	 * @param mode Object mode (for teleporters)
+	 */
+	inline void DestroyBuilding(TeamFortress2::TFObjectType type, TeamFortress2::TFObjectMode mode)
+	{
+		switch (type)
+		{
+		case TeamFortress2::TFObject_Dispenser:
+			DelayedFakeClientCommand("destroy 0 0");
+			break;
+		case TeamFortress2::TFObject_Teleporter:
+		{
+			if (mode == TeamFortress2::TFObjectMode::TFObjectMode_Entrance)
+			{
+				DelayedFakeClientCommand("destroy 1 0");
+			}
+			else
+			{
+				DelayedFakeClientCommand("destroy 1 1");
+			}
+
+			break;
+		}
+		case TeamFortress2::TFObject_Sentry:
+			DelayedFakeClientCommand("destroy 2 0");
+			break;
+		default:
+			break;
+		}
+	}
+
 	void DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam = false);
 
 	inline void DisguiseAs(TeamFortress2::TFClassType classtype, TeamFortress2::TFTeam team)
@@ -181,7 +214,7 @@ private:
 class CTF2BotPathCost : public IPathCost
 {
 public:
-	CTF2BotPathCost(CTF2Bot* bot, RouteType routetype = FASTEST_ROUTE);
+	CTF2BotPathCost(CTF2Bot* bot, RouteType routetype = DEFAULT_ROUTE);
 
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
@@ -195,6 +228,7 @@ private:
 	float m_maxgapjumpdistance;
 	bool m_candoublejump;
 	bool m_canblastjump;
+	int m_teamID;
 };
 
 #endif // !NAVBOT_TEAM_FORTRESS_2_BOT_H_

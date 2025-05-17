@@ -47,6 +47,11 @@ bool CWeaponInfoManager::LoadConfigFile()
 
 	PostParseAnalysis();
 
+	for (auto& info : m_weapons)
+	{
+		info->PostLoad();
+	}
+
 	extmanager->ForEachBot([](CBaseBot* bot) {
 		bot->GetInventoryInterface()->OnWeaponInfoConfigReloaded();
 	});
@@ -256,6 +261,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetIsSemiAuto(UtilHelpers::StringToBoolean(value));
 	}
+	else if (strncmp(key, "attack_range_override", 21) == 0)
+	{
+		float flvalue = atof(value);
+		m_current->SetAttackRange(flvalue);
+	}
 	else if (!IsParserInWeaponAttackSection())
 	{
 		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair <%s - %s> at line %i col %i", key, value, states->line, states->col);
@@ -352,6 +362,21 @@ SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SMCStates* states)
 	}
 
 	return SMCResult_Continue;
+}
+
+void WeaponInfo::PostLoad()
+{
+	// If not set by the config file, use the largest distance between all available attacks.
+	if (attack_move_range <= 0.0f)
+	{
+		for (size_t i = 0; i < static_cast<size_t>(MAX_WEAPON_ATTACKS); i++)
+		{
+			if (attacksinfo[i].HasFunction() && attacksinfo[i].GetMaxRange() > attack_move_range)
+			{
+				attack_move_range = attacksinfo[i].GetMaxRange();
+			}
+		}
+	}
 }
 
 CON_COMMAND(sm_navbot_reload_weaponinfo_config, "Reloads the weapon info configuration file.")

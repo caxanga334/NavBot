@@ -27,6 +27,7 @@ CPath::CPath() :
 {
 	m_segments.reserve(512);
 	m_cursorPos = 0.0f;
+	m_travelDistance = 0.0f;
 }
 
 CPath::~CPath()

@@ -120,6 +120,7 @@ public:
 		primammolow = 0;
 		secammolow = 0;
 		slot = INVALID_WEAPON_SLOT;
+		attack_move_range = -1.0f;
 	}
 
 	virtual ~WeaponInfo() {}
@@ -137,6 +138,7 @@ public:
 		maxclip2 = 0;
 		primammolow = 0;
 		secammolow = 0;
+		attack_move_range = -1.0f;
 
 		slot = INVALID_WEAPON_SLOT;
 		attacksinfo[PRIMARY_ATTACK].Reset();
@@ -200,6 +202,7 @@ public:
 	inline void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	inline void SetSlot(int s) { slot = s; }
 	inline void SetIsSemiAuto(bool v) { semiauto = v; }
+	inline void SetAttackRange(float v) { attack_move_range = v; }
 
 	inline bool HasEconIndex() const { return econindex >= 0; }
 	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -221,29 +224,10 @@ public:
 	inline bool IsSemiAuto() const { return semiauto; }
 	inline bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
 	inline bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
-
-	// Retrieves the smallest minimum range and largest maximum range.
-	inline void GetAbsoluteMinAndMaxRanges(float& min, float& max)
-	{
-		if (attacksinfo[PRIMARY_ATTACK].HasFunction())
-		{
-			min = attacksinfo[PRIMARY_ATTACK].GetMinRange();
-			max = attacksinfo[PRIMARY_ATTACK].GetMaxRange();
-		}
-
-		if (attacksinfo[SECONDARY_ATTACK].HasFunction())
-		{
-			if (attacksinfo[SECONDARY_ATTACK].GetMinRange() < min)
-			{
-				min = attacksinfo[SECONDARY_ATTACK].GetMinRange();
-			}
-
-			if (attacksinfo[SECONDARY_ATTACK].GetMaxRange() > max)
-			{
-				max = attacksinfo[SECONDARY_ATTACK].GetMaxRange();
-			}
-		}
-	}
+	// Returns the minimum distance bots should try to maintain when attacking
+	const float GetAttackRange() const { return attack_move_range; }
+ 
+	virtual void PostLoad();
 
 protected:
 	std::string classname;
@@ -261,6 +245,7 @@ protected:
 	int primammolow; // Threshold for low primary ammo
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
+	float attack_move_range; // Minimum distance the bot will try to maintain when attacking.
 
 	static constexpr auto CLIP_USES_RESERVE = -2; // if maxclip is equal to this constant, then the weapon doesn't use clips and the actual ammo in the 'clip' is the reserve ammo.
 };

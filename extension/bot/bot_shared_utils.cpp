@@ -664,3 +664,44 @@ const bool botsharedutils::IsReachableAreas::IsReachable(CNavArea* area, float* 
 
 	return false;
 }
+
+botsharedutils::SpreadDangerToNearbyAreas::SpreadDangerToNearbyAreas(CNavArea* start, int teamid, const float travellimit, const float danger, const float maxdanger) :
+	INavAreaCollector<CNavArea>(start, travellimit)
+{
+	m_danger = danger;
+	m_limit = maxdanger;
+	m_teamid = teamid;
+}
+
+bool botsharedutils::SpreadDangerToNearbyAreas::ShouldSearch(CNavArea* area)
+{
+	return !area->IsBlocked(m_teamid);
+}
+
+bool botsharedutils::SpreadDangerToNearbyAreas::ShouldCollect(CNavArea* area)
+{
+	return true;
+}
+
+void botsharedutils::SpreadDangerToNearbyAreas::OnDone()
+{
+	for (CNavArea* area : GetCollectedAreas())
+	{
+		float danger = area->GetDanger(m_teamid) + m_danger;
+
+		if (danger > m_limit)
+		{
+			danger = m_limit - area->GetDanger(m_teamid);
+
+			if (danger <= 0.0f)
+			{
+				continue;
+			}
+
+			area->IncreaseDanger(m_teamid, danger);
+			continue;
+		}
+
+		area->IncreaseDanger(m_teamid, m_danger);
+	}
+}
