@@ -89,6 +89,20 @@ namespace tf2lib::pd
 	CBaseEntity* GetTeamLeader(TeamFortress2::TFTeam team);
 }
 
+namespace tf2lib::passtime
+{
+	// returns the passtime ball entity
+	CBaseEntity* GetJack();
+	// Gets the player carrying the given jack
+	CBaseEntity* GetJackCarrier(CBaseEntity* jack);
+	// true if the jack is spawned and active
+	bool IsJackActive();
+	// gets the jack spawn position, returns false if not found
+	bool GetJackSpawnPosition(Vector* spawnPos);
+	// gets a pass time goal entity
+	CBaseEntity* GetGoalEntity(TeamFortress2::PassTimeGoalType goaltype, TeamFortress2::TFTeam team);
+}
+
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
 {
 	switch (tfclass)

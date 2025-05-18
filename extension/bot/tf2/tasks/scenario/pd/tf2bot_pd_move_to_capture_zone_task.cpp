@@ -106,7 +106,7 @@ TaskResult<CTF2Bot> CTF2BotPDMoveToCaptureZoneTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (!m_nav.ComputePathToPosition(bot, pos, cost, 0.0f, true))
 		{
-			if (++m_pathfailures > 20)
+			if (++m_pathfailures > 12)
 			{
 				return Done("Giving up, too many path failures!");
 			}

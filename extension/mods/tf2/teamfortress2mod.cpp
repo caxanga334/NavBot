@@ -41,6 +41,7 @@ static const char* s_tf2gamemodenames[] = {
 	"SPECIAL DELIVERY",
 	"TERRITORIAL CONTROL",
 	"ARENA",
+	"PASS TIME",
 	"VERSUS SAXTON HALE",
 	"ZOMBIE INFECTION",
 	"GUN GAME",
@@ -437,6 +438,11 @@ void CTeamFortress2Mod::DetectCurrentGameMode()
 		return;
 	}
 
+	if (DetectMapViaEntities())
+	{
+		return;
+	}
+
 	if (DetectMapViaName())
 	{
 		rootconsole->ConsolePrint("[NavBot] Game mode detected via map prefix.");
@@ -732,6 +738,18 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 	}
 	default:
 		break;
+	}
+
+	return false;
+}
+
+bool CTeamFortress2Mod::DetectMapViaEntities()
+{
+	if (UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "passtime_logic") != INVALID_EHANDLE_INDEX)
+	{
+		rootconsole->ConsolePrint("[NavBot] Found 'passtime_logic', game mode is Pass Time.");
+		m_gamemode = TeamFortress2::GameModeType::GM_PASSTIME;
+		return true;
 	}
 
 	return false;
@@ -1339,6 +1357,8 @@ CTF2ClassSelection::ClassRosterType CTeamFortress2Mod::GetRosterForTeam(TeamFort
 		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
 	case TeamFortress2::GameModeType::GM_SD:
 		return CTF2ClassSelection::ClassRosterType::ROSTER_DEFAULT;
+	case TeamFortress2::GameModeType::GM_PASSTIME:
+		return CTF2ClassSelection::ClassRosterType::ROSTER_PASSTIME;
 	case TeamFortress2::GameModeType::GM_TC:
 		break;
 	case TeamFortress2::GameModeType::GM_ARENA:

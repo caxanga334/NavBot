@@ -592,6 +592,13 @@ bool CTF2Bot::IsAbleToDodgeEnemies(const CKnownEntity* threat) const
 	return CBaseBot::IsAbleToDodgeEnemies(threat);
 }
 
+bool CTF2Bot::IsCarryingThePassTimeJack() const
+{
+	bool ret = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bHasPasstimeBall", ret);
+	return ret;
+}
+
 void CTF2Bot::SelectNewClass()
 {
 #if SOURCE_ENGINE == SE_TF2

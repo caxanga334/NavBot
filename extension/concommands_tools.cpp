@@ -296,3 +296,23 @@ CON_COMMAND_F(sm_navbot_tool_reset_bots, "Reset the bot interfaces.", FCVAR_CHEA
 		bot->Reset();
 	});
 }
+
+CON_COMMAND_F(sm_navbot_tool_toggle_non_solid, "Makes your non solid to triggers.", FCVAR_CHEAT)
+{
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+
+	static int oldsolidtype = -1;
+
+	if (oldsolidtype < 0)
+	{
+		entprops->GetEntProp(1, Prop_Data, "m_nSolidType", oldsolidtype);
+		entprops->SetEntProp(1, Prop_Data, "m_nSolidType", static_cast<int>(SolidType_t::SOLID_NONE));
+		META_CONPRINTF("Setting to SOLID_NONE! Old = %i \n", oldsolidtype);
+	}
+	else
+	{
+		entprops->SetEntProp(1, Prop_Data, "m_nSolidType", oldsolidtype);
+		META_CONPRINTF("Restoring to old solid type %i \n", oldsolidtype);
+		oldsolidtype = -1;
+	}	
+}

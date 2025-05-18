@@ -490,6 +490,7 @@ namespace TeamFortress2
 		GM_SD, // Special Delivery
 		GM_TC, // Territorial Control
 		GM_ARENA, // Arena
+		GM_PASSTIME, // Passtime
 		GM_VSH, // Versus Saxton Hale
 		GM_ZI, // Zombie Infection
 		GM_GG, // Gun game
@@ -710,6 +711,13 @@ namespace TeamFortress2
 	{
 		RT_STATE_SETUP,		// Timer is in setup mode
 		RT_STATE_NORMAL,	// Timer is in normal mode
+	};
+
+	enum PassTimeGoalType
+	{
+		TYPE_HOOP,
+		TYPE_ENDZONE,
+		TYPE_TOWER,
 	};
 }
 

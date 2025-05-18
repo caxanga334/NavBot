@@ -710,3 +710,97 @@ CBaseEntity* tf2lib::pd::GetTeamLeader(TeamFortress2::TFTeam team)
 
 	return leader;
 }
+
+CBaseEntity* tf2lib::passtime::GetJack()
+{
+	int index = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "passtime_ball");
+	edict_t* edict = gamehelpers->EdictOfIndex(index);
+
+	if (UtilHelpers::IsValidEdict(edict))
+	{
+		return UtilHelpers::EdictToBaseEntity(edict);
+	}
+
+	return nullptr;
+}
+
+CBaseEntity* tf2lib::passtime::GetJackCarrier(CBaseEntity* jack)
+{
+	return entprops->GetEntPropEnt(jack, Prop_Send, "m_hCarrier");
+}
+
+bool tf2lib::passtime::IsJackActive()
+{
+	int index = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "passtime_ball");
+
+	if (index == INVALID_EHANDLE_INDEX)
+	{
+		return false;
+	}
+
+	TeamFortress2::TFTeam team = tf2lib::GetEntityTFTeam(index);
+
+	if (team >= TeamFortress2::TFTeam::TFTeam_Red)
+	{
+		return true;
+	}
+
+	int effects = 0;
+	entprops->GetEntProp(index, Prop_Send, "m_fEffects", effects);
+	
+	if (team == TeamFortress2::TFTeam::TFTeam_Unassigned && (effects & EF_NODRAW) != 0)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool tf2lib::passtime::GetJackSpawnPosition(Vector* spawnPos)
+{
+	edict_t* spawnent = gamehelpers->EdictOfIndex(UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "info_passtime_ball_spawn"));
+
+	if (UtilHelpers::IsValidEdict(spawnent))
+	{
+		const Vector& origin = UtilHelpers::getEntityOrigin(spawnent);
+		*spawnPos = origin;
+		return true;
+	}
+
+	return false;
+}
+
+CBaseEntity* tf2lib::passtime::GetGoalEntity(TeamFortress2::PassTimeGoalType goaltype, TeamFortress2::TFTeam team)
+{
+	CBaseEntity* goal = nullptr;
+	UtilHelpers::ForEachEntityOfClassname("func_passtime_goal", [&goal, &goaltype, &team](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			bool disabled = false;
+			entprops->GetEntPropBool(index, Prop_Send, "m_bTriggerDisabled", disabled);
+
+			if (disabled)
+			{
+				return true;
+			}
+
+			if (tf2lib::GetEntityTFTeam(entity) != team)
+			{
+				return true;
+			}
+
+			int type = -1;
+			entprops->GetEntProp(index, Prop_Send, "m_iGoalType", type);
+
+			if (type == static_cast<int>(goaltype))
+			{
+				goal = entity;
+				return false;
+			}
+		}
+
+		return true;
+		});
+
+	return goal;
+}

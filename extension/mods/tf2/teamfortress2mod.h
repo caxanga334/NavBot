@@ -189,6 +189,7 @@ private:
 	bool DetectMapViaName();
 	bool DetectCommunityGameModes();
 	bool DetectMapViaGameRules();
+	bool DetectMapViaEntities();
 	bool DetectKoth();
 	bool DetectPlayerDestruction();
 	void FindPayloadCarts();

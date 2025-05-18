@@ -220,6 +220,12 @@ SMCResult CTF2ClassSelection::ReadSMC_NewSection(const SMCStates* states, const 
 			m_parserdata.current_roster = ClassRosterType::ROSTER_MANNVSMACHINE;
 			return SourceMod::SMCResult_Continue;
 		}
+		else if (strncasecmp(name, "passtime", 8) == 0)
+		{
+			m_parserdata.depth = 2;
+			m_parserdata.current_roster = ClassRosterType::ROSTER_PASSTIME;
+			return SourceMod::SMCResult_Continue;
+		}
 		else
 		{
 			smutils->LogError(myself, "Error parsing class_selection.cfg, unknown section name \"%s\"!", name);
@@ -310,12 +316,14 @@ void CTF2ClassSelection::StoreClassData(ClassRosterType roster, TeamFortress2::T
 
 	if (r < 0 || r >= static_cast<int>(ClassRosterType::MAX_ROSTER_TYPES))
 	{
-		throw std::out_of_range("Out of Bounds write attempt at roster type!");
+		smutils->LogError(myself, "Out of Bounds write attempt at roster type!");
+		return;
 	}
 
 	if (c < 0 || c >= static_cast<int>(TeamFortress2::TFClassType::TFClass_Engineer))
 	{
-		throw std::out_of_range("Out of Bounds write attempt at class type!");
+		smutils->LogError(myself, "Out of Bounds write attempt at class type!");
+		return;
 	}
 
 #ifdef EXT_DEBUG

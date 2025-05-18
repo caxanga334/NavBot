@@ -17,6 +17,7 @@ public:
 		ROSTER_ATTACKERS,
 		ROSTER_DEFENDERS,
 		ROSTER_MANNVSMACHINE,
+		ROSTER_PASSTIME,
 
 		MAX_ROSTER_TYPES
 	};
@@ -114,7 +115,7 @@ public:
 
 private:
 	// class data for all classes, there are 9 classes but the first valid class starts at 1, remember to subtract to avoid OOB access
-	ClassData m_classdata[static_cast<int>(ClassRosterType::MAX_ROSTER_TYPES)][TeamFortress2::TFClassType::TFClass_Engineer];
+	ClassData m_classdata[static_cast<int>(ClassRosterType::MAX_ROSTER_TYPES)][static_cast<int>(TeamFortress2::TFClassType::TFClass_Engineer)];
 	ParserData m_parserdata;
 
 	void StoreClassData(ClassRosterType roster, TeamFortress2::TFClassType classtype, const ClassData& data);
