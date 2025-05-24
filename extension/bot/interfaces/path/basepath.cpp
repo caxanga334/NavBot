@@ -738,7 +738,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 	const float halfjumpheight = mover->GetMaxJumpHeight() * 0.5f;
 
 	// distance between two areas is larger than the bot's hull width, a jump is required
-	if (gaplength > hullwidth && zdiff <= halfjumpheight)
+	if (gaplength > hullwidth && std::abs(zdiff) <= halfjumpheight)
 	{
 		Vector landing;
 		to->area->GetClosestPointOnArea(to->goal, &landing);
@@ -762,7 +762,7 @@ bool CPath::ProcessPathJumps(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& f
 	{
 		AIPath::SegmentType type = AIPath::SegmentType::SEGMENT_CLIMB_UP; // default to simple jump
 
-		if (zdiff > mover->GetMaxJumpHeight() && zdiff < mover->GetMaxDoubleJumpHeight())
+		if (zdiff > mover->GetMaxJumpHeight() && zdiff <= mover->GetMaxDoubleJumpHeight())
 		{
 			type = AIPath::SEGMENT_CLIMB_DOUBLE_JUMP;
 		}

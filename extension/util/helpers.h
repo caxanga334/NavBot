@@ -169,7 +169,7 @@ namespace UtilHelpers
 	 * @param functor Player collection filter, only called to clients that are valid and in game.
 	 */
 	template <typename T>
-	void CollectPlayers(std::vector<int>& playersvector, T functor);
+	void CollectPlayers(std::vector<int>& playersvector, T& functor);
 	const char* GetPlayerDebugIdentifier(int player);
 	const char* GetPlayerDebugIdentifier(edict_t* player);
 	
@@ -255,7 +255,7 @@ namespace UtilHelpers
 	 * @param functor Function to call
 	 */
 	template <typename T>
-	inline void ForEachEdict(T functor)
+	inline void ForEachEdict(T& functor)
 	{
 		for (int i = 0; i < gpGlobals->maxEntities; i++)
 		{
@@ -275,7 +275,7 @@ namespace UtilHelpers
 	 * @return Number of players counted.
 	 */
 	template <typename T>
-	inline int CountPlayers(T functor)
+	inline int CountPlayers(T& functor)
 	{
 		int playercount = 0;
 
@@ -303,7 +303,7 @@ namespace UtilHelpers
 	 * @param functor Function to run on each player.
 	 */
 	template <typename T>
-	inline void ForEachPlayer(T functor)
+	inline void ForEachPlayer(T& functor)
 	{
 		for (int i = 1; i <= gpGlobals->maxClients; i++)
 		{
@@ -328,7 +328,7 @@ namespace UtilHelpers
 	 * @param functor Function to run
 	 */
 	template <typename T>
-	inline void ForEachEntityOfClassname(const char* classname ,T functor)
+	inline void ForEachEntityOfClassname(const char* classname ,T& functor)
 	{
 		int entity = INVALID_EHANDLE_INDEX;
 		while ((entity = UtilHelpers::FindEntityByClassname(entity, classname)) != INVALID_EHANDLE_INDEX)
@@ -354,7 +354,7 @@ namespace UtilHelpers
 	 * @param functor Function to run.
 	 */
 	template <typename T>
-	inline void ForEachEntityInSphere(const Vector& center, float radius, T functor)
+	inline void ForEachEntityInSphere(const Vector& center, float radius, T& functor)
 	{
 		int entity = INVALID_EHANDLE_INDEX;
 		while ((entity = UtilHelpers::FindEntityInSphere(entity, center, radius)) != INVALID_EHANDLE_INDEX)
@@ -378,7 +378,7 @@ namespace UtilHelpers
 	 * @param functor Function to call.
 	 */
 	template <typename T>
-	inline void ForEveryEntity(T functor)
+	inline void ForEveryEntity(T& functor)
 	{
 		CBaseHandle next = g_EntList->FirstHandle();
 
@@ -404,7 +404,7 @@ namespace UtilHelpers
 	 * @param functor Functor to run.
 	 */
 	template <typename T>
-	inline void ForEveryEdict(T functor)
+	inline void ForEveryEdict(T& functor)
 	{
 		for (int i = 0; i < gpGlobals->maxEntities; i++)
 		{
@@ -662,7 +662,7 @@ namespace UtilHelpers
 		 * @param func function to run. Return false to stop looping
 		 */
 		template <typename F>
-		inline void ForEach(F func)
+		inline void ForEach(F& func)
 		{
 			for (CBaseEntity* entity : m_ents)
 			{
@@ -721,7 +721,7 @@ namespace UtilHelpers
 }
 
 template<typename T>
-inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T functor)
+inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T& functor)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{

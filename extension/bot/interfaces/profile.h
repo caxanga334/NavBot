@@ -150,7 +150,7 @@ public:
 	 * @param functor Function to run.
 	 */
 	template <typename T, typename F>
-	void ForEveryProfile(F functor)
+	void ForEveryProfile(F& functor)
 	{
 		for (auto& ptr : m_profiles)
 		{

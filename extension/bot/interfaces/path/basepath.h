@@ -433,7 +433,7 @@ public:
 	 * @param functor Function to run, return false to end loop early.
 	 */
 	template <typename T, typename F>
-	void ForEveryPathSegment(F functor)
+	void ForEveryPathSegment(F& functor)
 	{
 		for (auto& segptr : m_segments)
 		{

@@ -40,7 +40,7 @@ public:
 	 * @param functor function to run on every valid weapon
 	 */
 	template <typename T>
-	inline void ForEveryWeapon(T functor) const
+	inline void ForEveryWeapon(T& functor) const
 	{
 		for (auto& weapon : m_weapons)
 		{

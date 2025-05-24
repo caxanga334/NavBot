@@ -183,7 +183,7 @@ public:
 	 * @param func Function to run.
 	 */
 	template <typename T>
-	inline void ForEveryAngle(T func) const
+	inline void ForEveryAngle(T& func) const
 	{
 		for (std::size_t i = 0U; i < GetNumOfAvailableAngles(); i++)
 		{

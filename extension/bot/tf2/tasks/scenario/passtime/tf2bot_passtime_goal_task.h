@@ -7,6 +7,7 @@ public:
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+	void OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask) override;
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
@@ -21,6 +22,12 @@ private:
 	CHandle<CBaseEntity> m_goalent;
 	CMeshNavigator m_nav;
 	CountdownTimer m_repathtimer;
+	TeamFortress2::PassTimeGoalType m_goaltype;
+	CountdownTimer m_holdattacktimer;
+
+	static constexpr float MAX_RANGE_TO_LAUNCH_JACK = 512.0f;
+	bool NeedsToFire() const;
+	float GetZ(const Vector& origin, const Vector& center) const;
 };
 
 #endif // !__NAVBOT_TF2BOT_PASSTIME_GOAL_TASK_H_

@@ -1147,7 +1147,7 @@ public:
 	 * @param functor Function to run. Return false to end loop.
 	 */
 	template <typename T, typename F>
-	inline void ForEveryWaypoint(F functor)
+	inline void ForEveryWaypoint(F& functor)
 	{
 		std::for_each(m_waypoints.begin(), m_waypoints.end(), [&functor](const std::pair<const WaypointID, std::shared_ptr<CWaypoint>>& object) {
 			T* wpt = static_cast<T*>(object.second.get());
@@ -1167,7 +1167,7 @@ public:
 	 * @param functor Function to collect waypoints. Return true to collect, false to skip.
 	 */
 	template <typename T, typename F>
-	inline void CollectWaypoints(std::vector<T*>& vec, F functor)
+	inline void CollectWaypoints(std::vector<T*>& vec, F& functor)
 	{
 		std::for_each(m_waypoints.begin(), m_waypoints.end(), [&vec, &functor](const std::pair<WaypointID, std::shared_ptr<CWaypoint>>& object) {
 			T* wpt = static_cast<T*>(object.second.get());
@@ -1198,7 +1198,7 @@ public:
 	 * @param functor Function to run.
 	 */
 	template <typename T, typename F>
-	inline void ForEveryNavVolume(F functor)
+	inline void ForEveryNavVolume(F& functor)
 	{
 		std::for_each(m_volumes.begin(), m_volumes.end(), [&functor](const std::pair<const WaypointID, std::shared_ptr<CNavVolume>>& object) {
 			T* volume = static_cast<T*>(object.second.get());

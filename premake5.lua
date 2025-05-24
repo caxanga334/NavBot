@@ -123,6 +123,8 @@ workspace "navbot"
 
     if g_Compiler == "MSVC" then
         toolset "msc"
+		clangtidy("On")
+		runcodeanalysis("On")
     elseif g_Compiler == "CLANG" then
         toolset "clang"
     else
@@ -163,6 +165,10 @@ workspace "navbot"
         }
         -- disable prefixes for Linux
         targetprefix ""
+		
+		if os.host() == "linux" then
+			visibility "Hidden"
+		end
 
     -- Linux options for Clang only
     filter { "system:linux", "toolset:clang" }
@@ -180,8 +186,7 @@ workspace "navbot"
         defines { "NDEBUG" }
         targetdir "build/bin/%{cfg.architecture}/release"
         optimize "Full"
-        flags { "LinkTimeOptimization" }
-		visibility "Hidden"
+		linktimeoptimization "On"
 
     filter { "platforms:Win32" }
         system "Windows"

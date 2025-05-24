@@ -80,7 +80,7 @@ public:
 	 * @param functor Function to call on each bot.
 	 */
 	template <typename T>
-	inline void ForEachBot(T functor)
+	inline void ForEachBot(T& functor)
 	{
 		for (auto& ptr : m_bots)
 		{

@@ -719,6 +719,29 @@ namespace TeamFortress2
 		TYPE_ENDZONE,
 		TYPE_TOWER,
 	};
+
+	//-----------------------------------------------------------------------------
+	// Robot Destruction enums
+	//-----------------------------------------------------------------------------
+
+	enum eRobotType
+	{
+		ROBOT_TYPE_FRUSTUM = 0,
+		ROBOT_TYPE_SPHERE,
+		ROBOT_TYPE_KING,
+
+		NUM_ROBOT_TYPES
+	};
+
+	enum eRobotUIState
+	{
+		ROBOT_STATE_INACIVE = 0,
+		ROBOT_STATE_ACTIVE,
+		ROBOT_STATE_DEAD,
+		ROBOT_STATE_SHIELDED,
+
+		NUM_ROBOT_STATES
+	};
 }
 
 

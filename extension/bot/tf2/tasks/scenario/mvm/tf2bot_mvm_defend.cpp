@@ -66,7 +66,9 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, m_targetPos, cost);
 	}
-
+	
+	const CTF2BotWeapon* weapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
+	float maxrange = weapon ? weapon->GetTF2Info()->GetAttackRange() : 512.0f;
 	float range = bot->GetRangeTo(m_targetPos);
 
 	if (range > 128.0f && m_lookAtTimer.IsElapsed())
@@ -75,7 +77,7 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 		bot->GetControlInterface()->AimAt(m_targetPos, IPlayerController::LOOK_ALERT, 1.0f, "Looking at mvm target!");
 	}
 
-	if (range > 64.0f)
+	if (range > maxrange || !bot->GetSensorInterface()->IsLineOfSightClear(m_targetPos))
 	{
 		m_nav.Update(bot);
 	}

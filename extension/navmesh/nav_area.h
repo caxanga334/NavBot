@@ -728,7 +728,7 @@ public:
 	 * @param functor function to run.
 	 */
 	template <typename T>
-	inline void ForEachAdjacentArea(T functor)
+	inline void ForEachAdjacentArea(T& functor)
 	{
 		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
 		{
@@ -748,7 +748,7 @@ public:
 	 * @param functor function to run on each connected area to this area
 	 */
 	template <typename T>
-	inline void ForEachConnectedArea(T functor)
+	inline void ForEachConnectedArea(T& functor)
 	{
 		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
 		{
