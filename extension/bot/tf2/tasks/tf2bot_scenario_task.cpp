@@ -25,6 +25,7 @@
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
+#include "scenario/rd/tf2bot_rd_monitor_task.h"
 #include "tf2bot_scenario_task.h"
 
 AITask<CTF2Bot>* CTF2BotScenarioTask::InitialNextTask(CTF2Bot* bot)
@@ -131,6 +132,8 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 		return new CTF2BotPDMonitorTask;
 	case TeamFortress2::GameModeType::GM_PASSTIME:
 		return new CTF2BotPassTimeMonitorTask;
+	case TeamFortress2::GameModeType::GM_RD:
+		return new CTF2BotRobotDestructionMonitorTask;
 	default:
 		break;
 	}

@@ -76,6 +76,18 @@
 				"linux"		"4"
 				"linux64"	"4"
 			}
+
+			/**
+			 * relative offset to m_bShielded member variable from the offset of the networked variable m_eType.
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/39f6dde8fbc238727c020d13b05ecadd31bda4c0/src/game/shared/tf/tf_robot_destruction_robot.h#L348-L349
+			*/
+			"CTFRobotDestruction_Robot::m_bShielded"
+			{
+				"windows"	"-4"
+				"windows64" "-4"
+				"linux"		"-4"
+				"linux64"	"-4"
+			}
 		}
 	}
 }

@@ -38,6 +38,8 @@ namespace tfentities
 		bool IsDropped() const { return GetStatus() == TeamFortress2::TF_FLAGINFO_DROPPED; }
 		Vector GetPosition() const;
 		Vector GetReturnPosition() const;
+		// How many points this capture flag is worth
+		int GetPointValue() const;
 	};
 
 	class HCaptureZone : public HTFBaseEntity

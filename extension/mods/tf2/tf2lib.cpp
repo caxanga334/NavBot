@@ -804,3 +804,45 @@ CBaseEntity* tf2lib::passtime::GetGoalEntity(TeamFortress2::PassTimeGoalType goa
 
 	return goal;
 }
+
+bool tf2lib::rd::IsRobotInvulnerable(CBaseEntity* robot)
+{
+	static int offset = 0;
+
+	if (offset == 0)
+	{
+		SourceMod::IGameConfig* cfg = nullptr;
+		char error[512];
+		int temp = 0;
+		
+		if (!gameconfs->LoadGameConfigFile("navbot.games", &cfg, error, sizeof(error)))
+		{
+			smutils->LogError(myself, "%s", error);
+			return false;
+		}
+
+		if (!cfg->GetOffset("CTFRobotDestruction_Robot::m_bShielded", &temp))
+		{
+			smutils->LogError(myself, "Failed to get relative offset of CTFRobotDestruction_Robot::m_bShielded from NavBot's gamedata!");
+			return false;
+		}
+		else
+		{
+			SourceMod::sm_sendprop_info_t info;
+			
+			if (!gamehelpers->FindSendPropInfo("CTFRobotDestruction_Robot", "m_eType", &info))
+			{
+				smutils->LogError(myself, "Failed to find offset for networked property CTFRobotDestruction_Robot::m_eType");
+				return false;
+			}
+			else
+			{
+				offset = static_cast<int>(info.actual_offset) + temp;
+				smutils->LogMessage(myself, "Loaded offset %i (%u + %i) for CTFRobotDestruction_Robot::m_bShielded", offset, info.actual_offset, temp);
+			}
+		}
+	}
+
+	bool* shielded = entprops->GetPointerToEntData<bool>(robot, static_cast<unsigned int>(offset));
+	return *shielded;
+}

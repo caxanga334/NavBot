@@ -38,6 +38,7 @@ static const char* s_tf2gamemodenames[] = {
 	"PAYLOAD",
 	"PAYLOAD RACE",
 	"PLAYER DESTRUCTION",
+	"ROBOT DESTRUCTION",
 	"SPECIAL DELIVERY",
 	"TERRITORIAL CONTROL",
 	"ARENA",
@@ -749,6 +750,13 @@ bool CTeamFortress2Mod::DetectMapViaEntities()
 	{
 		rootconsole->ConsolePrint("[NavBot] Found 'passtime_logic', game mode is Pass Time.");
 		m_gamemode = TeamFortress2::GameModeType::GM_PASSTIME;
+		return true;
+	}
+
+	if (UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "tf_logic_robot_destruction") != INVALID_EHANDLE_INDEX)
+	{
+		rootconsole->ConsolePrint("[NavBot] Found 'tf_logic_robot_destruction', game mode is Robot Destruction.");
+		m_gamemode = TeamFortress2::GameModeType::GM_RD;
 		return true;
 	}
 
@@ -1825,6 +1833,21 @@ CON_COMMAND(sm_navbot_tf_debug_pd, "Debug player destruction")
 	{
 		Warning("CTFPlayer::m_hItem == NULL \n");
 	}
+}
+
+CON_COMMAND(sm_navbot_tf_debug_rd, "Debug robot destruction")
+{
+	UtilHelpers::ForEachEntityOfClassname("tf_robot_destruction_robot", [](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			bool shielded = tf2lib::rd::IsRobotInvulnerable(entity);
+			int type = -1;
+			entprops->GetEntProp(index, Prop_Send, "m_eType", type);
+			Msg("tf_robot_destruction_robot [%i]: %s TYPE %i \n", index, shielded ? "SHIELDED" : "NOT SHIELDED", type);
+		}
+
+		return true;
+	});
 }
 
 #endif // EXT_DEBUG

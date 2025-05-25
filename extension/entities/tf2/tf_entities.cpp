@@ -94,6 +94,13 @@ Vector tfentities::HCaptureFlag::GetReturnPosition() const
 	return *result;
 }
 
+int tfentities::HCaptureFlag::GetPointValue() const
+{
+	int points = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_nPointValue", points);
+	return points;
+}
+
 tfentities::HCaptureZone::HCaptureZone(edict_t* entity) : HTFBaseEntity(entity)
 {
 }

@@ -103,6 +103,11 @@ namespace tf2lib::passtime
 	CBaseEntity* GetGoalEntity(TeamFortress2::PassTimeGoalType goaltype, TeamFortress2::TFTeam team);
 }
 
+namespace tf2lib::rd
+{
+	bool IsRobotInvulnerable(CBaseEntity* robot);
+}
+
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)
 {
 	switch (tfclass)

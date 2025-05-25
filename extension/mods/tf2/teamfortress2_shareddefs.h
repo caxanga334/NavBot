@@ -487,6 +487,7 @@ namespace TeamFortress2
 		GM_PL, // Payload
 		GM_PL_RACE, // Payload Race
 		GM_PD, // Player Destruction
+		GM_RD, // Robot Destruction
 		GM_SD, // Special Delivery
 		GM_TC, // Territorial Control
 		GM_ARENA, // Arena
