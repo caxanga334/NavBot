@@ -50,7 +50,7 @@ CON_COMMAND_F(sm_nav_waypoint_delete, "Deletes the nearest or selected waypoint.
 	CWaypoint* nearest = nullptr;
 	float best = std::numeric_limits<float>::max();
 
-	TheNavMesh->ForEveryWaypoint<CWaypoint>([&origin, &best, &nearest](CWaypoint* waypoint) {
+	auto func = [&origin, &best, &nearest](CWaypoint* waypoint) {
 		float distance = (waypoint->GetOrigin() - origin).Length();
 
 		if (distance <= CWaypoint::WAYPOINT_DELETE_SEARCH_DIST && distance < best)
@@ -60,7 +60,9 @@ CON_COMMAND_F(sm_nav_waypoint_delete, "Deletes the nearest or selected waypoint.
 		}
 
 		return true;
-	});
+	};
+
+	TheNavMesh->ForEveryWaypoint<CWaypoint>(func);
 
 	if (nearest != nullptr)
 	{

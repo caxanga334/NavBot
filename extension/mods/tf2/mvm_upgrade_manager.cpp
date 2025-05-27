@@ -176,19 +176,17 @@ void CMvMUpgradeManager::ConCommand_ListUpgrades() const
 void CMvMUpgradeManager::Reload()
 {
 	// Clean up pointers while they are still valid
-	extmanager->ForEachBot([](CBaseBot* bot) {
+	auto func = [](CBaseBot* bot) {
 		CTF2Bot* tf2bot = static_cast<CTF2Bot*>(bot);
 		tf2bot->GetUpgradeManager().Reset();
-	});
+	};
+	extmanager->ForEachBot(func);
 
 	Reset();
 	ParseUpgradeFile();
 	ParseBotUpgradeInfoFile();
 
-	extmanager->ForEachBot([](CBaseBot* bot) {
-		CTF2Bot* tf2bot = static_cast<CTF2Bot*>(bot);
-		tf2bot->GetUpgradeManager().Reset();
-	});
+	extmanager->ForEachBot(func);
 }
 
 const MvMUpgrade_t* CMvMUpgradeManager::FindUpgrade(const std::string& attributename, int quality) const

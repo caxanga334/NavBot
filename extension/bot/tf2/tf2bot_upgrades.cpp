@@ -312,9 +312,9 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 
 	// Collect weapon item definition indexes
 	std::vector<int> myweaponindexes;
-	m_me->GetInventoryInterface()->ForEveryWeapon([&myweaponindexes](const CBotWeapon* weapon) {
+	auto functor = [&myweaponindexes](const CBotWeapon* weapon) {
 		myweaponindexes.push_back(weapon->GetWeaponEconIndex());
-	});
+	};
 
 	auto start = std::remove_if(m_tobuylist.begin(), m_tobuylist.end(), [&myweaponindexes](const TF2BotUpgradeInfo_t* upgradeinfo) {
 		if (upgradeinfo->AnyWeapon())
@@ -332,6 +332,8 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 
 		return true; // upgrade has weapon restriction and the bot doesn't have the needed weapon, remove this upgrade
 	});
+
+	m_me->GetInventoryInterface()->ForEveryWeapon(functor);
 
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{

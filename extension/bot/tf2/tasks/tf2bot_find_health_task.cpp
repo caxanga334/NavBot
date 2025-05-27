@@ -131,7 +131,7 @@ bool CTF2BotFindHealthTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 	}
 
 	// Append dispensers
-	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			if (filter.IsSelected(entity))
@@ -150,7 +150,9 @@ bool CTF2BotFindHealthTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", functor);
 
 	if (!best)
 	{

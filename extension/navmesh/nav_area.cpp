@@ -141,6 +141,8 @@ const char* NavOffMeshConnection::OffMeshConnectionTypeToString(OffMeshConnectio
 		"BLAST_JUMP"sv,
 		"DOUBLE_JUMP"sv,
 		"JUMP_OVER_GAP"sv,
+		"CLIMB_UP"sv,
+		"DROP_FROM_LEDGE"sv,
 	};
 
 	static_assert(linkNames.size() == static_cast<size_t>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES), "linkNames and OffMeshConnectionType enum mismatch!");

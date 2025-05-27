@@ -79,7 +79,7 @@ bool CTF2BotMedicMvMBuildUberTask::FindPlayerToHeal(CTF2Bot* me)
 	edict_t* target = nullptr;
 	m_healTarget.Term();
 
-	UtilHelpers::ForEachPlayer([&me, &target](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
+	auto func = [&me, &target](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 		if (!target && player->IsInGame() && !player->GetPlayerInfo()->IsDead())
 		{
 			if (client == me->GetIndex())
@@ -96,7 +96,9 @@ bool CTF2BotMedicMvMBuildUberTask::FindPlayerToHeal(CTF2Bot* me)
 				return;
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 
 	if (target)
 	{

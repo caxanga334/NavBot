@@ -57,20 +57,21 @@ CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	Vector target = UtilHelpers::getWorldSpaceCenter(host);
-
-	extmanager->ForEachBot([&target](CBaseBot* bot) {
+	auto functor = [&target](CBaseBot* bot) {
 		bot->GetControlInterface()->AimAt(target, IPlayerController::LOOK_CRITICAL, 10.0f, "Debug command!");
-	});
+	};
+	extmanager->ForEachBot(functor);
 }
 
 CON_COMMAND(sm_navbot_debug_bot_snap_look, "Debug the bot look functions.")
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	Vector target = UtilHelpers::getWorldSpaceCenter(host);
-
-	extmanager->ForEachBot([&target](CBaseBot* bot) {
+	auto functor = [&target](CBaseBot* bot) {
 		bot->GetControlInterface()->SnapAimAt(target, IPlayerController::LOOK_CRITICAL);
-	});
+	};
+
+	extmanager->ForEachBot(functor);
 }
 
 CON_COMMAND(sm_navbot_debug_bot_impulse, "All bots sends a specific impulse command.")
@@ -89,9 +90,11 @@ CON_COMMAND(sm_navbot_debug_bot_impulse, "All bots sends a specific impulse comm
 		return;
 	}
 
-	extmanager->ForEachBot([&impulse](CBaseBot* bot) {
+	auto func = [&impulse](CBaseBot* bot) {
 		bot->SetImpulseCommand(impulse);
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command.")
@@ -104,9 +107,11 @@ CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command."
 
 	const char* command = args[1];
 
-	extmanager->ForEachBot([&command](CBaseBot* bot) {
+	auto func = [&command](CBaseBot* bot) {
 		bot->DelayedFakeClientCommand(command);
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
@@ -122,9 +127,8 @@ CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
 	float time = atof(args[2]);
 
 	time = std::clamp(time, 1.0f, 10.0f);
+	auto func = [&button, &time](CBaseBot* bot) {
 
-	extmanager->ForEachBot([&button, &time](CBaseBot* bot) {
-		
 		if (strcasecmp(button, "jump") == 0)
 		{
 			bot->GetControlInterface()->PressJumpButton(time);
@@ -141,7 +145,9 @@ CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
 		{
 			bot->GetControlInterface()->PressAttackButton(time);
 		}
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path to the console.")
@@ -475,9 +481,10 @@ CON_COMMAND_F(sm_snap_to_origin, "Snaps the player view angles to an origin", FC
 
 CON_COMMAND_F(sm_navbot_debug_entlist, "Debugs the entity list.", FCVAR_CHEAT)
 {
-	UtilHelpers::ForEveryEntity([](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
 		Msg("Entity #%i: %s (%p <%p>) [%i] \n", index, gamehelpers->GetEntityClassname(entity) ? gamehelpers->GetEntityClassname(entity) : "NULL CLASSNAME", entity, edict, reinterpret_cast<IServerUnknown*>(entity)->GetRefEHandle().GetEntryIndex());
-	});
+	};
+	UtilHelpers::ForEveryEntity(func);
 }
 
 #if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
@@ -597,7 +604,7 @@ CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHE
 }
 
 // SDKs that may have func_useableladder entities
-#if SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013
+#if SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_ORANGEBOX
 
 CON_COMMAND_F(sm_navbot_debug_useable_ladder, "Useable ladder debug command", FCVAR_CHEAT)
 {
@@ -605,8 +612,7 @@ CON_COMMAND_F(sm_navbot_debug_useable_ladder, "Useable ladder debug command", FC
 	Vector center = host.GetAbsOrigin();
 
 	CBaseEntity* ladder = nullptr;
-
-	UtilHelpers::ForEachEntityInSphere(center, 512, [&ladder](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&ladder](int index, edict_t* edict, CBaseEntity* entity) {
 		if (edict != nullptr && entity != nullptr)
 		{
 			if (strcmp(gamehelpers->GetEntityClassname(entity), "func_useableladder") == 0)
@@ -617,7 +623,10 @@ CON_COMMAND_F(sm_navbot_debug_useable_ladder, "Useable ladder debug command", FC
 		}
 
 		return true;
-	});
+	};
+
+
+	UtilHelpers::ForEachEntityInSphere(center, 512, func);
 
 	if (ladder == nullptr)
 	{
@@ -646,7 +655,7 @@ CON_COMMAND_F(sm_navbot_debug_useable_ladder, "Useable ladder debug command", FC
 	NDebugOverlay::VertArrow(bottomPosition, topPosition, 10.0f, 0, 255, 0, 255, true, 20.0f);
 }
 
-#endif // SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013
+#endif // SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_ORANGEBOX
 
 CON_COMMAND_F(sm_navbot_debug_find_ledge, "finds the ledge", FCVAR_CHEAT)
 {
@@ -834,8 +843,7 @@ CON_COMMAND(sm_navbot_debug_entsinbox, "Debug EntitiesInBox implementation.")
 
 	Msg("Entities In Box: \n");
 	NDebugOverlay::Box(vec3_origin, mins, maxs, 0, 128, 0, 96, 30.0f);
-
-	enumerator.ForEach([&i](CBaseEntity* entity) {
+	auto func = [&i](CBaseEntity* entity) {
 		Msg("#%i ", reinterpret_cast<IHandleEntity*>(entity)->GetRefEHandle().GetEntryIndex());
 		i++;
 
@@ -848,7 +856,9 @@ CON_COMMAND(sm_navbot_debug_entsinbox, "Debug EntitiesInBox implementation.")
 		}
 
 		return true;
-	});
+	};
+
+	enumerator.ForEach(func);
 }
 
 CON_COMMAND(sm_navbot_debug_find_cover, "Debugs the find cover utility")
@@ -1059,7 +1069,7 @@ CON_COMMAND(sm_navbot_debug_vis, "Visibility debug")
 
 CON_COMMAND(sm_navbot_debug_dump_player_models, "Dump the models of every player.")
 {
-	UtilHelpers::ForEachPlayer([](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto func = [](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 		if (player->IsInGame())
 		{
 			const char* model = STRING(entity->GetIServerEntity()->GetModelName());
@@ -1069,7 +1079,9 @@ CON_COMMAND(sm_navbot_debug_dump_player_models, "Dump the models of every player
 				META_CONPRINTF("Player %s #%i model %s \n", player->GetName(), client, model);
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 }
 
 CON_COMMAND(sm_navbot_debug_touching, "List entities you're touching.")
@@ -1081,13 +1093,14 @@ CON_COMMAND(sm_navbot_debug_touching, "List entities you're touching.")
 
 	UtilHelpers::CEntityEnumerator enumerator;
 	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
-
-	enumerator.ForEach([](CBaseEntity* entity) -> bool {
+	auto func = [](CBaseEntity* entity) -> bool {
 
 		META_CONPRINTF("Touching %s \n", gamehelpers->GetEntityClassname(entity));
 
 		return true;
-	});
+	};
+
+	enumerator.ForEach(func);
 }
 
 CON_COMMAND(sm_navbot_debug_spread_danger, "Spread danger to nearby areas")

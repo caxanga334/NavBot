@@ -485,15 +485,14 @@ void CNavLadder::FindLadderEntity( void )
 	{
 		CBaseEntity* ladder = nullptr;
 		float distance = 99999999.0f;
-
-		UtilHelpers::ForEachEntityOfClassname("func_useableladder", [&ladder, &distance, this](int index, edict_t* edict, CBaseEntity* entity) {
+		auto functor = [&ladder, &distance, this](int index, edict_t* edict, CBaseEntity* entity) {
 			if (edict == nullptr || entity == nullptr)
 			{
 				return true; // exit early but keep searching
 			}
 
 			Vector origin = edict->GetCollideable()->GetCollisionOrigin();
-			
+
 			float current = (this->GetUseableLadderEntityOrigin() - origin).Length();
 
 			if (current < distance)
@@ -503,7 +502,9 @@ void CNavLadder::FindLadderEntity( void )
 			}
 
 			return true;
-		});
+		};
+
+		UtilHelpers::ForEachEntityOfClassname("func_useableladder", functor);
 
 		if (ladder != nullptr)
 		{

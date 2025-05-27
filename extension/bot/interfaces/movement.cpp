@@ -499,9 +499,9 @@ void IMovement::DetermineIdealPostureForPath(const CMeshNavigator* path)
 	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
 	const CBasePathSegment* goal = path->GetGoalSegment();
 
-	if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) && GetBot<CBaseBot>()->GetRangeToSqr(goal->goal) <= GOAL_CROUCH_RANGE)
+	if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) /* && GetBot<CBaseBot>()->GetRangeToSqr(goal->goal) <= GOAL_CROUCH_RANGE */)
 	{
-		GetBot<CBaseBot>()->GetControlInterface()->PressCrouchButton(0.1f);
+		GetBot<CBaseBot>()->GetControlInterface()->PressCrouchButton(0.25f);
 	}
 }
 

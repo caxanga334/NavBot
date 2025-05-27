@@ -359,7 +359,7 @@ bool tf2lib::MVM_ShouldBotsReadyUp()
 	bool readyup = false; // true if the bots should ready up
 	bool anyhumans = false;
 
-	UtilHelpers::ForEachPlayer([&readyup, &anyhumans](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto func = [&readyup, &anyhumans](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 		if (!player->IsFakeClient())
 		{
 			anyhumans = true;
@@ -376,7 +376,9 @@ bool tf2lib::MVM_ShouldBotsReadyUp()
 				}
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 
 	if (!anyhumans)
 	{
@@ -481,13 +483,12 @@ bool tf2lib::IsBuildingSapped(CBaseEntity* entity)
 CBaseEntity* tf2lib::GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team)
 {
 	CBaseEntity* spawn = nullptr;
-
-	UtilHelpers::ForEachEntityOfClassname("info_player_teamspawn", [&spawn, &team](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&spawn, &team](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			bool disabled = false;
 			entprops->GetEntPropBool(index, Prop_Data, "m_bDisabled", disabled);
-			
+
 			if (disabled)
 			{
 				return true; // keep loop
@@ -501,7 +502,9 @@ CBaseEntity* tf2lib::GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team)
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("info_player_teamspawn", func);
 
 	return spawn;
 }
@@ -571,9 +574,8 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 
 	CBaseEntity* flag = nullptr;
 	float distance = 1e10f;
+	auto func = [&hatch, &flag, &distance, &ignoreDropped](int index, edict_t* edict, CBaseEntity* entity) {
 
-	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&hatch, &flag, &distance, &ignoreDropped](int index, edict_t* edict, CBaseEntity* entity) {
-		
 		if (entity != nullptr)
 		{
 			tfentities::HCaptureFlag captureflag(entity);
@@ -600,7 +602,7 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 
 			Vector origin = captureflag.GetPosition();
 			float range = (hatch - origin).Length();
-			
+
 			if (range < distance)
 			{
 				distance = range;
@@ -609,7 +611,9 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", func);
 
 	return flag;
 }
@@ -623,8 +627,7 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousTank()
 
 	CBaseEntity* tank = nullptr;
 	float distance = 1e10f;
-
-	UtilHelpers::ForEachEntityOfClassname("tank_boss", [&hatch, &tank, &distance](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&hatch, &tank, &distance](int index, edict_t* edict, CBaseEntity* entity) {
 
 		if (entity != nullptr)
 		{
@@ -639,7 +642,9 @@ CBaseEntity* tf2lib::mvm::GetMostDangerousTank()
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("tank_boss", func);
 
 	return tank;
 }
@@ -773,7 +778,7 @@ bool tf2lib::passtime::GetJackSpawnPosition(Vector* spawnPos)
 CBaseEntity* tf2lib::passtime::GetGoalEntity(TeamFortress2::PassTimeGoalType goaltype, TeamFortress2::TFTeam team)
 {
 	CBaseEntity* goal = nullptr;
-	UtilHelpers::ForEachEntityOfClassname("func_passtime_goal", [&goal, &goaltype, &team](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&goal, &goaltype, &team](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			bool disabled = false;
@@ -800,10 +805,23 @@ CBaseEntity* tf2lib::passtime::GetGoalEntity(TeamFortress2::PassTimeGoalType goa
 		}
 
 		return true;
-		});
+	};
+	UtilHelpers::ForEachEntityOfClassname("func_passtime_goal", func);
 
 	return goal;
 }
+
+class FooBar
+{
+public:
+
+	virtual ~FooBar() = default;
+
+	char pad[64];
+	bool a;
+	int b;
+	bool c;
+};
 
 bool tf2lib::rd::IsRobotInvulnerable(CBaseEntity* robot)
 {

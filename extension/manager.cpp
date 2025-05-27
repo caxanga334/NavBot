@@ -564,8 +564,8 @@ void CExtManager::UpdateBotQuota()
 	{
 		isnavbot[ptr->GetIndex()] = true;
 	}
-
-	UtilHelpers::ForEachPlayer([&mod, &humans, &navbots, &otherbots, &isnavbot](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
+	
+	auto func = [&mod, &humans, &navbots, &otherbots, &isnavbot](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 		if (player->IsInGame())
 		{
 			if (mod->BotQuotaIsClientIgnored(client, entity, player))
@@ -595,7 +595,9 @@ void CExtManager::UpdateBotQuota()
 				++humans;
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 
 	if (humans == 0) // server is empty of humans
 	{

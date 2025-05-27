@@ -86,13 +86,15 @@ inline TaskResult<BT> CBotSharedSnipeTask<BT, CT>::OnTaskStart(BT* bot, AITask<B
 {
 	if (m_waypoint)
 	{
-		m_waypoint->ForEveryAngle([this](const QAngle& angle) {
+		auto func = [this](const QAngle& angle) {
 			Vector dir;
 			AngleVectors(angle, &dir);
 			dir.NormalizeInPlace();
 			Vector& aim = m_aimvec.emplace_back();
 			aim = (m_waypoint->GetOrigin() + Vector(0.0f, 0.0f, 64.0f)) + (dir * 1024.0f);
-		});
+		};
+
+		m_waypoint->ForEveryAngle(func);
 
 		m_goal = m_waypoint->GetRandomPoint();
 		m_waypoint->Use(bot, m_snipeduration + 20.0f);

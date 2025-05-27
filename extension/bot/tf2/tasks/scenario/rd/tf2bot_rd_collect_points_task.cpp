@@ -19,14 +19,15 @@ bool CTF2BotRDCollectPointsTask::IsPossible(CTF2Bot* bot, std::vector<CHandle<CB
 	UtilHelpers::EntitiesInSphere(bot->GetAbsOrigin(), 2048.0f, enumerator);
 
 	auto myteam = bot->GetMyTFTeam();
-	enumerator.ForEach([&POINT_ENTITY_CLASSNAME, &points, &myteam](CBaseEntity* entity) -> bool {
+	auto functor = [&POINT_ENTITY_CLASSNAME, &points, &myteam](CBaseEntity* entity) -> bool {
 		if (tf2lib::GetEntityTFTeam(entity) == myteam && UtilHelpers::FClassnameIs(entity, POINT_ENTITY_CLASSNAME.data()))
 		{
 			points.push_back(entity);
 		}
 
 		return true;
-	});
+	};
+	enumerator.ForEach(functor);
 
 	return !points.empty();
 }

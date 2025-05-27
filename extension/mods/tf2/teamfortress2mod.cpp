@@ -150,18 +150,20 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		}
 		else if (strncasecmp(name, "mvm_wave_complete", 17) == 0)
 		{
-			extmanager->ForEachBot([](CBaseBot* baseBot) {
+			auto func = [](CBaseBot* baseBot) {
 				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveEnd();
-			});
+			};
+			extmanager->ForEachBot(func);
 
 			OnRoundStart();
 
 		}
 		else if (strncasecmp(name, "mvm_wave_failed", 15) == 0)
 		{
-			extmanager->ForEachBot([](CBaseBot* baseBot) {
+			auto func = [](CBaseBot* baseBot) {
 				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveFailed();
-			});
+			};
+			extmanager->ForEachBot(func);
 
 			OnRoundStart();
 		}
@@ -179,21 +181,25 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 
 			if (UtilHelpers::IsValidEdict(edict))
 			{
-				CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
+				CBaseEntity* entity = UtilHelpers::EdictToBaseEntity(edict);
 
 				TeamFortress2::TFFlagEvent flagevent = static_cast<TeamFortress2::TFFlagEvent>(event->GetInt("eventtype", 0));
 
 				if (flagevent == TeamFortress2::TF_FLAGEVENT_PICKEDUP)
 				{
-					extmanager->ForEachBot([&entity](CBaseBot* bot) {
+					auto func = [&entity](CBaseBot* bot) {
 						bot->OnFlagTaken(entity);
-					});
+					};
+
+					extmanager->ForEachBot(func);
 				}
 				else if (flagevent == TeamFortress2::TF_FLAGEVENT_DROPPED)
 				{
-					extmanager->ForEachBot([&entity](CBaseBot* bot) {
+					auto func = [&entity](CBaseBot* bot) {
 						bot->OnFlagDropped(entity);
-					});
+					};
+
+					extmanager->ForEachBot(func);
 				}
 			}
 		}
@@ -205,7 +211,7 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 
 			if (entity)
 			{
-				extmanager->ForEachBot([&entity, &teamWhoCapped](CBaseBot* bot) {
+				auto func = [&entity, &teamWhoCapped](CBaseBot* bot) {
 
 					if (bot->GetCurrentTeamIndex() == teamWhoCapped)
 					{
@@ -215,7 +221,8 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 					{
 						bot->OnControlPointLost(entity);
 					}
-				});
+				};
+				extmanager->ForEachBot(func);
 			}
 		}
 		else if (strncasecmp(name, "teamplay_point_startcapture", 27) == 0)
@@ -225,9 +232,10 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 
 			if (entity)
 			{
-				extmanager->ForEachBot([&entity](CBaseBot* bot) {
+				auto func = [&entity](CBaseBot* bot) {
 					bot->OnControlPointContested(entity);
-				});
+				};
+				extmanager->ForEachBot(func);
 			}
 		}
 		else if (strncasecmp(name, "recalculate_truce", 17) == 0)
@@ -305,9 +313,11 @@ void CTeamFortress2Mod::Update()
 		{
 			m_isTruceActive = inTruce;
 
-			extmanager->ForEachBot([&inTruce](CBaseBot* bot) {
+			auto func = [&inTruce](CBaseBot* bot) {
 				bot->OnTruceChanged(inTruce);
-			});
+			};
+
+			extmanager->ForEachBot(func);
 		}
 	}
 }
@@ -366,7 +376,7 @@ bool CTeamFortress2Mod::BotQuotaIsClientIgnored(int client, edict_t* entity, Sou
 
 void CTeamFortress2Mod::OnNavMeshLoaded()
 {
-	TheNavMesh->ForEveryWaypoint<CTFWaypoint>([this](CTFWaypoint* waypoint) {
+	auto functor = [this](CTFWaypoint* waypoint) {
 		if (waypoint->GetTFHint() == CTFWaypoint::TFHint::TFHINT_SNIPER && waypoint->GetNumOfAvailableAngles() > 0)
 		{
 			m_sniperWaypoints.push_back(waypoint);
@@ -398,7 +408,9 @@ void CTeamFortress2Mod::OnNavMeshLoaded()
 		}
 
 		return true;
-	});
+	};
+
+	TheNavMesh->ForEveryWaypoint<CTFWaypoint>(functor);
 }
 
 void CTeamFortress2Mod::OnNavMeshDestroyed()
@@ -620,7 +632,7 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 		int num_flags = 0;
 		bool foundrcflag = false; // Resource Control flag
 
-		UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&num_flags, &foundrcflag](int index, edict_t* edict, CBaseEntity* entity) {
+		auto functor = [&num_flags, &foundrcflag](int index, edict_t* edict, CBaseEntity* entity) {
 			if (entity)
 			{
 				num_flags++;
@@ -634,7 +646,9 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 			}
 
 			return true;
-		});
+		};
+
+		UtilHelpers::ForEachEntityOfClassname("item_teamflag", functor);
 
 		if (num_flags == 1 && foundrcflag)
 		{
@@ -804,7 +818,7 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 #endif // EXT_DEBUG
 
 	// Method 1: On most maps, the trigger is parented to the payload's func_tracktrain entity.
-	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&pTrigger, &pTrain](int index, edict_t* edict, CBaseEntity* entity) {
+	auto m1func = [&pTrigger, &pTrain](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity != nullptr)
 		{
 			tfentities::HTFBaseEntity capture(entity);
@@ -819,7 +833,9 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m1func);
 
 #ifdef EXT_DEBUG
 	if (pTrigger == nullptr)
@@ -845,7 +861,7 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 
 	// Method 2: On some maps (example: pl_embargo) the capture trigger is parented to a secondary train.
 	// Use the first avaialble trigger_capture_area
-	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&pTrigger, &pTrain, &attackpoints](int index, edict_t* edict, CBaseEntity* entity) {
+	auto m2func = [&pTrigger, &pTrain, &attackpoints](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity != nullptr)
 		{
 			tfentities::HTFBaseEntity capture(entity);
@@ -866,7 +882,7 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 			}
 
 			int controlpoint = UtilHelpers::FindEntityByTargetname(INVALID_EHANDLE_INDEX, cappointname);
-			
+
 			if (controlpoint == INVALID_EHANDLE_INDEX)
 			{
 				return true; // skip this one
@@ -889,7 +905,9 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m2func);
 
 #ifdef EXT_DEBUG
 	if (pTrigger == nullptr)
@@ -905,7 +923,7 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 
 	// As a last resort, use the first enabled trigger_capture_area
 	// This works fine for pl_embargo. Most maps will stop at method 1.
-	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&pTrigger](int index, edict_t* edict, CBaseEntity* entity) {
+	auto m3func = [&pTrigger](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity != nullptr)
 		{
 			tfentities::HTFBaseEntity capture(entity);
@@ -927,7 +945,8 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 		}
 
 		return true;
-	});
+	};
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m3func);
 
 #ifdef EXT_DEBUG
 	if (pTrigger == nullptr)
@@ -948,7 +967,7 @@ void CTeamFortress2Mod::FindPayloadCarts()
 	m_red_payload.Term();
 	m_blu_payload.Term();
 
-	UtilHelpers::ForEachEntityOfClassname("team_train_watcher", [this](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [this](int index, edict_t* edict, CBaseEntity* entity) {
 		if (edict == nullptr)
 		{
 			return true; // return early, keep loop
@@ -1017,7 +1036,9 @@ void CTeamFortress2Mod::FindPayloadCarts()
 		}
 
 		return true; // keep loop
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("team_train_watcher", functor);
 }
 
 void CTeamFortress2Mod::FindControlPoints()
@@ -1032,17 +1053,18 @@ void CTeamFortress2Mod::FindControlPoints()
 	}
 
 	size_t i = 0;
-
-	UtilHelpers::ForEachEntityOfClassname("team_control_point", [this, &i](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [this, &i](int index, edict_t* edict, CBaseEntity* entity) {
 		m_controlpoints[i].Set(entity);
-		
+
 		if (++i >= TeamFortress2::TF_MAX_CONTROL_POINTS)
 		{
 			return false; // end search
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("team_control_point", functor);
 
 #if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_mod_debug.GetBool())
@@ -1064,9 +1086,8 @@ void CTeamFortress2Mod::CheckForSetup()
 {
 	bool setup = false;
 	int setuplength = 0;
+	auto functor = [&setup, &setuplength](int index, edict_t* edict, CBaseEntity* entity) {
 
-	UtilHelpers::ForEachEntityOfClassname("team_round_timer", [&setup, &setuplength](int index, edict_t* edict, CBaseEntity* entity) {
-		
 		int disabled = 0;
 		entprops->GetEntProp(index, Prop_Send, "m_bIsDisabled", disabled);
 
@@ -1083,7 +1104,7 @@ void CTeamFortress2Mod::CheckForSetup()
 			return true; // exit early, keep searching
 		}
 
-		
+
 		entprops->GetEntProp(index, Prop_Send, "m_nSetupTimeLength", setuplength);
 
 		if (setuplength > 0)
@@ -1094,7 +1115,9 @@ void CTeamFortress2Mod::CheckForSetup()
 
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("team_round_timer", functor);
 
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(64, 200, 0, 255), "CTeamFortress2Mod::CheckForSetup m_bInSetup = %s\n", setup ? "TRUE" : "FALSE");
@@ -1433,9 +1456,11 @@ void CTeamFortress2Mod::OnRoundStart()
 	FindPayloadCarts();
 	UpdateHealthAndAmmoSources();
 
-	extmanager->ForEachBot([](CBaseBot* bot) {
+	auto func = [](CBaseBot* bot) {
 		bot->OnRoundStateChanged();
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 const TeamFortress2::TFObjectiveResource* CTeamFortress2Mod::GetTFObjectiveResource() const
@@ -1706,13 +1731,15 @@ void CTeamFortress2Mod::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer*
 			int command = TeamFortress2::GetVoiceCommandID(atoi(args[1]), atoi(args[2]));
 			CBaseEntity* pEntity = pEdict->GetIServerEntity()->GetBaseEntity();
 
-			extmanager->ForEachBot([&pEntity, &command](CBaseBot* bot) {
+			auto func = [&pEntity, &command](CBaseBot* bot) {
 				// send voice commands for all bots
 				if (bot->GetEntity() != pEntity)
 				{
 					bot->OnVoiceCommand(pEntity, command);
 				}
-			});
+			};
+
+			extmanager->ForEachBot(func);
 		}
 	}
 }
@@ -1837,7 +1864,7 @@ CON_COMMAND(sm_navbot_tf_debug_pd, "Debug player destruction")
 
 CON_COMMAND(sm_navbot_tf_debug_rd, "Debug robot destruction")
 {
-	UtilHelpers::ForEachEntityOfClassname("tf_robot_destruction_robot", [](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			bool shielded = tf2lib::rd::IsRobotInvulnerable(entity);
@@ -1847,7 +1874,9 @@ CON_COMMAND(sm_navbot_tf_debug_rd, "Debug robot destruction")
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("tf_robot_destruction_robot", func);
 }
 
 #endif // EXT_DEBUG

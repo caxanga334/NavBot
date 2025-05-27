@@ -597,8 +597,7 @@ void CNavElevator::ElevatorEntity::SearchForEntity(const bool noerror)
 		CBaseEntity* nearest = nullptr;
 		float best = FLT_MAX;
 		const Vector& start = this->position;
-
-		UtilHelpers::ForEachEntityOfClassname(this->classname.c_str(), [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
+		auto func = [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
 			if (entity != nullptr)
 			{
 				Vector end = UtilHelpers::getWorldSpaceCenter(entity);
@@ -613,7 +612,9 @@ void CNavElevator::ElevatorEntity::SearchForEntity(const bool noerror)
 			}
 
 			return true;
-		});
+		};
+
+		UtilHelpers::ForEachEntityOfClassname(this->classname.c_str(), func);
 
 		this->handle = nearest;
 	}

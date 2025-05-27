@@ -55,7 +55,6 @@ public:
 	edict_t* GetFlagToFetch() const;
 	edict_t* GetFlagToDefend(bool stolenOnly = false, bool ignoreHome = false) const;
 	edict_t* GetFlagCaptureZoreToDeliver() const;
-	bool IsAmmoLow() const;
 	void FindMyBuildings();
 	bool IsDisguised() const;
 	bool IsCloaked() const;

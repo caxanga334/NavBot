@@ -612,16 +612,6 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	return !result.DidHit();
 }
 
-int CBaseBot::GetWaterLevel() const
-{
-	return static_cast<int>(entityprops::GetEntityWaterLevel(GetEntity()));
-}
-
-bool CBaseBot::IsUnderWater() const
-{
-	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(WaterLevel::WL_Eyes);
-}
-
 void CBaseBot::SendChatMessage(const char* message)
 {
 	constexpr std::size_t MAX_SIZE = 255U;

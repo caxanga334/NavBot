@@ -96,9 +96,11 @@ void CBaseMod::ReloadBotDifficultyProfile()
 
 	const CDifficultyManager* manager = m_profilemanager.get();
 
-	extmanager->ForEachBot([&manager](CBaseBot* bot) {
+	auto func = [&manager](CBaseBot* bot) {
 		bot->RefreshDifficulty(manager);
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 void CBaseMod::InternalFindPlayerResourceEntity()

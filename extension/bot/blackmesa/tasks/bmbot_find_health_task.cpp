@@ -140,7 +140,7 @@ bool CBlackMesaBotFindHealthTask::FindHealthSource(CBlackMesaBot* bot, CBaseEnti
 	std::vector<CBaseEntity*> sources;
 	Vector start = bot->GetAbsOrigin();
 
-	UtilHelpers::ForEachEntityOfClassname("item_healthcharger", [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
+	auto chargerfunc = [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			float charge = -1.0f;
@@ -156,9 +156,11 @@ bool CBlackMesaBotFindHealthTask::FindHealthSource(CBlackMesaBot* bot, CBaseEnti
 		}
 
 		return true;
-	});
+	};
 
-	UtilHelpers::ForEachEntityOfClassname("item_healthkit", [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
+	UtilHelpers::ForEachEntityOfClassname("item_healthcharger", chargerfunc);
+
+	auto kitfunc = [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			const Vector& end = UtilHelpers::getEntityOrigin(entity);
@@ -178,7 +180,9 @@ bool CBlackMesaBotFindHealthTask::FindHealthSource(CBlackMesaBot* bot, CBaseEnti
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("item_healthkit", kitfunc);
 
 	if (sources.empty())
 	{

@@ -119,8 +119,7 @@ bool CTF2BotMvMUpgradeTask::SelectNearestUpgradeStation(CTF2Bot* me)
 {
 	std::vector<edict_t*> upgradestations;
 	upgradestations.reserve(8);
-
-	UtilHelpers::ForEachEntityOfClassname("func_upgradestation", [&upgradestations](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&upgradestations](int index, edict_t* edict, CBaseEntity* entity) {
 		if (edict == nullptr)
 		{
 			return true; // return early, but keep looping. Upgrade stations should never have a NULL edict
@@ -137,7 +136,9 @@ bool CTF2BotMvMUpgradeTask::SelectNearestUpgradeStation(CTF2Bot* me)
 		upgradestations.push_back(edict);
 
 		return true; // continue looping
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_upgradestation", functor);
 
 	if (upgradestations.empty())
 	{

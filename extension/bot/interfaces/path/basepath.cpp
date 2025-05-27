@@ -522,6 +522,18 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 	Vector alongPath = toPos - fromPos;
 	const float expectedHeightDrop = -DotProduct(alongPath, groundNormal);
 
+	// When going from land to underwater, the bot enters a loop of going back to land and entering water
+	if (index <= 1 && to->area->IsUnderwater())
+	{
+		if (bot->IsUnderWater())
+		{
+			from->goal = bot->GetAbsOrigin();
+			to->goal = bot->GetAbsOrigin();
+
+			return true;
+		}
+	}
+
 	if (expectedHeightDrop > mover->GetStepHeight())
 	{
 		Vector2D dir;
@@ -923,6 +935,54 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		// between goal is the special link position on the nav area.
 
 		// Create the blast jump segment that goes from the link start to the link end position.
+		auto gapseg = CreateNewSegment();
+		gapseg->CopySegment(from);
+		gapseg->area = to->area;
+		gapseg->goal = link->GetEnd();
+		gapseg->how = GO_OFF_MESH_CONNECTION;
+		gapseg->type = AIPath::SEGMENT_GROUND;
+
+		pathinsert.emplace(from, std::move(between), true);
+		pathinsert.emplace(to, std::move(gapseg), false);
+		break;
+	}
+	case OffMeshConnectionType::OFFMESH_CLIMB_UP:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetStart();
+		between->how = GO_OFF_MESH_CONNECTION;
+		between->type = AIPath::SEGMENT_CLIMB_UP;
+
+		auto gapseg = CreateNewSegment();
+		gapseg->CopySegment(from);
+		gapseg->area = to->area;
+		gapseg->goal = link->GetEnd();
+		gapseg->how = GO_OFF_MESH_CONNECTION;
+		gapseg->type = AIPath::SEGMENT_GROUND;
+
+		pathinsert.emplace(from, std::move(between), true);
+		pathinsert.emplace(to, std::move(gapseg), false);
+		break;
+	}
+	case OffMeshConnectionType::OFFMESH_DROP_DOWN:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetStart();
+		between->how = GO_OFF_MESH_CONNECTION;
+		between->type = AIPath::SEGMENT_DROP_FROM_LEDGE;
+
 		auto gapseg = CreateNewSegment();
 		gapseg->CopySegment(from);
 		gapseg->area = to->area;

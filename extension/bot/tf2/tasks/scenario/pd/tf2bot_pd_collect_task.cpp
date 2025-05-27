@@ -19,8 +19,7 @@ bool CTF2BotPDCollectTask::IsPossible(CTF2Bot* bot, std::vector<CHandle<CBaseEnt
 
 	std::vector<CHandle<CBaseEntity>> collect;
 	collect.reserve(64);
-
-	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&bot, &collect](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&bot, &collect](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			bool disabled = false;
@@ -52,7 +51,9 @@ bool CTF2BotPDCollectTask::IsPossible(CTF2Bot* bot, std::vector<CHandle<CBaseEnt
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", functor);
 
 	if (!collect.empty())
 	{

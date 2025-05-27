@@ -77,13 +77,16 @@ void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
 	}
 	
 	CBaseEntity* groundent = GetGroundEntity();
+	int waterlevel = GetWaterLevel();
 
-	if (groundent == nullptr)
+	if (groundent == nullptr && waterlevel == static_cast<int>(WaterLevel::WL_NotInWater))
 	{
 		return; // don't update if the bot is midair
 	}
 
-	CNavArea* newarea = TheNavMesh->GetNearestNavArea(GetEdict(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, 50.0f);
+	float maxDist = waterlevel == static_cast<int>(WaterLevel::WL_NotInWater) ? 50.0f : 512.0f;
+
+	CNavArea* newarea = TheNavMesh->GetNearestNavArea(GetEdict(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, maxDist);
 
 	if (!newarea)
 	{
@@ -430,6 +433,15 @@ bool CBaseExtPlayer::IsLookingTowards(const Vector& position, const float tolera
 	return DotProduct(forward, to) >= tolerance;
 }
 
+int CBaseExtPlayer::GetWaterLevel() const
+{
+	return static_cast<int>(entityprops::GetEntityWaterLevel(GetEntity()));
+}
+
+bool CBaseExtPlayer::IsUnderWater() const
+{
+	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(WaterLevel::WL_Eyes);
+}
 
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)

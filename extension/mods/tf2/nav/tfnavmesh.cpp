@@ -38,7 +38,7 @@ namespace tfnavmeshutils
 				tfarea->GetSpawnRoomTeam() == team_index)
 			{
 				// current area is a spawn room area, loop connected areas and add any areas that does not have the spawn room attribute to the list
-				tfarea->ForEachConnectedArea([this](CNavArea* area) {
+				auto functor = [this](CNavArea* area) {
 					CTFNavArea* connectedArea = static_cast<CTFNavArea*>(area);
 
 					if (!connectedArea->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM))
@@ -49,7 +49,8 @@ namespace tfnavmeshutils
 							areas.push_back(connectedArea);
 						}
 					}
-				});
+				};
+				tfarea->ForEachConnectedArea(functor);
 			}
 
 			return true;

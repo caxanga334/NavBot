@@ -167,8 +167,7 @@ void CTF2BotAttackControlPointTask::FindCaptureTrigger(CBaseEntity* controlpoint
 	std::unique_ptr<char[]> targetname = std::make_unique<char[]>(128);
 	entity.GetTargetName(targetname.get(), 128);
 	CBaseEntity* trigger = nullptr;
-
-	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", [&targetname, &controlpoint, &trigger](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&targetname, &controlpoint, &trigger](int index, edict_t* edict, CBaseEntity* entity) {
 
 		if (entity != nullptr)
 		{
@@ -190,7 +189,9 @@ void CTF2BotAttackControlPointTask::FindCaptureTrigger(CBaseEntity* controlpoint
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", functor);
 
 	if (trigger)
 	{

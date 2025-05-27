@@ -52,9 +52,11 @@ bool CWeaponInfoManager::LoadConfigFile()
 		info->PostLoad();
 	}
 
-	extmanager->ForEachBot([](CBaseBot* bot) {
+	auto functor = [](CBaseBot* bot) {
 		bot->GetInventoryInterface()->OnWeaponInfoConfigReloaded();
-	});
+	};
+
+	extmanager->ForEachBot(functor);
 
 	return true;
 }

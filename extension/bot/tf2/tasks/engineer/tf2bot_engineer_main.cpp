@@ -68,39 +68,40 @@ CBaseEntity* CTF2BotEngineerMainTask::ScanAllyBuildings(CTF2Bot* me, bool& is_up
 		float best = std::numeric_limits<float>::max();
 		bool upgrade_or_repair = false; // repair on false, upgrade on true
 		TeamFortress2::TFTeam myteam = me->GetMyTFTeam();
+		auto functor = [&me, &building, &best, &myteam, &upgrade_or_repair](int index, edict_t* edict, CBaseEntity* entity) {
+			if (entity != nullptr && tf2lib::GetEntityTFTeam(index) == myteam &&
+				tf2lib::GetBuildingBuilder(entity) != me->GetEntity() && tf2lib::IsBuildingPlaced(entity))
+			{
+				if (tf2lib::BuildingNeedsToBeRepaired(entity))
+				{
+					float distance = me->GetRangeToSqr(entity);
+
+					if (distance <= CTF2BotEngineerMainTask::HELP_ALLY_BUILDING_MAX_RANGE_SQR && distance < best)
+					{
+						best = distance;
+						building = entity;
+						upgrade_or_repair = false; // repair
+					}
+				}
+				else if (!tf2lib::IsBuildingAtMaxUpgradeLevel(entity))
+				{
+					float distance = me->GetRangeToSqr(entity);
+
+					if (distance <= CTF2BotEngineerMainTask::HELP_ALLY_BUILDING_MAX_RANGE_SQR && distance < best)
+					{
+						best = distance;
+						building = entity;
+						upgrade_or_repair = true; // upgrade
+					}
+				}
+			}
+
+			return true;
+		};
 
 		for (auto& classname : objects_classnames)
 		{
-			UtilHelpers::ForEachEntityOfClassname(classname.data(), [&me, &building, &best, &myteam, &upgrade_or_repair](int index, edict_t* edict, CBaseEntity* entity) {
-				if (entity != nullptr && tf2lib::GetEntityTFTeam(index) == myteam && 
-					tf2lib::GetBuildingBuilder(entity) != me->GetEntity() && tf2lib::IsBuildingPlaced(entity))
-				{
-					if (tf2lib::BuildingNeedsToBeRepaired(entity))
-					{
-						float distance = me->GetRangeToSqr(entity);
-
-						if (distance <= CTF2BotEngineerMainTask::HELP_ALLY_BUILDING_MAX_RANGE_SQR && distance < best)
-						{
-							best = distance;
-							building = entity;
-							upgrade_or_repair = false; // repair
-						}
-					}
-					else if (!tf2lib::IsBuildingAtMaxUpgradeLevel(entity))
-					{
-						float distance = me->GetRangeToSqr(entity);
-
-						if (distance <= CTF2BotEngineerMainTask::HELP_ALLY_BUILDING_MAX_RANGE_SQR && distance < best)
-						{
-							best = distance;
-							building = entity;
-							upgrade_or_repair = true; // upgrade
-						}
-					}
-				}
-
-				return true;
-			});
+			UtilHelpers::ForEachEntityOfClassname(classname.data(), functor);
 		}
 
 		is_upgrade = upgrade_or_repair;

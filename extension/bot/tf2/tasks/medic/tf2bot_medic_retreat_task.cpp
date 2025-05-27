@@ -55,8 +55,7 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	bool visibleteammate = false;
-
-	bot->GetSensorInterface()->ForEveryKnownEntity([&bot, &visibleteammate](const CKnownEntity* known) {
+	auto func = [&bot, &visibleteammate](const CKnownEntity* known) {
 		if (!visibleteammate && !known->IsObsolete() && known->IsPlayer() && known->IsVisibleNow())
 		{
 			if (tf2lib::GetEntityTFTeam(known->GetIndex()) == bot->GetMyTFTeam())
@@ -64,7 +63,9 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 				visibleteammate = true;
 			}
 		}
-	});
+	};
+
+	bot->GetSensorInterface()->ForEveryKnownEntity(func);
 
 	if (visibleteammate)
 	{
@@ -103,8 +104,7 @@ Vector CTF2BotMedicRetreatTask::GetRetreatPosition(CTF2Bot* me) const
 	auto myteam = me->GetMyTFTeam();
 	Vector origin = me->GetAbsOrigin();
 	Vector goal;
-
-	UtilHelpers::ForEachPlayer([&t, &nearestTeammate, &myteam, &origin, &goal](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto func = [&t, &nearestTeammate, &myteam, &origin, &goal](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 		if (player->IsInGame() && UtilHelpers::IsPlayerAlive(client) && tf2lib::GetEntityTFTeam(client) == myteam)
 		{
 			CBaseExtPlayer them(entity);
@@ -117,7 +117,9 @@ Vector CTF2BotMedicRetreatTask::GetRetreatPosition(CTF2Bot* me) const
 				goal = them.GetAbsOrigin();
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 
 	if (nearestTeammate != nullptr)
 	{

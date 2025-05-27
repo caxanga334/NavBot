@@ -23,8 +23,7 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 	entprops->GetEntPropBool(m_capzone.GetEntryIndex(), Prop_Data, "m_bDisabled", m_capwasdisabled);
 
 	CBaseEntity* flagzone = nullptr;
-
-	UtilHelpers::ForEachEntityOfClassname("func_flagdetectionzone", [&flagzone, &bot](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&flagzone, &bot](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			int teamNum = 0;
@@ -34,7 +33,7 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 			{
 				bool disabled = false;
 				entprops->GetEntPropBool(index, Prop_Data, "m_bDisabled", disabled);
-				
+
 				if (!disabled)
 				{
 					flagzone = entity;
@@ -44,7 +43,9 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_flagdetectionzone", functor);
 
 	m_flagzone = flagzone;
 

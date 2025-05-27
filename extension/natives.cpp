@@ -113,9 +113,11 @@ namespace natives
 
 		float maxRadius = sp_ctof(params[4]);
 
-		extmanager->ForEachBot([&entity, &origin, &type, &maxRadius](CBaseBot* bot) {
+		auto functor = [&entity, &origin, &type, &maxRadius](CBaseBot* bot) {
 			bot->OnSound(entity, origin, type, maxRadius);
-		});
+		};
+
+		extmanager->ForEachBot(functor);
 
 		return 0;
 	}

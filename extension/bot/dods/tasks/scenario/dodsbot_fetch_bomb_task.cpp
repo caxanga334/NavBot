@@ -92,7 +92,7 @@ bool CDoDSBotFetchBombTask::SelectNearestBombDispenser(CDoDSBot* bot)
 
 	std::priority_queue<CBaseEntity*, std::vector<CBaseEntity*>, decltype(cmp)> nearest_dispenser_queue(cmp);
 
-	UtilHelpers::ForEachEntityOfClassname("dod_bomb_dispenser", [&nearest_dispenser_queue, &bot](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&nearest_dispenser_queue, &bot](int index, edict_t* edict, CBaseEntity* entity) {
 
 		if (entity)
 		{
@@ -116,7 +116,9 @@ bool CDoDSBotFetchBombTask::SelectNearestBombDispenser(CDoDSBot* bot)
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("dod_bomb_dispenser", functor);
 
 	if (nearest_dispenser_queue.empty())
 	{

@@ -260,7 +260,7 @@ CON_COMMAND_F(sm_navbot_tool_give_infammo, "Gives infinite reserve ammo to every
 		return;
 	}
 
-	UtilHelpers::ForEachPlayer([](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto func = [](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 		if (player->IsInGame())
 		{
 			for (int i = 0; i < MAX_AMMO_TYPES; i++)
@@ -268,7 +268,9 @@ CON_COMMAND_F(sm_navbot_tool_give_infammo, "Gives infinite reserve ammo to every
 				entprops->SetEntProp(client, Prop_Send, "m_iAmmo", 9999, 4, i);
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 }
 
 CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current position.", FCVAR_CHEAT)
@@ -279,9 +281,11 @@ CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current positio
 		return;
 	}
 
-	extmanager->ForEachBot([](CBaseBot* bot) {
+	auto func = [](CBaseBot* bot) {
 		bot->OnDebugMoveToHostCommand();
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 CON_COMMAND_F(sm_navbot_tool_reset_bots, "Reset the bot interfaces.", FCVAR_CHEAT)
@@ -292,9 +296,11 @@ CON_COMMAND_F(sm_navbot_tool_reset_bots, "Reset the bot interfaces.", FCVAR_CHEA
 		return;
 	}
 
-	extmanager->ForEachBot([](CBaseBot* bot) {
+	auto func = [](CBaseBot* bot) {
 		bot->Reset();
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 CON_COMMAND_F(sm_navbot_tool_toggle_non_solid, "Makes your non solid to triggers.", FCVAR_CHEAT)

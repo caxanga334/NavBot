@@ -108,14 +108,15 @@ void CTF2BotSetupTimeTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 void CTF2BotSetupTimeTask::SelectRandomTarget(CTF2Bot* me)
 {
 	std::vector<CBaseEntity*> targets;
-
-	UtilHelpers::ForEachPlayer([&me, &targets](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto func = [&me, &targets](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 
 		if (client != me->GetIndex() && player->IsInGame() && UtilHelpers::IsPlayerAlive(client) && tf2lib::GetEntityTFTeam(client) == me->GetMyTFTeam())
 		{
 			targets.push_back(gamehelpers->ReferenceToEntity(client));
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 
 	if (targets.empty())
 	{

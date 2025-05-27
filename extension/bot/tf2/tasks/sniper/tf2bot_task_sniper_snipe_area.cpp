@@ -121,14 +121,16 @@ void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 		Vector start = m_waypoint->GetOrigin();
 		start.z = eyePos.z;
 
-		m_waypoint->ForEveryAngle([this, &me, &start](const QAngle& angle) {
+		auto func = [this, &me, &start](const QAngle& angle) {
 			Vector forward;
 			AngleVectors(angle, &forward);
 			forward.NormalizeInPlace();
 
 			Vector end = start + (forward * 512.0f);
 			m_lookPoints.push_back(end);
-		});
+		};
+
+		m_waypoint->ForEveryAngle(func);
 
 		return;
 	}

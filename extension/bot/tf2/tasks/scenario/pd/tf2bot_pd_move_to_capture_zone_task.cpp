@@ -22,8 +22,7 @@ bool CTF2BotPDMoveToCaptureZoneTask::IsPossible(CTF2Bot* bot, CBaseEntity** capt
 	}
 
 	CBaseEntity* pEntity = nullptr;
-
-	UtilHelpers::ForEachEntityOfClassname("func_capturezone", [&bot, &pEntity](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&bot, &pEntity](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity && tf2lib::GetEntityTFTeam(index) == bot->GetMyTFTeam())
 		{
 			bool disabled = false;
@@ -39,7 +38,9 @@ bool CTF2BotPDMoveToCaptureZoneTask::IsPossible(CTF2Bot* bot, CBaseEntity** capt
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_capturezone", functor);
 
 	if (!pEntity)
 	{

@@ -166,10 +166,10 @@ namespace UtilHelpers
 	 * @brief Collects player into a vector of ints containing their indexes
 	 * @tparam T A class with an operator() overload with two parameters (int client, edict_t* entity, SourceMod::IGamePlayer* player), return true to add the client to the vector
 	 * @param playersvector Vector to store the players indexes
-	 * @param functor Player collection filter, only called to clients that are valid and in game.
+	 * @param pred Player collection filter, only called to clients that are valid and in game.
 	 */
 	template <typename T>
-	void CollectPlayers(std::vector<int>& playersvector, T& functor);
+	void CollectPlayers(std::vector<int>& playersvector, T pred);
 	const char* GetPlayerDebugIdentifier(int player);
 	const char* GetPlayerDebugIdentifier(edict_t* player);
 	
@@ -354,7 +354,7 @@ namespace UtilHelpers
 	 * @param functor Function to run.
 	 */
 	template <typename T>
-	inline void ForEachEntityInSphere(const Vector& center, float radius, T& functor)
+	inline void ForEachEntityInSphere(const Vector& center, float radius,T& functor)
 	{
 		int entity = INVALID_EHANDLE_INDEX;
 		while ((entity = UtilHelpers::FindEntityInSphere(entity, center, radius)) != INVALID_EHANDLE_INDEX)
@@ -721,7 +721,7 @@ namespace UtilHelpers
 }
 
 template<typename T>
-inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T& functor)
+inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T pred)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
@@ -744,7 +744,7 @@ inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T& func
 		if (!gp->IsInGame())
 			continue;
 
-		if (functor(i, edict, gp))
+		if (pred(i, edict, gp))
 		{
 			playersvector.push_back(i);
 		}

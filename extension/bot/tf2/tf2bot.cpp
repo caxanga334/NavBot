@@ -243,8 +243,7 @@ edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly, bool ignoreHome) const
 	collectedflags.reserve(16);
 	auto myteam = GetMyTFTeam();
 	const float now = gpGlobals->curtime;
-
-	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&collectedflags, &myteam, &stolenOnly, &ignoreHome, &now](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&collectedflags, &myteam, &stolenOnly, &ignoreHome, &now](int index, edict_t* edict, CBaseEntity* entity) {
 
 		if (edict == nullptr)
 		{
@@ -286,7 +285,9 @@ edict_t* CTF2Bot::GetFlagToDefend(bool stolenOnly, bool ignoreHome) const
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", functor);
 
 	if (collectedflags.empty())
 	{
@@ -333,59 +334,6 @@ edict_t* CTF2Bot::GetFlagCaptureZoreToDeliver() const
 	}
 
 	return nullptr;
-}
-
-bool CTF2Bot::IsAmmoLow() const
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CTF2Bot::IsAmmoLow", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	// For engineer, check metal
-	if (GetMyClassType() == TeamFortress2::TFClass_Engineer)
-	{
-		if (GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) <= 0)
-		{
-			return true;
-		}
-	}
-
-	bool haslowammoweapon = false;
-
-	GetInventoryInterface()->ForEveryWeapon([this, &haslowammoweapon](const CBotWeapon* weapon) {
-		if (haslowammoweapon)
-			return;
-
-		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
-		{
-			return; // don't bother with ammo for non combat weapons
-		}
-
-		if (weapon->GetWeaponInfo()->HasInfiniteAmmo())
-		{
-			return;
-		}
-
-		if (weapon->GetWeaponInfo()->HasLowPrimaryAmmoThreshold())
-		{
-			if (GetAmmoOfIndex(weapon->GetBaseCombatWeapon().GetPrimaryAmmoType()) < weapon->GetWeaponInfo()->GetLowPrimaryAmmoThreshold())
-			{
-				haslowammoweapon = true;
-				return;
-			}
-		}
-
-		if (weapon->GetWeaponInfo()->HasLowSecondaryAmmoThreshold())
-		{
-			if (GetAmmoOfIndex(weapon->GetBaseCombatWeapon().GetSecondaryAmmoType()) < weapon->GetWeaponInfo()->GetLowSecondaryAmmoThreshold())
-			{
-				haslowammoweapon = true;
-				return;
-			}
-		}
-	});
-
-	return haslowammoweapon;
 }
 
 CBaseEntity* CTF2Bot::GetMySentryGun() const

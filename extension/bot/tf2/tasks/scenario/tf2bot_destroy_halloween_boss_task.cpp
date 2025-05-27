@@ -71,8 +71,7 @@ TaskResult<CTF2Bot> CTF2BotDestroyHalloweenBossTask::OnTaskUpdate(CTF2Bot* bot)
 bool CTF2BotDestroyHalloweenBossTask::FindHalloweenBoss()
 {
 	CBaseEntity* boss = nullptr;
-
-	UtilHelpers::ForEachEntityOfClassname("eyeball_boss", [&boss](int index, edict_t* edict, CBaseEntity* entity) {
+	auto eyeballfunctor = [&boss](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			// ignore spell created Monoculus
@@ -84,46 +83,34 @@ bool CTF2BotDestroyHalloweenBossTask::FindHalloweenBoss()
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("eyeball_boss", eyeballfunctor);
+
+	auto functor = [&boss](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			boss = entity;
+			return false;
+		}
+
+		return true;
+	};
 
 	if (!boss)
 	{
-		UtilHelpers::ForEachEntityOfClassname("merasmus", [&boss](int index, edict_t* edict, CBaseEntity* entity) {
-			if (entity)
-			{
-				boss = entity;
-				return false;
-			}
-
-			return true;
-		});
+		UtilHelpers::ForEachEntityOfClassname("merasmus", functor);
 	}
 
 	if (!boss)
 	{
 		// base_boss is generally used with Vscript bosses
-		UtilHelpers::ForEachEntityOfClassname("base_boss", [&boss](int index, edict_t* edict, CBaseEntity* entity) {
-			if (entity)
-			{
-				boss = entity;
-				return false;
-			}
-
-			return true;
-		});
+		UtilHelpers::ForEachEntityOfClassname("base_boss", functor);
 	}
 
 	if (!boss)
 	{
-		UtilHelpers::ForEachEntityOfClassname("headless_hatman", [&boss](int index, edict_t* edict, CBaseEntity* entity) {
-			if (entity)
-			{
-				boss = entity;
-				return false;
-			}
-
-			return true;
-		});
+		UtilHelpers::ForEachEntityOfClassname("headless_hatman", functor);
 	}
 
 	if (boss)

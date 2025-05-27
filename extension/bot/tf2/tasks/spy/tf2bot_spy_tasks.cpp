@@ -288,8 +288,7 @@ void CTF2BotSpyInfiltrateTask::GetLurkSearchStartPos(CTF2Bot* me, Vector& out)
 	{
 		CBaseEntity* enemyZone = nullptr;
 		TeamFortress2::TFTeam enemyTeam = tf2lib::GetEnemyTFTeam(me->GetMyTFTeam());
-
-		UtilHelpers::ForEachEntityOfClassname("func_capturezone", [&enemyZone, &enemyTeam](int index, edict_t* edict, CBaseEntity* entity) {
+		auto functor = [&enemyZone, &enemyTeam](int index, edict_t* edict, CBaseEntity* entity) {
 			if (entity != nullptr)
 			{
 				tfentities::HCaptureZone capzone(entity);
@@ -302,7 +301,9 @@ void CTF2BotSpyInfiltrateTask::GetLurkSearchStartPos(CTF2Bot* me, Vector& out)
 			}
 
 			return true;
-		});
+		};
+
+		UtilHelpers::ForEachEntityOfClassname("func_capturezone", functor);
 
 		if (enemyZone != nullptr)
 		{
@@ -706,8 +707,7 @@ TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		// sap other nearby objects
 
 		CBaseEntity* nextObject = nullptr;
-
-		bot->GetSensorInterface()->ForEveryKnownEntity([&nextObject](const CKnownEntity* known) {
+		auto func = [&nextObject](const CKnownEntity* known) {
 			if (nextObject == nullptr)
 			{
 				if (!known->IsObsolete() && known->IsVisibleNow())
@@ -720,7 +720,9 @@ TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
 					}
 				}
 			}
-		});
+		};
+
+		bot->GetSensorInterface()->ForEveryKnownEntity(func);
 
 		if (nextObject == nullptr)
 		{

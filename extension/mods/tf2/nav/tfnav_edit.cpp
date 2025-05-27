@@ -261,7 +261,7 @@ CON_COMMAND_F(sm_tf_nav_auto_set_spawnrooms, "Detects and set spawn room areas a
 		center.z += 24.0f;
 		bool inside = false;
 
-		UtilHelpers::ForEachEntityOfClassname("func_respawnroom", [&inside, &center](int index, edict_t* edict, CBaseEntity* entity) {
+		auto functor2 = [&inside, &center](int index, edict_t* edict, CBaseEntity* entity) {
 			if (edict != nullptr && edict->GetCollideable() != nullptr)
 			{
 				if (trace::pointwithin(edict->GetCollideable(), center))
@@ -272,7 +272,9 @@ CON_COMMAND_F(sm_tf_nav_auto_set_spawnrooms, "Detects and set spawn room areas a
 			}
 
 			return true; // keep searching for entities
-		});
+		};
+
+		UtilHelpers::ForEachEntityOfClassname("func_respawnroom", functor2);
 
 		if (inside)
 		{

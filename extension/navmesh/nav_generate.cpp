@@ -156,13 +156,15 @@ void CNavMesh::BuildLadders(void)
 
 	// TO-DO: Add support for HL2 style ladders, will be used for Synergy and others HL2 based MP mods.
 
-	UtilHelpers::ForEachEntityOfClassname("func_simpleladder", [this](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
 		Vector mins;
 		Vector maxs;
 		edict->GetCollideable()->WorldSpaceSurroundingBounds(&mins, &maxs);
 		CreateLadder(mins, maxs, 0.0f);
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_simpleladder", func);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3245,7 +3247,7 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 // adds walkable positions for any/all positions a mod specifies
 void CNavMesh::AddWalkableSeeds( void )
 {
-	UtilHelpers::ForEveryEntity([this](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [this](int index, edict_t* edict, CBaseEntity* entity) {
 		const char* classname = gamehelpers->GetEntityClassname(entity);
 
 		if (classname != nullptr && classname[0] != '\0')
@@ -3278,7 +3280,9 @@ void CNavMesh::AddWalkableSeeds( void )
 				}
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEveryEntity(functor);
 }
 
 

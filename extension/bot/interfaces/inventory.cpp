@@ -147,9 +147,8 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 	const float rangeToThreat = bot->GetRangeTo(threat->GetEdict());
 	const CBotWeapon* best = nullptr;
 	int priority = std::numeric_limits<int>::min();
+	auto func = [&bot, &priority, &rangeToThreat, &best](const CBotWeapon* weapon) {
 
-	ForEveryWeapon([&bot, &priority, &rangeToThreat, &best](const CBotWeapon* weapon) {
-		
 		if (!weapon->IsValid())
 		{
 			return;
@@ -191,7 +190,9 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			best = weapon;
 			priority = currentprio;
 		}
-	});
+	};
+
+	ForEveryWeapon(func);
 
 	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
 
@@ -221,8 +222,7 @@ void IInventory::SelectBestWeapon()
 	CBaseBot* bot = GetBot();
 	const CBotWeapon* best = nullptr;
 	int priority = std::numeric_limits<int>::min();
-
-	ForEveryWeapon([&bot, &priority, &best](const CBotWeapon* weapon) {
+	auto func = [&bot, &priority, &best](const CBotWeapon* weapon) {
 
 		if (!weapon->IsValid())
 		{
@@ -256,7 +256,9 @@ void IInventory::SelectBestWeapon()
 			best = weapon;
 			priority = currentprio;
 		}
-	});
+	};
+
+	ForEveryWeapon(func);
 
 	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
 
@@ -287,9 +289,7 @@ void IInventory::SelectBestWeaponForBreakables()
 	const CBotWeapon* best = nullptr;
 	int priority = std::numeric_limits<int>::min();
 	bool found_melee = false;
-
-	// Find the best melee weapon
-	ForEveryWeapon([&bot, &priority, &best, &found_melee](const CBotWeapon* weapon) {
+	auto func = [&bot, &priority, &best, &found_melee](const CBotWeapon* weapon) {
 
 		if (!weapon->IsValid())
 		{
@@ -334,7 +334,10 @@ void IInventory::SelectBestWeaponForBreakables()
 				found_melee = true;
 			}
 		}
-	});
+	};
+
+	// Find the best melee weapon
+	ForEveryWeapon(func);
 
 	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
 
@@ -364,9 +367,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 	CBaseBot* bot = GetBot();
 	const CBotWeapon* best = nullptr;
 	int priority = std::numeric_limits<int>::min();
-
-	// Find the best melee weapon
-	ForEveryWeapon([&bot, &priority, &best, &meleeIsHitscan](const CBotWeapon* weapon) {
+	auto func = [&bot, &priority, &best, &meleeIsHitscan](const CBotWeapon* weapon) {
 
 		if (!weapon->IsValid())
 		{
@@ -411,7 +412,10 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 			best = weapon;
 			priority = currentprio;
 		}
-	});
+	};
+
+	// Find the best melee weapon
+	ForEveryWeapon(func);
 
 	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
 

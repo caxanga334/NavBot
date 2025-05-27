@@ -44,13 +44,15 @@ public:
 		m_waypoint = waypoint;
 		std::vector<Vector> spots;
 
-		waypoint->ForEveryAngle([&waypoint, &spots](const QAngle& angle) {
+		auto func = [&waypoint, &spots](const QAngle& angle) {
 			Vector dir;
 			AngleVectors(angle, &dir);
 			dir.NormalizeInPlace();
 			Vector aimAt = (waypoint->GetOrigin() + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_AIM_HEIGHT)) + (dir * 1024.0f);
 			spots.push_back(aimAt);
-		});
+		};
+
+		waypoint->ForEveryAngle(func);
 
 		m_aimSpots.swap(spots);
 		waypoint->Use(bot, maxtime + 10.0f);

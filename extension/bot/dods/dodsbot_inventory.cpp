@@ -14,13 +14,14 @@ CDoDSBotInventory::~CDoDSBotInventory()
 bool CDoDSBotInventory::HasBomb() const
 {
 	bool found = false;
-
-	this->ForEveryWeapon([&found](const CBotWeapon* weapon) {
+	auto func = [&found](const CBotWeapon* weapon) {
 		if (strcmp(weapon->GetClassname().c_str(), "weapon_basebomb") == 0)
 		{
 			found = true;
 		}
-	});
+	};
+
+	this->ForEveryWeapon(func);
 
 	return found;
 }

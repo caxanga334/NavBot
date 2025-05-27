@@ -142,6 +142,11 @@ public:
 	 */
 	bool IsLookingTowards(const Vector& position, const float tolerance = DEFAULT_LOOK_TOWARDS_TOLERANCE) const;
 
+	// returns the player's water level
+	int GetWaterLevel() const;
+	// is the player underwater?
+	bool IsUnderWater() const;
+
 protected:
 
 private:

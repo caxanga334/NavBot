@@ -4842,19 +4842,26 @@ void CNavMesh::CommandNavDisconnectDropDownAreas(const float minDrop)
 	{
 		CNavArea* area = m_selectedSet[it];
 		std::vector<CNavArea*> toDisconnect;
-
-		area->ForEachAdjacentArea([&area, &minDrop, &toDisconnect](CNavArea* connectedArea) {
+		auto functor = [&area, &minDrop, &toDisconnect](CNavArea* connectedArea) {
 			const float height = area->ComputeAdjacentConnectionHeightChange(connectedArea);
 
 			if (height < 0.0f && std::abs(height) >= minDrop)
 			{
 				toDisconnect.push_back(connectedArea);
 			}
-		});
+		};
+
+		area->ForEachAdjacentArea(functor);
 
 		for (CNavArea* other : toDisconnect)
 		{
 			area->Disconnect(other);
+
+			if (other->IsConnected(area, NUM_DIRECTIONS))
+			{
+				other->Disconnect(area);
+			}
+
 			count++;
 		}
 	}

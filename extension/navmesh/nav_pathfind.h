@@ -1826,9 +1826,10 @@ inline void INavAStarSearch<T>::DoSearch(CF& gCostFunctor, HF& hCostFunctor)
 		}
 
 		// Collect neighbors
-		area->ForEachConnectedArea([&neighborAreas](CNavArea* other) {
+		auto collectneighborsfunc = [&neighborAreas](CNavArea* other) {
 			neighborAreas.push_back(other);
-		});
+		};
+		area->ForEachConnectedArea(collectneighborsfunc);
 
 		for (auto neighbor : neighborAreas)
 		{

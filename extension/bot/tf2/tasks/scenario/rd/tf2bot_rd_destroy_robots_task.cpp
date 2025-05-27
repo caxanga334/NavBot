@@ -17,8 +17,7 @@ bool CTF2BotRDDestroyRobotsTask::IsPossible(CTF2Bot* bot, std::vector<CHandle<CB
 
 	constexpr auto ROBOT_CLASSNAME = "tf_robot_destruction_robot"sv;
 	const TFTeam myteam = bot->GetMyTFTeam();
-
-	UtilHelpers::ForEachEntityOfClassname(ROBOT_CLASSNAME.data(), [&myteam, &robots](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&myteam, &robots](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			int team = 0;
@@ -32,7 +31,9 @@ bool CTF2BotRDDestroyRobotsTask::IsPossible(CTF2Bot* bot, std::vector<CHandle<CB
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname(ROBOT_CLASSNAME.data(), functor);
 
 	return !robots.empty();
 }
@@ -76,8 +77,11 @@ TaskResult<CTF2Bot> CTF2BotRDDestroyRobotsTask::OnTaskUpdate(CTF2Bot* bot)
 		break;
 	}
 
-	CTF2BotPathCost cost(bot);
-	m_nav.Update(bot, next, cost);
+	if (bot->GetRangeTo(next) >= 300.0f || !bot->GetSensorInterface()->IsLineOfSightClear(next))
+	{
+		CTF2BotPathCost cost(bot);
+		m_nav.Update(bot, next, cost);
+	}
 
 	return Continue();
 }

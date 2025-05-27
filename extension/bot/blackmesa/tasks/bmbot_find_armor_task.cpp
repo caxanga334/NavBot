@@ -140,7 +140,7 @@ bool CBlackMesaBotFindArmorTask::FindArmorSource(CBlackMesaBot* bot, CBaseEntity
 	std::vector<CBaseEntity*> sources;
 	Vector start = bot->GetAbsOrigin();
 
-	UtilHelpers::ForEachEntityOfClassname("item_suitcharger", [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
+	auto chargerfunc = [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			float charge = -1.0f;
@@ -156,9 +156,11 @@ bool CBlackMesaBotFindArmorTask::FindArmorSource(CBlackMesaBot* bot, CBaseEntity
 		}
 
 		return true;
-	});
+	};
 
-	UtilHelpers::ForEachEntityOfClassname("item_battery", [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
+	UtilHelpers::ForEachEntityOfClassname("item_suitcharger", chargerfunc);
+
+	auto batfunc = [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			const Vector& end = UtilHelpers::getEntityOrigin(entity);
@@ -178,7 +180,9 @@ bool CBlackMesaBotFindArmorTask::FindArmorSource(CBlackMesaBot* bot, CBaseEntity
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("item_battery", batfunc);
 
 	if (sources.empty())
 	{

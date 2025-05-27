@@ -116,7 +116,7 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 		return ANSWER_YES;
 	}
 
-	if (me->IsAmmoLow())
+	if (me->GetInventoryInterface()->IsAmmoLow(false))
 	{
 		return ANSWER_YES;
 	}

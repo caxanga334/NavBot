@@ -220,9 +220,6 @@ public:
 		}
 	}
 
-	int GetWaterLevel() const;
-	bool IsUnderWater() const;
-
 	void SendChatMessage(const char* message);
 	void SendTeamChatMessage(const char* message);
 	void SetImpulseCommand(int impulse)

@@ -123,7 +123,7 @@ bool CBlackMesaBotFindAmmoTask::FindAmmoToPickup(CBlackMesaBot* bot, CBaseEntity
 		return false;
 	}
 
-	UtilHelpers::ForEachEntityOfClassname(classname.c_str(), [&nearbyammo, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&nearbyammo, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			int effects = 0;
@@ -145,9 +145,9 @@ bool CBlackMesaBotFindAmmoTask::FindAmmoToPickup(CBlackMesaBot* bot, CBaseEntity
 		}
 
 		return true;
-	});
+		};
 
-
+	UtilHelpers::ForEachEntityOfClassname(classname.c_str(), functor);
 
 	if (nearbyammo.empty())
 	{

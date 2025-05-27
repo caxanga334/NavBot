@@ -130,13 +130,14 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	if (uber > 0.9999f || rage > 0.9999f)
 	{
 		int visiblethreats = 0;
-
-		bot->GetSensorInterface()->ForEveryKnownEnemy([&visiblethreats](const CKnownEntity* known) {
+		auto func = [&visiblethreats](const CKnownEntity* known) {
 			if (known->IsVisibleNow())
 			{
 				visiblethreats++;
 			}
-		});
+		};
+
+		bot->GetSensorInterface()->ForEveryKnownEnemy(func);
 
 		int min_threats = 3; // always deploy if there are 3 enemies visible
 
@@ -234,8 +235,7 @@ void CTF2BotMedicHealTask::UpdateFollowTarget(CTF2Bot* bot)
 
 	CBaseEntity* nextFollowTarget = nullptr;
 	float best = std::numeric_limits<float>::max();
-
-	UtilHelpers::ForEachPlayer([&bot, &best, &nextFollowTarget](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto functor = [&bot, &best, &nextFollowTarget](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 
 		if (client != bot->GetIndex() && player->IsInGame() && tf2lib::GetEntityTFTeam(client) == bot->GetMyTFTeam() && UtilHelpers::IsPlayerAlive(client))
 		{
@@ -270,7 +270,9 @@ void CTF2BotMedicHealTask::UpdateFollowTarget(CTF2Bot* bot)
 				nextFollowTarget = entity->GetIServerEntity()->GetBaseEntity();
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(functor);
 
 	if (nextFollowTarget != nullptr)
 	{
@@ -380,8 +382,7 @@ void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* 
 bool CTF2BotMedicHealTask::ScanForReviveMarkers(const Vector& center, CBaseEntity** marker)
 {
 	float best = std::numeric_limits<float>::max();
-
-	UtilHelpers::ForEachEntityOfClassname("entity_revive_marker", [&marker, &center, &best](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&marker, &center, &best](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			const Vector& origin = UtilHelpers::getEntityOrigin(entity);
@@ -395,7 +396,9 @@ bool CTF2BotMedicHealTask::ScanForReviveMarkers(const Vector& center, CBaseEntit
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("entity_revive_marker", functor);
 
 	return *marker != nullptr;
 }

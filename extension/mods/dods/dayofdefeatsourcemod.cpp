@@ -77,9 +77,11 @@ void CDayOfDefeatSourceMod::OnRoundStart()
 
 	CNavMesh::NotifyRoundRestart();
 
-	extmanager->ForEachBot([](CBaseBot* bot) {
+	auto func = [](CBaseBot* bot) {
 		bot->OnRoundStateChanged(); // Notify behavior about round restart
-	});
+	};
+
+	extmanager->ForEachBot(func);
 }
 
 const CDODObjectiveResource* CDayOfDefeatSourceMod::GetDODObjectiveResource() const
@@ -249,13 +251,13 @@ void CDayOfDefeatSourceMod::FindControlPoints()
 
 	std::size_t it = 0;
 
-	UtilHelpers::ForEachEntityOfClassname("dod_control_point", [&it, this](int index, edict_t* edict, CBaseEntity* entity) {
-		
+	auto functor = [&it, this](int index, edict_t* edict, CBaseEntity* entity) {
+
 		if (it >= m_controlpoints.max_size())
 		{
 			return false;
 		}
-		
+
 		if (entity)
 		{
 			m_controlpoints[it].point = entity;
@@ -264,7 +266,9 @@ void CDayOfDefeatSourceMod::FindControlPoints()
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("dod_control_point", functor);
 
 #ifdef EXT_DEBUG
 	META_CONPRINTF("Found %zu control point entities. Objective Resource reports %i entities. \n", it, m_objectiveres.GetControlPointCount());
@@ -289,8 +293,8 @@ void CDayOfDefeatSourceMod::FindAndAssignCaptureAreas()
 			{
 				continue; // no targetname set
 			}
-
-			UtilHelpers::ForEachEntityOfClassname("dod_capture_area", [&controlpoint, &name, &str_len](int index, edict_t* edict, CBaseEntity* entity) {
+			
+			auto functor = [&controlpoint, &name, &str_len](int index, edict_t* edict, CBaseEntity* entity) {
 
 				std::size_t length = 0;
 				std::string assigned_point_name(str_len, '\0');
@@ -312,7 +316,9 @@ void CDayOfDefeatSourceMod::FindAndAssignCaptureAreas()
 				}
 
 				return true;
-			});
+			};
+
+			UtilHelpers::ForEachEntityOfClassname("dod_capture_area", functor);
 		}
 	}
 }
@@ -338,7 +344,7 @@ void CDayOfDefeatSourceMod::FindAndAssignBombTargets()
 
 			std::size_t it = 0;
 
-			UtilHelpers::ForEachEntityOfClassname("dod_bomb_target", [&controlpoint, &name, &str_len, &it](int index, edict_t* edict, CBaseEntity* entity) {
+			auto functor = [&controlpoint, &name, &str_len, &it](int index, edict_t* edict, CBaseEntity* entity) {
 
 				if (entity)
 				{
@@ -369,7 +375,9 @@ void CDayOfDefeatSourceMod::FindAndAssignBombTargets()
 				}
 
 				return true;
-			});
+			};
+
+			UtilHelpers::ForEachEntityOfClassname("dod_bomb_target", functor);
 		}
 	}
 }
@@ -378,13 +386,13 @@ void CDayOfDefeatSourceMod::FindAndAssignBombTargets()
 
 CON_COMMAND(sm_dod_navbot_debug_control_point_index, "Tests access to the CControlPoint::m_iPointIndex member variable.")
 {
-	UtilHelpers::ForEachEntityOfClassname("dod_control_point", [](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [](int index, edict_t* edict, CBaseEntity* entity) {
 
 		if (entity)
 		{
 			auto datamap = gamehelpers->GetDataMap(entity);
 			SourceMod::sm_datatable_info_t info;
-			
+
 			if (gamehelpers->FindDataMapInfo(datamap, "m_iCPGroup", &info))
 			{
 				unsigned int offset = info.actual_offset - sizeof(int);
@@ -398,7 +406,9 @@ CON_COMMAND(sm_dod_navbot_debug_control_point_index, "Tests access to the CContr
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("dod_control_point", functor);
 }
 
 CON_COMMAND(sm_dod_navbot_debug_attackdefend_points, "List which control point your current team can attack and defend")

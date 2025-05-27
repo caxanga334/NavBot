@@ -150,8 +150,7 @@ TaskResult<CTF2Bot> CTF2BotMvMGuardDroppedBombTask::OnTaskUpdate(CTF2Bot* bot)
 			const float maxRange = bot->GetSensorInterface()->GetMaxHearingRange();
 			bool found = false;
 			Vector lookAt;
-
-			UtilHelpers::ForEachPlayer([&bot, &nearest, &lookAt, &found, &maxRange](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+			auto func = [&bot, &nearest, &lookAt, &found, &maxRange](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 				if (tf2lib::GetEntityTFTeam(client) == TeamFortress2::TFTeam_Blue && UtilHelpers::IsPlayerAlive(client))
 				{
 					float range = bot->GetRangeTo(entity);
@@ -167,7 +166,9 @@ TaskResult<CTF2Bot> CTF2BotMvMGuardDroppedBombTask::OnTaskUpdate(CTF2Bot* bot)
 						}
 					}
 				}
-			});
+			};
+
+			UtilHelpers::ForEachPlayer(func);
 
 			if (found)
 			{

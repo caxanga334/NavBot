@@ -28,8 +28,7 @@ bool CTF2BotEngineerMvMDodgeSentryBusterTask::IsPossible(CTF2Bot* bot, CBaseEnti
 	}
 
 	CBaseEntity* buster = nullptr;
-
-	UtilHelpers::ForEachPlayer([&bot, &buster](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
+	auto func = [&bot, &buster](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 		if (!buster && player->IsInGame() && !player->GetPlayerInfo()->IsDead())
 		{
 			if (client == bot->GetIndex())
@@ -52,7 +51,9 @@ bool CTF2BotEngineerMvMDodgeSentryBusterTask::IsPossible(CTF2Bot* bot, CBaseEnti
 				buster = UtilHelpers::EdictToBaseEntity(entity);
 			}
 		}
-	});
+	};
+
+	UtilHelpers::ForEachPlayer(func);
 
 	if (!buster)
 	{

@@ -16,8 +16,7 @@
 bool CTF2BotRDStealEnemyPointsTask::IsPossible(CTF2Bot* bot, CBaseEntity** flag)
 {
 	CBaseEntity* out = nullptr;
-
-	UtilHelpers::ForEachEntityOfClassname("item_teamflag", [&bot, &out](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&bot, &out](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			tfentities::HCaptureFlag cf(entity);
@@ -30,7 +29,9 @@ bool CTF2BotRDStealEnemyPointsTask::IsPossible(CTF2Bot* bot, CBaseEntity** flag)
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("item_teamflag", functor);
 
 	if (!out)
 	{
@@ -82,7 +83,7 @@ TaskResult<CTF2Bot> CTF2BotRDStealEnemyPointsTask::OnTaskUpdate(CTF2Bot* bot)
 				}
 
 				// Keep collecting points until the flag is over 100 points or the enemy team doesn't have any points left
-				if (teampoints > 0 || flag.GetPointValue() < 100)
+				if (teampoints > 0 && flag.GetPointValue() < 100)
 				{
 					if (m_repathtimer.IsElapsed())
 					{

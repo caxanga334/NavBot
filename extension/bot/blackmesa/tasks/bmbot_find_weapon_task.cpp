@@ -99,8 +99,7 @@ bool CBlackMesaBotFindWeaponTask::FindWeaponToPickup(CBlackMesaBot* bot, CBaseEn
 	Vector start = bot->GetAbsOrigin();
 	CBlackMesaBotInventory* inventory = bot->GetInventoryInterface();
 	std::vector<CBaseEntity*> nearbyweapons;
-
-	UtilHelpers::ForEachEntityInSphere(start, maxRange, [&nearbyweapons, &inventory](int index, edict_t* edict, CBaseEntity* entity) {
+	auto functor = [&nearbyweapons, &inventory](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			const char* classname = entityprops::GetEntityClassname(entity);
@@ -131,7 +130,9 @@ bool CBlackMesaBotFindWeaponTask::FindWeaponToPickup(CBlackMesaBot* bot, CBaseEn
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityInSphere(start, maxRange, functor);
 
 	if (nearbyweapons.empty())
 	{

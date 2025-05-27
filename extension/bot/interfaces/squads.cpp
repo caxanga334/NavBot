@@ -13,8 +13,7 @@ ISquad::SquadMember::SquadMember(CBaseBot* follower)
 ISquad* ISquad::GetSquadLeaderInterfaceForHumanLeader(CBaseEntity* humanleader)
 {
 	ISquad* iface = nullptr;
-
-	extmanager->ForEachBot([&humanleader, &iface](CBaseBot* bot) {
+	auto func = [&humanleader, &iface](CBaseBot* bot) {
 		// stop on the first one found
 		if (iface != nullptr) { return; }
 
@@ -24,7 +23,9 @@ ISquad* ISquad::GetSquadLeaderInterfaceForHumanLeader(CBaseEntity* humanleader)
 		{
 			iface = squad;
 		}
-	});
+	};
+
+	extmanager->ForEachBot(func);
 
 	return iface;
 }

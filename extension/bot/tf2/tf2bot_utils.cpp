@@ -596,9 +596,7 @@ CBaseEntity* tf2botutils::MedicSelectBestPatientToHeal(CTF2Bot* bot, const float
 {
 	std::vector<std::pair<CBaseEntity*, int>> patients;
 	patients.reserve(static_cast<size_t>(gpGlobals->maxClients));
-
-	// the functor is only called if player is not NULL.
-	UtilHelpers::ForEachPlayer([&bot, &maxSearchRange, &patients](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+	auto functor = [&bot, &maxSearchRange, &patients](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
 		// must be in-game, must not be the bot itself and must be alive
 		if (player->IsInGame() && client != bot->GetIndex() && UtilHelpers::IsPlayerAlive(client))
 		{
@@ -667,7 +665,10 @@ CBaseEntity* tf2botutils::MedicSelectBestPatientToHeal(CTF2Bot* bot, const float
 				pair.second -= 800; // prevents two medics getting stuck healing each other
 			}
 		}
-	});
+	};
+
+	// the functor is only called if player is not NULL.
+	UtilHelpers::ForEachPlayer(functor);
 
 	int bestscore = 0; // if a target ends up with a negative score, don't heal them
 	CBaseEntity* ret = nullptr;

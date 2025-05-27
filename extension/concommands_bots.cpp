@@ -45,7 +45,7 @@ CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
 	}
 
 	std::string targetname(args[1]);
-	extmanager->ForEachBot([&targetname](CBaseBot* bot) {
+	auto functor = [&targetname](CBaseBot* bot) {
 		auto gp = playerhelpers->GetGamePlayer(bot->GetIndex());
 
 		if (gp)
@@ -55,12 +55,13 @@ CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
 			if (szname)
 			{
 				std::string botname(szname);
-				
+
 				if (botname.find(targetname) != std::string::npos) // partial name search
 				{
 					gp->Kick("Nav Bot: Kicked by admin command.");
 				}
 			}
 		}
-	});
+	};
+	extmanager->ForEachBot(functor);
 }

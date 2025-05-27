@@ -278,8 +278,9 @@ CON_COMMAND_F(sm_nav_volume_show_target_entity, "Shows the current target entity
 
 CON_COMMAND_F(sm_nav_volume_check_for_conflicts, "Checks if there are volume conflicts", FCVAR_CHEAT)
 {
-	TheNavMesh->ForEveryNavVolume<CNavVolume>([](CNavVolume* volume1) {
-		TheNavMesh->ForEveryNavVolume<CNavVolume>([&volume1](CNavVolume* volume2) {
+	auto func1 = [](CNavVolume* volume1) {
+
+		auto func2 = [&volume1](CNavVolume* volume2) {
 
 			if (volume1->IntersectsWith(volume2))
 			{
@@ -287,10 +288,14 @@ CON_COMMAND_F(sm_nav_volume_check_for_conflicts, "Checks if there are volume con
 			}
 
 			return true;
-		});
+			};
+
+		TheNavMesh->ForEveryNavVolume<CNavVolume>(func2);
 
 		return true;
-	});
+	};
+
+	TheNavMesh->ForEveryNavVolume<CNavVolume>(func1);
 
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }

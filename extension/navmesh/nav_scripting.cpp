@@ -152,8 +152,7 @@ void navscripting::EntityLink::FindLinkedEntity()
 		CBaseEntity* best = nullptr;
 		float nearest = 99999999.0f;
 		const Vector& start = m_position;
-
-		UtilHelpers::ForEachEntityOfClassname(m_classname.c_str(), [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
+		auto functor = [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
 			if (entity)
 			{
 				Vector end = UtilHelpers::getWorldSpaceCenter(entity);
@@ -167,7 +166,9 @@ void navscripting::EntityLink::FindLinkedEntity()
 			}
 
 			return true;
-		});
+		};
+
+		UtilHelpers::ForEachEntityOfClassname(m_classname.c_str(), functor);
 
 		if (!best)
 		{
