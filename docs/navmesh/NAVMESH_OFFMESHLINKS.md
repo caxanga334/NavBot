@@ -38,3 +38,6 @@ Note: `sm_nav_offmesh_list_all` will always list all available link types.
 | Teleport | 2 | Bots can go to the other area via map based teleporters (trigger_teleport) entities. Very low cost to traverse. |
 | Blast Jump | 3 | Bots can perform a blast jump (rocket jump/sticky jump/grenade jump) here. |
 | Double Jump | 4 | Bots can perform a double jump here. |
+| Jump Over Gap | 5 | Bots can perform a jump over gap here. |
+| Climb Up | 6 | Bots can perform a climb/simple jump over here. |
+| Drop From Ledge | 7 | Bots can drop from a ledge here. |
