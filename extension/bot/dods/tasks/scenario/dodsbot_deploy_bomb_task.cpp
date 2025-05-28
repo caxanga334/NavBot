@@ -17,6 +17,11 @@ CDoDSBotDeployBombTask::CDoDSBotDeployBombTask(CBaseEntity* target)
 
 TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
 {
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		META_CONPRINTF("%s BOMBING TARGET %i [%p]\n", bot->GetDebugIdentifier(), m_target.GetEntryIndex(), m_target.Get());
+	}
+
 	return Continue();
 }
 

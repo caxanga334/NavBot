@@ -17,13 +17,13 @@ public:
 
 	// Number of control points on the map.
 	int GetControlPointCount() const { return *m_iNumControlPoints; }
-	bool IsControlPointVisible(int index) const { return m_bCPIsVisible[index]; }
+	bool IsControlPointVisible(int index) const { return m_bCPIsVisible[index] != 0; }
 	int GetAlliesRequiredCappers(int index) const { return m_iAlliesReqCappers[index]; }
 	int GetAxisRequiredCappers(int index) const { return m_iAxisReqCappers[index]; }
-	bool IsBombPlanted(int index) const { return m_bBombPlanted[index]; }
+	bool IsBombPlanted(int index) const { return m_bBombPlanted[index] != 0; }
 	int GetNumBombsRequired(int index) const { return m_iBombsRequired[index]; }
 	int GetNumBombsRemaining(int index) const { return m_iBombsRemaining[index]; }
-	bool IsBombBeingDefused(int index) const { return m_bBombBeingDefused[index]; }
+	bool IsBombBeingDefused(int index) const { return m_bBombBeingDefused[index] != 0; }
 	int GetNumAlliesOnPoint(int index) const { return m_iNumAllies[index]; }
 	int GetNumAxisOnPoint(int index) const { return m_iNumAxis[index]; }
 	int GetCapturingTeamIndex(int index) const { return m_iCappingTeam[index]; }
@@ -32,13 +32,13 @@ public:
 private:
 	int* m_iNumControlPoints; // Number of control points, this is not an array
 	/* These are all arrays */
-	bool* m_bCPIsVisible;
+	int* m_bCPIsVisible;
 	int* m_iAlliesReqCappers;
 	int* m_iAxisReqCappers;
-	bool* m_bBombPlanted;
+	int* m_bBombPlanted;
 	int* m_iBombsRequired;
 	int* m_iBombsRemaining;
-	bool* m_bBombBeingDefused;
+	int* m_bBombBeingDefused;
 	int* m_iNumAllies;
 	int* m_iNumAxis;
 	int* m_iCappingTeam;

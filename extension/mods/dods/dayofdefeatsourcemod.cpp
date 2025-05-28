@@ -12,13 +12,13 @@
 void CDODObjectiveResource::Init(CBaseEntity* entity)
 {
 	m_iNumControlPoints = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iNumControlPoints");
-	m_bCPIsVisible = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bCPIsVisible");
+	m_bCPIsVisible = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_bCPIsVisible");
 	m_iAlliesReqCappers = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iAlliesReqCappers");
 	m_iAxisReqCappers = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iAxisReqCappers");
-	m_bBombPlanted = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bBombPlanted");
+	m_bBombPlanted = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_bBombPlanted");
 	m_iBombsRequired = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iBombsRequired");
 	m_iBombsRemaining = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iBombsRemaining");
-	m_bBombBeingDefused = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bBombBeingDefused");
+	m_bBombBeingDefused = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_bBombBeingDefused");
 	m_iNumAllies = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iNumAllies");
 	m_iNumAxis = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iNumAxis");
 	m_iCappingTeam = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iCappingTeam");
@@ -134,6 +134,12 @@ void CDayOfDefeatSourceMod::CollectControlPointsToAttack(dayofdefeatsource::DoDT
 			continue;
 		}
 
+		// skip: control point is not visible
+		if (!objres->IsControlPointVisible(controlpoint.index))
+		{
+			continue;
+		}
+
 		// skip: all bombs already planted
 		if (objres->GetNumBombsRequired(controlpoint.index) > 0 && objres->GetNumBombsRemaining(controlpoint.index) == 0)
 		{
@@ -186,6 +192,12 @@ void CDayOfDefeatSourceMod::CollectControlPointsToDefend(dayofdefeatsource::DoDT
 		// skip: invalid or not owned by my team
 		if (controlpoint.index == dayofdefeatsource::INVALID_CONTROL_POINT || controlpoint.point.Get() == nullptr ||
 			objres->GetOwnerTeamIndex(controlpoint.index) != static_cast<int>(team))
+		{
+			continue;
+		}
+
+		// skip: control point is not visible
+		if (!objres->IsControlPointVisible(controlpoint.index))
 		{
 			continue;
 		}

@@ -15,7 +15,7 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 	const int defrate = mod->GetModSettings()->GetDefendRate();
 
 	// Random Defend chance
-	if (CBaseBot::s_botrng.GetRandomInt<int>(1, 100) >= defrate)
+	if (CBaseBot::s_botrng.GetRandomInt<int>(1, 100) <= defrate)
 	{
 		CBaseEntity* defuse = nullptr;
 		const CDayOfDefeatSourceMod::DoDControlPoint* defend = nullptr;
