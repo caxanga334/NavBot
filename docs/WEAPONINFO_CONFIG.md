@@ -26,7 +26,8 @@ This is a list of keys available for all mods.
 |low_primary_ammo_threshold|Threshold to consider the bot to be low on ammo for the primary ammo type.|integer|
 |low_secondary_ammo_threshold|Threshold to consider the bot to be low on ammo for the secondary ammo type.|integer|
 |slot|Which slot this weapon uses.|integer|
-|semiauto|Is the weapon semi automatic (requires the attack button to be released to fire again)|boolean|
+|semiauto|Is the weapon semi automatic (requires the attack button to be released to fire again).|boolean|
+|attack_range_override|Overrides the maximum range between the bot and the target.|float|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
 
@@ -55,6 +56,10 @@ If `projectilespeed` is negative, the weapon is considered to be a hitscan weapo
 `headshot_range_multiplier` ranges from 0.0 to 1.0 and is used to multiply the attack's `maxrange` value. Example: If a weapon has a `maxrange` of 2048 and a `headshot_range_multiplier` of 0.5, the bots will only aim at the head if the range to the enemy is 1024 or less.
 
 Setting `maxclip1` or `maxclip2` to `-2` flags the weapon as *Clip is reserve ammo*. (The weapon doesn't uses clips and the reserve ammo is used directly, IE: HL2's SMG1 grenades).
+
+When attacking enemies, bots will only move towards the enemy if they are not visible or if they are outside the range of all weapons owned by the bot.  
+By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be overriden with `attack_range_override`.  
+This can be used to make the bot close the distance between them and the enemy without having to reduce the weapon's maximum range.
 
 Bots identify weapons via their entity classname and economy index if available for the mod.
 
