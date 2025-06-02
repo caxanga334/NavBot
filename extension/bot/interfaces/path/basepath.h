@@ -92,6 +92,8 @@ public:
 	 * @return path cost
 	*/
 	virtual float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const = 0;
+
+	virtual void SetRouteType(RouteType type) = 0;
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments

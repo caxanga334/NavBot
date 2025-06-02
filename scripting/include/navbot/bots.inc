@@ -17,6 +17,13 @@ methodmap NavBot
 
 	// True if this NavBot instance is a Plugin Bot.
 	public native bool IsPluginBot();
+	/**
+	 * Sets the skill group used by this bot.
+	 * 
+	 * @param skill_level	Skill group to use.
+	 * @error				Invalid bot instance.
+	 */
+	public native void SetSkillLevel(int skill_level);
 
 	property int Index
 	{

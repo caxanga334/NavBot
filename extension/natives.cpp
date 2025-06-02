@@ -39,12 +39,6 @@ namespace natives
 
 	cell_t AddNavBot(IPluginContext* context, const cell_t* params)
 	{
-		if (!TheNavMesh->IsLoaded())
-		{
-			context->ReportError("Cannot add bot. Navigation Mesh is not loaded!");
-			return 0;
-		}
-
 		cell_t* client = nullptr;
 		edict_t* edict = nullptr;
 

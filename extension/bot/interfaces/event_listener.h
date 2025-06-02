@@ -43,6 +43,17 @@ public:
 		MAX_SOUND_TYPES
 	};
 
+	enum SquadEventType
+	{
+		SQUAD_EVENT_FORMED = 0, // Squad was formed
+		SQUAD_EVENT_DISBANDED, // Squad was disbanded
+		SQUAD_EVENT_JOINED, // Member joined
+		SQUAD_EVENT_LEFT, // Member left
+		SQUAD_EVENT_LEADER_DIED, // Squad leader was killed
+
+		MAX_SQUAD_EVENT_TYPES
+	};
+
 	// Gets a vector containing all event listeners
 	virtual std::vector<IEventListener*>* GetListenerVector() { return nullptr; }
 
@@ -69,6 +80,7 @@ public:
 	virtual void OnWeaponEquip(CBaseEntity* weapon); // When a weapon is equipped (invoked by a CBasePlayer::Weapon_Equip post hook)
 	virtual void OnVoiceCommand(CBaseEntity* subject, int command); // When a player uses voice commands (mod specific)
 	virtual void OnTruceChanged(const bool enabled); // When the truce status has changed
+	virtual void OnSquadEvent(SquadEventType evtype); // Squad events
 };
 
 inline void IEventListener::OnDebugMoveToHostCommand()
@@ -370,7 +382,18 @@ inline void IEventListener::OnTruceChanged(const bool enabled)
 	}
 }
 
+inline void IEventListener::OnSquadEvent(SquadEventType evtype)
+{
+	auto vec = GetListenerVector();
 
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnSquadEvent(evtype);
+		}
+	}
+}
 
 #endif // !SMNAV_BOT_EVENT_LISTENER_H_
 

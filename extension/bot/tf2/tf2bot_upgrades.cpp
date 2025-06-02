@@ -11,7 +11,9 @@
 #include "tf2bot.h"
 #include "tf2bot_upgrades.h"
 
+#if SOURCE_ENGINE == SE_TF2
 static ConVar sm_navbot_tf_debug_bot_upgrades("sm_navbot_tf_debug_bot_upgrades", "0", FCVAR_CHEAT, "Enables debugging bot upgrades.");
+#endif // SOURCE_ENGINE == SE_TF2
 
 CTF2BotUpgradeManager::CTF2BotUpgradeManager()
 {
@@ -68,23 +70,26 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 {
 	if (!m_me->IsInUpgradeZone())
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
 			Vector origin = m_me->GetAbsOrigin();
 			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::ExecuteBuy called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f> \n", m_me->GetDebugIdentifier(),
 				origin.x, origin.y, origin.z);
 		}
-
+#endif // SOURCE_ENGINE == SE_TF2
 		return;
 	}
 
 	if (m_tobuylist.empty())
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
 			ConColorMsg(Color(0, 128, 0, 255), "%s: CTF2BotUpgradeManager::ExecuteBuy - Buy list is empty! \n", m_me->GetDebugIdentifier());
 			ConColorMsg(Color(0, 128, 128, 255), "Advancing from priority %i to %i!\n", m_nextpriority, (m_nextpriority + 1));
 		}
+#endif // SOURCE_ENGINE == SE_TF2
 
 		m_state = STATE_ADVANCE;
 		return;
@@ -118,12 +123,14 @@ void CTF2BotUpgradeManager::ExecuteBuy()
 		return;
 	}
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
 		ConColorMsg(Color(32, 255, 0, 255), "%s: Bought Upgrade -->\n", m_me->GetDebugIdentifier());
 		ConColorMsg(Color(0, 255, 255, 255), "    ID: %i\n    Attribute: %s\n    Quality: %i\n    Item Slot: %i\n    Times Bought: %i\n", 
 			upgradeinfo->GetUpgradeIndex(), upgradeinfo->attribute.c_str(), upgradeinfo->quality, upgradeinfo->itemslot, data->times_bought);
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	BeginBuyingUpgrades();
 	BuySingleUpgrade(upgradeinfo->GetUpgradeIndex(), upgradeinfo->itemslot, 1);
@@ -162,10 +169,12 @@ bool CTF2BotUpgradeManager::AnyUpgradeAvailable() const
 		return true;
 	}
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
 		ConColorMsg(Color(128, 255, 0, 255), "%s reached upgrade priority limit of %i (%i)!\n", m_me->GetDebugIdentifier(), maxprio, m_nextpriority);
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	return false;
 }
@@ -196,12 +205,14 @@ void CTF2BotUpgradeManager::ExecuteState_Refund()
 {
 	if (!m_me->IsInUpgradeZone())
 	{
+#if SOURCE_ENGINE == SE_TF2
 		if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 		{
 			Vector origin = m_me->GetAbsOrigin();
 			smutils->LogError(myself, "BOT %s: CTF2BotUpgradeManager::ExecuteState_Refund called outsize an upgrade zone at <%3.2f, %3.2f, %3.2f>", m_me->GetDebugIdentifier(),
 				origin.x, origin.y, origin.z);
 		}
+#endif // SOURCE_ENGINE == SE_TF2
 
 		return;
 	}
@@ -240,10 +251,12 @@ void CTF2BotUpgradeManager::ExecuteState_Advance()
 
 void CTF2BotUpgradeManager::ExecuteState_UpdateFilter()
 {
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
 		ConColorMsg(Color(0, 200, 200, 255), "%s: Running Upgrade Filter!\n", m_me->GetDebugIdentifier());
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	FilterUpgrades();
 	m_state = STATE_UPGRADE;
@@ -293,10 +306,12 @@ void CTF2BotUpgradeManager::FetchUpgrades()
 {
 	CTeamFortress2Mod::GetTF2Mod()->GetMvMUpgradeManager().CollectUpgradesToBuy(m_tobuylist, m_nextpriority, m_me->GetMyClassType());
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
 		ConColorMsg(Color(0, 128, 0, 255), "%s: Collected %i upgrades for class %s. Current Priority: %i\n", m_me->GetDebugIdentifier(), static_cast<int>(m_tobuylist.size()), tf2lib::GetClassNameFromType(m_me->GetMyClassType()), m_nextpriority);
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	FilterUpgrades();
 }
@@ -335,6 +350,7 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 
 	m_me->GetInventoryInterface()->ForEveryWeapon(functor);
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
 		for (auto it = start; it != m_tobuylist.end(); it++)
@@ -345,6 +361,7 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 				upgrade->GetUpgradeIndex(), upgrade->attribute.c_str(), upgrade->quality, upgrade->itemslot);
 		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	m_tobuylist.erase(start, m_tobuylist.end()); // remove upgrades
 
@@ -365,6 +382,7 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 		return false;
 	});
 
+#if SOURCE_ENGINE == SE_TF2
 	if (sm_navbot_tf_debug_bot_upgrades.GetBool())
 	{
 		for (auto it = start2; it != m_tobuylist.end(); it++)
@@ -375,6 +393,7 @@ void CTF2BotUpgradeManager::FilterUpgrades()
 				upgrade->GetUpgradeIndex(), upgrade->attribute.c_str(), upgrade->quality, upgrade->itemslot);
 		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	m_tobuylist.erase(start2, m_tobuylist.end()); // remove upgrades
 }

@@ -1691,3 +1691,10 @@ IterationRetval_t UtilHelpers::CEntityEnumerator::EnumElement(IHandleEntity* pHa
 	m_ents.push_back(reinterpret_cast<CBaseEntity*>(pHandleEntity));
 	return IterationRetval_t::ITERATION_CONTINUE;
 }
+
+bool UtilHelpers::PredPlayersInTeam::operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player)
+{
+	int client_team = 0;
+	entprops->GetEntProp(client, Prop_Send, "m_iTeamNum", client_team);
+	return client_team == m_team;
+}

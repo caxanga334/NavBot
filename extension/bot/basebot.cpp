@@ -810,33 +810,7 @@ bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const 
 
 	if (primaryinfo.HasFunction())
 	{
-		bool hasammo = true;
-
-		if (!primaryinfo.IsMelee())
-		{
-			int ammo = 0;
-
-			if (weapon->GetWeaponInfo()->Clip1IsReserveAmmo())
-			{
-				int index = weapon->GetBaseCombatWeapon().GetPrimaryAmmoType();
-
-				if (index >= 0)
-				{
-					ammo = GetAmmoOfIndex(index);
-				}
-			}
-			else
-			{
-				ammo = weapon->GetBaseCombatWeapon().GetClip1();
-			}
-
-			if (ammo <= 0)
-			{
-				hasammo = false;
-			}
-		}
-
-		if (hasammo && (!primaryinfo.HasMinRange() || range >= primaryinfo.GetMinRange()) && (!primaryinfo.HasMaxRange() || range <= primaryinfo.GetMaxRange()))
+		if (weapon->CanUsePrimaryAttack(this) && weapon->IsInAttackRange(range, WeaponInfo::AttackFunctionType::PRIMARY_ATTACK))
 		{
 			candoprimary = true;
 		}
@@ -844,33 +818,7 @@ bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const 
 
 	if (secondaryinfo.HasFunction())
 	{
-		bool hasammo = true;
-
-		if (!secondaryinfo.IsMelee())
-		{
-			int ammo = 0;
-
-			if (weapon->GetWeaponInfo()->Clip2IsReserveAmmo())
-			{
-				int index = weapon->GetBaseCombatWeapon().GetSecondaryAmmoType();
-
-				if (index >= 0)
-				{
-					ammo = GetAmmoOfIndex(index);
-				}
-			}
-			else
-			{
-				ammo = weapon->GetBaseCombatWeapon().GetClip2();
-			}
-
-			if (ammo <= 0)
-			{
-				hasammo = false;
-			}
-		}
-
-		if (hasammo && (!secondaryinfo.HasMinRange() || range >= secondaryinfo.GetMinRange()) && (!secondaryinfo.HasMaxRange() || range <= secondaryinfo.GetMaxRange()))
+		if (weapon->CanUseSecondaryAttack(this) && weapon->IsInAttackRange(range, WeaponInfo::AttackFunctionType::SECONDARY_ATTACK))
 		{
 			candosecondary = true;
 		}
@@ -892,8 +840,7 @@ bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const 
 	else
 	{
 		// can do both primary and seconadary
-		// 20% to use secondary attack
-		if (CBaseBot::s_botrng.GetRandomInt<int>(0, 5) == 5)
+		if (CBaseBot::s_botrng.GetRandomInt<int>(1, 100) <= weapon->GetWeaponInfo()->GetChanceToUseSecondaryAttack())
 		{
 			doPrimary = false;
 		}
@@ -940,7 +887,7 @@ void CBaseBot::ReloadIfNeeded(const CBotWeapon* weapon)
 
 		if (primaryinfo.HasFunction() && weapon->GetBaseCombatWeapon().GetClip1() == 0 && !primaryinfo.IsMelee())
 		{
-			if (GetAmmoOfIndex(primarytype) > 0 || weapon->GetWeaponInfo()->HasInfiniteAmmo())
+			if (GetAmmoOfIndex(primarytype) > 0 || weapon->GetWeaponInfo()->HasInfiniteReserveAmmo())
 			{
 				GetControlInterface()->ReleaseAllAttackButtons();
 				GetControlInterface()->PressReloadButton();

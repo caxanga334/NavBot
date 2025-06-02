@@ -20,7 +20,7 @@ This is a list of keys available for all mods.
 |can_headshot|Can this weapon headshot.|boolean|
 |headshot_range_multiplier|Headshot range multiplier.|float|
 |headshot_aim_offset|Offset to apply when aiming at the head with this weapon.|Vector|
-|infinite_ammo|Does this weapon have infinite reserve ammo.|boolean|
+|infinite_reserve_ammo|This weapon has infinite reserve ammo.|boolean|
 |maxclip1|Maximum ammo in clip 1.|integer|
 |maxclip2|Maximum ammo in clip 2.|integer|
 |low_primary_ammo_threshold|Threshold to consider the bot to be low on ammo for the primary ammo type.|integer|
@@ -28,6 +28,7 @@ This is a list of keys available for all mods.
 |slot|Which slot this weapon uses.|integer|
 |semiauto|Is the weapon semi automatic (requires the attack button to be released to fire again).|boolean|
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
+|use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
 
@@ -56,6 +57,8 @@ If `projectilespeed` is negative, the weapon is considered to be a hitscan weapo
 `headshot_range_multiplier` ranges from 0.0 to 1.0 and is used to multiply the attack's `maxrange` value. Example: If a weapon has a `maxrange` of 2048 and a `headshot_range_multiplier` of 0.5, the bots will only aim at the head if the range to the enemy is 1024 or less.
 
 Setting `maxclip1` or `maxclip2` to `-2` flags the weapon as *Clip is reserve ammo*. (The weapon doesn't uses clips and the reserve ammo is used directly, IE: HL2's SMG1 grenades).
+
+Setting `maxclip2` to `-3` flags the weapon as *Secondary attack uses primary ammo type*.
 
 When attacking enemies, bots will only move towards the enemy if they are not visible or if they are outside the range of all weapons owned by the bot.  
 By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be overriden with `attack_range_override`.  

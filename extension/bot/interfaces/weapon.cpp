@@ -30,7 +30,7 @@ CBotWeapon::~CBotWeapon()
 
 bool CBotWeapon::IsValid() const
 {
-	return m_info.get() != nullptr && m_handle.Get() != nullptr;
+	return m_info != nullptr && m_handle.Get() != nullptr;
 }
 
 edict_t* CBotWeapon::GetEdict() const
@@ -48,53 +48,61 @@ int CBotWeapon::GetIndex() const
 	return gamehelpers->EntityToBCompatRef(m_handle.Get());
 }
 
-bool CBotWeapon::IsAmmoLow(const CBaseBot* owner, const bool primaryOnly, const int lowThresholdOverride) const
+bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 {
-	// Also consider melee primary as infinite ammo weapons
-	if (m_info->HasInfiniteAmmo() || m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	/* 
+	 * This function is used by the bot to determine if they are low on ammo and should fetch ammo. 
+	 * It should return true if the bot needs to fetch ammo for this weapon.
+	*/
+
+	auto info = GetWeaponInfo();
+	auto& bcw = GetBaseCombatWeapon();
+
+	// If the weapon is primary melee or tagged with infinite reserve ammo, it's never low on ammo.
+	if (info->HasInfiniteReserveAmmo() || info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
 	{
 		return false;
 	}
 
-	bool low = false;
-	int ammo = 0;
-	int limit = lowThresholdOverride > 0 ? lowThresholdOverride : m_info->GetLowPrimaryAmmoThreshold();
-
-	if (!m_info->Clip1IsReserveAmmo())
+	if (info->HasLowPrimaryAmmoThreshold())
 	{
-		ammo += m_bcw.GetClip1();
-	}
+		int ammo = 0;
 
-	int type = m_bcw.GetPrimaryAmmoType();
-
-	if (type >= 0 && type < MAX_AMMO_TYPES)
-	{
-		ammo += owner->GetAmmoOfIndex(type);
-	}
-
-	if (ammo <= limit)
-	{
-		return true;
-	}
-
-	if (!primaryOnly)
-	{
-		limit = lowThresholdOverride > 0 ? lowThresholdOverride : m_info->GetLowSecondaryAmmoThreshold();
-		ammo = 0;
-
-		if (!m_info->Clip2IsReserveAmmo())
+		if (!info->Clip1IsReserveAmmo())
 		{
-			ammo += m_bcw.GetClip2();
+			ammo += bcw.GetClip1();
 		}
 
-		type = m_bcw.GetSecondaryAmmoType();
+		int type = bcw.GetPrimaryAmmoType();
 
-		if (type >= 0 && type < MAX_AMMO_TYPES)
+		if (type > 0 && type <= MAX_AMMO_TYPES)
 		{
 			ammo += owner->GetAmmoOfIndex(type);
 		}
 
-		if (ammo <= limit)
+		if (ammo <= info->GetLowPrimaryAmmoThreshold())
+		{
+			return true;
+		}
+	}
+
+	if (info->HasLowSecondaryAmmoThreshold() && !info->SecondaryUsesPrimaryAmmo() && info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
+	{
+		int ammo = 0;
+
+		if (!info->Clip2IsReserveAmmo())
+		{
+			ammo += bcw.GetClip2();
+		}
+
+		int type = bcw.GetSecondaryAmmoType();
+
+		if (type > 0 && type <= MAX_AMMO_TYPES)
+		{
+			ammo += owner->GetAmmoOfIndex(type);
+		}
+
+		if (ammo <= info->GetLowSecondaryAmmoThreshold())
 		{
 			return true;
 		}
@@ -103,64 +111,116 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner, const bool primaryOnly, const 
 	return false;
 }
 
-bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner, const bool inClipOnly, const bool primaryOnly) const
+bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner) const
 {
-	// Also consider melee primary as infinite ammo weapons
-	if (m_info->HasInfiniteAmmo() || m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	// This function checks if the weapon is completely out of ammo
+
+	auto info = GetWeaponInfo();
+
+	// primary melee never runs out of ammo
+	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
 	{
 		return false;
 	}
 
-	bool low = false;
 	int ammo = 0;
-	int type = -1;
+	
+	ammo += GetPrimaryAmmoLeft(owner);
 
-	if (!m_info->Clip1IsReserveAmmo())
+	if (!info->SecondaryUsesPrimaryAmmo() && info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
 	{
-		ammo += m_bcw.GetClip1();
+		ammo += GetSecondaryAmmoLeft(owner);
 	}
 
-	if (!inClipOnly || m_info->Clip1IsReserveAmmo())
-	{
-		type = m_bcw.GetPrimaryAmmoType();
+	return ammo <= 0;
+}
 
-		if (type >= 0 && type < MAX_AMMO_TYPES)
-		{
-			ammo += owner->GetAmmoOfIndex(type);
-		}
+int CBotWeapon::GetPrimaryAmmoLeft(const CBaseBot* owner) const
+{
+	int ammo = 0;
+
+	int type = GetBaseCombatWeapon().GetPrimaryAmmoType();
+
+	if (type > 0 && type < MAX_AMMO_TYPES)
+	{
+		ammo += owner->GetAmmoOfIndex(type);
 	}
 
-	if (ammo <= 0)
+	// Uses clips
+	if (!GetWeaponInfo()->Clip1IsReserveAmmo())
+	{
+		ammo += GetBaseCombatWeapon().GetClip1();
+	}
+
+	return ammo;
+}
+
+int CBotWeapon::GetSecondaryAmmoLeft(const CBaseBot* owner) const
+{
+	if (GetWeaponInfo()->SecondaryUsesPrimaryAmmo())
+	{
+		return GetPrimaryAmmoLeft(owner);
+	}
+
+	int ammo = 0;
+
+	int type = GetBaseCombatWeapon().GetSecondaryAmmoType();
+
+	if (type > 0 && type < MAX_AMMO_TYPES)
+	{
+		ammo += owner->GetAmmoOfIndex(type);
+	}
+
+	// Uses clips
+	if (!GetWeaponInfo()->Clip2IsReserveAmmo())
+	{
+		ammo += GetBaseCombatWeapon().GetClip2();
+	}
+
+	return ammo;
+}
+
+bool CBotWeapon::IsInAttackRange(const float range, const WeaponInfo::AttackFunctionType attackType) const
+{
+	auto& info = GetWeaponInfo()->GetAttackInfo(attackType);
+
+	if (info.HasMaxRange() && range > info.GetMaxRange())
+	{
+		// larger than max range
+		return false;
+	}
+
+	if (info.HasMinRange() && range < info.GetMinRange())
+	{
+		// smaller than min range
+		return false;
+	}
+
+	return true;
+}
+
+bool CBotWeapon::CanUsePrimaryAttack(const CBaseBot* owner) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+
+	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
 	{
 		return true;
 	}
 
-	if (!primaryOnly)
+	return HasPrimaryAmmo(owner);
+}
+
+bool CBotWeapon::CanUseSecondaryAttack(const CBaseBot* owner) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+
+	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
 	{
-		ammo = 0;
-
-		if (!m_info->Clip2IsReserveAmmo())
-		{
-			ammo += m_bcw.GetClip2();
-		}
-
-		if (!inClipOnly || m_info->Clip2IsReserveAmmo())
-		{
-			type = m_bcw.GetSecondaryAmmoType();
-
-			if (type >= 0 && type < MAX_AMMO_TYPES)
-			{
-				ammo += owner->GetAmmoOfIndex(type);
-			}
-		}
-
-		if (ammo <= 0)
-		{
-			return true;
-		}
+		return true;
 	}
 
-	return false;
+	return hasSecondaryAmmo(owner);
 }
 
 bool CBotWeapon::IsClipFull() const

@@ -15,7 +15,7 @@
 class WeaponAttackFunctionInfo
 {
 public:
-	inline WeaponAttackFunctionInfo()
+	WeaponAttackFunctionInfo()
 	{
 		maxrange = -10000.0f;
 		minrange = -1.0f;
@@ -29,7 +29,7 @@ public:
 		isexplosive = false;
 	}
 
-	inline void Reset()
+	void Reset()
 	{
 		maxrange = -10000.0f;
 		minrange = -1.0f;
@@ -43,38 +43,38 @@ public:
 		isexplosive = false;
 	}
 
-	inline float GetMaxRange() const { return maxrange; }
-	inline float GetMinRange() const { return minrange; }
-	inline float GetProjectileSpeed() const { return projectilespeed; }
-	inline float GetGravity() const { return gravity; }
-	inline float GetBallisticElevationStartRange() const { return ballistic_elevation_range_start; }
-	inline float GetBallisticElevationEndRange() const { return ballistic_elevation_range_end; }
-	inline float GetBallisticElevationMinRate() const { return ballistic_elevation_min; }
-	inline float GetBallisticElevationMaxRate() const { return ballistic_elevation_max; }
-	inline bool IsMelee() const { return ismelee; }
-	inline bool IsExplosive() const { return isexplosive; }
-	inline bool IsHitscan() const { return projectilespeed <= 0.0f; }
+	float GetMaxRange() const { return maxrange; }
+	float GetMinRange() const { return minrange; }
+	float GetProjectileSpeed() const { return projectilespeed; }
+	float GetGravity() const { return gravity; }
+	float GetBallisticElevationStartRange() const { return ballistic_elevation_range_start; }
+	float GetBallisticElevationEndRange() const { return ballistic_elevation_range_end; }
+	float GetBallisticElevationMinRate() const { return ballistic_elevation_min; }
+	float GetBallisticElevationMaxRate() const { return ballistic_elevation_max; }
+	bool IsMelee() const { return ismelee; }
+	bool IsExplosive() const { return isexplosive; }
+	bool IsHitscan() const { return projectilespeed <= 0.0f; }
 	// fires a projectile?
-	inline bool IsProjectile() const { return projectilespeed > 0.0f; }
+	bool IsProjectile() const { return projectilespeed > 0.0f; }
 	// fires a projectile that is affected by gravity?
-	inline bool IsBallistic() const { return gravity > 0.0f; }
-	inline bool HasMaxRange() const { return maxrange > 0.0f; }
-	inline bool HasMinRange() const { return minrange > 0.0f; }
-	inline bool InRangeTo(const float dist) const { return dist >= minrange && dist <= maxrange; }
-	inline bool InRangeToSqr(const float dist) const { return dist >= (minrange * minrange) && dist <= (maxrange * maxrange); }
-	inline float GetTravelTimeForDistance(const float dist) const { return dist / projectilespeed; }
-	inline bool HasFunction() const { return maxrange > -9000.0f; }
+	bool IsBallistic() const { return gravity > 0.0f; }
+	bool HasMaxRange() const { return maxrange > 0.0f; }
+	bool HasMinRange() const { return minrange > 0.0f; }
+	bool InRangeTo(const float dist) const { return dist >= minrange && dist <= maxrange; }
+	bool InRangeToSqr(const float dist) const { return dist >= (minrange * minrange) && dist <= (maxrange * maxrange); }
+	float GetTravelTimeForDistance(const float dist) const { return dist / projectilespeed; }
+	bool HasFunction() const { return maxrange > -9000.0f; }
 
-	inline void SetMaxRange(float v) { maxrange = v; }
-	inline void SetMinRange(float v) { minrange = v; }
-	inline void SetProjectileSpeed(float v) { projectilespeed = v; }
-	inline void SetGravity(float v) { gravity = v; }
-	inline void SetBallisticElevationStartRange(float v) { ballistic_elevation_range_start = v; }
-	inline void SetBallisticElevationEndRange(float v) { ballistic_elevation_range_end = v; }
-	inline void SetBallisticElevationMin(float v) { ballistic_elevation_min = v; }
-	inline void SetBallisticElevationMax(float v) { ballistic_elevation_max = v; }
-	inline void SetMelee(bool v) { ismelee = v; }
-	inline void SetExplosive(bool v) { isexplosive = v; }
+	void SetMaxRange(float v) { maxrange = v; }
+	void SetMinRange(float v) { minrange = v; }
+	void SetProjectileSpeed(float v) { projectilespeed = v; }
+	void SetGravity(float v) { gravity = v; }
+	void SetBallisticElevationStartRange(float v) { ballistic_elevation_range_start = v; }
+	void SetBallisticElevationEndRange(float v) { ballistic_elevation_range_end = v; }
+	void SetBallisticElevationMin(float v) { ballistic_elevation_min = v; }
+	void SetBallisticElevationMax(float v) { ballistic_elevation_max = v; }
+	void SetMelee(bool v) { ismelee = v; }
+	void SetExplosive(bool v) { isexplosive = v; }
 
 private:
 	float maxrange;
@@ -104,7 +104,7 @@ public:
 		MAX_WEAPON_ATTACKS
 	};
 
-	inline WeaponInfo() :
+	WeaponInfo() :
 		headshot_aim_offset(0.0f, 0.0f, 0.0f)
 	{
 		classname.reserve(64);
@@ -112,7 +112,7 @@ public:
 		econindex = -1;
 		priority = 0;
 		can_headshot = false;
-		inf_ammo = false;
+		infinite_reserve_ammo = false;
 		semiauto = false;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
@@ -121,17 +121,20 @@ public:
 		secammolow = 0;
 		slot = INVALID_WEAPON_SLOT;
 		attack_move_range = -1.0f;
+		use_secondary_chance = 20;
 	}
 
 	virtual ~WeaponInfo() {}
 
-	inline void Reset()
+	void Reset()
 	{
 		classname.clear();
 		configentry.clear();
 		econindex = -1;
 		priority = 0;
 		can_headshot = false;
+		infinite_reserve_ammo = false;
+		semiauto = false;
 		headshot_range_mult = 1.0f;
 		headshot_aim_offset.Init(0.0f, 0.0f, 0.0f);
 		maxclip1 = 0;
@@ -139,6 +142,7 @@ public:
 		primammolow = 0;
 		secammolow = 0;
 		attack_move_range = -1.0f;
+		use_secondary_chance = 20;
 
 		slot = INVALID_WEAPON_SLOT;
 		attacksinfo[PRIMARY_ATTACK].Reset();
@@ -146,86 +150,92 @@ public:
 		attacksinfo[TERTIARY_ATTACK].Reset();
 	}
 
-	inline const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
+	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
 	{
 		return attacksinfo[type];
 	}
 
-	inline const char* GetClassname() const { return classname.c_str(); }
-	inline const char* GetConfigEntryName() const { return configentry.c_str(); }
-	inline int GetPriority() const { return priority; }
-	inline int GetItemDefIndex() const { return econindex; }
+	const char* GetClassname() const { return classname.c_str(); }
+	const std::string& GetClassnameString() const { return classname; }
+	const char* GetConfigEntryName() const { return configentry.c_str(); }
+	const std::string& GetConfigEntryNameString() const { return configentry; }
+	int GetPriority() const { return priority; }
+	int GetItemDefIndex() const { return econindex; }
 
-	inline void SetAttackInfo(AttackFunctionType type, WeaponAttackFunctionInfo info)
+	void SetAttackInfo(AttackFunctionType type, WeaponAttackFunctionInfo info)
 	{
 		attacksinfo[type] = info;
 	}
 
-	inline void SetClassname(const char* szclassname)
+	void SetClassname(const char* szclassname)
 	{
 		classname.assign(szclassname);
 	}
 
-	inline void SetConfigEntryName(const char* entry)
+	void SetConfigEntryName(const char* entry)
 	{
 		configentry.assign(entry);
 	}
 
-	inline void SetCanHeadShot(bool v) { can_headshot = v; }
-	inline void SetInfiniteAmmo(bool v) { inf_ammo = v; }
-	inline void SetHeadShotRangeMultiplier(float v) { headshot_range_mult = v; }
-	inline void SetHeadShotAimOffset(const Vector& offset) { headshot_aim_offset = offset; }
+	void SetCanHeadShot(bool v) { can_headshot = v; }
+	void SetInfiniteReserveAmmo(bool v) { infinite_reserve_ammo = v; }
+	void SetHeadShotRangeMultiplier(float v) { headshot_range_mult = v; }
+	void SetHeadShotAimOffset(const Vector& offset) { headshot_aim_offset = offset; }
 
 	WeaponAttackFunctionInfo* GetAttackInfoForEditing(AttackFunctionType type)
 	{
 		return &attacksinfo[type];
 	}
 
-	inline const WeaponAttackFunctionInfo& GetAttackInfo(AttackFunctionType type) const
+	const WeaponAttackFunctionInfo& GetAttackInfo(AttackFunctionType type) const
 	{
 		return attacksinfo[type];
 	}
 
 	// Returns true if this is the default weapon info profile
-	inline bool IsDefault() const { return configentry.size() == 0; }
-	inline bool CanHeadShot() const { return can_headshot; }
-	inline bool HasInfiniteAmmo() const { return inf_ammo; }
-	inline float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
-	inline float GetMaxPrimaryHeadShotRange() const { return attacksinfo[PRIMARY_ATTACK].GetMaxRange() * headshot_range_mult; }
-	inline const Vector& GetHeadShotAimOffset() const { return headshot_aim_offset; }
+	bool IsDefault() const { return configentry.size() == 0; }
+	bool CanHeadShot() const { return can_headshot; }
+	bool HasInfiniteReserveAmmo() const { return infinite_reserve_ammo; }
+	float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
+	float GetMaxPrimaryHeadShotRange() const { return attacksinfo[PRIMARY_ATTACK].GetMaxRange() * headshot_range_mult; }
+	const Vector& GetHeadShotAimOffset() const { return headshot_aim_offset; }
 
-	inline void SetEconItemIndex(int index) { econindex = index; }
-	inline void SetPriority(int pri) { priority = pri; }
-	inline void SetMaxClip1(int clip) { maxclip1 = clip; }
-	inline void SetMaxClip2(int clip) { maxclip2 = clip; }
-	inline void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
-	inline void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
-	inline void SetSlot(int s) { slot = s; }
-	inline void SetIsSemiAuto(bool v) { semiauto = v; }
-	inline void SetAttackRange(float v) { attack_move_range = v; }
+	void SetEconItemIndex(int index) { econindex = index; }
+	void SetPriority(int pri) { priority = pri; }
+	void SetMaxClip1(int clip) { maxclip1 = clip; }
+	void SetMaxClip2(int clip) { maxclip2 = clip; }
+	void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
+	void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
+	void SetSlot(int s) { slot = s; }
+	void SetIsSemiAuto(bool v) { semiauto = v; }
+	void SetAttackRange(float v) { attack_move_range = v; }
+	void SetChanceToUseSecondaryAttack(int v) { use_secondary_chance = v; }
 
-	inline bool HasEconIndex() const { return econindex >= 0; }
-	inline bool IsEntry(std::string& entry) const { return configentry == entry; }
-	inline bool IsClassname(std::string& name) const { return classname == name; }
-	inline bool HasPrimaryAttack() const { return attacksinfo[PRIMARY_ATTACK].HasFunction(); }
-	inline bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
-	inline bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
-	inline bool IsCombatWeapon() const { return priority >= 0; }
-	inline bool HasMaxClip1() const { return maxclip1 > 0; }
-	inline int GetMaxClip1() const { return maxclip1; }
-	inline bool HasMaxClip2() const { return maxclip2 > 0; }
-	inline int GetMaxClip2() const { return maxclip2; }
-	inline bool HasLowPrimaryAmmoThreshold() const { return primammolow > 0; }
-	inline int GetLowPrimaryAmmoThreshold() const { return primammolow; }
-	inline bool HasLowSecondaryAmmoThreshold() const { return secammolow > 0; }
-	inline int GetLowSecondaryAmmoThreshold() const { return secammolow; }
-	inline int GetSlot() const { return slot; }
-	inline bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
-	inline bool IsSemiAuto() const { return semiauto; }
-	inline bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
-	inline bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
+	bool HasEconIndex() const { return econindex >= 0; }
+	bool IsEntry(std::string& entry) const { return configentry == entry; }
+	bool IsClassname(std::string& name) const { return classname == name; }
+	bool HasPrimaryAttack() const { return attacksinfo[PRIMARY_ATTACK].HasFunction(); }
+	bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
+	bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
+	bool IsCombatWeapon() const { return priority >= 0; }
+	bool HasMaxClip1() const { return maxclip1 > 0; }
+	int GetMaxClip1() const { return maxclip1; }
+	bool HasMaxClip2() const { return maxclip2 > 0; }
+	int GetMaxClip2() const { return maxclip2; }
+	bool HasLowPrimaryAmmoThreshold() const { return primammolow > 0; }
+	int GetLowPrimaryAmmoThreshold() const { return primammolow; }
+	bool HasLowSecondaryAmmoThreshold() const { return secammolow > 0; }
+	int GetLowSecondaryAmmoThreshold() const { return secammolow; }
+	int GetSlot() const { return slot; }
+	bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
+	bool IsSemiAuto() const { return semiauto; }
+	bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
+	bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
+	// Returns true if the weapon secondary attack uses the primary ammo type.
+	bool SecondaryUsesPrimaryAmmo() const { return maxclip2 == SECONDARY_ATTACK_USES_PRIMARY_AMMO; }
 	// Returns the minimum distance bots should try to maintain when attacking
 	const float GetAttackRange() const { return attack_move_range; }
+	int GetChanceToUseSecondaryAttack() const { return use_secondary_chance; }
  
 	virtual void PostLoad();
 
@@ -237,7 +247,7 @@ protected:
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
 	bool can_headshot;
-	bool inf_ammo; // Infinite ammo?
+	bool infinite_reserve_ammo; // weapon has infinite reserve ammo (no need to collect ammo for it)
 	bool semiauto; // The weapon is semi auto (needs to release attack in order to fire again)
 	float headshot_range_mult;
 	int maxclip1; // Maximum ammo stored in clip1
@@ -246,14 +256,16 @@ protected:
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
 	float attack_move_range; // Minimum distance the bot will try to maintain when attacking.
+	int use_secondary_chance; // Chance to use the secondary attack if available
 
 	static constexpr auto CLIP_USES_RESERVE = -2; // if maxclip is equal to this constant, then the weapon doesn't use clips and the actual ammo in the 'clip' is the reserve ammo.
+	static constexpr auto SECONDARY_ATTACK_USES_PRIMARY_AMMO = -3;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
 {
 public:
-	inline CWeaponInfoManager()
+	CWeaponInfoManager()
 	{
 		m_weapons.reserve(128);
 		m_isvalid = false;
@@ -270,7 +282,7 @@ protected:
 	virtual WeaponInfo* CreateWeaponInfo() const { return new WeaponInfo; }
 public:
 
-	inline bool WeaponEntryExists(std::string& entry) const
+	bool WeaponEntryExists(std::string& entry) const
 	{
 		for (auto& weaponptr : m_weapons)
 		{
@@ -290,9 +302,9 @@ public:
 	 * @param index Econ index to search
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
-	virtual std::shared_ptr<WeaponInfo> GetWeaponInfo(std::string classname, const int index) const;
+	virtual const WeaponInfo* GetWeaponInfo(std::string classname, const int index) const;
 
-	inline bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
+	bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
 protected:
 	/**
@@ -328,10 +340,12 @@ public:
 	bool LoadConfigFile();
 
 protected:
-	std::vector<std::shared_ptr<WeaponInfo>> m_weapons;
-	std::shared_ptr<WeaponInfo> m_default; // Default weapon info for when lookup fails
+	std::vector<std::unique_ptr<WeaponInfo>> m_weapons; // main storage
+	std::unique_ptr<WeaponInfo> m_default; // Default weapon info for when lookup fails
+	std::unordered_map<int, const WeaponInfo*> m_index_lookup; // map for econ index look up
+	std::unordered_map<std::string, const WeaponInfo*> m_classname_lookup; // map for classname look up
 
-	inline void InitParserData()
+	void InitParserData()
 	{
 		m_isvalid = false;
 		m_section_weapon = false;
@@ -349,12 +363,12 @@ protected:
 
 	WeaponInfo* m_current; // Current weapon info being parsed
 
-	inline bool IsParserInWeaponAttackSection() const
+	bool IsParserInWeaponAttackSection() const
 	{
 		return m_section_prim || m_section_sec || m_section_ter;
 	}
 
-	inline void ParserExitWeaponSection()
+	void ParserExitWeaponSection()
 	{
 		// only one section is parsed at a time so this should be safe
 		m_section_prim = false;
@@ -362,29 +376,27 @@ protected:
 		m_section_ter = false;
 	}
 
-	inline std::shared_ptr<WeaponInfo> LookUpWeaponInfoByClassname(std::string classname) const
+	const WeaponInfo* LookUpWeaponInfoByClassname(std::string classname) const
 	{
-		for (auto& weaponptr : m_weapons)
+		auto it = m_classname_lookup.find(classname);
+
+		if (it != m_classname_lookup.end())
 		{
-			if (weaponptr->IsClassname(classname))
-			{
-				return weaponptr;
-			}
+			return it->second;
 		}
 
 		return nullptr;
 	}
 
-	inline std::shared_ptr<WeaponInfo> LookUpWeaponInfoByEconIndex(const int index) const
+	const WeaponInfo* LookUpWeaponInfoByEconIndex(const int index) const
 	{
 		if (index < 0) { return nullptr; }
 
-		for (auto& weaponptr : m_weapons)
+		auto it = m_index_lookup.find(index);
+
+		if (it != m_index_lookup.end())
 		{
-			if (weaponptr->GetItemDefIndex() == index)
-			{
-				return weaponptr;
-			}
+			return it->second;
 		}
 
 		return nullptr;

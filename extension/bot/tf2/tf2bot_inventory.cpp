@@ -1,4 +1,5 @@
 #include <extension.h>
+#include <util/entprops.h>
 #include "tf2bot.h"
 #include "tf2bot_inventory.h"
 
@@ -25,4 +26,3 @@ bool CTF2BotInventory::IsAmmoLow(const bool heldOnly)
 
 	return IInventory::IsAmmoLow(heldOnly);
 }
-

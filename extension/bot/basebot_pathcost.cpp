@@ -113,3 +113,7 @@ float CBaseBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const C
 
 	return cost;
 }
+
+void CBaseBotPathCost::SetRouteType([[maybe_unused]] RouteType type)
+{
+}

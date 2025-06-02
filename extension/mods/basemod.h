@@ -1,6 +1,7 @@
 #ifndef EXT_BASE_MOD_H_
 #define EXT_BASE_MOD_H_
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <string>
@@ -8,6 +9,7 @@
 #include <sdkports/sdk_ehandle.h>
 #include <bot/interfaces/weaponinfo.h>
 #include <bot/interfaces/profile.h>
+#include <bot/interfaces/sharedmemory.h>
 #include <IPlayerHelpers.h>
 #include "gamemods_shared.h"
 #include "modsettings.h"
@@ -35,16 +37,17 @@ protected:
 	virtual CWeaponInfoManager* CreateWeaponInfoManager() const { return new CWeaponInfoManager; }
 	// Creates the bot difficulty profile manager object, override to use a custom class
 	virtual CDifficultyManager* CreateBotDifficultyProfileManager() const { return new CDifficultyManager; }
-
+	// Creates a new shared memory object
+	virtual ISharedBotMemory* CreateSharedMemory() const { return new ISharedBotMemory; }
 public:
 	// Gets the cleaned up current map name used for loading config files.
 	virtual std::string GetCurrentMapName() const;
 	// Called once after the manager has allocated the mod class
 	virtual void PostCreation();
 	// Called every server frame
-	virtual void Frame() {}
+	virtual void Frame();
 	// Called at intervals
-	virtual void Update() {}
+	virtual void Update();
 	// Called when the map starts
 	virtual void OnMapStart();
 	// Called when the map ends
@@ -66,7 +69,7 @@ public:
 	// A new round has started
 	virtual void OnNewRound() {}
 	// A round has started
-	virtual void OnRoundStart() {}
+	virtual void OnRoundStart();
 	// A round has ended
 	virtual void OnRoundEnd() {}
 	// Called when the nav mesh is fully loaded and valid.
@@ -87,15 +90,20 @@ public:
 	const CDifficultyManager* GetBotDifficultyManager() const { return m_profilemanager.get(); }
 
 	virtual void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) {}
+	/**
+	 * @brief Gets a pointer to the bot shared memory interface for the given team index.
+	 * @param teamindex Team index number.
+	 * @return Shared bot memory interface pointer or NULL on failure/error.
+	 */
+	virtual ISharedBotMemory* GetSharedBotMemory(int teamindex);
 protected:
-	// SMC parser data
-	int m_parser_depth;
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;
 	std::unique_ptr<CDifficultyManager> m_profilemanager;
 
 private:
 	CBaseHandle m_playerresourceentity;
+	std::array<std::unique_ptr<ISharedBotMemory>, MAX_TEAMS> m_teamsharedmemory;
 
 	void InternalFindPlayerResourceEntity();
 };

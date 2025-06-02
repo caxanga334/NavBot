@@ -46,12 +46,12 @@ inline TaskResult<BT> CBotSharedAttackNearestEnemyTask<BT, CT>::OnTaskUpdate(BT*
 		return AITask<BT>::Done("No visible threat!");
 	}
 
-	auto weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 	bool move = false;
 
 	if (weapon)
 	{
-		auto& info = weapon->GetWeaponInfo();
+		const WeaponInfo* info = weapon->GetWeaponInfo();
 		auto& attackinfo = info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
 
 		if (attackinfo.IsMelee())

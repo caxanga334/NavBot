@@ -270,12 +270,12 @@ namespace UtilHelpers
 
 	/**
 	 * @brief Counts the number of players.
-	 * @tparam T A class with operator() overload with 3 parameters (int client, edict_t* entity, SourceMod::IGamePlayer* player)
-	 * @param functor Function to run on each player. Return true to count the player.
+	 * @tparam T A predicate with 3 parameters (int client, edict_t* entity, SourceMod::IGamePlayer* player)
+	 * @param pred Predicate to run on each player
 	 * @return Number of players counted.
 	 */
 	template <typename T>
-	inline int CountPlayers(T& functor)
+	inline int CountPlayers(T pred)
 	{
 		int playercount = 0;
 
@@ -288,7 +288,7 @@ namespace UtilHelpers
 
 			auto player = playerhelpers->GetGamePlayer(i);
 
-			if (functor(i, edict, player))
+			if (pred(i, edict, player))
 			{
 				++playercount;
 			}
@@ -296,6 +296,23 @@ namespace UtilHelpers
 
 		return playercount;
 	}
+
+	/**
+	 * @brief Predicate for counting the number of players on a team.
+	 */
+	class PredPlayersInTeam
+	{
+	public:
+		PredPlayersInTeam(int team) :
+			m_team(team)
+		{
+		}
+
+		bool operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player);
+
+	private:
+		int m_team;
+	};
 
 	/**
 	 * @brief Runs a function on each player.

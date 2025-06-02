@@ -18,7 +18,7 @@
 #undef max
 #undef clamp
 
-constexpr auto UPDATE_WEAPONS_INTERVAL_AFTER_RESET = 0.1f;
+constexpr auto UPDATE_WEAPONS_INTERVAL_AFTER_RESET = 0.2f;
 
 IInventory::IInventory(CBaseBot* bot) : IBotInterface(bot)
 {
@@ -91,6 +91,20 @@ CBaseEntity* IInventory::GetWeaponEntity(const char* classname)
 	return nullptr;
 }
 
+const CBotWeapon* IInventory::GetWeaponOfEntity(CBaseEntity* weapon)
+{
+	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&weapon](const std::unique_ptr<CBotWeapon>& weaponptr) {
+		return weaponptr->GetEntity() == weapon;
+	});
+
+	if (it != m_weapons.end())
+	{
+		return it->get();
+	}
+
+	return nullptr;
+}
+
 void IInventory::AddWeaponToInventory(CBaseEntity* weapon)
 {
 	if (!HasWeapon(weapon))
@@ -110,6 +124,24 @@ void IInventory::BuildInventory()
 
 	// array CHandle<CBaseEntity> weapons[MAX_WEAPONS]
 	CHandle<CBaseEntity>* myweapons = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(GetBot()->GetEntity(), CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_MYWEAPONS);
+
+#ifdef EXT_DEBUG
+	{
+		static bool logged = false;
+
+		if (!logged)
+		{
+			logged = true;
+
+			std::size_t size = entprops->GetEntPropArraySize(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_hMyWeapons");
+
+			if (size != static_cast<std::size_t>(MAX_WEAPONS))
+			{
+				smutils->LogError(myself, "SDK's MAX_WEAPONS macro (%i) doesn't match CBaseCombatCharacter::m_hMyWeapons array size (%zu)!", MAX_WEAPONS, size);
+			}
+		}
+	}
+#endif // EXT_DEBUG
 
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
@@ -169,7 +201,7 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			return;
 		}
 
-		if (weapon->IsOutOfAmmo(bot, false, false))
+		if (weapon->IsOutOfAmmo(bot))
 		{
 			return;
 		}
@@ -244,7 +276,7 @@ void IInventory::SelectBestWeapon()
 			return;
 		}
 
-		if (weapon->IsOutOfAmmo(bot, false, false))
+		if (weapon->IsOutOfAmmo(bot))
 		{
 			return;
 		}
@@ -311,7 +343,7 @@ void IInventory::SelectBestWeaponForBreakables()
 			return;
 		}
 
-		if (weapon->IsOutOfAmmo(bot, false, false))
+		if (weapon->IsOutOfAmmo(bot))
 		{
 			return;
 		}
@@ -394,7 +426,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 			return;
 		}
 
-		if (weapon->IsOutOfAmmo(bot, false, false))
+		if (weapon->IsOutOfAmmo(bot))
 		{
 			return;
 		}
@@ -478,7 +510,7 @@ bool IInventory::IsAmmoLow(const bool heldOnly)
 			return false;
 		}
 
-		return weapon->IsAmmoLow(me, false);
+		return weapon->IsAmmoLow(me);
 	}
 	else
 	{
@@ -489,7 +521,7 @@ bool IInventory::IsAmmoLow(const bool heldOnly)
 				continue;
 			}
 
-			if (weapon->IsAmmoLow(me, false))
+			if (weapon->IsAmmoLow(me))
 			{
 				return true;
 			}

@@ -11,6 +11,8 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/bot_shared_utils.h>
+#include <bot/tasks_shared/bot_shared_take_cover_from_spot.h>
+#include <bot/tasks_shared/bot_shared_use_self_heal_item.h>
 #include "tf2bot_find_health_task.h"
 
 #undef min
@@ -98,39 +100,38 @@ bool CTF2BotFindHealthTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 	VPROF_BUDGET("CTF2BotFindHealthTask::IsPossible", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Heavy)
+	{
+		CBaseEntity* weapon = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary));
+
+		if (weapon && UtilHelpers::FClassnameIs(weapon, "tf_weapon_lunchbox"))
+		{
+			const CBotWeapon* botweapon = bot->GetInventoryInterface()->GetWeaponOfEntity(weapon);
+
+			if (botweapon && !botweapon->IsOutOfAmmo(bot))
+			{
+				int index = 0;
+				entprops->GetEntProp(UtilHelpers::IndexOfEntity(weapon), Prop_Send, "m_iItemDefinitionIndex", index);
+
+				// 311 is The Buffalo Steak Sandvich
+				if (index != 311)
+				{
+					*source = weapon;
+					return true;
+				}
+			}
+		}
+	}
+
 	const float maxrange = CTeamFortress2Mod::GetTF2Mod()->GetModSettings()->GetCollectItemMaxDistance();
 	CTF2HealthFilter filter(bot);
 	botsharedutils::IsReachableAreas collector(bot, maxrange);
-	auto& statichealthsources = CTeamFortress2Mod::GetTF2Mod()->GetHealthSources();
 
 	CBaseEntity* best = nullptr;
 	float smallest_dist = std::numeric_limits<float>::max();
 
 	collector.Execute();
 
-	for (auto& handle : statichealthsources)
-	{
-		CBaseEntity* pEntity = handle.Get();
-
-		if (pEntity)
-		{
-			if (filter.IsSelected(pEntity))
-			{
-				float cost = 0.0f;
-
-				if (collector.IsReachable(filter.healtharea, &cost))
-				{
-					if (cost < smallest_dist)
-					{
-						smallest_dist = cost;
-						best = pEntity;
-					}
-				}
-			}
-		}
-	}
-
-	// Append dispensers
 	auto functor = [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
@@ -152,6 +153,8 @@ bool CTF2BotFindHealthTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 		return true;
 	};
 
+	UtilHelpers::ForEachEntityOfClassname("func_regenerate", functor);
+	UtilHelpers::ForEachEntityOfClassname("item_healthkit*", functor);
 	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", functor);
 
 	if (!best)
@@ -170,6 +173,22 @@ TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 	if (!entity)
 	{
 		return Done("Health source entity is NULL!");
+	}
+
+	if (UtilHelpers::FClassnameIs(entity, "tf_weapon_lunchbox"))
+	{
+		// sandvich, eat it instead of collect.
+
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+		if (threat)
+		{
+			AITask<CTF2Bot>* task = new CBotSharedUseSelfHealItemTask<CTF2Bot>(entity, 10.0f, true);
+			return SwitchTo(new CBotSharedTakeCoverFromSpotTask<CTF2Bot, CTF2BotPathCost>(bot, threat->GetLastKnownPosition(), 256.0f, true, true, 4096.0f, task), "Taking cover to heal!");
+		}
+
+		// no visible threat
+		return SwitchTo(new CBotSharedUseSelfHealItemTask<CTF2Bot>(entity, 10.0f, true), "Using self heal item!");
 	}
 
 	CTF2BotPathCost cost(bot);

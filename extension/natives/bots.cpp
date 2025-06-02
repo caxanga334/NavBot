@@ -3,6 +3,7 @@
 #include <util/helpers.h>
 #include <bot/basebot.h>
 #include <bot/pluginbot/pluginbot.h>
+#include <mods/basemod.h>
 #include "bots.h"
 
 // gets a CBaseBot instance. Throws plugin errors if invalid
@@ -43,6 +44,7 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 	sp_nativeinfo_t list[] = {
 		{"NavBot.NavBot", AddNavBotMM},
 		{"NavBot.IsPluginBot", IsPluginBot},
+		{"NavBot.SetSkillLevel", SetSkillLevel},
 		{"PluginBot.PluginBot", AttachNavBot},
 		{"GetNavBotByIndex", GetNavBotByIndex},
 	};
@@ -52,12 +54,6 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 
 cell_t natives::bots::AddNavBotMM(IPluginContext* context, const cell_t* params)
 {
-	if (!TheNavMesh->IsLoaded())
-	{
-		context->ReportError("Cannot add bot. Navigation Mesh is not loaded!");
-		return 0;
-	}
-
 	edict_t* edict = nullptr;
 	char* szName = nullptr;
 
@@ -152,6 +148,19 @@ cell_t natives::bots::IsPluginBot(IPluginContext* context, const cell_t* params)
 	METHODMAP_GETVALIDBOT;
 
 	return bot->IsPluginBot() ? 1 : 0;
+}
+
+cell_t natives::bots::SetSkillLevel(IPluginContext* context, const cell_t* params)
+{
+	METHODMAP_GETVALIDBOT;
+
+	int skill = static_cast<int>(params[2]);
+
+	auto profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(skill);
+
+	bot->SetDifficultyProfile(profile);
+
+	return 0;
 }
 
 cell_t natives::bots::GetNavBotByIndex(IPluginContext* context, const cell_t* params)

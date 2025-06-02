@@ -1,4 +1,5 @@
 #include <chrono>
+#include <cstring>
 
 #include <extension.h>
 #include <manager.h>
@@ -321,4 +322,72 @@ CON_COMMAND_F(sm_navbot_tool_toggle_non_solid, "Makes your non solid to triggers
 		META_CONPRINTF("Restoring to old solid type %i \n", oldsolidtype);
 		oldsolidtype = -1;
 	}	
+}
+
+CON_COMMAND_F(sm_navbot_tool_dump_weapons, "Lists all CBaseCombatCharacter weapons.", FCVAR_CHEAT)
+{
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_dump_weapons <client index> \n    Use 'self' to dump your weapons. \n");
+		return;
+	}
+
+	int iEnt;
+
+	if (std::strcmp(args[1], "self") == 0)
+	{
+		iEnt = 1; // listen server host
+	}
+	else
+	{
+		iEnt = atoi(args[1]);
+	}
+
+	std::size_t numWeapons = entprops->GetEntPropArraySize(iEnt, Prop_Send, "m_hMyWeapons");
+
+	if (numWeapons == 0)
+	{
+		META_CONPRINT("Error: m_hMyWeapons size == 0! \n");
+		return;
+	}
+
+	if (numWeapons != static_cast<std::size_t>(MAX_WEAPONS))
+	{
+		META_CONPRINTF("Warning: m_hMyWeapons size doesn't match SDK's MAX_WEAPONS definiton! %zu != %i \n", numWeapons, MAX_WEAPONS);
+	}
+
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(gamehelpers->EdictOfIndex(iEnt));
+
+	CHandle<CBaseEntity>* pMyWeapons = entprops->GetPointerToEntData<CHandle<CBaseEntity>>(pEntity, Prop_Send, "m_hMyWeapons");
+
+	if (!pMyWeapons)
+	{
+		META_CONPRINT("Failed to get address to CBaseCombatCharacter::m_hMyWeapons! \n");
+		return;
+	}
+
+	for (std::size_t i = 0; i < numWeapons; i++)
+	{
+		CBaseEntity* pWeapon = pMyWeapons[i].Get();
+
+		if (!pWeapon)
+		{
+			continue;
+		}
+
+		META_CONPRINTF("[%zu] Weapon %s #%i <%p> \n", i, gamehelpers->GetEntityClassname(pWeapon), UtilHelpers::IndexOfEntity(pWeapon));
+	}
+
+	CBaseBot* bot = extmanager->GetBotByIndex(iEnt);
+
+	if (bot)
+	{
+		META_CONPRINTF("Dumping stored Weapon Information data of %s \n", bot->GetClientName());
+
+		auto dumpweapons = [](const CBotWeapon* weapon) {
+			META_CONPRINTF("Weapon \"%s\" #%i using config entry: %s \n", weapon->GetClassname().c_str(), weapon->GetWeaponEconIndex(), weapon->GetWeaponInfo()->GetConfigEntryName());
+		};
+
+		bot->GetInventoryInterface()->ForEveryWeapon(dumpweapons);
+	}
 }

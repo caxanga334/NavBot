@@ -129,7 +129,7 @@ botsharedutils::RandomDefendSpotCollector::RandomDefendSpotCollector(const Vecto
 	SetSearchElevators(false);
 	SetTravelLimit(bot->GetSensorInterface()->GetMaxVisionRange());
 
-	CNavArea* area = TheNavMesh->GetNavArea(spot);
+	CNavArea* area = TheNavMesh->GetNearestNavArea(spot, 512.0f, true, true);
 	SetStartArea(area);
 }
 

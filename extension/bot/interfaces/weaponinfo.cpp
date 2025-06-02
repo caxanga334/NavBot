@@ -31,6 +31,8 @@ bool CWeaponInfoManager::LoadConfigFile()
 		}
 	}
 
+	m_index_lookup.clear();
+	m_classname_lookup.clear();
 	m_weapons.clear();
 
 	InitParserData();
@@ -50,6 +52,26 @@ bool CWeaponInfoManager::LoadConfigFile()
 	for (auto& info : m_weapons)
 	{
 		info->PostLoad();
+
+		// Item index is set, add to the item index look up map
+		if (info->GetItemDefIndex() >= 0)
+		{
+			auto insert_result = m_index_lookup.insert({ info->GetItemDefIndex(), info.get() });
+			
+			if (!insert_result.second)
+			{
+				smutils->LogError(myself, "WeaponInfo: Failed to insert item index %i to look up map! Entry: %s", info->GetItemDefIndex(), info->GetConfigEntryName());
+			}
+		}
+		else
+		{
+			auto insert_result = m_classname_lookup.insert({ std::string{ info->GetClassname() }, info.get()});
+
+			if (!insert_result.second)
+			{
+				smutils->LogError(myself, "WeaponInfo: Failed to insert classname %s to look up map! Entry: %s", info->GetClassname(), info->GetConfigEntryName());
+			}
+		}
 	}
 
 	auto functor = [](CBaseBot* bot) {
@@ -108,9 +130,9 @@ void CWeaponInfoManager::PostParseAnalysis()
 	m_default.reset(CreateWeaponInfo());
 }
 
-std::shared_ptr<WeaponInfo> CWeaponInfoManager::GetWeaponInfo(std::string classname, const int index) const
+const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(std::string classname, const int index) const
 {
-	std::shared_ptr<WeaponInfo> result{ nullptr };
+	const WeaponInfo* result = nullptr;
 
 	result = LookUpWeaponInfoByEconIndex(index);
 
@@ -127,7 +149,7 @@ std::shared_ptr<WeaponInfo> CWeaponInfoManager::GetWeaponInfo(std::string classn
 	}
 
 	smutils->LogError(myself, "CWeaponInfoManager::GetWeaponInfo Failed to find WeaponInfo for %s <%i>", classname.c_str(), index);
-	return m_default;
+	return m_default.get();
 }
 
 SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const char* name)
@@ -218,10 +240,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			m_current->SetCanHeadShot(false);
 		}
 	}
-	else if (strncmp(key, "infinite_ammo", 13) == 0)
+	else if (strncmp(key, "infinite_reserve_ammo", 13) == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
-		m_current->SetInfiniteAmmo(v);
+		m_current->SetInfiniteReserveAmmo(v);
 	}
 	else if (strncmp(key, "headshot_range_multiplier", 25) == 0)
 	{
@@ -267,6 +289,12 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		float flvalue = atof(value);
 		m_current->SetAttackRange(flvalue);
+	}
+	else if (strncmp(key, "use_secondary_attack_chance", 27) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 1, 100);
+		m_current->SetChanceToUseSecondaryAttack(v);
 	}
 	else if (!IsParserInWeaponAttackSection())
 	{

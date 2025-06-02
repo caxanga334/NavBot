@@ -16,8 +16,12 @@
 
 CBaseMod::CBaseMod()
 {
-	m_parser_depth = 0;
 	m_playerresourceentity.Term();
+
+	for (std::size_t i = 0; i < m_teamsharedmemory.max_size(); i++)
+	{
+		m_teamsharedmemory[i] = nullptr;
+	}
 }
 
 CBaseMod::~CBaseMod()
@@ -41,6 +45,28 @@ void CBaseMod::PostCreation()
 	m_profilemanager.reset(CreateBotDifficultyProfileManager());
 
 	m_profilemanager->LoadProfiles();
+}
+
+void CBaseMod::Frame()
+{
+	for (auto& sbm : m_teamsharedmemory)
+	{
+		if (sbm)
+		{
+			sbm->Frame();
+		}
+	}
+}
+
+void CBaseMod::Update()
+{
+	for (auto& sbm : m_teamsharedmemory)
+	{
+		if (sbm)
+		{
+			sbm->Update();
+		}
+	}
 }
 
 void CBaseMod::OnMapStart()
@@ -69,6 +95,17 @@ std::optional<int> CBaseMod::GetPlayerResourceEntity()
 	}
 
 	return std::nullopt;
+}
+
+void CBaseMod::OnRoundStart()
+{
+	for (auto& sbm : m_teamsharedmemory)
+	{
+		if (sbm)
+		{
+			sbm->OnRoundRestart();
+		}
+	}
 }
 
 void CBaseMod::ReloadModSettingsFile()
@@ -101,6 +138,21 @@ void CBaseMod::ReloadBotDifficultyProfile()
 	};
 
 	extmanager->ForEachBot(func);
+}
+
+ISharedBotMemory* CBaseMod::GetSharedBotMemory(int teamindex)
+{
+	if (teamindex >= 0 && teamindex < static_cast<int>(m_teamsharedmemory.max_size()))
+	{
+		if (!m_teamsharedmemory[teamindex])
+		{
+			m_teamsharedmemory[teamindex].reset(CreateSharedMemory());
+		}
+
+		return m_teamsharedmemory[teamindex].get();
+	}
+
+	return nullptr;
 }
 
 void CBaseMod::InternalFindPlayerResourceEntity()

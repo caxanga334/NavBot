@@ -40,7 +40,7 @@ public:
 
 	bool HasTF2WeaponFlag(TF2WeaponInfoFlags flags) const
 	{
-		return (m_tfweaponflags & flags) ? true : false;
+		return (m_tfweaponflags & flags) != 0 ? true : false;
 	}
 
 	bool CanCharge() const { return HasTF2WeaponFlag(TF2_WEAPONFLAG_CHARGEMECHANIC); }
@@ -75,7 +75,7 @@ public:
 	}
 
 protected:
-	WeaponInfo* CreateWeaponInfo() const override { return new TF2WeaponInfo; }
+	WeaponInfo* CreateWeaponInfo() const override { return  static_cast<WeaponInfo*>(new TF2WeaponInfo); }
 
 	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
@@ -104,7 +104,7 @@ public:
 	float GetProjectileSpeed() const;
 	// primary attack only, takes into account the weapon charge mechanic (IE: huntsman)
 	float GetProjectileGravity() const;
-	const TF2WeaponInfo* GetTF2Info() const { return static_cast<TF2WeaponInfo*>(m_info.get()); }
+	const TF2WeaponInfo* GetTF2Info() const { return static_cast<const TF2WeaponInfo*>(GetWeaponInfo()); }
 
 	UberType GetMedigunUberType() const { return m_ubertype; }
 

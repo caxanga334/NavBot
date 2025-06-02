@@ -2100,6 +2100,67 @@ bool CEntPropUtils::SetEntDataString(int entity, int offset, char *value, int ma
 	return true;
 }
 
+std::size_t CEntPropUtils::GetEntPropArraySize(int entity, PropType proptype, const char* prop)
+{
+	CBaseEntity* pEntity = nullptr;
+	edict_t* pEdict = nullptr;
+
+	if (!IndexToAThings(entity, &pEntity, &pEdict))
+	{
+		return 0;
+	}
+
+	switch (proptype)
+	{
+	case Prop_Data:
+	{
+		typedescription_t* td = nullptr;
+		SourceMod::sm_datatable_info_t dinfo;
+
+		if (!FindDataMap(pEntity, dinfo, prop))
+		{
+			return 0;
+		}
+
+		td = dinfo.prop;
+
+		return static_cast<std::size_t>(td->fieldSize);
+	}
+	case Prop_Send:
+	{
+		SourceMod::sm_sendprop_info_t info;
+
+		if (!FindSendProp(&info, pEntity, prop, entity))
+		{
+			return 0;
+		}
+
+		if (info.prop->GetType() == SendPropType::DPT_Array)
+		{
+			return static_cast<std::size_t>(info.prop->GetNumElements());
+		}
+
+		if (info.prop->GetType() != SendPropType::DPT_DataTable)
+		{
+			return 0;
+		}
+
+		SendTable* pTable = info.prop->GetDataTable();
+
+		if (!pTable)
+		{
+			return 0;
+		}
+
+		return static_cast<std::size_t>(pTable->GetNumProps());
+	}
+	default:
+		return 0;
+	}
+
+	return 0;
+}
+
 CBaseEntity *CEntPropUtils::GetGameRulesProxyEntity()
 {
 	static int proxyEntRef = -1;

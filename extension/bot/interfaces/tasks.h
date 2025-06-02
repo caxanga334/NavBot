@@ -12,6 +12,7 @@
 #include <bot/bot_debug_shared.h>
 #include "decisionquery.h"
 #include "event_listener.h"
+#include "sharedmemory.h"
 
 // Forward declaration
 template <typename BotClass> class AITask;
@@ -585,6 +586,7 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnWeaponEquip(BotClass* bot, CBaseEntity* weapon) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnVoiceCommand(BotClass* bot, CBaseEntity* subject, int command) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnTruceChanged(BotClass* bot, const bool enabled) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnSquadEvent(BotClass* bot, SquadEventType evtype) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1120,6 +1122,11 @@ private:
 	void OnTruceChanged(const bool enabled) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnTruceChanged, enabled);
+	}
+
+	void OnSquadEvent(SquadEventType evtype) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSquadEvent, evtype);
 	}
 };
 

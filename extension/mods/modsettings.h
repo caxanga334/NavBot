@@ -9,11 +9,11 @@ public:
 	CModSettings()
 	{
 		cfg_parser_depth = 0;
-		defendrate = 33;
+		defendrate = 17;
 		stucksuicidethreshold = 15; // stuck events happens every 1 second, this will be about 15 seconds
 		updaterate = 0.10f;
 		vision_npc_update_rate = 0.250f;
-		inventory_update_rate = 1.0f;
+		inventory_update_rate = 60.0f;
 		vision_statistics_update = 0.5f;
 		collect_item_max_distance = 5000.0f;
 	}

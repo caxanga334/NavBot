@@ -16,6 +16,8 @@ public:
 
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override { return new CTF2BotWeapon(weapon); }
+
+private:
 };
 
 #endif // !NAVBOT_TF2BOT_INVENTORY_INTERFACE_H_

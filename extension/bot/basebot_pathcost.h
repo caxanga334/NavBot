@@ -11,6 +11,7 @@ public:
 
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
+	void SetRouteType(RouteType type) override;
 private:
 	CBaseBot* m_me;
 	float m_stepheight;

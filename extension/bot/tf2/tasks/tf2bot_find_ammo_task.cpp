@@ -94,60 +94,14 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 	const float maxrange = CTeamFortress2Mod::GetTF2Mod()->GetModSettings()->GetCollectItemMaxDistance();
 	CTF2AmmoFilter filter(bot);
 	botsharedutils::IsReachableAreas collector(bot, maxrange);
-	auto& staticammosources = CTeamFortress2Mod::GetTF2Mod()->GetAmmoSources();
+
 
 	CBaseEntity* best = nullptr;
 	float smallest_dist = std::numeric_limits<float>::max();
 
 	collector.Execute();
 
-	for (auto& handle : staticammosources)
-	{
-		CBaseEntity* pEntity = handle.Get();
-
-		if (pEntity)
-		{
-			if (filter.IsSelected(pEntity))
-			{
-				float cost = 0.0f;
-
-				if (collector.IsReachable(filter.ammoarea, &cost))
-				{
-					if (cost < smallest_dist)
-					{
-						smallest_dist = cost;
-						best = pEntity;
-					}
-				}
-			}
-		}
-	}
-
-	// Append dispensers
-	auto dispfunc = [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
-		if (entity)
-		{
-			if (filter.IsSelected(entity))
-			{
-				float cost = 0.0f;
-
-				if (collector.IsReachable(filter.ammoarea, &cost))
-				{
-					if (cost < smallest_dist)
-					{
-						smallest_dist = cost;
-						best = entity;
-					}
-				}
-			}
-		}
-
-		return true;
-	};
-	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", dispfunc);
-
-	// Append dropped ammo packs
-	auto packfunc = [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			if (filter.IsSelected(entity))
@@ -168,7 +122,10 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 		return true;
 	};
 
-	UtilHelpers::ForEachEntityOfClassname("tf_ammo_pack", packfunc);
+	UtilHelpers::ForEachEntityOfClassname("func_regenerate", func);
+	UtilHelpers::ForEachEntityOfClassname("item_ammopack*", func);
+	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", func);
+	UtilHelpers::ForEachEntityOfClassname("tf_ammo_pack", func);
 
 	if (!best)
 	{

@@ -5,8 +5,9 @@
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
-#include "bot/tf2/tf2bot.h"
-#include <bot/tf2/tasks/tf2bot_roam.h>
+#include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_defend_spot.h>
+#include <bot/tasks_shared/bot_shared_roam.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include "tf2bot_map_ctf.h"
 
@@ -16,44 +17,36 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		return PauseFor(new CTF2BotCTFDeliverFlagTask, "Going to deliver the flag!");
 	}
-	else
-	{
-		// get dropped and stolen flags
-		edict_t* flag_to_defend = bot->GetFlagToDefend(false, true);
-		edict_t* flag = bot->GetFlagToFetch();
-		int defrate = CTeamFortress2Mod::GetTF2Mod()->GetModSettings()->GetDefendRate();
 
-		if (flag != nullptr && flag_to_defend != nullptr)
+	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
+	int defrate = tf2mod->GetModSettings()->GetDefendRate();
+
+	// should defend?
+	if (randomgen->GetRandomInt<int>(1, 100) >= defrate)
+	{
+		edict_t* ent = bot->GetFlagToDefend(false, false);
+
+		if (ent)
 		{
-			// I have both a flag to attack and defend
-			if (randomgen->GetRandomInt<int>(0, 100) < defrate)
+			tfentities::HCaptureFlag flag(ent);
+
+			if (flag.IsHome())
 			{
-				CBaseEntity* ent = flag_to_defend->GetIServerEntity()->GetBaseEntity();
-				return PauseFor(new CTF2BotCTFDefendFlag(ent), "Defending a dropped/stolen flag!");
+				return PauseFor(new CBotSharedDefendSpotTask(bot, UtilHelpers::getEntityOrigin(ent), 30.0f, true), "Defending my flag!");
 			}
-			else
-			{
-				return PauseFor(new CTF2BotCTFFetchFlagTask(flag), "Going to fetch the flag!");
-			}
-		}
-		else if (flag == nullptr && flag_to_defend != nullptr)
-		{
-			CBaseEntity* ent = flag_to_defend->GetIServerEntity()->GetBaseEntity();
-			return PauseFor(new CTF2BotCTFDefendFlag(ent), "Defending a dropped/stolen flag!");
-		}
-	
-		if (flag != nullptr)
-		{
-			return PauseFor(new CTF2BotCTFFetchFlagTask(flag), "Going to fetch the flag!");
+
+			return PauseFor(new CTF2BotCTFDefendFlag(UtilHelpers::EdictToBaseEntity(ent)), "Defending dropped flag!");
 		}
 	}
 
-	if (randomgen->GetRandomInt<int>(0, 1) == 1)
+	edict_t* flagtofetch = bot->GetFlagToFetch();
+
+	if (flagtofetch)
 	{
-		return PauseFor(new CTF2BotRoamTask(), "No flag to deliver or fetch, roaming!");
+		return PauseFor(new CTF2BotCTFFetchFlagTask(flagtofetch), "Going to fetch the flag!");
 	}
 
-	return Continue();
+	return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 10000.0f), "Nothing to do, roaming!");
 }
 
 CTF2BotCTFFetchFlagTask::CTF2BotCTFFetchFlagTask(edict_t* flag) :
@@ -232,9 +225,9 @@ TaskEventResponseResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnMoveToFailure(CTF2
 	return TryContinue();
 }
 
-CTF2BotCTFDefendFlag::CTF2BotCTFDefendFlag(CBaseEntity* flag)
+CTF2BotCTFDefendFlag::CTF2BotCTFDefendFlag(CBaseEntity* flag) :
+	m_flag(flag)
 {
-	m_flag = flag;
 }
 
 TaskResult<CTF2Bot> CTF2BotCTFDefendFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)

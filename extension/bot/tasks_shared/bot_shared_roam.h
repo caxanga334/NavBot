@@ -2,6 +2,7 @@
 #define __NAVBOT_BOT_SHARED_ROAM_TASK_H_
 
 #include <extension.h>
+#include <util/librandom.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
@@ -76,6 +77,11 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
+	if (randomgen->GetRandomInt<int>(1, 4) == 1)
+	{
+		m_pathcost.SetRouteType(SAFEST_ROUTE);
+	}
+
 	FindRandomDestination(bot);
 
 	if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathcost))

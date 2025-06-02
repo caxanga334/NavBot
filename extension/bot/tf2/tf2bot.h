@@ -205,9 +205,6 @@ private:
 	float* m_cloakMeter;
 	bool m_doMvMUpgrade;
 
-	static constexpr float medic_patient_health_critical_level() { return 0.3f; }
-	static constexpr float medic_patient_health_low_level() { return 0.6f; }
-
 	void SelectNewClass();
 };
 
@@ -218,6 +215,7 @@ public:
 
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
+	void SetRouteType(RouteType type) override { m_routetype = type; }
 private:
 	CTF2Bot* m_me;
 	RouteType m_routetype;

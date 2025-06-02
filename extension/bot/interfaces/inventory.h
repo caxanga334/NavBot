@@ -74,6 +74,13 @@ public:
 	CBaseEntity* GetWeaponEntity(const char* classname);
 
 	/**
+	 * @brief Given a weapon entity, returns a bot weapon interface pointer.
+	 * @param weapon Weapon entity.
+	 * @return Bot weapon interface pointer.
+	 */
+	const CBotWeapon* GetWeaponOfEntity(CBaseEntity* weapon);
+
+	/**
 	 * @brief Registers the given weapon to the bot inventory.
 	 * @param weapon Weapon entity.
 	 */

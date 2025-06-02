@@ -47,7 +47,7 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 		return Continue();
 	}
 
-	if (weapon->IsAmmoLow(bot, false))
+	if (weapon->IsAmmoLow(bot))
 	{
 		CBaseEntity* source = nullptr;
 

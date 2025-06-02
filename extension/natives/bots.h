@@ -11,6 +11,7 @@ namespace natives::bots
 	cell_t AddNavBotMM(IPluginContext* context, const cell_t* params);
 	cell_t AttachNavBot(IPluginContext* context, const cell_t* params);
 	cell_t IsPluginBot(IPluginContext* context, const cell_t* params);
+	cell_t SetSkillLevel(IPluginContext* context, const cell_t* params);
 	cell_t GetNavBotByIndex(IPluginContext* context, const cell_t* params);
 	cell_t SetRunPlayerCommands(IPluginContext* context, const cell_t* params);
 }
