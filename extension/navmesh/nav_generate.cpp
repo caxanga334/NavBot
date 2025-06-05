@@ -354,7 +354,7 @@ void CNavMesh::CreateUseableLadder(CBaseEntity* pLadder)
 //--------------------------------------------------------------------------------------------------------------
 void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 {
-	const float nearLadderRange = 75.0f;		// 50
+	constexpr float nearLadderRange = 75.0f;		// 50
 
 	//
 	// Find naviagtion area at bottom of ladder
@@ -364,7 +364,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	Vector center = m_bottom + Vector( 0, 0, navgenparams->generation_step_size );
 	AddDirectionVector( &center, m_dir, navgenparams->half_human_width );
 
-	CNavArea* bottomArea = TheNavMesh->GetNearestNavArea( center, true );
+	CNavArea* bottomArea = TheNavMesh->GetNearestNavArea(center, 200.0f);
 	if (!bottomArea)
 	{
 		DevMsg( "ERROR: Unconnected ladder bottom at ( %g, %g, %g )\n", m_bottom.x, m_bottom.y, m_bottom.z );
@@ -373,6 +373,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	{
 		// store reference to ladder in the area
 		bottomArea->AddLadderUp( this );
+		ConnectTo(bottomArea);
 	}
 
 	//
@@ -419,7 +420,7 @@ void CNavLadder::ConnectGeneratedLadder( float maxHeightAboveTopArea )
 	if (topLeftArea)
 	{
 		topLeftArea->AddLadderDown(this);
-		ConnectTo(topBehindArea);
+		ConnectTo(topLeftArea);
 	}
 
 	if (topRightArea)

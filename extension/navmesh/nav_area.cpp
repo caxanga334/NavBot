@@ -856,19 +856,11 @@ public:
 
 	bool operator()( CNavLadder *ladder )
 	{
-		bool found = false;
-
-		for (auto& connect : ladder->GetConnections())
+		if (ladder->IsConnected(m_originalArea))
 		{
-			if (connect.GetConnectedArea() == m_originalArea)
-			{
-				found = true;
-				break;
-			}
+			ladder->Disconnect(m_originalArea);
+			ladder->ConnectTo(m_replacementArea);
 		}
-
-		ladder->Disconnect(m_originalArea);
-		ladder->ConnectTo(m_replacementArea);
 
 		return true;
 	}

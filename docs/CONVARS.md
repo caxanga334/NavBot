@@ -45,14 +45,16 @@ Values for `sm_navbot_tf_force_gamemode`.
 * 6: Payload
 * 7: Payload Race
 * 8: Player Destruction
-* 9: Special Delivery
-* 10: Territorial Control
-* 11: Arena
-* 12: Versus Saxton Hale
-* 13: Zombie Infection
-* 14: Gun Game
-* 15: Deathmatch
-* 16: Slender Fortress
+* 9: Robot Destruction
+* 10: Special Delivery
+* 11: Territorial Control
+* 12: Arena
+* 13: Passtime
+* 14: Versus Saxton Hale
+* 15: Zombie Infection
+* 16: Gun Game
+* 17: Deathmatch
+* 18: Slender Fortress
 
 ### Notes For TF2 Game Modes
 
