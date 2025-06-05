@@ -210,6 +210,8 @@ enum class OffMeshConnectionType : std::uint32_t
 	OFFMESH_JUMP_OVER_GAP, // Jump over gap
 	OFFMESH_CLIMB_UP, // Climb/Jump
 	OFFMESH_DROP_DOWN, // Drop from ledge
+	OFFMESH_GRAPPLING_HOOK, // Grappling hook
+	OFFMESH_CATAPULT, // Catapult/push
 
 	MAX_OFFMESH_CONNECTION_TYPES // max known link types
 };

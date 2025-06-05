@@ -311,6 +311,19 @@ public:
 	void DoCounterStrafe(const float time = 0.1f) { m_counterStrafeTimer.Start(time); }
 	// Is the bot counter-strafing?
 	bool IsCounterStrafing() const { return m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed(); }
+	/**
+	 * @brief Instructs the bot to use a catapult.
+	 * 
+	 * Catapult is any entity that will push the bot towards a specific position.
+	 * 
+	 * Examples: trigger_push, trigger_catapult
+	 * @param start The starting position (where the trigger is).
+	 * @param landing The landing position.
+	 * @return True if the bot is able to perform this movement.
+	 */
+	virtual bool UseCatapult(const Vector& start, const Vector& landing);
+	// returns true if the bot is using a catapult
+	bool IsUsingACatapult() const { return m_isUsingCatapult; }
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -324,11 +337,13 @@ protected:
 	CountdownTimer m_jumpCooldown;
 	CountdownTimer m_jumpTimer;
 	CountdownTimer m_doMidAirCJ; // do a mid air crouch jump (for double jumps)
+	Vector m_catapultStartPosition;
 	bool m_isJumping;
 	bool m_isJumpingAcrossGap;
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
 	bool m_isBreakingObstacle;
+	bool m_isUsingCatapult;
 	const CNavElevator* m_elevator;
 	const CNavElevator::ElevatorFloor* m_fromFloor;
 	const CNavElevator::ElevatorFloor* m_toFloor;
@@ -412,6 +427,10 @@ inline bool IMovement::IsControllingMovements()
 	else if (m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed())
 	{
 		return true; // counter strafing
+	}
+	else if (m_isUsingCatapult) // using catapult, block standard pathing
+	{
+		return true;
 	}
 
 	return false;

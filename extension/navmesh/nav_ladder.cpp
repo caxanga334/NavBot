@@ -408,15 +408,14 @@ void CNavLadder::OnRoundRestart( void )
 
 void CNavLadder::BuildUseableLadder(CBaseEntity* ladder)
 {
-	IServerEntity* svent = reinterpret_cast<IServerEntity*>(ladder);
+	const Vector& origin = UtilHelpers::getEntityOrigin(ladder);
 
 	m_ladderType = USEABLE_LADDER;
-	m_useableOrigin = svent->GetCollideable()->GetCollisionOrigin();
+	m_useableOrigin = origin;
 	m_ladderEntity = ladder;
 
 	entities::HBaseEntity ent{ ladder };
 
-	Vector origin = reinterpret_cast<IServerEntity*>(ladder)->GetCollideable()->GetCollisionOrigin();
 	Vector topPosition, bottomPosition;
 	Vector* top = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecPlayerMountPositionTop");
 	Vector* bottom = entprops->GetPointerToEntData<Vector>(ladder, Prop_Send, "m_vecPlayerMountPositionBottom");

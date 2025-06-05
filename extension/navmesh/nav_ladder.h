@@ -28,13 +28,15 @@ class IServerEntity;
 // Represents a connection from the ladder to exit areas
 struct LadderToAreaConnection
 {
-	LadderToAreaConnection()
+	LadderToAreaConnection() :
+		point(0.0f, 0.0f, 0.0f)
 	{
 		connect = 0U;
 		bottom = true;
 	}
 
-	LadderToAreaConnection(CNavArea* area)
+	LadderToAreaConnection(CNavArea* area) :
+		point(0.0f, 0.0f, 0.0f)
 	{
 		connect = area;
 		bottom = true;
@@ -76,7 +78,8 @@ struct LadderToAreaConnection
 class CNavLadder
 {
 public:
-	CNavLadder( void )
+	CNavLadder( void ) :
+		m_bottom(0.0f, 0.0f, 0.0f), m_top(0.0f, 0.0f, 0.0f), m_normal(0.0f, 0.0f, 0.0f), m_useableOrigin(0.0f, 0.0f, 0.0f)
 	{
 		m_connections.reserve(2); // ladders will generally have two connections
 		// set an ID for interactive editing - loads will overwrite this

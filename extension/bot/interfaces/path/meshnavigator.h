@@ -9,15 +9,15 @@ class CMeshNavigator : public CPath
 {
 public:
 	CMeshNavigator();
-	virtual ~CMeshNavigator();
+	~CMeshNavigator() override;
 
-	virtual void Invalidate() override;
-	virtual void OnPathChanged(CBaseBot* bot, AIPath::ResultType result) override;
+	void Invalidate() override;
+	void OnPathChanged(CBaseBot* bot, AIPath::ResultType result) override;
 
 	// Moves the bot along the path
 	virtual void Update(CBaseBot* bot);
 
-	virtual const CBasePathSegment* GetGoalSegment() const override { return m_goal; }
+	const CBasePathSegment* GetGoalSegment() const override { return m_goal; }
 
 	// Distance to consider the goal reached
 	inline virtual void SetGoalTolerance(const float tolerance) { m_goalTolerance = tolerance; }
@@ -25,6 +25,8 @@ public:
 	// Maximum distance to skip path segments and walk in a straight line (if not blocked). Allows smooth movement
 	inline virtual void SetSkipAheadDistance(const float distance) { m_skipAheadDistance = distance; }
 	inline virtual const float GetSkipAheadDistance() { return m_skipAheadDistance; }
+	// Updates the goal segment to the segment nearest to the bot.
+	virtual void AdvanceGoalToNearest();
 
 protected:
 	// true while the bot is using ladders
@@ -36,6 +38,7 @@ protected:
 	virtual edict_t* FindBlocker(CBaseBot* bot);
 	virtual void BreakIfNeeded(CBaseBot* bot);
 	virtual void SearchForUseableObstacles(CBaseBot* bot);
+	virtual bool OffMeshLinksUpdate(CBaseBot* bot);
 
 	bool IsAtGoal(CBaseBot* bot);
 	bool CheckProgress(CBaseBot* bot);

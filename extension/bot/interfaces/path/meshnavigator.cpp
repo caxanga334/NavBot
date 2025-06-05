@@ -125,6 +125,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	BreakIfNeeded(bot);
 	mover->AdjustSpeedForPath(this);
 
+	if (OffMeshLinksUpdate(bot))
+	{
+		return; // handling special off-mesh connection
+	}
+
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = m_goal->goal - origin;
 	auto input = bot->GetControlInterface();
@@ -286,7 +291,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	{
 		return true;
 	}
-	else if (m_goal->type == AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE)
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE)
 	{
 		auto landing = GetNextSegment(m_goal);
 
@@ -294,7 +299,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		{
 			return true; // goal reached or path is corrupt
 		}
-		else if (origin.z - landing->goal.z < mover->GetStepHeight())
+		if (origin.z - landing->goal.z < mover->GetStepHeight())
 		{
 			return true;
 		}
@@ -309,9 +314,17 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		{
 			return true; // goal reached or path is corrupt
 		}
-		else if (origin.z > m_goal->goal.z + mover->GetStepHeight())
+		if (origin.z > m_goal->goal.z + mover->GetStepHeight())
 		{
 			// bot can step to goal, reached
+			return true;
+		}
+	}
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_CATAPULT)
+	{
+		if (origin.z > m_goal->goal.z + mover->GetStepHeight())
+		{
+			// bot is above the catapult start
 			return true;
 		}
 	}
@@ -1039,7 +1052,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 	// don't avoid in precise navigation areas
 	CNavArea* area = bot->GetLastKnownNavArea();
-	if (area != nullptr && (area->GetAttributes() & NAV_MESH_PRECISE))
+	if (area != nullptr && (area->GetAttributes() & NAV_MESH_PRECISE) != 0)
 	{
 		return goalPos;
 	}
@@ -1169,7 +1182,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 			{
 				return adjustedGoal;
 			}
-			else if (rightAvoid > leftAvoid)
+			if (rightAvoid > leftAvoid)
 			{
 				avoidResult = -rightAvoid;
 			}
@@ -1326,6 +1339,85 @@ void CMeshNavigator::SearchForUseableObstacles(CBaseBot* bot)
 	}
 }
 
+bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::OffMeshLinksUpdate", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!m_goal)
+	{
+		return false;
+	}
+
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_CATAPULT)
+	{
+		const CBasePathSegment* next = GetNextSegment(m_goal);
+
+		if (next)
+		{
+			if (bot->GetMovementInterface()->UseCatapult(m_goal->goal, next->goal))
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+void CMeshNavigator::AdvanceGoalToNearest()
+{
+	if (!IsValid() || GetBot() == nullptr)
+	{
+		return;
+	}
+
+	CBaseBot* me = GetBot();
+
+	const CBasePathSegment* start = m_goal != nullptr ? m_goal : GetFirstSegment();
+
+	if (!start)
+	{
+		return;
+	}
+
+	const CBasePathSegment* nearest = nullptr;
+	float best_distance = me->GetRangeTo(start->goal);
+
+	const CBasePathSegment* next = GetNextSegment(start);
+
+	while (next != nullptr)
+	{
+		float dist = me->GetRangeTo(next->goal);
+
+		if (dist < best_distance)
+		{
+			nearest = next;
+			best_distance = dist;
+			next = GetNextSegment(next);
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	if (nearest != nullptr && nearest != m_goal)
+	{
+		if (me->IsDebugging(BOTDEBUG_PATH))
+		{
+			me->DebugPrintToConsole(255, 215, 0, "%s PATH GOAL SEGMENT ADJUSTED FROM %g %g %g TO %g %g %g \n", me->GetDebugIdentifier(),
+				start->goal.x, start->goal.y, start->goal.z, nearest->goal.x, nearest->goal.y, nearest->goal.z);
+			Vector top = nearest->goal;
+			top.z += 32.0f;
+			NDebugOverlay::VertArrow(top, nearest->goal, 4.0f, 255, 215, 0, 255, true, 15.0f);
+		}
+
+		m_goal = nearest;
+	}
+}
+
 bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 {
 #ifdef EXT_VPROF_ENABLED
@@ -1459,31 +1551,29 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 			m_goal = GetNextSegment(m_goal);
 			return false;
 		}
+		
+		auto ladder = m_goal->ladder;
+		auto top = ladder->m_top;
+		auto bottom = ladder->m_bottom;
+		Vector mountPoint = top + (0.5f * mover->GetHullWidth() * ladder->GetNormal());
+		mountPoint.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
+		Vector2D to = (mountPoint - origin).AsVector2D();
+
+		input->AimAt(bottom + 50.0f * ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()), IPlayerController::LOOK_MOVEMENT, 0.25f);
+
+		float range = to.NormalizeInPlace();
+
+		// double mount range when going down, the movement interface handles this a lot better than us
+		if (range < (LADDER_MOUNT_RANGE * 2.0f) || mover->IsOnLadder())
+		{
+			mover->DescendLadder(ladder, m_goal->area);
+
+			// go to next goal since the movement interface will auto pilot the ladder
+			m_goal = GetNextSegment(m_goal);
+		}
 		else
 		{
-			auto ladder = m_goal->ladder;
-			auto top = ladder->m_top;
-			auto bottom = ladder->m_bottom;
-			Vector mountPoint = top + (0.5f * mover->GetHullWidth() * ladder->GetNormal());
-			mountPoint.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
-			Vector2D to = (mountPoint - origin).AsVector2D();
-
-			input->AimAt(bottom + 50.0f * ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()), IPlayerController::LOOK_MOVEMENT, 0.25f);
-
-			float range = to.NormalizeInPlace();
-
-			// double mount range when going down, the movement interface handles this a lot better than us
-			if (range < (LADDER_MOUNT_RANGE * 2.0f) || mover->IsOnLadder())
-			{
-				mover->DescendLadder(ladder, m_goal->area);
-
-				// go to next goal since the movement interface will auto pilot the ladder
-				m_goal = GetNextSegment(m_goal);
-			}
-			else
-			{
-				return false; // move towards the ladder top using normal pathing
-			}
+			return false; // move towards the ladder top using normal pathing
 		}
 	}
 

@@ -11,6 +11,7 @@
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <entities/baseentity.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include "movement.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -91,6 +92,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_isClimbingObstacle = false;
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
+	m_isUsingCatapult = false;
 	m_stuck.Reset();
 	m_motionVector = vec3_origin;
 	m_groundMotionVector = vec2_origin;
@@ -108,6 +110,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_obstacleBreakTimeout.Invalidate();
 	m_obstacleEntity = nullptr;
 	m_desiredspeed = 0.0f;
+	m_catapultStartPosition = vec3_origin;
 }
 
 IMovement::~IMovement()
@@ -129,6 +132,7 @@ void IMovement::Reset()
 	m_isClimbingObstacle = false;
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
+	m_isUsingCatapult = false;
 	m_stuck.Reset();
 	m_motionVector = vec3_origin;
 	m_groundMotionVector = vec2_origin;
@@ -146,6 +150,7 @@ void IMovement::Reset()
 	m_isBreakingObstacle = false;
 	m_obstacleBreakTimeout.Invalidate();
 	m_obstacleEntity = nullptr;
+	m_catapultStartPosition = vec3_origin;
 }
 
 void IMovement::Update()
@@ -191,6 +196,51 @@ void IMovement::Update()
 		{
 			me->DebugPrintToConsole(255, 255, 0, "%s MID AIR CROUCH JUMP! \n", me->GetDebugIdentifier());
 		}
+	}
+
+	if (m_isUsingCatapult)
+	{
+		if (!m_isAirborne)
+		{
+			if (!IsOnGround())
+			{
+				m_isAirborne = true;
+				return;
+			}
+
+			// move towards the start position
+			MoveTowards(m_catapultStartPosition, MOVEWEIGHT_CRITICAL);
+		}
+		else
+		{
+			if (IsOnGround())
+			{
+				// Landed, assume the destination was reached.
+				m_isUsingCatapult = false;
+
+				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					me->DebugPrintToConsole(135, 206, 250, "%s CATAPULT COMPLETE! DISTANCE FROM LANDING GOAL: %g \n", me->GetDebugIdentifier(), me->GetRangeTo(m_landingGoal));
+				}
+
+				// force an update
+				me->UpdateLastKnownNavArea(true);
+				CMeshNavigator* nav = me->GetActiveNavigator();
+
+				if (nav)
+				{
+					// Refresh the goal position so the bot doesn't try to walk back to the jump start
+					nav->AdvanceGoalToNearest();
+				}
+			}
+			else
+			{
+				// air strafe towards it
+				MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
+			}
+		}
+
+		return; // block everything below
 	}
 
 	// the code below should not run when the bot is using ladders
@@ -1246,6 +1296,22 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity)
 	}
 
 	return false;
+}
+
+bool IMovement::UseCatapult(const Vector& start, const Vector& landing)
+{
+	m_catapultStartPosition = start;
+	m_landingGoal = landing;
+	m_isUsingCatapult = true;
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		GetBot()->DebugPrintToConsole(255, 105, 180, "%s Use Catapult from %g %g %g to %g %g %g!\n", GetBot()->GetDebugIdentifier(),
+			start.x, start.y, start.z, landing.x, landing.y, landing.z);
+		debugoverlay->AddLineOverlay(start, landing, 255, 165, 0, true, 15.0f);
+	}
+
+	return true;
 }
 
 void IMovement::StuckMonitor()

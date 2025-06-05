@@ -994,6 +994,30 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		pathinsert.emplace(to, std::move(gapseg), false);
 		break;
 	}
+	case OffMeshConnectionType::OFFMESH_CATAPULT:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		auto seg1 = CreateNewSegment();
+
+		seg1->CopySegment(from);
+		seg1->goal = link->GetStart();
+		seg1->how = GO_OFF_MESH_CONNECTION;
+		seg1->type = AIPath::SEGMENT_CATAPULT;
+
+		auto seg2 = CreateNewSegment();
+		seg2->CopySegment(from);
+		seg2->area = to->area;
+		seg2->goal = link->GetEnd();
+		seg2->how = GO_OFF_MESH_CONNECTION;
+		seg2->type = AIPath::SEGMENT_GROUND;
+
+		pathinsert.emplace(from, std::move(seg1), true);
+		pathinsert.emplace(to, std::move(seg2), false);
+		break;
+	}
 	default:
 		Warning("CPath::ProcessOffMeshConnectionsInPath unhandled link type!");
 		return false;
@@ -1132,6 +1156,11 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_ELEVATOR:
 	{
 		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 0, 255, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_CATAPULT:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 2, 71, 254, 255, true, duration);
 		break;
 	}
 	default:
