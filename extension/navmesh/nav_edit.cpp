@@ -28,6 +28,7 @@
 #include "nav_node.h"
 #include "nav_colors.h"
 #include <util/helpers.h>
+#include <util/entprops.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
@@ -3792,6 +3793,46 @@ void CNavMesh::CommandNavDisconnectOffMeshLink(uint32_t linktype)
 	ClearSelectedSet();
 }
 
+CON_COMMAND_F(sm_nav_offmesh_purge, "Removes all off-mesh connections from an area.", FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavPurgeAllOffmeshLinks();
+}
+
+void CNavMesh::CommandNavPurgeAllOffmeshLinks()
+{
+	if (m_markedArea)
+	{
+		m_markedArea->DisconnectAllOffMeshConnections();
+		Msg("Removed all off-mesh connections from area #%i \n", m_markedArea->GetID());
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		return;
+	}
+
+	if (!IsSelectedSetEmpty())
+	{
+		FOR_EACH_VEC(m_selectedSet, it)
+		{
+			CNavArea* area = m_selectedSet[it];
+			area->DisconnectAllOffMeshConnections();
+		}
+
+		ClearSelectedSet();
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		return;
+	}
+
+	if (FindActiveNavArea() && m_selectedArea != nullptr)
+	{
+		m_selectedArea->DisconnectAllOffMeshConnections();
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+		Msg("Removed all off-mesh connections from area #%i \n", m_selectedArea->GetID());
+		return;
+	}
+
+	PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+	Msg("No nav area! \n");
+}
+
 CON_COMMAND_F(sm_nav_offmesh_set_origin, "Set the connection origin for creating new nav special links", FCVAR_CHEAT)
 {
 	TheNavMesh->CommandNavSetLinkOrigin();
@@ -4860,6 +4901,11 @@ void CNavMesh::CommandNavDisconnectDropDownAreas(const float minDrop)
 			if (other->IsConnected(area, NUM_DIRECTIONS))
 			{
 				other->Disconnect(area);
+
+				if (area->IsConnected(other, NUM_DIRECTIONS))
+				{
+					area->Disconnect(other);
+				}
 			}
 
 			count++;
@@ -4895,4 +4941,74 @@ CON_COMMAND_F(sm_nav_disconnect_dropdown_areas, "Disconnect drop down areas with
 	}
 
 	TheNavMesh->CommandNavDisconnectDropDownAreas(limit);
+}
+
+CON_COMMAND_F(sm_nav_auto_create_teleports, "Automatically creates off-mesh connections for every trigger_teleport entity.", FCVAR_CHEAT)
+{
+	int created = 0;
+
+	auto func = [&created](int index, edict_t* edict, CBaseEntity* entity) -> bool {
+		if (entity)
+		{
+			Vector center = UtilHelpers::getWorldSpaceCenter(entity);
+			Vector ground = trace::getground(center);
+			CNavArea* startArea = TheNavMesh->GetNearestNavArea(ground, 200.0f, true, true);
+
+			if (!startArea)
+			{
+				META_CONPRINTF("Skipping entity #%i at %g %g %g : NULL nearest nav area (start)! \n", index, ground.x, ground.y, ground.z);
+				return true;
+			}
+
+			char targetname[256];
+			std::size_t length = 0U;
+
+			if (!entprops->GetEntPropString(index, Prop_Data, "m_target", targetname, sizeof(targetname), length) || length < 1)
+			{
+				META_CONPRINTF("Skipping entity #%i : No targetname set! \n", index);
+				return true;
+			}
+
+			int iTarget = UtilHelpers::FindEntityByTargetname(INVALID_EHANDLE_INDEX, targetname);
+
+			if (iTarget == INVALID_EHANDLE_INDEX)
+			{
+				META_CONPRINTF("Skipping entity #%i : NULL m_target ent! (%s)\n", index, targetname);
+				return true;
+			}
+
+			CBaseEntity* pentTarget = gamehelpers->ReferenceToEntity(iTarget);
+
+			if (!pentTarget)
+			{
+				return true; // SM failed to get a CBaseEntity pointer
+			}
+
+			Vector destination = UtilHelpers::getWorldSpaceCenter(pentTarget);
+			destination = trace::getground(destination);
+			CNavArea* endArea = TheNavMesh->GetNearestNavArea(destination, 200.0f, true, true);
+
+			if (!endArea)
+			{
+				META_CONPRINTF("Skipping entity #%i at %g %g %g : NULL nearest nav area (end)! \n", index, destination.x, destination.y, destination.z);
+				return true;
+			}
+
+			if (startArea->IsConnectedToBySpecialLink(endArea))
+			{
+				return true; // already has link
+			}
+
+			startArea->ConnectTo(endArea, OffMeshConnectionType::OFFMESH_TELEPORTER, ground, destination);
+			created++;
+		}
+
+		return true;
+		};
+
+	UtilHelpers::ForEachEntityOfClassname("trigger_teleport", func);
+	META_CONPRINTF("Created %i teleporter connections. \n", created);
+	TheNavMesh->ClearSelectedSet();
+	TheNavMesh->SetMarkedArea(nullptr);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
 }

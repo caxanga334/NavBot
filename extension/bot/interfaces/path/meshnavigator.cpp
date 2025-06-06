@@ -1384,6 +1384,8 @@ void CMeshNavigator::AdvanceGoalToNearest()
 
 	const CBasePathSegment* nearest = nullptr;
 	float best_distance = me->GetRangeTo(start->goal);
+	unsigned char max_i = 0U;
+	constexpr unsigned char MAX_SEARCH_ITERATIONS = 15U;
 
 	const CBasePathSegment* next = GetNextSegment(start);
 
@@ -1399,6 +1401,13 @@ void CMeshNavigator::AdvanceGoalToNearest()
 		}
 		else
 		{
+			if (max_i < MAX_SEARCH_ITERATIONS)
+			{
+				next = GetNextSegment(next);
+				max_i++;
+				continue;
+			}
+
 			break;
 		}
 	}

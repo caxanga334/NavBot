@@ -579,6 +579,7 @@ public:
 	void CommandNavSeedWalkableSpots(void);
 	void CommandNavConnectViaOffMeshLink(uint32_t linktype);
 	void CommandNavDisconnectOffMeshLink(uint32_t linktype);
+	void CommandNavPurgeAllOffmeshLinks();								// Remove all offmesh connections from the marked area.
 	void CommandNavSetLinkOrigin();
 	void CommandNavWarpToLinkOrigin() const;
 	void CommandNavTestForBlocked() const;

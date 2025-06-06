@@ -351,6 +351,9 @@ public:
 
 	bool ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const Vector& origin, const Vector& end); // connect via off mesh connection
 	void Disconnect(CNavArea* area, OffMeshConnectionType linktype); // remove off mesh connection
+	// Purges all off-mesh connections
+	void DisconnectAllOffMeshConnections() { m_offmeshconnections.clear(); }
+
 
 	unsigned int GetID( void ) const	{ return m_id; }		// return this area's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							// re-orders area ID's so they are continuous

@@ -1,4 +1,5 @@
 #include "extension.h"
+#include "manager.h"
 #include <PlayerState.h>
 #include "navmesh/nav_mesh.h"
 #include "navmesh/nav_area.h"
@@ -441,6 +442,85 @@ int CBaseExtPlayer::GetWaterLevel() const
 bool CBaseExtPlayer::IsUnderWater() const
 {
 	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(WaterLevel::WL_Eyes);
+}
+
+bool CBaseExtPlayer::IsMovingTowards(const Vector& position, const float tolerance, float* distance) const
+{
+	Vector toDir = position - GetAbsOrigin();
+	float range = toDir.NormalizeInPlace();
+
+	if (distance)
+	{
+		*distance = range;
+	}
+
+	Vector velocity = GetAbsVelocity();
+	velocity.NormalizeInPlace();
+	
+	if (DotProduct(toDir, velocity) >= tolerance)
+	{
+		return true;
+	}
+
+	return false;
+}
+
+Vector CBaseExtPlayer::CalculateLaunchVector(const Vector& landing, const float speed) const
+{
+	/*
+	* Modified from the TF2's SDK.
+	* https://github.com/ValveSoftware/source-sdk-2013/blob/39f6dde8fbc238727c020d13b05ecadd31bda4c0/src/game/shared/tf/trigger_catapult_shared.cpp#L34-L64
+	*/
+
+	// Find where we're going
+	Vector vecSourcePos = GetAbsOrigin();
+	Vector vecTargetPos = landing;
+
+	// adjust target position so player's center will hit the target
+	vecTargetPos.z -= 32.0f;
+
+	const float flGravity = CExtManager::GetSvGravityValue();
+
+	Vector vecVelocity = (vecTargetPos - vecSourcePos);
+
+	// throw at a constant time
+	float time = vecVelocity.Length() / speed;
+	vecVelocity = vecVelocity * (1.f / time);
+
+	// adjust upward toss to compensate for gravity loss
+	vecVelocity.z += flGravity * time * 0.5f;
+
+	return vecVelocity;
+}
+
+bool CBaseExtPlayer::IsTouching(const char* classname) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::IsTouching( classname )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	// todo: implement caching for multiple calls on the same server tick
+
+	const ICollideable* collider = GetCollideable();
+	Vector mins = collider->OBBMins() + collider->GetCollisionOrigin();
+	Vector maxs = collider->OBBMaxs() + collider->GetCollisionOrigin();
+	bool result = false;
+	UtilHelpers::CEntityEnumerator enumerator;
+	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
+	auto func = [&result, &classname](CBaseEntity* entity) -> bool {
+
+		if (UtilHelpers::FClassnameIs(entity, classname))
+		{
+			result = true;
+			return false; // stop looping
+		}
+
+		return true;
+	};
+
+	enumerator.ForEach(func);
+
+	return result;
 }
 
 #ifdef EXT_DEBUG

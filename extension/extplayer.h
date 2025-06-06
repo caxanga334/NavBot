@@ -10,6 +10,7 @@ class CTakeDamageInfo;
 #include <eiface.h>
 #include <iplayerinfo.h>
 #include <const.h>
+#include <sdkports/sdk_ehandle.h>
 
 // Base player class, all code shared by players and bots goes here
 class CBaseExtPlayer
@@ -146,7 +147,23 @@ public:
 	int GetWaterLevel() const;
 	// is the player underwater?
 	bool IsUnderWater() const;
-
+	/**
+	 * @brief Checks if the player is moving towards the given position by comparing their velocity.
+	 * @param position 
+	 * @param tolerance Dot product result tolerance to consider true (between -1.0 and 1.0). 0.0 means 180 degrees.
+	 * @param distance Optional float to store the distance between the player and the given position.
+	 * @return true if the player is moving towars the given position within the given tolerance. false otherwise.
+	 */
+	bool IsMovingTowards(const Vector& position, const float tolerance = 0.5f, float* distance = nullptr) const;
+	/**
+	 * @brief Calculates a velocity to launch the player towards the given landing position.
+	 * @param landing Landing position.
+	 * @param speed Speed to launch the player.
+	 * @return Velocity that should be set on the player to land on the target.
+	 */
+	Vector CalculateLaunchVector(const Vector& landing, const float speed) const;
+	// returns true if the player is touching an entity of the given classnamew
+	bool IsTouching(const char* classname) const;
 protected:
 
 private:

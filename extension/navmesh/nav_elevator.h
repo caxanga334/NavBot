@@ -61,7 +61,8 @@ public:
 	class ElevatorFloor
 	{
 	public:
-		ElevatorFloor()
+		ElevatorFloor() :
+			floor_position(0.0f, 0.0f, 0.0f), wait_position(0.0f, 0.0f, 0.0f)
 		{
 			floor_area = static_cast<unsigned int>(0U);
 			is_here = false;
@@ -69,7 +70,8 @@ public:
 			toggle_state = -1;
 		}
 
-		ElevatorFloor(CNavArea* area)
+		ElevatorFloor(CNavArea* area) :
+			floor_position(0.0f, 0.0f, 0.0f), wait_position(0.0f, 0.0f, 0.0f)
 		{
 			floor_area = area;
 			is_here = false;

@@ -709,9 +709,11 @@ bool CNavArea::ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const V
 		return false;
 	}
 
-	if (!Contains(start))
+	const float range = (GetCenter() - start).Length();
+
+	if (range >= 512.0f)
 	{
-		Warning("Connect Area via off-mesh connection: Off-mesh connection start point is outside nav area boundaries! \n");
+		Warning("Distance between start area center and start position is %g! Is this correct? \n", range);
 	}
 
 	pos.x = start.x;

@@ -319,6 +319,7 @@ public:
 	 * Examples: trigger_push, trigger_catapult
 	 * @param start The starting position (where the trigger is).
 	 * @param landing The landing position.
+	 * @param cheatVelocity If true, manually set the bot velocity.
 	 * @return True if the bot is able to perform this movement.
 	 */
 	virtual bool UseCatapult(const Vector& start, const Vector& landing);
@@ -344,6 +345,7 @@ protected:
 	bool m_isAirborne;
 	bool m_isBreakingObstacle;
 	bool m_isUsingCatapult;
+	CountdownTimer m_catapultCorrectVelocityTimer;
 	const CNavElevator* m_elevator;
 	const CNavElevator::ElevatorFloor* m_fromFloor;
 	const CNavElevator::ElevatorFloor* m_toFloor;

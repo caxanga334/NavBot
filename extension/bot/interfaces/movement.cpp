@@ -29,6 +29,7 @@ static ConVar cvar_dev_jump_hold_time("sm_navbot_dev_jump_hold_time", "1.0", FCV
 static ConVar sm_navbot_movement_climb_dj_time("sm_navbot_movement_climb_dj_time", "0.3", FCVAR_GAMEDLL, "Delay to perform the double jump whem climbing.");
 static ConVar sm_navbot_movement_gap_dj_time("sm_navbot_movement_gap_dj_time", "0.6", FCVAR_GAMEDLL, "Delay to perform the double jump whem jumping over a gap.");
 static ConVar sm_navbot_movement_jump_cooldown("sm_navbot_movement_jump_cooldown", "0.1", FCVAR_GAMEDLL, "Cooldown between jumps.");
+static ConVar sm_navbot_movement_catapult_speed("sm_navbot_movement_catapult_speed", "550.0", FCVAR_GAMEDLL, "Speed to use in catapult velocity correction.");
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
 	trace::CTraceFilterSimple(bot->GetEntity(), COLLISION_GROUP_NONE)
@@ -133,6 +134,7 @@ void IMovement::Reset()
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
 	m_isUsingCatapult = false;
+	m_catapultCorrectVelocityTimer.Invalidate();
 	m_stuck.Reset();
 	m_motionVector = vec3_origin;
 	m_groundMotionVector = vec2_origin;
@@ -202,9 +204,23 @@ void IMovement::Update()
 	{
 		if (!m_isAirborne)
 		{
+			if (me->IsTouching("trigger_push"))
+			{
+				m_catapultCorrectVelocityTimer.Start(0.75f);
+			}
+
 			if (!IsOnGround())
 			{
 				m_isAirborne = true;
+
+				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					me->DebugPrintToConsole(135, 206, 250, "%s CATAPULT AIRBORNE! \n", me->GetDebugIdentifier());
+					const ICollideable* collider = me->GetCollideable();
+					debugoverlay->AddBoxOverlay(collider->GetCollisionOrigin(), collider->OBBMins(), collider->OBBMaxs(), collider->GetCollisionAngles(), 135, 206, 250, 180, 15.0f);
+					debugoverlay->AddLineOverlay(collider->GetCollisionOrigin(), m_landingGoal, 135, 206, 250, true, 15.0f);
+				}
+
 				return;
 			}
 
@@ -217,6 +233,7 @@ void IMovement::Update()
 			{
 				// Landed, assume the destination was reached.
 				m_isUsingCatapult = false;
+				m_isAirborne = false;
 
 				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 				{
@@ -235,8 +252,16 @@ void IMovement::Update()
 			}
 			else
 			{
+				if (m_catapultCorrectVelocityTimer.HasStarted() && m_catapultCorrectVelocityTimer.IsElapsed())
+				{
+					m_catapultCorrectVelocityTimer.Invalidate();
+					Vector velocity = me->CalculateLaunchVector(m_landingGoal, sm_navbot_movement_catapult_speed.GetFloat());
+					me->SetAbsVelocity(velocity);
+				}
+
 				// air strafe towards it
 				MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
+				me->GetControlInterface()->AimAt(m_landingGoal, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at catapult landing position!");
 			}
 		}
 
@@ -1024,7 +1049,7 @@ bool IMovement::IsOnGround()
 	// return GetBot()->GetGroundEntity() != nullptr;
 	int flags = 0;
 	entprops->GetEntProp(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_fFlags", flags);
-	return (flags & FL_ONGROUND);
+	return (flags & FL_ONGROUND) != 0;
 }
 
 /**
@@ -1290,7 +1315,7 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity)
 
 		return false;
 	}
-	else if (std::strcmp(classname, "prop_door_rotating") == 0)
+	if (std::strcmp(classname, "prop_door_rotating") == 0)
 	{
 		return true;
 	}
@@ -1303,10 +1328,14 @@ bool IMovement::UseCatapult(const Vector& start, const Vector& landing)
 	m_catapultStartPosition = start;
 	m_landingGoal = landing;
 	m_isUsingCatapult = true;
+	m_catapultCorrectVelocityTimer.Invalidate();
+	Vector lookat = start;
+	lookat.z += navgenparams->human_eye_height;
+	GetBot<CBaseBot>()->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_MOVEMENT, 0.25f, "Looking at catapult!");
 
 	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
-		GetBot()->DebugPrintToConsole(255, 105, 180, "%s Use Catapult from %g %g %g to %g %g %g!\n", GetBot()->GetDebugIdentifier(),
+		GetBot()->DebugPrintToConsole(255, 105, 180, "%s USE CATAPULT FROM %g %g %g TO %g %g %g!\n", GetBot()->GetDebugIdentifier(),
 			start.x, start.y, start.z, landing.x, landing.y, landing.z);
 		debugoverlay->AddLineOverlay(start, landing, 255, 165, 0, true, 15.0f);
 	}
@@ -2014,7 +2043,7 @@ IMovement::ElevatorState IMovement::EState_CallElevator()
 	{
 		return ElevatorState::NOT_USING_ELEVATOR;
 	}
-	else
+
 	{
 		Vector pos = UtilHelpers::getWorldSpaceCenter(callbutton);
 		MoveTowards(pos, MOVEWEIGHT_CRITICAL);
