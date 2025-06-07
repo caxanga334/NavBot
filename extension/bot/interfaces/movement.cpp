@@ -204,6 +204,8 @@ void IMovement::Update()
 	{
 		if (!m_isAirborne)
 		{
+			// These require a precise aligment and movement (depends on the map).
+			// To make things easier for bots and for nav mesh editing, we cheat a bit by correcting the bot's velocity mid flight.
 			if (me->IsTouching("trigger_push"))
 			{
 				m_catapultCorrectVelocityTimer.Start(0.75f);

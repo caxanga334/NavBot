@@ -186,10 +186,10 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	{
 		float v = atof(value);
 
-		if (v < 180.0f)
+		if (v < 30.0f)
 		{
-			v = 500.0f;
-			smutils->LogError(myself, "Aim speed cannot be less than 180 degrees per second! %s <%s> at line %i col %i", key, value, states->line, states->col);
+			v = 31.0f;
+			smutils->LogError(myself, "Aim speed cannot be less than 30 degrees per second! %s <%s> at line %i col %i", key, value, states->line, states->col);
 		}
 
 		m_current->SetAimSpeed(v);
