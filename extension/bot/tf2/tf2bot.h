@@ -178,6 +178,7 @@ public:
 	// Makes the bot run the upgrade logic on the next Update call
 	void DoMvMUpgrade() { m_doMvMUpgrade = true; }
 	void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true) override;
+	bool HandleWeapon(const CBotWeapon* weapon) override;
 	void SendVoiceCommand(TeamFortress2::VoiceCommandsID id);
 	/**
 	 * @brief Gets the time left to capture the point before we lose the game.

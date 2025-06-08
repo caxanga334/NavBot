@@ -17,3 +17,8 @@ This will show debug information about the entity you're aiming at. You can also
 You can disconnect multiple drop down areas with the `sm_nav_disconnect_dropdown_areas <drop down height limit>` command.
 
 Add the areas you want to disconnect to the selected set, then run the command. Any nav areas with a height difference between them larger than the given limit will be disconnected.
+
+# Adjust Area Corner To Player's Z
+
+The command `sm_nav_corner_place_at_feet (adjust nearby)` can be used to adjust the vertical position of the currently select area corner.    
+The command has one optional boolean parameter that determines if the vertical position of nearby areas should also be adjusted.

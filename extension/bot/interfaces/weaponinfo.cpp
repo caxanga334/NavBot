@@ -281,9 +281,17 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetSlot(atoi(value));
 	}
-	else if (strncmp(key, "semiauto", 8) == 0)
+	else if (strncmp(key, "attack_interval", 15) == 0)
 	{
-		m_current->SetIsSemiAuto(UtilHelpers::StringToBoolean(value));
+		float v = atof(value);
+		
+		if (v <= 0.0f)
+		{
+			v = -1.0f;
+		}
+
+		m_current->SetAttackInterval(v);
+
 	}
 	else if (strncmp(key, "attack_range_override", 21) == 0)
 	{
@@ -367,6 +375,17 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			{
 				m_current->GetAttackInfoForEditing(type)->SetExplosive(false);
 			}
+		}
+		else if (strncmp(key, "hold_button_time", 16) == 0)
+		{
+			float v = atof(value);
+
+			if (v <= 0.0f)
+			{
+				v = -1.0f;
+			}
+
+			m_current->GetAttackInfoForEditing(type)->SetHoldButtonTime(v);
 		}
 		else
 		{

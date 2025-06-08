@@ -26,7 +26,7 @@ This is a list of keys available for all mods.
 |low_primary_ammo_threshold|Threshold to consider the bot to be low on ammo for the primary ammo type.|integer|
 |low_secondary_ammo_threshold|Threshold to consider the bot to be low on ammo for the secondary ammo type.|integer|
 |slot|Which slot this weapon uses.|integer|
-|semiauto|Is the weapon semi automatic (requires the attack button to be released to fire again).|boolean|
+|attack_interval|Delay in seconds between attacks. The bot releases the attack buttons between intervals. Negative values to make the bot hold the attack button.|float|
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
 
@@ -42,6 +42,7 @@ The following keys applies to attack info sections (`primary_attack_info`, `seco
 |ballistic_elevation_max|Elevation value to use for gravity compensation when aiming at the maximum range.|float|
 |ballistic_elevation_range_start|Range to apply the minimum elevation value.|float|
 |ballistic_elevation_range_end|Range to apply the maximum elevation value.|float|
+|hold_button_time|How long to keep pressing the attack button in seconds. Negative values for a single tap.|float|
 |melee|Is melee attack?|boolean|
 |explosive|Is explosive attack?|boolean|
 

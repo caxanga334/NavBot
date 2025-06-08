@@ -112,6 +112,8 @@ void CTF2Bot::Spawn()
 void CTF2Bot::FirstSpawn()
 {
 	CBaseBot::FirstSpawn();
+
+	engine->SetFakeClientConVarValue(GetEdict(), "cl_autoreload", "1");
 }
 
 int CTF2Bot::GetMaxHealth() const
@@ -399,73 +401,23 @@ void CTF2Bot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	if (tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
 
-	if (!IsAlive())
-		return;
+	CBaseBot::FireWeaponAtEnemy(enemy, doAim);
+}
 
-	if (GetMovementInterface()->NeedsWeaponControl())
-		return;
+bool CTF2Bot::HandleWeapon(const CBotWeapon* weapon)
+{
+	const CTF2BotWeapon* tfweapon = static_cast<const CTF2BotWeapon*>(weapon);
 
-	if (!enemy->IsValid())
-		return;
-
-	const CBotWeapon* weapon = GetInventoryInterface()->GetActiveBotWeapon();
-
-	if (!weapon || !weapon->IsValid())
-		return;
-
-	if (GetBehaviorInterface()->ShouldAttack(this, enemy) == ANSWER_NO)
-		return;
-
-	if (doAim && !GetControlInterface()->IsAimOnTarget())
-		return;
-
-	if (GetMyClassType() == TeamFortress2::TFClassType::TFClass_Heavy && GetAmmoOfIndex(TeamFortress2::TF_AMMO_PRIMARY) >= 50 &&
-		GetBehaviorInterface()->ShouldHurry(this) != ANSWER_YES)
-	{
-		constexpr auto THREAT_SPIN_TIME = 3.0f;
-		if (GetSensorInterface()->GetTimeSinceVisibleThreat() <= THREAT_SPIN_TIME)
-		{
-			GetControlInterface()->PressSecondaryAttackButton(0.25f); // spin the minigun
-		}
-	}
-
-	const float range = GetRangeTo(enemy->GetEdict());
-	bool primary = true; // primary attack by default
-
-	if (CanFireWeapon(weapon, range, true, primary) && HandleWeapon(weapon))
-	{
-		if (!AimWeaponAtEnemy(enemy, weapon, doAim, range, primary))
-			return;
-
-		if (doAim && !GetControlInterface()->IsAimOnTarget())
-			return;
-
-		SetJustFiredMyWeapon(true);
-
-		if (primary)
-		{
-			GetControlInterface()->PressAttackButton();
-		}
-		else
-		{
-			GetControlInterface()->PressSecondaryAttackButton();
-		}
-	}
-	else
-	{
-		ReloadIfNeeded(weapon);
-	}
-
-	auto tfweapon = GetInventoryInterface()->GetActiveTFWeapon();
-
-	// for weapons like the huntsman, release the fire button when the charge hits maximum.
-	if (tfweapon && tfweapon->GetTF2Info()->CanCharge())
+	if (tfweapon->GetTF2Info()->CanCharge())
 	{
 		if (tfweapon->GetChargePercentage() >= 0.99f)
 		{
 			GetControlInterface()->ReleaseAllAttackButtons();
+			return false; // block attack
 		}
 	}
+
+	return CBaseBot::HandleWeapon(weapon);
 }
 
 void CTF2Bot::SendVoiceCommand(TeamFortress2::VoiceCommandsID id)
@@ -501,6 +453,7 @@ void CTF2Bot::SendVoiceCommand(TeamFortress2::VoiceCommandsID id)
 
 	ke::SafeSprintf(cmd.get(), size, "voicemenu %i %i", x, y);
 	DelayedFakeClientCommand(cmd.get()); // DelayedFakeClientCommand copies the string
+	m_voicecmdtimer.Start();
 }
 
 float CTF2Bot::GetTimeLeftToCapture() const

@@ -26,7 +26,6 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_simulationtick = -1;
 	m_profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
 	m_isfirstspawn = false;
-	m_justfiredmyweapon = false;
 	m_nextupdatetime.Invalidate();
 	m_joingametime = 64;
 	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet.
@@ -511,7 +510,7 @@ void CBaseBot::Spawn()
 
 	m_spawnTime = gpGlobals->curtime;
 	m_homepos = GetAbsOrigin();
-	m_justfiredmyweapon = false;
+	m_lastfiredweapontimer.Invalidate();
 	Reset();
 }
 
@@ -658,10 +657,16 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	if (doAim && !GetControlInterface()->IsAimOnTarget())
 		return;
 
+	if (!IsLastUsedWeapon(weapon))
+	{
+		OnLastUsedWeaponChanged(weapon);
+		SetLastUsedWeapon(weapon);
+	}
+
 	const float range = GetRangeTo(enemy->GetEdict());
 	bool primary = true; // primary attack by default
 
-	if (CanFireWeapon(weapon, range, true, primary) && HandleWeapon(weapon))
+	if (CanFireWeapon(weapon, range, true, primary))
 	{
 		if (!AimWeaponAtEnemy(enemy, weapon, doAim, range, primary))
 			return;
@@ -669,15 +674,24 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 		if (doAim && !GetControlInterface()->IsAimOnTarget())
 			return;
 
-		SetJustFiredMyWeapon(true);
+		if (!HandleWeapon(weapon))
+			return;
+
+		const IntervalTimer& timer = GetLastFiredWeaponTimer();
+
+		// check attack interval
+		if (timer.HasStarted() && timer.IsLessThen(weapon->GetWeaponInfo()->GetAttackInterval()))
+			return;
+
+		StartLastFiredWeaponTimer();
 
 		if (primary)
 		{
-			GetControlInterface()->PressAttackButton();
+			GetControlInterface()->PressAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
 		}
 		else
 		{
-			GetControlInterface()->PressSecondaryAttackButton();
+			GetControlInterface()->PressSecondaryAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetHoldButtonTime());
 		}
 	}
 	else
@@ -863,13 +877,6 @@ bool CBaseBot::HandleWeapon(const CBotWeapon* weapon)
 	// or a weapon that must be deployed to be used
 	// etc...
 
-	if (HasJustFiredMyWeapon() && weapon->GetWeaponInfo()->IsSemiAuto())
-	{
-		SetJustFiredMyWeapon(false);
-		GetControlInterface()->ReleaseAllAttackButtons();
-		return false;
-	}
-
 	return true;
 }
 
@@ -965,4 +972,10 @@ bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* wea
 	}
 
 	return true;
+}
+
+void CBaseBot::OnLastUsedWeaponChanged(const CBotWeapon* new_weapon)
+{
+	m_lastfiredweapontimer.Invalidate();
+	GetControlInterface()->ReleaseAllAttackButtons();
 }

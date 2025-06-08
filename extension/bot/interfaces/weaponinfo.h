@@ -25,6 +25,7 @@ public:
 		ballistic_elevation_range_end = -1.0f;
 		ballistic_elevation_min = -1.0f;
 		ballistic_elevation_max = -1.0f;
+		hold_time = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
@@ -39,6 +40,7 @@ public:
 		ballistic_elevation_range_end = -1.0f;
 		ballistic_elevation_min = -1.0f;
 		ballistic_elevation_max = -1.0f;
+		hold_time = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
@@ -64,6 +66,7 @@ public:
 	bool InRangeToSqr(const float dist) const { return dist >= (minrange * minrange) && dist <= (maxrange * maxrange); }
 	float GetTravelTimeForDistance(const float dist) const { return dist / projectilespeed; }
 	bool HasFunction() const { return maxrange > -9000.0f; }
+	float GetHoldButtonTime() const { return hold_time; }
 
 	void SetMaxRange(float v) { maxrange = v; }
 	void SetMinRange(float v) { minrange = v; }
@@ -75,6 +78,7 @@ public:
 	void SetBallisticElevationMax(float v) { ballistic_elevation_max = v; }
 	void SetMelee(bool v) { ismelee = v; }
 	void SetExplosive(bool v) { isexplosive = v; }
+	void SetHoldButtonTime(float v) { hold_time = v; }
 
 private:
 	float maxrange;
@@ -85,6 +89,7 @@ private:
 	float ballistic_elevation_range_end;
 	float ballistic_elevation_min;
 	float ballistic_elevation_max;
+	float hold_time;
 	bool ismelee;
 	bool isexplosive;
 };
@@ -113,7 +118,7 @@ public:
 		priority = 0;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
-		semiauto = false;
+		interval_between_attacks = -1.0f;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
 		maxclip2 = 0;
@@ -134,7 +139,7 @@ public:
 		priority = 0;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
-		semiauto = false;
+		interval_between_attacks = -1.0f;
 		headshot_range_mult = 1.0f;
 		headshot_aim_offset.Init(0.0f, 0.0f, 0.0f);
 		maxclip1 = 0;
@@ -207,7 +212,7 @@ public:
 	void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
 	void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	void SetSlot(int s) { slot = s; }
-	void SetIsSemiAuto(bool v) { semiauto = v; }
+	void SetAttackInterval(float v) { interval_between_attacks = v; }
 	void SetAttackRange(float v) { attack_move_range = v; }
 	void SetChanceToUseSecondaryAttack(int v) { use_secondary_chance = v; }
 
@@ -228,7 +233,7 @@ public:
 	int GetLowSecondaryAmmoThreshold() const { return secammolow; }
 	int GetSlot() const { return slot; }
 	bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
-	bool IsSemiAuto() const { return semiauto; }
+	float GetAttackInterval() const { return interval_between_attacks; }
 	bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
 	bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
 	// Returns true if the weapon secondary attack uses the primary ammo type.
@@ -248,7 +253,7 @@ protected:
 	int priority; // Priority for weapon selection
 	bool can_headshot;
 	bool infinite_reserve_ammo; // weapon has infinite reserve ammo (no need to collect ammo for it)
-	bool semiauto; // The weapon is semi auto (needs to release attack in order to fire again)
+	float interval_between_attacks; // delay between attacks
 	float headshot_range_mult;
 	int maxclip1; // Maximum ammo stored in clip1
 	int maxclip2; // Maximum ammo stored in clip2

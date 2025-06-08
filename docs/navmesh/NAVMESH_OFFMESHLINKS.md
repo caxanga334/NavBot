@@ -11,8 +11,10 @@ They allow two areas to be connected in ways that the standard connections doesn
 | sm_nav_offmesh_list_all | None | Lists all available link type. |
 | sm_nav_offmesh_connect | (Link type ID) | Creates a new nav link with the given type. |
 | sm_nav_offmesh_disconnect | (Link type ID) | Removes a nav link with the given type. |
+| sm_nav_offmesh_purge | None | Removes all off-mesh connections. |
 | sm_nav_offmesh_set_origin | None | Sets the starting point when creating new links. |
 | sm_nav_offmesh_warp_to_origin | None | Teleports you to the starting point used for new links. |
+| sm_nav_auto_create_teleports | None | Automatically creates off-mesh connection on trigger_teleport entities. |
 
 # Creating Links
 
@@ -41,3 +43,5 @@ Note: `sm_nav_offmesh_list_all` will always list all available link types.
 | Jump Over Gap | 5 | Bots can perform a jump over gap here. |
 | Climb Up | 6 | Bots can perform a climb/simple jump over here. |
 | Drop From Ledge | 7 | Bots can drop from a ledge here. |
+| Grappling Hook | 8 | Bots can use a grappling hook here. |
+| Catapult | 9 | Bots can get launched here. |

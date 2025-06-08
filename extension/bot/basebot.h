@@ -304,11 +304,20 @@ protected:
 	 */
 	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
 
-	inline void SetJustFiredMyWeapon(bool v = true) { m_justfiredmyweapon = v; }
-	bool HasJustFiredMyWeapon() const { return m_justfiredmyweapon; }
+	const IntervalTimer& GetLastFiredWeaponTimer() const { return m_lastfiredweapontimer; }
+	void StartLastFiredWeaponTimer() { m_lastfiredweapontimer.Start(); }
+	// returns true if the given weapon is the last used weapon by the bot.
+	bool IsLastUsedWeapon(const CBotWeapon* weapon) const { return m_lastusedweapon == weapon; }
+	void SetLastUsedWeapon(const CBotWeapon* weapon) { m_lastusedweapon = weapon; }
+	/**
+	 * @brief Called to nofity the weapon the bot is currently using to attack enemies has changed.
+	 * @param new_weapon Weapon the bot is currently using to attack enemies.
+	 */
+	virtual void OnLastUsedWeaponChanged(const CBotWeapon* new_weapon);
 
 private:
-	bool m_justfiredmyweapon;
+	const CBotWeapon* m_lastusedweapon; // last weapon used to attack an enemy
+	IntervalTimer m_lastfiredweapontimer;
 	float m_spawnTime;
 	int m_simulationtick;
 	CountdownTimer m_nextupdatetime;
