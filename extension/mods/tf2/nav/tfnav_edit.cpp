@@ -143,7 +143,48 @@ private:
 	CTFNavArea::MvMNavAttributes m_attribute;
 };
 
-CON_COMMAND_F(sm_tf_nav_toggle_path_attrib, "Toggles NavBot TF Path Attributes on the selected set", FCVAR_CHEAT)
+static int PathAttributes_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+{
+	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
+	{
+		return 0;
+	}
+
+	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
+	V_strncpy(cmd, partial, sizeof(cmd));
+
+	// skip to start of argument
+	char* partialArg = V_strrchr(cmd, ' ');
+	if (partialArg == NULL)
+	{
+		return 0;
+	}
+
+	// chop command from partial argument
+	*partialArg = '\000';
+	++partialArg;
+
+	int partialArgLength = V_strlen(partialArg);
+
+	int count = 0;
+
+	for (auto& pair : s_tfnavpathattribs)
+	{
+		if (count >= COMMAND_COMPLETION_MAXITEMS)
+		{
+			break;
+		}
+
+		if (V_strnicmp(pair.first.c_str(), partialArg, partialArgLength) == 0)
+		{
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.first.c_str());
+		}
+	}
+
+	return count;
+}
+
+CON_COMMAND_F_COMPLETION(sm_tf_nav_toggle_path_attrib, "Toggles NavBot TF Path Attributes on the selected set", FCVAR_CHEAT, PathAttributes_AutoComplete)
 {
 	if (args.ArgC() < 2)
 	{
@@ -215,7 +256,48 @@ CON_COMMAND_F(sm_tf_nav_toggle_attrib, "Toggles NavBot TF Attributes on the sele
 	TheNavMesh->ClearSelectedSet();
 }
 
-CON_COMMAND_F(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Attributes on the selected set", FCVAR_CHEAT)
+static int MvMAttributes_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+{
+	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
+	{
+		return 0;
+	}
+
+	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
+	V_strncpy(cmd, partial, sizeof(cmd));
+
+	// skip to start of argument
+	char* partialArg = V_strrchr(cmd, ' ');
+	if (partialArg == NULL)
+	{
+		return 0;
+	}
+
+	// chop command from partial argument
+	*partialArg = '\000';
+	++partialArg;
+
+	int partialArgLength = V_strlen(partialArg);
+
+	int count = 0;
+
+	for (auto& pair : s_mvmattribs)
+	{
+		if (count >= COMMAND_COMPLETION_MAXITEMS)
+		{
+			break;
+		}
+
+		if (V_strnicmp(pair.first.c_str(), partialArg, partialArgLength) == 0)
+		{
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.first.c_str());
+		}
+	}
+
+	return count;
+}
+
+CON_COMMAND_F_COMPLETION(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Attributes on the selected set", FCVAR_CHEAT, MvMAttributes_AutoComplete)
 {
 	if (args.ArgC() < 2)
 	{

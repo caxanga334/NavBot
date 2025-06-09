@@ -961,6 +961,7 @@ void CNavMesh::DrawEditMode( void )
 					connected += m_selectedArea->GetAdjacentCount( EAST );
 					connected += m_selectedArea->GetAdjacentCount( WEST );
 					connected += static_cast<int>(m_selectedArea->GetOffMeshConnectionCount());
+					if (m_selectedArea->GetElevator() != nullptr) { connected += static_cast<int>((m_selectedArea->GetElevator()->GetFloors().size() - 1U)); }
 					Q_strncat( attrib, UTIL_VarArgs( "%d Connections ", connected ), sizeof( attrib ), -1 );
 				}
 

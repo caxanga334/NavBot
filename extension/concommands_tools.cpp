@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstring>
+#include <string>
 
 #include <extension.h>
 #include <manager.h>
@@ -9,75 +10,230 @@
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
+#include <mods/basemod.h>
+#include <entities/basecombatweapon.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <util/prediction.h>
 
-CON_COMMAND_F(sm_navbot_tool_build_path, "Builds a path from your current position to the marked nav area. (Original Search Method)", FCVAR_CHEAT)
+class CToolsPlayerPathCost : public NavAStarPathCost
 {
-	if (engine->IsDedicatedServer())
+public:
+	CToolsPlayerPathCost(const char* preset);
+
+	float operator()(CNavArea* area, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator) const;
+
+private:
+	float m_stepheight;
+	float m_maxjumpheight;
+	float m_maxdoublejumpheight;
+	float m_maxdropheight;
+	float m_maxgapjumpdistance;
+	bool m_candoublejump;
+	bool m_canblastjump;
+};
+
+CToolsPlayerPathCost::CToolsPlayerPathCost(const char* preset)
+{
+	m_stepheight = 18.0f; // this is generally the same for every game.
+
+	if (std::strcmp(preset, "tf2_default") == 0)
 	{
-		META_CONPRINT("This command can only be used on a listen server! \n");
-		return;
+		m_maxjumpheight = 72.0f;
+		m_maxdoublejumpheight = 116.0f;
+		m_maxdropheight = 350.0f;
+		m_maxgapjumpdistance = 258.0f;
+		m_candoublejump = false;
+		m_canblastjump = false;
 	}
-
-	edict_t* host = UtilHelpers::GetListenServerHost();
-	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
-
-	CNavArea* start = TheNavMesh->GetNearestNavArea(origin, 256.0f, true, true);
-	CNavArea* end = TheNavMesh->GetMarkedArea();
-
-	if (start == nullptr)
+	else if (std::strcmp(preset, "tf2_scout") == 0)
 	{
-		META_CONPRINT("No Nav Area found near you! \n");
-		return;
+		m_maxjumpheight = 72.0f;
+		m_maxdoublejumpheight = 116.0f;
+		m_maxdropheight = 350.0f;
+		m_maxgapjumpdistance = 600.0f;
+		m_candoublejump = true;
+		m_canblastjump = false;
 	}
-
-	if (end == nullptr)
+	else if (std::strcmp(preset, "tf2_soldier") == 0)
 	{
-		META_CONPRINT("No End Area. Mark the destination area with sm_nav_mark! \n");
-		return;
+		m_maxjumpheight = 72.0f;
+		m_maxdoublejumpheight = 116.0f;
+		m_maxdropheight = 350.0f;
+		m_maxgapjumpdistance = 216.0f;
+		m_candoublejump = true;
+		m_canblastjump = false;
 	}
-
-	ShortestPathCost cost;
-	CNavArea* closest = nullptr;
-	auto tstart = std::chrono::high_resolution_clock::now();
-	bool found = NavAreaBuildPath(start, end, nullptr, cost, &closest);
-	auto tend = std::chrono::high_resolution_clock::now();
-
-	const std::chrono::duration<double, std::milli> millis = (tend - tstart);
-
-	META_CONPRINTF("NavAreaBuildPath took %f ms.\n", millis.count());
-
-	if (found)
+	else if (std::strcmp(preset, "dods") == 0)
 	{
-		META_CONPRINT("Found path! \n");
+		m_maxjumpheight = 57.0f;
+		m_maxdoublejumpheight = 116.0f;
+		m_maxdropheight = 200.0f;
+		m_maxgapjumpdistance = 160.0f;
+		m_candoublejump = false;
+		m_canblastjump = false;
 	}
-	else
+	else /* hl2 */
 	{
-		META_CONPRINT("No path found! \n");
-	}
-
-	CNavArea* from = nullptr;
-	CNavArea* to = nullptr;
-
-	for (CNavArea* area = closest; area != nullptr; area = area->GetParent())
-	{
-		if (from == nullptr) // set starting area;
-		{
-			from = area;
-			area->DrawFilled(0, 128, 0, 64, 30.0f);
-			continue;
-		}
-
-		to = area;
-
-		to->DrawFilled(0, 128, 0, 64, 30.0f);
-
-		from = to;
+		m_maxjumpheight = 56.0f;
+		m_maxdoublejumpheight = 56.0f;
+		m_maxdropheight = 350.0f;
+		m_maxgapjumpdistance = 220.0f;
+		m_candoublejump = false;
+		m_canblastjump = false;
 	}
 }
 
-CON_COMMAND_F(sm_navbot_tool_build_path_new, "Builds a path from your current position to the marked nav area. (New Search Method)", FCVAR_CHEAT)
+float CToolsPlayerPathCost::operator()(CNavArea* area, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator) const
+{
+	if (fromArea == nullptr)
+	{
+		// first area in path, no cost
+		return 0.0f;
+	}
+
+	float dist = 0.0f;
+
+	if (link != nullptr)
+	{
+		dist = link->GetConnectionLength();
+	}
+	else if (ladder != nullptr) // experimental, very few maps have 'true' ladders
+	{
+		dist = ladder->m_length;
+	}
+	else if (elevator != nullptr)
+	{
+		auto fromFloor = fromArea->GetMyElevatorFloor();
+
+		if (!fromFloor->HasCallButton() && !fromFloor->is_here)
+		{
+			return -1.0f; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
+		}
+
+		dist = elevator->GetLengthBetweenFloors(fromArea, area);
+	}
+	else
+	{
+		dist = (area->GetCenter() + fromArea->GetCenter()).Length();
+	}
+
+
+	// only check gap and height on common connections
+	if (link == nullptr && elevator == nullptr && ladder == nullptr)
+	{
+		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(area);
+
+		if (deltaZ >= m_stepheight)
+		{
+			if (m_candoublejump)
+			{
+				if (deltaZ > m_maxdoublejumpheight)
+				{
+					// too high to reach with double jumps
+					return -1.0f;
+				}
+			}
+			else
+			{
+				if (deltaZ > m_maxjumpheight)
+				{
+					// too high to reach with regular jumps
+					return -1.0f;
+				}
+			}
+
+			// jump type is resolved by the navigator
+
+			// add jump penalty
+			constexpr auto jumpPenalty = 2.0f;
+			dist *= jumpPenalty;
+		}
+		else if (deltaZ < -m_maxdropheight)
+		{
+			// too far to drop
+			return -1.0f;
+		}
+
+		float gap = fromArea->ComputeAdjacentConnectionGapDistance(area);
+
+		if (gap >= m_maxgapjumpdistance)
+		{
+			return -1.0f; // can't jump over this gap
+		}
+	}
+	else if (link != nullptr)
+	{
+		// Don't use double jump links if we can't perform a double jump
+		if (link->GetType() == OffMeshConnectionType::OFFMESH_DOUBLE_JUMP && !m_candoublejump)
+		{
+			return -1.0f;
+		}
+		else if (link->GetType() == OffMeshConnectionType::OFFMESH_BLAST_JUMP && !m_canblastjump)
+		{
+			return -1.0f;
+		}
+		else if (link->GetType() == OffMeshConnectionType::OFFMESH_JUMP_OVER_GAP)
+		{
+			if ((link->GetStart() - link->GetEnd()).Length() > m_maxgapjumpdistance)
+			{
+				return -1.0f;
+			}
+		}
+	}
+
+	return dist;
+}
+
+static std::string s_path_presets[] = {
+	{ "tf2_default" },
+	{ "tf2_scout" },
+	{ "tf2_soldier" },
+	{ "dods" },
+	{ "default" },
+};
+
+static int ToolBuildPath_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+{
+	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
+	{
+		return 0;
+	}
+
+	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
+	V_strncpy(cmd, partial, sizeof(cmd));
+
+	// skip to start of argument
+	char* partialArg = V_strrchr(cmd, ' ');
+	if (partialArg == NULL)
+	{
+		return 0;
+	}
+
+	// chop command from partial argument
+	*partialArg = '\000';
+	++partialArg;
+
+	int partialArgLength = V_strlen(partialArg);
+
+	int count = 0;
+
+	for (auto& preset : s_path_presets)
+	{
+		if (count >= COMMAND_COMPLETION_MAXITEMS)
+		{
+			break;
+		}
+
+		if (V_strnicmp(preset.c_str(), partialArg, partialArgLength) == 0)
+		{
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, preset.c_str());
+		}
+	}
+
+	return count;
+}
+
+CON_COMMAND_F_COMPLETION(sm_navbot_tool_build_path, "Builds a path from your current position to the marked nav area.", FCVAR_CHEAT, ToolBuildPath_AutoComplete)
 {
 	if (engine->IsDedicatedServer())
 	{
@@ -85,15 +241,31 @@ CON_COMMAND_F(sm_navbot_tool_build_path_new, "Builds a path from your current po
 		return;
 	}
 
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_build_path <preset> \n");
+		META_CONPRINT("Available Presets: tf2_default tf2_scout tf2_soldier dods default \n");
+		return;
+	}
+
+	const char* preset = args[1];
 	edict_t* host = UtilHelpers::GetListenServerHost();
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
+	SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(host);
 
-	CNavArea* start = TheNavMesh->GetNearestNavArea(origin, 256.0f, true, true);
+	if (!player || !player->GetPlayerInfo())
+	{
+		META_CONPRINT("Error: NULL player! \n");
+		return;
+	}
+
+	CNavArea* start = TheNavMesh->GetNearestNavArea(origin, 512.0f, true, true, player->GetPlayerInfo()->GetTeamIndex());
 	CNavArea* end = TheNavMesh->GetMarkedArea();
 
 	if (start == nullptr)
 	{
 		META_CONPRINT("No Nav Area found near you! \n");
+		META_CONPRINT("The nearest area may be blocked for your current team. \n");
 		return;
 	}
 
@@ -103,7 +275,7 @@ CON_COMMAND_F(sm_navbot_tool_build_path_new, "Builds a path from your current po
 		return;
 	}
 
-	NavAStarPathCost cost;
+	CToolsPlayerPathCost cost{ preset };
 	NavAStarHeuristicCost heuristic;
 	INavAStarSearch<CNavArea> search;
 	search.SetStart(start);
@@ -115,7 +287,7 @@ CON_COMMAND_F(sm_navbot_tool_build_path_new, "Builds a path from your current po
 
 	const std::chrono::duration<double, std::milli> millis = (tend - tstart);
 
-	META_CONPRINTF("INavAStarSearch<CNavArea>::DoSearch() took %f ms.\n", millis.count());
+	META_CONPRINTF("INavAStarSearch<CNavArea>::DoSearch() took %g ms.\n", millis.count());
 
 	if (search.FoundPath())
 	{
@@ -389,5 +561,53 @@ CON_COMMAND_F(sm_navbot_tool_dump_weapons, "Lists all CBaseCombatCharacter weapo
 		};
 
 		bot->GetInventoryInterface()->ForEveryWeapon(dumpweapons);
+	}
+}
+
+CON_COMMAND_F(sm_navbot_tool_weapon_report, "Reports some information about your currently held weapon.", FCVAR_CHEAT)
+{
+	CBaseExtPlayer player{ gamehelpers->EdictOfIndex(1) };
+
+	CBaseEntity* weapon = player.GetActiveWeapon();
+
+	if (!weapon)
+	{
+		META_CONPRINT("NULL Active Weapon! \n");
+		return;
+	}
+
+	int entindex = UtilHelpers::IndexOfEntity(weapon);
+	const char* classname = gamehelpers->GetEntityClassname(weapon);
+	int itemindex = extmanager->GetMod()->GetWeaponEconIndex(UtilHelpers::BaseEntityToEdict(weapon));
+
+	META_CONPRINTF("Weapon: \n  Item Item: %i\n  Entity Classname: %s\n  Entity Index: %i\n", itemindex, classname, entindex);
+
+	entities::HBaseCombatWeapon bcw{ weapon };
+
+	int clip1 = 0;
+	int clip2 = 0;
+	entprops->GetEntProp(entindex, Prop_Data, "m_iClip1", clip1);
+	entprops->GetEntProp(entindex, Prop_Data, "m_iClip2", clip2);
+	int primaryammotype = bcw.GetPrimaryAmmoType();
+	int secondaryammotype = bcw.GetSecondaryAmmoType();
+
+	if (clip1 < 0)
+	{
+		META_CONPRINT("Weapon doesn't uses clips for primary attack. \n");
+	}
+
+	if (clip2 < 0)
+	{
+		META_CONPRINT("Weapon doesn't uses clips for secondary attack. \n");
+	}
+
+	if (primaryammotype < 0)
+	{
+		META_CONPRINT("Weapon doesn't have a primary ammo type. \n");
+	}
+
+	if (secondaryammotype < 0)
+	{
+		META_CONPRINT("Weapon doesn't have a secondary ammo type. \n");
 	}
 }

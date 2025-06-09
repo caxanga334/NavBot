@@ -16,11 +16,11 @@ NavBot's Navigation Mesh has three files to load place names from.
 
 # Creating Map Specific Place Database
 
-Create a new text file at `configs/navbot/[mod]/maps/nav_places_[map].cfg`.
+Create a new text file at `data/navbot/[mod]/[map]_places.cfg`.
 
 `[mod]` is the current mod gamefolder name.
 
-`[map]` is the current map name report by the command `sm_nav_print_map_name`.
+`[map]` is the current map name report by the command `sm_nav_print_map_name`.    
 
 The file needs to follow this format:
 

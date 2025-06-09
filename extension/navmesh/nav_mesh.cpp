@@ -1396,7 +1396,7 @@ void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)
 	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
 	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
 	const char* mod = smutils->GetGameFolderName();
-	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/maps/nav_places_%s.cfg", mod, mapname.c_str());
+	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "data/navbot/%s/%s_places.cfg", mod, mapname.c_str());
 	std::filesystem::path path{ szPath.get() };
 
 	if (!loader.ParseFile(path))
@@ -1501,30 +1501,43 @@ Place CNavMesh::PartialNameToPlace( const char *name ) const
  */
 int CNavMesh::PlaceNameAutocomplete( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
 {
-	/*
-	* Broken, doesn't work. Crashes the game when auto complete is called.
-	int numMatches = 0;
-	partial += Q_strlen( "sm_nav_use_place " );
-	int partialLength = Q_strlen( partial );
-
-	for (const auto& object : m_placeMap)
+	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
 	{
-		if (strncasecmp(object.second.c_str(), partial, partialLength) == 0)
-		{
-			// Add the place name to the autocomplete array
-			ke::SafeSprintf(commands[numMatches], COMMAND_COMPLETION_ITEM_LENGTH, "sm_nav_use_place %s", object.second.c_str());
-			++numMatches;
+		return 0;
+	}
 
-			// Make sure we don't try to return too many place names
-			if (numMatches == COMMAND_COMPLETION_MAXITEMS)
-				return numMatches;
+	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
+	V_strncpy(cmd, partial, sizeof(cmd));
+
+	// skip to start of argument
+	char* partialArg = V_strrchr(cmd, ' ');
+	if (partialArg == NULL)
+	{
+		return 0;
+	}
+
+	// chop command from partial argument
+	*partialArg = '\000';
+	++partialArg;
+
+	int partialArgLength = V_strlen(partialArg);
+
+	int count = 0;
+
+	for (auto& pair : m_placeMap)
+	{
+		if (count >= COMMAND_COMPLETION_MAXITEMS)
+		{
+			break;
+		}
+
+		if (V_strnicmp(pair.second.first.c_str(), partialArg, partialArgLength) == 0)
+		{
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.second.first.c_str());
 		}
 	}
 
-	return numMatches;
-	*/
-
-	return 0;
+	return count;
 }
 
 std::optional<std::string> CNavMesh::GetPlaceDisplayName(Place place) const
@@ -2659,8 +2672,7 @@ static ConCommand sm_nav_load( "sm_nav_load", CommandNavLoad, "Loads the Navigat
 //--------------------------------------------------------------------------------------------------------------
 static int PlaceNameAutocompleteCallback( char const *partial, char commands[ COMMAND_COMPLETION_MAXITEMS ][ COMMAND_COMPLETION_ITEM_LENGTH ] )
 {
-	return 0; // this is causing crashes
-	// return TheNavMesh->PlaceNameAutocomplete( partial, commands );
+	return TheNavMesh->PlaceNameAutocomplete( partial, commands );
 }
 
 

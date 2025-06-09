@@ -22,3 +22,9 @@ Add the areas you want to disconnect to the selected set, then run the command. 
 
 The command `sm_nav_corner_place_at_feet (adjust nearby)` can be used to adjust the vertical position of the currently select area corner.    
 The command has one optional boolean parameter that determines if the vertical position of nearby areas should also be adjusted.
+
+# Testing Path Finding Without Bots
+
+The command `sm_navbot_tool_build_path <preset>` can be used to build the shortest path to a given area.    
+Use `sm_nav_mark` to mark the path **goal** area. The nearest area to you is used as the path start area.    
+The command has one argument, the name of the path cost preset you want to use.

@@ -1772,6 +1772,7 @@ inline void INavAStarSearch<T>::DoSearch(CF& gCostFunctor, HF& hCostFunctor)
 	Vector searchGoal = goalArea != nullptr ? goalArea->GetCenter() : goalPosition;
 	std::vector<CNavArea*> neighborAreas;
 	CNavArea* endArea = goalArea;
+	NavAStarNode* closest = nullptr;
 
 	if (endArea == nullptr)
 	{
@@ -1811,6 +1812,7 @@ inline void INavAStarSearch<T>::DoSearch(CF& gCostFunctor, HF& hCostFunctor)
 	{
 		neighborAreas.clear();
 		NavAStarNode* current = openList.top();
+		closest = current;
 		CNavArea* area = current->area;
 		openList.pop(); // remove current from openList
 		current->Close(); // mark as closed
@@ -1871,6 +1873,12 @@ inline void INavAStarSearch<T>::DoSearch(CF& gCostFunctor, HF& hCostFunctor)
 	}
 
 	this->lastResult = false;
+
+	if (closest != nullptr)
+	{
+		BuildPath(closest);
+	}
+
 	OnFailure();
 }
 

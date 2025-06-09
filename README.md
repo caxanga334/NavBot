@@ -21,11 +21,17 @@ The NavMesh is also standalone and can be used in games that doesn't already hav
 
 List of game/mods that NavBot supports.
 
-| Game/Mod Name | Support Status | Notes |
+| Game/Mod Name | Support Status |
 |:---:|:---:|:---:|
-| Team Fortress 2 | Partial Support | Lacks supports for some game modes. |
-| Black Mesa | Partial Support | Supports DM & TDM modes. |
-| Day of Defeat: Source | Partial Support | Supports control points and bomb maps. No class selection (always uses rifleman). |
+| Team Fortress 2 | Good |
+| Black Mesa | Good |
+| Day of Defeat: Source | Basic |
+
+### Legend
+
+- Basic: Very basic support, missing major features.
+- Partial: Some features are implemented but still missing some significant ones.
+- Good: Overall good support for the game.
 
 ## Downloads
 
