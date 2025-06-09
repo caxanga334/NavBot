@@ -22,7 +22,7 @@ The NavMesh is also standalone and can be used in games that doesn't already hav
 List of game/mods that NavBot supports.
 
 | Game/Mod Name | Support Status |
-|:---:|:---:|:---:|
+|:---:|:---:|
 | Team Fortress 2 | Good |
 | Black Mesa | Good |
 | Day of Defeat: Source | Basic |
