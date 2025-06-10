@@ -10,6 +10,7 @@
 
 ## Advanced
 
+- [Nav Mesh Ladders]
 - [Nav Mesh Off-Mesh Link Connections]
 - [Nav Mesh Elevators]
 - [Nav Mesh Prerequisites]
@@ -25,6 +26,7 @@
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md
 [Nav Mesh Places]: NAVMESH_PLACES.md
+[Nav Mesh Ladders]: NAVMESH_LADDERS.md
 [Nav Mesh Off-Mesh Link Connections]: NAVMESH_OFFMESHLINKS.md
 [Nav Mesh Editing Tips]: NAVMESH_EDITING_TIPS.md
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md
