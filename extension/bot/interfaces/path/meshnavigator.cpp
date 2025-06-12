@@ -543,6 +543,15 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	{
 		// Authorative nav mesh can be trusted for climbing
 
+		/* For normal jumps and double jumps, wait until the bot is aligned before jumping */
+		if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
+		{
+			if (bot->GetAbsVelocity().Length() >= 100.0f && !bot->IsMovingTowards2D(m_goal->goal, 0.85f))
+			{
+				return false;
+			}
+		}
+
 		if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP)
 		{
 			auto seg = GetNextSegment(m_goal);
@@ -1480,7 +1489,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 		}
 	}
 
-	constexpr auto LADDER_MOUNT_RANGE = 25.0f;
+	constexpr auto LADDER_MOUNT_RANGE = 50.0f;
 
 	if (m_goal->how == GO_LADDER_UP)
 	{

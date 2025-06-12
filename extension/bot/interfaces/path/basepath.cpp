@@ -1034,7 +1034,11 @@ void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& fro
 
 	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
 	
-	bot->GetMovementInterface()->AdjustPathCrossingPoint(from, to, frompos, crosspoint);
+	// Don't make adjustments to areas with precise attribute, trust the mesh
+	if (!from->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)) && !to->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)))
+	{
+		bot->GetMovementInterface()->AdjustPathCrossingPoint(from, to, frompos, crosspoint);
+	}
 }
 
 void CPath::PostProcessPath()
@@ -1205,8 +1209,3 @@ const Vector& CPath::GetEndPosition() const
 	return vec3_origin;
 }
 
-// The segment the bot will try to reach.
-const CBasePathSegment* CPath::GetGoalSegment() const
-{
-	return nullptr;
-}

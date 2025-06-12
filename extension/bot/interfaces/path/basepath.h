@@ -346,11 +346,14 @@ public:
 	virtual const Vector& GetStartPosition() const;
 	virtual const Vector& GetEndPosition() const;
 
+	// The first segment on the path
 	const CBasePathSegment* GetFirstSegment() const;
+	// The last segment on the path
 	const CBasePathSegment* GetLastSegment() const;
 	const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
 	const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
-	virtual const CBasePathSegment* GetGoalSegment() const;
+	// The segment the bot is trying to reach
+	virtual const CBasePathSegment* GetGoalSegment() const { return nullptr; /* implemented by derived classes */ }
 
 	enum SeekType
 	{

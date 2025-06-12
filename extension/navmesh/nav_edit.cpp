@@ -886,7 +886,7 @@ void CNavMesh::DrawEditMode( void )
 		if (m_selectedArea)
 		{
 			m_lastSelectedLadder = NULL;
-	
+
 			// if area changed, print its ID
 			if ( m_selectedArea != m_lastSelectedArea )
 			{

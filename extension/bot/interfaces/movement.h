@@ -345,6 +345,7 @@ protected:
 	bool m_isAirborne;
 	bool m_isBreakingObstacle;
 	bool m_isUsingCatapult;
+	bool m_wasLaunched; // was the bot launched already? (CHEAT)
 	CountdownTimer m_catapultCorrectVelocityTimer;
 	const CNavElevator* m_elevator;
 	const CNavElevator::ElevatorFloor* m_fromFloor;
@@ -372,6 +373,9 @@ protected:
 		m_elevatorTimeout.Invalidate();
 		SetDesiredSpeed(GetRunSpeed());
 	}
+
+	// Bot has completed a jump
+	void OnJumpComplete();
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed

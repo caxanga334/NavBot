@@ -156,6 +156,16 @@ public:
 	 */
 	bool IsMovingTowards(const Vector& position, const float tolerance = 0.5f, float* distance = nullptr) const;
 	/**
+	 * @brief Checks if the player is moving towards the given position by comparing their velocity.
+	 * 
+	 * Ignores Z axis.
+	 * @param position
+	 * @param tolerance Dot product result tolerance to consider true (between -1.0 and 1.0). 0.0 means 180 degrees.
+	 * @param distance Optional float to store the distance between the player and the given position.
+	 * @return true if the player is moving towars the given position within the given tolerance. false otherwise.
+	 */
+	bool IsMovingTowards2D(const Vector& position, const float tolerance = 0.5f, float* distance = nullptr) const;
+	/**
 	 * @brief Calculates a velocity to launch the player towards the given landing position.
 	 * @param landing Landing position.
 	 * @param speed Speed to launch the player.

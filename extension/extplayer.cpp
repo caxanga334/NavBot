@@ -465,6 +465,27 @@ bool CBaseExtPlayer::IsMovingTowards(const Vector& position, const float toleran
 	return false;
 }
 
+bool CBaseExtPlayer::IsMovingTowards2D(const Vector& position, const float tolerance, float* distance) const
+{
+	Vector toDir = position - GetAbsOrigin();
+	float range = toDir.NormalizeInPlace();
+
+	if (distance)
+	{
+		*distance = range;
+	}
+
+	Vector velocity = GetAbsVelocity();
+	velocity.NormalizeInPlace();
+
+	if (DotProduct2D(toDir.AsVector2D(), velocity.AsVector2D()) >= tolerance)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 Vector CBaseExtPlayer::CalculateLaunchVector(const Vector& landing, const float speed) const
 {
 	/*

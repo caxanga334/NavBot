@@ -94,6 +94,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
 	m_isUsingCatapult = false;
+	m_wasLaunched = false;
 	m_stuck.Reset();
 	m_motionVector = vec3_origin;
 	m_groundMotionVector = vec2_origin;
@@ -134,6 +135,7 @@ void IMovement::Reset()
 	m_isJumpingAcrossGap = false;
 	m_isAirborne = false;
 	m_isUsingCatapult = false;
+	m_wasLaunched = false;
 	m_catapultCorrectVelocityTimer.Invalidate();
 	m_stuck.Reset();
 	m_motionVector = vec3_origin;
@@ -166,6 +168,8 @@ void IMovement::Update()
 
 	StuckMonitor();
 	ObstacleBreakUpdate();
+	TraverseLadder();
+	ElevatorUpdate();
 
 	Vector velocity = me->GetAbsVelocity();
 	m_speed = velocity.Length();
@@ -284,22 +288,7 @@ void IMovement::Update()
 
 			if (IsOnGround())
 			{
-				// jump complete
-				m_isJumpingAcrossGap = false;
-				m_isClimbingObstacle = false;
-				m_isAirborne = false;
-				m_isJumping = false;
-				m_jumpTimer.Invalidate();
-				m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
-				me->UpdateLastKnownNavArea(true);
-				DoCounterStrafe(0.25f); // experimental to regain control post landing
-				me->GetControlInterface()->ReleaseJumpButton();
-				me->GetControlInterface()->ReleaseCrouchButton();
-
-				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
-				{
-					me->DebugPrintToConsole(0, 170, 0, "%s JUMP COMPLETE \n", me->GetDebugIdentifier());
-				}
+				OnJumpComplete();
 			}
 		}
 		else // not airborne, jump!
@@ -334,18 +323,7 @@ void IMovement::Update()
 		{
 			if (IsOnGround())
 			{
-				m_isAirborne = false;
-				m_isJumping = false;
-				m_jumpTimer.Invalidate();
-				m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
-				me->UpdateLastKnownNavArea(true);
-				me->GetControlInterface()->ReleaseJumpButton();
-				me->GetControlInterface()->ReleaseCrouchButton();
-
-				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
-				{
-					me->DebugPrintToConsole(0, 170, 0, "%s JUMP COMPLETE \n", me->GetDebugIdentifier());
-				}
+				OnJumpComplete();
 			}
 		}
 		else
@@ -380,10 +358,6 @@ void IMovement::Frame()
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::Frame", "NavBot");
 #endif // EXT_VPROF_ENABLED
-
-	// Was on Update, moved to frame
-	TraverseLadder();
-	ElevatorUpdate();
 }
 
 float IMovement::GetHullWidth()
@@ -676,7 +650,7 @@ void IMovement::CrouchJump()
 	// Cannot jump while holding the jump button
 	if (IsOnGround() && me->GetControlInterface()->IsPressingJumpButton())
 	{
-		m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
+		m_jumpCooldown.Start(0.5f);
 		me->GetControlInterface()->ReleaseJumpButton();
 		me->GetControlInterface()->ReleaseCrouchButton();
 
@@ -757,6 +731,7 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 	}
 
 	m_isJumpingAcrossGap = true;
+	m_isClimbingObstacle = false;
 	m_landingGoal = landing;
 	m_isAirborne = false;
 
@@ -774,18 +749,35 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 
 bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
 {
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	if (!me->IsMovingTowards2D(landingGoal, 0.9f))
+	{
+		// Cheat: bot is not aliged, manually correct their velocity.c
+		Vector velocity = me->GetAbsVelocity();
+		velocity.x = GetRunSpeed() * landingForward.x;
+		velocity.y = GetRunSpeed() * landingForward.y;
+		me->SetAbsVelocity(velocity);
+
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(250, 128, 114, "%s CLIMB UP TO LEDGE: BOT MOTION VECTOR WAS NOT ALIGNED WITH JUMP GOAL. MANUALLY ALIGNED! \n", me->GetDebugIdentifier());
+		}
+	}
+
 	CrouchJump(); // Always do a crouch jump
 
 	m_isClimbingObstacle = true;
+	m_isJumpingAcrossGap = false;
 	m_landingGoal = landingGoal;
 	m_isAirborne = false;
 
 	// low priority look
-	GetBot<CBaseBot>()->GetControlInterface()->AimAt(landingGoal, IPlayerController::LOOK_INTERESTING, 0.5f, "Looking at ledge to climb!");
+	me->GetControlInterface()->AimAt(landingGoal, IPlayerController::LOOK_INTERESTING, 0.5f, "Looking at ledge to climb!");
 
-	if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_MOVEMENT))
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
-		GetBot<CBaseBot>()->DebugPrintToConsole(70, 130, 180, "%s CLIMB UP TO LEDGE AT %3.2f %3.2f %3.2f \n", GetBot<CBaseBot>()->GetDebugIdentifier(), landingGoal.x, landingGoal.y, landingGoal.z);
+		me->DebugPrintToConsole(70, 130, 180, "%s CLIMB UP TO LEDGE AT %3.2f %3.2f %3.2f \n", me->GetDebugIdentifier(), landingGoal.x, landingGoal.y, landingGoal.z);
 	}
 
 	return true;
@@ -799,6 +791,7 @@ bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landi
 	DoubleJump();
 
 	m_isClimbingObstacle = true;
+	m_isJumpingAcrossGap = false;
 	m_landingGoal = landingGoal;
 	m_isAirborne = false;
 
@@ -1049,6 +1042,7 @@ bool IMovement::IsOnGround()
 {
 	// ground ent was not being realiable for some reason.
 	// return GetBot()->GetGroundEntity() != nullptr;
+	// TO-DO: See if it's worth to cache the m_fFlags pointer
 	int flags = 0;
 	entprops->GetEntProp(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_fFlags", flags);
 	return (flags & FL_ONGROUND) != 0;
@@ -1183,6 +1177,17 @@ void IMovement::TryToUnstuck()
 			}
 		}
 
+		return;
+	}
+
+	// Jumping in these states will probably cause more issues than fix then, don't try to do anything.
+	if (m_isJumping || m_isJumpingAcrossGap || m_isClimbingObstacle || m_isUsingCatapult || IsUsingElevator())
+	{
+		return;
+	}
+
+	if (!IsOnGround())
+	{
 		return;
 	}
 
@@ -1556,6 +1561,37 @@ void IMovement::ObstacleBreakUpdate()
 	}
 }
 
+void IMovement::OnJumpComplete()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	if (m_isJumpingAcrossGap)
+	{
+		// the bot some times backtracks, either falling or entering a loop
+		// force the path to update it's goal position
+		me->UpdateLastKnownNavArea(true);
+		if (me->GetActiveNavigator()) { me->GetActiveNavigator()->AdvanceGoalToNearest(); }
+	}
+
+	// jump complete
+	m_isJumpingAcrossGap = false;
+	m_isClimbingObstacle = false;
+	m_isAirborne = false;
+	m_isJumping = false;
+	m_wasLaunched = false;
+	m_jumpTimer.Invalidate();
+	m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
+	me->UpdateLastKnownNavArea(true);
+	DoCounterStrafe(0.25f); // experimental to regain control post landing
+	me->GetControlInterface()->ReleaseJumpButton();
+	me->GetControlInterface()->ReleaseCrouchButton();
+
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		me->DebugPrintToConsole(0, 170, 0, "%s JUMP COMPLETE \n", me->GetDebugIdentifier());
+	}
+}
+
 // approach a ladder that we will go up
 IMovement::LadderState IMovement::ApproachUpLadder()
 {
@@ -1614,9 +1650,10 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 		return NOT_USING_LADDER;
 	}
 
-	auto origin = GetBot()->GetAbsOrigin();
+	CBaseBot* me = GetBot<CBaseBot>();
+	auto origin = me->GetAbsOrigin();
 	const float z = origin.z;
-	const bool debug = GetBot()->IsDebugging(BOTDEBUG_MOVEMENT);
+	const bool debug = me->IsDebugging(BOTDEBUG_MOVEMENT);
 
 	if (z <= m_ladder->m_bottom.z + GetMaxJumpHeight())
 	{
@@ -1626,14 +1663,26 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 
 	Vector climbPoint;
 
-	if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
+	if (!IsOnGround())
+	{
+		// Airborne, probably missed the ladder, move towards it to grab it
+		climbPoint = m_ladder->m_top - (0.5f * GetHullWidth() * m_ladder->GetNormal());
+
+		if (!me->IsMovingTowards(climbPoint, 0.95f))
+		{
+			// Cheat: Launch towards the ladder climb point to help the bot grab it
+			Vector launch = me->CalculateLaunchVector(climbPoint, GetWalkSpeed());
+			me->SetAbsVelocity(launch);
+		}
+	}
+	else if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
 	{
 		// useable ladder top/bottom positions are at the center of the ladder
 		climbPoint = m_ladder->m_top;
 	}
 	else
 	{
-		climbPoint = m_ladder->m_top + (0.25f * GetHullWidth() * m_ladder->GetNormal());
+		climbPoint = m_ladder->m_top + (0.8f * GetHullWidth() * m_ladder->GetNormal());
 	}
 
 	climbPoint.z = m_ladder->ClampZ(z - (GetStepHeight() / 4.0f));
@@ -1645,7 +1694,7 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 
 	if (debug)
 	{
-		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), moveGoal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::HorzArrow(GetBot()->GetAbsOrigin(), moveGoal, 4.0f, 0, 255, 0, 255, false, 0.2f);
 		NDebugOverlay::Cross3D(moveGoal, 12.0f, 0, 0, 255, false, 0.2f);
 	}
 
@@ -1791,10 +1840,12 @@ IMovement::LadderState IMovement::DismountLadderTop()
 		return NOT_USING_LADDER; // bot left ladder
 	}
 
-	auto input = GetBot()->GetControlInterface();
-	auto origin = GetBot()->GetAbsOrigin();
-	auto eyepos = GetBot()->GetEyeOrigin();
+	CBaseBot* me = GetBot<CBaseBot>();
+	auto input = me->GetControlInterface();
+	auto origin = me->GetAbsOrigin();
+	auto eyepos = me->GetEyeOrigin();
 	const float z = origin.z;
+	const bool isDebuggingMovement = me->IsDebugging(BOTDEBUG_MOVEMENT);
 	Vector toGoal = m_ladderExit->GetCenter() - origin;
 	toGoal.z = 0.0f;
 	float range = toGoal.NormalizeInPlace();
@@ -1820,17 +1871,37 @@ IMovement::LadderState IMovement::DismountLadderTop()
 		}
 	}
 
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	if (isDebuggingMovement)
 	{
-		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goalPos, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::HorzArrow(origin, goalPos, 4.0f, 0, 255, 0, 255, false, 0.2f);
 		NDebugOverlay::Cross3D(goalPos, 12.0f, 0, 0, 255, false, 0.2f);
 	}
 
-	constexpr auto tolerance = 10.0f;
-	if (GetBot()->GetLastKnownNavArea() == m_ladderExit && range < tolerance)
+	constexpr auto tolerance = 48.0f;
+	if (/* me->GetLastKnownNavArea() == m_ladderExit && */ range < tolerance /* && IsOnGround()*/)
 	{
+		/*
+		* TO-DO: Heavy desync issues between navigator and the bot position
+		* AdvanceGoalToNearest helps a bit but bots still misses and falls about 1 in 6 climbs
+		* Maybe an additional state should be added that handles airstrafing towards the landing area
+		*/
+
+		if (!IsOnGround())
+		{
+			Vector vec = me->CalculateLaunchVector(m_ladderExit->GetCenter(), 300.0f);
+			me->SetAbsVelocity(vec);
+		}
+
 		m_ladder = nullptr;
 		m_ladderExit = nullptr;
+		me->UpdateLastKnownNavArea(true);
+		if (me->GetActiveNavigator()) { me->GetActiveNavigator()->AdvanceGoalToNearest(); }
+
+		if (isDebuggingMovement)
+		{
+			me->DebugPrintToConsole(0, 180, 0, "%s: DismountLadderTop: Reached dismount goal %g %g %g \n", me->GetDebugIdentifier(), origin.x, origin.y, origin.z);
+		}
+
 		return NOT_USING_LADDER;
 	}
 

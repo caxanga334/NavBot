@@ -89,12 +89,12 @@ void CTF2BotMovement::CrouchJump()
 	CTF2Bot* me = GetBot<CTF2Bot>();
 
 	// TF2: Cannot jump while crouched, if not jumping already, release the crouch button
-	if (!m_jumpCooldown.HasStarted() && !m_isJumping && me->GetControlInterface()->IsPressingCrouchButton())
+	if (!m_jumpCooldown.HasStarted() && IsOnGround() && me->GetControlInterface()->IsPressingCrouchButton())
 	{
 		me->GetControlInterface()->ReleaseCrouchButton();
 		me->GetControlInterface()->ReleaseJumpButton();
 		// start the jump cooldown timer to give some time for the player to uncrouch
-		m_jumpCooldown.Start(0.9f);
+		m_jumpCooldown.Start(0.5f);
 
 		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
