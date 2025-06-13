@@ -14,7 +14,7 @@ Hint: Use `ent_text func_useableladder` to make the ladder entity visible.
 
 ## Building Useable Ladders
 
-Go near the ladder and run the following command: `ent_text func_useableladder`
+Go near the ladder and run the following command: `sm_nav_build_useable_ladder`
 You will most likely need to fix the ladder's direction. Look at the ladder and run this command: `sm_nav_useable_ladder_set_dir`    
 Then check if there are connected areas to the bottom and top of the ladder.
 

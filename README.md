@@ -10,6 +10,7 @@ Nav Bot
 [Day of Defeat: Source]: https://store.steampowered.com/app/300/Day_of_Defeat_Source/
 [Installing NavBot]: docs/INSTALL.md
 [Supported Games/Mods List]: docs/MODS.md
+[detailed game support]: docs/DGS.md
 
 Nav Bot is a [SourceMod] extension that provides a third-party player bot for Source Engine games and mods.
 
@@ -19,19 +20,11 @@ The NavMesh is also standalone and can be used in games that doesn't already hav
 
 ## Supported Games/Mods
 
-List of game/mods that NavBot supports.
+- Team Fortress 2
+- Black Mesa
+- Day of Defeat: Source
 
-| Game/Mod Name | Support Status |
-|:---:|:---:|
-| Team Fortress 2 | Good |
-| Black Mesa | Good |
-| Day of Defeat: Source | Basic |
-
-### Legend
-
-- Basic: Very basic support, missing major features.
-- Partial: Some features are implemented but still missing some significant ones.
-- Good: Overall good support for the game.
+See [detailed game support].
 
 ## Downloads
 
