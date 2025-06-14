@@ -542,7 +542,7 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 		constexpr float inc = 10.0f;
 		const float maxPushDist = 2.0f * mover->GetHullWidth();
 		const float halfWidth = mover->GetHullWidth() / 2.0f;
-		const float hullHeight = mover->GetCrouchedHullHeigh();
+		const float hullHeight = mover->GetCrouchedHullHeight();
 
 		float pushDist;
 		for (pushDist = 0.0f; pushDist <= maxPushDist; pushDist += inc)
@@ -646,7 +646,7 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 
 			for (auto& connect : connections)
 			{
-				if (connect.IsConnectedToLadderTop() && connect.GetConnectedArea() == to->area)
+				if (/* connect.IsConnectedToLadderTop() && */ connect.GetConnectedArea() == to->area)
 				{
 					to->ladder = ladder;
 					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
@@ -675,7 +675,7 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 
 			for (auto& connect : connections)
 			{
-				if (connect.IsConnectedToLadderBottom() && connect.GetConnectedArea() == to->area)
+				if (/* connect.IsConnectedToLadderBottom() && */ connect.GetConnectedArea() == to->area)
 				{
 					to->ladder = ladder;
 					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();

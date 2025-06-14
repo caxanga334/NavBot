@@ -50,6 +50,8 @@ public:
 	void SetCollectItemMaxDistance(float v) { collect_item_max_distance = v; }
 
 	const int GetDefendRate() const { return defendrate; }
+	// Rolls a random chance to defend
+	bool RollDefendChance() const;
 	const int GetStuckSuicideThreshold() const { return stucksuicidethreshold; }
 	const float GetUpdateRate() const { return updaterate; }
 	const float GetVisionNPCUpdateRate() const { return vision_npc_update_rate; }

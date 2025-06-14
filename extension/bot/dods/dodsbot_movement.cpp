@@ -12,12 +12,12 @@ CDoDSBotMovement::~CDoDSBotMovement()
 {
 }
 
-float CDoDSBotMovement::GetCrouchedHullHeigh()
+float CDoDSBotMovement::GetCrouchedHullHeight()
 {
 	return dayofdefeatsource::DOD_PLAYER_CROUCHING_HEIGHT * GetBot<CDoDSBot>()->GetModelScale();
 }
 
-float CDoDSBotMovement::GetProneHullHeigh()
+float CDoDSBotMovement::GetProneHullHeight()
 {
 	return dayofdefeatsource::DOD_PLAYER_PRONE_HEIGHT * GetBot<CDoDSBot>()->GetModelScale();
 }

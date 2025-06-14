@@ -49,13 +49,13 @@ float CTF2BotMovement::GetHullWidth()
 	return PLAYER_HULL_WIDTH * scale;
 }
 
-float CTF2BotMovement::GetStandingHullHeigh()
+float CTF2BotMovement::GetStandingHullHeight()
 {
 	float scale = GetBot()->GetModelScale();
 	return PLAYER_HULL_STAND * scale;
 }
 
-float CTF2BotMovement::GetCrouchedHullHeigh()
+float CTF2BotMovement::GetCrouchedHullHeight()
 {
 	float scale = GetBot()->GetModelScale();
 	return PLAYER_HULL_CROUCH * scale;

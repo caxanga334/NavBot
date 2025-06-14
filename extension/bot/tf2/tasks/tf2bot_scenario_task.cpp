@@ -63,7 +63,7 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 {
 	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
 	auto gm = tf2mod->GetCurrentGameMode();
-	bool defend = (randomgen->GetRandomInt<int>(1, 100) < tf2mod->GetModSettings()->GetDefendRate());
+	bool defend = tf2mod->GetModSettings()->RollDefendChance();
 
 	// Current gamemode is deathmatch, no class specific behavior is used
 	if (tf2mod->UseDeathmatchBehaviorOnly())

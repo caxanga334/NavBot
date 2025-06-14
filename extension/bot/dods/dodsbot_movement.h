@@ -10,9 +10,9 @@ public:
 	~CDoDSBotMovement() override;
 
 	// float GetHullWidth() override;
-	// float GetStandingHullHeigh() override;
-	float GetCrouchedHullHeigh() override;
-	float GetProneHullHeigh() override;
+	// float GetStandingHullHeight() override;
+	float GetCrouchedHullHeight() override;
+	float GetProneHullHeight() override;
 	// Maximum gap jump distance without sprinting
 	float GetMaxGapJumpDistance() const override { return 160.0f; }
 	// this is the distance bots can drop without taking fall damage

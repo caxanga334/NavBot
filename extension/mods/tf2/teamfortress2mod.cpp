@@ -92,6 +92,13 @@ SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCState
 			SetMedicPatientScanRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
+		else if (strncasecmp(key, "engineer_destroy_travel_range", 29) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 1000.0f, 10000.0f);
+			SetEngineerMoveDestroyBuildingRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
 	}
 
 	return CModSettings::ReadSMC_KeyValue(states, key, value);

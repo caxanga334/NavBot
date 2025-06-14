@@ -318,20 +318,9 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					}
 					else
 					{
-						if (ladderAreaList->at(ladderConnIndex).IsConnectedToLadderTop())
-						{
-							newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
-						}
-						else
-						{
-							ladderConnIndex++; // increment index
-							continue;
-						}
-
+						newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
 						ladderConnIndex++; // increment index
 					}
-
-					how = GO_LADDER_UP;
 				}
 				else
 				{
@@ -351,26 +340,30 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					}
 					else
 					{
-						if (ladderAreaList->at(ladderConnIndex).IsConnectedToLadderBottom())
-						{
-							newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
-						}
-						else
-						{
-							ladderConnIndex++; // increment index
-							continue;
-						}
-
+						newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
 						ladderConnIndex++; // increment index
 					}
-					
-					how = GO_LADDER_DOWN;
 				}
+
+				// Skip self
+				if (newArea == area)
+					continue;
 
 				if ( newArea == NULL )
 					continue;
 
+				/* Because ladder connections can now be anywhere within the ladder, determine direction based on the Z axis */
+				how = newArea->GetCenter().z > area->GetCenter().z ? GO_LADDER_UP : GO_LADDER_DOWN;
 				length = -1.0f;
+/*
+				{
+					const Vector& c1 = area->GetCenter();
+					const Vector& c2 = newArea->GetCenter();
+					META_CONPRINTF("BuildPath Ladder #%i: area #%u <%g %g %g> newArea #%u <%g %g %g> how %s \n", ladder->GetID(), area->GetID(), c1.x, c1.y, c1.z,
+						newArea->GetID(), c2.x, c2.y, c2.z, 
+						how == GO_LADDER_UP ? "LADDER_UP" : "LADDER_DOWN");
+				}
+*/
 			}
 			else if ( searchWhere == SEARCH_ELEVATORS )
 			{

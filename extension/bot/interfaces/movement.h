@@ -172,10 +172,10 @@ public:
 	inline virtual float GetTraversableSlopeLimit() const { return 0.6f; }
 	// Bot collision hull width
 	virtual float GetHullWidth();
-	// Bot collision hull heigh
-	virtual float GetStandingHullHeigh();
-	virtual float GetCrouchedHullHeigh();
-	virtual float GetProneHullHeigh();
+	// Bot collision hull height
+	virtual float GetStandingHullHeight();
+	virtual float GetCrouchedHullHeight();
+	virtual float GetProneHullHeight();
 	// Trace mask for collision detection
 	virtual unsigned int GetMovementTraceMask();
 	// Gets the bot running speed

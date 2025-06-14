@@ -347,7 +347,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 
 			float dot = DotProduct2D(toGoal.AsVector2D(), plane);
 
-			if (dot < 0.0001f && fabsf(toGoal.z) < mover->GetStandingHullHeigh())
+			if (dot < 0.0001f && fabsf(toGoal.z) < mover->GetStandingHullHeight())
 			{
 				// If it's reachable, then the bot reached it
 				if (toGoal.z < mover->GetStepHeight() &&
@@ -603,7 +603,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	}
 
 	float heightDelta = -1.0f;
-	const float tolerance = mover->GetCrouchedHullHeigh();
+	const float tolerance = mover->GetCrouchedHullHeight();
 
 	if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP)
 	{
@@ -674,7 +674,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 	const float hullWidth = mover->GetHullWidth();
 	const float halfWidth = hullWidth * 0.5f;
-	const float minHullHeight = mover->GetCrouchedHullHeigh();
+	const float minHullHeight = mover->GetCrouchedHullHeight();
 	const float minLedgeHeight = mover->GetStepHeight() + 0.1f;
 
 	Vector skipStepHeightHullMin(-halfWidth, -halfWidth, minLedgeHeight);
@@ -894,7 +894,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 							ledgeTopLookAheadRange = minTraceDepth;
 						}
 					}
-					else if (ledgeHeight > mover->GetCrouchedHullHeigh() && !isPlannedClimb)
+					else if (ledgeHeight > mover->GetCrouchedHullHeight() && !isPlannedClimb)
 					{
 						break;
 					}
@@ -1080,7 +1080,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	range *= bot->GetModelScale();
 
 	auto hullMin = Vector(-size, -size, mover->GetStepHeight() + 0.1f);
-	auto hullMax = Vector(size, size, mover->GetCrouchedHullHeigh());
+	auto hullMax = Vector(size, size, mover->GetCrouchedHullHeight());
 
 	Vector nextStepHullMin(-size, -size, 2.0f * mover->GetStepHeight() + 0.1f);
 
@@ -1251,7 +1251,7 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 
 	const float size = mover->GetHullWidth() / 4.0f;
 	Vector mins(-size, -size, mover->GetStepHeight());
-	Vector maxs(-size, -size, mover->GetCrouchedHullHeigh());
+	Vector maxs(-size, -size, mover->GetCrouchedHullHeight());
 	Vector from = bot->GetAbsOrigin();
 	float range = 0.0f;
 	auto mask = mover->GetMovementTraceMask();
@@ -1503,7 +1503,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 		Vector goal = m_goal->ladder->m_bottom;
 		goal.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
 		Vector2D to = (goal - origin).AsVector2D();
-		input->AimAt(m_goal->ladder->m_top - 50.0f * m_goal->ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()),
+		input->AimAt(m_goal->ladder->m_top - 50.0f * m_goal->ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeight()),
 			IPlayerController::LOOK_MOVEMENT, 2.0f);
 
 		const float range = to.NormalizeInPlace();
@@ -1577,7 +1577,7 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 		mountPoint.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
 		Vector2D to = (mountPoint - origin).AsVector2D();
 
-		input->AimAt(bottom + 50.0f * ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeigh()), IPlayerController::LOOK_MOVEMENT, 0.25f);
+		input->AimAt(bottom + 50.0f * ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeight()), IPlayerController::LOOK_MOVEMENT, 0.25f);
 
 		float range = to.NormalizeInPlace();
 

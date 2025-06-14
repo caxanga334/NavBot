@@ -19,10 +19,9 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
-	int defrate = tf2mod->GetModSettings()->GetDefendRate();
 
 	// should defend?
-	if (randomgen->GetRandomInt<int>(1, 100) >= defrate)
+	if (tf2mod->GetModSettings()->RollDefendChance())
 	{
 		edict_t* ent = bot->GetFlagToDefend(false, false);
 

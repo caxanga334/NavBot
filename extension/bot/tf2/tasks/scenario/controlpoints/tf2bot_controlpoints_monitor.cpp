@@ -59,7 +59,7 @@ TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 
 		// if no points are under attack randomly attack or guard
-		if (randomgen->GetRandomInt<int>(1, 100) > tf2mod->GetModSettings()->GetDefendRate())
+		if (tf2mod->GetModSettings()->RollDefendChance())
 		{
 			CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(attackPoints);
 			return PauseFor(new CTF2BotAttackControlPointTask(target), "Attacking control point!");

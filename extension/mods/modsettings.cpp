@@ -1,5 +1,6 @@
 #include <extension.h>
 #include <manager.h>
+#include <util/librandom.h>
 #include "basemod.h"
 #include "modsettings.h"
 
@@ -24,10 +25,22 @@ void CModSettings::ParseConfigFile()
 
 			if (!std::filesystem::exists(path))
 			{
-				return; // Use default values set by the constructor
+				smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.custom.cfg");
+
+				if (!std::filesystem::exists(path))
+				{
+					smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.cfg");
+
+					if (!std::filesystem::exists(path))
+					{
+						return; // Use default values set by the constructor
+					}
+				}
 			}
 		}
 	}
+
+	META_CONPRINTF("[NavBot] Parsing mod settings file: %s \n", path);
 
 	SourceMod::SMCStates states;
 	SourceMod::SMCError result = textparsers->ParseFile_SMC(path, this, &states);
@@ -120,4 +133,14 @@ SourceMod::SMCResult CModSettings::ReadSMC_LeavingSection(const SourceMod::SMCSt
 	}
 
 	return SourceMod::SMCResult_Continue;
+}
+
+bool CModSettings::RollDefendChance() const
+{
+	if (defendrate >= randomgen->GetRandomInt<int>(1, 100))
+	{
+		return true;
+	}
+
+	return false;
 }
