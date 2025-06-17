@@ -439,7 +439,11 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		edict = engine->CreateFakeClient(finalname);
 		break;
 	case BotCreateMethod::CREATEFAKECLIENTEX:
+#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 		edict = engine->CreateFakeClientEx(finalname);
+#else
+		edict = engine->CreateFakeClient(finalname);
+#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 		break;
 	case BotCreateMethod::BOTMANAGER:
 		[[fallthrough]];
