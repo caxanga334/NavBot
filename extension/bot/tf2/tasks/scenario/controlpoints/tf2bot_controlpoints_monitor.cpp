@@ -43,9 +43,16 @@ TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else if (attackPoints.empty())
 	{
-		// no points to attack
-		CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(defendPoints);
-		return PauseFor(new CTF2BotGuardControlPointTask(target), "Guarding control point!");
+		if (tf2mod->GetModSettings()->RollDefendChance())
+		{
+			// no points to attack
+			CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(defendPoints);
+			return PauseFor(new CTF2BotGuardControlPointTask(target), "Guarding control point!");
+		}
+		else
+		{
+			return PauseFor(new CTF2BotRoamTask, "No points to attack, roaming around!");
+		}
 	}
 	else
 	{
@@ -61,13 +68,13 @@ TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 		// if no points are under attack randomly attack or guard
 		if (tf2mod->GetModSettings()->RollDefendChance())
 		{
-			CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(attackPoints);
-			return PauseFor(new CTF2BotAttackControlPointTask(target), "Attacking control point!");
+			CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(defendPoints);
+			return PauseFor(new CTF2BotGuardControlPointTask(target), "Guarding control point!");
 		}
 		else
 		{
-			CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(defendPoints);
-			return PauseFor(new CTF2BotGuardControlPointTask(target), "Guarding control point!");
+			CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(attackPoints);
+			return PauseFor(new CTF2BotAttackControlPointTask(target), "Attacking control point!");
 		}
 	}
 

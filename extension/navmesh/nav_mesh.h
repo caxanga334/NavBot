@@ -590,6 +590,7 @@ public:
 	void CommandNavDisconnectDropDownAreas(const float minDrop);		// Nav areas with drop down connections of heights greater than the limit are disconnected
 	void CommandNavSelectAreasWithinEntity(CBaseEntity* pEntity, const std::string& classname, const bool centerOnly, const float heightOffset);
 	void CommandNavReloadMesh();										// Saves the navigation mesh and reloads it
+	void CommandNavMeasureDistance();									// Measures the distance between two nav areas
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );

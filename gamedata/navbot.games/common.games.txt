@@ -13,6 +13,7 @@
 			 * engine1 = engine->CreateFakeClient
 			 * engine2 = engine->CreateFakeClientEx
 			 * botmanager = botmanager->CreateBot
+			 * engine2 fallbacks to engine1 on unsupported branches
 			*/
 			"CreateBotMethod"	"engine2"
 			/* Should NavBot manually set the FL_CLIENT and FL_FAKECLIENT flags on bots?

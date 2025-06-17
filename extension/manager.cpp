@@ -59,10 +59,13 @@
 constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
 
 static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players", CExtManager::OnQuotaModeCvarChanged);
-
 static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
-
 static ConVar sm_navbot_bot_name_prefix("sm_navbot_bot_name_prefix", "", FCVAR_GAMEDLL, "Prefix to add to bot names.");
+
+// Engine branches that supports engine->CreateFakeClientEx
+#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
+static ConVar sm_navbot_hide_bots("sm_navbot_hide_bots", "0", FCVAR_GAMEDLL, "If enabled, bots will be hidden from the server browser.");
+#endif
 
 CExtManager::CExtManager()
 {
@@ -440,7 +443,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		break;
 	case BotCreateMethod::CREATEFAKECLIENTEX:
 #if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
-		edict = engine->CreateFakeClientEx(finalname);
+		edict = engine->CreateFakeClientEx(finalname, !sm_navbot_hide_bots.GetBool());
 #else
 		edict = engine->CreateFakeClient(finalname);
 #endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS

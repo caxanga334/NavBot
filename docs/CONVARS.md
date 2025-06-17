@@ -21,6 +21,8 @@ List of console variables for NavBot.
 |sm_navbot_aim_lookat_settle_duration|Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.|Float|N/A|
 |sm_navbot_quota_mode|Bot quota mode.|String|'normal' to keep N number of bots in the game. 'fill' to fill until there area N players on the server, bots will leave as human players join in this mode.|
 |sm_navbot_quota_quantity|The target number of bots.|Integer|N/A|
+|sm_navbot_bot_name_prefix|Prefix to add to bot names.|String|N/A|
+|sm_navbot_hide_bots|If enabled, bots are hidden from the server browser.|Boolean|Needs to be enable before adding bots to take effect. Only available on supported engine branches.|
 
 ## Team Fortress 2 Bot specific ConVars
 

@@ -5213,3 +5213,58 @@ CON_COMMAND_F(sm_nav_reload, "Reloads the navigation mesh.", FCVAR_CHEAT | FCVAR
 
 	TheNavMesh->CommandNavReloadMesh();
 }
+
+void CNavMesh::CommandNavMeasureDistance()
+{
+	if (!UTIL_IsCommandIssuedByServerAdmin())
+		return;
+
+	CNavArea* first = GetMarkedArea();
+
+	if (!first)
+	{
+		META_CONPRINT("Mark an area first! \n");
+		return;
+	}
+
+	CNavArea* second = nullptr;
+
+	if (FindActiveNavArea())
+	{
+		second = m_selectedArea;
+	}
+
+	if (!second)
+	{
+		return;
+	}
+
+	if (first == second)
+	{
+		META_CONPRINT("Start and End areas can't be the same! \n");
+		return;
+	}
+
+	float range_center = (first->GetCenter() - second->GetCenter()).Length();
+	float range_center_2d = (first->GetCenter() - second->GetCenter()).Length2D();
+	Vector point1, point2;
+
+	first->GetClosestPointOnArea(second->GetCenter(), &point1);
+	second->GetClosestPointOnArea(first->GetCenter(), &point2);
+
+	float range_closest = (point1 - point2).Length();
+	float range_closest_2d = (point1 - point2).Length2D();
+
+	META_CONPRINTF("Distances between area #%u and area #%u \n", first->GetID(), second->GetID());
+	META_CONPRINTF("Range (Center to Center): \n  3D: %g\n  2D: %g\n", range_center, range_center_2d);
+	META_CONPRINTF("Range (Closest Point From Center): \n  3D: %g\n  2D: %g\n", range_closest, range_closest_2d);
+	debugoverlay->AddLineOverlay(point1, point2, 0, 200, 0, true, 30.0f);
+	NDebugOverlay::Cross3D(point1, 5.0f, 255, 0, 0, true, 30.0f);
+	NDebugOverlay::Cross3D(point2, 5.0f, 255, 0, 0, true, 30.0f);
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
+CON_COMMAND_F(sm_nav_measure_distance, "Measures the distances between two nav areas.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	TheNavMesh->CommandNavMeasureDistance();
+}
