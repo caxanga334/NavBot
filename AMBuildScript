@@ -327,6 +327,9 @@ class ExtensionConfig(object):
     if builder.options.debug == '1':
       cxx.cflags += ['/Od', '/RTC1']
 
+    if builder.options.asan == '1':
+      cxx.cflags += ['/fsanitize=address']
+
     if builder.options.archoptions == 1:
       cxx.cflags += ['/arch:SSE4.2']
     elif builder.options.archoptions == 2:

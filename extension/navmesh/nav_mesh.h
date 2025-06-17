@@ -378,6 +378,7 @@ public:
 	virtual void Precache(); // precache edit sounds here
 	virtual void OnMapStart();
 	virtual void OnMapEnd();
+	virtual void OnReloaded();											// invoked when the reload command is used.
 	
 	virtual void PreLoadAreas( int nAreas ) {}
 	virtual CNavArea *CreateArea( void ) const;							// CNavArea factory
@@ -587,6 +588,8 @@ public:
 	void CommandNavSetUseableLadderDir();
 	void CommandNavMarkVolume(const CCommand& args);
 	void CommandNavDisconnectDropDownAreas(const float minDrop);		// Nav areas with drop down connections of heights greater than the limit are disconnected
+	void CommandNavSelectAreasWithinEntity(CBaseEntity* pEntity, const std::string& classname, const bool centerOnly, const float heightOffset);
+	void CommandNavReloadMesh();										// Saves the navigation mesh and reloads it
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
@@ -629,6 +632,9 @@ public:
 	bool IsInSelectedSet( const CNavArea *area ) const;					// return true if the given area is in the selected set
 	int GetSelecteSetSize( void ) const;
 	const NavAreaVector &GetSelectedSet( void ) const;					// return the selected set
+
+	void NotifyDangerousEditCommandWasUsed();							// a dangerous command was used, remove all bots and enable the dangerous flag
+	bool IsDangerousForBots() const { return m_isInDangerousState; }	// true if the navigation mesh is in a dangerous state for bots to be added.
 
 	/**
 	 * Apply the functor to all navigation areas in the Selected Set,
@@ -741,6 +747,48 @@ public:
 			{
 				return;
 			}
+		}
+	}
+
+	/**
+	 * @brief Utility function for applying an edit command on nav areas.
+	 * 
+	 * Uses the first available: selected area set, marked area, active area.
+	 * @tparam T Nav Area class
+	 * @tparam F Edit command functor. requires an operator() overload with one parameter: void (T* area)
+	 * @param cmd Edit command functor to run.
+	 * @param clearOnEnd If true, the selected set/marked area is cleared when done.
+	 */
+	template <typename T, typename F>
+	void ExecuteAreaEditCommand(const F& cmd, const bool clearOnEnd = true)
+	{
+		if (!IsSelectedSetEmpty())
+		{
+			FOR_EACH_VEC(m_selectedSet, it)
+			{
+				T* area = static_cast<T*>(m_selectedSet[it]);
+				cmd(area);
+			}
+		}
+		else
+		{
+			if (m_markedArea)
+			{
+				cmd(static_cast<T*>(m_markedArea));
+			}
+			else
+			{
+				if (FindActiveNavArea() && m_selectedArea)
+				{
+					cmd(static_cast<T*>(m_selectedArea));
+				}
+			}
+		}
+
+		if (clearOnEnd)
+		{
+			ClearSelectedSet();
+			SetMarkedArea(nullptr);
 		}
 	}
 
@@ -1025,6 +1073,7 @@ private:
 	int m_generationIndex;										// used for iterating nav areas during generation process
 	int m_sampleTick;											// counter for displaying pseudo-progress while sampling walkable space
 	bool m_bQuitWhenFinished;
+	bool m_isInDangerousState;									// True if the nav mesh is in a dangerous state for bots (will crash if bots are present)
 	float m_generationStartTime;
 	Extent m_simplifyGenerationExtent;
 

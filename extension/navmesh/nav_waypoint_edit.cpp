@@ -35,6 +35,7 @@ CON_COMMAND_F(sm_nav_waypoint_delete, "Deletes the nearest or selected waypoint.
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
+	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 
 	auto& selectedWpt = TheNavMesh->GetSelectedWaypoint();
 

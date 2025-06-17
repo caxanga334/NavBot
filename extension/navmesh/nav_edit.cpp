@@ -5013,3 +5013,203 @@ CON_COMMAND_F(sm_nav_auto_create_teleports, "Automatically creates off-mesh conn
 	TheNavMesh->SetMarkedArea(nullptr);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
 }
+
+void CNavMesh::CommandNavSelectAreasWithinEntity(CBaseEntity* pEntity, const std::string& classname, const bool centerOnly, const float heightOffset)
+{
+	ClearSelectedSet();
+	SetMarkedArea(nullptr);
+	Vector search;
+
+	if (pEntity)
+	{
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			CNavArea* area = TheNavAreas[it];
+
+			search = area->GetCenter();
+			search.z += heightOffset;
+
+			if (UtilHelpers::pointIsWithinTrigger(pEntity, search))
+			{
+				AddToSelectedSet(area);
+				continue;
+			}
+
+			if (centerOnly)
+			{
+				continue;
+			}
+
+			for (int c = 0; c < static_cast<int>(NUM_CORNERS); c++)
+			{
+				search = area->GetCorner(static_cast<NavCornerType>(c));
+				search.z += heightOffset;
+
+				if (UtilHelpers::pointIsWithinTrigger(pEntity, search))
+				{
+					AddToSelectedSet(area);
+					break; // exit the corner loop
+				}
+			}
+		}
+	}
+	else
+	{
+		auto functor = [this, &centerOnly, &heightOffset](int index, edict_t* edict, CBaseEntity* entity) {
+
+			if (entity)
+			{
+				Vector search;
+
+				FOR_EACH_VEC(TheNavAreas, it)
+				{
+					CNavArea* area = TheNavAreas[it];
+
+					search = area->GetCenter();
+					search.z += heightOffset;
+
+					if (UtilHelpers::pointIsWithinTrigger(entity, search))
+					{
+						AddToSelectedSet(area);
+						continue;
+					}
+
+					if (centerOnly)
+					{
+						continue;
+					}
+
+					for (int c = 0; c < static_cast<int>(NUM_CORNERS); c++)
+					{
+						search = area->GetCorner(static_cast<NavCornerType>(c));
+						search.z += heightOffset;
+
+						if (UtilHelpers::pointIsWithinTrigger(entity, search))
+						{
+							AddToSelectedSet(area);
+							break; // exit the corner loop
+						}
+					}
+				}
+			}
+
+			return true;
+		};
+
+		UtilHelpers::ForEachEntityOfClassname(classname.c_str(), functor);
+	}
+
+	int count = GetSelectedSet().Count();
+	META_CONPRINTF("Selected %i areas!\n", count);
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+CON_COMMAND_F(sm_nav_select_areas_within_entity, "Selects all nav areas that are within an entity bounds.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	if (args.ArgC() < 4)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_select_areas_within_entity <entity index or entity classname> <bool: search center only> <height offset> \n");
+		return;
+	}
+
+	std::string classname;
+	CBaseEntity* pEntity = nullptr;
+
+	int index = atoi(args[1]);
+
+	if (index == 0)
+	{
+		classname.assign(args[1]);
+	}
+	else
+	{
+		pEntity = gamehelpers->ReferenceToEntity(index);
+
+		if (!pEntity)
+		{
+			META_CONPRINTF("NULL entity of index %i!\n", index);
+			return;
+		}
+
+	}
+
+	const bool centerOnly = UtilHelpers::StringToBoolean(args[2]);
+	const float heightOffset = atof(args[3]);
+
+	TheNavMesh->CommandNavSelectAreasWithinEntity(pEntity, classname, centerOnly, heightOffset);
+}
+
+void CNavMesh::CommandNavReloadMesh()
+{
+	extmanager->RemoveAllBots("Reloading navigation mesh.");
+	ClearSelectedSet();
+	SetMarkedArea(nullptr);
+
+	META_CONPRINT("Saving and loading the navigaiton mesh, this may freeze your game for a few seconds. \n");
+
+	if (!Save())
+	{
+		META_CONPRINT("Failed to reload the navigation mesh: Error while trying to save! \n");
+		return;
+	}
+
+	LoadPlaceDatabase();
+
+	NavErrorType error = NAV_CORRUPT_DATA;
+
+	try
+	{
+		error = Load();
+	}
+	catch (const std::ios_base::failure& ex)
+	{
+		smutils->LogError(myself, "Exception throw while reading navigation mesh file: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "Failed to load navigation mesh: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+
+	switch (error)
+	{
+	case NAV_OK:
+		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
+		break;
+	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
+		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
+		break;
+	case NAV_INVALID_FILE:
+		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
+		break;
+	case NAV_BAD_FILE_VERSION:
+		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
+		break;
+	case NAV_FILE_OUT_OF_DATE:
+		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
+		break;
+	case NAV_CORRUPT_DATA:
+		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
+		break;
+	case NAV_OUT_OF_MEMORY:
+		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
+		break;
+	default:
+		break;
+	}
+
+	// Sourcemod's OnMapStart is called on a ServerActivate hook
+	OnServerActivate(); // this isn't called anywhere else so just call it here
+	OnReloaded();
+}
+
+CON_COMMAND_F(sm_nav_reload, "Reloads the navigation mesh.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	if (!UTIL_IsCommandIssuedByServerAdmin())
+		return;
+
+	TheNavMesh->CommandNavReloadMesh();
+}

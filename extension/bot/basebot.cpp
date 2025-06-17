@@ -28,7 +28,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_isfirstspawn = false;
 	m_nextupdatetime.Invalidate();
 	m_joingametime = 64;
-	m_controller = nullptr; // Because the bot is now allocated at 'OnClientPutInServer' no bot controller was created yet.
+	m_controller = nullptr; // bot manager will return NULL if called here because the FL_FAKECLIENT flag isn't set yet
 	m_listeners.reserve(8);
 	m_basecontrol = nullptr;
 	m_basemover = nullptr;
@@ -62,6 +62,12 @@ CBaseBot::~CBaseBot()
 
 void CBaseBot::PostAdd()
 {
+	if (CExtManager::ShouldFixUpBotFlags())
+	{
+		entprops->SetEntProp(GetIndex(), Prop_Send, "m_fFlags", 0); // clear flags
+		entprops->SetEntProp(GetIndex(), Prop_Send, "m_fFlags", FL_CLIENT | FL_FAKECLIENT); // set client and fakeclient flags
+	}
+
 	if (m_controller == nullptr)
 	{
 		m_controller = botmanager->GetBotController(GetEdict());
@@ -69,6 +75,15 @@ void CBaseBot::PostAdd()
 
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(0, 255, 60, 255), "CBaseBot::PostAdd m_controller = %p \n", m_controller);
+
+	int flags = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_fFlags", flags);
+
+	if ((flags & FL_FAKECLIENT) == 0)
+	{
+		smutils->LogError(myself, "CBaseBot::PostAdd FL_FAKECLIENT not set for bot %s!", GetClientName());
+	}
+
 #endif // EXT_DEBUG
 }
 

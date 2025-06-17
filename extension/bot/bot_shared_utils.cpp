@@ -6,7 +6,7 @@
 #include "bot_shared_utils.h"
 
 botsharedutils::AimSpotCollector::AimSpotCollector(CBaseBot* bot) :
-	INavAreaCollector(bot->GetLastKnownNavArea(), bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false), 
+	INavAreaCollector(bot->GetLastKnownNavArea(), bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false, true), 
 	m_vecOffset1(0.0f, 0.0f, 32.0f), m_vecOffset2(0.0f, 0.0f, 60.0f)
 {
 	m_aimOrigin = bot->GetEyeOrigin();
@@ -639,7 +639,7 @@ bool botsharedutils::RandomDestinationCollector::ShouldSearch(CNavArea* area)
 }
 
 botsharedutils::IsReachableAreas::IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators) :
-	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), limit, searchLadders, searchLinks, searchElevators)
+	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), limit, searchLadders, searchLinks, searchElevators, false)
 {
 	m_bot = bot;
 }

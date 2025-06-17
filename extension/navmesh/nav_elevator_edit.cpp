@@ -68,6 +68,7 @@ CON_COMMAND_F(sm_nav_elevator_create, "Creates a new Nav Elevator", FCVAR_CHEAT)
 
 	Msg("Created Nav Elevator #%i.\n", ne->GetID());
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	TheNavMesh->NotifyDangerousEditCommandWasUsed(); // elevators causes crashes if the map isn't reloaded
 }
 
 CON_COMMAND_F(sm_nav_elevator_select_nearest, "Selects the nearest elevator to your position.", FCVAR_CHEAT)
@@ -122,6 +123,7 @@ CON_COMMAND_F(sm_nav_elevator_clear_selection, "Clears the selected elevator.", 
 CON_COMMAND_F(sm_nav_elevator_delete, "Deletes the selected elevator.", FCVAR_CHEAT)
 {
 	auto& selected = TheNavMesh->GetSelectedElevator();
+	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 
 	if (selected.get() == nullptr)
 	{

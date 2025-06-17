@@ -2,6 +2,7 @@
 #define SMNAV_EXT_MANAGER_H_
 #pragma once
 
+#include <cstdint>
 #include <bot/interfaces/profile.h>
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
@@ -24,6 +25,15 @@ public:
 	{
 		QUOTA_FIXED = 0, // Manager keeps a fixed number of bots
 		QUOTA_FILL, // Fill with N bots, automatically kicked to free space for humans
+	};
+
+	enum class BotCreateMethod : std::uint8_t
+	{
+		CREATEFAKECLIENT = 0U,
+		CREATEFAKECLIENTEX,
+		BOTMANAGER,
+
+		MAX_METHODS
 	};
 
 	static constexpr float MOD_UPDATE_INTERVAL = 1.0f; // interval between CBaseMod::Update calls
@@ -105,6 +115,9 @@ public:
 	void NotifyBotsAreUnsupported() { m_allowbots = false; }
 	bool AreBotsSupported() const { return m_allowbots; }
 
+	static BotCreateMethod GetBotCreateMethod() { return s_botcreatemethod; }
+	static bool ShouldFixUpBotFlags() { return s_fixupbotflags; }
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
@@ -125,6 +138,8 @@ private:
 
 	// Getting horrible performance at vstdlib.dll from a function called by ConVarRef::Init, so we are caching the sv_gravity value here
 	static inline float s_sv_gravity{ 800.0f };
+	static inline BotCreateMethod s_botcreatemethod{ BotCreateMethod::BOTMANAGER };
+	static inline bool s_fixupbotflags{ false };
 };
 
 extern CExtManager* extmanager;

@@ -1185,6 +1185,7 @@ public:
 		m_searchLinks = true;
 		m_searchElevators = true;
 		m_endSearch = false;
+		m_searchIncoming = false;
 	}
 
 	INavAreaCollector(T* start, const float limit = 999999.0f)
@@ -1197,9 +1198,10 @@ public:
 		m_searchLinks = true;
 		m_searchElevators = true;
 		m_endSearch = false;
+		m_searchIncoming = false;
 	}
 
-	INavAreaCollector(T* start, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators)
+	INavAreaCollector(T* start, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators, const bool searchIncomingConnections)
 	{
 		m_startArea = start;
 		m_travelLimit = limit;
@@ -1209,6 +1211,7 @@ public:
 		m_searchLinks = searchLinks;
 		m_searchElevators = searchElevators;
 		m_endSearch = false;
+		m_searchIncoming = searchIncomingConnections;
 	}
 
 	virtual ~INavAreaCollector() {}
@@ -1221,9 +1224,11 @@ public:
 	void SetSearchLadders(const bool search) { m_searchLadders = search; }
 	void SetSearchLinks(const bool search) { m_searchLinks = search; }
 	void SetSearchElevators(const bool search) { m_searchElevators = search; }
+	void SetSearchIncomingConnections(const bool search) { m_searchIncoming = search; }
 	bool CanSearchLadders() const { return m_searchLadders; }
 	bool CanSearchLinks() const { return m_searchLinks; }
 	bool CanSearchElevators() const { return m_searchElevators; }
+	bool CanSearchIncomingConnections() const { return m_searchIncoming; }
 
 	// Execute the search
 	void Execute();
@@ -1277,6 +1282,7 @@ private:
 	bool m_searchLinks;
 	bool m_searchElevators;
 	bool m_endSearch;
+	bool m_searchIncoming;
 
 	void InitSearch();
 
@@ -1375,6 +1381,24 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 		{
 			T* other = static_cast<T*>(area->GetAdjacentArea(static_cast<NavDirType>(dir), i));
 			IncludeInSearch(area, other);
+		}
+	}
+
+	// Search incoming connections
+	if (CanSearchIncomingConnections())
+	{
+		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			auto* vec = area->GetIncomingConnections(static_cast<NavDirType>(dir));
+
+			if (vec)
+			{
+				for (int i = 0; i < vec->Count(); i++)
+				{
+					T* other = static_cast<T*>(vec->Element(i).area);
+					IncludeInSearch(area, other);
+				}
+			}
 		}
 	}
 

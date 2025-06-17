@@ -120,6 +120,14 @@ void CBaseBot::Hook_Spawn_Post()
 {
 #ifdef EXT_DEBUG
 	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn_Post <%p>\n", this);
+
+	const Vector& origin = UtilHelpers::getEntityOrigin(GetEntity());
+
+	if (origin.DistTo(vec3_origin) <= 64.0f)
+	{
+		Warning("%s spawned near world origin! %g %g %g \n", GetDebugIdentifier(), origin.x, origin.y, origin.z);
+	}
+
 #endif // EXT_DEBUG
 
 	Spawn();

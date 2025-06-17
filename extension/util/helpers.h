@@ -79,7 +79,21 @@ namespace UtilHelpers
 	const QAngle& getEntityAngles(CBaseEntity* entity);
 	void getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs);
 	void getEntityBounds(CBaseEntity* entity, Vector& mins, Vector& maxs);
+	/**
+	 * Checks if a point is within a trigger
+	 *
+	 * @param pEntity	The trigger entity
+	 * @param vPoint	The point to be tested
+	 * @return			True if the given point is within pEntity
+	 **/
 	bool pointIsWithinTrigger(edict_t* pEntity, const Vector& vPoint);
+	/**
+	 * @brief Checks if the given position is within the given entity's trigger volume.
+	 * @param pEntity Entity to test.
+	 * @param vPoint Position to test.
+	 * @return True if the given position is within the given entity's trigger volume.
+	 */
+	bool pointIsWithinTrigger(CBaseEntity* pEntity, const Vector& vPoint);
 	bool isBoundsDefinedInEntitySpace(edict_t* pEntity);
 	bool isBoundsDefinedInEntitySpace(ICollideable* collider);
 	int FindEntityByClassname(int start, const char* searchname);

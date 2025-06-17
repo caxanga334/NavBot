@@ -19,11 +19,12 @@
 #include <util/librandom.h>
 #include "manager.h"
 
+#include <navmesh/nav_mesh.h>
+
 #ifdef EXT_DEBUG
 #include <sdkports/debugoverlay_shared.h>
 #include <navmesh/nav.h>
 #include <navmesh/nav_area.h>
-#include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/interfaces/path/basepath.h>
 #include <entities/baseentity.h>
@@ -100,6 +101,41 @@ void CExtManager::OnAllLoaded()
 
 	AllocateMod();
 	LoadBotNames();
+
+	constexpr std::size_t MAX_LEN = 256U;
+	char error[MAX_LEN];
+
+	SourceMod::IGameConfig* gameconf = nullptr;
+
+	if (gameconfs->LoadGameConfigFile("navbot.games", &gameconf, error, MAX_LEN))
+	{
+		const char* botmethod = gameconf->GetKeyValue("CreateBotMethod");
+
+		if (botmethod)
+		{
+			if (std::strcmp(botmethod, "engine1") == 0)
+			{
+				CExtManager::s_botcreatemethod = BotCreateMethod::CREATEFAKECLIENT;
+			}
+			else if (std::strcmp(botmethod, "engine2") == 0)
+			{
+				CExtManager::s_botcreatemethod = BotCreateMethod::CREATEFAKECLIENTEX;
+			}
+			else if (std::strcmp(botmethod, "botmanager") == 0)
+			{
+				CExtManager::s_botcreatemethod = BotCreateMethod::BOTMANAGER;
+			}
+		}
+
+		const char* value = gameconf->GetKeyValue("FixUpFlags");
+		
+		if (value)
+		{
+			CExtManager::s_fixupbotflags = UtilHelpers::StringToBoolean(value);
+		}
+
+		gameconfs->CloseGameConfigFile(gameconf);
+	}
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%s'. Detected Mod: '%s'", UtilHelpers::GetEngineBranchName(), m_mod->GetModName());
 }
@@ -336,6 +372,12 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		return;
 	}
 
+	if (TheNavMesh->IsDangerousForBots())
+	{
+		META_CONPRINT("The navigation mesh was edited, bots cannot be added until the map is reloaded! \n");
+		return;
+	}
+
 	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
 
 	m_prebotaddforward->Execute(&result);
@@ -389,12 +431,28 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 	// Tell the bot manager to create a new bot. Now that we are using SourceHooks, we need to catch the bot on 'OnClientPutInServer'.
 	m_iscreatingbot = true;
-	edict_t* edict = botmanager->CreateBot(finalname);
+	edict_t* edict = nullptr;
+
+	switch (CExtManager::s_botcreatemethod)
+	{
+	case BotCreateMethod::CREATEFAKECLIENT:
+		edict = engine->CreateFakeClient(finalname);
+		break;
+	case BotCreateMethod::CREATEFAKECLIENTEX:
+		edict = engine->CreateFakeClientEx(finalname);
+		break;
+	case BotCreateMethod::BOTMANAGER:
+		[[fallthrough]];
+	default:
+		edict = botmanager->CreateBot(finalname);
+		break;
+	}
+
 	m_iscreatingbot = false;
 
 	if (edict == nullptr)
 	{
-		smutils->LogError(myself, "Failed to create a new bot with the Bot Manager interface!");
+		smutils->LogError(myself, "AddBot failed: NULL edict when creating bot!");
 
 		if (newbotedict != nullptr)
 		{

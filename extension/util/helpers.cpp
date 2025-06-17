@@ -307,22 +307,29 @@ void UtilHelpers::getEntityBounds(CBaseEntity* entity, Vector& mins, Vector& max
 	maxs = reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->OBBMaxs();
 }
 
-/**
- * Checks if a point is within a trigger
- *
- * @param pEntity	The trigger entity
- * @param vPoint	The point to be tested
- * @return			True if the given point is within pEntity
- **/
 bool UtilHelpers::pointIsWithinTrigger(edict_t* pEntity, const Vector& vPoint)
 {
 #ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("UtilHelpers::pointIsWithinTrigger", "NavBot");
+	VPROF_BUDGET("UtilHelpers::pointIsWithinTrigger (edict_t)", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
 	Ray_t ray;
 	trace_t tr;
 	ICollideable* pCollide = pEntity->GetCollideable();
+	ray.Init(vPoint, vPoint);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, pCollide, &tr);
+	return (tr.startsolid);
+}
+
+bool UtilHelpers::pointIsWithinTrigger(CBaseEntity* pEntity, const Vector& vPoint)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::pointIsWithinTrigger (CBaseEntity)", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	Ray_t ray;
+	trace_t tr;
+	ICollideable* pCollide = reinterpret_cast<IServerUnknown*>(pEntity)->GetCollideable();
 	ray.Init(vPoint, vPoint);
 	enginetrace->ClipRayToCollideable(ray, MASK_ALL, pCollide, &tr);
 	return (tr.startsolid);

@@ -69,6 +69,7 @@ CON_COMMAND_F(sm_nav_prereq_delete, "Deletes the currently selected prerequisite
 	if (selected)
 	{
 		TheNavMesh->DeletePrerequisite(selected.get());
+		TheNavMesh->NotifyDangerousEditCommandWasUsed();
 	}
 }
 

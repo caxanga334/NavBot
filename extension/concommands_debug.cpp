@@ -1157,4 +1157,63 @@ CON_COMMAND(sm_navbot_debug_network_prop, "Debugs the entity's CServerNetworkPro
 
 }
 
+CON_COMMAND(sm_navbot_debug_createfakeclient, "Debug CreateFakeClient.")
+{
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_fakeclient <method> \n  0 = CreateFakeClient\n  1 = CreateFakeClientEx\n  2 = BotManager \n");
+		return;
+	}
+
+	char name[MAX_PLAYER_NAME_LENGTH];
+	V_snprintf(name, MAX_PLAYER_NAME_LENGTH, "BOT %04i", randomgen->GetRandomInt<int>(1, 9999));
+	int method = atoi(args[1]);
+	edict_t* edict = nullptr;
+
+	if (method == 0)
+	{
+		edict = engine->CreateFakeClient(name);
+	}
+	else if (method == 1)
+	{
+		edict = engine->CreateFakeClientEx(name);
+	}
+	else if (method == 2)
+	{
+		edict = botmanager->CreateBot(name);
+	}
+
+	if (!edict)
+	{
+		META_CONPRINT("NULL bot edict! \n");
+		return;
+	}
+
+	int index = gamehelpers->IndexOfEdict(edict);
+	entprops->SetEntProp(index, Prop_Send, "m_fFlags", 0); // clear flags
+	entprops->SetEntProp(index, Prop_Send, "m_fFlags", FL_CLIENT | FL_FAKECLIENT); // set client and fakeclient flags
+
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(edict);
+	IPlayerInfo* info = playerinfomanager->GetPlayerInfo(edict);
+	IBotController* controller = botmanager->GetBotController(edict);
+
+	META_CONPRINTF("Created fake client: %i <%p> PI: %p BC: %p\n", gamehelpers->IndexOfEdict(edict), pEntity, info, controller);
+}
+
+CON_COMMAND(sm_navbot_debug_player_info, "Debugs the player info interfaces.")
+{
+	for (int client = 1; client <= gpGlobals->maxClients; client++)
+	{
+		edict_t* edict = gamehelpers->EdictOfIndex(client);
+		
+		if (!UtilHelpers::IsValidEdict(edict))
+			continue;
+
+		IPlayerInfo* info = playerinfomanager->GetPlayerInfo(edict);
+		IBotController* controller = botmanager->GetBotController(edict);
+
+		META_CONPRINTF("Player %i edict %p player info %p bot controller %p \n", client, edict, info, controller);
+	}
+}
+
 #endif // EXT_DEBUG

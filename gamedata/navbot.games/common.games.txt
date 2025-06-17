@@ -9,6 +9,22 @@
 			 * If a mod needs to hook OnPlayerRunCMD, set this to 1
 			*/
 			"HookPlayerRunCMD"	"0"
+			/* Method used to create bots.
+			 * engine1 = engine->CreateFakeClient
+			 * engine2 = engine->CreateFakeClientEx
+			 * botmanager = botmanager->CreateBot
+			*/
+			"CreateBotMethod"	"engine2"
+			/* Should NavBot manually set the FL_CLIENT and FL_FAKECLIENT flags on bots?
+			 * This should be set to "true" if CreateBotMethod is set to engine1 or engine2
+			*/
+			"FixUpFlags"		"true"
+
+			/* Experimental:
+			 * Going to switch from CreateBot to CreateFakeClientEx as the default create bot method.
+			 * NextBots uses CreateFakeClientEx, and CreateBot has some side effects. 
+			 * (Example: on DoD:S, CreateBot causes bots to spawn a ragdoll on the map origin and an ERRORNAME died message).
+			*/
 			
 			/* Nav Mesh editing sounds 
 			 * Default sounds are from HL2, should be compatible with most mods

@@ -137,7 +137,6 @@ CNavMesh::CNavMesh( void )
 	Reset();
 
 	ListenForGameEvent("round_start");
-	ListenForGameEvent("dod_round_start");
 	
 
 	// Default walkable entities for generation
@@ -287,6 +286,10 @@ void CNavMesh::OnMapEnd()
 {
 }
 
+void CNavMesh::OnReloaded()
+{
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Reset the Navigation Mesh to initial values
@@ -306,6 +309,7 @@ void CNavMesh::Reset( void )
 	m_markedArea = NULL;
 	m_selectedArea = NULL;
 	m_bQuitWhenFinished = false;
+	m_isInDangerousState = false;
 
 	m_editMode = NORMAL;
 
@@ -652,7 +656,7 @@ void CNavMesh::FireGameEvent(IGameEvent* event)
 
 	auto name = event->GetName();
 
-	if (strncmp(name, "round_start", 11) == 0 || strncmp(name, "dod_round_start", 15) == 0 || strncmp(name, "teamplay_round_start", 20) == 0)
+	if (strncmp(name, "round_start", 11) == 0)
 	{
 		OnRoundRestart();
 		PropagateOnRoundRestart();
@@ -4070,4 +4074,11 @@ bool CNavMesh::IsClimbableSurface(const trace_t& tr)
 	}
 
 	return climbable;
+}
+void CNavMesh::NotifyDangerousEditCommandWasUsed()
+{
+	m_isInDangerousState = true;
+	extmanager->RemoveAllBots("Nav Mesh was edited, removing all bots.");
+	ConVarRef sm_navbot_quota_quantity{ "sm_navbot_quota_quantity" };
+	sm_navbot_quota_quantity.SetValue(0);
 }

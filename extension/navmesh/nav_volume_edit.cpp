@@ -46,6 +46,7 @@ CON_COMMAND_F(sm_nav_volume_delete, "Deletes the selected nav volume.", FCVAR_CH
 {
 	TheNavMesh->RemoveSelectedVolume();
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_volume_draw_areas, "Draws areas inside the selected volume.", FCVAR_CHEAT)
