@@ -1,4 +1,5 @@
 #include <array>
+#include <cmath>
 #include <extension.h>
 #include <sdkports/sdk_traces.h>
 #include <bot/blackmesa/bmbot.h>
@@ -73,6 +74,14 @@ TaskResult<CBlackMesaBot> CBlackMesaBotDeployTripminesTask::OnTaskUpdate(CBlackM
 	if (m_timeout < gpGlobals->curtime)
 	{
 		return Done("Timed out!");
+	}
+
+	const Vector origin = bot->GetAbsOrigin();
+	const float z = std::fabs(origin.z - m_wallPosition.z);
+	
+	if (z > bot->GetMovementInterface()->GetStandingHullHeight())
+	{
+		return Done("Unreachable!");
 	}
 
 	bot->GetMovementInterface()->MoveTowards(m_wallPosition);

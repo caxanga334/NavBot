@@ -8,6 +8,7 @@
 #include <tier1/convar.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include <sdkports/sdk_traces.h>
+#include <am-float.h>
 #include "basebot_behavior.h"
 #include "basebot.h"
 
@@ -427,6 +428,21 @@ void CBaseBot::BuildUserCommand(const int buttons)
 
 void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 {
+#if EXT_DEBUG
+	// Check the user command for invalid values
+
+	if (ke::IsNaN<float>(ucmd->forwardmove) || ke::IsInfinite<float>(ucmd->forwardmove))
+	{
+		smutils->LogError(myself, "%s Bogus CBotCmd::forwardmove", GetClientName());
+	}
+
+	if (ke::IsNaN<float>(ucmd->sidemove) || ke::IsInfinite<float>(ucmd->sidemove))
+	{
+		smutils->LogError(myself, "%s Bogus CBotCmd::sidemove", GetClientName());
+	}
+
+#endif // EXT_DEBUG
+
 	if (!extension->ShouldCallRunPlayerCommand()) // this mod already calls runplayermove on bots, we send the bot actual cmd on the hook
 	{
 		return;

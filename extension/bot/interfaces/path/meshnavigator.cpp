@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <cmath>
 
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
@@ -291,6 +292,7 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	{
 		return true;
 	}
+
 	if (m_goal->type == AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE)
 	{
 		auto landing = GetNextSegment(m_goal);

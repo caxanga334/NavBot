@@ -982,10 +982,12 @@ private:
 
 		if (result.GetPriority() >= m_pendingEventResult.GetPriority())
 		{
+#ifdef EXT_DEBUG
 			if (m_pendingEventResult.GetPriority() == PRIORITY_MANDATORY)
 			{
-				throw std::runtime_error("PRIORITY_MANDATORY collision!");
+				DevWarning("[NAVBOT] %s::UpdatePendingEventResult PRIORITY_MANDATORY COLLISION! \n", GetName());
 			}
+#endif // EXT_DEBUG
 
 			// We received a new result with higher priority, discard old result
 			if (m_pendingEventResult.GetNextTask() != nullptr)

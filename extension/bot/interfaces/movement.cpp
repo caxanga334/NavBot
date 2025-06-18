@@ -576,6 +576,7 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 
 	m_ladder = ladder;
 	m_ladderExit = dismount;
+	m_wasLaunched = false;
 	ChangeLadderState(LadderState::APPROACHING_LADDER_UP);
 
 	auto bot = GetBot();
@@ -593,6 +594,7 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 {
 	m_ladder = ladder;
 	m_ladderExit = dismount;
+	m_wasLaunched = false;
 	ChangeLadderState(LadderState::APPROACHING_LADDER_DOWN);
 
 	auto bot = GetBot();
@@ -1686,11 +1688,12 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 		// Airborne, probably missed the ladder, move towards it to grab it
 		climbPoint = m_ladder->m_top - (0.5f * GetHullWidth() * m_ladder->GetNormal());
 
-		if (!me->IsMovingTowards(climbPoint, 0.95f))
+		if (!me->IsMovingTowards(climbPoint, 0.95f) && !m_wasLaunched)
 		{
 			// Cheat: Launch towards the ladder climb point to help the bot grab it
 			Vector launch = me->CalculateLaunchVector(climbPoint, GetWalkSpeed());
 			me->SetAbsVelocity(launch);
+			m_wasLaunched = true;
 		}
 	}
 	else if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
@@ -1799,7 +1802,7 @@ IMovement::LadderState IMovement::UseLadderUp()
 
 		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
-			NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+			NDebugOverlay::VertArrow(origin, goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
 			NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
 			m_ladderExit->DrawFilled(0, 255, 255, 200);
 			NDebugOverlay::Text(m_ladderExit->GetCenter(), false, 0.1f, "LADDER EXIT AREA %3.2f", m_ladderGoalZ);
@@ -2038,7 +2041,23 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	case IMovement::USING_LADDER_UP:
 	{
 		// calculate Z goal
-		m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() * 0.5f);
+
+		if (m_ladder->GetLadderType() == CNavLadder::LadderType::USEABLE_LADDER)
+		{
+			m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z - (GetStepHeight() * 0.5f);
+		}
+		else
+		{
+			// for simple ladders, try to go a little above it
+			m_ladderGoalZ = m_ladder->GetConnectionToArea(m_ladderExit)->GetConnectionPoint().z + GetCrouchedHullHeight();
+
+			if (m_ladderGoalZ >= m_ladder->m_top.z)
+			{
+				m_ladderGoalZ = m_ladder->m_top.z - (GetStepHeight() * 0.5f);
+			}
+		}
+
+		
 		float time = m_ladder->m_length / LADDER_TIME_DIVIDER;
 		m_ladderTimer.Start(time);
 		SetDesiredSpeed(GetRunSpeed());

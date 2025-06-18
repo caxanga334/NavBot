@@ -650,6 +650,8 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 				{
 					to->ladder = ladder;
 					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
+					// the connection point is to the EXIT area, adjust the Z coordinates
+					to->goal.z = ladder->ClampZ(from->area->GetCenter().z);
 					to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
 					break;
 				}
@@ -678,8 +680,10 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 				if (/* connect.IsConnectedToLadderBottom() && */ connect.GetConnectedArea() == to->area)
 				{
 					to->ladder = ladder;
-					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
-					to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
+					to->goal = connect.GetConnectionPoint() - ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
+					// the connection point is to the EXIT area, adjust the Z coordinates
+					to->goal.z = ladder->ClampZ(from->area->GetCenter().z);
+					to->type = AIPath::SegmentType::SEGMENT_LADDER_DOWN;
 					break;
 				}
 			}
