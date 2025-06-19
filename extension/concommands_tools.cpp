@@ -557,7 +557,8 @@ CON_COMMAND_F(sm_navbot_tool_dump_weapons, "Lists all CBaseCombatCharacter weapo
 		META_CONPRINTF("Dumping stored Weapon Information data of %s \n", bot->GetClientName());
 
 		auto dumpweapons = [](const CBotWeapon* weapon) {
-			META_CONPRINTF("Weapon \"%s\" #%i using config entry: %s \n", weapon->GetClassname().c_str(), weapon->GetWeaponEconIndex(), weapon->GetWeaponInfo()->GetConfigEntryName());
+			META_CONPRINTF("Weapon \"%s\" #%i using config entry: %s \n", 
+				weapon->GetClassname().c_str(), weapon->GetWeaponEconIndex(), weapon->GetWeaponInfo()->GetConfigEntryName());
 		};
 
 		bot->GetInventoryInterface()->ForEveryWeapon(dumpweapons);
@@ -605,9 +606,17 @@ CON_COMMAND_F(sm_navbot_tool_weapon_report, "Reports some information about your
 	{
 		META_CONPRINT("Weapon doesn't have a primary ammo type. \n");
 	}
+	else
+	{
+		META_CONPRINTF("Weapon's primary ammo type index: %i \n", primaryammotype);
+	}
 
 	if (secondaryammotype < 0)
 	{
 		META_CONPRINT("Weapon doesn't have a secondary ammo type. \n");
+	}
+	else
+	{
+		META_CONPRINTF("Weapon's secondary ammo type index: %i \n", secondaryammotype);
 	}
 }

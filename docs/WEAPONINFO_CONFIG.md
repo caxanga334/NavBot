@@ -29,6 +29,14 @@ This is a list of keys available for all mods.
 |attack_interval|Delay in seconds between attacks. The bot releases the attack buttons between intervals. Negative values to make the bot hold the attack button.|float|
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
+|custom_ammo_property_name|Entity property the ammo for this weapon is stored at.|string|
+|custom_ammo_property_source|Where is the entity property located. Valid values are "player" and "weapon".|string|
+|custom_ammo_property_type|Custom ammo property type. "networked" for networked properties and "datamap" for datamaps.|string|
+|custom_ammo_property_out_of_ammo_threshold|If the property value is equal or less than this, the weapon is out of ammo.|float|
+|custom_ammo_property_is_float|Is the entity property used for custom ammo a float? If not, it's an integer.|boolean|
+|priority_dynamic_has_secondary_ammo|If non zero and the weapon has secondary ammo, add this to the weapon's priority value.|integer|
+|priority_dynamic_health_percentage|If the bot health matches the condition, add this to the weapon's priority value|integer|
+|priority_dynamic_health_percentage_threshold|If the bot health percentage is equal or less than this, then add `priority_dynamic_health_percentage` to the weapon's priority. Negative value (default) disables this.|float|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
 

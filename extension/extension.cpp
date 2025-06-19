@@ -368,8 +368,6 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	}
 #endif // EXT_DEBUG
 
-	
-
 	GET_V_IFACE_CURRENT(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
 
 	gpGlobals = ismm->GetCGlobals();

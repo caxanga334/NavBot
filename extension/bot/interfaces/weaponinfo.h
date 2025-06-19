@@ -114,10 +114,15 @@ public:
 	{
 		classname.reserve(64);
 		configentry.reserve(64);
+		custom_ammo_property_name.reserve(64);
 		econindex = -1;
 		priority = 0;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
+		custom_ammo_prop_on_weapon = true;
+		custom_ammo_prop_is_net = true;
+		custom_ammo_is_float = false;
+		custom_ammo_out_of_ammo = 0.0f;
 		interval_between_attacks = -1.0f;
 		headshot_range_mult = 1.0f;
 		maxclip1 = 0;
@@ -127,18 +132,26 @@ public:
 		slot = INVALID_WEAPON_SLOT;
 		attack_move_range = -1.0f;
 		use_secondary_chance = 20;
+		dynamic_priority_has_sec_ammo = 0;
+		dynamic_priority_health = 0;
+		dynamic_priority_health_cond = -1.0f;
 	}
 
 	virtual ~WeaponInfo() {}
 
-	void Reset()
+	virtual void Reset()
 	{
 		classname.clear();
 		configentry.clear();
+		custom_ammo_property_name.clear();
 		econindex = -1;
 		priority = 0;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
+		custom_ammo_prop_on_weapon = true;
+		custom_ammo_prop_is_net = true;
+		custom_ammo_is_float = false;
+		custom_ammo_out_of_ammo = 0.0f;
 		interval_between_attacks = -1.0f;
 		headshot_range_mult = 1.0f;
 		headshot_aim_offset.Init(0.0f, 0.0f, 0.0f);
@@ -215,6 +228,14 @@ public:
 	void SetAttackInterval(float v) { interval_between_attacks = v; }
 	void SetAttackRange(float v) { attack_move_range = v; }
 	void SetChanceToUseSecondaryAttack(int v) { use_secondary_chance = v; }
+	void SetCustomAmmoPropertyName(const char* name) { custom_ammo_property_name.assign(name); }
+	void SetCustomAmmoPropertySource(bool onweapon) { custom_ammo_prop_on_weapon = onweapon; }
+	void SetCustomAmmoPropertyType(bool networked) { custom_ammo_prop_is_net = networked; }
+	void SetCustomAmmoOutOfAmmoThreshold(float v) { custom_ammo_out_of_ammo = v; }
+	void SetCustomAmmoPropertyIsFloat(const bool v) { custom_ammo_is_float = v; }
+	void SetDynamicPriorityHasSecondaryAmmo(const int v) { dynamic_priority_has_sec_ammo = v; }
+	void SetDynamicPriorityHealthPercentage(const int v) { dynamic_priority_health = v; }
+	void SetDynamicPriorityHealthPercentageCondition(const float v) {  dynamic_priority_health_cond = v; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -241,18 +262,32 @@ public:
 	// Returns the minimum distance bots should try to maintain when attacking
 	const float GetAttackRange() const { return attack_move_range; }
 	int GetChanceToUseSecondaryAttack() const { return use_secondary_chance; }
+	const std::string& GetCustomAmmoPropertyName() const { return custom_ammo_property_name; }
+	bool HasCustomAmmoProperty() const { return !custom_ammo_property_name.empty(); }
+	bool IsCustomAmmoPropertyOnWeapon() const { return custom_ammo_prop_on_weapon; }
+	bool IsCustomAmmoPropertyNetworked() const { return custom_ammo_prop_is_net; }
+	float GetCustomAmmoOutOfAmmoThreshold() const { return custom_ammo_out_of_ammo; }
+	bool IsCustomAmmoPropertyAFloat() const { return custom_ammo_is_float;  }
+	int GetDynamicPriorityHasSecondaryAmmo() const { return dynamic_priority_has_sec_ammo; }
+	int GetDynamicPriorityHealthPercentage() const { return dynamic_priority_health; }
+	float GetDynamicPriorityHealthPercentageCondition() const { return dynamic_priority_health_cond; }
  
 	virtual void PostLoad();
 
 protected:
 	std::string classname;
 	std::string configentry;
+	std::string custom_ammo_property_name;
 	WeaponAttackFunctionInfo attacksinfo[MAX_WEAPON_ATTACKS];
 	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
 	bool can_headshot;
 	bool infinite_reserve_ammo; // weapon has infinite reserve ammo (no need to collect ammo for it)
+	bool custom_ammo_prop_on_weapon; // if true, the custom ammo property is located on the weapon, if false, on the player
+	bool custom_ammo_prop_is_net; // if true, the custom ammo property is a networked property, else it's a datamap
+	bool custom_ammo_is_float; // if true, the custom ammo property is a float, else an integer.
+	float custom_ammo_out_of_ammo; // if the custom ammo is equal or less than this, the weapon is out of ammo
 	float interval_between_attacks; // delay between attacks
 	float headshot_range_mult;
 	int maxclip1; // Maximum ammo stored in clip1
@@ -262,6 +297,9 @@ protected:
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
 	float attack_move_range; // Minimum distance the bot will try to maintain when attacking.
 	int use_secondary_chance; // Chance to use the secondary attack if available
+	int dynamic_priority_has_sec_ammo; // Additional priority when the weapon has secondary ammo
+	int dynamic_priority_health; // Additional priority when the bot's health is equal or less to dynamic_priority_health_cond
+	float dynamic_priority_health_cond;
 
 	static constexpr auto CLIP_USES_RESERVE = -2; // if maxclip is equal to this constant, then the weapon doesn't use clips and the actual ammo in the 'clip' is the reserve ammo.
 	static constexpr auto SECONDARY_ATTACK_USES_PRIMARY_AMMO = -3;

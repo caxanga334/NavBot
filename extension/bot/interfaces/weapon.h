@@ -8,6 +8,7 @@
 #include <entities/basecombatweapon.h>
 
 class CBaseBot;
+class CKnownEntity;
 
 class CBotWeapon
 {
@@ -26,8 +27,10 @@ public:
 	inline const entities::HBaseCombatWeapon& GetBaseCombatWeapon() const { return m_bcw; }
 	inline int GetWeaponEconIndex() const { return m_econindex; }
 	edict_t* GetEdict() const;
-	CBaseEntity* GetEntity() const;
-	int GetIndex() const;
+	// Weapon's CBaseEntity pointer
+	CBaseEntity* GetEntity() const { return m_handle.Get(); }
+	// Weapon's entity index
+	int GetIndex() const { return m_entindex; }
 	/**
 	 * @brief Checks if this weapon is running low on ammo.
 	 * @param owner Bot that owns this weapon.
@@ -63,16 +66,26 @@ public:
 	virtual float GetCurrentMinimumAttackRange(CBaseBot* owner) const;
 	// Gets the maximum attack range based on the attack type used by the bot
 	virtual float GetCurrentMaximumAttackRange(CBaseBot* owner) const;
-
+	// Gets the weapon's entity classname (cached)
 	const std::string& GetClassname() const { return m_classname; }
-
+	/**
+	 * @brief Gets the dynamic weapon selection priority for this weapon.
+	 * @param owner Bot who owns this weapon.
+	 * @param range Optional: Range to threat
+	 * @param threat Optional: Current threat
+	 * @return Weapon selection priority
+	 */
+	const int GetPriority(const CBaseBot* owner, const float* range = nullptr, const CKnownEntity* threat = nullptr) const;
 protected:
 	const WeaponInfo* m_info;
+
+	float GetCustomAmmo(const CBaseBot* owner) const;
 
 private:
 	CHandle<CBaseEntity> m_handle;
 	entities::HBaseCombatWeapon m_bcw;
 	int m_econindex;
+	int m_entindex;
 	std::string m_classname;
 };
 

@@ -2,6 +2,7 @@
 #define SMNAV_BOT_KNOWN_ENTITY_H_
 #pragma once
 
+#include <string>
 #include <sdkports/sdk_ehandle.h>
 
 // Known Entity. Represents an entity that is known to the bot
@@ -73,12 +74,14 @@ public:
 		return false;
 	}
 
-	edict_t* GetEdict() const;
-	CBaseEntity* GetEntity() const;
-	int GetIndex() const;
+	edict_t* GetEdict() const { return m_handle.ToEdict(); }
+	CBaseEntity* GetEntity() const { return m_handle.Get(); }
+	int GetIndex() const { return m_handle.GetEntryIndex(); }
+	const std::string& GetEntityClassname() const { return m_classname; }
 	bool IsPlayer() const;
 private:
 	CHandle<CBaseEntity> m_handle; // Handle to the actual entity
+	std::string m_classname; // Entity classname (cached)
 	Vector m_lastknownposition; // Last known position of this entity
 	Vector m_lastknownvelocity; // Last known velocity of this entity
 	CNavArea* m_lastknownarea; // Nav area nearest to the LKP

@@ -19,6 +19,7 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 
 	auto classname = entityprops::GetEntityClassname(entity);
 	m_econindex = extmanager->GetMod()->GetWeaponEconIndex(edict);
+	m_entindex = gamehelpers->EntityToBCompatRef(entity);
 	m_info = extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(classname, m_econindex);
 	m_handle = entity;
 	m_classname.assign(classname);
@@ -38,16 +39,6 @@ edict_t* CBotWeapon::GetEdict() const
 	return reinterpret_cast<IServerEntity*>(m_handle.Get())->GetNetworkable()->GetEdict();
 }
 
-CBaseEntity* CBotWeapon::GetEntity() const
-{
-	return m_handle.Get();
-}
-
-int CBotWeapon::GetIndex() const
-{
-	return gamehelpers->EntityToBCompatRef(m_handle.Get());
-}
-
 bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 {
 	/* 
@@ -62,6 +53,11 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 	if (info->HasInfiniteReserveAmmo() || info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
 	{
 		return false;
+	}
+
+	if (info->HasCustomAmmoProperty())
+	{
+		return static_cast<int>(GetCustomAmmo(owner)) <= info->GetLowPrimaryAmmoThreshold();
 	}
 
 	if (info->HasLowPrimaryAmmoThreshold())
@@ -120,6 +116,16 @@ bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner) const
 	// primary melee never runs out of ammo
 	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
 	{
+		return false;
+	}
+
+	if (info->HasCustomAmmoProperty())
+	{
+		if (GetCustomAmmo(owner) <= info->GetCustomAmmoOutOfAmmoThreshold())
+		{
+			return true;
+		}
+
 		return false;
 	}
 
@@ -215,6 +221,11 @@ bool CBotWeapon::CanUseSecondaryAttack(const CBaseBot* owner) const
 {
 	const WeaponInfo* info = GetWeaponInfo();
 
+	if (!info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
+	{
+		return false;
+	}
+
 	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
 	{
 		return true;
@@ -285,4 +296,45 @@ float CBotWeapon::GetCurrentMaximumAttackRange(CBaseBot* owner) const
 	}
 
 	return std::numeric_limits<float>::max();
+}
+
+const int CBotWeapon::GetPriority(const CBaseBot* owner, const float* range, const CKnownEntity* threat) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+	int priority = info->GetPriority();
+
+	if (info->GetDynamicPriorityHasSecondaryAmmo() != 0 && hasSecondaryAmmo(owner))
+	{
+		priority += info->GetDynamicPriorityHasSecondaryAmmo();
+	}
+
+	if (info->GetDynamicPriorityHealthPercentageCondition() > 0.0f && owner->GetHealthPercentage() <= info->GetDynamicPriorityHealthPercentageCondition())
+	{
+		priority += info->GetDynamicPriorityHealthPercentage();
+	}
+
+	return priority;
+}
+
+float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+	PropType type = info->IsCustomAmmoPropertyNetworked() ? Prop_Send : Prop_Data;
+	float result = 0.0f;
+	int entity = info->IsCustomAmmoPropertyOnWeapon() ? this->GetIndex() : owner->GetIndex();
+
+	if (info->IsCustomAmmoPropertyAFloat())
+	{
+		float value = 0.0f;
+		entprops->GetEntPropFloat(entity, type, info->GetCustomAmmoPropertyName().c_str(), value);
+		result = value;
+	}
+	else
+	{
+		int value = 0;
+		entprops->GetEntProp(entity, type, info->GetCustomAmmoPropertyName().c_str(), value);
+		result = static_cast<float>(value);
+	}
+
+	return result;
 }

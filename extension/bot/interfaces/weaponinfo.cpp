@@ -1,6 +1,7 @@
 #include <filesystem>
 #include <unordered_set>
 #include <algorithm>
+#include <cstring>
 
 #include <extension.h>
 #include <manager.h>
@@ -225,7 +226,7 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetEconItemIndex(atoi(value));
 	}
-	else if (strncmp(key, "priority", 8) == 0)
+	else if (std::strcmp(key, "priority") == 0)
 	{
 		m_current->SetPriority(atoi(value));
 	}
@@ -277,7 +278,7 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetLowSecondaryAmmoThreshold(atoi(value));
 	}
-	else if (strncmp(key, "slot", 4) == 0)
+	else if (std::strcmp(key, "slot") == 0)
 	{
 		m_current->SetSlot(atoi(value));
 	}
@@ -303,6 +304,57 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		int v = atoi(value);
 		v = std::clamp(v, 1, 100);
 		m_current->SetChanceToUseSecondaryAttack(v);
+	}
+	else if (strncmp(key, "custom_ammo_property_name", 25) == 0)
+	{
+		m_current->SetCustomAmmoPropertyName(value);
+	}
+	else if (strncmp(key, "custom_ammo_property_source", 27) == 0)
+	{
+		if (strncmp(value, "player", 6) == 0)
+		{
+			m_current->SetCustomAmmoPropertySource(false);
+		}
+		else
+		{
+			m_current->SetCustomAmmoPropertySource(true);
+		}
+	}
+	else if (strncmp(key, "custom_ammo_property_type", 27) == 0)
+	{
+		if (strncmp(value, "networked", 9) == 0)
+		{
+			m_current->SetCustomAmmoPropertyType(true);
+		}
+		else
+		{
+			m_current->SetCustomAmmoPropertyType(false);
+		}
+	}
+	else if (strncmp(key, "custom_ammo_property_out_of_ammo_threshold", 42) == 0)
+	{
+		float v = atof(value);
+		m_current->SetCustomAmmoOutOfAmmoThreshold(v);
+	}
+	else if (strncmp(key, "custom_ammo_property_is_float", 29) == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetCustomAmmoPropertyIsFloat(v);
+	}
+	else if (std::strcmp(key, "priority_dynamic_has_secondary_ammo") == 0)
+	{
+		int v = atoi(value);
+		m_current->SetDynamicPriorityHasSecondaryAmmo(v);
+	}
+	else if (std::strcmp(key, "priority_dynamic_health_percentage") == 0)
+	{
+		int v = atoi(value);
+		m_current->SetDynamicPriorityHealthPercentage(v);
+	}
+	else if (std::strcmp(key, "priority_dynamic_health_percentage_threshold") == 0)
+	{
+		float v = atof(value);
+		m_current->SetDynamicPriorityHealthPercentageCondition(v);
 	}
 	else if (!IsParserInWeaponAttackSection())
 	{
@@ -330,11 +382,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		{
 			m_current->GetAttackInfoForEditing(type)->SetMinRange(atof(value));
 		}
-		else if (strncmp(key, "projectilespeed", 15) == 0)
+		else if (std::strcmp(key, "projectilespeed") == 0)
 		{
 			m_current->GetAttackInfoForEditing(type)->SetProjectileSpeed(atof(value));
 		}
-		else if (strncmp(key, "gravity", 7) == 0)
+		else if (std::strcmp(key, "gravity") == 0)
 		{
 			m_current->GetAttackInfoForEditing(type)->SetGravity(atof(value));
 		}

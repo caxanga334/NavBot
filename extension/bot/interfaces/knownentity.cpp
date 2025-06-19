@@ -40,6 +40,7 @@ CKnownEntity::~CKnownEntity()
 
 void CKnownEntity::Init()
 {
+	m_classname = gamehelpers->GetEntityClassname(m_handle.Get());
 	m_timeknown = gpGlobals->curtime;
 	m_timelastvisible = -9999.0f;
 	m_timelastinfo = -9999.0f;
@@ -117,21 +118,6 @@ bool CKnownEntity::IsEntity(edict_t* entity) const
 bool CKnownEntity::IsEntity(const int entity) const
 {
 	return entity == m_handle.GetEntryIndex();
-}
-
-edict_t* CKnownEntity::GetEdict() const
-{
-	return m_handle.ToEdict();
-}
-
-CBaseEntity* CKnownEntity::GetEntity() const
-{
-	return m_handle.Get();
-}
-
-int CKnownEntity::GetIndex() const
-{
-	return m_handle.GetEntryIndex();
 }
 
 bool CKnownEntity::IsPlayer() const

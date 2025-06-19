@@ -179,7 +179,7 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 	const float rangeToThreat = bot->GetRangeTo(threat->GetEdict());
 	const CBotWeapon* best = nullptr;
 	int priority = std::numeric_limits<int>::min();
-	auto func = [&bot, &priority, &rangeToThreat, &best](const CBotWeapon* weapon) {
+	auto func = [&bot, &priority, &rangeToThreat, &best, &threat](const CBotWeapon* weapon) {
 
 		if (!weapon->IsValid())
 		{
@@ -206,16 +206,23 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			return;
 		}
 
-		if (rangeToThreat > weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange())
+		// Primary attack is out of range
+		if (!weapon->IsInAttackRange(rangeToThreat, WeaponInfo::AttackFunctionType::PRIMARY_ATTACK))
 		{
-			return; // outside max range
-		}
-		else if (rangeToThreat < weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMinRange())
-		{
-			return; // too close
+			// no secondary attack, skip this weapon
+			if (!weapon->CanUseSecondaryAttack(bot))
+			{
+				return;
+			}
+
+			// weapon has a secondary attack, check range
+			if (!weapon->IsInAttackRange(rangeToThreat, WeaponInfo::AttackFunctionType::SECONDARY_ATTACK))
+			{
+				return;
+			}
 		}
 
-		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+		int currentprio = weapon->GetPriority(bot, &rangeToThreat, threat);
 
 		if (currentprio > priority)
 		{
@@ -281,7 +288,7 @@ void IInventory::SelectBestWeapon()
 			return;
 		}
 
-		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+		int currentprio = weapon->GetPriority(bot);
 
 		if (currentprio > priority)
 		{
@@ -348,7 +355,7 @@ void IInventory::SelectBestWeaponForBreakables()
 			return;
 		}
 
-		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+		int currentprio = weapon->GetPriority(bot);
 		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee();
 
 		if (!is_melee && found_melee)
@@ -431,7 +438,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 			return;
 		}
 
-		int currentprio = weapon->GetWeaponInfo()->GetPriority();
+		int currentprio = weapon->GetPriority(bot);
 		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee();
 
 		if (is_melee && !meleeIsHitscan)
