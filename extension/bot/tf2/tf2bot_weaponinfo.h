@@ -108,6 +108,8 @@ public:
 
 	UberType GetMedigunUberType() const { return m_ubertype; }
 
+	bool IsDeployedOrScoped(const CBaseBot* owner) const override;
+
 private:
 	float* m_charge;
 	UberType m_ubertype;

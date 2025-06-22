@@ -685,9 +685,6 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	if (GetBehaviorInterface()->ShouldAttack(this, enemy) == ANSWER_NO)
 		return;
 
-	if (doAim && !GetControlInterface()->IsAimOnTarget())
-		return;
-
 	if (!IsLastUsedWeapon(weapon))
 	{
 		OnLastUsedWeaponChanged(weapon);
@@ -696,17 +693,21 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 
 	const float range = GetRangeTo(enemy->GetEdict());
 	bool primary = true; // primary attack by default
+	IPlayerController* control = GetControlInterface();
 
 	if (CanFireWeapon(weapon, range, true, primary))
 	{
 		if (!AimWeaponAtEnemy(enemy, weapon, doAim, range, primary))
 			return;
 
-		if (doAim && !GetControlInterface()->IsAimOnTarget())
+		if (doAim && !control->IsAimOnTarget())
 			return;
 
 		if (!HandleWeapon(weapon))
 			return;
+
+		if (control->GetAimAtTarget() != enemy->GetEntity())
+			return; // Don't fire: bot is aiming at something else.
 
 		const IntervalTimer& timer = GetLastFiredWeaponTimer();
 
@@ -718,15 +719,21 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 
 		if (primary)
 		{
-			GetControlInterface()->PressAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
+			control->PressAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
 		}
 		else
 		{
-			GetControlInterface()->PressSecondaryAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetHoldButtonTime());
+			control->PressSecondaryAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetHoldButtonTime());
 		}
 	}
 	else
 	{
+		if (doAim)
+		{
+			// simply keep it aimed using the last result from AimWeaponAtEnemy
+			control->AimAt(enemy->GetEntity(), IPlayerController::LOOK_COMBAT, 1.0f, "Keeping weapon aimed at enemy while reloading!");
+		}
+
 		ReloadIfNeeded(weapon);
 	}
 }
@@ -785,8 +792,8 @@ bool CBaseBot::IsAbleToDodgeEnemies(const CKnownEntity* threat) const
 		return false;
 	}
 
-	// Don't dodge while scoped
-	if (IsScopedIn())
+	// Don't dodge while using this weapon
+	if (!activeWeapon->GetWeaponInfo()->IsAllowedToDodge())
 	{
 		return false;
 	}
@@ -842,16 +849,53 @@ void CBaseBot::DodgeEnemies(const CKnownEntity* threat)
 	}
 }
 
+void CBaseBot::HandleWeaponsNoThreat()
+{
+	const CBotWeapon* activeWeapon = GetInventoryInterface()->GetActiveBotWeapon();
+	IPlayerController* control = GetControlInterface();
+
+	if (!activeWeapon)
+	{
+		return;
+	}
+
+	const bool isLoaded = activeWeapon->IsLoaded();
+
+	if (!isLoaded)
+	{
+		// reload first
+		control->PressReloadButton();
+		return;
+	}
+
+	if (m_undeployWeaponTimer.HasStarted() && m_undeployWeaponTimer.IsElapsed())
+	{
+		m_undeployWeaponTimer.Invalidate();
+
+		if (activeWeapon->IsDeployedOrScoped(this))
+		{
+			control->PressSecondaryAttackButton();
+		}
+	}
+}
+
 bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CBaseBot::CanFireWeapon", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	auto& primaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
-	auto& secondaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::SECONDARY_ATTACK);
+	const WeaponInfo* info = weapon->GetWeaponInfo();
+	auto& primaryinfo = info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
+	auto& secondaryinfo = info->GetAttackInfo(WeaponInfo::SECONDARY_ATTACK);
+	auto& bcw = weapon->GetBaseCombatWeapon();
 	bool candoprimary = false;
 	bool candosecondary = false;
+
+	if (!weapon->IsLoaded())
+	{
+		return false;
+	}
 
 	if (primaryinfo.HasFunction())
 	{
@@ -907,6 +951,15 @@ bool CBaseBot::HandleWeapon(const CBotWeapon* weapon)
 	// this function is used for stuff like hold primary attack for N seconds then release to fire
 	// or a weapon that must be deployed to be used
 	// etc...
+
+	const WeaponInfo* info = weapon->GetWeaponInfo();
+
+	if (info->NeedsToBeDeployedToFire() && !weapon->IsDeployedOrScoped(this))
+	{
+		GetControlInterface()->PressSecondaryAttackButton();
+		GetUndeployWeaponTimer().Start(6.0f);
+		return false;
+	}
 
 	return true;
 }

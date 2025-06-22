@@ -72,7 +72,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskStart(CTF2Bot* bot
 	m_repathTimer.StartRandom();
 	m_sniping = false;
 
-	if (bot->IsScopedIn())
+	if (bot->IsUsingSniperScope())
 	{
 		bot->GetControlInterface()->PressSecondaryAttackButton();
 	}

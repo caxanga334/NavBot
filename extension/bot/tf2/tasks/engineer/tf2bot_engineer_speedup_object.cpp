@@ -64,7 +64,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerSpeedUpObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		bot->GetControlInterface()->AimAt(object.WorldSpaceCenter(), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to construct it.");
+		bot->GetControlInterface()->AimAt(object.WorldSpaceCenter(), IPlayerController::LOOK_PRIORITY, 0.5f, "Looking at object to construct it.");
 		bot->GetControlInterface()->PressAttackButton(0.5f);
 		bot->GetControlInterface()->PressCrouchButton(0.5f);
 	}

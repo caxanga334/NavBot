@@ -104,7 +104,7 @@ TaskResult<CTF2Bot> CTF2BotPassTimeGoalTask::OnTaskUpdate(CTF2Bot* bot)
 			Vector origin = bot->GetEyeOrigin();
 			Vector aim{ center };
 			aim.z += GetZ(origin, center);
-			bot->GetControlInterface()->AimAt(aim, IPlayerController::LOOK_VERY_IMPORTANT, 0.25f, "Aiming to throw the jack at the goal!");
+			bot->GetControlInterface()->AimAt(aim, IPlayerController::LOOK_PRIORITY, 0.25f, "Aiming to throw the jack at the goal!");
 
 			if (!m_holdattacktimer.HasStarted())
 			{

@@ -247,8 +247,6 @@ public:
 
 	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_usercmdrng{}; // random number generator bot user commands
 	static inline librandom::RandomNumberGenerator<std::mt19937, unsigned int> s_botrng{}; // random number generator for bot stuff
-	// Is the bot using a weapon with scopes and is currently scoped in
-	virtual bool IsScopedIn() const { return false; }
 
 	/**
 	 * @brief Checks if the bot took some damage recently.
@@ -268,6 +266,12 @@ public:
 	 * @param threat Enemy to dodge.
 	 */
 	virtual void DodgeEnemies(const CKnownEntity* threat);
+	/**
+	 * @brief Invoked to handle the bot's weapons when no enemies are present.
+	 * 
+	 * Example: reload it, unscope/undeploy, etc...
+	 */
+	virtual void HandleWeaponsNoThreat();
 protected:
 	bool m_isfirstspawn;
 
@@ -315,6 +319,8 @@ protected:
 	 */
 	virtual void OnLastUsedWeaponChanged(const CBotWeapon* new_weapon);
 
+	CountdownTimer& GetUndeployWeaponTimer() { return m_undeployWeaponTimer; }
+
 private:
 	const CBotWeapon* m_lastusedweapon; // last weapon used to attack an enemy
 	IntervalTimer m_lastfiredweapontimer;
@@ -349,6 +355,7 @@ private:
 	CountdownTimer m_reloadCheckDelay;
 	const CNavPrerequisite* m_lastPrerequisite; // Last prerequisite this bot used
 	CountdownTimer m_clearLastPrerequisiteTimer;
+	CountdownTimer m_undeployWeaponTimer; // timer to undeploy the weapon after firing it
 
 	void ExecuteQueuedCommands();
 };

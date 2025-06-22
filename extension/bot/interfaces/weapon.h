@@ -58,9 +58,9 @@ public:
 	bool CanUsePrimaryAttack(const CBaseBot* owner) const;
 	// Returns true if it's possible to use the weapon's secondary attack
 	bool CanUseSecondaryAttack(const CBaseBot* owner) const;
-
-	// True if this weapon's clip is full. Only checks primary clip ammo.
-	bool IsClipFull() const;
+	// Returns true if the weapon has ammo loaded in the clip.
+	// If the weapon doesn't uses clips, also returns true.
+	bool IsLoaded() const;
 
 	// Gets the minimum attack range based on the attack type used by the bot
 	virtual float GetCurrentMinimumAttackRange(CBaseBot* owner) const;
@@ -76,6 +76,8 @@ public:
 	 * @return Weapon selection priority
 	 */
 	const int GetPriority(const CBaseBot* owner, const float* range = nullptr, const CKnownEntity* threat = nullptr) const;
+	// returns true if the weapon is deployed/scoped.
+	virtual bool IsDeployedOrScoped(const CBaseBot* owner) const;
 protected:
 	const WeaponInfo* m_info;
 

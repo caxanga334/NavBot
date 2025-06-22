@@ -123,11 +123,14 @@ public:
 	
 	// Number of valid weapons this bot owns
 	int GetOwnedWeaponCount() const;
+	// Forces the stale weapons removal to run the next Update
+	void ForceStaleWeaponsCheck() { m_purgeStaleWeaponsTimer.Invalidate(); }
 
 protected:
 	std::vector<std::unique_ptr<CBotWeapon>> m_weapons;
 	mutable CBotWeapon* m_cachedActiveWeapon;
 	CountdownTimer m_updateWeaponsTimer;
+	CountdownTimer m_purgeStaleWeaponsTimer;
 	CountdownTimer m_weaponSwitchCooldown; // cooldown between weapon switches
 };
 

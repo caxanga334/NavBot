@@ -25,6 +25,7 @@ IInventory::IInventory(CBaseBot* bot) : IBotInterface(bot)
 	m_weapons.reserve(MAX_WEAPONS);
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
 	m_cachedActiveWeapon = nullptr;
+	m_purgeStaleWeaponsTimer.Start(2.0f);
 }
 
 IInventory::~IInventory()
@@ -37,6 +38,7 @@ void IInventory::Reset()
 	m_weaponSwitchCooldown.Invalidate();
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
 	m_cachedActiveWeapon = nullptr;
+	m_purgeStaleWeaponsTimer.Start(2.0f);
 }
 
 void IInventory::Update()
@@ -49,6 +51,32 @@ void IInventory::Update()
 	{
 		m_updateWeaponsTimer.Start(extmanager->GetMod()->GetModSettings()->GetInventoryUpdateRate());
 		BuildInventory();
+	}
+
+	if (m_purgeStaleWeaponsTimer.IsElapsed())
+	{
+		m_purgeStaleWeaponsTimer.Start(2.0f);
+		const CBaseBot* me = GetBot<CBaseBot>();
+
+		m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [&me](const std::unique_ptr<CBotWeapon>& object) {
+
+			CBaseEntity* pWeapon = object->GetEntity();
+
+			if (!pWeapon)
+			{
+				return true; // NULL weapon entity
+			}
+			
+			CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
+
+			if (owner != me->GetEntity())
+			{
+				return true; // I no longer own this weapon
+			}
+
+			return false;
+
+		}), m_weapons.end());
 	}
 }
 
@@ -206,20 +234,9 @@ void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
 			return;
 		}
 
-		// Primary attack is out of range
-		if (!weapon->IsInAttackRange(rangeToThreat, WeaponInfo::AttackFunctionType::PRIMARY_ATTACK))
+		if (!weapon->GetWeaponInfo()->IsInSelectionRange(rangeToThreat))
 		{
-			// no secondary attack, skip this weapon
-			if (!weapon->CanUseSecondaryAttack(bot))
-			{
-				return;
-			}
-
-			// weapon has a secondary attack, check range
-			if (!weapon->IsInAttackRange(rangeToThreat, WeaponInfo::AttackFunctionType::SECONDARY_ATTACK))
-			{
-				return;
-			}
+			return;
 		}
 
 		int currentprio = weapon->GetPriority(bot, &rangeToThreat, threat);
@@ -280,6 +297,10 @@ void IInventory::SelectBestWeapon()
 		// I must be the weapon's owner
 		if (bot->GetEntity() != owner)
 		{
+#ifdef EXT_DEBUG
+			META_CONPRINTF("BOT WEAPON OWNER MISMATCH FOR WEAPON %s #%i!\n    %p != %p \n", 
+				weapon->GetClassname().c_str(), weapon->GetIndex(), bot->GetEntity(), owner);
+#endif // EXT_DEBUG
 			return;
 		}
 

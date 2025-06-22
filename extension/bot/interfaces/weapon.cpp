@@ -23,6 +23,28 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 	m_info = extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(classname, m_econindex);
 	m_handle = entity;
 	m_classname.assign(classname);
+
+#ifdef EXT_DEBUG
+	
+	int clip = 0;
+	entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip1", clip);
+
+	if (clip == WEAPON_NOCLIP && !m_info->Clip1IsReserveAmmo() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	{
+		smutils->LogError(myself, "Weapon %s CLIP1 == WEAPON_NOCLIP but lacks \"primary_no_clip\" attribute. %s #%i", 
+			m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
+	}
+
+	clip = 0;
+	entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip2", clip);
+
+	if (clip == WEAPON_NOCLIP && !m_info->Clip2IsReserveAmmo() && m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
+	{
+		smutils->LogError(myself, "Weapon %s CLIP2 == WEAPON_NOCLIP but lacks \"secondary_no_clip\" attribute. %s #%i",
+			m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
+	}
+
+#endif // EXT_DEBUG
 }
 
 CBotWeapon::~CBotWeapon()
@@ -48,6 +70,12 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 
 	auto info = GetWeaponInfo();
 	auto& bcw = GetBaseCombatWeapon();
+
+	// Ignore weapons that doesn't have a primary attack
+	if (!info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasFunction())
+	{
+		return false;
+	}
 
 	// If the weapon is primary melee or tagged with infinite reserve ammo, it's never low on ammo.
 	if (info->HasInfiniteReserveAmmo() || info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
@@ -234,14 +262,23 @@ bool CBotWeapon::CanUseSecondaryAttack(const CBaseBot* owner) const
 	return hasSecondaryAmmo(owner);
 }
 
-bool CBotWeapon::IsClipFull() const
+bool CBotWeapon::IsLoaded() const
 {
-	if (m_info->HasMaxClip1())
+	const WeaponInfo* info = GetWeaponInfo();
+	const entities::HBaseCombatWeapon& bcw = GetBaseCombatWeapon();
+	bool loaded = true;
+
+	if (!info->Clip1IsReserveAmmo() && bcw.UsesClipsForAmmo1() && bcw.GetClip1() == 0)
 	{
-		return m_bcw.GetClip1() >= m_info->GetMaxClip1();
+		loaded = false;
 	}
 
-	return true;
+	if (loaded && !info->Clip2IsReserveAmmo() && info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction() && bcw.UsesClipsForAmmo2() && bcw.GetClip2() == 0)
+	{
+		loaded = false;
+	}
+
+	return loaded;
 }
 
 float CBotWeapon::GetCurrentMinimumAttackRange(CBaseBot* owner) const
@@ -314,6 +351,21 @@ const int CBotWeapon::GetPriority(const CBaseBot* owner, const float* range, con
 	}
 
 	return priority;
+}
+
+bool CBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+
+	if (info->HasDeployedStateProperty())
+	{
+		int source = info->IsDeployedPropertyOnTheWeapon() ? this->GetIndex() : owner->GetIndex();
+		bool deployed = false;
+		entprops->GetEntPropBool(source, Prop_Send, info->GetDeployedPropertyName().c_str(), deployed);
+		return deployed;
+	}
+
+	return false;
 }
 
 float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const

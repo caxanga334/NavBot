@@ -22,7 +22,7 @@ IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlaye
 	m_lookentity.Term();
 	m_looktarget.Init();
 	m_lastangles.Init();
-	m_priority = LOOK_NONE;
+	m_priority = LOOK_IDLE;
 	m_isSteady = false;
 	m_isOnTarget = false;
 	m_didLookAtTarget = false;
@@ -39,6 +39,32 @@ IPlayerController::~IPlayerController()
 {
 }
 
+const char* IPlayerController::GetLookPriorityName(IPlayerController::LookPriority priority)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"IDLE"sv,
+		"PATH"sv,
+		"INTERESTING"sv,
+		"ALLY"sv,
+		"SEARCH"sv,
+		"ALERT"sv,
+		"DANGER"sv,
+		"USE"sv,
+		"COMBAT"sv,
+		"SUPPORT"sv,
+		"PRIORITY"sv,
+		"MOVEMENT"sv,
+		"CRITICAL"sv,
+		"MANDATORY"sv,
+	};
+
+	static_assert(names.size() == static_cast<size_t>(IPlayerController::MAX_LOOK_PRIORITY), "Look priority name array and enum size mismatch!");
+
+	return names[static_cast<size_t>(priority)].data();
+}
+
 void IPlayerController::OnDifficultyProfileChanged()
 {
 	m_aimSpeed = GetBot()->GetDifficultyProfile()->GetAimSpeed();
@@ -52,10 +78,10 @@ void IPlayerController::Reset()
 	m_lookentity.Term();
 	m_looktarget.Init();
 	m_lastangles.Init();
-	m_priority = LOOK_NONE;
+	m_priority = LOOK_IDLE;
 	m_isSteady = false;
 	m_isOnTarget = false;
-	m_didLookAtTarget = false;
+	m_didLookAtTarget = true;
 	m_isSnapingViewAngles = false;
 	m_snapToAngles = vec3_angle;
 	m_steadyTimer.Invalidate();
@@ -87,6 +113,40 @@ void IPlayerController::ProcessButtons(int& buttons)
 	// m_buttons = 0;
 }
 
+void IPlayerController::ForceUpdateAimOnTarget(const float tolerance)
+{
+	if (m_didLookAtTarget && m_looktimer.IsElapsed())
+	{
+		return;
+	}
+
+	CBaseBot* me = GetBot<CBaseBot>();
+	auto eyepos = me->GetEyeOrigin();
+	auto to = m_looktarget - eyepos;
+	to.NormalizeInPlace();
+	QAngle desiredAngles;
+	VectorAngles(to, desiredAngles);
+	QAngle finalAngles(0.0f, 0.0f, 0.0f);
+	Vector forward;
+	me->EyeVectors(&forward);
+	const float dot = DotProduct(forward, to);
+
+	if (dot > tolerance)
+	{
+		// bot is looking at it's target
+		m_isOnTarget = true;
+
+		if (m_didLookAtTarget == false)
+		{
+			m_didLookAtTarget = true; // first time the bot aim was on target since the last AimAt call
+		}
+	}
+	else
+	{
+		m_isOnTarget = false; // aim is off target
+	}
+}
+
 // This function handles the bot aiming/looking process
 void IPlayerController::RunLook()
 {
@@ -110,7 +170,7 @@ void IPlayerController::RunLook()
 		return;
 	}
 	
-	auto currentAngles = me->GetEyeAngles();
+	QAngle currentAngles = me->GetEyeAngles() + me->GetPunchAngle();
 
 	bool isSteady = true;
 
@@ -182,6 +242,11 @@ void IPlayerController::RunLook()
 		if (m_didLookAtTarget == false)
 		{
 			m_didLookAtTarget = true; // first time the bot aim was on target since the last AimAt call
+
+			if (me->IsDebugging(BOTDEBUG_LOOK))
+			{
+				me->DebugPrintToConsole(0, 180, 0, "%s: LOOK AT ON TARGET! \n", me->GetDebugIdentifier());
+			}
 		}
 	}
 	else
@@ -204,7 +269,7 @@ void IPlayerController::RunLook()
 		int red = m_isOnTarget ? 255 : 0;
 		int green = m_lookentity.IsValid() ? 255 : 0;
 
-		NDebugOverlay::HorzArrow(eyepos, m_looktarget, width, red, green, 255, 255, false, DRAW_TIME);
+		NDebugOverlay::HorzArrow(eyepos, m_looktarget, width, red, green, 255, 255, true, DRAW_TIME);
 	}
 
 	// Updates the bot view angle, this is later sent on the User Command
@@ -247,6 +312,15 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 			pos.x, pos.y, pos.z, duration, GetLookPriorityName(priority), reason ? reason : "");
 	}
 
+	m_looktimer.Start(duration);
+
+	// If given the same position, just update priority
+	if ((m_looktarget - pos).IsLengthLessThan(1.0f))
+	{
+		m_priority = priority;
+		return;
+	}
+
 	// experimental
 	if (m_looktarget.DistTo(pos) > 64.0f)
 	{
@@ -254,7 +328,6 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 	}
 
 	m_priority = priority;
-	m_looktimer.Start(duration);
 	m_looktarget = pos;
 	m_lookentity = nullptr;
 	m_didLookAtTarget = false;
@@ -297,6 +370,15 @@ void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, 
 			gamehelpers->GetEntityClassname(entity), duration, GetLookPriorityName(priority), reason ? reason : "");
 	}
 
+	m_looktimer.Start(duration);
+
+	// If given the same target entity again, just update the priority.
+	if (m_lookentity.Get() == entity)
+	{
+		m_priority = priority;
+		return;
+	}
+
 	// Experimental
 	if (m_lookentity.Get() != entity)
 	{
@@ -304,7 +386,6 @@ void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, 
 	}
 
 	m_priority = priority;
-	m_looktimer.Start(duration);
 	m_lookentity = entity;
 	m_didLookAtTarget = false;
 }

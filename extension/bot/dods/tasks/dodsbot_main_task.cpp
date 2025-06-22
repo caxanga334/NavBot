@@ -33,6 +33,10 @@ TaskResult<CDoDSBot> CDoDSBotMainTask::OnTaskUpdate(CDoDSBot* bot)
 		bot->FireWeaponAtEnemy(threat, true);
 		bot->DodgeEnemies(threat);
 	}
+	else
+	{
+		bot->HandleWeaponsNoThreat();
+	}
 
 	return Continue();
 }

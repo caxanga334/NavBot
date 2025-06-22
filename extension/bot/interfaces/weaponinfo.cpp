@@ -232,14 +232,8 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	}
 	else if (strncmp(key, "can_headshot", 12) == 0)
 	{
-		if (strncmp(value, "true", 4) == 0)
-		{
-			m_current->SetCanHeadShot(true);
-		}
-		else
-		{
-			m_current->SetCanHeadShot(false);
-		}
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetCanHeadShot(v);
 	}
 	else if (strncmp(key, "infinite_reserve_ammo", 13) == 0)
 	{
@@ -262,13 +256,17 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			m_current->SetHeadShotAimOffset(offset);
 		}
 	}
-	else if (strncmp(key, "maxclip1", 8) == 0)
+	else if (std::strcmp(key, "primary_no_clip") == 0)
 	{
-		m_current->SetMaxClip1(atoi(value));
+		m_current->SetNoClip1(true);
 	}
-	else if (strncmp(key, "maxclip2", 8) == 0)
+	else if (std::strcmp(key, "secondary_no_clip") == 0)
 	{
-		m_current->SetMaxClip2(atoi(value));
+		m_current->SetNoClip2(true);
+	}
+	else if (std::strcmp(key, "secondary_uses_primary_ammo_type") == 0)
+	{
+		m_current->SetSecondaryUsesPrimaryAmmoType(true);
 	}
 	else if (strncmp(key, "low_primary_ammo_threshold", 26) == 0)
 	{
@@ -355,6 +353,46 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		float v = atof(value);
 		m_current->SetDynamicPriorityHealthPercentageCondition(v);
+	}
+	else if (std::strcmp(key, "priority_dynamic_threat_range_less_than") == 0)
+	{
+		int v = atoi(value);
+		m_current->SetDynamicPriorityThreatRangeLessThan(v);
+	}
+	else if (std::strcmp(key, "priority_dynamic_threat_range_less_than_threshold") == 0)
+	{
+		float v = atof(value);
+		m_current->SetDynamicPriorityThreatRangeLessThanCondition(v);
+	}
+	else if (std::strcmp(key, "deployed_property_name") == 0)
+	{
+		m_current->SetDeployedPropertyName(value);
+	}
+	else if (std::strcmp(key, "needs_to_be_deployed_to_fire") == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetNeedsToBeDeployed(v);
+	}
+	else if (std::strcmp(key, "deployed_property_source") == 0)
+	{
+		if (std::strcmp(value, "player") == 0)
+		{
+			m_current->SetDeployedPropertySource(false);
+		}
+		else
+		{
+			m_current->SetDeployedPropertySource(true);
+		}
+	}
+	else if (std::strcmp(key, "disable_dodge") == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetIsDodgeDisabled(v);
+	}
+	else if (std::strcmp(key, "selection_max_range_override") == 0)
+	{
+		float v = atof(value);
+		m_current->SetSelectionMaxRangeOverride(v);
 	}
 	else if (!IsParserInWeaponAttackSection())
 	{
@@ -476,6 +514,37 @@ void WeaponInfo::PostLoad()
 			{
 				attack_move_range = attacksinfo[i].GetMaxRange();
 			}
+		}
+	}
+
+	// not set by the config file
+	if (selection_max_range <= 0.0f)
+	{
+		float minrange = 9999999999.0f;
+
+		for (size_t i = 0; i < static_cast<size_t>(MAX_WEAPON_ATTACKS); i++)
+		{
+			if (attacksinfo[i].HasFunction())
+			{
+				if (attacksinfo[i].GetMaxRange() > selection_max_range)
+				{
+					selection_max_range = attacksinfo[i].GetMaxRange();
+				}
+
+				if (attacksinfo[i].GetMinRange() > 0.0f && attacksinfo[i].GetMinRange() < minrange)
+				{
+					minrange = attacksinfo[i].GetMinRange();
+				}
+			}
+		}
+
+		if (minrange < selection_max_range)
+		{
+			selection_min_range = minrange;
+		}
+		else
+		{
+			selection_min_range = -1.0f;
 		}
 	}
 }

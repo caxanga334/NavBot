@@ -83,7 +83,7 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 		if (threat->IsVisibleNow() || bot->GetSensorInterface()->GetTimeSinceVisibleThreat() <= SCOPE_IN_TIME)
 		{
 			// scope
-			if (!bot->IsScopedIn())
+			if (!bot->IsUsingSniperScope())
 			{
 				bot->GetControlInterface()->PressSecondaryAttackButton();
 			}
@@ -91,7 +91,7 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 		else
 		{
 			// unscope
-			if (bot->IsScopedIn())
+			if (bot->IsUsingSniperScope())
 			{
 				bot->GetControlInterface()->PressSecondaryAttackButton();
 			}
@@ -100,7 +100,7 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 	else
 	{
 		// unscope
-		if (bot->IsScopedIn())
+		if (bot->IsUsingSniperScope())
 		{
 			bot->GetControlInterface()->PressSecondaryAttackButton();
 		}
@@ -124,7 +124,7 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 
 void CTF2BotSniperPushTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 {
-	if (bot->IsScopedIn())
+	if (bot->IsUsingSniperScope())
 	{
 		bot->GetControlInterface()->PressSecondaryAttackButton();
 	}

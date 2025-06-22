@@ -159,6 +159,13 @@ const Vector CBaseExtPlayer::GetMaxs() const
 	return vec3_origin;
 }
 
+const QAngle CBaseExtPlayer::GetPunchAngle() const
+{
+	Vector vec{ 0.0f, 0.0f, 0.0f };
+	entprops->GetEntPropVector(GetIndex(), Prop_Send, "m_vecPunchAngle", vec);
+	return QAngle{ vec.x, vec.y, vec.z };
+}
+
 void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) const
 {
 #ifdef EXT_VPROF_ENABLED
@@ -653,6 +660,42 @@ CON_COMMAND(sm_navbot_debug_player_positions, "Shows the player's Eye Origin, Wo
 	NDebugOverlay::Box(eyes, mins, maxs, 255, 0, 0, 255, 10.0f);
 	NDebugOverlay::Box(center, mins, maxs, 0, 255, 0, 255, 10.0f);
 	NDebugOverlay::Box(origin, mins, maxs, 0, 0, 255, 255, 10.0f);
+}
+
+CON_COMMAND(sm_navbot_debug_player_weapon_switch, "Debug weapon switch")
+{
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_player_weapon_switch <weapon entity index> \n");
+		return;
+	}
+
+	CBaseExtPlayer player{ UtilHelpers::GetListenServerHost() };
+	CBaseEntity* pWeapon = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pWeapon)
+	{
+		META_CONPRINT("ERROR: NULL ENTITY! \n");
+		return;
+	}
+
+	ServerClass* svclass = gamehelpers->FindEntityServerClass(pWeapon);
+
+	if (!svclass)
+	{
+		META_CONPRINT("ERROR: NULL ServerClass! \n");
+		return;
+	}
+
+	SendTable* st = svclass->m_pTable;
+
+	if (!UtilHelpers::HasDataTable(st, "DT_BaseCombatWeapon"))
+	{
+		META_CONPRINT("ERROR: ENTITY DOESN'T DERIVE FROM CBASECOMBATWEAPON! \n");
+		return;
+	}
+
+	player.SelectWeapon(pWeapon);
 }
 
 #endif // EXT_DEBUG

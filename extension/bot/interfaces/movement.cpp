@@ -497,7 +497,7 @@ void IMovement::FaceTowards(const Vector& pos, const bool important)
 {
 	auto input = GetBot()->GetControlInterface();
 	auto eyes = GetBot()->GetEyeOrigin();
-	IPlayerController::LookPriority priority = important ? IPlayerController::LookPriority::LOOK_MOVEMENT : IPlayerController::LookPriority::LOOK_NONE;
+	IPlayerController::LookPriority priority = important ? IPlayerController::LookPriority::LOOK_MOVEMENT : IPlayerController::LookPriority::LOOK_IDLE;
 
 	Vector lookAt(pos.x, pos.y, eyes.z);
 	input->AimAt(lookAt, priority, 0.1f, "IMovement::FaceTowards");
@@ -797,9 +797,8 @@ bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landi
 	m_landingGoal = landingGoal;
 	m_isAirborne = false;
 
-	// The second jump direction is generally requires looking at the direction you want to move
-	// GetBot<CBaseBot>()->GetControlInterface()->SnapAimAt(landingGoal, IPlayerController::LOOK_MOVEMENT);
-	GetBot<CBaseBot>()->GetControlInterface()->AimAt(landingGoal, IPlayerController::LOOK_VERY_IMPORTANT, 0.2f, "Looking at ledge to climb!");
+	// The second jump direction generally requires looking at the direction you want to move
+	GetBot<CBaseBot>()->GetControlInterface()->AimAt(landingGoal, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at ledge to climb!");
 
 	if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
@@ -1681,7 +1680,7 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 		return EXITING_LADDER_DOWN;
 	}
 
-	Vector climbPoint;
+	Vector climbPoint{ 0.0f, 0.0f, 0.0f };
 
 	if (!IsOnGround())
 	{
@@ -1856,11 +1855,6 @@ IMovement::LadderState IMovement::DismountLadderTop()
 		return NOT_USING_LADDER;
 	}
 
-	if (!IsOnLadder())
-	{
-		return NOT_USING_LADDER; // bot left ladder
-	}
-
 	CBaseBot* me = GetBot<CBaseBot>();
 	auto input = me->GetControlInterface();
 	auto origin = me->GetAbsOrigin();
@@ -1872,7 +1866,7 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	float range = toGoal.NormalizeInPlace();
 	toGoal.z = 1.0f;
 
-	Vector goalPos = eyepos + 100.0f * toGoal;
+	Vector goalPos = eyepos + GetCrouchedHullHeight() * toGoal;
 	input->AimAt(goalPos, IPlayerController::LOOK_MOVEMENT, 0.2f, "Dismount Ladder");
 
 	if (!input->IsAimOnTarget())
@@ -1893,7 +1887,7 @@ IMovement::LadderState IMovement::DismountLadderTop()
 		if (m_useLadderTimer.IsElapsed())
 		{
 			input->PressUseButton();
-			m_useLadderTimer.Start(0.1f);
+			m_useLadderTimer.Start(0.4f);
 		}
 	}
 
@@ -1903,30 +1897,36 @@ IMovement::LadderState IMovement::DismountLadderTop()
 		NDebugOverlay::Cross3D(goalPos, 12.0f, 0, 0, 255, false, 0.2f);
 	}
 
-	constexpr auto tolerance = 48.0f;
-	if (/* me->GetLastKnownNavArea() == m_ladderExit && */ range < tolerance /* && IsOnGround()*/)
+	if (IsOnLadder())
 	{
-		if (!IsOnGround())
-		{
-			if (!m_wasLaunched)
-			{
-				m_wasLaunched = true;
-				Vector launch = me->CalculateLaunchVector(m_ladderExit->GetCenter(), GetWalkSpeed());
-				me->SetAbsVelocity(launch);
-			}
+		// On ladder: wait for move towards to get us out of the ladder
+		return EXITING_LADDER_UP;
+	}
 
-			return EXITING_LADDER_UP;
+	if (!IsOnGround())
+	{
+		// bot is in the air and not on the ladder
+
+		if (!m_wasLaunched)
+		{
+			m_wasLaunched = true;
+			Vector launch = me->CalculateLaunchVector(m_ladderExit->GetCenter(), GetWalkSpeed());
+			me->SetAbsVelocity(launch);
 		}
+
+		return EXITING_LADDER_UP;
+	}
+	else
+	{
+		// bot hit the ground
 
 		if (isDebuggingMovement)
 		{
-			me->DebugPrintToConsole(0, 180, 0, "%s: DismountLadderTop: Reached dismount goal %g %g %g \n", me->GetDebugIdentifier(), origin.x, origin.y, origin.z);
+			me->DebugPrintToConsole(0, 180, 0, "%s: DISMOUNTLADDERTOP: BOT LANDED ON GROUND AT %g %g %g \n", me->GetDebugIdentifier(), origin.x, origin.y, origin.z);
 		}
 
 		return NOT_USING_LADDER;
 	}
-
-	return EXITING_LADDER_UP;
 }
 
 IMovement::LadderState IMovement::DismountLadderBottom()

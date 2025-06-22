@@ -514,7 +514,7 @@ TaskResult<CTF2Bot> CTF2BotSpyAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 
 		// LOOK_VERY_IMPORTANT overrides combat but still allows for movement aim
-		bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_VERY_IMPORTANT, 1.0f, "Aiming at my stab victim!");
+		bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_PRIORITY, 1.0f, "Aiming at my stab victim!");
 
 		if (!isBehindThem)
 		{
@@ -734,7 +734,7 @@ TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(object), IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at object to sap!");
+	bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(object), IPlayerController::LOOK_PRIORITY, 0.5f, "Looking at object to sap!");
 
 	if (bot->GetRangeTo(object) < 90.0f)
 	{

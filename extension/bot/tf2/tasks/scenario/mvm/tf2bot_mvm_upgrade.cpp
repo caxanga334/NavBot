@@ -31,7 +31,7 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 
 	if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Sniper)
 	{
-		if (bot->IsScopedIn())
+		if (bot->IsUsingSniperScope())
 		{
 			bot->GetControlInterface()->PressSecondaryAttackButton();
 		}

@@ -76,7 +76,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (bot->GetRangeTo(object) < 96.0f)
 		{
-			bot->GetControlInterface()->AimAt(goal, IPlayerController::LOOK_VERY_IMPORTANT, 1.0f, "Looking at object to pick it!");
+			bot->GetControlInterface()->AimAt(goal, IPlayerController::LOOK_PRIORITY, 1.0f, "Looking at object to pick it!");
 
 			if (bot->GetControlInterface()->IsAimOnTarget())
 			{
@@ -104,7 +104,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskUpdate(CTF2Bot* bot)
 			return Done("Dropped building!");
 		}
 
-		bot->GetControlInterface()->AimAt(m_angle, IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at direction to place building!");
+		bot->GetControlInterface()->AimAt(m_angle, IPlayerController::LOOK_PRIORITY, 0.5f, "Looking at direction to place building!");
 
 		if (bot->GetControlInterface()->IsAimOnTarget())
 		{

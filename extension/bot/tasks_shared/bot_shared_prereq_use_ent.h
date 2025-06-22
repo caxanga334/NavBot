@@ -87,7 +87,7 @@ inline TaskResult<BT> CBotSharedPrereqUseEntityTask<BT, CT>::OnTaskUpdate(BT* bo
 
 	if (range < CBaseExtPlayer::PLAYER_USE_RADIUS)
 	{
-		bot->GetControlInterface()->AimAt(entPos, IPlayerController::LOOK_VERY_IMPORTANT, 0.2f, "Looking at prerequisite task entity!");
+		bot->GetControlInterface()->AimAt(entPos, IPlayerController::LOOK_PRIORITY, 0.2f, "Looking at prerequisite task entity!");
 
 		if (bot->IsLookingTowards(entPos, 0.98f))
 		{

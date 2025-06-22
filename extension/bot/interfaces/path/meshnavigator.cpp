@@ -252,7 +252,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		Vector lookat(goalPos.x, goalPos.y, eyes.z);
 
 		// low priority look towards movement goal so the bot doesn't walk with a fixed look
-		input->AimAt(lookat, IPlayerController::LOOK_NONE, 0.1f, "Looking at move goal (Ground).");
+		input->AimAt(lookat, IPlayerController::LOOK_PATH, 0.1f, "Looking at move goal (Ground).");
 	}
 
 	// move bot along path
@@ -1344,7 +1344,7 @@ void CMeshNavigator::SearchForUseableObstacles(CBaseBot* bot)
 		if (bot->GetMovementInterface()->IsUseableObstacle(obstacle))
 		{
 			Vector aimPos = UtilHelpers::getWorldSpaceCenter(obstacle);
-			bot->GetControlInterface()->AimAt(aimPos, IPlayerController::LOOK_OPERATE, sm_navbot_path_useable_scan.GetFloat() + 0.2f, "Looking at useable obstacle on my path!");
+			bot->GetControlInterface()->AimAt(aimPos, IPlayerController::LOOK_USE, sm_navbot_path_useable_scan.GetFloat() + 0.2f, "Looking at useable obstacle on my path!");
 			bot->GetControlInterface()->PressUseButton();
 		}
 	}

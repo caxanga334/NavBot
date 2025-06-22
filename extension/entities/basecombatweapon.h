@@ -15,8 +15,12 @@ namespace entities
 
 		int GetClip1() const;
 		int GetClip2() const;
+		bool UsesClipsForAmmo1() const;
+		bool UsesClipsForAmmo2() const;
 		int GetPrimaryAmmoType() const;
 		int GetSecondaryAmmoType() const;
+		int GetPrimaryAmmoCount() const;
+		int GetSecondaryAmmoCount() const;
 		int GetState() const;
 		int GetOwnerIndex() const;
 		edict_t* GetOwner() const;

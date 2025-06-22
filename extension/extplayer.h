@@ -60,6 +60,7 @@ public:
 	const QAngle GetEyeAngles() const;
 	const Vector GetMins() const;
 	const Vector GetMaxs() const;
+	const QAngle GetPunchAngle() const;
 	/**
 	 * @brief Utility function for finding a position to aim at for headshots.
 	 * @param bonename Name of the head bone.

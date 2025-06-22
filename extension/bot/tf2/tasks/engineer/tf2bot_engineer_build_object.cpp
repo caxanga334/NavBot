@@ -220,7 +220,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 				break;
 			}
 
-			bot->GetControlInterface()->AimAt(origin, IPlayerController::LOOK_VERY_IMPORTANT, 0.2f, "Looking at build place.");
+			bot->GetControlInterface()->AimAt(origin, IPlayerController::LOOK_PRIORITY, 0.2f, "Looking at build place.");
 		}
 
 		// crouch while placing

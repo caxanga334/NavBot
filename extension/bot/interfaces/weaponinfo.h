@@ -117,6 +117,7 @@ public:
 		custom_ammo_property_name.reserve(64);
 		econindex = -1;
 		priority = 0;
+		disable_dodge = false;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
 		custom_ammo_prop_on_weapon = true;
@@ -125,8 +126,9 @@ public:
 		custom_ammo_out_of_ammo = 0.0f;
 		interval_between_attacks = -1.0f;
 		headshot_range_mult = 1.0f;
-		maxclip1 = 0;
-		maxclip2 = 0;
+		no_clip1 = false;
+		no_clip2 = false;
+		sec_uses_prim = false;
 		primammolow = 0;
 		secammolow = 0;
 		slot = INVALID_WEAPON_SLOT;
@@ -135,6 +137,13 @@ public:
 		dynamic_priority_has_sec_ammo = 0;
 		dynamic_priority_health = 0;
 		dynamic_priority_health_cond = -1.0f;
+		dynamic_priority_range_lt = 0;
+		dynamic_priority_range_lt_cond = -1.0f;
+		deployed_property_name.reserve(64);
+		needs_to_be_deployed = false;
+		deployed_property_on_weapon = true;
+		selection_max_range = -1.0f;
+		selection_min_range = -1.0f;
 	}
 
 	virtual ~WeaponInfo() {}
@@ -146,6 +155,7 @@ public:
 		custom_ammo_property_name.clear();
 		econindex = -1;
 		priority = 0;
+		disable_dodge = false;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
 		custom_ammo_prop_on_weapon = true;
@@ -155,12 +165,20 @@ public:
 		interval_between_attacks = -1.0f;
 		headshot_range_mult = 1.0f;
 		headshot_aim_offset.Init(0.0f, 0.0f, 0.0f);
-		maxclip1 = 0;
-		maxclip2 = 0;
 		primammolow = 0;
 		secammolow = 0;
 		attack_move_range = -1.0f;
 		use_secondary_chance = 20;
+		dynamic_priority_has_sec_ammo = 0;
+		dynamic_priority_health = 0;
+		dynamic_priority_health_cond = -1.0f;
+		dynamic_priority_range_lt = 0;
+		dynamic_priority_range_lt_cond = -1.0f;
+		deployed_property_name.clear();
+		needs_to_be_deployed = false;
+		deployed_property_on_weapon = true;
+		selection_max_range = -1.0f;
+		selection_min_range = -1.0f;
 
 		slot = INVALID_WEAPON_SLOT;
 		attacksinfo[PRIMARY_ATTACK].Reset();
@@ -220,8 +238,9 @@ public:
 
 	void SetEconItemIndex(int index) { econindex = index; }
 	void SetPriority(int pri) { priority = pri; }
-	void SetMaxClip1(int clip) { maxclip1 = clip; }
-	void SetMaxClip2(int clip) { maxclip2 = clip; }
+	void SetNoClip1(bool v) { no_clip1 = v; }
+	void SetNoClip2(bool v) { no_clip2 = v; }
+	void SetSecondaryUsesPrimaryAmmoType(bool v) { sec_uses_prim = v; }
 	void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
 	void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	void SetSlot(int s) { slot = s; }
@@ -235,7 +254,14 @@ public:
 	void SetCustomAmmoPropertyIsFloat(const bool v) { custom_ammo_is_float = v; }
 	void SetDynamicPriorityHasSecondaryAmmo(const int v) { dynamic_priority_has_sec_ammo = v; }
 	void SetDynamicPriorityHealthPercentage(const int v) { dynamic_priority_health = v; }
-	void SetDynamicPriorityHealthPercentageCondition(const float v) {  dynamic_priority_health_cond = v; }
+	void SetDynamicPriorityHealthPercentageCondition(const float v) { dynamic_priority_health_cond = v; }
+	void SetDynamicPriorityThreatRangeLessThan(const int v) { dynamic_priority_range_lt = v; }
+	void SetDynamicPriorityThreatRangeLessThanCondition(const float v) { dynamic_priority_range_lt_cond = v; }
+	void SetDeployedPropertyName(const char* name) { deployed_property_name.assign(name); }
+	void SetNeedsToBeDeployed(const bool v) { needs_to_be_deployed = v; }
+	void SetDeployedPropertySource(const bool onweapon) { deployed_property_on_weapon = onweapon; }
+	void SetIsDodgeDisabled(const bool v) { disable_dodge = v; }
+	void SetSelectionMaxRangeOverride(const float v) { selection_max_range = v; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -244,10 +270,6 @@ public:
 	bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
 	bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
 	bool IsCombatWeapon() const { return priority >= 0; }
-	bool HasMaxClip1() const { return maxclip1 > 0; }
-	int GetMaxClip1() const { return maxclip1; }
-	bool HasMaxClip2() const { return maxclip2 > 0; }
-	int GetMaxClip2() const { return maxclip2; }
 	bool HasLowPrimaryAmmoThreshold() const { return primammolow > 0; }
 	int GetLowPrimaryAmmoThreshold() const { return primammolow; }
 	bool HasLowSecondaryAmmoThreshold() const { return secammolow > 0; }
@@ -255,10 +277,12 @@ public:
 	int GetSlot() const { return slot; }
 	bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
 	float GetAttackInterval() const { return interval_between_attacks; }
-	bool Clip1IsReserveAmmo() const { return maxclip1 == CLIP_USES_RESERVE; }
-	bool Clip2IsReserveAmmo() const { return maxclip2 == CLIP_USES_RESERVE; }
+	// if this returns true, the weapon doesn't uses clips for the primary attack
+	bool Clip1IsReserveAmmo() const { return no_clip1; }
+	// if this returns true, the weapon doesn't uses clips for the secondary attack
+	bool Clip2IsReserveAmmo() const { return no_clip1; }
 	// Returns true if the weapon secondary attack uses the primary ammo type.
-	bool SecondaryUsesPrimaryAmmo() const { return maxclip2 == SECONDARY_ATTACK_USES_PRIMARY_AMMO; }
+	bool SecondaryUsesPrimaryAmmo() const { return sec_uses_prim; }
 	// Returns the minimum distance bots should try to maintain when attacking
 	const float GetAttackRange() const { return attack_move_range; }
 	int GetChanceToUseSecondaryAttack() const { return use_secondary_chance; }
@@ -271,10 +295,27 @@ public:
 	int GetDynamicPriorityHasSecondaryAmmo() const { return dynamic_priority_has_sec_ammo; }
 	int GetDynamicPriorityHealthPercentage() const { return dynamic_priority_health; }
 	float GetDynamicPriorityHealthPercentageCondition() const { return dynamic_priority_health_cond; }
+	int GetDynamicPriorityThreatRangeLessThan() const { return dynamic_priority_range_lt; }
+	float GetDynamicPriorityThreatRangeLessThanCondition() const { return dynamic_priority_range_lt_cond; }
+	bool HasDynamicPriorityThreatRangeLessThan() const { return dynamic_priority_range_lt_cond > 0.0f; }
+	bool HasDeployedStateProperty() const { return !deployed_property_name.empty(); }
+	const std::string& GetDeployedPropertyName() const { return deployed_property_name; }
+	bool NeedsToBeDeployedToFire() const { return needs_to_be_deployed; }
+	bool IsDeployedPropertyOnTheWeapon() const { return deployed_property_on_weapon; }
+	bool IsAllowedToDodge() const { return !disable_dodge; }
+	bool IsInSelectionRange(const float range) const
+	{
+		if (range >= selection_min_range && range <= selection_max_range)
+		{
+			return true;
+		}
+
+		return false;
+	}
  
 	virtual void PostLoad();
 
-protected:
+private:
 	std::string classname;
 	std::string configentry;
 	std::string custom_ammo_property_name;
@@ -282,6 +323,7 @@ protected:
 	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
+	bool disable_dodge; // if true, the bot won't try to dodge enemy attacks while using this weapon
 	bool can_headshot;
 	bool infinite_reserve_ammo; // weapon has infinite reserve ammo (no need to collect ammo for it)
 	bool custom_ammo_prop_on_weapon; // if true, the custom ammo property is located on the weapon, if false, on the player
@@ -290,8 +332,9 @@ protected:
 	float custom_ammo_out_of_ammo; // if the custom ammo is equal or less than this, the weapon is out of ammo
 	float interval_between_attacks; // delay between attacks
 	float headshot_range_mult;
-	int maxclip1; // Maximum ammo stored in clip1
-	int maxclip2; // Maximum ammo stored in clip2
+	bool no_clip1; // Weapon doesn't uses clip 1 (primary)
+	bool no_clip2; // Weapon doesn't uses clip 2 (secondary)
+	bool sec_uses_prim; // Secondary attack uses primary ammo type
 	int primammolow; // Threshold for low primary ammo
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
@@ -300,9 +343,13 @@ protected:
 	int dynamic_priority_has_sec_ammo; // Additional priority when the weapon has secondary ammo
 	int dynamic_priority_health; // Additional priority when the bot's health is equal or less to dynamic_priority_health_cond
 	float dynamic_priority_health_cond;
-
-	static constexpr auto CLIP_USES_RESERVE = -2; // if maxclip is equal to this constant, then the weapon doesn't use clips and the actual ammo in the 'clip' is the reserve ammo.
-	static constexpr auto SECONDARY_ATTACK_USES_PRIMARY_AMMO = -3;
+	int dynamic_priority_range_lt; // Additional priority when the range to threat is less than the condition
+	float dynamic_priority_range_lt_cond;
+	std::string deployed_property_name;
+	bool deployed_property_on_weapon; // if true, the property is on the weapon, else is on the player.
+	bool needs_to_be_deployed; // if true, the weapon needs to be deployed/scoped to fire it.
+	float selection_max_range;
+	float selection_min_range;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC

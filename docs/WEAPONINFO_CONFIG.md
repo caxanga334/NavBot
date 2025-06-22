@@ -21,8 +21,9 @@ This is a list of keys available for all mods.
 |headshot_range_multiplier|Headshot range multiplier.|float|
 |headshot_aim_offset|Offset to apply when aiming at the head with this weapon.|Vector|
 |infinite_reserve_ammo|This weapon has infinite reserve ammo.|boolean|
-|maxclip1|Maximum ammo in clip 1.|integer|
-|maxclip2|Maximum ammo in clip 2.|integer|
+|primary_no_clip|This weapon doesn't uses clips for primary attack.|boolean|
+|secondary_no_clip|This weapon doesn't uses clips for secondary attack.|boolean|
+|secondary_uses_primary_ammo_type|The secondary attack uses primary ammo type.|boolean|
 |low_primary_ammo_threshold|Threshold to consider the bot to be low on ammo for the primary ammo type.|integer|
 |low_secondary_ammo_threshold|Threshold to consider the bot to be low on ammo for the secondary ammo type.|integer|
 |slot|Which slot this weapon uses.|integer|
@@ -37,6 +38,11 @@ This is a list of keys available for all mods.
 |priority_dynamic_has_secondary_ammo|If non zero and the weapon has secondary ammo, add this to the weapon's priority value.|integer|
 |priority_dynamic_health_percentage|If the bot health matches the condition, add this to the weapon's priority value|integer|
 |priority_dynamic_health_percentage_threshold|If the bot health percentage is equal or less than this, then add `priority_dynamic_health_percentage` to the weapon's priority. Negative value (default) disables this.|float|
+|deployed_property_name|Name of a networked property used to check if the weapon is scoped in or deployed. Only supports booleans for now.|string|
+|deployed_property_source|Deployed status property source. "player" or "weapon".|string|
+|needs_to_be_deployed_to_fire|If enabled, bots will deploy/scope-in before firing with this weapon.|boolean|
+|disable_dodge|If enabled, bots won't dodge enemy attacks while using this weapon.|boolean|
+|selection_max_range_override|If positive, overrides the maximum range value used in weapon selection.|float|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
 
@@ -64,10 +70,6 @@ If `maxrange` is less than *-9000*, the attack function is considered to the dis
 If `projectilespeed` is negative, the weapon is considered to be a hitscan weapon.
 
 `headshot_range_multiplier` ranges from 0.0 to 1.0 and is used to multiply the attack's `maxrange` value. Example: If a weapon has a `maxrange` of 2048 and a `headshot_range_multiplier` of 0.5, the bots will only aim at the head if the range to the enemy is 1024 or less.
-
-Setting `maxclip1` or `maxclip2` to `-2` flags the weapon as *Clip is reserve ammo*. (The weapon doesn't uses clips and the reserve ammo is used directly, IE: HL2's SMG1 grenades).
-
-Setting `maxclip2` to `-3` flags the weapon as *Secondary attack uses primary ammo type*.
 
 When attacking enemies, bots will only move towards the enemy if they are not visible or if they are outside the range of all weapons owned by the bot.  
 By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be overriden with `attack_range_override`.  
@@ -108,7 +110,6 @@ WeaponInfoConfig
 		"slot" "2"
 		"can_headshot" "true"
 		"headshot_range_multiplier" "0.25"
-		"maxclip1" "17"
 		"low_primary_ammo_threshold" "30"
 
 		"primary_attack_info"

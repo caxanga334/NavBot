@@ -176,7 +176,7 @@ void CPluginMeshNavigator::Update(CBaseBot* bot)
 		Vector lookat(goalPos.x, goalPos.y, eyes.z);
 
 		// low priority look towards movement goal so the bot doesn't walk with a fixed look
-		input->AimAt(lookat, IPlayerController::LOOK_NONE, 0.1f);
+		input->AimAt(lookat, IPlayerController::LOOK_PATH, 0.1f);
 	}
 
 	// move bot along path

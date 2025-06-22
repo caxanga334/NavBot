@@ -10,6 +10,7 @@ public:
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
 	TaskEventResponseResult<CTF2Bot> OnFlagTaken(CTF2Bot* bot, CBaseEntity* player) override;
+	TaskEventResponseResult<CTF2Bot> OnWeaponEquip(CTF2Bot* bot, CBaseEntity* weapon) override;
 
 	// Don't chase enemies
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }

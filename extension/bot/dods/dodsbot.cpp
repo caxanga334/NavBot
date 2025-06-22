@@ -35,6 +35,13 @@ void CDoDSBot::Spawn()
 	m_droppedAmmo = false;
 }
 
+void CDoDSBot::FirstSpawn()
+{
+	CBaseBot::FirstSpawn();
+
+	engine->SetFakeClientConVarValue(GetEdict(), "cl_autoreload", "1");
+}
+
 dayofdefeatsource::DoDTeam CDoDSBot::GetMyDoDTeam() const
 {
 	return dodslib::GetDoDTeam(GetEntity());
@@ -83,19 +90,6 @@ bool CDoDSBot::IsDefusingBomb() const
 	bool result = false;
 	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bDefusing", result);
 	return result;
-}
-
-bool CDoDSBot::IsScopedIn() const
-{
-	CBaseEntity* weapon = GetActiveWeapon();
-
-	if (!weapon) { return false; }
-
-	bool* bZoomed = entprops->GetPointerToEntData<bool>(weapon, Prop_Send, "m_bZoomed");
-
-	if (!bZoomed) { return false; }
-
-	return *bZoomed;
 }
 
 void CDoDSBot::DodgeEnemies(const CKnownEntity* threat)

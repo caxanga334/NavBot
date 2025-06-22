@@ -85,7 +85,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotDeployTripminesTask::OnTaskUpdate(CBlackM
 	}
 
 	bot->GetMovementInterface()->MoveTowards(m_wallPosition);
-	bot->GetControlInterface()->AimAt(m_wallPosition, IPlayerController::LOOK_VERY_IMPORTANT, 0.5f, "Looking at wall to deploy tripmine.");
+	bot->GetControlInterface()->AimAt(m_wallPosition, IPlayerController::LOOK_PRIORITY, 0.5f, "Looking at wall to deploy tripmine.");
 
 	const float range = bot->GetRangeTo(m_wallPosition);
 

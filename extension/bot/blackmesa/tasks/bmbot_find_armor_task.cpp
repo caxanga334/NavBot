@@ -75,7 +75,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindArmorTask::OnTaskUpdate(CBlackMesaBot
 
 	if (m_isCharger && bot->GetRangeTo(m_goal) < CBaseExtPlayer::PLAYER_USE_RADIUS)
 	{
-		bot->GetControlInterface()->AimAt(m_goal, IPlayerController::LOOK_OPERATE, 0.5f, "Looking at armor charger to use it!");
+		bot->GetControlInterface()->AimAt(m_goal, IPlayerController::LOOK_USE, 0.5f, "Looking at armor charger to use it!");
 
 		if (bot->GetControlInterface()->IsAimOnTarget())
 		{

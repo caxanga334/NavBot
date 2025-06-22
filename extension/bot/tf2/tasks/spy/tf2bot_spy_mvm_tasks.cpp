@@ -122,7 +122,7 @@ TaskResult<CTF2Bot> CTF2BotSpySapMvMRobotTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
-	bot->GetControlInterface()->AimAt(target, IPlayerController::LOOK_VERY_IMPORTANT, 1.0f, "Looking at robot to sap!");
+	bot->GetControlInterface()->AimAt(target, IPlayerController::LOOK_PRIORITY, 1.0f, "Looking at robot to sap!");
 
 	if (bot->GetRangeTo(target) <= 128.0f && bot->GetControlInterface()->IsAimOnTarget())
 	{

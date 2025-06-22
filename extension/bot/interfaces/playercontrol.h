@@ -23,22 +23,25 @@ public:
 	// Priority for look calls
 	enum LookPriority
 	{
-		LOOK_NONE = 0, // Look with the lowest priority
-		LOOK_AMBIENT, // Looking at the ambient
-		LOOK_INTERESTING, // Something interesting
-		LOOK_ALERT, // Something that alerts, gunfire, explosions
-		LOOK_DANGER, // Something dangerous
-		LOOK_ALLY, // Look at my teammate
-		LOOK_OPERATE, // Operating a machine, buttons, levers, etc
-		LOOK_COMBAT, // Enemies
-		LOOK_SUPPORT, // Combat support, more important than enemies
-		LOOK_VERY_IMPORTANT, // Something very important, more than enemies
+		LOOK_IDLE = 0, // Idle look.
+		LOOK_PATH, // Looking at the direction I am going
+		LOOK_INTERESTING, // Looking at something interesting
+		LOOK_ALLY, // Looking at my teammate
+		LOOK_SEARCH, // Looking at potential enemy positions
+		LOOK_ALERT, // Looking at something that alerted me
+		LOOK_DANGER, // Looking at a danger source
+		LOOK_USE, // Looking to use a door, button, etc
+		LOOK_COMBAT, // Looking at en enemy
+		LOOK_SUPPORT, // Looking to support my teammates
+		LOOK_PRIORITY, // Looking at something that requires high priority
 		LOOK_MOVEMENT, // Movement that requires looking in a specific direction (ie: ladders, jumps)
 		LOOK_CRITICAL, // Something of very high importance
 		LOOK_MANDATORY, // Nothing can interrupt this
 
 		MAX_LOOK_PRIORITY
 	};
+
+	static const char* GetLookPriorityName(IPlayerController::LookPriority priority);
 
 	void OnDifficultyProfileChanged() override;
 
@@ -82,13 +85,15 @@ public:
 	// Translates the given position into angles and calls SnapAimAt(const QAngle& angles, const LookPriority priority)
 	void SnapAimAt(const Vector& pos, const LookPriority priority);
 	// True if the bot aim is Steady
-	virtual const bool IsAimSteady() const { return m_isSteady; }
+	const bool IsAimSteady() const { return m_isSteady; }
 	// True if the bot aim is currently on target
-	virtual const bool IsAimOnTarget() const { return m_isOnTarget; }
+	const bool IsAimOnTarget() const { return m_isOnTarget; }
 	// True if the bot aim at some point looked directly on it's target
-	virtual const bool DidLookAtTarget() const { return m_didLookAtTarget; }
+	const bool DidLookAtTarget() const { return m_didLookAtTarget; }
 	// How long the bot aim has been steady
-	virtual const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
+	const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
+	// Returns the current aim target entity.
+	CBaseEntity* GetAimAtTarget() const { return m_lookentity.Get(); }
 
 	void SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot spot) { m_desiredAimSpot = spot; }
 	void SetDesiredAimBone(const char* boneName)
@@ -106,6 +111,11 @@ public:
 	IDecisionQuery::DesiredAimSpot GetCurrentDesiredAimSpot() const { return m_desiredAimSpot; }
 	const std::string& GetCurrentDesiredAimBone() const { return m_desiredAimBone; }
 	const Vector& GetCurrentDesiredAimOffset() const { return m_desiredAimOffset; }
+
+	/**
+	 * @brief Forces an update to the IsAimOnTarget status.
+	 */
+	void ForceUpdateAimOnTarget(const float tolerance = 0.98f);
 
 private:
 
@@ -129,32 +139,6 @@ private:
 	std::string m_desiredAimBone; // bone name
 	Vector m_desiredAimOffset; // offset for aim by offset
 };
-
-inline const char* GetLookPriorityName(IPlayerController::LookPriority priority)
-{
-	using namespace std::literals::string_view_literals;
-
-	constexpr std::array names = {
-		"NONE"sv,
-		"AMBIENT"sv,
-		"INTERESTING"sv,
-		"ALERT"sv,
-		"DANGER"sv,
-		"ALLY"sv,
-		"OPERATE"sv,
-		"COMBAT"sv,
-		"SUPPORT"sv,
-		"VERY IMPORTANT"sv,
-		"MOVEMENT"sv,
-		"CRITICAL"sv,
-		"MANDATORY"sv,
-	};
-
-	static_assert(names.size() == static_cast<size_t>(IPlayerController::MAX_LOOK_PRIORITY), "Look priority name array and enum size mismatch!");
-
-	return names[static_cast<size_t>(priority)].data();
-}
-
 
 #endif // !SMNAV_BOT_BASE_PLAYER_CONTROL_IFACE_H_
 

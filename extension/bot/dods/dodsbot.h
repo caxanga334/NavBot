@@ -23,6 +23,7 @@ public:
 	bool HasJoinedGame() override;
 	void TryJoinGame() override;
 	void Spawn() override;
+	void FirstSpawn() override;
 	dayofdefeatsource::DoDTeam GetMyDoDTeam() const;
 	dayofdefeatsource::DoDClassType GetMyClassType() const;
 	// Control point index the bot is currently at. returns -1 if not at one.
@@ -34,7 +35,6 @@ public:
 	bool IsPlantingBomb() const;
 	bool IsDefusingBomb() const;
 	bool CanDropAmmo() const { return !m_droppedAmmo; } // ammo can only be dropped once per life
-	bool IsScopedIn() const override;
 	void DodgeEnemies(const CKnownEntity* threat) override;
 private:
 	std::unique_ptr<CDoDSBotSensor> m_dodsensor;
