@@ -350,6 +350,14 @@ const int CBotWeapon::GetPriority(const CBaseBot* owner, const float* range, con
 		priority += info->GetDynamicPriorityHealthPercentage();
 	}
 
+	if (range && info->HasDynamicPriorityThreatRangeLessThan())
+	{
+		if (*range <= info->GetDynamicPriorityThreatRangeLessThanCondition())
+		{
+			priority += info->GetDynamicPriorityThreatRangeLessThan();
+		}
+	}
+
 	return priority;
 }
 
