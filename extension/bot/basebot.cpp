@@ -709,6 +709,8 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 		if (control->GetAimAtTarget() != enemy->GetEntity())
 			return; // Don't fire: bot is aiming at something else.
 
+		OpportunisticallyUseWeaponSpecialFunction(enemy, weapon, range);
+
 		const IntervalTimer& timer = GetLastFiredWeaponTimer();
 
 		// check attack interval
@@ -1058,8 +1060,47 @@ bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* wea
 	return true;
 }
 
+void CBaseBot::OpportunisticallyUseWeaponSpecialFunction(const CKnownEntity* enemy, const CBotWeapon* weapon, const float range)
+{
+	if (!m_weaponSpecialFunctionTimer.IsElapsed())
+		return;
+
+	if (weapon->CanUseSpecialFunction(this, range))
+	{
+		const WeaponInfo::SpecialFunction& func = weapon->GetWeaponInfo()->GetSpecialFunction();
+		IPlayerController* control = GetControlInterface();
+		m_weaponSpecialFunctionTimer.Start(func.delay_between_uses);
+
+		if (IsDebugging(BOTDEBUG_MISC))
+		{
+			DebugPrintToConsole(255, 239, 0, "%s USING WEAPON (%s : %s) SPECIAL FUNCTION! \n",
+				GetDebugIdentifier(), weapon->GetClassname().c_str(), weapon->GetWeaponInfo()->GetConfigEntryName());
+		}
+
+		switch (func.button_to_press)
+		{
+		case INPUT_ATTACK2:
+
+			control->PressSecondaryAttackButton(func.hold_button_time);
+			break;
+		case INPUT_ATTACK3:
+			control->PressSpecialAttackButton(func.hold_button_time);
+			break;
+		case INPUT_RELOAD:
+			control->PressReloadButton(func.hold_button_time);
+			break;
+		default:
+#ifdef EXT_DEBUG
+			META_CONPRINTF("Bot Weapon \"%s\" special function with invalid button to press! \n", weapon->GetWeaponInfo()->GetConfigEntryName());
+#endif // EXT_DEBUG
+			break;
+		}
+	}
+}
+
 void CBaseBot::OnLastUsedWeaponChanged(const CBotWeapon* new_weapon)
 {
 	m_lastfiredweapontimer.Invalidate();
+	m_weaponSpecialFunctionTimer.Invalidate();
 	GetControlInterface()->ReleaseAllAttackButtons();
 }

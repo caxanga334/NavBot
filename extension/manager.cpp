@@ -757,11 +757,64 @@ CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 	extmanager->LoadBotNames();
 }
 
-CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
+static std::string s_debugoptionsnames[] = {
+	{ "STOPALL" },
+	{ "SENSOR" },
+	{ "TASKS" },
+	{ "LOOK" },
+	{ "PATH" },
+	{ "EVENTS" },
+	{ "MOVEMENT" },
+	{ "ERRORS" },
+	{ "MISC" }
+};
+
+static int SMNavBotDebugCommand_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+{
+	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
+	{
+		return 0;
+	}
+
+	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
+	V_strncpy(cmd, partial, sizeof(cmd));
+
+	// skip to start of argument
+	char* partialArg = V_strrchr(cmd, ' ');
+	if (partialArg == NULL)
+	{
+		return 0;
+	}
+
+	// chop command from partial argument
+	*partialArg = '\000';
+	++partialArg;
+
+	int partialArgLength = V_strlen(partialArg);
+
+	int count = 0;
+
+	for (auto& optionname : s_debugoptionsnames)
+	{
+		if (count >= COMMAND_COMPLETION_MAXITEMS)
+		{
+			break;
+		}
+
+		if (V_strnicmp(optionname.c_str(), partialArg, partialArgLength) == 0)
+		{
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, optionname.c_str());
+		}
+	}
+
+	return count;
+}
+
+CON_COMMAND_F_COMPLETION(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT, SMNavBotDebugCommand_AutoComplete)
 {
 	if (args.ArgC() <= 1)
 	{
-		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS");
+		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS, MISC");
 		rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTION1> <OPTION2> ...");
 		return;
 	}
@@ -816,6 +869,11 @@ CON_COMMAND_F(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT)
 		{
 			extmanager->ToggleDebugOption(BOTDEBUG_SQUADS);
 			rootconsole->ConsolePrint("Toggle Debugging Bot Squads");
+		}
+		else if (strncasecmp(option, "MISC", 4) == 0)
+		{
+			extmanager->ToggleDebugOption(BOTDEBUG_MISC);
+			rootconsole->ConsolePrint("Toggle Debugging Bot Miscellaneous functions");
 		}
 		else
 		{

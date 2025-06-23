@@ -376,6 +376,37 @@ bool CBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 	return false;
 }
 
+bool CBotWeapon::CanUseSpecialFunction(const CBaseBot* owner, const float range) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+	const WeaponInfo::SpecialFunction& func = info->GetSpecialFunction();
+
+	if (!func.property_name.empty())
+	{
+		if (range < func.min_range || range > func.max_range)
+		{
+			return false;
+		}
+
+		int entsource = func.property_on_weapon ? this->GetIndex() : owner->GetIndex();
+
+		if (func.property_is_float)
+		{
+			float value = 0.0f;
+			entprops->GetEntPropFloat(entsource, Prop_Send, func.property_name.c_str(), value);
+			return value >= func.available_threshold;
+		}
+		else
+		{
+			int value = 0;
+			entprops->GetEntProp(entsource, Prop_Send, func.property_name.c_str(), value);
+			return value >= static_cast<int>(func.available_threshold);
+		}
+	}
+
+	return false;
+}
+
 float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const
 {
 	const WeaponInfo* info = GetWeaponInfo();

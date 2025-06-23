@@ -16,7 +16,7 @@ Vector pred::SimpleProjectileLead(const Vector& targetPosition, const Vector& ta
 {
 	float time = GetProjectileTravelTime(projectileSpeed, rangeBetween);
 
-	time = time + (gpGlobals->interval_per_tick * 2.0f); // add two ticks ahead
+	// time = time + (gpGlobals->interval_per_tick * 2.0f); // add two ticks ahead
 
 	Vector result = targetPosition + (targetVelocity * time);
 	return result;

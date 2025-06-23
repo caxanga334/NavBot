@@ -196,6 +196,12 @@ SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const 
 		}
 	}
 
+	if (m_section_weapon && std::strcmp(name, "special_function") == 0)
+	{
+		m_section_specialfunc = true;
+		return SourceMod::SMCResult_Continue;
+	}
+
 	if (!m_section_weapon) // weapon section can be anything
 	{
 		m_section_weapon = true;
@@ -218,6 +224,72 @@ SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const 
 
 SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const char* key, const char* value)
 {
+	if (m_section_specialfunc)
+	{
+		WeaponInfo::SpecialFunction* func = m_current->GetSpecialFunctionEx();
+
+		if (std::strcmp(key, "property_name") == 0)
+		{
+			func->property_name.assign(value);
+		}
+		else if (std::strcmp(key, "property_source") == 0)
+		{
+			if (std::strcmp(value, "player") == 0)
+			{
+				func->property_on_weapon = false;
+			}
+			else if (std::strcmp(value, "weapon") == 0)
+			{
+				func->property_on_weapon = true;
+			}
+		}
+		else if (std::strcmp(key, "property_is_float") == 0)
+		{
+			func->property_is_float = UtilHelpers::StringToBoolean(value);
+		}
+		else if (std::strcmp(key, "available_threshold") == 0)
+		{
+			func->available_threshold = atof(value);
+		}
+		else if (std::strcmp(key, "button_to_press") == 0)
+		{
+			if (std::strcmp(value, "secondary_attack") == 0)
+			{
+				func->button_to_press = INPUT_ATTACK2;
+			}
+			if (std::strcmp(value, "tertiary_attack") == 0)
+			{
+				func->button_to_press = INPUT_ATTACK3;
+			}
+			else if (std::strcmp(value, "reload") == 0)
+			{
+				func->button_to_press = INPUT_RELOAD;
+			}
+		}
+		else if (std::strcmp(key, "delay_between_uses") == 0)
+		{
+			func->delay_between_uses = atof(value);
+		}
+		else if (std::strcmp(key, "hold_button_time") == 0)
+		{
+			func->hold_button_time = atof(value);
+		}
+		else if (std::strcmp(key, "min_range_to_activate") == 0)
+		{
+			func->min_range = atof(value);
+		}
+		else if (std::strcmp(key, "max_range_to_activate") == 0)
+		{
+			func->max_range = atof(value);
+		}
+		else
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair on special function <%s - %s> at line %i col %i", key, value, states->line, states->col);
+		}
+
+		return SourceMod::SMCResult_Continue;
+	}
+
 	if (strncmp(key, "classname", 9) == 0)
 	{
 		m_current->SetClassname(value);
@@ -489,18 +561,24 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 
 SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SMCStates* states)
 {
+	if (m_section_specialfunc)
+	{
+		m_section_specialfunc = false;
+		return SourceMod::SMCResult_Continue;
+	}
+
 	if (m_section_weapon)
 	{
 		if (IsParserInWeaponAttackSection())
 		{
 			ParserExitWeaponSection();
-			return SMCResult_Continue;
+			return SourceMod::SMCResult_Continue;
 		}
 
 		m_section_weapon = false;
 	}
 
-	return SMCResult_Continue;
+	return SourceMod::SMCResult_Continue;
 }
 
 void WeaponInfo::PostLoad()
@@ -545,6 +623,14 @@ void WeaponInfo::PostLoad()
 		else
 		{
 			selection_min_range = -1.0f;
+		}
+	}
+
+	if (!special_function.property_name.empty())
+	{
+		if (special_function.button_to_press == 0)
+		{
+			smutils->LogError(myself, "Weapon Info for \"%s\" has special function declared with missing button to press.", this->configentry.c_str());
 		}
 	}
 }

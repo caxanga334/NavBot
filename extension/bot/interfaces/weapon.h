@@ -78,6 +78,8 @@ public:
 	const int GetPriority(const CBaseBot* owner, const float* range = nullptr, const CKnownEntity* threat = nullptr) const;
 	// returns true if the weapon is deployed/scoped.
 	virtual bool IsDeployedOrScoped(const CBaseBot* owner) const;
+	// returns true if the weapon's special function can be used.
+	bool CanUseSpecialFunction(const CBaseBot* owner, const float range) const;
 protected:
 	const WeaponInfo* m_info;
 

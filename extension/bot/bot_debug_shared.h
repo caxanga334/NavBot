@@ -13,6 +13,7 @@ enum BotDebugModes
 	BOTDEBUG_MOVEMENT = (1 << 5),
 	BOTDEBUG_ERRORS = (1 << 6),
 	BOTDEBUG_SQUADS = (1 << 7),
+	BOTDEBUG_MISC = (1 << 8),
 };
 
 #endif // !NAVBOT_BOT_DEBUG_SHARED_H_

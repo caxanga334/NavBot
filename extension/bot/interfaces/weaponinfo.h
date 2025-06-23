@@ -109,6 +109,31 @@ public:
 		MAX_WEAPON_ATTACKS
 	};
 
+	struct SpecialFunction
+	{
+		SpecialFunction()
+		{
+			property_on_weapon = true;
+			property_is_float = true;
+			available_threshold = -1.0f;
+			hold_button_time = -1.0f;
+			delay_between_uses = -1.0f;
+			min_range = -1.0f;
+			max_range = 900000.0f;
+			button_to_press = 0;
+		}
+
+		std::string property_name;
+		bool property_on_weapon;
+		bool property_is_float;
+		float available_threshold;
+		float hold_button_time;
+		float delay_between_uses;
+		float min_range;
+		float max_range;
+		int button_to_press;
+	};
+
 	WeaponInfo() :
 		headshot_aim_offset(0.0f, 0.0f, 0.0f)
 	{
@@ -312,6 +337,10 @@ public:
 
 		return false;
 	}
+
+	const SpecialFunction& GetSpecialFunction() const { return special_function; }
+	// for writing
+	SpecialFunction* GetSpecialFunctionEx() { return &special_function; }
  
 	virtual void PostLoad();
 
@@ -350,6 +379,7 @@ private:
 	bool needs_to_be_deployed; // if true, the weapon needs to be deployed/scoped to fire it.
 	float selection_max_range;
 	float selection_min_range;
+	SpecialFunction special_function;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
@@ -363,6 +393,7 @@ public:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
+		m_section_specialfunc = false;
 		m_current = nullptr;
 	}
 
@@ -442,6 +473,7 @@ protected:
 		m_section_prim = false;
 		m_section_sec = false;
 		m_section_ter = false;
+		m_section_specialfunc = false;
 	}
 
 	// parser data
@@ -450,6 +482,7 @@ protected:
 	bool m_section_prim; // primary attack section
 	bool m_section_sec; // secondary attack section
 	bool m_section_ter; // tertiary attack section
+	bool m_section_specialfunc; // special function section
 
 	WeaponInfo* m_current; // Current weapon info being parsed
 

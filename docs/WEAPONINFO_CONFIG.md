@@ -1,8 +1,8 @@
 # Weapon Information Configuration File
 
-The weapon information provide bots with information about how a weapon can be used.
-
-The configuration file is stored at `config/<mod folder>/weapons.cfg`.
+The weapon information provide bots with information about how a weapon can be used.    
+The configuration file is stored at `config/<mod folder>/weapons.cfg`.    
+It's recommended that you create a copy and rename it to `weapons.custom.cfg` before making modifications to it.
 
 ## File Format
 
@@ -59,6 +59,29 @@ The following keys applies to attack info sections (`primary_attack_info`, `seco
 |hold_button_time|How long to keep pressing the attack button in seconds. Negative values for a single tap.|float|
 |melee|Is melee attack?|boolean|
 |explosive|Is explosive attack?|boolean|
+
+### Weapon's Special Function
+
+The special function section provide bots with information on how to use a weapon special secondary ability, especially those that doesn't use standard attack buttons or ammo storage.    
+Example of weapons with such functions (TF2): The Soda Popper, The Hitman's Heatmaker, The Cleaner's Carbine.    
+The following key value pairs should be on a `special_function` section on the weapon config file.
+
+|Key Name|Description|Type|
+|:---:|:---:|:---:|
+|property_name|Name of the networked property to read.|string|
+|property_source|Where is the networked property located. "player" or "weapon".|string|
+|property_is_float|Is the networked property internally a float. Integer if set to false.|boolean|
+|available_threshold|The networked property value must be greater than this to be used.|float|
+|button_to_press|Which button the bot should press to activate the special functionl. Options: "secondary_attack", "tertiary_attack", "reload"|string|
+|delay_between_uses|Delay in seconds between uses of the special function. Negative values for no delay.|float|
+|hold_button_time|How long to press the special function button in seconds. Negative values for a single tap.|float|
+|min_range_to_activate|Bots won't use the special function is the distance to the current enemy is less than this value.|float|
+|max_range_to_activate|Bots won't use the special function is the distance to the current enemy is greater than this value.|float|
+
+Additional information:
+
+* Bots won't use the weapon's special function if the current enemy is outside the weapon's main attack range.
+* Maximum range has a default value of `900000`.
 
 ### Special Values and Additional Info
 

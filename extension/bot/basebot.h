@@ -307,6 +307,13 @@ protected:
 	 * @return True if the line of fire is clear. False if not.
 	 */
 	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
+	/**
+	 * @brief Invoked to make the bot use the weapon's special function if possible.
+	 * @param enemy Current enemy
+	 * @param weapon Current active weapon.
+	 * @param range Range to enemy.
+	 */
+	virtual void OpportunisticallyUseWeaponSpecialFunction(const CKnownEntity* enemy, const CBotWeapon* weapon, const float range);
 
 	const IntervalTimer& GetLastFiredWeaponTimer() const { return m_lastfiredweapontimer; }
 	void StartLastFiredWeaponTimer() { m_lastfiredweapontimer.Start(); }
@@ -320,6 +327,7 @@ protected:
 	virtual void OnLastUsedWeaponChanged(const CBotWeapon* new_weapon);
 
 	CountdownTimer& GetUndeployWeaponTimer() { return m_undeployWeaponTimer; }
+	CountdownTimer& GetWeaponSpecialFunctionUseTimer() { return m_weaponSpecialFunctionTimer; }
 
 private:
 	const CBotWeapon* m_lastusedweapon; // last weapon used to attack an enemy
@@ -356,6 +364,7 @@ private:
 	const CNavPrerequisite* m_lastPrerequisite; // Last prerequisite this bot used
 	CountdownTimer m_clearLastPrerequisiteTimer;
 	CountdownTimer m_undeployWeaponTimer; // timer to undeploy the weapon after firing it
+	CountdownTimer m_weaponSpecialFunctionTimer;
 
 	void ExecuteQueuedCommands();
 };
