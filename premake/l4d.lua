@@ -35,6 +35,10 @@ project "NavBot-L4D"
         path.join(Path_SM, "public", "smsdk_ext.cpp"),
 	}
 
+    -- reset filter    
+    filter {}
+        defines { "TERROR" }
+
     filter { "system:Linux" }
         defines { "NO_HOOK_MALLOC", "NO_MALLOC_OVERRIDE" }
 

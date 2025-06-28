@@ -34,6 +34,10 @@ project "NavBot-SWARM"
         path.join(Path_SM, "public", "smsdk_ext.cpp"),
 	}
 
+    -- reset filter    
+    filter {}
+        defines { "INFESTED_DLL" }
+
     filter { "system:Windows", "architecture:x86" }
         links {
             path.join(Path_HL2SDKROOT, Dir_SDK, "lib", "public", "mathlib.lib"),

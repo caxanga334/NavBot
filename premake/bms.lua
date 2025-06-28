@@ -35,6 +35,10 @@ project "NavBot-BMS"
         path.join(Path_SM, "public", "smsdk_ext.cpp"),
 	}
 
+    -- reset filter    
+    filter {}
+        defines { "HL2_DLL" }
+
     filter { "system:Linux" }
         defines { "NO_HOOK_MALLOC", "NO_MALLOC_OVERRIDE" }
 

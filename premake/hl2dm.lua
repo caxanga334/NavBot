@@ -35,6 +35,10 @@ project "NavBot-HL2DM"
         path.join(Path_SM, "public", "smsdk_ext.cpp"),
 	}
 
+    -- reset filter    
+    filter {}
+        defines { "HL2_DLL", "HL2MP" }
+
     filter { "system:Linux" }
         defines { "NO_HOOK_MALLOC", "NO_MALLOC_OVERRIDE" }
 

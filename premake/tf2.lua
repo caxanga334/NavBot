@@ -35,6 +35,10 @@ project "NavBot-TF2"
         path.join(Path_SM, "public", "smsdk_ext.cpp"),
 	}
 
+    -- reset filter    
+    filter {}
+        defines { "TF_DLL" }
+
     filter { "system:Linux" }
         defines { "NO_HOOK_MALLOC", "NO_MALLOC_OVERRIDE" }
 
