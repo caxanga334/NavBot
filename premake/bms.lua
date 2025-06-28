@@ -37,7 +37,7 @@ project "NavBot-BMS"
 
     -- reset filter    
     filter {}
-        defines { "HL2_DLL" }
+        defines { "HL2_DLL", "HL2MP" }
 
     filter { "system:Linux" }
         defines { "NO_HOOK_MALLOC", "NO_MALLOC_OVERRIDE" }
