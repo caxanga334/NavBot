@@ -16,7 +16,7 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
-ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty.");
+ConVar cvar_bot_difficulty("sm_navbot_skill_level", "0", FCVAR_NONE, "Skill level group to use when selecting bot difficulty. Setting this to negative to generate a random profile for each bot.");
 ConVar cvar_bot_disable_behavior("sm_navbot_debug_disable_gamemode_ai", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "When set to 1, disables game mode behavior for the bot AI.");
 
 CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),

@@ -907,7 +907,7 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 	if (args.ArgC() < 3)
 	{
 		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <filter option>\n");
-		META_CONPRINT("  <mask option> : playersolid npcsolid visible shot all\n");
+		META_CONPRINT("  <mask option> : playersolid playersolidbrushonly npcsolid npcsolidbrushonly water opaque solid blocklos visible shot all\n");
 		META_CONPRINT("  <filter option> : simple navtransient\n");
 		return;
 	}
@@ -926,13 +926,37 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 
 	const char* arg1 = args[1];
 
-	if (strcasecmp(arg1, "playersolid") == 0)
+	if (std::strcmp(arg1, "playersolid") == 0)
 	{
 		mask = MASK_PLAYERSOLID;
 	}
-	else if (strcasecmp(arg1, "npcsolid") == 0)
+	else if (std::strcmp(arg1, "playersolidbrushonly") == 0)
+	{
+		mask = MASK_PLAYERSOLID_BRUSHONLY;
+	}
+	else if (std::strcmp(arg1, "npcsolid") == 0)
 	{
 		mask = MASK_NPCSOLID;
+	}
+	else if (std::strcmp(arg1, "npcsolidbrushonly") == 0)
+	{
+		mask = MASK_NPCSOLID_BRUSHONLY;
+	}
+	else if (std::strcmp(arg1, "water") == 0)
+	{
+		mask = MASK_WATER;
+	}
+	else if (std::strcmp(arg1, "opaque") == 0)
+	{
+		mask = MASK_OPAQUE;
+	}
+	else if (std::strcmp(arg1, "solid") == 0)
+	{
+		mask = MASK_SOLID;
+	}
+	else if (std::strcmp(arg1, "blocklos") == 0)
+	{
+		mask = MASK_BLOCKLOS;
 	}
 	else if (strcasecmp(arg1, "visible") == 0)
 	{
@@ -998,6 +1022,10 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 			{
 				META_CONPRINTF(" \n");
 			}
+		}
+		else
+		{
+			META_CONPRINT("HIT BUT ENTITY IS NULL! \n");
 		}
 	}
 	else

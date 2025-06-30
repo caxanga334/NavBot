@@ -1275,7 +1275,7 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 	if ( fabs( start.z - end.z ) > navgenparams->step_height )
 	{
 		// initialize the height delta
-		trace::hull(start + traceOffset, start - traceOffset, hullMins, hullMaxs, MASK_NPCSOLID, &filter, trace);
+		trace::hull(start + traceOffset, start - traceOffset, hullMins, hullMaxs, MASK_PLAYERSOLID, &filter, trace);
 
 		if ( trace.startsolid || trace.IsDispSurface() )
 		{
@@ -1292,7 +1292,7 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 		{
 			pos = start + t * ( end - start );
 
-			trace::hull(pos + traceOffset, pos - traceOffset, hullMins, hullMaxs, MASK_NPCSOLID, &filter, trace);
+			trace::hull(pos + traceOffset, pos - traceOffset, hullMins, hullMaxs, MASK_PLAYERSOLID, &filter, trace);
 
 			if ( trace.startsolid || trace.IsDispSurface() )
 			{
@@ -4502,7 +4502,7 @@ static bool IsWalkableTraceLineClear( const Vector &from, const Vector &to, unsi
 	const int maxTries = 50;
 	for( int t=0; t<maxTries; ++t )
 	{
-		trace::line(useFrom, to, MASK_NPCSOLID, &traceFilter, result);
+		trace::line(useFrom, to, MASK_PLAYERSOLID, &traceFilter, result);
 
 		// if we hit a walkable entity, try again
 		if (result.fraction != 1.0f && TheNavMesh->IsEntityWalkable(result.m_pEnt, flags))

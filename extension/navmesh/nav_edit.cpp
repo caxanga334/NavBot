@@ -333,7 +333,7 @@ bool CNavMesh::FindActiveNavArea( void )
 
 	trace_t result;
 	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
-	trace::line(from, to, (sm_nav_solid_props.GetBool()) ? MASK_NPCSOLID : MASK_NPCSOLID_BRUSHONLY, &filter, result);
+	trace::line(from, to, (sm_nav_solid_props.GetBool()) ? MASK_PLAYERSOLID : MASK_PLAYERSOLID_BRUSHONLY, &filter, result);
 
 	if (result.fraction != 1.0f)
 	{
@@ -488,7 +488,7 @@ static bool CheckForClimbableSurface( const Vector &start, const Vector &end )
 {
 	trace_t result;
 
-	trace::line(start, end, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+	trace::line(start, end, MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 	return result.DidHit()
 			&& (physprops->GetSurfaceData(result.surface.surfaceProps)->game.climbable != 0

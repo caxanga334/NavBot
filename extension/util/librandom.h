@@ -21,11 +21,35 @@ namespace librandom
 		void ReSeed(S seed);
 		void RandomReSeed();
 
+		/**
+		 * @brief Generates a random integer.
+		 * @tparam T Integer type.
+		 * @param min Minimum value.
+		 * @param max Maximum value.
+		 * @return Randomly generated value.
+		 */
 		template <typename T>
 		T GetRandomInt(T min, T max);
 
+		/**
+		 * @brief Generates a random real.
+		 * @tparam T Real type (float, double)
+		 * @param min Minimum value.
+		 * @param max Maximum value.
+		 * @return Randomly generated value.
+		 */
 		template <typename T>
 		T GetRandomReal(T min, T max);
+
+		/**
+		 * @brief Generates a random bool value.
+		 * @param chance Chance for the result to be true. Defaults to 50%.
+		 * @return Randomly generated boolean value.
+		 */
+		bool GetRandomChance(const int chance = 50)
+		{
+			return chance >= this->GetRandomInt<int>(1, 100);
+		}
 
 	private:
 		E engine;
@@ -102,6 +126,12 @@ namespace librandom
 
 // default generator using Mersenne Twister 19937
 extern librandom::RandomNumberGenerator<std::mt19937, unsigned int>* randomgen;
+
+namespace librandom
+{
+	// Sets a new randomly generated seed to the global random number generators
+	void ReSeedGlobalGenerators();
+}
 
 namespace librandom::utils
 {

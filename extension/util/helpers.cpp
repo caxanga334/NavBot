@@ -6,9 +6,9 @@
 #include <entities/baseentity.h>
 #include <server_class.h>
 #include <studio.h>
-#include "helpers.h"
 #include "sdkcalls.h"
 #include "entprops.h"
+#include "helpers.h"
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>

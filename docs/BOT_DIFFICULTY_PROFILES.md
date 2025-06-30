@@ -1,24 +1,23 @@
 # Bot Difficulty Profiles
 
-The bot difficulty profile stores difficulty/skill level related variables.
-
+The bot difficulty profile stores difficulty/skill level related variables.    
 The ConVar `sm_navbot_skill_level` determines which skill group to use.
-
-These profiles are stored in the `addons/sourcemod/configs/navbot/` folder.
+These profiles are stored in the `addons/sourcemod/configs/navbot/` folder.    
 
 ## Loading Files
 
-The parser supports mod specific profiles and custom overrides.
-
-Per mod files are stored in the mod folder. Example: `addons/sourcemod/configs/navbot/tf/bot_difficulty.cfg`.
-
+The parser supports mod specific profiles and custom overrides.    
+Per mod files are stored in the mod folder. Example: `addons/sourcemod/configs/navbot/tf/bot_difficulty.cfg`.    
 If that file doesn't exists, it loads the global configuration file located at: `addons/sourcemod/configs/navbot/bot_difficulty.cfg`.
 
 ### Overrides
 
-You can override the bot profile files by renaming it to `bot_difficulty.custom.cfg`.
+You can override the bot profile files by renaming it to `bot_difficulty.custom.cfg`.    
+This allows you to customize the bot profiles without worrying about losing them when updating the extension.    
 
-This allows you to customize the bot profiles without worrying about losing them when updating the extension.
+## Random Difficulty
+
+If `sm_navbot_skill_level` is set to a negative value, a random difficulty profile is generated for each bot instead of selecting a profile from the configuration file.
 
 # Profile Format
 

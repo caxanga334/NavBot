@@ -1074,7 +1074,7 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	{
 		// trace directly down to see if it's below us and unobstructed
 		trace_t result;
-		trace::line(testPos, Vector(testPos.x, testPos.y, useZ), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+		trace::line(testPos, Vector(testPos.x, testPos.y, useZ), MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 		if ( ( result.fraction != 1.0f ) && ( fabs( result.endpos.z - useZ ) > flStepHeight ) )
 			return NULL;
@@ -1208,7 +1208,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						trace_t result;
 
 						// make sure 'pos' is not embedded in the world
-						trace::line(pos, pos + Vector(0, 0, navgenparams->step_height), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+						trace::line(pos, pos + Vector(0, 0, navgenparams->step_height), MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 						// it was embedded - move it out
 						Vector safePos = result.startsolid ? result.endpos + Vector( 0, 0, 1.0f )
@@ -1219,7 +1219,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						if ( heightDelta > navgenparams->step_height )
 						{
 							// trace to the height of the original point
-							trace::line(areaPos + Vector(0, 0, navgenparams->step_height), Vector(areaPos.x, areaPos.y, safePos.z), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+							trace::line(areaPos + Vector(0, 0, navgenparams->step_height), Vector(areaPos.x, areaPos.y, safePos.z), MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 							
 							if ( result.fraction != 1.0f )
 							{
@@ -1228,7 +1228,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 						}
 
 						// trace to the original point's height above the area
-						trace::line(safePos, Vector(areaPos.x, areaPos.y, safePos.z + navgenparams->step_height), MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+						trace::line(safePos, Vector(areaPos.x, areaPos.y, safePos.z + navgenparams->step_height), MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 						if ( result.fraction != 1.0f )
 						{
@@ -1634,7 +1634,7 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 
 	while( to.z - pos.z < flMaxOffset ) 
 	{
-		trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, &filter, result);
+		trace::line(from, to, MASK_PLAYERSOLID_BRUSHONLY, &filter, result);
 
 		if (!result.startsolid && ((result.fraction == 1.0f) || ((from.z - result.endpos.z) >= navgenparams->human_height)))
 		{
@@ -1678,7 +1678,7 @@ bool CNavMesh::GetSimpleGroundHeight( const Vector &pos, float *height, Vector *
 
 	trace_t result;
 
-	trace::line(pos, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+	trace::line(pos, to, MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 	if (result.startsolid)
 		return false;
@@ -3594,7 +3594,7 @@ void CNavMesh::EndVisibilityComputations( void )
 //--------------------------------------------------------------------------------------------------------------
 unsigned int CNavMesh::GetGenerationTraceMask( void ) const
 {
-	return MASK_NPCSOLID_BRUSHONLY;
+	return MASK_PLAYERSOLID_BRUSHONLY;
 }
 
 //--------------------------------------------------------------------------------------------------------------

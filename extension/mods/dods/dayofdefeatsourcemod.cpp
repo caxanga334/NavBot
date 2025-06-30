@@ -65,9 +65,7 @@ CNavMesh* CDayOfDefeatSourceMod::NavMeshFactory()
 
 void CDayOfDefeatSourceMod::OnRoundStart()
 {
-	randomgen->RandomReSeed(); // change seed on round start
-	CBaseBot::s_botrng.RandomReSeed();
-	CBaseBot::s_usercmdrng.RandomReSeed();
+	librandom::ReSeedGlobalGenerators();
 
 	FindObjectiveResourceEntity();
 	FindControlPoints();

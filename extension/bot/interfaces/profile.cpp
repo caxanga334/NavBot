@@ -10,6 +10,23 @@
 #undef max
 #undef clamp
 
+void DifficultyProfile::RandomizeProfileValues()
+{
+	skill_level = SKILL_LEVEL_RANDOM_PROFILE;
+	game_awareness = randomgen->GetRandomInt<int>(0, 100);
+	aimspeed = randomgen->GetRandomReal<float>(30.0f, 4000.0f);
+	fov = randomgen->GetRandomInt<int>(60, 179);
+	maxvisionrange = randomgen->GetRandomInt<int>(1024, 16384);
+	maxhearingrange = randomgen->GetRandomInt<int>(256, 8192);
+	minrecognitiontime = randomgen->GetRandomReal<float>(0.0001f, 1.0f);
+	predict_projectiles = randomgen->GetRandomChance(); // GetRandomChance defauls to 50% chance for true
+	allow_headshots = randomgen->GetRandomChance();
+	can_dodge = randomgen->GetRandomChance();
+	aim_tracking_interval = randomgen->GetRandomReal<float>(0.0001f, 1.0f);
+	aggressiveness = randomgen->GetRandomInt<int>(0, 100);
+	teamwork = randomgen->GetRandomInt<int>(0, 100);
+}
+
 CDifficultyManager::~CDifficultyManager()
 {
 	m_profiles.clear();
@@ -95,6 +112,15 @@ void CDifficultyManager::LoadProfiles()
 
 std::shared_ptr<DifficultyProfile> CDifficultyManager::GetProfileForSkillLevel(const int level) const
 {
+	// random profile
+	if (level < 0)
+	{
+		std::shared_ptr<DifficultyProfile> random;
+		random.reset(CreateNewProfile());
+		random->RandomizeProfileValues();
+		return random;
+	}
+
 	std::vector<std::shared_ptr<DifficultyProfile>> collected;
 	collected.reserve(32);
 

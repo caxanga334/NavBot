@@ -173,9 +173,8 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	m_cfg_navbot = nullptr;
 	m_cfg_sdkhooks = nullptr;
 	m_cfg_sdktools = nullptr;
-	randomgen->RandomReSeed(); // uses std::random_device to generate a random seed
-	CBaseBot::s_usercmdrng.RandomReSeed();
-	CBaseBot::s_botrng.RandomReSeed();
+	// generate a random seed for the global generators
+	librandom::ReSeedGlobalGenerators();
 
 	// Create the directory
 	auto mod = smutils->GetGameFolderName();
@@ -406,7 +405,7 @@ bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 
 void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
 {
-	randomgen->RandomReSeed(); // change seed every map start
+	librandom::ReSeedGlobalGenerators();
 	extmanager->OnMapStart();
 }
 

@@ -658,7 +658,8 @@ float NavAreaTravelDistance( const Vector &startPos, const Vector &goalPos, Cost
  */
 void CNavArea::ComputeEarliestOccupyTimes( void )
 {
-#ifdef CSTRIKE_DLL
+
+#if 0 /* #ifdef CSTRIKE_DLL */
 	/// @todo Derive cstrike-specific navigation classes
 
 	for( int i=0; i<MAX_NAV_TEAMS; ++i )

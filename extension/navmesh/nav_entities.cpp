@@ -136,6 +136,7 @@ bool CFuncNavCost::IsApplicableTo( edict_t *who ) const
 		return false;
 	}
 
+/*
 #ifdef TF_DLL
 	// TODO: Make group comparison efficient and move to base combat character
 	CTFBot *bot = ToTFBot( who );
@@ -220,6 +221,7 @@ bool CFuncNavCost::IsApplicableTo( edict_t *who ) const
 		return false;
 	}
 #endif
+*/
 
 	return false;
 }

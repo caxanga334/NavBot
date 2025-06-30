@@ -110,9 +110,7 @@ void CBlackMesaDeathmatchMod::OnMapStart()
 
 void CBlackMesaDeathmatchMod::OnRoundStart()
 {
-	randomgen->RandomReSeed();
-	CBaseBot::s_usercmdrng.RandomReSeed();
-	CBaseBot::s_botrng.RandomReSeed();
+	librandom::ReSeedGlobalGenerators();
 }
 
 const std::pair<std::string, int>* CBlackMesaDeathmatchMod::GetRandomPlayerModel() const

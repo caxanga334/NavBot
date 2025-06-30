@@ -3646,7 +3646,7 @@ bool IsHidingSpotInCover( const Vector &spot )
 	// if we are crouched underneath something, that counts as good cover
 	to = from + Vector( 0, 0, 20.0f );
 
-	trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+	trace::line(from, to, MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 	if (result.fraction != 1.0f)
 		return true;
@@ -3658,7 +3658,7 @@ bool IsHidingSpotInCover( const Vector &spot )
 	{
 		to = from + Vector( coverRange * (float)cos(angle), coverRange * (float)sin(angle), navgenparams->human_height );
 
-		trace::line(from, to, MASK_NPCSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+		trace::line(from, to, MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
 
 		// if traceline hit something, it hit "cover"
 		if (result.fraction != 1.0f)
@@ -4652,7 +4652,7 @@ void CNavArea::CheckFloor( edict_t* ignore )
 	CBaseEntity* be = reinterpret_cast<CBaseEntity*>(ignore->GetIServerEntity());
 	trace_t tr;
 	trace::CTraceFilterSimple filter(COLLISION_GROUP_PLAYER_MOVEMENT, be);
-	trace::hull(origin, origin, mins, maxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
+	trace::hull(origin, origin, mins, maxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
 
 	// If the center is open space, we're effectively blocked
 	if ( !tr.startsolid )

@@ -363,7 +363,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 	Vector start( m_pos );
 	Vector end( start );
 	end.z += navgenparams->jump_crouch_height;
-	trace::hull(start, end, NavTraceMins, NavTraceMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
+	trace::hull(start, end, NavTraceMins, NavTraceMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
 
 	float maxHeight = tr.endpos.z - start.z;
 
@@ -376,7 +376,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 
 		realMaxs.z = navgenparams->human_crouch_height;
 
-		trace::hull(start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
+		trace::hull(start, start, mins, realMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
 
 		if ( !tr.startsolid )
 		{
@@ -385,7 +385,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 			// We found a crouch-sized space.  See if we can stand up.
 			realMaxs.z = navgenparams->human_height;
 
-			trace::hull(start, start, mins, realMaxs, MASK_NPCSOLID_BRUSHONLY, &filter, tr);
+			trace::hull(start, start, mins, realMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
 
 			if ( !tr.startsolid )
 			{

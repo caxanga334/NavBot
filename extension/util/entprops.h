@@ -34,8 +34,16 @@
 #include <cinttypes>
 #include <unordered_map>
 #include <array>
+
+#ifdef COMPILER_MSVC
+#pragma warning( push )
+#pragma warning( disable : 4005 ) // warning C4005: 'SPROP_COORD': macro redefinition
+#endif // COMPILER_MSVC
+
+
 #include <extension.h>
 #include <dt_send.h>
+#include <shareddefs.h>
 #include <server_class.h>
 #include <datamap.h>
 #include "helpers.h"
@@ -405,5 +413,9 @@ namespace entityprops
 	// Gets an entity velocity
 	void GetEntityAbsVelocity(CBaseEntity* entity, Vector& result);
 }
+
+#ifdef COMPILER_MSVC
+#pragma warning( pop )
+#endif // COMPILER_MSVC
 
 #endif

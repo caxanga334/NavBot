@@ -13,6 +13,11 @@
 class DifficultyProfile
 {
 public:
+	// If skill_level is this value, this is a 'default' profile.
+	static constexpr int SKILL_LEVEL_DEFAULT_PROFILE = -1;
+	// If skill_level is this value, this is a randomly generated profile.
+	static constexpr int SKILL_LEVEL_RANDOM_PROFILE = -2;
+
 	DifficultyProfile()
 	{
 		skill_level = -1;
@@ -30,8 +35,13 @@ public:
 		teamwork = 20;
 	}
 
+	virtual ~DifficultyProfile() = default;
+	// Randomizes the difficulty profile values
+	virtual void RandomizeProfileValues();
+
 	// user defined skill profiles starts from 0 and are always a positive skill level
-	inline bool IsDefaultProfile() const { return skill_level < 0; }
+	inline bool IsDefaultProfile() const { return skill_level == SKILL_LEVEL_DEFAULT_PROFILE; }
+	inline bool IsRandomizedProfile() const { return skill_level == SKILL_LEVEL_RANDOM_PROFILE; }
 
 	inline const int GetSkillLevel() const { return skill_level; }
 	// Bot game awareness skill. Range: 0 - 100
