@@ -4,6 +4,7 @@
 #include <utility>
 #include <array>
 #include <mods/basemod.h>
+#include <dt_send.h>
 #include <shareddefs.h>
 #include "blackmesa_shareddefs.h"
 

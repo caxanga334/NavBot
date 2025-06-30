@@ -24,6 +24,7 @@
 #include "nav_ladder.h"
 #include "nav_elevator.h"
 #include <sdkports/sdk_timers.h>
+#include <dt_send.h>
 #include <shareddefs.h>
 #include <networkvar.h>
 

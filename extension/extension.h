@@ -45,6 +45,8 @@ class CTakeDamageInfo;
 
 #include "smsdk_ext.h"
 
+#include <const.h>
+
 #include <engine/ivdebugoverlay.h>
 #include <engine/IEngineTrace.h>
 #include <engine/IEngineSound.h>

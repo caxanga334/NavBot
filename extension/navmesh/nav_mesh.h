@@ -35,6 +35,7 @@
 #include "nav.h"
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
+#include <dt_send.h>
 #include <shareddefs.h>
 #include <convar.h>
 #include <gametrace.h>

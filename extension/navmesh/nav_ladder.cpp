@@ -19,6 +19,7 @@
 #include "nav_colors.h"
 #include "nav.h"
 #include "nav_mesh.h"
+#include <dt_send.h>
 #include <shareddefs.h>
 
 extern ConVar sm_nav_area_bgcolor;
