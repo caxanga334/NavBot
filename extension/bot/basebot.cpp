@@ -1048,6 +1048,12 @@ bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* wea
 	}
 	else
 	{
+		if (IsDebugging(BOTDEBUG_MISC))
+		{
+			DebugPrintToConsole(255, 69, 0, "%s CAN'T FIRE WEAPON. LINE OF FIRE IS BLOCKED! <%s> RANGE: %g\n", GetDebugIdentifier(), enemy->GetEntityClassname().c_str(), range);
+			debugoverlay->AddLineOverlay(GetEyeOrigin(), center, 255, 0, 0, true, 0.1f);
+		}
+
 		return false; // all lines of fire are obstructed
 	}
 

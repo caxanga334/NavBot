@@ -21,6 +21,7 @@
 #undef clamp
 
 ConVar cvar_navbot_notarget("sm_navbot_debug_blind", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "When set to 1, disables the bot's vision.");
+ConVar cvar_navbot_skip_pvs("sm_navbot_vision_skip_pvs", "0", FCVAR_GAMEDLL, "When enabled, skips the PVS check and always uses raycast for vision. Raycast is more expensive and enabling this will impact performance.");
 
 class BotSensorTraceFilter : public trace::CTraceFilterSimple
 {
@@ -85,6 +86,11 @@ void ISensor::SetupPVS(CBaseBot* bot)
 	VPROF_BUDGET("ISensor::SetupPVS", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	if (cvar_navbot_skip_pvs.GetBool())
+	{
+		return;
+	}
+
 	engine->ResetPVS(ISensor::s_pvs.data(), static_cast<int>(ISensor::s_pvs.size()));
 	engine->AddOriginToPVS(bot->GetEyeOrigin());
 }
@@ -95,6 +101,11 @@ bool ISensor::IsInPVS(const Vector& origin)
 	VPROF_BUDGET("ISensor::IsInPVS( Point )", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	if (cvar_navbot_skip_pvs.GetBool())
+	{
+		return true;
+	}
+
 	return engine->CheckOriginInPVS(origin, ISensor::s_pvs.data(), static_cast<int>(ISensor::s_pvs.size()));
 }
 
@@ -103,6 +114,12 @@ bool ISensor::IsInPVS(const Vector& mins, const Vector& maxs)
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsInPVS( Bounding Box )", "NavBot");
 #endif // EXT_VPROF_ENABLED
+
+	if (cvar_navbot_skip_pvs.GetBool())
+	{
+		return true;
+	}
+
 	return engine->CheckBoxInPVS(mins, maxs, ISensor::s_pvs.data(), static_cast<int>(ISensor::s_pvs.size()));
 }
 
@@ -799,7 +816,7 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					me->DebugPrintToConsole(0, 128, 0, "%s caught line of sight with entity %i (%s)", 
+					me->DebugPrintToConsole(0, 128, 0, "%s caught line of sight with entity %i (%s) \n", 
 						me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
 
 					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 0, 255, 0, 255, false, 5.0f);
@@ -823,7 +840,7 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					me->DebugPrintToConsole(255, 0, 0, "%s lost line of sight with entity %i (%s)",
+					me->DebugPrintToConsole(255, 0, 0, "%s lost line of sight with entity %i (%s) \n",
 						me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
 
 					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
