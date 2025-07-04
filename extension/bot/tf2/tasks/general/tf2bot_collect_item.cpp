@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <mods/basemod.h>
 #include <mods/tf2/teamfortress2mod.h>

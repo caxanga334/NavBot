@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include "nav.h"
 
 // Default values goes here.

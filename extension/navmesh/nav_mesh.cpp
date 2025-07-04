@@ -9,6 +9,7 @@
 // Implementation of Navigation Mesh interface
 // Author: Michael S. Booth, 2003-2004
 
+#include NAVBOT_PCH_FILE
 #include "extension.h"
 #include <manager.h>
 #include <mods/basemod.h>

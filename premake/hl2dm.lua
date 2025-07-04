@@ -3,7 +3,7 @@ project "NavBot-HL2DM"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.hl2dm"
-    defines { "SOURCE_ENGINE=7" }
+    defines { "SOURCE_ENGINE=7", "NAVBOT_PCH_FILE=\"navbot_pch_hl2dm.h\""  }
 
     local Dir_SDK = "hl2sdk-hl2dm"
 
@@ -26,6 +26,7 @@ project "NavBot-HL2DM"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}

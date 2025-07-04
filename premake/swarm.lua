@@ -3,7 +3,7 @@ project "NavBot-SWARM"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.swarm"
-    defines { "SOURCE_ENGINE=17" }
+    defines { "SOURCE_ENGINE=17", "NAVBOT_PCH_FILE=\"navbot_pch_swarm.h\""  }
 
     local Dir_SDK = "hl2sdk-swarm"
 
@@ -25,6 +25,7 @@ project "NavBot-SWARM"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}

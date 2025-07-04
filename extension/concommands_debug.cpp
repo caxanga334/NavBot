@@ -1,11 +1,5 @@
-#include <memory>
-#include <string>
-#include <sstream>
-#include <chrono>
-#include <queue>
+#include NAVBOT_PCH_FILE
 
-#include <extension.h>
-#include <manager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <bot/bot_shared_utils.h>
@@ -22,11 +16,7 @@
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_game_util.h>
 #include <sdkports/sdk_servernetworkproperty.h>
-#include <util/helpers.h>
-#include <util/librandom.h>
 #include <util/ehandle_edict.h>
-#include <util/sdkcalls.h>
-#include <util/entprops.h>
 #include <sm_argbuffer.h>
 #include <am-platform.h>
 
@@ -1202,10 +1192,20 @@ CON_COMMAND(sm_navbot_debug_createfakeclient, "Debug CreateFakeClient.")
 	{
 		edict = engine->CreateFakeClient(name);
 	}
+#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS
 	else if (method == 1)
 	{
 		edict = engine->CreateFakeClientEx(name);
 	}
+#else
+	else if (method == 1)
+	{
+		META_CONPRINT("CreateFakeClientEx is not available for the current engine branch! \n");
+		return;
+	}
+#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS
+
+
 	else if (method == 2)
 	{
 		edict = botmanager->CreateBot(name);
@@ -1242,6 +1242,35 @@ CON_COMMAND(sm_navbot_debug_player_info, "Debugs the player info interfaces.")
 
 		META_CONPRINTF("Player %i edict %p player info %p bot controller %p \n", client, edict, info, controller);
 	}
+}
+
+CON_COMMAND(sm_navbot_debug_ent_iface, "Debug entity interface")
+{
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_iface <classname> \n");
+		return;
+	}
+
+	const char* classname = args[1];
+	int ent = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, classname);
+	
+	if (ent == INVALID_EHANDLE_INDEX)
+	{
+		META_CONPRINTF("No entity of classname \"%s\" was found! \n", classname);
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(ent);
+
+	IServerEntity* svent = reinterpret_cast<IServerEntity*>(pEntity);
+	IServerUnknown* svunk = reinterpret_cast<IServerUnknown*>(pEntity);
+	IServerNetworkable* svnet = svent->GetNetworkable();
+	IServerNetworkable* unknet = svunk->GetNetworkable();
+
+	META_CONPRINTF("Entity <%s>\nNetworkable (SE): %p \nNetworkable (SU): %p \n", classname, svnet, unknet);
+	META_CONPRINTF("Edict (SE): %p\nEdict (SU): %p\n", svnet->GetEdict(), unknet->GetEdict());
+	META_CONPRINTF("Base Net (SE): %p\nBase Net (SU): %p\n", svnet->GetBaseNetworkable(), unknet->GetBaseNetworkable());
 }
 
 #endif // EXT_DEBUG

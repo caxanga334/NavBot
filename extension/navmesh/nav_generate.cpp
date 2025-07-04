@@ -9,6 +9,7 @@
 // Auto-generate a Navigation Mesh by sampling the current map
 // Author: Michael S. Booth (mike@turtlerockstudios.com), 2003
 
+#include NAVBOT_PCH_FILE
 #include <algorithm>
 #include <vector>
 #include <unordered_set>

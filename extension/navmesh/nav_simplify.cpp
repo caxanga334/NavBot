@@ -7,6 +7,7 @@
 //=============================================================================//
 // nav_simplify.cpp
 
+#include NAVBOT_PCH_FILE
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "nav_node.h"

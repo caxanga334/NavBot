@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <util/entprops.h>
 #include <sdkports/sdk_traces.h>

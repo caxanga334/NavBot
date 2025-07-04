@@ -1,4 +1,6 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
+#include <util/helpers.h>
 #include "manager.h"
 #include <bot/basebot.h>
 #include "natives.h"

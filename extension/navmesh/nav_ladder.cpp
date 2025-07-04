@@ -8,6 +8,7 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <extplayer.h>
 #include <util/entprops.h>
@@ -19,8 +20,6 @@
 #include "nav_colors.h"
 #include "nav.h"
 #include "nav_mesh.h"
-#include <dt_send.h>
-#include <shareddefs.h>
 
 extern ConVar sm_nav_area_bgcolor;
 

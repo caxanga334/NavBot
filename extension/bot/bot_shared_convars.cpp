@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "bot_shared_convars.h"
 

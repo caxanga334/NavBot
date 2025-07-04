@@ -3,7 +3,7 @@ project "NavBot-CSS"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.css"
-    defines { "SOURCE_ENGINE=6" }
+    defines { "SOURCE_ENGINE=6", "NAVBOT_PCH_FILE=\"navbot_pch_css.h\""  }
 
     local Dir_SDK = "hl2sdk-css"
 
@@ -26,6 +26,7 @@ project "NavBot-CSS"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}

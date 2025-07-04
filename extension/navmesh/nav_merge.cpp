@@ -2,6 +2,7 @@
 // Save/merge for partial nav meshes
 //========= Copyright Valve Corporation, All rights reserved. ============//
 
+#include NAVBOT_PCH_FILE
 #include "nav_mesh.h"
 #include "nav_area.h"
 // #include <edict.h>

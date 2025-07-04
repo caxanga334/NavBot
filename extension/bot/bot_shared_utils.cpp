@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/prediction.h>

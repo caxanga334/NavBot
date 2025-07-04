@@ -5,6 +5,7 @@
 // $NoKeywords: $
 //===========================================================================//
 
+#include NAVBOT_PCH_FILE
 // #include "cbase.h"
 #include <extension.h>
 #include "sdk_servernetworkproperty.h"

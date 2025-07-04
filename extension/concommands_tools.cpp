@@ -1,12 +1,5 @@
-#include <chrono>
-#include <cstring>
-#include <string>
+#include NAVBOT_PCH_FILE
 
-#include <extension.h>
-#include <manager.h>
-#include <extplayer.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>

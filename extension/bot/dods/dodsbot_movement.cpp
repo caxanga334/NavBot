@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <mods/dods/dods_shareddefs.h>
 #include "dodsbot.h"

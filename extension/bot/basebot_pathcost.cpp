@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>

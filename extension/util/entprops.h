@@ -30,18 +30,6 @@
 #define SMNAV_UTIL_ENT_PROPS_H_
 #pragma once
 
-#include <string>
-#include <cinttypes>
-#include <unordered_map>
-#include <array>
-
-#include <extension.h>
-#include <dt_send.h>
-#include <shareddefs.h>
-#include <server_class.h>
-#include <datamap.h>
-#include "helpers.h"
-
 // Indicates an invalid entity reference/index. Better compat between 32 bits integers and 64 bits integers than INVALID_EHANDLE_INDEX
 #define INVALID_ENT_REFERENCE -1
 
@@ -60,14 +48,7 @@ enum PropType
 	Prop_Data
 };
 
-// Water level values for m_nWaterLevel, from src/game/shared/imovehelper.h
-enum WaterLevel : std::int8_t
-{
-	WL_NotInWater = 0,
-	WL_Feet,
-	WL_Waist,
-	WL_Eyes
-};
+
 
 // from sourcemod
 enum RoundState
@@ -392,6 +373,15 @@ extern CEntPropUtils *entprops;
 
 namespace entityprops
 {
+	// Water level values for m_nWaterLevel, from src/game/shared/imovehelper.h
+	enum WaterLevel : std::int8_t
+	{
+		WL_NotInWater = 0,
+		WL_Feet,
+		WL_Waist,
+		WL_Eyes
+	};
+
 	// Gets an entity classname, offset is cached localy
 	const char* GetEntityClassname(CBaseEntity* entity);
 	// Gets an entity team number (m_iTeamNum) via datamaps

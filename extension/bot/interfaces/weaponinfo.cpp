@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <filesystem>
 #include <unordered_set>
 #include <algorithm>

@@ -6,6 +6,8 @@
 // $NoKeywords: $
 //=============================================================================//
 
+#include NAVBOT_PCH_FILE
+
 #if !defined(_STATIC_LINKED) || defined(_SHARED_LIB)
 
 #include "sdk_collisionutils.h"

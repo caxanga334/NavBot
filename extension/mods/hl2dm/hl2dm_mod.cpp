@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/hl2dm/hl2dmbot.h>
 #include "hl2dm_mod.h"

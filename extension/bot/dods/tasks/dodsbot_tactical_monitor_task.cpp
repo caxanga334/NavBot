@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/dods/dodsbot.h>
 #include <mods/dods/dayofdefeatsourcemod.h>

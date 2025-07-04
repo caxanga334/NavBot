@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <bot/tf2/tf2bot.h>

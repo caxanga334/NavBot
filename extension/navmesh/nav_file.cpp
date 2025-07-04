@@ -9,6 +9,7 @@
 // Reading and writing nav files
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January-September 2003
 
+#include NAVBOT_PCH_FILE
 #include <cinttypes>
 #include <memory>
 

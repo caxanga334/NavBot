@@ -1,6 +1,6 @@
+#include NAVBOT_PCH_FILE
 #include "extension.h"
 #include "manager.h"
-#include <PlayerState.h>
 #include "navmesh/nav_mesh.h"
 #include "navmesh/nav_area.h"
 #include <entities/baseentity.h>
@@ -26,6 +26,7 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 	m_pEntity = edict->GetIServerEntity()->GetBaseEntity();
 	m_index = gamehelpers->IndexOfEdict(edict);
 	m_playerinfo = playerinfomanager->GetPlayerInfo(edict);
+	m_pl = gameclients->GetPlayerState(edict);
 	m_lastnavarea = nullptr;
 	m_navupdatetimer = 6;
 
@@ -80,12 +81,12 @@ void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
 	CBaseEntity* groundent = GetGroundEntity();
 	int waterlevel = GetWaterLevel();
 
-	if (groundent == nullptr && waterlevel == static_cast<int>(WaterLevel::WL_NotInWater))
+	if (groundent == nullptr && waterlevel == static_cast<int>(entityprops::WaterLevel::WL_NotInWater))
 	{
 		return; // don't update if the bot is midair
 	}
 
-	float maxDist = waterlevel == static_cast<int>(WaterLevel::WL_NotInWater) ? 50.0f : 512.0f;
+	float maxDist = waterlevel == static_cast<int>(entityprops::WaterLevel::WL_NotInWater) ? 50.0f : 512.0f;
 
 	CNavArea* newarea = TheNavMesh->GetNearestNavArea(GetEdict(), GETNAVAREA_CHECK_GROUND | GETNAVAREA_CHECK_LOS, maxDist);
 
@@ -110,6 +111,8 @@ const Vector CBaseExtPlayer::WorldSpaceCenter() const
 
 const Vector CBaseExtPlayer::GetAbsOrigin() const
 {
+	// TO-DO: maybe use ICollideable instead?
+	// Would allow making this return a reference instead of a copy
 	return m_playerinfo->GetAbsOrigin();
 }
 
@@ -125,14 +128,30 @@ const Vector CBaseExtPlayer::GetEyeOrigin() const
 	return ear;
 }
 
-const QAngle CBaseExtPlayer::GetEyeAngles() const
+const QAngle& CBaseExtPlayer::GetEyeAngles() const
 {
-	// TO-DO: This is the 'RCBot' way of getting eye angles
-	// Sourcemod VCalls EyeAngles.
-	// Determine which is better
+	// NOTE: Viewangles are measured *relative* to the parent's coordinate system
+	CBaseEntity* pMoveParent = GetMoveParent();
 
-	auto cmd = m_playerinfo->GetLastUserCommand();
-	return cmd.viewangles;
+	if (!pMoveParent)
+	{
+		return m_pl->v_angle;
+	}
+
+	// FIXME: Cache off the angles?
+	matrix3x4_t eyesToParent, eyesToWorld;
+	AngleMatrix(m_pl->v_angle, eyesToParent);
+	entities::HBaseEntity entparent(pMoveParent);
+	ConcatTransforms(entparent.EntityToWorldTransform(), eyesToParent, eyesToWorld);
+
+	static QAngle angEyeWorld;
+	MatrixAngles(eyesToWorld, angEyeWorld);
+	return angEyeWorld;
+}
+
+const QAngle& CBaseExtPlayer::GetLocalEyeAngles() const
+{
+	return m_pl->v_angle;
 }
 
 const Vector CBaseExtPlayer::GetMins() const
@@ -164,6 +183,11 @@ const QAngle CBaseExtPlayer::GetPunchAngle() const
 	Vector vec{ 0.0f, 0.0f, 0.0f };
 	entprops->GetEntPropVector(GetIndex(), Prop_Send, "m_vecPunchAngle", vec);
 	return QAngle{ vec.x, vec.y, vec.z };
+}
+
+CBaseEntity* CBaseExtPlayer::GetMoveParent() const
+{
+	return entprops->GetEntPropEnt(m_pEntity, Prop_Send, "moveparent");
 }
 
 void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) const
@@ -392,19 +416,8 @@ CBaseEntity* CBaseExtPlayer::GetWeaponOfSlot(int slot) const
 
 void CBaseExtPlayer::SnapEyeAngles(const QAngle& viewAngles) const
 {
-	CPlayerState* state = gameclients->GetPlayerState(GetEdict());
-
-	if (state != nullptr)
-	{
-		state->v_angle = viewAngles;
-		state->fixangle = FIXANGLE_ABSOLUTE;
-	}
-#ifdef EXT_DEBUG
-	else
-	{
-		smutils->LogError(myself, "Got NULL CPlayerState!");
-	}
-#endif // EXT_DEBUG
+	m_pl->v_angle = viewAngles;
+	m_pl->fixangle = FIXANGLE_ABSOLUTE;
 }
 
 bool CBaseExtPlayer::IsLookingTowards(edict_t* edict, const float tolerance) const
@@ -448,7 +461,7 @@ int CBaseExtPlayer::GetWaterLevel() const
 
 bool CBaseExtPlayer::IsUnderWater() const
 {
-	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(WaterLevel::WL_Eyes);
+	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(entityprops::WaterLevel::WL_Eyes);
 }
 
 bool CBaseExtPlayer::IsMovingTowards(const Vector& position, const float tolerance, float* distance) const

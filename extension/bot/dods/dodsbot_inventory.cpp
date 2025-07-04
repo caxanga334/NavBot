@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "dodsbot.h"
 #include "dodsbot_inventory.h"

@@ -29,6 +29,7 @@
  * Version: $Id$
  */
 
+#include NAVBOT_PCH_FILE
 #include <filesystem>
 #include <string>
 

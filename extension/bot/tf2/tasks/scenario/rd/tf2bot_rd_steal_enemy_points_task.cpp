@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <string_view>
 #include <algorithm>
 #include <extension.h>

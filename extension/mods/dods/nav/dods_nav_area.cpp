@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "dods_nav_mesh.h"
 #include "dods_nav_area.h"

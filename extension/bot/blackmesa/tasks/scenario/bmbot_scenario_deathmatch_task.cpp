@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
 #include <bot/blackmesa/tasks/bmbot_find_armor_task.h>

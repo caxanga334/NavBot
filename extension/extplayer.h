@@ -1,16 +1,11 @@
 #ifndef EXT_PLAYER_INTERFACE_H_
 #define EXT_PLAYER_INTERFACE_H_
 
-#include <vector>
-
 class CNavArea;
 class CBaseBot;
 class CTakeDamageInfo;
 
-#include <eiface.h>
 #include <iplayerinfo.h>
-#include <const.h>
-#include <sdkports/sdk_ehandle.h>
 
 // Base player class, all code shared by players and bots goes here
 class CBaseExtPlayer
@@ -57,10 +52,12 @@ public:
 	const Vector GetAbsOrigin() const;
 	const QAngle GetAbsAngles() const;
 	const Vector GetEyeOrigin() const;
-	const QAngle GetEyeAngles() const;
+	const QAngle& GetEyeAngles() const;
+	const QAngle& GetLocalEyeAngles() const;
 	const Vector GetMins() const;
 	const Vector GetMaxs() const;
 	const QAngle GetPunchAngle() const;
+	CBaseEntity* GetMoveParent() const;
 	/**
 	 * @brief Utility function for finding a position to aim at for headshots.
 	 * @param bonename Name of the head bone.
@@ -180,6 +177,7 @@ protected:
 private:
 	edict_t* m_edict; // my edict pointer
 	CBaseEntity* m_pEntity; // my cbaseentity pointer
+	CPlayerState* m_pl; // player state pointer (cached)
 	int m_index; // Index of this player
 	IPlayerInfo* m_playerinfo;
 	CNavArea* m_lastnavarea;

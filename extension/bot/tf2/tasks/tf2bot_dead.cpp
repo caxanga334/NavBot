@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_maintask.h"

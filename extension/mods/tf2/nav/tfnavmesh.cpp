@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <cstring>
 #include <unordered_set>
 #include <vector>

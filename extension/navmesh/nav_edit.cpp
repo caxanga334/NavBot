@@ -9,6 +9,7 @@
 // Implementation of Navigation Mesh edit mode
 // Author: Michael Booth, 2003-2004
 
+#include NAVBOT_PCH_FILE
 #include <string_view>
 #include <cinttypes>
 #include <cmath>

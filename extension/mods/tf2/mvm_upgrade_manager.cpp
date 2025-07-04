@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <sstream>
 
 #include <extension.h>

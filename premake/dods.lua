@@ -3,7 +3,7 @@ project "NavBot-DODS"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.dods"
-    defines { "SOURCE_ENGINE=8" }
+    defines { "SOURCE_ENGINE=8", "NAVBOT_PCH_FILE=\"navbot_pch_dods.h\"" }
 
     local Dir_SDK = "hl2sdk-dods"
 
@@ -26,6 +26,7 @@ project "NavBot-DODS"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}

@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <util/commandargs_episode1.h>
 #include <util/entprops.h>

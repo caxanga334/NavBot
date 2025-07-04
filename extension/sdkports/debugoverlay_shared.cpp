@@ -5,6 +5,7 @@
 //
 //=============================================================================//
 
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "debugoverlay_shared.h"
 #include "sdk_traces.h"

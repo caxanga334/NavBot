@@ -1,11 +1,7 @@
 #ifndef NAVBOT_BLACKMESA_DEATHMATCH_MOD_H_
 #define NAVBOT_BLACKMESA_DEATHMATCH_MOD_H_
 
-#include <utility>
-#include <array>
 #include <mods/basemod.h>
-#include <dt_send.h>
-#include <shareddefs.h>
 #include "blackmesa_shareddefs.h"
 
 class CBlackMesaDeathmatchMod : public CBaseMod

@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
 #include <mods/blackmesa/nav/bm_nav_mesh.h>

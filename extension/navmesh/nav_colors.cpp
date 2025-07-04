@@ -8,6 +8,7 @@
 // Central point for defining colors and drawing routines for Navigation Mesh edit mode
 // Author: Matthew Campbell, 2004
 
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "nav_colors.h"
 

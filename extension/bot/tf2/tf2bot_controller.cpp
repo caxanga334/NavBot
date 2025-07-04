@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include "tf2bot_controller.h"
 
 CTF2BotPlayerController::CTF2BotPlayerController(CBaseBot* bot) : IPlayerController(bot)

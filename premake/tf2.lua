@@ -3,7 +3,7 @@ project "NavBot-TF2"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.tf2"
-    defines { "SOURCE_ENGINE=12" }
+    defines { "SOURCE_ENGINE=12", "NAVBOT_PCH_FILE=\"navbot_pch_tf2.h\"" }
 
     local Dir_SDK = "hl2sdk-tf2"
 
@@ -26,6 +26,7 @@ project "NavBot-TF2"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}

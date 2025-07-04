@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <queue>
 #include <vector>
 #include <extension.h>

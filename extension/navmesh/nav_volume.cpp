@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <string_view>
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>

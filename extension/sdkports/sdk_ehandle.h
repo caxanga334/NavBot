@@ -3,7 +3,6 @@
 #pragma once
 
 #include <basehandle.h>
-#include <util/helpers.h>
 
 // -------------------------------------------------------------------------------------------------- //
 // CHandle.
@@ -140,7 +139,14 @@ T* CHandle<T>::operator -> () const
 template<class T>
 inline edict_t* CHandle<T>::ToEdict() const
 {
-	return UtilHelpers::GetEdictFromCBaseHandle(*this);
+	IServerUnknown* unk = reinterpret_cast<IServerUnknown*>(Get());
+
+	if (!unk)
+	{
+		return nullptr;
+	}
+
+	return unk->GetNetworkable()->GetEdict();
 }
 
 typedef CHandle<CBaseEntity> EHANDLE;

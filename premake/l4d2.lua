@@ -3,7 +3,7 @@ project "NavBot-L4D2"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.l4d2"
-    defines { "SOURCE_ENGINE=16" }
+    defines { "SOURCE_ENGINE=16", "NAVBOT_PCH_FILE=\"navbot_pch_l4d2.h\""  }
 
     local Dir_SDK = "hl2sdk-l4d2"
 
@@ -26,6 +26,7 @@ project "NavBot-L4D2"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}

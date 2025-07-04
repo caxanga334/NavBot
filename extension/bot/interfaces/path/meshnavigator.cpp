@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <algorithm>
 #include <cmath>
 
@@ -242,7 +243,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		}
 	}
 
-	if (m_goal->area->IsUnderwater() || bot->GetWaterLevel() >= static_cast<int>(WaterLevel::WL_Waist))
+	if (m_goal->area->IsUnderwater() || bot->GetWaterLevel() >= static_cast<int>(entityprops::WaterLevel::WL_Waist))
 	{
 		input->AimAt(m_goal->goal, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at move goal (Underwater).");
 	}

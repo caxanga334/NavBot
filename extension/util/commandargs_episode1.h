@@ -1,9 +1,6 @@
 #ifndef NAVBOT_CON_COMMANDS_ARGS_EPISODE1_COMPAT_H_
 #define NAVBOT_CON_COMMANDS_ARGS_EPISODE1_COMPAT_H_
 
-#include <memory>
-#include <extension.h>
-
 #if SOURCE_ENGINE == SE_EPISODEONE
 
 // Episode 1/Source 2006 lacks CCommand args parameter for console commands, this macros creates one and does nothing on SDK branches that already have CCommand args

@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>

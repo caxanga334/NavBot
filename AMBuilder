@@ -23,14 +23,55 @@ includesDirs = [
 
 project = builder.LibraryProject(projectName)
 
+# Because of pre compiled headers, we have a copy of this file instead
+"""
 if os.path.isfile(os.path.join(builder.currentSourcePath, 'sdk', 'smsdk_ext.cpp')):
   # Use the copy included in the project
   project.sources += [os.path.join('sdk', 'smsdk_ext.cpp')]
 else:
   # Use the copy included with SM 1.6 and newer
   project.sources += [os.path.join(Extension.sm_root, 'public', 'smsdk_ext.cpp')]
+"""
 
 project.sources += sourceFiles
+
+pch_sources_shared = [
+  'array',
+  'vector',
+  'map',
+  'set',
+  'unordered_map',
+  'unordered_set',
+  'stack',
+  'deque',
+  'list',
+  'memory',
+  'tuple',
+  'variant',
+  'optional',
+  'functional',
+  'limits',
+  'climits',
+  'cfloat',
+  'algorithm',
+  'cstdint',
+  'cinttypes',
+  'cstdarg',
+  'cstring',
+  'string',
+  'string_view',
+  'cmath',
+  'ctime',
+  'chrono',
+  'filesystem',
+  'fstream',
+  'sstream',
+  'cstdio',
+  'atomic',
+  'mutex',
+  'future',
+  'thread'
+]
 
 for sdk_name in Extension.sdks:
   sdk = Extension.sdks[sdk_name]
@@ -46,5 +87,58 @@ for sdk_name in Extension.sdks:
     # fixes a compile error due to missing include
     binary.compiler.defines += [ 'RAD_TELEMETRY_DISABLED' ]
 
+    pch_sources = []
+    pch_sources += pch_sources_shared
+    pch_sources += [
+      os.path.join(builder.currentSourcePath, 'extension', 'navbot_headers_pre_sdk.h'),
+      os.path.join(sdk['path'],'public', 'tier0', 'dbg.h'),
+      os.path.join(sdk['path'],'public', 'tier0', 'platform.h'),
+      os.path.join(sdk['path'],'public', 'tier0', 'basetypes.h'),
+      os.path.join(sdk['path'],'public', 'tier1', 'strtools.h'),
+      os.path.join(sdk['path'],'public', 'tier1', 'utlvector.h'),
+      os.path.join(sdk['path'],'public', 'mathlib', 'vmatrix.h'),
+      os.path.join(sdk['path'],'public', 'string_t.h'),
+      os.path.join(sdk['path'],'public', 'vphysics_interface.h'),
+      os.path.join(sdk['path'],'public', 'const.h'),
+      os.path.join(sdk['path'],'public', 'edict.h'),
+      os.path.join(sdk['path'],'public', 'eiface.h'),
+      os.path.join(sdk['path'],'public', 'iserverentity.h'),
+      os.path.join(sdk['path'],'public', 'iservernetworkable.h'),
+      os.path.join(sdk['path'],'public', 'iserver.h'),
+      os.path.join(sdk['path'],'public', 'iclient.h'),
+      os.path.join(sdk['path'],'public', 'dt_send.h'),
+      os.path.join(sdk['path'],'game', 'shared', 'shareddefs.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'sdkports', 'sdk_ehandle.h'),
+      os.path.join(sdk['path'],'public', 'datamap.h'),
+      os.path.join(sdk['path'],'public', 'server_class.h'),
+      os.path.join(sdk['path'],'game', 'shared', 'touchlink.h'),
+      os.path.join(sdk['path'],'public', 'igameevents.h'),
+      os.path.join(sdk['path'],'public', 'PlayerState.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'navbot_headers_post_sdk.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'sdkports', 'debugoverlay_shared.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'bot', 'bot_debug_shared.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'extension.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'util', 'helpers.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'util', 'entprops.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'util', 'librandom.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'util', 'commandargs_episode1.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'util', 'sdkcalls.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'extplayer.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'manager.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'navbot_headers_end.h'),
+    ]
+
+    pch_name = 'navbot_pch_' + sdk['name']
+    pch_builder = cxx.PrecompiledHeaders(pch_name, source_type = 'c++')
+    pch_builder.sources += pch_sources
+
+    pch_builder.compiler.cflags += binary.compiler.cflags
+    pch_builder.compiler.includes = binary.compiler.includes
+    pch_builder.compiler.defines = binary.compiler.defines
+    pch_builder.compiler.cxxincludes += binary.compiler.cxxincludes
+
+    pch = builder.Add(pch_builder)
+    binary.compiler.cxxincludes += [pch]
+    binary.compiler.defines += [ 'NAVBOT_PCH_FILE=\"' + pch_name + '.h\"' ]
 
 Extension.extensions += builder.Add(project)

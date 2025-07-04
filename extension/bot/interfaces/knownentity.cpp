@@ -1,3 +1,4 @@
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/basebot.h>

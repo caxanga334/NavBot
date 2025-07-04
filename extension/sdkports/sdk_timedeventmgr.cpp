@@ -4,6 +4,7 @@
 //
 //=============================================================================//
 
+#include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "sdk_timedeventmgr.h"
 

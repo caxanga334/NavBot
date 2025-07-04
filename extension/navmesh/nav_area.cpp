@@ -9,6 +9,7 @@
 // AI Navigation areas
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
+#include NAVBOT_PCH_FILE
 #include <unordered_set>
 #include <string_view>
 

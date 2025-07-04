@@ -3,7 +3,7 @@ project "NavBot-BMS"
     kind "SharedLib"
     cppdialect "C++17"
     targetname "navbot.ext.2.bms"
-    defines { "SOURCE_ENGINE=11" }
+    defines { "SOURCE_ENGINE=11", "NAVBOT_PCH_FILE=\"navbot_pch_bms.h\"" }
 
     local Dir_SDK = "hl2sdk-bms"
 
@@ -26,6 +26,7 @@ project "NavBot-BMS"
         path.join(Path_SM, "public", "amtl"),
         path.join(Path_MMS, "core"),
         path.join(Path_MMS, "core", "sourcehook"),
+        "../build/navbot_pch_*/**",
         "../extension",
         "../versioning/include"
 	}
