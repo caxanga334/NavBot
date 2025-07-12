@@ -43,6 +43,7 @@
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
+#include "sourcepawn/misc.h"
 
 #if defined(EXT_DEBUG)
 #include <tier1/KeyValues.h>
@@ -266,12 +267,14 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
 	sharesys->AddDependency(myself, "sdkhooks.ext", true, true);
 	sharesys->RegisterLibrary(myself, "navbot");
-	
+	spmisc::RegisterNavBotMultiTargetFilter();
+
 	return true;
 }
 
 void NavBotExt::SDK_OnUnload()
 {
+	spmisc::UnregisterNavBotMultiTargetFilter();
 	gameconfs->CloseGameConfigFile(m_cfg_navbot);
 	gameconfs->CloseGameConfigFile(m_cfg_sdktools);
 	gameconfs->CloseGameConfigFile(m_cfg_sdkhooks);

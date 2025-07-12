@@ -60,6 +60,12 @@ public:
 
 	CBaseBot* GetBotByIndex(int index);
 	CBaseBot* GetBotFromEntity(CBaseEntity* entity);
+	/**
+	 * @brief Find bots by name.
+	 * @param name Full or partial name.
+	 * @return Bot pointer if found or NULL.
+	 */
+	CBaseBot* FindBotByName(const char* name) const;
 	bool IsNavBot(const int client) const;
 
 	void AddBot(std::string* newbotname = nullptr, edict_t** newbotedict = nullptr);
@@ -117,6 +123,8 @@ public:
 
 	static BotCreateMethod GetBotCreateMethod() { return s_botcreatemethod; }
 	static bool ShouldFixUpBotFlags() { return s_fixupbotflags; }
+	// Utility function that provides auto completion of in-game NavBot names
+	static int AutoComplete_BotNames(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH]);
 
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots

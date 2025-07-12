@@ -16,7 +16,7 @@ public:
 
 	/**
 	 * @brief Radius the player is able to use objects.
-	 * https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/shared/baseplayer_shared.h#L15
+	 * https://github.com/ValveSoftware/source-sdk-2013/blob/39f6dde8fbc238727c020d13b05ecadd31bda4c0/src/game/shared/baseplayer_shared.h#L15
 	 */
 	static constexpr float PLAYER_USE_RADIUS = 80.0f;
 

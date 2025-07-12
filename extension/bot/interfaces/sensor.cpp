@@ -157,6 +157,21 @@ void ISensor::Frame()
 	m_primarythreatcache = nullptr;
 }
 
+void ISensor::ShowDebugInformation() const
+{
+	META_CONPRINTF("Known Entities: %zu\n", m_knownlist.size());
+
+	for (auto& known : m_knownlist)
+	{
+		if (known.IsObsolete())
+		{
+			continue;
+		}
+
+		known.DebugDraw(10.0f);
+	}
+}
+
 bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
 {
 	return IsAbleToSee(entity->GetIServerEntity()->GetBaseEntity(), checkFOV);

@@ -1,11 +1,6 @@
 #include NAVBOT_PCH_FILE
-#include <limits>
-#include <cstring>
 
 #include <extension.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
-#include <util/librandom.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_takedamageinfo.h>

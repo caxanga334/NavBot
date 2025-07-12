@@ -43,6 +43,26 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 	Msg("--- END NavBot Info ---\n");
 }
 
+CON_COMMAND_F_COMPLETION(sm_navbot_debug_bot_sensor_memory, "Debugs the bot Sensor interface's entity memory.", FCVAR_CHEAT | FCVAR_GAMEDLL, CExtManager::AutoComplete_BotNames)
+{
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_sensor_memory <bot name> \n");
+		return;
+	}
+
+	CBaseBot* bot = extmanager->FindBotByName(args[1]);
+
+	if (!bot)
+	{
+		META_CONPRINTF("Error: bot of name \"%s\" not found!\n", args[1]);
+		return;
+	}
+
+	META_CONPRINTF("Showing ISensor debug information for %s \n", bot->GetClientName());
+	bot->GetSensorInterface()->ShowDebugInformation();
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 {
@@ -60,6 +80,19 @@ CON_COMMAND(sm_navbot_debug_bot_snap_look, "Debug the bot look functions.")
 	Vector target = UtilHelpers::getWorldSpaceCenter(host);
 	auto functor = [&target](CBaseBot* bot) {
 		bot->GetControlInterface()->SnapAimAt(target, IPlayerController::LOOK_CRITICAL);
+	};
+
+	extmanager->ForEachBot(functor);
+}
+
+CON_COMMAND(sm_navbot_debug_bot_hear_me, "Simulates the bots hearing you.")
+{
+	IServerEntity* host = reinterpret_cast<IServerEntity*>(gamehelpers->ReferenceToEntity(1));
+
+	auto functor = [&host](CBaseBot* bot) {
+		bot->OnSound(host->GetBaseEntity(), host->GetCollideable()->GetCollisionOrigin(), IEventListener::SoundType::SOUND_GENERIC, 10000.0f);
+		CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(host->GetBaseEntity());
+		known->UpdateHeard();
 	};
 
 	extmanager->ForEachBot(functor);

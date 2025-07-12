@@ -34,6 +34,7 @@ public:
 	void Update() override;
 	// Called every server frame
 	void Frame() override;
+	void ShowDebugInformation() const;
 	// Is this entity ignored by the bot?
 	virtual bool IsIgnored(CBaseEntity* entity) { return false; }
 	virtual bool IsFriendly(CBaseEntity* entity) { return false; }

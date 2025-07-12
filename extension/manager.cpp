@@ -350,6 +350,21 @@ CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
 	return nullptr;
 }
 
+CBaseBot* CExtManager::FindBotByName(const char* name) const
+{
+	for (auto& botptr : m_bots)
+	{
+		const char* other = botptr->GetClientName();
+
+		if (V_strstr(name, other) != nullptr)
+		{
+			return botptr.get();
+		}
+	}
+
+	return nullptr;
+}
+
 bool CExtManager::IsNavBot(const int client) const
 {
 #ifdef EXT_VPROF_ENABLED
@@ -749,6 +764,49 @@ void CExtManager::OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, 
 void CExtManager::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args)
 {
 	m_mod->OnClientCommand(pEdict, player, args);
+}
+
+int CExtManager::AutoComplete_BotNames(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+{
+	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
+	{
+		return 0;
+	}
+
+	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
+	V_strncpy(cmd, partial, sizeof(cmd));
+
+	// skip to start of argument
+	char* partialArg = V_strrchr(cmd, ' ');
+	if (partialArg == NULL)
+	{
+		return 0;
+	}
+
+	// chop command from partial argument
+	*partialArg = '\000';
+	++partialArg;
+
+	int partialArgLength = V_strlen(partialArg);
+
+	int count = 0;
+
+	for (auto& botptr : extmanager->m_bots)
+	{
+		const char* name = botptr->GetClientName();
+
+		if (count >= COMMAND_COMPLETION_MAXITEMS)
+		{
+			break;
+		}
+
+		if (V_strnicmp(name, partialArg, partialArgLength) == 0)
+		{
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s \"%s\"", cmd, name);
+		}
+	}
+
+	return count;
 }
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")

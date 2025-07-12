@@ -3,6 +3,7 @@
 #include <manager.h>
 #include <util/helpers.h>
 #include <bot/basebot.h>
+#include <bot/interfaces/knownentity.h>
 #include <bot/pluginbot/pluginbot.h>
 #include <mods/basemod.h>
 #include "bots.h"
@@ -48,6 +49,9 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBot.SetSkillLevel", SetSkillLevel},
 		{"PluginBot.PluginBot", AttachNavBot},
 		{"GetNavBotByIndex", GetNavBotByIndex},
+		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},
+		{"NavBot.FireWeaponAtEnemy", FireWeaponAtEnemy},
+		{"NavBot.SelectWeapon", SelectWeapon},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
@@ -226,4 +230,80 @@ cell_t natives::bots::SetRunPlayerCommands(IPluginContext* context, const cell_t
 	pluginbot->SetRunPlayerCommands(enablecommands);
 
 	return 0;
+}
+
+cell_t natives::bots::DelayedFakeClientCommand(IPluginContext* context, const cell_t* params)
+{
+	METHODMAP_GETVALIDBOT;
+
+	char* command = nullptr;
+	context->LocalToStringNULL(params[2], &command);
+
+	if (!command)
+	{
+		context->ReportError("Command cannot be a NULL string!");
+		return 0;
+	}
+
+	if (std::strlen(command) < 1)
+	{
+		context->ReportError("Command string length == 0!");
+		return 0;
+	}
+
+	bot->DelayedFakeClientCommand(command);
+	return 0;
+}
+
+cell_t natives::bots::FireWeaponAtEnemy(IPluginContext* context, const cell_t* params)
+{
+	METHODMAP_GETVALIDBOT;
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(params[2]);
+
+	if (!entity)
+	{
+		context->ReportError("Invalid entity of index %i!", static_cast<int>(params[2]));
+		return 0;
+	}
+
+	bool doAim = static_cast<int>(params[3]) != 0;
+	bool force = static_cast<int>(params[4]) != 0;
+
+	const CKnownEntity* known = nullptr;
+
+	if (force)
+	{
+		CKnownEntity* known2 = bot->GetSensorInterface()->AddKnownEntity(entity);
+		known2->UpdatePosition();
+		known2->MarkAsFullyVisible();
+		known = known2;
+	}
+	else
+	{
+		known = bot->GetSensorInterface()->GetKnown(entity);
+	}
+
+	if (!known)
+	{
+		return 0;
+	}
+
+	bot->FireWeaponAtEnemy(known, doAim);
+	return 1;
+}
+
+cell_t natives::bots::SelectWeapon(IPluginContext* context, const cell_t* params)
+{
+	METHODMAP_GETVALIDBOT;
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(params[2]);
+
+	if (!entity)
+	{
+		context->ReportError("Invalid weapon entity of index %i!", static_cast<int>(params[2]));
+		return 0;
+	}
+
+	return static_cast<cell_t>(bot->SelectWeapon(entity));
 }

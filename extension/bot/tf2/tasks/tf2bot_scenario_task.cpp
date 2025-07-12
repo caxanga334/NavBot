@@ -24,6 +24,7 @@
 #include "scenario/specialdelivery/tf2bot_special_delivery_monitor_task.h"
 #include "scenario/pd/tf2bot_pd_monitor_task.h"
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
+#include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
 #include "scenario/rd/tf2bot_rd_monitor_task.h"
@@ -209,19 +210,61 @@ TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnVoiceCommand(CTF2Bot* bo
 		break;
 	}
 
-	constexpr float FOLLOW_TEAMMATE_MAX_RANGE = 1200.0f; // maximum range between the bot and the requesting teammate to follow them.
+	constexpr float LISTEN_TO_TEAMMATE_MAX_RANGE = 1200.0f; // Limit range to listen to teammate voice commands
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(subject));
 	TeamFortress2::VoiceCommandsID vcmd = static_cast<TeamFortress2::VoiceCommandsID>(command);
 
 	if (!IsPaused() && theirteam == bot->GetMyTFTeam() && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES
 		&& bot->GetBehaviorInterface()->ShouldAssistTeammate(bot, subject) != ANSWER_NO &&
-		CBaseBot::s_botrng.GetRandomInt<int>(1, 100) >= bot->GetDifficultyProfile()->GetTeamwork())
+		CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
 	{
-		if (bot->GetRangeTo(UtilHelpers::getEntityOrigin(subject)) < FOLLOW_TEAMMATE_MAX_RANGE && vcmd == TeamFortress2::VoiceCommandsID::VC_HELP)
+		if (bot->GetRangeTo(UtilHelpers::getEntityOrigin(subject)) <= LISTEN_TO_TEAMMATE_MAX_RANGE)
 		{
-			bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
-			m_respondToTeamMatesTimer.StartRandom(90.0f, 180.0f);
-			return TryPauseFor(new CBotSharedEscortEntityTask<CTF2Bot, CTF2BotPathCost>(bot, subject, 30.0f), PRIORITY_MEDIUM, "Responding to teammate call for help!");
+			if (vcmd == TeamFortress2::VoiceCommandsID::VC_HELP)
+			{
+				bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
+				m_respondToTeamMatesTimer.StartRandom(90.0f, 180.0f);
+				return TryPauseFor(new CBotSharedEscortEntityTask<CTF2Bot, CTF2BotPathCost>(bot, subject, 30.0f), PRIORITY_MEDIUM, "Responding to teammate call for help!");
+			}
+			else if (vcmd == TeamFortress2::VoiceCommandsID::VC_GOLEFT || vcmd == TeamFortress2::VoiceCommandsID::VC_GORIGHT) /* flank left/right */
+			{
+				CBaseExtPlayer player(UtilHelpers::BaseEntityToEdict(subject));
+
+				Vector forward, right;
+				player.EyeVectors(&forward, &right, nullptr);
+				const Vector& origin = UtilHelpers::getEntityOrigin(subject);
+
+				Vector endpos = origin;
+				endpos += forward * 750.0f;
+				
+				if (vcmd == TeamFortress2::VoiceCommandsID::VC_GOLEFT)
+				{
+					endpos -= right * 500.0f;
+				}
+				else
+				{
+					endpos += right * 500.0f;
+				}
+
+				// Check if a nav area is present
+				CNavArea* area = TheNavMesh->GetNearestNavArea(endpos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 3.0f, false, true);
+
+				if (area)
+				{
+					if (bot->IsDebugging(BOTDEBUG_TASKS) && bot->IsDebugging(BOTDEBUG_MISC))
+					{
+						NDebugOverlay::Line(player.GetEyeOrigin(), endpos, 0, 180, 0, true, 30.0f);
+						META_CONPRINTF("%s RESPONDED TO GOLEFT/RIGHT VOICE COMMAND! GOAL AREA #%i <%g, %g, %g> \n",
+							bot->GetDebugIdentifier(), area->GetID(), endpos.x, endpos.y, endpos.z);
+					}
+
+					endpos = area->GetRandomPoint();
+					m_respondToTeamMatesTimer.StartRandom(90.0f, 120.0f);
+					bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
+					return TryPauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, endpos, "MoveToCommand", true, false, true),
+						EventResultPriorityType::PRIORITY_MEDIUM, "Respoding to teammate flank command!");
+				}
+			}
 		}
 	}
 

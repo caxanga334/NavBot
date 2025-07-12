@@ -79,6 +79,8 @@ public:
 	int GetIndex() const { return m_handle.GetEntryIndex(); }
 	const std::string& GetEntityClassname() const { return m_classname; }
 	bool IsPlayer() const;
+	// Draws this known entity instance (debug)
+	void DebugDraw(const float duration = 1.0f) const;
 private:
 	CHandle<CBaseEntity> m_handle; // Handle to the actual entity
 	std::string m_classname; // Entity classname (cached)

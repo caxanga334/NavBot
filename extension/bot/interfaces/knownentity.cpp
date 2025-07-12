@@ -94,7 +94,12 @@ void CKnownEntity::UpdatePosition()
 		m_timelastinfo = gpGlobals->curtime;
 		m_lastknownposition = UtilHelpers::getEntityOrigin(pEntity);
 		m_lastknownvelocity = be.GetAbsVelocity();
-		m_lastknownarea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
+		CNavArea* newArea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
+
+		if (newArea != nullptr)
+		{
+			m_lastknownarea = newArea;
+		}
 	}
 }
 
@@ -124,4 +129,31 @@ bool CKnownEntity::IsEntity(const int entity) const
 bool CKnownEntity::IsPlayer() const
 {
 	return UtilHelpers::IsPlayerIndex(m_handle.GetEntryIndex());
+}
+
+void CKnownEntity::DebugDraw(const float duration) const
+{
+	static Vector box_mins{ -16.0f, -16.0f, -16.0f };
+	static Vector box_maxs{ 16.0f, 16.0f, 16.0f };
+	static Vector text_height_offset{ 0.0f, 0.0f, 32.0f };
+
+	int r, g, b;
+
+	if (IsVisibleNow())
+	{
+		r = 0;
+		g = 180;
+		b = 0;
+	}
+	else
+	{
+		r = 255;
+		g = 0;
+		b = 0;
+	}
+
+	NDebugOverlay::Box(m_lastknownposition, box_mins, box_maxs, r, g, b, 127, duration);
+	NDebugOverlay::Text(m_lastknownposition + text_height_offset, true, duration, "#%i <%s> TSK: %g TSV: %g TSI: %g TSH: %g", 
+		m_handle.GetEntryIndex(), m_classname.c_str(), GetTimeSinceBecomeKnown(), GetTimeSinceLastVisible(), GetTimeSinceLastInfo(), 
+		GetTimeSinceLastHeard());
 }
