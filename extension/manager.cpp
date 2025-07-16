@@ -81,27 +81,34 @@ CExtManager::CExtManager()
 	m_callModUpdateTimer.Invalidate();
 	m_pawnmemory = std::make_unique<CSourcePawnMemoryManager>();
 	m_allowbots = true;
+#ifndef NO_SOURCEPAWN_API
 	m_prebotaddforward = nullptr;
 	m_postbotaddforward = nullptr;
 	m_prepluginbotaddforward = nullptr;
 	m_postpluginbotaddforward = nullptr;
+#endif // !NO_SOURCEPAWN_API
+
 }
 
 CExtManager::~CExtManager()
 {
 	m_bots.clear();
+#ifndef NO_SOURCEPAWN_API
 	forwards->ReleaseForward(m_prebotaddforward);
 	forwards->ReleaseForward(m_postbotaddforward);
 	forwards->ReleaseForward(m_prepluginbotaddforward);
 	forwards->ReleaseForward(m_postpluginbotaddforward);
+#endif // !NO_SOURCEPAWN_API
 }
 
 void CExtManager::OnAllLoaded()
 {
+#ifndef NO_SOURCEPAWN_API
 	m_prebotaddforward = forwards->CreateForward("OnPreNavBotAdd", ET_Event, 0, nullptr);
 	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+#endif // !NO_SOURCEPAWN_API
 
 	AllocateMod();
 	LoadBotNames();
@@ -397,12 +404,14 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 
 	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
 
+#ifndef NO_SOURCEPAWN_API
 	m_prebotaddforward->Execute(&result);
 
 	if (result > static_cast<cell_t>(SourceMod::ResultType::Pl_Continue))
 	{
 		return;
 	}
+#endif // !NO_SOURCEPAWN_API
 
 	char defaultbotname[32]{};
 	const char* name = nullptr;
@@ -500,14 +509,17 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		*newbotedict = edict;
 	}
 
+#ifndef NO_SOURCEPAWN_API
 	m_postbotaddforward->PushCell(gamehelpers->IndexOfEdict(edict));
 	m_postbotaddforward->Execute();
+#endif // !NO_SOURCEPAWN_API
 
 	smutils->LogMessage(myself, "NavBot added to the game.");
 }
 
 CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
 {
+#ifndef NO_SOURCEPAWN_API
 	if (!m_allowbots)
 	{
 		return nullptr;
@@ -531,6 +543,9 @@ CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
 	m_postpluginbotaddforward->Execute();
 
 	return newBot;
+#else
+	return nullptr;
+#endif // !NO_SOURCEPAWN_API
 }
 
 void CExtManager::RemoveRandomBot(const char* message)

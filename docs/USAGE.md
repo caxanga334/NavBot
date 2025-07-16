@@ -17,6 +17,10 @@ The mode is set via the `sm_navbot_quota_mode` ConVar.
 Either `sm_navbot_quota_mode normal` or `sm_navbot_quota_mode fill`.
 The target number of bots is set by `sm_navbot_quota_quantity`. Set this ConVar to **0** to disabled the bot quota system.
 
+## Targetting Bots
+
+NavBot adds a multi-target filter for SourceMod commands.    
+Using `@navbots` will target all NavBot bots.
 
 <!-- Links -->
 [Bot Difficulty Configuration]: BOT_DIFFICULTY_PROFILES.md

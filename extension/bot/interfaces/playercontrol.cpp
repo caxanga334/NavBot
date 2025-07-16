@@ -224,7 +224,8 @@ void IPlayerController::RunLook()
 		}
 	}
 
-	constexpr auto tolerance = 0.98f;
+	// was 0.98 (about 11.5 degrees), changed to 0.995 (about 5 degrees)
+	constexpr auto tolerance = 0.995f;
 	auto eyepos = me->GetEyeOrigin();
 	auto to = m_looktarget - eyepos;
 	to.NormalizeInPlace();

@@ -65,6 +65,12 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 		bot->HandleWeaponsNoThreat();
 	}
 
+	if (m_abilityUseTimer.IsElapsed())
+	{
+		m_abilityUseTimer.Start(bot->GetDifficultyProfile()->GetAbilityUsageInterval());
+		bot->UseSecondaryAbilities(threat);
+	}
+
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
 	{
 		bot->GetMovementInterface()->ClearStuckStatus("PREROUND"); // players are frozen during pre-round, don't get stuck

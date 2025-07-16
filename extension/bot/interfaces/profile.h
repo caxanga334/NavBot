@@ -33,6 +33,7 @@ public:
 		aim_tracking_interval = 0.25f;
 		aggressiveness = 20;
 		teamwork = 20;
+		ability_use_interval = 1.0f;
 	}
 
 	virtual ~DifficultyProfile() = default;
@@ -57,6 +58,7 @@ public:
 	inline const float GetAimTrackingInterval() const { return aim_tracking_interval; }
 	inline const int GetAggressiveness() const { return aggressiveness; }
 	inline const int GetTeamwork() const { return teamwork; }
+	inline const float GetAbilityUsageInterval() const { return ability_use_interval; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
@@ -71,6 +73,7 @@ public:
 	inline void SetAimTrackingInterval(const float v) { aim_tracking_interval = v; }
 	inline void SetAggressiveness(const int v) { aggressiveness = v; }
 	inline void SetTeamwork(const int v) { teamwork = v; }
+	inline void SetAbilityUsageInterval(const float v) { ability_use_interval = v; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -86,6 +89,7 @@ private:
 	float aim_tracking_interval; // Interval between aim target position updates
 	int aggressiveness; // How aggressive will this bot play
 	int teamwork; // How likely this bot will cooperate with teammates
+	float ability_use_interval; // Interval between secondary abilities usage
 };
 
 // Bot difficulty profile manager

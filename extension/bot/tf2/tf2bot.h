@@ -188,6 +188,7 @@ public:
 	float GetTimeLeftToCapture() const;
 	bool IsAbleToDodgeEnemies(const CKnownEntity* threat) const override;
 	bool IsCarryingThePassTimeJack() const;
+	void UseSecondaryAbilities(const CKnownEntity* threat) override;
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -206,6 +207,7 @@ private:
 	bool m_doMvMUpgrade;
 
 	void SelectNewClass();
+	void PyroUseAirblast();
 };
 
 class CTF2BotPathCost : public IPathCost

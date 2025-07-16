@@ -26,6 +26,7 @@ void DifficultyProfile::RandomizeProfileValues()
 	aim_tracking_interval = randomgen->GetRandomReal<float>(0.0001f, 1.0f);
 	aggressiveness = randomgen->GetRandomInt<int>(0, 100);
 	teamwork = randomgen->GetRandomInt<int>(0, 100);
+	ability_use_interval = randomgen->GetRandomReal<float>(0.250f, 2.0f);
 }
 
 CDifficultyManager::~CDifficultyManager()
@@ -301,6 +302,12 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		int v = atoi(value);
 		v = std::clamp(v, 0, 100);
 		m_current->SetTeamwork(v);
+	}
+	else if (strncasecmp(key, "ability_use_interval", 21) == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, 0.01f, 2.0f);
+		m_current->SetAbilityUsageInterval(v);
 	}
 	else
 	{

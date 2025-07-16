@@ -268,6 +268,14 @@ int tf2lib::GetWeaponItemDefinitionIndex(edict_t* weapon)
 	return index;
 }
 
+int tf2lib::GetWeaponItemDefinitionIndex(CBaseEntity* weapon)
+{
+	int entity = reinterpret_cast<IServerEntity*>(weapon)->GetRefEHandle().GetEntryIndex();
+	int index = -1;
+	entprops->GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex", index);
+	return index;
+}
+
 TeamFortress2::TFTeam tf2lib::GetEntityTFTeam(int entity)
 {
 	int team = 0;

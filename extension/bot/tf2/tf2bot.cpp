@@ -501,6 +501,63 @@ bool CTF2Bot::IsCarryingThePassTimeJack() const
 	return ret;
 }
 
+void CTF2Bot::UseSecondaryAbilities(const CKnownEntity* threat)
+{
+	auto profile = GetDifficultyProfile();
+	auto control = GetControlInterface();
+
+	if (profile->GetGameAwareness() <= 5)
+	{
+		return; // too stupid to use them
+	}
+
+
+	switch (GetMyClassType())
+	{
+	case TeamFortress2::TFClassType::TFClass_Pyro:
+	{
+		if (!threat)
+		{
+			break;
+		}
+
+		// Airblast
+		if (profile->GetGameAwareness() <= 25)
+		{
+			break;
+		}
+
+		PyroUseAirblast();
+
+		break;
+	}
+	case TeamFortress2::TFClassType::TFClass_DemoMan:
+	{
+		// low aggressiveness bots only charge at full health
+		if (profile->GetAggressiveness() < 50 && GetHealthPercentage() < 0.7f)
+		{
+			break;
+		}
+
+		bool hasShield = false;
+		entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bShieldEquipped", hasShield);
+		float chargeMeter = 0.0f;
+		entprops->GetEntPropFloat(GetIndex(), Prop_Send, "m_flChargeMeter", chargeMeter);
+
+		// has visible enemy, can charge and is currently aiming on the enemy
+		if (threat && hasShield && threat->IsVisibleNow() && chargeMeter >= 99.8f && control->IsAimOnTarget())
+		{
+			// charge
+			control->PressSecondaryAttackButton();
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+}
+
 void CTF2Bot::SelectNewClass()
 {
 #if SOURCE_ENGINE == SE_TF2
@@ -532,6 +589,76 @@ void CTF2Bot::SelectNewClass()
 		{
 			m_upgrademan.DoRefund();
 			JoinClass(tfclass);
+		}
+	}
+}
+
+void CTF2Bot::PyroUseAirblast()
+{
+	auto myweapon = GetInventoryInterface()->GetActiveTFWeapon();
+
+	if (!myweapon)
+	{
+		return;
+	}
+
+	constexpr int ITEM_INDEX_THE_PHLOGISTINATOR = 594;
+
+	if (myweapon->GetWeaponEconIndex() == ITEM_INDEX_THE_PHLOGISTINATOR)
+	{
+		return; // can't airblast with the phlog
+	}
+
+	if (std::strcmp(myweapon->GetClassname().c_str(), "tf_weapon_flamethrower") == 0 || std::strcmp(myweapon->GetClassname().c_str(), "tf_weapon_rocketlauncher_fireball") == 0)
+	{
+		// scan for entities in front of the pyro
+
+		Vector forward;
+		EyeVectors(&forward);
+		Vector center = GetEyeOrigin() + (forward * 64.0f);
+		Vector size = { 96.0f, 96.0f, 64.0f };
+		UtilHelpers::CEntityEnumerator enumerator;
+
+		UtilHelpers::EntitiesInBox(center - size, center + size, enumerator);
+
+		bool airblast = false;
+		auto myteam = this->GetMyTFTeam();
+		auto functor = [&myteam, &airblast](CBaseEntity* entity) -> bool {
+
+			if (airblast)
+			{
+				return false;
+			}
+
+			if (entity)
+			{
+				const char* classname = gamehelpers->GetEntityClassname(entity);
+				auto team = tf2lib::GetEntityTFTeam(entity);
+
+				if (team == myteam)
+				{
+					return true;
+				}
+
+				if (std::strcmp(classname, "player") == 0 && CBaseBot::s_botrng.GetRandomChance(15))
+				{
+					airblast = true;
+				}
+				else if (std::strncmp(classname, "tf_projectile", 13) == 0)
+				{
+					airblast = true;
+				}
+			}
+
+			return true;
+		};
+
+		enumerator.ForEach(functor);
+
+		if (airblast)
+		{
+			GetControlInterface()->ReleaseAllAttackButtons();
+			GetControlInterface()->PressSecondaryAttackButton();
 		}
 	}
 }

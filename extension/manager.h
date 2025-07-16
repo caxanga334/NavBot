@@ -131,10 +131,13 @@ private:
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
 	std::unique_ptr<CSourcePawnMemoryManager> m_pawnmemory;
+#ifndef NO_SOURCEPAWN_API
 	SourceMod::IForward* m_prebotaddforward; // SM Forward, on pre bot add
 	SourceMod::IForward* m_postbotaddforward; // SM Forward, post bot add (normal bots)
 	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
-	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
+	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)  
+#endif // !NO_SOURCEPAWN_API
+
 	size_t m_nextbotname; // Index of the next bot name to use
 	int m_botdebugmode;
 	int m_quotaupdatetime; // Bot quota timer

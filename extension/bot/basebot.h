@@ -272,6 +272,13 @@ public:
 	 * Example: reload it, unscope/undeploy, etc...
 	 */
 	virtual void HandleWeaponsNoThreat();
+	/**
+	 * @brief Invoked to handle the bot's secondary abilities. (Game specific)
+	 * 
+	 * @param threat The bot current threat or NULL if no visible threat.
+	 * Example: TF2 airblast, demoman shield charge, etc.
+	 */
+	virtual void UseSecondaryAbilities(const CKnownEntity* threat) {}
 protected:
 	bool m_isfirstspawn;
 
@@ -328,7 +335,6 @@ protected:
 
 	CountdownTimer& GetUndeployWeaponTimer() { return m_undeployWeaponTimer; }
 	CountdownTimer& GetWeaponSpecialFunctionUseTimer() { return m_weaponSpecialFunctionTimer; }
-
 private:
 	const CBotWeapon* m_lastusedweapon; // last weapon used to attack an enemy
 	IntervalTimer m_lastfiredweapontimer;

@@ -39,6 +39,7 @@ Example profile
     "aim_tracking_interval"		"1.0"
     "aggressiveness"			"0"
     "teamwork"					"0"
+    "ability_use_interval"		"1.0"
 }
 ```
 
@@ -57,4 +58,5 @@ Example profile
 | aim_tracking_interval | How frequently the bot will update the target position when aiming at an entity. |
 | aggressiveness | How aggressive this bot is. |
 | teamwork | How likely this bot will cooperate with teammates. |
+| ability_use_interval | How ofter the bot will check if they can use secondary abilities. (Example: TF2 airblast, demoman charge) |
 

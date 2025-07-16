@@ -4,10 +4,6 @@
 
 #include <sdkports/sdk_timers.h>
 
-#ifdef EXT_DEBUG
-#include <bot/interfaces/path/meshnavigator.h>
-#endif // EXT_DEBUG
-
 class CTF2Bot;
 class CTF2BotWeapon;
 class CKnownEntity;
@@ -34,6 +30,7 @@ public:
 	const char* GetName() const override { return "MainTask"; }
 
 private:
+	CountdownTimer m_abilityUseTimer;
 
 	void AimAtPlayerWithHitScanWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
 	void AimAtPlayerWithProjectileWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
@@ -41,27 +38,5 @@ private:
 
 	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 };
-
-#ifdef EXT_DEBUG
-
-class CTF2BotDevTask : public AITask<CTF2Bot>
-{
-public:
-	CTF2BotDevTask(const Vector& moveTo);
-
-	virtual TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
-	virtual TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
-
-	virtual TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
-	virtual TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
-
-	virtual const char* GetName() const override { return "DebugMoveToOrigin"; }
-private:
-	Vector m_goal;
-	CountdownTimer m_repathtimer;
-	CMeshNavigator m_nav;
-};
-
-#endif // EXT_DEBUG
 
 #endif // !NAVBOT_TF2BOT_MAIN_TASK_H_

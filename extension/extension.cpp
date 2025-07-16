@@ -328,12 +328,14 @@ void NavBotExt::SDK_OnAllLoaded()
 	entprops->Init(true);
 	sdkcalls->PostInit(); // setup the calls
 
+#ifndef NO_SOURCEPAWN_API
 	natives::setup(m_natives);
 	natives::bots::setup(m_natives);
 	natives::bots::interfaces::path::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });
 	sharesys->AddNatives(myself, m_natives.data());
 	smutils->LogMessage(myself, "Registered %i natives.", m_natives.size() - 1);
+#endif // !NO_SOURCEPAWN_API
 }
 
 bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)

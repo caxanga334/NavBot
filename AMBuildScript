@@ -177,6 +177,9 @@ class ExtensionConfig(object):
       # --enable-debug fails to compile so we consider non-optimized builds as debug
       cxx.defines += ['EXT_DEBUG']
 
+    if builder.options.nospapi == '1':
+      cxx.defines += ['NO_SOURCEPAWN_API']
+
     # Debugging
     if builder.options.debug == '1':
       cxx.defines += ['DEBUG', '_DEBUG']

@@ -40,6 +40,13 @@ newoption {
     category    = "BuildOptions"
 }
 
+newoption {
+    trigger     = "no-sourcepawn-api",
+    description = "Disables the SourcePawn API.",
+    category    = "BuildOptions"
+}
+
+
 Path_HL2SDKROOT = ""
 Path_SM = ""
 Path_MMS = ""
@@ -139,6 +146,9 @@ workspace "navbot"
     
     filter { "options:valve-prof" }
         defines { "EXT_VPROF_ENABLED" }
+
+    filter { "options:no-sourcepawn-api" }
+        defines { "NO_SOURCEPAWN_API" }
 
     filter { "system:Windows" }
         defines { "_CRT_SECURE_NO_DEPRECATE", "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_DEPRECATE", "_WINDOWS", "_ITERATOR_DEBUG_LEVEL=0" }

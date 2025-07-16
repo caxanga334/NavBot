@@ -24,6 +24,7 @@ namespace tf2lib
 	TeamFortress2::TFClassType GetClassTypeFromName(std::string name);
 	const char* GetClassNameFromType(TeamFortress2::TFClassType type);
 	int GetWeaponItemDefinitionIndex(edict_t* weapon);
+	int GetWeaponItemDefinitionIndex(CBaseEntity* weapon);
 	TeamFortress2::TFTeam GetEntityTFTeam(int entity);
 	TeamFortress2::TFTeam GetEntityTFTeam(CBaseEntity* entity);
 	int GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned, const bool ignore_bots = false);

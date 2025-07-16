@@ -223,13 +223,13 @@ void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) c
 
 void CBaseExtPlayer::EyeVectors(Vector* pForward) const
 {
-	auto eyeangles = GetEyeAngles();
+	auto& eyeangles = GetEyeAngles();
 	AngleVectors(eyeangles, pForward);
 }
 
 void CBaseExtPlayer::EyeVectors(Vector* pForward, Vector* pRight, Vector* pUp) const
 {
-	auto eyeangles = GetEyeAngles();
+	auto& eyeangles = GetEyeAngles();
 	AngleVectors(eyeangles, pForward, pRight, pUp);
 }
 
