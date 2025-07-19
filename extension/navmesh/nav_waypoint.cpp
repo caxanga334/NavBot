@@ -261,6 +261,17 @@ bool CWaypoint::IsBeingUsed() const
 	return m_expireUserTimer.HasStarted() && !m_expireUserTimer.IsElapsed();
 }
 
+bool CWaypoint::IsCurrentUser(CBaseBot* me) const
+{
+	if (IsBeingUsed())
+	{
+		CBaseEntity* last = m_user.Get();
+		return last != nullptr && last == me->GetEntity();
+	}
+
+	return false;
+}
+
 void CWaypoint::StopUsing(CBaseBot* user) const
 {
 	if (m_user.Get() == nullptr)

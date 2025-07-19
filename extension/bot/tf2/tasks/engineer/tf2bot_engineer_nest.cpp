@@ -14,6 +14,8 @@
 #include <sdkports/sdk_traces.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
 #include <bot/bot_shared_utils.h>
+#include <bot/tasks_shared/bot_shared_roam.h>
+#include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include "tf2bot_engineer_build_object.h"
 #include "tf2bot_engineer_repair_object.h"
 #include "tf2bot_engineer_upgrade_object.h"
@@ -27,9 +29,8 @@ static ConVar sm_navbot_tf_engineer_vc_listen_range("sm_navbot_tf_engineer_vc_li
 
 inline static Vector GetSpotBehindSentry(CBaseEntity* sentry)
 {
-	tfentities::HBaseObject sentrygun(sentry);
-	Vector origin = sentrygun.GetAbsOrigin();
-	QAngle angle = sentrygun.GetAbsAngles();
+	const Vector& origin = UtilHelpers::getEntityOrigin(sentry);
+	const QAngle& angle = UtilHelpers::getEntityAngles(sentry);
 	Vector forward;
 
 	AngleVectors(angle, &forward);
@@ -39,102 +40,134 @@ inline static Vector GetSpotBehindSentry(CBaseEntity* sentry)
 	return trace::getground(point);
 }
 
-CTF2BotEngineerNestTask::CTF2BotEngineerNestTask()
+CTF2BotEngineerNestTask::CTF2BotEngineerNestTask() :
+	m_goal(vec3_origin), m_sentryBuildPos(vec3_origin), m_myOrigin(vec3_origin)
 {
-	m_goal.Init(0.0f, 0.0f, 0.0f);
 	m_sentryWaypoint = nullptr;
-	m_justMovedSentry = false;
+	m_checkDispenser = false;
+	m_findNewNestPos = true;
+	m_sentryWasBuilt = false;
+	m_checkEntrance = false;
+	m_checkExit = false;
+	m_mysentry = nullptr;
+	m_mydispenser = nullptr;
+	m_myentrance = nullptr;
+	m_myexit = nullptr;
+	m_sentryKills = 0;
+	m_teleUses = 0;
+	m_myteam = 0;
+}
+
+TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	m_myteam = static_cast<int>(bot->GetMyTFTeam());
+	bot->FindMyBuildings();
+	CBaseEntity* mysentry = bot->GetMySentryGun();
+
+	CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
+
+	for (auto wpt : tf2mod->GetAllSentryWaypoints())
+	{
+		if (wpt->IsCurrentUser(bot))
+		{
+			m_sentryWaypoint = wpt;
+			m_sentryBuildPos = wpt->GetOrigin();
+			break;
+		}
+	}
+
+	if (!mysentry)
+	{
+		if (m_sentryWaypoint)
+		{
+			m_sentryWaypoint->StopUsing(bot);
+			m_sentryWaypoint = nullptr;
+		}
+
+		m_sentryKills = 0;
+		m_teleUses = 0;
+	}
+	else
+	{
+		m_findNewNestPos = false; // already have a sentry
+		m_sentryWasBuilt = true;
+		m_sentryBuildPos = UtilHelpers::getEntityOrigin(mysentry);
+		m_sentryKills = tf2lib::GetSentryKills(mysentry) + tf2lib::GetSentryAssists(mysentry);
+	}
+
+	CBaseEntity* entrance = bot->GetMyTeleporterEntrance();
+
+	if (entrance)
+	{
+		m_teleUses = tf2lib::GetTeleporterUses(entrance);
+	}
+
+	m_moveTimer.Start(60.0f);
+
+	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	bot->FindMyBuildings();
+	bot->GetMyBuildings(&m_mysentry, &m_mydispenser, &m_myentrance, &m_myexit);
 
-	AITask<CTF2Bot>* nestTask = NestTask(bot);
-
-	if (nestTask != nullptr)
+	// Makes high team work recently spawned bots priorize helping allies setup their teleporters
+	if (bot->GetTimeSinceLastSpawn() <= 5.0f && bot->GetDifficultyProfile()->GetTeamwork() > 50)
 	{
-		return PauseFor(nestTask, "Taking care of my own nest!");
-	}
+		AITask<CTF2Bot>* helpAllyTask = GetHelpFriendlyEngineerTask(bot);
 
-	if (m_roundStateTimer.HasStarted() && m_roundStateTimer.IsElapsed())
-	{
-		if (entprops->GameRules_GetRoundState() == RoundState_BetweenRounds)
+		if (helpAllyTask)
 		{
-			m_noThreatTimer.Start(0.1f);
-			m_moveBuildingCheckTimer.Start(0.2f);
+			return PauseFor(helpAllyTask, "Helping another engineer!");
 		}
-
-		m_roundStateTimer.Invalidate();
 	}
 
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	AITask<CTF2Bot>* buildTask = GetBuildTask(bot);
 
-	if (threat != nullptr)
+	if (buildTask)
 	{
-		m_noThreatTimer.Invalidate();
+		m_moveTimer.Start(60.0f);
+		return PauseFor(buildTask, "Taking care of my own buildings!");
+	}
+
+	if (bot->GetDifficultyProfile()->GetTeamwork() > 5)
+	{
+		AITask<CTF2Bot>* helpAllyTask = GetHelpFriendlyEngineerTask(bot);
+
+		if (helpAllyTask)
+		{
+			if (m_moveTimer.IsElapsed())
+			{
+				m_moveTimer.StartRandom(10.0f, 20.0f);
+			}
+
+			return PauseFor(helpAllyTask, "Helping another engineer!");
+		}
+	}
+
+	AITask<CTF2Bot>* moveTask = GetMoveBuildingsTask(bot);
+
+	if (moveTask)
+	{
+		return PauseFor(moveTask, "Moving my builings!");
+	}
+
+	if (!m_mysentry)
+	{
+		// Nothing to do and without a sentry, probably out of metal and no ammo source nearby, just roam
+		return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
 	}
 	else
 	{
-		// max my metal
-		if (bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < 200)
+		Vector pos = GetSpotBehindSentry(m_mysentry);
+
+		if (bot->GetRangeTo(pos) > 128.0f)
 		{
-			CBaseEntity* source = nullptr;
-
-			if (CTF2BotFindAmmoTask::IsPossible(bot, &source))
-			{
-				return PauseFor(new CTF2BotFindAmmoTask(source, 200), "Need more metal to build!");
-			}
-		}
-
-		CBaseEntity* sentryGun = bot->GetMySentryGun();
-
-		if (sentryGun && ShouldMoveSentryGun())
-		{
-			CTFWaypoint* waypoint = nullptr;
-			CTFNavArea* area = nullptr;
-
-			if (tf2botutils::FindSpotToBuildSentryGun(bot, &waypoint, &area))
-			{
-				m_justMovedSentry = true;
-				if (waypoint)
-				{
-					return PauseFor(new CTF2BotEngineerMoveObjectTask(sentryGun, waypoint), "Moving my sentry gun!");
-				}
-				else
-				{
-					return PauseFor(new CTF2BotEngineerMoveObjectTask(sentryGun, area->GetCenter()), "Moving my sentry gun!");
-				}
-			}
-			else
-			{
-				// find spot failed, try again
-				m_noThreatTimer.Start(5.0f);
-			}
+			return PauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, pos, "GoBehindSentry", false, true, true), "Moving back to the nest!");
 		}
 	}
 
-	auto moveTask = MoveBuildingsIfNeeded(bot);
-
-	if (moveTask != nullptr)
-	{
-		return PauseFor(moveTask, "Moving my buildings!");
-	}
-
-	// At this point, the bot has fully upgraded everything, time to idle near the sentry
-
-	m_goal = GetSpotBehindSentry(bot->GetMySentryGun());
-
-	if (bot->GetRangeTo(m_goal) > 48.0f)
-	{
-		if (!m_nav.IsValid() || m_nav.GetAge() > 3.0f)
-		{
-			CTF2BotPathCost cost(bot);
-			m_nav.ComputePathToPosition(bot, m_goal, cost);
-		}
-
-		m_nav.Update(bot);
-	}
+	// TODO: Do something other than idling near the sentry after everything has been setup
 
 	return Continue();
 }
@@ -147,16 +180,6 @@ bool CTF2BotEngineerNestTask::OnTaskPause(CTF2Bot* bot, AITask<CTF2Bot>* nextTas
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	if (pastTask)
-	{
-		CTF2BotEngineerMoveObjectTask* moveTask = dynamic_cast<CTF2BotEngineerMoveObjectTask*>(pastTask);
-
-		if (moveTask != nullptr)
-		{
-			m_moveBuildingCheckTimer.StartRandom(4.0f, 10.0f);
-		}
-	}
-
 	return Continue();
 }
 
@@ -214,8 +237,6 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot
 			m_respondToVCTimer.StartRandom(30.0f, 50.0f);
 			bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_YES);
 			const Vector& origin = UtilHelpers::getEntityOrigin(subject);
-			m_noThreatTimer.Invalidate();
-			m_moveBuildingCheckTimer.StartRandom(75.0f, 110.0f);
 
 			switch (vcmd)
 			{
@@ -252,14 +273,26 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot
 
 				return TryPauseFor(new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::eObjectType::OBJECT_SENTRYGUN, origin), PRIORITY_MEDIUM, "Teammate needs a sentry here!");
 			}
+			case TeamFortress2::VC_GOGOGO:
+				[[fallthrough]];
+			case TeamFortress2::VC_MOVEUP:
+				[[fallthrough]];
+			case TeamFortress2::VC_GOLEFT:
+				[[fallthrough]];
+			case TeamFortress2::VC_GORIGHT:
+			{
+				ForceMoveBuildings(10.0f);
+				m_respondToVCTimer.Start(15.0f);
+				break;
+			}
 			default:
+				m_respondToVCTimer.Start(5.0f); // command that we ignore
 				return TryContinue();
 			}
 		}
 		else
 		{
 			bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_NO);
-			m_moveBuildingCheckTimer.StartRandom(15.0f, 30.0f);
 		}
 	}
 
@@ -270,14 +303,14 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnControlPointCaptured(CTF2Bot* bot, CBaseEntity* point)
 {
-	ForceMoveBuildings();
+	ForceMoveBuildings(10.0f);
 
 	return TryContinue();
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnControlPointLost(CTF2Bot* bot, CBaseEntity* point)
 {
-	ForceMoveBuildings();
+	ForceMoveBuildings(10.0f);
 
 	return TryContinue();
 }
@@ -295,322 +328,510 @@ QueryAnswerType CTF2BotEngineerNestTask::IsReady(CBaseBot* me)
 	return ANSWER_NO;
 }
 
-bool CTF2BotEngineerNestTask::ShouldMoveSentryGun()
+bool CTF2BotEngineerNestTask::operator()(int index, edict_t* edict, CBaseEntity* entity)
 {
-	if (!m_noThreatTimer.HasStarted())
+	if (entity)
 	{
-		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(60.0f, 90.0f));
-		return false;
-		
-	}
-	else if (m_noThreatTimer.IsElapsed())
-	{
-		// it has been a while since I saw an enemy, time to move my sentry gun.
-		m_noThreatTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(60.0f, 90.0f)); // start the timer again so the bot doesn't enter a move loop
-		return true;
+		tfentities::HBaseObject object(entity);
+
+		if ((m_myOrigin - object.WorldSpaceCenter()).Length() > 1000.0f)
+		{
+			return true;
+		}
+
+		// must be from the same team
+		if (object.GetTeam() != m_myteam || object.IsPlacing() || object.IsBeingCarried() || object.IsRedeploying())
+		{
+			return true;
+		}
+
+		if (object.IsSapped())
+		{
+			m_allyObjects.emplace_back(ALLY_ACTION_SAPPED, entity);
+			return true;
+		}
+
+		if (object.GetPercentageConstructed() > 0.99f && object.GetHealthPercentage() < 0.9f)
+		{
+			m_allyObjects.emplace_back(ALLY_ACTION_REPAIR, entity);
+			return true;
+		}
+
+		if (!object.IsAtMaxLevel())
+		{
+			m_allyObjects.emplace_back(ALLY_ACTION_UPGRADE, entity);
+			return true;
+		}
 	}
 
-	return false;
+	return true;
 }
 
-AITask<CTF2Bot>* CTF2BotEngineerNestTask::NestTask(CTF2Bot* me)
+AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 {
-	Vector goal; // used if no waypoints are available
-	CTFWaypoint* wpt = nullptr;
-	CTFNavArea* area = nullptr;
+	constexpr int MIN_METAL_TO_BUILD = 140;
 
-	if (me->GetMyTeleporterEntrance() == nullptr)
+	if (me->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) < MIN_METAL_TO_BUILD)
 	{
-		if (tf2botutils::FindSpotToBuildTeleEntrance(me, &wpt, &area))
+		CBaseEntity* ammoSource = nullptr;
+		if (CTF2BotFindAmmoTask::IsPossible(me, &ammoSource))
 		{
-			if (wpt != nullptr)
+			return new CTF2BotFindAmmoTask(ammoSource, MIN_METAL_TO_BUILD);
+		}
+		else
+		{
+			if (me->IsDebugging(BOTDEBUG_ERRORS))
 			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, wpt);
+				const Vector origin = me->GetAbsOrigin();
+
+				me->DebugPrintToConsole(255, 0, 0, "%s ERROR: CTF2BotEngineerNestTask::GetBuildTask bot needs more metal to build but CTF2BotFindAmmoTask::IsPossible returned false! Team: %i Position: %g %g %g", me->GetDebugIdentifier(), me->GetCurrentTeamIndex(), origin.x, origin.y, origin.z);
+			}
+
+			return nullptr; // need more metal but find ammo failed
+		}
+	}
+
+	CTFWaypoint* buildwpt = nullptr;
+	CTFNavArea* buildarea = nullptr;
+	CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
+	auto role = tf2mod->GetTeamRole(me->GetMyTFTeam());
+
+	if (!m_sentryWasBuilt && m_mysentry)
+	{
+		m_sentryWasBuilt = true; // remember that we built a sentry
+	}
+
+	// No entrance, build it first
+	if (!m_myentrance)
+	{
+		m_teleUses = 0; // reset this
+
+		if (tf2botutils::FindSpotToBuildTeleEntrance(me, &buildwpt, &buildarea))
+		{
+			if (buildwpt)
+			{
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, buildwpt);
 			}
 			else
 			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, area->GetCenter());
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, buildarea->GetRandomPoint());
 			}
 		}
 	}
-	else if (me->GetMySentryGun() == nullptr)
+	else
 	{
-		if (tf2botutils::FindSpotToBuildSentryGun(me, &wpt, &area))
+		// entrance is built
+
+		if (role == TeamFortress2::TeamRoles::TEAM_ROLE_ATTACKERS && !m_myexit && CBaseBot::s_botrng.GetRandomChance(35))
 		{
-			if (wpt != nullptr)
+			// bots on attack roles have a random chance to priorize upgrading their teleporter entrance before building anything else
+			tfentities::HBaseObject object(m_myentrance);
+
+			if (!object.IsAtMaxLevel())
 			{
-				m_sentryWaypoint = wpt;
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, wpt);
-			}
-			else
-			{
-				m_sentryWaypoint = nullptr;
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, area->GetCenter());
+				return new CTF2BotEngineerUpgradeObjectTask(m_myentrance);
 			}
 		}
-	}
-	else if (me->GetMyDispenser() == nullptr)
-	{
-		bool canplacebehind = tf2botutils::FindSpotToBuildDispenserBehindSentry(me, goal);
 
-		if (tf2botutils::FindSpotToBuildDispenser(me, &wpt, &area, m_sentryWaypoint))
+		if (!m_mysentry) // no sentry gun
 		{
-			if (wpt != nullptr) // place at waypoints if available
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, wpt);
-			}
-			else if (canplacebehind) // place behind the sentry gun
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, goal);
-			}
-			else // place in a random area near the sentry gun
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, area->GetCenter());
-			}
-		}
-	}
-	else if (me->GetMyTeleporterExit() == nullptr)
-	{
-		if (tf2botutils::FindSpotToBuildTeleExit(me, &wpt, &area, m_sentryWaypoint))
-		{
-			if (wpt != nullptr)
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, wpt);
-			}
-			else
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, area->GetCenter());
-			}
-		}
-	}
+			m_sentryKills = 0; // reset this
 
-	CBaseEntity* entity = me->GetMySentryGun();
-
-	if (entity != nullptr)
-	{
-		tfentities::HBaseObject sentrygun(entity);
-
-		if (m_sentryEnemyScanTimer.IsElapsed())
-		{
-			m_sentryEnemyScanTimer.Start(1.0f);
-			int enemy = INVALID_EHANDLE_INDEX;
-
-			if (entprops->GetEntPropEnt(sentrygun.GetIndex(), Prop_Send, "m_hEnemy", enemy))
+			// sentry was destroyed, find a new location
+			if (m_sentryWasBuilt)
 			{
-				if (enemy != INVALID_EHANDLE_INDEX)
+				m_sentryWasBuilt = false;
+				m_findNewNestPos = true;
+			}
+
+			// time to find a new spot to build
+			if (m_findNewNestPos)
+			{
+				if (m_sentryWaypoint)
 				{
-					CBaseEntity* pEnemy = gamehelpers->ReferenceToEntity(enemy);
+					m_sentryWaypoint->StopUsing(me);
+					m_sentryWaypoint = nullptr;
+				}
 
-					if (pEnemy)
+				if (tf2botutils::FindSpotToBuildSentryGun(me, &buildwpt, &buildarea))
+				{
+					m_findNewNestPos = false;
+
+					if (buildwpt)
 					{
-						auto known = me->GetSensorInterface()->AddKnownEntity(pEnemy);
-						known->UpdatePosition();
+						m_sentryWaypoint = buildwpt;
+						m_sentryBuildPos = buildwpt->GetOrigin();
+						m_sentryWaypoint->Use(me, 90.0f); // lock the waypoint
+					}
+					else
+					{
+						m_sentryWaypoint = nullptr;
+						m_sentryBuildPos = buildarea->GetRandomPoint();
+					}
+				}
+				else
+				{
+					if (me->IsDebugging(BOTDEBUG_ERRORS))
+					{
+						const Vector origin = me->GetAbsOrigin();
 
-						me->GetControlInterface()->AimAt(known->GetLastKnownPosition(), IPlayerController::LOOK_ALERT, 2.0f, "Looking at my sentry's current enemy!");
+						me->DebugPrintToConsole(255, 0, 0, "%s ERROR: FindSpotToBuildSentryGun failed! Team: %i Position: %g %g %g", me->GetDebugIdentifier(),
+							me->GetCurrentTeamIndex(), origin.x, origin.y, origin.z);
+					}
+
+					return nullptr;
+				}
+			}
+
+			// Priorize the teleporter exit
+			if (!m_myexit)
+			{
+				if (tf2botutils::FindSpotToBuildTeleExit(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+				{
+					if (buildwpt)
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildwpt);
+					}
+					else
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildarea->GetRandomPoint());
+					}
+				}
+				else // failed to find a spot to build a tele exit, just build the sentry
+				{
+					if (m_sentryWaypoint)
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryWaypoint);
+					}
+					else
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryBuildPos);
+					}
+				}
+			}
+			else
+			{
+				// Random chance to build the dispenser before the sentry gun
+				if (!m_mydispenser && CBaseBot::s_botrng.GetRandomChance(35) && tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+				{
+					if (buildwpt)
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildwpt);
+					}
+					else
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildarea->GetRandomPoint());
+					}
+				}
+
+				if (m_sentryWaypoint)
+				{
+					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryWaypoint);
+				}
+				else
+				{
+					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryBuildPos);
+				}
+			}
+		}
+		else
+		{
+			// sentry gun is built
+
+			// try dispenser
+			if (!m_mydispenser)
+			{
+				if (tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+				{
+					if (buildwpt)
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildwpt);
+					}
+					else
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildarea->GetRandomPoint());
+					}
+				}
+				else if (m_mysentry)
+				{
+					Vector buildPos;
+					if (tf2botutils::FindSpotToBuildDispenserBehindSentry(me, buildPos))
+					{
+						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildPos);
 					}
 				}
 			}
 		}
 
-		if (!sentrygun.IsAtMaxLevel())
+		// build an exit if we don't have one already
+		if (!m_myexit && tf2botutils::FindSpotToBuildTeleExit(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
 		{
-			return new CTF2BotEngineerUpgradeObjectTask(entity);
-		}
-		else if (sentrygun.GetHealthPercentage() < 1.0f || sentrygun.IsSapped())
-		{
-			return new CTF2BotEngineerRepairObjectTask(entity);
-		}
-		else
-		{
-			int shells = 999;
-			entprops->GetEntProp(sentrygun.GetIndex(), Prop_Send, "m_iAmmoShells", shells);
-			int rockets = 999;
-			entprops->GetEntProp(sentrygun.GetIndex(), Prop_Send, "m_iAmmoRockets", rockets);
-
-			if (shells <= 50 || rockets <= 5)
+			if (buildwpt)
 			{
-				// sentry needs ammo
-				return new CTF2BotEngineerRepairObjectTask(entity);
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildwpt);
+			}
+			else
+			{
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildarea->GetRandomPoint());
 			}
 		}
 	}
 
-	entity = me->GetMyDispenser();
+	// nothing to build
+	// time to upgrade stuff
+	// repair is handled in the main engineer behavior
 
-	if (entity != nullptr)
+	if (m_mysentry)
 	{
-		tfentities::HBaseObject dispenser(entity);
+		tfentities::HBaseObject object(m_mysentry);
 
-		if (!dispenser.IsAtMaxLevel())
+		if (!object.IsAtMaxLevel())
 		{
-			return new CTF2BotEngineerUpgradeObjectTask(entity);
-		}
-		else if (dispenser.GetHealthPercentage() < 1.0f || dispenser.IsSapped())
-		{
-			return new CTF2BotEngineerRepairObjectTask(entity);
+			return new CTF2BotEngineerUpgradeObjectTask(m_mysentry);
 		}
 	}
 
-	CBaseEntity* exit = me->GetMyTeleporterExit();
-	CBaseEntity* entrance = me->GetMyTeleporterEntrance();
-
-	if (exit != nullptr && entrance != nullptr)
+	if (m_mydispenser)
 	{
-		// only upgrade teleporters after both exit and entrance are setup.
-		if (me->GetRangeToSqr(exit) < me->GetRangeToSqr(entrance))
-		{
-			tfentities::HBaseObject tele(exit);
+		tfentities::HBaseObject object(m_mydispenser);
 
-			if (!tele.IsAtMaxLevel())
+		if (!object.IsAtMaxLevel())
+		{
+			return new CTF2BotEngineerUpgradeObjectTask(m_mydispenser);
+		}
+	}
+
+	if (m_myexit && m_myentrance)
+	{
+		tfentities::HBaseObject object(m_myexit);
+
+		if (!object.IsAtMaxLevel())
+		{
+			if ((me->GetRangeTo(m_myentrance) + 600.0f) < me->GetRangeTo(m_myexit))
 			{
-				return new CTF2BotEngineerUpgradeObjectTask(exit);
+				return new CTF2BotEngineerUpgradeObjectTask(m_myentrance);
 			}
-		}
-		else
-		{
-			tfentities::HBaseObject tele(entrance);
-
-			if (!tele.IsAtMaxLevel())
+			else
 			{
-				return new CTF2BotEngineerUpgradeObjectTask(entrance);
+				return new CTF2BotEngineerUpgradeObjectTask(m_myexit);
 			}
-		}
-	}
-
-	if (exit != nullptr)
-	{
-		tfentities::HBaseObject tele(exit);
-
-		if (tele.GetHealthPercentage() < 1.0f || tele.IsSapped())
-		{
-			return new CTF2BotEngineerRepairObjectTask(exit);
-		}
-	}
-	if (entrance != nullptr)
-	{
-		tfentities::HBaseObject tele(entrance);
-
-		if (tele.GetHealthPercentage() < 1.0f || tele.IsSapped())
-		{
-			return new CTF2BotEngineerRepairObjectTask(entrance);
 		}
 	}
 
 	return nullptr;
 }
 
-AITask<CTF2Bot>* CTF2BotEngineerNestTask::MoveBuildingsIfNeeded(CTF2Bot* bot)
+AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 {
-	if (!m_moveBuildingCheckTimer.IsElapsed())
-	{
-		return nullptr;
-	}
-
-	m_moveBuildingCheckTimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(5.0f, 15.0f));
-
-	CBaseEntity* sentry = bot->GetMySentryGun();
-	CBaseEntity* dispenser = bot->GetMyDispenser();
-	CBaseEntity* entrance = bot->GetMyTeleporterEntrance();
-	CBaseEntity* exit = bot->GetMyTeleporterExit();
-
-	// must have all 4 buildings
-	if (sentry == nullptr || dispenser == nullptr || entrance == nullptr || exit == nullptr)
-	{
-		m_moveBuildingCheckTimer.Start(90.0f); // must build and upgrade, wait a longer time
-		return nullptr;
-	}
-
-	constexpr auto DISTANCE_MARGIN = 200.0f;
 	const CTF2ModSettings* settings = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings();
-	const Vector& sentryPos = UtilHelpers::getEntityOrigin(sentry);
-	const Vector& dispenserPos = UtilHelpers::getEntityOrigin(dispenser);
-	CTFWaypoint* waypoint = nullptr;
-	CTFNavArea* area = nullptr;
+	CTFWaypoint* buildwpt = nullptr;
+	CTFNavArea* buildarea = nullptr;
 
-	// dispenser first
-	float range = (sentryPos - dispenserPos).Length();
-
-	if (m_justMovedSentry || range > (settings->GetEngineerNestDispenserRange() + DISTANCE_MARGIN))
+	if (m_moveTimer.IsElapsed())
 	{
-		m_justMovedSentry = false;
-		Vector spot;
+		// TO-DO: add settings for this
+		m_moveTimer.Start(60.0f); 
 
-		// time to move
-		if (tf2botutils::FindSpotToBuildDispenserBehindSentry(bot, spot))
+		if (m_mysentry)
 		{
-			return new CTF2BotEngineerMoveObjectTask(dispenser, spot, true);
-		}
-		else if (tf2botutils::FindSpotToBuildDispenser(bot, &waypoint, &area, m_sentryWaypoint))
-		{
-			if (waypoint)
+			int currentKills = tf2lib::GetSentryKills(m_mysentry) + tf2lib::GetSentryAssists(m_mysentry);
+
+			// todo settings
+			if (currentKills - 3 <= m_sentryKills)
 			{
-				return new CTF2BotEngineerMoveObjectTask(dispenser, waypoint, true);
+				if (me->IsDebugging(BOTDEBUG_TASKS))
+				{
+					me->DebugPrintToConsole(0, 230, 200, "%s MOVING SENTRY! CURRENT KILLS %i STORED KILLS %i\n", me->GetDebugIdentifier(), currentKills, m_sentryKills);
+				}
+
+				if (tf2botutils::FindSpotToBuildSentryGun(me, &buildwpt, &buildarea))
+				{
+					// give some time to reach the new location
+					m_moveTimer.Start(120.0f);
+					m_sentryKills = currentKills;
+					m_checkDispenser = true;
+					m_checkEntrance = true;
+					m_checkExit = true;
+					m_checkOthersTimer.Start(30.0f);
+
+					if (buildwpt)
+					{
+						if (m_sentryWaypoint)
+						{
+							m_sentryWaypoint->StopUsing(me);
+						}
+
+						buildwpt->Use(me, 90.0f);
+						m_sentryWaypoint = buildwpt;
+						m_sentryBuildPos = buildwpt->GetOrigin();
+						
+						return new CTF2BotEngineerMoveObjectTask(m_mysentry, buildwpt, true);
+					}
+					else
+					{
+						if (m_sentryWaypoint)
+						{
+							m_sentryWaypoint->StopUsing(me);
+							m_sentryWaypoint = nullptr;
+						}
+
+						m_sentryBuildPos = buildarea->GetRandomPoint();
+						return new CTF2BotEngineerMoveObjectTask(m_mysentry, m_sentryBuildPos, true);
+					}
+				}
 			}
 			else
 			{
-				return new CTF2BotEngineerMoveObjectTask(dispenser, area->GetCenter(), true);
+				if (me->IsDebugging(BOTDEBUG_TASKS))
+				{
+					me->DebugPrintToConsole(255, 120, 0, "%s NOT MOVING SENTRY! CURRENT KILLS %i STORED KILLS %i\n", me->GetDebugIdentifier(), currentKills, m_sentryKills);
+				}
+
+				m_sentryKills = currentKills;
 			}
 		}
 	}
-	
-	const Vector& exitPos = UtilHelpers::getEntityOrigin(exit);
-	range = (sentryPos - exitPos).Length();
 
-	if (range > (settings->GetEngineerNestExitRange() + DISTANCE_MARGIN))
+	if (m_checkOthersTimer.HasStarted() && m_checkOthersTimer.IsElapsed())
 	{
-		if (tf2botutils::FindSpotToBuildTeleExit(bot, &waypoint, &area, m_sentryWaypoint))
+		m_checkOthersTimer.Invalidate();
+		m_checkDispenser = true;
+		m_checkEntrance = true;
+		m_checkExit = true;
+	}
+
+	if (m_checkDispenser)
+	{
+		m_checkDispenser = false;
+
+		if (m_mydispenser && m_mysentry)
 		{
-			if (waypoint)
+			const float range = (UtilHelpers::getEntityOrigin(m_mydispenser) - UtilHelpers::getEntityOrigin(m_mysentry)).Length();
+
+			if (range >= settings->GetEngineerNestDispenserRange())
 			{
-				return new CTF2BotEngineerMoveObjectTask(exit, waypoint, true);
+				if (me->IsDebugging(BOTDEBUG_TASKS))
+				{
+					me->DebugPrintToConsole(0, 230, 200, "%s MOVING DISPENSER! RANGE TO SENTRY (%g) GREATER THAN LIMIT (%g)\n",
+						me->GetDebugIdentifier(), range, settings->GetEngineerNestDispenserRange());
+				}
+
+				if (tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+				{
+					if (buildwpt)
+					{
+						return new CTF2BotEngineerMoveObjectTask(m_mydispenser, buildwpt, true);
+					}
+					else
+					{
+						return new CTF2BotEngineerMoveObjectTask(m_mydispenser, buildarea->GetRandomPoint(), true);
+					}
+				}
+				else
+				{
+					Vector buildPos;
+					if (tf2botutils::FindSpotToBuildDispenserBehindSentry(me, buildPos))
+					{
+						return new CTF2BotEngineerMoveObjectTask(m_mydispenser, buildPos, true);
+					}
+				}
 			}
 			else
 			{
-				return new CTF2BotEngineerMoveObjectTask(exit, area->GetCenter(), true);
+				if (me->IsDebugging(BOTDEBUG_TASKS))
+				{
+					me->DebugPrintToConsole(255, 120, 0, "%s NOT MOVING DISPENSER! RANGE TO SENTRY (%g) LESS THAN LIMIT (%g)\n",
+						me->GetDebugIdentifier(), range, settings->GetEngineerNestDispenserRange());
+				}
 			}
 		}
 	}
 
-
-	const Vector& entrancePos = UtilHelpers::getEntityOrigin(entrance);
-	CBaseEntity* spawnPoint = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
-	const Vector& spawnPos = UtilHelpers::getEntityOrigin(spawnPoint);
-	CNavArea* spawnArea = TheNavMesh->GetNearestNavArea(spawnPos, 512.0f);
-	CNavArea* entranceArea = TheNavMesh->GetNearestNavArea(entrancePos, 512.0f);
-	bool moveEntrance = false;
-	
-	if (spawnArea && entranceArea)
+	if (m_checkEntrance || m_checkExit)
 	{
-		botsharedutils::IsReachableAreas collector(bot, settings->GetEntranceSpawnRange() + DISTANCE_MARGIN);
-		collector.SetStartArea(spawnArea); // override, uses the bot position by default
-		collector.Execute();
+		// both exists
+		if (m_myentrance && m_myexit)
+		{
+			int uses = tf2lib::GetTeleporterUses(m_myentrance);
 
-		float cost;
-		if (collector.IsReachable(entranceArea, &cost))
-		{
-			if (cost > settings->GetEntranceSpawnRange() + DISTANCE_MARGIN)
+			if (uses - 5 > m_teleUses)
 			{
-				moveEntrance = true;
+				if (me->IsDebugging(BOTDEBUG_TASKS))
+				{
+					me->DebugPrintToConsole(255, 120, 0, "%s NOT MOVING TELEPORTERS! CURRENT USES %i STORED USES %i\n", me->GetDebugIdentifier(), uses, m_teleUses);
+				}
+
+				// teleporter still being used, skip
+				m_checkEntrance = false;
+				m_checkExit = false;
 			}
-		}
-		else
-		{
-			// can't reach it
-			moveEntrance = true;
+
+			m_teleUses = uses;
 		}
 	}
 
-	if (moveEntrance)
+	if (m_checkEntrance)
 	{
-		if (tf2botutils::FindSpotToBuildTeleEntrance(bot, &waypoint, &area))
+		m_checkEntrance = false;
+
+		if (m_myentrance)
 		{
-			if (waypoint)
+			CBaseEntity* spawn = tf2lib::GetNearestValidSpawnPointForTeam(me->GetMyTFTeam(), UtilHelpers::getEntityOrigin(m_myentrance));
+
+			if (spawn)
 			{
-				return new CTF2BotEngineerMoveObjectTask(entrance, waypoint, true);
+				const Vector& spawnPos = UtilHelpers::getEntityOrigin(spawn);
+				const float range = (spawnPos - UtilHelpers::getEntityOrigin(m_myentrance)).Length();
+
+				if (range >= settings->GetEntranceSpawnRange())
+				{
+					if (me->IsDebugging(BOTDEBUG_TASKS))
+					{
+						me->DebugPrintToConsole(0, 230, 200, "%s MOVING TELE ENTRANCE! DISTANCE TO SPAWN <%g %g %g> : %g\n",
+							me->GetDebugIdentifier(), spawnPos.x, spawnPos.y, spawnPos.z, range);
+					}
+
+					if (tf2botutils::FindSpotToBuildTeleEntrance(me, &buildwpt, &buildarea))
+					{
+						if (buildwpt)
+						{
+							return new CTF2BotEngineerMoveObjectTask(m_myentrance, buildwpt, true);
+						}
+						else
+						{
+							return new CTF2BotEngineerMoveObjectTask(m_myentrance, buildarea->GetRandomPoint(), true);
+						}
+					}
+				}
 			}
-			else
+		}
+	}
+
+	if (m_checkExit)
+	{
+		if (m_mysentry && m_myexit)
+		{
+			const float range = (UtilHelpers::getEntityOrigin(m_myexit) - UtilHelpers::getEntityOrigin(m_mysentry)).Length();
+
+			if (range >= settings->GetEngineerNestExitRange())
 			{
-				return new CTF2BotEngineerMoveObjectTask(entrance, area->GetCenter(), true);
+				if (me->IsDebugging(BOTDEBUG_TASKS))
+				{
+					me->DebugPrintToConsole(0, 230, 200, "%s MOVING TELE EXIT! RANGE TO SENTRY (%g) GREATER THAN LIMIT (%g)\n",
+						me->GetDebugIdentifier(), range, settings->GetEngineerNestExitRange());
+				}
+
+				if (tf2botutils::FindSpotToBuildTeleExit(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+				{
+					if (buildwpt)
+					{
+						return new CTF2BotEngineerMoveObjectTask(m_myexit, buildwpt, true);
+					}
+					else
+					{
+						return new CTF2BotEngineerMoveObjectTask(m_myexit, buildarea->GetRandomPoint(), true);
+					}
+				}
 			}
 		}
 	}
@@ -618,3 +839,44 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::MoveBuildingsIfNeeded(CTF2Bot* bot)
 	return nullptr;
 }
 
+AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetHelpFriendlyEngineerTask(CTF2Bot* me)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array classnames = {
+		"obj_sentrygun"sv,
+		"obj_dispenser"sv,
+		"obj_teleporter"sv,
+	};
+
+	m_allyObjects.clear();
+	m_myOrigin = me->GetAbsOrigin();
+
+	for (auto& clname : classnames)
+	{
+		UtilHelpers::ForEachEntityOfClassname(clname.data(), *this);
+	}
+
+	if (m_allyObjects.empty())
+	{
+		return nullptr;
+	}
+
+	for (auto& pair : m_allyObjects)
+	{
+		// Priorize sapped builings
+		if (pair.first == ALLY_ACTION_SAPPED)
+		{
+			return new CTF2BotEngineerRepairObjectTask(pair.second);
+		}
+	}
+
+	auto& pair = m_allyObjects[randomgen->GetRandomInt<std::size_t>(0U, m_allyObjects.size() - 1U)];
+
+	if (pair.first == ALLY_ACTION_REPAIR)
+	{
+		return new CTF2BotEngineerRepairObjectTask(pair.second);
+	}
+
+	return new CTF2BotEngineerUpgradeObjectTask(pair.second);
+}

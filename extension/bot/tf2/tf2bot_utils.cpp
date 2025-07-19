@@ -494,16 +494,26 @@ bool tf2botutils::FindSpotToBuildDispenserBehindSentry(CTF2Bot* bot, Vector& spo
 	return false;
 }
 
-bool tf2botutils::FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint)
+bool tf2botutils::FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint, const Vector* sentryGunPos)
 {
-	CBaseEntity* sentryGun = bot->GetMySentryGun();
+	CBaseEntity* mysentry = bot->GetMySentryGun();
 
-	if (!sentryGun)
+	Vector sentryPos;
+
+	if (mysentry)
 	{
-		return false;
+		sentryPos = UtilHelpers::getEntityOrigin(mysentry);
+	}
+	else
+	{
+		if (!sentryGunPos)
+		{
+			return false; // no sentry and no position given
+		}
+
+		sentryPos = *sentryGunPos;
 	}
 
-	const Vector& sentryPos = UtilHelpers::getEntityOrigin(sentryGun);
 	const float maxRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerNestDispenserRange();
 
 	*waypoint = SelectWaypointForDispenser(bot, maxRange, &sentryPos, sentryGunWaypoint);
@@ -564,16 +574,26 @@ bool tf2botutils::FindSpotToBuildTeleEntrance(CTF2Bot* bot, CTFWaypoint** waypoi
 	return false;
 }
 
-bool tf2botutils::FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint)
+bool tf2botutils::FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint, const Vector* sentryGunPos)
 {
 	CBaseEntity* mysentry = bot->GetMySentryGun();
 
-	if (mysentry == nullptr)
+	Vector sentryPos;
+
+	if (mysentry)
 	{
-		return false;
+		sentryPos = UtilHelpers::getEntityOrigin(mysentry);
+	}
+	else
+	{
+		if (!sentryGunPos)
+		{
+			return false; // no sentry and no position given
+		}
+
+		sentryPos = *sentryGunPos;
 	}
 
-	const Vector& sentryPos = UtilHelpers::getEntityOrigin(mysentry);
 	const float maxRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerNestExitRange();
 
 	*waypoint = tf2botutils::SelectWaypointForTeleExit(bot, maxRange, &sentryPos, sentryGunWaypoint);

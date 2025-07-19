@@ -48,10 +48,15 @@ namespace tf2lib
 	bool IsBuildingAtMaxUpgradeLevel(CBaseEntity* entity);
 	bool IsBuildingSapped(CBaseEntity* entity);
 	CBaseEntity* GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team);
+	// Returns the nearest valid team spawn point to the given origin.
+	CBaseEntity* GetNearestValidSpawnPointForTeam(TeamFortress2::TFTeam team, const Vector& origin);
 	// gets the position of an item_teamflag
 	const Vector& GetFlagPosition(CBaseEntity* flag);
 	// Gets the matching teleporter.
 	CBaseEntity* GetMatchingTeleporter(CBaseEntity* teleporter);
+	int GetSentryKills(CBaseEntity* sentry);
+	int GetSentryAssists(CBaseEntity* sentry);
+	int GetTeleporterUses(CBaseEntity* teleporter);
 }
 
 namespace tf2lib::mvm

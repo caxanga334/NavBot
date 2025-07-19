@@ -250,6 +250,11 @@ bool CBotWeapon::CanUseSecondaryAttack(const CBaseBot* owner) const
 {
 	const WeaponInfo* info = GetWeaponInfo();
 
+	if (info->GetChanceToUseSecondaryAttack() == 0)
+	{
+		return false;
+	}
+
 	if (!info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
 	{
 		return false;

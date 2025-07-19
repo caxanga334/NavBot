@@ -44,6 +44,17 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			return PauseFor(new CTF2BotFindAmmoTask(source, object.GetMetalNeededToUpgrade()), "Need more metal!");
 		}
+		else
+		{
+			if (bot->IsDebugging(BOTDEBUG_ERRORS))
+			{
+				const Vector origin = bot->GetAbsOrigin();
+
+				bot->DebugPrintToConsole(255, 0, 0, "%s ERROR: UpgradeObjectTask bot needs more metal to build but CTF2BotFindAmmoTask::IsPossible returned false! Team: %i Position: %g %g %g", bot->GetDebugIdentifier(), bot->GetCurrentTeamIndex(), origin.x, origin.y, origin.z);
+			}
+
+			return Done("Out of metal and no ammo source nearby!");
+		}
 	}
 
 	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
@@ -58,7 +69,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	if (bot->GetRangeTo(object.WorldSpaceCenter()) > get_object_melee_range())
+	const float range = bot->GetRangeTo(object.WorldSpaceCenter());
+
+	if (range > get_object_melee_range())
 	{
 		if (!m_nav.IsValid() || m_nav.GetAge() > 3.0f)
 		{
@@ -71,6 +84,12 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 
 		m_nav.Update(bot);
+
+		// crouch early for precise movement when going for teleporters
+		if (std::strcmp(gamehelpers->GetEntityClassname(m_object.Get()), "obj_teleporter") == 0 && range <= 256.0f)
+		{
+			bot->GetControlInterface()->PressCrouchButton();
+		}
 	}
 	else
 	{

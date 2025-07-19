@@ -27,7 +27,7 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 {
 	m_ammochecktimer.Start(5.0f);
 	m_healthchecktimer.Start(5.0f);
-	m_teleportertimer.Start(3.0f);
+	m_teleportertimer.Start(0.2f);
 
 	return Continue();
 }
@@ -72,16 +72,20 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (m_teleportertimer.IsElapsed())
 	{
+		if (bot->GetTimeSinceLastSpawn() <= 5.0f)
+		{
+			m_teleportertimer.Start(0.2f); // frequent checks after a respawn
+		}
+		else
+		{
+			m_teleportertimer.StartRandom(2.0f, 10.0f);
+		}
+
 		CBaseEntity* teleporter = nullptr;
 
 		if (CTF2BotUseTeleporterTask::IsPossible(bot, &teleporter))
 		{
-			m_teleportertimer.StartRandom(75.0f, 135.0f); // don't search again for a while
 			return PauseFor(new CTF2BotUseTeleporterTask(teleporter), "Using teleporter!");
-		}
-		else
-		{
-			m_teleportertimer.StartRandom(1.0f, 6.0f);
 		}
 	}
 

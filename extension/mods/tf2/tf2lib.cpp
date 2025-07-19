@@ -400,12 +400,13 @@ bool tf2lib::MVM_ShouldBotsReadyUp()
 
 bool tf2lib::BuildingNeedsToBeRepaired(CBaseEntity* entity)
 {
+	float* percentconstructed = entprops->GetPointerToEntData<float>(entity, Prop_Send, "m_flPercentageConstructed");
 	int* health = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iHealth");
 	int* maxhealth = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iMaxHealth");
 
-	if (health && maxhealth)
+	if (health && maxhealth && percentconstructed)
 	{
-		if (*health < *maxhealth)
+		if (*percentconstructed >= 0.99f && *health < *maxhealth)
 		{
 			return true;
 		}
@@ -518,6 +519,43 @@ CBaseEntity* tf2lib::GetFirstValidSpawnPointForTeam(TeamFortress2::TFTeam team)
 	return spawn;
 }
 
+CBaseEntity* tf2lib::GetNearestValidSpawnPointForTeam(TeamFortress2::TFTeam team, const Vector& origin)
+{
+	CBaseEntity* spawn = nullptr;
+	float best = FLT_MAX;
+	auto func = [&spawn, &best, &team, &origin](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			bool disabled = false;
+			entprops->GetEntPropBool(index, Prop_Data, "m_bDisabled", disabled);
+
+			if (disabled)
+			{
+				return true; // keep loop
+			}
+
+			if (tf2lib::GetEntityTFTeam(index) != team)
+			{
+				return true;
+			}
+
+			const float distance = (origin - UtilHelpers::getEntityOrigin(entity)).Length();
+
+			if (distance < best)
+			{
+				best = distance;
+				spawn = entity;
+			}
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("info_player_teamspawn", func);
+
+	return spawn;
+}
+
 const Vector& tf2lib::GetFlagPosition(CBaseEntity* flag)
 {
 	CBaseEntity* owner = entprops->GetEntPropEnt(flag, Prop_Data, "m_hOwnerEntity");
@@ -573,6 +611,24 @@ CBaseEntity* tf2lib::GetMatchingTeleporter(CBaseEntity* teleporter)
 
 	CHandle<CBaseEntity>* hMatchingTeleporter = entprops->GetPointerToEntData<CHandle<CBaseEntity>>(teleporter, offset);
 	return hMatchingTeleporter->Get();
+}
+
+int tf2lib::GetSentryKills(CBaseEntity* sentry)
+{
+	int* value = entprops->GetPointerToEntData<int>(sentry, Prop_Send, "m_iKills");
+	return *value;
+}
+
+int tf2lib::GetSentryAssists(CBaseEntity* sentry)
+{
+	int* value = entprops->GetPointerToEntData<int>(sentry, Prop_Send, "m_iAssists");
+	return *value;
+}
+
+int tf2lib::GetTeleporterUses(CBaseEntity* teleporter)
+{
+	int* value = entprops->GetPointerToEntData<int>(teleporter, Prop_Send, "m_iTimesUsed");
+	return *value;
 }
 
 CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)

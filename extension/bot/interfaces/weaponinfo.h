@@ -7,6 +7,7 @@
 #include <memory>
 #include <algorithm>
 #include <unordered_map>
+#include <unordered_set>
 #include <optional>
 #include <cmath>
 
@@ -154,6 +155,7 @@ public:
 		no_clip1 = false;
 		no_clip2 = false;
 		sec_uses_prim = false;
+		is_template = false;
 		primammolow = 0;
 		secammolow = 0;
 		slot = INVALID_WEAPON_SLOT;
@@ -204,11 +206,54 @@ public:
 		deployed_property_on_weapon = true;
 		selection_max_range = -1.0f;
 		selection_min_range = -1.0f;
+		is_template = false;
 
 		slot = INVALID_WEAPON_SLOT;
 		attacksinfo[PRIMARY_ATTACK].Reset();
 		attacksinfo[SECONDARY_ATTACK].Reset();
 		attacksinfo[TERTIARY_ATTACK].Reset();
+		tags.clear();
+	}
+
+	// This WI instance is a variant of the given WI, copy the 'other' attributes into this one.
+	virtual void VariantOf(const WeaponInfo* other)
+	{
+		this->classname = other->classname;
+		this->custom_ammo_property_name = other->custom_ammo_property_name;
+		this->attacksinfo = other->attacksinfo;
+		this->headshot_aim_offset = other->headshot_aim_offset;
+		this->econindex = other->econindex;
+		this->priority = other->priority;
+		this->disable_dodge = other->disable_dodge;
+		this->can_headshot = other->can_headshot;
+		this->infinite_reserve_ammo = other->infinite_reserve_ammo;
+		this->custom_ammo_prop_on_weapon = other->custom_ammo_prop_on_weapon;
+		this->custom_ammo_prop_is_net = other->custom_ammo_prop_is_net;
+		this->custom_ammo_is_float = other->custom_ammo_is_float;
+		this->custom_ammo_out_of_ammo = other->custom_ammo_out_of_ammo;
+		this->interval_between_attacks = other->interval_between_attacks;
+		this->headshot_range_mult = other->headshot_range_mult;
+		this->no_clip1 = other->no_clip1;
+		this->no_clip2 = other->no_clip2;
+		this->sec_uses_prim = other->sec_uses_prim;
+		this->is_template = false; // copies are never a template
+		this->primammolow = other->primammolow;
+		this->secammolow = other->secammolow;
+		this->slot = other->slot;
+		this->attack_move_range = other->attack_move_range;
+		this->use_secondary_chance = other->use_secondary_chance;
+		this->dynamic_priority_has_sec_ammo = other->dynamic_priority_has_sec_ammo;
+		this->dynamic_priority_health = other->dynamic_priority_health;
+		this->dynamic_priority_health_cond = other->dynamic_priority_health_cond;
+		this->dynamic_priority_range_lt = other->dynamic_priority_range_lt;
+		this->dynamic_priority_range_lt_cond = other->dynamic_priority_range_lt_cond;
+		this->deployed_property_name = other->deployed_property_name;
+		this->deployed_property_on_weapon = other->deployed_property_on_weapon;
+		this->needs_to_be_deployed = other->needs_to_be_deployed;
+		this->selection_max_range = other->selection_max_range;
+		this->selection_min_range = other->selection_min_range;
+		this->special_function = other->special_function;
+		this->tags = other->tags;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
@@ -287,6 +332,9 @@ public:
 	void SetDeployedPropertySource(const bool onweapon) { deployed_property_on_weapon = onweapon; }
 	void SetIsDodgeDisabled(const bool v) { disable_dodge = v; }
 	void SetSelectionMaxRangeOverride(const float v) { selection_max_range = v; }
+	void ClearTags() { tags.clear(); }
+	void AddTag(const std::string& tag) { tags.emplace(tag); }
+	void SetIsTemplateEntry(const bool v) { is_template = v; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -337,6 +385,8 @@ public:
 
 		return false;
 	}
+	bool HasTag(const std::string& tag) const { return tags.find(tag) != tags.end(); }
+	bool IsTemplateEntry() const { return is_template; }
 
 	const SpecialFunction& GetSpecialFunction() const { return special_function; }
 	// for writing
@@ -348,7 +398,7 @@ private:
 	std::string classname;
 	std::string configentry;
 	std::string custom_ammo_property_name;
-	WeaponAttackFunctionInfo attacksinfo[MAX_WEAPON_ATTACKS];
+	std::array<WeaponAttackFunctionInfo, AttackFunctionType::MAX_WEAPON_ATTACKS> attacksinfo;
 	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
@@ -364,6 +414,7 @@ private:
 	bool no_clip1; // Weapon doesn't uses clip 1 (primary)
 	bool no_clip2; // Weapon doesn't uses clip 2 (secondary)
 	bool sec_uses_prim; // Secondary attack uses primary ammo type
+	bool is_template; // This entry is a template for "variantof" (disables some error checks)
 	int primammolow; // Threshold for low primary ammo
 	int secammolow; // Threshold for low secondary ammo
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
@@ -380,6 +431,7 @@ private:
 	float selection_max_range;
 	float selection_min_range;
 	SpecialFunction special_function;
+	std::unordered_set<std::string> tags;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
@@ -520,6 +572,20 @@ protected:
 		if (it != m_index_lookup.end())
 		{
 			return it->second;
+		}
+
+		return nullptr;
+	}
+
+	// Searches for a weapon info by config entry name, used by the parser
+	const WeaponInfo* LookUpWeaponInfoByConfigEntryName(const char* name) const
+	{
+		for (auto& info : m_weapons)
+		{
+			if (std::strcmp(info->GetConfigEntryName(), name) == 0)
+			{
+				return info.get();
+			}
 		}
 
 		return nullptr;

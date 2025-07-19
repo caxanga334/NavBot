@@ -124,6 +124,8 @@ CTeamFortress2Mod::CTeamFortress2Mod() : CBaseMod()
 	ListenForGameEvent("teamplay_point_startcapture");
 	ListenForGameEvent("teamplay_point_captured");
 	ListenForGameEvent("recalculate_truce");
+	ListenForGameEvent("player_upgradedobject");
+	ListenForGameEvent("player_sapped_object");
 }
 
 CTeamFortress2Mod::~CTeamFortress2Mod()
@@ -247,6 +249,48 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		else if (strncasecmp(name, "recalculate_truce", 17) == 0)
 		{
 			m_updateTruceStatus.Start(0.5f);
+		}
+		else if (std::strcmp(name, "player_upgradedobject") == 0)
+		{
+			bool isBuilder = event->GetBool("isbuilder", true);
+			
+			if (!isBuilder)
+			{
+				int entindex = event->GetInt("index", INVALID_EHANDLE_INDEX);
+				
+				if (entindex != INVALID_EHANDLE_INDEX)
+				{
+					int builder = 0;
+					entprops->GetEntPropEnt(entindex, Prop_Send, "m_hBuilder", builder);
+
+					if (builder != 0)
+					{
+						CBaseBot* bot = extmanager->GetBotByIndex(builder);
+
+						if (bot && randomgen->GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
+						{
+							static_cast<CTF2Bot*>(bot)->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_THANKS);
+						}
+					}
+				}
+			}
+		}
+		else if (std::strcmp(name, "player_sapped_object"))
+		{
+			int owner = playerhelpers->GetClientOfUserId(event->GetInt("ownerid", -1));
+			int saboteur = playerhelpers->GetClientOfUserId(event->GetInt("userid", -1));
+
+			if (owner != 0 && saboteur != 0)
+			{
+				CBaseEntity* pOwner = gamehelpers->ReferenceToEntity(owner);
+				CBaseEntity* pSaboteur = gamehelpers->ReferenceToEntity(saboteur);
+
+				auto func = [&pOwner, &pSaboteur](CBaseBot* bot) {
+					bot->OnObjectSapped(pOwner, pSaboteur);
+				};
+
+				extmanager->ForEachBot(func);
+			}
 		}
 	}
 }

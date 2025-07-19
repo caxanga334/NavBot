@@ -2,6 +2,7 @@
 #define NAVBOT_INVENTORY_INTERFACE_H_
 
 #include <unordered_map>
+#include <cstring>
 #include <sdkports/sdk_timers.h>
 #include "base_interface.h"
 #include "weapon.h"
@@ -51,6 +52,60 @@ public:
 
 			functor(weapon.get());
 		}
+	}
+
+	/**
+	 * @brief Finds a weapon by their entity classname.
+	 * @param classname Weapon's entity classname to search for;
+	 * @return Bot Weapon interface pointer or NULL if not found.
+	 */
+	const CBotWeapon* FindWeaponByClassname(const char* classname) const
+	{
+		for (auto& weaponptr : m_weapons)
+		{
+			if (weaponptr->IsValid() && std::strcmp(weaponptr->GetClassname().c_str(), classname) == 0)
+			{
+				return weaponptr.get();
+			}
+		}
+
+		return nullptr;
+	}
+
+	/**
+	 * @brief Finds a weapon by their economy index.
+	 * @param index Weapon's economy item index.
+	 * @return Bot Weapon interface pointer or NULL if not found.
+	 */
+	const CBotWeapon* FindWeaponByEconIndex(const int index) const
+	{
+		for (auto& weaponptr : m_weapons)
+		{
+			if (weaponptr->IsValid() && weaponptr->GetWeaponEconIndex() == index)
+			{
+				return weaponptr.get();
+			}
+		}
+
+		return nullptr;
+	}
+
+	/**
+	 * @brief Finds the first weapon that contains the given tag.
+	 * @param tag Tag to search.
+	 * @return Bot Weapon interface pointer or NULL if not found.
+	 */
+	const CBotWeapon* FindWeaponByTag(const std::string& tag) const
+	{
+		for (auto& weaponptr : m_weapons)
+		{
+			if (weaponptr->IsValid() && weaponptr->GetWeaponInfo()->HasTag(tag))
+			{
+				return weaponptr.get();
+			}
+		}
+
+		return nullptr;
 	}
 
 	/**

@@ -24,6 +24,11 @@
 #undef max
 #undef clamp
 
+#ifdef EXT_DEBUG
+static ConVar convar_debug_ammo_search("sm_navbot_tf_debug_find_ammo", "0", FCVAR_GAMEDLL, "Enable find ammo debug");
+#endif // EXT_DEBUG
+
+
 class CTF2AmmoFilter : public UtilHelpers::IGenericFilter<CBaseEntity*>
 {
 public:
@@ -46,10 +51,18 @@ bool CTF2AmmoFilter::IsSelected(CBaseEntity* object)
 {
 	Vector position = UtilHelpers::getWorldSpaceCenter(object);
 	position = trace::getground(position);
-	this->ammoarea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA);
+	this->ammoarea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f);
 
 	if (this->ammoarea == nullptr)
 	{
+#ifdef EXT_DEBUG
+		if (convar_debug_ammo_search.GetBool())
+		{
+			META_CONPRINTF("CTF2AmmoFilter::IsSelected entity <%s> at %g %g %g skipped! NULL Nav Area! \n",
+				gamehelpers->GetEntityClassname(object), position.x, position.y, position.z);
+		}
+#endif
+
 		return false; // no nav area
 	}
 
@@ -62,8 +75,17 @@ bool CTF2AmmoFilter::IsSelected(CBaseEntity* object)
 
 	tfentities::HTFBaseEntity baseentity(object);
 
-	if (baseentity.IsEffectActive(EF_NODRAW))
+	// func_regenerate entities have NODRAW but are valid
+	if (UtilHelpers::FClassnameIs(object, "item_ammopack*") && baseentity.IsEffectActive(EF_NODRAW))
 	{
+#ifdef EXT_DEBUG
+		if (convar_debug_ammo_search.GetBool())
+		{
+			META_CONPRINTF("CTF2AmmoFilter::IsSelected entity <%s> at %g %g %g skipped! EF_NODRAW! \n",
+				gamehelpers->GetEntityClassname(object), position.x, position.y, position.z);
+		}
+#endif
+
 		return false;
 	}
 
@@ -108,6 +130,16 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 			if (filter.IsSelected(entity))
 			{
 				float cost = 0.0f;
+
+#ifdef EXT_DEBUG
+				if (convar_debug_ammo_search.GetBool())
+				{
+					float dcost = -1.0f;
+					const bool reachable = collector.IsReachable(filter.ammoarea, &dcost);
+					META_CONPRINTF("CTF2BotFindAmmoTask::IsPossible ENTITY <%s> IS %s WITH A COST OF %g\n",
+						gamehelpers->GetEntityClassname(entity), reachable ? "REACHABLE" : "UNREACHABLE", dcost);
+				}
+#endif
 
 				if (collector.IsReachable(filter.ammoarea, &cost))
 				{

@@ -43,6 +43,9 @@ This is a list of keys available for all mods.
 |needs_to_be_deployed_to_fire|If enabled, bots will deploy/scope-in before firing with this weapon.|boolean|
 |disable_dodge|If enabled, bots won't dodge enemy attacks while using this weapon.|boolean|
 |selection_max_range_override|If positive, overrides the maximum range value used in weapon selection.|float|
+|tag|Comma delimited list of weapon tags. Existing tags will be purged.|string list|
+|add_tags|Comma delimited list of weapon tags. This version doesn't clear the existing tags.|string list|
+|is_template|This is a template entry for variantof. More information below.|boolean|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
 
@@ -103,6 +106,20 @@ Bots identify weapons via their entity classname and economy index if available 
 This means on games like Team Fortress 2, you can have unique settings for weapons that share the same classname but not economy index like the stock Rocket Launcher and The Liberty Launcher.
 
 When searching for weapon information, economy index is searched first, then classname.
+
+## variantof
+
+To make the config file neater, you can use `"variantof"    "weapon_entry_name"` to inherit another weapon's properties.    
+This also reduces the amount of sycronization needed when updating properties shared by both weapons.    
+There are a few rules you must obey when using `variantof`:
+
+* The config entry you want the current to be a variant of must come first (be above it).
+* Any properties you want to modify/add must be listed **BELOW** the `variantof` KV pair.
+
+### Templates
+
+Entries can be turned into a template by adding the `"is_template"    "true"` property.    
+Template entries ignores some error checks and also won't be used by the bots.    
 
 ## Console Commands
 

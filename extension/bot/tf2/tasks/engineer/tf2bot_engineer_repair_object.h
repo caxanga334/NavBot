@@ -24,7 +24,7 @@ private:
 	CMeshNavigator m_nav;
 	bool m_sentry;
 
-	static constexpr auto get_object_melee_range() { return 64.0f; }
+	static constexpr auto get_object_melee_range() { return 80.0f; }
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_REPAIR_OBJECT_H_

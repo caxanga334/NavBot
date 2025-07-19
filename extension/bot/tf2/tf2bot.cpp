@@ -115,6 +115,7 @@ void CTF2Bot::FirstSpawn()
 	CBaseBot::FirstSpawn();
 
 	engine->SetFakeClientConVarValue(GetEdict(), "cl_autoreload", "1");
+	engine->SetFakeClientConVarValue(GetEdict(), "tf_medigun_autoheal", "1");
 }
 
 int CTF2Bot::GetMaxHealth() const
@@ -339,44 +340,9 @@ edict_t* CTF2Bot::GetFlagCaptureZoreToDeliver() const
 	return nullptr;
 }
 
-CBaseEntity* CTF2Bot::GetMySentryGun() const
+bool CTF2Bot::IsMyBuilding(CBaseEntity* entity)
 {
-	return m_mySentryGun.Get();
-}
-
-CBaseEntity* CTF2Bot::GetMyDispenser() const
-{
-	return m_myDispenser.Get();
-}
-
-CBaseEntity* CTF2Bot::GetMyTeleporterEntrance() const
-{
-	return m_myTeleporterEntrance.Get();
-}
-
-CBaseEntity* CTF2Bot::GetMyTeleporterExit() const
-{
-	return m_myTeleporterExit.Get();
-}
-
-void CTF2Bot::SetMySentryGun(CBaseEntity* entity)
-{
-	m_mySentryGun = entity;
-}
-
-void CTF2Bot::SetMyDispenser(CBaseEntity* entity)
-{
-	m_myDispenser = entity;
-}
-
-void CTF2Bot::SetMyTeleporterEntrance(CBaseEntity* entity)
-{
-	m_myTeleporterEntrance = entity;
-}
-
-void CTF2Bot::SetMyTeleporterExit(CBaseEntity* entity)
-{
-	m_myTeleporterExit = entity;
+	return GetEntity() == tf2lib::GetBuildingBuilder(entity);
 }
 
 bool CTF2Bot::IsCarryingObject() const

@@ -19,7 +19,7 @@ private:
 	CHandle<CBaseEntity> m_object;
 	CMeshNavigator m_nav;
 
-	static constexpr auto get_object_melee_range() { return 64.0f; }
+	static constexpr auto get_object_melee_range() { return 80.0f; }
 };
 
 

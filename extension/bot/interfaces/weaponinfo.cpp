@@ -51,6 +51,11 @@ bool CWeaponInfoManager::LoadConfigFile()
 
 	PostParseAnalysis();
 
+	// purge templates before inserting into the look up database
+	m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [](const std::unique_ptr<WeaponInfo>& obj) {
+		return obj->IsTemplateEntry();
+	}));
+
 	for (auto& info : m_weapons)
 	{
 		info->PostLoad();
@@ -103,6 +108,11 @@ void CWeaponInfoManager::PostParseAnalysis()
 		else
 		{
 			smutils->LogError(myself, "Duplicate Weapon Info entry found! \"%s\" ", entry.c_str());
+		}
+
+		if (weaponinfoptr->IsTemplateEntry())
+		{
+			continue; // ignore all checks below for templates
 		}
 
 		auto index = weaponinfoptr->GetItemDefIndex();
@@ -291,7 +301,24 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		return SourceMod::SMCResult_Continue;
 	}
 
-	if (strncmp(key, "classname", 9) == 0)
+	if (std::strcmp(key, "variantof") == 0)
+	{
+		const WeaponInfo* other = this->LookUpWeaponInfoByConfigEntryName(value);
+
+		if (!other)
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown config entry name \"%s\" used in \"variantof\" at line %u col %u!", value, states->line, states->col);
+		}
+		else
+		{
+			m_current->VariantOf(other);
+		}
+	}
+	else if (std::strcmp(key, "is_template") == 0)
+	{
+		m_current->SetIsTemplateEntry(UtilHelpers::StringToBoolean(value));
+	}
+	else if (strncmp(key, "classname", 9) == 0)
 	{
 		m_current->SetClassname(value);
 	}
@@ -331,15 +358,15 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	}
 	else if (std::strcmp(key, "primary_no_clip") == 0)
 	{
-		m_current->SetNoClip1(true);
+		m_current->SetNoClip1(UtilHelpers::StringToBoolean(value));
 	}
 	else if (std::strcmp(key, "secondary_no_clip") == 0)
 	{
-		m_current->SetNoClip2(true);
+		m_current->SetNoClip2(UtilHelpers::StringToBoolean(value));
 	}
 	else if (std::strcmp(key, "secondary_uses_primary_ammo_type") == 0)
 	{
-		m_current->SetSecondaryUsesPrimaryAmmoType(true);
+		m_current->SetSecondaryUsesPrimaryAmmoType(UtilHelpers::StringToBoolean(value));
 	}
 	else if (strncmp(key, "low_primary_ammo_threshold", 26) == 0)
 	{
@@ -373,7 +400,7 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	else if (strncmp(key, "use_secondary_attack_chance", 27) == 0)
 	{
 		int v = atoi(value);
-		v = std::clamp(v, 1, 100);
+		v = std::clamp(v, 0, 100);
 		m_current->SetChanceToUseSecondaryAttack(v);
 	}
 	else if (strncmp(key, "custom_ammo_property_name", 25) == 0)
@@ -466,6 +493,44 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		float v = atof(value);
 		m_current->SetSelectionMaxRangeOverride(v);
+	}
+	else if (std::strcmp(key, "tags") == 0)
+	{
+		m_current->ClearTags();
+
+		std::string szValue(value);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			if (m_current->HasTag(token))
+			{
+				smutils->LogError(myself, "[WEAPON INFO PARSER] Duplicate tag \"%s\" found on \"%s\" at line %u col %u!",
+					token.c_str(), m_current->GetConfigEntryName(), states->line, states->col);
+			}
+
+			m_current->AddTag(token);
+		}
+	}
+	else if (std::strcmp(key, "add_tags") == 0)
+	{
+		// add new tags while keeping the current ones (for when variantof is used)
+
+		std::string szValue(value);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			if (m_current->HasTag(token))
+			{
+				smutils->LogError(myself, "[WEAPON INFO PARSER] Duplicate tag \"%s\" found on \"%s\" at line %u col %u!",
+					token.c_str(), m_current->GetConfigEntryName(), states->line, states->col);
+			}
+
+			m_current->AddTag(token);
+		}
 	}
 	else if (!IsParserInWeaponAttackSection())
 	{

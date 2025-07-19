@@ -149,14 +149,26 @@ public:
 
 	bool IsInsideSpawnRoom() const;
 
-	CBaseEntity* GetMySentryGun() const;
-	CBaseEntity* GetMyDispenser() const;
-	CBaseEntity* GetMyTeleporterEntrance() const;
-	CBaseEntity* GetMyTeleporterExit() const;
-	void SetMySentryGun(CBaseEntity* entity);
-	void SetMyDispenser(CBaseEntity* entity);
-	void SetMyTeleporterEntrance(CBaseEntity* entity);
-	void SetMyTeleporterExit(CBaseEntity* entity);
+	CBaseEntity* GetMySentryGun() const { return m_mySentryGun.Get(); }
+	CBaseEntity* GetMyDispenser() const { return m_myDispenser.Get(); }
+	CBaseEntity* GetMyTeleporterEntrance() const { return m_myTeleporterEntrance.Get(); }
+	CBaseEntity* GetMyTeleporterExit() const { return m_myTeleporterExit.Get(); }
+
+	// Retrieves the bot's buildings. All parameters must be used.
+	void GetMyBuildings(CBaseEntity** sentry, CBaseEntity** dispenser, CBaseEntity** entrance, CBaseEntity** exit) const
+	{
+		*sentry = m_mySentryGun.Get();
+		*dispenser = m_myDispenser.Get();
+		*entrance = m_myTeleporterEntrance.Get();
+		*exit = m_myTeleporterExit.Get();
+	}
+
+	void SetMySentryGun(CBaseEntity* entity) { m_mySentryGun = entity; }
+	void SetMyDispenser(CBaseEntity* entity) { m_myDispenser = entity; }
+	void SetMyTeleporterEntrance(CBaseEntity* entity) { m_myTeleporterEntrance = entity; }
+	void SetMyTeleporterExit(CBaseEntity* entity) { m_myTeleporterExit = entity; }
+	// Returns true if this entity was built by this bot
+	bool IsMyBuilding(CBaseEntity* entity);
 
 	/**
 	 * @brief Gets the spy cloak meter percentage retrieved by reading the 'm_flCloakMeter' property.

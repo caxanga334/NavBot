@@ -28,6 +28,7 @@ private:
 	CountdownTimer m_patientScanTimer; // Time to scan for people to heal
 	CountdownTimer m_respondToCallsTimer;
 	CountdownTimer m_reviveMarkerScanTimer;
+	CountdownTimer m_crossbowHealTimer;
 	Vector m_moveGoal;
 	bool m_isMvM;
 

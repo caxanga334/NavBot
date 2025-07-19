@@ -44,7 +44,7 @@ bool CTF2HealthFilter::IsSelected(CBaseEntity* object)
 {
 	Vector position = UtilHelpers::getWorldSpaceCenter(object);
 	position = trace::getground(position);
-	this->healtharea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA);
+	this->healtharea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f);
 
 	if (this->healtharea == nullptr)
 	{
@@ -60,7 +60,7 @@ bool CTF2HealthFilter::IsSelected(CBaseEntity* object)
 
 	tfentities::HTFBaseEntity baseentity(object);
 
-	if (baseentity.IsEffectActive(EF_NODRAW))
+	if (UtilHelpers::FClassnameIs(object, "item_healthkit*") && baseentity.IsEffectActive(EF_NODRAW))
 	{
 		return false;
 	}

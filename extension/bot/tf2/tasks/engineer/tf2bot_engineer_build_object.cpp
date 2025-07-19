@@ -174,8 +174,6 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (m_reachedGoal)
 	{
-		bot->FindMyBuildings();
-
 		if (m_giveupTimer.IsElapsed())
 		{
 			return Done("Giving up after many failed build attempts!");
@@ -285,6 +283,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 void CTF2BotEngineerBuildObjectTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 {
 	bot->GetInventoryInterface()->SelectBestWeapon();
+	bot->FindMyBuildings(); // update buildings
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)

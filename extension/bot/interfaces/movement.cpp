@@ -754,9 +754,10 @@ bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingF
 {
 	CBaseBot* me = GetBot<CBaseBot>();
 
-	if (!me->IsMovingTowards2D(landingGoal, 0.9f))
+	// 60 degress tolerance ( t = cos(deg2rad(60)) )
+	if (!me->IsMovingTowards2D(landingGoal, 0.5f))
 	{
-		// Cheat: bot is not aliged, manually correct their velocity.c
+		// Cheat: bot is not aliged, manually correct their velocity.
 		Vector velocity = me->GetAbsVelocity();
 		velocity.x = GetRunSpeed() * landingForward.x;
 		velocity.y = GetRunSpeed() * landingForward.y;

@@ -78,9 +78,10 @@ namespace tf2botutils
 	 * @param out Waypoint to build if found.
 	 * @param area Nav area to build if found.
 	 * @param sentryGunWaypoint Waypoint to search for connections.
+	 * @param sentryGunPos Optional position of where the sentry would be in case it's not built yet.
 	 * @return true if a spot is found. false otherwise.
 	 */
-	bool FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint);
+	bool FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint, const Vector* sentryGunPos = nullptr);
 	/**
 	 * @brief Finds a spot to build a teleporter entrance.
 	 * @param bot Engineer bot.
@@ -95,9 +96,10 @@ namespace tf2botutils
 	 * @param out Waypoint to build if found.
 	 * @param area Nav area to build if found.
 	 * @param sentryGunWaypoint Waypoint to search for connections.
+	 * @param sentryGunPos Optional position of where the sentry would be in case it's not built yet.
 	 * @return true if a spot is found. false otherwise.
 	 */
-	bool FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint);
+	bool FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, CTFNavArea** area, const CTFWaypoint* sentryGunWaypoint, const Vector* sentryGunPos = nullptr);
 	/**
 	 * @brief Finds a player for medic bots to heal.
 	 * @param bot The medic bot.

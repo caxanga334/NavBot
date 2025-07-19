@@ -13,6 +13,7 @@
 #include <bot/tf2/tasks/tf2bot_attack.h>
 #include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_revive_task.h"
+#include "tf2bot_medic_crossbow_heal_task.h"
 #include "tf2bot_medic_heal_task.h"
 
 #undef max
@@ -32,6 +33,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 
 	m_isMvM = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_MVM;
 	m_reviveMarkerScanTimer.Start(10.0f);
+	m_crossbowHealTimer.Start(3.0f);
 
 	return Continue();
 }
@@ -40,6 +42,31 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	UpdateFollowTarget(bot);
 	UpdateHealTarget(bot);
+
+	if (m_crossbowHealTimer.IsElapsed())
+	{
+		const CBotWeapon* crossbow = bot->GetInventoryInterface()->FindWeaponByClassname("tf_weapon_crossbow");
+
+		m_crossbowHealTimer.Start(3.0f);
+
+		if (crossbow && crossbow->GetBaseCombatWeapon().GetClip1() >= 1)
+		{
+			CBaseEntity* heal = CTF2BotMedicCrossbowHealTask::IsPossible(bot, crossbow);
+
+			if (heal)
+			{
+				return PauseFor(new CTF2BotMedicCrossbowHealTask(heal), "Healing teammate with the crossbow!");
+			}
+		}
+		else
+		{
+			if (!crossbow)
+			{
+				// doesn't own a crossbow
+				m_crossbowHealTimer.Start(120.0f);
+			}
+		}
+	}
 
 	if (m_isMvM && m_reviveMarkerScanTimer.IsElapsed())
 	{
@@ -152,6 +179,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 			if (uber > 0.9999f)
 			{
 				bot->GetControlInterface()->PressSecondaryAttackButton();
+				m_crossbowHealTimer.Start(20.0f);
 			}
 			else
 			{
@@ -428,6 +456,11 @@ bool CTF2BotMedicHealTask::IsPatientStable(CTF2Bot* bot, CBaseEntity* patient)
 
 	if (tf2lib::GetPlayerHealthPercentage(entindex) < 0.99f)
 	{
+		if (tf2lib::GetPlayerHealthPercentage(entindex) < 0.6f)
+		{
+			m_crossbowHealTimer.Start(2.0f); // don't use the crossbow if my current heal target is low on health
+		}
+
 		return false;
 	}
 

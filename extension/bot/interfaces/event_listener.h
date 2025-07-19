@@ -81,6 +81,7 @@ public:
 	virtual void OnVoiceCommand(CBaseEntity* subject, int command); // When a player uses voice commands (mod specific)
 	virtual void OnTruceChanged(const bool enabled); // When the truce status has changed
 	virtual void OnSquadEvent(SquadEventType evtype); // Squad events
+	virtual void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur); // An object was sapped (TF2)
 };
 
 inline void IEventListener::OnDebugMoveToHostCommand()
@@ -391,6 +392,19 @@ inline void IEventListener::OnSquadEvent(SquadEventType evtype)
 		for (auto listener : *vec)
 		{
 			listener->OnSquadEvent(evtype);
+		}
+	}
+}
+
+inline void IEventListener::OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnObjectSapped(owner, saboteur);
 		}
 	}
 }

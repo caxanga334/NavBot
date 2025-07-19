@@ -82,7 +82,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	if (bot->GetRangeTo(object.WorldSpaceCenter()) > get_object_melee_range())
+	const float range = bot->GetRangeTo(object.WorldSpaceCenter());
+
+	if (range > get_object_melee_range())
 	{
 		if (!m_nav.IsValid() || m_nav.GetAge() > 3.0f)
 		{
@@ -95,6 +97,12 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 
 		m_nav.Update(bot);
+
+		// crouch early for precise movement when going for teleporters
+		if (std::strcmp(gamehelpers->GetEntityClassname(m_object.Get()), "obj_teleporter") == 0 && range <= 256.0f)
+		{
+			bot->GetControlInterface()->PressCrouchButton();
+		}
 	}
 	else
 	{

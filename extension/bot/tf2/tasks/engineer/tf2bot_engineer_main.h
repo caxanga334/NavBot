@@ -18,12 +18,9 @@ public:
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
 	const char* GetName() const override { return "EngineerMain"; }
-
-	static constexpr auto HELP_ALLY_BUILDING_MAX_RANGE_SQR = 1024.f * 1024.0f;
 private:
-	CountdownTimer m_friendlyBuildingScan;
-
-	CBaseEntity* ScanAllyBuildings(CTF2Bot* me, bool &is_upgrade);
+	CountdownTimer m_repairCheckTimer;
+	CountdownTimer m_updateBuildingsTimer;
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_MAIN_H_

@@ -587,6 +587,7 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnVoiceCommand(BotClass* bot, CBaseEntity* subject, int command) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnTruceChanged(BotClass* bot, const bool enabled) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSquadEvent(BotClass* bot, SquadEventType evtype) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnObjectSapped(BotClass* bot, CBaseEntity* owner, CBaseEntity* saboteur) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1129,6 +1130,11 @@ private:
 	void OnSquadEvent(SquadEventType evtype) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSquadEvent, evtype);
+	}
+
+	void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnObjectSapped, owner, saboteur);
 	}
 };
 

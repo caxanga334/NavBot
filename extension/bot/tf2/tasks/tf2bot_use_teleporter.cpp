@@ -22,38 +22,40 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 
 	UtilHelpers::CEntityEnumerator enumerator;
 
-	Vector origin = bot->GetAbsOrigin();
-	Vector mins = origin + Vector(-600.0f, -600.0f, -32.0f);
-	Vector maxs = origin + Vector(600.0f, 600.0f, 72.0f);
-
-	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
 	CBaseEntity* entrance = nullptr;
 	CBaseEntity* exit = nullptr;
 
-	for (CBaseEntity* entity : enumerator.GetEntityVector())
-	{
-		if (UtilHelpers::FClassnameIs(entity, "obj_teleporter"))
+	auto func = [&entrance, &exit, &bot](int index, edict_t* edict, CBaseEntity* entity) {
+		tfentities::HObjectTeleporter tele(entity);
+
+		if (tele.IsSapped() || tele.GetPercentageConstructed() < 1.0f || tele.IsBeingCarried() || tele.IsPlacing() ||
+			tele.GetMode() != TeamFortress2::TFObjectMode::TFObjectMode_Entrance ||
+			tele.GetState() != TeamFortress2::TeleporterState::TELEPORTER_STATE_READY ||
+			tele.GetTFTeam() != bot->GetMyTFTeam())
 		{
-			tfentities::HObjectTeleporter tele(entity);
-
-			if (tele.IsSapped() || tele.GetPercentageConstructed() < 1.0f || tele.IsBeingCarried() || tele.IsPlacing() ||
-				tele.GetMode() != TeamFortress2::TFObjectMode::TFObjectMode_Entrance || 
-				tele.GetState() != TeamFortress2::TeleporterState::TELEPORTER_STATE_READY ||
-				tele.GetTFTeam() != bot->GetMyTFTeam())
-			{
-				continue;
-			}
-
-			// Scouts only uses level 3 teleporters
-			if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Scout && tele.GetLevel() < 3)
-			{
-				continue;
-			}
-
-			entrance = entity;
-			exit = tf2lib::GetMatchingTeleporter(entity);
+			return true;
 		}
-	}
+
+		// Scouts only uses level 3 teleporters
+		if (bot->GetDifficultyProfile()->GetTeamwork() > 30 && bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Scout && tele.GetLevel() < 3)
+		{
+			return true;
+		}
+		
+		// too far
+		if (bot->GetRangeTo(tele.WorldSpaceCenter()) > 1000.0f)
+		{
+			return true;
+		}
+
+		entrance = entity;
+		exit = tf2lib::GetMatchingTeleporter(entity);
+		return false; // stop on the first teleporter found
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("obj_teleporter", func);
+
+	Vector origin = bot->GetAbsOrigin();
 
 	if (!entrance || !exit) { return false; }
 
@@ -65,7 +67,7 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 	constexpr auto TELEPORTER_EXTRA_DIST = 300.0f; // artificial distance added to the teleporter distance to goal
 	const Vector& goal = nav->GetPathDestination();
 	const Vector& telepos = UtilHelpers::getEntityOrigin(exit);
-	float distBotToGoal = (bot->GetAbsOrigin() - goal).Length();
+	float distBotToGoal = (origin - goal).Length();
 	float distTPToGoal = (telepos - goal).Length() + TELEPORTER_EXTRA_DIST;
 
 	if (distTPToGoal < distBotToGoal)

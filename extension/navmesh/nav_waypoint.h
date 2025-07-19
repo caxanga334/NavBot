@@ -143,6 +143,8 @@ public:
 	void Use(CBaseBot* user, const float duration = 10.0f) const;
 	// True if a bot is using this waypoint.
 	bool IsBeingUsed() const;
+	// True if the given bot is currently using this waypoint
+	bool IsCurrentUser(CBaseBot* me) const;
 	/**
 	 * @brief Notify that this waypoint is no longer being used.
 	 * @param user Bot that was using this waypoint.
