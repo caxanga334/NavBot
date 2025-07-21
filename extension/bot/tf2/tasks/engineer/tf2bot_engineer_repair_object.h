@@ -23,6 +23,7 @@ private:
 	CHandle<CBaseEntity> m_object;
 	CMeshNavigator m_nav;
 	bool m_sentry;
+	bool m_useRescueRanger;
 
 	static constexpr auto get_object_melee_range() { return 80.0f; }
 };

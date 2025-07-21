@@ -10,7 +10,9 @@
 #include <sdkports/sdk_takedamageinfo.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/interfaces/path/chasenavigator.h>
 #include <bot/bot_shared_convars.h>
+#include <bot/tf2/tasks/general/tf2bot_remove_sapper_from_object_task.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
@@ -276,6 +278,49 @@ TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnTruceChanged(CTF2Bot* bo
 	if (enabled)
 	{
 		return TrySwitchTo(new CTF2BotScenarioTask, PRIORITY_HIGH, "Truce enabled, restarting scenario behavior!");
+	}
+
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnObjectSapped(CTF2Bot* bot, CBaseEntity* owner, CBaseEntity* saboteur)
+{
+	// Engineers already handle this in their behavior
+	if (bot->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Engineer)
+	{
+		return TryContinue();
+	}
+
+	if (bot->GetDifficultyProfile()->GetGameAwareness() < 10 || bot->GetDifficultyProfile()->GetTeamwork() < 20)
+	{
+		return TryContinue();
+	}
+
+	if (CTF2BotRemoveObjectSapperTask::IsPossible(bot))
+	{
+		CBaseEntity* object = CTF2BotRemoveObjectSapperTask::FindNearestSappedObject(bot);
+
+		if (object)
+		{
+			m_respondToTeamMatesTimer.Start(30.0f); // ignore voice commands for some time
+			return TryPauseFor(new CTF2BotRemoveObjectSapperTask(object), EventResultPriorityType::PRIORITY_MEDIUM, "Removing sapper from teammate's building.");
+		}
+	}
+	else
+	{
+		CBaseEntity* object = CTF2BotRemoveObjectSapperTask::FindNearestSappedObject(bot);
+
+		if (object)
+		{
+			const Vector& origin = UtilHelpers::getEntityOrigin(object);
+
+			if ((origin - bot->GetAbsOrigin()).Length() <= bot->GetSensorInterface()->GetMaxHearingRange())
+			{
+				/* bot can't remove sappers (lacks weapon for it), just go to the sapped building position and help the engineer fight the spy */
+				m_respondToTeamMatesTimer.Start(30.0f);
+				return TryPauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, origin, "InvestigatingSappedObject", true, true, true), EventResultPriorityType::PRIORITY_MEDIUM, "Investigating sapped teammate's building.");
+			}
+		}
 	}
 
 	return TryContinue();

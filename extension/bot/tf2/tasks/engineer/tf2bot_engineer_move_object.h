@@ -31,6 +31,7 @@ private:
 	CountdownTimer m_changeAngleTimer;
 	bool m_hasBuilding;
 	bool m_canDestroy;
+	bool m_useRescueRanger;
 };
 
 

@@ -84,6 +84,24 @@ const CTF2BotSpyMonitor::KnownSpy& CTF2BotSpyMonitor::GetKnownSpy(CBaseEntity* s
 	return ret;
 }
 
+const CTF2BotSpyMonitor::KnownSpy* CTF2BotSpyMonitor::DetectSpy(CBaseEntity* spy)
+{
+	for (auto& known : m_knownspylist)
+	{
+		if (known(spy))
+		{
+			known.ForceDetection();
+			return &known;
+		}
+	}
+
+	// not found
+	auto& known = m_knownspylist.emplace_back(spy);
+	known.Update(GetBot<CTF2Bot>());
+	known.ForceDetection();
+	return &known;
+}
+
 CTF2BotSpyMonitor::KnownSpy::KnownSpy(edict_t* spy) :
 	m_handle(spy->GetIServerEntity()->GetBaseEntity())
 {

@@ -72,6 +72,8 @@ private:
 	int m_myteam;
 	std::vector<std::pair<int, CBaseEntity*>> m_allyObjects;
 	Vector m_myOrigin;
+	float m_maxHelpAllyRange;
+	static constexpr float MOVE_BUILDING_TIMER_EXTRA_TIME = 40.0f; // additional time to add to the move timer when moving buildings (gives time for bots to reach their destination)
 
 	void ForceMoveBuildings(const float delay)
 	{

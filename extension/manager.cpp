@@ -838,7 +838,8 @@ static std::string s_debugoptionsnames[] = {
 	{ "EVENTS" },
 	{ "MOVEMENT" },
 	{ "ERRORS" },
-	{ "MISC" }
+	{ "MISC" },
+	{ "COMBAT" }
 };
 
 static int SMNavBotDebugCommand_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
@@ -886,7 +887,7 @@ CON_COMMAND_F_COMPLETION(sm_navbot_debug, "Toggles between debug modes", FCVAR_C
 {
 	if (args.ArgC() <= 1)
 	{
-		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS, MISC");
+		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS, MISC, COMBAT");
 		rootconsole->ConsolePrint("Usage: sm_navbot_debug <OPTION1> <OPTION2> ...");
 		return;
 	}
@@ -946,6 +947,11 @@ CON_COMMAND_F_COMPLETION(sm_navbot_debug, "Toggles between debug modes", FCVAR_C
 		{
 			extmanager->ToggleDebugOption(BOTDEBUG_MISC);
 			rootconsole->ConsolePrint("Toggle Debugging Bot Miscellaneous functions");
+		}
+		else if (strncasecmp(option, "COMBAT", 6) == 0)
+		{
+			extmanager->ToggleDebugOption(BOTDEBUG_COMBAT);
+			rootconsole->ConsolePrint("Toggle Debugging Bot Combat functions");
 		}
 		else
 		{

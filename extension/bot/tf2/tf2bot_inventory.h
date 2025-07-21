@@ -27,6 +27,8 @@ public:
 
 		return weapon;
 	}
+	// Returns a weapon interface pointer to the rescue ranger, NULL if the bot doesn't own it
+	const CTF2BotWeapon* GetTheRescueRanger() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_shotgun_building_rescue")); }
 
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override { return new CTF2BotWeapon(weapon); }

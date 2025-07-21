@@ -31,6 +31,10 @@ public:
 	CBaseEntity* GetEntity() const { return m_handle.Get(); }
 	// Weapon's entity index
 	int GetIndex() const { return m_entindex; }
+	// Returns true if this weapon matches the given classname
+	bool IsWeapon(const char* classname) const;
+	// Returns true if this weapon matches the given econ index
+	bool IsWeapon(const int econindex) const { return econindex == m_econindex; }
 	/**
 	 * @brief Checks if this weapon is running low on ammo.
 	 * @param owner Bot that owns this weapon.

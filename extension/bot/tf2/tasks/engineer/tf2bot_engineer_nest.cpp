@@ -56,6 +56,7 @@ CTF2BotEngineerNestTask::CTF2BotEngineerNestTask() :
 	m_sentryKills = 0;
 	m_teleUses = 0;
 	m_myteam = 0;
+	m_maxHelpAllyRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerHelpAllyMaxRange();
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -126,7 +127,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (buildTask)
 	{
-		m_moveTimer.Start(60.0f);
+		m_moveTimer.Start(CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerMoveCheckInterval());
 		return PauseFor(buildTask, "Taking care of my own buildings!");
 	}
 
@@ -281,7 +282,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot
 				[[fallthrough]];
 			case TeamFortress2::VC_GORIGHT:
 			{
-				ForceMoveBuildings(10.0f);
+				ForceMoveBuildings(2.0f);
 				m_respondToVCTimer.Start(15.0f);
 				break;
 			}
@@ -334,7 +335,7 @@ bool CTF2BotEngineerNestTask::operator()(int index, edict_t* edict, CBaseEntity*
 	{
 		tfentities::HBaseObject object(entity);
 
-		if ((m_myOrigin - object.WorldSpaceCenter()).Length() > 1000.0f)
+		if ((m_myOrigin - object.WorldSpaceCenter()).Length() > m_maxHelpAllyRange)
 		{
 			return true;
 		}
@@ -630,14 +631,14 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 	if (m_moveTimer.IsElapsed())
 	{
 		// TO-DO: add settings for this
-		m_moveTimer.Start(60.0f); 
+		m_moveTimer.Start(settings->GetEngineerMoveCheckInterval()); 
 
 		if (m_mysentry)
 		{
 			int currentKills = tf2lib::GetSentryKills(m_mysentry) + tf2lib::GetSentryAssists(m_mysentry);
 
 			// todo settings
-			if (currentKills - 3 <= m_sentryKills)
+			if (currentKills - settings->GetEngineerSentryKillAssistsThreshold() <= m_sentryKills)
 			{
 				if (me->IsDebugging(BOTDEBUG_TASKS))
 				{
@@ -647,7 +648,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 				if (tf2botutils::FindSpotToBuildSentryGun(me, &buildwpt, &buildarea))
 				{
 					// give some time to reach the new location
-					m_moveTimer.Start(120.0f);
+					m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() + MOVE_BUILDING_TIMER_EXTRA_TIME);
 					m_sentryKills = currentKills;
 					m_checkDispenser = true;
 					m_checkEntrance = true;
@@ -754,7 +755,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 		{
 			int uses = tf2lib::GetTeleporterUses(m_myentrance);
 
-			if (uses - 5 > m_teleUses)
+			if (uses - settings->GetEngineerTeleporterUsesThreshold() > m_teleUses)
 			{
 				if (me->IsDebugging(BOTDEBUG_TASKS))
 				{

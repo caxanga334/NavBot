@@ -53,3 +53,7 @@ These settings are only used in Team Fortress 2.
 | entrance_spawn_range | Maximum distance between the telepoter entrance and the active team spawn point. | 1500 - 6000 | 2048 |
 | mvm_sentry_to_bomb_range | Maximum distance to search for spots to build a sentry gun in MvM. | 1000 - 3000 | 1500 |
 | engineer_destroy_travel_range | When moving buildings, if the travel distance to reach the building is larger than this, destroy it instead. | 1000 - 10000 | 4500 |
+| engineer_move_check_interval | How frequently in seconds engineers check if they should move their buildings. | 30 - 180 | 60 |
+| engineer_sentry_killassist_threshold | If a sentry hasn't got at least this many kills plus assists between two move checks, bots will move them. | 1 - 30 | 5 |
+| engineer_teleporter_uses_threshold | If a teleporter wasn't used at least this many times between two move checks, bots will move them. | 1 - 10 | 4 |
+| engineer_help_ally_max_range | Ally building maximum search range. | 500 - 4000 | 1500 |

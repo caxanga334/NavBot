@@ -24,6 +24,10 @@ public:
 		mvm_sentry_to_bomb_range = 1500.0f;
 		medic_patient_scan_range = 1024.0f;
 		engineer_destroy_travel_range = 4500.0f;
+		engineer_move_check_interval = 60.0f;
+		engineer_sentry_killassist_threshold = 5;
+		engineer_teleporter_uses_threshold = 4;
+		engineer_help_ally_max_range = 1500.0f;
 	}
 
 	void SetEngineerNestDispenserRange(float range) { engineer_nest_dispenser_range = range; }
@@ -32,6 +36,10 @@ public:
 	void SetMvMSentryToBombRange(float range) { mvm_sentry_to_bomb_range = range; }
 	void SetMedicPatientScanRange(float range) { medic_patient_scan_range = range; }
 	void SetEngineerMoveDestroyBuildingRange(float range) { engineer_destroy_travel_range = range; }
+	void SetEngineerMoveCheckInterval(float value) { engineer_move_check_interval = value; }
+	void SetEngineerSentryKillAssistsThreshold(int value) { engineer_sentry_killassist_threshold = value; }
+	void SetEngineerTeleporterUsesThreshold(int value) { engineer_teleporter_uses_threshold = value; }
+	void SetEngineerHelpAllyMaxRange(float value) { engineer_help_ally_max_range = value; }
 
 	float GetEngineerNestDispenserRange() const { return engineer_nest_dispenser_range; }
 	float GetEngineerNestExitRange() const { return engineer_nest_exit_range; }
@@ -39,6 +47,10 @@ public:
 	float GetMvMSentryToBombRange() const { return mvm_sentry_to_bomb_range; }
 	float GetMedicPatientScanRange() const { return medic_patient_scan_range; }
 	float GetEngineerMoveDestroyBuildingRange() const { return engineer_destroy_travel_range; }
+	float GetEngineerMoveCheckInterval() const { return engineer_move_check_interval; }
+	int GetEngineerSentryKillAssistsThreshold() const { return engineer_sentry_killassist_threshold; }
+	int GetEngineerTeleporterUsesThreshold() const { return engineer_teleporter_uses_threshold; }
+	float GetEngineerHelpAllyMaxRange() const { return engineer_help_ally_max_range; }
 
 protected:
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
@@ -50,6 +62,10 @@ private:
 	float mvm_sentry_to_bomb_range; // MvM: maximum sentry build distance
 	float medic_patient_scan_range; // distance medics will scan for patients
 	float engineer_destroy_travel_range; // When moving buildings, if the travel distance is larger than this, destroy it instead
+	float engineer_move_check_interval;
+	int engineer_sentry_killassist_threshold;
+	int engineer_teleporter_uses_threshold;
+	float engineer_help_ally_max_range;
 };
 
 class CTF2Bot;

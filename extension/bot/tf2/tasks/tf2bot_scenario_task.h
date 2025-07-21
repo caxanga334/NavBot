@@ -13,6 +13,7 @@ public:
 
 	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 	TaskEventResponseResult<CTF2Bot> OnTruceChanged(CTF2Bot* bot, const bool enabled) override;
+	TaskEventResponseResult<CTF2Bot> OnObjectSapped(CTF2Bot* bot, CBaseEntity* owner, CBaseEntity* saboteur) override;
 
 	const char* GetName() const override { return "Scenario"; }
 private:

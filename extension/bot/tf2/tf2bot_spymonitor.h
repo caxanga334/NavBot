@@ -51,6 +51,7 @@ public:
 		bool IsHostile() const { return m_detectionLevel == DETECTION_BLOWN; }
 		SpyDetectionLevel GetDetectionLevel() const { return m_detectionLevel; }
 		void NotifyTouch() { OnDetected(); }
+		void ForceDetection() { OnDetected(); }
 
 	private:
 		CHandle<CBaseEntity> m_handle;
@@ -72,6 +73,8 @@ public:
 
 	const KnownSpy& GetKnownSpy(edict_t* spy);
 	const KnownSpy& GetKnownSpy(CBaseEntity* spy);
+	// Immediately recognize and detect a spy
+	const KnownSpy* DetectSpy(CBaseEntity* spy);
 
 private:
 	std::vector<KnownSpy> m_knownspylist;

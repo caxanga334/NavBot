@@ -731,10 +731,18 @@ void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 	}
 	else
 	{
+		if (IsDebugging(BOTDEBUG_COMBAT))
+		{
+			DebugPrintToConsole(255, 127, 0, "%s CAN'T FIRE WEAPON AT ENEMY <%s> RANGE %g WEAPON <%s> : %i : <%s> IS %s\n", 
+				GetDebugIdentifier(), enemy->GetEntityClassname().c_str(), range, weapon->GetClassname().c_str(),
+				weapon->GetWeaponEconIndex(), weapon->GetWeaponInfo()->GetConfigEntryName(),
+				weapon->IsLoaded() ? "LOADED" : "NOT LOADED");
+		}
+
 		if (doAim)
 		{
 			// simply keep it aimed using the last result from AimWeaponAtEnemy
-			control->AimAt(enemy->GetEntity(), IPlayerController::LOOK_COMBAT, 1.0f, "Keeping weapon aimed at enemy while reloading!");
+			control->AimAt(enemy->GetEntity(), IPlayerController::LOOK_COMBAT, 1.0f, "Keeping weapon aimed at enemy.");
 		}
 
 		ReloadIfNeeded(weapon);
@@ -790,13 +798,7 @@ bool CBaseBot::IsAbleToDodgeEnemies(const CKnownEntity* threat) const
 	const CBotWeapon* activeWeapon = GetInventoryInterface()->GetActiveBotWeapon();
 
 	// Don't dodge if I'm not using a combat weapon
-	if (!activeWeapon || !activeWeapon->GetWeaponInfo()->IsCombatWeapon())
-	{
-		return false;
-	}
-
-	// Don't dodge while using this weapon
-	if (!activeWeapon->GetWeaponInfo()->IsAllowedToDodge())
+	if (!activeWeapon || !activeWeapon->GetWeaponInfo()->IsCombatWeapon() || !activeWeapon->GetWeaponInfo()->IsAllowedToDodge())
 	{
 		return false;
 	}

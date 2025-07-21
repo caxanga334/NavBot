@@ -5,6 +5,7 @@
 #include <extension.h>
 #include <util/librandom.h>
 #include <util/helpers.h>
+#include <coordsize.h>
 #include "profile.h"
 
 #undef min
@@ -17,8 +18,8 @@ void DifficultyProfile::RandomizeProfileValues()
 	game_awareness = randomgen->GetRandomInt<int>(0, 100);
 	aimspeed = randomgen->GetRandomReal<float>(30.0f, 4000.0f);
 	fov = randomgen->GetRandomInt<int>(60, 179);
-	maxvisionrange = randomgen->GetRandomInt<int>(1024, 16384);
-	maxhearingrange = randomgen->GetRandomInt<int>(256, 8192);
+	maxvisionrange = randomgen->GetRandomInt<int>(1024, MAX_COORD_INTEGER);
+	maxhearingrange = randomgen->GetRandomInt<int>(256, MAX_COORD_INTEGER / 4); // use sane random hearing distances
 	minrecognitiontime = randomgen->GetRandomReal<float>(0.0001f, 1.0f);
 	predict_projectiles = randomgen->GetRandomChance(); // GetRandomChance defauls to 50% chance for true
 	allow_headshots = randomgen->GetRandomChance();
@@ -238,10 +239,10 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	{
 		int v = atoi(value);
 
-		if (v < 1024 || v > 16384)
+		if (v < 1024 || v > MAX_COORD_INTEGER)
 		{
-			v = std::clamp(v, 1024, 16384);
-			smutils->LogError(myself, "Max vision range should be between 1024 and 16384! %s <%s> at line %i col %i", key, value, states->line, states->col);
+			v = std::clamp(v, 1024, MAX_COORD_INTEGER);
+			smutils->LogError(myself, "Max vision range should be between 1024 and %i! %s <%s> at line %i col %i", MAX_COORD_INTEGER, key, value, states->line, states->col);
 		}
 
 		m_current->SetMaxVisionRange(v);
@@ -250,10 +251,10 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	{
 		int v = atoi(value);
 
-		if (v < 256 || v > 16384)
+		if (v < 256 || v > MAX_COORD_INTEGER)
 		{
-			v = std::clamp(v, 256, 16384);
-			smutils->LogError(myself, "Max hearing range should be between 256 and 16384! %s <%s> at line %i col %i", key, value, states->line, states->col);
+			v = std::clamp(v, 256, MAX_COORD_INTEGER);
+			smutils->LogError(myself, "Max hearing range should be between 256 and %i! %s <%s> at line %i col %i", MAX_COORD_INTEGER, key, value, states->line, states->col);
 		}
 
 		m_current->SetMaxHearingRange(v);

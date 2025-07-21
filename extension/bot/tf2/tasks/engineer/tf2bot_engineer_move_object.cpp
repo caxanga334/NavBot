@@ -18,6 +18,7 @@ CTF2BotEngineerMoveObjectTask::CTF2BotEngineerMoveObjectTask(CBaseEntity* object
 	m_building = object;
 	m_hasBuilding = false;
 	m_canDestroy = allowDestroying;
+	m_useRescueRanger = false;
 }
 
 CTF2BotEngineerMoveObjectTask::CTF2BotEngineerMoveObjectTask(CBaseEntity* object, CTFWaypoint* goal, const bool allowDestroying)
@@ -32,6 +33,7 @@ CTF2BotEngineerMoveObjectTask::CTF2BotEngineerMoveObjectTask(CBaseEntity* object
 
 	m_hasBuilding = false;
 	m_canDestroy = allowDestroying;
+	m_useRescueRanger = false;
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -57,6 +59,14 @@ TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskStart(CTF2Bot* bot, AIT
 		}
 	}
 
+	const CTF2BotWeapon* rescueranger = bot->GetInventoryInterface()->GetTheRescueRanger();
+
+	if (rescueranger && bot->GetAmmoOfIndex(TeamFortress2::TF_AMMO_METAL) > 100)
+	{
+		bot->SelectWeapon(rescueranger->GetEntity());
+		m_useRescueRanger = true;
+	}
+
 	return Continue();
 }
 
@@ -75,6 +85,28 @@ TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 		m_nav.Update(bot, goal, cost);
 
+		if (m_useRescueRanger)
+		{
+			const CTF2BotWeapon* activetfweapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
+
+			if (activetfweapon)
+			{
+				if (activetfweapon->IsTheRescueRanger() && bot->GetRangeTo(goal) > 500.0f && bot->IsLineOfFireClear(goal))
+				{
+					bot->GetControlInterface()->AimAt(goal, IPlayerController::LOOK_PRIORITY, 1.0f, "Looking at object to pick it!");
+
+					if (bot->GetControlInterface()->IsAimOnTarget())
+					{
+						bot->GetControlInterface()->PressSecondaryAttackButton();
+					}
+				}
+				else
+				{
+					bot->SelectWeapon(activetfweapon->GetEntity());
+				}
+			}
+		}
+
 		if (bot->GetRangeTo(object) < 96.0f)
 		{
 			bot->GetControlInterface()->AimAt(goal, IPlayerController::LOOK_PRIORITY, 1.0f, "Looking at object to pick it!");
@@ -92,6 +124,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskUpdate(CTF2Bot* bot)
 			if (UtilHelpers::FClassnameIs(weapon, "tf_weapon_builder"))
 			{
 				m_hasBuilding = true;
+				m_nav.Invalidate();
 			}
 		}
 

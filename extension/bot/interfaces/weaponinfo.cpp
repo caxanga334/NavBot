@@ -8,7 +8,6 @@
 #include <manager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
-
 #include "weaponinfo.h"
 
 #undef min
@@ -584,25 +583,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		}
 		else if (strncmp(key, "melee", 5) == 0)
 		{
-			if (strncmp(value, "true", 4) == 0)
-			{
-				m_current->GetAttackInfoForEditing(type)->SetMelee(true);
-			}
-			else
-			{
-				m_current->GetAttackInfoForEditing(type)->SetMelee(false);
-			}
+			m_current->GetAttackInfoForEditing(type)->SetMelee(UtilHelpers::StringToBoolean(value));
 		}
 		else if (strncmp(key, "explosive", 7) == 0)
 		{
-			if (strncmp(value, "true", 4) == 0)
-			{
-				m_current->GetAttackInfoForEditing(type)->SetExplosive(true);
-			}
-			else
-			{
-				m_current->GetAttackInfoForEditing(type)->SetExplosive(false);
-			}
+			m_current->GetAttackInfoForEditing(type)->SetExplosive(UtilHelpers::StringToBoolean(value));
 		}
 		else if (strncmp(key, "hold_button_time", 16) == 0)
 		{

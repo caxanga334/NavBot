@@ -62,6 +62,11 @@ edict_t* CBotWeapon::GetEdict() const
 	return reinterpret_cast<IServerEntity*>(m_handle.Get())->GetNetworkable()->GetEdict();
 }
 
+bool CBotWeapon::IsWeapon(const char* classname) const
+{
+	return std::strcmp(m_classname.c_str(), classname) == 0;
+}
+
 bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 {
 	/* 

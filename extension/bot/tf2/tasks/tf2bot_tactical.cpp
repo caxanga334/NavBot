@@ -171,3 +171,16 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 	return TryContinue(PRIORITY_DONT_CARE);
 }
 
+TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnObjectSapped(CTF2Bot* bot, CBaseEntity* owner, CBaseEntity* saboteur)
+{
+	if (saboteur && bot->GetDifficultyProfile()->GetGameAwareness() > 10 && tf2lib::GetEntityTFTeam(saboteur) != bot->GetMyTFTeam() && bot->GetRangeTo(saboteur) <= bot->GetSensorInterface()->GetMaxHearingRange())
+	{
+		CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(saboteur);
+		known->UpdateHeard();
+
+		bot->GetSpyMonitorInterface()->DetectSpy(saboteur);
+	}
+
+	return TryContinue(PRIORITY_DONT_CARE);
+}
+

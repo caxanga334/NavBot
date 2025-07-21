@@ -12,6 +12,7 @@ CTF2BotEngineerRepairObjectTask::CTF2BotEngineerRepairObjectTask(CBaseEntity* ob
 	m_object(object)
 {
 	m_sentry = false;
+	m_useRescueRanger = false;
 }
 
 TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -24,6 +25,13 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskStart(CTF2Bot* bot, A
 	if (UtilHelpers::FClassnameIs(m_object.Get(), "obj_sentrygun"))
 	{
 		m_sentry = true;
+	}
+
+	const CTF2BotWeapon* rescueranger = bot->GetInventoryInterface()->GetTheRescueRanger();
+
+	if (rescueranger)
+	{
+		m_useRescueRanger = true;
 	}
 
 	return Continue();
@@ -48,7 +56,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	tfentities::HBaseObject object(m_object.Get());
 
-	bool needsRepair = object.GetHealthPercentage() < 0.9999f || object.IsSapped();
+	bool needsRepair = object.GetHealthPercentage() < 0.99f || object.IsSapped();
 
 	if (m_sentry)
 	{
@@ -68,21 +76,50 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Object is repaied!");
 	}
 
-	/* TODO position behind sentry if under attack by enemy */
+	auto myweapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
+	Vector center = object.WorldSpaceCenter();
+	const float range = bot->GetRangeTo(center);
 
-	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
-
-	if (myweapon && myweapon->GetWeaponInfo()->GetSlot() != static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee))
+	if (myweapon)
 	{
-		CBaseEntity* wrench = bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee);
-
-		if (wrench)
+		if (m_useRescueRanger && range > 256.0f && bot->IsLineOfFireClear(center) && object.GetHealthPercentage() < 0.99f && !object.IsSapped())
 		{
-			bot->SelectWeapon(wrench);
+			if (!myweapon->IsTheRescueRanger())
+			{
+				const CTF2BotWeapon* rescueranger = bot->GetInventoryInterface()->GetTheRescueRanger();
+
+				if (rescueranger)
+				{
+					bot->SelectWeapon(rescueranger->GetEntity());
+				}
+				else
+				{
+					m_useRescueRanger = false;
+				}
+			}
+			else if (myweapon->IsLoaded())
+			{
+				bot->GetControlInterface()->AimAt(m_object.Get(), IPlayerController::LookPriority::LOOK_PRIORITY, 1.0f, "Aiming the rescue ranger!");
+
+				if (bot->GetControlInterface()->IsAimOnTarget())
+				{
+					bot->GetControlInterface()->PressAttackButton();
+				}
+			}
+		}
+		else
+		{
+			if (myweapon->GetWeaponInfo()->GetSlot() != static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee))
+			{
+				CBaseEntity* wrench = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee));
+
+				if (wrench)
+				{
+					bot->SelectWeapon(wrench);
+				}
+			}
 		}
 	}
-
-	const float range = bot->GetRangeTo(object.WorldSpaceCenter());
 
 	if (range > get_object_melee_range())
 	{

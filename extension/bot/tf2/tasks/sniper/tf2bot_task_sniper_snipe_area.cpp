@@ -47,7 +47,7 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 
 			if (m_fireWeaponDelay.IsElapsed() && bot->IsLookingTowards(threat->GetEntity(), SNIPER_FIRE_DOT_TOLERANCE))
 			{
-				m_fireWeaponDelay.StartRandom(0.7f, 1.6f);
+				m_fireWeaponDelay.StartRandom(1.5f, 2.3f);
 				bot->GetControlInterface()->PressAttackButton();
 			}
 		}

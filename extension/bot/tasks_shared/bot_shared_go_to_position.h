@@ -27,8 +27,9 @@ public:
 	/**
 	 * @brief Constructor.
 	 * @param bot Bot that will use this task.
-	 * @param goal Position the 
+	 * @param goal Position the bot will move to.
 	 * @param name The task name for debug commands. NULL for default.
+	 * @param attackEnemies If true, this task will be paused to attack any enemies found.
 	 * @param isPriority If true, this task won't be interrupted by gameplay related events.
 	 * @param fastestPath If true, use the fastest path.
 	 */

@@ -100,6 +100,34 @@ SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCState
 			SetEngineerMoveDestroyBuildingRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
+		else if (strncasecmp(key, "engineer_move_check_interval", 28) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 30.0f, 180.0f);
+			SetEngineerMoveCheckInterval(v);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "engineer_sentry_killassist_threshold", 36) == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, 1, 30);
+			SetEngineerSentryKillAssistsThreshold(v);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "engineer_teleporter_uses_threshold", 34) == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, 1, 10);
+			SetEngineerTeleporterUsesThreshold(v);
+			return SourceMod::SMCResult_Continue;
+		}
+		else if (strncasecmp(key, "engineer_help_ally_max_range", 28) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 500.0f, 4000.0f);
+			SetEngineerHelpAllyMaxRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
 	}
 
 	return CModSettings::ReadSMC_KeyValue(states, key, value);

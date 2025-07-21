@@ -110,6 +110,8 @@ public:
 
 	bool IsDeployedOrScoped(const CBaseBot* owner) const override;
 
+	bool IsTheRescueRanger() const { return IsWeapon("tf_weapon_shotgun_building_rescue"); }
+
 private:
 	float* m_charge;
 	UberType m_ubertype;
