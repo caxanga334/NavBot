@@ -70,7 +70,7 @@ public:
 
 		CHandle<CBaseEntity> point; // handle to dod_control_point
 		CHandle<CBaseEntity> capture_trigger; // handle to dod_capture_area
-		std::array<CHandle<CBaseEntity>, 2U> bomb_targets; // bomb targets assigned to this control point
+		std::array<CHandle<CBaseEntity>, 16U> bomb_targets; // bomb targets assigned to this control point
 		int index; // control point index
 
 		inline void Reset()

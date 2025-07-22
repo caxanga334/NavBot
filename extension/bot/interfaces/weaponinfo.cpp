@@ -53,7 +53,7 @@ bool CWeaponInfoManager::LoadConfigFile()
 	// purge templates before inserting into the look up database
 	m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [](const std::unique_ptr<WeaponInfo>& obj) {
 		return obj->IsTemplateEntry();
-	}));
+	}), m_weapons.end());
 
 	for (auto& info : m_weapons)
 	{
