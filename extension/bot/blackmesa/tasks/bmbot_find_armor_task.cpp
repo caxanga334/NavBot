@@ -52,16 +52,17 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindArmorTask::OnTaskUpdate(CBlackMesaBot
 		}
 
 		SetArmorSource(newSource, bot);
-		m_repathtimer.Invalidate();
+		m_nav.Invalidate();
+		m_nav.ForceRepath();
 	}
 
 	float moveToRange = m_isCharger ? 70.0f : 24.0f;
 
 	if (bot->GetRangeTo(m_goal) > moveToRange)
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(1.0f);
+			m_nav.StartRepathTimer();
 
 			CBlackMesaBotPathCost cost(bot);
 

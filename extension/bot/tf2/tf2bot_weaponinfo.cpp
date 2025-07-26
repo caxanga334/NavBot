@@ -12,17 +12,19 @@
 
 SourceMod::SMCResult CTF2WeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
 {
-	if (m_section_weapon && !IsParserInWeaponAttackSection())
+	if (m_parser_depth == 2)
 	{
 		if (strncasecmp(name, "tf_weapon_flags", 15) == 0)
 		{
 			m_section_tfflags = true;
-			return SourceMod::SMCResult_Continue;
+			m_parser_depth++;
+			return SourceMod::SMCResult::SMCResult_Continue;
 		}
 		else if (strncasecmp(name, "tf_data", 7) == 0)
 		{
 			m_section_tfdata = true;
-			return SourceMod::SMCResult_Continue;
+			m_parser_depth++;
+			return SourceMod::SMCResult::SMCResult_Continue;
 		}
 	}
 
@@ -96,16 +98,21 @@ SourceMod::SMCResult CTF2WeaponInfoManager::ReadSMC_KeyValue(const SourceMod::SM
 
 SourceMod::SMCResult CTF2WeaponInfoManager::ReadSMC_LeavingSection(const SourceMod::SMCStates* states)
 {
-	if (m_section_tfflags)
+	if (m_parser_depth == 3)
 	{
-		m_section_tfflags = false;
-		return SourceMod::SMCResult_Continue;
-	}
+		if (m_section_tfflags)
+		{
+			m_section_tfflags = false;
+			m_parser_depth--;
+			return SourceMod::SMCResult::SMCResult_Continue;
+		}
 
-	if (m_section_tfdata)
-	{
-		m_section_tfdata = false;
-		return SourceMod::SMCResult_Continue;
+		if (m_section_tfdata)
+		{
+			m_section_tfdata = false;
+			m_parser_depth--;
+			return SourceMod::SMCResult::SMCResult_Continue;
+		}
 	}
 
 	return CWeaponInfoManager::ReadSMC_LeavingSection(states);

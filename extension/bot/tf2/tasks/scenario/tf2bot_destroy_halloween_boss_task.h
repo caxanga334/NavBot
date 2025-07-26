@@ -12,7 +12,6 @@ private:
 	CHandle<CBaseEntity> m_boss;
 	Vector m_goal;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 
 	bool FindHalloweenBoss();
 	void UpdateBossPosition(CBaseEntity* boss);

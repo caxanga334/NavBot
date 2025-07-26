@@ -44,7 +44,6 @@ public:
 private:
 	CT m_pathCost;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CountdownTimer m_timeoutTimer;
 	float m_escortDistance;
 	float m_timeoutDuration;
@@ -84,9 +83,9 @@ inline TaskResult<BT> CBotSharedEscortEntityTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	if (range > m_escortDistance)
 	{
-		if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
+		if (!m_nav.IsValid() || m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(0.5f);
+			m_nav.StartRepathTimer(1.0f);
 			m_nav.ComputePathToPosition(bot, pos, m_pathCost);
 		}
 

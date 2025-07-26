@@ -23,7 +23,6 @@ public:
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
-	CountdownTimer m_repathtimer;
 	bool m_hasgoal;
 	uint8_t m_failcount;
 

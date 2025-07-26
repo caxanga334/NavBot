@@ -125,6 +125,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMoveObjectTask::OnTaskUpdate(CTF2Bot* bot)
 			{
 				m_hasBuilding = true;
 				m_nav.Invalidate();
+				m_nav.ForceRepath();
 			}
 		}
 

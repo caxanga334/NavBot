@@ -24,7 +24,6 @@ private:
 	int m_maxCarry;
 	std::string m_classname;
 	CHandle<CBaseEntity> m_item;
-	CountdownTimer m_repathtimer;
 	CMeshNavigator m_nav;
 	Vector m_goal;
 

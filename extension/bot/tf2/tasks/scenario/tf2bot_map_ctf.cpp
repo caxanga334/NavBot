@@ -6,7 +6,9 @@
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
+#include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <mods/tf2/teamfortress2mod.h>
@@ -82,9 +84,7 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 		return Done("Failed to find a path to the flag!");
 	}
 
-	m_repathtimer.StartRandom(1.0f, 1.5f);
-
-
+	m_nav.StartRepathTimer();
 
 	return Continue();
 }
@@ -108,9 +108,16 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Someone stole the flag before me!");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+	if (threat)
 	{
-		m_repathtimer.Reset();
+		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+	}
+
+	if (m_nav.NeedsRepath())
+	{
+		m_nav.StartRepathTimer();
 		m_goalpos = flag.GetPosition();
 
 		CTF2BotPathCost cost(bot, m_routetype);
@@ -133,7 +140,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnMoveToFailure(CTF2Bo
 		return TryDone(PRIORITY_HIGH, "Failed to find a path to the flag!");
 	}
 
-	m_repathtimer.Start(0.5f);
+	m_nav.StartRepathTimer();
 
 	return TryContinue();
 }
@@ -171,7 +178,7 @@ TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskStart(CTF2Bot* bot, AITask<
 		return Done("Failed to find a path to the capture zone!");
 	}
 
-	m_repathtimer.Start(0.5f);
+	m_nav.StartRepathTimer();
 	m_capzone = UtilHelpers::EdictToBaseEntity(goalzone);
 
 	return Continue();
@@ -191,9 +198,9 @@ TaskResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("Capture zone is NULL!");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		// refresh pos, some maps have the capture zone parented to a moving entity
 		m_goalpos = UtilHelpers::getWorldSpaceCenter(capzone);
 		m_goalpos = trace::getground(m_goalpos);
@@ -220,7 +227,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotCTFDeliverFlagTask::OnMoveToFailure(CTF2
 		return TryDone(PRIORITY_HIGH, "Failed to find a path to the capture zone!");
 	}
 
-	m_repathtimer.Start(0.5f);
+	m_nav.StartRepathTimer();
 
 	return TryContinue();
 }
@@ -243,6 +250,13 @@ TaskResult<CTF2Bot> CTF2BotCTFDefendFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 
 TaskResult<CTF2Bot> CTF2BotCTFDefendFlag::OnTaskUpdate(CTF2Bot* bot)
 {
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+	if (threat)
+	{
+		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+	}
+
 	if (m_giveupTimer.IsElapsed())
 	{
 		return Done("Defend timer elapsed!");

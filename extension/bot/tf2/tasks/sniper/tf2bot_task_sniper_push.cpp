@@ -109,9 +109,9 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (move)
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(2.0f);
+			m_nav.StartRepathTimer();
 			CTF2BotPathCost cost(bot);
 			m_nav.ComputePathToPosition(bot, m_goal, cost);
 		}

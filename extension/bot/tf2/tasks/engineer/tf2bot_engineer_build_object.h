@@ -48,7 +48,6 @@ private:
 	const CTFWaypoint* m_waypoint;
 	Vector m_goal;
 	QAngle m_lookangles;
-	CountdownTimer m_repathTimer;
 	CountdownTimer m_giveupTimer;
 	CountdownTimer m_strafeTimer;
 	CMeshNavigator m_nav;

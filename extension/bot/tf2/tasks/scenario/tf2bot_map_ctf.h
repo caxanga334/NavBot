@@ -31,7 +31,6 @@ private:
 	CMeshNavigator m_nav;
 	CBaseHandle m_flag;
 	Vector m_goalpos;
-	CountdownTimer m_repathtimer;
 	RouteType m_routetype;
 };
 
@@ -50,7 +49,6 @@ public:
 private:
 	CMeshNavigator m_nav;
 	Vector m_goalpos;
-	CountdownTimer m_repathtimer;
 	CHandle<CBaseEntity> m_capzone;
 };
 

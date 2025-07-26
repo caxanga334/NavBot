@@ -86,9 +86,9 @@ TaskResult<CTF2Bot> CTF2BotRDStealEnemyPointsTask::OnTaskUpdate(CTF2Bot* bot)
 				// Keep collecting points until the flag is over 100 points or the enemy team doesn't have any points left
 				if (teampoints > 0 && flag.GetPointValue() < 100)
 				{
-					if (m_repathtimer.IsElapsed())
+					if (m_nav.NeedsRepath())
 					{
-						m_repathtimer.Start(2.0f);
+						m_nav.StartRepathTimer();
 						CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 						m_nav.ComputePathToPosition(bot, m_homepos, cost);
 					}
@@ -117,9 +117,9 @@ TaskResult<CTF2Bot> CTF2BotRDStealEnemyPointsTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(2.0f);
+		m_nav.StartRepathTimer();
 		const Vector& pos = UtilHelpers::getEntityOrigin(ent);
 		CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 		m_nav.ComputePathToPosition(bot, pos, cost);

@@ -154,7 +154,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMvMDodgeSentryBusterTask::OnTaskUpdate(CTF2Bo
 
 		if (bot->IsCarryingObject())
 		{
-			m_repathTimer.IsElapsed();
+			m_nav.ForceRepath();
 			m_hasSentry = true;
 		}
 	}
@@ -167,7 +167,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMvMDodgeSentryBusterTask::OnTaskUpdate(CTF2Bo
 		if (takedamage == DAMAGE_NO || tf2lib::IsPlayerInCondition(buster, TeamFortress2::TFCond::TFCond_Taunting) || bot->GetRangeTo(buster) <= m_detonationRange)
 		{
 			m_detonating = true;
-			m_repathTimer.IsElapsed();
+			m_nav.ForceRepath();
 			botsharedutils::FindCoverCollector collector(UtilHelpers::getEntityOrigin(buster), SENTRY_BUSTER_MIN_COVER_RADIUS, false, false, SENTRY_BUSTER_MAX_COVER_RADIUS, bot);
 			collector.Execute();
 
@@ -187,9 +187,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerMvMDodgeSentryBusterTask::OnTaskUpdate(CTF2Bo
 		}
 	}
 
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathTimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, m_goal, cost, 0.0f, true);
 	}

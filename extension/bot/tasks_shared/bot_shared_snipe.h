@@ -48,7 +48,6 @@ public:
 private:
 	CT m_pathcost;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 	float m_snipeduration;
 	CountdownTimer m_timeout;
 	CHandle<CBaseEntity> m_sniperweapon;
@@ -166,9 +165,9 @@ inline TaskResult<BT> CBotSharedSnipeTask<BT, CT>::OnTaskUpdate(BT* bot)
 	}
 	else
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(2.0f);
+			m_nav.StartRepathTimer();
 			m_nav.ComputePathToPosition(bot, m_goal, m_pathcost);
 		}
 

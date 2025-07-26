@@ -92,6 +92,18 @@ void IInventory::OnWeaponInfoConfigReloaded()
 	BuildInventory();
 }
 
+void IInventory::EquipWeapon(const CBotWeapon* weapon) const
+{
+	const CBotWeapon* activeWeapon = GetActiveBotWeapon();
+
+	if (activeWeapon != nullptr && activeWeapon == weapon)
+	{
+		return;
+	}
+
+	GetBot<CBaseBot>()->SelectWeapon(weapon->GetEntity());
+}
+
 bool IInventory::HasWeapon(const char* classname)
 {
 	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::unique_ptr<CBotWeapon>& weaponptr) {

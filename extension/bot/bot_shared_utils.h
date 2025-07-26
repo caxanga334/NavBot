@@ -202,6 +202,63 @@ namespace botsharedutils
 		float m_limit;
 		int m_teamid;
 	};
+
+	/**
+	 * @brief Utility area collector for finding an area to retreat from current known threats
+	 */
+	class SelectRetreatArea : public INavAreaCollector<CNavArea>
+	{
+	public:
+		enum class RetreatAreaPreference : int
+		{
+			NEAREST = 0, // Retreat to the nearest available area
+			FURTHEST, // Retreat to the furthest available area
+			RANDOM, // Retreat to a random available area
+
+			MAX_RETREAT_AREA_TYPES
+		};
+
+		/**
+		 * @brief Constructor.
+		 * @param bot Bot that will be retreating.
+		 * @param preference Retreat area selection preference type.
+		 * @param minDistFromThreat Areas must be at least this far from enemies to be considered a valid retreat area.
+		 * @param maxRetreatDist Maximum distance to search for a retreat area.
+		 */
+		SelectRetreatArea(CBaseBot* bot, RetreatAreaPreference preference = RetreatAreaPreference::RANDOM, const float minDistFromThreat = 512.0f, const float maxRetreatDist = 8192.0f);
+
+
+		bool ShouldSearch(CNavArea* area) override;
+		bool ShouldCollect(CNavArea* area) override;
+		void OnDone() override;
+
+		bool HasFoundRetreatArea() const { return m_retreatArea != nullptr; }
+		const CNavArea* GetRetreatToArea() const { return m_retreatArea; }
+
+	private:
+		CBaseBot* m_bot;
+		float m_mindistance; // minimum distance from threat
+		RetreatAreaPreference m_preference;
+		CNavArea* m_retreatArea;
+	};
+
+	class CollectPatrolAreas : public INavAreaCollector<CNavArea>
+	{
+	public:
+		CollectPatrolAreas(CBaseBot* bot, const Vector& start, const float minDistanceFromStart, const float maxSearchDistance = 4096.0f);
+
+		bool ShouldSearch(CNavArea* area) override;
+		bool ShouldCollect(CNavArea* area) override;
+
+	private:
+		CBaseBot* m_bot;
+		Vector m_vStart;
+		Vector m_vViewOffset;
+		float m_minDistance;
+		std::vector<Vector> m_points;
+
+		static constexpr float MAX_RANGE_FOR_VIS_CHECKS = 1024.0f;
+	};
 }
 
 namespace botsharedutils::weapons

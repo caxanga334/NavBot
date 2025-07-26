@@ -71,14 +71,12 @@ public:
 	CMeshNavigatorAutoRepath(float repathInterval = 1.0f)
 	{
 		m_repathinterval = repathInterval;
-		m_repathTimer.Invalidate();
 		m_failCount = 0;
 		m_lastGoal = vec3_origin;
 	}
 
 	void Invalidate() override
 	{
-		m_repathTimer.Invalidate();
 		CMeshNavigator::Invalidate();
 	}
 
@@ -93,7 +91,6 @@ public:
 
 private:
 	float m_repathinterval;
-	CountdownTimer m_repathTimer; // Time until next repath
 	CountdownTimer m_failTimer; // Time to wait if the path failed
 	Vector m_lastGoal; // goal from the last valid path
 	int m_failCount; // number of times it failed to build a path
@@ -112,6 +109,13 @@ private:
 template<typename CF>
 inline void CMeshNavigatorAutoRepath::Update(CBaseBot* bot, const Vector& goal, CF& costFunctor)
 {
+	// Within goal reach tolerance, don't move
+	if (bot->GetRangeTo(goal) <= GetGoalTolerance())
+	{
+		bot->OnMoveToSuccess(this);
+		return;
+	}
+
 	// Refresh path if needed
 	RefreshPath(bot, goal, costFunctor);
 
@@ -122,7 +126,9 @@ inline void CMeshNavigatorAutoRepath::Update(CBaseBot* bot, const Vector& goal, 
 template<typename CF>
 inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& goal, CF& costFunctor)
 {
-	if (IsValid() && !m_repathTimer.IsElapsed())
+	CountdownTimer* repathtimer = InternalGetRepathTimer();
+
+	if (IsValid() && !repathtimer->IsElapsed())
 	{
 		return;
 	}
@@ -132,7 +138,7 @@ inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& g
 	// Don't repath on these conditions but also force a repath as soon as possible.
 	if (mover->IsOnLadder() || mover->IsControllingMovements())
 	{
-		m_repathTimer.Invalidate();
+		repathtimer->Invalidate();
 		return;
 	}
 
@@ -154,7 +160,7 @@ inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& g
 		}
 		else
 		{
-			m_repathTimer.Start(m_repathinterval);
+			repathtimer->Start(m_repathinterval);
 		}
 	}
 }

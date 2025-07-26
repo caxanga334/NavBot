@@ -14,7 +14,6 @@ public:
 private:
 	const CDayOfDefeatSourceMod::DoDControlPoint* m_controlpoint;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 };
 
 #endif // !__NAVBOT_DODSBOT_ATTACK_CONTROL_POINT_TASK_H_

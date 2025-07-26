@@ -20,6 +20,8 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 
 	if (!nav || !nav->IsValid()) { return false; }
 
+	if (bot->GetItem() != nullptr) { return false; }
+
 	UtilHelpers::CEntityEnumerator enumerator;
 
 	CBaseEntity* entrance = nullptr;
@@ -68,6 +70,13 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 	const Vector& goal = nav->GetPathDestination();
 	const Vector& telepos = UtilHelpers::getEntityOrigin(exit);
 	float distBotToGoal = (origin - goal).Length();
+
+	if (distBotToGoal <= 512.0f)
+	{
+		return false; // already close to the goal
+	}
+
+
 	float distTPToGoal = (telepos - goal).Length() + TELEPORTER_EXTRA_DIST;
 
 	if (distTPToGoal < distBotToGoal)
@@ -113,6 +122,11 @@ TaskResult<CTF2Bot> CTF2BotUseTeleporterTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("I've teleported!");
 	}
 
+	if (bot->GetRangeTo(pExit) <= 128.0f)
+	{
+		return Done("I've teleported!");
+	}
+
 	tfentities::HObjectTeleporter teleporter(pEntity);
 
 	if (teleporter.IsSapped() || teleporter.GetState() != TeamFortress2::TeleporterState::TELEPORTER_STATE_READY)
@@ -122,9 +136,9 @@ TaskResult<CTF2Bot> CTF2BotUseTeleporterTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (pGround != pEntity)
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(0.5f);
+			m_nav.StartRepathTimer();
 			CTF2BotPathCost cost(bot);
 			m_nav.ComputePathToPosition(bot, UtilHelpers::getEntityOrigin(pEntity), cost, 0.0f, true);
 		}

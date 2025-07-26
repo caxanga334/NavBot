@@ -624,10 +624,10 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 	{
 		CKnownEntity* known = &obj;
 
-		if (!IsAwareOf(known))
+		if (known->IsObsolete())
 			continue;
 
-		if (known->IsObsolete())
+		if (!IsAwareOf(known))
 			continue;
 
 		if (IsIgnored(known->GetEntity()))

@@ -82,15 +82,16 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskUpdate(CTF2Bot* bot)
 		if (m_capwasdisabled)
 		{
 			m_capwasdisabled = false;
-			m_repathTimer.Invalidate(); // force a repath
+			m_nav.Invalidate();
+			m_nav.ForceRepath();
 		}
 
 		m_goal = UtilHelpers::getWorldSpaceCenter(capzone);
 	}
 
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathTimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, m_goal, cost);

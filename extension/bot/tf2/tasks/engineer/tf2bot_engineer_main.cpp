@@ -6,6 +6,9 @@
 #include <util/helpers.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
+#include "tf2bot_engineer_sentry_combat.h"
 #include "tf2bot_engineer_repair_object.h"
 #include "tf2bot_engineer_upgrade_object.h"
 #include "tf2bot_engineer_nest.h"
@@ -32,17 +35,41 @@ TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 		bot->FindMyBuildings();
 	}
 
+	if (bot->IsCarryingObject())
+	{
+		return Continue();
+	}
+
+	CBaseEntity* mysentry;
+	CBaseEntity* mydispenser;
+	CBaseEntity* myentrance;
+	CBaseEntity* myexit;
+
+	bot->GetMyBuildings(&mysentry, &mydispenser, &myentrance, &myexit);
+
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+	if (threat)
+	{
+		if (mysentry)
+		{
+			return PauseFor(new CTF2BotEngineerSentryCombatTask(), "Combat with visible enemy!");
+		}
+		else
+		{
+			if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
+			{
+				return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible threat!");
+			}
+			else
+			{
+				return PauseFor(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference::FURTHEST, 3.0f, 90.0f, 512.0f, 4096.0f), "Retreating from visible threat!");
+			}
+		}
+	}
+
 	if (m_repairCheckTimer.IsElapsed())
 	{
-		m_repairCheckTimer.Start(0.250f);
-
-		CBaseEntity* mysentry;
-		CBaseEntity* mydispenser;
-		CBaseEntity* myentrance;
-		CBaseEntity* myexit;
-
-		bot->GetMyBuildings(&mysentry, &mydispenser, &myentrance, &myexit);
-
 		if (mysentry && tf2lib::BuildingNeedsToBeRepaired(mysentry))
 		{
 			return PauseFor(new CTF2BotEngineerRepairObjectTask(mysentry), "Repairing my sentry gun!");

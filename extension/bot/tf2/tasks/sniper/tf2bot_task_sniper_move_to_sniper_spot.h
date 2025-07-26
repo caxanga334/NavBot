@@ -18,7 +18,6 @@ public:
 private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CTFWaypoint* m_waypoint;
 	bool m_sniping;
 

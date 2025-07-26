@@ -63,6 +63,7 @@ TaskResult<CTF2Bot> CTF2BotRDDestroyRobotsTask::OnTaskUpdate(CTF2Bot* bot)
 				m_robots.swap(robots);
 				m_iter = 0U;
 				m_nav.Invalidate();
+				m_nav.ForceRepath();
 				return Continue(); // skip one update cycle
 			}
 		}
@@ -100,6 +101,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotRDDestroyRobotsTask::OnOtherKilled(CTF2B
 		if (CTF2BotRDCollectPointsTask::IsPossible(bot, points))
 		{
 			m_nav.Invalidate();
+			m_nav.ForceRepath();
 			return TryPauseFor(new CTF2BotRDCollectPointsTask(std::move(points)), PRIORITY_HIGH, "Collecting points from destroyed robot!");
 		}
 	}

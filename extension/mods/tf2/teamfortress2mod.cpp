@@ -186,13 +186,14 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		}
 		else if (strncasecmp(name, "mvm_wave_complete", 17) == 0)
 		{
-			auto func = [](CBaseBot* baseBot) {
+			auto func = [&event](CBaseBot* baseBot) {
 				static_cast<CTF2Bot*>(baseBot)->GetUpgradeManager().OnWaveEnd();
+				baseBot->OnGameEvent(event, nullptr);
 			};
+
 			extmanager->ForEachBot(func);
 
 			OnRoundStart();
-
 		}
 		else if (strncasecmp(name, "mvm_wave_failed", 15) == 0)
 		{

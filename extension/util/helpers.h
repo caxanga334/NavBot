@@ -782,6 +782,24 @@ inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T pred)
 	}
 }
 
+namespace UtilHelpers::math
+{
+	/**
+	 * @brief Builds a normalized direction vector that points towards the 'to' vector.
+	 * 
+	 * Addition moves closer to 'to', subtraction moves away from 'to'.
+	 * @param from From position
+	 * @param to To position
+	 * @return Normalized direction vector.
+	 */
+	inline Vector BuildDirectionVector(const Vector& from, const Vector& to)
+	{
+		Vector dir = (to - from);
+		dir.NormalizeInPlace();
+		return dir;
+	}
+}
+
 #endif // !UTIL_HELPERS_H_
 
 

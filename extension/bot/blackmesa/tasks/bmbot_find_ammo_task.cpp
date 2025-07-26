@@ -71,7 +71,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindAmmoTask::OnTaskUpdate(CBlackMesaBot*
 		}
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
 		CBlackMesaBotPathCost cost(bot);
 		
@@ -80,7 +80,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindAmmoTask::OnTaskUpdate(CBlackMesaBot*
 			return Done("Failed to find a path to the ammo entity!");
 		}
 
-		m_repathtimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 	}
 
 	m_nav.Update(bot);
@@ -92,7 +92,8 @@ void CBlackMesaBotFindAmmoTask::SetGoalEntity(CBaseEntity* goalEnt)
 {
 	m_item = goalEnt;
 	m_goal = UtilHelpers::getEntityOrigin(goalEnt);
-	m_repathtimer.Invalidate();
+	m_nav.Invalidate();
+	m_nav.ForceRepath();
 }
 
 bool CBlackMesaBotFindAmmoTask::IsItemValid(CBaseEntity* item)

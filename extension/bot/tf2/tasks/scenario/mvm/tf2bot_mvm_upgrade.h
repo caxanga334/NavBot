@@ -20,7 +20,6 @@ public:
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_buydelay;
 	CBaseHandle m_upgradestation;
 

@@ -22,7 +22,6 @@ public:
 	const char* GetName() const override { return "FindWeapon"; }
 private:
 	CHandle<CBaseEntity> m_weapon;
-	CountdownTimer m_repathtimer;
 	CMeshNavigator m_nav;
 	Vector m_goal;
 

@@ -3,6 +3,7 @@
 #include <util/entprops.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_task_push_payload.h"
 
 TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -20,7 +21,7 @@ TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskStart(CTF2Bot* bot, AITask<CTF
 
 	m_payload.Set(payload);
 
-	m_repathtimer.Start(0.4f);
+	m_nav.StartRepathTimer();
 	
 	if (payload != nullptr)
 	{
@@ -41,6 +42,13 @@ TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 		return Continue();
 	}
 
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+	if (threat)
+	{
+		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot, CBaseBot::s_botrng.GetRandomReal<float>(3.0f, 6.0f)), "Attacking visible threat!");
+	}
+
 	CBaseEntity* payload = GetPayload(bot);
 
 	if (payload == nullptr)
@@ -48,14 +56,14 @@ TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 		return Continue();
 	}
 
-	if (!m_nav.IsValid() || m_repathtimer.IsElapsed())
+	if (!m_nav.IsValid() || m_nav.NeedsRepath())
 	{
 		m_goal = UtilHelpers::getWorldSpaceCenter(m_payload.ToEdict());
 
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, m_goal, cost);
 
-		m_repathtimer.Start(0.4f);
+		m_nav.StartRepathTimer();
 	}
 
 	m_nav.Update(bot);
@@ -88,6 +96,7 @@ TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskResume(CTF2Bot* bot, AITask<CT
 	}
 
 	m_nav.Invalidate();
+	m_nav.ForceRepath();
 
 	return Continue();
 }
@@ -95,6 +104,7 @@ TaskResult<CTF2Bot> CTF2BotPushPayloadTask::OnTaskResume(CTF2Bot* bot, AITask<CT
 TaskEventResponseResult<CTF2Bot> CTF2BotPushPayloadTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
 	m_nav.Invalidate();
+	m_nav.ForceRepath();
 	return TryContinue();
 }
 

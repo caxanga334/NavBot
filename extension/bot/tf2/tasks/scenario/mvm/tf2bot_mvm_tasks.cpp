@@ -74,14 +74,15 @@ TaskResult<CTF2Bot> CTF2BotCollectMvMCurrencyTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else
 		{
-			m_repathTimer.Invalidate();
+			m_nav.Invalidate();
+			m_nav.ForceRepath();
 			return Continue(); // skip 1 update cycle
 		}
 	}
 
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathTimer.Start(0.8f);
+		m_nav.StartRepathTimer();
 		Vector pos = UtilHelpers::getEntityOrigin(currency);
 		CTF2BotPathCost cost(bot);
 		
@@ -94,7 +95,8 @@ TaskResult<CTF2Bot> CTF2BotCollectMvMCurrencyTask::OnTaskUpdate(CTF2Bot* bot)
 				return Done("Done collecting currency packs!");
 			}
 
-			m_repathTimer.Invalidate();
+			m_nav.Invalidate();
+			m_nav.ForceRepath();
 			return Continue(); // skip 1 update cycle
 		}
 	}
@@ -205,11 +207,11 @@ TaskResult<CTF2Bot> CTF2BotMvMTankBusterTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, pos1, cost);
-		m_repathTimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 	}
 
 	if (bot->GetRangeTo(pos1) > 500.0f)

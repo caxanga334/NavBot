@@ -135,6 +135,24 @@ public:
 		int button_to_press;
 	};
 
+	struct DynamicPriority
+	{
+		DynamicPriority()
+		{
+			is_used = false;
+			is_greater = false;
+			value_to_compare = 0.0f;
+			priority_value = 0;
+		}
+
+		void Parse(const char* str);
+
+		bool is_used;
+		bool is_greater; // if true, compare is greater, otherwise less
+		float value_to_compare;
+		int priority_value;
+	};
+
 	WeaponInfo() :
 		headshot_aim_offset(0.0f, 0.0f, 0.0f)
 	{
@@ -161,11 +179,6 @@ public:
 		slot = INVALID_WEAPON_SLOT;
 		attack_move_range = -1.0f;
 		use_secondary_chance = 20;
-		dynamic_priority_has_sec_ammo = 0;
-		dynamic_priority_health = 0;
-		dynamic_priority_health_cond = -1.0f;
-		dynamic_priority_range_lt = 0;
-		dynamic_priority_range_lt_cond = -1.0f;
 		deployed_property_name.reserve(64);
 		needs_to_be_deployed = false;
 		deployed_property_on_weapon = true;
@@ -174,46 +187,6 @@ public:
 	}
 
 	virtual ~WeaponInfo() {}
-
-	virtual void Reset()
-	{
-		classname.clear();
-		configentry.clear();
-		custom_ammo_property_name.clear();
-		econindex = -1;
-		priority = 0;
-		disable_dodge = false;
-		can_headshot = false;
-		infinite_reserve_ammo = false;
-		custom_ammo_prop_on_weapon = true;
-		custom_ammo_prop_is_net = true;
-		custom_ammo_is_float = false;
-		custom_ammo_out_of_ammo = 0.0f;
-		interval_between_attacks = -1.0f;
-		headshot_range_mult = 1.0f;
-		headshot_aim_offset.Init(0.0f, 0.0f, 0.0f);
-		primammolow = 0;
-		secammolow = 0;
-		attack_move_range = -1.0f;
-		use_secondary_chance = 20;
-		dynamic_priority_has_sec_ammo = 0;
-		dynamic_priority_health = 0;
-		dynamic_priority_health_cond = -1.0f;
-		dynamic_priority_range_lt = 0;
-		dynamic_priority_range_lt_cond = -1.0f;
-		deployed_property_name.clear();
-		needs_to_be_deployed = false;
-		deployed_property_on_weapon = true;
-		selection_max_range = -1.0f;
-		selection_min_range = -1.0f;
-		is_template = false;
-
-		slot = INVALID_WEAPON_SLOT;
-		attacksinfo[PRIMARY_ATTACK].Reset();
-		attacksinfo[SECONDARY_ATTACK].Reset();
-		attacksinfo[TERTIARY_ATTACK].Reset();
-		tags.clear();
-	}
 
 	// This WI instance is a variant of the given WI, copy the 'other' attributes into this one.
 	virtual void VariantOf(const WeaponInfo* other)
@@ -242,11 +215,6 @@ public:
 		this->slot = other->slot;
 		this->attack_move_range = other->attack_move_range;
 		this->use_secondary_chance = other->use_secondary_chance;
-		this->dynamic_priority_has_sec_ammo = other->dynamic_priority_has_sec_ammo;
-		this->dynamic_priority_health = other->dynamic_priority_health;
-		this->dynamic_priority_health_cond = other->dynamic_priority_health_cond;
-		this->dynamic_priority_range_lt = other->dynamic_priority_range_lt;
-		this->dynamic_priority_range_lt_cond = other->dynamic_priority_range_lt_cond;
 		this->deployed_property_name = other->deployed_property_name;
 		this->deployed_property_on_weapon = other->deployed_property_on_weapon;
 		this->needs_to_be_deployed = other->needs_to_be_deployed;
@@ -254,6 +222,10 @@ public:
 		this->selection_min_range = other->selection_min_range;
 		this->special_function = other->special_function;
 		this->tags = other->tags;
+		this->dynprio_health = other->dynprio_health;
+		this->dynprio_range = other->dynprio_range;
+		this->dynprio_sec_ammo = other->dynprio_sec_ammo;
+		this->dynprio_aggression = other->dynprio_aggression;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
@@ -322,11 +294,6 @@ public:
 	void SetCustomAmmoPropertyType(bool networked) { custom_ammo_prop_is_net = networked; }
 	void SetCustomAmmoOutOfAmmoThreshold(float v) { custom_ammo_out_of_ammo = v; }
 	void SetCustomAmmoPropertyIsFloat(const bool v) { custom_ammo_is_float = v; }
-	void SetDynamicPriorityHasSecondaryAmmo(const int v) { dynamic_priority_has_sec_ammo = v; }
-	void SetDynamicPriorityHealthPercentage(const int v) { dynamic_priority_health = v; }
-	void SetDynamicPriorityHealthPercentageCondition(const float v) { dynamic_priority_health_cond = v; }
-	void SetDynamicPriorityThreatRangeLessThan(const int v) { dynamic_priority_range_lt = v; }
-	void SetDynamicPriorityThreatRangeLessThanCondition(const float v) { dynamic_priority_range_lt_cond = v; }
 	void SetDeployedPropertyName(const char* name) { deployed_property_name.assign(name); }
 	void SetNeedsToBeDeployed(const bool v) { needs_to_be_deployed = v; }
 	void SetDeployedPropertySource(const bool onweapon) { deployed_property_on_weapon = onweapon; }
@@ -334,7 +301,12 @@ public:
 	void SetSelectionMaxRangeOverride(const float v) { selection_max_range = v; }
 	void ClearTags() { tags.clear(); }
 	void AddTag(const std::string& tag) { tags.emplace(tag); }
+	void RemoveTag(const std::string& tag) { tags.erase(tag); }
 	void SetIsTemplateEntry(const bool v) { is_template = v; }
+	DynamicPriority* EditDynamicPriorityHealth() { return &dynprio_health; }
+	DynamicPriority* EditDynamicPriorityRange() { return &dynprio_range; }
+	DynamicPriority* EditDynamicPrioritySecAmmo() { return &dynprio_sec_ammo; }
+	DynamicPriority* EditDynamicPriorityAggression() { return &dynprio_aggression; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -365,12 +337,6 @@ public:
 	bool IsCustomAmmoPropertyNetworked() const { return custom_ammo_prop_is_net; }
 	float GetCustomAmmoOutOfAmmoThreshold() const { return custom_ammo_out_of_ammo; }
 	bool IsCustomAmmoPropertyAFloat() const { return custom_ammo_is_float;  }
-	int GetDynamicPriorityHasSecondaryAmmo() const { return dynamic_priority_has_sec_ammo; }
-	int GetDynamicPriorityHealthPercentage() const { return dynamic_priority_health; }
-	float GetDynamicPriorityHealthPercentageCondition() const { return dynamic_priority_health_cond; }
-	int GetDynamicPriorityThreatRangeLessThan() const { return dynamic_priority_range_lt; }
-	float GetDynamicPriorityThreatRangeLessThanCondition() const { return dynamic_priority_range_lt_cond; }
-	bool HasDynamicPriorityThreatRangeLessThan() const { return dynamic_priority_range_lt_cond > 0.0f; }
 	bool HasDeployedStateProperty() const { return !deployed_property_name.empty(); }
 	const std::string& GetDeployedPropertyName() const { return deployed_property_name; }
 	bool NeedsToBeDeployedToFire() const { return needs_to_be_deployed; }
@@ -391,6 +357,10 @@ public:
 	const SpecialFunction& GetSpecialFunction() const { return special_function; }
 	// for writing
 	SpecialFunction* GetSpecialFunctionEx() { return &special_function; }
+	const DynamicPriority& GetDynamicPriorityHealth() const { return dynprio_health; }
+	const DynamicPriority& GetDynamicPriorityRange() const { return dynprio_range; }
+	const DynamicPriority& GetDynamicPrioritySecAmmo() const { return dynprio_sec_ammo; }
+	const DynamicPriority& GetDynamicPriorityAggression() const { return dynprio_aggression; }
  
 	virtual void PostLoad();
 
@@ -420,11 +390,6 @@ private:
 	int slot; // Slot used by this weapon. Used when selecting a weapon by slot.
 	float attack_move_range; // Minimum distance the bot will try to maintain when attacking.
 	int use_secondary_chance; // Chance to use the secondary attack if available
-	int dynamic_priority_has_sec_ammo; // Additional priority when the weapon has secondary ammo
-	int dynamic_priority_health; // Additional priority when the bot's health is equal or less to dynamic_priority_health_cond
-	float dynamic_priority_health_cond;
-	int dynamic_priority_range_lt; // Additional priority when the range to threat is less than the condition
-	float dynamic_priority_range_lt_cond;
 	std::string deployed_property_name;
 	bool deployed_property_on_weapon; // if true, the property is on the weapon, else is on the player.
 	bool needs_to_be_deployed; // if true, the weapon needs to be deployed/scoped to fire it.
@@ -432,6 +397,10 @@ private:
 	float selection_min_range;
 	SpecialFunction special_function;
 	std::unordered_set<std::string> tags;
+	DynamicPriority dynprio_health;
+	DynamicPriority dynprio_range;
+	DynamicPriority dynprio_sec_ammo;
+	DynamicPriority dynprio_aggression;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC
@@ -446,6 +415,8 @@ public:
 		m_section_sec = false;
 		m_section_ter = false;
 		m_section_specialfunc = false;
+		m_section_dynamicprio = false;
+		m_parser_depth = 0;
 		m_current = nullptr;
 	}
 
@@ -526,6 +497,9 @@ protected:
 		m_section_sec = false;
 		m_section_ter = false;
 		m_section_specialfunc = false;
+		m_section_dynamicprio = false;
+		m_parser_depth = 0;
+		m_current = nullptr;
 	}
 
 	// parser data
@@ -535,6 +509,8 @@ protected:
 	bool m_section_sec; // secondary attack section
 	bool m_section_ter; // tertiary attack section
 	bool m_section_specialfunc; // special function section
+	bool m_section_dynamicprio; // dynamic priority section
+	int m_parser_depth; // section depth
 
 	WeaponInfo* m_current; // Current weapon info being parsed
 
@@ -592,6 +568,10 @@ protected:
 	}
 
 	virtual void PostParseAnalysis();
+
+private:
+
+	void ReadDynamicPrioritySection(const SourceMod::SMCStates* states, const char* key, const char* value);
 };
 
 #endif // !NAVBOT_WEAPON_INFO_H_

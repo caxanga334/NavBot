@@ -5,10 +5,10 @@ Welcome to the NavBot extension documentation index.
 ## Docs
 
 - [Installing NavBot]
+- [Updating NavBot]
 - [For Developers]
 - [Bot Difficulty Configuration]
 - [Bot Names Configuration]
-- [Questions and Answers]
 - [Navigation Mesh Documentation]
 - [Weapon Info Config File]
 - [NavBot ConVars]
@@ -16,9 +16,9 @@ Welcome to the NavBot extension documentation index.
 
 <!-- Links -->
 [Installing NavBot]: INSTALL.md
+[Updating NavBot]: UPDATING.md
 [Using NavBot]: USAGE.md
 [For Developers]: developers/README.md
-[Questions and Answers]: QAA.md
 [Bot Names Configuration]: BOT_NAMES.md
 [Bot Difficulty Configuration]: BOT_DIFFICULTY_PROFILES.md
 [Navigation Mesh Documentation]: navmesh/README.md

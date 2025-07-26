@@ -39,9 +39,9 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindWeaponTask::OnTaskUpdate(CBlackMesaBo
 		return Done("Weapon is invalid/taken!");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		CBlackMesaBotPathCost cost(bot);
 		
 		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))

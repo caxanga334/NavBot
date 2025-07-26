@@ -71,7 +71,6 @@ private:
 	float m_maxtime;
 	CMeshNavigator m_nav;
 	CountdownTimer m_timeout;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_aimtimer;
 	std::vector<Vector> m_aimSpots;
 	CWaypoint* m_waypoint;
@@ -140,9 +139,9 @@ inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 	}
 	else
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(2.0f);
+			m_nav.StartRepathTimer();
 			m_nav.ComputePathToPosition(bot, m_watchSpot, m_pathCost, 0.0f, true);
 		}
 

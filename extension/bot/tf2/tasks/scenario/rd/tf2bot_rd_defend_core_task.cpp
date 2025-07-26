@@ -84,9 +84,9 @@ TaskResult<CTF2Bot> CTF2BotRDDefendCoreTask::OnTaskUpdate(CTF2Bot* bot)
 		bot->GetControlInterface()->AimAt(carrier, IPlayerController::LOOK_INTERESTING, 1.0f, "Looking at the reactor core carrier.");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		CTF2BotPathCost cost(bot, FASTEST_ROUTE);
 		m_nav.ComputePathToPosition(bot, goal, cost);
 	}

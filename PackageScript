@@ -17,6 +17,8 @@ folder_list = [
   'addons/sourcemod/configs/navbot/tf',
   'addons/sourcemod/configs/navbot/bms',
   'addons/sourcemod/configs/navbot/dod',
+  'addons/sourcemod/data/',
+  'addons/sourcemod/data/navbot',
 ]
 
 if 'x86_64' in Extension.target_archs:
@@ -85,7 +87,6 @@ CopyFiles('configs', 'addons/sourcemod/configs/navbot',
   [ 
     'bot_difficulty.cfg',
     'bot_names.cfg',
-    'nav_places.cfg',
     'settings.example.cfg',
   ]
 )
@@ -108,6 +109,12 @@ CopyFiles('configs/bms', 'addons/sourcemod/configs/navbot/bms',
 CopyFiles('configs/dod', 'addons/sourcemod/configs/navbot/dod',
   [ 
     'weapons.cfg'
+  ]
+)
+
+CopyFiles('data', 'addons/sourcemod/data/navbot',
+  [ 
+    'nav_places.cfg'
   ]
 )
 

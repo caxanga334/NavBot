@@ -13,7 +13,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_target;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 };
 
 

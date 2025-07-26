@@ -21,7 +21,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_healthSource;
 	CountdownTimer m_timeout;
-	CountdownTimer m_repathtimer;
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	bool m_isCharger;

@@ -19,7 +19,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_target;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CountdownTimer m_updateTargetTimer;
 	CountdownTimer m_lookAtTimer;
 	Vector m_targetPos;

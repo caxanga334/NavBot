@@ -117,6 +117,24 @@ namespace tfentities
 		static constexpr int GetDefaultMaxStoredMetal() { return 400; }
 	};
 
+	class HObjectSentryGun : public HBaseObject
+	{
+	public:
+		HObjectSentryGun(edict_t* entity) : HBaseObject(entity) {}
+		HObjectSentryGun(CBaseEntity* entity) : HBaseObject(entity) {}
+
+		TeamFortress2::SentryState GetState() const;
+		int GetAmmoShells() const;
+		int GetAmmoRockets() const;
+		bool IsOutOfAmmo() const { return GetAmmoShells() == 0; /* Don't count rockets, shells is the primary damage source */ }
+		bool IsPlayerControlled() const;
+		int GetShieldLevel() const;
+		CBaseEntity* GetEnemy() const;
+		int GetKills() const;
+		int GetAssists() const;
+		int GetKillsPlusAssists() const { return GetKills() + GetAssists(); }
+	};
+
 	class HTeamControlPoint : public HTFBaseEntity
 	{
 	public:

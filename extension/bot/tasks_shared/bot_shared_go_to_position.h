@@ -76,7 +76,6 @@ public:
 private:
 	std::string m_taskdebugname;
 	CT m_pathcost;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_timeout;
 	CMeshNavigator m_nav;
 	Vector m_goal;
@@ -105,7 +104,7 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskStart(BT* bot, A
 	}
 
 	m_timeout.Start(time);
-	m_repathtimer.Start(2.0f);
+	m_nav.StartRepathTimer();
 
 	return AITask<BT>::Continue();
 }
@@ -125,9 +124,9 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskUpdate(BT* bot)
 		return AITask<BT>::Done("Failed to reach goal within a reasonable time!");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(2.0f);
+		m_nav.StartRepathTimer();
 		m_nav.ComputePathToPosition(bot, m_goal, m_pathcost, 0.0f, true);
 	}
 
@@ -157,7 +156,7 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskResume(BT* bot, 
 	}
 
 	m_timeout.Start(time);
-	m_repathtimer.Start(2.0f);
+	m_nav.StartRepathTimer();
 
 	return AITask<BT>::Continue();
 }

@@ -33,7 +33,6 @@ public:
 private:
 	CT m_pathCost;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	Vector m_goal;
 	int m_failCount;
 };
@@ -41,9 +40,9 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathTimer.StartRandom(1.0f, 2.0f);
+		m_nav.StartRepathTimer();
 
 		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathCost))
 		{

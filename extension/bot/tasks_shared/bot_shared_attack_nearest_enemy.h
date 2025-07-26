@@ -32,7 +32,6 @@ public:
 private:
 	CT m_pathCost;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	Vector m_goal;
 };
 
@@ -71,9 +70,9 @@ inline TaskResult<BT> CBotSharedAttackNearestEnemyTask<BT, CT>::OnTaskUpdate(BT*
 
 	if (move)
 	{
-		if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
+		if (!m_nav.IsValid() || m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(0.5f);
+			m_nav.StartRepathTimer();
 			m_goal = threat->GetLastKnownPosition();
 			m_nav.ComputePathToPosition(bot, m_goal, m_pathCost);
 		}

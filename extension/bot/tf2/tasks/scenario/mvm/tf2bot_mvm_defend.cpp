@@ -52,7 +52,7 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 
 	bool isFlag = UtilHelpers::FClassnameIs(target, "item_teamflag");
 
-	if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
+	if (!m_nav.IsValid() || m_nav.NeedsRepath())
 	{
 		if (isFlag)
 		{
@@ -63,7 +63,7 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 			m_targetPos = UtilHelpers::getEntityOrigin(target);
 		}
 
-		m_repathTimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, m_targetPos, cost);
 	}

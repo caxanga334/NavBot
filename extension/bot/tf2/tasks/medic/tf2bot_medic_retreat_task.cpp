@@ -24,15 +24,15 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 		return Done("Failed to find a path to home position!");
 	}
 
-	m_repathtimer.Start(randomgen->GetRandomReal<float>(1.0f, 2.0f));
+	m_nav.StartRepathTimer();
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(randomgen->GetRandomReal<float>(1.0f, 2.0f));
+		m_nav.StartRepathTimer();
 		CTF2BotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, m_goal, cost, 0.0f, true);
 	}

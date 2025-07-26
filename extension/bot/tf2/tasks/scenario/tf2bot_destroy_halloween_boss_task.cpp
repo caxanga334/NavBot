@@ -56,9 +56,9 @@ TaskResult<CTF2Bot> CTF2BotDestroyHalloweenBossTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (moveTowards)
 	{
-		if (m_repathTimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(1.0f);
+			m_nav.StartRepathTimer();
 			CTF2BotPathCost cost(bot);
 			m_nav.ComputePathToPosition(bot, m_goal, cost, 0.0f, true);
 		}

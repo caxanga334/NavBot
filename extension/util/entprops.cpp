@@ -266,11 +266,13 @@ void CEntPropUtils::Init(bool reset)
 
 	if (!value)
 	{
-		smutils->LogError(myself, "CEntPropUtils::Init -- Failed to get game rules proxy classname.");
+		smutils->LogError(myself, "Failed to get \"GameRulesProxy\" key from SDKTools's gamedata!");
 	}
 	else
 	{
+#ifdef EXT_DEBUG
 		smutils->LogMessage(myself, "CEntPropUtils::Init -- Retrieved game rules proxy classname \"%s\".", value);
+#endif // EXT_DEBUG
 		grclassname.assign(value);
 	}
 
@@ -278,7 +280,9 @@ void CEntPropUtils::Init(bool reset)
 
 	gameconfs->CloseGameConfigFile(gamedata);
 	initialized = true;
+#ifdef EXT_DEBUG
 	smutils->LogMessage(myself, "CEntPropUtils::Init -- Done.");
+#endif // EXT_DEBUG
 }
 
 /**

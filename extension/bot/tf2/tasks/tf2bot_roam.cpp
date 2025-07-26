@@ -57,7 +57,7 @@ TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* 
 		return Done("Failed to find a path to the goal position!");
 	}
 
-	m_repathtimer.Start(randomgen->GetRandomReal<float>(1.0f, 3.0f));
+	m_nav.StartRepathTimer();
 	return Continue();
 }
 
@@ -74,15 +74,15 @@ TaskResult<CTF2Bot> CTF2BotRoamTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (randomgen->GetRandomInt<int>(1, 100) <= bot->GetDifficultyProfile()->GetAggressiveness())
 		{
-			m_repathtimer.Invalidate();
 			m_nav.Invalidate();
+			m_nav.ForceRepath();
 			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot, 5.0f), "Attacking visible threat!");
 		}
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(randomgen->GetRandomReal<float>(1.0f, 3.0f));
+		m_nav.StartRepathTimer();
 
 		CTF2BotPathCost cost(bot);
 		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
@@ -117,7 +117,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotRoamTask::OnMoveToFailure(CTF2Bot* bot, 
 		return TryDone(PRIORITY_HIGH, "Stuck limit reached, abandoning!");
 	}
 
-	m_repathtimer.Start(randomgen->GetRandomReal<float>(1.0f, 3.0f));
+	m_nav.StartRepathTimer();
 	CTF2BotPathCost cost(bot);
 	m_nav.ComputePathToPosition(bot, m_goal, cost);
 

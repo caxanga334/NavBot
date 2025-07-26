@@ -124,8 +124,9 @@ public:
 		}
 	}
 
+	// Selects a class to disguese as
+	void Disguise(bool myTeam = false);
 	void DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam = false);
-
 	inline void DisguiseAs(TeamFortress2::TFClassType classtype, TeamFortress2::TFTeam team)
 	{
 		if (team == TeamFortress2::TFTeam_Red)

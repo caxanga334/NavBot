@@ -2,18 +2,28 @@
 #include <extension.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_search_area.h>
 #include "tf2bot_task_defend_payload.h"
 
 TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	GetPayload(bot); // update payload
-	m_repathtimer.Invalidate();
+	// if true, will stay near the payload, otherwise will patrol around
+	m_defendPayload = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->RollDefendChance();
 
 	return Continue();
 }
 
 TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+	if (threat)
+	{
+		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot, CBaseBot::s_botrng.GetRandomReal<float>(3.0f, 6.0f)), "Attacking visible threat!");
+	}
+
 	CBaseEntity* payload = GetPayload(bot);
 
 	if (payload == nullptr)
@@ -21,18 +31,29 @@ TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 		return Continue();
 	}
 
-	if (bot->GetRangeToSqr(payload) > 300.0f)
+	const Vector center = UtilHelpers::getWorldSpaceCenter(payload);
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t tr;
+	trace::line(bot->GetEyeOrigin(), center, MASK_BLOCKLOS, tr);
+
+	if (bot->GetRangeToSqr(center) > DEFEND_PAYLOAD_RANGE || (!tr.startsolid && tr.fraction == 1.0f))
 	{
-		if (!m_nav.IsValid() || m_repathtimer.IsElapsed())
+		if (!m_nav.IsValid() || m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(0.8f);
+			m_nav.StartRepathTimer();
 
 			CTF2BotPathCost cost(bot);
-			Vector pos = UtilHelpers::getWorldSpaceCenter(payload);
-			m_nav.ComputePathToPosition(bot, pos, cost);
+			m_nav.ComputePathToPosition(bot, center, cost);
 		}
 
 		m_nav.Update(bot);
+	}
+	else
+	{
+		if (!m_defendPayload)
+		{
+			return PauseFor(new CBotSharedSearchAreaTask<CTF2Bot, CTF2BotPathCost>(bot, bot->GetAbsOrigin(), 512.0f, 2048.0f, 32U), "Patrolling area near payload for enemies.");
+		}
 	}
 
 	return Continue();
@@ -41,7 +62,8 @@ TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	GetPayload(bot); // update payload
-	m_repathtimer.Invalidate();
+	m_nav.Invalidate();
+	m_nav.ForceRepath();
 
 	return Continue();
 }

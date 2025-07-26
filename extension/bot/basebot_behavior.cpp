@@ -104,10 +104,11 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 		return Done("My Path is invalid!");
 	}
 
-	if (m_nav.GetAge() > 1.0f)
+	if (m_nav.NeedsRepath())
 	{
 		CBaseBotPathCost cost(bot);
 		bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);
+		m_nav.StartRepathTimer();
 
 		if (result == false)
 		{

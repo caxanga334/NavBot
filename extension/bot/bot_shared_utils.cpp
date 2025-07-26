@@ -707,3 +707,157 @@ void botsharedutils::SpreadDangerToNearbyAreas::OnDone()
 		area->IncreaseDanger(m_teamid, m_danger);
 	}
 }
+
+botsharedutils::SelectRetreatArea::SelectRetreatArea(CBaseBot* bot, RetreatAreaPreference preference, const float minDistFromThreat, const float maxRetreatDist) :
+	INavAreaCollector(bot->GetLastKnownNavArea(), maxRetreatDist, true, true, false, false)
+{
+	/* search ladders and off-mesh links but skip elevators (not ideal for retreating) and incoming connections (may not be reachable) */
+
+	m_bot = bot;
+	m_mindistance = minDistFromThreat;
+	m_preference = preference;
+	m_retreatArea = nullptr;
+}
+
+bool botsharedutils::SelectRetreatArea::ShouldSearch(CNavArea* area)
+{
+	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
+}
+
+bool botsharedutils::SelectRetreatArea::ShouldCollect(CNavArea* area)
+{
+	const float myDist = m_bot->GetRangeTo(area->GetCenter());
+	bool collect = true;
+
+	auto functor = [this, &area, myDist, &collect](const CKnownEntity* known) {
+
+		if (!collect) { return; } // skip calculations if I'm not collecting it already
+
+		const float dist = (area->GetCenter() - known->GetLastKnownPosition()).Length();
+
+		// if the distance between a threat is smaller than the given limit OR it's closer to the enemy than to me, don't collect it
+		if (dist <= m_mindistance || dist < myDist)
+		{
+			collect = false;
+		}
+	};
+
+	m_bot->GetSensorInterface()->ForEveryKnownEnemy(functor);
+
+	return collect;
+}
+
+void botsharedutils::SelectRetreatArea::OnDone()
+{
+	m_retreatArea = nullptr;
+
+	if (IsCollectedAreasEmpty())
+	{
+		return; // no place to retreat
+	}
+
+	switch (m_preference)
+	{
+	case RetreatAreaPreference::NEAREST:
+	{
+		CNavArea* nearestArea = nullptr;
+		float smallest_cost = std::numeric_limits<float>::max();
+
+		for (auto area : GetCollectedAreas())
+		{
+			auto node = GetNodeForArea(area);
+			// node should never be NULL for collected areas
+
+			if (node->GetTravelCostFromStart() < smallest_cost)
+			{
+				nearestArea = area;
+				smallest_cost = node->GetTravelCostFromStart();
+			}
+		}
+
+		m_retreatArea = nearestArea;
+
+		break;
+	}
+	case RetreatAreaPreference::FURTHEST:
+	{
+		CNavArea* nearestArea = nullptr;
+		float highest_cost = -1.0f;
+
+		for (auto area : GetCollectedAreas())
+		{
+			auto node = GetNodeForArea(area);
+			// node should never be NULL for collected areas
+
+			if (node->GetTravelCostFromStart() > highest_cost)
+			{
+				nearestArea = area;
+				highest_cost = node->GetTravelCostFromStart();
+			}
+		}
+
+		break;
+	}
+	default:
+	{
+		m_retreatArea = librandom::utils::GetRandomElementFromVector<CNavArea*>(GetCollectedAreas());
+		return;
+	}
+	}
+}
+
+botsharedutils::CollectPatrolAreas::CollectPatrolAreas(CBaseBot* bot, const Vector& start, float minDistanceFromStart, const float maxSearchDistance) :
+	INavAreaCollector<CNavArea>(nullptr, maxSearchDistance, true, true, false, false),
+	m_bot(bot), m_vStart(start), m_vViewOffset(0.0f, 0.0f, 48.0f), m_minDistance(minDistanceFromStart)
+{
+	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 4.0f, true, true, bot->GetCurrentTeamIndex());
+	SetStartArea(startArea);
+}
+
+bool botsharedutils::CollectPatrolAreas::ShouldSearch(CNavArea* area)
+{
+	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
+}
+
+bool botsharedutils::CollectPatrolAreas::ShouldCollect(CNavArea* area)
+{
+	const float range = (area->GetCenter() - m_vStart).Length();
+
+	if (range < m_minDistance)
+	{
+		return false;
+	}
+
+	Vector start = m_vStart + m_vViewOffset;
+	Vector end = area->GetCenter() + m_vViewOffset;
+
+	trace_t tr;
+	trace::line(start, end, MASK_BLOCKLOS, tr);
+
+	if (tr.fraction >= 1.0f)
+	{
+		return false; // visible from start pos
+	}
+
+
+
+	for (const auto& vec : m_points)
+	{
+		const float r2 = (end - vec).Length();
+
+		if (r2 > MAX_RANGE_FOR_VIS_CHECKS)
+		{
+			continue;
+		}
+
+		trace::line(vec, end, MASK_BLOCKLOS, tr);
+
+		if (tr.fraction >= 1.0f)
+		{
+			return false; // current area is visible from a collected patrol spot
+		}
+	}
+
+	m_points.push_back(std::move(end));
+	return true;
+}

@@ -19,7 +19,6 @@ public:
 	const char* GetName() const override { return "Roam"; }
 private:
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	Vector m_goal;
 	int m_failCount;
 

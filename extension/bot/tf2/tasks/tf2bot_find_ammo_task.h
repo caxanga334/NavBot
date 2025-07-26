@@ -31,7 +31,6 @@ public:
 	const char* GetName() const override { return "FindAmmo"; }
 
 private:
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_failsafetimer;
 	CMeshNavigator m_nav;
 	AmmoSource m_type;

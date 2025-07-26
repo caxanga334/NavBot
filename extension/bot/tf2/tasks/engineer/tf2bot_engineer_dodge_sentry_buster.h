@@ -21,7 +21,6 @@ private:
 	CHandle<CBaseEntity> m_sentryBuster;
 	bool m_hasSentry;
 	bool m_detonating;
-	CountdownTimer m_repathTimer;
 	CMeshNavigator m_nav;
 	Vector m_goal;
 	float m_detonationRange;

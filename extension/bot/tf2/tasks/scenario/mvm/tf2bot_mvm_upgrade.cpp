@@ -45,7 +45,7 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 		}
 	}
 
-	m_repathtimer.Start(2.0f);
+	m_nav.StartRepathTimer();
 	return Continue();
 }
 
@@ -60,9 +60,9 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (!bot->IsInUpgradeZone())
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(2.0f);
+			m_nav.StartRepathTimer();
 
 			CTF2BotPathCost cost(bot);
 			if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
@@ -95,7 +95,7 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskUpdate(CTF2Bot* bot)
 
 TaskEventResponseResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	m_repathtimer.Start(2.0f);
+	m_nav.StartRepathTimer();
 
 	CTF2BotPathCost cost(bot);
 	if (!m_nav.ComputePathToPosition(bot, m_goal, cost))

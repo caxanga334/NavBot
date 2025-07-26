@@ -5,7 +5,10 @@
 #include <mods/tf2/nav/tfnavarea.h>
 #include <navmesh/nav_pathfind.h>
 #include <bot/bot_shared_utils.h>
+#include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include "tf2bot_task_sniper_snipe_area.h"
+
+constexpr auto SNIPER_THREAT_TOO_CLOSE_FOR_CONFORT_RANGE = 600.0f;
 
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
@@ -32,7 +35,6 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
-	constexpr auto SNIPER_FIRE_DOT_TOLERANCE = 0.98f;
 
 	EquipAndScope(bot);
 
@@ -40,12 +42,18 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (threat->IsVisibleNow())
 		{
+			// Retreat if an enemy is too close
+			if (bot->GetDifficultyProfile()->GetAggressiveness() < 75 && bot->GetRangeTo(threat->GetLastKnownPosition()) <= SNIPER_THREAT_TOO_CLOSE_FOR_CONFORT_RANGE)
+			{
+				return SwitchTo(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference::FURTHEST), "Threat too close, backing off!");
+			}
+
 			m_boredTimer.Reset();
 
 			botsharedutils::aiming::SelectDesiredAimSpotForTarget(bot, threat->GetEntity());
 			bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at visible threat!");
 
-			if (m_fireWeaponDelay.IsElapsed() && bot->IsLookingTowards(threat->GetEntity(), SNIPER_FIRE_DOT_TOLERANCE))
+			if (m_fireWeaponDelay.IsElapsed() && bot->GetControlInterface()->IsAimOnTarget())
 			{
 				m_fireWeaponDelay.StartRandom(1.5f, 2.3f);
 				bot->GetControlInterface()->PressAttackButton();

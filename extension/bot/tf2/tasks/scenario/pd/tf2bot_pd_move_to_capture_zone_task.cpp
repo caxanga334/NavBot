@@ -99,10 +99,10 @@ TaskResult<CTF2Bot> CTF2BotPDMoveToCaptureZoneTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("No more points to deliver!");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
 		// on some maps, the zone is attached to a moving entity, needs faster repaths
-		m_repathtimer.Start(1.0f);
+		m_nav.StartRepathTimer(CPath::DEFAULT_REPATH_DURATION / 2.0f);
 		Vector pos = UtilHelpers::getWorldSpaceCenter(zone);
 		CTF2BotPathCost cost(bot);
 

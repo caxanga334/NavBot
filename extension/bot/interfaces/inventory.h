@@ -109,6 +109,11 @@ public:
 	}
 
 	/**
+	 * @brief Checks if the current active weapon is the given weapon, if it's not, equip the given weapon.
+	 * @param weapon Weapon to equip.
+	 */
+	void EquipWeapon(const CBotWeapon* weapon) const;
+	/**
 	 * @brief Checks if the bot has a weapon of the given classname.
 	 * @param classname Weapon classname.
 	 * @return true if the bot has the weapon.

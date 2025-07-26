@@ -39,9 +39,9 @@ TaskResult<CTF2Bot> CTF2BotWaitForJackTask::OnTaskUpdate(CTF2Bot* bot)
 		return SwitchTo(new CTF2BotPickJackTask, "Going after the jack!");
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(2.0f);
+		m_nav.StartRepathTimer();
 		CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 		m_nav.ComputePathToPosition(bot, m_goal, cost);
 	}

@@ -40,7 +40,6 @@ public:
 private:
 	CT m_pathCost;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	Vector m_goal;
 	int m_failCount;
 	const CNavPrerequisite* m_prereq;
@@ -84,9 +83,9 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 		return AITask<BT>::Done("Target entity is dead!");
 	}
 
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathTimer.StartRandom(1.0f, 2.0f);
+		m_nav.StartRepathTimer();
 
 		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathCost))
 		{

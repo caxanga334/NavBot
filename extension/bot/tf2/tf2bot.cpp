@@ -731,6 +731,70 @@ bool CTF2Bot::IsUsingSniperScope() const
 	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Zoomed);
 }
 
+void CTF2Bot::Disguise(bool myTeam)
+{
+	using namespace TeamFortress2;
+
+	if (myTeam)
+	{
+		DisguiseAs(static_cast<TFClassType>(CBaseBot::s_botrng.GetRandomInt<int>(static_cast<int>(TFClassType::TFClass_Scout), static_cast<int>(TFClassType::TFClass_Engineer)), false));
+	}
+	else
+	{
+		std::vector<TFClassType> candidates;
+		int skill = GetDifficultyProfile()->GetGameAwareness();
+
+		if (skill < 50) // less than 50, disguise as a random class
+		{
+			// Random class
+			DisguiseAs(static_cast<TFClassType>(CBaseBot::s_botrng.GetRandomInt<int>(static_cast<int>(TFClassType::TFClass_Scout), static_cast<int>(TFClassType::TFClass_Engineer)), false));
+		}
+		else if (skill < 75) // more than 50 and less than 75, filter class with no players
+		{
+			for (int clss = static_cast<int>(TFClass_Scout); clss <= static_cast<int>(TFClass_Engineer); clss++)
+			{
+				if (tf2lib::GetNumberOfPlayersAsClass(static_cast<TFClassType>(clss), tf2lib::GetEnemyTFTeam(GetMyTFTeam())) > 0)
+				{
+					candidates.push_back(static_cast<TFClassType>(clss));
+				}
+			}
+
+			if (candidates.empty())
+			{
+				DisguiseAs(TFClass_Spy, false);
+			}
+			else
+			{
+				DisguiseAs(librandom::utils::GetRandomElementFromVector(candidates), false);
+			}
+		}
+		else // more than 75, filter class with no players and bad classes
+		{
+			for (int clss = static_cast<int>(TFClass_Scout); clss <= static_cast<int>(TFClass_Engineer); clss++)
+			{
+				if (clss == static_cast<int>(TFClass_Scout) || clss == static_cast<int>(TFClass_Medic))
+				{
+					continue; // skip these
+				}
+
+				if (tf2lib::GetNumberOfPlayersAsClass(static_cast<TFClassType>(clss), tf2lib::GetEnemyTFTeam(GetMyTFTeam())) > 0)
+				{
+					candidates.push_back(static_cast<TFClassType>(clss));
+				}
+			}
+
+			if (candidates.empty())
+			{
+				DisguiseAs(TFClass_Spy, false);
+			}
+			else
+			{
+				DisguiseAs(librandom::utils::GetRandomElementFromVector(candidates), false);
+			}
+		}
+	}
+}
+
 void CTF2Bot::DisguiseAs(TeamFortress2::TFClassType classtype, bool myTeam)
 {
 	// std::unique_ptr<char[]> buffer = std::make_unique<char[]>(128);

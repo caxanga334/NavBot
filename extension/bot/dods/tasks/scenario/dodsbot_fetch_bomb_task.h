@@ -16,7 +16,6 @@ public:
 private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 	AITask<CDoDSBot>* m_exittask;
 
 	bool SelectNearestBombDispenser(CDoDSBot* bot);

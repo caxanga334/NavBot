@@ -588,6 +588,7 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnTruceChanged(BotClass* bot, const bool enabled) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnSquadEvent(BotClass* bot, SquadEventType evtype) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnObjectSapped(BotClass* bot, CBaseEntity* owner, CBaseEntity* saboteur) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnGameEvent(BotClass* bot, const IGameEvent* event, void* moddata) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1135,6 +1136,11 @@ private:
 	void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur) override final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnObjectSapped, owner, saboteur);
+	}
+
+	void OnGameEvent(const IGameEvent* event, void* moddata) override final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnGameEvent, event, moddata);
 	}
 };
 

@@ -21,7 +21,6 @@ public:
 	const char* GetName() const override { return "PDMoveToCap"; }
 private:
 	CHandle<CBaseEntity> m_capzone;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_timeout;
 	CMeshNavigator m_nav;
 	int m_pathfailures;

@@ -455,3 +455,65 @@ int tfentities::HObjectDispenser::GetStoredMetal() const
 	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmoMetal", metal);
 	return metal;
 }
+
+TeamFortress2::SentryState tfentities::HObjectSentryGun::GetState() const
+{
+	int state = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iState", state);
+	return static_cast<TeamFortress2::SentryState>(state);
+}
+
+int tfentities::HObjectSentryGun::GetAmmoShells() const
+{
+	int retval = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmoShells", retval);
+	return retval;
+}
+
+int tfentities::HObjectSentryGun::GetAmmoRockets() const
+{
+	int retval = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAmmoRockets", retval);
+	return retval;
+}
+
+bool tfentities::HObjectSentryGun::IsPlayerControlled() const
+{
+	bool retval = false;
+	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bPlayerControlled", retval);
+	return retval;
+}
+
+int tfentities::HObjectSentryGun::GetShieldLevel() const
+{
+	int retval = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_nShieldLevel", retval);
+	return retval;
+}
+
+CBaseEntity* tfentities::HObjectSentryGun::GetEnemy() const
+{
+	int ent = INVALID_EHANDLE_INDEX;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hEnemy", ent);
+
+	if (ent == INVALID_EHANDLE_INDEX)
+	{
+		return nullptr;
+	}
+
+	return gamehelpers->ReferenceToEntity(ent);
+}
+
+int tfentities::HObjectSentryGun::GetKills() const
+{
+	int retval = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iKills", retval);
+	return retval;
+}
+
+int tfentities::HObjectSentryGun::GetAssists() const
+{
+	int retval = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iAssists", retval);
+	return retval;
+}

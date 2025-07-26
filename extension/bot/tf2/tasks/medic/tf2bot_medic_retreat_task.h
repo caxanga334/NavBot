@@ -23,7 +23,6 @@ public:
 private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_atHomeTimer;
 
 	static constexpr float home_range() { return 256.0f; }

@@ -23,7 +23,6 @@ public:
 
 private:
 	CountdownTimer m_endpushtimer;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_firetimer;
 	CMeshNavigator m_nav;
 	Vector m_goal;

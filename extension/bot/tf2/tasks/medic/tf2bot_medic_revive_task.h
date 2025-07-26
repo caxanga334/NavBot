@@ -25,7 +25,6 @@ public:
 
 private:
 	CHandle<CBaseEntity> m_marker; // revive marker
-	CountdownTimer m_repathTimer;
 	CMeshNavigator m_nav;
 	Vector m_aimpos;
 	Vector m_goal;

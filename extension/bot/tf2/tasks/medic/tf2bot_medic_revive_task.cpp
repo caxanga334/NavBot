@@ -59,7 +59,7 @@ TaskResult<CTF2Bot> CTF2BotMedicReviveTask::OnTaskStart(CTF2Bot* bot, AITask<CTF
 	m_aimpos.z += marker_aimpos_z_offset();
 
 	bot->GetControlInterface()->ReleaseAttackButton();
-	m_repathTimer.Start(1.2f);
+	m_nav.StartRepathTimer();
 
 	CBaseEntity* medigun = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary));
 
@@ -110,9 +110,9 @@ TaskResult<CTF2Bot> CTF2BotMedicReviveTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		if (m_repathTimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(1.2f);
+			m_nav.StartRepathTimer();
 
 			CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 			if (!m_nav.ComputePathToPosition(bot, m_goal, cost))

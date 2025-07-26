@@ -70,7 +70,7 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskStart(CTF2Bot* bot
 	CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 	m_nav.ComputePathToPosition(bot, m_goal, cost);
 
-	m_repathTimer.StartRandom();
+	m_nav.StartRepathTimer();
 	m_sniping = false;
 
 	if (bot->IsUsingSniperScope())
@@ -99,9 +99,9 @@ TaskResult<CTF2Bot> CTF2BotSniperMoveToSnipingSpotTask::OnTaskUpdate(CTF2Bot* bo
 		return SwitchTo(new CTF2BotSniperSnipeAreaTask(m_waypoint), "Sniping!");
 	}
 
-	if (m_repathTimer.IsElapsed() || !m_nav.IsValid())
+	if (m_nav.NeedsRepath() || !m_nav.IsValid())
 	{
-		m_repathTimer.StartRandom();
+		m_nav.StartRepathTimer();
 
 		CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 		m_nav.ComputePathToPosition(bot, m_goal, cost);

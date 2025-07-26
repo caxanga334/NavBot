@@ -520,6 +520,13 @@ ISquad* CBaseBot::GetSquadInterface() const
 	return m_basesquad.get();
 }
 
+ISharedBotMemory* CBaseBot::GetSharedMemoryInterface() const
+{
+	int team = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iTeamNum", team);
+	return extmanager->GetMod()->GetSharedBotMemory(team);
+}
+
 void CBaseBot::Spawn()
 {
 	if (m_isfirstspawn == false)

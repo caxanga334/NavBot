@@ -43,8 +43,8 @@ TaskResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnTaskStart(CBlackMesaBot* bot,
 	{
 		return Done("No path to random roam goal!");
 	}
-
-	m_repathTimer.Start(1.0f);
+	
+	m_nav.StartRepathTimer();
 	m_failCount = 0;
 
 	return Continue();
@@ -52,9 +52,9 @@ TaskResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnTaskStart(CBlackMesaBot* bot,
 
 TaskResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnTaskUpdate(CBlackMesaBot* bot)
 {
-	if (m_repathTimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathTimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		CBlackMesaBotPathCost cost(bot);
 		if (!m_nav.ComputePathToPosition(bot, m_goal, cost))
 		{
@@ -69,7 +69,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnTaskUpdate(CBlackMesaBot* bot
 
 TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotRoamTask::OnMoveToFailure(CBlackMesaBot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	m_repathTimer.Invalidate();
+	m_nav.ForceRepath();
 	
 	if (++m_failCount >= 20)
 	{

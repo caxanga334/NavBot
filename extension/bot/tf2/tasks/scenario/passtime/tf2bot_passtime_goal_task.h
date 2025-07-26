@@ -21,7 +21,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_goalent;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 	TeamFortress2::PassTimeGoalType m_goaltype;
 	CountdownTimer m_holdattacktimer;
 

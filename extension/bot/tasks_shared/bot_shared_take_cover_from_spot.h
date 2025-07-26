@@ -39,7 +39,6 @@ private:
 	botsharedutils::FindCoverCollector m_collector;
 	CT m_pathcost;
 	AITask<BT>* m_task; // optional task for when the bot reaches cover
-	CountdownTimer m_repathtimer;
 	CMeshNavigator m_nav;
 	Vector m_goal;
 };
@@ -74,9 +73,9 @@ inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskStart(BT* b
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.StartRandom(1.0f, 2.0f);
+		m_nav.StartRepathTimer();
 		m_nav.ComputePathToPosition(bot, m_goal, m_pathcost);
 	}
 

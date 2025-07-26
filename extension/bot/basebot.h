@@ -18,6 +18,7 @@
 #include <bot/interfaces/weapon.h>
 #include <bot/interfaces/inventory.h>
 #include <bot/interfaces/squads.h>
+#include <bot/interfaces/sharedmemory.h>
 #include <sdkports/sdk_timers.h>
 
 // Interval between calls to Update()
@@ -136,6 +137,7 @@ public:
 	virtual IBehavior* GetBehaviorInterface() const;
 	virtual IInventory* GetInventoryInterface() const;
 	virtual ISquad* GetSquadInterface() const;
+	virtual ISharedBotMemory* GetSharedMemoryInterface() const;
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 

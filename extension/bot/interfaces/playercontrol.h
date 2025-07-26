@@ -20,6 +20,8 @@ public:
 	IPlayerController(CBaseBot* bot);
 	~IPlayerController() override;
 	
+	static constexpr auto AIM_ON_TARGET_DOT_TOLERANCE = 0.995f; // Dot product result must be larger than this to consider the aim to be on target
+
 	// Priority for look calls
 	enum LookPriority
 	{

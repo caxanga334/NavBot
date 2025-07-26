@@ -90,21 +90,23 @@ TaskResult<CTF2Bot> CTF2BotPDCollectTask::OnTaskUpdate(CTF2Bot* bot)
 	if (entprops->GetEntPropEnt(flag, Prop_Send, "m_hOwnerEntity") != nullptr)
 	{
 		m_points[m_index].Term(); // invalidate the handle, the code above will skip it
-		m_repathtimer.Invalidate();
+		m_nav.Invalidate();
+		m_nav.ForceRepath();
 		return Continue();
 	}
 
 	const Vector& origin = UtilHelpers::getEntityOrigin(flag);
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 		CTF2BotPathCost cost(bot);
 		
 		if (!m_nav.ComputePathToPosition(bot, origin, cost, 0.0f, true))
 		{
 			m_points[m_index].Term(); // invalidate the handle, the code above will skip it
-			m_repathtimer.Invalidate();
+			m_nav.Invalidate();
+			m_nav.ForceRepath();
 			return Continue();
 		}
 	}

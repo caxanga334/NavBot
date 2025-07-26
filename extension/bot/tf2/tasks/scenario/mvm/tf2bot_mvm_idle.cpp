@@ -134,9 +134,9 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (bot->GetRangeTo(m_goal) > 72.0f)
 	{
-		if (m_repathtimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathtimer.Start(1.0f);
+			m_nav.StartRepathTimer();
 			CTF2BotPathCost cost(bot);
 			m_nav.ComputePathToPosition(bot, m_goal, cost);
 		}
@@ -150,7 +150,7 @@ TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskUpdate(CTF2Bot* bot)
 TaskResult<CTF2Bot> CTF2BotMvMIdleTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
 	m_nav.Invalidate();
-	m_repathtimer.Invalidate();
+	m_nav.ForceRepath();
 
 	return Continue();
 }

@@ -141,6 +141,30 @@ void CWeaponInfoManager::PostParseAnalysis()
 	m_default.reset(CreateWeaponInfo());
 }
 
+void CWeaponInfoManager::ReadDynamicPrioritySection(const SourceMod::SMCStates* states, const char* key, const char* value)
+{
+	if (std::strcmp(key, "health") == 0)
+	{
+		m_current->EditDynamicPriorityHealth()->Parse(value);
+	}
+	else if (std::strcmp(key, "range") == 0)
+	{
+		m_current->EditDynamicPriorityRange()->Parse(value);
+	}
+	else if (std::strcmp(key, "secondary_ammo") == 0)
+	{
+		m_current->EditDynamicPrioritySecAmmo()->Parse(value);
+	}
+	else if (std::strcmp(key, "aggression") == 0)
+	{
+		m_current->EditDynamicPriorityAggression()->Parse(value);
+	}
+	else
+	{
+		smutils->LogError(myself, "Unknown KV pair in Dynamic Priority section! %s %s col %u line %u", key, value, states->col, states->line);
+	}
+}
+
 const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(std::string classname, const int index) const
 {
 	const WeaponInfo* result = nullptr;
@@ -163,72 +187,76 @@ const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(std::string classname, const
 	return m_default.get();
 }
 
-SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SMCStates* states, const char* name)
+SourceMod::SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
 {
-	// If the file doesn't start with this, the file is invalid
-	if (strncmp(name, "WeaponInfoConfig", 16) == 0)
+	/*
+	
+	WeaponInfoConfig // depth 0
 	{
-		m_isvalid = true;
-		return SMCResult_Continue;
-	}
-
-	if (!m_isvalid)
-	{
-		return SMCResult_Halt;
-	}
-
-	// check weapon info sections
-	if (strncmp(name, "primary_attack_info", 19) == 0)
-	{
-		m_section_prim = true;
-
-		if (!m_section_weapon)
+		"entry" // depth 1
 		{
-			return SMCResult_Halt;
+			"k1" "v1"
+			...
+			"sub_section" // depth 2
+			{
+				...
+			}
 		}
 	}
-	else if (strncmp(name, "secondary_attack_info", 21) == 0)
-	{
-		m_section_sec = true;
+	
+	*/
 
-		if (!m_section_weapon)
+	if (m_parser_depth == 0)
+	{
+		if (std::strcmp(name, "WeaponInfoConfig") == 0)
 		{
-			return SMCResult_Halt;
+			m_isvalid = true;
+		}
+		else
+		{
+			smutils->LogError(myself, "[WEAPON PARSER INFO] Invalid file!");
+			return SourceMod::SMCResult_HaltFail;
 		}
 	}
-	else if (strncmp(name, "tertiary_attack_info", 20) == 0)
+	else if (m_parser_depth == 1)
 	{
-		m_section_ter = true;
-
 		if (!m_section_weapon)
 		{
-			return SMCResult_Halt;
+			m_section_weapon = true;
+			auto& newinfo = m_weapons.emplace_back(CreateWeaponInfo());
+			m_current = newinfo.get();
+			m_current->SetConfigEntryName(name);
+		}
+	}
+	else if (m_parser_depth == 2)
+	{
+		if (std::strcmp(name, "primary_attack_info") == 0)
+		{
+			m_section_prim = true;
+		}
+		else if (std::strcmp(name, "secondary_attack_info") == 0)
+		{
+			m_section_sec = true;
+		}
+		else if (std::strcmp(name, "tertiary_attack_info") == 0)
+		{
+			m_section_ter = true;
+		}
+		else if (std::strcmp(name, "special_function") == 0)
+		{
+			m_section_specialfunc = true;
+		}
+		else if (std::strcmp(name, "dynamic_priorities") == 0)
+		{
+			m_section_dynamicprio = true;
+		}
+		else
+		{
+			smutils->LogError(myself, "[WEAPON INFO CONFIG] Unknown weapon subsection named \"%s\"!", name);
 		}
 	}
 
-	if (m_section_weapon && std::strcmp(name, "special_function") == 0)
-	{
-		m_section_specialfunc = true;
-		return SourceMod::SMCResult_Continue;
-	}
-
-	if (!m_section_weapon) // weapon section can be anything
-	{
-		m_section_weapon = true;
-		auto& newinfo = m_weapons.emplace_back(CreateWeaponInfo());
-		m_current = newinfo.get();
-		m_current->SetConfigEntryName(name);
-	}
-	else if (IsParserInWeaponAttackSection())
-	{
-		return SMCResult_Continue;
-	}
-	else // not a weapon entry section and not a know section name
-	{
-		smutils->LogError(myself, "Unknown section! %s at line %d col %d", name, states->line, states->col);
-		return SMCResult_Halt;
-	}
-
+	m_parser_depth++;
 	return SMCResult_Continue;
 }
 
@@ -297,6 +325,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair on special function <%s - %s> at line %i col %i", key, value, states->line, states->col);
 		}
 
+		return SourceMod::SMCResult_Continue;
+	}
+	else if (m_section_dynamicprio)
+	{
+		ReadDynamicPrioritySection(states, key, value);
 		return SourceMod::SMCResult_Continue;
 	}
 
@@ -438,31 +471,6 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetCustomAmmoPropertyIsFloat(v);
 	}
-	else if (std::strcmp(key, "priority_dynamic_has_secondary_ammo") == 0)
-	{
-		int v = atoi(value);
-		m_current->SetDynamicPriorityHasSecondaryAmmo(v);
-	}
-	else if (std::strcmp(key, "priority_dynamic_health_percentage") == 0)
-	{
-		int v = atoi(value);
-		m_current->SetDynamicPriorityHealthPercentage(v);
-	}
-	else if (std::strcmp(key, "priority_dynamic_health_percentage_threshold") == 0)
-	{
-		float v = atof(value);
-		m_current->SetDynamicPriorityHealthPercentageCondition(v);
-	}
-	else if (std::strcmp(key, "priority_dynamic_threat_range_less_than") == 0)
-	{
-		int v = atoi(value);
-		m_current->SetDynamicPriorityThreatRangeLessThan(v);
-	}
-	else if (std::strcmp(key, "priority_dynamic_threat_range_less_than_threshold") == 0)
-	{
-		float v = atof(value);
-		m_current->SetDynamicPriorityThreatRangeLessThanCondition(v);
-	}
 	else if (std::strcmp(key, "deployed_property_name") == 0)
 	{
 		m_current->SetDeployedPropertyName(value);
@@ -529,6 +537,21 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			}
 
 			m_current->AddTag(token);
+		}
+	}
+	else if (std::strcmp(key, "clear_tags") == 0)
+	{
+		m_current->ClearTags();
+	}
+	else if (std::strcmp(key, "remove_tags") == 0)
+	{
+		std::string szValue(value);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			m_current->RemoveTag(token);
 		}
 	}
 	else if (!IsParserInWeaponAttackSection())
@@ -610,25 +633,52 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	return SMCResult_Continue;
 }
 
-SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SMCStates* states)
+SourceMod::SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SourceMod::SMCStates* states)
 {
-	if (m_section_specialfunc)
+	/*
+	WeaponInfoConfig
 	{
-		m_section_specialfunc = false;
-		return SourceMod::SMCResult_Continue;
+		// leaves at depth 1
+		"entry"
+		{
+			// leaves at depth 2
+			"k1" "v1"
+			...
+			"sub_section"
+			{
+				// leaves at depth 3
+				...
+			}
+		}
 	}
+	*/
 
-	if (m_section_weapon)
+
+	if (m_parser_depth == 3)
 	{
-		if (IsParserInWeaponAttackSection())
+		if (m_section_specialfunc)
+		{
+			m_section_specialfunc = false;
+		}
+		else if (m_section_dynamicprio)
+		{
+			m_section_dynamicprio = false;
+		}
+		else if (IsParserInWeaponAttackSection())
 		{
 			ParserExitWeaponSection();
-			return SourceMod::SMCResult_Continue;
 		}
-
-		m_section_weapon = false;
+	}
+	else if (m_parser_depth == 2)
+	{
+		if (m_section_weapon)
+		{
+			m_section_weapon = false;
+			m_current = nullptr;
+		}
 	}
 
+	m_parser_depth--;
 	return SourceMod::SMCResult_Continue;
 }
 
@@ -685,6 +735,74 @@ void WeaponInfo::PostLoad()
 		}
 	}
 }
+
+void WeaponInfo::DynamicPriority::Parse(const char* str)
+{
+	try
+	{
+		std::string szValue(str);
+		std::stringstream stream(szValue);
+		std::string token;
+		std::uint8_t i = 0U;
+
+		while (std::getline(stream, token, ','))
+		{
+			if (i == 0)
+			{
+				if (std::strcmp(token.c_str(), "remove") == 0)
+				{
+					this->is_used = false;
+					this->is_greater = false;
+					this->value_to_compare = 0.0f;
+					this->priority_value = 0;
+					return;
+				}
+
+				if (std::strcmp(token.c_str(), "empty") == 0)
+				{
+					i++;
+					continue;
+				}
+
+				if (std::strcmp(token.c_str(), "greater") == 0)
+				{
+					this->is_greater = true;
+				}
+				else
+				{
+					this->is_greater = false;
+				}
+			}
+			else if (i == 1)
+			{
+				if (std::strcmp(token.c_str(), "empty") == 0)
+				{
+					i++;
+					continue;
+				}
+
+				this->value_to_compare = std::stof(token, nullptr);
+			}
+			else if (i == 2)
+			{
+				this->priority_value = std::stoi(token, nullptr);
+			}
+
+			if (++i >= 3)
+			{
+				break;
+			}
+		}
+
+		this->is_used = true;
+	}
+	catch (std::exception& ex)
+	{
+		smutils->LogError(myself, "C++ Exception throw while parsing weapon dynamic priority value \"%s\" : %s", str, ex.what());
+		this->is_used = false;
+	}
+}
+
 
 CON_COMMAND(sm_navbot_reload_weaponinfo_config, "Reloads the weapon info configuration file.")
 {

@@ -24,6 +24,26 @@ public:
 	CBaseMod();
 	virtual ~CBaseMod();
 
+	/**
+	 * @brief Utility class for propagating game events to bots.
+	 * 
+	 * Moddata is optional and can be NULL.
+	 */
+	class PropagateGameEventToBots
+	{
+	public:
+		PropagateGameEventToBots()
+		{
+			moddata = nullptr;
+			event = nullptr;
+		}
+
+		void operator()(CBaseBot* bot);
+
+		void* moddata;
+		const IGameEvent* event;
+	};
+
 	static constexpr auto NO_ECON_INDEX = -1;
 
 protected:
@@ -93,7 +113,7 @@ public:
 	/**
 	 * @brief Gets a pointer to the bot shared memory interface for the given team index.
 	 * @param teamindex Team index number.
-	 * @return Shared bot memory interface pointer or NULL on failure/error.
+	 * @return Shared bot memory interface pointer.
 	 */
 	virtual ISharedBotMemory* GetSharedBotMemory(int teamindex);
 protected:

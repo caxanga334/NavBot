@@ -241,6 +241,8 @@ public:
 	 * @return True if controlling the bot's movements. False otherwise.
 	 */
 	virtual bool IsControllingMovements();
+	// Returns true if the bot is allowed to compute paths.
+	virtual bool IsPathingAllowed() const;
 	/**
 	 * @brief Current movement action needs to control the bot weapons (IE: use the rocket launcher to rocket jump)
 	 * 
@@ -440,6 +442,17 @@ inline bool IMovement::IsControllingMovements()
 	}
 
 	return false;
+}
+
+inline bool IMovement::IsPathingAllowed() const
+{
+	// Don't allow navigators to compute a path in these states
+	if (m_ladderState != NOT_USING_LADDER || m_elevatorState != NOT_USING_ELEVATOR || m_isUsingCatapult)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 inline bool IMovement::IsClimbingOrJumping()

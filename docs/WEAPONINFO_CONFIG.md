@@ -35,9 +35,6 @@ This is a list of keys available for all mods.
 |custom_ammo_property_type|Custom ammo property type. "networked" for networked properties and "datamap" for datamaps.|string|
 |custom_ammo_property_out_of_ammo_threshold|If the property value is equal or less than this, the weapon is out of ammo.|float|
 |custom_ammo_property_is_float|Is the entity property used for custom ammo a float? If not, it's an integer.|boolean|
-|priority_dynamic_has_secondary_ammo|If non zero and the weapon has secondary ammo, add this to the weapon's priority value.|integer|
-|priority_dynamic_health_percentage|If the bot health matches the condition, add this to the weapon's priority value|integer|
-|priority_dynamic_health_percentage_threshold|If the bot health percentage is equal or less than this, then add `priority_dynamic_health_percentage` to the weapon's priority. Negative value (default) disables this.|float|
 |deployed_property_name|Name of a networked property used to check if the weapon is scoped in or deployed. Only supports booleans for now.|string|
 |deployed_property_source|Deployed status property source. "player" or "weapon".|string|
 |needs_to_be_deployed_to_fire|If enabled, bots will deploy/scope-in before firing with this weapon.|boolean|
@@ -120,6 +117,37 @@ There are a few rules you must obey when using `variantof`:
 
 Entries can be turned into a template by adding the `"is_template"    "true"` property.    
 Template entries ignores some error checks and also won't be used by the bots.    
+
+## Dynamic Priorities
+
+Weapons supports condition based dynamic priorities.    
+The dynamic priority values are added to the weapon's base priority.    
+Dynamic priorities should be added to a `dynamic_priorities` section of the weapon.
+
+|Priority Key Name|Description|Priority Only|
+|:---:|:---:|:---:|
+|health|Changes the weapon's priority based on the bot's health.|No.|
+|range|Changes the weapon's priority based on the distance between the bot and the current enemy.|No.|
+|secondary_ammo|Changes the weapon's priority if secondary ammo is available for this weapon.|Yes.|
+|aggression|Changes the weapon's priority based on the bot's difficulty profile aggression value.|No.|
+
+### Dynamic Priority Key Format
+
+Dynamic priorities values are parsed from a single string with each data delimited by comma in the following format:    
+`compare type,value to compare,priority value`    
+If **Priority Only** is **yes** on the table above, `compare type` and `value to compare` are not used and should be set to `empty`.    
+Examples:
+
+```
+// Add 30 weapon priority when secondary ammo is available
+"secondary_ammo" "empty,empty,30"
+// Add -10 weapon priority when the range to the current enemy is greater than 1000 units.
+"range" "greater,1000.0,-10"
+// Add 50 weapon priority when the bot's health percentage is less than 0.5
+"health" "less,0.5,50"
+// Remove the health priority if the current weapon is a variant of another weapon that has a dynamic health priority
+"health" "remove"
+```
 
 ## Console Commands
 

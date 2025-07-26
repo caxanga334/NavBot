@@ -15,7 +15,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_teleporter;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_timeout;
 };
 

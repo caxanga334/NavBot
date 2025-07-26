@@ -62,7 +62,6 @@ public:
 	const char* GetName() const override { return "Roam"; }
 private:
 	CT m_pathcost;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_timeout;
 	CMeshNavigator m_nav;
 	Vector m_goal;
@@ -89,7 +88,7 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT
 		return AITask<BT>::Done("Failed to build path to destination!");
 	}
 
-	m_repathtimer.Start(2.0f);
+	m_nav.StartRepathTimer();
 	return AITask<BT>::Continue();
 }
 
@@ -111,9 +110,9 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 		}
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(2.0f);
+		m_nav.StartRepathTimer();
 
 		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathcost))
 		{

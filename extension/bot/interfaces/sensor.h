@@ -86,6 +86,8 @@ public:
 	// Time since a threat was visible
 	virtual const float GetTimeSinceVisibleThreat() const;
 
+	static constexpr bool ONLY_VISIBLE_THREATS = true;
+
 	// Gets the primary known threat to the bot or NULL if none
 	virtual const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
 	/**
@@ -96,6 +98,13 @@ public:
 	 * @return Quantity of known entities
 	*/
 	virtual int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
+	/**
+	 * @brief Gets the count of known enemies.
+	 * @param onlyvisible If true, only consider visible enemies.
+	 * @param rangelimit If larger than zero, must be at least this close to the bot.
+	 * @return Number of known enemies that passes the given filters.
+	 */
+	int GetKnownEnemyCount(const bool onlyvisible, const float rangelimit = -1.0f);
 	// Gets the team index of a known entity since we don't have access to the CBaseEntity functions. Override per mod needs.
 	virtual int GetKnownEntityTeamIndex(CKnownEntity* known);
 	virtual const CKnownEntity* GetNearestKnown(const int teamindex);

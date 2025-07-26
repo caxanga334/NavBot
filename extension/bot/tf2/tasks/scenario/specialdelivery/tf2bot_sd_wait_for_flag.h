@@ -17,7 +17,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_flag;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 };
 
 #endif // !__NAVBOT_TF2BOT_SD_WAIT_FOR_FLAG_TASK_H_

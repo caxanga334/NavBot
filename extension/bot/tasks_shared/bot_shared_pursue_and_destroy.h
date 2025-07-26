@@ -12,6 +12,8 @@
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_ehandle.h>
 
+// Deprecated, use bot_shared_seek_and_destroy_entity.h
+
 template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedPursueAndDestroyTask : public AITask<BT>
 {
@@ -48,7 +50,6 @@ private:
 	int m_pathfails;
 	CT m_pathCost;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CountdownTimer m_timeout;
 	Vector m_moveGoal;
 	CHandle<CBaseEntity> m_enemy;
@@ -143,9 +144,9 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 		m_patrolDone = true;
 	}
 
-	if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
+	if (!m_nav.IsValid() || m_nav.NeedsRepath())
 	{
-		m_repathTimer.Start(1.0f);
+		m_nav.StartRepathTimer();
 
 		if (!m_nav.ComputePathToPosition(bot, m_moveGoal, m_pathCost))
 		{

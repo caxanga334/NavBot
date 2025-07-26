@@ -126,11 +126,11 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		// move to lurk position
 
-		if (!m_nav.IsValid() || m_repathTimer.IsElapsed())
+		if (!m_nav.IsValid() || m_nav.NeedsRepath())
 		{
 			CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 			m_nav.ComputePathToPosition(bot, m_goal, cost);
-			m_repathTimer.Start(0.6f);
+			m_nav.StartRepathTimer();
 		}
 
 		m_nav.Update(bot);
@@ -219,7 +219,7 @@ void CTF2BotSpyInfiltrateTask::DisguiseMe(CTF2Bot* me)
 {
 	if (m_disguiseCooldown.IsElapsed())
 	{
-		me->DisguiseAs(static_cast<TeamFortress2::TFClassType>(randomgen->GetRandomInt<int>(1, 9)));
+		me->Disguise(false);
 		m_disguiseCooldown.Start(2.0f);
 	}
 }
@@ -477,7 +477,7 @@ TaskResult<CTF2Bot> CTF2BotSpyAttackTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	if (!threat || threat->IsObsolete() || !UtilHelpers::IsPlayer(threat->GetEntity()))
+	if (!threat || threat->IsObsolete() || !UtilHelpers::IsPlayer(threat->GetEntity()) || bot->GetSensorInterface()->IsIgnored(threat->GetEntity()))
 	{
 		return Done("Victim is obsolete!");
 	}
@@ -514,7 +514,7 @@ TaskResult<CTF2Bot> CTF2BotSpyAttackTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 		}
 
-		// LOOK_VERY_IMPORTANT overrides combat but still allows for movement aim
+		// LOOK_PRIORITY overrides combat but still allows for movement aim
 		bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_PRIORITY, 1.0f, "Aiming at my stab victim!");
 
 		if (!isBehindThem)

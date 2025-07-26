@@ -23,7 +23,6 @@ public:
 private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CHandle<CBaseEntity> m_capzone;
 	CHandle<CBaseEntity> m_flagzone;
 	bool m_capwasdisabled;

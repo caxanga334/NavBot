@@ -88,7 +88,7 @@ TaskResult<CTF2Bot> CTF2BotMvMGuardDroppedBombTask::OnTaskStart(CTF2Bot* bot, AI
 	m_goal = goal->GetRandomPoint();
 	CTF2BotPathCost cost(bot);
 	m_nav.ComputePathToPosition(bot, m_goal, cost);
-	m_repathTimer.Start(2.0f);
+	m_nav.StartRepathTimer();
 
 	CBaseEntity* health = nullptr;
 
@@ -132,9 +132,9 @@ TaskResult<CTF2Bot> CTF2BotMvMGuardDroppedBombTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (!m_reached)
 	{
-		if (m_repathTimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(2.0f);
+			m_nav.StartRepathTimer();
 			CTF2BotPathCost cost(bot);
 			m_nav.ComputePathToPosition(bot, m_goal, cost);
 		}

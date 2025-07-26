@@ -1374,12 +1374,12 @@ void CNavMesh::LoadPlaceDatabase( void )
 void CNavMesh::ParseGlobalPlaceDatabase(NavPlaceDatabaseLoader& loader)
 {
 	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
-	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/nav_places.cfg");
+	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "data/navbot/nav_places.cfg");
 	std::filesystem::path path{ szPath.get() };
 
 	if (!loader.ParseFile(path))
 	{
-		smutils->LogError(myself, "Failed to parse Nav global place database.");
+		smutils->LogError(myself, "Failed to parse Nav global place database at \"%s\".", szPath.get());
 	}
 }
 
@@ -1387,13 +1387,16 @@ void CNavMesh::ParseModPlaceDatabase(NavPlaceDatabaseLoader& loader)
 {
 	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
 	const char* mod = smutils->GetGameFolderName();
-	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/nav_places.cfg", mod);
+	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "data/navbot/%s/nav_places.cfg", mod);
 	std::filesystem::path path{ szPath.get() };
 
+	// Only print in debug builds to avoid confusion since it's not an error.
+#ifdef EXT_DEBUG
 	if (!loader.ParseFile(path))
 	{
 		rootconsole->ConsolePrint("Could not parse Nav mod specific place database. <%s>", szPath.get());
 	}
+#endif // EXT_DEBUG
 }
 
 void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)

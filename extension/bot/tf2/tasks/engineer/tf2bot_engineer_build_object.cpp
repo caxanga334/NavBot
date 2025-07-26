@@ -105,7 +105,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 		}
 	}
 
-	m_repathTimer.Start(2.5f);
+	m_nav.StartRepathTimer();
 
 	// hack for mvm
 	bot->SelectWeapon(bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Primary));
@@ -259,9 +259,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		if (m_repathTimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(2.5f);
+			m_nav.StartRepathTimer();
 
 			CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 			if (!m_nav.ComputePathToPosition(bot, m_goal, cost))

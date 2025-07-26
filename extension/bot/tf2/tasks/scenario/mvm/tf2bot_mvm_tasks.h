@@ -31,7 +31,6 @@ public:
 
 	const char* GetName() const override { return "CollectMvMCurrency"; }
 private:
-	CountdownTimer m_repathTimer;
 	CMeshNavigator m_nav;
 	std::vector<CHandle<CBaseEntity>> m_currencypacks;
 	std::vector<CHandle<CBaseEntity>>::iterator m_it;
@@ -48,7 +47,6 @@ public:
 	const char* GetName() const override { return "TankBuster"; }
 private:
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CHandle<CBaseEntity> m_tank;
 	CountdownTimer m_rescanTimer;
 };

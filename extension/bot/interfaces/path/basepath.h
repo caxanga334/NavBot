@@ -146,8 +146,10 @@ public:
 		}
 	};
 
+	// Invalidates the current path
 	virtual void Invalidate();
-
+	// Mark this path for repathing
+	virtual void ForceRepath();
 	// Returns the path destination since the last ComputePath call.
 	inline const Vector& GetPathDestination() const { return m_destination; }
 
@@ -176,6 +178,14 @@ public:
 	{
 		Invalidate();
 
+		if (!bot->GetMovementInterface()->IsPathingAllowed())
+		{
+			// Return true since we a skipping path calculations and not actually failing due to no path found.
+			// The Invalidate() will reset the repath timer
+			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
+			return true;
+		}
+
 		auto start = bot->GetAbsOrigin();
 		auto startArea = bot->GetLastKnownNavArea();
 		m_destination = goal;
@@ -183,6 +193,7 @@ public:
 		if (startArea == nullptr)
 		{
 			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
+			m_repathTimer.Invalidate();
 			return false;
 		}
 
@@ -399,6 +410,10 @@ public:
 
 	// Returns the total travel distance since the last ComputePath call.
 	const float GetTravelDistance() const { return m_travelDistance; }
+	const CountdownTimer& GetRepathTimer() const { return m_repathTimer; }
+	static constexpr float DEFAULT_REPATH_DURATION = 2.0f;
+	void StartRepathTimer(const float duration = DEFAULT_REPATH_DURATION) { m_repathTimer.Start(duration); }
+	const bool NeedsRepath() const { return m_repathTimer.IsElapsed(); }
 
 protected:
 	virtual bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
@@ -415,6 +430,8 @@ protected:
 
 	void SetTravelDistance(const float dist) { m_travelDistance = dist; }
 
+	CountdownTimer* InternalGetRepathTimer() { return &m_repathTimer; }
+
 private:
 	std::vector<std::shared_ptr<CBasePathSegment>> m_segments;
 	IntervalTimer m_ageTimer;
@@ -422,6 +439,7 @@ private:
 	float m_cursorPos;
 	Vector m_destination; // 'Goal' position of the last ComputePath call
 	float m_travelDistance; // Travel distance between start and goal from the last ComputePath Call
+	CountdownTimer m_repathTimer;
 
 	void DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration);
 	void Drawladder(const CNavLadder* ladder, AIPath::SegmentType type, const float duration);
@@ -434,6 +452,11 @@ inline void CPath::Invalidate()
 	m_cursorPos = 0.0f;
 	m_cursor.Invalidate();
 	m_destination = vec3_origin;
+}
+
+inline void CPath::ForceRepath()
+{
+	m_repathTimer.Invalidate();
 }
 
 inline void CPath::MoveCursorToStart(void)

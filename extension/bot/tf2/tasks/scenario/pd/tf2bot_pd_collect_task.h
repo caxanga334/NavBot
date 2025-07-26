@@ -19,7 +19,6 @@ public:
 private:
 	std::vector<CHandle<CBaseEntity>> m_points;
 	std::size_t m_index;
-	CountdownTimer m_repathtimer;
 	CMeshNavigator m_nav;
 };
 

@@ -103,7 +103,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 		m_teleUses = tf2lib::GetTeleporterUses(entrance);
 	}
 
-	m_moveTimer.Start(60.0f);
+	m_moveTimer.Start(tf2mod->GetTF2ModSettings()->GetEngineerMoveCheckInterval());
 
 	return Continue();
 }
@@ -176,6 +176,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 bool CTF2BotEngineerNestTask::OnTaskPause(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 {
 	m_nav.Invalidate();
+	m_nav.ForceRepath();
 	return true;
 }
 
@@ -630,7 +631,15 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 
 	if (m_moveTimer.IsElapsed())
 	{
-		// TO-DO: add settings for this
+		const CKnownEntity* threat = me->GetSensorInterface()->GetPrimaryKnownThreat(false);
+
+		// Don't move buildings if I see or recently saw an enemy
+		if (threat && (threat->IsVisibleNow() || threat->GetTimeSinceLastInfo() <= 10.0f))
+		{
+			m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
+			return nullptr;
+		}
+
 		m_moveTimer.Start(settings->GetEngineerMoveCheckInterval()); 
 
 		if (m_mysentry)

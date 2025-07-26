@@ -248,10 +248,9 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 	CBaseEntity* source = m_sourceentity.Get();
 	Vector goal = UtilHelpers::getWorldSpaceCenter(source);
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(2.0f);
-		
+		m_nav.StartRepathTimer();
 
 		CTF2BotPathCost cost(bot);
 		if (!m_nav.ComputePathToPosition(bot, goal, cost))
@@ -276,7 +275,8 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskUpdate(CTF2Bot* bot)
 TaskEventResponseResult<CTF2Bot> CTF2BotFindAmmoTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
 	// don't clear stuck status here, can cause bots to get stuck forever
-	m_repathtimer.Invalidate(); // force repath
+	m_nav.Invalidate();
+	m_nav.ForceRepath();
 	return TryContinue();
 }
 

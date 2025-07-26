@@ -13,7 +13,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_flag;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 };
 
 #endif // !__NAVBOT_TF2BOT_RD_DEFEND_CORE_TASK_H_

@@ -13,7 +13,6 @@ public:
 private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 };
 
 #endif // !__NAVBOT_TF2BOT_WAIT_FOR_JACK_TASK_H_

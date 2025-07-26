@@ -30,7 +30,6 @@ private:
 	CountdownTimer m_disguiseCooldown;
 	CountdownTimer m_cloakTimer;
 	CountdownTimer m_lurkTimer;
-	CountdownTimer m_repathTimer;
 	CountdownTimer m_lookAround;
 	float* m_cloakMeter;
 	std::vector<Vector> m_aimSpots;

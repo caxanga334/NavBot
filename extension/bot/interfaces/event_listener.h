@@ -4,6 +4,7 @@
 
 #include <vector>
 
+class IGameEvent;
 class CBaseBot;
 class CPath;
 class CBaseEntity;
@@ -82,6 +83,7 @@ public:
 	virtual void OnTruceChanged(const bool enabled); // When the truce status has changed
 	virtual void OnSquadEvent(SquadEventType evtype); // Squad events
 	virtual void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur); // An object was sapped (TF2)
+	virtual void OnGameEvent(const IGameEvent* event, void* moddata = nullptr); // Generic AI event for passing game events
 };
 
 inline void IEventListener::OnDebugMoveToHostCommand()
@@ -405,6 +407,19 @@ inline void IEventListener::OnObjectSapped(CBaseEntity* owner, CBaseEntity* sabo
 		for (auto listener : *vec)
 		{
 			listener->OnObjectSapped(owner, saboteur);
+		}
+	}
+}
+
+inline void IEventListener::OnGameEvent(const IGameEvent* event, void* moddata)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnGameEvent(event, moddata);
 		}
 	}
 }

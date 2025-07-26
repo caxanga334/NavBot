@@ -14,7 +14,6 @@ private:
 	Vector m_goal;
 	CountdownTimer m_checkpointstimer;
 	CountdownTimer m_checkdelivertimer;
-	CountdownTimer m_repathtimer;
 	CMeshNavigator m_nav;
 
 	bool SelectRandomGoal(CTF2Bot* bot);

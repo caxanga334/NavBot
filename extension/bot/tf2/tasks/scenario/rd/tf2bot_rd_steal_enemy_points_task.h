@@ -15,7 +15,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_flag;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathtimer;
 	Vector m_homepos;
 	bool m_washome;
 };

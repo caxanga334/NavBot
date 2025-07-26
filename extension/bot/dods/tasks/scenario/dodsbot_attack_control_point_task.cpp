@@ -187,9 +187,9 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskUpdate(CDoDSBot* bot)
 		return Continue(); // capturing the point
 	}
 
-	if (m_repathtimer.IsElapsed())
+	if (m_nav.NeedsRepath())
 	{
-		m_repathtimer.Start(CBaseBot::s_botrng.GetRandomReal<float>(1.0f, 2.1f));
+		m_nav.StartRepathTimer();
 		Vector goal = UtilHelpers::getWorldSpaceCenter(trigger);
 		CDoDSBotPathCost cost(bot);
 		m_nav.ComputePathToPosition(bot, goal, cost);

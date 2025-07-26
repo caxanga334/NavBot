@@ -68,9 +68,9 @@ TaskResult<CTF2Bot> CTF2BotSDWaitForFlagTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (flag.IsDropped() || flag.IsHome())
 	{
-		if (m_repathTimer.IsElapsed())
+		if (m_nav.NeedsRepath())
 		{
-			m_repathTimer.Start(1.0f);
+			m_nav.StartRepathTimer();
 			Vector goal = flag.GetAbsOrigin();
 
 			CTF2BotPathCost cost(bot);

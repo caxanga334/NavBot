@@ -20,9 +20,11 @@ public:
 private:
 	CMeshNavigator m_nav;
 	Vector m_goal;
-	CountdownTimer m_repathtimer;
 	CountdownTimer m_updatePayloadTimer;
 	CHandle<CBaseEntity> m_payload;
+	bool m_defendPayload;
+
+	static constexpr float DEFEND_PAYLOAD_RANGE = 750.0f * 750.0f;
 
 	CBaseEntity* GetPayload(CTF2Bot* bot);
 };

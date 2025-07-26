@@ -15,7 +15,6 @@ public:
 private:
 	CHandle<CBaseEntity> m_bomb;
 	CMeshNavigator m_nav;
-	CountdownTimer m_repathTimer;
 	CountdownTimer m_scanTimer;
 	Vector m_goal;
 	bool m_reached;

@@ -15,6 +15,11 @@
 #undef max
 #undef clamp
 
+void CBaseMod::PropagateGameEventToBots::operator()(CBaseBot* bot)
+{
+	bot->OnGameEvent(this->event, this->moddata);
+}
+
 CBaseMod::CBaseMod()
 {
 	m_playerresourceentity.Term();
@@ -153,7 +158,17 @@ ISharedBotMemory* CBaseMod::GetSharedBotMemory(int teamindex)
 		return m_teamsharedmemory[teamindex].get();
 	}
 
-	return nullptr;
+
+	// Assert to make sure TEAM_UNASSIGNED is a sane value
+	static_assert(TEAM_UNASSIGNED >= 0 && TEAM_UNASSIGNED < MAX_TEAMS, "Problematic TEAM_UNASSIGNED value!");
+
+	if (!m_teamsharedmemory[TEAM_UNASSIGNED])
+	{
+		m_teamsharedmemory[TEAM_UNASSIGNED].reset(CreateSharedMemory());
+	}
+
+	// this function should never NULL, return the shared interface for the unassigned team if the given team index is invalid.
+	return m_teamsharedmemory[TEAM_UNASSIGNED].get();
 }
 
 void CBaseMod::InternalFindPlayerResourceEntity()

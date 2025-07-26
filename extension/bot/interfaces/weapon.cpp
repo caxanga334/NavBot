@@ -351,21 +351,70 @@ const int CBotWeapon::GetPriority(const CBaseBot* owner, const float* range, con
 	const WeaponInfo* info = GetWeaponInfo();
 	int priority = info->GetPriority();
 
-	if (info->GetDynamicPriorityHasSecondaryAmmo() != 0 && hasSecondaryAmmo(owner))
+	if (info->GetDynamicPrioritySecAmmo().is_used && hasSecondaryAmmo(owner))
 	{
-		priority += info->GetDynamicPriorityHasSecondaryAmmo();
+		priority += info->GetDynamicPrioritySecAmmo().priority_value;
 	}
 
-	if (info->GetDynamicPriorityHealthPercentageCondition() > 0.0f && owner->GetHealthPercentage() <= info->GetDynamicPriorityHealthPercentageCondition())
-	{
-		priority += info->GetDynamicPriorityHealthPercentage();
-	}
+	const WeaponInfo::DynamicPriority& healthprio = info->GetDynamicPriorityHealth();
 
-	if (range && info->HasDynamicPriorityThreatRangeLessThan())
+	if (healthprio.is_used)
 	{
-		if (*range <= info->GetDynamicPriorityThreatRangeLessThanCondition())
+		if (healthprio.is_greater)
 		{
-			priority += info->GetDynamicPriorityThreatRangeLessThan();
+			if (owner->GetHealthPercentage() > healthprio.value_to_compare)
+			{
+				priority += healthprio.priority_value;
+			}
+		}
+		else
+		{
+			if (owner->GetHealthPercentage() < healthprio.value_to_compare)
+			{
+				priority += healthprio.priority_value;
+			}
+		}
+	}
+
+	const WeaponInfo::DynamicPriority& rangeprio = info->GetDynamicPriorityRange();
+
+	if (range && rangeprio.is_used)
+	{
+		if (rangeprio.is_greater)
+		{
+			if (rangeprio.value_to_compare > *range)
+			{
+				priority += rangeprio.priority_value;
+			}
+		}
+		else
+		{
+			if (rangeprio.value_to_compare < *range)
+			{
+				priority += rangeprio.priority_value;
+			}
+		}
+	}
+
+	const WeaponInfo::DynamicPriority& aggressionprio = info->GetDynamicPriorityAggression();
+
+	if (aggressionprio.is_used)
+	{
+		int value = static_cast<int>(std::round(aggressionprio.value_to_compare));
+
+		if (aggressionprio.is_greater)
+		{
+			if (owner->GetDifficultyProfile()->GetAggressiveness() > value)
+			{
+				priority += aggressionprio.priority_value;
+			}
+		}
+		else
+		{
+			if (owner->GetDifficultyProfile()->GetAggressiveness() < value)
+			{
+				priority += aggressionprio.priority_value;
+			}
 		}
 	}
 
