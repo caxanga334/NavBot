@@ -5278,11 +5278,11 @@ public:
 	{
 		if (area->IsBlocked(team))
 		{
-			area->DrawFilled(100, 143, 255, 127, 10.0f);
+			area->DrawFilled(255, 102, 0, 127, 10.0f);
 		}
 		else
 		{
-			area->DrawFilled(255, 102, 0, 127, 10.0f);
+			area->DrawFilled(100, 143, 255, 127, 10.0f);
 		}
 	}
 
