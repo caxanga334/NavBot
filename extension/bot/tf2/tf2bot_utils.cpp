@@ -13,6 +13,10 @@
 #include "tf2bot.h"
 #include "tf2bot_utils.h"
 
+#if defined(TF_DLL) && defined(EXT_DEBUG)
+static ConVar cvar_debug_tf2botutils("sm_navbot_tf_debug_tf2bot_utils", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Enable tf2botuilts debug messages.");
+#endif // defined(TF_DLL) && defined(EXT_DEBUG)
+
 class CTF2EngineerBuildableAreaCollector : public INavAreaCollector<CTFNavArea>
 {
 public:
@@ -118,6 +122,13 @@ CTFNavArea* tf2botutils::FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxR
 
 	if (!area)
 	{
+#if defined(TF_DLL) && defined(EXT_DEBUG)
+		if (cvar_debug_tf2botutils.GetBool())
+		{
+			META_CONPRINTF("%s tf2botutils::FindRandomNavAreaToBuild NULL start area! maxRange: %g avoidSlopes %s \n", bot->GetDebugIdentifier(), maxRange, avoidSlopes ? "TRUE" : "FALSE");
+		}
+#endif // defined(TF_DLL) && defined(EXT_DEBUG)
+
 		return nullptr;
 	}
 
@@ -127,6 +138,13 @@ CTFNavArea* tf2botutils::FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxR
 
 	if (collector.IsCollectedAreasEmpty())
 	{
+#if defined(TF_DLL) && defined(EXT_DEBUG)
+		if (cvar_debug_tf2botutils.GetBool())
+		{
+			META_CONPRINTF("%s tf2botutils::FindRandomNavAreaToBuild collector is empty! maxRange: %g avoidSlopes %s \n", bot->GetDebugIdentifier(), maxRange, avoidSlopes ? "TRUE" : "FALSE");
+		}
+#endif // defined(TF_DLL) && defined(EXT_DEBUG)
+
 		return nullptr;
 	}
 

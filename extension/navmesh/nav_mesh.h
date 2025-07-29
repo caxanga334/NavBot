@@ -760,7 +760,7 @@ public:
 	 * @param clearOnEnd If true, the selected set/marked area is cleared when done.
 	 */
 	template <typename T, typename F>
-	void ExecuteAreaEditCommand(const F& cmd, const bool clearOnEnd = true)
+	void ExecuteAreaEditCommand(F& cmd, const bool clearOnEnd = true)
 	{
 		if (!IsSelectedSetEmpty())
 		{

@@ -5269,3 +5269,67 @@ CON_COMMAND_F(sm_nav_measure_distance, "Measures the distances between two nav a
 {
 	TheNavMesh->CommandNavMeasureDistance();
 }
+
+class NavEditCommandDrawBlockedStatusFunctor
+{
+public:
+
+	void operator()(CNavArea* area)
+	{
+		if (area->IsBlocked(team))
+		{
+			area->DrawFilled(100, 143, 255, 127, 10.0f);
+		}
+		else
+		{
+			area->DrawFilled(255, 102, 0, 127, 10.0f);
+		}
+	}
+
+	int team;
+};
+
+CON_COMMAND_F(sm_nav_draw_blocked_status, "Draws the blocked/unblocked status for each selected area.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	if (!UTIL_IsCommandIssuedByServerAdmin())
+		return;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINTF("[SM] Usage: sm_nav_draw_blocked_status <team>\n <team> : ANY MY or a number\n");
+		return;
+	}
+
+	const char* arg1 = args[1];
+	int team;
+
+	if (strncasecmp(arg1, "ANY", 3) == 0)
+	{
+		team = NAV_TEAM_ANY;
+	}
+	else if (strncasecmp(arg1, "MY", 2) == 0)
+	{
+		CBaseEntity* host = gamehelpers->ReferenceToEntity(1);
+		team = entityprops::GetEntityTeamNum(host);
+	}
+	else
+	{
+		team = atoi(arg1);
+
+		if (team < 0)
+		{
+			team = NAV_TEAM_ANY;
+		}
+		else if (team > static_cast<int>(NAV_TEAMS_ARRAY_SIZE))
+		{
+			META_CONPRINTF("Error: Given team number larger than max supported team indexes (%u) by the nav mesh!\n", NAV_TEAMS_ARRAY_SIZE);
+			return;
+		}
+	}
+
+	NavEditCommandDrawBlockedStatusFunctor functor;
+	functor.team = team;
+	TheNavMesh->ExecuteAreaEditCommand<CNavArea, NavEditCommandDrawBlockedStatusFunctor>(functor, true);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	META_CONPRINT("ORANGE = blocked area\nBLUE = unblocked area\n");
+}

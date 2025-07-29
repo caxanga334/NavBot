@@ -118,13 +118,13 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 	CTF2AmmoFilter filter(bot);
 	botsharedutils::IsReachableAreas collector(bot, maxrange);
 
-
 	CBaseEntity* best = nullptr;
 	float smallest_dist = std::numeric_limits<float>::max();
+	bool is_resupply_locker = true;
 
 	collector.Execute();
 
-	auto func = [&filter, &best, &smallest_dist, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&filter, &best, &smallest_dist, &collector, &is_resupply_locker](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			if (filter.IsSelected(entity))
@@ -143,6 +143,11 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 
 				if (collector.IsReachable(filter.ammoarea, &cost))
 				{
+					if (is_resupply_locker)
+					{
+						cost *= 0.6f; // artificial cost reduction for resupply lockers so bots prefer using them
+					}
+
 					if (cost < smallest_dist)
 					{
 						smallest_dist = cost;
@@ -156,6 +161,7 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 	};
 
 	UtilHelpers::ForEachEntityOfClassname("func_regenerate", func);
+	is_resupply_locker = false;
 	UtilHelpers::ForEachEntityOfClassname("item_ammopack*", func);
 	UtilHelpers::ForEachEntityOfClassname("obj_dispenser", func);
 	UtilHelpers::ForEachEntityOfClassname("tf_ammo_pack", func);

@@ -202,6 +202,11 @@ TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 	float time = range / (bot->GetMaxSpeed() * 0.25f);
 	m_failsafetimer.Start(time + 8.0f);
 
+	if (tf2lib::GetNumberOfPlayersAsClass(TeamFortress2::TFClassType::TFClass_Medic, bot->GetMyTFTeam()) > 0)
+	{
+		bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_MEDIC);
+	}
+
 	return Continue();
 }
 

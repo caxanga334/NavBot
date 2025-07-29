@@ -734,6 +734,26 @@ bool CTF2Bot::IsUsingSniperScope() const
 void CTF2Bot::Disguise(bool myTeam)
 {
 	using namespace TeamFortress2;
+	std::vector<int> enemyplayers;
+	int myteamnum = static_cast<int>(GetMyTFTeam());
+	const int me = GetIndex();
+	auto pred = [&myteamnum, me](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> bool {
+		if (client == me)
+		{
+			return false;
+		}
+
+		int theirteam = static_cast<int>(tf2lib::GetEntityTFTeam(client));
+
+		if (theirteam > TEAM_SPECTATOR && theirteam != myteamnum)
+		{
+			return true;
+		}
+
+		return false;
+	};
+
+	UtilHelpers::CollectPlayers(enemyplayers, pred);
 
 	if (myTeam)
 	{
@@ -751,12 +771,9 @@ void CTF2Bot::Disguise(bool myTeam)
 		}
 		else if (skill < 75) // more than 50 and less than 75, filter class with no players
 		{
-			for (int clss = static_cast<int>(TFClass_Scout); clss <= static_cast<int>(TFClass_Engineer); clss++)
+			for (int client : enemyplayers)
 			{
-				if (tf2lib::GetNumberOfPlayersAsClass(static_cast<TFClassType>(clss), tf2lib::GetEnemyTFTeam(GetMyTFTeam())) > 0)
-				{
-					candidates.push_back(static_cast<TFClassType>(clss));
-				}
+				candidates.push_back(tf2lib::GetPlayerClassType(client));
 			}
 
 			if (candidates.empty())
@@ -770,17 +787,16 @@ void CTF2Bot::Disguise(bool myTeam)
 		}
 		else // more than 75, filter class with no players and bad classes
 		{
-			for (int clss = static_cast<int>(TFClass_Scout); clss <= static_cast<int>(TFClass_Engineer); clss++)
+			for (int client : enemyplayers)
 			{
-				if (clss == static_cast<int>(TFClass_Scout) || clss == static_cast<int>(TFClass_Medic))
+				TFClassType clss = tf2lib::GetPlayerClassType(client);
+
+				if (clss == TFClassType::TFClass_Scout || clss == TFClassType::TFClass_Medic)
 				{
-					continue; // skip these
+					continue; // ignore scout and medic
 				}
 
-				if (tf2lib::GetNumberOfPlayersAsClass(static_cast<TFClassType>(clss), tf2lib::GetEnemyTFTeam(GetMyTFTeam())) > 0)
-				{
-					candidates.push_back(static_cast<TFClassType>(clss));
-				}
+				candidates.push_back(clss);
 			}
 
 			if (candidates.empty())

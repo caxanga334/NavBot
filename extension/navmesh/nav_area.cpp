@@ -4729,6 +4729,26 @@ bool CNavArea::HasSolidObstruction() const
 
 		return true; // something is obstructing the area
 	}
+	else
+	{
+		Vector v1 = GetCorner(NavCornerType::NORTH_WEST);
+		Vector v2 = GetCorner(NavCornerType::SOUTH_EAST);
+
+		v1.z += navgenparams->human_crouch_eye_height;
+		v2.z += navgenparams->human_crouch_eye_height;
+
+		trace::line(v1, v2, MASK_PLAYERSOLID, &filter, result);
+
+		if (result.DidHit())
+		{
+			if (sm_nav_debug_blocked.GetBool())
+			{
+				debugoverlay->AddLineOverlay(v1, v2, 255, 0, 0, true, 2.0f);
+			}
+
+			return true;
+		}
+	}
 
 	if (sm_nav_debug_blocked.GetBool())
 	{

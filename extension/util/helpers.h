@@ -756,18 +756,12 @@ inline void UtilHelpers::CollectPlayers(std::vector<int>& playersvector, T pred)
 {
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		auto edict = gamehelpers->EdictOfIndex(i);
+		edict_t* edict = gamehelpers->EdictOfIndex(i);
 
-		if (!edict)
+		if (!edict || !UtilHelpers::IsValidEdict(edict))
 			continue;
 
-		if (edict->IsFree())
-			continue;
-
-		if (edict->GetUnknown() == nullptr)
-			continue;
-
-		auto gp = playerhelpers->GetGamePlayer(i);
+		SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(i);
 
 		if (!gp)
 			continue;

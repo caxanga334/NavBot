@@ -927,10 +927,11 @@ CON_COMMAND(sm_navbot_debug_find_cover, "Debugs the find cover utility")
 
 CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 {
-	if (args.ArgC() < 3)
+	if (args.ArgC() < 4)
 	{
-		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <filter option>\n");
-		META_CONPRINT("  <mask option> : playersolid playersolidbrushonly npcsolid npcsolidbrushonly water opaque solid blocklos visible shot all\n");
+		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <collision group> <filter option>\n");
+		META_CONPRINT("  <mask option> : playersolid playersolidbrushonly npcsolid npcsolidbrushonly water opaque solid blocklos visible shot all team1 team2\n");
+		META_CONPRINT("  <collision group> : none player plmove npc\n");
 		META_CONPRINT("  <filter option> : simple navtransient\n");
 		return;
 	}
@@ -993,22 +994,51 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 	{
 		mask = MASK_ALL;
 	}
+	else if (strcasecmp(arg1, "team1") == 0)
+	{
+		mask = CONTENTS_TEAM1 | MASK_PLAYERSOLID;
+	}
+	else if (strcasecmp(arg1, "team2") == 0)
+	{
+		mask = CONTENTS_TEAM2 | MASK_PLAYERSOLID;
+	}
 	else
 	{
 		META_CONPRINTF("Unknown mask option %s! \n", arg1);
 		return;
 	}
 
+	int colgroup = 0;
+
 	const char* arg2 = args[2];
 
-	trace::CTraceFilterSimple simplefilter(host.GetEntity(), COLLISION_GROUP_NONE);
-	CTraceFilterTransientAreas navfilter(host.GetEntity(), COLLISION_GROUP_NONE);
+	if (std::strcmp(arg2, "none") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_NONE);
+	}
+	else if (std::strcmp(arg2, "player") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_PLAYER);
+	}
+	else if (std::strcmp(arg2, "plmove") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_PLAYER_MOVEMENT);
+	}
+	else if (std::strcmp(arg2, "npc") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_NPC);
+	}
 
-	if (strcasecmp(arg2, "simple") == 0)
+	const char* arg3 = args[3];
+
+	trace::CTraceFilterSimple simplefilter(host.GetEntity(), colgroup);
+	CTraceFilterTransientAreas navfilter(host.GetEntity(), colgroup);
+
+	if (strcasecmp(arg3, "simple") == 0)
 	{
 		filter = &simplefilter;
 	}
-	else if (strcasecmp(arg2, "navtransient") == 0)
+	else if (strcasecmp(arg3, "navtransient") == 0)
 	{
 		filter = &navfilter;
 	}

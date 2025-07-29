@@ -45,3 +45,23 @@ Nothing special is needed, just create a standard connection between two areas, 
 It's common for the generator to generate a one-way connection near railings. Bots frequently gets stuck because they don't know they need to jump.    
 To fix this, disconnect the areas first, then create a new area between the floor and ledge. Jump onto the railing, mark the new area with `sm_nav_mark` and them run this command `sm_nav_corner_place_at_feet false` to move the newly created area to the railing's height. Then create a two-way connection from the floor to the new area and a one-way to the ground below to create a drop down.    
 The bot's path generation will now understand that it needs to jump before dropping.
+
+# Transient Attribute
+
+The **TRANSIENT** attribute can be applied to areas with the `sm_nav_transient` command.    
+This attribute tells the nav mesh that this nav area should be periodically checked for obstruction.    
+If an obstruction is found, the area is marked as blocked and bots won't path through it.    
+A ground check is also performed and areas floating in the air will also be marked as blocked.    
+This attribute blocks the area for all teams. If you need a more advanced control of an area blocked/unblocked status, see [Nav Mesh Volumes].    
+
+# Checking Blocked Status
+
+The command `sm_nav_draw_blocked_status <team>` can be used to check the blocked status of nav areas from the selected set, marked area or the area currently under your cursor.    
+Blocked areas will be filled in orange and unblocked areas will be filled in blue.    
+The `<team>` parameter accepts the following values:    
+* ANY: Blocked for any team.
+* MY: Blocked for your current team.
+* Team Number: Blocked for the given team number.
+
+<!-- LINKS -->
+[Nav Mesh Volumes]: NAVMESH_VOLUMES.md
