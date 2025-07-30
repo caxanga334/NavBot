@@ -35,6 +35,7 @@
 #include "nav.h"
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
+#include <sdkports/sdk_ehandle.h>
 #include <convar.h>
 #include <gametrace.h>
 
@@ -1128,6 +1129,7 @@ private:
 	std::shared_ptr<CNavElevator> m_selectedElevator;
 	std::unordered_map<unsigned int, std::shared_ptr<CNavPrerequisite>> m_prerequisites;
 	std::shared_ptr<CNavPrerequisite> m_selectedPrerequisite;
+	std::vector<CHandle<CBaseEntity>> m_forcedSolidEntities; // vector of entities overriden to be solid in walkable traces
 
 protected:
 	// Creates a new waypoint instance
@@ -1299,6 +1301,34 @@ public:
 		}
 
 		return it->second;
+	}
+
+	/**
+	 * @brief Adds an entity to the forced solid list.
+	 * 
+	 * Entities on this list will be solid in walkable entities trace filter. See the IsEntityWalkable function.
+	 * @param entity Entity to add to the list.
+	 */
+	void AddEntityToForcedSolidList(CBaseEntity* entity) { m_forcedSolidEntities.emplace_back(entity); }
+	// Removes an entity from the forced solid list
+	void RemoveEntityFromForcedSolidList(CBaseEntity* entity)
+	{
+		m_forcedSolidEntities.erase(std::remove_if(m_forcedSolidEntities.begin(), m_forcedSolidEntities.end(), [&entity](const CHandle<CBaseEntity>& handle) {
+			return handle.Get() == entity;
+		}), m_forcedSolidEntities.end());
+	}
+	// Removes all entities from the forced solid list
+	void RemoveAllEntitiesFromForcedSolidList() { m_forcedSolidEntities.clear(); }
+	// Returns true if the given entity is in the forced solid entity list
+	const bool IsEntityInTheForcedSolidList(CBaseEntity* entity) const
+	{
+		if (m_forcedSolidEntities.empty()) { return false; }
+
+		auto it = std::find_if(m_forcedSolidEntities.cbegin(), m_forcedSolidEntities.cend(), [&entity](const CHandle<CBaseEntity>& handle) {
+			return handle.Get() == entity;
+		});
+
+		return it != m_forcedSolidEntities.cend();
 	}
 };
 

@@ -5333,3 +5333,87 @@ CON_COMMAND_F(sm_nav_draw_blocked_status, "Draws the blocked/unblocked status fo
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	META_CONPRINT("ORANGE = blocked area\nBLUE = unblocked area\n");
 }
+
+CON_COMMAND_F(sm_nav_trace_make_entity_solid, "Adds the given entity to the list of forced solid list.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (!UTIL_IsCommandIssuedByServerAdmin())
+		return;
+
+	CBaseEntity* entity = nullptr;
+
+	if (args.ArgC() > 1)
+	{
+		const char* arg1 = args[1];
+		int iEntIndex = atoi(arg1);
+
+		if (iEntIndex != 0)
+		{
+			entity = gamehelpers->ReferenceToEntity(iEntIndex);
+		}
+		else
+		{
+			META_CONPRINTF("Invalid entity index passed! %s \n", arg1);
+			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+			return;
+		}
+	}
+	else
+	{
+		CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+
+		Vector start = host.GetEyeOrigin();
+		Vector forward;
+		host.EyeVectors(&forward);
+		Vector end = start + (forward * 16384.0f);
+
+		trace::CTraceFilterNoNPCsOrPlayers filter{ host.GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT };
+		trace_t tr;
+		trace::line(start, end, MASK_PLAYERSOLID, &filter, tr);
+
+		if (tr.DidHit() && tr.DidHitNonWorldEntity())
+		{
+			entity = tr.m_pEnt;
+		}
+		else
+		{
+			META_CONPRINT("Could not find any non-world entity!\n");
+			TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+			return;
+		}
+	}
+
+	if (!entity)
+	{
+		META_CONPRINT("NULL ent! \n");
+		return;
+	}
+
+	TheNavMesh->AddEntityToForcedSolidList(entity);
+
+	entities::HBaseEntity be{ entity };
+
+	constexpr int tgstrlen = 256;
+	char targetname[tgstrlen];
+
+	std::size_t tglen = be.GetTargetName(targetname, tgstrlen);
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+
+	META_CONPRINTF("Entity %s was added to the solid list!", classname);
+
+	if (tglen > 2)
+	{
+		META_CONPRINTF(" Name: %s \n", targetname);
+	}
+	else
+	{
+		META_CONPRINTF(" \n");
+	}
+
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+CON_COMMAND_F(sm_nav_trace_clear_solid_entity_list, "Clears the entities added to the list of forced solid list.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	TheNavMesh->RemoveAllEntitiesFromForcedSolidList();
+	META_CONPRINT("Forced solid entity list cleared!\n");
+}

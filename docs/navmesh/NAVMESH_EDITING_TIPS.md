@@ -63,5 +63,22 @@ The `<team>` parameter accepts the following values:
 * MY: Blocked for your current team.
 * Team Number: Blocked for the given team number.
 
+# Overriding an Entity Walkable Status
+
+Some entities are considered walkable by the nav mesh, so they don't collide with raycast traces done by the nav mesh. For example, doors are considered walkable.
+Most of the time this is fine however sometimes this becomes a problem when nav areas are generated on places that are solid for players.    
+Another case is on some maps there are temporary bridges that are non-solid for the nav mesh and manually creating the areas on these bridges is hard.    
+NavBot offers some control over which entities are solid for nav mesh generation and editing:
+
+* `sm_nav_solid_props`: This ConVar makes props (both physics and dynamic) solid. (Note: This ConVar exists on Valve's implementation, NavBot fixed it not doing anything).
+* `sm_nav_solid_func_brush`: NavBot exclusive convar to force func_brush entities to be always solid.
+* `sm_nav_trace_make_entity_solid <optional: ent index>`: Console command to add the entity you're looking at to the list of forced solid entities. You can also pass an entity index as the first parameter.
+
+**Important Notes**:    
+Use `sm_nav_trace_clear_solid_entity_list` to clear the forced solid entity list. This list is also automatically cleared when a new round starts.    
+**func_brush** entities must be in their solid state otherwise the engine sees it as non-solid and traces won't collide with them. You can use the `ent_fire` command to change their solid state.    
+`sm_nav_solid_props` includes prop_physics entities, you may want to generate the initial mesh with it turned off and enable when needed.    
+
+
 <!-- LINKS -->
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md

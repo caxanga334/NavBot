@@ -53,6 +53,7 @@ ConVar sm_nav_show_func_nav_avoid( "sm_nav_show_func_nav_avoid", "0", FCVAR_GAME
 ConVar sm_nav_show_func_nav_prefer( "sm_nav_show_func_nav_prefer", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prefer entities" );
 ConVar sm_nav_show_func_nav_prerequisite( "sm_nav_show_func_nav_prerequisite", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prerequisite entities" );
 ConVar sm_nav_max_vis_delta_list_length( "sm_nav_max_vis_delta_list_length", "64", FCVAR_CHEAT );
+ConVar sm_nav_solid_func_brush("sm_nav_solid_func_brush", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, func_brush entities are always considered solid for nav mesh generation/editing.");
 
 
 extern ConVar sm_nav_show_potentially_visible;
@@ -153,6 +154,11 @@ CNavMesh::~CNavMesh()
 
 bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 {
+	if (IsEntityInTheForcedSolidList(pEntity))
+	{
+		return false; // this specific entity was overriden to be solid
+	}
+
 	entities::HBaseEntity be(pEntity);
 
 	if (UtilHelpers::FClassnameIs(pEntity, "worldspawn"))
@@ -194,7 +200,14 @@ bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 			return true;
 		case entities::HFuncBrush::BrushSolidities_e::BRUSHSOLID_TOGGLE:
 		default:
+		{
+			if (sm_nav_solid_func_brush.GetBool())
+			{
+				return false; // forced to be always solid
+			}
+
 			return (flags & WALK_THRU_TOGGLE_BRUSHES) ? true : false;
+		}
 		}
 	}
 
@@ -214,12 +227,12 @@ bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 	ConVarRef solidprops("sm_nav_solid_props", false);
 
 	if (solidprops.GetBool() && UtilHelpers::FClassnameIs(pEntity, "prop_*"))
-		return true;
+		return false; // Original valve code returns true here but returning true makes things non solid. This might be a bug in the original code.
 #else
 	extern ConVar sm_nav_solid_props;
 
 	if (sm_nav_solid_props.GetBool() && UtilHelpers::FClassnameIs(pEntity, "prop_*"))
-		return true;
+		return false;
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
 	return false;
@@ -324,6 +337,7 @@ void CNavMesh::Reset( void )
 	m_updateBlockedAreasTimer.Invalidate();
 
 	m_walkableSeeds.RemoveAll();
+	RemoveAllEntitiesFromForcedSolidList();
 }
 
 
@@ -866,6 +880,7 @@ void CNavMesh::OnRoundRestart( void )
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
 	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
+	RemoveAllEntitiesFromForcedSolidList(); // entities are deleted and re-created between rounds, clear the list
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
