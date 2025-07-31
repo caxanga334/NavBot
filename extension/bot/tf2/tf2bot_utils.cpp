@@ -12,6 +12,7 @@
 #include <navmesh/nav_pathfind.h>
 #include "tf2bot.h"
 #include "tf2bot_utils.h"
+#include <bot/bot_shared_utils.h>
 
 #if defined(TF_DLL) && defined(EXT_DEBUG)
 static ConVar cvar_debug_tf2botutils("sm_navbot_tf_debug_tf2bot_utils", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Enable tf2botuilts debug messages.");
@@ -25,6 +26,7 @@ public:
 	{
 		m_me = engineer;
 		m_avoidSlopes = false;
+		m_myteam = static_cast<int>(engineer->GetMyTFTeam());
 	}
 
 	bool ShouldSearch(CTFNavArea* area) override;
@@ -33,11 +35,12 @@ public:
 private:
 	CTF2Bot* m_me;
 	bool m_avoidSlopes;
+	int m_myteam;
 };
 
 bool CTF2EngineerBuildableAreaCollector::ShouldSearch(CTFNavArea* area)
 {
-	if (area->IsBlocked(static_cast<int>(m_me->GetMyTFTeam())))
+	if (area->IsBlocked(m_myteam))
 	{
 		return false;
 	}
@@ -308,6 +311,49 @@ CTFWaypoint* tf2botutils::SelectWaypointForTeleEntrance(CTF2Bot* bot, const floa
 	return spots[CBaseBot::s_botrng.GetRandomInt<size_t>(0U, spots.size() - 1U)];
 }
 
+CTFNavArea* tf2botutils::FindTeleEntranceNavAreaFromSpawnRoom(CTF2Bot* bot, const Vector& spawnPointPos)
+{
+	botsharedutils::IsReachableAreas collector(bot, 5000.0f, false, true, false);
+	CTFNavArea* start = static_cast<CTFNavArea*>(TheNavMesh->GetNearestNavArea(spawnPointPos, 600.0f, false, true, bot->GetCurrentTeamIndex()));
+
+	if (start && start->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM))
+	{
+		collector.SetStartArea(start);
+		collector.Execute();
+
+		if (!collector.IsCollectedAreasEmpty())
+		{
+			CTFNavArea* best = nullptr;
+			float smallest_cost = std::numeric_limits<float>::max();
+			TeamFortress2::TFTeam myteam = bot->GetMyTFTeam();
+
+			// Search the collected areas, select the nearest non spawn room area
+			for (CNavArea* base : collector.GetCollectedAreas())
+			{
+				CTFNavArea* tfarea = static_cast<CTFNavArea*>(base);
+
+				if (tfarea->IsBuildable(myteam)) // this already checks for the spawn room attribute
+				{
+					auto node = collector.GetNodeForArea(base);
+
+					if (node->GetTravelCostFromStart() < smallest_cost)
+					{
+						smallest_cost = node->GetTravelCostFromStart();
+						best = tfarea;
+					}
+				}
+			}
+
+			if (best)
+			{
+				return best;
+			}
+		}
+	}
+
+	return nullptr;
+}
+
 bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 {
 	TeamFortress2::GameModeType gm = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode();
@@ -562,31 +608,24 @@ bool tf2botutils::FindSpotToBuildTeleEntrance(CTF2Bot* bot, CTFWaypoint** waypoi
 
 	const float maxRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEntranceSpawnRange();
 
-	// bot spawned recently, probably inside a spawnroom, use their position as the search start.
-	if (bot->GetTimeSinceLastSpawn() < 1.0f)
-	{
-		*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, nullptr, true);
+	CBaseEntity* spawnpoint = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
 
-		if (*area != nullptr)
-		{
-			return true;
-		}
+	if (!spawnpoint)
+	{
+		return false;
 	}
-	else
+
+	const Vector& searchStart = UtilHelpers::getEntityOrigin(spawnpoint);
+	*area = tf2botutils::FindTeleEntranceNavAreaFromSpawnRoom(bot, searchStart);
+
+	if (*area == nullptr)
 	{
-		// use an active spawnpoint as a base for our search
-		CBaseEntity* spawnpoint = tf2lib::GetFirstValidSpawnPointForTeam(bot->GetMyTFTeam());
+		*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, &searchStart, true);
+	}
 
-		if (spawnpoint)
-		{
-			const Vector& searchStart = UtilHelpers::getEntityOrigin(spawnpoint);
-			*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, &searchStart, true);
-
-			if (*area != nullptr)
-			{
-				return true;
-			}
-		}
+	if (*area != nullptr)
+	{
+		return true;
 	}
 
 	return false;

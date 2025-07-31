@@ -84,8 +84,11 @@ bool CTFWaypoint::IsAvailableToTeam(const int teamNum) const
 {
 	using namespace tfentities;
 
+	// Non team specific waypoints just uses base class for now
+	if (GetTeam() == NAV_TEAM_ANY) { return CWaypoint::IsAvailableToTeam(teamNum); }
+
 	// If a control point is assigned to this waypoint
-	if (m_cpindex != CTFWaypoint::NO_CONTROL_POINT && (GetTeam() == NAV_TEAM_ANY || GetTeam() == teamNum))
+	if (m_cpindex != CTFWaypoint::NO_CONTROL_POINT && GetTeam() == teamNum)
 	{
 		std::vector<CBaseEntity*> controlpoints;
 		controlpoints.reserve(8);

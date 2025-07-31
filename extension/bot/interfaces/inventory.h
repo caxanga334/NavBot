@@ -73,6 +73,15 @@ public:
 	}
 
 	/**
+	 * @brief Finds a weapon by their entity classname. Supports patterns with *
+	 * 
+	 * Example: FindWeaponByClassnamePattern("tf_weapon_sniper*")
+	 * @param pattern Pattern to search for.
+	 * @return Bot Weapon interface pointer or NULL if not found.
+	 */
+	const CBotWeapon* FindWeaponByClassnamePattern(const char* pattern) const;
+
+	/**
 	 * @brief Finds a weapon by their economy index.
 	 * @param index Weapon's economy item index.
 	 * @return Bot Weapon interface pointer or NULL if not found.

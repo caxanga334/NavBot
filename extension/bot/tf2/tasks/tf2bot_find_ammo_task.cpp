@@ -226,6 +226,19 @@ TaskResult<CTF2Bot> CTF2BotFindAmmoTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 	float time = range / (bot->GetMaxSpeed() * 0.25f);
 	m_failsafetimer.Start(time + 8.0f);
 
+	TeamFortress2::TFClassType myclass = bot->GetMyClassType();
+
+	// Equip melee to make sniper bots unscope, they will switch back to the sniper/smg if an enemy is visible
+	if (myclass == TeamFortress2::TFClassType::TFClass_Sniper)
+	{
+		CBaseEntity* weapon = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee));
+
+		if (weapon)
+		{
+			bot->SelectWeapon(weapon);
+		}
+	}
+
 	return Continue();
 }
 

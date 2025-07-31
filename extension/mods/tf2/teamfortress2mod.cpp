@@ -894,10 +894,6 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 
 	CBaseEntity* pTrigger = nullptr;
 
-#ifdef EXT_DEBUG
-	Msg("Start FindCaptureTriggerForTrain\n");
-#endif // EXT_DEBUG
-
 	// Method 1: On most maps, the trigger is parented to the payload's func_tracktrain entity.
 	auto m1func = [&pTrigger, &pTrain](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity != nullptr)
@@ -905,9 +901,6 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 			tfentities::HTFBaseEntity capture(entity);
 			if (capture.GetMoveParent() == pTrain)
 			{
-#ifdef EXT_DEBUG
-				Msg("Found trigger_capture_area %i parented to train %i\n", index, gamehelpers->EntityToBCompatRef(pTrain));
-#endif
 				pTrigger = entity;
 				return false;
 			}
@@ -918,13 +911,6 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 
 	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m1func);
 
-#ifdef EXT_DEBUG
-	if (pTrigger == nullptr)
-	{
-		Warning("No trigger_capture_area entity is parented to func_tracktrain <%i>!\n", gamehelpers->EntityToBCompatRef(pTrain));
-	}
-#endif // EXT_DEBUG
-
 	if (pTrigger != nullptr)
 	{
 		return pTrigger;
@@ -932,13 +918,6 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 
 	std::vector<CBaseEntity*> attackpoints;
 	tf2mod->CollectControlPointsToAttack(team, attackpoints);
-
-#ifdef EXT_DEBUG
-	if (attackpoints.empty())
-	{
-		Warning("attackpoints.size() == 0!\n");
-	}
-#endif
 
 	// Method 2: On some maps (example: pl_embargo) the capture trigger is parented to a secondary train.
 	// Use the first avaialble trigger_capture_area
@@ -975,9 +954,6 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 			{
 				if (pAttackControlPoint == pControlPoint)
 				{
-#ifdef EXT_DEBUG
-					Msg("Method 2 found #%i <%s>\n    %i == %i\n", index, cappointname, gamehelpers->EntityToBCompatRef(pAttackControlPoint), gamehelpers->EntityToBCompatRef(pControlPoint));
-#endif // EXT_DEBUG
 
 					pTrigger = entity;
 					return false;
@@ -989,13 +965,6 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 	};
 
 	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m2func);
-
-#ifdef EXT_DEBUG
-	if (pTrigger == nullptr)
-	{
-		Warning("Method 2 failed to find a trigger_capture_area for func_tracktrain <%i>!\n", gamehelpers->EntityToBCompatRef(pTrain));
-	}
-#endif // EXT_DEBUG
 
 	if (pTrigger != nullptr)
 	{
@@ -1014,27 +983,14 @@ static CBaseEntity* FindCaptureTriggerForTrain(CBaseEntity* pTrain, TeamFortress
 				return true; // skip disabled capture zones
 			}
 
-#ifdef EXT_DEBUG
-			if (pTrigger == nullptr)
-			{
-				Warning("Method 1 and 2 failed. We will be using the first enabled trigger_capture_area found: %i\n", index);
-			}
-#endif // EXT_DEBUG
-
 			pTrigger = entity;
 			return false;
 		}
 
 		return true;
 	};
-	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m3func);
 
-#ifdef EXT_DEBUG
-	if (pTrigger == nullptr)
-	{
-		Warning("Method 3 failed! Either all trigger_capture_area entities are disabled or they don't exists!\n");
-	}
-#endif // EXT_DEBUG
+	UtilHelpers::ForEachEntityOfClassname("trigger_capture_area", m3func);
 
 	return pTrigger;
 }

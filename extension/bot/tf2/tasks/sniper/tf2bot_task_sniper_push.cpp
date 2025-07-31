@@ -65,9 +65,9 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 			botsharedutils::aiming::SelectDesiredAimSpotForTarget(bot, threat->GetEntity());
 			bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at visible threat!");
 
-			if (m_firetimer.IsElapsed())
+			if (m_firetimer.IsElapsed() && bot->GetControlInterface()->IsAimOnTarget())
 			{
-				m_firetimer.StartRandom(1.0f, 2.0f);
+				m_firetimer.StartRandom(1.5f, 2.5f);
 				bot->GetControlInterface()->PressAttackButton();
 			}
 
@@ -135,6 +135,17 @@ TaskEventResponseResult<CTF2Bot> CTF2BotSniperPushTask::OnMoveToSuccess(CTF2Bot*
 {
 	SelectPushGoal(bot);
 	return TryContinue();
+}
+
+QueryAnswerType CTF2BotSniperPushTask::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon)
+{
+	// Only allow switching to the sniper rifle
+	if (weapon && weapon->ClassnameMatchesPattern("tf_weapon_sniper*"))
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_NO;
 }
 
 void CTF2BotSniperPushTask::SelectPushGoal(CTF2Bot* bot)

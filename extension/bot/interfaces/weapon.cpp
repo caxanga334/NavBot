@@ -27,22 +27,25 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 
 #ifdef EXT_DEBUG
 	
-	int clip = 0;
-	entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip1", clip);
-
-	if (clip == WEAPON_NOCLIP && !m_info->Clip1IsReserveAmmo() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	if (m_info->IsCombatWeapon())
 	{
-		smutils->LogError(myself, "Weapon %s CLIP1 == WEAPON_NOCLIP but lacks \"primary_no_clip\" attribute. %s #%i", 
-			m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
-	}
+		int clip = 0;
+		entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip1", clip);
 
-	clip = 0;
-	entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip2", clip);
+		if (clip == WEAPON_NOCLIP && !m_info->Clip1IsReserveAmmo() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+		{
+			smutils->LogError(myself, "Weapon %s CLIP1 == WEAPON_NOCLIP but lacks \"primary_no_clip\" attribute. %s #%i",
+				m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
+		}
 
-	if (clip == WEAPON_NOCLIP && !m_info->Clip2IsReserveAmmo() && m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
-	{
-		smutils->LogError(myself, "Weapon %s CLIP2 == WEAPON_NOCLIP but lacks \"secondary_no_clip\" attribute. %s #%i",
-			m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
+		clip = 0;
+		entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip2", clip);
+
+		if (clip == WEAPON_NOCLIP && !m_info->Clip2IsReserveAmmo() && m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
+		{
+			smutils->LogError(myself, "Weapon %s CLIP2 == WEAPON_NOCLIP but lacks \"secondary_no_clip\" attribute. %s #%i",
+				m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
+		}
 	}
 
 #endif // EXT_DEBUG
@@ -67,6 +70,11 @@ bool CBotWeapon::IsWeapon(const char* classname) const
 	return std::strcmp(m_classname.c_str(), classname) == 0;
 }
 
+const bool CBotWeapon::ClassnameMatchesPattern(const char* pattern) const
+{
+	return UtilHelpers::StringMatchesPattern(m_classname.c_str(), pattern, 0);
+}
+
 bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 {
 	/* 
@@ -77,8 +85,8 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 	auto info = GetWeaponInfo();
 	auto& bcw = GetBaseCombatWeapon();
 
-	// Ignore weapons that doesn't have a primary attack
-	if (!info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasFunction())
+	// Ignore weapons that doesn't have a primary attack or aren't a combat weapon
+	if (!info->IsCombatWeapon() || !info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasFunction())
 	{
 		return false;
 	}

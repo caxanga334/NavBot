@@ -160,11 +160,25 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
-		Vector pos = GetSpotBehindSentry(m_mysentry);
-
-		if (bot->GetRangeTo(pos) > 128.0f)
+		if (m_scanForEnemiesTimer.IsElapsed())
 		{
-			return PauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, pos, "GoBehindSentry", false, true, true), "Moving back to the nest!");
+			m_scanForEnemiesTimer.Start(0.5f);
+
+			CBaseEntity* enemy = entprops->GetEntPropEnt(m_mysentry, Prop_Send, "m_hEnemy");
+
+			if (enemy)
+			{
+				CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(enemy);
+				known->UpdatePosition();
+				bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(enemy), IPlayerController::LOOK_ALERT, 1.0f, "Looking at my sentry current enemy!");
+			}
+		}
+
+		const Vector& pos = UtilHelpers::getEntityOrigin(m_mysentry);
+
+		if (bot->GetRangeTo(pos) > 260.0f)
+		{
+			return PauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, pos, "GoBehindSentry", false, true, true, 200.0f), "Moving back to the nest!");
 		}
 	}
 
@@ -638,6 +652,16 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 		{
 			m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
 			return nullptr;
+		}
+
+		// If waypoint trust settings is enabled, assume waypoints are always in a good spot and don't bother moving it unless the current waypoint is not avaiable anymore
+		if (m_sentryWaypoint && settings->ShouldEngineersTrustWaypoints())
+		{
+			if (m_sentryWaypoint->IsEnabled() && m_sentryWaypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())))
+			{
+				m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
+				return nullptr;
+			}
 		}
 
 		m_moveTimer.Start(settings->GetEngineerMoveCheckInterval()); 

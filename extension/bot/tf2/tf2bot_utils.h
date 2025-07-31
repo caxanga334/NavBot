@@ -52,6 +52,8 @@ namespace tf2botutils
 	 * @return Waypoint to build or NULL if none is found.
 	 */
 	CTFWaypoint* SelectWaypointForTeleEntrance(CTF2Bot* bot, const float maxRange = -1.0f, const Vector* searchCenter = nullptr);
+	// Finds a good area to build a tele entrance for when the bot is inside their spawnroom
+	CTFNavArea* FindTeleEntranceNavAreaFromSpawnRoom(CTF2Bot* bot, const Vector& spawnPointPos);
 	// Determines the search start position for sentry gun build spot search.
 	bool GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot);
 	// Determines the maximum search range for sentry gun spots.

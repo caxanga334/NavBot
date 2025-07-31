@@ -32,15 +32,9 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
 
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
-	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
-	{
-		if (m_reachedGoal)
-		{
-			return ANSWER_NO;
-		}
-
-		return ANSWER_UNDEFINED;
-	}
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
 
 	const char* GetName() const override { return m_taskname.c_str(); }
 

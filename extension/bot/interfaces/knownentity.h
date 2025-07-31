@@ -81,6 +81,14 @@ public:
 	bool IsPlayer() const;
 	// Draws this known entity instance (debug)
 	void DebugDraw(const float duration = 1.0f) const;
+	/**
+	 * @brief Checks if the known entity classname matches. Supports patterns with '*'.
+	 * 
+	 * Example: IsEntityOfClassname("npc_*")
+	 * @param classname Classname pattern to match.
+	 * @return True if the string pattern matches with this known entity classname. False otherwise.
+	 */
+	const bool IsEntityOfClassname(const char* classname) const;
 private:
 	CHandle<CBaseEntity> m_handle; // Handle to the actual entity
 	std::string m_classname; // Entity classname (cached)

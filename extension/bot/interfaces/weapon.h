@@ -33,6 +33,14 @@ public:
 	int GetIndex() const { return m_entindex; }
 	// Returns true if this weapon matches the given classname
 	bool IsWeapon(const char* classname) const;
+	/**
+	 * @brief Returns true if the weapon's entity classname matches the given pattern.
+	 * 
+	 * Example: ClassnameMatchesPattern("tf_weapon_sniper*")
+	 * @param pattern Pattern to match.
+	 * @return True if the given pattern matches. False otherwise.
+	 */
+	const bool ClassnameMatchesPattern(const char* pattern) const;
 	// Returns true if this weapon matches the given econ index
 	bool IsWeapon(const int econindex) const { return econindex == m_econindex; }
 	/**

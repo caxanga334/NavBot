@@ -49,7 +49,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 
 	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
 
-	if (threat)
+	if (threat && bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO)
 	{
 		if (mysentry)
 		{

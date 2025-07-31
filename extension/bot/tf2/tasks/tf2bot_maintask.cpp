@@ -99,11 +99,11 @@ const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKno
 	{
 		return threat1;
 	}
-	else if (!threat1 && threat2)
+	if (!threat1 && threat2)
 	{
 		return threat2;
 	}
-	else if (threat1 == threat2)
+	if (threat1 == threat2)
 	{
 		return threat1; // if both are the same, return threat1
 	}
@@ -228,7 +228,6 @@ void CTF2BotMainTask::AimAtPlayerWithProjectileWeapon(CTF2Bot* me, CBaseExtPlaye
 	}
 
 	result = player->GetEyeOrigin();
-	return;
 }
 
 void CTF2BotMainTask::AimAtPlayerWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo)
@@ -264,12 +263,21 @@ void CTF2BotMainTask::AimAtPlayerWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer
 
 const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
-	// TO-DO: Add threat selection
+	constexpr float SENTRY_GUN_RANGE = 1600.0f;
 
-	auto range1 = me->GetRangeTo(threat1->GetEdict());
-	auto range2 = me->GetRangeTo(threat2->GetEdict());
+	const float range1 = me->GetRangeTo(threat1->GetEdict());
+	const float range2 = me->GetRangeTo(threat2->GetEdict());
 
-	// temporary distance based for testing
+	// Priorize sentries
+	if (range1 <= SENTRY_GUN_RANGE && threat1->IsEntityOfClassname("obj_sentrygun"))
+	{
+		return threat1;
+	}
+	else if (range2 <= SENTRY_GUN_RANGE && threat2->IsEntityOfClassname("obj_sentrygun"))
+	{
+		return threat2;
+	}
+
 	if (range1 < range2)
 	{
 		return threat1;

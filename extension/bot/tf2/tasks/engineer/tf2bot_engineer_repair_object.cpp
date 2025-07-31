@@ -6,6 +6,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_engineer_repair_object.h"
 
 CTF2BotEngineerRepairObjectTask::CTF2BotEngineerRepairObjectTask(CBaseEntity* object) :
@@ -56,7 +57,19 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 	tfentities::HBaseObject object(m_object.Get());
 
-	bool needsRepair = object.GetHealthPercentage() < 0.99f || object.IsSapped();
+	const bool isSapped = object.IsSapped();
+	bool needsRepair = object.GetHealthPercentage() < 0.99f || isSapped;
+
+	if (isSapped)
+	{
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+		// if the object is sapped and I see an enemy spy, priorize attacking the spy
+		if (threat && threat->IsPlayer() && tf2lib::GetPlayerClassType(threat->GetIndex()) == TeamFortress2::TFClassType::TFClass_Spy)
+		{
+			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible spy!");
+		}
+	}
 
 	if (m_sentry)
 	{
@@ -149,22 +162,4 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
-}
-
-QueryAnswerType CTF2BotEngineerRepairObjectTask::ShouldAttack(CBaseBot* me, const CKnownEntity* them)
-{
-	if (UtilHelpers::IsPlayerIndex(them->GetIndex()))
-	{
-		if (tf2lib::GetPlayerClassType(them->GetIndex()) == TeamFortress2::TFClass_Spy)
-		{
-			return ANSWER_YES; // always attack spies
-		}
-	}
-
-	if (m_sentry)
-	{
-		return ANSWER_NO; // the sentry will deal with them
-	}
-
-	return ANSWER_UNDEFINED;
 }

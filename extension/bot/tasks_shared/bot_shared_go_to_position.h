@@ -32,9 +32,10 @@ public:
 	 * @param attackEnemies If true, this task will be paused to attack any enemies found.
 	 * @param isPriority If true, this task won't be interrupted by gameplay related events.
 	 * @param fastestPath If true, use the fastest path.
+	 * @param reachDist If larger than zero, sets the minimum distance between the goal position and the bot to consider the goal to be reached.
 	 */
-	CBotSharedGoToPositionTask(BT* bot, const Vector& goal, const char* name = nullptr, const bool attackEnemies = true, const bool isPriority = false, const bool fastestPath = false) :
-		m_pathcost(bot), m_attackEnemies(attackEnemies), m_priority(isPriority)
+	CBotSharedGoToPositionTask(BT* bot, const Vector& goal, const char* name = nullptr, const bool attackEnemies = true, const bool isPriority = false, const bool fastestPath = false, const float reachDist = -1.0f) :
+		m_pathcost(bot), m_attackEnemies(attackEnemies), m_priority(isPriority), m_reachDistance(reachDist)
 	{
 
 		if (name)
@@ -81,6 +82,7 @@ private:
 	Vector m_goal;
 	bool m_attackEnemies;
 	bool m_priority;
+	float m_reachDistance;
 };
 
 template<typename BT, typename CT>
@@ -112,11 +114,19 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskStart(BT* bot, A
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
-
-	if (threat)
+	if (m_attackEnemies)
 	{
-		return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+		if (threat)
+		{
+			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+		}
+	}
+
+	if (m_reachDistance > 0.0f && bot->GetRangeTo(m_goal) <= m_reachDistance)
+	{
+		return AITask<BT>::Done("Goal reached!");
 	}
 
 	if (m_timeout.IsElapsed())

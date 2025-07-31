@@ -157,3 +157,8 @@ void CKnownEntity::DebugDraw(const float duration) const
 		m_handle.GetEntryIndex(), m_classname.c_str(), GetTimeSinceBecomeKnown(), GetTimeSinceLastVisible(), GetTimeSinceLastInfo(), 
 		GetTimeSinceLastHeard());
 }
+
+const bool CKnownEntity::IsEntityOfClassname(const char* classname) const
+{
+	return UtilHelpers::StringMatchesPattern(m_classname.c_str(), classname, 0);
+}

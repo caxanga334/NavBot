@@ -51,6 +51,7 @@ private:
 	CountdownTimer m_checkOthersTimer; // secondary timer for moving non sentry gun buildings
 	CountdownTimer m_roundStateTimer;
 	CountdownTimer m_respondToVCTimer;
+	CountdownTimer m_scanForEnemiesTimer;
 	// cache for member functions
 	CBaseEntity* m_mysentry;
 	CBaseEntity* m_mydispenser;

@@ -28,6 +28,7 @@ public:
 		engineer_sentry_killassist_threshold = 5;
 		engineer_teleporter_uses_threshold = 4;
 		engineer_help_ally_max_range = 1500.0f;
+		engineer_trust_waypoints = true;
 	}
 
 	void SetEngineerNestDispenserRange(float range) { engineer_nest_dispenser_range = range; }
@@ -40,6 +41,7 @@ public:
 	void SetEngineerSentryKillAssistsThreshold(int value) { engineer_sentry_killassist_threshold = value; }
 	void SetEngineerTeleporterUsesThreshold(int value) { engineer_teleporter_uses_threshold = value; }
 	void SetEngineerHelpAllyMaxRange(float value) { engineer_help_ally_max_range = value; }
+	void SetEngineerTrustWaypoints(bool value) { engineer_trust_waypoints = value; }
 
 	float GetEngineerNestDispenserRange() const { return engineer_nest_dispenser_range; }
 	float GetEngineerNestExitRange() const { return engineer_nest_exit_range; }
@@ -51,6 +53,7 @@ public:
 	int GetEngineerSentryKillAssistsThreshold() const { return engineer_sentry_killassist_threshold; }
 	int GetEngineerTeleporterUsesThreshold() const { return engineer_teleporter_uses_threshold; }
 	float GetEngineerHelpAllyMaxRange() const { return engineer_help_ally_max_range; }
+	bool ShouldEngineersTrustWaypoints() const { return engineer_trust_waypoints; }
 
 protected:
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
@@ -66,6 +69,7 @@ private:
 	int engineer_sentry_killassist_threshold;
 	int engineer_teleporter_uses_threshold;
 	float engineer_help_ally_max_range;
+	bool engineer_trust_waypoints;
 };
 
 class CTF2Bot;

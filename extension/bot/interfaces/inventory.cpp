@@ -92,6 +92,19 @@ void IInventory::OnWeaponInfoConfigReloaded()
 	BuildInventory();
 }
 
+const CBotWeapon* IInventory::FindWeaponByClassnamePattern(const char* pattern) const
+{
+	for (auto& weaponptr : m_weapons)
+	{
+		if (weaponptr->IsValid() && UtilHelpers::StringMatchesPattern(weaponptr->GetClassname().c_str(), pattern, 0))
+		{
+			return weaponptr.get();
+		}
+	}
+
+	return nullptr;
+}
+
 void IInventory::EquipWeapon(const CBotWeapon* weapon) const
 {
 	const CBotWeapon* activeWeapon = GetActiveBotWeapon();
