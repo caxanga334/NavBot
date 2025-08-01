@@ -202,6 +202,8 @@ public:
 	bool IsAbleToDodgeEnemies(const CKnownEntity* threat) const override;
 	bool IsCarryingThePassTimeJack() const;
 	void UseSecondaryAbilities(const CKnownEntity* threat) override;
+	// Makes the bot use the weapon's taunt
+	void DoWeaponTaunt() { DelayedFakeClientCommand("weapon_taunt"); }
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;

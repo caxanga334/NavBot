@@ -34,7 +34,7 @@ public:
 
 		bool operator==(const SquadMember& other) const;
 		bool operator==(CBaseBot* bot) const;
-		bool operator==(CBaseEntity * player) const;
+		bool operator==(CBaseEntity* player) const;
 
 		void AssignBot(CBaseBot* bot);
 		void AssignHuman(CBaseEntity* player)

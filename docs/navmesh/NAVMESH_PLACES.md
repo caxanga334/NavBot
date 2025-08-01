@@ -10,8 +10,8 @@ NavBot's upgraded the place system to support loading from multiple files.
 The main feature is the addition of map specific place name databases.    
 There are 3 database files:
 
-* `config/nav_places.cfg` (Global)
-* `config/[mod]/nav_places.cfg` (Mod Global)
+* `data/navbot/nav_places.cfg` (Global)
+* `data/navbot/[mod]/nav_places.cfg` (Mod Global)
 * `data/navbot/[mod]/[map]_places.cfg` (Per map file)
 
 The global and mod global files needs to be syncronized for everyone for them to work. Because of this, custom place names should **ALWAYS** be added to the per map database file.    

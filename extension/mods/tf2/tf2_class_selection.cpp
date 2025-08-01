@@ -227,6 +227,12 @@ SMCResult CTF2ClassSelection::ReadSMC_NewSection(const SMCStates* states, const 
 			m_parserdata.current_roster = ClassRosterType::ROSTER_PASSTIME;
 			return SourceMod::SMCResult_Continue;
 		}
+		else if (strncasecmp(name, "medieval", 8) == 0)
+		{
+			m_parserdata.depth = 2;
+			m_parserdata.current_roster = ClassRosterType::ROSTER_MEDIEVAL;
+			return SourceMod::SMCResult_Continue;
+		}
 		else
 		{
 			smutils->LogError(myself, "Error parsing class_selection.cfg, unknown section name \"%s\"!", name);

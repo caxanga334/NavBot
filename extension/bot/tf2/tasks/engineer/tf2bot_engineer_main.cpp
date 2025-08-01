@@ -4,10 +4,14 @@
 #include <limits>
 #include <extension.h>
 #include <util/helpers.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
+#include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
+#include <bot/tf2/tasks/scenario/specialdelivery/tf2bot_sd_deliver_flag.h>
+#include <bot/tf2/tasks/scenario/pd/tf2bot_pd_move_to_capture_zone_task.h>
 #include "tf2bot_engineer_sentry_combat.h"
 #include "tf2bot_engineer_repair_object.h"
 #include "tf2bot_engineer_upgrade_object.h"
@@ -29,6 +33,35 @@ AITask<CTF2Bot>* CTF2BotEngineerMainTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	if (m_checkFlagTimer.IsElapsed())
+	{
+		m_checkFlagTimer.Start(2.0f);
+
+		auto gm = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode();
+		edict_t* item = bot->GetItem();
+
+		if (item) // bot is carrying a flag
+		{
+			if (gm == TeamFortress2::GameModeType::GM_CTF)
+			{
+				return PauseFor(new CTF2BotCTFDeliverFlagTask, "Delivering the flag!");
+			}
+			else if (gm == TeamFortress2::GameModeType::GM_SD)
+			{
+				return PauseFor(new CTF2BotSDDeliverFlag, "Delivering the australium!");
+			}
+			else if (gm == TeamFortress2::GameModeType::GM_PD)
+			{
+				CBaseEntity* capzone = nullptr;
+
+				if (CTF2BotPDMoveToCaptureZoneTask::IsPossible(bot, &capzone))
+				{
+					return PauseFor(new CTF2BotPDMoveToCaptureZoneTask(capzone), "Delivering points!");
+				}
+			}
+		}
+	}
+	
 	if (m_updateBuildingsTimer.IsElapsed())
 	{
 		m_updateBuildingsTimer.Start(1.0f);

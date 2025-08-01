@@ -1366,6 +1366,11 @@ TeamFortress2::TeamRoles CTeamFortress2Mod::GetTeamRole(TeamFortress2::TFTeam te
 
 CTF2ClassSelection::ClassRosterType CTeamFortress2Mod::GetRosterForTeam(TeamFortress2::TFTeam team) const
 {
+	if (IsPlayingMedievalMode())
+	{
+		return CTF2ClassSelection::ClassRosterType::ROSTER_MEDIEVAL;
+	}
+
 	switch (m_gamemode)
 	{
 	case TeamFortress2::GameModeType::GM_NONE:
@@ -1739,6 +1744,13 @@ void CTeamFortress2Mod::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer*
 			extmanager->ForEachBot(func);
 		}
 	}
+}
+
+const bool CTeamFortress2Mod::IsPlayingMedievalMode() const
+{
+	bool value = false;
+	entprops->GameRules_GetPropBool("m_bPlayingMedieval", value);
+	return value;
 }
 
 #if SOURCE_ENGINE == SE_TF2

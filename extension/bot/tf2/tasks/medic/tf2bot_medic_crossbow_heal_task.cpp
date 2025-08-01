@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/weapon.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include "tf2bot_medic_crossbow_heal_task.h"
 
@@ -10,9 +11,9 @@ CBaseEntity* CTF2BotMedicCrossbowHealTask::IsPossible(CTF2Bot* me, const CBotWea
 	std::fill(targets.begin(), targets.end(), nullptr);
 	std::size_t target_count = 0U;
 	const TeamFortress2::TFTeam myteam = me->GetMyTFTeam();
+	const float min_range = CTeamFortress2Mod::GetTF2Mod()->IsPlayingMedievalMode() ? 128.0f : 600.0f;
 
-	auto functor = [&me, &crossbow, &targets, &target_count, &myteam](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
-		constexpr float MIN_RANGE = 600.0f;
+	auto functor = [&me, &crossbow, &targets, &target_count, &myteam, min_range](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 
 		if (target_count >= targets.max_size())
 		{
@@ -28,7 +29,7 @@ CBaseEntity* CTF2BotMedicCrossbowHealTask::IsPossible(CTF2Bot* me, const CBotWea
 
 			const float range = me->GetRangeTo(entity);
 
-			if (range > MIN_RANGE && range <= crossbow->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange())
+			if (range > min_range && range <= crossbow->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange())
 			{
 				if (me->IsLineOfFireClear(UtilHelpers::getWorldSpaceCenter(entity)))
 				{

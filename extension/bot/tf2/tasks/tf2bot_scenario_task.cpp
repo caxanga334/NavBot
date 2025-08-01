@@ -149,6 +149,20 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectClassTask(CTF2Bot* me)
 {
 	auto myclass = me->GetMyClassType();
 
+	if (CTeamFortress2Mod::GetTF2Mod()->IsPlayingMedievalMode())
+	{
+		// Sniper and engineers uses default game mode behavior in medieval mode
+		switch (myclass)
+		{
+		case TeamFortress2::TFClass_Medic:
+			return new CTF2BotMedicMainTask;
+		case TeamFortress2::TFClass_Spy:
+			return new CTF2BotSpyMainTask;
+		default:
+			return nullptr;
+		}
+	}
+
 	switch (myclass)
 	{
 	case TeamFortress2::TFClass_Sniper:

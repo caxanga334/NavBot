@@ -12,6 +12,7 @@
 #include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_revive_task.h"
 #include "tf2bot_medic_heal_task.h"
+#include "tf2bot_medic_medieval_task.h"
 #include "tf2bot_medic_main_task.h"
 
 #undef max
@@ -20,6 +21,11 @@
 
 AITask<CTF2Bot>* CTF2BotMedicMainTask::InitialNextTask(CTF2Bot* bot)
 {
+	if (CTeamFortress2Mod::GetTF2Mod()->IsPlayingMedievalMode())
+	{
+		return new CTF2BotMedicMedievalTask;
+	}
+
 	return new CTF2BotMedicHealTask;
 }
 

@@ -21,6 +21,7 @@ public:
 private:
 	CountdownTimer m_repairCheckTimer;
 	CountdownTimer m_updateBuildingsTimer;
+	CountdownTimer m_checkFlagTimer;
 };
 
 #endif // !NAVBOT_TF2BOT_TASKS_ENGINEER_MAIN_H_

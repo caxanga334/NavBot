@@ -178,6 +178,7 @@ public:
 
 	// Returns true if the halloween boss fight truce is active
 	inline bool IsTruceActive() const { return m_isTruceActive; }
+	const bool IsPlayingMedievalMode() const;
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
