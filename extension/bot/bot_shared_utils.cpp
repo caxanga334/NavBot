@@ -3,6 +3,9 @@
 #include <util/helpers.h>
 #include <util/prediction.h>
 #include <util/entprops.h>
+#include <navmesh/nav_mesh.h>
+#include <navmesh/nav_area.h>
+#include <navmesh/nav_waypoint.h>
 #include "basebot.h"
 #include "bot_shared_utils.h"
 
@@ -860,4 +863,120 @@ bool botsharedutils::CollectPatrolAreas::ShouldCollect(CNavArea* area)
 
 	m_points.push_back(std::move(end));
 	return true;
+}
+
+CWaypoint* botsharedutils::waypoints::GetRandomRoamWaypoint(CBaseBot* bot, const float maxRange)
+{
+	std::vector<CWaypoint*> wpts;
+
+	auto func = [&bot, &maxRange, &wpts](CWaypoint* waypoint) {
+		if (waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_ROAM) && waypoint->IsEnabled() && waypoint->IsAvailableToTeam(bot->GetCurrentTeamIndex()) && waypoint->CanBeUsedByBot(bot))
+		{
+			if (maxRange > 0.0f)
+			{
+				const float range = (bot->GetAbsOrigin() - waypoint->GetOrigin()).Length();
+
+				if (range > maxRange)
+				{
+					return true;
+				}
+			}
+
+			wpts.push_back(waypoint);
+		}
+
+		return true;
+	};
+
+	TheNavMesh->ForEveryWaypoint<CWaypoint, decltype(func)>(func);
+
+	if (wpts.empty())
+	{
+		return nullptr;
+	}
+
+	if (wpts.size() == 1U)
+	{
+		return wpts[0];
+	}
+
+	return wpts[randomgen->GetRandomInt<std::size_t>(0U, wpts.size() - 1U)];
+}
+
+CWaypoint* botsharedutils::waypoints::GetRandomDefendWaypoint(CBaseBot* bot, const Vector* defendSpot, const float maxRange)
+{
+	std::vector<CWaypoint*> wpts;
+	Vector origin = defendSpot != nullptr ? *defendSpot : bot->GetAbsOrigin();
+
+	auto func = [&bot, &maxRange, &wpts, origin](CWaypoint* waypoint) {
+		if (waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_DEFEND) && waypoint->IsEnabled() && waypoint->IsAvailableToTeam(bot->GetCurrentTeamIndex()) && waypoint->CanBeUsedByBot(bot))
+		{
+			if (maxRange > 0.0f)
+			{
+				const float range = (origin - waypoint->GetOrigin()).Length();
+
+				if (range > maxRange)
+				{
+					return true;
+				}
+			}
+
+			wpts.push_back(waypoint);
+		}
+
+		return true;
+		};
+
+	TheNavMesh->ForEveryWaypoint<CWaypoint, decltype(func)>(func);
+
+	if (wpts.empty())
+	{
+		return nullptr;
+	}
+
+	if (wpts.size() == 1U)
+	{
+		return wpts[0];
+	}
+
+	return wpts[randomgen->GetRandomInt<std::size_t>(0U, wpts.size() - 1U)];
+}
+
+CWaypoint* botsharedutils::waypoints::GetRandomSniperWaypoint(CBaseBot* bot, const Vector* defendSpot, const float maxRange)
+{
+	std::vector<CWaypoint*> wpts;
+	Vector origin = defendSpot != nullptr ? *defendSpot : bot->GetAbsOrigin();
+
+	auto func = [&bot, &maxRange, &wpts, origin](CWaypoint* waypoint) {
+		if (waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_SNIPER) && waypoint->IsEnabled() && waypoint->IsAvailableToTeam(bot->GetCurrentTeamIndex()) && waypoint->CanBeUsedByBot(bot))
+		{
+			if (maxRange > 0.0f)
+			{
+				const float range = (origin - waypoint->GetOrigin()).Length();
+
+				if (range > maxRange)
+				{
+					return true;
+				}
+			}
+
+			wpts.push_back(waypoint);
+		}
+
+		return true;
+		};
+
+	TheNavMesh->ForEveryWaypoint<CWaypoint, decltype(func)>(func);
+
+	if (wpts.empty())
+	{
+		return nullptr;
+	}
+
+	if (wpts.size() == 1U)
+	{
+		return wpts[0];
+	}
+
+	return wpts[randomgen->GetRandomInt<std::size_t>(0U, wpts.size() - 1U)];
 }

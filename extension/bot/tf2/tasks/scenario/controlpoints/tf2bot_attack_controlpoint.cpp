@@ -5,7 +5,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
 #include <bot/tf2/tf2bot.h>
-#include <bot/tf2/tasks/tf2bot_attack.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_attack_controlpoint.h"
 
 CTF2BotAttackControlPointTask::CTF2BotAttackControlPointTask(CBaseEntity* controlpoint) :
@@ -81,7 +81,7 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskUpdate(CTF2Bot* bot)
 		// only attack if i'm not close to the control point
 		if (bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity())) + 512.0f < bot->GetRangeTo(m_capturePos))
 		{
-			return PauseFor(new CTF2BotAttackTask(threat->GetEntity(), 2.0f, 20.0f), "Attacking threat!");
+			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking threat!");
 		}
 	}
 

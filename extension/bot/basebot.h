@@ -5,6 +5,7 @@
 #include <queue>
 #include <string>
 #include <memory>
+#include <cstdint>
 
 #include <IGameConfigs.h>
 #include <extplayer.h>
@@ -281,6 +282,31 @@ public:
 	 * Example: TF2 airblast, demoman shield charge, etc.
 	 */
 	virtual void UseSecondaryAbilities(const CKnownEntity* threat) {}
+
+	enum class HealthState : std::uint8_t
+	{
+		HEALTH_OK = 0U,		// Bot health is ok.
+		HEALTH_LOW,			// Bot is low on health
+		HEALTH_CRITICAL,	// Bot is critically low on health
+	};
+
+	// Returns the bot 'health state'.
+	HealthState GetHealthState() const
+	{
+		const float percent = GetHealthPercentage();
+
+		if (percent <= m_profile->GetHealthCriticalThreshold())
+		{
+			return HealthState::HEALTH_CRITICAL;
+		}
+		if (percent <= m_profile->GetHealthLowThreshold())
+		{
+			return HealthState::HEALTH_LOW;
+		}
+
+		return HealthState::HEALTH_OK;
+	}
+
 protected:
 	bool m_isfirstspawn;
 

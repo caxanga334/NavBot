@@ -47,7 +47,7 @@ private:
 	Vector m_goal;
 	Vector m_sentryBuildPos;
 	CTFWaypoint* m_sentryWaypoint; // waypoint used to build the nest
-	CountdownTimer m_moveTimer; // main move building timer
+	CountdownTimer m_moveSentryGunTimer; // main move building timer
 	CountdownTimer m_checkOthersTimer; // secondary timer for moving non sentry gun buildings
 	CountdownTimer m_roundStateTimer;
 	CountdownTimer m_respondToVCTimer;
@@ -78,7 +78,7 @@ private:
 
 	void ForceMoveBuildings(const float delay)
 	{
-		m_moveTimer.Start(delay);
+		m_moveSentryGunTimer.Start(delay);
 	}
 
 	AITask<CTF2Bot>* GetBuildTask(CTF2Bot* me); // returns a build related task or NULL if none

@@ -11,8 +11,33 @@
 #include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
+#include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include "tf2bot_map_ctf.h"
+
+/**
+ * @brief CTF variant of the shared defend task.
+ */
+class CTF2BotCTFDefendBaseTask : public CBotSharedDefendSpotTask<CTF2Bot, CTF2BotPathCost>
+{
+public:
+	CTF2BotCTFDefendBaseTask(CTF2Bot* bot, const Vector& pos) :
+		CBotSharedDefendSpotTask<CTF2Bot, CTF2BotPathCost>(bot, pos, CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f), true)
+	{
+	}
+
+	TaskEventResponseResult<CTF2Bot> OnFlagTaken(CTF2Bot* bot, CBaseEntity* player) override
+	{
+		if (player && tf2lib::GetEntityTFTeam(player) != bot->GetMyTFTeam())
+		{
+			return TryDone(PRIORITY_MEDIUM, "My flag was stolen!");
+		}
+
+		return TryContinue();
+	}
+
+	const char* GetName() const override { return "DefendBase"; }
+};
 
 TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 {
@@ -34,7 +59,7 @@ TaskResult<CTF2Bot> CTF2BotCTFMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 
 			if (flag.IsHome())
 			{
-				return PauseFor(new CBotSharedDefendSpotTask(bot, UtilHelpers::getEntityOrigin(ent), 30.0f, true), "Defending my flag!");
+				return PauseFor(new CTF2BotCTFDefendBaseTask(bot, flag.GetPosition()), "Defending my base!");
 			}
 
 			return PauseFor(new CTF2BotCTFDefendFlag(UtilHelpers::EdictToBaseEntity(ent)), "Defending dropped flag!");
@@ -103,6 +128,17 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskUpdate(CTF2Bot* bot)
 		if (gamehelpers->IndexOfEdict(edict) == gamehelpers->IndexOfEdict(bot->GetItem()))
 		{
 			return SwitchTo(new CTF2BotCTFDeliverFlagTask, "I have the flag, going to deliver it!");
+		}
+
+		if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
+		{
+			CBaseEntity* carrier = flag.GetOwnerEntity();
+
+			if (carrier && tf2lib::GetEntityTFTeam(carrier) == bot->GetMyTFTeam())
+			{
+				auto func = std::bind(tf2lib::IsPlayerCarryingAFlag, std::placeholders::_1);
+				return PauseFor(new CBotSharedEscortEntityTask<CTF2Bot, CTF2BotPathCost>(bot, carrier, func), "Escorting flag carrier!");
+			}
 		}
 
 		return Done("Someone stole the flag before me!");

@@ -75,6 +75,7 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	m_updateStatisticsTimer.Start(extmanager->GetMod()->GetModSettings()->GetVisionStatisticsUpdateRate());
 	m_statsvisibleallies = 0;
 	m_statsvisibleenemies = 0;
+	m_statsknownallies = 0;
 }
 
 ISensor::~ISensor()
@@ -144,6 +145,7 @@ void ISensor::Reset()
 	m_primarythreatcache = nullptr;
 	m_statsvisibleallies = 0;
 	m_statsvisibleenemies = 0;
+	m_statsknownallies = 0;
 }
 
 void ISensor::Update()
@@ -972,13 +974,16 @@ void ISensor::UpdateStatistics()
 
 	m_statsvisibleallies = 0;
 	m_statsvisibleenemies = 0;
+	m_statsknownallies = 0;
 
 	for (CKnownEntity& known : m_knownlist)
 	{
+		if (!known.IsValid()) { continue; }
+
+		CBaseEntity* pEntity = known.GetEntity();
+
 		if (known.IsVisibleNow())
 		{
-			CBaseEntity* pEntity = known.GetEntity();
-
 			if (IsFriendly(pEntity))
 			{
 				m_statsvisibleallies++;
@@ -987,6 +992,11 @@ void ISensor::UpdateStatistics()
 			{
 				m_statsvisibleenemies++;
 			}
+		}
+
+		if (IsFriendly(pEntity))
+		{
+			m_statsknownallies++;
 		}
 	}
 }

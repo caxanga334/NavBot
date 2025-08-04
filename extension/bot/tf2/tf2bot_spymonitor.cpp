@@ -52,6 +52,28 @@ void CTF2BotSpyMonitor::Frame()
 {
 }
 
+void CTF2BotSpyMonitor::OnContact(CBaseEntity* pOther)
+{
+	const CTF2Bot* me = GetBot<const CTF2Bot>();
+
+	if (me->GetDifficultyProfile()->GetGameAwareness() < 15) { return; }
+
+	if (pOther && UtilHelpers::IsPlayer(pOther))
+	{
+		
+		int client = UtilHelpers::IndexOfEntity(pOther);
+
+		// bumped into an enemy spy
+		if (tf2lib::GetEntityTFTeam(client) != me->GetMyTFTeam() && tf2lib::GetPlayerClassType(client) == TeamFortress2::TFClassType::TFClass_Spy)
+		{
+			CKnownEntity* known = me->GetSensorInterface()->AddKnownEntity(pOther);
+			known->UpdatePosition();
+			const KnownSpy* spy = DetectSpy(pOther);
+			me->GetControlInterface()->AimAt(pOther, IPlayerController::LOOK_ALERT, 2.0f, "Bumped into an spy!");
+		}
+	}
+}
+
 const CTF2BotSpyMonitor::KnownSpy& CTF2BotSpyMonitor::GetKnownSpy(edict_t* spy)
 {
 	for (auto& known : m_knownspylist)

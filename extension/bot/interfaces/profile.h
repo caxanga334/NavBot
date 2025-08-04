@@ -34,11 +34,16 @@ public:
 		aggressiveness = 20;
 		teamwork = 20;
 		ability_use_interval = 1.0f;
+		health_critical_percent = 0.2f;
+		health_low_percent = 0.5f;
+		numerical_disadvantage_retreat_threshold = 5;
 	}
 
 	virtual ~DifficultyProfile() = default;
 	// Randomizes the difficulty profile values
 	virtual void RandomizeProfileValues();
+	// Invoked for each profile after parsing the config file to validate values
+	virtual void ValidateProfileValues();
 
 	// user defined skill profiles starts from 0 and are always a positive skill level
 	inline bool IsDefaultProfile() const { return skill_level == SKILL_LEVEL_DEFAULT_PROFILE; }
@@ -59,6 +64,9 @@ public:
 	inline const int GetAggressiveness() const { return aggressiveness; }
 	inline const int GetTeamwork() const { return teamwork; }
 	inline const float GetAbilityUsageInterval() const { return ability_use_interval; }
+	inline const float GetHealthCriticalThreshold() const { return health_critical_percent; }
+	inline const float GetHealthLowThreshold() const { return health_low_percent; }
+	inline const int GetRetreatFromNumericalDisadvantageThreshold() const { return numerical_disadvantage_retreat_threshold; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
@@ -74,6 +82,9 @@ public:
 	inline void SetAggressiveness(const int v) { aggressiveness = v; }
 	inline void SetTeamwork(const int v) { teamwork = v; }
 	inline void SetAbilityUsageInterval(const float v) { ability_use_interval = v; }
+	inline void SetHealthCriticalThreshold(const float v) { health_critical_percent = v; }
+	inline void SetHealthLowThreshold(const float v) { health_low_percent = v; }
+	inline void SetRetreatFromNumericalDisadvantageThreshold(const int v) { numerical_disadvantage_retreat_threshold = v; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -90,6 +101,9 @@ private:
 	int aggressiveness; // How aggressive will this bot play
 	int teamwork; // How likely this bot will cooperate with teammates
 	float ability_use_interval; // Interval between secondary abilities usage
+	float health_critical_percent; // If the bot HP % is less than this, the bot health is critical
+	float health_low_percent; // If the bot HP % is less than this, the bot health is low
+	int numerical_disadvantage_retreat_threshold; // If the numerical disadvantage (number of enemies - number of allies) is greater than this, the bot will retreat
 };
 
 // Bot difficulty profile manager

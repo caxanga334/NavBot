@@ -67,6 +67,7 @@ public:
 	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 
 	const char* GetName() const override { return "SpyAttack"; }
 private:
@@ -87,6 +88,7 @@ public:
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
 
 	const char* GetName() const override { return "SpySapObject"; }
 

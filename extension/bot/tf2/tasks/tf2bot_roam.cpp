@@ -8,7 +8,6 @@
 #include <util/librandom.h>
 #include <bot/tf2/tf2bot.h>
 #include "tf2bot_roam.h"
-#include "tf2bot_attack.h"
 #include <bot/tasks_shared/bot_shared_attack_enemy.h>
 
 class RoamCollector : public INavAreaCollector<CTFNavArea>

@@ -7,7 +7,9 @@
 #include <bot/interfaces/path/chasenavigator.h>
 
 /**
- * @brief Shared task for attacking enemies
+ * @brief Shared task for bots to attack visible enemies.
+ * 
+ * Bots will chase enemies for a limited time. Tasks ends when no threat is visible.
  * @tparam BT Bot class
  * @tparam CT Path cost class
  */

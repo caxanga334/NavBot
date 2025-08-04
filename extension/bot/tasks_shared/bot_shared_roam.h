@@ -5,6 +5,7 @@
 #include <util/librandom.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
+#include <bot/bot_shared_utils.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <sdkports/sdk_timers.h>
 #include <navmesh/nav_mesh.h>
@@ -16,13 +17,31 @@ template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedRoamTask : public AITask<BT>
 {
 public:
-	CBotSharedRoamTask(BT* bot, const float travellimit = 4096.0f, const bool attackvisiblenemies = false) :
+	/**
+	 * @brief This version of the constructor will search for a random nav area or random waypoint.
+	 * 
+	 * Waypoints are priorized.
+	 * @param bot Bot that will be using this task.
+	 * @param travellimit Maximum search range for a random nav area.
+	 * @param attackvisiblenemies If true, bots will stop and attack visible enemies.
+	 * @param waypointSearchRange Maximum search range for a random "roam" flagged waypoint. Negative values for no limit.
+	 */
+	CBotSharedRoamTask(BT* bot, const float travellimit = 4096.0f, const bool attackvisiblenemies = false, const float waypointSearchRange = -1.0f) :
 		m_pathcost(bot), m_goal(0.0f, 0.0f, 0.0f)
 	{
 		m_goalSet = false;
 		m_attackEnemies = attackvisiblenemies;
 		m_travelLimit = travellimit;
 		m_moveFailures = 0;
+
+		CWaypoint* randomWpt = botsharedutils::waypoints::GetRandomRoamWaypoint(bot, waypointSearchRange);
+
+		if (randomWpt)
+		{
+			m_goal = randomWpt->GetRandomPoint();
+			m_goalSet = true;
+			randomWpt->Use(bot, 30.0f);
+		}
 	}
 
 	CBotSharedRoamTask(BT* bot, const Vector& goal, const float timeout = -1.0f, const bool attackvisiblenemies = false) :

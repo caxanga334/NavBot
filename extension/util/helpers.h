@@ -794,6 +794,21 @@ namespace UtilHelpers::math
 	}
 }
 
+namespace UtilHelpers::parsers
+{
+	/**
+	 * @brief Utility function for parsing random values from configuration files.
+	 * 
+	 * Format "MIN:MAX". Example: "25:50", a random number between 25 and 50
+	 * @param str String to parse.
+	 * @param out Variable to store the random output.
+	 * @param min Minimum value allowed.
+	 * @param max Maximum value allowed.
+	 * @return True if parsed successfully, false on error.
+	 */
+	bool ParseRandomInt(const char* str, int& out, const int min, const int max);
+}
+
 #endif // !UTIL_HELPERS_H_
 
 

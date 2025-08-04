@@ -631,6 +631,18 @@ int tf2lib::GetTeleporterUses(CBaseEntity* teleporter)
 	return *value;
 }
 
+bool tf2lib::IsPlayerCarryingAFlag(CBaseEntity* player)
+{
+	int item = INVALID_EHANDLE_INDEX;
+
+	if (entprops->GetEntPropEnt(UtilHelpers::IndexOfEntity(player), Prop_Send, "m_hItem", item))
+	{
+		return item != INVALID_EHANDLE_INDEX;
+	}
+
+	return false;
+}
+
 CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)
 {
 	const Vector& hatch = CTeamFortress2Mod::GetTF2Mod()->GetMvMBombHatchPosition();

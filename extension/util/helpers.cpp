@@ -1706,3 +1706,44 @@ bool UtilHelpers::PredPlayersInTeam::operator()(int client, edict_t* entity, Sou
 	entprops->GetEntProp(client, Prop_Send, "m_iTeamNum", client_team);
 	return client_team == m_team;
 }
+
+bool UtilHelpers::parsers::ParseRandomInt(const char* str, int& out, const int min, const int max)
+{
+	try
+	{
+		std::string string{ str };
+		std::string::size_type dividerpos = string.find_first_of(':');
+
+		if (dividerpos == std::string::npos)
+		{
+			return false;
+		}
+
+		std::string first = string.substr(0, dividerpos);
+		std::string second = string.substr(dividerpos + 1U);
+		int smin = std::stoi(first);
+		int smax = std::stoi(second);
+		smin = std::max(smin, min);
+		smax = std::min(smax, max);
+
+		if (smin == smax)
+		{
+			out = smax;
+			return true;
+		}
+
+		if (smin > smax)
+		{
+			return false;
+		}
+
+		out = randomgen->GetRandomInt<int>(smin, smax);
+		return true;
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "C++ Exception throw! %s", ex.what());
+		out = 0;
+		return false;
+	}
+}

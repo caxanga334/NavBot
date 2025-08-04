@@ -103,7 +103,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskStart(CTF2Bot* bot, AITask<CT
 		m_teleUses = tf2lib::GetTeleporterUses(entrance);
 	}
 
-	m_moveTimer.Start(tf2mod->GetTF2ModSettings()->GetEngineerMoveCheckInterval());
+	m_moveSentryGunTimer.Start(tf2mod->GetTF2ModSettings()->GetEngineerMoveCheckInterval());
 
 	return Continue();
 }
@@ -127,7 +127,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (buildTask)
 	{
-		m_moveTimer.Start(CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerMoveCheckInterval());
+		m_moveSentryGunTimer.Start(CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerMoveCheckInterval());
 		return PauseFor(buildTask, "Taking care of my own buildings!");
 	}
 
@@ -137,9 +137,9 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (helpAllyTask)
 		{
-			if (m_moveTimer.IsElapsed())
+			if (m_moveSentryGunTimer.IsElapsed())
 			{
-				m_moveTimer.StartRandom(10.0f, 20.0f);
+				m_moveSentryGunTimer.StartRandom(10.0f, 20.0f);
 			}
 
 			return PauseFor(helpAllyTask, "Helping another engineer!");
@@ -643,14 +643,14 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 	CTFWaypoint* buildwpt = nullptr;
 	CTFNavArea* buildarea = nullptr;
 
-	if (m_moveTimer.IsElapsed())
+	if (m_moveSentryGunTimer.IsElapsed())
 	{
 		const CKnownEntity* threat = me->GetSensorInterface()->GetPrimaryKnownThreat(false);
 
 		// Don't move buildings if I see or recently saw an enemy
 		if (threat && (threat->IsVisibleNow() || threat->GetTimeSinceLastInfo() <= 10.0f))
 		{
-			m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
+			m_moveSentryGunTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
 			return nullptr;
 		}
 
@@ -659,12 +659,16 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 		{
 			if (m_sentryWaypoint->IsEnabled() && m_sentryWaypoint->IsAvailableToTeam(static_cast<int>(me->GetMyTFTeam())))
 			{
-				m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
+				m_moveSentryGunTimer.Start(settings->GetEngineerMoveCheckInterval() * 0.25f);
+				/* Check the other buildings too */
+				m_checkDispenser = true;
+				m_checkEntrance = true;
+				m_checkExit = true;
 				return nullptr;
 			}
 		}
 
-		m_moveTimer.Start(settings->GetEngineerMoveCheckInterval()); 
+		m_moveSentryGunTimer.Start(settings->GetEngineerMoveCheckInterval()); 
 
 		if (m_mysentry)
 		{
@@ -681,7 +685,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 				if (tf2botutils::FindSpotToBuildSentryGun(me, &buildwpt, &buildarea))
 				{
 					// give some time to reach the new location
-					m_moveTimer.Start(settings->GetEngineerMoveCheckInterval() + MOVE_BUILDING_TIMER_EXTRA_TIME);
+					m_moveSentryGunTimer.Start(settings->GetEngineerMoveCheckInterval() + MOVE_BUILDING_TIMER_EXTRA_TIME);
 					m_sentryKills = currentKills;
 					m_checkDispenser = true;
 					m_checkEntrance = true;

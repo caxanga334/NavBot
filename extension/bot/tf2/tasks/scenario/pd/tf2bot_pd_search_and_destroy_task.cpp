@@ -9,7 +9,7 @@
 #include <bot/bot_shared_utils.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/meshnavigator.h>
-#include <bot/tf2/tasks/tf2bot_attack.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_pd_move_to_capture_zone_task.h"
 #include "tf2bot_pd_collect_task.h"
 #include "tf2bot_pd_search_and_destroy_task.h"
@@ -61,7 +61,7 @@ TaskResult<CTF2Bot> CTF2BotPDSearchAndDestroyTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (threat)
 		{
-			return PauseFor(new CTF2BotAttackTask(threat->GetEntity()), "Attacking visible threat!");
+			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible threat!");
 		}
 	}
 

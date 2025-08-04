@@ -437,3 +437,12 @@ void CWaypoint::PrintInfo()
 		Msg("Waypoint has connection to waypoint #%i\n", connect.GetOther()->GetID());
 	}
 }
+
+void CWaypoint::BuildAimSpotFunctor::operator()(const QAngle& angle)
+{
+	Vector dir;
+	AngleVectors(angle, &dir);
+	dir.NormalizeInPlace();
+	Vector aimAt = (this->origin + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_AIM_HEIGHT)) + (dir * 1024.0f);
+	this->output->push_back(std::move(aimAt));
+}

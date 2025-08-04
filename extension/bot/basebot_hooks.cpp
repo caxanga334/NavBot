@@ -16,7 +16,8 @@ class CBasePlayer;
 #include <usercmd.h>
 
 #ifdef EXT_DEBUG
-static ConVar cvar_print_bot_touch("sm_navbot_debug_bot_touch", "0", FCVAR_GAMEDLL, "Prints entities touched by the bot");
+static ConVar cvar_print_bot_hooks("sm_navbot_debug_bot_hooks", "0", FCVAR_GAMEDLL, "Prints console messages when the hooked game func callbacks are called.");
+static ConVar cvar_print_bot_touch("sm_navbot_debug_bot_touch", "0", FCVAR_GAMEDLL, "Prints entities touched by the bot.");
 #endif // EXT_DEBUG
 
 namespace BotHookHelpers
@@ -111,7 +112,10 @@ void CBaseBot::AddHooks()
 void CBaseBot::Hook_Spawn()
 {
 #ifdef EXT_DEBUG
-	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
+	if (cvar_print_bot_hooks.GetBool())
+	{
+		ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
+	}
 #endif // EXT_DEBUG
 	
 	RETURN_META(MRES_IGNORED);
@@ -120,7 +124,10 @@ void CBaseBot::Hook_Spawn()
 void CBaseBot::Hook_Spawn_Post()
 {
 #ifdef EXT_DEBUG
-	ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn_Post <%p>\n", this);
+	if (cvar_print_bot_hooks.GetBool())
+	{
+		ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn_Post <%p>\n", this);
+	}
 
 	const Vector& origin = UtilHelpers::getEntityOrigin(GetEntity());
 

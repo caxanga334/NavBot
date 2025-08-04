@@ -38,6 +38,11 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 
 	EquipAndScope(bot);
 
+	if (m_waypoint && m_waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH))
+	{
+		bot->GetControlInterface()->PressCrouchButton();
+	}
+
 	if (threat)
 	{
 		if (threat->IsVisibleNow())
@@ -121,6 +126,17 @@ QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldAttack(CBaseBot* me, const CKn
 	return ANSWER_NO;
 }
 
+QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldRetreat(CBaseBot* me)
+{
+	// Snipers don't retreat unless low on health or low on ammo
+	if (me->GetHealthState() == CBaseBot::HealthState::HEALTH_OK && !me->GetInventoryInterface()->IsAmmoLow(false))
+	{
+		return ANSWER_NO;
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
 void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 {
 	if (m_waypoint != nullptr)
@@ -129,18 +145,8 @@ void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)
 		Vector eyePos = me->GetEyeOrigin();
 		Vector start = m_waypoint->GetOrigin();
 		start.z = eyePos.z;
-
-		auto func = [this, &me, &start](const QAngle& angle) {
-			Vector forward;
-			AngleVectors(angle, &forward);
-			forward.NormalizeInPlace();
-
-			Vector end = start + (forward * 512.0f);
-			m_lookPoints.push_back(end);
-		};
-
+		CWaypoint::BuildAimSpotFunctor func{ start, &m_lookPoints };
 		m_waypoint->ForEveryAngle(func);
-
 		return;
 	}
 

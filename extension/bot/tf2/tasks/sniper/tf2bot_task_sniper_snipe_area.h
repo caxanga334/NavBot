@@ -23,6 +23,7 @@ public:
 	const char* GetName() const override { return "SnipeArea"; }
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
 	// I'm busy
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }

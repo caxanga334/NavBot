@@ -59,4 +59,7 @@ Example profile
 | aggressiveness | How aggressive this bot is. |
 | teamwork | How likely this bot will cooperate with teammates. |
 | ability_use_interval | How ofter the bot will check if they can use secondary abilities. (Example: TF2 airblast, demoman charge) |
+| health_critical_percent | If the bot HP% (range: 0.0-1.0) is less than this value, the bot is critically low on health. |
+| health_low_percent | If the bot HP% is less than this value, the bot is low on health. |
+| numerical_disadvantage_retreat_threshold | Threshold for retreating due to numerical disadvantage (visible enemies minus nearby allies). |
 

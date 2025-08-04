@@ -16,6 +16,8 @@ public:
 		inventory_update_rate = 60.0f;
 		vision_statistics_update = 0.5f;
 		collect_item_max_distance = 5000.0f;
+		max_defend_distance = 4096.0f;
+		max_sniper_distance = 8192.0f;
 	}
 
 	virtual ~CModSettings() = default;
@@ -30,15 +32,10 @@ protected:
 	}
 
 	void ReadSMC_ParseEnd(bool halted, bool failed) override {}
-
 	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
-
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
-
 	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
-
 	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
-
 public:
 
 	void SetDefendRate(int v) { defendrate = v; }
@@ -48,6 +45,8 @@ public:
 	void SetInventoryUpdateRate(float v) { inventory_update_rate = v; }
 	void SetVisionStatisticsUpdateRate(float v) { vision_statistics_update = v; }
 	void SetCollectItemMaxDistance(float v) { collect_item_max_distance = v; }
+	void SetMaxDefendDistance(float v) { max_defend_distance = v; }
+	void SetMaxSniperDistance(float v) { max_sniper_distance = v; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -58,6 +57,8 @@ public:
 	const float GetInventoryUpdateRate() const { return inventory_update_rate; }
 	const float GetVisionStatisticsUpdateRate() const { return vision_statistics_update; }
 	const float GetCollectItemMaxDistance() const { return collect_item_max_distance; }
+	const float GetMaxDefendDistance() const { return max_defend_distance; }
+	const float GetMaxSniperDistance() const { return max_sniper_distance; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -67,6 +68,8 @@ protected:
 	float inventory_update_rate; // delay in seconds between updates of the weapons being carried by the bot.
 	float vision_statistics_update; // delay in seconds between vision statistics updates
 	float collect_item_max_distance; // maximum travel distance when collecting items (health, ammo, weapons, ...)
+	float max_defend_distance; // maximum distance from the objective to search for defensive flagged waypoints
+	float max_sniper_distance; // maximum distance from the objective to search for sniper flagged waypoints
 	int cfg_parser_depth; // config file parser depth
 };
 

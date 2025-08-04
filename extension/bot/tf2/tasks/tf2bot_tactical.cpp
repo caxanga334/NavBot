@@ -11,6 +11,7 @@
 #include "tf2bot_find_ammo_task.h"
 #include "tf2bot_find_health_task.h"
 #include "tf2bot_use_teleporter.h"
+#include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include "tf2bot_scenario_task.h"
 
@@ -34,16 +35,16 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	// low ammo and health check
-	if (bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
-	{
-		const float healthratio = sm_navbot_bot_low_health_ratio.GetFloat();
+	const bool shouldRetreat = bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO;
 
-		if (healthratio >= 0.1f && m_healthchecktimer.IsElapsed())
+	// low ammo and health check
+	if (shouldRetreat && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
+	{
+		if (m_healthchecktimer.IsElapsed())
 		{
 			m_healthchecktimer.StartRandom(1.0f, 5.0f);
 
-			if (bot->GetHealthPercentage() <= healthratio)
+			if (bot->GetHealthState() != CBaseBot::HealthState::HEALTH_OK)
 			{
 				CBaseEntity* source = nullptr;
 
@@ -89,6 +90,19 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
+	if (shouldRetreat && m_retreatCooldown.IsElapsed())
+	{
+		const CTF2BotSensor* sensor = bot->GetSensorInterface();
+		const int enemies = sensor->GetVisibleEnemiesCount();
+		const int allies = sensor->GetKnownAllyCount();
+
+		if (enemies > 1 && (enemies - allies) >= bot->GetDifficultyProfile()->GetRetreatFromNumericalDisadvantageThreshold())
+		{
+			m_retreatCooldown.Start(120.0f); // cooldown to avoid constant retreats
+			return PauseFor(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, true), "Retreating due to numerical disadvantage!");
+		}
+	}
+
 	return Continue();
 }
 
@@ -109,9 +123,7 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 		return ANSWER_NO;
 	}
 
-	const float healthratio = sm_navbot_bot_low_health_ratio.GetFloat();
-
-	if (healthratio >= 0.1f && me->GetHealthPercentage() <= healthratio)
+	if (me->GetHealthState() != CBaseBot::HealthState::HEALTH_OK)
 	{
 		return ANSWER_YES;
 	}

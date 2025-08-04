@@ -315,4 +315,31 @@ namespace botsharedutils::aiming
 	void SelectDesiredAimSpotForTarget(CBaseBot* bot, CBaseEntity* target);
 }
 
+namespace botsharedutils::waypoints
+{
+	/**
+	 * @brief Gets a random waypoint with the "roam" flag.
+	 * @param bot Bot that will be using this waypoint.
+	 * @param maxRange Maximum range between the bot and the waypoint. Negative for no limit.
+	 * @return Random waypoint or NULL if none found.
+	 */
+	CWaypoint* GetRandomRoamWaypoint(CBaseBot* bot, const float maxRange = -1.0f);
+	/**
+	 * @brief Gets a random waypoint with the "defend" flag.
+	 * @param bot Bot that will be using this waypoint.
+	 * @param defendSpot Position the bot will defend, used in range calculations. If NULL, the bot position is used instead.
+	 * @param maxRange Maximum range between the bot and the waypoint. Negative for no limit.
+	 * @return Random waypoint or NULL if none found.
+	 */
+	CWaypoint* GetRandomDefendWaypoint(CBaseBot* bot, const Vector* defendSpot, const float maxRange = -1.0f);
+	/**
+	 * @brief Gets a random waypoint with the "sniper" flag.
+	 * @param bot Bot that will be using this waypoint.
+	 * @param defendSpot Position the bot will overwatch, used in range calculations. If NULL, the bot position is used instead.
+	 * @param maxRange Maximum range between the bot and the waypoint. Negative for no limit.
+	 * @return Random waypoint or NULL if none found.
+	 */
+	CWaypoint* GetRandomSniperWaypoint(CBaseBot* bot, const Vector* defendSpot, const float maxRange = -1.0f);
+}
+
 #endif // !__NAVBOT_BASE_BOT_SHARED_UTILS_H_

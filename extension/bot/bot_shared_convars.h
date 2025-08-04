@@ -1,7 +1,6 @@
 #ifndef __NAVBOT_BOT_SHARED_CONVARS_H_
 #define __NAVBOT_BOT_SHARED_CONVARS_H_
 
-extern ConVar sm_navbot_bot_low_health_ratio;
 extern ConVar sm_navbot_bot_no_ammo_check;
 
 

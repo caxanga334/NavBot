@@ -57,6 +57,8 @@ namespace tf2lib
 	int GetSentryKills(CBaseEntity* sentry);
 	int GetSentryAssists(CBaseEntity* sentry);
 	int GetTeleporterUses(CBaseEntity* teleporter);
+	// Returns true if the given player is carrying a flag. Always false on non-player entities.
+	bool IsPlayerCarryingAFlag(CBaseEntity* player);
 }
 
 namespace tf2lib::mvm

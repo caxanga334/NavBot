@@ -39,9 +39,7 @@ public:
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 	void OnTaskEnd(BT* bot, AITask<BT>* nextTask) override;
-
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
-
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
 
 	const char* GetName() const override { return "Snipe"; }
@@ -85,14 +83,7 @@ inline TaskResult<BT> CBotSharedSnipeTask<BT, CT>::OnTaskStart(BT* bot, AITask<B
 {
 	if (m_waypoint)
 	{
-		auto func = [this](const QAngle& angle) {
-			Vector dir;
-			AngleVectors(angle, &dir);
-			dir.NormalizeInPlace();
-			Vector& aim = m_aimvec.emplace_back();
-			aim = (m_waypoint->GetOrigin() + Vector(0.0f, 0.0f, 64.0f)) + (dir * 1024.0f);
-		};
-
+		CWaypoint::BuildAimSpotFunctor(m_waypoint->GetOrigin(), &m_aimvec);
 		m_waypoint->ForEveryAngle(func);
 
 		m_goal = m_waypoint->GetRandomPoint();

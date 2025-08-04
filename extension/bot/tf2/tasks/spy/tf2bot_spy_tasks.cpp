@@ -629,6 +629,16 @@ QueryAnswerType CTF2BotSpyAttackTask::ShouldSwitchToWeapon(CBaseBot* me, const C
 	return ANSWER_UNDEFINED;
 }
 
+QueryAnswerType CTF2BotSpyAttackTask::ShouldRetreat(CBaseBot* me)
+{
+	if (me->GetHealthState() == CBaseBot::HealthState::HEALTH_OK && !me->GetInventoryInterface()->IsAmmoLow(false))
+	{
+		return ANSWER_NO;
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
 CTF2BotSpySapObjectTask::CTF2BotSpySapObjectTask(CBaseEntity* object) :
 	m_nav(CChaseNavigator::DONT_LEAD_SUBJECT)
 {

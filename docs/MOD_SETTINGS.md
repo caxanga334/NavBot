@@ -41,6 +41,8 @@ These settings are used by all mods.
 | defend_rate | Used by bots to determine if they should defend or attack. | 0 - 100 | 17 |
 | stuck_suicide_threshold | If a bot gets this many stuck events on a roll, they will use the kill command. | 5 - 60 | 15 |
 | collect_item_max_distance | Maximum travel distance when collecting items (health, armor, weapons, ammo, ...) | 2048 - 16384 | 5000 |
+| max_defend_distance | Maximum distance between objectives and defend flagged waypoints. | 1024 - MAX_COORD | 4096 |
+| max_sniper_distance | Maximum distance between objectives and sniper flagged waypoints. | 1024 - MAX_COORD | 8192 |
 
 ## Team Fortress 2 Settings
 
@@ -57,3 +59,10 @@ These settings are only used in Team Fortress 2.
 | engineer_sentry_killassist_threshold | If a sentry hasn't got at least this many kills plus assists between two move checks, bots will move them. | 1 - 30 | 5 |
 | engineer_teleporter_uses_threshold | If a teleporter wasn't used at least this many times between two move checks, bots will move them. | 1 - 10 | 4 |
 | engineer_help_ally_max_range | Ally building maximum search range. | 500 - 4000 | 1500 |
+
+### Macro Values
+
+Some setting options uses macro values instead of fixed values.    
+These generally depends on the SDK branch NavBot was compiled for.    
+
+* `MAX_COORD`: Maximum world size in hammer units. Generally it's 16384.

@@ -10,7 +10,6 @@ List of console variables for NavBot.
 |sm_navbot_debug_disable_gamemode_ai|Disables the bot game mode behavior.|Boolean|Cheat protected.|
 |sm_navbot_debug_blind|Disables the bot vision.|Boolean|Cheat protected.|
 |sm_navbot_debug_filter|When debugging bots, only show debug information for the bot of this index. Use 0 for all bots.|Integer|Cheat protected.|
-|sm_navbot_bot_low_health_ratio|Health ratio for bots to be considered low on health.|Float|Set to a negative value to make bots not check for health.|
 |sm_navbot_bot_no_ammo_check|When enabled, bots won't check if they're low on ammo.|Boolean|Enable this on game modes with infinite ammo.|
 |sm_navbot_path_segment_draw_limit|Maximum number of path segments draw at once.|Integer|The game client may crash if too many debug overlays are being draw at the same time.|
 |sm_navbot_path_max_segments|Maximum number of path segments a path can have.|Integer|Improves CPU performance by limiting the number of segments processed on long paths.|

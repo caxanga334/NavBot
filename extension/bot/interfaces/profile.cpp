@@ -28,6 +28,21 @@ void DifficultyProfile::RandomizeProfileValues()
 	aggressiveness = randomgen->GetRandomInt<int>(0, 100);
 	teamwork = randomgen->GetRandomInt<int>(0, 100);
 	ability_use_interval = randomgen->GetRandomReal<float>(0.250f, 2.0f);
+	health_critical_percent = randomgen->GetRandomReal<float>(0.1f, 0.3f);
+	health_low_percent = randomgen->GetRandomReal<float>(0.4f, 0.8f);
+	numerical_disadvantage_retreat_threshold = randomgen->GetRandomInt<int>(3, 12);
+}
+
+void DifficultyProfile::ValidateProfileValues()
+{
+
+	if (health_low_percent <= health_critical_percent)
+	{
+		smutils->LogError(myself, "Difficulty profile with health low value less than or equals to health critical value!");
+
+		health_low_percent = 0.5f;
+		health_critical_percent = 0.2f;
+	}
 }
 
 CDifficultyManager::~CDifficultyManager()
@@ -108,6 +123,11 @@ void CDifficultyManager::LoadProfiles()
 		smutils->LogError(myself, "Failed to read bot difficulty profile configuration file at \"%s\"!", path.get());
 		m_profiles.clear();
 		return;
+	}
+
+	for (auto& profile : m_profiles)
+	{
+		profile->ValidateProfileValues();
 	}
 
 	smutils->LogMessage(myself, "Loaded bot difficulty profiles. Number of profiles: %i", m_profiles.size());
@@ -304,11 +324,29 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		v = std::clamp(v, 0, 100);
 		m_current->SetTeamwork(v);
 	}
-	else if (strncasecmp(key, "ability_use_interval", 21) == 0)
+	else if (strncasecmp(key, "ability_use_interval", 20) == 0)
 	{
 		float v = atof(value);
 		v = std::clamp(v, 0.01f, 2.0f);
 		m_current->SetAbilityUsageInterval(v);
+	}
+	else if (strncasecmp(key, "health_critical_percent", 23) == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, 0.01f, 0.6f);
+		m_current->SetHealthCriticalThreshold(v);
+	}
+	else if (strncasecmp(key, "health_low_percent", 18) == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, 0.2f, 0.95f);
+		m_current->SetHealthLowThreshold(v);
+	}
+	else if (strncasecmp(key, "numerical_disadvantage_retreat_threshold", 40) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 2, 100);
+		m_current->SetRetreatFromNumericalDisadvantageThreshold(v);
 	}
 	else
 	{

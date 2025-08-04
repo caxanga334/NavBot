@@ -25,6 +25,11 @@ ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVA
 ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "0.5", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
 
+#ifdef EXT_DEBUG
+static ConVar sm_navbot_path_debug_goal("sm_navbot_path_debug_goal", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs navigator path goal.");
+#endif // EXT_DEBUG
+
+
 CMeshNavigator::CMeshNavigator() : CPath()
 {
 	float goaltolerance = sm_navbot_path_goal_tolerance.GetFloat();
@@ -259,6 +264,14 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	// move bot along path
 	mover->MoveTowards(goalPos, IMovement::MOVEWEIGHT_NAVIGATOR);
 
+#ifdef EXT_DEBUG
+	if (sm_navbot_path_debug_goal.GetInt() > 1 && m_goal)
+	{
+		META_CONPRINTF("%s PATH GOAL SEG %s <%g %g %g> %g RANGE TO GOAL: %g\n",
+			bot->GetDebugIdentifier(), AIPath::SegmentTypeToString(m_goal->type), m_goal->goal.x, m_goal->goal.y, m_goal->goal.z, m_goal->curvature, rangeToGoal);
+	}
+#endif // EXT_DEBUG
+
 	if (bot->IsDebugging(BOTDEBUG_PATH))
 	{
 		auto start = GetGoalSegment();
@@ -293,6 +306,16 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	{
 		return true;
 	}
+
+#ifdef EXT_DEBUG
+	const float DebugdistToGoal = (m_goal->goal - origin).Length();
+
+	if (sm_navbot_path_debug_goal.GetInt() > 2 && m_goal)
+	{
+		META_CONPRINTF("%s IS AT GOAL %s <%g %g %g> %g RANGE TO GOAL: %g\n",
+			bot->GetDebugIdentifier(), AIPath::SegmentTypeToString(m_goal->type), m_goal->goal.x, m_goal->goal.y, m_goal->goal.z, m_goal->curvature, DebugdistToGoal);
+	}
+#endif // EXT_DEBUG
 
 	if (m_goal->type == AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE)
 	{
@@ -387,6 +410,16 @@ bool CMeshNavigator::CheckProgress(CBaseBot* bot)
 		{
 			next = GetNextSegment(m_goal);
 		}
+#ifdef EXT_DEBUG
+		else
+		{
+			if (sm_navbot_path_debug_goal.GetBool() && m_goal)
+			{
+				META_CONPRINTF("%s GOAL SEG REACHED %s NEXT PATH GOAL IS %s\n", 
+					bot->GetDebugIdentifier(), AIPath::SegmentTypeToString(m_goal->type), AIPath::SegmentTypeToString(next->type));
+			}
+		}
+#endif // EXT_DEBUG
 
 		if (next == nullptr) // no next segment, only one segment remains on the path
 		{
@@ -549,8 +582,19 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 		/* For normal jumps and double jumps, wait until the bot is aligned before jumping */
 		if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
 		{
-			if (bot->GetAbsVelocity().Length() >= 100.0f && !bot->IsMovingTowards2D(m_goal->goal, 0.85f))
+			// t = cos(deg2rad(X)) where X is a degree in angle
+			constexpr float tolerance = 0.5f; // 60 degrees tolerance
+
+			if (bot->GetAbsVelocity().Length() >= 100.0f && !bot->IsMovingTowards2D(m_goal->goal, tolerance))
 			{
+#ifdef EXT_DEBUG
+				if (sm_navbot_path_debug_goal.GetInt() > 2)
+				{
+					META_CONPRINTF("%s CLIMB REJECTED! NOT ALIGNED! RANGE: %g\n",
+						bot->GetDebugIdentifier(), rangeToGoal);
+				}
+#endif // EXT_DEBUG
+
 				return false;
 			}
 		}
@@ -1065,6 +1109,12 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	// don't avoid in precise navigation areas
 	CNavArea* area = bot->GetLastKnownNavArea();
 	if (area != nullptr && (area->GetAttributes() & NAV_MESH_PRECISE) != 0)
+	{
+		return goalPos;
+	}
+
+	// don't avoid if the goal nav area needs precise navigation
+	if (m_goal && (m_goal->area->GetAttributes() & NAV_MESH_PRECISE) != 0)
 	{
 		return goalPos;
 	}

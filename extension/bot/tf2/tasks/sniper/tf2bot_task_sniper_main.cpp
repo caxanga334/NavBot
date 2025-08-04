@@ -6,6 +6,7 @@
 #include <bot/tf2/tasks/tf2bot_scenario_task.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/scenario/specialdelivery/tf2bot_sd_deliver_flag.h>
+#include <bot/tf2/tasks/scenario/controlpoints/tf2bot_attack_controlpoint.h>
 #include "tf2bot_task_sniper_main.h"
 #include "tf2bot_task_sniper_move_to_sniper_spot.h"
 #include "tf2bot_task_sniper_push.h"
@@ -25,6 +26,24 @@ TaskResult<CTF2Bot> CTF2BotSniperMainTask::OnTaskUpdate(CTF2Bot* bot)
 	if (bot->GetDifficultyProfile()->GetAggressiveness() >= 50 && CBaseBot::s_botrng.GetRandomInt<int>(0, 1) == 1)
 	{
 		return PauseFor(new CTF2BotSniperPushTask, "Pushing to the objective!");
+	}
+
+	auto tf2mod = CTeamFortress2Mod::GetTF2Mod();
+	auto gm = tf2mod->GetCurrentGameMode();
+
+	if (gm == TeamFortress2::GameModeType::GM_CP || gm == TeamFortress2::GameModeType::GM_ADCP)
+	{
+		if (bot->GetTimeLeftToCapture() < 30.0f) /* team is about to lose, don't snipe, go try capture the control point */
+		{
+			std::vector<CBaseEntity*> attackPoints;
+			tf2mod->CollectControlPointsToAttack(bot->GetMyTFTeam(), attackPoints);
+
+			if (!attackPoints.empty())
+			{
+				CBaseEntity* target = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(attackPoints);
+				return PauseFor(new CTF2BotAttackControlPointTask(target), "Attacking control point!");
+			}
+		}
 	}
 
 	/* time to go sniping */

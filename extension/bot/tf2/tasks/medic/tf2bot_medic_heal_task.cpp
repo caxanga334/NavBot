@@ -10,7 +10,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
-#include <bot/tf2/tasks/tf2bot_attack.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_revive_task.h"
 #include "tf2bot_medic_crossbow_heal_task.h"
@@ -88,7 +88,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (threat)
 		{
-			return PauseFor(new CTF2BotAttackTask(threat->GetEntity()), "Nobody to heal. Attacking visible threat!");
+			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Nobody to heal. Attacking visible threat!");
 		}
 
 		return Continue();
@@ -206,6 +206,32 @@ QueryAnswerType CTF2BotMedicHealTask::ShouldSwitchToWeapon(CBaseBot* me, const C
 	}
 
 	return ANSWER_NO;
+}
+
+QueryAnswerType CTF2BotMedicHealTask::ShouldRetreat(CBaseBot* me)
+{
+	if (me->GetSensorInterface()->GetVisibleAlliesCount() == 0)
+	{
+		return ANSWER_YES; // medics with no visible allies should retreat
+	}
+
+	if (me->GetDifficultyProfile()->GetTeamwork() > 50)
+	{
+		if (me->GetHealthState() != CBaseBot::HealthState::HEALTH_CRITICAL)
+		{
+			return ANSWER_NO; // high team work medics only retreat if on critical health
+		}
+	}
+	else
+	{
+		// Only retreat if low on health
+		if (me->GetHealthState() == CBaseBot::HealthState::HEALTH_OK)
+		{
+			return ANSWER_NO;
+		}
+	}
+
+	return ANSWER_UNDEFINED;
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)

@@ -11,7 +11,8 @@
 #include <bot/basebot_pathcost.h>
 #include <bot/bot_shared_utils.h>
 #include <bot/interfaces/path/meshnavigator.h>
-#include "bot_shared_pursue_and_destroy.h"
+#include <mods/basemod.h>
+#include "bot_shared_attack_enemy.h"
 
 template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedDefendSpotTask : public AITask<BT>
@@ -42,19 +43,8 @@ public:
 		m_endonthreat = endifenemy;
 		m_reached = false;
 		m_waypoint = waypoint;
-		std::vector<Vector> spots;
-
-		auto func = [&waypoint, &spots](const QAngle& angle) {
-			Vector dir;
-			AngleVectors(angle, &dir);
-			dir.NormalizeInPlace();
-			Vector aimAt = (waypoint->GetOrigin() + Vector(0.0f, 0.0f, CWaypoint::WAYPOINT_AIM_HEIGHT)) + (dir * 1024.0f);
-			spots.push_back(aimAt);
-		};
-
+		CWaypoint::BuildAimSpotFunctor func(m_waypoint->GetOrigin(), &m_aimSpots);
 		waypoint->ForEveryAngle(func);
-
-		m_aimSpots.swap(spots);
 		waypoint->Use(bot, maxtime + 10.0f);
 	}
 
@@ -83,16 +73,35 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
-	botsharedutils::RandomDefendSpotCollector collector(m_defendSpot, bot);
-	collector.Execute();
-
-	if (collector.IsCollectedAreasEmpty())
+	// No waypoint given by the constructor, search for a random one.
+	if (!m_waypoint)
 	{
-		return AITask<BT>::Done("Failed to find a suitable spot to defend from!");
+		CWaypoint* waypoint = botsharedutils::waypoints::GetRandomDefendWaypoint(bot, &m_defendSpot, extmanager->GetMod()->GetModSettings()->GetMaxDefendDistance());
+
+		if (waypoint)
+		{
+			m_watchSpot = waypoint->GetRandomPoint();
+			m_waypoint = waypoint;
+			CWaypoint::BuildAimSpotFunctor func(m_waypoint->GetOrigin(), &m_aimSpots);
+			waypoint->ForEveryAngle(func);
+			waypoint->Use(bot, m_maxtime + 10.0f);
+		}
 	}
 
-	CNavArea* area = collector.GetRandomCollectedArea();
-	m_watchSpot = area->GetCenter();
+	// No waypoint found
+	if (!m_waypoint)
+	{
+		botsharedutils::RandomDefendSpotCollector collector(m_defendSpot, bot);
+		collector.Execute();
+
+		if (collector.IsCollectedAreasEmpty())
+		{
+			return AITask<BT>::Done("Failed to find a suitable spot to defend from!");
+		}
+
+		CNavArea* area = collector.GetRandomCollectedArea();
+		m_watchSpot = area->GetCenter();
+	}
 
 	if (!m_nav.ComputePathToPosition(bot, m_watchSpot, m_pathCost, 0.0f, true))
 	{
@@ -107,13 +116,18 @@ inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
 	if (m_reached)
 	{
+		if (m_waypoint && m_waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH))
+		{
+			bot->GetControlInterface()->PressCrouchButton(0.250f);
+		}
+
 		if (m_endonthreat)
 		{
 			const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
 			if (threat)
 			{
-				return AITask<BT>::SwitchTo(new CBotSharedPursueAndDestroyTask<BT, CT>(bot, threat->GetEntity()), "Visible threat!");
+				return AITask<BT>::SwitchTo(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
 			}
 		}
 

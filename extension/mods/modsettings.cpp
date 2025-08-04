@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <manager.h>
 #include <util/librandom.h>
+#include <coordsize.h>
 #include "basemod.h"
 #include "modsettings.h"
 
@@ -115,6 +116,18 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			float v = atof(value);
 			v = std::clamp(v, 2048.0f, 16384.0f);
 			SetCollectItemMaxDistance(v);
+		}
+		else if (strncasecmp(key, "max_defend_distance", 19) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 1024.0f, MAX_COORD_FLOAT);
+			SetMaxDefendDistance(v);
+		}
+		else if (strncasecmp(key, "max_sniper_distance", 19) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 1024.0f, MAX_COORD_FLOAT);
+			SetMaxDefendDistance(v);
 		}
 		else
 		{

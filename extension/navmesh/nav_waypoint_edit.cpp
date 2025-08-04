@@ -428,9 +428,11 @@ CON_COMMAND_F(sm_nav_waypoint_toggle_flags, "Toggles base waypoint flags", FCVAR
 {
 	DECLARE_COMMAND_ARGS;
 
-	if (args.ArgC() < 1)
+	if (args.ArgC() < 2)
 	{
-		Msg("[SM] Usage: sm_nav_waypoint_toggle_flags <flag> <flag> ... <flag>");
+		Msg("[SM] Usage: sm_nav_waypoint_toggle_flags <flag> <flag> ... <flag> \n");
+		Msg("Flag list: ");
+		CWaypoint::PrintBaseFlagsToConsole();
 		return;
 	}
 
@@ -444,7 +446,7 @@ CON_COMMAND_F(sm_nav_waypoint_toggle_flags, "Toggles base waypoint flags", FCVAR
 
 	bool found = false;
 
-	for (int arg = 1; arg <= args.ArgC(); arg++)
+	for (int arg = 1; arg < args.ArgC(); arg++)
 	{
 		CWaypoint::BaseFlags flag = CWaypoint::StringToBaseFlags(args[arg]);
 

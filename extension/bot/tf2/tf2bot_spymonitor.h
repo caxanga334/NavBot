@@ -70,6 +70,8 @@ public:
 	void Update() override;
 	// Called every server frame
 	void Frame() override;
+	// Bot touch event
+	void OnContact(CBaseEntity* pOther) override;
 
 	const KnownSpy& GetKnownSpy(edict_t* spy);
 	const KnownSpy& GetKnownSpy(CBaseEntity* spy);

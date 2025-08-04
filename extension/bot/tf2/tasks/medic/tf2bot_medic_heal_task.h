@@ -17,6 +17,7 @@ public:
 	// don't attack enemies if I healing my team
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 
 	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 

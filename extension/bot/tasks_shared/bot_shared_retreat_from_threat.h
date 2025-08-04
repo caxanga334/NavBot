@@ -11,8 +11,9 @@ template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedRetreatFromThreatTask : public AITask<BT>
 {
 public:
+	// Default constructor
 	CBotSharedRetreatFromThreatTask(BT* bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference preference, const float noThreatTime = 3.0f, const float timeout = 90.0f, const float minDistance = 512.0f, const float maxRetreatDistance = 8192.0f) :
-		m_pathcost(bot)
+		m_pathcost(bot), m_goal(0.0f, 0.0f, 0.0f)
 	{
 		m_pathcost.SetRouteType(FASTEST_ROUTE);
 		m_escapeTime = noThreatTime;
@@ -20,11 +21,20 @@ public:
 		m_preference = preference;
 		m_minDistance = minDistance;
 		m_maxRetreatDistance = maxRetreatDistance;
+		m_endIfVisibleAllies = false;
+	}
+
+	// Constructor for a 'quick retreat' preset
+	CBotSharedRetreatFromThreatTask(BT* bot, const bool endIfAllyIsVisible) :
+		CBotSharedRetreatFromThreatTask(bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference::FURTHEST, 3.0f, 90.0f, 512.0f, 4096.0f)
+	{
+		m_endIfVisibleAllies = endIfAllyIsVisible;
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
+	TaskEventResponseResult<BT> OnSight(BT* bot, CBaseEntity* subject) override;
 
 	const char* GetName() const override { return "RetreatFromThreat"; }
 private:
@@ -34,6 +44,7 @@ private:
 	float m_escapeTime;
 	float m_minDistance;
 	float m_maxRetreatDistance;
+	bool m_endIfVisibleAllies;
 	IntervalTimer m_threatVisibleTimer;
 	CountdownTimer m_timeoutTimer;
 	botsharedutils::SelectRetreatArea::RetreatAreaPreference m_preference;
@@ -93,6 +104,17 @@ inline TaskEventResponseResult<BT> CBotSharedRetreatFromThreatTask<BT, CT>::OnMo
 	if (collector.HasFoundRetreatArea())
 	{
 		m_goal = collector.GetRetreatToArea()->GetRandomPoint();
+	}
+
+	return AITask<BT>::TryContinue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedRetreatFromThreatTask<BT, CT>::OnSight(BT* bot, CBaseEntity* subject)
+{
+	if (m_endIfVisibleAllies && subject && bot->GetSensorInterface()->IsFriendly(subject))
+	{
+		return AITask<BT>::TryDone(PRIORITY_MEDIUM, "Ally visible!");
 	}
 
 	return AITask<BT>::TryContinue();

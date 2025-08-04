@@ -98,13 +98,6 @@ public:
 	 * @return Quantity of known entities
 	*/
 	virtual int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
-	/**
-	 * @brief Gets the count of known enemies.
-	 * @param onlyvisible If true, only consider visible enemies.
-	 * @param rangelimit If larger than zero, must be at least this close to the bot.
-	 * @return Number of known enemies that passes the given filters.
-	 */
-	int GetKnownEnemyCount(const bool onlyvisible, const float rangelimit = -1.0f);
 	// Gets the team index of a known entity since we don't have access to the CBaseEntity functions. Override per mod needs.
 	virtual int GetKnownEntityTeamIndex(CKnownEntity* known);
 	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
@@ -190,6 +183,8 @@ public:
 	inline int GetVisibleAlliesCount() const { return m_statsvisibleallies; }
 	// Number of visible enemies. The information is updated periodically and cached, it may be out of date.
 	inline int GetVisibleEnemiesCount() const { return m_statsvisibleenemies; }
+	// Number of known allies. The information is updated periodically and cached, it may be out of date.
+	inline int GetKnownAllyCount() const { return m_statsknownallies; }
 protected:
 	virtual void UpdateKnownEntities();
 	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);
@@ -221,6 +216,7 @@ private:
 	IntervalTimer m_threatvisibletimer;
 	int m_statsvisibleallies;
 	int m_statsvisibleenemies;
+	int m_statsknownallies; // total number of known allies (visible or not)
 };
 
 #endif // !NAVBOT_SENSOR_INTERFACE_H_

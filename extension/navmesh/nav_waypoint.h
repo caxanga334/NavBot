@@ -276,6 +276,35 @@ protected:
 
 	// Additional mod specific waypoint draw text
 	virtual void DrawModText() const {}
+
+public:
+
+	/* Utility classes */
+
+	/**
+	 * @brief Utility class for converting the waypoint's angles into world positions for the bot to aim at.
+	 * 
+	 * Use with the 'ForEveryAngle' function.
+	 */
+	class BuildAimSpotFunctor
+	{
+	public:
+		/**
+		 * @brief Constructor.
+		 * @param pos Aim origin (generally the waypoint origin + view height)
+		 * @param aimSpotsVec Vector to store the aim positions at.
+		 */
+		BuildAimSpotFunctor(const Vector& pos, std::vector<Vector>* aimSpotsVec) :
+			origin(pos)
+		{
+			output = aimSpotsVec;
+		}
+
+		void operator()(const QAngle& angle);
+
+		Vector origin;
+		std::vector<Vector>* output;
+	};
 };
 
 extern ConVar sm_nav_waypoint_edit;
