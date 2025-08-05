@@ -26,15 +26,19 @@ public:
 	{
 		m_me = engineer;
 		m_avoidSlopes = false;
+		m_allowVisCheck = false;
 		m_myteam = static_cast<int>(engineer->GetMyTFTeam());
 	}
 
 	bool ShouldSearch(CTFNavArea* area) override;
 	bool ShouldCollect(CTFNavArea* area) override;
 	void ShouldAvoidSlopes(bool avoid) { m_avoidSlopes = avoid; }
+	void ShouldCheckVis(bool value) { m_allowVisCheck = value; }
+	CTFNavArea* GetNearestAreaWithin(const float minDistFromStart);
 private:
 	CTF2Bot* m_me;
 	bool m_avoidSlopes;
+	bool m_allowVisCheck;
 	int m_myteam;
 };
 
@@ -75,7 +79,54 @@ bool CTF2EngineerBuildableAreaCollector::ShouldCollect(CTFNavArea* area)
 		}
 	}
 
+	if (m_allowVisCheck && !GetStartArea()->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM) && GetStartArea() != area)
+	{
+		Vector start = GetStartArea()->GetCenter();
+		start.z += navgenparams->human_eye_height;
+		Vector end = area->GetCenter();
+		end.z += navgenparams->human_eye_height;
+
+		CTraceFilterWorldAndPropsOnly filter;
+		trace_t tr;
+		trace::line(start, end, MASK_SHOT, &filter, tr);
+
+		if (tr.DidHit())
+		{
+			return false;
+		}
+	}
+
 	return true;
+}
+
+CTFNavArea* CTF2EngineerBuildableAreaCollector::GetNearestAreaWithin(const float minDistFromStart)
+{
+	auto& vec = GetCollectedAreas();
+
+	if (vec.empty()) { return nullptr; }
+
+	CTFNavArea* out = nullptr;
+	float best = std::numeric_limits<float>::max();
+	const Vector& start = GetStartArea()->GetCenter();
+
+	for (CTFNavArea* area : vec)
+	{
+		if (area == GetStartArea()) { continue; }
+
+		const float range = (area->GetCenter() - start).Length();
+
+		if (minDistFromStart > 0.0f && range <= minDistFromStart) { continue; }
+
+		auto node = GetNodeForArea(area);
+
+		if (node->GetTravelCostFromStart() < best)
+		{
+			best = node->GetTravelCostFromStart();
+			out = area;
+		}
+	}
+
+	return out;
 }
 
 CTFWaypoint* tf2botutils::SelectWaypointForSentryGun(CTF2Bot* bot, const float maxRange, const Vector* searchCenter)
@@ -110,7 +161,7 @@ CTFWaypoint* tf2botutils::SelectWaypointForSentryGun(CTF2Bot* bot, const float m
 	return spots[CBaseBot::s_botrng.GetRandomInt<size_t>(0U, spots.size() - 1U)];
 }
 
-CTFNavArea* tf2botutils::FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxRange, const Vector* searchCenter, const bool avoidSlopes)
+CTFNavArea* tf2botutils::FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxRange, const Vector* searchCenter, const bool avoidSlopes, const bool checkVis)
 {
 	CTFNavArea* area = nullptr;
 
@@ -137,6 +188,7 @@ CTFNavArea* tf2botutils::FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxR
 
 	CTF2EngineerBuildableAreaCollector collector(bot, area, maxRange);
 	collector.ShouldAvoidSlopes(avoidSlopes);
+	collector.ShouldCheckVis(checkVis);
 	collector.Execute();
 
 	if (collector.IsCollectedAreasEmpty())
@@ -354,6 +406,17 @@ CTFNavArea* tf2botutils::FindTeleEntranceNavAreaFromSpawnRoom(CTF2Bot* bot, cons
 	return nullptr;
 }
 
+CTFNavArea* tf2botutils::FindAreaNearSentryGun(CTF2Bot* bot, CTFNavArea* sentryArea, const float maxRange, const float minRangeScale)
+{
+	CTF2EngineerBuildableAreaCollector collector(bot, sentryArea, maxRange);
+	collector.Execute();
+
+	if (collector.IsCollectedAreasEmpty()) { return nullptr; }
+
+	CTFNavArea* area = collector.GetNearestAreaWithin(maxRange * minRangeScale);
+	return area;
+}
+
 bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 {
 	TeamFortress2::GameModeType gm = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode();
@@ -376,65 +439,61 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 			spot = frontlineArea->GetCenter();
 			return true;
 		}
-		else
-		{
-			// wave is active, build near the objective (a bomb or a tank)
 
-			CBaseEntity* tank = tf2lib::mvm::GetMostDangerousTank();
+		// wave is active, build near the objective (a bomb or a tank)
+
+		CBaseEntity* tank = tf2lib::mvm::GetMostDangerousTank();
 			
-			// tank is active in the map
-			if (tank)
+		// tank is active in the map
+		if (tank)
+		{
+			CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(true);
+
+			if (!flag)
 			{
-				CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(true);
+				spot = UtilHelpers::getEntityOrigin(tank);
+				return true;
+			}
 
-				if (!flag)
-				{
-					spot = UtilHelpers::getEntityOrigin(tank);
-					return true;
-				}
-				else
-				{
-					const Vector& tankPos = UtilHelpers::getEntityOrigin(tank);
-					const Vector& flagPos = tf2lib::GetFlagPosition(flag);
+			const Vector& tankPos = UtilHelpers::getEntityOrigin(tank);
+			const Vector& flagPos = tf2lib::GetFlagPosition(flag);
 
-					if ((tankPos - bombHatchPos).LengthSqr() < (flagPos - bombHatchPos).LengthSqr())
-					{
-						spot = tankPos;
-					}
-					else
-					{
-						spot = flagPos;
-					}
-
-					return true;
-				}
+			if ((tankPos - bombHatchPos).LengthSqr() < (flagPos - bombHatchPos).LengthSqr())
+			{
+				spot = tankPos;
 			}
 			else
 			{
-				// no tank on the map
-				CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
+				spot = flagPos;
+			}
 
-				if (flag)
+			return true;
+		}
+		else
+		{
+			// no tank on the map
+			CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
+
+			if (flag)
+			{
+				spot = UtilHelpers::getEntityOrigin(flag);
+			}
+			else
+			{
+				// no flag to defend, build near the frontlines
+				CTFNavArea* frontlineArea = TheTFNavMesh()->GetRandomFrontLineArea();
+
+				if (frontlineArea)
 				{
-					spot = UtilHelpers::getEntityOrigin(flag);
+					spot = frontlineArea->GetCenter();
 				}
 				else
 				{
-					// no flag to defend, build near the frontlines
-					CTFNavArea* frontlineArea = TheTFNavMesh()->GetRandomFrontLineArea();
-
-					if (frontlineArea)
-					{
-						spot = frontlineArea->GetCenter();
-					}
-					else
-					{
-						spot = bot->GetAbsOrigin();
-					}
+					spot = bot->GetAbsOrigin();
 				}
-
-				return true;
 			}
+
+			return true;
 		}
 	}
 	else if (gm == TeamFortress2::GameModeType::GM_CTF)
@@ -454,6 +513,17 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 
 		if (points.empty())
 		{
+			if (gm == TeamFortress2::GameModeType::GM_CP)
+			{
+				CBaseEntity* neutralPoint = mod->FindNeutralControlPoint();
+
+				if (neutralPoint)
+				{
+					spot = UtilHelpers::getWorldSpaceCenter(neutralPoint);
+					return true;
+				}
+			}
+
 			spot = bot->GetAbsOrigin();
 			return true;
 		}
@@ -499,7 +569,7 @@ float tf2botutils::GetSentrySearchMaxRange(bool isWaypointSearch)
 	case GameModeType::GM_MVM:
 		return CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetMvMSentryToBombRange();
 	default:
-		return 4096.0f; // don't search the entire map when searching nav areas
+		return CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerRandomNavAreaBuildRange();
 	}
 }
 
@@ -516,7 +586,8 @@ bool tf2botutils::FindSpotToBuildSentryGun(CTF2Bot* bot, CTFWaypoint** waypoint,
 			return true;
 		}
 
-		*area = tf2botutils::FindRandomNavAreaToBuild(bot, tf2botutils::GetSentrySearchMaxRange(false), &spot, false);
+		const bool checkVis = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->ShouldRandomNavAreaBuildCheckForVisiblity();
+		*area = tf2botutils::FindRandomNavAreaToBuild(bot, tf2botutils::GetSentrySearchMaxRange(false), &spot, false, checkVis);
 
 		if (*area != nullptr)
 		{
@@ -585,6 +656,18 @@ bool tf2botutils::FindSpotToBuildDispenser(CTF2Bot* bot, CTFWaypoint** waypoint,
 	if (*waypoint != nullptr)
 	{
 		return true;
+	}
+
+	CTFNavArea* sentryArea = static_cast<CTFNavArea*>(TheNavMesh->GetNearestNavArea(sentryPos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 4.0f));
+
+	if (sentryArea)
+	{
+		*area = FindAreaNearSentryGun(bot, sentryArea, maxRange);
+
+		if (*area != nullptr)
+		{
+			return true;
+		}
 	}
 
 	*area = FindRandomNavAreaToBuild(bot, maxRange, &sentryPos, false);
@@ -658,6 +741,18 @@ bool tf2botutils::FindSpotToBuildTeleExit(CTF2Bot* bot, CTFWaypoint** waypoint, 
 	if (*waypoint != nullptr)
 	{
 		return true;
+	}
+
+	CTFNavArea* sentryArea = static_cast<CTFNavArea*>(TheNavMesh->GetNearestNavArea(sentryPos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 4.0f));
+
+	if (sentryArea)
+	{
+		*area = FindAreaNearSentryGun(bot, sentryArea, maxRange, 0.4f);
+
+		if (*area != nullptr)
+		{
+			return true;
+		}
 	}
 
 	*area = tf2botutils::FindRandomNavAreaToBuild(bot, maxRange, &sentryPos, true);

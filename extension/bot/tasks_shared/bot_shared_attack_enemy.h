@@ -47,9 +47,22 @@ inline TaskResult<BT> CBotSharedAttackEnemyTask<BT, CT>::OnTaskUpdate(BT* bot)
 		return AITask<BT>::Done("No threat!");
 	}
 
-	if (!threat->IsVisibleNow() && threat->GetTimeSinceLastInfo() >= m_chaseTime)
+	if (!threat->IsVisibleNow())
 	{
-		return AITask<BT>::Done("Threat has escaped!");
+		if (bot->GetDifficultyProfile()->GetAggressiveness() < 50 && bot->GetHealthState() != CBaseBot::HealthState::HEALTH_OK)
+		{
+			return AITask<BT>::Done("Threat is no longer visible and I am low on health!");
+		}
+
+		if (bot->GetHealthState() == CBaseBot::HealthState::HEALTH_CRITICAL)
+		{
+			return AITask<BT>::Done("Threat is no longer visible and I am very low on health!");
+		}
+
+		if (threat->GetTimeSinceLastInfo() >= m_chaseTime)
+		{
+			return AITask<BT>::Done("Threat has escaped!");
+		}
 	}
 
 	float moveRange = 750.0f;

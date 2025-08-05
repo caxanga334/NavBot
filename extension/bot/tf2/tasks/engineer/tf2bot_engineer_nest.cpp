@@ -56,6 +56,7 @@ CTF2BotEngineerNestTask::CTF2BotEngineerNestTask() :
 	m_sentryKills = 0;
 	m_teleUses = 0;
 	m_myteam = 0;
+	m_myindex = 0;
 	m_maxHelpAllyRange = CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetEngineerHelpAllyMaxRange();
 }
 
@@ -349,6 +350,11 @@ bool CTF2BotEngineerNestTask::operator()(int index, edict_t* edict, CBaseEntity*
 	if (entity)
 	{
 		tfentities::HBaseObject object(entity);
+
+		if (object.GetBuilderIndex() == m_myindex)
+		{
+			return true;
+		}
 
 		if ((m_myOrigin - object.WorldSpaceCenter()).Length() > m_maxHelpAllyRange)
 		{
@@ -889,6 +895,7 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetHelpFriendlyEngineerTask(CTF2Bot* m
 
 	m_allyObjects.clear();
 	m_myOrigin = me->GetAbsOrigin();
+	m_myindex = me->GetIndex();
 
 	for (auto& clname : classnames)
 	{

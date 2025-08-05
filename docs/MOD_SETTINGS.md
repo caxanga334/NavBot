@@ -59,6 +59,9 @@ These settings are only used in Team Fortress 2.
 | engineer_sentry_killassist_threshold | If a sentry hasn't got at least this many kills plus assists between two move checks, bots will move them. | 1 - 30 | 5 |
 | engineer_teleporter_uses_threshold | If a teleporter wasn't used at least this many times between two move checks, bots will move them. | 1 - 10 | 4 |
 | engineer_help_ally_max_range | Ally building maximum search range. | 500 - 4000 | 1500 |
+| engineer_nav_build_range | Maximum search distance for a random nav area to build. | 1024 - 10000 | 2048 |
+| engineer_nav_build_check_vis | If enabled, engineers will only build on random areas that can be seen from the map's objective. | true or false | false |
+| engineer_trust_waypoints | If enabled, engineers won't move their sentry gun if the current waypoint being used is still valid. | true or false | true |
 
 ### Macro Values
 

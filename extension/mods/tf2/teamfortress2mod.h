@@ -29,6 +29,8 @@ public:
 		engineer_teleporter_uses_threshold = 4;
 		engineer_help_ally_max_range = 1500.0f;
 		engineer_trust_waypoints = true;
+		engineer_nav_build_check_vis = false;
+		engineer_nav_build_range = 2048.0f;
 	}
 
 	void SetEngineerNestDispenserRange(float range) { engineer_nest_dispenser_range = range; }
@@ -42,6 +44,8 @@ public:
 	void SetEngineerTeleporterUsesThreshold(int value) { engineer_teleporter_uses_threshold = value; }
 	void SetEngineerHelpAllyMaxRange(float value) { engineer_help_ally_max_range = value; }
 	void SetEngineerTrustWaypoints(bool value) { engineer_trust_waypoints = value; }
+	void SetRandomNavAreaBuildCheckForVisiblity(bool value) { engineer_nav_build_check_vis = value; }
+	void SetEngineerRandomNavAreaBuildRange(float value) { engineer_nav_build_range = value; }
 
 	float GetEngineerNestDispenserRange() const { return engineer_nest_dispenser_range; }
 	float GetEngineerNestExitRange() const { return engineer_nest_exit_range; }
@@ -54,6 +58,8 @@ public:
 	int GetEngineerTeleporterUsesThreshold() const { return engineer_teleporter_uses_threshold; }
 	float GetEngineerHelpAllyMaxRange() const { return engineer_help_ally_max_range; }
 	bool ShouldEngineersTrustWaypoints() const { return engineer_trust_waypoints; }
+	bool ShouldRandomNavAreaBuildCheckForVisiblity() const { return engineer_nav_build_check_vis; }
+	float GetEngineerRandomNavAreaBuildRange() const { return engineer_nav_build_range; }
 
 protected:
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
@@ -70,6 +76,8 @@ private:
 	int engineer_teleporter_uses_threshold;
 	float engineer_help_ally_max_range;
 	bool engineer_trust_waypoints;
+	bool engineer_nav_build_check_vis; // If true, random areas to build must be visible from the map's objective
+	float engineer_nav_build_range; // maximum search distance for random nav areas to build on
 };
 
 class CTF2Bot;
@@ -132,6 +140,8 @@ public:
 	const TeamFortress2::TFObjectiveResource* GetTFObjectiveResource() const;
 	void CollectControlPointsToAttack(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out);
 	void CollectControlPointsToDefend(TeamFortress2::TFTeam tfteam, std::vector<CBaseEntity*>& out);
+	// Returns the first instance of a neutral control point.
+	CBaseEntity* FindNeutralControlPoint(const bool allowLocked = true) const;
 	CBaseEntity* GetControlPointByIndex(const int index) const;
 	/**
 	 * @brief Gets the active round timer.

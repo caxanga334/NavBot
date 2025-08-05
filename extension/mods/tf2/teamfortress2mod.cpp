@@ -65,67 +65,84 @@ SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCState
 			SetEngineerNestDispenserRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "engineer_nest_exit_range", 24) == 0)
+		if (strncasecmp(key, "engineer_nest_exit_range", 24) == 0)
 		{
 			float range = atof(value);
 			range = std::clamp(range, 600.0f, 4096.0f);
 			SetEngineerNestExitRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "entrance_spawn_range", 20) == 0)
+		if (strncasecmp(key, "entrance_spawn_range", 20) == 0)
 		{
 			float range = atof(value);
 			range = std::clamp(range, 1500.0f, 6000.0f);
 			SetEntranceSpawnRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "mvm_sentry_to_bomb_range", 24) == 0)
+		if (strncasecmp(key, "mvm_sentry_to_bomb_range", 24) == 0)
 		{
 			float range = atof(value);
 			range = std::clamp(range, 1000.0f, 3000.0f);
 			SetMvMSentryToBombRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "medic_patient_scan_range", 24) == 0)
+		if (strncasecmp(key, "medic_patient_scan_range", 24) == 0)
 		{
 			float range = atof(value);
 			range = std::clamp(range, 750.0f, 5000.0f);
 			SetMedicPatientScanRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "engineer_destroy_travel_range", 29) == 0)
+		if (strncasecmp(key, "engineer_destroy_travel_range", 29) == 0)
 		{
 			float range = atof(value);
 			range = std::clamp(range, 1000.0f, 10000.0f);
 			SetEngineerMoveDestroyBuildingRange(range);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "engineer_move_check_interval", 28) == 0)
+		if (strncasecmp(key, "engineer_move_check_interval", 28) == 0)
 		{
 			float v = atof(value);
 			v = std::clamp(v, 30.0f, 180.0f);
 			SetEngineerMoveCheckInterval(v);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "engineer_sentry_killassist_threshold", 36) == 0)
+		if (strncasecmp(key, "engineer_sentry_killassist_threshold", 36) == 0)
 		{
 			int v = atoi(value);
 			v = std::clamp(v, 1, 30);
 			SetEngineerSentryKillAssistsThreshold(v);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "engineer_teleporter_uses_threshold", 34) == 0)
+		if (strncasecmp(key, "engineer_teleporter_uses_threshold", 34) == 0)
 		{
 			int v = atoi(value);
 			v = std::clamp(v, 1, 10);
 			SetEngineerTeleporterUsesThreshold(v);
 			return SourceMod::SMCResult_Continue;
 		}
-		else if (strncasecmp(key, "engineer_help_ally_max_range", 28) == 0)
+		if (strncasecmp(key, "engineer_help_ally_max_range", 28) == 0)
 		{
 			float range = atof(value);
 			range = std::clamp(range, 500.0f, 4000.0f);
 			SetEngineerHelpAllyMaxRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		if (strncasecmp(key, "engineer_nav_build_range", 24) == 0)
+		{
+			float range = atof(value);
+			range = std::clamp(range, 1024.0f, 10000.0f);
+			SetEngineerRandomNavAreaBuildRange(range);
+			return SourceMod::SMCResult_Continue;
+		}
+		if (strncasecmp(key, "engineer_nav_build_check_vis", 28) == 0)
+		{
+			SetRandomNavAreaBuildCheckForVisiblity(UtilHelpers::StringToBoolean(value));
+			return SourceMod::SMCResult_Continue;
+		}
+		if (strncasecmp(key, "engineer_trust_waypoints", 24) == 0)
+		{
+			SetEngineerTrustWaypoints(UtilHelpers::StringToBoolean(value));
 			return SourceMod::SMCResult_Continue;
 		}
 	}
@@ -1582,6 +1599,46 @@ void CTeamFortress2Mod::CollectControlPointsToDefend(TeamFortress2::TFTeam tftea
 			out.push_back(entity);
 		}
 	}
+}
+
+CBaseEntity* CTeamFortress2Mod::FindNeutralControlPoint(const bool allowLocked) const
+{
+	if (m_objecteResourceEntity.Get() == nullptr)
+	{
+		return nullptr;
+	}
+
+	bool minirounds = m_objectiveResourcesData.IsPlayingMiniRounds();
+
+	for (auto& handle : m_controlpoints)
+	{
+		CBaseEntity* entity = handle.Get();
+
+		if (entity == nullptr)
+		{
+			continue;
+		}
+
+		tfentities::HTeamControlPoint point(entity);
+		int index = point.GetPointIndex();
+
+		if (!allowLocked && m_objectiveResourcesData.IsLocked(index))
+		{
+			continue;
+		}
+
+		if (minirounds && !m_objectiveResourcesData.InMiniRound(index))
+		{
+			continue;
+		}
+
+		if (m_objectiveResourcesData.GetOwner(index) <= static_cast<int>(TeamFortress2::TFTeam::TFTeam_Spectator))
+		{
+			return entity;
+		}
+	}
+
+	return nullptr;
 }
 
 CBaseEntity* CTeamFortress2Mod::GetControlPointByIndex(const int index) const

@@ -25,7 +25,7 @@ namespace tf2botutils
 	 * @param avoidSlopes Should skip areas with non flat ground?
 	 * @return Nav area pointer or NULL if not found.
 	 */
-	CTFNavArea* FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxRange = 4096.0f, const Vector* searchCenter = nullptr, const bool avoidSlopes = false);
+	CTFNavArea* FindRandomNavAreaToBuild(CTF2Bot* bot, const float maxRange = 4096.0f, const Vector* searchCenter = nullptr, const bool avoidSlopes = false, const bool checkVis = false);
 	/**
 	 * @brief Selects a random waypoint for buildng a dispenser.
 	 * @param bot Bot that will build the dispenser.
@@ -54,6 +54,15 @@ namespace tf2botutils
 	CTFWaypoint* SelectWaypointForTeleEntrance(CTF2Bot* bot, const float maxRange = -1.0f, const Vector* searchCenter = nullptr);
 	// Finds a good area to build a tele entrance for when the bot is inside their spawnroom
 	CTFNavArea* FindTeleEntranceNavAreaFromSpawnRoom(CTF2Bot* bot, const Vector& spawnPointPos);
+	/**
+	 * @brief Finds an area to build near the sentry gun.
+	 * @param bot Bot that will build.
+	 * @param sentryArea Nav area the sentry gun is at.
+	 * @param maxRange Maximum search range.
+	 * @param minRangeScale Minimum distance is max range multiplied by this.
+	 * @return Nearest nav area or NULL if none found.
+	 */
+	CTFNavArea* FindAreaNearSentryGun(CTF2Bot* bot, CTFNavArea* sentryArea, const float maxRange, const float minRangeScale = 0.2f);
 	// Determines the search start position for sentry gun build spot search.
 	bool GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot);
 	// Determines the maximum search range for sentry gun spots.

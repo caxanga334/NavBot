@@ -70,6 +70,7 @@ private:
 	static constexpr int ALLY_ACTION_UPGRADE = 2;
 	static constexpr int ALLY_ACTION_SAPPED = 3;
 
+	int m_myindex;
 	int m_myteam;
 	std::vector<std::pair<int, CBaseEntity*>> m_allyObjects;
 	Vector m_myOrigin;
