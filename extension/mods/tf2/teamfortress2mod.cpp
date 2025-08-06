@@ -1810,6 +1810,14 @@ const bool CTeamFortress2Mod::IsPlayingMedievalMode() const
 	return value;
 }
 
+bool CTeamFortress2Mod::IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt) const
+{
+	trace::CTraceFilterSimple filter{ passEnt, COLLISION_GROUP_NONE };
+	trace_t result;
+	trace::line(from, to, MASK_SOLID, &filter, result);
+	return !result.DidHit();
+}
+
 #if SOURCE_ENGINE == SE_TF2
 
 CON_COMMAND(sm_navbot_tf_show_upgrades, "[TF2] List all MvM Upgrades known by the bots.")

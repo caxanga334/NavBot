@@ -62,6 +62,14 @@ public:
 	int GetCurrency() const;
 	bool IsInUpgradeZone() const;
 	bool IsUsingSniperScope() const;
+	/**
+	 * @brief Checks if the bot line of fire is clear by performing a trace from the bot's eye origin to the given position.
+	 * 
+	 * Overriden for TF2 because TF2 uses MASK_SOLID instead of MASK_SHOT for hitscan bullets.
+	 * @param to Trace end position.
+	 * @return True if there are no obstructions that blocks bullets. False otherwise.
+	 */
+	bool IsLineOfFireClear(const Vector& to) const override;
 
 	inline void BeginBuilding(TeamFortress2::TFObjectType type, TeamFortress2::TFObjectMode mode)
 	{
@@ -241,9 +249,26 @@ private:
 	float m_maxdropheight;
 	float m_maxdjheight; // max double jump height
 	float m_maxgapjumpdistance;
+	float m_hullsize;
 	bool m_candoublejump;
 	bool m_canblastjump;
 	int m_teamID;
+};
+
+/**
+ * @brief NavBot implementation of TF2's CTraceFilterIgnoreFriendlyCombatItems.
+ * 
+ * https://github.com/ValveSoftware/source-sdk-2013/blob/68c8b82fdcb41b8ad5abde9fe1f0654254217b8e/src/game/shared/tf/tf_weaponbase.h#L170
+ */
+class CTF2TraceFilterIgnoreFriendlyCombatItems : public trace::CTraceFilterSimple
+{
+public:
+	CTF2TraceFilterIgnoreFriendlyCombatItems(CBaseEntity* passEnt, int collisionGroup, const int ignoreTeam);
+
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+
+private:
+	int m_ignoreTeam;
 };
 
 #endif // !NAVBOT_TEAM_FORTRESS_2_BOT_H_

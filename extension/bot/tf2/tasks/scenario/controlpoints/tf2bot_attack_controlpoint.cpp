@@ -128,6 +128,9 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskResume(CTF2Bot* bot, AI
 		return Done("NULL control point!");
 	}
 
+	m_nav.Invalidate();
+	m_nav.ForceRepath();
+
 	return Continue();
 }
 

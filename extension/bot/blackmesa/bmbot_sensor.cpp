@@ -15,7 +15,7 @@ CBlackMesaBotSensor::~CBlackMesaBotSensor()
 {
 }
 
-bool CBlackMesaBotSensor::IsIgnored(CBaseEntity* entity)
+bool CBlackMesaBotSensor::IsIgnored(CBaseEntity* entity) const
 {
 	if (UtilHelpers::IsPlayer(entity))
 	{
@@ -25,7 +25,7 @@ bool CBlackMesaBotSensor::IsIgnored(CBaseEntity* entity)
 	return true;
 }
 
-bool CBlackMesaBotSensor::IsFriendly(CBaseEntity* entity)
+bool CBlackMesaBotSensor::IsFriendly(CBaseEntity* entity) const
 {
 	if (CBlackMesaDeathmatchMod::GetBMMod()->IsTeamPlay())
 	{
@@ -35,7 +35,7 @@ bool CBlackMesaBotSensor::IsFriendly(CBaseEntity* entity)
 	return false;
 }
 
-bool CBlackMesaBotSensor::IsEnemy(CBaseEntity* entity)
+bool CBlackMesaBotSensor::IsEnemy(CBaseEntity* entity) const
 {
 	if (CBlackMesaDeathmatchMod::GetBMMod()->IsTeamPlay())
 	{

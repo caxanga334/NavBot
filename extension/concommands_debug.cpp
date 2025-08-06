@@ -932,7 +932,7 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <collision group> <filter option>\n");
 		META_CONPRINT("  <mask option> : playersolid playersolidbrushonly npcsolid npcsolidbrushonly water opaque solid blocklos visible shot all team1 team2\n");
 		META_CONPRINT("  <collision group> : none player plmove npc\n");
-		META_CONPRINT("  <filter option> : simple navtransient navwalkable\n");
+		META_CONPRINT("  <filter option> : simple navtransient navwalkable worldproponly hitall\n");
 		return;
 	}
 
@@ -1034,6 +1034,8 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 	trace::CTraceFilterSimple simplefilter(host.GetEntity(), colgroup);
 	CTraceFilterTransientAreas navfilter(host.GetEntity(), colgroup);
 	CTraceFilterWalkableEntities navwalkablefilter(host.GetEntity(), colgroup, WALK_THRU_EVERYTHING);
+	CTraceFilterWorldAndPropsOnly wponlyfilter;
+	CTraceFilterHitAll hitallfilter;
 
 	if (strcasecmp(arg3, "simple") == 0)
 	{
@@ -1046,6 +1048,14 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 	else if (strcasecmp(arg3, "navwalkable") == 0)
 	{
 		filter = &navwalkablefilter;
+	}
+	else if (strcasecmp(arg3, "worldproponly") == 0)
+	{
+		filter = &wponlyfilter;
+	}
+	else if (strcasecmp(arg3, "hitall") == 0)
+	{
+		filter = &hitallfilter;
 	}
 	else
 	{

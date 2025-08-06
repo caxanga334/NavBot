@@ -45,7 +45,7 @@ CTF2BotSensor::~CTF2BotSensor()
 {
 }
 
-bool CTF2BotSensor::IsIgnored(CBaseEntity* entity)
+bool CTF2BotSensor::IsIgnored(CBaseEntity* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CTF2BotSensor::IsIgnored", "NavBot");
@@ -94,7 +94,7 @@ bool CTF2BotSensor::IsIgnored(CBaseEntity* entity)
 	return false;
 }
 
-bool CTF2BotSensor::IsFriendly(CBaseEntity* entity)
+bool CTF2BotSensor::IsFriendly(CBaseEntity* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CTF2BotSensor::IsFriendly", "NavBot");
@@ -119,7 +119,7 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity)
 	return false;
 }
 
-bool CTF2BotSensor::IsEnemy(CBaseEntity* entity)
+bool CTF2BotSensor::IsEnemy(CBaseEntity* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CTF2BotSensor::IsEnemy", "NavBot");
@@ -189,7 +189,7 @@ void CTF2BotSensor::OnTruceChanged(const bool enabled)
 	}
 }
 
-bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)
+bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CTF2BotSensor::IsPlayerIgnoredInternal", "NavBot");
@@ -209,7 +209,7 @@ bool CTF2BotSensor::IsPlayerIgnoredInternal(CBaseEntity* entity)
 }
 
 // TFConds that the bots should always ignore
-bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player)
+bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CTF2BotSensor::IgnoredConditionsInternal", "NavBot");
@@ -226,7 +226,7 @@ bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player)
 	return false;
 }
 
-bool CTF2BotSensor::IsClassnameIgnored(const char* classname)
+bool CTF2BotSensor::IsClassnameIgnored(const char* classname) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CTF2BotSensor::IsClassnameIgnored", "NavBot");

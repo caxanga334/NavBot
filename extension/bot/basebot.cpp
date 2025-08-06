@@ -644,7 +644,7 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	VPROF_BUDGET("CBaseBot::IsLineOfFireClean", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	CTraceFilterWorldAndPropsOnly filter;
+	CBaseBotTraceFilterLineOfFire filter{ this };
 	trace_t result;
 	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
 	return !result.DidHit();
@@ -1119,4 +1119,38 @@ void CBaseBot::OnLastUsedWeaponChanged(const CBotWeapon* new_weapon)
 	m_lastfiredweapontimer.Invalidate();
 	m_weaponSpecialFunctionTimer.Invalidate();
 	GetControlInterface()->ReleaseAllAttackButtons();
+}
+
+CBaseBotTraceFilterLineOfFire::CBaseBotTraceFilterLineOfFire(const CBaseBot* bot, const bool ignoreAllies) :
+	trace::CTraceFilterSimple(bot->GetEntity(), COLLISION_GROUP_NONE)
+{
+	m_bot = bot;
+	m_sensor = bot->GetSensorInterface();
+	m_ignoreAllies = ignoreAllies;
+}
+
+bool CBaseBotTraceFilterLineOfFire::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+{
+	if (trace::CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+	{
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+		if (pEntity)
+		{
+			// Don't collide with enemies
+			if (m_sensor->IsEnemy(pEntity))
+			{
+				return false;
+			}
+
+			if (!m_ignoreAllies && m_sensor->IsFriendly(pEntity))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	return false;
 }

@@ -501,5 +501,28 @@ namespace trace
 
 		return false;
 	}
+
+	bool CTraceFilterIgnoreVector::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+	{
+		if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+		{
+			CBaseEntity* pEntity = EntityFromEntityHandle(pHandleEntity);
+
+			if (pEntity)
+			{
+				for (CBaseEntity* ent : m_ignoreList)
+				{
+					if (pEntity == ent)
+					{
+						return false;
+					}
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
 }
 

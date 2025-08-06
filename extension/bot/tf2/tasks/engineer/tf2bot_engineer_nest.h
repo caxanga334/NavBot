@@ -47,6 +47,7 @@ private:
 	Vector m_goal;
 	Vector m_sentryBuildPos;
 	CTFWaypoint* m_sentryWaypoint; // waypoint used to build the nest
+	CountdownTimer m_pointWasCappedTimer; // control point was captured recently timer
 	CountdownTimer m_moveSentryGunTimer; // main move building timer
 	CountdownTimer m_checkOthersTimer; // secondary timer for moving non sentry gun buildings
 	CountdownTimer m_roundStateTimer;
@@ -64,6 +65,7 @@ private:
 	bool m_checkEntrance;
 	bool m_checkExit;
 	bool m_checkDispenser; // recently moved the sentry
+	bool m_pointWasCapped; // control point was recently cappped
 
 	static constexpr int ALLY_ACTION_NONE = 0;
 	static constexpr int ALLY_ACTION_REPAIR = 1;

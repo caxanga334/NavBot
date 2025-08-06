@@ -12,9 +12,9 @@ public:
 	CBlackMesaBotSensor(CBaseBot* bot);
 	~CBlackMesaBotSensor() override;
 
-	bool IsIgnored(CBaseEntity* entity) override;
-	bool IsFriendly(CBaseEntity* entity) override;
-	bool IsEnemy(CBaseEntity* entity) override;
+	bool IsIgnored(CBaseEntity* entity) const override;
+	bool IsFriendly(CBaseEntity* entity) const override;
+	bool IsEnemy(CBaseEntity* entity) const override;
 
 protected:
 	void CollectPlayers(std::vector<edict_t*>& visibleVec) override;

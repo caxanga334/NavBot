@@ -9,9 +9,9 @@ public:
 	CDoDSBotSensor(CBaseBot* bot);
 	~CDoDSBotSensor() override;
 
-	bool IsIgnored(CBaseEntity* entity) override;
-	bool IsFriendly(CBaseEntity* entity) override;
-	bool IsEnemy(CBaseEntity* entity) override;
+	bool IsIgnored(CBaseEntity* entity) const override;
+	bool IsFriendly(CBaseEntity* entity) const override;
+	bool IsEnemy(CBaseEntity* entity) const override;
 
 	bool IsEntityHidden(CBaseEntity* entity) override;
 	bool IsPositionObscured(const Vector& pos) override;

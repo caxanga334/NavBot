@@ -731,6 +731,21 @@ bool CTF2Bot::IsUsingSniperScope() const
 	return tf2lib::IsPlayerInCondition(GetIndex(), TeamFortress2::TFCond_Zoomed);
 }
 
+bool CTF2Bot::IsLineOfFireClear(const Vector& to) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2Bot::IsLineOfFireClean", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CTF2TraceFilterIgnoreFriendlyCombatItems ignoreFriedlyCombatItemsFilter{ GetEntity(), COLLISION_GROUP_NONE, static_cast<int>(GetMyTFTeam()) };
+	CBaseBotTraceFilterLineOfFire lineoffireFilter{ this, false };
+	trace::CTraceFilterChain chainFilter{ &ignoreFriedlyCombatItemsFilter, &lineoffireFilter };
+	
+	trace_t result;
+	trace::line(GetEyeOrigin(), to, MASK_SOLID, &chainFilter, result);
+	return !result.DidHit();
+}
+
 void CTF2Bot::Disguise(bool myTeam)
 {
 	using namespace TeamFortress2;
@@ -867,6 +882,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
 	m_canblastjump = bot->GetMovementInterface()->IsAbleToBlastJump();
 	m_teamID = static_cast<int>(bot->GetMyTFTeam());
+	m_hullsize = bot->GetMovementInterface()->GetHullWidth();
 }
 
 float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
@@ -975,7 +991,8 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 		}
 		else if (link->GetType() == OffMeshConnectionType::OFFMESH_JUMP_OVER_GAP)
 		{
-			if ((link->GetStart() - link->GetEnd()).Length() > m_maxgapjumpdistance)
+			// add hull size to max gap distance to reduce required placement precision
+			if ((link->GetStart() - link->GetEnd()).Length() > (m_maxgapjumpdistance + m_hullsize))
 			{
 				return -1.0f;
 			}
@@ -1007,4 +1024,30 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	}
 
 	return cost;
+}
+
+CTF2TraceFilterIgnoreFriendlyCombatItems::CTF2TraceFilterIgnoreFriendlyCombatItems(CBaseEntity* passEnt, int collisionGroup, const int ignoreTeam) :
+	trace::CTraceFilterSimple(passEnt, collisionGroup), m_ignoreTeam(ignoreTeam)
+{
+}
+
+bool CTF2TraceFilterIgnoreFriendlyCombatItems::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+{
+	CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+	if (pEntity)
+	{
+		const char* classname = gamehelpers->GetEntityClassname(pEntity);
+		int team = entityprops::GetEntityTeamNum(pEntity);
+
+		if (team == m_ignoreTeam)
+		{
+			if (std::strcmp(classname, "entity_medigun_shield") == 0 || std::strcmp(classname, "entity_revive_marker") == 0)
+			{
+				return false;
+			}
+		}
+	}
+
+	return trace::CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask);
 }

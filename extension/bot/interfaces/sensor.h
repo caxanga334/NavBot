@@ -36,9 +36,9 @@ public:
 	void Frame() override;
 	void ShowDebugInformation() const;
 	// Is this entity ignored by the bot?
-	virtual bool IsIgnored(CBaseEntity* entity) { return false; }
-	virtual bool IsFriendly(CBaseEntity* entity) { return false; }
-	virtual bool IsEnemy(CBaseEntity* entity) { return false; }
+	virtual bool IsIgnored(CBaseEntity* entity) const { return false; }
+	virtual bool IsFriendly(CBaseEntity* entity) const { return false; }
+	virtual bool IsEnemy(CBaseEntity* entity) const { return false; }
 	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
 	bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
 	bool IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV = true);

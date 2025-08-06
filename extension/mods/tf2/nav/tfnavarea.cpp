@@ -78,6 +78,11 @@ bool CTFNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 
 void CTFNavArea::UpdateDynamicSpawnRoom()
 {
+	if (!HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM))
+	{
+		return;
+	}
+
 	int spawnroom = 0;
 	const Vector& center = GetCenter();
 	int nearest_team = 0; // store the team of the nearest func_respawnroom entity

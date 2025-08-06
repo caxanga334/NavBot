@@ -49,6 +49,7 @@ CTF2BotEngineerNestTask::CTF2BotEngineerNestTask() :
 	m_sentryWasBuilt = false;
 	m_checkEntrance = false;
 	m_checkExit = false;
+	m_pointWasCapped = false;
 	m_mysentry = nullptr;
 	m_mydispenser = nullptr;
 	m_myentrance = nullptr;
@@ -62,6 +63,7 @@ CTF2BotEngineerNestTask::CTF2BotEngineerNestTask() :
 
 TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	m_pointWasCappedTimer.Invalidate();
 	m_myteam = static_cast<int>(bot->GetMyTFTeam());
 	bot->FindMyBuildings();
 	CBaseEntity* mysentry = bot->GetMySentryGun();
@@ -320,14 +322,20 @@ TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnVoiceCommand(CTF2Bot
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnControlPointCaptured(CTF2Bot* bot, CBaseEntity* point)
 {
-	ForceMoveBuildings(10.0f);
+	m_pointWasCapped = true;
+	m_checkEntrance = true;
+	m_checkExit = true;
+	ForceMoveBuildings(1.0f);
 
 	return TryContinue();
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotEngineerNestTask::OnControlPointLost(CTF2Bot* bot, CBaseEntity* point)
 {
-	ForceMoveBuildings(10.0f);
+	m_pointWasCapped = true;
+	m_checkEntrance = true;
+	m_checkExit = true;
+	ForceMoveBuildings(1.0f);
 
 	return TryContinue();
 }
@@ -411,6 +419,23 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 
 			return nullptr; // need more metal but find ammo failed
 		}
+	}
+
+	if (m_pointWasCapped)
+	{
+		m_pointWasCapped = false;
+		m_pointWasCappedTimer.Start(5.0f);
+		m_moveSentryGunTimer.Invalidate();
+	}
+
+	if (!m_pointWasCappedTimer.IsElapsed())
+	{
+		if (m_sentryWaypoint && !m_sentryWaypoint->IsAvailableToTeam(me->GetCurrentTeamIndex()))
+		{
+			m_sentryWaypoint = nullptr;
+		}
+
+		return nullptr; // control point was capped recently, don't build anything for a short period
 	}
 
 	CTFWaypoint* buildwpt = nullptr;

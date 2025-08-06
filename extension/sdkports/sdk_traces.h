@@ -55,6 +55,11 @@ namespace trace
 		void SetCollisionGroup(int group) { m_collisiongroup = group; }
 		void SetPassEntity(CBaseEntity* ent) { m_passEntity = ent; }
 
+		/**
+		 * @brief Sets an additional function to be called to determine if the trace should hit an entity.
+		 * @tparam F bool (IHandleEntity* pHandleEntity, int contentsMask) function
+		 * @param func Function to call.
+		 */
 		template <typename F>
 		void SetExtraFunc(F func)
 		{
@@ -154,8 +159,35 @@ namespace trace
 			m_ignoreList.push_back(ignore);
 		}
 
+		bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+
 	private:
 		std::vector<CBaseEntity*> m_ignoreList;
+	};
+
+	/**
+	 * @brief Trace filter that chains two filters together. Both must return true to hit the entity.
+	 */
+	class CTraceFilterChain : public CTraceFilter
+	{
+	public:
+		// Both filters must be passed!
+		CTraceFilterChain(ITraceFilter* filter1, ITraceFilter* filter2)
+		{
+			m_pFilter1 = filter1;
+			m_pFilter2 = filter2;
+		}
+
+		bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override
+		{
+			bool result1 = m_pFilter1->ShouldHitEntity(pHandleEntity, contentsMask);
+			bool result2 = m_pFilter2->ShouldHitEntity(pHandleEntity, contentsMask);
+			return result1 && result2;
+		}
+
+	private:
+		ITraceFilter* m_pFilter1;
+		ITraceFilter* m_pFilter2;
 	};
 
 	inline void line(const Vector& start, const Vector& end, unsigned int mask, trace_t& result)

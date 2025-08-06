@@ -14,20 +14,20 @@ CDoDSBotSensor::~CDoDSBotSensor()
 {
 }
 
-bool CDoDSBotSensor::IsIgnored(CBaseEntity* entity)
+bool CDoDSBotSensor::IsIgnored(CBaseEntity* entity) const
 {
 	// ignore everything but player entities
 	return !(UtilHelpers::IsPlayer(entity));
 }
 
-bool CDoDSBotSensor::IsFriendly(CBaseEntity* entity)
+bool CDoDSBotSensor::IsFriendly(CBaseEntity* entity) const
 {
 	CDoDSBot* me = GetBot<CDoDSBot>();
 
 	return dodslib::GetDoDTeam(entity) == me->GetMyDoDTeam();
 }
 
-bool CDoDSBotSensor::IsEnemy(CBaseEntity* entity)
+bool CDoDSBotSensor::IsEnemy(CBaseEntity* entity) const
 {
 	CDoDSBot* me = GetBot<CDoDSBot>();
 

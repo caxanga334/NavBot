@@ -114,6 +114,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_obstacleEntity = nullptr;
 	m_desiredspeed = 0.0f;
 	m_catapultStartPosition = vec3_origin;
+	m_isStopAndWait = false;
 }
 
 IMovement::~IMovement()
@@ -156,6 +157,8 @@ void IMovement::Reset()
 	m_obstacleBreakTimeout.Invalidate();
 	m_obstacleEntity = nullptr;
 	m_catapultStartPosition = vec3_origin;
+	m_isStopAndWait = false;
+	m_stopAndWaitTimer.Invalidate();
 }
 
 void IMovement::Update()
@@ -211,10 +214,7 @@ void IMovement::Update()
 		{
 			// These require a precise aligment and movement (depends on the map).
 			// To make things easier for bots and for nav mesh editing, we cheat a bit by correcting the bot's velocity mid flight.
-			if (me->IsTouching("trigger_push"))
-			{
-				m_catapultCorrectVelocityTimer.Start(0.75f);
-			}
+			m_catapultCorrectVelocityTimer.Start(0.75f);
 
 			if (!IsOnGround())
 			{
@@ -350,6 +350,17 @@ void IMovement::Update()
 			Vector strafeTo = me->GetAbsOrigin();
 			strafeTo += (forward * -256.0f);
 			MoveTowards(strafeTo, MOVEWEIGHT_COUNTERSTRAFE);
+		}
+	}
+
+	if (m_isStopAndWait)
+	{
+		DoCounterStrafe(); // counter strafe to cancel any movement speed
+
+		if (m_stopAndWaitTimer.IsElapsed())
+		{
+			m_stopAndWaitTimer.Invalidate();
+			m_isStopAndWait = false;
 		}
 	}
 }
@@ -770,6 +781,7 @@ bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingF
 	}
 
 	CrouchJump(); // Always do a crouch jump
+	MoveTowards(landingGoal, MOVEWEIGHT_STANDARD_JUMPS);
 
 	m_isClimbingObstacle = true;
 	m_isJumpingAcrossGap = false;
@@ -1604,6 +1616,7 @@ void IMovement::OnJumpComplete()
 	m_jumpCooldown.Start(sm_navbot_movement_jump_cooldown.GetFloat());
 	me->UpdateLastKnownNavArea(true);
 	DoCounterStrafe(0.25f); // experimental to regain control post landing
+	StopAndWait(0.25f); // wait some time for better precision in consecutive jumps
 	me->GetControlInterface()->ReleaseJumpButton();
 	me->GetControlInterface()->ReleaseCrouchButton();
 

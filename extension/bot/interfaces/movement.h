@@ -148,6 +148,7 @@ public:
 	static constexpr auto MOVEWEIGHT_DEFAULT = 100;
 	static constexpr auto MOVEWEIGHT_NAVIGATOR = 1000; // for calls from the navigator
 	static constexpr auto MOVEWEIGHT_DODGE = 2000; // trying to dodge something
+	static constexpr auto MOVEWEIGHT_STANDARD_JUMPS = 10000; // standard jumps
 	static constexpr auto MOVEWEIGHT_COUNTERSTRAFE = 250000; // counterstrafe move calls
 	static constexpr auto MOVEWEIGHT_PRIORITY = 500000; // priority move toward calls
 	static constexpr auto MOVEWEIGHT_CRITICAL = 900000; // critical move toward calls
@@ -327,6 +328,13 @@ public:
 	virtual bool UseCatapult(const Vector& start, const Vector& landing);
 	// returns true if the bot is using a catapult
 	bool IsUsingACatapult() const { return m_isUsingCatapult; }
+	/**
+	 * @brief Makes the bot stop moving and wait a given time.
+	 * @param duration Time to wait.
+	 */
+	void StopAndWait(const float duration) { m_isStopAndWait = true; m_stopAndWaitTimer.Start(duration); }
+	// returns true if the bot is stopped (won't move) and waiting
+	const bool IsStoppedAndWaiting() const { return m_isStopAndWait; }
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -385,6 +393,8 @@ private:
 	Vector2D m_groundMotionVector; // Unit vector of the bot current ground (2D) movement
 	float m_maxspeed; // the bot's maximum speed
 	float m_desiredspeed; // speed the bot wants to move at
+	bool m_isStopAndWait;
+	CountdownTimer m_stopAndWaitTimer;
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();

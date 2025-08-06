@@ -116,6 +116,14 @@ public:
 	 * @return Shared bot memory interface pointer.
 	 */
 	virtual ISharedBotMemory* GetSharedBotMemory(int teamindex);
+	/**
+	 * @brief Checks if there are no solid obstructions for hitscan weapons between the given positions.
+	 * @param from Raycast trace start position.
+	 * @param to Raycast trace end position.
+	 * @param passEnt optional entity to pass to the trace filter.
+	 * @return True if no obstruction is found, false otherwise.
+	 */
+	virtual bool IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt = nullptr) const;
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;

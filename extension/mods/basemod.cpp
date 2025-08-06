@@ -171,6 +171,14 @@ ISharedBotMemory* CBaseMod::GetSharedBotMemory(int teamindex)
 	return m_teamsharedmemory[TEAM_UNASSIGNED].get();
 }
 
+bool CBaseMod::IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt) const
+{
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t result;
+	trace::line(from, to, MASK_SHOT, &filter, result);
+	return !result.DidHit();
+}
+
 void CBaseMod::InternalFindPlayerResourceEntity()
 {
 	SourceMod::IGameConfig* gamedata = nullptr;

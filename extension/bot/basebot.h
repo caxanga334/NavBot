@@ -9,6 +9,8 @@
 
 #include <IGameConfigs.h>
 #include <extplayer.h>
+#include <sdkports/sdk_timers.h>
+#include <sdkports/sdk_traces.h>
 #include <util/librandom.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/interfaces/movement.h>
@@ -20,7 +22,6 @@
 #include <bot/interfaces/inventory.h>
 #include <bot/interfaces/squads.h>
 #include <bot/interfaces/sharedmemory.h>
-#include <sdkports/sdk_timers.h>
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
@@ -206,7 +207,11 @@ public:
 	void DebugPrintToConsole(const int red, const int green, const int blue, const char* fmt, ...) const;
 	void DebugDisplayText(const char* text);
 	void DebugFrame();
-
+	/**
+	 * @brief Checks if the bot line of fire is clear by performing a trace from the bot's eye origin to the given position.
+	 * @param to Trace end position.
+	 * @return True if there are no obstructions that blocks bullets. False otherwise.
+	 */
 	virtual bool IsLineOfFireClear(const Vector& to) const;
 
 	inline const Vector& GetHomePos() const { return m_homepos; }
@@ -401,6 +406,20 @@ private:
 	CountdownTimer m_weaponSpecialFunctionTimer;
 
 	void ExecuteQueuedCommands();
+};
+
+// Trace filter for line of fire checks
+class CBaseBotTraceFilterLineOfFire : public trace::CTraceFilterSimple
+{
+public:
+	CBaseBotTraceFilterLineOfFire(const CBaseBot* bot, const bool ignoreAllies = true);
+
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+
+private:
+	const CBaseBot* m_bot;
+	const ISensor* m_sensor;
+	bool m_ignoreAllies;
 };
 
 extern ConVar cvar_bot_disable_behavior;

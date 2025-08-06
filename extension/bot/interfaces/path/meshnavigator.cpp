@@ -122,6 +122,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return; // goal reached
 	}
 
+	if (mover->IsStoppedAndWaiting())
+	{
+		return;
+	}
+
 	if (m_useableTimer.IsElapsed())
 	{
 		m_useableTimer.Start(sm_navbot_path_useable_scan.GetFloat());
