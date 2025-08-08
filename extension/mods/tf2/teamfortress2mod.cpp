@@ -1812,7 +1812,7 @@ const bool CTeamFortress2Mod::IsPlayingMedievalMode() const
 
 bool CTeamFortress2Mod::IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt) const
 {
-	trace::CTraceFilterSimple filter{ passEnt, COLLISION_GROUP_NONE };
+	CTraceFilterWorldAndPropsOnly filter;
 	trace_t result;
 	trace::line(from, to, MASK_SOLID, &filter, result);
 	return !result.DidHit();

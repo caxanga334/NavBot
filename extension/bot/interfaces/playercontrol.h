@@ -22,7 +22,9 @@ public:
 	
 	static constexpr auto AIM_ON_TARGET_DOT_TOLERANCE = 0.995f; // Dot product result must be larger than this to consider the aim to be on target
 
-	// Priority for look calls
+	/**
+	 * @brief Priorities for look/aim commands.
+	 */
 	enum LookPriority
 	{
 		LOOK_IDLE = 0, // Idle look.
@@ -94,8 +96,19 @@ public:
 	const bool DidLookAtTarget() const { return m_didLookAtTarget; }
 	// How long the bot aim has been steady
 	const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
-	// Returns the current aim target entity.
+	// Returns the current aim target entity. NULL if not currently aiming at an entity.
 	CBaseEntity* GetAimAtTarget() const { return m_lookentity.Get(); }
+	/**
+	 * @brief Stops an AimAt command if the current command priority is equal or lower than the given priority.
+	 * @param priority Stop Aim command priority.
+	 */
+	void StopAiming(const LookPriority priority)
+	{
+		if (m_priority > priority) { return; }
+
+		m_priority = LookPriority::LOOK_IDLE;
+		m_looktimer.Invalidate();
+	}
 
 	void SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot spot) { m_desiredAimSpot = spot; }
 	void SetDesiredAimBone(const char* boneName)
@@ -117,7 +130,7 @@ public:
 	/**
 	 * @brief Forces an update to the IsAimOnTarget status.
 	 */
-	void ForceUpdateAimOnTarget(const float tolerance = 0.98f);
+	void ForceUpdateAimOnTarget(const float tolerance = AIM_ON_TARGET_DOT_TOLERANCE);
 
 private:
 

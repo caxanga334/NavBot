@@ -644,7 +644,11 @@ bool CBaseBot::IsLineOfFireClear(const Vector& to) const
 	VPROF_BUDGET("CBaseBot::IsLineOfFireClean", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+#if 0
 	CBaseBotTraceFilterLineOfFire filter{ this };
+#else
+	CTraceFilterWorldAndPropsOnly filter;
+#endif // 0
 	trace_t result;
 	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
 	return !result.DidHit();

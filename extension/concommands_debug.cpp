@@ -68,6 +68,22 @@ CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	Vector target = UtilHelpers::getWorldSpaceCenter(host);
+
+	if (args.ArgC() > 2)
+	{
+		const char* arg1 = args[1];
+		float x, y, z;
+
+		int count = sscanf(arg1, "%f %f %f", &x, &y, &z);
+
+		if (count == 3)
+		{
+			target.x = x;
+			target.y = y;
+			target.z = z;
+		}
+	}
+	
 	auto functor = [&target](CBaseBot* bot) {
 		bot->GetControlInterface()->AimAt(target, IPlayerController::LOOK_CRITICAL, 10.0f, "Debug command!");
 	};

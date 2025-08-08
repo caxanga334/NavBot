@@ -13,7 +13,9 @@
 #endif // EXT_VPROF_ENABLED
 
 ConVar smnav_bot_aim_stability_max_rate("sm_navbot_aim_stability_max_rate", "100.0", FCVAR_GAMEDLL, "Maximum angle change rate to consider the bot aim to be stable.");
+#ifdef PROBLEMATIC
 ConVar smnav_bot_aim_lookat_settle_duration("sm_navbot_aim_lookat_settle_duration", "0.3", FCVAR_GAMEDLL, "Amount of time the bot will wait for it's aim to stabilize before looking at a target of the same priority again.");
+#endif // PROBLEMATIC
 
 IPlayerController::IPlayerController(CBaseBot* bot) : IBotInterface(bot), IPlayerInput()
 {
@@ -189,9 +191,9 @@ void IPlayerController::RunLook()
 		isSteady = false;
 	}
 
-	if (isSteady == true)
+	if (isSteady)
 	{
-		if (m_steadyTimer.HasStarted() == false)
+		if (!m_steadyTimer.HasStarted())
 		{
 			m_steadyTimer.Start();
 		}
@@ -292,6 +294,8 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 		return;
 	}
 
+	/* Disabled: causes issues with short duration look at commands. */
+#ifdef PROBLEMATIC
 	if (m_priority == priority)
 	{
 		// Don't reaim too frequently
@@ -306,6 +310,7 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 			return;
 		}
 	}
+#endif // PROBLEMATIC
 
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{
@@ -332,7 +337,6 @@ void IPlayerController::AimAt(const Vector& pos, const LookPriority priority, co
 	m_looktarget = pos;
 	m_lookentity = nullptr;
 	m_didLookAtTarget = false;
-
 }
 
 void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, const float duration, const char* reason)
@@ -350,6 +354,7 @@ void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, 
 		return;
 	}
 
+#ifdef PROBLEMATIC
 	if (m_priority == priority)
 	{
 		// Don't reaim too frequently
@@ -364,6 +369,8 @@ void IPlayerController::AimAt(CBaseEntity* entity, const LookPriority priority, 
 			return;
 		}
 	}
+#endif // PROBLEMATIC
+
 
 	if (me->IsDebugging(BOTDEBUG_LOOK))
 	{

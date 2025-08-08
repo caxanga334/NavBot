@@ -367,6 +367,11 @@ void CTF2Bot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
 
 	if (tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_Taunting))
 		return;
+	
+	const CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
+
+	if (tf2mod->IsInSetup())
+		return;
 
 	CBaseBot::FireWeaponAtEnemy(enemy, doAim);
 }
@@ -737,12 +742,19 @@ bool CTF2Bot::IsLineOfFireClear(const Vector& to) const
 	VPROF_BUDGET("CTF2Bot::IsLineOfFireClean", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+#if 0
 	CTF2TraceFilterIgnoreFriendlyCombatItems ignoreFriedlyCombatItemsFilter{ GetEntity(), COLLISION_GROUP_NONE, static_cast<int>(GetMyTFTeam()) };
 	CBaseBotTraceFilterLineOfFire lineoffireFilter{ this, false };
 	trace::CTraceFilterChain chainFilter{ &ignoreFriedlyCombatItemsFilter, &lineoffireFilter };
-	
+
 	trace_t result;
 	trace::line(GetEyeOrigin(), to, MASK_SOLID, &chainFilter, result);
+#else
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t result;
+	trace::line(GetEyeOrigin(), to, MASK_SOLID, &filter, result);
+#endif // 0
+
 	return !result.DidHit();
 }
 

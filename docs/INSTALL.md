@@ -24,3 +24,7 @@ Generally it's `<game root>/addons/sourcemod/`.
 
 [Actions]: https://github.com/caxanga334/NavBot/actions
 [Releases]: https://github.com/caxanga334/NavBot/releases
+
+## Additional Information
+
+On listen servers, you must the game in insecure mode (add `-insecure` to the launch parameters).
