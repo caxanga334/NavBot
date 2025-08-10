@@ -482,7 +482,6 @@ void CTF2Bot::UseSecondaryAbilities(const CKnownEntity* threat)
 		return; // too stupid to use them
 	}
 
-
 	switch (GetMyClassType())
 	{
 	case TeamFortress2::TFClassType::TFClass_Pyro:
@@ -613,6 +612,11 @@ void CTF2Bot::PyroUseAirblast()
 
 				if (std::strcmp(classname, "player") == 0 && CBaseBot::s_botrng.GetRandomChance(15))
 				{
+					if (static_cast<int>(team) <= TEAM_SPECTATOR || !UtilHelpers::IsPlayerAlive(UtilHelpers::IndexOfEntity(entity)))
+					{
+						return true;
+					}
+
 					airblast = true;
 				}
 				else if (std::strncmp(classname, "tf_projectile", 13) == 0)
@@ -625,6 +629,11 @@ void CTF2Bot::PyroUseAirblast()
 		};
 
 		enumerator.ForEach(functor);
+
+		if (IsDebugging(BOTDEBUG_MISC))
+		{
+			NDebugOverlay::SweptBox(center, center, -size, size, GetEyeAngles(), 255, 255, 0, 200, 0.5f);
+		}
 
 		if (airblast)
 		{
