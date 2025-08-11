@@ -85,7 +85,7 @@ void CTF2Bot::Frame()
 void CTF2Bot::TryJoinGame()
 {
 	JoinTeam();
-	auto tfclass = CTeamFortress2Mod::GetTF2Mod()->SelectAClassForBot(this);
+	TeamFortress2::TFClassType tfclass = CTeamFortress2Mod::GetTF2Mod()->SelectAClassForBot(this);
 	JoinClass(tfclass);
 	m_classswitchtimer.Start(30.0f);
 }

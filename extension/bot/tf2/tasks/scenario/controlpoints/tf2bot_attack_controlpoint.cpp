@@ -215,4 +215,24 @@ void CTF2BotAttackControlPointTask::FindCaptureTrigger(CBaseEntity* controlpoint
 	{
 		m_capturePos = entity.GetAbsOrigin();
 	}
+
+	/* 
+	* On some maps, the center is solid and bots fails to move due to a lack of a path.
+	* Snap the position to the nearest nav area.
+	*/
+
+	CNavArea* area = TheNavMesh->GetNearestNavArea(m_capturePos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 5.0f, false, false, NAV_TEAM_ANY);
+
+	if (area)
+	{
+		area->GetClosestPointOnArea(m_capturePos, &m_capturePos);
+	}
+	else
+	{
+		if (extmanager->IsDebugging(BOTDEBUG_ERRORS))
+		{
+			META_CONPRINTF("CTF2BotAttackControlPointTask::FindCaptureTrigger NULL nav area at %g %g %g within %g units!\n", m_capturePos.x, m_capturePos.y, m_capturePos.z, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 5.0f);
+		}
+	}
+
 }

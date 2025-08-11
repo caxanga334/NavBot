@@ -20,15 +20,34 @@ CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 		Warning("Nav Mesh not loaded, bots will not be able to move! \n");
 	}
 
-	if (args.ArgC() < 2)
+	bool printHelp = !!args.FindArg("-help");
+
+	if (printHelp)
 	{
-		extmanager->AddBot(nullptr, nullptr);
+
+		META_CONPRINT("[SM] Usage: sm_navbot_add <args ...>\n");
+		META_CONPRINT("Arguments: \n-count : number of bots to add\n-name : the bot's name (only works if adding 1 bot)\n");
+		META_CONPRINT("-help : prints this message.\n");
+		return;
+	}
+
+	int count = args.FindArgInt("-count", 1);
+
+	count = std::max(count, 1);
+
+	if (count == 1)
+	{
+		std::string name{ args.FindArg("-name") };
+		extmanager->AddBot(&name, nullptr);
 	}
 	else
 	{
-		std::string botname(args[1]);
-		extmanager->AddBot(&botname, nullptr);
-	}	
+		while (count > 0)
+		{
+			extmanager->AddBot(nullptr, nullptr);
+			count--;
+		}
+	}
 }
 
 CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
