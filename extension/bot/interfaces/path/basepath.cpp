@@ -633,75 +633,48 @@ bool CPath::ProcessLaddersInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment
 	VPROF_BUDGET("CPath::ProcessLaddersInPath", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	switch (to->how)
-	{
-	case GO_LADDER_UP:
-	{
-		auto ladders = from->area->GetLadders(CNavLadder::LADDER_UP);
+	std::vector<const NavLadderConnect*> connections;
+	from->area->GetAllLadderConnections(connections);
 
-		int i = 0;
+	for (const NavLadderConnect* connect : connections)
+	{
+		CNavLadder* ladder = connect->ladder;
+		auto& ladderToAreaConns = ladder->GetConnections();
 
-		for (i = 0; i < ladders->Count(); i++)
+		for (auto& lac : ladderToAreaConns)
 		{
-			CNavLadder* ladder = ladders->Element(i).ladder;
-			auto& connections = ladder->GetConnections();
-
-			for (auto& connect : connections)
+			if (lac.GetConnectedArea() == to->area)
 			{
-				if (/* connect.IsConnectedToLadderTop() && */ connect.GetConnectedArea() == to->area)
+				to->ladder = ladder;
+
+				if (to->how == GO_LADDER_UP)
 				{
-					to->ladder = ladder;
-					to->goal = connect.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
+					to->goal = lac.GetConnectionPoint() + ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
 					// the connection point is to the EXIT area, adjust the Z coordinates
 					to->goal.z = ladder->ClampZ(from->area->GetCenter().z);
 					to->type = AIPath::SegmentType::SEGMENT_LADDER_UP;
-					break;
 				}
-			}
-
-			if (i == ladders->Count())
-			{
-				return false; // failed to find a valid ladder
-			}
-		}
-		break;
-	}
-	case GO_LADDER_DOWN:
-	{
-		auto ladders = from->area->GetLadders(CNavLadder::LADDER_DOWN);
-
-		int i = 0;
-
-		for (i = 0; i < ladders->Count(); i++)
-		{
-			CNavLadder* ladder = ladders->Element(i).ladder;
-			auto& connections = ladder->GetConnections();
-
-			for (auto& connect : connections)
-			{
-				if (/* connect.IsConnectedToLadderBottom() && */ connect.GetConnectedArea() == to->area)
+				else
 				{
-					to->ladder = ladder;
-					to->goal = connect.GetConnectionPoint() - ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
+					to->goal = lac.GetConnectionPoint() - ladder->GetNormal() * bot->GetMovementInterface()->GetHullWidth();
 					// the connection point is to the EXIT area, adjust the Z coordinates
 					to->goal.z = ladder->ClampZ(from->area->GetCenter().z);
 					to->type = AIPath::SegmentType::SEGMENT_LADDER_DOWN;
-					break;
 				}
-			}
 
-			if (i == ladders->Count())
-			{
-				return false; // failed to find a valid ladder
+				return true;
 			}
 		}
-		break;
-	}
-	default:
-		break;
 	}
 
-	return true;
+	if (bot->IsDebugging(BOTDEBUG_PATH) && bot->IsDebugging(BOTDEBUG_ERRORS))
+	{
+		bot->DebugPrintToConsole(255, 0, 0, "%s FAILED TO FIND A LADDER IN PATH TO GO FROM AREA %u TO AREA %u !\n",
+			bot->GetDebugIdentifier(), from->area->GetID(), to->area->GetID());
+	}
+
+	// Failed to find a suitable ladder
+	return false;
 }
 
 bool CPath::ProcessElevatorsInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert)

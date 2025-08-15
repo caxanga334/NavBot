@@ -411,12 +411,20 @@ bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 
 void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
 {
+#ifdef EXT_DEBUG
+	META_CONPRINTF("[NavBot] OnCoreMapStart\n");
+#endif // EXT_DEBUG
+
 	librandom::ReSeedGlobalGenerators();
 	extmanager->OnMapStart();
 }
 
 void NavBotExt::OnCoreMapEnd()
 {
+#ifdef EXT_DEBUG
+	META_CONPRINTF("[NavBot] OnCoreMapEnd\n");
+#endif // EXT_DEBUG
+
 	extmanager->OnMapEnd();
 }
 

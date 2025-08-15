@@ -487,6 +487,24 @@ public:
 	void AddIncomingConnection( CNavArea *source, NavDirType incomingEdgeDir );
 
 	const NavLadderConnectVector *GetLadders( CNavLadder::LadderDirectionType dir ) const	{ return &m_ladder[dir]; }
+	/**
+	 * @brief Fills a vector with all connected ladders to this nav area.
+	 * @param out Vector of ladder connections
+	 */
+	void GetAllLadderConnections(std::vector<const NavLadderConnect*>& out) const
+	{
+		FOR_EACH_VEC(m_ladder[0], it)
+		{
+			const NavLadderConnect& connect = m_ladder[0].Element(it);
+			out.push_back(&connect);
+		}
+
+		FOR_EACH_VEC(m_ladder[1], it)
+		{
+			const NavLadderConnect& connect = m_ladder[1].Element(it);
+			out.push_back(&connect);
+		}
+	}
 	const CNavElevator* GetElevator() const { return m_elevator; }
 	const CNavElevator::ElevatorFloor* GetMyElevatorFloor() const { return m_elevfloor; }
 	void SetElevator(const CNavElevator* elevator, const CNavElevator::ElevatorFloor* floor)

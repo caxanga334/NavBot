@@ -1367,4 +1367,28 @@ CON_COMMAND(sm_navbot_debug_ent_iface, "Debug entity interface")
 	META_CONPRINTF("Base Net (SE): %p\nBase Net (SU): %p\n", svnet->GetBaseNetworkable(), unknet->GetBaseNetworkable());
 }
 
+CON_COMMAND(sm_navbot_debug_vector_angles, "")
+{
+	CBaseExtPlayer player{ UtilHelpers::GetListenServerHost() };
+
+	const QAngle& eyeAngles = player.GetLocalEyeAngles();
+	Vector eyeForward;
+	AngleVectors(eyeAngles, &eyeForward);
+	META_CONPRINTF("Eye Forward: %g %g %g\n", eyeForward.x, eyeForward.y, eyeForward.z);
+	QAngle ang1{ 0.0f, -45.0f, 0.0f };
+	QAngle ang2{ 0.0f, 45.0f, 0.0f };
+	Vector f1;
+	Vector f2;
+	VectorRotate(eyeForward, ang1, f1);
+	VectorRotate(eyeForward, ang2, f2);
+	META_CONPRINTF("-45: %g %g %g\n", f1.x, f1.y, f1.z);
+	META_CONPRINTF("+45: %g %g %g\n", f2.x, f2.y, f2.z);
+	Vector eyePos = player.GetEyeOrigin();
+	eyePos.z -= 32.0f;
+
+	debugoverlay->AddLineOverlay(eyePos, eyePos + (eyeForward * 512.0f), 0, 180, 0, true, 10.0f);
+	debugoverlay->AddLineOverlay(eyePos, eyePos + (f1 * 512.0f), 255, 0, 0, true, 10.0f);
+	debugoverlay->AddLineOverlay(eyePos, eyePos + (f2 * 512.0f), 0, 0, 255, true, 10.0f);
+}
+
 #endif // EXT_DEBUG

@@ -359,6 +359,11 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 			return true;
 		}
 	}
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_LADDER_UP || m_goal->type == AIPath::SegmentType::SEGMENT_LADDER_DOWN)
+	{
+		// experiental
+		return bot->GetMovementInterface()->IsOnLadder();
+	}
 	else
 	{
 		auto next = GetNextSegment(m_goal);
@@ -1562,10 +1567,10 @@ bool CMeshNavigator::LadderUpdate(CBaseBot* bot)
 		goal.z = m_goal->ladder->ClampZ(m_me->GetAbsOrigin().z);
 		Vector2D to = (goal - origin).AsVector2D();
 		input->AimAt(m_goal->ladder->m_top - 50.0f * m_goal->ladder->GetNormal() + Vector(0.0f, 0.0f, mover->GetCrouchedHullHeight()),
-			IPlayerController::LOOK_MOVEMENT, 2.0f);
+			IPlayerController::LOOK_MOVEMENT, 2.0f, "Looking at ladder to climb up!");
 
 		const float range = to.NormalizeInPlace();
-		constexpr float LADDER_ALIGN_RANGE = 50.0f;
+		constexpr float LADDER_ALIGN_RANGE = 128.0f;
 
 		if (range < LADDER_ALIGN_RANGE)
 		{

@@ -37,8 +37,18 @@ CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 
 	if (count == 1)
 	{
-		std::string name{ args.FindArg("-name") };
-		extmanager->AddBot(&name, nullptr);
+		bool bHasName = !!args.FindArg("-name");
+
+		if (bHasName)
+		{
+			std::string name{ args.FindArg("-name") };
+
+			extmanager->AddBot(&name, nullptr);
+		}
+		else
+		{
+			extmanager->AddBot(nullptr, nullptr);
+		}
 	}
 	else
 	{
