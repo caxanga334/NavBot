@@ -1050,7 +1050,7 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 		return false;
 	}
 
-	return GetBot()->IsAbleToBreak(edict);
+	return GetBot()->IsAbleToBreak(entity);
 }
 
 bool IMovement::IsOnGround()
@@ -1510,6 +1510,13 @@ void IMovement::TraverseLadder()
 
 	if (newState != m_ladderState)
 	{
+		CBaseBot* me = GetBot<CBaseBot>();
+
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 255, 0, "%s LADDER STATE CHANGED FROM %i TO %i \n", me->GetDebugIdentifier(), static_cast<int>(m_ladderState), static_cast<int>(newState));
+		}
+
 		ChangeLadderState(newState);
 	}
 }
@@ -1777,7 +1784,7 @@ IMovement::LadderState IMovement::ApproachDownLadder()
 
 IMovement::LadderState IMovement::UseLadderUp()
 {
-	if (m_ladder == nullptr || !IsOnLadder() || m_ladderTimer.IsElapsed())
+	if (m_ladder == nullptr || m_ladderTimer.IsElapsed())
 	{
 		return NOT_USING_LADDER;
 	}
@@ -1785,6 +1792,19 @@ IMovement::LadderState IMovement::UseLadderUp()
 	auto input = GetBot()->GetControlInterface();
 	auto origin = GetBot()->GetAbsOrigin();
 	const float z = origin.z;
+
+	if (!IsOnLadder())
+	{
+		// Some ladders are very short at the top and the bot will frequently overshoot it
+		if (z >= m_ladderGoalZ || z >= m_ladder->m_top.z)
+		{
+			return EXITING_LADDER_UP;
+		}
+
+		// fell off the ladder before reaching the goal height
+		return NOT_USING_LADDER;
+	}
+
 
 	// Bot is not at the top of the ladder but is above the landing nav area height plus some offset distance
 	if (z >= m_ladderGoalZ)
@@ -1797,7 +1817,8 @@ IMovement::LadderState IMovement::UseLadderUp()
 
 		return EXITING_LADDER_UP;
 	}
-	else if (z >= m_ladder->m_top.z)
+
+	if (z >= m_ladder->m_top.z)
 	{
 		// reached ladder top
 
@@ -1808,21 +1829,19 @@ IMovement::LadderState IMovement::UseLadderUp()
 
 		return EXITING_LADDER_UP;
 	}
-	else
-	{
-		Vector goal = origin + 100.0f * (-m_ladder->GetNormal() + Vector(0.0f, 0.0f, 2.0f));
-		input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f, "Going up a ladder.");
-		MoveTowards(goal, MOVEWEIGHT_CRITICAL);
 
-		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
-		{
-			NDebugOverlay::VertArrow(origin, goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
-			NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
-			m_ladderExit->DrawFilled(0, 255, 255, 200);
-			NDebugOverlay::Text(m_ladderExit->GetCenter(), false, 0.1f, "LADDER EXIT AREA %3.2f", m_ladderGoalZ);
-			NDebugOverlay::Text(origin, false, 0.1f, "BOT Z: %3.2f", origin.z);
-			GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Up. Distance to Z goal: %3.2f\n", GetBot()->GetDebugIdentifier(), m_ladderGoalZ - z);
-		}
+	Vector goal = origin + 100.0f * (-m_ladder->GetNormal() + Vector(0.0f, 0.0f, 2.0f));
+	input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f, "Going up a ladder.");
+	MoveTowards(goal, MOVEWEIGHT_CRITICAL);
+
+	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		NDebugOverlay::VertArrow(origin, goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
+		m_ladderExit->DrawFilled(0, 255, 255, 200);
+		NDebugOverlay::Text(m_ladderExit->GetCenter(), false, 0.1f, "LADDER EXIT AREA %3.2f", m_ladderGoalZ);
+		NDebugOverlay::Text(origin, false, 0.1f, "BOT Z: %3.2f", origin.z);
+		GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Up. Distance to Z goal: %3.2f\n", GetBot()->GetDebugIdentifier(), m_ladderGoalZ - z);
 	}
 
 	return USING_LADDER_UP;
@@ -1830,14 +1849,42 @@ IMovement::LadderState IMovement::UseLadderUp()
 
 IMovement::LadderState IMovement::UseLadderDown()
 {
-	if (m_ladder == nullptr || !IsOnLadder() || m_ladderTimer.IsElapsed())
+	if (m_ladder == nullptr || m_ladderTimer.IsElapsed())
 	{
 		return NOT_USING_LADDER;
 	}
 
-	auto input = GetBot()->GetControlInterface();
-	auto origin = GetBot()->GetAbsOrigin();
+	CBaseBot* me = GetBot<CBaseBot>();
+	auto input = me->GetControlInterface();
+	auto origin = me->GetAbsOrigin();
 	const float z = origin.z;
+	const bool isOnLadder = IsOnLadder();
+	const bool isDebugging = me->IsDebugging(BOTDEBUG_MOVEMENT);
+
+	// Fell off the ladder
+	if (!isOnLadder)
+	{
+		if (z <= m_ladder->m_bottom.z)
+		{
+			return NOT_USING_LADDER;
+		}
+
+		// move towards the ladder to grab it again
+		if (!IsOnGround())
+		{
+			Vector goal = origin + 100.0f * (-m_ladder->GetNormal() + Vector(0.0f, 0.0f, -2.0f));
+			input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f);
+			MoveTowards(goal, MOVEWEIGHT_CRITICAL);
+
+			if (isDebugging)
+			{
+				debugoverlay->AddTextOverlay(origin + Vector(0.0f, 0.0f, 24.0f), 0.1f, "BOT OFF LADDER!");
+				NDebugOverlay::HorzArrow(origin, goal, 8.0f, 255, 0, 0, 255, true, 0.1f);
+			}
+
+			return USING_LADDER_DOWN;
+		}
+	}
 
 	if (z <= m_ladderGoalZ)
 	{
@@ -1853,11 +1900,11 @@ IMovement::LadderState IMovement::UseLadderDown()
 	input->AimAt(goal, IPlayerController::LOOK_MOVEMENT, 0.1f);
 	MoveTowards(goal, MOVEWEIGHT_CRITICAL);
 
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	if (isDebugging)
 	{
-		NDebugOverlay::VertArrow(GetBot()->GetAbsOrigin(), goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
+		NDebugOverlay::VertArrow(origin, goal, 4.0f, 0, 255, 0, 255, false, 0.2f);
 		NDebugOverlay::Cross3D(goal, 12.0f, 0, 0, 255, false, 0.2f);
-		GetBot()->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Down. Distance to Z goal: %3.2f\n", GetBot()->GetDebugIdentifier(), fabsf(m_ladderGoalZ - z));
+		me->DebugPrintToConsole(51, 153, 153, "%s: Using Ladder Down. Distance to Z goal: %3.2f\n", me->GetDebugIdentifier(), fabsf(m_ladderGoalZ - z));
 	}
 
 	return USING_LADDER_DOWN;
@@ -1871,77 +1918,43 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	}
 
 	CBaseBot* me = GetBot<CBaseBot>();
+	const Vector origin = me->GetAbsOrigin();
 	auto input = me->GetControlInterface();
-	auto origin = me->GetAbsOrigin();
-	auto eyepos = me->GetEyeOrigin();
-	const float z = origin.z;
-	const bool isDebuggingMovement = me->IsDebugging(BOTDEBUG_MOVEMENT);
-	Vector toGoal = m_ladderExit->GetCenter() - origin;
-	toGoal.z = 0.0f;
-	float range = toGoal.NormalizeInPlace();
-	toGoal.z = 1.0f;
+	const Vector& dismountGoal = m_ladderExit->GetCenter();
+	const bool isOnLadder = IsOnLadder();
+	const bool isOnGround = IsOnGround();
 
-	Vector goalPos = eyepos + GetCrouchedHullHeight() * toGoal;
-	input->AimAt(goalPos, IPlayerController::LOOK_MOVEMENT, 0.2f, "Dismount Ladder");
+	input->AimAt(dismountGoal + Vector(0.0f, 0.0f, GetCrouchedHullHeight()), IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at ladder top dismount goal!");
 
-	if (!input->IsAimOnTarget())
+	// not on a ladder, not on the ground and above the dismount goal Z, probably overshot the ladder and airborne
+	if (!isOnLadder && !isOnGround && origin.z >= (dismountGoal.z - GetStepHeight()))
 	{
-		// wait until the bot is looking at the dismount position
-		return EXITING_LADDER_UP;
-	}
-
-	MoveTowards(m_ladderExit->GetCenter(), MOVEWEIGHT_CRITICAL);
-
-	if (m_ladderExit->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
-	{
-		input->PressCrouchButton(0.2f);
-	}
-
-	if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
-	{
-		if (m_useLadderTimer.IsElapsed())
-		{
-			input->PressUseButton();
-			m_useLadderTimer.Start(0.4f);
-		}
-	}
-
-	if (isDebuggingMovement)
-	{
-		NDebugOverlay::HorzArrow(origin, goalPos, 4.0f, 0, 255, 0, 255, false, 0.2f);
-		NDebugOverlay::Cross3D(goalPos, 12.0f, 0, 0, 255, false, 0.2f);
-	}
-
-	if (IsOnLadder())
-	{
-		// On ladder: wait for move towards to get us out of the ladder
-		return EXITING_LADDER_UP;
-	}
-
-	if (!IsOnGround())
-	{
-		// bot is in the air and not on the ladder
-
-		if (!m_wasLaunched)
-		{
-			m_wasLaunched = true;
-			Vector launch = me->CalculateLaunchVector(m_ladderExit->GetCenter(), GetWalkSpeed());
-			me->SetAbsVelocity(launch);
-		}
-
-		return EXITING_LADDER_UP;
-	}
-	else
-	{
-		// bot hit the ground
-
-		if (isDebuggingMovement)
-		{
-			me->DebugPrintToConsole(0, 180, 0, "%s: DISMOUNTLADDERTOP: BOT LANDED ON GROUND AT %g %g %g \n", me->GetDebugIdentifier(), origin.x, origin.y, origin.z);
-		}
-
+		// Fake jump off the ladder
+		Vector launch = me->CalculateLaunchVector(dismountGoal, GetWalkSpeed());
+		me->SetAbsVelocity(launch);
 		return NOT_USING_LADDER;
 	}
+
+	if (input->IsAimOnTarget())
+	{
+		MoveTowards(dismountGoal, MOVEWEIGHT_CRITICAL);
+
+		// Not on the ladder and is on solid ground
+		if (!isOnLadder && isOnGround)
+		{
+			// See if there are any gaps on the ground, if yes we simulate a fake jump
+			if (HasPotentialGap(me->GetAbsOrigin(), dismountGoal, nullptr))
+			{
+				// Fake jump off the ladder
+				Vector launch = me->CalculateLaunchVector(dismountGoal, GetWalkSpeed());
+				me->SetAbsVelocity(launch);
+			}
+
+			return NOT_USING_LADDER;
+		}
+	}
+
+	return EXITING_LADDER_UP;
 }
 
 IMovement::LadderState IMovement::DismountLadderBottom()
@@ -1953,59 +1966,34 @@ IMovement::LadderState IMovement::DismountLadderBottom()
 
 	CBaseBot* me = GetBot<CBaseBot>();
 	auto input = me->GetControlInterface();
-	Vector toExit = (m_ladderExit->GetCenter() - GetBot()->GetAbsOrigin());
+	const Vector origin = me->GetAbsOrigin();
+	Vector toExit = (m_ladderExit->GetCenter() - origin);
 	toExit.z = 0.0f;
 	toExit.NormalizeInPlace();
-	Vector lookAt = me->GetEyeOrigin() + (toExit * 128.0f);
+	Vector lookAt = me->GetEyeOrigin() + (toExit * 256.0f);
+	const bool isOnLadder = IsOnLadder();
+	const bool isOnGround = IsOnGround();
+	const Vector& moveGoal = m_ladderExit->GetCenter();
 
 	input->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at ladder dismount area!");
-	MoveTowards(m_ladderExit->GetCenter(), MOVEWEIGHT_CRITICAL);
+	MoveTowards(moveGoal, MOVEWEIGHT_CRITICAL);
 
-	if (!input->IsAimOnTarget())
+	
+	if (!isOnLadder)
 	{
-		// wait until the bot is looking at the dismount position
-		return EXITING_LADDER_DOWN;
-	}
-
-	if (m_ladderExit->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
-	{
-		input->PressCrouchButton(0.2f);
-	}
-
-	if (IsOnLadder())
-	{
-		if (m_ladder->GetLadderType() == CNavLadder::USEABLE_LADDER)
+		if (isOnGround)
 		{
-			if (m_useLadderTimer.IsElapsed())
-			{
-				input->PressUseButton();
-				m_useLadderTimer.Start(0.3f);
-			}
+			// Off the ladder and touching ground
+			return NOT_USING_LADDER;
 		}
 
-		// hopefully there is ground below us
-		Jump();
-	}
-	else
-	{
-		if (!me->IsMovingTowards2D(m_ladderExit->GetCenter(), 0.75f))
+		if (HasPotentialGap(origin, moveGoal, nullptr))
 		{
-			// needs correction
-			if (!m_wasLaunched)
-			{
-				m_wasLaunched = true;
-				Vector launch = me->CalculateLaunchVector(m_ladderExit->GetCenter(), GetWalkSpeed());
-				if (launch.x < 0.0f) { launch.x = 0.0f; }
-				me->SetAbsVelocity(launch);
-			}
+			// Fake jump off the ladder
+			Vector launch = me->CalculateLaunchVector(moveGoal, GetWalkSpeed());
+			me->SetAbsVelocity(launch);
+			return NOT_USING_LADDER;
 		}
-
-		if (!IsOnGround())
-		{
-			return EXITING_LADDER_DOWN;
-		}
-
-		return NOT_USING_LADDER;
 	}
 
 	return EXITING_LADDER_DOWN;
@@ -2020,6 +2008,9 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	switch (newState)
 	{
 	case IMovement::NOT_USING_LADDER:
+	{
+
+	
 		m_wasLaunched = false;
 		m_ladder = nullptr;
 		m_ladderExit = nullptr;
@@ -2029,8 +2020,16 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		m_ladderMoveGoal = vec3_origin;
 		SetDesiredSpeed(GetRunSpeed());
 		me->UpdateLastKnownNavArea(true);
-		if (me->GetActiveNavigator()) { me->GetActiveNavigator()->AdvanceGoalToNearest(); }
+		CMeshNavigator* nav = me->GetActiveNavigator();
+
+		if (nav)
+		{
+			nav->Invalidate();
+			nav->ForceRepath();
+		}
+
 		return;
+	}
 	case IMovement::EXITING_LADDER_UP:
 	case IMovement::EXITING_LADDER_DOWN:
 	{
@@ -2142,10 +2141,8 @@ IMovement::ElevatorState IMovement::EState_MoveToWaitPosition()
 		m_elevatorTimeout.Invalidate();
 		return ElevatorState::CALL_ELEVATOR;
 	}
-	else
-	{
-		MoveTowards(m_fromFloor->wait_position, MOVEWEIGHT_CRITICAL);
-	}
+
+	MoveTowards(m_fromFloor->wait_position, MOVEWEIGHT_CRITICAL);
 
 	return ElevatorState::MOVE_TO_WAIT_POS;
 }
@@ -2263,12 +2260,10 @@ IMovement::ElevatorState IMovement::EState_WaitForElevator()
 	{
 		return ElevatorState::WAIT_FOR_ELEVATOR;
 	}
-	else
+
+	if (me->GetRangeTo(m_fromFloor->wait_position) > IMovement::ELEV_MOVE_RANGE)
 	{
-		if (me->GetRangeTo(m_fromFloor->wait_position) > IMovement::ELEV_MOVE_RANGE)
-		{
-			MoveTowards(m_fromFloor->wait_position, MOVEWEIGHT_CRITICAL);
-		}
+		MoveTowards(m_fromFloor->wait_position, MOVEWEIGHT_CRITICAL);
 	}
 
 	return ElevatorState::WAIT_FOR_ELEVATOR;

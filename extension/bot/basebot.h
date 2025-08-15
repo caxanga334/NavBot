@@ -122,7 +122,7 @@ public:
 	virtual bool IsRangeLessThan(edict_t* edict, const float range) const;
 	virtual bool IsRangeLessThan(CBaseEntity* entity, const float range) const;
 
-	virtual bool IsAbleToBreak(edict_t* entity);
+	virtual bool IsAbleToBreak(CBaseEntity* entity);
 	virtual bool IsAlive() const;
 
 	IBotController* GetController() const { return m_controller; }

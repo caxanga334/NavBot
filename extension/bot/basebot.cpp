@@ -301,15 +301,9 @@ bool CBaseBot::IsRangeLessThan(CBaseEntity* entity, const float range) const
  * @param entity Entity the bot needs to break
  * @return true if the bot can break this entity
 */
-bool CBaseBot::IsAbleToBreak(edict_t* entity)
+bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 {
-	int index = gamehelpers->IndexOfEdict(entity);
-
-	if (index == -1)
-	{
-		return false;
-	}
-
+	int index = UtilHelpers::IndexOfEntity(entity);
 	int takedamage = 0;
 
 	if (entprops->GetEntProp(index, Prop_Data, "m_takedamage", takedamage) == true)
@@ -330,7 +324,7 @@ bool CBaseBot::IsAbleToBreak(edict_t* entity)
 	int health = 0;
 	constexpr auto MAX_HEALTH_TO_BREAK = 1000; // if the entity health is greater than this, don't bother trying to break it
 	
-	if (entprops->GetEntProp(index, Prop_Data, "m_iHealth", health) == true)
+	if (entprops->GetEntProp(index, Prop_Data, "m_iHealth", health))
 	{
 		if (health > MAX_HEALTH_TO_BREAK)
 		{

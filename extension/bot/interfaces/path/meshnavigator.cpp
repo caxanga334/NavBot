@@ -1374,7 +1374,7 @@ void CMeshNavigator::BreakIfNeeded(CBaseBot* bot)
 
 	if (!bot->GetMovementInterface()->IsPotentiallyTraversable(bot->GetAbsOrigin(), m_goal->goal, nullptr, true, &obstacle))
 	{
-		if (obstacle != nullptr && bot->IsAbleToBreak(reinterpret_cast<IServerUnknown*>(obstacle)->GetNetworkable()->GetEdict()))
+		if (obstacle != nullptr && bot->IsAbleToBreak(obstacle))
 		{
 			bot->GetMovementInterface()->BreakObstacle(obstacle);
 		}
