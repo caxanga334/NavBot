@@ -9,7 +9,7 @@ public:
 
 	TaskResult<CDoDSBot> OnTaskUpdate(CDoDSBot* bot) override;
 
-	TaskEventResponseResult<CDoDSBot> OnDebugMoveToHostCommand(CDoDSBot* bot);
+	TaskEventResponseResult<CDoDSBot> OnDebugMoveToCommand(CDoDSBot* bot, const Vector& moveTo);
 
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;

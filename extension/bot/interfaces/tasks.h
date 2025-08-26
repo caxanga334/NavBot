@@ -563,7 +563,7 @@ public:
 	[[nodiscard]] TaskEventResponseResult<BotClass> TryPauseFor(AITask<BotClass>* task, EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
 	[[nodiscard]] TaskEventResponseResult<BotClass> TryDone(EventResultPriorityType priority = PRIORITY_DONT_CARE, const char* reason = nullptr) const;
 
-	virtual TaskEventResponseResult<BotClass> OnDebugMoveToHostCommand(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnDebugMoveToCommand(BotClass* bot, const Vector& moveTo) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnNavAreaChanged(BotClass* bot, CNavArea* oldArea, CNavArea* newArea) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnUnstuck(BotClass* bot) { return TryContinue(); }
@@ -1013,9 +1013,9 @@ private:
 	AITask<BotClass>* ProcessTaskPause(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 	TaskResult<BotClass> ProcessTaskResume(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 
-	void OnDebugMoveToHostCommand() override final
+	void OnDebugMoveToCommand(const Vector& moveTo) override final
 	{
-		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnDebugMoveToHostCommand);
+		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnDebugMoveToCommand, moveTo);
 	}
 
 	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) override final

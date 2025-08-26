@@ -60,6 +60,16 @@ bool CBotWeapon::IsValid() const
 	return m_info != nullptr && m_handle.Get() != nullptr;
 }
 
+bool CBotWeapon::IsOwnedByBot(const CBaseBot* bot) const
+{
+	if (m_handle.Get() != nullptr)
+	{
+		return m_bcw.GetOwnerIndex() == bot->GetIndex();
+	}
+
+	return false;
+}
+
 edict_t* CBotWeapon::GetEdict() const
 {
 	return reinterpret_cast<IServerEntity*>(m_handle.Get())->GetNetworkable()->GetEdict();

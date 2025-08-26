@@ -32,6 +32,7 @@ public:
 	// Returns a weapon interface pointer to the wrangler, NULL if the bot doesn't own it
 	const CTF2BotWeapon* GetTheWrangler() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_laser_pointer")); }
 	const CTF2BotWeapon* GetTheCrusadersCrossbow() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_crossbow")); }
+	const CTF2BotWeapon* GetTheGrapplingHook() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_grapplinghook")); }
 
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override { return new CTF2BotWeapon(weapon); }

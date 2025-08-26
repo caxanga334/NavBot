@@ -56,7 +56,7 @@ void IInventory::Update()
 
 	if (m_purgeStaleWeaponsTimer.IsElapsed())
 	{
-		m_purgeStaleWeaponsTimer.Start(2.0f);
+		m_purgeStaleWeaponsTimer.Start(0.5f);
 		const CBaseBot* me = GetBot<CBaseBot>();
 
 		m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [&me](const std::unique_ptr<CBotWeapon>& object) {
@@ -92,12 +92,17 @@ void IInventory::OnWeaponInfoConfigReloaded()
 	BuildInventory();
 }
 
-const CBotWeapon* IInventory::FindWeaponByClassnamePattern(const char* pattern) const
+const CBotWeapon* IInventory::FindWeaponByClassnamePattern(const char* pattern, const bool validateOwnership) const
 {
 	for (auto& weaponptr : m_weapons)
 	{
 		if (weaponptr->IsValid() && UtilHelpers::StringMatchesPattern(weaponptr->GetClassname().c_str(), pattern, 0))
 		{
+			if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+			{
+				continue;
+			}
+
 			return weaponptr.get();
 		}
 	}

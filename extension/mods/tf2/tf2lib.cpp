@@ -352,7 +352,7 @@ TeamFortress2::TFClassType tf2lib::GetDisguiseClass(int player)
 edict_t* tf2lib::GetDisguiseTarget(int player)
 {
 	int target = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(player, Prop_Send, "m_hDisguiseTarget", target);
+	entprops->GetEntPropEnt(player, Prop_Send, "m_hDisguiseTarget", &target);
 	return gamehelpers->EdictOfIndex(target);
 }
 
@@ -558,7 +558,8 @@ CBaseEntity* tf2lib::GetNearestValidSpawnPointForTeam(TeamFortress2::TFTeam team
 
 const Vector& tf2lib::GetFlagPosition(CBaseEntity* flag)
 {
-	CBaseEntity* owner = entprops->GetEntPropEnt(flag, Prop_Data, "m_hOwnerEntity");
+	CBaseEntity* owner = nullptr;
+	entprops->GetEntPropEnt(flag, Prop_Data, "m_hOwnerEntity", nullptr, &owner);
 
 	if (!owner)
 	{
@@ -635,7 +636,7 @@ bool tf2lib::IsPlayerCarryingAFlag(CBaseEntity* player)
 {
 	int item = INVALID_EHANDLE_INDEX;
 
-	if (entprops->GetEntPropEnt(UtilHelpers::IndexOfEntity(player), Prop_Send, "m_hItem", item))
+	if (entprops->GetEntPropEnt(player, Prop_Send, "m_hItem", &item))
 	{
 		return item != INVALID_EHANDLE_INDEX;
 	}
@@ -771,7 +772,7 @@ CBaseEntity* tf2lib::pd::GetTeamLeader(TeamFortress2::TFTeam team)
 		if (team == TeamFortress2::TFTeam::TFTeam_Red)
 		{
 			int iLeader = INVALID_EHANDLE_INDEX; 
-			entprops->GetEntPropEnt(entindex, Prop_Send, "m_hRedTeamLeader", iLeader);
+			entprops->GetEntPropEnt(entindex, Prop_Send, "m_hRedTeamLeader", &iLeader);
 
 			if (iLeader != INVALID_EHANDLE_INDEX)
 			{
@@ -781,7 +782,7 @@ CBaseEntity* tf2lib::pd::GetTeamLeader(TeamFortress2::TFTeam team)
 		else
 		{
 			int iLeader = INVALID_EHANDLE_INDEX;
-			entprops->GetEntPropEnt(entindex, Prop_Send, "m_hBlueTeamLeader", iLeader);
+			entprops->GetEntPropEnt(entindex, Prop_Send, "m_hBlueTeamLeader", &iLeader);
 
 			if (iLeader != INVALID_EHANDLE_INDEX)
 			{
@@ -808,7 +809,9 @@ CBaseEntity* tf2lib::passtime::GetJack()
 
 CBaseEntity* tf2lib::passtime::GetJackCarrier(CBaseEntity* jack)
 {
-	return entprops->GetEntPropEnt(jack, Prop_Send, "m_hCarrier");
+	CBaseEntity* pCarrier = nullptr;
+	entprops->GetEntPropEnt(jack, Prop_Send, "m_hCarrier", nullptr, &pCarrier);
+	return pCarrier;
 }
 
 bool tf2lib::passtime::IsJackActive()

@@ -117,7 +117,7 @@ void CBaseBot::Hook_Spawn()
 		ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
 	}
 #endif // EXT_DEBUG
-	
+
 	RETURN_META(MRES_IGNORED);
 }
 

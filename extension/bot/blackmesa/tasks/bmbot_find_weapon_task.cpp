@@ -100,6 +100,7 @@ bool CBlackMesaBotFindWeaponTask::FindWeaponToPickup(CBlackMesaBot* bot, CBaseEn
 	Vector start = bot->GetAbsOrigin();
 	CBlackMesaBotInventory* inventory = bot->GetInventoryInterface();
 	std::vector<CBaseEntity*> nearbyweapons;
+
 	auto functor = [&nearbyweapons, &inventory](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{

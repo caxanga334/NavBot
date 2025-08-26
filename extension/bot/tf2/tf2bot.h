@@ -252,6 +252,7 @@ private:
 	float m_hullsize;
 	bool m_candoublejump;
 	bool m_canblastjump;
+	bool m_canusegrapple;
 	int m_teamID;
 };
 

@@ -2,14 +2,18 @@
 #define SMNAV_BOT_MOVEMENT_INTERFACE_H_
 
 #include <bot/interfaces/base_interface.h>
+#include "path/path_shareddefs.h"
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
+#include <navmesh/nav_consts.h>
 #include <navmesh/nav_elevator.h>
 
 class CNavLadder;
 class CNavArea;
 class IMovement;
 class CMeshNavigator;
+class CBasePathSegment;
+class NavOffMeshConnection;
 
 class CMovementTraverseFilter : public trace::CTraceFilterSimple
 {
@@ -144,6 +148,17 @@ public:
 		MAX_ELEVATOR_STATES,
 	};
 
+	// States for the strafe jump FSM
+	enum StrafeJumpState : int
+	{
+		NOT_STRAFE_JUMPING = 0,
+		STRAFEJUMP_INIT, // init, on ground
+		STRAFEJUMP_TO_MIDPOINT, // moving to mid point
+		STRAFEJUMP_TO_ENDPOINT, // moving to end point
+
+		MAX_STRAFEJUMP_STATES
+	};
+
 	/* Common Move Weights */
 	static constexpr auto MOVEWEIGHT_DEFAULT = 100;
 	static constexpr auto MOVEWEIGHT_NAVIGATOR = 1000; // for calls from the navigator
@@ -193,6 +208,14 @@ public:
 	 */
 	virtual void MoveTowards(const Vector& pos, const int weight = MOVEWEIGHT_DEFAULT);
 	/**
+	 * @brief Moves the bot by setting their velocity
+	 * @param pos Position to move towards.
+	 * @param speed Optional speed, otherwise run speed is used.
+	 * @param delta Optional delta for speed.
+	 * @param weight Move call weight. If another call was made with a higher weight than the current call, then the current is ignored.
+	 */
+	virtual void AccelerateTowards(const Vector& pos, const float* speed = nullptr, const float* delta = nullptr, const int weight = MOVEWEIGHT_DEFAULT);
+	/**
 	 * @brief Makes the bot look at the given position (used for movement)
 	 * @param pos Position the bot will look at
 	 * @param important if true, send a high priority look request
@@ -230,20 +253,38 @@ public:
 	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
 	// Climb by double jumping
 	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
-
-	virtual bool IsAbleToClimb() { return true; }
-	virtual bool IsAbleToJumpAcrossGap() { return true; }
-	virtual bool IsAbleToClimbOntoEntity(edict_t* entity);
-	virtual bool IsAbleToDoubleJump() { return false; }
+	// Can the bot climb obstacles
+	virtual bool IsAbleToClimb() const { return true; }
+	// Can the bot jump across a gap on the ground
+	virtual bool IsAbleToJumpAcrossGap() const { return true; }
+	virtual bool IsAbleToClimbOntoEntity(edict_t* entity) const;
+	// Can the bot perform a double jump
+	virtual bool IsAbleToDoubleJump() const { return false; }
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
-	virtual bool IsAbleToBlastJump() { return false; }
+	virtual bool IsAbleToBlastJump() const { return false; }
+	// Can the bot use a grappling hook
+	virtual bool IsAbleToUseGrapplingHook() const { return false; }
+	// Can the bot perform a strafe jump
+	virtual bool IsAbleToStrafeJump() const { return true; }
+	// Can the bot use the given off mesh connection?
+	virtual bool IsAbleToUseOffMeshConnection(OffMeshConnectionType type, const NavOffMeshConnection* connection) const { return true; }
 	/**
 	 * @brief Checks if the movement interface has taken control of the bot movements to perform a maneuver
 	 * @return True if controlling the bot's movements. False otherwise.
 	 */
-	virtual bool IsControllingMovements();
+	virtual bool IsControllingMovements() const;
 	// Returns true if the bot is allowed to compute paths.
 	virtual bool IsPathingAllowed() const;
+	/**
+	 * @brief This is invoked by the navigator to determine if the current goal path segment should be considered as reached and move onto the next segment in the path.
+	 * 
+	 * This is only called for off-mesh connections.
+	 * @param nav Navigator that called this function.
+	 * @param goal Current goal path segment.
+	 * @param resultoverride return value override. Set to true to consider as reached, false to not reached.
+	 * @return Return true to use the value of resultoverride, otherwise resultoverride is ignored.
+	 */
+	virtual bool IsPathSegmentReached(const CMeshNavigator* nav, const CBasePathSegment* goal, bool &resultoverride) const { return false; }
 	/**
 	 * @brief Current movement action needs to control the bot weapons (IE: use the rocket launcher to rocket jump)
 	 * 
@@ -335,6 +376,28 @@ public:
 	void StopAndWait(const float duration) { m_isStopAndWait = true; m_stopAndWaitTimer.Start(duration); }
 	// returns true if the bot is stopped (won't move) and waiting
 	const bool IsStoppedAndWaiting() const { return m_isStopAndWait; }
+	/**
+	 * @brief Starts a strafe jump.
+	 * @param start Strafe jump start position.
+	 * @param end Strafe jump end position.
+	 * @return True if it was possible to start a strafe jump
+	 */
+	virtual bool DoStrafeJump(const Vector& start, const Vector& end);
+	// returns true if the bot is performing a strafe jump
+	const bool IsStrafeJumping() const { return m_strafeJumpState != StrafeJumpState::NOT_STRAFE_JUMPING; }
+	// Returns the calculated 'middle point' for a strafe jump.
+	const Vector& GetStrafeJumpMidPoint() const { return m_sjMidPoint; }
+	// Returns the strafe jump end point
+	const Vector& GetStrafeJumpEndPoint() const { return m_sjEndPoint; }
+	// Returns the current strafe jump FSM state
+	StrafeJumpState GetStrafeJumpFSMState() const { return m_strafeJumpState; }
+	/**
+	 * @brief Starts using a grappling hook.
+	 * @param start Start position.
+	 * @param end End position.
+	 * @return True if the movement action started, false if not.
+	 */
+	virtual bool UseGrapplingHook(const Vector& start, const Vector& end) { return false; }
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -386,6 +449,15 @@ protected:
 
 	// Bot has completed a jump
 	void OnJumpComplete();
+	/**
+	 * @brief Calculates the strafe jump mid point.
+	 * @param start Jump start position.
+	 * @param end Jump end position.
+	 * @return True if a mid point was found, false otherwise.
+	 */
+	bool CalculateStrafeJumpMidPoint(const Vector& start, const Vector& end);
+	// call to drive the strafe jump FSM. returns false if not strafe jumping
+	void StrafeJumpUpdate();
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed
@@ -395,6 +467,10 @@ private:
 	float m_desiredspeed; // speed the bot wants to move at
 	bool m_isStopAndWait;
 	CountdownTimer m_stopAndWaitTimer;
+	StrafeJumpState m_strafeJumpState; // strafe jump FSM current state
+	Vector m_sjMidPoint; // strafe jump mid point
+	Vector m_sjEndPoint; // strafe jump end point
+	bool m_sjIsToTheLeft;
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();
@@ -423,12 +499,16 @@ private:
 	ElevatorState EState_RideElevator();
 	ElevatorState EState_ExitElevator();
 
+	StrafeJumpState StrafeJump_Init();
+	StrafeJumpState StrafeJump_ToMidPoint();
+	StrafeJumpState StrafeJump_ToEndPoint();
+
 	static constexpr float ELEV_MOVE_RANGE = 32.0f;
 	static constexpr float ELEV_SPEED_DIV = 400.0f; // timeout is this value divided by speed
 	static constexpr float ELEV_MOVESPEED_SCALE = 0.7f; // move at 70% of run speed
 };
 
-inline bool IMovement::IsControllingMovements()
+inline bool IMovement::IsControllingMovements() const
 {
 	if (m_ladderState != NOT_USING_LADDER)
 	{
@@ -447,6 +527,10 @@ inline bool IMovement::IsControllingMovements()
 		return true; // counter strafing
 	}
 	else if (m_isUsingCatapult) // using catapult, block standard pathing
+	{
+		return true;
+	}
+	else if (IsStrafeJumping())
 	{
 		return true;
 	}

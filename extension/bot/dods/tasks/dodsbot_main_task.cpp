@@ -42,11 +42,9 @@ TaskResult<CDoDSBot> CDoDSBotMainTask::OnTaskUpdate(CDoDSBot* bot)
 	return Continue();
 }
 
-TaskEventResponseResult<CDoDSBot> CDoDSBotMainTask::OnDebugMoveToHostCommand(CDoDSBot* bot)
+TaskEventResponseResult<CDoDSBot> CDoDSBotMainTask::OnDebugMoveToCommand(CDoDSBot* bot, const Vector& moveTo)
 {
-	const Vector& pos = UtilHelpers::getEntityOrigin(gamehelpers->EdictOfIndex(1));
-
-	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CDoDSBot, CDoDSBotPathCost>(bot, pos), PRIORITY_CRITICAL, "Responding to debug command!");
+	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CDoDSBot, CDoDSBotPathCost>(bot, moveTo), PRIORITY_CRITICAL, "Responding to debug command!");
 }
 
 Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)

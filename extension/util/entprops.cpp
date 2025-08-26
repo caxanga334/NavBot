@@ -295,26 +295,31 @@ void CEntPropUtils::Init(bool reset)
  */
 bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset)
 {
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return HasEntProp(pEntity, proptype, prop, offset);
+}
+
+bool CEntPropUtils::HasEntProp(edict_t* entity, PropType proptype, const char* prop, unsigned int* offset)
+{
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+	return HasEntProp(pEntity, proptype, prop, offset);
+}
+
+bool CEntPropUtils::HasEntProp(CBaseEntity* entity, PropType proptype, const char* prop, unsigned int* offset)
+{
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::HasEntProp", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
 	using namespace SourceMod;
 
-	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
-
-	if (!pEntity)
-	{
-		return false;
-	}
-
 	switch (proptype)
 	{
 	case Prop_Send:
 	{
-		ServerClass* pClass = gamehelpers->FindEntityServerClass(pEntity);
+		ServerClass* pClass = gamehelpers->FindEntityServerClass(entity);
 		sm_sendprop_info_t info;
-		
+
 		if (!pClass)
 		{
 			return false;
@@ -334,7 +339,7 @@ bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, 
 	}
 	case Prop_Data:
 	{
-		datamap_t* map = gamehelpers->GetDataMap(pEntity);
+		datamap_t* map = gamehelpers->GetDataMap(entity);
 		sm_datatable_info_t info;
 
 		if (map == nullptr)
@@ -378,7 +383,7 @@ bool CEntPropUtils::IsNetworkedEntity(CBaseEntity *pEntity)
 	return (edict && !edict->IsFree()) ? true : false;
 }
 
-bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop, int entity)
+bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::FindSendProp", "NavBot");
@@ -388,7 +393,6 @@ bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntit
 
 	if (pServerClass == nullptr)
 	{
-		smutils->LogError(myself, "Failed to retreive entity <%i> ServerClass. Prop: %s", entity, prop);
 		return false;
 	}
 
@@ -397,7 +401,8 @@ bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntit
 #ifdef EXT_DEBUG
 		// Log errors on debug so programmers can fix it if needed
 		const char* classname = entityprops::GetEntityClassname(pEntity);
-		smutils->LogError(myself, "Entity #%i <%s> [%s] does not have networked property named \"%s\"!", entity, classname, pServerClass->GetName(), prop);
+		int entindex = UtilHelpers::IndexOfEntity(pEntity);
+		smutils->LogError(myself, "Entity #%i <%s> [%s] does not have networked property named \"%s\"!", entindex, classname, pServerClass->GetName(), prop);
 #endif // EXT_DEBUG
 		return false;
 	}
@@ -489,22 +494,28 @@ bool CEntPropUtils::IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pE
 */
 bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, int& result, int size, int element)
 {
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return GetEntProp(pEntity, proptype, prop, result, size, element);
+}
+
+bool CEntPropUtils::GetEntProp(edict_t* entity, PropType proptype, const char* prop, int& result, int size, int element)
+{
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+	return GetEntProp(pEntity, proptype, prop, result, size, element);
+}
+
+bool CEntPropUtils::GetEntProp(CBaseEntity* pEntity, PropType proptype, const char* prop, int& result, int size, int element)
+{
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::GetEntProp", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
+	edict_t* pEdict = UtilHelpers::BaseEntityToEdict(pEntity);
 	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
+	SendProp* pProp = nullptr;
 	int bit_count;
 	int offset;
 	bool is_unsigned = false;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return false;
-	}
 
 	switch (proptype)
 	{
@@ -525,10 +536,10 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 		}
 
 		CHECK_SET_PROP_DATA_OFFSET(false);
-		
+
 		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
 		{
-			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
+			auto* pVariant = (variant_t*)((intptr_t)pEntity + offset);
 			if ((bit_count = MatchTypeDescAsInteger(pVariant->fieldType, 0)) == 0)
 			{
 				return false;
@@ -538,8 +549,8 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 		break;
 
 	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -550,19 +561,19 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 
 		PROP_TYPE_SWITCH(DPT_Int, "integer", false);
 
-		#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS \
+#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS \
 			|| SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_TF2 \
 			|| SOURCE_ENGINE == SE_CSGO || SOURCE_ENGINE == SE_BLADE || SOURCE_ENGINE == SE_PVKII
-			if (pProp->GetFlags() & SPROP_VARINT)
-			{
-				bit_count = sizeof(int) * 8;
-			}
-		#endif
+		if (pProp->GetFlags() & SPROP_VARINT)
+		{
+			bit_count = sizeof(int) * 8;
+		}
+#endif
 
 		is_unsigned = ((pProp->GetFlags() & SPROP_UNSIGNED) == SPROP_UNSIGNED);
 
 		break;
-	
+
 	default:
 		return false;
 		break;
@@ -622,23 +633,25 @@ bool CEntPropUtils::GetEntProp(int entity, PropType proptype, const char *prop, 
 */
 bool CEntPropUtils::GetEntPropBool(int entity, PropType proptype, const char* prop, bool& result, int element)
 {
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CEntPropUtils::GetEntPropBool", "NavBot");
-#endif // EXT_VPROF_ENABLED
+	int val = 0;
+	bool retv = GetEntProp(entity, proptype, prop, val, 1, element);
+	result = val != 0;
+	return retv;
+}
 
-	int iresult = 0;
-	bool retv = GetEntProp(entity, proptype, prop, iresult, 1, element);
+bool CEntPropUtils::GetEntPropBool(edict_t* entity, PropType proptype, const char* prop, bool& result, int element)
+{
+	int val = 0;
+	bool retv = GetEntProp(entity, proptype, prop, val, 1, element);
+	result = val != 0;
+	return retv;
+}
 
-	switch (iresult)
-	{
-	case 0:
-		result = false;
-		break;
-	default:
-		result = true;
-		break;
-	}
-
+bool CEntPropUtils::GetEntPropBool(CBaseEntity* entity, PropType proptype, const char* prop, bool& result, int element)
+{
+	int val = 0;
+	bool retv = GetEntProp(entity, proptype, prop, val, 1, element);
+	result = val != 0;
 	return retv;
 }
 
@@ -704,7 +717,7 @@ bool CEntPropUtils::SetEntProp(int entity, PropType proptype, const char *prop, 
 
 	case Prop_Send:
 		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -774,21 +787,26 @@ bool CEntPropUtils::SetEntProp(int entity, PropType proptype, const char *prop, 
 */
 bool CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char* prop, float& result, int element)
 {
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return GetEntPropFloat(pEntity, proptype, prop, result, element);
+}
+
+bool CEntPropUtils::GetEntPropFloat(edict_t* entity, PropType proptype, const char* prop, float& result, int element)
+{
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+	return GetEntPropFloat(pEntity, proptype, prop, result, element);
+}
+
+bool CEntPropUtils::GetEntPropFloat(CBaseEntity* pEntity, PropType proptype, const char* prop, float& result, int element)
+{
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::GetEntPropFloat", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
+	SendProp* pProp = nullptr;
 	int bit_count;
 	int offset;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return false;
-	}
 
 	switch (proptype)
 	{
@@ -804,14 +822,14 @@ bool CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char* p
 		td = dinfo.prop;
 
 		CHECK_SET_PROP_DATA_OFFSET(false);
-		
+
 		CHECK_TYPE_VALID_IF_VARIANT(FIELD_FLOAT, "float", false);
 
 		break;
 
 	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -823,7 +841,7 @@ bool CEntPropUtils::GetEntPropFloat(int entity, PropType proptype, const char* p
 		PROP_TYPE_SWITCH(DPT_Float, "float", false);
 
 		break;
-	
+
 	default:
 		return false;
 		break;
@@ -882,7 +900,7 @@ bool CEntPropUtils::SetEntPropFloat(int entity, PropType proptype, const char *p
 
 	case Prop_Send:
 		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -919,24 +937,30 @@ bool CEntPropUtils::SetEntPropFloat(int entity, PropType proptype, const char *p
  * @param element Element # (starting from 0) if property is an array.
  * @return TRUE on success, FALSE on failure
 */
-bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* prop, int& result, int element)
+bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut, int element)
+{
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return GetEntPropEnt(pEntity, proptype, prop, result, pOut, element);
+}
+
+bool CEntPropUtils::GetEntPropEnt(edict_t* entity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut, int element)
+{
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+	return GetEntPropEnt(pEntity, proptype, prop, result, pOut, element);
+}
+
+bool CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut, int element)
 {
 #ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CEntPropUtils::GetEntPropEnt( int )", "NavBot");
+	VPROF_BUDGET("CEntPropUtils::GetEntPropEnt", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
+	// edict_t* pEdict = UtilHelpers::BaseEntityToEdict(pEntity);
 	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
+	SendProp* pProp = nullptr;
 	int bit_count;
 	int offset;
 	PropEntType type = PropEnt_Unknown;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return false;
-	}
 
 	switch (proptype)
 	{
@@ -982,10 +1006,10 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 		break;
 
 	case Prop_Send:
-		
+
 		type = PropEnt_Handle;
 
-		if (!FindSendProp(&info, pEntity, prop, entity))
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -997,132 +1021,9 @@ bool CEntPropUtils::GetEntPropEnt(int entity, PropType proptype, const char* pro
 		PROP_TYPE_SWITCH(DPT_Int, "integer", false);
 
 		break;
-	
+
 	default:
 		return false;
-		break;
-	}
-
-	switch (type)
-	{
-	case PropEnt_Handle:
-	case PropEnt_Variant:
-		{
-			CBaseHandle *hndl;
-			if (type == PropEnt_Handle)
-			{
-				hndl = (CBaseHandle *)((uint8_t *)pEntity + offset);
-			}
-			else // PropEnt_Variant
-			{
-				auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
-				hndl = &pVariant->eVal;
-			}
-
-			CBaseEntity *pHandleEntity = gamehelpers->ReferenceToEntity(hndl->GetEntryIndex());
-
-			if (!pHandleEntity || *hndl != reinterpret_cast<IHandleEntity *>(pHandleEntity)->GetRefEHandle())
-				return false;
-
-			result = gamehelpers->EntityToBCompatRef(pHandleEntity);
-			return true;
-		}
-	case PropEnt_Entity:
-		{
-			CBaseEntity *pPropEntity = *(CBaseEntity **) ((uint8_t *) pEntity + offset);
-			result = gamehelpers->EntityToBCompatRef(pPropEntity);
-			return true;
-		}
-	case PropEnt_Edict:
-		{
-			edict_t *_pEdict = *(edict_t **) ((uint8_t *) pEntity + offset);
-			if (!_pEdict || _pEdict->IsFree()) {
-				return false;
-			}
-
-			result = gamehelpers->IndexOfEdict(_pEdict);
-			return true;
-		}
-	}
-
-	return false;
-}
-
-CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptype, const char* prop, int element)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CEntPropUtils::GetEntPropEnt( CBaseEntity* )", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	SourceMod::sm_sendprop_info_t info;
-	SendProp* pProp = nullptr;
-	int bit_count;
-	int offset;
-	PropEntType type = PropEnt_Unknown;
-
-	switch (proptype)
-	{
-	case Prop_Data:
-		typedescription_t* td;
-		SourceMod::sm_datatable_info_t dinfo;
-
-		if (!FindDataMap(pEntity, dinfo, prop))
-		{
-			return nullptr;
-		}
-
-		td = dinfo.prop;
-
-		switch (td->fieldType)
-		{
-		case FIELD_EHANDLE:
-			type = PropEnt_Handle;
-			break;
-		case FIELD_CLASSPTR:
-			type = PropEnt_Entity;
-			break;
-		case FIELD_EDICT:
-			type = PropEnt_Edict;
-			break;
-		case FIELD_CUSTOM:
-			if ((td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
-			{
-				type = PropEnt_Variant;
-			}
-			break;
-		}
-
-		if (type == PropEnt_Unknown)
-		{
-			return nullptr;
-		}
-
-		CHECK_SET_PROP_DATA_OFFSET(nullptr);
-
-		CHECK_TYPE_VALID_IF_VARIANT(FIELD_EHANDLE, "ehandle", nullptr);
-
-		break;
-
-	case Prop_Send:
-	{
-		type = PropEnt_Handle;
-		int entity = gamehelpers->EntityToBCompatRef(pEntity);
-
-		if (!FindSendProp(&info, pEntity, prop, entity))
-		{
-			return nullptr;
-		}
-
-		offset = info.actual_offset;
-		pProp = info.prop;
-		bit_count = pProp->m_nBits;
-
-		PROP_TYPE_SWITCH(DPT_Int, "integer", nullptr);
-
-		break;
-	}
-	default:
-		return nullptr;
 		break;
 	}
 
@@ -1145,27 +1046,58 @@ CBaseEntity* CEntPropUtils::GetEntPropEnt(CBaseEntity* pEntity, PropType proptyp
 		CBaseEntity* pHandleEntity = gamehelpers->ReferenceToEntity(hndl->GetEntryIndex());
 
 		if (!pHandleEntity || *hndl != reinterpret_cast<IHandleEntity*>(pHandleEntity)->GetRefEHandle())
-			return nullptr;
+			return false;
 
-		return pHandleEntity;
+		if (result)
+		{
+			*result = gamehelpers->EntityToBCompatRef(pHandleEntity);
+		}
+
+		if (pOut)
+		{
+			*pOut = pHandleEntity;
+		}
+
+		return true;
 	}
 	case PropEnt_Entity:
 	{
 		CBaseEntity* pPropEntity = *(CBaseEntity**)((uint8_t*)pEntity + offset);
-		return pPropEntity;
+
+		if (result)
+		{
+			*result = gamehelpers->EntityToBCompatRef(pPropEntity);
+		}
+
+		if (pOut)
+		{
+			*pOut = pPropEntity;
+		}
+
+		return true;
 	}
 	case PropEnt_Edict:
 	{
 		edict_t* _pEdict = *(edict_t**)((uint8_t*)pEntity + offset);
-		if (!_pEdict || _pEdict->IsFree() || _pEdict->GetIServerEntity() == nullptr) {
-			return nullptr;
+		if (!_pEdict || _pEdict->IsFree()) {
+			return false;
 		}
 
-		return _pEdict->GetIServerEntity()->GetBaseEntity();
+		if (result)
+		{
+			*result = gamehelpers->IndexOfEdict(_pEdict);
+		}
+
+		if (pOut)
+		{
+			*pOut = UtilHelpers::EdictToBaseEntity(_pEdict);
+		}
+
+		return true;
 	}
 	}
 
-	return nullptr;
+	return false;
 }
 
 /// @brief Sets an entity index in an entity's property.
@@ -1237,7 +1169,7 @@ bool CEntPropUtils::SetEntPropEnt(int entity, PropType proptype, const char *pro
 		
 		type = PropEnt_Handle;
 
-		if (!FindSendProp(&info, pEntity, prop, entity))
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -1327,22 +1259,27 @@ bool CEntPropUtils::SetEntPropEnt(int entity, PropType proptype, const char *pro
 /// @return Value at the given property offset.
 bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* prop, Vector& result, int element)
 {
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return GetEntPropVector(pEntity, proptype, prop, result, element);
+}
+
+bool CEntPropUtils::GetEntPropVector(edict_t* entity, PropType proptype, const char* prop, Vector& result, int element)
+{
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+	return GetEntPropVector(pEntity, proptype, prop, result, element);
+}
+
+bool CEntPropUtils::GetEntPropVector(CBaseEntity* pEntity, PropType proptype, const char* prop, Vector& result, int element)
+{
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::GetEntPropVector", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
+	SendProp* pProp = nullptr;
 	int bit_count;
 	int offset;
 	bool is_unsigned = false;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return false;
-	}
 
 	switch (proptype)
 	{
@@ -1363,10 +1300,11 @@ bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* 
 		}
 
 		CHECK_SET_PROP_DATA_OFFSET(false);
-		
+
 		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
 		{
-			auto *pVariant = (variant_t *)((intptr_t)pEntity + offset);
+			variant_t* pVariant = (variant_t*)((intptr_t)pEntity + offset);
+
 			if (pVariant->fieldType != FIELD_VECTOR && pVariant->fieldType != FIELD_POSITION_VECTOR)
 			{
 				return false;
@@ -1376,8 +1314,8 @@ bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* 
 		break;
 
 	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -1389,13 +1327,13 @@ bool CEntPropUtils::GetEntPropVector(int entity, PropType proptype, const char* 
 		PROP_TYPE_SWITCH(DPT_Vector, "vector", false);
 
 		break;
-	
+
 	default:
 		return false;
 		break;
 	}
 
-	Vector *v = (Vector *)((uint8_t *)pEntity + offset);
+	Vector* v = (Vector*)((uint8_t*)pEntity + offset);
 	result = *v;
 
 	return true;
@@ -1458,7 +1396,7 @@ bool CEntPropUtils::SetEntPropVector(int entity, PropType proptype, const char *
 
 	case Prop_Send:
 		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -1498,23 +1436,28 @@ bool CEntPropUtils::SetEntPropVector(int entity, PropType proptype, const char *
 /// @return Value at the given property offset.
 bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element)
 {
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return GetEntPropString(pEntity, proptype, prop, result, maxlen, len, element);
+}
+
+bool CEntPropUtils::GetEntPropString(edict_t* entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element)
+{
+	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+	return GetEntPropString(pEntity, proptype, prop, result, maxlen, len, element);
+}
+
+bool CEntPropUtils::GetEntPropString(CBaseEntity* pEntity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element)
+{
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::GetEntPropString", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	edict_t *pEdict;
-	CBaseEntity *pEntity;
 	SourceMod::sm_sendprop_info_t info;
-	SendProp *pProp = nullptr;
+	SendProp* pProp = nullptr;
 	int bit_count;
 	int offset;
-	const char *src = nullptr;
+	const char* src = nullptr;
 	bool bIsStringIndex = false;
-
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
-	{
-		return false;
-	}
 
 	switch (proptype)
 	{
@@ -1531,7 +1474,7 @@ bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* 
 
 		if ((td->fieldType != FIELD_CHARACTER
 			&& td->fieldType != FIELD_STRING
-			&& td->fieldType != FIELD_MODELNAME 
+			&& td->fieldType != FIELD_MODELNAME
 			&& td->fieldType != FIELD_SOUNDNAME)
 			|| (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) != FTYPEDESC_OUTPUT))
 		{
@@ -1563,19 +1506,19 @@ bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* 
 
 			string_t idx;
 
-			idx = *(string_t *) ((uint8_t *) pEntity + offset);
+			idx = *(string_t*)((uint8_t*)pEntity + offset);
 			src = (idx == NULL_STRING) ? "" : STRING(idx);
 		}
 		else
 		{
-			src = (char *) ((uint8_t *) pEntity + offset);
+			src = (char*)((uint8_t*)pEntity + offset);
 		}
 
 		break;
 
 	case Prop_Send:
-		
-		if (!FindSendProp(&info, pEntity, prop, entity))
+
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return false;
 		}
@@ -1589,16 +1532,17 @@ bool CEntPropUtils::GetEntPropString(int entity, PropType proptype, const char* 
 		if (pProp->GetProxyFn())
 		{
 			DVariant var;
-			pProp->GetProxyFn()(pProp, pEntity, (const void *) ((intptr_t) pEntity + offset), &var, element, entity);
+			int entindex = UtilHelpers::IndexOfEntity(pEntity);
+			pProp->GetProxyFn()(pProp, pEntity, (const void*)((intptr_t)pEntity + offset), &var, element, entindex);
 			src = (char*)var.m_pString; // hack because SDK 2013 declares this as const char*
 		}
 		else
 		{
-			src = *(char **) ((uint8_t *) pEntity + offset);
+			src = *(char**)((uint8_t*)pEntity + offset);
 		}
 
 		break;
-	
+
 	default:
 		return false;
 		break;
@@ -2106,9 +2050,8 @@ bool CEntPropUtils::SetEntDataString(int entity, int offset, char *value, int ma
 std::size_t CEntPropUtils::GetEntPropArraySize(int entity, PropType proptype, const char* prop)
 {
 	CBaseEntity* pEntity = nullptr;
-	edict_t* pEdict = nullptr;
 
-	if (!IndexToAThings(entity, &pEntity, &pEdict))
+	if (!IndexToAThings(entity, &pEntity, nullptr))
 	{
 		return 0;
 	}
@@ -2133,7 +2076,7 @@ std::size_t CEntPropUtils::GetEntPropArraySize(int entity, PropType proptype, co
 	{
 		SourceMod::sm_sendprop_info_t info;
 
-		if (!FindSendProp(&info, pEntity, prop, entity))
+		if (!FindSendProp(&info, pEntity, prop))
 		{
 			return 0;
 		}

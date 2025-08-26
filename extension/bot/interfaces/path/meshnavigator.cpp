@@ -72,6 +72,9 @@ void CMeshNavigator::OnPathChanged(CBaseBot* bot, AIPath::ResultType result)
 	case AIPath::COMPLETE_PATH:
 	case AIPath::PARTIAL_PATH:
 		m_goal = GetFirstSegment();
+		/* Avoid backtracking by advancing the goal to the nearest segment, this occurs when the bot is performing air movements */
+		SetBot(bot);
+		AdvanceGoalToNearest();
 		break;
 	case AIPath::NO_PATH:
 	default:
@@ -95,26 +98,14 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	m_me = bot;
 	bot->SetActiveNavigator(this);
 
-	if (mover->IsControllingMovements())
-	{
-		// bot movements are under control of the movement interface, likely performing an advanced movement that requires multiple steps such as a rocket jump.
-		// Wait until it's done to continue moving the bot.
-		return;
-	}
-
 	if (!m_waitTimer.IsElapsed())
 	{
 		return; // wait for something to stop blocking our path (like a door opening)
 	}
 
-	if (LadderUpdate(bot))
+	if (LadderUpdate(bot) || ElevatorUpdate(bot))
 	{
-		return; // bot is using a ladder
-	}
-
-	if (ElevatorUpdate(bot))
-	{
-		return; // bot is using an elevator
+		return; // bot is using a ladder or elevator
 	}
 
 	if (!CheckProgress(bot))
@@ -124,6 +115,13 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	if (mover->IsStoppedAndWaiting())
 	{
+		return;
+	}
+
+	if (mover->IsControllingMovements())
+	{
+		// bot movements are under control of the movement interface, likely performing an advanced movement that requires multiple steps such as a rocket jump.
+		// Wait until it's done to continue moving the bot.
 		return;
 	}
 
@@ -322,6 +320,16 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	}
 #endif // EXT_DEBUG
 
+	// For off-mesh connections, ask the movement interface first
+	if (m_goal->how == NavTraverseType::GO_OFF_MESH_CONNECTION)
+	{
+		bool ret = false;
+		if (mover->IsPathSegmentReached(this, m_goal, ret))
+		{
+			return ret;
+		}
+	}
+
 	if (m_goal->type == AIPath::SegmentType::SEGMENT_DROP_FROM_LEDGE)
 	{
 		auto landing = GetNextSegment(m_goal);
@@ -396,6 +404,11 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		}
 	}
 
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_STRAFE_JUMP && mover->IsStrafeJumping())
+	{
+		return true;
+	}
+
 	// Check distance to goal
 	if (toGoal.AsVector2D().IsLengthLessThan(GetGoalTolerance()))
 	{
@@ -449,6 +462,7 @@ bool CMeshNavigator::CheckProgress(CBaseBot* bot)
 		}
 		else // There are still some segments left to follow, move to the next
 		{
+			OnGoalSegmentReached(m_goal, next);
 			m_goal = next;
 		}
 	}
@@ -1422,7 +1436,9 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 		return false;
 	}
 
-	if (m_goal->type == AIPath::SegmentType::SEGMENT_CATAPULT)
+	switch (m_goal->type)
+	{
+	case AIPath::SegmentType::SEGMENT_CATAPULT:
 	{
 		const CBasePathSegment* next = GetNextSegment(m_goal);
 
@@ -1433,9 +1449,82 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 				return true;
 			}
 		}
+
+		break;
+	}
+	/*
+	case AIPath::SegmentType::SEGMENT_STRAFE_JUMP:
+	{
+		const CBasePathSegment* next = GetNextSegment(m_goal);
+		const float range = bot->GetRangeTo(m_goal->goal) - (bot->GetMovementInterface()->GetHullWidth());
+
+		if (next && range <= GetGoalTolerance())
+		{
+			if (bot->GetMovementInterface()->DoStrafeJump(m_goal->goal, next->goal))
+			{
+				return true;
+			}
+			else
+			{
+				if (bot->IsDebugging(BOTDEBUG_PATH))
+				{
+					bot->DebugPrintToConsole(255, 0, 0, "%s ERROR: PATH WANTS TO STRAFE JUMP BUT MOVEMENT RETURNED FALSE! \n", bot->GetDebugIdentifier());
+				}
+			}
+		}
+
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_GRAPPLING_HOOK:
+	{
+		const CBasePathSegment* next = GetNextSegment(m_goal);
+		const float range = bot->GetRangeTo(m_goal->goal) - (bot->GetMovementInterface()->GetHullWidth());
+
+		if (next && range <= GetGoalTolerance())
+		{
+			if (bot->GetMovementInterface()->UseGrapplingHook(m_goal->goal, next->goal))
+			{
+				return true;
+			}
+		}
+
+		break;
+	} */
 	}
 
 	return false;
+}
+
+void CMeshNavigator::OnGoalSegmentReached(const CBasePathSegment* goal, const CBasePathSegment* next) const
+{
+	CBaseBot* bot = GetBot();
+
+	if (!bot || !next) { return; }
+
+	IMovement* mover = bot->GetMovementInterface();
+	const Vector origin = bot->GetAbsOrigin();
+
+	switch (goal->type)
+	{
+	case AIPath::SegmentType::SEGMENT_GRAPPLING_HOOK:
+	{
+		mover->UseGrapplingHook(origin, next->goal);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_STRAFE_JUMP:
+	{
+		if (!bot->GetMovementInterface()->DoStrafeJump(goal->goal, next->goal))
+		{
+			if (bot->IsDebugging(BOTDEBUG_PATH))
+			{
+				bot->DebugPrintToConsole(255, 0, 0, "%s ERROR: PATH WANTS TO STRAFE JUMP BUT MOVEMENT RETURNED FALSE! \n", bot->GetDebugIdentifier());
+			}
+		}
+
+		break;
+	}
+	}
+
 }
 
 void CMeshNavigator::AdvanceGoalToNearest()
@@ -1493,6 +1582,10 @@ void CMeshNavigator::AdvanceGoalToNearest()
 			Vector top = nearest->goal;
 			top.z += 32.0f;
 			NDebugOverlay::VertArrow(top, nearest->goal, 4.0f, 255, 215, 0, 255, true, 15.0f);
+
+			top = start->goal;
+			top.z += 32.0f;
+			NDebugOverlay::VertArrow(top, start->goal, 4.0f, 255, 0, 0, 255, true, 15.0f);
 		}
 
 		m_goal = nearest;

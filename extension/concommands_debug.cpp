@@ -1391,4 +1391,83 @@ CON_COMMAND(sm_navbot_debug_vector_angles, "")
 	debugoverlay->AddLineOverlay(eyePos, eyePos + (f2 * 512.0f), 0, 0, 255, true, 10.0f);
 }
 
+CON_COMMAND(sm_navbot_debug_strafe_jump_calcs, "")
+{
+	static bool set = false;
+	static Vector end;
+
+	CBaseExtPlayer player{ UtilHelpers::GetListenServerHost() };
+
+	if (!set)
+	{
+		set = true;
+		end = player.GetAbsOrigin();
+		META_CONPRINTF("End Position set! \n");
+		return;
+	}
+
+	set = false;
+
+	Vector start = player.GetAbsOrigin();
+	trace::CTraceFilterSimple filter(player.GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
+	trace_t tr;
+	const float halfhull = navgenparams->half_human_width;
+	const Vector mins{ -halfhull, -halfhull, 0.0f };
+	const Vector maxs{ halfhull, halfhull, navgenparams->half_human_height };
+	const Vector dir = UtilHelpers::math::BuildDirectionVector(start, end);
+	const Vector offset{ 0.0f, 0.0f, navgenparams->half_human_height };
+	const float midrange = ((end - start).Length()) * 0.5f;
+	start += offset;
+	constexpr float arrow_width = 4.0f;
+
+	trace::hull(start, end + offset, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+	// it should always hit on strafe jumps
+	if (tr.DidHit())
+	{
+		for (float y = 5.0f; y <= 45.0f; y += 5.0f)
+		{
+			QAngle angle{ 0.0f, y, 0.0f };
+			Vector newdir;
+			VectorRotate(dir, angle, newdir);
+			Vector end2 = start + (newdir * midrange);
+
+			trace::hull(start, end2, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+			if (!tr.DidHit())
+			{
+				NDebugOverlay::HorzArrow(start, end2, arrow_width, 255, 255, 0, 255, true, 10.0f);
+				NDebugOverlay::HorzArrow(end2, end, arrow_width, 0, 200, 255, 255, true, 10.0f);
+				return;
+			}
+			else
+			{
+				NDebugOverlay::HorzArrow(start, end2, arrow_width, 255, 0, 0, 255, true, 10.0f);
+			}
+		}
+
+		for (float y = -5.0f; y >= -45.0f; y -= 5.0f)
+		{
+			QAngle angle{ 0.0f, y, 0.0f };
+			Vector newdir;
+			VectorRotate(dir, angle, newdir);
+			Vector end2 = start + (newdir * midrange);
+
+			trace::hull(start, end2, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+			if (!tr.DidHit())
+			{
+				NDebugOverlay::HorzArrow(start, end2, arrow_width, 255, 255, 0, 255, true, 10.0f);
+				NDebugOverlay::HorzArrow(end2, end, arrow_width, 0, 200, 255, 255, true, 10.0f);
+				return;
+			}
+			else
+			{
+				NDebugOverlay::HorzArrow(start, end2, arrow_width, 255, 0, 0, 255, true, 10.0f);
+			}
+		}
+	}
+
+}
+
 #endif // EXT_DEBUG

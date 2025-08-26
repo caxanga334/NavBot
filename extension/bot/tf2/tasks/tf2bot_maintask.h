@@ -20,7 +20,7 @@ public:
 	AITask<CTF2Bot>* InitialNextTask(CTF2Bot* bot) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 	
-	TaskEventResponseResult<CTF2Bot> OnDebugMoveToHostCommand(CTF2Bot* bot) override;
+	TaskEventResponseResult<CTF2Bot> OnDebugMoveToCommand(CTF2Bot* bot, const Vector& moveTo) override;
 
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;

@@ -24,6 +24,8 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmd(),
 	m_viewangles(0.0f, 0.0f, 0.0f), m_homepos(0.0f, 0.0f, 0.0f)
 {
+	m_lastUpdateTime = 0.0f;
+	m_lastUpdateDelta = 0.0f;
 	m_spawnTime = -1.0f;
 	m_simulationtick = -1;
 	m_profile = extmanager->GetMod()->GetBotDifficultyManager()->GetProfileForSkillLevel(cvar_bot_difficulty.GetInt());
@@ -206,6 +208,10 @@ void CBaseBot::Update()
 	VPROF_BUDGET("CBaseBot::Update", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	const float curtime = gpGlobals->curtime;
+
+	m_lastUpdateDelta = curtime - m_lastUpdateTime;
+
 	if (m_clearLastPrerequisiteTimer.HasStarted() && m_clearLastPrerequisiteTimer.IsElapsed())
 	{
 		m_clearLastPrerequisiteTimer.Invalidate();
@@ -216,6 +222,8 @@ void CBaseBot::Update()
 	{
 		iface->Update();
 	}
+
+	m_lastUpdateTime = curtime;
 }
 
 void CBaseBot::Frame()

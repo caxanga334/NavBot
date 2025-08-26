@@ -187,7 +187,9 @@ const QAngle CBaseExtPlayer::GetPunchAngle() const
 
 CBaseEntity* CBaseExtPlayer::GetMoveParent() const
 {
-	return entprops->GetEntPropEnt(m_pEntity, Prop_Send, "moveparent");
+	CBaseEntity* ent = nullptr;
+	entprops->GetEntPropEnt(m_pEntity, Prop_Send, "moveparent", nullptr, &ent);
+	return ent;
 }
 
 void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) const
@@ -303,9 +305,9 @@ MoveType_t CBaseExtPlayer::GetMoveType() const
 
 CBaseEntity* CBaseExtPlayer::GetGroundEntity() const
 {
-	int groundent = -1;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hGroundEntity", groundent);
-	return gamehelpers->ReferenceToEntity(groundent);
+	CBaseEntity* groundent = nullptr;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hGroundEntity", nullptr, &groundent);
+	return groundent;
 }
 
 /**
@@ -324,7 +326,7 @@ bool CBaseExtPlayer::Weapon_OwnsThisType(const char* weapon, edict_t** result)
 	edict_t* entity = nullptr;
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
-		if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", weapon_entity, i) == false)
+		if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", &weapon_entity, nullptr, i) == false)
 		{
 			return false; // lookup failed
 		}
@@ -383,7 +385,7 @@ std::vector<edict_t*> CBaseExtPlayer::GetAllWeapons() const
 	{
 		int weapon = INVALID_EHANDLE_INDEX;
 		
-		if (!entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", weapon, i))
+		if (!entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hMyWeapons", &weapon, nullptr, i))
 			continue;
 
 		auto entity = gamehelpers->EdictOfIndex(weapon);
@@ -625,6 +627,7 @@ CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 	Vector vec_var;
 	int integer_var = 0;
 	int entity_var = 0;
+	CBaseEntity* entity_ptr = nullptr;
 	float float_var = 0.0f;
 	char string_var[256]{};
 	size_t length = 0;
@@ -634,7 +637,7 @@ CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 
 	results[0] = entprops->GetEntProp(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_iTeamNum", integer_var);
 	results[1] = entprops->GetEntPropFloat(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_flModelScale", float_var);
-	results[2] = entprops->GetEntPropEnt(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_hActiveWeapon", entity_var);
+	results[2] = entprops->GetEntPropEnt(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_hActiveWeapon", &entity_var, &entity_ptr);
 	results[3] = entprops->GetEntPropVector(LISTEN_SERVER_HOST_ENTITY, Prop_Send, "m_vecOrigin", vec_var);
 	results[4] = entprops->GetEntPropString(LISTEN_SERVER_HOST_ENTITY, Prop_Data, "m_iClassname", string_var, sizeof(string_var), length);
 
@@ -653,7 +656,7 @@ CON_COMMAND(sm_navbot_debug_entprops, "Tests the ent prop lib.")
 		return;
 	}
 	
-	rootconsole->ConsolePrint("Entity var: #%i %p", entity_var, edict);
+	rootconsole->ConsolePrint("Entity var: #%i %p %p", entity_var, entity_ptr, edict);
 
 	rootconsole->ConsolePrint("String Var: '%s' Length: %i", string_var, length);
 }

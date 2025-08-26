@@ -311,7 +311,10 @@ public:
 
 		return HealthState::HEALTH_OK;
 	}
-
+	// returns the timestamp of the last time the bot update function was called
+	float GetLastUpdateTimestamp() const { return m_lastUpdateTime; }
+	// returns the time difference between the current update and the last update
+	float GetLastUpdateTimeDelta() const { return m_lastUpdateDelta; }
 protected:
 	bool m_isfirstspawn;
 
@@ -371,6 +374,8 @@ protected:
 private:
 	const CBotWeapon* m_lastusedweapon; // last weapon used to attack an enemy
 	IntervalTimer m_lastfiredweapontimer;
+	float m_lastUpdateTime; // time stamp of the last time CBaseBot::Update was invoked.
+	float m_lastUpdateDelta; // delta time between the current and the last update time stamp
 	float m_spawnTime;
 	int m_simulationtick;
 	CountdownTimer m_nextupdatetime;

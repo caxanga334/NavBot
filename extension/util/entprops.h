@@ -117,17 +117,30 @@ public:
 	// It's faster to just cache locally.
 
 	bool HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
+	bool HasEntProp(edict_t* entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
+	bool HasEntProp(CBaseEntity* entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
 	bool GetEntProp(int entity, PropType proptype, const char *prop, int &result, int size = 4, int element = 0);
+	bool GetEntProp(edict_t* entity, PropType proptype, const char* prop, int& result, int size = 4, int element = 0);
+	bool GetEntProp(CBaseEntity* entity, PropType proptype, const char* prop, int& result, int size = 4, int element = 0);
 	bool GetEntPropBool(int entity, PropType proptype, const char *prop, bool& result, int element = 0);
+	bool GetEntPropBool(edict_t* entity, PropType proptype, const char* prop, bool& result, int element = 0);
+	bool GetEntPropBool(CBaseEntity* entity, PropType proptype, const char* prop, bool& result, int element = 0);
 	bool SetEntProp(int entity, PropType proptype, const char *prop, int value, int size = 4, int element = 0);
 	bool GetEntPropFloat(int entity, PropType proptype, const char *prop, float &result, int element = 0);
+	bool GetEntPropFloat(edict_t* entity, PropType proptype, const char* prop, float& result, int element = 0);
+	bool GetEntPropFloat(CBaseEntity* entity, PropType proptype, const char* prop, float& result, int element = 0);
 	bool SetEntPropFloat(int entity, PropType proptype, const char *prop, float value, int element = 0);
-	bool GetEntPropEnt(int entity, PropType proptype, const char *prop, int &result, int element = 0);
-	CBaseEntity* GetEntPropEnt(CBaseEntity* entity, PropType proptype, const char* prop, int element = 0);
+	bool GetEntPropEnt(int entity, PropType proptype, const char *prop, int* result, CBaseEntity** pOut = nullptr, int element = 0);
+	bool GetEntPropEnt(edict_t* entity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut = nullptr, int element = 0);
+	bool GetEntPropEnt(CBaseEntity* entity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut = nullptr, int element = 0);
 	bool SetEntPropEnt(int entity, PropType proptype, const char *prop, int other, int element = 0);
 	bool GetEntPropVector(int entity, PropType proptype, const char *prop, Vector &result, int element = 0);
+	bool GetEntPropVector(edict_t* entity, PropType proptype, const char* prop, Vector& result, int element = 0);
+	bool GetEntPropVector(CBaseEntity* entity, PropType proptype, const char* prop, Vector& result, int element = 0);
 	bool SetEntPropVector(int entity, PropType proptype, const char *prop, Vector value, int element = 0);
 	bool GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
+	bool GetEntPropString(edict_t* entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
+	bool GetEntPropString(CBaseEntity* entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
 	bool SetEntPropString(int entity, PropType proptype, const char *prop, char *value, int element = 0);
 	bool GetEntData(int entity, int offset, int &result, int size = 4);
 	bool SetEntData(int entity, int offset, int value, int size = 4, bool changeState = false);
@@ -199,7 +212,7 @@ public:
 private:
 	bool IsNetworkedEntity(CBaseEntity *pEntity);
 	edict_t *BaseEntityToEdict(CBaseEntity *pEntity);
-	bool FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop, int entity);
+	bool FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop);
 	bool FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_info_t& dinfo, const char* prop);
 	int MatchTypeDescAsInteger(_fieldtypes type, int flags);
 	ServerClass* FindEntityServerClass(CBaseEntity* pEntity);

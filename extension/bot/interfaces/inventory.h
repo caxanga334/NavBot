@@ -45,7 +45,7 @@ public:
 	{
 		for (auto& weapon : m_weapons)
 		{
-			if (!weapon->IsValid())
+			if (!weapon->IsValid() || !weapon->IsOwnedByBot(GetBot<CBaseBot>()))
 			{
 				continue;
 			}
@@ -57,14 +57,20 @@ public:
 	/**
 	 * @brief Finds a weapon by their entity classname.
 	 * @param classname Weapon's entity classname to search for;
+	 * @param validateOwnership If true, check that the bot still owns the weapon.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
-	const CBotWeapon* FindWeaponByClassname(const char* classname) const
+	const CBotWeapon* FindWeaponByClassname(const char* classname, const bool validateOwnership = true) const
 	{
 		for (auto& weaponptr : m_weapons)
 		{
 			if (weaponptr->IsValid() && std::strcmp(weaponptr->GetClassname().c_str(), classname) == 0)
 			{
+				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+				{
+					continue;
+				}
+
 				return weaponptr.get();
 			}
 		}
@@ -79,19 +85,24 @@ public:
 	 * @param pattern Pattern to search for.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
-	const CBotWeapon* FindWeaponByClassnamePattern(const char* pattern) const;
+	const CBotWeapon* FindWeaponByClassnamePattern(const char* pattern, const bool validateOwnership = true) const;
 
 	/**
 	 * @brief Finds a weapon by their economy index.
 	 * @param index Weapon's economy item index.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
-	const CBotWeapon* FindWeaponByEconIndex(const int index) const
+	const CBotWeapon* FindWeaponByEconIndex(const int index, const bool validateOwnership = true) const
 	{
 		for (auto& weaponptr : m_weapons)
 		{
 			if (weaponptr->IsValid() && weaponptr->GetWeaponEconIndex() == index)
 			{
+				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+				{
+					continue;
+				}
+
 				return weaponptr.get();
 			}
 		}
@@ -104,12 +115,17 @@ public:
 	 * @param tag Tag to search.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
-	const CBotWeapon* FindWeaponByTag(const std::string& tag) const
+	const CBotWeapon* FindWeaponByTag(const std::string& tag, const bool validateOwnership = true) const
 	{
 		for (auto& weaponptr : m_weapons)
 		{
 			if (weaponptr->IsValid() && weaponptr->GetWeaponInfo()->HasTag(tag))
 			{
+				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+				{
+					continue;
+				}
+
 				return weaponptr.get();
 			}
 		}

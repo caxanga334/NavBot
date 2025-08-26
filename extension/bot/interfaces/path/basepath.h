@@ -150,6 +150,12 @@ public:
 	virtual void Invalidate();
 	// Mark this path for repathing
 	virtual void ForceRepath();
+	// Invalidates the current path and resets the repath timer
+	inline void InvalidateAndRepath()
+	{
+		Invalidate();
+		ForceRepath();
+	}
 	// Returns the path destination since the last ComputePath call.
 	inline const Vector& GetPathDestination() const { return m_destination; }
 
@@ -181,19 +187,26 @@ public:
 		if (!bot->GetMovementInterface()->IsPathingAllowed())
 		{
 			// Return true since we a skipping path calculations and not actually failing due to no path found.
-			// The Invalidate() will reset the repath timer
+			m_repathTimer.Invalidate();
 			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
 			return true;
 		}
 
-		auto start = bot->GetAbsOrigin();
-		auto startArea = bot->GetLastKnownNavArea();
+		const Vector start = bot->GetAbsOrigin();
+		CNavArea* startArea = bot->GetLastKnownNavArea();
+		const bool isDebugging = bot->IsDebugging(BOTDEBUG_PATH);
 		m_destination = goal;
 
 		if (startArea == nullptr)
 		{
 			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
 			m_repathTimer.Invalidate();
+
+			if (isDebugging)
+			{
+				bot->DebugPrintToConsole(255, 0, 0, "%s COMPUTE PATH ERROR: NULL START AREA! <%g %g %g>\n", bot->GetDebugIdentifier(), start.x, start.y, start.z);
+			}
+
 			return false;
 		}
 
@@ -225,6 +238,12 @@ public:
 			SetTravelDistance(closestArea->GetTotalCost());
 		}
 
+		if (isDebugging && !pathBuildResult)
+		{
+			bot->DebugPrintToConsole(255, 0, 0, "%s COMPUTE PATH: FAILED TO BUILD A FULL PATH TO GOAL FROM <%g %g %g> TO <%g %g %g> (%g) \n", 
+				bot->GetDebugIdentifier(), start.x, start.y, start.z, goal.x, goal.y, goal.z, endPos.z);
+		}
+
 		// count the number of areas in the path
 		int areaCount = 0;
 
@@ -252,7 +271,7 @@ public:
 		}
 
 		// the path is built from end to start, include the end position first
-		if (pathBuildResult == true || includeGoalOnFailure == true)
+		if (pathBuildResult || includeGoalOnFailure)
 		{
 			std::shared_ptr<CBasePathSegment> segment = CreateNewSegment();
 
@@ -278,7 +297,7 @@ public:
 		// Place the path start at the vector start
 		std::reverse(m_segments.begin(), m_segments.end());
 
-		if (ProcessCurrentPath(bot, start) == false)
+		if (!ProcessCurrentPath(bot, start))
 		{
 			Invalidate(); // destroy the path so IsValid returns false
 			OnPathChanged(bot, AIPath::ResultType::NO_PATH);
@@ -287,7 +306,7 @@ public:
 
 		PostProcessPath();
 
-		if (pathBuildResult == true)
+		if (pathBuildResult)
 		{
 			OnPathChanged(bot, AIPath::ResultType::COMPLETE_PATH);
 		}

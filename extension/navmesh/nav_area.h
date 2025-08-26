@@ -16,11 +16,12 @@
 #include <filesystem>
 #include <fstream>
 #include <string>
-#include <cstdint>
 #include <vector>
 #include <array>
+#include <string_view>
 #include <cmath>
 
+#include "nav_consts.h"
 #include "nav_ladder.h"
 #include "nav_elevator.h"
 #include <sdkports/sdk_timers.h>
@@ -199,22 +200,6 @@ struct SpotEncounter
 };
 typedef CUtlVector< SpotEncounter * > SpotEncounterVector;
 
-enum class OffMeshConnectionType : std::uint32_t
-{
-	OFFMESH_INVALID = 0,
-	OFFMESH_GROUND, // solid ground
-	OFFMESH_TELEPORTER, // map based teleporter (trigger_teleport)
-	OFFMESH_BLAST_JUMP, // Blast/Rocket Jump
-	OFFMESH_DOUBLE_JUMP, // Double jump (climb)
-	OFFMESH_JUMP_OVER_GAP, // Jump over gap
-	OFFMESH_CLIMB_UP, // Climb/Jump
-	OFFMESH_DROP_DOWN, // Drop from ledge
-	OFFMESH_GRAPPLING_HOOK, // Grappling hook
-	OFFMESH_CATAPULT, // Catapult/push
-
-	MAX_OFFMESH_CONNECTION_TYPES // max known link types
-};
-
 /**
  * @brief Off-mesh connection between two nav areas.
  */
@@ -243,7 +228,31 @@ public:
 		m_end = end;
 	}
 
+private:
+
+	static inline constexpr std::array<std::string_view, static_cast<size_t>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES)> s_linknames = {
+		"INVALID",
+		"GROUND",
+		"TELEPORTER",
+		"BLAST_JUMP",
+		"DOUBLE_JUMP",
+		"JUMP_OVER_GAP",
+		"CLIMB_UP",
+		"DROP_FROM_LEDGE",
+		"GRAPPLING_HOOK",
+		"CATAPULT",
+		"STRAFE_JUMP",
+	};
+
+public:
+
 	static const char* OffMeshConnectionTypeToString(OffMeshConnectionType type);
+	/**
+	 * @brief Matches a string with an offmesh link name. Returns ID.
+	 * @param input Input string.
+	 * @return Offmesh ID or OffMeshConnectionType::OFFMESH_INVALID
+	 */
+	static OffMeshConnectionType GetOffMeshConnectionTypeFromString(const char* input);
 
 	inline bool IsOfType(OffMeshConnectionType type) const { return m_type == type; }
 	inline bool IsConnectedTo(CNavArea* area) const { return m_link.area == area; }

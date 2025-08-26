@@ -20,6 +20,8 @@ namespace AIPath
 		SEGMENT_ELEVATOR,// Use an elevator
 		SEGMENT_GRAPPLING_HOOK, // Use a grappling hook
 		SEGMENT_CATAPULT, // Use a catapult
+		SEGMENT_GROUND_NOSKIP, // Same as ground but disallows being skipped
+		SEGMENT_STRAFE_JUMP, // Jump/Climb while strafing
 
 		MAX_SEGMENT_TYPES
 	};
@@ -47,6 +49,8 @@ namespace AIPath
 			"ELEVATOR"sv,
 			"GRAPPLING_HOOK"sv,
 			"CATAPULT"sv,
+			"GROUND_NOSKIP"sv,
+			"STRAFE_JUMP"sv,
 		};
 
 		static_assert(names.size() == static_cast<size_t>(SegmentType::MAX_SEGMENT_TYPES), "name array and SegmentType enum mismatch!");

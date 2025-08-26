@@ -15,6 +15,8 @@ public:
 
 	float operator()(CNavArea* area, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator) const;
 
+	void SetTeamNum(int team) { m_teamnum = team; }
+
 private:
 	float m_stepheight;
 	float m_maxjumpheight;
@@ -23,11 +25,13 @@ private:
 	float m_maxgapjumpdistance;
 	bool m_candoublejump;
 	bool m_canblastjump;
+	int m_teamnum;
 };
 
 CToolsPlayerPathCost::CToolsPlayerPathCost(const char* preset)
 {
 	m_stepheight = 18.0f; // this is generally the same for every game.
+	m_teamnum = NAV_TEAM_ANY;
 
 	if (std::strcmp(preset, "tf2_default") == 0)
 	{
@@ -82,6 +86,14 @@ float CToolsPlayerPathCost::operator()(CNavArea* area, CNavArea* fromArea, const
 	{
 		// first area in path, no cost
 		return 0.0f;
+	}
+
+	if (m_teamnum >= TEAM_UNASSIGNED)
+	{
+		if (area->IsBlocked(m_teamnum))
+		{
+			return -1.0f; // area is blocked
+		}
 	}
 
 	float dist = 0.0f;
@@ -177,56 +189,7 @@ float CToolsPlayerPathCost::operator()(CNavArea* area, CNavArea* fromArea, const
 	return dist;
 }
 
-static std::string s_path_presets[] = {
-	{ "tf2_default" },
-	{ "tf2_scout" },
-	{ "tf2_soldier" },
-	{ "dods" },
-	{ "default" },
-};
-
-static int ToolBuildPath_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
-{
-	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
-	{
-		return 0;
-	}
-
-	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
-	V_strncpy(cmd, partial, sizeof(cmd));
-
-	// skip to start of argument
-	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
-	{
-		return 0;
-	}
-
-	// chop command from partial argument
-	*partialArg = '\000';
-	++partialArg;
-
-	int partialArgLength = V_strlen(partialArg);
-
-	int count = 0;
-
-	for (auto& preset : s_path_presets)
-	{
-		if (count >= COMMAND_COMPLETION_MAXITEMS)
-		{
-			break;
-		}
-
-		if (V_strnicmp(preset.c_str(), partialArg, partialArgLength) == 0)
-		{
-			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, preset.c_str());
-		}
-	}
-
-	return count;
-}
-
-CON_COMMAND_F_COMPLETION(sm_navbot_tool_build_path, "Builds a path from your current position to the marked nav area.", FCVAR_CHEAT, ToolBuildPath_AutoComplete)
+CON_COMMAND_F(sm_navbot_tool_build_path, "Builds a path from your current position to the marked nav area.", FCVAR_CHEAT)
 {
 	if (engine->IsDedicatedServer())
 	{
@@ -236,12 +199,24 @@ CON_COMMAND_F_COMPLETION(sm_navbot_tool_build_path, "Builds a path from your cur
 
 	if (args.ArgC() < 2)
 	{
-		META_CONPRINT("[SM] Usage: sm_navbot_tool_build_path <preset> \n");
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_build_path -preset <preset> -team <my or team number> \n");
 		META_CONPRINT("Available Presets: tf2_default tf2_scout tf2_soldier dods default \n");
 		return;
 	}
 
-	const char* preset = args[1];
+	char preset[64];
+	std::memset(preset, 0, sizeof(preset));
+	
+	const char* argPreset = args.FindArg("-preset");
+
+	if (!argPreset)
+	{
+		META_CONPRINTF("Missing -preset!\n");
+		return;
+	}
+
+	ke::SafeSprintf(preset, sizeof(preset), "%s", argPreset);
+
 	edict_t* host = UtilHelpers::GetListenServerHost();
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 	SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(host);
@@ -273,6 +248,22 @@ CON_COMMAND_F_COMPLETION(sm_navbot_tool_build_path, "Builds a path from your cur
 	INavAStarSearch<CNavArea> search;
 	search.SetStart(start);
 	search.SetGoalArea(end);
+
+	const char* argTeam = args.FindArg("-team");
+
+	if (argTeam)
+	{
+		if (std::strcmp(argTeam, "my") == 0)
+		{
+			int teamNum = player->GetPlayerInfo()->GetTeamIndex();
+			cost.SetTeamNum(teamNum);
+		}
+		else
+		{
+			int teamNum = atoi(argTeam);
+			cost.SetTeamNum(teamNum);
+		}
+	}
 
 	auto tstart = std::chrono::high_resolution_clock::now();
 	search.DoSearch(cost, heuristic);
@@ -447,8 +438,38 @@ CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current positio
 		return;
 	}
 
-	auto func = [](CBaseBot* bot) {
-		bot->OnDebugMoveToHostCommand();
+	edict_t* host = gamehelpers->EdictOfIndex(1);
+	Vector goal = host->GetCollideable()->GetCollisionOrigin();
+
+	const char* inputPos = args.FindArg("-pos");
+
+	if (inputPos && inputPos[0] != '\0')
+	{
+		Vector v;
+		int count = sscanf(inputPos, "%f %f %f", &v.x, &v.y, &v.z);
+
+		if (count == 3)
+		{
+			goal = v;
+		}
+	}
+
+	int areaID = args.FindArgInt("-area", -1);
+
+	CNavArea* area = nullptr;
+
+	if (areaID > 0)
+	{
+		area = TheNavMesh->GetNavAreaByID(static_cast<unsigned int>(areaID));
+	}
+
+	if (area)
+	{
+		goal = area->GetCenter();
+	}
+
+	auto func = [&goal](CBaseBot* bot) {
+		bot->OnDebugMoveToCommand(goal);
 	};
 
 	extmanager->ForEachBot(func);

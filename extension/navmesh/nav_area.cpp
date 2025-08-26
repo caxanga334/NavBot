@@ -135,24 +135,25 @@ const char* NavOffMeshConnection::OffMeshConnectionTypeToString(OffMeshConnectio
 		return "ERROR";
 	}
 
-	constexpr std::array linkNames = {
-		"INVALID"sv,
-		"GROUND"sv,
-		"TELEPORTER"sv,
-		"BLAST_JUMP"sv,
-		"DOUBLE_JUMP"sv,
-		"JUMP_OVER_GAP"sv,
-		"CLIMB_UP"sv,
-		"DROP_FROM_LEDGE"sv,
-		"GRAPPLING_HOOK"sv,
-		"CATAPULT"sv,
-	};
-
-	static_assert(linkNames.size() == static_cast<size_t>(OffMeshConnectionType::MAX_OFFMESH_CONNECTION_TYPES), "linkNames and OffMeshConnectionType enum mismatch!");
-
-	return linkNames.at(static_cast<size_t>(type)).data();
+	return NavOffMeshConnection::s_linknames.at(static_cast<size_t>(type)).data();
 }
 
+OffMeshConnectionType NavOffMeshConnection::GetOffMeshConnectionTypeFromString(const char* input)
+{
+	int i = 0;
+
+	for (auto& sv : NavOffMeshConnection::s_linknames)
+	{
+		if (std::strcmp(input, sv.data()) == 0)
+		{
+			return static_cast<OffMeshConnectionType>(i);
+		}
+
+		i++;
+	}
+
+	return OffMeshConnectionType::OFFMESH_INVALID;
+}
 
 void Extent::Init(edict_t *entity) 
 {

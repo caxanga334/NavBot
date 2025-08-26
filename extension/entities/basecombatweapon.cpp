@@ -82,14 +82,14 @@ int entities::HBaseCombatWeapon::GetState() const
 int entities::HBaseCombatWeapon::GetOwnerIndex() const
 {
 	int owner = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hOwner", owner);
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hOwner", &owner);
 	return owner;
 }
 
 edict_t* entities::HBaseCombatWeapon::GetOwner() const
 {
 	int owner = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hOwner", owner);
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hOwner", &owner);
 	return gamehelpers->EdictOfIndex(owner);
 }
 

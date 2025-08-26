@@ -1187,7 +1187,7 @@ std::optional<int> UtilHelpers::GetOwnerEntity(const int entity)
 {
 	int owner = INVALID_EHANDLE_INDEX;
 
-	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity", owner))
+	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hOwnerEntity", &owner))
 	{
 		return owner;
 	}

@@ -31,6 +31,8 @@ static ConVar sm_navbot_movement_climb_dj_time("sm_navbot_movement_climb_dj_time
 static ConVar sm_navbot_movement_gap_dj_time("sm_navbot_movement_gap_dj_time", "0.6", FCVAR_GAMEDLL, "Delay to perform the double jump whem jumping over a gap.");
 static ConVar sm_navbot_movement_jump_cooldown("sm_navbot_movement_jump_cooldown", "0.1", FCVAR_GAMEDLL, "Cooldown between jumps.");
 static ConVar sm_navbot_movement_catapult_speed("sm_navbot_movement_catapult_speed", "550.0", FCVAR_GAMEDLL, "Speed to use in catapult velocity correction.");
+static ConVar sm_navbot_movement_strafejump_max_angle("sm_navbot_movement_strafe_jump_max_angle", "75.0", FCVAR_GAMEDLL, "Maximum strafe angle for strafe jumps.");
+static ConVar sm_navbot_movement_strafejump_look_angle_offset("sm_navbot_movement_strafe_look_angle_offset", "15.0", FCVAR_GAMEDLL, "Angle offset for strafe jump look.");
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
 	trace::CTraceFilterSimple(bot->GetEntity(), COLLISION_GROUP_NONE)
@@ -115,6 +117,10 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_desiredspeed = 0.0f;
 	m_catapultStartPosition = vec3_origin;
 	m_isStopAndWait = false;
+	m_strafeJumpState = NOT_STRAFE_JUMPING;
+	m_sjMidPoint = vec3_origin;
+	m_sjEndPoint = vec3_origin;
+	m_sjIsToTheLeft = false;
 }
 
 IMovement::~IMovement()
@@ -159,6 +165,9 @@ void IMovement::Reset()
 	m_catapultStartPosition = vec3_origin;
 	m_isStopAndWait = false;
 	m_stopAndWaitTimer.Invalidate();
+	m_strafeJumpState = NOT_STRAFE_JUMPING;
+	m_sjMidPoint = vec3_origin;
+	m_sjEndPoint = vec3_origin;
 }
 
 void IMovement::Update()
@@ -174,6 +183,7 @@ void IMovement::Update()
 	ObstacleBreakUpdate();
 	TraverseLadder();
 	ElevatorUpdate();
+	StrafeJumpUpdate();
 
 	Vector velocity = me->GetAbsVelocity();
 	m_speed = velocity.Length();
@@ -192,7 +202,7 @@ void IMovement::Update()
 		m_groundMotionVector.y = velocity.y / m_speed;
 	}
 
-	if (IsUsingLadder() || IsUsingElevator())
+	if (IsUsingLadder() || IsUsingElevator() || IsStrafeJumping())
 	{
 		return;
 	}
@@ -445,7 +455,7 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 
 	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
-		NDebugOverlay::Line(origin, pos, 0, 255, 0, false, 0.2f);
+		NDebugOverlay::Line(me->WorldSpaceCenter(), pos, 0, 255, 0, false, 0.2f);
 	}
 
 	// handle ladder movement
@@ -503,6 +513,28 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 			input->PressMoveRightButton();
 		}
 	}
+}
+
+void IMovement::AccelerateTowards(const Vector& pos, const float* speed, const float* delta, const int weight)
+{
+	if (m_lastMoveWeight > weight)
+	{
+		return;
+	}
+
+	// call move towards to setup button presses
+	MoveTowards(pos, weight);
+
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	const float accelspeed = speed != nullptr ? *speed : GetRunSpeed();
+	const float deltaT = delta != nullptr ? *delta : me->GetLastUpdateTimeDelta();
+
+	Vector velocity = me->GetAbsVelocity();
+	Vector dir = UtilHelpers::math::BuildDirectionVector(me->GetAbsOrigin(), pos);
+	dir.z = 0.0f;
+	velocity += (dir * deltaT);
+	me->SetAbsVelocity(velocity);
 }
 
 void IMovement::FaceTowards(const Vector& pos, const bool important)
@@ -822,7 +854,7 @@ bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landi
 	return true;
 }
 
-bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity)
+bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity) const
 {
 	if (entity == nullptr)
 	{
@@ -1383,6 +1415,28 @@ bool IMovement::UseCatapult(const Vector& start, const Vector& landing)
 	return true;
 }
 
+bool IMovement::DoStrafeJump(const Vector& start, const Vector& end)
+{
+	constexpr auto DEBUG_ARROW_WIDTH = 4.0f;
+	m_sjEndPoint = end;
+	bool result = CalculateStrafeJumpMidPoint(start, end);
+
+	if (result)
+	{
+		SetDesiredSpeed(GetRunSpeed());
+		MoveTowards(start, MOVEWEIGHT_PRIORITY);
+		m_strafeJumpState = StrafeJumpState::STRAFEJUMP_INIT;
+
+		if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			NDebugOverlay::HorzArrow(start, m_sjMidPoint, DEBUG_ARROW_WIDTH, 0, 180, 0, 255, true, 5.0f);
+			NDebugOverlay::HorzArrow(m_sjMidPoint, end, DEBUG_ARROW_WIDTH, 0, 180, 0, 255, true, 5.0f);
+		}
+	}
+
+	return result;
+}
+
 void IMovement::StuckMonitor()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -1631,6 +1685,82 @@ void IMovement::OnJumpComplete()
 	{
 		me->DebugPrintToConsole(0, 170, 0, "%s JUMP COMPLETE \n", me->GetDebugIdentifier());
 	}
+}
+
+bool IMovement::CalculateStrafeJumpMidPoint(const Vector& start, const Vector& end)
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	trace::CTraceFilterSimple filter(bot->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
+	trace_t tr;
+	const float halfhull = GetHullWidth() * 0.5f;
+	const float halfheight = GetStandingHullHeight() * 0.5f;
+	const Vector mins{ -halfhull, -halfhull, 0.0f };
+	const Vector maxs{ halfhull, halfhull, halfheight };
+	const Vector dir = UtilHelpers::math::BuildDirectionVector(start, end);
+	const Vector offset{ 0.0f, 0.0f, halfheight };
+	const float midrange = ((end - start).Length()) * 0.5f;
+	const Vector traceStart = start + offset;
+	float limit = sm_navbot_movement_strafejump_max_angle.GetFloat();
+
+	for (float y = 5.0f; y <= limit; y += 5.0f)
+	{
+		QAngle angle{ 0.0f, y, 0.0f };
+		Vector newdir;
+		VectorRotate(dir, angle, newdir);
+		Vector midpoint = traceStart + (newdir * midrange);
+
+		trace::hull(traceStart, midpoint, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+		if (!tr.DidHit())
+		{
+			m_sjMidPoint = midpoint;
+			m_sjIsToTheLeft = true;
+			return true;
+		}
+	}
+
+	limit *= -1.0f;
+
+	for (float y = -5.0f; y >= limit; y -= 5.0f)
+	{
+		QAngle angle{ 0.0f, y, 0.0f };
+		Vector newdir;
+		VectorRotate(dir, angle, newdir);
+		Vector midpoint = traceStart + (newdir * midrange);
+
+		trace::hull(traceStart, midpoint, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+		if (!tr.DidHit())
+		{
+			m_sjMidPoint = midpoint;
+			m_sjIsToTheLeft = false;
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void IMovement::StrafeJumpUpdate()
+{
+	StrafeJumpState next;
+
+	switch (m_strafeJumpState)
+	{
+	case StrafeJumpState::STRAFEJUMP_INIT:
+		next = StrafeJump_Init();
+		break;
+	case StrafeJumpState::STRAFEJUMP_TO_MIDPOINT:
+		next = StrafeJump_ToMidPoint();
+		break;
+	case StrafeJumpState::STRAFEJUMP_TO_ENDPOINT:
+		next = StrafeJump_ToEndPoint();
+		break;
+	default:
+		return;
+	}
+
+	m_strafeJumpState = next;
 }
 
 // approach a ladder that we will go up
@@ -2009,8 +2139,6 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 	{
 	case IMovement::NOT_USING_LADDER:
 	{
-
-	
 		m_wasLaunched = false;
 		m_ladder = nullptr;
 		m_ladderExit = nullptr;
@@ -2020,14 +2148,6 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		m_ladderMoveGoal = vec3_origin;
 		SetDesiredSpeed(GetRunSpeed());
 		me->UpdateLastKnownNavArea(true);
-		CMeshNavigator* nav = me->GetActiveNavigator();
-
-		if (nav)
-		{
-			nav->Invalidate();
-			nav->ForceRepath();
-		}
-
 		return;
 	}
 	case IMovement::EXITING_LADDER_UP:
@@ -2431,6 +2551,121 @@ IMovement::ElevatorState IMovement::EState_ExitElevator()
 	}
 
 	return ElevatorState::EXIT_ELEVATOR;
+}
+
+IMovement::StrafeJumpState IMovement::StrafeJump_Init()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	// fell before the bot could jump
+	if (!IsOnGround())
+	{
+		return NOT_STRAFE_JUMPING;
+	}
+
+	const Vector start = me->GetAbsOrigin();
+	Vector dir = UtilHelpers::math::BuildDirectionVector(start, GetStrafeJumpMidPoint());
+	float speed = GetRunSpeed();
+	Vector velocity = me->GetAbsVelocity();
+	// cheat: make the bot be at full speed during the initial jump and also aligned
+	velocity.x = speed * dir.x;
+	velocity.y = speed * dir.y;
+	me->SetAbsVelocity(velocity);
+	CrouchJump();
+
+	return STRAFEJUMP_TO_MIDPOINT;
+}
+
+static void CalculateStrafeJumpLookAtPos(const bool isLeft, const Vector& veldir, const Vector& origin, Vector& out)
+{
+	float angleOffset = sm_navbot_movement_strafejump_look_angle_offset.GetFloat();
+
+	if (isLeft)
+	{
+		angleOffset *= -1.0f; // when strafing to the left, look to the right
+	}
+
+	QAngle angle{ 0.0f, angleOffset, 0.0f };
+	Vector dir;
+	VectorRotate(veldir, angle, dir);
+	out = origin + (dir * 128.0f);
+}
+
+IMovement::StrafeJumpState IMovement::StrafeJump_ToMidPoint()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+	// const float delta = me->GetLastUpdateTimeDelta() * 3.0f;
+	MoveTowards(GetStrafeJumpEndPoint(), MOVEWEIGHT_CRITICAL);
+	// AccelerateTowards(GetStrafeJumpMidPoint(), nullptr, &delta);
+	const Vector origin = me->GetEyeOrigin();
+	Vector veldir = me->GetAbsVelocity();
+	veldir.z = 0.0f;
+	veldir.NormalizeInPlace();
+	Vector lookat;
+	CalculateStrafeJumpLookAtPos(m_sjIsToTheLeft, veldir, origin, lookat);
+	me->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_MOVEMENT, 0.2f, "Strafe jumping!");
+
+	const Vector current = me->GetAbsOrigin();
+	const float dist = (current - GetStrafeJumpMidPoint()).AsVector2D().Length();
+
+	if (dist <= (GetHullWidth() * 0.5f))
+	{
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(0, 180, 0, "%s REACHED STRAFE JUMP MIDPOINT <%g %g %g> (%g) \n", me->GetDebugIdentifier(), current.x, current.y, current.z, dist);
+		}
+
+		Vector vel = me->GetAbsVelocity();
+		vel.z = 0.0f;
+		const float myspeed = vel.Length();
+		const float launchspeed = std::max(myspeed, GetWalkSpeed());
+
+		Vector launch = me->CalculateLaunchVector(m_sjEndPoint, launchspeed);
+		me->SetAbsVelocity(launch);
+		return STRAFEJUMP_TO_ENDPOINT;
+	}
+
+	// fell and hit ground
+	if (IsOnGround())
+	{
+		return NOT_STRAFE_JUMPING;
+	}
+
+	return STRAFEJUMP_TO_MIDPOINT;
+}
+
+IMovement::StrafeJumpState IMovement::StrafeJump_ToEndPoint()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+	MoveTowards(GetStrafeJumpEndPoint(), MOVEWEIGHT_CRITICAL);
+	// const float delta = std::min(me->GetLastUpdateTimeDelta() * 8.0f, 1.0f);
+	// AccelerateTowards(GetStrafeJumpEndPoint(), nullptr, &delta);
+	// Vector lookat = GetStrafeJumpEndPoint();
+	// lookat.z += GetCrouchedHullHeight();
+	// me->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_MOVEMENT, 0.5f, "Strafe jumping!");
+
+	const Vector origin = me->GetEyeOrigin();
+	Vector veldir = me->GetAbsVelocity();
+	veldir.z = 0.0f;
+	veldir.NormalizeInPlace();
+	Vector lookat;
+	CalculateStrafeJumpLookAtPos(m_sjIsToTheLeft, veldir, origin, lookat);
+	me->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_MOVEMENT, 0.2f, "Strafe jumping!");
+
+	if (IsOnGround())
+	{
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			const Vector current = me->GetAbsOrigin();
+			const float zdiff = std::abs(current.z - m_sjEndPoint.z);
+			me->DebugPrintToConsole(0, 180, 0, "%s STRAFE JUMP COMPLETE: ON GROUND (%g) \n", me->GetDebugIdentifier(), zdiff);
+		}
+
+		me->UpdateLastKnownNavArea(true);
+		return NOT_STRAFE_JUMPING;
+	}
+
+	return STRAFEJUMP_TO_ENDPOINT;
 }
 
 

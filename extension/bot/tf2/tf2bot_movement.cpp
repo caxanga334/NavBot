@@ -16,8 +16,10 @@ CTF2BotMovement::CTF2BotMovement(CBaseBot* bot) : IMovement(bot)
 {
 	m_blastJumpLandingGoal = vec3_origin;
 	m_blastJumpStart = vec3_origin;
+	m_grapplingHookGoal = vec3_origin;
 	m_bIsBlastJumping = false;
 	m_bBlastJumpAlreadyFired = false;
+	m_bIsUsingGrapplingHook = false;
 }
 
 CTF2BotMovement::~CTF2BotMovement()
@@ -41,6 +43,11 @@ void CTF2BotMovement::Update()
 	if (m_bIsBlastJumping)
 	{
 		BlastJumpUpdate();
+	}
+
+	if (m_bIsUsingGrapplingHook)
+	{
+		GrapplingHookUpdate();
 	}
 }
 
@@ -135,7 +142,7 @@ void CTF2BotMovement::BlastJumpTo(const Vector& start, const Vector& landingGoal
 	}
 }
 
-bool CTF2BotMovement::IsAbleToDoubleJump()
+bool CTF2BotMovement::IsAbleToDoubleJump() const
 {
 	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());
 
@@ -147,7 +154,7 @@ bool CTF2BotMovement::IsAbleToDoubleJump()
 	return false;
 }
 
-bool CTF2BotMovement::IsAbleToBlastJump()
+bool CTF2BotMovement::IsAbleToBlastJump() const
 {
 	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());
 
@@ -163,6 +170,11 @@ bool CTF2BotMovement::IsAbleToBlastJump()
 	}
 
 	return false;
+}
+
+bool CTF2BotMovement::IsAbleToUseGrapplingHook() const
+{
+	return GetBot<CTF2Bot>()->GetInventoryInterface()->GetTheGrapplingHook() != nullptr;
 }
 
 bool CTF2BotMovement::GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const
@@ -211,14 +223,29 @@ bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity
 	return IMovement::IsEntityTraversable(index, edict, entity, now);
 }
 
-bool CTF2BotMovement::IsControllingMovements()
+bool CTF2BotMovement::IsControllingMovements() const
 {
 	if (m_bIsBlastJumping)
 	{
 		return true;
 	}
 
+	if (m_bIsUsingGrapplingHook)
+	{
+		return true;
+	}
+
 	return IMovement::IsControllingMovements();
+}
+
+bool CTF2BotMovement::IsPathingAllowed() const
+{
+	if (m_bIsUsingGrapplingHook)
+	{
+		return false;
+	}
+
+	return IMovement::IsPathingAllowed();
 }
 
 bool CTF2BotMovement::NeedsWeaponControl() const
@@ -228,7 +255,55 @@ bool CTF2BotMovement::NeedsWeaponControl() const
 		return true;
 	}
 
+	if (m_bIsUsingGrapplingHook)
+	{
+		return true;
+	}
+
 	return IMovement::NeedsWeaponControl();
+}
+
+bool CTF2BotMovement::UseGrapplingHook(const Vector& start, const Vector& end)
+{
+	CTF2Bot* me = GetBot<CTF2Bot>();
+	CTF2BotInventory* inv = me->GetInventoryInterface();
+	const CTF2BotWeapon* grapple = inv->GetTheGrapplingHook();
+
+	if (!grapple)
+	{
+		return false;
+	}
+
+	m_grapplingHookGoal = end;
+	m_bIsUsingGrapplingHook = true;
+
+	const float range = (start - end).Length();
+	constexpr float SPEED = 400.0f;
+	constexpr float MIN_TIME = 7.0f;
+	float time = range / SPEED;
+	time = std::max(time, MIN_TIME);
+
+	m_failTimer.Start(time);
+	inv->EquipWeapon(grapple);
+
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		me->DebugPrintToConsole(0, 180, 0, "%s USE GRAPPLING HOOK (TRAVEL DISTANCE: %g)\n", me->GetDebugIdentifier(), range);
+	}
+
+	return true;
+}
+
+bool CTF2BotMovement::IsPathSegmentReached(const CMeshNavigator* nav, const CBasePathSegment* goal, bool& resultoverride) const
+{
+	if (goal->type == AIPath::SegmentType::SEGMENT_GRAPPLING_HOOK && m_bIsUsingGrapplingHook)
+	{
+		resultoverride = true;
+		return true;
+	}
+
+
+	return false;
 }
 
 bool CTF2BotMovement::DoRocketJumpAim()
@@ -317,4 +392,61 @@ void CTF2BotMovement::OnEndBlastJump()
 	m_failTimer.Invalidate();
 }
 
+void CTF2BotMovement::GrapplingHookUpdate()
+{
+	Vector lookAt = m_grapplingHookGoal;
+	lookAt.z += GetStandingHullHeight() * 0.75f;
 
+	CTF2Bot* me = GetBot<CTF2Bot>();
+	CTF2BotPlayerController* input = me->GetControlInterface();
+	CTF2BotInventory* inv = me->GetInventoryInterface();
+	const CTF2BotWeapon* active = inv->GetActiveTFWeapon();
+	const CTF2BotWeapon* grapple = inv->GetTheGrapplingHook();
+
+	if (!grapple)
+	{
+		m_bIsUsingGrapplingHook = false;
+	}
+
+	if (active != grapple)
+	{
+		inv->EquipWeapon(grapple);
+		return;
+	}
+
+	if (m_failTimer.IsElapsed())
+	{
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 0, 0, "%s USING GRAPPLING HOOK! TIMED OUT!\n", me->GetDebugIdentifier());
+		}
+
+		m_bIsUsingGrapplingHook = false;
+		m_failTimer.Invalidate();
+	}
+
+	input->AimAt(lookAt, IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at grappling hook goal!");
+
+	const float tolerance = GetHullWidth() * 1.5f;
+
+	if (input->IsAimOnTarget())
+	{
+		input->PressAttackButton(0.2f);
+	}
+
+	Vector origin = me->GetAbsOrigin();
+	const float range = (origin - m_grapplingHookGoal).Length2D();
+
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		me->DebugPrintToConsole(220, 208, 255, "%s USING GRAPPLING HOOK! DISTANCE TO GOAL: %g\n", me->GetDebugIdentifier(), range);
+	}
+
+	if (range <= tolerance)
+	{
+		m_bIsUsingGrapplingHook = false;
+		m_failTimer.Invalidate();
+		input->ReleaseAllAttackButtons();
+		inv->SelectBestWeapon();
+	}
+}

@@ -111,7 +111,8 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	if (medigun)
 	{
 		float patientRange = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(patient));
-		CBaseEntity* healtarget = entprops->GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget");
+		CBaseEntity* healtarget = nullptr;
+		entprops->GetEntPropEnt(medigun, Prop_Send, "m_hHealingTarget", nullptr, &healtarget);
 
 		if (patientRange < MEDIGUN_LETGO_RANGE)
 		{

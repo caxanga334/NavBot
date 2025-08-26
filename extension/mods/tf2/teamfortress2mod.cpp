@@ -307,7 +307,7 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 				if (entindex != INVALID_EHANDLE_INDEX)
 				{
 					int builder = 0;
-					entprops->GetEntPropEnt(entindex, Prop_Send, "m_hBuilder", builder);
+					entprops->GetEntPropEnt(entindex, Prop_Send, "m_hBuilder", &builder);
 
 					if (builder != 0)
 					{
@@ -1921,7 +1921,7 @@ CON_COMMAND(sm_navbot_tf_debug_capture_percentages, "Reads cap percentages from 
 CON_COMMAND(sm_navbot_tf_debug_pd, "Debug player destruction")
 {
 	int flag = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(1, Prop_Send, "m_hItem", flag);
+	entprops->GetEntPropEnt(1, Prop_Send, "m_hItem", &flag);
 
 	if (flag != INVALID_EHANDLE_INDEX)
 	{

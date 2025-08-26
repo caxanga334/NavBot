@@ -31,11 +31,11 @@ bool CTF2BotPDCollectTask::IsPossible(CTF2Bot* bot, std::vector<CHandle<CBaseEnt
 				return true;
 			}
 
-			int owner = INVALID_EHANDLE_INDEX;
-			entprops->GetEntPropEnt(index, Prop_Send, "m_hOwnerEntity", owner);
+			CBaseEntity* owner = nullptr;
+			entprops->GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity", nullptr, &owner);
 
 			// owned flags are being carried by someone
-			if (owner != INVALID_EHANDLE_INDEX)
+			if (owner)
 			{
 				return true;
 			}
@@ -87,7 +87,10 @@ TaskResult<CTF2Bot> CTF2BotPDCollectTask::OnTaskUpdate(CTF2Bot* bot)
 		break;
 	}
 
-	if (entprops->GetEntPropEnt(flag, Prop_Send, "m_hOwnerEntity") != nullptr)
+	CBaseEntity* owner = nullptr;
+	entprops->GetEntPropEnt(flag, Prop_Send, "m_hOwnerEntity", nullptr, &owner);
+
+	if (owner != nullptr)
 	{
 		m_points[m_index].Term(); // invalidate the handle, the code above will skip it
 		m_nav.Invalidate();

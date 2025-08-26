@@ -151,9 +151,9 @@ edict_t* CTF2Bot::GetItem() const
 	edict_t* item = nullptr;
 	int entity = -1;
 
-	if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hItem", entity))
+	if (entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hItem", &entity))
 	{
-		UtilHelpers::IndexToAThings(entity, nullptr, &item);
+		item = gamehelpers->EdictOfIndex(entity);
 	}
 
 	return item;
@@ -354,9 +354,9 @@ bool CTF2Bot::IsCarryingObject() const
 
 CBaseEntity* CTF2Bot::GetObjectBeingCarriedByMe() const
 {
-	int ent = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hCarriedObject", ent);
-	return gamehelpers->ReferenceToEntity(ent);
+	CBaseEntity* pEntity = nullptr;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hCarriedObject", nullptr, &pEntity);
+	return pEntity;
 }
 
 void CTF2Bot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
@@ -902,6 +902,7 @@ CTF2BotPathCost::CTF2BotPathCost(CTF2Bot* bot, RouteType routetype)
 	m_maxgapjumpdistance = bot->GetMovementInterface()->GetMaxGapJumpDistance();
 	m_candoublejump = bot->GetMovementInterface()->IsAbleToDoubleJump();
 	m_canblastjump = bot->GetMovementInterface()->IsAbleToBlastJump();
+	m_canusegrapple = bot->GetMovementInterface()->IsAbleToUseGrapplingHook();
 	m_teamID = static_cast<int>(bot->GetMyTFTeam());
 	m_hullsize = bot->GetMovementInterface()->GetHullWidth();
 }
@@ -1007,6 +1008,10 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 			return -1.0f;
 		}
 		else if (link->GetType() == OffMeshConnectionType::OFFMESH_BLAST_JUMP && !m_canblastjump)
+		{
+			return -1.0f;
+		}
+		else if (link->GetType() == OffMeshConnectionType::OFFMESH_GRAPPLING_HOOK && !m_canusegrapple)
 		{
 			return -1.0f;
 		}

@@ -185,14 +185,14 @@ TeamFortress2::TFObjectMode tfentities::HBaseObject::GetMode() const
 edict_t* tfentities::HBaseObject::GetBuilder() const
 {
 	int entity = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", entity);
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", &entity);
 	return gamehelpers->EdictOfIndex(entity);
 }
 
 int tfentities::HBaseObject::GetBuilderIndex() const
 {
 	int entity = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", entity);
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", &entity);
 	return entity;
 }
 
@@ -493,15 +493,9 @@ int tfentities::HObjectSentryGun::GetShieldLevel() const
 
 CBaseEntity* tfentities::HObjectSentryGun::GetEnemy() const
 {
-	int ent = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hEnemy", ent);
-
-	if (ent == INVALID_EHANDLE_INDEX)
-	{
-		return nullptr;
-	}
-
-	return gamehelpers->ReferenceToEntity(ent);
+	CBaseEntity* pEntity = nullptr;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hEnemy", nullptr, &pEntity);
+	return pEntity;
 }
 
 int tfentities::HObjectSentryGun::GetKills() const

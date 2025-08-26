@@ -825,7 +825,7 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		between->CopySegment(from);
 		between->goal = link->GetStart();
 		between->how = GO_OFF_MESH_CONNECTION;
-		between->type = AIPath::SEGMENT_GROUND;
+		between->type = AIPath::SEGMENT_GROUND_NOSKIP;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
@@ -836,7 +836,7 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		post->how = GO_OFF_MESH_CONNECTION;
 		post->goal = link->GetEnd();
 		post->area = to->area;
-		post->type = AIPath::SEGMENT_GROUND;
+		post->type = AIPath::SEGMENT_GROUND_NOSKIP;
 
 		pathinsert.emplace(to, std::move(post), false);
 		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
@@ -997,8 +997,54 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, s
 		pathinsert.emplace(to, std::move(seg2), false);
 		break;
 	}
+	case OffMeshConnectionType::OFFMESH_STRAFE_JUMP:
+	{
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetStart();
+		between->how = GO_OFF_MESH_CONNECTION;
+		between->type = AIPath::SEGMENT_STRAFE_JUMP;
+
+		auto gapseg = CreateNewSegment();
+		gapseg->CopySegment(from);
+		gapseg->area = to->area;
+		gapseg->goal = link->GetEnd();
+		gapseg->how = GO_OFF_MESH_CONNECTION;
+		gapseg->type = AIPath::SEGMENT_GROUND;
+
+		pathinsert.emplace(from, std::move(between), true);
+		pathinsert.emplace(to, std::move(gapseg), false);
+		break;
+	}
+	case OffMeshConnectionType::OFFMESH_GRAPPLING_HOOK:
+	{
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		auto between = CreateNewSegment();
+
+		between->CopySegment(from);
+		between->goal = link->GetStart();
+		between->how = GO_OFF_MESH_CONNECTION;
+		between->type = AIPath::SEGMENT_GRAPPLING_HOOK;
+
+		auto gapseg = CreateNewSegment();
+		gapseg->CopySegment(from);
+		gapseg->area = to->area;
+		gapseg->goal = link->GetEnd();
+		gapseg->how = GO_OFF_MESH_CONNECTION;
+		gapseg->type = AIPath::SEGMENT_GROUND_NOSKIP;
+
+		pathinsert.emplace(from, std::move(between), true);
+		pathinsert.emplace(to, std::move(gapseg), false);
+		break;
+	}
 	default:
-		Warning("CPath::ProcessOffMeshConnectionsInPath unhandled link type!");
+		Warning("CPath::ProcessOffMeshConnectionsInPath unhandled link type! \n");
 		return false;
 	}
 

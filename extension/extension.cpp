@@ -98,6 +98,9 @@ ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCV
 static ConVar cvar_dump_kv_cmds("sm_navbot_debug_dump_kv_commands", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, prints keyvalue commands sent by clients into the console.");
 #endif // defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 
+#ifdef EXT_DEBUG
+static ConVar cvar_draw_player_move("sm_navbot_debug_draw_player_move", "0", FCVAR_GAMEDLL | FCVAR_CHEAT);
+#endif // EXT_DEBUG
 
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
@@ -458,6 +461,30 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 	{
 		extmanager->Frame();
 	}
+
+#ifdef EXT_DEBUG
+	int playermove = cvar_draw_player_move.GetInt();
+
+	if (playermove > 0)
+	{
+		CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+		constexpr float ARROW_LENGTH = 48.0f;
+
+		const Vector origin = host.GetAbsOrigin();
+		const Vector vel = host.GetAbsVelocity();
+		Vector dirvel = vel;
+		dirvel.NormalizeInPlace();
+		Vector eyefoward;
+		Vector eyeright;
+		host.EyeVectors(&eyefoward, &eyeright, nullptr);
+		const Vector eyePos = host.GetEyeOrigin();
+		NDebugOverlay::HorzArrow(eyePos, eyePos + (eyefoward * ARROW_LENGTH), 6.0f, 255, 0, 0, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::HorzArrow(eyePos, eyePos + (eyeright * ARROW_LENGTH), 6.0f, 255, 255, 0, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::HorzArrow(eyePos, eyePos - (eyeright * ARROW_LENGTH), 6.0f, 255, 0, 255, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::HorzArrow(origin, origin + (dirvel * ARROW_LENGTH), 6.0f, 0, 180, 80, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
+
+#endif // EXT_DEBUG
 
 	RETURN_META(MRES_IGNORED);
 }

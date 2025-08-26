@@ -26,7 +26,7 @@ class CBaseBotTestTask : public AITask<CBaseBot>
 public:
 	TaskResult<CBaseBot> OnTaskUpdate(CBaseBot* bot) override;
 	TaskResult<CBaseBot> OnTaskResume(CBaseBot* bot, AITask<CBaseBot>* pastTask) override;
-	TaskEventResponseResult<CBaseBot> OnDebugMoveToHostCommand(CBaseBot* bot) override;
+	TaskEventResponseResult<CBaseBot> OnDebugMoveToCommand(CBaseBot* bot, const Vector& moveTo) override;
 	const char* GetName() const override { return "CBaseBotTestTask"; }
 };
 
@@ -71,7 +71,7 @@ TaskResult<CBaseBot> CBaseBotTestTask::OnTaskResume(CBaseBot* bot, AITask<CBaseB
 	return SwitchTo(new CBaseBotSwitchTestTask, "Testing Task Switch!");
 }
 
-TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnDebugMoveToHostCommand(CBaseBot* bot)
+TaskEventResponseResult<CBaseBot> CBaseBotTestTask::OnDebugMoveToCommand(CBaseBot* bot, const Vector& moveTo)
 {
 	rootconsole->ConsolePrint("AI Event -- OnDebugMoveToHostCommand");
 	return TryPauseFor(new CBaseBotPathTestTask, PRIORITY_HIGH, "Event pause test!");

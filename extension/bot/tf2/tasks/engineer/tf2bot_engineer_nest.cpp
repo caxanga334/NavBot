@@ -167,7 +167,8 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			m_scanForEnemiesTimer.Start(0.5f);
 
-			CBaseEntity* enemy = entprops->GetEntPropEnt(m_mysentry, Prop_Send, "m_hEnemy");
+			CBaseEntity* enemy = nullptr;
+			entprops->GetEntPropEnt(m_mysentry, Prop_Send, "m_hEnemy", nullptr, &enemy);
 
 			if (enemy)
 			{

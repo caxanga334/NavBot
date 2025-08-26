@@ -39,6 +39,7 @@ protected:
 	virtual void BreakIfNeeded(CBaseBot* bot);
 	virtual void SearchForUseableObstacles(CBaseBot* bot);
 	virtual bool OffMeshLinksUpdate(CBaseBot* bot);
+	virtual void OnGoalSegmentReached(const CBasePathSegment* goal, const CBasePathSegment* next) const;
 
 	bool IsAtGoal(CBaseBot* bot);
 	bool CheckProgress(CBaseBot* bot);

@@ -152,11 +152,8 @@ bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer& them, CBlackMesaBot
 	return true;
 }
 
-TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnDebugMoveToHostCommand(CBlackMesaBot* bot)
+TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnDebugMoveToCommand(CBlackMesaBot* bot, const Vector& moveTo)
 {
-	edict_t* host = UtilHelpers::GetListenServerHost();
-	const Vector& goal = host->GetCollideable()->GetCollisionOrigin();
-
-	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, goal), PRIORITY_CRITICAL, "Debug command received!");
+	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, moveTo), PRIORITY_CRITICAL, "Debug command received!");
 }
 

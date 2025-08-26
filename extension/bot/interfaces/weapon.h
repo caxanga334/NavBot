@@ -18,7 +18,8 @@ public:
 
 	// True if the weapon entity is valid
 	bool IsValid() const;
-
+	// true if the given bot is this weapon's owner.
+	bool IsOwnedByBot(const CBaseBot* bot) const;
 	/**
 	 * @brief Gets the Weapon info.
 	 * @return Weapon Info pointer or NULL if no weapon info was obtained from the weapon info manager.

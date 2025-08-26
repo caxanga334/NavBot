@@ -79,17 +79,9 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
-TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnDebugMoveToHostCommand(CTF2Bot* bot)
+TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnDebugMoveToCommand(CTF2Bot* bot, const Vector& moveTo)
 {
-	edict_t* host = gamehelpers->EdictOfIndex(1);
-
-	if (host)
-	{
-		const Vector& origin = UtilHelpers::getEntityOrigin(host);
-		return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CTF2Bot, CTF2BotPathCost>(bot, origin), PRIORITY_CRITICAL, "Responding to debug command!");
-	}
-
-	return TryContinue();
+	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CTF2Bot, CTF2BotPathCost>(bot, moveTo), PRIORITY_CRITICAL, "Responding to debug command!");
 }
 
 const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)

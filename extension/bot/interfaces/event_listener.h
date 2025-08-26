@@ -58,7 +58,7 @@ public:
 	// Gets a vector containing all event listeners
 	virtual std::vector<IEventListener*>* GetListenerVector() { return nullptr; }
 
-	virtual void OnDebugMoveToHostCommand();
+	virtual void OnDebugMoveToCommand(const Vector& moveTo);
 	virtual void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea);
 	virtual void OnStuck(); // bot is stuck
 	virtual void OnUnstuck(); // bot was stuck and is no longer stuck
@@ -86,7 +86,7 @@ public:
 	virtual void OnGameEvent(const IGameEvent* event, void* moddata = nullptr); // Generic AI event for passing game events
 };
 
-inline void IEventListener::OnDebugMoveToHostCommand()
+inline void IEventListener::OnDebugMoveToCommand(const Vector& moveTo)
 {
 	auto vec = GetListenerVector();
 
@@ -94,7 +94,7 @@ inline void IEventListener::OnDebugMoveToHostCommand()
 	{
 		for (auto listener : *vec)
 		{
-			listener->OnDebugMoveToHostCommand();
+			listener->OnDebugMoveToCommand(moveTo);
 		}
 	}
 }

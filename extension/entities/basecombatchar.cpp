@@ -16,7 +16,7 @@ edict_t* entities::HBaseCombatCharacter::GetActiveWeapon() const
 	int me = GetIndex();
 	int weapon;
 
-	if (entprops->GetEntPropEnt(me, Prop_Send, "m_hActiveWeapon", weapon))
+	if (entprops->GetEntPropEnt(me, Prop_Send, "m_hActiveWeapon", &weapon))
 	{
 		return gamehelpers->EdictOfIndex(weapon);
 	}
@@ -32,7 +32,7 @@ bool entities::HBaseCombatCharacter::HasWeapon(const char* classname) const
 	{
 		int weapon;
 		
-		if (!entprops->GetEntPropEnt(me, Prop_Send, "m_hMyWeapons", weapon, i))
+		if (!entprops->GetEntPropEnt(me, Prop_Send, "m_hMyWeapons", &weapon, nullptr, i))
 			continue;
 
 		edict_t* entity = gamehelpers->EdictOfIndex(weapon);

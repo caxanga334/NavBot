@@ -20,6 +20,11 @@ CBaseEntity* CTF2BotMedicCrossbowHealTask::IsPossible(CTF2Bot* me, const CBotWea
 			return;
 		}
 
+		if (!UtilHelpers::IsPlayerAlive(client))
+		{
+			return;
+		}
+
 		if (tf2lib::GetEntityTFTeam(client) == myteam || tf2lib::GetPlayerClassType(client) == TeamFortress2::TFClassType::TFClass_Spy)
 		{
 			if (tf2lib::GetPlayerHealthPercentage(client) > 0.7f)
