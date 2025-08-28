@@ -7,6 +7,8 @@
 #endif
 #define _navbot_included
 
+#include <core>
+
 #include "navbot/bots.inc"
 
 /**
@@ -76,6 +78,28 @@ forward Action OnPreNavBotAdd();
  * @param bot Client index of the bot that was just added.
  */
 forward void OnNavBotAdded(int bot);
+
+/**
+ * Called when a random NavBot instance is about to be kicked, either due to the bot quota or the remove bot command.
+ * Allow plugins to implement their own random bot selection.
+ * 
+ * @param bot Client index of the NavBot instance that should be kicked. Initially 0.
+ * @return Returning Plugin_Continue will run the standard behavior. Anything else to kick the bot set on the 'bot' parameter.
+ * Returning Plugin_Stop stops the bot from getting kicked.
+ */
+forward Action OnPreKickRandomBot(int& bot);
+
+/**
+ * Called whe updating the bot quota to determine if the given client should not count towards the total player count.
+ * 
+ * @return Returning true will ignore the given client.
+ */
+forward bool OnUpdateBotQuotaIsClientIgnored(int client);
+
+/**
+ * Returns the number of Navbots in-game.
+ */
+native int GetNavBotCount();
 
 /**
  * Do not edit below this line!

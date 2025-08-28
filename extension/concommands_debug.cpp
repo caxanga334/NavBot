@@ -1470,4 +1470,20 @@ CON_COMMAND(sm_navbot_debug_strafe_jump_calcs, "")
 
 }
 
+CON_COMMAND(sm_navbot_debug_valve_fs, "Debugs valve file system.")
+{
+	// 
+
+	FileHandle_t handle = filesystem->Open("scripts/vscripts/vssaxtonhale/vsh.nut", "r", "BSP");
+
+	if (handle == FILESYSTEM_INVALID_HANDLE)
+	{
+		META_CONPRINT("FILE NOT FOUND! \n");
+		return;
+	}
+
+	META_CONPRINT("FILE FOUND! \n");
+	filesystem->Close(handle);
+}
+
 #endif // EXT_DEBUG

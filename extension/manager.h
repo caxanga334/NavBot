@@ -126,6 +126,11 @@ public:
 	// Utility function that provides auto completion of in-game NavBot names
 	static int AutoComplete_BotNames(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH]);
 
+#ifndef NO_SOURCEPAWN_API
+	// returns true if a plugin tell us that the given client should be ignored by the bot quota.
+	bool SMAPIBotQuotaIsClientIgnored(int client);
+#endif // !NO_SOURCEPAWN_API
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
@@ -135,7 +140,9 @@ private:
 	SourceMod::IForward* m_prebotaddforward; // SM Forward, on pre bot add
 	SourceMod::IForward* m_postbotaddforward; // SM Forward, post bot add (normal bots)
 	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
-	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)  
+	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
+	SourceMod::IForward* m_preremoverandombot; // SM Forward, called when kicking a random bot.
+	SourceMod::IForward* m_botquotaisclientignored; // SM Forward, called during the bot quota update.
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use

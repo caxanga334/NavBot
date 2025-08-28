@@ -86,6 +86,8 @@ CExtManager::CExtManager()
 	m_postbotaddforward = nullptr;
 	m_prepluginbotaddforward = nullptr;
 	m_postpluginbotaddforward = nullptr;
+	m_preremoverandombot = nullptr;
+	m_botquotaisclientignored = nullptr;
 #endif // !NO_SOURCEPAWN_API
 
 }
@@ -98,6 +100,8 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_postbotaddforward);
 	forwards->ReleaseForward(m_prepluginbotaddforward);
 	forwards->ReleaseForward(m_postpluginbotaddforward);
+	forwards->ReleaseForward(m_preremoverandombot);
+	forwards->ReleaseForward(m_botquotaisclientignored);
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -108,6 +112,8 @@ void CExtManager::OnAllLoaded()
 	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_preremoverandombot = forwards->CreateForward("OnPreKickRandomBot", ET_Event, 1, nullptr, SourceMod::ParamType::Param_CellByRef);
+	m_botquotaisclientignored = forwards->CreateForward("OnUpdateBotQuotaIsClientIgnored", ET_Single, 1, nullptr, SourceMod::ParamType::Param_Cell);
 #endif // !NO_SOURCEPAWN_API
 
 	AllocateMod();
@@ -555,6 +561,34 @@ void CExtManager::RemoveRandomBot(const char* message)
 		return;
 	}
 
+#ifndef NO_SOURCEPAWN_API
+	cell_t plugin_target = 0;
+	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
+
+	m_preremoverandombot->PushCellByRef(&plugin_target);
+	m_preremoverandombot->Execute(&result);
+
+	if (result >= static_cast<cell_t>(SourceMod::ResultType::Pl_Changed))
+	{
+		if (result == static_cast<cell_t>(SourceMod::ResultType::Pl_Stop))
+		{
+			return;
+		}
+
+		CBaseBot* bot = GetBotByIndex(static_cast<int>(plugin_target));
+
+		if (!bot)
+		{
+			smutils->LogError(myself, "Forward error: OnPreKickRandomBot! Given client index %i is not a NavBot instance.", static_cast<int>(plugin_target));
+			return;
+		}
+
+		IGamePlayer* gp = playerhelpers->GetGamePlayer(bot->GetIndex());
+		gp->Kick(message);
+		return;
+	}
+#endif // !NO_SOURCEPAWN_API
+
 	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
 	auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
 	player->Kick(message);
@@ -662,6 +696,13 @@ void CExtManager::UpdateBotQuota()
 	auto func = [&mod, &humans, &navbots, &otherbots, &isnavbot](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
 		if (player->IsInGame())
 		{
+#ifndef NO_SOURCEPAWN_API
+			if (extmanager->SMAPIBotQuotaIsClientIgnored(client))
+			{
+				return;
+			}
+#endif
+
 			if (mod->BotQuotaIsClientIgnored(client, entity, player))
 			{
 				return;
@@ -823,6 +864,17 @@ int CExtManager::AutoComplete_BotNames(const char* partial, char commands[COMMAN
 
 	return count;
 }
+
+#ifndef NO_SOURCEPAWN_API
+bool CExtManager::SMAPIBotQuotaIsClientIgnored(int client)
+{
+	cell_t result = 0;
+	m_botquotaisclientignored->PushCell(static_cast<cell_t>(client));
+	m_botquotaisclientignored->Execute(&result);
+
+	return result != 0;
+}
+#endif // !NO_SOURCEPAWN_API
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {

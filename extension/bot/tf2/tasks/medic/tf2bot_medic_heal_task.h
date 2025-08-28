@@ -30,6 +30,7 @@ private:
 	CountdownTimer m_respondToCallsTimer;
 	CountdownTimer m_reviveMarkerScanTimer;
 	CountdownTimer m_crossbowHealTimer;
+	CountdownTimer m_letGoTimer; // timer for letting go of the attack button
 	Vector m_moveGoal;
 	bool m_isMvM;
 

@@ -20,6 +20,7 @@ namespace natives
 			{"AddNavBot", AddNavBot},
 			{"IsNavMeshLoaded", IsNavMeshLoaded},
 			{"FireNavBotSoundEvent", FireNavBotSoundEvent},
+			{"GetNavBotCount", GetNavBotCount},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));
@@ -116,5 +117,10 @@ namespace natives
 		extmanager->ForEachBot(functor);
 
 		return 0;
+	}
+
+	cell_t GetNavBotCount(IPluginContext* context, const cell_t* params)
+	{
+		return static_cast<cell_t>(extmanager->GetAllBots().size());
 	}
 }

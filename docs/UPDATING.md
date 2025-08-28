@@ -9,4 +9,4 @@ You should **always** replace every file from the following folders:
 * gamedata
 
 Always replace files in `scripting` if you're using NavBot's Sourcepawn API.    
-The `configs` folder can be skipped but recommended to also update. Most NavBot config files supports the `.custom` suffix to prevent
+The `configs` folder can be skipped but recommended to also update. Most NavBot config files supports the `.custom` suffix to prevent updates from overwriting your custom configs.

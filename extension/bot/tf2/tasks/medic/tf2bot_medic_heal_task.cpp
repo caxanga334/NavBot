@@ -5,6 +5,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
+#include <sdkports/sdk_traces.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tf2bot_utils.h>
 #include <mods/tf2/teamfortress2mod.h>
@@ -19,6 +20,20 @@
 #undef max
 #undef min
 #undef clamp
+
+static bool IsLineOfHealClearToPatient(CTF2Bot* me, CBaseEntity* patient)
+{
+	trace::CTraceFilterSimple filter{ me->GetEntity(), COLLISION_GROUP_NONE };
+	trace_t tr;
+	trace::line(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(patient), MASK_SOLID, &filter, tr);
+
+	if (!tr.DidHit() || tr.m_pEnt == patient)
+	{
+		return true;
+	}
+
+	return false;
+}
 
 CTF2BotMedicHealTask::CTF2BotMedicHealTask() :
 	m_moveGoal(0.0f, 0.0f, 0.0f)
@@ -102,9 +117,16 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 
 	UpdateMovePosition(bot, threat);
 	EquipMedigun(bot);
+	CTF2BotPlayerController* input = bot->GetControlInterface();
 
-	bot->GetControlInterface()->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
-	bot->GetControlInterface()->AimAt(patient, IPlayerController::LOOK_SUPPORT, 0.2f, "Looking at patient to heal them!");
+	input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
+	input->AimAt(patient, IPlayerController::LOOK_SUPPORT, 0.2f, "Looking at patient to heal them!");
+
+	if (!m_letGoTimer.IsElapsed())
+	{
+		input->ReleaseAllAttackButtons();
+		return Continue();
+	}
 
 	CBaseEntity* medigun = bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary));
 
@@ -116,35 +138,26 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (patientRange < MEDIGUN_LETGO_RANGE)
 		{
-			// healing someone, not my patient
-			if (healtarget && healtarget != patient)
+			// healing my patient
+			if (healtarget == patient)
 			{
-				// release button
-				bot->GetControlInterface()->ReleaseAllAttackButtons();
+				// auto heal is enabled, just release the attack button
+				input->ReleaseAttackButton();
 			}
-			else if (healtarget && healtarget == patient)
+			else if (input->IsPressingAttackButton())
 			{
-				// healing my patient, keep the button pressed
-				bot->GetControlInterface()->PressAttackButton(0.3f);
+				// let go to allow switching heal targets
+				input->ReleaseAttackButton();
 			}
-			else if (!healtarget && bot->GetControlInterface()->IsAimOnTarget())
+			else if (input->IsAimOnTarget() && IsLineOfHealClearToPatient(bot, patient))
 			{
-				// not healing, looking at patient
-				bot->GetControlInterface()->PressAttackButton(0.3f);
+				input->PressAttackButton();
 			}
 		}
 		else // patient is outside range
 		{
-			if (healtarget)
-			{
-				// keep healing the previous patient
-				bot->GetControlInterface()->PressAttackButton(0.3f);
-			}
-			else
-			{
-				// patient is outside range and i'm not healing anyone, release
-				bot->GetControlInterface()->ReleaseAllAttackButtons();
-			}
+			// release attack button, auto-heal is enabled and the medigun should keep healing
+			input->ReleaseAttackButton();
 		}
 	}
 
@@ -371,6 +384,7 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 	}
 
 	m_patientScanTimer.Start(2.0f);
+	m_letGoTimer.Start(0.5f); // let go of the attack button to switch patients
 }
 
 void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat)
