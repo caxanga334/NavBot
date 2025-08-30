@@ -136,6 +136,7 @@ void CBaseBot::PlayerThink()
 		int deadbuttons = 0;
 		DeadSleepThink(deadbuttons);
 		BuildUserCommand(deadbuttons); // Still send empty usercommands while dead
+		ExecuteQueuedCommands();
 		return;
 	}
 

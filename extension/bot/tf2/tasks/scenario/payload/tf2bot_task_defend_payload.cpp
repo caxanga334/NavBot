@@ -4,6 +4,7 @@
 #include <bot/tf2/tf2bot.h>
 #include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include <bot/tasks_shared/bot_shared_search_area.h>
+#include <bot/tf2/tasks/demoman/tf2bot_demoman_lay_sticky_trap_task.h>
 #include "tf2bot_task_defend_payload.h"
 
 TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -50,6 +51,11 @@ TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
+		if (CTF2BotDemomanLayStickyTrapTask::IsPossible(bot) && CBaseBot::s_botrng.GetRandomChance(50))
+		{
+			return PauseFor(new CTF2BotDemomanLayStickyTrapTask(center), "Deploying sticky trap!");
+		}
+
 		if (!m_defendPayload)
 		{
 			return PauseFor(new CBotSharedSearchAreaTask<CTF2Bot, CTF2BotPathCost>(bot, bot->GetAbsOrigin(), 512.0f, 2048.0f, 32U), "Patrolling area near payload for enemies.");

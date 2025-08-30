@@ -51,6 +51,16 @@ void CModSettings::ParseConfigFile()
 	{
 		smutils->LogError(myself, "Error parsing mod settings file \"%s\"!", path);
 	}
+
+	PostParse();
+}
+
+void CModSettings::PostParse()
+{
+	if (rogue_min_time >= rogue_max_time)
+	{
+		rogue_min_time = rogue_max_time - 1.0f;
+	}
 }
 
 SourceMod::SMCResult CModSettings::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
@@ -128,6 +138,24 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			float v = atof(value);
 			v = std::clamp(v, 1024.0f, MAX_COORD_FLOAT);
 			SetMaxDefendDistance(v);
+		}
+		else if (strncasecmp(key, "rogue_chance", 12) == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, 0, 100);
+			SetRogueChance(v);
+		}
+		else if (strncasecmp(key, "rogue_max_time", 14) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 90.0f, 1200.0f);
+			SetRogueMaxTime(v);
+		}
+		else if (strncasecmp(key, "rogue_min_time", 14) == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 30.0f, 600.0f);
+			SetRogueMinTime(v);
 		}
 		else
 		{

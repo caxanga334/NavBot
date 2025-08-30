@@ -75,6 +75,7 @@ public:
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 
@@ -148,9 +149,23 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 }
 
 template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedRoamTask<BT, CT>::OnStuck(BT* bot)
+{
+	m_nav.Invalidate();
+	m_nav.ForceRepath();
+
+	if (++m_moveFailures > 10)
+	{
+		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
+	}
+
+	return AITask<BT>::TryContinue(PRIORITY_LOW);
+}
+
+template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedRoamTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	if (++m_moveFailures > 20)
+	if (++m_moveFailures > 10)
 	{
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
 	}

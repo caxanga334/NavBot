@@ -27,6 +27,7 @@
 #include "scenario/pd/tf2bot_pd_monitor_task.h"
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
+#include <bot/tasks_shared/bot_shared_rogue_behavior.h>
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
 #include "scenario/rd/tf2bot_rd_monitor_task.h"
@@ -48,7 +49,20 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotScenarioTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
+	CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
 	m_respondToTeamMatesTimer.Invalidate();
+	TeamFortress2::GameModeType gm = tf2mod->GetCurrentGameMode();
+
+	// Don't allow going rogue on MvM
+	if (gm != TeamFortress2::GameModeType::GM_MVM)
+	{
+		int roguechance = tf2mod->GetModSettings()->GetRogueBehaviorChance();
+
+		if (roguechance > 0 && CBaseBot::s_botrng.GetRandomChance(roguechance))
+		{
+			return PauseFor(new CBotSharedRogueBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Starting rogue behavior!");
+		}
+	}
 
 	return Continue();
 }

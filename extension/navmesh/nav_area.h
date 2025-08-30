@@ -342,6 +342,7 @@ public:
 	virtual void Save(std::fstream& filestream, uint32_t version);	// (EXTEND)
 	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);		// (EXTEND)
 	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
+	void ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion);	// Invoked when importing a nav mesh file from the game.
 
 	// virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
 	// virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues
@@ -461,6 +462,20 @@ public:
 	void MarkAsDamaging( float duration );						// Mark this area is damaging for the next 'duration' seconds
 
 	bool IsVisible( const Vector &eye, Vector *visSpot = NULL ) const;	// return true if area is visible from the given eyepoint, return visible spot
+	/**
+	 * @brief Checks if another nav area is partially visible from this area.
+	 * @param other Other area to test.
+	 * @param checkPVS If true, a PVS check if performed and the expensive raycast is skipped if both areas are not in PVS.
+	 * @return true if the given area is partially visible from this area.
+	 */
+	bool IsPartiallyVisible(const CNavArea* other, const bool checkPVS = false) const;
+	/**
+	 * @brief Checks if another nav area is completely visible from this area.
+	 * @param other Other area to test.
+	 * @param checkPVS If true, a PVS check if performed and the expensive raycast is skipped if both areas are not in PVS.
+	 * @return true if the given area is completely visible from this area.
+	 */
+	bool IsCompletelyVisible(const CNavArea* other, const bool checkPVS = false) const;
 
 	int GetAdjacentCount( NavDirType dir ) const	{ return m_connect[ dir ].Count(); }	// return number of connected areas in given direction
 	CNavArea *GetAdjacentArea( NavDirType dir, int i ) const;	// return the i'th adjacent area in the given direction
@@ -851,6 +866,9 @@ public:
 			}
 		}
 	}
+
+protected:
+	inline static std::array<byte, MAX_MAP_CLUSTERS / 8> s_pvs{}; // static PVS array for PVS functions
 
 private:
 	friend class CNavMesh;

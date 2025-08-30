@@ -46,17 +46,19 @@ extern CNavMesh *TheNavMesh;
 
 ConVar sm_nav_edit( "sm_nav_edit", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode." );
 ConVar sm_nav_quicksave( "sm_nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing." );	// TERROR: defaulting to 1, since we don't need the other data
-ConVar sm_nav_show_approach_points( "sm_nav_show_approach_points", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show Approach Points in the Navigation Mesh." );
+// ConVar sm_nav_show_approach_points( "sm_nav_show_approach_points", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show Approach Points in the Navigation Mesh." );
 ConVar sm_nav_show_danger( "sm_nav_show_danger", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show current 'danger' levels." );
-ConVar sm_nav_show_player_counts( "sm_nav_show_player_counts", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show current player counts in each area." );
-ConVar sm_nav_show_func_nav_avoid( "sm_nav_show_func_nav_avoid", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot avoidance due to func_nav_avoid entities" );
-ConVar sm_nav_show_func_nav_prefer( "sm_nav_show_func_nav_prefer", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prefer entities" );
-ConVar sm_nav_show_func_nav_prerequisite( "sm_nav_show_func_nav_prerequisite", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prerequisite entities" );
-ConVar sm_nav_max_vis_delta_list_length( "sm_nav_max_vis_delta_list_length", "64", FCVAR_CHEAT );
+#ifdef NAVMESH_REMOVED_FEATURES
+ConVar sm_nav_show_player_counts("sm_nav_show_player_counts", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show current player counts in each area.");
+ConVar sm_nav_show_func_nav_avoid("sm_nav_show_func_nav_avoid", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot avoidance due to func_nav_avoid entities");
+ConVar sm_nav_show_func_nav_prefer("sm_nav_show_func_nav_prefer", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prefer entities");
+ConVar sm_nav_show_func_nav_prerequisite("sm_nav_show_func_nav_prerequisite", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show areas of designer-placed bot preference due to func_nav_prerequisite entities");
+ConVar sm_nav_max_vis_delta_list_length("sm_nav_max_vis_delta_list_length", "64", FCVAR_CHEAT);
+#endif // NAVMESH_REMOVED_FEATURES
 ConVar sm_nav_solid_func_brush("sm_nav_solid_func_brush", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, func_brush entities are always considered solid for nav mesh generation/editing.");
 
 
-extern ConVar sm_nav_show_potentially_visible;
+// extern ConVar sm_nav_show_potentially_visible;
 extern NavAreaVector TheNavAreas;
 #ifdef STAGING_ONLY
 int g_DebugPathfindCounter = 0;
@@ -528,6 +530,7 @@ void CNavMesh::Update( void )
 		DrawDanger();
 	}
 
+#ifdef NAVMESH_REMOVED_FEATURES
 	if (sm_nav_show_player_counts.GetBool())
 	{
 		DrawPlayerCounts();
@@ -542,6 +545,7 @@ void CNavMesh::Update( void )
 	{
 		DrawFuncNavPrefer();
 	}
+#endif // NAVMESH_REMOVED_FEATURES
 
 	{
 		FOR_EACH_VEC(TheNavAreas, it)
@@ -4100,4 +4104,9 @@ void CNavMesh::NotifyDangerousEditCommandWasUsed()
 	extmanager->RemoveAllBots("Nav Mesh was edited, removing all bots.");
 	ConVarRef sm_navbot_quota_quantity{ "sm_navbot_quota_quantity" };
 	sm_navbot_quota_quantity.SetValue(0);
+}
+
+CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	TheNavMesh->ImportFromGame();
 }

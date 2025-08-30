@@ -32,6 +32,53 @@
 * size_t / std::size_t will change size between 32/64 bits. If saving a size_t, save as uint64_t!
 */
 
+#define WORKSHOP_PREFIX_1		"workshop/"
+#define MAP_WORKSHOP_PREFIX_1	"maps/" WORKSHOP_PREFIX_1
+
+#define WORKSHOP_PREFIX_2		"workshop\\"
+#define MAP_WORKSHOP_PREFIX_2	"maps\\" WORKSHOP_PREFIX_2
+
+namespace gameutilsimport
+{
+	static const char* GetCleanMapName(const char* pszUnCleanMapName, char(&pszTmp)[256])
+	{
+#if defined( TF_DLL ) || defined( TF_CLIENT_DLL )
+		bool bPrefixMaps = true;
+		const char* pszMapAfterPrefix = StringAfterPrefixCaseSensitive(pszUnCleanMapName, MAP_WORKSHOP_PREFIX_1);
+		if (!pszMapAfterPrefix)
+			pszMapAfterPrefix = StringAfterPrefixCaseSensitive(pszUnCleanMapName, MAP_WORKSHOP_PREFIX_2);
+
+		if (!pszMapAfterPrefix)
+		{
+			bPrefixMaps = false;
+			pszMapAfterPrefix = StringAfterPrefixCaseSensitive(pszUnCleanMapName, WORKSHOP_PREFIX_1);
+			if (!pszMapAfterPrefix)
+				pszMapAfterPrefix = StringAfterPrefixCaseSensitive(pszUnCleanMapName, WORKSHOP_PREFIX_2);
+		}
+
+		if (pszMapAfterPrefix)
+		{
+			if (bPrefixMaps)
+			{
+				V_strcpy_safe(pszTmp, "maps" CORRECT_PATH_SEPARATOR_S);
+				V_strcat_safe(pszTmp, pszMapAfterPrefix);
+			}
+			else
+			{
+				V_strcpy_safe(pszTmp, pszMapAfterPrefix);
+			}
+
+			char* pszUGC = V_strstr(pszTmp, ".ugc");
+			if (pszUGC)
+				*pszUGC = '\0';
+
+			return pszTmp;
+		}
+#endif
+
+		return pszUnCleanMapName;
+	}
+}
 
 class NavMeshFileHeader
 {
@@ -1693,4 +1740,358 @@ void CNavMesh::BuildAuthorInfo()
 		rootconsole->ConsolePrint("Saved editor information: %s,%lli", szname.c_str(), steamid);
 		return;
 	}
+}
+
+#define FORMAT_BSPFILE "maps\\%s.bsp"
+#define FORMAT_NAVFILE "maps\\%s.nav"
+#define PATH_NAVFILE_EMBEDDED "maps\\embed.nav"
+#define NAV_ORIGINAL_MAGIC_NUMBER 0xFEEDFACE				// to help identify nav files
+constexpr auto NAV_ORIGINAL_VERSION = 16U;
+constexpr int NAV_ORIGINAL_MAX_TEAMS = 2;
+
+void CNavMesh::ImportFromGame()
+{
+	if (IsLoaded())
+	{
+		META_CONPRINT("[NavBot] Cannot import a navmesh onto an existing one, rename the file and reload the map! \n");
+		return;
+	}
+
+	// free previous navigation mesh data
+	Reset();
+	placeDirectory.Reset();
+	CNavArea::m_nextID = 1;
+
+	CUtlBuffer filebuffer{ 4096, 1024 * 1024, CUtlBuffer::BufferFlags_t::READ_ONLY };
+
+	if (!ImportOpenNavFileForReading(filebuffer))
+	{
+		META_CONPRINT("Failed to open game's nav mesh file for reading! \n");
+		return;
+	}
+
+	ImportLoad(filebuffer);
+}
+
+bool CNavMesh::ImportOpenNavFileForReading(CUtlBuffer& outBuffer)
+{
+	char maptmp[256];
+	const char* pszMapName = gameutilsimport::GetCleanMapName(STRING(gpGlobals->mapname), maptmp);
+
+	// nav filename is derived from map filename
+	char filename[MAX_PATH] = { 0 };
+	Q_snprintf(filename, sizeof(filename), FORMAT_NAVFILE, pszMapName);
+
+	if (!filesystem->ReadFile(filename, "MOD", outBuffer))	// this ignores .nav files embedded in the .bsp ...
+	{
+		if (!filesystem->ReadFile(filename, "BSP", outBuffer))	// ... and this looks for one if it's the only one around.
+		{
+			// Finally, check for the special embed name for in-BSP nav meshes only
+			if (!filesystem->ReadFile(PATH_NAVFILE_EMBEDDED, "BSP", outBuffer))
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+void CNavMesh::ImportLoad(CUtlBuffer& filebuffer)
+{
+	unsigned int magic = filebuffer.GetUnsignedInt();
+	if (!filebuffer.IsValid() || magic != NAV_ORIGINAL_MAGIC_NUMBER)
+	{
+		META_CONPRINT("Import failed: magic number doesn't match!\n");
+		return;
+	}
+
+	unsigned int version = filebuffer.GetUnsignedInt();
+	if (!filebuffer.IsValid())
+	{
+		META_CONPRINT("Import failed: failed to read nav mesh version! \n");
+		return;
+	}
+
+	if (version < NAV_ORIGINAL_VERSION)
+	{
+		META_CONPRINT("Import failed: nav mesh version is too old. Try saving it again. \n");
+		return;
+	}
+
+	if (version > NAV_ORIGINAL_VERSION)
+	{
+		META_CONPRINT("Import failed: nav mesh version is newer than the current supported version. \n");
+		return;
+	}
+
+	SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
+
+	unsigned int requiredSubVersion = 0;
+
+	const char* gdKeyValue = gamedata->GetKeyValue("NavImportSubVersion");
+
+	if (gdKeyValue)
+	{
+		requiredSubVersion = static_cast<unsigned int>(atoi(gdKeyValue));
+	}
+
+	unsigned int subVersion = filebuffer.GetUnsignedInt();
+
+	if (!filebuffer.IsValid())
+	{
+		META_CONPRINT("Failed to read nav mesh sub version.\n");
+		return;
+	}
+
+	if (subVersion != 0 && subVersion != requiredSubVersion)
+	{
+		META_CONPRINT("Import failed: nav mesh sub version not supported! \n");
+		return;
+	}
+
+	META_CONPRINTF("Import: Version %u SubVersion %u \n", version, subVersion);
+
+	filebuffer.GetUnsignedInt(); // discard bsp size
+	filebuffer.GetUnsignedChar(); // discord Analyzed status
+
+	// discard place directory
+
+	{
+		unsigned short count = filebuffer.GetUnsignedShort();
+		unsigned short len;
+		char tmp[256];
+
+		for (int i = 0; i < static_cast<int>(count); ++i)
+		{
+			len = filebuffer.GetUnsignedShort();
+			filebuffer.Get(tmp, MIN(sizeof(tmp), len));
+		}
+
+		filebuffer.GetUnsignedChar();
+	}
+
+	// custom data pre area
+	// nothing until a mod uses it
+
+	unsigned int areaCount = filebuffer.GetUnsignedInt();
+
+	if (areaCount == 0 || !filebuffer.IsValid())
+	{
+		META_CONPRINT("Import failed: no nav areas! \n");
+		return;
+	}
+
+	META_CONPRINTF("Import: %u areas.\n", areaCount);
+
+	PreLoadAreas(areaCount);
+
+	Extent extent;
+	extent.lo.x = std::numeric_limits<float>::max();
+	extent.lo.y = std::numeric_limits<float>::max();
+	extent.hi.x = std::numeric_limits<float>::min();
+	extent.hi.y = std::numeric_limits<float>::min();
+	Extent areaExtent;
+
+	int progress = 0;
+
+	for (unsigned int i = 0; i < areaCount; i++)
+	{
+		CNavArea* area = CreateArea();
+		area->ImportLoad(filebuffer, version, subVersion);
+		TheNavAreas.AddToTail(area);
+
+		area->GetExtent(&areaExtent);
+
+		if (areaExtent.lo.x < extent.lo.x)
+			extent.lo.x = areaExtent.lo.x;
+		if (areaExtent.lo.y < extent.lo.y)
+			extent.lo.y = areaExtent.lo.y;
+		if (areaExtent.hi.x > extent.hi.x)
+			extent.hi.x = areaExtent.hi.x;
+		if (areaExtent.hi.y > extent.hi.y)
+			extent.hi.y = areaExtent.hi.y;
+
+		if (++progress == 100)
+		{
+			progress = 0;
+			float percent = static_cast<float>(i) / static_cast<float>(areaCount);
+			META_CONPRINTF("Importing nav areas... %3.2f percent done. \n", percent);
+		}
+	}
+
+	META_CONPRINT("Done importing nav areas! \n");
+
+	// add the areas to the grid
+	AllocateGrid(extent.lo.x, extent.hi.x, extent.lo.y, extent.hi.y);
+
+	FOR_EACH_VEC(TheNavAreas, it)
+	{
+		AddNavArea(TheNavAreas[it]);
+	}
+
+	// TO-DO: Load ladders
+
+	ImportPost();
+}
+
+void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion)
+{
+	m_id = filebuffer.GetUnsignedInt();
+
+	// update nextID to avoid collisions
+	if (m_id >= m_nextID)
+		m_nextID = m_id + 1;
+
+	// TO-DO: This will probably need to be changed in the future
+	m_attributeFlags = filebuffer.GetInt();
+
+	// load extent of area
+	filebuffer.Get(&m_nwCorner, 3 * sizeof(float));
+	filebuffer.Get(&m_seCorner, 3 * sizeof(float));
+
+	m_center.x = (m_nwCorner.x + m_seCorner.x) / 2.0f;
+	m_center.y = (m_nwCorner.y + m_seCorner.y) / 2.0f;
+	m_center.z = (m_nwCorner.z + m_seCorner.z) / 2.0f;
+
+	if ((m_seCorner.x - m_nwCorner.x) > 0.0f && (m_seCorner.y - m_nwCorner.y) > 0.0f)
+	{
+		m_invDxCorners = 1.0f / (m_seCorner.x - m_nwCorner.x);
+		m_invDyCorners = 1.0f / (m_seCorner.y - m_nwCorner.y);
+	}
+	else
+	{
+		m_invDxCorners = m_invDyCorners = 0;
+
+		DevWarning("Degenerate Navigation Area #%d at setpos %g %g %g\n",
+			m_id, m_center.x, m_center.y, m_center.z);
+	}
+
+	// load heights of implicit corners
+	m_neZ = filebuffer.GetFloat();
+	m_swZ = filebuffer.GetFloat();
+
+	CheckWaterLevel();
+
+	// load connections (IDs) to adjacent areas
+	// in the enum order NORTH, EAST, SOUTH, WEST
+	for (int d = 0; d < NUM_DIRECTIONS; d++)
+	{
+		// load number of connections for this direction
+		unsigned int count = filebuffer.GetUnsignedInt();
+
+		m_connect[d].EnsureCapacity(count);
+		for (unsigned int i = 0; i < count; ++i)
+		{
+			NavConnect connect;
+			connect.id = filebuffer.GetUnsignedInt();
+
+			// don't allow self-referential connections
+			if (connect.id != m_id)
+			{
+				m_connect[d].AddToTail(connect);
+			}
+		}
+	}
+
+	unsigned char hidingSpotCount = filebuffer.GetUnsignedChar();
+
+	// load HidingSpot objects for this area
+	for (int h = 0; h < hidingSpotCount; ++h)
+	{
+		// eat hiding spot data
+		filebuffer.GetUnsignedInt();
+		filebuffer.GetFloat();
+		filebuffer.GetFloat();
+		filebuffer.GetFloat();
+		filebuffer.GetUnsignedChar();
+	}
+
+	//
+	// Load encounter paths for this area
+	//
+	unsigned int count = filebuffer.GetUnsignedInt();
+
+	for (unsigned int e = 0; e < count; ++e)
+	{
+		filebuffer.GetUnsignedInt();
+		filebuffer.GetUnsignedChar();
+		filebuffer.GetUnsignedInt();
+		filebuffer.GetUnsignedChar();
+
+		unsigned char spotCount = filebuffer.GetUnsignedChar();
+
+		for (int s = 0; s < spotCount; ++s)
+		{
+			filebuffer.GetUnsignedInt();
+			filebuffer.GetUnsignedChar();
+		}
+	}
+
+	// eat the place index
+	filebuffer.GetUnsignedShort();
+
+	// load ladder data
+	for (int dir = 0; dir < CNavLadder::NUM_LADDER_DIRECTIONS; ++dir)
+	{
+		count = filebuffer.GetUnsignedInt();
+		for (unsigned int i = 0; i < count; ++i)
+		{
+			// TO-DO: Ladders
+			filebuffer.GetUnsignedInt();
+		}
+	}
+
+	// load earliest occupy times
+	for (int i = 0; i < MAX_NAV_TEAMS; ++i)
+	{
+		// no spot in the map should take longer than this to reach
+		filebuffer.GetFloat();
+	}
+
+	// load light intensity
+	for (int i = 0; i < NUM_CORNERS; ++i)
+	{
+		filebuffer.GetFloat();
+	}
+
+	// load visibility information
+	unsigned int visibleAreaCount = filebuffer.GetUnsignedInt();
+
+	for (unsigned int j = 0; j < visibleAreaCount; ++j)
+	{
+		filebuffer.GetUnsignedInt();
+		filebuffer.GetUnsignedChar();
+	}
+
+	filebuffer.GetUnsignedInt();
+
+	// eat game specific data
+	if (extmanager->GetMod()->GetModType() == Mods::ModType::MOD_TF2)
+	{
+		// TF nav mesh current subversion is 2. TO-DO: move this to gamedata or virtualize the import functions
+		if (subVersion != 0 && subVersion == 2)
+		{
+			filebuffer.GetUnsignedInt(); // eat tf attributes
+		}
+	}
+
+	if (!filebuffer.IsValid())
+	{
+		DevWarning("NavBot Import NavArea: file buffer is invalid! \n");
+	}
+}
+
+void CNavMesh::ImportPost()
+{
+	NavErrorType result = PostLoad(1U); // always post load as the first version
+
+	if (result != NAV_OK)
+	{
+		META_CONPRINT("PostLoad error during import! \n");
+	}
+
+	m_isAnalyzed = false;
+	Save();
+	META_CONPRINT("Nav mesh imported, reload the map!\n");
 }

@@ -18,12 +18,15 @@ public:
 		collect_item_max_distance = 5000.0f;
 		max_defend_distance = 4096.0f;
 		max_sniper_distance = 8192.0f;
+		rogue_chance = 8;
+		rogue_max_time = 300.0f;
+		rogue_min_time = 120.0f;
 	}
 
 	virtual ~CModSettings() = default;
 
 	virtual void ParseConfigFile();
-
+	virtual void PostParse();
 protected:
 
 	void ReadSMC_ParseStart() override
@@ -47,6 +50,9 @@ public:
 	void SetCollectItemMaxDistance(float v) { collect_item_max_distance = v; }
 	void SetMaxDefendDistance(float v) { max_defend_distance = v; }
 	void SetMaxSniperDistance(float v) { max_sniper_distance = v; }
+	void SetRogueChance(int v) { rogue_chance = v; }
+	void SetRogueMaxTime(float v) { rogue_max_time = v; }
+	void SetRogueMinTime(float v) { rogue_min_time = v; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -59,6 +65,9 @@ public:
 	const float GetCollectItemMaxDistance() const { return collect_item_max_distance; }
 	const float GetMaxDefendDistance() const { return max_defend_distance; }
 	const float GetMaxSniperDistance() const { return max_sniper_distance; }
+	const int GetRogueBehaviorChance() const { return rogue_chance; }
+	const float GetRogueBehaviorMaxTime() const { return rogue_max_time; }
+	const float GetRogueBehaviorMinTime() const { return rogue_min_time; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -71,6 +80,9 @@ protected:
 	float max_defend_distance; // maximum distance from the objective to search for defensive flagged waypoints
 	float max_sniper_distance; // maximum distance from the objective to search for sniper flagged waypoints
 	int cfg_parser_depth; // config file parser depth
+	int rogue_chance; // chance for a bot to go rogue and ignore map objectives
+	float rogue_max_time;
+	float rogue_min_time;
 };
 
 

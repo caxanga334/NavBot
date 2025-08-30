@@ -60,12 +60,16 @@ public:
 				m_pathcost.SetRouteType(SAFEST_ROUTE);
 			}
 		}
+
+		m_moveFailures = 0;
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 	TaskResult<BT> OnTaskResume(BT* bot, AITask<BT>* pastTask) override;
 
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
+	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 	TaskEventResponseResult<BT> OnFlagTaken(BT* bot, CBaseEntity* player) override;
 	TaskEventResponseResult<BT> OnFlagDropped(BT* bot, CBaseEntity* player) override;
@@ -83,6 +87,7 @@ private:
 	bool m_attackEnemies;
 	bool m_priority;
 	float m_reachDistance;
+	int m_moveFailures;
 };
 
 template<typename BT, typename CT>
@@ -169,6 +174,31 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskResume(BT* bot, 
 	m_nav.StartRepathTimer();
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnStuck(BT* bot)
+{
+	m_nav.Invalidate();
+	m_nav.ForceRepath();
+
+	if (++m_moveFailures > 10)
+	{
+		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
+	}
+
+	return AITask<BT>::TryContinue(PRIORITY_LOW);
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	if (++m_moveFailures > 10)
+	{
+		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
+	}
+
+	return AITask<BT>::TryContinue(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>

@@ -76,6 +76,7 @@ public:
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 
@@ -127,6 +128,20 @@ inline TaskResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnTaskUpdate(BT* bot)
 	m_nav.Update(bot);
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnStuck(BT* bot)
+{
+	if (++m_fails > 5)
+	{
+		m_patrolPoints.pop();
+		m_nav.Invalidate();
+		m_nav.ForceRepath();
+		m_fails = 0;
+	}
+
+	return AITask<BT>::TryContinue();
 }
 
 template<typename BT, typename CT>

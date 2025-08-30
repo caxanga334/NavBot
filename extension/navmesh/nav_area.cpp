@@ -59,15 +59,17 @@ ConVar sm_nav_coplanar_slope_limit_displacement( "sm_nav_coplanar_slope_limit_di
 ConVar sm_nav_split_place_on_ground( "sm_nav_split_place_on_ground", "0", FCVAR_CHEAT, "If true, nav areas will be placed flush with the ground when split." );
 ConVar sm_nav_area_bgcolor( "sm_nav_area_bgcolor", "0 0 0 30", FCVAR_CHEAT, "RGBA color to draw as the background color for nav areas while editing." );
 ConVar sm_nav_corner_adjust_adjacent( "sm_nav_corner_adjust_adjacent", "18", FCVAR_CHEAT, "radius used to raise/lower corners in nearby areas when raising/lowering corners." );
+#ifdef NAVMESH_REMOVED_FEATURES
 ConVar sm_nav_show_light_intensity( "sm_nav_show_light_intensity", "0", FCVAR_CHEAT );
+#endif // NAVMESH_REMOVED_FEATURES
 ConVar sm_nav_debug_blocked( "sm_nav_debug_blocked", "0", FCVAR_CHEAT );
 ConVar sm_nav_show_contiguous( "sm_nav_show_continguous", "0", FCVAR_CHEAT, "Highlight non-contiguous connections" );
 
 constexpr float DEF_NAV_VIEW_DISTANCE = 1500.0;
-ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
-ConVar sm_nav_update_visibility_on_edit( "sm_nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
-ConVar sm_nav_potentially_visible_dot_tolerance( "sm_nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
-ConVar sm_nav_show_potentially_visible( "sm_nav_show_potentially_visible", "0", FCVAR_CHEAT, "Show areas that are potentially visible from the current nav area" );
+// ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
+// ConVar sm_nav_update_visibility_on_edit( "sm_nav_update_visibility_on_edit", "0", FCVAR_CHEAT, "If nonzero editing the mesh will incrementally recompue visibility" );
+// ConVar sm_nav_potentially_visible_dot_tolerance( "sm_nav_potentially_visible_dot_tolerance", "0.98", FCVAR_CHEAT );
+// ConVar sm_nav_show_potentially_visible( "sm_nav_show_potentially_visible", "0", FCVAR_CHEAT, "Show areas that are potentially visible from the current nav area" );
 static ConVar sm_nav_danger_decay_rate("sm_nav_danger_decay_rate", "20", FCVAR_GAMEDLL, "How much area danger is decayed per second.", true, 1.0f, true, 100.0f);
 
 Color s_selectedSetColor( 255, 255, 200, 96 );
@@ -2783,18 +2785,20 @@ void CNavArea::Draw( void ) const
 	sw.y = se.y;
 	sw.z = m_swZ;
 
+#ifdef NAVMESH_REMOVED_FEATURES
 	if (sm_nav_show_light_intensity.GetBool())
 	{
-		for ( int i=0; i<NUM_CORNERS; ++i )
+		for (int i = 0; i < NUM_CORNERS; ++i)
 		{
-			Vector pos = GetCorner( (NavCornerType)i );
+			Vector pos = GetCorner((NavCornerType)i);
 			Vector end = pos;
 			float lightIntensity = GetLightIntensity(pos);
-			end.z += navgenparams->human_height*lightIntensity;
+			end.z += navgenparams->human_height * lightIntensity;
 			lightIntensity *= 255; // for color
-			debugoverlay->AddLineOverlay( end, pos, lightIntensity, lightIntensity, MAX( 192, lightIntensity ), true, DebugDuration );
+			debugoverlay->AddLineOverlay(end, pos, lightIntensity, lightIntensity, MAX(192, lightIntensity), true, DebugDuration);
 		}
 	}
+#endif // NAVMESH_REMOVED_FEATURES
 
 	int bgcolor[4];
 	if ( 4 == sscanf(sm_nav_area_bgcolor.GetString(), "%d %d %d %d", &(bgcolor[0]), &(bgcolor[1]), &(bgcolor[2]), &(bgcolor[3]) ) )
@@ -3487,13 +3491,13 @@ bool CNavArea::IsDamaging( void ) const
 
 
 //--------------------------------------------------------------------------------------------------------------
-inline void CNavArea::MarkAsDamaging( float duration )
+void CNavArea::MarkAsDamaging( float duration )
 {
 	m_damagingTickCount = gpGlobals->tickcount + TIME_TO_TICKS(duration);
 }
 
 //--------------------------------------------------------------------------------------------------------------
-inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
+bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 {
 	Vector corner;
 	trace_t result;
@@ -3501,7 +3505,7 @@ inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 	const float offset = 0.75f * navgenparams->human_height; 
 
 	// check center first
-	trace::line(eye, GetCenter() + Vector(0, 0, offset), MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE, &tracefilter, result);
+	trace::line(eye, GetCenter() + Vector(0.0f, 0.0f, offset), MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE, &tracefilter, result);
 
 	if (result.fraction == 1.0f)
 	{
@@ -3517,7 +3521,7 @@ inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 	{
 		corner = GetCorner( (NavCornerType)c );
 
-		trace::line(eye, GetCenter() + Vector(0, 0, offset), MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE, &tracefilter, result);
+		trace::line(eye, GetCenter() + Vector(0.0f, 0.0f, offset), MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE, &tracefilter, result);
 
 		if (result.fraction == 1.0f)
 		{
@@ -3531,6 +3535,100 @@ inline bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 	}
 
 	return false;
+}
+
+bool CNavArea::IsPartiallyVisible(const CNavArea* other, const bool checkPVS) const
+{
+	if (checkPVS)
+	{
+		int cluster = engine->GetClusterForOrigin(GetCenter());
+		engine->GetPVSForCluster(cluster, static_cast<int>(CNavArea::s_pvs.size()), CNavArea::s_pvs.data());
+
+		if (!engine->CheckOriginInPVS(other->GetCenter(), CNavArea::s_pvs.data(), static_cast<int>(CNavArea::s_pvs.size())))
+		{
+			return false; // outside PVS
+		}
+	}
+
+	const Vector offset(0.0f, 0.0f, navgenparams->human_eye_height);
+
+	Vector start = GetCenter() + offset;
+	Vector end = other->GetCenter() + offset;
+
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t tr;
+	trace::line(start, end, MASK_VISIBLE, &filter, tr);
+
+	if (tr.fraction == 1.0f)
+	{
+		return true;
+	}
+
+	for (int c1 = 0; c1 < static_cast<int>(NavCornerType::NUM_CORNERS); c1++)
+	{
+		start = GetCorner(static_cast<NavCornerType>(c1)) + offset;
+
+		for (int c2 = 0; c2 < static_cast<int>(NavCornerType::NUM_CORNERS); c2++)
+		{
+			end = other->GetCorner(static_cast<NavCornerType>(c2)) + offset;
+
+			trace::line(start, end, MASK_VISIBLE, &filter, tr);
+
+			if (tr.fraction == 1.0f)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool CNavArea::IsCompletelyVisible(const CNavArea* other, const bool checkPVS) const
+{
+	if (checkPVS)
+	{
+		int cluster = engine->GetClusterForOrigin(GetCenter());
+		engine->GetPVSForCluster(cluster, static_cast<int>(CNavArea::s_pvs.size()), CNavArea::s_pvs.data());
+
+		if (!engine->CheckOriginInPVS(other->GetCenter(), CNavArea::s_pvs.data(), static_cast<int>(CNavArea::s_pvs.size())))
+		{
+			return false; // outside PVS
+		}
+	}
+
+	const Vector offset(0.0f, 0.0f, navgenparams->human_eye_height);
+
+	Vector start = GetCenter() + offset;
+	Vector end = other->GetCenter() + offset;
+
+	CTraceFilterWorldAndPropsOnly filter;
+	trace_t tr;
+	trace::line(start, end, MASK_VISIBLE, &filter, tr);
+
+	if (tr.fraction < 1.0f)
+	{
+		return false;
+	}
+
+	for (int c1 = 0; c1 < static_cast<int>(NavCornerType::NUM_CORNERS); c1++)
+	{
+		start = GetCorner(static_cast<NavCornerType>(c1)) + offset;
+
+		for (int c2 = 0; c2 < static_cast<int>(NavCornerType::NUM_CORNERS); c2++)
+		{
+			end = other->GetCorner(static_cast<NavCornerType>(c2)) + offset;
+
+			trace::line(start, end, MASK_VISIBLE, &filter, tr);
+
+			if (tr.fraction < 1.0f)
+			{
+				return false;
+			}
+		}
+	}
+
+	return true;
 }
 
 //--------------------------------------------------------------------------------------------------------------

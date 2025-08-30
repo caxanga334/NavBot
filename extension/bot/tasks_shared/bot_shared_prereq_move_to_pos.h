@@ -26,6 +26,7 @@ public:
 
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 
@@ -54,6 +55,17 @@ inline TaskResult<BT> CBotSharedPrereqMoveToPositionTask<BT, CT>::OnTaskUpdate(B
 	m_nav.Update(bot);
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedPrereqMoveToPositionTask<BT, CT>::OnStuck(BT* bot)
+{
+	if (++m_failCount > 20)
+	{
+		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
+	}
+
+	return AITask<BT>::TryContinue();
 }
 
 template<typename BT, typename CT>

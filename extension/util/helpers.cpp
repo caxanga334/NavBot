@@ -1747,3 +1747,66 @@ bool UtilHelpers::parsers::ParseRandomInt(const char* str, int& out, const int m
 		return false;
 	}
 }
+
+CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool alive, const bool onlyhumans)
+{
+	std::vector<CBaseEntity*> candidates;
+	candidates.reserve(ABSOLUTE_PLAYER_LIMIT);
+
+	int myteam = -2;
+	entprops->GetEntProp(me, Prop_Send, "m_iTeamNum", myteam);
+
+	for (int client = 1; client <= gpGlobals->maxClients; client++)
+	{
+		SourceMod::IGamePlayer* gameplayer = playerhelpers->GetGamePlayer(client);
+
+		if (!gameplayer || !gameplayer->IsInGame())
+		{
+			continue;
+		}
+
+		if (onlyhumans && gameplayer->IsFakeClient())
+		{
+			continue;
+		}
+
+		edict_t* edict = gamehelpers->EdictOfIndex(client);
+
+		if (!UtilHelpers::IsValidEdict(edict))
+		{
+			continue;
+		}
+
+		CBaseEntity* ent = UtilHelpers::EdictToBaseEntity(edict);
+
+		if (!ent || ent == me)
+		{
+			continue;
+		}
+
+		if (alive && !UtilHelpers::IsPlayerAlive(client))
+		{
+			continue;
+		}
+
+		int theirteam = -1;
+		entprops->GetEntProp(me, Prop_Send, "m_iTeamNum", theirteam);
+
+		if (myteam == theirteam)
+		{
+			candidates.push_back(ent);
+		}
+	}
+
+	if (candidates.empty())
+	{
+		return nullptr;
+	}
+
+	if (candidates.size() == 1U)
+	{
+		return candidates[0];
+	}
+
+	return librandom::utils::GetRandomElementFromVector(candidates);
+}

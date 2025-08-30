@@ -409,6 +409,11 @@ public:
 	virtual void SaveCustomDataPreArea(std::fstream& filestream) { }						// store custom mesh data for derived classes that needs to be loaded before areas are read in
 	virtual void LoadCustomDataPreArea(std::fstream& filestream, uint32_t subVersion) { }	// load custom mesh data for derived classes that needs to be loaded before areas are read in
 
+	void ImportFromGame(); // load a nav mesh file from the game, import to navbot's format
+	bool ImportOpenNavFileForReading(CUtlBuffer& outBuffer);
+	void ImportLoad(CUtlBuffer& fileBuffer);
+	void ImportPost();
+
 	// events
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
 	virtual void OnRoundRestart( void );								// invoked when a game round restarts

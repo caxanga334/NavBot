@@ -1486,4 +1486,80 @@ CON_COMMAND(sm_navbot_debug_valve_fs, "Debugs valve file system.")
 	filesystem->Close(handle);
 }
 
+CON_COMMAND(sm_nav_debug_partially_visible, "")
+{
+	CNavArea* start = TheNavMesh->GetMarkedArea();
+
+	if (!start)
+	{
+		start = TheNavMesh->GetSelectedArea();
+
+		if (!start)
+		{
+			return;
+		}
+	}
+
+	INavAreaCollector<CNavArea> collector{ start, 5000.0f };
+
+	collector.Execute();
+	auto& vec = collector.GetCollectedAreas();
+
+	for (CNavArea* area : vec)
+	{
+		if (area == start)
+		{
+			continue;
+		}
+
+		if (start->IsPartiallyVisible(area))
+		{
+			area->DrawFilled(0, 180, 0, 200, 15.0f);
+		}
+		else
+		{
+			area->DrawFilled(255, 0, 0, 200, 15.0f);
+		}
+	}
+	
+}
+
+CON_COMMAND(sm_nav_debug_completely_visible, "")
+{
+	CNavArea* start = TheNavMesh->GetMarkedArea();
+
+	if (!start)
+	{
+		start = TheNavMesh->GetSelectedArea();
+
+		if (!start)
+		{
+			return;
+		}
+	}
+
+	INavAreaCollector<CNavArea> collector{ start, 5000.0f };
+
+	collector.Execute();
+	auto& vec = collector.GetCollectedAreas();
+
+	for (CNavArea* area : vec)
+	{
+		if (area == start)
+		{
+			continue;
+		}
+
+		if (start->IsCompletelyVisible(area))
+		{
+			area->DrawFilled(0, 180, 0, 200, 15.0f);
+		}
+		else
+		{
+			area->DrawFilled(255, 0, 0, 200, 15.0f);
+		}
+	}
+
+}
+
 #endif // EXT_DEBUG

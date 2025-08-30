@@ -22,6 +22,10 @@
 
 - [Team Fortress 2 Nav Mesh Editing]
 
+## Extras
+
+- [Importing From The Game]
+
 <!-- Links -->
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md
@@ -35,3 +39,4 @@
 [Nav Mesh Scripting]: NAVMESH_SCRIPTING.md
 [Nav Mesh Authors and Editors]: NAVMESH_AUTHOR_INFO.md
 [Team Fortress 2 Nav Mesh Editing]: TF2_EDITING.md
+[Importing From The Game]: IMPORTING.md

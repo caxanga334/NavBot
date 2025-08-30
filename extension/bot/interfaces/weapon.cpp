@@ -27,7 +27,7 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 
 #ifdef EXT_DEBUG
 	
-	if (m_info->IsCombatWeapon())
+	if (m_info != nullptr && m_info->IsCombatWeapon())
 	{
 		int clip = 0;
 		entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip1", clip);

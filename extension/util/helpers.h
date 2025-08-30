@@ -809,6 +809,18 @@ namespace UtilHelpers::parsers
 	bool ParseRandomInt(const char* str, int& out, const int min, const int max);
 }
 
+namespace UtilHelpers::players
+{
+	/**
+	 * @brief Gets a random teammate of the given player.
+	 * @param me Player entity ptr.
+	 * @param alive If true, only search for alive teammates.
+	 * @param onlyhumans If true, skip bots.
+	 * @return Teammate entity ptr or NULL if none found.
+	 */
+	CBaseEntity* GetRandomTeammate(CBaseEntity* me, const bool alive = false, const bool onlyhumans = false);
+}
+
 #endif // !UTIL_HELPERS_H_
 
 

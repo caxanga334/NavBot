@@ -43,6 +43,9 @@ These settings are used by all mods.
 | collect_item_max_distance | Maximum travel distance when collecting items (health, armor, weapons, ammo, ...) | 2048 - 16384 | 5000 |
 | max_defend_distance | Maximum distance between objectives and defend flagged waypoints. | 1024 - MAX_COORD | 4096 |
 | max_sniper_distance | Maximum distance between objectives and sniper flagged waypoints. | 1024 - MAX_COORD | 8192 |
+| rogue_chance | Chance for a bot to use the rogue behavior. Rogue bots ignore map objectives and will roam randomly looking for enemies. | 0 - 100 | 8 |
+| rogue_max_time | Maximum time to stay in the rogue behavior. | 90 - 1200 | 300 |
+| rogue_min_time | Minimum time to stay in the rogue behavior. | 30 - 600 | 120 |
 
 ## Team Fortress 2 Settings
 

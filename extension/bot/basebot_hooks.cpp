@@ -51,31 +51,31 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 {
 	int offset = 0;
 
-	if (!gd_sdkhooks->GetOffset("Spawn", &offset)) { return false; }
+	if (!gd_sdkhooks->GetOffset("Spawn", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Spawn"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Spawn, offset, 0, 0);
 
-	if (!gd_sdkhooks->GetOffset("Touch", &offset)) { return false; }
+	if (!gd_sdkhooks->GetOffset("Touch", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Touch"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Touch, offset, 0, 0);
 
-	if (!gd_sdkhooks->GetOffset("OnTakeDamage_Alive", &offset)) { return false; }
+	if (!gd_sdkhooks->GetOffset("OnTakeDamage_Alive", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::OnTakeDamage_Alive"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_OnTakeDamage_Alive, offset, 0, 0);
 
-	if (!gd_navbot->GetOffset("Event_Killed", &offset)) { return false; }
+	if (!gd_navbot->GetOffset("Event_Killed", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Event_Killed"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Event_Killed, offset, 0, 0);
 
-	if (!gd_navbot->GetOffset("Event_KilledOther", &offset)) { return false; }
+	if (!gd_navbot->GetOffset("Event_KilledOther", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Event_KilledOther"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Event_KilledOther, offset, 0, 0);
 
-	if (!gd_navbot->GetOffset("PhysicsSimulate", &offset)) { return false; }
+	if (!gd_navbot->GetOffset("PhysicsSimulate", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::PhysicsSimulate"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_PhysicsSimulate, offset, 0, 0);
 
-	if (!gd_sdkhooks->GetOffset("Weapon_Equip", &offset)) { return false; }
+	if (!gd_sdkhooks->GetOffset("Weapon_Equip", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Weapon_Equip"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Weapon_Equip, offset, 0, 0);
 
 	// This mod needs to hook CBasePlayer::PlayerRunCommand
 	if (extension->ShouldHookRunPlayerCommand())
 	{
-		if (!gd_sdktools->GetOffset("PlayerRunCmd", &offset)) { return false; }
+		if (!gd_sdktools->GetOffset("PlayerRunCmd", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::PlayerRunCommand"); return false; }
 		SH_MANUALHOOK_RECONFIGURE(CBaseBot_PlayerRunCommand, offset, 0, 0);
 	}
 
