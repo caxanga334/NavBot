@@ -2,6 +2,10 @@
 {
 	"tf"
 	{
+		"Keys"
+		{
+			"NavImportSubVersion"		"2"
+		}
 		"Offsets"
 		{
 			"Event_Killed"
