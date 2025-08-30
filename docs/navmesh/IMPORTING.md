@@ -4,6 +4,8 @@ NavBot supports importing and converting official navigation mesh files into Nav
 To import a nav mesh, run this command: `sm_nav_import`.    
 Note: Importing can only be done when no nav mesh is present.    
 
+After importing, run `sm_nav_analyze` with quick save disabled.
+
 ## Supported Games
 
 NavBot can import navigation mesh files from the following games:    
