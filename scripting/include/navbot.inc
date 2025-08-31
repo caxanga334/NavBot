@@ -102,6 +102,33 @@ forward bool OnUpdateBotQuotaIsClientIgnored(int client);
 native int GetNavBotCount();
 
 /**
+ * Builds a path from the start position to the end position.
+ * 
+ * @param vStart				Path start position.
+ * @param vEnd					Path goal position.
+ * @param maxJumpHeight			Maximum jump height used for path finding. Set to 0 if you only want paths that doesn't require jumps.
+ * @param maxGapJumpDistance	Maximum gap distance used for path finding. Set to half the hull width if you only want paths that doesn't require gap jumps.
+ * @param maxDropHeight			Maximum drop height used for path finding.
+ * @return						True if a path was found, false otherwise.
+ */
+native bool BuildPathSimple(const float vStart[3], const float vEnd[3], const float maxJumpHeight = 57.0, const float maxGapJumpDistance = 200.0, const float maxDropHeight = 300.0);
+
+/**
+ * Retrieves a path segment.
+ * A path must be built first using BuildPathSimple.
+ * Indexes starts at 0 and ends at GetPathSegmentCount() - 1
+ * 
+ * @param index			Path segment index.
+ * @param position		Vector to store the path segment position at.
+ * 
+ * @error				Path segment index out of bounds.
+ */
+native void GetPathSegment(const int index, float position[3]);
+
+// Returns the number of stored path segments.
+native int GetPathSegmentCount();
+
+/**
  * Do not edit below this line!
  */
 public Extension __ext_navbot =
