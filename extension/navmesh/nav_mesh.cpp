@@ -56,6 +56,7 @@ ConVar sm_nav_show_func_nav_prerequisite("sm_nav_show_func_nav_prerequisite", "0
 ConVar sm_nav_max_vis_delta_list_length("sm_nav_max_vis_delta_list_length", "64", FCVAR_CHEAT);
 #endif // NAVMESH_REMOVED_FEATURES
 ConVar sm_nav_solid_func_brush("sm_nav_solid_func_brush", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, func_brush entities are always considered solid for nav mesh generation/editing.");
+ConVar sm_nav_auto_import("sm_nav_auto_import", "0", FCVAR_GAMEDLL, "If enabled, automatically imports an official nav mesh if a navbot nav mesh is missing.");
 
 
 // extern ConVar sm_nav_show_potentially_visible;
@@ -273,8 +274,31 @@ void CNavMesh::OnMapStart()
 		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
 		break;
 	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
+	{
 		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
+
+		if (sm_nav_auto_import.GetBool())
+		{
+			ImportFromGame();
+
+			if (IsLoaded()) // successful import
+			{
+				smutils->LogMessage(myself, "Auto import successful! Running analysis.");
+				sm_nav_quicksave.SetValue(0);
+
+				CNavArea::CompressIDs(TheNavMesh);
+				CNavLadder::CompressIDs(TheNavMesh);
+				TheNavMesh->CompressWaypointsIDs();
+				TheNavMesh->CompressVolumesIDs();
+				TheNavMesh->CompressElevatorsIDs();
+				TheNavMesh->CompressPrerequisiteIDs();
+
+				TheNavMesh->BeginAnalysis(false);
+			}
+		}
+
 		break;
+	}
 	case NAV_INVALID_FILE:
 		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
 		break;
