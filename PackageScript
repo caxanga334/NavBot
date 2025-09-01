@@ -78,6 +78,7 @@ CopyFiles('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games',
     'game.hl2mp.txt',
     'game.hl1mp.txt',
     'game.tf.txt',
+    'game.zps.txt',
     'master.games.txt'
   ]
 )

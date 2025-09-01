@@ -33,4 +33,9 @@
 	{
 		"game"		"hl1mp"
 	}
+	// Zombie Panic: Source
+	"game.zps.txt"
+	{
+		"game"		"zps"
+	}
 }

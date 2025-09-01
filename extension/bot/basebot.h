@@ -163,7 +163,7 @@ public:
 	}
 
 	// Do what is necessary to join the game
-	virtual void TryJoinGame() {}
+	virtual void TryJoinGame();
 	// Don't update the bot when dead if this returns true
 	virtual bool SleepWhenDead() const { return true; }
 	

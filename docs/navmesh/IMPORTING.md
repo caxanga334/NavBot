@@ -13,3 +13,8 @@ NavBot can import navigation mesh files from the following games:
 * Team Fortress 2 (Version 16, Subversion 2)
 * Unmodified Source SDK 2013 nav mesh (Version 16, Subversion 0)
 
+## Automatic Import
+
+Setting the ConVar `sm_nav_auto_import` to 1 will enable automatic import.    
+When a map with no nav mesh is loaded, it will run the `sm_nav_import` command automatically.    
+The auto import feature works on dedicated servers.    

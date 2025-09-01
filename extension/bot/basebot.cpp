@@ -568,6 +568,25 @@ void CBaseBot::OnTakeDamage_Alive(const CTakeDamageInfo& info)
 {
 }
 
+void CBaseBot::TryJoinGame()
+{
+	SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
+
+	const char* command = gamedata->GetKeyValue("BotJoinGameCommand");
+
+	if (command)
+	{
+		std::string szValue(command);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			DelayedFakeClientCommand(token.c_str());
+		}
+	}
+}
+
 /**
  * @brief Selects weapon by using the IBotController::SetActiveWeapon function.
  * This will call BCC's Weapon_Create, make sure the bot actually owns the weapon you want or the bot will magically get one.

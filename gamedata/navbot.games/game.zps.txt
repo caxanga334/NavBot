@@ -1,0 +1,41 @@
+"Games"
+{
+	"zps"
+	{
+		"Keys"
+		{
+            /* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"		"info_player_human,info_player_zombie"
+            /* Comma delimited list of client command the bot should send to join the game. */
+            "BotJoinGameCommand"            "joingame,choose1"
+            /* ZPS already calls PlayerRunCommands on bots we create, just hook the function */
+            "HookPlayerRunCMD"	"1"
+		}
+		"Offsets"
+		{
+			/* CBasePlayer::Event_Killed */
+			"Event_Killed"
+			{
+				"windows"		"73"
+				"linux"			"74"
+			}
+			/* CBasePlayer::Event_KilledOther */
+			"Event_KilledOther"
+			{
+				"windows"		"74"
+				"linux"			"75"
+			}
+			/* CBasePlayer::PhysicsSimulate */
+			"PhysicsSimulate"
+			{
+				"windows"		"111"
+				"linux"			"112"
+			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"210"
+				"linux"		"211"
+			}
+		}
+	}
+}

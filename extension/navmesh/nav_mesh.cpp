@@ -142,12 +142,43 @@ CNavMesh::CNavMesh( void )
 	Reset();
 
 	ListenForGameEvent("round_start");
-	
 
 	// Default walkable entities for generation
 	AddWalkableEntity("info_player_start");
 	AddWalkableEntity("info_player_teamspawn");
 	AddWalkableEntity("info_player_deathmatch");
+
+	// Load walkable entities from gamedata
+	SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
+
+	const char* buffer = gamedata->GetKeyValue("NavGenerationWalkableEnts");
+
+	if (buffer)
+	{
+		std::string szValue(buffer);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			AddWalkableEntity(token.c_str(), false);
+		}
+	}
+
+	buffer = nullptr;
+	buffer = gamedata->GetKeyValue("NavGenerationWalkableEntsCenter");
+
+	if (buffer)
+	{
+		std::string szValue(buffer);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			AddWalkableEntity(token.c_str(), true);
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------
