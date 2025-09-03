@@ -80,6 +80,13 @@ CON_COMMAND_F(sm_nav_waypoint_delete, "Deletes the nearest or selected waypoint.
 	}
 }
 
+CON_COMMAND_F(sm_nav_waypoint_purge, "Deletes all waypoints.", FCVAR_CHEAT)
+{
+	TheNavMesh->RemoveAllWaypoints();
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+	META_CONPRINT("All waypoints were deleted. \n");
+}
+
 CON_COMMAND_F(sm_nav_waypoint_mark_crosshair, "Marks/select the waypoint nearest to your crosshair.", FCVAR_CHEAT)
 {
 	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));

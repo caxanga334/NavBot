@@ -18,6 +18,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <entities/baseentity.h>
+#include <ports/rcbot2_waypoint.h>
 
 #include "nav_mesh.h"
 #include "nav_trace.h"
@@ -308,12 +309,18 @@ void CNavMesh::OnMapStart()
 	{
 		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
 
-		if (sm_nav_auto_import.GetBool())
+		if (sm_nav_auto_import.GetInt() > 0)
 		{
 			ImportFromGame();
 
 			if (IsLoaded()) // successful import
 			{
+				if (sm_nav_auto_import.GetInt() > 1)
+				{
+					smutils->LogMessage(myself, "Nav Mesh imported. Running waypoint import.");
+					ImportWaypointsFromRCBot2();
+				}
+
 				smutils->LogMessage(myself, "Auto import successful! Running analysis.");
 				sm_nav_quicksave.SetValue(0);
 
@@ -3859,6 +3866,12 @@ void CNavMesh::RemoveWaypoint(CWaypoint* wpt)
 	m_waypoints.erase(key);
 }
 
+void CNavMesh::RemoveAllWaypoints()
+{
+	m_selectedWaypoint = nullptr;
+	m_waypoints.clear();
+}
+
 void CNavMesh::RemoveSelectedVolume()
 {
 	if (!m_selectedVolume)
@@ -4164,4 +4177,9 @@ void CNavMesh::NotifyDangerousEditCommandWasUsed()
 CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
 	TheNavMesh->ImportFromGame();
+}
+
+CON_COMMAND_F(sm_nav_rcbot2_import, "Imports waypoints from RCBot2", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	TheNavMesh->ImportWaypointsFromRCBot2();
 }

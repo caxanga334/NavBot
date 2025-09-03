@@ -22,6 +22,7 @@
 #include "nav_waypoint.h"
 #include "nav_volume.h"
 #include "nav_prereq.h"
+#include <ports/rcbot2_waypoint.h>
 
 #include <utlbuffer.h>
 #include <filesystem.h>
@@ -2094,4 +2095,57 @@ void CNavMesh::ImportPost()
 	m_isAnalyzed = false;
 	Save();
 	META_CONPRINT("Nav mesh imported, reload the map!\n");
+}
+
+void CNavMesh::ImportWaypointsFromRCBot2()
+{
+	if (!IsLoaded())
+	{
+		META_CONPRINT("A nav mesh must be generated before importing waypoints! \n");
+		return;
+	}
+
+	const char* gamefolder = smutils->GetGameFolderName();
+	char maptmp[256];
+	const char* pszMapName = gameutilsimport::GetCleanMapName(STRING(gpGlobals->mapname), maptmp);
+	char szpath[PLATFORM_MAX_PATH + 1];
+
+	smutils->BuildPath(SourceMod::PathType::Path_Game, szpath, sizeof(szpath), "addons/rcbot2/waypoints/%s/%s.rcw", gamefolder, pszMapName);
+
+	std::filesystem::path path{ szpath };
+
+	if (!std::filesystem::exists(path))
+	{
+		META_CONPRINTF("Failed to import RCBot2 waypoint! File does not exists.\n  \"%s\"", szpath);
+		return;
+	}
+	
+	std::fstream file;
+
+	file.open(path.string(), std::ios_base::in | std::ios_base::binary);
+
+	if (!file.is_open() || file.bad())
+	{
+		META_CONPRINTF("Failed to import RCBot2 waypoint! Failed to open file for reading.\n  \"%s\"", szpath);
+		return;
+	}
+
+	CRCBot2WaypointLoader loader;
+
+	bool result = loader.Load(file);
+
+	file.close();
+
+	if (!result)
+	{
+		META_CONPRINT("Failed to import RCBot2 waypoint! Loaded couldn't parse the waypoint file. \n");
+		return;
+	}
+
+	auto& waypoints = loader.GetWaypoints();
+
+	for (auto& wpt : waypoints)
+	{
+		OnRCBot2WaypointImported(wpt, loader);
+	}
 }

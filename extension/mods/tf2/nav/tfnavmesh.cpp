@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <extension.h>
+#include <ports/rcbot2_waypoint.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <sdkports/sdk_timers.h>
 #include <navmesh/nav_area.h>
@@ -116,16 +117,12 @@ void CTFNavMesh::FireGameEvent(IGameEvent* event)
 
 		if (name)
 		{
-			if (std::strcmp(name, "mvm_wave_failed") == 0 || std::strcmp(name, "mvm_wave_complete") == 0)
+			if (std::strcmp(name, "mvm_wave_failed") == 0 || std::strcmp(name, "mvm_wave_complete") == 0 || 
+				std::strcmp(name, "teamplay_round_start") == 0 || std::strcmp(name, "arena_round_start") == 0)
 			{
 				OnRoundRestart();
 				PropagateOnRoundRestart();
 				return;
-			}
-			else if (std::strcmp(name, "teamplay_round_start") == 0 || std::strcmp(name, "arena_round_start") == 0)
-			{
-				OnRoundRestart();
-				PropagateOnRoundRestart();
 			}
 		}
 	}
@@ -169,6 +166,125 @@ void CTFNavMesh::Update()
 bool CTFNavMesh::Save(void)
 {
 	return CNavMesh::Save();
+}
+
+void CTFNavMesh::OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader)
+{
+	using namespace TeamFortress2;
+
+	if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_UNREACHABLE))
+		return;
+
+	auto gm = CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode();
+	CTFWaypoint* wpt = nullptr;
+
+	bool gamemodeusesArea = (gm == GameModeType::GM_CP || gm == GameModeType::GM_ADCP || gm == GameModeType::GM_PL || gm == GameModeType::GM_PL_RACE);
+	bool setAngle = false;
+	bool assignControlPoint = false;
+
+	if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_SNIPER))
+	{
+		auto result = TheNavMesh->AddWaypoint(waypoint.GetOrigin());
+		wpt = static_cast<CTFWaypoint*>(result.value().get());
+		
+		wpt->SetTFHint(CTFWaypoint::TFHINT_SNIPER);
+
+		setAngle = true;
+		assignControlPoint = true;
+	}
+	else if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_SENTRY))
+	{
+		auto result = TheNavMesh->AddWaypoint(waypoint.GetOrigin());
+		wpt = static_cast<CTFWaypoint*>(result.value().get());
+
+		wpt->SetTFHint(CTFWaypoint::TFHINT_SENTRYGUN);
+
+		setAngle = true;
+		assignControlPoint = true;
+	}
+	else if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_TELE_EXIT))
+	{
+		auto result = TheNavMesh->AddWaypoint(waypoint.GetOrigin());
+		wpt = static_cast<CTFWaypoint*>(result.value().get());
+
+		wpt->SetTFHint(CTFWaypoint::TFHINT_TELE_EXIT);
+
+		setAngle = true;
+		assignControlPoint = true;
+	}
+	else if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_TELE_ENTRANCE))
+	{
+		auto result = TheNavMesh->AddWaypoint(waypoint.GetOrigin());
+		wpt = static_cast<CTFWaypoint*>(result.value().get());
+
+		wpt->SetTFHint(CTFWaypoint::TFHINT_TELE_ENTRANCE);
+
+		setAngle = true;
+		assignControlPoint = true;
+	}
+	else if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_DEFEND))
+	{
+		auto result = TheNavMesh->AddWaypoint(waypoint.GetOrigin());
+		wpt = static_cast<CTFWaypoint*>(result.value().get());
+
+		wpt->SetFlags(CWaypoint::BaseFlags::BASEFLAGS_DEFEND);
+
+		setAngle = true;
+		assignControlPoint = true;
+	}
+	else if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_ROUTE))
+	{
+		auto result = TheNavMesh->AddWaypoint(waypoint.GetOrigin());
+		wpt = static_cast<CTFWaypoint*>(result.value().get());
+
+		// rcbot2 route and navbot roam flags are different things so this is a bit experimental
+		wpt->SetFlags(CWaypoint::BaseFlags::BASEFLAGS_ROAM);
+
+		setAngle = true;
+		assignControlPoint = true;
+	}
+
+	if (!wpt)
+	{
+		return;
+	}
+
+	wpt->SetRadius(waypoint.GetRadius());
+
+	if (setAngle)
+	{
+		const float yaw = AngleNormalizePositive(static_cast<float>(waypoint.GetAimYaw()));
+		QAngle angle{ 0.0f, yaw, 0.0f };
+		wpt->AddAngle(angle);
+	}
+
+	if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_CROUCH))
+	{
+		wpt->SetFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH);
+	}
+
+	if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_NORED))
+	{
+		wpt->SetTeam(static_cast<int>(TFTeam::TFTeam_Blue));
+	}
+	else if (waypoint.HasFlags(CRCBot2Waypoint::W_FL_NOBLU))
+	{
+		wpt->SetTeam(static_cast<int>(TFTeam::TFTeam_Red));
+	}
+
+	if (assignControlPoint && gamemodeusesArea)
+	{
+		int area = waypoint.GetAreaNumber();
+
+		area -= 1; // down shift the area number to property translate into NavBot control point index.
+
+		if (area < 0 || area >= MAX_CONTROL_POINTS)
+		{
+			area = CTFWaypoint::NO_CONTROL_POINT;
+		}
+
+		wpt->SetControlPointIndex(area);
+	}
 }
 
 CTFNavArea* CTFNavMesh::GetRandomFrontLineArea() const

@@ -10,6 +10,7 @@
 #include "nav.h"
 
 class CBaseBot;
+class CRCBot2Waypoint;
 
 struct WaypointConnect
 {

@@ -42,6 +42,8 @@
 class HidingSpot;
 class CUtlBuffer;
 class NavPlaceDatabaseLoader;
+class CRCBot2Waypoint;
+class CRCBot2WaypointLoader;
 
 namespace SourceMod
 {
@@ -413,6 +415,7 @@ public:
 	bool ImportOpenNavFileForReading(CUtlBuffer& outBuffer);
 	void ImportLoad(CUtlBuffer& fileBuffer);
 	void ImportPost();
+	void ImportWaypointsFromRCBot2();
 
 	// events
 	virtual void OnServerActivate( void );								// (EXTEND) invoked when server loads a new map
@@ -433,6 +436,7 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea );				// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder );			// invoked when given ladder has just been deleted from the mesh in edit mode
 	virtual void OnNodeAdded( CNavNode *node ) {};						
+	virtual void OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader) {};		// invoked for each imported RCBot2 waypoint
 
 	// Obstructions
 	void RegisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction );
@@ -1160,6 +1164,7 @@ public:
 	std::optional<const std::shared_ptr<CWaypoint>> AddWaypoint(const Vector& origin);
 
 	void RemoveWaypoint(CWaypoint* wpt);
+	void RemoveAllWaypoints();
 
 	template <typename T>
 	inline std::optional<const std::shared_ptr<T>> GetWaypointOfID(WaypointID id) const

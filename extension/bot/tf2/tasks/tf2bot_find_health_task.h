@@ -33,6 +33,9 @@ private:
 	CMeshNavigatorAutoRepath m_nav;
 	HealthSource m_type;
 	CHandle<CBaseEntity> m_sourceentity;
+	CountdownTimer m_healthUpdateTimer;
+	bool m_dontMove;
+	int m_heathlValueLastUpdate;
 
 	bool IsSourceStillValid(CTF2Bot* me);
 };

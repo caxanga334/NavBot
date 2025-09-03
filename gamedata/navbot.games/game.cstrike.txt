@@ -2,6 +2,13 @@
 {
 	"cstrike"
 	{
+		"Keys"
+		{
+			/* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"			"info_player_counterterrorist,info_player_terrorist,hostage_entity"
+			/* Same as above but uses WorldSpaceCenter instead of AbsOrigin */
+			"NavGenerationWalkableEntsCenter"	"func_buyzone,func_bomb_target,func_hostage_rescue"
+		}
 		"Offsets"
 		{
 			/* CCSPlayer::Event_Killed */

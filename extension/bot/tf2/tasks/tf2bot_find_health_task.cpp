@@ -93,6 +93,9 @@ CTF2BotFindHealthTask::CTF2BotFindHealthTask(CBaseEntity* source) :
 	{
 		m_type = HealthSource::HEALTHPACK;
 	}
+
+	m_heathlValueLastUpdate = 0;
+	m_dontMove = false;
 }
 
 bool CTF2BotFindHealthTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
@@ -207,6 +210,9 @@ TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 		bot->SendVoiceCommand(TeamFortress2::VoiceCommandsID::VC_MEDIC);
 	}
 
+	m_heathlValueLastUpdate = bot->GetHealth();
+	m_healthUpdateTimer.Start(1.0f);
+
 	return Continue();
 }
 
@@ -232,6 +238,39 @@ TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskUpdate(CTF2Bot* bot)
 	static constexpr auto DISPENSER_TOUCH_RANGE = 64.0f;
 
 	if (m_type == HealthSource::DISPENSER && bot->GetRangeTo(pos) < DISPENSER_TOUCH_RANGE)
+	{
+		return Continue();
+	}
+
+	if (m_healthUpdateTimer.IsElapsed())
+	{
+		m_healthUpdateTimer.Start(1.0f);
+
+		const int current = bot->GetHealth();
+		const int delta = (m_heathlValueLastUpdate - current);
+		m_heathlValueLastUpdate = current;
+
+		// if the delta is negative, the bot is gaining health
+		if (delta < 0)
+		{
+			const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
+
+			if (!threat || !threat->IsVisibleNow())
+			{
+				m_dontMove = true;
+			}
+			else
+			{
+				m_dontMove = false;
+			}
+		}
+		else
+		{
+			m_dontMove = false;
+		}
+	}
+
+	if (m_dontMove)
 	{
 		return Continue();
 	}

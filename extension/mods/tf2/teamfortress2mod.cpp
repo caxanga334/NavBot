@@ -1752,6 +1752,46 @@ void CTeamFortress2Mod::DebugInfo_ControlPoints()
 			Msg("    In Mini Round: %s \n", inminiround ? "YES" : "NO");
 		}
 	}
+
+	std::vector<CBaseEntity*> points;
+	CollectControlPointsToAttack(TeamFortress2::TFTeam::TFTeam_Red, points);
+
+	for (CBaseEntity* ent : points)
+	{
+		tfentities::HTeamControlPoint controlpoint(ent);
+
+		Msg("RED can attack control point of index %i \n", controlpoint.GetPointIndex());
+	}
+
+	points.clear();
+	CollectControlPointsToDefend(TeamFortress2::TFTeam::TFTeam_Red, points);
+
+	for (CBaseEntity* ent : points)
+	{
+		tfentities::HTeamControlPoint controlpoint(ent);
+
+		Msg("RED can defend control point of index %i \n", controlpoint.GetPointIndex());
+	}
+
+	points.clear();
+	CollectControlPointsToAttack(TeamFortress2::TFTeam::TFTeam_Blue, points);
+
+	for (CBaseEntity* ent : points)
+	{
+		tfentities::HTeamControlPoint controlpoint(ent);
+
+		Msg("BLU can attack control point of index %i \n", controlpoint.GetPointIndex());
+	}
+
+	points.clear();
+	CollectControlPointsToDefend(TeamFortress2::TFTeam::TFTeam_Blue, points);
+
+	for (CBaseEntity* ent : points)
+	{
+		tfentities::HTeamControlPoint controlpoint(ent);
+
+		Msg("BLU can defend control point of index %i \n", controlpoint.GetPointIndex());
+	}
 }
 
 void CTeamFortress2Mod::Command_ShowControlPoints() const

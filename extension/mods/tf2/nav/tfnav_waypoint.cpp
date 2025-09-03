@@ -84,29 +84,57 @@ bool CTFWaypoint::IsAvailableToTeam(const int teamNum) const
 {
 	using namespace tfentities;
 
-	// Non team specific waypoints just uses base class for now
-	if (GetTeam() == NAV_TEAM_ANY) { return CWaypoint::IsAvailableToTeam(teamNum); }
+	const int wptteam = GetTeam();
 
 	// If a control point is assigned to this waypoint
-	if (m_cpindex != CTFWaypoint::NO_CONTROL_POINT && GetTeam() == teamNum)
+	if (m_cpindex != CTFWaypoint::NO_CONTROL_POINT)
 	{
-		std::vector<CBaseEntity*> controlpoints;
-		controlpoints.reserve(8);
-		TeamFortress2::TFTeam team = static_cast<TeamFortress2::TFTeam>(teamNum);
-
-		CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToAttack(team, controlpoints);
-		CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToDefend(team, controlpoints);
-
-		// A waypoit will be available if it can be attacked or defended by the given team
-
-		for (CBaseEntity* pEntity : controlpoints)
+		// assigned to a team
+		if (wptteam > TEAM_SPECTATOR)
 		{
-			HTeamControlPoint cp(pEntity);
-
-			if (cp.GetPointIndex() == m_cpindex)
+			if (wptteam == teamNum)
 			{
-				return true;
+				std::vector<CBaseEntity*> controlpoints;
+				controlpoints.reserve(8);
+				TeamFortress2::TFTeam team = static_cast<TeamFortress2::TFTeam>(teamNum);
+
+				CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToAttack(team, controlpoints);
+				CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToDefend(team, controlpoints);
+
+				// A waypoit will be available if it can be attacked or defended by the given team
+
+				for (CBaseEntity* pEntity : controlpoints)
+				{
+					HTeamControlPoint cp(pEntity);
+
+					if (cp.GetPointIndex() == m_cpindex)
+					{
+						return true;
+					}
+				}
 			}
+		}
+		else
+		{
+			// assigned to a control point but not to a team, this may happen on some waypoints imported from RCBot2
+			std::vector<CBaseEntity*> controlpoints;
+			controlpoints.reserve(16);
+
+			CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToDefend(TeamFortress2::TFTeam::TFTeam_Red, controlpoints);
+			CTeamFortress2Mod::GetTF2Mod()->CollectControlPointsToDefend(TeamFortress2::TFTeam::TFTeam_Blue, controlpoints);
+
+			// the waypoint will be available if either team can defend it
+
+			for (CBaseEntity* pEntity : controlpoints)
+			{
+				HTeamControlPoint cp(pEntity);
+
+				if (cp.GetPointIndex() == m_cpindex)
+				{
+					return true;
+				}
+			}
+
 		}
 
 		return false;

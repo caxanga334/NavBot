@@ -27,6 +27,8 @@ public:
 
 	virtual bool Save(void) override;
 
+	void OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader) override;
+
 	// Returns a random nav area marked with the frontline attribute for MvM
 	CTFNavArea* GetRandomFrontLineArea() const;
 	// Returns a random spawn room exit area of a given team
