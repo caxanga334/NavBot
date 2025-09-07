@@ -29,6 +29,7 @@ namespace tf2lib
 	TeamFortress2::TFTeam GetEntityTFTeam(CBaseEntity* entity);
 	int GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFortress2::TFTeam team = TeamFortress2::TFTeam::TFTeam_Unassigned, const bool ignore_bots = false);
 	TeamFortress2::TFTeam GetEnemyTFTeam(TeamFortress2::TFTeam team);
+	TeamFortress2::TFTeam TFTeamFromString(const char* string);
 	/**
 	 * @brief Gets the player health as a percentage.
 	 * @param player Player to get the health from.
@@ -114,6 +115,13 @@ namespace tf2lib::passtime
 namespace tf2lib::rd
 {
 	bool IsRobotInvulnerable(CBaseEntity* robot);
+}
+
+// Versus saxton hale functions
+namespace tf2lib::vsh
+{
+	// return true if the given player is the saxton hale, model based detection
+	bool IsPlayerTheSaxtonHale(CBaseEntity* player);
 }
 
 inline int tf2lib::GetClassDefaultMaxHealth(TeamFortress2::TFClassType tfclass)

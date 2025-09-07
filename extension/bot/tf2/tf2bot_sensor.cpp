@@ -101,6 +101,7 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity) const
 #endif // EXT_VPROF_ENABLED
 
 	CTF2Bot* me = GetBot<CTF2Bot>();
+	const CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
 
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
 
@@ -112,6 +113,11 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity) const
 			return false;
 		}
 #endif // SOURCE_ENGINE == SE_TF2
+
+		if (tf2mod->GameModeIsFreeForAll())
+		{
+			return false;
+		}
 
 		return true;
 	}
@@ -126,6 +132,7 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity) const
 #endif // EXT_VPROF_ENABLED
 
 	CTF2Bot* me = GetBot<CTF2Bot>();
+	const CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
 	auto spymonitor = me->GetSpyMonitorInterface();
 	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
 	
@@ -138,12 +145,17 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity) const
 		}
 #endif // SOURCE_ENGINE == SE_TF2
 
+		if (tf2mod->GameModeIsFreeForAll())
+		{
+			return true;
+		}
+
 		return false;
 	}
 
 	int index = gamehelpers->EntityToBCompatRef(entity);
 
-	if (CTeamFortress2Mod::GetTF2Mod()->IsTruceActive())
+	if (tf2mod->IsTruceActive())
 	{
 		// don't attack players on truce
 		if (UtilHelpers::IsPlayerIndex(index))

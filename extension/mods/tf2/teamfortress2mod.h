@@ -31,6 +31,7 @@ public:
 		engineer_trust_waypoints = true;
 		engineer_nav_build_check_vis = false;
 		engineer_nav_build_range = 2048.0f;
+		vsh_saxton_hale_team = TeamFortress2::TFTeam::TFTeam_Blue;
 	}
 
 	void SetEngineerNestDispenserRange(float range) { engineer_nest_dispenser_range = range; }
@@ -46,6 +47,7 @@ public:
 	void SetEngineerTrustWaypoints(bool value) { engineer_trust_waypoints = value; }
 	void SetRandomNavAreaBuildCheckForVisiblity(bool value) { engineer_nav_build_check_vis = value; }
 	void SetEngineerRandomNavAreaBuildRange(float value) { engineer_nav_build_range = value; }
+	void SetVSHSaxtonHaleTeam(TeamFortress2::TFTeam team) { vsh_saxton_hale_team = team; }
 
 	float GetEngineerNestDispenserRange() const { return engineer_nest_dispenser_range; }
 	float GetEngineerNestExitRange() const { return engineer_nest_exit_range; }
@@ -60,6 +62,7 @@ public:
 	bool ShouldEngineersTrustWaypoints() const { return engineer_trust_waypoints; }
 	bool ShouldRandomNavAreaBuildCheckForVisiblity() const { return engineer_nav_build_check_vis; }
 	float GetEngineerRandomNavAreaBuildRange() const { return engineer_nav_build_range; }
+	TeamFortress2::TFTeam GetVSHSaxtonHaleTeam() const { return vsh_saxton_hale_team; }
 
 protected:
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
@@ -78,6 +81,7 @@ private:
 	bool engineer_trust_waypoints;
 	bool engineer_nav_build_check_vis; // If true, random areas to build must be visible from the map's objective
 	float engineer_nav_build_range; // maximum search distance for random nav areas to build on
+	TeamFortress2::TFTeam vsh_saxton_hale_team; // The team the hale plays in on VSH, used to detect which bot is the saxton hale
 };
 
 class CTF2Bot;
@@ -180,6 +184,17 @@ public:
 		case TeamFortress2::GameModeType::GM_GG:
 			[[fallthrough]];
 		case TeamFortress2::GameModeType::GM_DM:
+			return true;
+		default:
+			return false;
+		}
+	}
+	// If true, bots will attack teammates
+	inline bool GameModeIsFreeForAll() const
+	{
+		switch (m_gamemode)
+		{
+		case TeamFortress2::GameModeType::GM_VSFFA:
 			return true;
 		default:
 			return false;

@@ -330,6 +330,26 @@ int tf2lib::GetNumberOfPlayersAsClass(TeamFortress2::TFClassType tfclass, TeamFo
 	return count;
 }
 
+TeamFortress2::TFTeam tf2lib::TFTeamFromString(const char* string)
+{
+	if (strncasecmp(string, "red", 3) == 0 || strncasecmp(string, "defenders", 9) == 0)
+	{
+		return TeamFortress2::TFTeam::TFTeam_Red;
+	}
+
+	if (strncasecmp(string, "blu", 3) == 0 || strncasecmp(string, "blue", 4) == 0 || strncasecmp(string, "invaders", 8) == 0)
+	{
+		return TeamFortress2::TFTeam::TFTeam_Blue;
+	}
+
+	if (strncasecmp(string, "spec", 4) == 0 || strncasecmp(string, "spectator", 9) == 0)
+	{
+		return TeamFortress2::TFTeam::TFTeam_Spectator;
+	}
+
+	return TeamFortress2::TFTeam::TFTeam_Unassigned;
+}
+
 float tf2lib::GetPlayerHealthPercentage(int player)
 {
 	return static_cast<float>(UtilHelpers::GetEntityHealth(player)) / static_cast<float>(GetPlayerMaxHealth(player));
@@ -943,4 +963,9 @@ bool tf2lib::rd::IsRobotInvulnerable(CBaseEntity* robot)
 
 	bool* shielded = entprops->GetPointerToEntData<bool>(robot, static_cast<unsigned int>(offset));
 	return *shielded;
+}
+
+bool tf2lib::vsh::IsPlayerTheSaxtonHale(CBaseEntity* player)
+{
+	return tf2lib::GetEntityTFTeam(player) == CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetVSHSaxtonHaleTeam();
 }

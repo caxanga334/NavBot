@@ -123,6 +123,20 @@ int CTF2Bot::GetMaxHealth() const
 	return tf2lib::GetPlayerMaxHealth(GetIndex());
 }
 
+bool CTF2Bot::CanBeAutoBalanced(bool& useOriginal)
+{
+	useOriginal = false; // we want to override it
+
+	// Re-create the game's function behavior for human players
+	if (tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_HalloweenGhostMode) ||
+		tf2lib::IsPlayerInCondition(GetEntity(), TeamFortress2::TFCond::TFCond_HalloweenKart))
+	{
+		return false;
+	}
+
+	return true;
+}
+
 TeamFortress2::TFClassType CTF2Bot::GetMyClassType() const
 {
 	return tf2lib::GetPlayerClassType(GetIndex());

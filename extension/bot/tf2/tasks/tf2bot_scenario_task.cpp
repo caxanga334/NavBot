@@ -25,6 +25,9 @@
 #include "scenario/mvm/tf2bot_mvm_monitor.h"
 #include "scenario/specialdelivery/tf2bot_special_delivery_monitor_task.h"
 #include "scenario/pd/tf2bot_pd_monitor_task.h"
+#include "scenario/community/tf2bot_vsh_monitor_task.h"
+#include "scenario/community/tf2bot_of_deathmatch_tasks.h"
+#include "scenario/community/tf2bot_zombie_infection_tasks.h"
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include <bot/tasks_shared/bot_shared_rogue_behavior.h>
@@ -53,8 +56,10 @@ TaskResult<CTF2Bot> CTF2BotScenarioTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 	m_respondToTeamMatesTimer.Invalidate();
 	TeamFortress2::GameModeType gm = tf2mod->GetCurrentGameMode();
 
-	// Don't allow going rogue on MvM
-	if (gm != TeamFortress2::GameModeType::GM_MVM)
+	// Don't allow going rogue on some game modes
+	if (gm != TeamFortress2::GameModeType::GM_MVM && gm != TeamFortress2::GameModeType::GM_VSH && 
+		gm != TeamFortress2::GameModeType::GM_ZI && gm != TeamFortress2::GameModeType::GM_SF && 
+		gm != TeamFortress2::GameModeType::GM_VSFFA)
 	{
 		int roguechance = tf2mod->GetModSettings()->GetRogueBehaviorChance();
 
@@ -92,6 +97,17 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 	if (gm == TeamFortress2::GameModeType::GM_MVM)
 	{
 		return new CTF2BotMvMMonitorTask; // In MvM, all bots start with this
+	}
+
+	// Don't use class behavior on this game mode
+	if (gm == TeamFortress2::GameModeType::GM_VSFFA)
+	{
+		return new CTF2BotOFDMMonitorTask;
+	}
+
+	if (gm == TeamFortress2::GameModeType::GM_ZI)
+	{
+		return new CTF2BotZIMonitorTask;
 	}
 
 	if (!skipClassBehavior)
@@ -152,6 +168,8 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 		return new CTF2BotPassTimeMonitorTask;
 	case TeamFortress2::GameModeType::GM_RD:
 		return new CTF2BotRobotDestructionMonitorTask;
+	case TeamFortress2::GameModeType::GM_VSH:
+		return new CTF2BotVSHMonitorTask;
 	default:
 		break;
 	}

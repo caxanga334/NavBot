@@ -65,6 +65,7 @@ These settings are only used in Team Fortress 2.
 | engineer_nav_build_range | Maximum search distance for a random nav area to build. | 1024 - 10000 | 2048 |
 | engineer_nav_build_check_vis | If enabled, engineers will only build on random areas that can be seen from the map's objective. | true or false | false |
 | engineer_trust_waypoints | If enabled, engineers won't move their sentry gun if the current waypoint being used is still valid. | true or false | true |
+| vsh_saxton_hale_team | Saxton Hale's team in VSH. | red or blu | blu |
 
 ### Macro Values
 

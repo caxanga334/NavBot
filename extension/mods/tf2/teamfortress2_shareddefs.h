@@ -492,11 +492,12 @@ namespace TeamFortress2
 		GM_TC, // Territorial Control
 		GM_ARENA, // Arena
 		GM_PASSTIME, // Passtime
-		GM_VSH, // Versus Saxton Hale
+		GM_VSH, // Versus Saxton Hale (VScript)
 		GM_ZI, // Zombie Infection
 		GM_GG, // Gun game
 		GM_DM, // Deathmatch
 		GM_SF, // Slender Fortress
+		GM_VSFFA, // Vscript Free for All Deathmatch
 
 		GM_MAX_GAMEMODE_TYPES
 	};

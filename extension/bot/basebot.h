@@ -66,6 +66,8 @@ private:
 	void Hook_PhysicsSimulate();
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
 	void Hook_Weapon_Equip_Post(CBaseEntity* weapon);
+	bool Hook_CanBeAutobalanced();
+	inline static bool s_hookCanBeAutobalanced{ false };
 
 protected:
 	/**
@@ -76,6 +78,12 @@ protected:
 	 */
 	inline void AddHookID(int id) { m_shhooks.push_back(id); }
 
+	/**
+	 * @brief Invoked by the CBaseMultiplayerPlayer::CanBeAutobalanced Hook.
+	 * @param useOriginal If set to true, allows the game to decide, otherwise uses the return value of this function.
+	 * @return When 'useOriginal' is false, return true to allow this bot to be auto team balanced, false to block it.
+	 */
+	virtual bool CanBeAutoBalanced(bool& useOriginal) { useOriginal = false; return true; }
 public:
 
 	// Event propagation

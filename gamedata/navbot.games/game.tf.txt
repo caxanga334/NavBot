@@ -5,6 +5,8 @@
 		"Keys"
 		{
 			"NavImportSubVersion"		"2"
+			/* Enable the CBaseMultiplayerPlayer::CanBeAutobalanced hook */
+			"HookCanBeAutobalanced"		"true"
 		}
 		"Offsets"
 		{

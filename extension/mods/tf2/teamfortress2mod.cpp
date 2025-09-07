@@ -23,6 +23,7 @@
 static ConVar sm_navbot_tf_force_class("sm_navbot_tf_force_class", "none", FCVAR_GAMEDLL, "Forces all NavBots to use the specified class.");
 static ConVar sm_navbot_tf_mod_debug("sm_navbot_tf_mod_debug", "0", FCVAR_GAMEDLL, "TF2 mod debugging.");
 static ConVar sm_navbot_tf_force_gamemode("sm_navbot_tf_force_gamemode", "-1", FCVAR_GAMEDLL, "Skips game mode detection and forces a specific game mode. -1 to disable.", CTeamFortress2Mod::OnForceGameModeConVarChanged);
+static ConVar sm_navbot_tf_file_based_gamemode_detection("sm_navbot_tf_file_based_gamemode_detection", "1", FCVAR_GAMEDLL, "If enabled, allow detecting game modes via filesystem.");
 #endif
 
 #undef min
@@ -44,11 +45,12 @@ static const char* s_tf2gamemodenames[] = {
 	"TERRITORIAL CONTROL",
 	"ARENA",
 	"PASS TIME",
-	"VERSUS SAXTON HALE",
+	"VERSUS SAXTON HALE (VSCRIPT)",
 	"ZOMBIE INFECTION",
 	"GUN GAME",
 	"DEATHMATCH",
-	"SLENDER FORTRESS"
+	"SLENDER FORTRESS",
+	"FREE FOR ALL DEATHMATCH (VSCRIPT)"
 };
 
 static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES), 
@@ -143,6 +145,11 @@ SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCState
 		if (strncasecmp(key, "engineer_trust_waypoints", 24) == 0)
 		{
 			SetEngineerTrustWaypoints(UtilHelpers::StringToBoolean(value));
+			return SourceMod::SMCResult_Continue;
+		}
+		if (strncasecmp(key, "vsh_saxton_hale_team", 20) == 0)
+		{
+			SetVSHSaxtonHaleTeam(tf2lib::TFTeamFromString(value));
 			return SourceMod::SMCResult_Continue;
 		}
 	}
@@ -321,7 +328,7 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 				}
 			}
 		}
-		else if (std::strcmp(name, "player_sapped_object"))
+		else if (std::strcmp(name, "player_sapped_object") == 0)
 		{
 			int owner = playerhelpers->GetClientOfUserId(event->GetInt("ownerid", -1));
 			int saboteur = playerhelpers->GetClientOfUserId(event->GetInt("userid", -1));
@@ -430,6 +437,8 @@ void CTeamFortress2Mod::OnMapStart()
 	smutils->LogMessage(myself, "Detected game mode \"%s\" for map \"%s\".", mode, map);
 	m_upgrademanager.ParseUpgradeFile();
 	m_upgrademanager.ParseBotUpgradeInfoFile();
+	m_bInSetup = false;
+	m_isTruceActive = false;
 
 	if (m_gamemode == TeamFortress2::GameModeType::GM_MVM)
 	{
@@ -652,17 +661,31 @@ bool CTeamFortress2Mod::DetectCommunityGameModes()
 
 	std::string map = tf2lib::maps::GetMapName();
 
-	if (map.find("vsh_") != std::string::npos)
+#if SOURCE_ENGINE == SE_TF2
+	if (sm_navbot_tf_file_based_gamemode_detection.GetBool())
 	{
-		m_gamemode = TeamFortress2::GameModeType::GM_VSH;
-		return true;
-	}
+		if (filesystem->FileExists("scripts/vscripts/vssaxtonhale/vsh.nut", "BSP"))
+		{
+			m_gamemode = TeamFortress2::GameModeType::GM_VSH;
+			META_CONPRINT("[NavBot] Found scripts/vscripts/vssaxtonhale/vsh.nut packed inside BSP, assuming Versus Saxton Hale (vscript)! \n");
+			return true;
+		}
 
-	if (map.find("zi_") != std::string::npos)
-	{
-		m_gamemode = TeamFortress2::GameModeType::GM_ZI;
-		return true;
+		if (filesystem->FileExists("scripts/vscripts/ffa/ffa.nut", "BSP"))
+		{
+			m_gamemode = TeamFortress2::GameModeType::GM_VSFFA;
+			META_CONPRINT("[NavBot] Found scripts/vscripts/ffa/ffa.nut packed inside BSP, assuming OF Free For All Deathmatch (vscript)! \n");
+			return true;
+		}
+
+		if (filesystem->FileExists("scripts/vscripts/infection/infection.nut", "BSP"))
+		{
+			m_gamemode = TeamFortress2::GameModeType::GM_ZI;
+			META_CONPRINT("[NavBot] Found scripts/vscripts/infection/infection.nut packed inside BSP, assuming Zombie Infection (vscript)! \n");
+			return true;
+		}
 	}
+#endif // SOURCE_ENGINE == SE_TF2
 
 	if (map.find("gg_") != std::string::npos)
 	{
@@ -1300,6 +1323,13 @@ void CTeamFortress2Mod::FindMvMBombHatchPosition()
 
 	CBaseEntity* entity = gamehelpers->ReferenceToEntity(capzone);
 	m_MvMHatchPos = UtilHelpers::getWorldSpaceCenter(entity);
+
+#if SOURCE_ENGINE == SE_TF2
+	if (sm_navbot_tf_mod_debug.GetBool())
+	{
+		rootconsole->ConsolePrint("[NavBot] Debug: MvM Bomb Hatch Pos: %3.2f %3.2f %3.2f", m_MvMHatchPos.x, m_MvMHatchPos.y, m_MvMHatchPos.z);
+	}
+#endif // SOURCE_ENGINE == SE_TF2
 }
 
 bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
@@ -1314,6 +1344,10 @@ bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
 		}
 
 		break;
+	}
+	case TeamFortress2::GameModeType::GM_VSFFA:
+	{
+		return false;
 	}
 	default:
 		break;
@@ -1470,6 +1504,7 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 
 void CTeamFortress2Mod::OnRoundStart()
 {
+	m_isTruceActive = false;
 	librandom::ReSeedGlobalGenerators();
 	UpdateObjectiveResource(); // call this first
 	FindControlPoints(); // this must be before findpayloadcarts
@@ -1686,19 +1721,17 @@ CBaseEntity* CTeamFortress2Mod::GetRoundTimer(TeamFortress2::TFTeam team) const
 
 		return gamehelpers->ReferenceToEntity(entindex);
 	}
-	else
+
+	if (m_objecteResourceEntity.Get() == nullptr)
 	{
-		if (m_objecteResourceEntity.Get() == nullptr)
-		{
-			return nullptr;
-		}
+		return nullptr;
+	}
 
-		int entindex = m_objectiveResourcesData.GetTimerToShowInHUD();
+	int entindex = m_objectiveResourcesData.GetTimerToShowInHUD();
 
-		if (entindex > 0)
-		{
-			return gamehelpers->ReferenceToEntity(entindex);
-		}
+	if (entindex > 0)
+	{
+		return gamehelpers->ReferenceToEntity(entindex);
 	}
 
 	return nullptr;

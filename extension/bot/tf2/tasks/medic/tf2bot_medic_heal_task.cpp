@@ -58,6 +58,24 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	UpdateFollowTarget(bot);
 	UpdateHealTarget(bot);
 
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		CBaseEntity* follow = m_followTarget.Get();
+		const float time = bot->GetLastUpdateTimeDelta();
+
+		if (follow)
+		{
+			NDebugOverlay::Text(UtilHelpers::getWorldSpaceCenter(follow), "Follow Target", false, time);
+		}
+
+		CBaseEntity* heal = m_healTarget.Get();
+
+		if (heal && heal != follow)
+		{
+			NDebugOverlay::Text(UtilHelpers::getWorldSpaceCenter(heal), "Heal Target", false, time);
+		}
+	}
+
 	if (m_crossbowHealTimer.IsElapsed())
 	{
 		const CBotWeapon* crossbow = bot->GetInventoryInterface()->FindWeaponByClassname("tf_weapon_crossbow");

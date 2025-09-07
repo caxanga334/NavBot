@@ -13,7 +13,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <navmesh/nav_waypoint.h>
-#include "bot_shared_attack_nearest_enemy.h"
+#include "bot_shared_attack_enemy.h"
 
 /**
  * @brief General purpose task to make bots search the surrounding areas for enemies.
@@ -33,7 +33,7 @@ public:
 	 * @param minDistanceFromStart Don't patrol areas this close to the start point.
 	 * @param maxPatrolDistance Max distance from the start to patrol.
 	 */
-	CBotSharedSearchAreaTask(BT* bot, const Vector& startPoint, const float minDistanceFromStart = 750.0f, const float maxPatrolDistance = 3000.0f, const std::size_t maxPatrolAreas = 16U) :
+	CBotSharedSearchAreaTask(BT* bot, const Vector& startPoint, const float minDistanceFromStart = 256.0f, const float maxPatrolDistance = 4096.0f, const std::size_t maxPatrolAreas = 32U) :
 		m_pathcost(bot)
 	{
 		botsharedutils::CollectPatrolAreas collector{ bot, startPoint, minDistanceFromStart, maxPatrolDistance };
@@ -91,6 +91,11 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s SEARCH AREA TASK START: %zu POINTS TO PATROL! \n", bot->GetDebugIdentifier(), m_patrolPoints.size());
+	}
+
 	return AITask<BT>::Continue();
 }
 
@@ -101,7 +106,7 @@ inline TaskResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	if (threat)
 	{
-		return AITask<BT>::SwitchTo(new CBotSharedAttackNearestEnemyTask<BT, CT>(bot), "Found enemy, attacking!");
+		return AITask<BT>::SwitchTo(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Found enemy, attacking!");
 	}
 
 	if (m_patrolPoints.empty())
@@ -151,6 +156,13 @@ inline TaskEventResponseResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnMoveToSuc
 	m_nav.Invalidate();
 	m_nav.ForceRepath();
 	m_fails = 0;
+
+	if (bot->IsDebugging(BOTDEBUG_TASKS) && !m_patrolPoints.empty())
+	{
+		const Vector& goal = m_patrolPoints.front();
+		bot->DebugPrintToConsole(0, 180, 0, "%s PATROL POINT REACHED! MOVING TO NEXT POINT AT %g %g %g! \n", bot->GetDebugIdentifier(), goal.x, goal.y, goal.z);
+	}
+
 	return AITask<BT>::TryContinue();
 }
 

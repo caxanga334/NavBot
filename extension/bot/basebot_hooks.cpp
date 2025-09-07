@@ -46,10 +46,12 @@ SH_DECL_MANUALHOOK2_void(CBaseBot_Event_KilledOther, 0, 0, 0, CBaseEntity*, cons
 SH_DECL_MANUALHOOK0_void(CBaseBot_PhysicsSimulate, 0, 0, 0)
 SH_DECL_MANUALHOOK2_void(CBaseBot_PlayerRunCommand, 0, 0, 0, CUserCmd*, IMoveHelper*)
 SH_DECL_MANUALHOOK1_void(CBaseBot_Weapon_Equip, 0, 0, 0, CBaseEntity*)
+SH_DECL_MANUALHOOK0(CBaseBot_CanBeAutobalanced, 0, 0, 0, bool)
 
 bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools)
 {
 	int offset = 0;
+	CBaseBot::s_hookCanBeAutobalanced = false;
 
 	if (!gd_sdkhooks->GetOffset("Spawn", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Spawn"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Spawn, offset, 0, 0);
@@ -79,6 +81,17 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 		SH_MANUALHOOK_RECONFIGURE(CBaseBot_PlayerRunCommand, offset, 0, 0);
 	}
 
+	const char* szValue = gd_navbot->GetKeyValue("HookCanBeAutobalanced");
+
+	if (szValue && szValue[0] != '\0' && UtilHelpers::StringToBoolean(szValue))
+	{
+		if (gd_sdkhooks->GetOffset("CanBeAutobalanced", &offset))
+		{
+			CBaseBot::s_hookCanBeAutobalanced = true;
+			SH_MANUALHOOK_RECONFIGURE(CBaseBot_CanBeAutobalanced, offset, 0, 0);
+		}
+	}
+
 	return true;
 }
 
@@ -106,6 +119,11 @@ void CBaseBot::AddHooks()
 	if (extension->ShouldHookRunPlayerCommand())
 	{
 		m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_PlayerRunCommand, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_PlayerRunCommand), false));
+	}
+
+	if (CBaseBot::s_hookCanBeAutobalanced)
+	{
+		m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_CanBeAutobalanced, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_CanBeAutobalanced), false));
 	}
 }
 
@@ -242,7 +260,37 @@ void CBaseBot::Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper)
 
 void CBaseBot::Hook_Weapon_Equip_Post(CBaseEntity* weapon)
 {
+#ifdef EXT_DEBUG
+	if (cvar_print_bot_hooks.GetBool() && weapon)
+	{
+		int index = UtilHelpers::IndexOfEntity(weapon);
+		const char* classname = gamehelpers->GetEntityClassname(weapon);
+		ConColorMsg(Color(173, 216, 230, 255), "%s Hook_Weapon_Equip_Post %p [%i] %s", GetDebugIdentifier(), weapon, index, classname);
+	}
+#endif
+
 	this->OnWeaponEquip(weapon);
 
 	RETURN_META(MRES_IGNORED);
+}
+
+bool CBaseBot::Hook_CanBeAutobalanced()
+{
+	bool useOriginal = false;
+	bool result = this->CanBeAutoBalanced(useOriginal);
+
+#ifdef EXT_DEBUG
+	if (cvar_print_bot_hooks.GetBool())
+	{
+		ConColorMsg(Color(173, 216, 230, 255), "%s Hook_CanBeAutobalanced Use Original: %s Result: %s", GetDebugIdentifier(),
+			useOriginal ? "TRUE" : "FALSE", result ? "TRUE" : "FALSE");
+	}
+#endif
+
+	if (!useOriginal)
+	{
+		RETURN_META_VALUE(MRES_SUPERCEDE, result);
+	}
+
+	RETURN_META_VALUE(MRES_IGNORED, false);
 }

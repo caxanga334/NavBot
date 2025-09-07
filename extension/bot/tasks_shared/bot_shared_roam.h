@@ -11,7 +11,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <navmesh/nav_waypoint.h>
-#include "bot_shared_attack_nearest_enemy.h"
+#include "bot_shared_attack_enemy.h"
 
 template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedRoamTask : public AITask<BT>
@@ -25,14 +25,16 @@ public:
 	 * @param travellimit Maximum search range for a random nav area.
 	 * @param attackvisiblenemies If true, bots will stop and attack visible enemies.
 	 * @param waypointSearchRange Maximum search range for a random "roam" flagged waypoint. Negative values for no limit.
+	 * @param interruptTask If true, this task will end when it gets interrupted.
 	 */
-	CBotSharedRoamTask(BT* bot, const float travellimit = 4096.0f, const bool attackvisiblenemies = false, const float waypointSearchRange = -1.0f) :
+	CBotSharedRoamTask(BT* bot, const float travellimit = 4096.0f, const bool attackvisiblenemies = false, const float waypointSearchRange = -1.0f, const bool interruptTask = false) :
 		m_pathcost(bot), m_goal(0.0f, 0.0f, 0.0f)
 	{
 		m_goalSet = false;
 		m_attackEnemies = attackvisiblenemies;
 		m_travelLimit = travellimit;
 		m_moveFailures = 0;
+		m_interrupt = interruptTask;
 
 		CWaypoint* randomWpt = botsharedutils::waypoints::GetRandomRoamWaypoint(bot, waypointSearchRange);
 
@@ -44,7 +46,7 @@ public:
 		}
 	}
 
-	CBotSharedRoamTask(BT* bot, const Vector& goal, const float timeout = -1.0f, const bool attackvisiblenemies = false) :
+	CBotSharedRoamTask(BT* bot, const Vector& goal, const float timeout = -1.0f, const bool attackvisiblenemies = false, const bool interruptTask = false) :
 		m_pathcost(bot), m_goal(goal)
 	{
 		if (timeout > 0.0f)
@@ -55,9 +57,10 @@ public:
 		m_goalSet = true;
 		m_attackEnemies = attackvisiblenemies;
 		m_moveFailures = 0;
+		m_interrupt = interruptTask;
 	}
 
-	CBotSharedRoamTask(BT* bot, CWaypoint* waypoint, const float timeout = -1.0f, const bool attackvisiblenemies = false) :
+	CBotSharedRoamTask(BT* bot, CWaypoint* waypoint, const float timeout = -1.0f, const bool attackvisiblenemies = false, const bool interruptTask = false) :
 		m_pathcost(bot)
 	{
 		if (timeout > 0.0f)
@@ -70,10 +73,12 @@ public:
 		m_goalSet = true;
 		m_attackEnemies = attackvisiblenemies;
 		m_moveFailures = 0;
+		m_interrupt = interruptTask;
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
+	bool OnTaskPause(BT* bot, AITask<BT>* nextTask) override;
 
 	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
@@ -87,6 +92,7 @@ private:
 	Vector m_goal;
 	bool m_goalSet;
 	bool m_attackEnemies;
+	bool m_interrupt;
 	float m_travelLimit;
 	int m_moveFailures;
 
@@ -126,7 +132,7 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 		if (threat)
 		{
-			return AITask<BT>::PauseFor(new CBotSharedAttackNearestEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
 		}
 	}
 
@@ -146,6 +152,17 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 	m_nav.Update(bot);
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline bool CBotSharedRoamTask<BT, CT>::OnTaskPause(BT* bot, AITask<BT>* nextTask)
+{
+	if (m_interrupt)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 template<typename BT, typename CT>

@@ -100,7 +100,7 @@ inline TaskResult<BT> CBotSharedRogueBehaviorTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	const int attackchance = std::min(bot->GetDifficultyProfile()->GetAggressiveness(), 75);
 	bool attackEnemies = CBaseBot::s_botrng.GetRandomChance(attackchance);
-	return AITask<BT>::PauseFor(new CBotSharedRoamTask<BT, CT>(bot, 8192.0f, attackEnemies), "Roaming!");
+	return AITask<BT>::PauseFor(new CBotSharedRoamTask<BT, CT>(bot, 8192.0f, attackEnemies, -1.0f, false), "Roaming!");
 }
 
 #endif

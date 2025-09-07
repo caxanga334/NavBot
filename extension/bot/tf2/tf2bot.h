@@ -46,6 +46,10 @@ public:
 	CTF2BotInventory* GetInventoryInterface() const { return m_tf2inventory.get(); }
 	int GetMaxHealth() const override;
 
+protected:
+	bool CanBeAutoBalanced(bool& useOriginal) override;
+public:
+
 	TeamFortress2::TFClassType GetMyClassType() const;
 	TeamFortress2::TFTeam GetMyTFTeam() const;
 	void JoinClass(TeamFortress2::TFClassType tfclass) const;
