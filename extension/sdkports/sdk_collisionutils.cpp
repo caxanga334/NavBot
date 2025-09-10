@@ -10,6 +10,7 @@
 
 #if !defined(_STATIC_LINKED) || defined(_SHARED_LIB)
 
+#if SOURCE_ENGINE > SE_EPISODEONE
 #include "sdk_collisionutils.h"
 #include "cmodel.h"
 #include "mathlib/mathlib.h"
@@ -17,7 +18,18 @@
 #include "tier0/dbg.h"
 #include <float.h>
 #include "mathlib/vector4d.h"
-#include "trace.h"
+#include "trace.h"  
+#else
+#include "sdk_collisionutils.h"
+#include "cmodel.h"
+#include "mathlib.h"
+#include "vector.h"
+#include "tier0/dbg.h"
+#include <cfloat>
+#include "vector4d.h"
+#include "trace.h"  
+#endif // SOURCE_ENGINE > SE_EPISODEONE
+
 
 #define UNINIT		-99999.0
 
@@ -537,16 +549,6 @@ bool IsSphereIntersectingCone( const Vector &sphereCenter, float sphereRadius, c
 //-----------------------------------------------------------------------------
 bool IsPointInBox( const Vector& pt, const Vector& boxMin, const Vector& boxMax )
 {
-	Assert( boxMin[0] <= boxMax[0] );
-	Assert( boxMin[1] <= boxMax[1] );
-	Assert( boxMin[2] <= boxMax[2] );
-
-	// on x360, force use of SIMD version.
-	if (IsX360())
-	{
-		return IsPointInBox( LoadUnaligned3SIMD(pt.Base()), LoadUnaligned3SIMD(boxMin.Base()), LoadUnaligned3SIMD(boxMax.Base()) ) ;
-	}
-
 	if ( (pt[0] > boxMax[0]) || (pt[0] < boxMin[0]) )
 		return false;
 	if ( (pt[1] > boxMax[1]) || (pt[1] < boxMin[1]) )
@@ -634,7 +636,9 @@ bool IsOBBIntersectingOBB( const Vector &vecOrigin1, const QAngle &vecAngles1, c
 }
 
 // NOTE: This is only very slightly faster on high end PCs and x360
+#if SOURCE_ENGINE > SE_EPISODEONE
 #define USE_SIMD_RAY_CHECKS 1
+#endif
 //-----------------------------------------------------------------------------
 // returns true if there's an intersection between box and ray
 //-----------------------------------------------------------------------------
@@ -710,8 +714,8 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& boxMin, const Vector& boxMax,
 	Assert( boxMin[2] <= boxMax[2] );
 
 	// FIXME: Surely there's a faster way
-	float tmin = -FLT_MAX;
-	float tmax = FLT_MAX;
+	float tmin = std::numeric_limits<float>::min();
+	float tmax = std::numeric_limits<float>::max();
 
 	for (int i = 0; i < 3; ++i)
 	{
@@ -835,8 +839,8 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& boxMin, const Vector& boxMax,
 	Assert( boxMin[2] <= boxMax[2] );
 
 	// FIXME: Surely there's a faster way
-	float tmin = -FLT_MAX;
-	float tmax = FLT_MAX;
+	float tmin = std::numeric_limits<float>::min();
+	float tmax = std::numeric_limits<float>::max();
 
 	for ( int i = 0; i < 3; ++i )
 	{
@@ -925,6 +929,7 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& vecBoxMin, const Vector& vecBo
 // returns true if there's an intersection between box and ray (SIMD version)
 //-----------------------------------------------------------------------------
 
+#if SOURCE_ENGINE > SE_EPISODEONE
 
 #ifdef _X360
 bool FASTCALL IsBoxIntersectingRay( fltx4 boxMin, fltx4 boxMax, 
@@ -1014,6 +1019,7 @@ bool FASTCALL IsBoxIntersectingRay( const fltx4& boxMin, const fltx4& boxMax,
 	return IsBoxIntersectingRay( vecExpandedBoxMin, vecExpandedBoxMax, rayStart, rayDelta, ReciprocalSIMD(rayDelta), ReplicateX4(flTolerance) );
 }
 
+#endif // SOURCE_ENGINE > SE_EPISODEONE
 
 //-----------------------------------------------------------------------------
 // Intersects a ray with a ray, return true if they intersect
@@ -1330,9 +1336,9 @@ bool IntersectRayWithOBB( const Vector &vecRayStart, const Vector &vecRayDelta,
 	for ( int j = 0; j < 3; j++ )
 	{
 		extent[j] = vecRayDelta.x * matOBBToWorld[0][j] + vecRayDelta.y * matOBBToWorld[1][j] +	vecRayDelta.z * matOBBToWorld[2][j];
-		uextent[j] = fabsf(extent[j]);
+		uextent[j] = std::abs(extent[j]);
 		float coord = segmentCenter.x * matOBBToWorld[0][j] + segmentCenter.y * matOBBToWorld[1][j] +	segmentCenter.z * matOBBToWorld[2][j];
-		coord = fabsf(coord);
+		coord = std::abs(coord);
 
 		if ( coord > (vecBoxExtents[j] + uextent[j]) )
 			return false;
@@ -1342,19 +1348,19 @@ bool IntersectRayWithOBB( const Vector &vecRayStart, const Vector &vecRayDelta,
 	float tmp, cextent;
 	Vector cross = vecRayDelta.Cross( segmentCenter );
 	cextent = cross.x * matOBBToWorld[0][0] + cross.y * matOBBToWorld[1][0] + cross.z * matOBBToWorld[2][0];
-	cextent = fabsf(cextent);
+	cextent = std::abs(cextent);
 	tmp = vecBoxExtents[1]*uextent[2] + vecBoxExtents[2]*uextent[1];
 	if ( cextent > tmp )
 		return false;
 
 	cextent = cross.x * matOBBToWorld[0][1] + cross.y * matOBBToWorld[1][1] + cross.z * matOBBToWorld[2][1];
-	cextent = fabsf(cextent);
+	cextent = std::abs(cextent);
 	tmp = vecBoxExtents[0]*uextent[2] + vecBoxExtents[2]*uextent[0];
 	if ( cextent > tmp )
 		return false;
 
 	cextent = cross.x * matOBBToWorld[0][2] + cross.y * matOBBToWorld[1][2] + cross.z * matOBBToWorld[2][2];
-	cextent = fabsf(cextent);
+	cextent = std::abs(cextent);
 	tmp = vecBoxExtents[0]*uextent[1] + vecBoxExtents[1]*uextent[0];
 	if ( cextent > tmp )
 		return false;
@@ -2011,7 +2017,7 @@ QuadBarycentricRetval_t PointInQuadToBarycentric( const Vector &v1, const Vector
 			return BARY_QUADRATIC_NEGATIVE_DISCRIMINANT;
 		}
 
-		double quad = sqrt( discriminant );
+		double quad = std::sqrt( discriminant );
 		double QPlus = ( negB + quad ) / ( 2.0f * A );
 		double QMinus = ( negB - quad ) / ( 2.0f * A );
 

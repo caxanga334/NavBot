@@ -75,6 +75,9 @@ IVModelInfo* modelinfo = nullptr;
 IMDLCache* imdlcache = nullptr;
 IFileSystem* filesystem = nullptr;
 ICvar* icvar = nullptr;
+#if SOURCE_ENGINE == SE_EPISODEONE
+ICvar* g_pCVar = nullptr;
+#endif // SOURCE_ENGINE == SE_EPISODEONE
 IServerTools* servertools = nullptr;
 IServerPluginHelpers* serverpluginhelpers = nullptr;
 IStaticPropMgrServer* staticpropmgr = nullptr;
@@ -105,7 +108,10 @@ static ConVar cvar_draw_player_move("sm_navbot_debug_draw_player_move", "0", FCV
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
 
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
+#if SOURCE_ENGINE > SE_EPISODEONE
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*, const CCommand&);
+#endif // SOURCE_ENGINE > SE_EPISODEONE
+
 
 #if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommandKeyValues, SH_NOATTRIB, 0, edict_t*, KeyValues*);
@@ -264,7 +270,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	}
 
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
-	ConVar_Register(0, this);
+	CONVAR_REGISTER(this);
 	playerhelpers->AddClientListener(this);
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
@@ -291,7 +297,9 @@ void NavBotExt::SDK_OnUnload()
 	delete extmanager;
 	extmanager = nullptr;
 
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 	ConVar_Unregister();
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 }
 
 void NavBotExt::SDK_OnAllLoaded()
@@ -355,10 +363,12 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetEngineFactory, imdlcache, IMDLCache, MDLCACHE_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, icvar, ICvar, CVAR_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, serverpluginhelpers, IServerPluginHelpers, INTERFACEVERSION_ISERVERPLUGINHELPERS);
-	GET_V_IFACE_CURRENT(GetServerFactory, servergamedll, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
+	GET_V_IFACE_ANY(GetServerFactory, servergamedll, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
 	GET_V_IFACE_CURRENT(GetServerFactory, playerinfomanager, IPlayerInfoManager, INTERFACEVERSION_PLAYERINFOMANAGER);
 	GET_V_IFACE_CURRENT(GetServerFactory, gameclients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
+#if SOURCE_ENGINE >= SE_ORANGEBOX
 	GET_V_IFACE_CURRENT(GetServerFactory, servertools, IServerTools, VSERVERTOOLS_INTERFACE_VERSION);
+#endif // SOURCE_ENGINE >= SE_ORANGEBOX
 	GET_V_IFACE_CURRENT(GetEngineFactory, staticpropmgr, IStaticPropMgrServer, INTERFACEVERSION_STATICPROPMGR_SERVER);
 	GET_V_IFACE_CURRENT(GetEngineFactory, partition, ISpatialPartition, INTERFACEVERSION_SPATIALPARTITION);
 
@@ -383,7 +393,9 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	g_pCVar = icvar; // TO-DO: add #if source engine here
 
 	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), true);
+#if SOURCE_ENGINE > SE_EPISODEONE
 	SH_ADD_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
+#endif // SOURCE_ENGINE > SE_EPISODEONE
 
 #ifdef EXT_DEBUG
 
@@ -399,7 +411,9 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 {
 	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), false);
+#if SOURCE_ENGINE > SE_EPISODEONE
 	SH_REMOVE_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
+#endif // SOURCE_ENGINE > SE_EPISODEONE
 
 #ifdef EXT_DEBUG
 

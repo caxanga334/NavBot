@@ -1,6 +1,34 @@
 #ifndef __NAVBOT_DODS_SHAREDDEFS_H_
 #define __NAVBOT_DODS_SHAREDDEFS_H_
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+
+//-----------------------------------------------------------------------------
+// Multiplayer specific defines
+//-----------------------------------------------------------------------------
+#define MAX_CONTROL_POINTS			8
+#define MAX_CONTROL_POINT_GROUPS	8
+
+// Maximum number of points that a control point may need owned to be cappable
+#define MAX_PREVIOUS_POINTS			3
+
+// The maximum number of teams the control point system knows how to deal with
+#define MAX_CONTROL_POINT_TEAMS		8
+
+// Maximum length of the cap layout string
+#define MAX_CAPLAYOUT_LENGTH		32
+
+// Maximum length of the current round printname
+#define MAX_ROUND_NAME				32
+
+// Maximum length of the current round name
+#define MAX_ROUND_IMAGE_NAME		64
+
+// Score added to the team score for a round win
+#define TEAMPLAY_ROUND_WIN_SCORE	1
+
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
 namespace dayofdefeatsource
 {
 	enum DoDTeam : int

@@ -20,6 +20,12 @@
 #include <sm_argbuffer.h>
 #include <am-platform.h>
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+#include <util/commandargs_episode1.h>
+#include <sdkports/sdk_convarref_ep1.h>
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
+
 CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 {
 	Msg("--- BEGIN NavBot Info ---\n");
@@ -45,6 +51,8 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 
 CON_COMMAND_F_COMPLETION(sm_navbot_debug_bot_sensor_memory, "Debugs the bot Sensor interface's entity memory.", FCVAR_CHEAT | FCVAR_GAMEDLL, CExtManager::AutoComplete_BotNames)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_debug_sensor_memory <bot name> \n");
@@ -66,6 +74,8 @@ CON_COMMAND_F_COMPLETION(sm_navbot_debug_bot_sensor_memory, "Debugs the bot Sens
 #ifdef EXT_DEBUG
 CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	Vector target = UtilHelpers::getWorldSpaceCenter(host);
 
@@ -116,6 +126,8 @@ CON_COMMAND(sm_navbot_debug_bot_hear_me, "Simulates the bots hearing you.")
 
 CON_COMMAND(sm_navbot_debug_bot_impulse, "All bots sends a specific impulse command.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_impulse <impulse number>");
@@ -139,6 +151,8 @@ CON_COMMAND(sm_navbot_debug_bot_impulse, "All bots sends a specific impulse comm
 
 CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_send_command <command>");
@@ -156,6 +170,8 @@ CON_COMMAND(sm_navbot_debug_bot_send_command, "All bots sends a client command."
 
 CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 3)
 	{
 		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_send_button <button> <time>");
@@ -288,6 +304,8 @@ CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 
 CON_COMMAND_F(sm_navbot_debug_worldcenter, "Debugs the extension CBaseEntity::WorldSpaceCenter implementation.", FCVAR_GAMEDLL)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("Usage: sm_navbot_debug_worldcenter <classname> \n");
@@ -383,37 +401,6 @@ CON_COMMAND_F(sm_navbot_tf_debug_test_buy_upgrade, "Testing sending KeyValue com
 
 #endif // SOURCE_ENGINE == SE_TF2
 
-#if SOURCE_ENGINE == SE_DODS && defined(WIN32)
-
-CON_COMMAND_F(sm_navbot_dod_debug_vcall, "Testing Virtual function calling.", FCVAR_CHEAT)
-{
-	static SourceMod::ICallWrapper* pCall = nullptr;
-
-	if (!pCall)
-	{
-		constexpr int OFFSET = 149; // WorldSpaceCenter
-
-		SourceMod::PassInfo ret;
-		ret.flags = PASSFLAG_BYVAL;
-		ret.size = sizeof(void*);
-		ret.type = SourceMod::PassType::PassType_Basic;
-
-		pCall = g_pBinTools->CreateVCall(OFFSET, 0, 0, &ret, nullptr, 0);
-	}
-
-	CBaseEntity* host = gamehelpers->ReferenceToEntity(1);
-	ArgBuffer<void*> vstk(host);
-
-	Vector result;
-	Vector* retval = nullptr;
-	pCall->Execute(vstk, &retval);
-
-	result = *retval;
-	Msg("CBaseEntity::WorldSpaceCenter() <%3.2f, %3.2f, %3.2f>\n", result.x, result.y, result.z);
-}
-
-#endif // SOURCE_ENGINE == SE_DODS
-
 CON_COMMAND_F(sm_navbot_debug_new_traces, "Debug new trace functions.", FCVAR_CHEAT)
 {
 	edict_t* host = gamehelpers->EdictOfIndex(1);
@@ -456,6 +443,8 @@ CON_COMMAND_F(sm_navbot_debug_sdkcalls, "Debug new SDKCalls functions.", FCVAR_C
 
 CON_COMMAND_F(sm_nav_debug_area_collector, "Debugs NavMeshCollector", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	CBaseExtPlayer player(gamehelpers->EdictOfIndex(1));
 	player.UpdateLastKnownNavArea(true);
 	
@@ -607,10 +596,17 @@ CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHE
 			Msg("Hit Solid!\n");
 		}
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+		if ((tr.contents & CONTENTS_MIST) != 0)
+		{
+			Msg("Hit Mist!\n");
+		}
+#else
 		if ((tr.contents & CONTENTS_BLOCKLOS) != 0)
 		{
 			Msg("Hit Block LOS!\n");
 		}
+#endif // SOURCE_ENGINE == SE_EPISODEONE
 
 		surfacedata_t* surfacedata = physprops->GetSurfaceData(tr.surface.surfaceProps);
 
@@ -819,6 +815,8 @@ CON_COMMAND(sm_navbot_debug_gamerules_ptr, "Tests if the extension is able to ge
 
 CON_COMMAND(sm_navbot_debug_cvar_value, "Reports the value of ConVars.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_debug_cvar_value <convar name>\n");
@@ -943,6 +941,8 @@ CON_COMMAND(sm_navbot_debug_find_cover, "Debugs the find cover utility")
 
 CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 4)
 	{
 		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <collision group> <filter option>\n");
@@ -1120,6 +1120,8 @@ CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 
 CON_COMMAND(sm_navbot_debug_vis, "Visibility debug")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		Msg("[SM] Usage: sm_navbot_debug_vis <ent index>\n");
@@ -1218,6 +1220,8 @@ CON_COMMAND(sm_navbot_debug_touching, "List entities you're touching.")
 
 CON_COMMAND(sm_navbot_debug_spread_danger, "Spread danger to nearby areas")
 {
+	DECLARE_COMMAND_ARGS;
+
 	edict_t* player = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = UtilHelpers::getEntityOrigin(player);
 	CNavArea* area = TheNavMesh->GetNearestNavArea(origin, 512.0f);
@@ -1271,6 +1275,8 @@ CON_COMMAND(sm_navbot_debug_network_prop, "Debugs the entity's CServerNetworkPro
 
 CON_COMMAND(sm_navbot_debug_createfakeclient, "Debug CreateFakeClient.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_debug_fakeclient <method> \n  0 = CreateFakeClient\n  1 = CreateFakeClientEx\n  2 = BotManager \n");
@@ -1340,6 +1346,8 @@ CON_COMMAND(sm_navbot_debug_player_info, "Debugs the player info interfaces.")
 
 CON_COMMAND(sm_navbot_debug_ent_iface, "Debug entity interface")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_iface <classname> \n");
@@ -1468,22 +1476,6 @@ CON_COMMAND(sm_navbot_debug_strafe_jump_calcs, "")
 		}
 	}
 
-}
-
-CON_COMMAND(sm_navbot_debug_valve_fs, "Debugs valve file system.")
-{
-	// 
-
-	FileHandle_t handle = filesystem->Open("scripts/vscripts/vssaxtonhale/vsh.nut", "r", "BSP");
-
-	if (handle == FILESYSTEM_INVALID_HANDLE)
-	{
-		META_CONPRINT("FILE NOT FOUND! \n");
-		return;
-	}
-
-	META_CONPRINT("FILE FOUND! \n");
-	filesystem->Close(handle);
 }
 
 CON_COMMAND(sm_nav_debug_partially_visible, "")

@@ -86,6 +86,36 @@ for sdk_name in Extension.sdks:
     binary.compiler.cxxincludes += includesDirs
     # fixes a compile error due to missing include
     binary.compiler.defines += [ 'RAD_TELEMETRY_DISABLED' ]
+  
+    # Disable some warnings from the SDK
+    if sdk['name'] in ['episode1']:
+      if binary.compiler.like('msvc'):
+        binary.compiler.cflags += ['/wd4838']
+      elif binary.compiler.like('gcc'):
+        binary.compiler.cflags += [
+          '-Wno-writable-strings',
+          '-Wno-c++11-narrowing',
+          '-Wno-mismatched-tags',
+        ]
+
+    vmatrix_path = None
+    shareddefs_path = None
+    touchlink_path = None
+
+    if sdk['name'] in ['episode1']:
+      vmatrix_path = os.path.join(sdk['path'],'public', 'vmatrix.h')
+    else:
+      vmatrix_path = os.path.join(sdk['path'],'public', 'mathlib', 'vmatrix.h')
+
+    if sdk['name'] in ['episode1']:
+      shareddefs_path = os.path.join(sdk['path'],'game_shared', 'shareddefs.h')
+    else:
+      shareddefs_path = os.path.join(sdk['path'],'game', 'shared', 'shareddefs.h')
+
+    if sdk['name'] in ['episode1']:
+      touchlink_path = os.path.join(sdk['path'],'game_shared', 'touchlink.h')
+    else:
+      touchlink_path = os.path.join(sdk['path'],'game', 'shared', 'touchlink.h')
 
     pch_sources = []
     pch_sources += pch_sources_shared
@@ -96,7 +126,7 @@ for sdk_name in Extension.sdks:
       os.path.join(sdk['path'],'public', 'tier0', 'basetypes.h'),
       os.path.join(sdk['path'],'public', 'tier1', 'strtools.h'),
       os.path.join(sdk['path'],'public', 'tier1', 'utlvector.h'),
-      os.path.join(sdk['path'],'public', 'mathlib', 'vmatrix.h'),
+      str(vmatrix_path),
       os.path.join(sdk['path'],'public', 'string_t.h'),
       os.path.join(sdk['path'],'public', 'vphysics_interface.h'),
       os.path.join(sdk['path'],'public', 'const.h'),
@@ -107,11 +137,11 @@ for sdk_name in Extension.sdks:
       os.path.join(sdk['path'],'public', 'iserver.h'),
       os.path.join(sdk['path'],'public', 'iclient.h'),
       os.path.join(sdk['path'],'public', 'dt_send.h'),
-      os.path.join(sdk['path'],'game', 'shared', 'shareddefs.h'),
+      str(shareddefs_path),
       os.path.join(builder.currentSourcePath, 'extension', 'sdkports', 'sdk_ehandle.h'),
       os.path.join(sdk['path'],'public', 'datamap.h'),
       os.path.join(sdk['path'],'public', 'server_class.h'),
-      os.path.join(sdk['path'],'game', 'shared', 'touchlink.h'),
+      str(touchlink_path),
       os.path.join(sdk['path'],'public', 'igameevents.h'),
       os.path.join(sdk['path'],'public', 'PlayerState.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'navbot_headers_post_sdk.h'),

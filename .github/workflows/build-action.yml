@@ -22,7 +22,7 @@ jobs:
         include:
           - meta_branch: "1.12-dev"
             sm_branch: "1.12-dev"
-            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm'
+            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm episode1'
           
           - buildjobs: windows-latest
             os_version: windows-latest
@@ -31,7 +31,7 @@ jobs:
             package_name: 'windows'
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
-            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
+            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1'
             os_ambuild_params: '--breakpad-upload'
 
           - buildjobs: linux-stable
@@ -43,7 +43,7 @@ jobs:
             package_name: 'linux'
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
-            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm'
+            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1'
             os_ambuild_params: ''
     env:
       USER_BIN_PATH: ${{ github.workspace }}/bins

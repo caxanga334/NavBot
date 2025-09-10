@@ -3525,8 +3525,6 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 
 void CNavMesh::CommandNavCornerPlaceAtFeet(const CCommand& args)
 {
-	DECLARE_COMMAND_ARGS;
-
 	edict_t* player = UTIL_GetListenServerEnt();
 
 	if (player == NULL || !IsEditMode(NORMAL))
@@ -4597,7 +4595,7 @@ void CNavMesh::PlayEditSoundInternal(const std::string& sound) const
 	char command[256];
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	ke::SafeSprintf(command, sizeof(command), "play %s", sound.c_str());
-	engine->ClientCommand(host, command);
+	engine->ClientCommand(host, "%s", command);
 }
 
 CON_COMMAND(sm_nav_print_map_name, "Prints the current map name used by the Navigaiton Mesh.")
@@ -5107,6 +5105,8 @@ void CNavMesh::CommandNavSelectAreasWithinEntity(CBaseEntity* pEntity, const std
 
 CON_COMMAND_F(sm_nav_select_areas_within_entity, "Selects all nav areas that are within an entity bounds.", FCVAR_CHEAT | FCVAR_GAMEDLL)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 4)
 	{
 		META_CONPRINT("[SM] Usage: sm_nav_select_areas_within_entity <entity index or entity classname> <bool: search center only> <height offset> \n");
@@ -5291,6 +5291,8 @@ public:
 
 CON_COMMAND_F(sm_nav_draw_blocked_status, "Draws the blocked/unblocked status for each selected area.", FCVAR_CHEAT | FCVAR_GAMEDLL)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (!UTIL_IsCommandIssuedByServerAdmin())
 		return;
 
@@ -5336,6 +5338,8 @@ CON_COMMAND_F(sm_nav_draw_blocked_status, "Draws the blocked/unblocked status fo
 
 CON_COMMAND_F(sm_nav_trace_make_entity_solid, "Adds the given entity to the list of forced solid list.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (!UTIL_IsCommandIssuedByServerAdmin())
 		return;
 

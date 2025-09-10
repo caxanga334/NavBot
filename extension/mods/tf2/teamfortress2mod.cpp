@@ -195,9 +195,9 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 	{
 		const char* name = event->GetName();
 
-#ifdef EXT_DEBUG
+#if defined(EXT_DEBUG) && defined(TF_DLL)
 		ConColorMsg(Color(255, 200, 150, 255), "CTeamFortress2Mod::FireGameEvent %s \n", name);
-#endif // EXT_DEBUG
+#endif // defined(EXT_DEBUG) && defined(TF_DLL)
 
 		if (strncasecmp(name, "teamplay_round_start", 20) == 0)
 		{
@@ -1196,9 +1196,9 @@ void CTeamFortress2Mod::CheckForSetup()
 
 	UtilHelpers::ForEachEntityOfClassname("team_round_timer", functor);
 
-#ifdef EXT_DEBUG
+#if defined(EXT_DEBUG) && defined(TF_DLL)
 	ConColorMsg(Color(64, 200, 0, 255), "CTeamFortress2Mod::CheckForSetup m_bInSetup = %s\n", setup ? "TRUE" : "FALSE");
-#endif // EXT_DEBUG
+#endif // defined(EXT_DEBUG) && defined(TF_DLL)
 
 	m_bInSetup = setup;
 

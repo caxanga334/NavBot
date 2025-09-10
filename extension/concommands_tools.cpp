@@ -8,6 +8,11 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <util/prediction.h>
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+#include <util/commandargs_episode1.h>
+#include <sdkports/sdk_convarref_ep1.h>
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
 class CToolsPlayerPathCost : public NavAStarPathCost
 {
 public:
@@ -191,6 +196,8 @@ float CToolsPlayerPathCost::operator()(CNavArea* area, CNavArea* fromArea, const
 
 CON_COMMAND_F(sm_navbot_tool_build_path, "Builds a path from your current position to the marked nav area.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (engine->IsDedicatedServer())
 	{
 		META_CONPRINT("This command can only be used on a listen server! \n");
@@ -301,6 +308,8 @@ CON_COMMAND_F(sm_navbot_tool_report_hull_sizes, "Prints the player's hull size t
 
 CON_COMMAND_F(sm_navbot_tool_projectile_aim, "Tests projectile aim parameters", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (engine->IsDedicatedServer())
 	{
 		Msg("This command can only be used on a Listen Server! \n");
@@ -353,6 +362,8 @@ CON_COMMAND_F(sm_navbot_tool_projectile_aim, "Tests projectile aim parameters", 
 
 CON_COMMAND_F(sm_navbot_tool_projectile_aim_entity, "Tests projectile aim parameters", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (engine->IsDedicatedServer())
 	{
 		Msg("This command can only be used on a Listen Server! \n");
@@ -432,6 +443,8 @@ CON_COMMAND_F(sm_navbot_tool_give_infammo, "Gives infinite reserve ammo to every
 
 CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current position.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (engine->IsDedicatedServer())
 	{
 		Msg("This command can only be used on a Listen Server! \n");
@@ -512,6 +525,8 @@ CON_COMMAND_F(sm_navbot_tool_toggle_non_solid, "Makes your non solid to triggers
 
 CON_COMMAND_F(sm_navbot_tool_dump_weapons, "Lists all CBaseCombatCharacter weapons.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_tool_dump_weapons <client index> \n    Use 'self' to dump your weapons. \n");

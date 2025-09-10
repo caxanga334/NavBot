@@ -78,7 +78,7 @@ void CBaseBot::PostAdd()
 	}
 
 #ifdef EXT_DEBUG
-	ConColorMsg(Color(0, 255, 60, 255), "CBaseBot::PostAdd m_controller = %p \n", m_controller);
+	META_CONPRINTF("CBaseBot::PostAdd m_controller = %p \n", m_controller);
 
 	int flags = 0;
 	entprops->GetEntProp(GetIndex(), Prop_Send, "m_fFlags", flags);
@@ -87,7 +87,6 @@ void CBaseBot::PostAdd()
 	{
 		smutils->LogError(myself, "CBaseBot::PostAdd FL_FAKECLIENT not set for bot %s!", GetClientName());
 	}
-
 #endif // EXT_DEBUG
 }
 

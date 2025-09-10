@@ -569,6 +569,8 @@ bool CBaseExtPlayer::IsTouching(const char* classname) const
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {
+	DECLARE_COMMAND_ARGS;
+
 	auto player = gamehelpers->EdictOfIndex(1); // Get listen server host
 
 	if (!player)
@@ -680,6 +682,8 @@ CON_COMMAND(sm_navbot_debug_player_positions, "Shows the player's Eye Origin, Wo
 
 CON_COMMAND(sm_navbot_debug_player_weapon_switch, "Debug weapon switch")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_debug_player_weapon_switch <weapon entity index> \n");

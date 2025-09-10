@@ -83,6 +83,7 @@ void CBlackMesaDeathmatchMod::OnMapStart()
 {
 	CBaseMod::OnMapStart();
 
+#if SOURCE_ENGINE == SE_BMS
 	ConVarRef mp_teamplay("mp_teamplay");
 
 	if (mp_teamplay.IsValid())
@@ -94,6 +95,7 @@ void CBlackMesaDeathmatchMod::OnMapStart()
 		m_isTeamPlay = false;
 		smutils->LogError(myself, "Failed to find ConVar \"mp_teamplay\"!");
 	}
+#endif // SOURCE_ENGINE == SE_BMS
 
 #ifdef EXT_DEBUG
 	rootconsole->ConsolePrint("Team Play is %s", m_isTeamPlay ? "ON" : "OFF");
@@ -132,6 +134,7 @@ const std::pair<std::string, int>* CBlackMesaDeathmatchMod::GetRandomPlayerModel
 
 void CBlackMesaDeathmatchMod::BuildMaxCarryArray()
 {
+#if SOURCE_ENGINE == SE_BMS
 	ConVarRef sk_ammo_9mm_max("sk_ammo_9mm_max");
 
 	if (sk_ammo_9mm_max.IsValid())
@@ -215,6 +218,7 @@ void CBlackMesaDeathmatchMod::BuildMaxCarryArray()
 	{
 		m_maxCarry[static_cast<int>(blackmesa::Ammo_Snarks)] = sk_ammo_snark_max.GetInt();
 	}
+#endif // SOURCE_ENGINE == SE_BMS
 }
 
 void CBlackMesaDeathmatchMod::ParsePlayerModelsConfigFile()

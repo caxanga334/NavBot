@@ -32,7 +32,12 @@
 #include <sdkports/sdk_collisionutils.h>
 #include <tier1/checksum_crc.h>
 
-#include <tslist.h>
+#if SOURCE_ENGINE == SE_EPISODEONE
+#include <sdkports/sdk_convarref_ep1.h>
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
+
+// #include <tslist.h>
 #include <utlhash.h>
 
 #ifdef EXT_VPROF_ENABLED
@@ -97,7 +102,11 @@ bool UTIL_IsCommandIssuedByServerAdmin()
 	return true;
 }
 
-static void SelectedSetColorChaged(IConVar *var, const char *pOldValue, float flOldValue) 
+#if SOURCE_ENGINE == SE_EPISODEONE
+static void SelectedSetColorChaged(ConVar* var, char const* pOldString)
+#else
+static void SelectedSetColorChaged(IConVar* var, const char* pOldValue, float flOldValue)
+#endif // SOURCE_ENGINE == SE_EPISODEONE
 {
 	ConVarRef colorVar(var->GetName());
 
@@ -2010,7 +2019,7 @@ bool CNavArea::IsCoplanar( const CNavArea *area ) const
  * NOTE: pos->z is not used.
  */
 
-float CNavArea::GetZ( float x, float y ) const RESTRICT
+float CNavArea::GetZ( float x, float y ) const
 {
 	// guard against division by zero due to degenerate areas
 #ifdef _X360 
@@ -2034,10 +2043,10 @@ float CNavArea::GetZ( float x, float y ) const RESTRICT
 
 	// clamp Z values to (x,y) volume
 	
-	u = fsel( u, u, 0 );			// u >= 0 ? u : 0
+	u = fsel( u, u, 0.0f );			// u >= 0 ? u : 0
 	u = fsel( u - 1.0f, 1.0f, u );	// u >= 1 ? 1 : u
 
-	v = fsel( v, v, 0 );			// v >= 0 ? v : 0
+	v = fsel( v, v, 0.0f );			// v >= 0 ? v : 0
 	v = fsel( v - 1.0f, 1.0f, v );	// v >= 1 ? 1 : v
 
 	float northZ = m_nwCorner.z + u * (m_neZ - m_nwCorner.z);
@@ -2052,7 +2061,7 @@ float CNavArea::GetZ( float x, float y ) const RESTRICT
  * Return closest point to 'pos' on 'area'.
  * Returned point is in 'close'.
  */
-void CNavArea::GetClosestPointOnArea( const Vector * RESTRICT pPos, Vector *close ) const RESTRICT 
+void CNavArea::GetClosestPointOnArea( const Vector* pPos, Vector *close ) const
 {
 	float x, y, z;
 
@@ -4165,6 +4174,8 @@ bool CNavArea::ComputeLighting( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
+
+#if 0
 CON_COMMAND_F( sm_nav_update_lighting, "Recomputes lighting values", FCVAR_CHEAT )
 {
 
@@ -4190,7 +4201,7 @@ CON_COMMAND_F( sm_nav_update_lighting, "Recomputes lighting values", FCVAR_CHEAT
 	}
 	DevMsg( "Computed lighting for %d/%d areas\n", numComputed, TheNavAreas.Count() );
 }
-
+#endif // 0
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -4571,12 +4582,11 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 		{
 			if ( blocker )
 			{
-				ConColorMsg(Color(0, 255, 128, 255), "%s %d blocked area %d\n",
-						blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
+				META_CONPRINTF("%s %d blocked area %d\n", blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
 			}
 			else
 			{
-				ConColorMsg( Color( 0, 255, 128, 255 ), "non-entity blocked area %d\n", GetID() );
+				META_CONPRINTF("non-entity blocked area %d", GetID());
 			}
 		}
 		TheNavMesh->OnAreaBlocked( this );
@@ -4585,11 +4595,11 @@ void CNavArea::MarkAsBlocked( int teamID, edict_t* blocker, bool bGenerateEvent 
 	{
 		if ( blocker )
 		{
-			ConColorMsg(Color(0, 255, 128, 255), "DUPE: %s %d blocked area %d\n", blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
+			META_CONPRINTF("DUPE: %s %d blocked area %d\n", blocker->GetClassName(), gamehelpers->IndexOfEdict(blocker), GetID());
 		}
 		else
 		{
-			ConColorMsg( Color( 0, 255, 128, 255 ), "DUPE: non-entity blocked area %d\n", GetID() );
+			META_CONPRINTF("DUPE: non-entity blocked area %d\n", GetID());
 		}
 	}
 }
@@ -4666,7 +4676,7 @@ void CNavArea::UnblockArea( int teamID )
 	{
 		if (sm_nav_debug_blocked.GetBool())
 		{
-			ConColorMsg( Color( 255, 0, 128, 255 ), "area %d is unblocked by UnblockArea\n", GetID() );
+			META_CONPRINTF("area %d is unblocked by UnblockArea\n", GetID());
 		}
 		TheNavMesh->OnAreaUnblocked( this );
 	}

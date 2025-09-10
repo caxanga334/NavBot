@@ -132,7 +132,7 @@ void CBaseBot::Hook_Spawn()
 #ifdef EXT_DEBUG
 	if (cvar_print_bot_hooks.GetBool())
 	{
-		ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn <%p>\n", this);
+		META_CONPRINTF("CBaseBot::Hook_Spawn <%p>\n", this);
 	}
 #endif // EXT_DEBUG
 
@@ -144,7 +144,7 @@ void CBaseBot::Hook_Spawn_Post()
 #ifdef EXT_DEBUG
 	if (cvar_print_bot_hooks.GetBool())
 	{
-		ConColorMsg(Color(0, 150, 0, 255), "CBaseBot::Hook_Spawn_Post <%p>\n", this);
+		META_CONPRINTF("CBaseBot::Hook_Spawn_Post <%p>\n", this);
 	}
 
 	const Vector& origin = UtilHelpers::getEntityOrigin(GetEntity());
@@ -222,7 +222,7 @@ void CBaseBot::Hook_PhysicsSimulate()
 #ifdef EXT_DEBUG
 	if (m_controller == nullptr && !IsPluginBot())
 	{
-		ConColorMsg(Color(255, 0, 0, 255), "CBaseBot::Hook_PhysicsSimulate called with NULL m_controller <%p>\n", this);
+		META_CONPRINTF("CBaseBot::Hook_PhysicsSimulate called with NULL m_controller <%p>\n", this);
 	}
 
 	// sanity check, see if the hook 'this' pointer isn't the bot itself
@@ -265,7 +265,7 @@ void CBaseBot::Hook_Weapon_Equip_Post(CBaseEntity* weapon)
 	{
 		int index = UtilHelpers::IndexOfEntity(weapon);
 		const char* classname = gamehelpers->GetEntityClassname(weapon);
-		ConColorMsg(Color(173, 216, 230, 255), "%s Hook_Weapon_Equip_Post %p [%i] %s", GetDebugIdentifier(), weapon, index, classname);
+		META_CONPRINTF("%s Hook_Weapon_Equip_Post %p [%i] %s", GetDebugIdentifier(), weapon, index, classname);
 	}
 #endif
 
@@ -282,7 +282,7 @@ bool CBaseBot::Hook_CanBeAutobalanced()
 #ifdef EXT_DEBUG
 	if (cvar_print_bot_hooks.GetBool())
 	{
-		ConColorMsg(Color(173, 216, 230, 255), "%s Hook_CanBeAutobalanced Use Original: %s Result: %s", GetDebugIdentifier(),
+		META_CONPRINTF("%s Hook_CanBeAutobalanced Use Original: %s Result: %s\n", GetDebugIdentifier(),
 			useOriginal ? "TRUE" : "FALSE", result ? "TRUE" : "FALSE");
 	}
 #endif

@@ -140,10 +140,12 @@ const virtualmodel_t* CStudioHdr::ResetVModel(const virtualmodel_t* pVModel) con
 
 const studiohdr_t* CStudioHdr::GroupStudioHdr(int i)
 {
+#if 0
 	if (!this)
 	{
 		ExecuteNTimes(5, Warning("Call to NULL CStudioHdr::GroupStudioHdr()\n"));
 	}
+#endif // 0
 
 	if (m_nFrameUnlockCounter != *m_pFrameUnlockCounter)
 	{

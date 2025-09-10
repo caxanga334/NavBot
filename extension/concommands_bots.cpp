@@ -9,6 +9,8 @@
 
 CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (!extmanager->AreBotsSupported())
 	{
 		Msg("Bot support is disabled! Check SourceMod logs for more information. \n");
@@ -62,6 +64,8 @@ CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 
 CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() < 2)
 	{
 		extmanager->RemoveRandomBot("Nav Bot: Kicked by admin command.");

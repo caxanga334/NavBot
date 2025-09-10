@@ -47,6 +47,10 @@
 #include <mods/hl2dm/hl2dm_mod.h>
 #endif // SOURCE_ENGINE == SE_HL2DM
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+#include <sdkports/sdk_convarref_ep1.h>
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
 #include <bot/pluginbot/pluginbot.h>
 
 #ifdef EXT_VPROF_ENABLED
@@ -786,7 +790,11 @@ void CExtManager::UpdateBotQuota()
 	}
 }
 
+#if SOURCE_ENGINE > SE_EPISODEONE
 void CExtManager::OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+#else
+void CExtManager::OnQuotaModeCvarChanged(ConVar* var, char const* pOldString)
+#endif
 {
 	auto mode = sm_navbot_quota_mode.GetString();
 
@@ -810,7 +818,11 @@ void CExtManager::OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, fl
 	}
 }
 
+#if SOURCE_ENGINE > SE_EPISODEONE
 void CExtManager::OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+#else
+void CExtManager::OnQuotaTargetCvarChanged(ConVar* var, char const* pOldString)
+#endif
 {
 	int target = sm_navbot_quota_quantity.GetInt();
 	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
@@ -937,6 +949,8 @@ static int SMNavBotDebugCommand_AutoComplete(const char* partial, char commands[
 
 CON_COMMAND_F_COMPLETION(sm_navbot_debug, "Toggles between debug modes", FCVAR_CHEAT, SMNavBotDebugCommand_AutoComplete)
 {
+	DECLARE_COMMAND_ARGS;
+
 	if (args.ArgC() <= 1)
 	{
 		rootconsole->ConsolePrint("Available debug options: STOPALL, SENSOR, TASKS, LOOK, PATH, EVENTS, MOVEMENT, ERRORS, MISC, COMBAT");

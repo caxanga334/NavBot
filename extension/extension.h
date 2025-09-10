@@ -327,6 +327,9 @@ extern IVModelInfo* modelinfo;
 extern IMDLCache* imdlcache;
 extern IFileSystem* filesystem;
 extern ICvar* icvar;
+#if SOURCE_ENGINE == SE_EPISODEONE
+extern ICvar* g_pCVar;
+#endif // SOURCE_ENGINE == SE_EPISODEONE
 extern IServerTools* servertools;
 extern IServerPluginHelpers* serverpluginhelpers;
 extern IStaticPropMgrServer* staticpropmgr;

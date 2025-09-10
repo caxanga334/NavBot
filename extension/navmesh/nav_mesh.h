@@ -45,6 +45,10 @@ class NavPlaceDatabaseLoader;
 class CRCBot2Waypoint;
 class CRCBot2WaypointLoader;
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+class CCommand;
+#endif
+
 namespace SourceMod
 {
 	class IGameConfig;

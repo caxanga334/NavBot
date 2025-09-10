@@ -46,7 +46,9 @@ CServerNetworkProperty::~CServerNetworkProperty()
 		m_pTransmitProxy->Release();
 	}*/
 
-	engine->CleanUpEntityClusterList( &m_PVSInfo );
+#if SOURCE_ENGINE > SE_EPISODEONE
+	engine->CleanUpEntityClusterList(&m_PVSInfo);
+#endif // SOURCE_ENGINE > SE_EPISODEONE
 
 	// remove the attached edict if it exists
 	DetachEdict();
@@ -248,18 +250,19 @@ bool CServerNetworkProperty::IsInPVS( const edict_t *pRecipient, const void *pvs
 //-----------------------------------------------------------------------------
 bool CServerNetworkProperty::IsInPVS( const CCheckTransmitInfo *pInfo )
 {
+#if SOURCE_ENGINE > SE_EPISODEONE
 	// PVS data must be up to date
-	Assert( !m_pPev || ( ( m_pPev->m_fStateFlags & FL_EDICT_DIRTY_PVS_INFORMATION ) == 0 ) );
-	
+	Assert(!m_pPev || ((m_pPev->m_fStateFlags & FL_EDICT_DIRTY_PVS_INFORMATION) == 0));
+
 	int i;
 
 	// Early out if the areas are connected
-	if ( !m_PVSInfo.m_nAreaNum2 )
+	if (!m_PVSInfo.m_nAreaNum2)
 	{
-		for ( i=0; i< pInfo->m_AreasNetworked; i++ )
+		for (i = 0; i < pInfo->m_AreasNetworked; i++)
 		{
 			int clientArea = pInfo->m_Areas[i];
-			if ( clientArea == m_PVSInfo.m_nAreaNum || engine->CheckAreasConnected( clientArea, m_PVSInfo.m_nAreaNum ) )
+			if (clientArea == m_PVSInfo.m_nAreaNum || engine->CheckAreasConnected(clientArea, m_PVSInfo.m_nAreaNum))
 				break;
 		}
 	}
@@ -267,21 +270,21 @@ bool CServerNetworkProperty::IsInPVS( const CCheckTransmitInfo *pInfo )
 	{
 		// doors can legally straddle two areas, so
 		// we may need to check another one
-		for ( i=0; i< pInfo->m_AreasNetworked; i++ )
+		for (i = 0; i < pInfo->m_AreasNetworked; i++)
 		{
 			int clientArea = pInfo->m_Areas[i];
-			if ( clientArea == m_PVSInfo.m_nAreaNum || clientArea == m_PVSInfo.m_nAreaNum2 )
+			if (clientArea == m_PVSInfo.m_nAreaNum || clientArea == m_PVSInfo.m_nAreaNum2)
 				break;
 
-			if ( engine->CheckAreasConnected( clientArea, m_PVSInfo.m_nAreaNum ) )
+			if (engine->CheckAreasConnected(clientArea, m_PVSInfo.m_nAreaNum))
 				break;
 
-			if ( engine->CheckAreasConnected( clientArea, m_PVSInfo.m_nAreaNum2 ) )
+			if (engine->CheckAreasConnected(clientArea, m_PVSInfo.m_nAreaNum2))
 				break;
 		}
 	}
 
-	if ( i == pInfo->m_AreasNetworked )
+	if (i == pInfo->m_AreasNetworked)
 	{
 		// areas not connected
 		return false;
@@ -291,24 +294,74 @@ bool CServerNetworkProperty::IsInPVS( const CCheckTransmitInfo *pInfo )
 	// negative leaf count is a node number
 	// If no pvs, add any entity
 
-	Assert( edict() != pInfo->m_pClientEnt );
+	Assert(edict() != pInfo->m_pClientEnt);
 
-	unsigned char *pPVS = ( unsigned char * )pInfo->m_PVS;
-	
-	if ( m_PVSInfo.m_nClusterCount < 0 )   // too many clusters, use headnode
+	unsigned char* pPVS = (unsigned char*)pInfo->m_PVS;
+
+	if (m_PVSInfo.m_nClusterCount < 0)   // too many clusters, use headnode
 	{
-		return (engine->CheckHeadnodeVisible( m_PVSInfo.m_nHeadNode, pPVS, pInfo->m_nPVSSize ) != 0);
+		return (engine->CheckHeadnodeVisible(m_PVSInfo.m_nHeadNode, pPVS, pInfo->m_nPVSSize) != 0);
 	}
-	
-	for ( i = m_PVSInfo.m_nClusterCount; --i >= 0; )
+
+	for (i = m_PVSInfo.m_nClusterCount; --i >= 0; )
 	{
 		int nCluster = m_PVSInfo.m_pClusters[i];
-		if ( ((int)(pPVS[nCluster >> 3])) & BitVec_BitInByte( nCluster ) )
+		if (((int)(pPVS[nCluster >> 3])) & BitVec_BitInByte(nCluster))
 			return true;
 	}
 
 	return false;		// not visible
+#else
+	// PVS data must be up to date
+	Assert(!(m_pOuter->GetEFlags() & EFL_DIRTY_PVS_INFORMATION));
 
+	int i;
+
+	for (i = 0; i < pInfo->m_AreasNetworked; i++)
+	{
+		int clientArea = pInfo->m_Areas[i];
+
+		// Early out if the areas are connected
+		if (engine->CheckAreasConnected(clientArea, m_PVSInfo.m_nAreaNum))
+		{
+			break;
+		}
+		// doors can legally straddle two areas, so
+		// we may need to check another one
+
+		if (m_PVSInfo.m_nAreaNum2 && engine->CheckAreasConnected(clientArea, m_PVSInfo.m_nAreaNum2))
+		{
+			break;
+		}
+	}
+
+	if (i == pInfo->m_AreasNetworked)
+	{
+		// areas not connected
+		return false;
+	}
+
+	// ignore if not touching a PV leaf
+	// negative leaf count is a node number
+	// If no pvs, add any entity
+
+	Assert(edict() != pInfo->m_pClientEnt);
+
+	unsigned char* pPVS = (unsigned char*)pInfo->m_PVS;
+
+	if (m_PVSInfo.m_nClusterCount < 0)   // too many clusters, use headnode
+	{
+		return (engine->CheckHeadnodeVisible(m_PVSInfo.m_nHeadNode, pPVS, pInfo->m_nPVSSize) != 0);
+	}
+
+	for (i = m_PVSInfo.m_nClusterCount; --i >= 0; )
+	{
+		if (pPVS[m_PVSInfo.m_pClusters[i] >> 3] & (1 << (m_PVSInfo.m_pClusters[i] & 7)))
+			return true;
+	}
+
+	return false;		// not visible
+#endif // SOURCE_ENGINE > SE_EPISODEONE
 }
 
 

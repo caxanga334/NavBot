@@ -108,8 +108,14 @@ public:
 	void SetBotQuotaMode(BotQuotaMode mode) { m_quotamode = mode; }
 	void SetBotQuotaTarget(int target) { m_quotatarget = target; }
 
+#if SOURCE_ENGINE > SE_EPISODEONE
 	static void OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
 	static void OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
+#else
+	static void OnQuotaModeCvarChanged(ConVar* var, char const* pOldString);
+	static void OnQuotaTargetCvarChanged(ConVar* var, char const* pOldString);
+#endif // SOURCE_ENGINE > SE_EPISODEONE
+
 
 	CSourcePawnMemoryManager* GetPawnMemoryManager() const { return m_pawnmemory.get(); }
 	

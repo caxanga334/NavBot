@@ -20,6 +20,10 @@
 #include <entities/baseentity.h>
 #include <ports/rcbot2_waypoint.h>
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+#include <sdkports/sdk_convarref_ep1.h>
+#endif
+
 #include "nav_mesh.h"
 #include "nav_trace.h"
 #include "nav_area.h"

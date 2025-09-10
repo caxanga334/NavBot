@@ -2,6 +2,34 @@
 #define SMNAV_TF2_SHARED_DEFS_H_
 #pragma once
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+
+//-----------------------------------------------------------------------------
+// Multiplayer specific defines
+//-----------------------------------------------------------------------------
+#define MAX_CONTROL_POINTS			8
+#define MAX_CONTROL_POINT_GROUPS	8
+
+// Maximum number of points that a control point may need owned to be cappable
+#define MAX_PREVIOUS_POINTS			3
+
+// The maximum number of teams the control point system knows how to deal with
+#define MAX_CONTROL_POINT_TEAMS		8
+
+// Maximum length of the cap layout string
+#define MAX_CAPLAYOUT_LENGTH		32
+
+// Maximum length of the current round printname
+#define MAX_ROUND_NAME				32
+
+// Maximum length of the current round name
+#define MAX_ROUND_IMAGE_NAME		64
+
+// Score added to the team score for a round win
+#define TEAMPLAY_ROUND_WIN_SCORE	1
+
+#endif // SOURCE_ENGINE == SE_EPISODEONE
+
 namespace TeamFortress2
 {
 	constexpr int STUNFLAG_SLOWDOWN = (1 << 0); // activates slowdown modifier
@@ -26,7 +54,7 @@ namespace TeamFortress2
 	constexpr int TF_AMMO_GRENADES2 = 5;
 	constexpr int TF_AMMO_GRENADES3 = 6;
 
-	constexpr size_t TF_MAX_CONTROL_POINTS = 8;
+	constexpr size_t TF_MAX_CONTROL_POINTS = 8U;
 
 	constexpr int TF_DEFAULT_MAX_METAL = 200; // default max metal an engineer can have
 
