@@ -106,6 +106,22 @@ public:
 		return nullptr;
 	}
 
+	/**
+	 * @brief Returns the nearest waypoint from the given position.
+	 * @param origin Position to get the nearest of.
+	 * @param maxRange Maximum distance between the waypoint and the given origin, negative for no limit.
+	 * @return Waypoint or NULL if none found.
+	 */
+	const CRCBot2Waypoint* GetNearestWaypoint(const Vector& origin, const float maxRange = -1.0f) const;
+	/**
+	 * @brief Returns the nearest waypoint from the given position with the given flags.
+	 * @param origin Position to get the nearest of.
+	 * @param flags Waypoint flags the waypoint must have.
+	 * @param maxRange Maximum distance between the waypoint and the given origin, negative for no limit.
+	 * @return Waypoint or NULL if none found.
+	 */
+	const CRCBot2Waypoint* GetNearestFlaggedWaypoint(const Vector& origin, int flags, const float maxRange = -1.0f) const;
+
 	const std::vector<CRCBot2Waypoint>& GetWaypoints() const { return m_waypoints; }
 
 private:

@@ -439,7 +439,8 @@ public:
 	virtual void OnEditCreateNotify( CNavArea *newArea );				// invoked when given area has just been added to the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavArea *deadArea );				// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder );			// invoked when given ladder has just been deleted from the mesh in edit mode
-	virtual void OnNodeAdded( CNavNode *node ) {};						
+	virtual void OnNodeAdded( CNavNode *node ) {};		
+	virtual void OnPreRCBot2WaypointImport(const CRCBot2WaypointLoader& loader) {};		// invoked before importing rcbot2 waypoints
 	virtual void OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader) {};		// invoked for each imported RCBot2 waypoint
 
 	// Obstructions

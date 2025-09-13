@@ -45,3 +45,11 @@ Note: `sm_nav_offmesh_list_all` will always list all available link types.
 | Drop From Ledge | 7 | Bots can drop from a ledge here. |
 | Grappling Hook | 8 | Bots can use a grappling hook here. |
 | Catapult | 9 | Bots can get launched here. |
+| Strafe Jump | 10 | Bots can perform a strafe jump here. |
+
+## Link Placement Tips
+
+Finding the ideal position for the off-mesh link start and end position requires a bit of trial and error.    
+For **Teleport** link types, place the link start at inside the teleporter's trigger entity.    
+For **Grappling Hook** link types, the bot will aim the grappling hook slightly above the end position.        
+For **Catapult** link types, the link start should be placed outside the catapult's trigger entity.    

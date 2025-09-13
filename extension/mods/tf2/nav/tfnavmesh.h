@@ -27,6 +27,7 @@ public:
 
 	virtual bool Save(void) override;
 
+	void OnPreRCBot2WaypointImport(const CRCBot2WaypointLoader& loader) override;
 	void OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader) override;
 
 	// Returns a random nav area marked with the frontline attribute for MvM
@@ -42,6 +43,7 @@ protected:
 private:
 	static constexpr auto NAV_SPAWNROOM_UPDATE_INTERVAL = 10.0f;
 	CountdownTimer m_spawnroomupdatetimer;
+	std::unordered_map<int, int> m_rcbot2areatoindexmap;
 
 	void UpdateDebugDraw();
 };

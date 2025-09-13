@@ -78,24 +78,47 @@ CON_COMMAND(sm_navbot_kick, "Removes a Nav Bot from the game.")
 		return;
 	}
 
-	std::string targetname(args[1]);
-	auto functor = [&targetname](CBaseBot* bot) {
-		auto gp = playerhelpers->GetGamePlayer(bot->GetIndex());
+	const char* target = args[1];
 
-		if (gp)
+	if (!target || target[0] == '\0' || std::strlen(target) == 0U)
+	{
+		META_CONPRINTF("Invalid target name! \nIf you want to kick all bots, use \"all\"!\n");
+		return;
+	}
+	
+	std::string targetname(target);
+
+	while (true)
+	{
+		auto& allbots = extmanager->GetAllBots();
+		bool found = false;
+
+		for (auto& ptr : allbots)
 		{
-			auto szname = gp->GetName();
+			CBaseBot* bot = ptr.get();
+			SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(bot->GetIndex());
 
-			if (szname)
+			if (gp)
 			{
-				std::string botname(szname);
+				const char* szname = gp->GetName();
 
-				if (botname.find(targetname) != std::string::npos) // partial name search
+				if (szname && szname[0] != '\0')
 				{
-					gp->Kick("Nav Bot: Kicked by admin command.");
+					std::string botname(szname);
+
+					if (targetname.find(botname) != std::string::npos)
+					{
+						gp->Kick("Nav Bot: Kicked by admin command.");
+						found = true;
+						break; // every time a bot is kicked, we need to get out of the bot vector loop otherwise a crash will happen
+					}
 				}
 			}
 		}
-	};
-	extmanager->ForEachBot(functor);
+
+		if (!found)
+		{
+			return;
+		}
+	}
 }

@@ -108,3 +108,47 @@ bool CRCBot2WaypointLoader::Load(std::fstream& file)
 
 	return true;
 }
+
+const CRCBot2Waypoint* CRCBot2WaypointLoader::GetNearestWaypoint(const Vector& origin, const float maxRange) const
+{
+	const CRCBot2Waypoint* out = nullptr;
+	float smallest = std::numeric_limits<float>::max();
+
+	for (auto& waypoint : m_waypoints)
+	{
+		const float range = (origin - waypoint.GetOrigin()).Length();
+
+		if (maxRange > 0.0f && range > maxRange) { continue; }
+
+		if (range < smallest)
+		{
+			smallest = range;
+			out = &waypoint;
+		}
+	}
+
+	return out;
+}
+
+const CRCBot2Waypoint* CRCBot2WaypointLoader::GetNearestFlaggedWaypoint(const Vector& origin, int flags, const float maxRange) const
+{
+	const CRCBot2Waypoint* out = nullptr;
+	float smallest = std::numeric_limits<float>::max();
+
+	for (auto& waypoint : m_waypoints)
+	{
+		const float range = (origin - waypoint.GetOrigin()).Length();
+
+		if (maxRange > 0.0f && range > maxRange) { continue; }
+
+		if (!waypoint.HasFlags(flags)) { continue; }
+
+		if (range < smallest)
+		{
+			smallest = range;
+			out = &waypoint;
+		}
+	}
+
+	return out;
+}

@@ -168,6 +168,33 @@ bool CTFNavMesh::Save(void)
 	return CNavMesh::Save();
 }
 
+void CTFNavMesh::OnPreRCBot2WaypointImport(const CRCBot2WaypointLoader& loader)
+{
+	m_rcbot2areatoindexmap.clear();
+	m_rcbot2areatoindexmap.reserve(8);
+
+	for (int i = 0; i < MAX_CONTROL_POINTS; i++)
+	{
+		CBaseEntity* pControlPoint = CTeamFortress2Mod::GetTF2Mod()->GetControlPointByIndex(i);
+
+		if (pControlPoint)
+		{
+			Vector pos = UtilHelpers::getWorldSpaceCenter(pControlPoint);
+
+			const CRCBot2Waypoint* wpt = loader.GetNearestFlaggedWaypoint(pos, CRCBot2Waypoint::W_FL_CAPPOINT, 1024.0f);
+
+			if (wpt)
+			{
+				int area = wpt->GetAreaNumber();
+				m_rcbot2areatoindexmap[area] = i;
+#ifdef EXT_DEBUG
+				META_CONPRINTF("[TFNavMesh] Mapped RCBot2 area number %i to control point index %i!\n", area, i);
+#endif // EXT_DEBUG
+			}
+		}
+	}
+}
+
 void CTFNavMesh::OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader)
 {
 	using namespace TeamFortress2;
@@ -276,14 +303,22 @@ void CTFNavMesh::OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const
 	{
 		int area = waypoint.GetAreaNumber();
 
-		area -= 1; // down shift the area number to property translate into NavBot control point index.
+		auto it = m_rcbot2areatoindexmap.find(area);
 
-		if (area < 0 || area >= MAX_CONTROL_POINTS)
+		if (it == m_rcbot2areatoindexmap.end())
 		{
-			area = CTFWaypoint::NO_CONTROL_POINT;
+#ifdef EXT_DEBUG
+			if (area > 0)
+			{
+				META_CONPRINTF("[RCBot2 Import] Waypoint area %i not mapped to a control point index! \n", area);
+			}
+#endif // EXT_DEBUG
+			wpt->SetControlPointIndex(CTFWaypoint::NO_CONTROL_POINT);
 		}
-
-		wpt->SetControlPointIndex(area);
+		else
+		{
+			wpt->SetControlPointIndex(it->second);
+		}
 	}
 }
 

@@ -2142,6 +2142,8 @@ void CNavMesh::ImportWaypointsFromRCBot2()
 		return;
 	}
 
+	OnPreRCBot2WaypointImport(loader);
+
 	auto& waypoints = loader.GetWaypoints();
 
 	for (auto& wpt : waypoints)
