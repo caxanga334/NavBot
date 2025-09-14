@@ -651,8 +651,8 @@ void CExtManager::LoadBotNames()
 		}
 
 		// we don't want these
-		line.erase(std::remove(line.begin(), line.end(), '\r'), line.cend());
-		line.erase(std::remove(line.begin(), line.end(), '\n'), line.cend());
+		line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+		line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
 		if (line.length() == 0)
 		{

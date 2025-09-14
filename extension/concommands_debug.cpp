@@ -15,7 +15,6 @@
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_game_util.h>
-#include <sdkports/sdk_servernetworkproperty.h>
 #include <util/ehandle_edict.h>
 #include <sm_argbuffer.h>
 #include <am-platform.h>
@@ -1251,26 +1250,6 @@ CON_COMMAND(sm_navbot_debug_spread_danger, "Spread danger to nearby areas")
 
 		META_CONPRINTF("Applied %3.2f danger (limit: %3.2f) to %zu nav areas. Travel distance limit: %3.2f \n", danger, limit, spread.GetCollectedAreasCount(), travellimit);
 	}
-}
-
-CON_COMMAND(sm_navbot_debug_network_prop, "Debugs the entity's CServerNetworkProperty.")
-{
-	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(1);
-	SourceMod::sm_datatable_info_t info;
-	gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(pEntity), "m_iClassname", &info);
-	unsigned int offset = info.actual_offset - sizeof(CServerNetworkProperty);
-
-	auto func = [&offset](int index, edict_t* edict, CBaseEntity* entity) {
-		CServerNetworkProperty* networkprop = entprops->GetPointerToEntData<CServerNetworkProperty>(entity, offset);
-		const char* classname = gamehelpers->GetEntityClassname(entity);
-		ServerClass* svclss = networkprop->GetServerClass();
-
-
-		META_CONPRINTF("[%i] %s {%s} <%i> %p \n", index, classname, svclss ? svclss->GetName() : "NULL", networkprop->entindex(), edict);
-	};
-
-	UtilHelpers::ForEveryEntity(func);
-
 }
 
 CON_COMMAND(sm_navbot_debug_createfakeclient, "Debug CreateFakeClient.")

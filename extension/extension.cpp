@@ -525,10 +525,13 @@ void NavBotExt::Hook_ClientCommand(edict_t* pEntity, const CCommand& args)
 #if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 void NavBotExt::Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues)
 {
+	// Newer engines have issues with this function. TO-DO: Create a local copy of it.
+#if SOURCE_ENGINE <= SE_TF2
 	if (cvar_dump_kv_cmds.GetBool())
 	{
 		KeyValuesDumpAsDevMsg(pKeyValues);
 	}
+#endif // SOURCE_ENGINE <= SE_TF2
 
 	RETURN_META(MRES_IGNORED);
 }
