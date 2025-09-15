@@ -51,6 +51,7 @@ public:
 		SQUAD_EVENT_JOINED, // Member joined
 		SQUAD_EVENT_LEFT, // Member left
 		SQUAD_EVENT_LEADER_DIED, // Squad leader was killed
+		SQUAD_EVENT_REMOVED_FROM, // Member was removed from a squad
 
 		MAX_SQUAD_EVENT_TYPES
 	};

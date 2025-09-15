@@ -185,6 +185,8 @@ public:
 	inline int GetVisibleEnemiesCount() const { return m_statsvisibleenemies; }
 	// Number of known allies. The information is updated periodically and cached, it may be out of date.
 	inline int GetKnownAllyCount() const { return m_statsknownallies; }
+	// Shares known entity information another sensor interface
+	void ShareKnownEntityList(ISensor* other);
 protected:
 	virtual void UpdateKnownEntities();
 	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);

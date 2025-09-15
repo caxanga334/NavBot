@@ -9,49 +9,241 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
+ISquad::SquadMember::SquadMember()
+{
+	m_player = nullptr;
+	m_bot = nullptr;
+	m_squadinterface = nullptr;
+	m_joinTime = -1.0f;
+}
+
 ISquad::SquadMember::SquadMember(CBaseBot* bot) :
-	handle(bot->GetEntity())
+	SquadMember()
 {
-	this->botptr = bot;
+	Init(nullptr, bot);
 }
 
-bool ISquad::SquadMember::operator==(const SquadMember& other) const
+ISquad::SquadMember::SquadMember(CBaseEntity* player) :
+	SquadMember()
 {
-	return this->handle.Get() == other.handle.Get();
+	Init(player, nullptr);
 }
 
-bool ISquad::SquadMember::operator==(CBaseBot* bot) const
+float ISquad::SquadMember::GetTimeSinceMember() const
 {
-	return this->handle.Get() == bot->GetEntity();
+	return gpGlobals->curtime - m_joinTime;
 }
 
-bool ISquad::SquadMember::operator==(CBaseEntity* player) const
+Vector ISquad::SquadMember::GetPosition() const
 {
-	return this->handle.Get() == player;
+	return UtilHelpers::getEntityOrigin(m_player.Get());
 }
 
-void ISquad::SquadMember::AssignBot(CBaseBot* bot)
+void ISquad::SquadMember::Init(CBaseEntity* pPlayer, CBaseBot* bot)
 {
-	handle = bot->GetEntity();
-	this->botptr = bot;
+	if (pPlayer)
+	{
+		m_player = pPlayer;
+		m_bot = nullptr;
+	}
+	else
+	{
+		m_bot = bot;
+		m_squadinterface = bot->GetSquadInterface();
+		m_player = bot->GetEntity();
+	}
+
+	m_joinTime = gpGlobals->curtime;
+}
+
+ISquad::SquadData::SquadData() :
+	m_botleader(), m_humanleader()
+{
+	m_destroyed = false;
+	m_humanled = false;
+	m_createdTime = gpGlobals->curtime;
+}
+
+Vector ISquad::SquadData::GetSquadLeaderPosition() const
+{
+	if (m_humanled && m_humanleader.IsValid())
+	{
+		return m_humanleader.GetPosition();
+	}
+
+	if (m_botleader.IsValid())
+	{
+		return m_botleader.GetPosition();
+	}
+
+	return vec3_origin;
+}
+
+bool ISquad::SquadData::IsSquadLeaderAlive() const
+{
+	CBaseEntity* human = m_humanleader.GetPlayerEntity();
+
+	if (human)
+	{
+		return UtilHelpers::IsPlayerAlive(m_humanleader.GetPlayerIndex());
+	}
+
+	if (m_botleader.IsValid())
+	{
+		return m_botleader.GetBot()->IsAlive();
+	}
+
+	return false;
+}
+
+float ISquad::SquadData::GetTimeSinceCreation() const
+{
+	return m_createdTime - gpGlobals->curtime;
+}
+
+std::size_t ISquad::SquadData::GetSquadSize() const
+{
+	std::size_t size = 1U;
+
+	if (m_humanled)
+	{
+		size++;
+	}
+
+	return size + m_members.size();
+}
+
+void ISquad::SquadData::RemoveInvalidMembers()
+{
+	m_members.erase(std::remove_if(m_members.begin(), m_members.end(), [](const SquadMember& member) {
+		return !member.IsValid();
+	}), m_members.end());
+}
+
+void ISquad::SquadData::DoFullValidation(ISensor* sensor)
+{
+	if (m_humanled)
+	{
+		if (!m_humanleader.IsValid())
+		{
+			Destroy();
+			return;
+		}
+
+		if (!sensor->IsFriendly(m_humanleader.GetPlayerEntity()))
+		{
+			Destroy();
+			return;
+		}
+	}
+
+	m_members.erase(std::remove_if(m_members.begin(), m_members.end(), [sensor](const SquadMember& member) {
+		if (!member.IsValid()) { return true; }
+
+		if (!sensor->IsFriendly(member.GetPlayerEntity()))
+		{
+			return true;
+		}
+
+		if (member.IsBot())
+		{
+			if (!member.GetSquadInterface()->IsInASquad())
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}), m_members.end());
+}
+
+void ISquad::SquadData::Destroy()
+{
+	for (SquadMember& member : m_members)
+	{
+		if (member.IsValid() && member.IsBot())
+		{
+			member.GetSquadInterface()->NotifySquadDestruction();
+		}
+	}
+
+	m_destroyed = true;
+	m_members.clear();
+
+	if (m_botleader.IsValid())
+	{
+		m_botleader.GetSquadInterface()->NotifySquadDestruction();
+	}
+}
+
+void ISquad::SquadData::AddMember(CBaseBot* bot)
+{
+	auto it = std::find_if(m_members.begin(), m_members.end(), [&bot](const ISquad::SquadMember& member) {
+		return member.GetBot() == bot;
+	});
+
+	if (it != m_members.end())
+	{
+		return;
+	}
+
+	m_members.emplace_back(bot);
+}
+
+void ISquad::SquadData::RemoveMember(CBaseBot* bot)
+{
+	m_members.erase(std::remove_if(m_members.begin(), m_members.end(), [&bot](const SquadMember& member) {
+		return member.GetBot() == bot;
+	}), m_members.end());
 }
 
 ISquad::ISquad(CBaseBot* bot) :
 	IBotInterface(bot)
 {
+	m_squaddata = nullptr;
 }
 
 ISquad::~ISquad()
 {
-	if (IsSquadLeader())
+	if (m_squaddata)
 	{
-		m_squaddata->destroyed = true;
-		m_squaddata = nullptr;
+		if (IsSquadLeader())
+		{
+			m_squaddata->Destroy();
+		}
+		else
+		{
+			const ISquad::SquadMember* leader = m_squaddata->GetBotLeader();
+
+			if (leader && leader->IsValid())
+			{
+				leader->GetSquadInterface()->NotifyMemberLeftSquad(GetBot<CBaseBot>(), true);
+			}
+		}
 	}
 }
 
 void ISquad::Reset()
 {
+	m_fullValidationTimer.Invalidate();
+	m_shareInfoTimer.Invalidate();
+
+	if (m_squaddata)
+	{
+		if (IsSquadLeader())
+		{
+			m_squaddata->Destroy();
+		}
+		else
+		{
+			if (IsSquadValid())
+			{
+				m_squaddata->GetBotLeader()->GetSquadInterface()->NotifyMemberLeftSquad(GetBot<CBaseBot>(), true);
+			}
+		}
+
+		m_squaddata = nullptr;
+	}
 }
 
 void ISquad::Update()
@@ -59,218 +251,187 @@ void ISquad::Update()
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISquad::Update", "NavBot");
 #endif // EXT_VPROF_ENABLED
-
+	
 	CBaseBot* me = GetBot<CBaseBot>();
 
 	if (IsInASquad())
 	{
-		if (GetSquadData()->destroyed || !GetSquadData()->leader.IsValid())
+		if (!m_squaddata->IsValid())
 		{
-			if (me->IsDebugging(BOTDEBUG_SQUADS))
-			{
-				me->DebugPrintToConsole(255, 0, 0, "%s INVALID SQUAD! \n", me->GetDebugIdentifier());
-			}
-
-			DestroySquad();
-			return;
+			NotifySquadDestruction();
 		}
-
-		if (IsSquadLeader())
+		else
 		{
-			// Purge invalid members
-			std::vector<SquadMember>& members = m_squaddata->members;
-
-			members.erase(std::remove_if(members.begin(), members.end(), [](const SquadMember& object) {
-				return !object.IsValid();
-			}), members.end());
-
-			const CKnownEntity* threat = me->GetSensorInterface()->GetPrimaryKnownThreat(false);
-
-			// Pass the squad leader's primary threat to members
-			if (threat)
+			if (IsSquadLeader())
 			{
-				for (auto& member : members)
+				m_squaddata->RemoveInvalidMembers();
+
+				if (m_squaddata->IsHumanLedSquad() && !m_squaddata->IsSquadLeaderAlive())
 				{
-					if (member.IsBot())
+					LeaveSquad();
+				}
+
+				if (m_fullValidationTimer.IsElapsed())
+				{
+					m_fullValidationTimer.Start(0.5f);
+					// Removes any members that doesn't match the bot's current team
+					m_squaddata->DoFullValidation(me->GetSensorInterface());
+				}
+
+				// Squad leader, share known entity list with the rest of the squad
+				if (m_shareInfoTimer.IsElapsed())
+				{
+					m_shareInfoTimer.StartRandom(3.0f, 9.0f);
+
+					ISensor* mysensor = me->GetSensorInterface();
+
+					for (const ISquad::SquadMember& member : m_squaddata->GetMembers())
 					{
-						CKnownEntity* known = member.botptr->GetSensorInterface()->AddKnownEntity(threat->GetEntity());
-						known->UpdatePosition();
+						if (member.IsValid() && member.IsBot())
+						{
+							member.GetBot()->GetSensorInterface()->ShareKnownEntityList(mysensor);
+						}
 					}
+				}
+			}
+			else
+			{
+				// Squad member, share the known entity list with my squad leader
+				if (m_shareInfoTimer.IsElapsed())
+				{
+					m_shareInfoTimer.StartRandom(3.0f, 9.0f);
+
+					m_squaddata->GetBotLeader()->GetBot()->GetSensorInterface()->ShareKnownEntityList(me->GetSensorInterface());
 				}
 			}
 		}
 	}
 }
 
-void ISquad::Frame()
+bool ISquad::OnInvitedToJoinSquad(CBaseBot* leader, const SquadData* squaddata) const
 {
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("ISquad::Frame", "NavBot");
-#endif // EXT_VPROF_ENABLED
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	if (me == leader) { return false; }
+
+	CBaseEntity* leaderEnt = leader->GetEntity();
+
+	return me->GetSensorInterface()->IsFriendly(leaderEnt);
 }
 
-void ISquad::OnKilled(const CTakeDamageInfo& info)
+void ISquad::CreateSquad(CBaseEntity* humanLeader)
 {
-	if (IsInASquad() && IsSquadLeader())
-	{
-		for (auto& member : GetSquadData()->members)
-		{
-			if (member.IsValid() && member.IsBot())
-			{
-				member.botptr->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_LEADER_DIED);
-			}
-		}
+	if (!CanLeadSquads()) { return; }
 
-		DestroySquad();
+	if (IsInASquad()) { return; }
+
+	m_squaddata.reset(AllocateSquadData());
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	m_squaddata->m_botleader.Init(nullptr, me);
+
+	if (humanLeader)
+	{
+		m_squaddata->m_humanleader.Init(humanLeader, nullptr);
+		m_squaddata->m_humanled = true;
+	}
+
+	me->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_FORMED);
+
+	if (me->IsDebugging(BOTDEBUG_SQUADS))
+	{
+		me->DebugPrintToConsole(136, 231, 136, "%s SQUAD CREATED!\n", me->GetDebugIdentifier());
 	}
 }
 
-void ISquad::OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info)
+void ISquad::AddToSquad(CBaseBot* member)
 {
+	if (IsSquadLeader())
+	{
+		m_squaddata->AddMember(member);
+
+		ISquad* other = member->GetSquadInterface();
+		other->m_squaddata = m_squaddata; // share a copy of my squad data with my member
+		member->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_JOINED);
+	}
 }
 
-bool ISquad::IsSquadLeader() const
+bool ISquad::TryToAddToSquad(CBaseBot* member)
 {
-	if (m_squaddata)
+	ISquad* other = member->GetSquadInterface();
+
+	if (other->CanJoinSquads() && other->OnInvitedToJoinSquad(GetBot<CBaseBot>(), m_squaddata.get()))
 	{
-		return m_squaddata->leader.botptr == GetBot<CBaseBot>();
+		this->AddToSquad(member);
+		return true;
 	}
 
 	return false;
 }
 
-void ISquad::CreateSquad()
+void ISquad::LeaveSquad()
 {
-	m_squaddata.reset(new SquadData);
-	m_squaddata->leader.AssignBot(GetBot<CBaseBot>());
-
-	if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_SQUADS))
-	{
-		GetBot<CBaseBot>()->DebugPrintToConsole(0, 150, 0, "%s SQUAD CREATED! \n", GetBot<CBaseBot>()->GetDebugIdentifier());
-	}
-
-	GetBot<CBaseBot>()->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_FORMED);
-}
-
-void ISquad::DestroySquad()
-{
-	if (!IsInASquad())
-	{
-		return;
-	}
-
-	if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_SQUADS))
-	{
-		GetBot<CBaseBot>()->DebugPrintToConsole(255, 0, 0, "%s SQUAD DESTROYED! \n", GetBot<CBaseBot>()->GetDebugIdentifier());
-	}
-
-	GetBot<CBaseBot>()->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_DISBANDED);
+	if (!IsInASquad()) { return; }
 
 	if (IsSquadLeader())
 	{
-		// leaders notify the squad destruction
+		m_squaddata->Destroy();
+		NotifySquadDestruction();
+		return;
+	}
 
-		for (auto& member : m_squaddata->members)
-		{
-			if (member.botptr)
-			{
-				member.botptr->GetSquadInterface()->DestroySquad();
-			}
-		}
+	const ISquad::SquadMember* leader = m_squaddata->GetBotLeader();
+
+	if (leader && leader->IsValid())
+	{
+		leader->GetSquadInterface()->NotifyMemberLeftSquad(GetBot<CBaseBot>());
+	}
+}
+
+void ISquad::NotifySquadDestruction()
+{
+	if (m_squaddata)
+	{
+		GetBot<CBaseBot>()->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_DISBANDED);
+		m_squaddata = nullptr;
+	}
+}
+
+void ISquad::NotifyMemberLeftSquad(CBaseBot* member, const bool is_deleting)
+{
+	if (!IsInASquad()) { return; }
+
+	if (IsSquadLeader())
+	{
+		GetBot<CBaseBot>()->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_LEFT);
 		
-		m_squaddata->destroyed = true;
-		m_squaddata = nullptr;
-	}
-	else
-	{
-		m_squaddata = nullptr;
+		if (!is_deleting)
+		{
+			member->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_REMOVED_FROM);
+		}
+
+		m_squaddata->RemoveMember(member);
 	}
 }
 
-void ISquad::AddSquadMember(CBaseBot* bot)
+ISquad* ISquad::GetSquadInterfaceOfHumanLeader(CBaseEntity* humanLeader)
 {
-	if (IsSquadLeader())
-	{
-		auto& member = m_squaddata->members.emplace_back(bot);
+	ISquad* iface = nullptr;
 
-		for (auto& members : m_squaddata->members)
+	auto func = [&iface, humanLeader](CBaseBot* bot) {
+
+		ISquad* squad = bot->GetSquadInterface();
+
+		if (squad->IsSquadValid() && squad->IsSquadLeader() && squad->IsSquadLedByAHuman())
 		{
-			if (members.IsBot())
+			const ISquad::SquadMember* leader = squad->GetSquad()->GetSquadLeader();
+
+			if (leader->IsHuman() && leader->GetPlayerEntity() == humanLeader)
 			{
-				members.botptr->GetSquadInterface()->OnNewSquadMember(&member);
+				iface = squad;
 			}
 		}
+	};
 
-		CopySquadData(bot->GetSquadInterface());
-		bot->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_JOINED);
-
-		if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_SQUADS))
-		{
-			GetBot<CBaseBot>()->DebugPrintToConsole(0, 160, 0, "%s BOT %s JOINED MY SQUAD! WE NOW HAVE %zu MEMBERS\n", 
-				GetBot<CBaseBot>()->GetDebugIdentifier(), bot->GetClientName(), m_squaddata->GetSquadMemberCount());
-		}
-	}
-#ifdef EXT_DEBUG
-	else
-	{
-		smutils->LogError(myself, "ISquad::AddSquadMember called on a non squad leader bot!");
-	}
-#endif // EXT_DEBUG
-}
-
-void ISquad::JoinSquad(CBaseBot* leader)
-{
-	ISquad* leadersquad = leader->GetSquadInterface();
-
-	leadersquad->AddSquadMember(GetBot<CBaseBot>());
-
-	if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_SQUADS))
-	{
-		GetBot<CBaseBot>()->DebugPrintToConsole(65, 105, 225, "%s I HAVE JOINED %s SQUAD! \n",
-			GetBot<CBaseBot>()->GetDebugIdentifier(), leader->GetClientName());
-	}
-}
-
-void ISquad::OnSquadMemberLeftSquad(CBaseEntity* member)
-{
-	if (IsSquadLeader())
-	{
-		if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_SQUADS))
-		{
-			GetBot<CBaseBot>()->DebugPrintToConsole(255, 165, 0, "%s SQUAD MEMBER LEFT SQUAD! \n", GetBot<CBaseBot>()->GetDebugIdentifier());
-		}
-
-		std::vector<SquadMember>& members = m_squaddata->members;
-		members.erase(std::remove_if(members.begin(), members.end(), [&member](const SquadMember& object) {
-			return object == member;
-		}), members.end());
-	}
-}
-
-void ISquad::NotifyVisibleEnemy(CBaseEntity* enemy) const
-{
-	if (!IsInASquad())
-	{
-		return;
-	}
-
-	if (!IsSquadLeader())
-	{
-		if (m_squaddata->leader.IsValid() && m_squaddata->leader.IsBot())
-		{
-			CKnownEntity* known = m_squaddata->leader.botptr->GetSensorInterface()->AddKnownEntity(enemy);
-			known->UpdatePosition();
-		}
-	}
-
-	CBaseBot* me = GetBot<CBaseBot>();
-
-	for (auto& member : m_squaddata->members)
-	{
-		if (member.IsValid() && member.IsBot() && member.botptr != me)
-		{
-			CKnownEntity* known = member.botptr->GetSensorInterface()->AddKnownEntity(enemy);
-			known->UpdatePosition();
-		}
-	}
+	return iface;
 }

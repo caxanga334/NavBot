@@ -34,16 +34,24 @@ private:
 };
 
 template<typename BT, typename CT>
-inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* bot)
+inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* __bot)
 {
-	const ISquad::SquadMember* leader = bot->GetSquadInterface()->GetSquadLeader();
+	CBaseBot* bot = __bot;
+	ISquad* squadiface = bot->GetSquadInterface();
+
+	if (!squadiface->IsSquadValid())
+	{
+		AITask<BT>::Continue();
+	}
+
+	const ISquad::SquadMember* leader = squadiface->GetSquad()->GetSquadLeader();
 
 	if (!leader || !leader->IsValid())
 	{
 		AITask<BT>::Continue();
 	}
 
-	const Vector& goal = UtilHelpers::getEntityOrigin(leader->handle.Get());
+	Vector goal = leader->GetPosition();
 
 	if (bot->GetRangeTo(goal) > m_followrange)
 	{
@@ -56,11 +64,6 @@ inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* 
 template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnSight(BT* bot, CBaseEntity* subject)
 {
-	if (subject && !bot->GetSensorInterface()->IsIgnored(subject) && bot->GetSensorInterface()->IsEnemy(subject))
-	{
-		bot->GetSquadInterface()->NotifyVisibleEnemy(subject);
-	}
-
 	return AITask<BT>::TryContinue();
 }
 

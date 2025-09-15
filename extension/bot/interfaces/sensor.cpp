@@ -744,6 +744,21 @@ const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
 	return nearest;
 }
 
+void ISensor::ShareKnownEntityList(ISensor* other)
+{
+	CKnownEntity thisknown{ GetBot<CBaseBot>()->GetEntity() };
+
+	for (CKnownEntity& known : other->m_knownlist)
+	{
+		if (!known.IsValid()) { continue; }
+
+		if (known == thisknown) { continue; }
+
+		CKnownEntity* newknown = AddKnownEntity(known.GetEntity());
+		newknown->UpdatePosition();
+	}
+}
+
 void ISensor::UpdateKnownEntities()
 {
 #ifdef EXT_VPROF_ENABLED

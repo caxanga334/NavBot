@@ -10,7 +10,7 @@
 
 In order to compile NavBot, you need:
 
-* A C++ compiler:
+* A C++ compiler with C++17 support:
   * Windows: MSVC (Visual Studio).
   * Linux: Clang or GCC. Clang is preferred.
 * Python >= 3.8
@@ -19,11 +19,9 @@ In order to compile NavBot, you need:
 
 ## Setup
 
-First you need to clone [SourceMod], [MetaMod: Source] and the [HL2 SDKs].
-
-You can use the following bash script to do this:
-
-On Windows, run these scripts via git bash.
+First you need to clone [SourceMod], [MetaMod: Source] and the [HL2 SDKs].    
+You can use the following bash script to do this:    
+On Windows, run these scripts via git bash.    
 
 ```bash
 #!/bin/bash
@@ -68,6 +66,7 @@ A full list can be retrieved with `--help`. (This will include AMBuild built-in 
 * `--mms-path`: Path to Metamod: Source.
 * `--sm-path`: Path to SourceMod.
 * `--targets`: Override the target architecture (use commas to separate multiple targets).
+* `--enable-optimize`: Enables compiler optimizations.
 * `--arch-options`: x86 architecture options.
   * 0 for default
   * 1 for SSE4.2

@@ -35,6 +35,7 @@ Source engine branches compatible with the extension.
 | Day of Defeat: Source |
 | Source SDK 2013 (tf2 branch) |
 | Source SDK 2013 (old) |
+| Episode One/Source SDK 2006 |
 | Black Mesa |
 | Episode Two/Orangebox |
 | Counter-Strike: Global Offensive |

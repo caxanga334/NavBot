@@ -50,7 +50,7 @@ inline AITask<BT>* CBotSharedSquadMemberMonitorTask<BT, CT>::InitialNextTask(BT*
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	if (!bot->GetSquadInterface()->IsInASquad())
+	if (!bot->GetSquadInterface()->IsSquadValid())
 	{
 		if (m_exitTask != nullptr)
 		{
