@@ -1,0 +1,4 @@
+// NavBot bot name list.
+// Each line should contain one name with a maximum of 30 characters.
+// Lines starting with '//' are comment lines and are ignored
+// Rename this file to bot_names.cfg to use it, then add any name you want below.

@@ -434,7 +434,22 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	{
 		if (m_botnames.empty())
 		{
-			std::sprintf(defaultbotname, "NavBot #%04d", randomgen->GetRandomInt<int>(0, 9999));
+			int n = 0;
+
+			for (int i = 1; i <= gpGlobals->maxClients; i++)
+			{
+				SourceMod::IGamePlayer* player = playerhelpers->GetGamePlayer(i);
+
+				if (player && player->IsInGame())
+				{
+					continue;
+				}
+
+				n = i;
+				break;
+			}
+
+			ke::SafeSprintf(defaultbotname, sizeof(defaultbotname), "Bot %i", n);
 			name = defaultbotname;
 		}
 		else
@@ -615,21 +630,13 @@ void CExtManager::LoadBotNames()
 {
 	char path[PLATFORM_MAX_PATH]{};
 
-	// allow custom file for bot names
-	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.custom.cfg");
+	m_botnames.clear(); // clear vector if we're reloading the name list
+	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.cfg");
 
 	if (!std::filesystem::exists(path))
 	{
-		smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "configs/navbot/bot_names.cfg");
-
-		if (!std::filesystem::exists(path))
-		{
-			smutils->LogError(myself, "Could not load bot name list, file \"%s\" doesn't exists!", path);
-			return;
-		}
+		return;
 	}
-	
-	m_botnames.clear(); // clear vector if we're reloading the name list
 
 	std::fstream file;
 	std::string line;
