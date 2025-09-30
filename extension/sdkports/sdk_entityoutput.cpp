@@ -4,7 +4,7 @@
 inline const CHandle<CBaseEntity>& variant_t::Entity(void) const
 {
 	if (fieldType == FIELD_EHANDLE)
-		return this->eVal;
+		return reinterpret_cast<const CHandle<CBaseEntity>&>(eVal);
 
 	static CHandle<CBaseEntity> hNull;
 	hNull.Set(nullptr);
