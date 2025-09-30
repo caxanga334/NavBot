@@ -33,7 +33,7 @@ blackmesa::BMAmmoIndex CBlackMesaBotInventory::SelectRandomNeededAmmo() const
 	CBaseBot* me = GetBot();
 	CBlackMesaDeathmatchMod* mod = CBlackMesaDeathmatchMod::GetBMMod();
 
-	for (auto& weapon : m_weapons)
+	for (auto& weapon : GetAllWeapons())
 	{
 		if (weapon->IsValid())
 		{

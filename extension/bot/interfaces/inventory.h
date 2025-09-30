@@ -32,8 +32,35 @@ public:
 protected:
 	// Creates a new bot weapon object, override to use mod specific class
 	virtual CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) { return new CBotWeapon(weapon); }
+
 public:
+	// Returns true if the bot has at least one weapon in the inventory (doesn't validate the weapons)
 	inline bool HasAnyWeapons() const { return !m_weapons.empty(); }
+	/**
+	 * @brief Checks if the bot contains at least one weapon of the given type in their inventory.
+	 * @param type Weapon type to search for.
+	 * @param validate If true, check that the weapon entity is valid and owned by the bot.
+	 * @return True if at least a single weapon is found, false otherwise.
+	 */
+	inline bool HasAnyWeaponOfType(WeaponInfo::WeaponType type, const bool validate = true) const
+	{
+		CBaseBot* bot = GetBot<CBaseBot>();
+
+		for (auto& weapon : m_weapons)
+		{
+			if (validate)
+			{
+				if (!weapon->IsValid() || !weapon->IsOwnedByBot(bot)) { continue; }
+			}
+
+			if (weapon->GetWeaponInfo()->GetWeaponType() == type)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
 
 	/**
 	 * @brief Runs a function on every valid bot weapon
@@ -83,6 +110,7 @@ public:
 	 * 
 	 * Example: FindWeaponByClassnamePattern("tf_weapon_sniper*")
 	 * @param pattern Pattern to search for.
+	 * @param validateOwnership If true, check if the weapon is still owned by the bot.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
 	const CBotWeapon* FindWeaponByClassnamePattern(const char* pattern, const bool validateOwnership = true) const;
@@ -90,6 +118,7 @@ public:
 	/**
 	 * @brief Finds a weapon by their economy index.
 	 * @param index Weapon's economy item index.
+	 * @param validateOwnership If true, check if the weapon is still owned by the bot.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
 	const CBotWeapon* FindWeaponByEconIndex(const int index, const bool validateOwnership = true) const
@@ -113,6 +142,7 @@ public:
 	/**
 	 * @brief Finds the first weapon that contains the given tag.
 	 * @param tag Tag to search.
+	 * @param validateOwnership If true, check if the weapon is still owned by the bot.
 	 * @return Bot Weapon interface pointer or NULL if not found.
 	 */
 	const CBotWeapon* FindWeaponByTag(const std::string& tag, const bool validateOwnership = true) const
@@ -120,6 +150,30 @@ public:
 		for (auto& weaponptr : m_weapons)
 		{
 			if (weaponptr->IsValid() && weaponptr->GetWeaponInfo()->HasTag(tag))
+			{
+				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+				{
+					continue;
+				}
+
+				return weaponptr.get();
+			}
+		}
+
+		return nullptr;
+	}
+
+	/**
+	 * @brief Finds the first weapon of the given weapon type.
+	 * @param type Weapon type to search for.
+	 * @param validateOwnership If true, check if the weapon is still owned by the bot.
+	 * @return Bot Weapon interface pointer or NULL if not found.
+	 */
+	const CBotWeapon* FindWeaponByType(WeaponInfo::WeaponType type, const bool validateOwnership = true) const
+	{
+		for (auto& weaponptr : m_weapons)
+		{
+			if (weaponptr->IsValid() && weaponptr->GetWeaponInfo()->GetWeaponType() == type)
 			{
 				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
 				{
@@ -178,8 +232,10 @@ public:
 	/**
 	 * @brief Given a known threat, selects the best weapon from the current inventory.
 	 * @param threat Threat, NULL is NOT accepted.
+	 * @param typeOnly Optional weapon type filter. Leave at default value for any weapon useable in combat.
+	 * @return True if a weapon the weapon was selected, false otherwise.
 	 */
-	virtual void SelectBestWeaponForThreat(const CKnownEntity* threat);
+	virtual bool SelectBestWeaponForThreat(const CKnownEntity* threat, WeaponInfo::WeaponType typeOnly = WeaponInfo::WeaponType::MAX_WEAPON_TYPES);
 	/**
 	 * @brief Selects the best weapon from the bot inventory.
 	 */
@@ -188,6 +244,12 @@ public:
 	 * @brief Selects the best weapon from the bot inventory to attack breakable entities (func_breakable, prop_physics, etc...)
 	 */
 	virtual void SelectBestWeaponForBreakables();
+	/**
+	 * @brief Selects the weapon with the highest priority that matches the given type.
+	 * @param type Weapon Type to filter.
+	 * @param range Optional, if positive, also filter weapons by range.
+	 */
+	virtual void SelectBestWeaponOfType(WeaponInfo::WeaponType type, const float range = -1.0f);
 	/**
 	 * @brief Selects the best hitscan weapon from the bot inventory.
 	 * @param meleeIsHitscan If true, consider melee weapon as hitscan.
@@ -210,8 +272,32 @@ public:
 	int GetOwnedWeaponCount() const;
 	// Forces the stale weapons removal to run the next Update
 	void ForceStaleWeaponsCheck() { m_purgeStaleWeaponsTimer.Invalidate(); }
+	// returns the vector that stores the weapons
+	const std::vector<std::unique_ptr<CBotWeapon>>& GetAllWeapons() const { return m_weapons; }
+	const bool IsWeaponSwitchInCooldown() const { return m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed(); }
+	void StartWeaponSwitchCooldown(const float time = 0.5f) { m_weaponSwitchCooldown.Start(time); }
 
 protected:
+	// deletes invalid weapons from the weapon storage vector
+	void RemoveInvalidWeapons();
+
+	void SetActiveWeaponCache(CBotWeapon* weapon) const { m_cachedActiveWeapon = weapon; }
+
+	/**
+	 * @brief Invoked to filter the best weapon to be used against the given threat.
+	 * @param me The bot itself.
+	 * @param threat The threat.
+	 * @param rangeToThreat Distance between the bot and the threat.
+	 * @param first The first weapon.
+	 * @param second The second weapon.
+	 * @return The weapon the bot should use. NULL for none and end the loop.
+	 */
+	virtual const CBotWeapon* FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* first, const CBotWeapon* second) const;
+	// Returns true if the weapon can be used agains the given threat
+	bool IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info) const;
+	// Selects the weapon with the highest static priority (no dynamic priority support)
+	const CBotWeapon* FilterSelectWeaponWithHighestStaticPriority(const CBotWeapon* first, const CBotWeapon* second) const;
+private:
 	std::vector<std::unique_ptr<CBotWeapon>> m_weapons;
 	mutable CBotWeapon* m_cachedActiveWeapon;
 	CountdownTimer m_updateWeaponsTimer;

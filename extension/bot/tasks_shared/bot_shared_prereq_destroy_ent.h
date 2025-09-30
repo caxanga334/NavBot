@@ -127,7 +127,7 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 
 	if (m_inRange && tr.fraction == 1.0f)
 	{
-		bot->FireWeaponAtEnemy(known, true);
+		bot->GetCombatInterface()->FireWeaponAt(targetEnt, true);
 	}
 	else
 	{

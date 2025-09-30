@@ -153,6 +153,13 @@ struct Extent
 {
 	Vector lo, hi;
 
+	Extent() :
+		lo(0.0f, 0.0f, 0.0f), hi(0.0f, 0.0f, 0.0f)
+	{
+	}
+
+	Extent(CBaseEntity* entity);
+
 	void Init( void )
 	{
 		lo.Init();
@@ -160,6 +167,7 @@ struct Extent
 	}
 
 	void Init( edict_t *entity );
+	void Init(CBaseEntity* pEntity);
 
 	float SizeX( void ) const	{ return hi.x - lo.x; }
 	float SizeY( void ) const	{ return hi.y - lo.y; }

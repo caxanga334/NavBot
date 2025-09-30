@@ -970,6 +970,8 @@ void CNavMesh::DrawEditMode( void )
 				debugoverlay->AddScreenTextOverlay(NAV_EDIT_OVERLAY_X, NAV_EDIT_OVERLAY_Y, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255,
 						0, 128, buffer);
 
+				m_selectedArea->ShowAreaInfo(); // call so mods can add their own area info
+
 				// do "place painting"
 				if (m_isPlacePainting
 						&& m_selectedArea->GetPlace()
@@ -1220,6 +1222,7 @@ void CNavMesh::CommandNavDelete( void )
 		if( markedArea )
 		{
 			EmitSound(player, "EDIT_DELETE" );
+			META_CONPRINTF("Deleted nav area #%u \n", markedArea->GetID());
 			TheNavAreas.FindAndRemove( markedArea );
 			TheNavMesh->OnEditDestroyNotify( markedArea );
 			TheNavMesh->DestroyArea( markedArea );
@@ -1227,6 +1230,7 @@ void CNavMesh::CommandNavDelete( void )
 		else if( markedLadder )
 		{
 			EmitSound(player, "EDIT_DELETE" );
+			META_CONPRINTF("Deleted nav ladder #%u \n", markedLadder->GetID());
 			m_ladders.FindAndRemove( markedLadder );
 			OnEditDestroyNotify( markedLadder );
 			delete markedLadder;
@@ -1234,16 +1238,20 @@ void CNavMesh::CommandNavDelete( void )
 		else if ( m_selectedArea )
 		{
 			EmitSound(player, "EDIT_DELETE" );
-			TheNavAreas.FindAndRemove( m_selectedArea );
-			OnEditDestroyNotify( m_selectedArea );
-			TheNavMesh->DestroyArea( m_selectedArea );
+			META_CONPRINTF("Deleted nav area #%u \n", m_selectedArea->GetID());
+			CNavArea* deadarea = m_selectedArea;
+			TheNavAreas.FindAndRemove(deadarea);
+			OnEditDestroyNotify(deadarea);
+			TheNavMesh->DestroyArea(deadarea);
 		}
 		else if ( m_selectedLadder )
 		{
 			EmitSound(player, "EDIT_DELETE" );
-			m_ladders.FindAndRemove( m_selectedLadder );
-			OnEditDestroyNotify( m_selectedLadder );
-			delete m_selectedLadder;
+			META_CONPRINTF("Deleted nav ladder #%u \n", m_selectedLadder->GetID());
+			CNavLadder* deadladder = m_selectedLadder;
+			m_ladders.FindAndRemove(deadladder);
+			OnEditDestroyNotify(deadladder);
+			delete deadladder;
 		}
 	}
 	else
@@ -1320,6 +1328,7 @@ void CNavMesh::CommandNavDeleteMarked( void )
 	{ 
 		EmitSound(player, "EDIT_DELETE" );
 		m_ladders.FindAndRemove( markedLadder );
+		OnEditDestroyNotify(markedLadder);
 		delete markedLadder; 
 	} 
 
@@ -4130,66 +4139,6 @@ template bool CNavMesh::ForAllAreasOverlappingExtent(NavAreaCollector&, const Ex
 template bool CNavMesh::ForAllAreasOverlappingExtent(CFuncNavObstruction&, const Extent&);
 template bool CNavMesh::ForAllAreasOverlappingExtent(COverlapCheck&, const Extent&);
 
-template< typename NavAreaType >
-void CNavMesh::CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< NavAreaType * > *outVector )
-{
-	if ( !m_grid.Count() )
-	{
-		return;
-	}
-
-	static unsigned int searchMarker = librandom::generate_random_int(0, 1024 * 1024);
-	if ( ++searchMarker == 0 )
-	{
-		++searchMarker;
-	}
-
-	Extent areaExtent;
-
-	// get list in cell that contains position
-	int startX = WorldToGridX( extent.lo.x );
-	int endX = WorldToGridX( extent.hi.x );
-	int startY = WorldToGridY( extent.lo.y );
-	int endY = WorldToGridY( extent.hi.y );
-
-	for( int x = startX; x <= endX; ++x )
-	{
-		for( int y = startY; y <= endY; ++y )
-		{
-			int iGrid = x + y*m_gridSizeX;
-			if ( iGrid >= m_grid.Count() )
-			{
-				ExecuteNTimes( 10, Warning( "** Walked off of the CNavMesh::m_grid in CollectAreasOverlappingExtent()\n" ) );
-				return;
-			}
-
-			NavAreaVector *areaVector = &m_grid[ iGrid ];
-
-			// find closest area in this cell
-			for( int v=0; v<areaVector->Count(); ++v )
-			{
-				CNavArea *area = areaVector->Element( v );
-
-				// skip if we've already visited this area
-				if ( area->m_nearNavSearchMarker == searchMarker )
-					continue;
-
-				// mark as visited
-				area->m_nearNavSearchMarker = searchMarker;
-				area->GetExtent( &areaExtent );
-
-				if ( extent.IsOverlapping( areaExtent ) )
-				{
-					outVector->AddToTail( (NavAreaType *)area );
-				}
-			}
-		}
-	}
-}
-
-template void CNavMesh::CollectAreasOverlappingExtent(const Extent&,
-		CUtlVector<CNavArea*>*);
-
 template < typename Functor >
 bool CNavMesh::ForAllAreasInRadius( Functor &func, const Vector &pos, float radius )
 {
@@ -4518,8 +4467,8 @@ void CNavMesh::OnEditDestroyNotify( CNavArea *deadArea )
 		elevator.second->NotifyNavAreaDestruction(deadArea);
 	}
 
-	EditDestroyNotification notification( deadArea );
-	ForEachActor( notification );
+	// EditDestroyNotification notification( deadArea );
+	// ForEachActor( notification );
 }
 
 

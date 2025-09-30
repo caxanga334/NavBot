@@ -159,9 +159,6 @@ static_assert(sizeof(NavMeshInfoHeader) == 324U, "Changing this will invalidate 
 // TODO: Was changed from 15, update when latest 360 code is integrated (MSB 5/5/09)
 constexpr int NavCurrentVersion = 17;
 
-// Current version of the Sourcemod Nav Mesh
-constexpr int SMNavVersion = 1;
-
 extern IFileSystem *filesystem;
 extern IVEngineServer* engine;
 extern CGlobalVars *gpGlobals;
@@ -602,7 +599,15 @@ NavErrorType CNavArea::PostLoad( void )
 			connect->area = TheNavMesh->GetNavAreaByID( id );
 			if (id && connect->area == NULL)
 			{
-				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas.");
+				CNavArea* area2 = CNavMesh::FindNavAreaByIDViaLoop(id);
+
+				if (area2)
+				{
+					smutils->LogError(myself, "CNavArea::PostLoad: Nav area hash table corruption detected!");
+				}
+
+				smutils->LogError(myself, "CNavArea::PostLoad: Corrupt navigation data. Cannot connect Navigation Areas. At %g %g %g From %u to %u ", 
+					m_center.x, m_center.y, m_center.z, GetID(), id);
 				error = NAV_CORRUPT_DATA;
 				return error;
 			}
@@ -905,7 +910,6 @@ static void WarnIfMeshNeedsAnalysis( int version )
 bool CNavMesh::Save(void)
 {
 	BuildAuthorInfo();
-
 	WarnIfMeshNeedsAnalysis(CNavMesh::NavMeshVersion);
 
 	auto path = GetFullPathToNavMeshFile();
@@ -1206,7 +1210,7 @@ NavErrorType CNavMesh::Load( void )
 	{
 		filestream.close();
 		std::string str = path.string();
-		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad version number! Got '%i', should be '%i' or lower!", str.c_str(), header.version, CNavMesh::NavMeshVersion);
+		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad version number! Got '%u', should be '%u' or lower!", str.c_str(), header.version, CNavMesh::NavMeshVersion);
 		return NAV_INVALID_FILE;
 	}
 
@@ -1214,7 +1218,7 @@ NavErrorType CNavMesh::Load( void )
 	{
 		filestream.close();
 		std::string str = path.string();
-		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad sub version number! Got '%i', should be '%i' or lower!", str.c_str(), header.subversion, GetSubVersionNumber());
+		smutils->LogError(myself, "Navigation Mesh file \"%s\" has bad sub version number! Got '%u', should be '%u' or lower!", str.c_str(), header.subversion, GetSubVersionNumber());
 		return NAV_INVALID_FILE;
 	}
 
@@ -1238,6 +1242,12 @@ NavErrorType CNavMesh::Load( void )
 	if (Q_strcmp(info.modfolder, mod) != 0)
 	{
 		Warning("Navigation Mesh was generated from another game! %s != %s \n", info.modfolder, mod);
+	}
+
+	if (header.version < CNavMesh::NavMeshVersion || header.subversion < GetSubVersionNumber())
+	{
+		std::string str = path.string();
+		smutils->LogMessage(myself, "Navigation mesh file \"%s\" is outdated.", str.c_str());
 	}
 
 	filestream.read(reinterpret_cast<char*>(&m_isAnalyzed), sizeof(bool));
@@ -1476,11 +1486,19 @@ struct OneWayLink_t
  */
 NavErrorType CNavMesh::PostLoad( uint32_t version )
 {
+	NavErrorType error = NAV_OK;
+
 	// allow areas to connect to each other, etc
 	FOR_EACH_VEC( TheNavAreas, pit )
 	{
 		CNavArea *area = TheNavAreas[ pit ];
-		area->PostLoad();
+		error = area->PostLoad();
+
+		if (error != NAV_OK)
+		{
+			Reset();
+			return error;
+		}
 	}
 
 	extern HidingSpotVector TheHidingSpots;
@@ -1488,7 +1506,13 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	FOR_EACH_VEC( TheHidingSpots, hit )
 	{
 		HidingSpot *spot = TheHidingSpots[ hit ];
-		spot->PostLoad();
+		error = spot->PostLoad();
+
+		if (error != NAV_OK)
+		{
+			Reset();
+			return error;
+		}
 	}
 
 	WaypointID topID = 0;

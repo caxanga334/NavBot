@@ -6,8 +6,6 @@
 #include "nav_mesh.h"
 #include "nav_trace.h"
 
-
-
 bool CTraceFilterWalkableEntities::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
 	if (trace::CTraceFilterNoNPCsOrPlayers::ShouldHitEntity(pHandleEntity, contentsMask))
@@ -31,14 +29,7 @@ bool CTraceFilterTransientAreas::ShouldHitEntity(IHandleEntity* pHandleEntity, i
 			return true; // always hit worldspawn
 		}
 
-		// TO-DO: Allow derived nav mesh classes to customize this
-		if (UtilHelpers::FClassnameIs(pEntity, "func_brush") ||
-			UtilHelpers::FClassnameIs(pEntity, "func_door") ||
-			UtilHelpers::FClassnameIs(pEntity, "func_door_rotating") ||
-			UtilHelpers::FClassnameIs(pEntity, "prop_dynamic*") ||
-			UtilHelpers::FClassnameIs(pEntity, "prop_static") ||
-			UtilHelpers::FClassnameIs(pEntity, "func_wall_toggle") ||
-			UtilHelpers::FClassnameIs(pEntity, "func_tracktrain"))
+		if (TheNavMesh->IsEntitySolidForTransientAreas(pEntity))
 		{
 			return true;
 		}

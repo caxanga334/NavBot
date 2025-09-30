@@ -252,20 +252,21 @@ void CFuncNavCost::UpdateAllNavCostDecoration( CNavMesh* TheNavMesh )
 		Extent extent;
 		extent.Init( pEnt );
 
-		CUtlVector< CNavArea * > overlapVector;
-		TheNavMesh->CollectAreasOverlappingExtent( extent, &overlapVector );
+		std::vector<CNavArea*> overlapVector;
+		TheNavMesh->CollectAreasOverlappingExtent<CNavArea>( extent, overlapVector );
 
 		Ray_t ray;
 		trace_t tr;
-		for( int j=0; j<overlapVector.Count(); ++j )
+
+		for (CNavArea* area : overlapVector)
 		{
-			ray.Init( overlapVector[j]->GetCenter(), overlapVector[j]->GetCenter() );
-			extern IEngineTrace *enginetrace;
-			enginetrace->ClipRayToCollideable( ray, MASK_ALL, pEnt->GetCollideable(), &tr );
-			
-			if ( tr.startsolid )
+			const Vector& center = area->GetCenter();
+			ray.Init(center, center);
+			enginetrace->ClipRayToCollideable(ray, MASK_ALL, pEnt->GetCollideable(), &tr);
+
+			if (tr.startsolid)
 			{
-				overlapVector[j]->AddFuncNavCostEntity( cost );
+				area->AddFuncNavCostEntity(cost);
 			}
 		}
 	}

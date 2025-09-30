@@ -166,9 +166,19 @@ OffMeshConnectionType NavOffMeshConnection::GetOffMeshConnectionTypeFromString(c
 	return OffMeshConnectionType::OFFMESH_INVALID;
 }
 
-void Extent::Init(edict_t *entity) 
+Extent::Extent(CBaseEntity* entity)
+{
+	Init(entity);
+}
+
+void Extent::Init(edict_t *entity)
 {
 	entity->GetCollideable()->WorldSpaceSurroundingBounds(&lo, &hi);
+}
+
+void Extent::Init(CBaseEntity* pEntity)
+{
+	reinterpret_cast<IServerEntity*>(pEntity)->GetCollideable()->WorldSpaceSurroundingBounds(&lo, &hi);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -527,8 +537,8 @@ CNavArea::~CNavArea()
 	TheNavMesh->RemoveNavArea( this );
 	
 	// make sure no players keep a pointer to this area
-	ForgetArea forget( this );
-	ForEachActor( forget );
+	// ForgetArea forget( this );
+	// ForEachActor( forget );
 }
 
 //--------------------------------------------------------------------------------------------------------------

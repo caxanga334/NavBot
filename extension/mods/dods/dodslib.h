@@ -36,6 +36,8 @@ namespace dodslib
 			return "UNASSIGNED";
 		}
 	}
+
+	bool CanPlantBombAtTarget(CBaseEntity* bombTarget);
 }
 
 

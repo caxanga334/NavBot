@@ -2,6 +2,8 @@
 #include <extension.h>
 #include <util/entprops.h>
 #include <mods/dods/dodslib.h>
+#include <mods/dods/nav/dods_nav_mesh.h>
+#include <mods/dods/nav/dods_nav_area.h>
 #include "dodsbot.h"
 
 CDoDSBot::CDoDSBot(edict_t* edict) :
@@ -11,6 +13,8 @@ CDoDSBot::CDoDSBot(edict_t* edict) :
 	m_dodbehavior = std::make_unique<CDoDSBotBehavior>(this);
 	m_dodinventory = std::make_unique<CDoDSBotInventory>(this);
 	m_dodmovement = std::make_unique<CDoDSBotMovement>(this);
+	m_dodcombat = std::make_unique<CDoDSBotCombat>(this);
+	m_dodcontrol = std::make_unique<CDoDSBotPlayerController>(this);
 	m_droppedAmmo = false;
 }
 
@@ -93,41 +97,6 @@ bool CDoDSBot::IsDefusingBomb() const
 	return result;
 }
 
-void CDoDSBot::DodgeEnemies(const CKnownEntity* threat)
-{
-	/* Overriden for DoD so bots don't jump */
-
-	if (!IsAbleToDodgeEnemies(threat))
-	{
-		return;
-	}
-
-	Vector forward;
-	Vector origin = GetAbsOrigin();
-	EyeVectors(&forward);
-	Vector left(-forward.y, forward.x, 0.0f);
-	left.NormalizeInPlace();
-	IMovement* mover = GetMovementInterface();
-	const float sideStepSize = mover->GetHullWidth();
-
-	int rng = CBaseBot::s_botrng.GetRandomInt<int>(1, 100);
-
-	if (rng < 33)
-	{
-		if (!mover->HasPotentialGap(origin, origin + sideStepSize * left))
-		{
-			GetControlInterface()->PressMoveLeftButton();
-		}
-	}
-	else if (rng > 66)
-	{
-		if (!mover->HasPotentialGap(origin, origin - sideStepSize * left))
-		{
-			GetControlInterface()->PressMoveRightButton();
-		}
-	}
-}
-
 CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type)
 {
 	m_me = bot;
@@ -136,9 +105,10 @@ CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type)
 	m_maxjumpheight = bot->GetMovementInterface()->GetMaxJumpHeight();
 	m_maxdropheight = bot->GetMovementInterface()->GetMaxDropHeight();
 	m_maxgapjumpdistance = bot->GetMovementInterface()->GetMaxGapJumpDistance();
+	m_hasbomb = bot->GetInventoryInterface()->HasBomb();
 }
 
-float CDoDSBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
+float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
 {
 	if (fromArea == nullptr)
 	{
@@ -146,9 +116,17 @@ float CDoDSBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const C
 		return 0.0f;
 	}
 
+	CDODSNavArea* toArea = static_cast<CDODSNavArea*>(baseToArea);
+
 	if (!m_me->GetMovementInterface()->IsAreaTraversable(toArea))
 	{
 		return -1.0f;
+	}
+
+	// Area is blocked if we don't have bombs
+	if (toArea->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_BLOCKED_WITHOUT_BOMBS) && !m_hasbomb)
+	{
+		return  -1.0f;
 	}
 
 	float dist = 0.0f;

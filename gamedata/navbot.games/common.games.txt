@@ -43,6 +43,28 @@
 			"NavEdit_GenericOff" 		"buttons\combine_button2.wav"
 			"NavEdit_ConnectFail" 		"buttons\button10.wav"
 			"NavEdit_WaypointAdd"		"weapons\crossbow\hit1.wav"
+
+			/* Nav Mesh generation parameters */
+			"NavGen_StepSize"				"25.0"
+			"NavGen_JumpHeight"				"41.8"
+			"NavGen_JumpCrouchHeight"		"64.0"
+			"NavGen_StepHeight"				"18.0"
+			"NavGen_DeathDropHeight"		"400.0"
+			"NavGen_ClimbUpHeight"			"200.0"
+			"NavGen_HalfHumanWidth"			"16.0"
+			"NavGen_HumanHeight"			"71.0"
+			"NavGen_HumanCrouchHeight"		"55.0"
+			"NavGen_HumanEyeHeight"			"62.0"
+			"NavGen_HumanCrouchEyeHeight"	"37.0"
+
+			/* NavBot IMovement bot interface parameters
+			 * Default values based from the default view vectors: 
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/68c8b82fdcb41b8ad5abde9fe1f0654254217b8e/src/game/shared/gamerules.cpp#L47-L61 
+			*/
+			"PlayerHull_StandHeight"		"72.0"
+			"PlayerHull_CrouchHeight"		"36.0"
+			"PlayerHull_ProneHeight"		"0.0"
+			"PlayerHull_Width"				"32.0"
 		}
 		"Offsets"
 		{

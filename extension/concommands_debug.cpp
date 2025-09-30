@@ -1533,4 +1533,30 @@ CON_COMMAND(sm_nav_debug_completely_visible, "")
 
 }
 
+CON_COMMAND(sm_navbot_debug_find_water_surface, "")
+{
+	CBaseExtPlayer player{ UtilHelpers::GetListenServerHost() };
+
+	Vector start = player.GetAbsOrigin();
+	Vector surface = trace::getwatersurface(start);
+
+	NDebugOverlay::Cross3D(surface, 16.0f, 0, 200, 0, true, 20.0f);
+}
+
+CON_COMMAND(sm_navbot_debug_nav_ladder_dot, "")
+{
+	CNavLadder* ladder = TheNavMesh->GetMarkedLadder();
+
+	if (!ladder) { META_CONPRINT("MARK A LADDER FIRST!\n"); return; }
+
+	CBaseExtPlayer player{ UtilHelpers::GetListenServerHost() };
+
+	Vector origin = player.GetAbsOrigin();
+	Vector bottom = ladder->m_bottom;
+	Vector to = UtilHelpers::math::BuildDirectionVector(origin, bottom);
+	const float dot = DotProduct(to, ladder->GetNormal());
+
+	META_CONPRINTF("Dot: %g\n    %g %g %g", dot, to.x, to.y, to.z);
+}
+
 #endif // EXT_DEBUG

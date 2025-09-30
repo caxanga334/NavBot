@@ -248,6 +248,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		m_botsAreSupported = false;
 	}
 
+	if (!IMovement::InitializeGameData(m_cfg_navbot))
+	{
+		ke::SafeSprintf(error, maxlen, "Failed during IMovement gamedata initialization!");
+		return false;
+	}
+
 	if (gamehelpers->GetGlobalEntityList() == nullptr)
 	{
 		ke::SafeSprintf(error, maxlen, "NULL g_EntList from IGameHelpers!");
@@ -333,6 +339,15 @@ void NavBotExt::SDK_OnAllLoaded()
 		catch (const std::exception& ex)
 		{
 			smutils->LogError(myself, "Exception throw by CNavMesh::LoadEditSounds! %s", ex.what());
+		}
+
+		try
+		{
+			TheNavMesh->InitializeGameData(m_cfg_navbot);
+		}
+		catch (const std::exception& ex)
+		{
+			smutils->LogError(myself, "C++ exception throw during Nav Mesh gamedata initialization! %s", ex.what());
 		}
 	}
 

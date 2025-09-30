@@ -6,6 +6,8 @@
 #include "dodsbot_behavior.h"
 #include "dodsbot_inventory.h"
 #include "dodsbot_movement.h"
+#include "dodsbot_combat.h"
+#include "dodsbot_playercontrol.h"
 #include <mods/dods/dods_shareddefs.h>
 #include <bot/interfaces/path/basepath.h>
 
@@ -15,10 +17,12 @@ public:
 	CDoDSBot(edict_t* edict);
 	~CDoDSBot() override;
 
+	CDoDSBotPlayerController* GetControlInterface() const override { return m_dodcontrol.get(); }
 	CDoDSBotSensor* GetSensorInterface() const override { return m_dodsensor.get(); }
 	CDoDSBotBehavior* GetBehaviorInterface() const override { return m_dodbehavior.get(); }
 	CDoDSBotMovement* GetMovementInterface() const override { return m_dodmovement.get(); }
 	CDoDSBotInventory* GetInventoryInterface() const override { return m_dodinventory.get(); }
+	CDoDSBotCombat* GetCombatInterface() const override { return m_dodcombat.get(); }
 
 	bool HasJoinedGame() override;
 	void TryJoinGame() override;
@@ -35,12 +39,13 @@ public:
 	bool IsPlantingBomb() const;
 	bool IsDefusingBomb() const;
 	bool CanDropAmmo() const { return !m_droppedAmmo; } // ammo can only be dropped once per life
-	void DodgeEnemies(const CKnownEntity* threat) override;
 private:
 	std::unique_ptr<CDoDSBotSensor> m_dodsensor;
 	std::unique_ptr<CDoDSBotBehavior> m_dodbehavior;
 	std::unique_ptr<CDoDSBotMovement> m_dodmovement;
 	std::unique_ptr<CDoDSBotInventory> m_dodinventory;
+	std::unique_ptr<CDoDSBotCombat> m_dodcombat;
+	std::unique_ptr<CDoDSBotPlayerController> m_dodcontrol;
 	bool m_droppedAmmo; // has the bot dropped ammo?
 };
 
@@ -59,6 +64,7 @@ private:
 	float m_maxjumpheight;
 	float m_maxdropheight;
 	float m_maxgapjumpdistance;
+	bool m_hasbomb;
 };
 
 #endif // !NAVBOT_DODSBOT_H_

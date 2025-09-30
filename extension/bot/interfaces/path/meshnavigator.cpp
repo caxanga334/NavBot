@@ -157,7 +157,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	const float goalRange = forward.NormalizeInPlace();
 	Vector left(-forward.y, forward.x, 0.0f);
 
-	if (left.IsZero())
+	// Causes issues when the bot is underwater
+	if (left.IsZero() && !bot->IsUnderWater())
 	{
 		bot->OnMoveToFailure(this, IEventListener::FAIL_STUCK);
 
@@ -253,7 +254,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	if (m_goal->area->IsUnderwater() || bot->GetWaterLevel() >= static_cast<int>(entityprops::WaterLevel::WL_Waist))
 	{
-		input->AimAt(m_goal->goal, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at move goal (Underwater).");
+		goalPos = AdjustGoalForUnderWater(bot, goalPos, m_goal);
+		input->AimAt(goalPos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at move goal (Underwater).");
 	}
 	else if (mover->IsOnGround())
 	{
@@ -409,8 +411,30 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		return true;
 	}
 
+	if (bot->IsUnderWater())
+	{
+		if (IsAtUnderwaterGoal(bot))
+		{
+			return true;
+		}
+	}
+
 	// Check distance to goal
 	if (toGoal.AsVector2D().IsLengthLessThan(GetGoalTolerance()))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool CMeshNavigator::IsAtUnderwaterGoal(CBaseBot* bot)
+{
+	constexpr float UNDERWATER_MULT = 1.4f;
+
+	const float distance2d = (bot->GetAbsOrigin() - m_goal->goal).AsVector2D().Length();
+
+	if (m_goal->type == AIPath::SegmentType::SEGMENT_GROUND && distance2d <= GetGoalTolerance() * UNDERWATER_MULT)
 	{
 		return true;
 	}
@@ -547,6 +571,29 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 	}
 
 	return skip;
+}
+
+Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const CBasePathSegment* seg)
+{
+	Vector origin = bot->GetAbsOrigin();
+
+	// If climbing, don't touch Z
+	if (goalPos.z >= origin.z)
+	{
+		return goalPos;
+	}
+
+	Vector adjusted = goalPos;
+	adjusted.z = origin.z;
+	adjusted.z += navgenparams->human_crouch_height;
+
+	// Try to maintain the current height unless there's something blocking it
+	if (bot->GetMovementInterface()->IsPotentiallyTraversable(origin, adjusted, nullptr, true, nullptr))
+	{
+		return adjusted;
+	}
+
+	return goalPos;
 }
 
 bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
@@ -1119,6 +1166,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	//
 	// Check for potential blockers along our path and wait if we're blocked
 	//
+	const Vector botorigin = bot->GetAbsOrigin();
 	auto blocker = FindBlocker(bot);
 	if (blocker != nullptr)
 	{
@@ -1126,9 +1174,8 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 		m_waitTimer.Start(avoidInterval * randomgen->GetRandomReal<float>(1.0f, 2.0f));
 		gamehelpers->SetHandleEntity(m_blocker, blocker);
 
-		return bot->GetAbsOrigin();
+		return botorigin;
 	}
-
 
 	// don't avoid in precise navigation areas
 	CNavArea* area = bot->GetLastKnownNavArea();

@@ -3,11 +3,14 @@
 #include <util/entprops.h>
 #include <bot/dods/dodsbot.h>
 #include <mods/dods/dayofdefeatsourcemod.h>
+#include <mods/dods/nav/dods_nav_mesh.h>
+#include <mods/dods/nav/dods_nav_area.h>
 #include "dodsbot_scenario_monitor_task.h"
 #include "dodsbot_tactical_monitor_task.h"
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include "scenario/dodsbot_attack_control_point_task.h"
 #include "scenario/dodsbot_defuse_bomb_task.h"
+#include "scenario/dodsbot_deploy_bomb_task.h"
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 
 AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
@@ -53,6 +56,19 @@ TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 	}
 
 	return Continue();
+}
+
+TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea)
+{
+	CDODSNavArea* area = static_cast<CDODSNavArea*>(newArea);
+
+	if (area->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_PLANT_BOMB) && !area->WasBombed() && area->CanPlantBomb())
+	{
+		CBaseEntity* target = area->GetAssignedBombTarget();
+		return TryPauseFor(new CDoDSBotDeployBombTask(target), PRIORITY_HIGH, "Nav area tells me I need to plant a bomb!");
+	}
+
+	return TryContinue(PRIORITY_LOW);
 }
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnRoundStateChanged(CDoDSBot* bot)

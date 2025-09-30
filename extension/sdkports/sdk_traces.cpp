@@ -9,6 +9,7 @@
 #include <sm_argbuffer.h>
 #include <entities/baseentity.h>
 #include <model_types.h>
+#include <coordsize.h>
 #include "sdk_traces.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -56,6 +57,27 @@ namespace trace
 		*outEntity = pEntity;
 		*outEdict = servergameents->BaseEntityToEdict(pEntity);
 		entity = gamehelpers->EntityToBCompatRef(pEntity);
+	}
+
+	Vector getwatersurface(const Vector& point)
+	{
+		Vector end = point;
+		end.z += MAX_COORD_FLOAT;
+		Ray_t ray;
+		ray.Init(point, end);
+		trace_t tr;
+		CTraceFilterWorldAndPropsOnly filter;
+
+		// find top
+		enginetrace->TraceRay(ray, MASK_WATER, &filter, &tr);
+		Vector top = tr.endpos;
+
+		end.z = point.z;
+		end.z -= MAX_COORD_FLOAT;
+		ray.Init(top, end);
+
+		enginetrace->TraceRay(ray, MASK_WATER, &filter, &tr);
+		return tr.endpos;
 	}
 
 	static bool StandardFilterRules(IHandleEntity* pHandleEntity, int contentsMask)

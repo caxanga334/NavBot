@@ -51,26 +51,6 @@ TaskResult<CTF2Bot> CTF2BotMainTask::OnTaskUpdate(CTF2Bot* bot)
 		return PauseFor(new CTF2BotTauntingTask, "Taunting!");
 	}
 
-	auto sensor = bot->GetSensorInterface();
-	const CKnownEntity* threat = sensor->GetPrimaryKnownThreat();
-
-	if (threat) // I have an enemy
-	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
-		bot->FireWeaponAtEnemy(threat, true);
-		bot->DodgeEnemies(threat);
-	}
-	else
-	{
-		bot->HandleWeaponsNoThreat();
-	}
-
-	if (m_abilityUseTimer.IsElapsed())
-	{
-		m_abilityUseTimer.Start(bot->GetDifficultyProfile()->GetAbilityUsageInterval());
-		bot->UseSecondaryAbilities(threat);
-	}
-
 	if (entprops->GameRules_GetRoundState() == RoundState_Preround)
 	{
 		bot->GetMovementInterface()->ClearStuckStatus("PREROUND"); // players are frozen during pre-round, don't get stuck

@@ -42,6 +42,7 @@ protected:
 	virtual void OnGoalSegmentReached(const CBasePathSegment* goal, const CBasePathSegment* next) const;
 
 	bool IsAtGoal(CBaseBot* bot);
+	bool IsAtUnderwaterGoal(CBaseBot* bot);
 	bool CheckProgress(CBaseBot* bot);
 	const CBasePathSegment* CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const;
 
@@ -50,6 +51,8 @@ protected:
 	CBaseBot* GetBot() const { return m_me; }
 	// Waiting for obstacles
 	bool IsWaitingForSomething() { return !m_waitTimer.IsElapsed(); }
+
+	virtual Vector AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const CBasePathSegment* seg);
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator

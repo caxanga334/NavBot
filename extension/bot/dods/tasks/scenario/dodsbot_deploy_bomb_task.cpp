@@ -10,6 +10,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #include "dodsbot_deploy_bomb_task.h"
 #include "dodsbot_fetch_bomb_task.h"
+#include <bot/tasks_shared/bot_shared_take_cover_from_spot.h>
 
 CDoDSBotDeployBombTask::CDoDSBotDeployBombTask(CBaseEntity* target)
 {
@@ -40,6 +41,13 @@ TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskUpdate(CDoDSBot* bot)
 
 	if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ARMED))
 	{
+		Vector center = UtilHelpers::getWorldSpaceCenter(target);
+
+		if (bot->GetRangeTo(center) <= 512.0f)
+		{
+			return SwitchTo(new CBotSharedTakeCoverFromSpotTask<CDoDSBot, CDoDSBotPathCost>(bot, center, 600.0f, false, false, 5000.0f, nullptr), "Taking cover from planted bomb!");
+		}
+
 		return Done("Bomb has been planted!");
 	}
 

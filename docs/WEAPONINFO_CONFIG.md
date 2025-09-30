@@ -17,6 +17,8 @@ This is a list of keys available for all mods.
 |classname|The weapon's entity classname.|string|
 |itemindex|The weapon's econ index for games that have it (IE: TF2).|integer|
 |priority|Weapon selection priority for this weapon.|integer|
+|min_required_skill|Minimum weapon skill required to use this weapon.|integer|
+|weapon_type|Weapon type. See docs below.|string|
 |can_headshot|Can this weapon headshot.|boolean|
 |headshot_range_multiplier|Headshot range multiplier.|float|
 |headshot_aim_offset|Offset to apply when aiming at the head with this weapon.|Vector|
@@ -28,6 +30,7 @@ This is a list of keys available for all mods.
 |low_secondary_ammo_threshold|Threshold to consider the bot to be low on ammo for the secondary ammo type.|integer|
 |slot|Which slot this weapon uses.|integer|
 |attack_interval|Delay in seconds between attacks. The bot releases the attack buttons between intervals. Negative values to make the bot hold the attack button.|float|
+|initial_attack_delay|Delay in seconds before the bot starts firing their weapon when combat start.|float|
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
 |custom_ammo_property_name|Entity property the ammo for this weapon is stored at.|string|
@@ -40,8 +43,10 @@ This is a list of keys available for all mods.
 |needs_to_be_deployed_to_fire|If enabled, bots will deploy/scope-in before firing with this weapon.|boolean|
 |disable_dodge|If enabled, bots won't dodge enemy attacks while using this weapon.|boolean|
 |selection_max_range_override|If positive, overrides the maximum range value used in weapon selection.|float|
-|tag|Comma delimited list of weapon tags. Existing tags will be purged.|string list|
+|tags|Comma delimited list of weapon tags. Existing tags will be purged.|string list|
 |add_tags|Comma delimited list of weapon tags. This version doesn't clear the existing tags.|string list|
+|clear_tags|Removes all tags from the weapon.|N/A|
+|remove_tags|Comma delimited list of weapon tags to remove from the weapon.|string list|
 |is_template|This is a template entry for variantof. More information below.|boolean|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
@@ -85,9 +90,6 @@ Additional information:
 
 ### Special Values and Additional Info
 
-Negative `priority` values marks the weapon as a non combat weapon. This makes the weapon be ignored when selecting the best weapon to engage an enemy.
-This is used on weapons that shouldn't be used in combat and should only be used in special occasions, example: The C4 from Counter-Strike.
-
 If `maxrange` is less than *-9000*, the attack function is considered to the disabled.
 
 If `projectilespeed` is negative, the weapon is considered to be a hitscan weapon.
@@ -103,6 +105,21 @@ Bots identify weapons via their entity classname and economy index if available 
 This means on games like Team Fortress 2, you can have unique settings for weapons that share the same classname but not economy index like the stock Rocket Launcher and The Liberty Launcher.
 
 When searching for weapon information, economy index is searched first, then classname.
+
+## Weapon Types
+
+Weapon types provides a basic type based identification of weapons for bots.    
+List of valid weapon types:    
+
+* not_useable_weapon : This weapon should not be used (replaces negative priority values).
+* combat_weapon : The default type if not specified in the config file, a weapon that can be used to shoot at enemies.
+* buff_item : This weapon provides a buff to the user (IE: TF2's crit a cola, soldier's banner).
+* defensive_buff_item : This weapon provides a defensive buff to the user. (IE: TF2's bonk).
+* heal_item : This weapon can heal the user.
+* medical_weapon : This weapon can heal others. (IE: TF2's medigun).
+* mobility_tool : This weapon provides additional mobility to the user. (IE: TF2's grappling hook).
+* combat_grenade : A grenade used to deal damage to enemies.
+* support_grenade : An utility grenade (IE: smoke, flashbangs).
 
 ## variantof
 

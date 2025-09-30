@@ -50,8 +50,10 @@ inline bool FStrEq(const char *sz1, const char *sz2)
 	return ( sz1 == sz2 || V_stricmp(sz1, sz2) == 0 );
 }
 
+/*
 template < typename Functor >
 bool ForEachActor( Functor &func );
+*/
 
 bool UTIL_IsCommandIssuedByServerAdmin();
 
@@ -673,6 +675,7 @@ public:
 	virtual void Draw( void ) const;							// draw area for debugging & editing
 	virtual void DrawFilled( int r, int g, int b, int a, float deltaT = 0.1f, bool noDepthTest = true, float margin = 5.0f ) const;	// draw area as a filled rect of the given color
 	virtual void DrawSelectedSet( const Vector &shift ) const;	// draw this area as part of a selected set
+	virtual void ShowAreaInfo() const {}						// called when showing the area info, allow derived areas to insert their own screen text 
 	void DrawDragSelectionSet( Color &dragSelectionSetColor ) const;
 	void DrawConnectedAreas(  CNavMesh* TheNavMesh ) const;
 	void DrawHidingSpots( void ) const;

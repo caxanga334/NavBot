@@ -50,7 +50,6 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"PluginBot.PluginBot", AttachNavBot},
 		{"GetNavBotByIndex", GetNavBotByIndex},
 		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},
-		{"NavBot.FireWeaponAtEnemy", FireWeaponAtEnemy},
 		{"NavBot.SelectWeapon", SelectWeapon},
 	};
 
@@ -253,44 +252,6 @@ cell_t natives::bots::DelayedFakeClientCommand(IPluginContext* context, const ce
 
 	bot->DelayedFakeClientCommand(command);
 	return 0;
-}
-
-cell_t natives::bots::FireWeaponAtEnemy(IPluginContext* context, const cell_t* params)
-{
-	METHODMAP_GETVALIDBOT;
-
-	CBaseEntity* entity = gamehelpers->ReferenceToEntity(params[2]);
-
-	if (!entity)
-	{
-		context->ReportError("Invalid entity of index %i!", static_cast<int>(params[2]));
-		return 0;
-	}
-
-	bool doAim = static_cast<int>(params[3]) != 0;
-	bool force = static_cast<int>(params[4]) != 0;
-
-	const CKnownEntity* known = nullptr;
-
-	if (force)
-	{
-		CKnownEntity* known2 = bot->GetSensorInterface()->AddKnownEntity(entity);
-		known2->UpdatePosition();
-		known2->MarkAsFullyVisible();
-		known = known2;
-	}
-	else
-	{
-		known = bot->GetSensorInterface()->GetKnown(entity);
-	}
-
-	if (!known)
-	{
-		return 0;
-	}
-
-	bot->FireWeaponAtEnemy(known, doAim);
-	return 1;
 }
 
 cell_t natives::bots::SelectWeapon(IPluginContext* context, const cell_t* params)

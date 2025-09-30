@@ -13,7 +13,7 @@ CNavMeshGeneratorParameters::CNavMeshGeneratorParameters()
 	jump_crouch_height = 64.0f;
 	step_height = 18.0f;
 	death_drop = 400.0f;
-	climb_up_height = 64.0f;
+	climb_up_height = 200.0f;
 	half_human_width = 16.0f;
 	half_human_height = 35.5f;
 	human_height = 71.0f;

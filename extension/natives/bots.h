@@ -15,7 +15,6 @@ namespace natives::bots
 	cell_t GetNavBotByIndex(IPluginContext* context, const cell_t* params);
 	cell_t SetRunPlayerCommands(IPluginContext* context, const cell_t* params);
 	cell_t DelayedFakeClientCommand(IPluginContext* context, const cell_t* params);
-	cell_t FireWeaponAtEnemy(IPluginContext* context, const cell_t* params);
 	cell_t SelectWeapon(IPluginContext* context, const cell_t* params);
 }
 

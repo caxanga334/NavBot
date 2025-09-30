@@ -12,16 +12,9 @@ public:
 	CTF2BotMovement(CBaseBot* bot);
 	~CTF2BotMovement() override;
 
-	static constexpr float PLAYER_HULL_WIDTH = 48.0f;
-	static constexpr float PLAYER_HULL_STAND = 82.0f;
-	static constexpr float PLAYER_HULL_CROUCH = 62.0f;
-
 	void Reset() override;
 	void Update() override;
 
-	float GetHullWidth() override;
-	float GetStandingHullHeight() override;
-	float GetCrouchedHullHeight() override;
 	// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Mapper%27s_Reference#Jump_Distances
 	float GetMaxJumpHeight() const override { return 72.0f; }
 	float GetMaxDoubleJumpHeight() const override { return 116.0f; }

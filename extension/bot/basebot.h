@@ -22,6 +22,7 @@
 #include <bot/interfaces/inventory.h>
 #include <bot/interfaces/squads.h>
 #include <bot/interfaces/sharedmemory.h>
+#include <bot/interfaces/combat.h>
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
@@ -147,6 +148,7 @@ public:
 	virtual IBehavior* GetBehaviorInterface() const;
 	virtual IInventory* GetInventoryInterface() const;
 	virtual ISquad* GetSquadInterface() const;
+	virtual ICombat* GetCombatInterface() const;
 	virtual ISharedBotMemory* GetSharedMemoryInterface() const;
 
 	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
@@ -246,18 +248,6 @@ public:
 		}
 	}
 
-	/**
-	 * @brief Fires the currently held weapon at the given enemy.
-	 * @param enemy The enemy the bot will fire at.
-	 * @param doAim If set to true, this function will also make the bot aim at the current enemy.
-	 */
-	virtual void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true);
-	/**
-	 * @brief If the bot was unable to fire their weapon, this function will be called to handle a possible need for reloads.
-	 * @param weapon Weapon that the bot was unable to fire.
-	 */
-	virtual void ReloadIfNeeded(const CBotWeapon* weapon);
-
 	const CNavPrerequisite* GetLastUsedPrerequisite() const { return m_lastPrerequisite; }
 	void SetLastUsedPrerequisite(const CNavPrerequisite* prereq) { m_lastPrerequisite = prereq; m_clearLastPrerequisiteTimer.Start(60.0f); }
 
@@ -275,26 +265,6 @@ public:
 	}
 
 	const IntervalTimer& GetLastKilledTimer() const { return m_lastkilledtimer; }
-	// Is the bot able to dodge enemies in combat?
-	virtual bool IsAbleToDodgeEnemies(const CKnownEntity* threat) const;
-	/**
-	 * @brief Dodge enemies in combat.
-	 * @param threat Enemy to dodge.
-	 */
-	virtual void DodgeEnemies(const CKnownEntity* threat);
-	/**
-	 * @brief Invoked to handle the bot's weapons when no enemies are present.
-	 * 
-	 * Example: reload it, unscope/undeploy, etc...
-	 */
-	virtual void HandleWeaponsNoThreat();
-	/**
-	 * @brief Invoked to handle the bot's secondary abilities. (Game specific)
-	 * 
-	 * @param threat The bot current threat or NULL if no visible threat.
-	 * Example: TF2 airblast, demoman shield charge, etc.
-	 */
-	virtual void UseSecondaryAbilities(const CKnownEntity* threat) {}
 
 	enum class HealthState : std::uint8_t
 	{
@@ -329,59 +299,7 @@ protected:
 	// Adds a SourceHook Hook into the hook list to be removed when this is destroyed
 	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
 
-	/**
-	 * @brief Determines if the weapon can be fired for the given range and determines which attack type is possible to use.
-	 * @param weapon Weapon that the bot will fire.
-	 * @param range Range to the target.
-	 * @param allowSecondary Allow secondary attacks?
-	 * @param doPrimary Set to true to perform a primary attack or false for secondary.
-	 * @return true if the bot can fire their weapon. false otherwise.
-	 */
-	virtual bool CanFireWeapon(const CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary);
-	/**
-	 * @brief Called to handle the given weapon.
-	 * @param weapon Weapon that the bot wants to fire.
-	 * @return true if the weapon can be fired, false if not.
-	 */
-	virtual bool HandleWeapon(const CBotWeapon* weapon);
-	/**
-	 * @brief This function has two purposes:
-	 * 
-	 * 1. Check if the line of fire is clear to the enemy. Return false if the line of fire is blocked.
-	 * 
-	 * 2. If 'doAim' is true, instruct the player controller interface to aim at the current enemy. Determine the best spot to aim at.
-	 * @param enemy Current enemy.
-	 * @param weapon Weapon that the bot will be aiming with.
-	 * @param doAim If true, send AimAt commands to the control interface.
-	 * @param range Distance between the bot and the enemy.
-	 * @param isPrimary True if using primary attack, false if secondary attack.
-	 * @return True if the line of fire is clear. False if not.
-	 */
-	virtual bool AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary);
-	/**
-	 * @brief Invoked to make the bot use the weapon's special function if possible.
-	 * @param enemy Current enemy
-	 * @param weapon Current active weapon.
-	 * @param range Range to enemy.
-	 */
-	virtual void OpportunisticallyUseWeaponSpecialFunction(const CKnownEntity* enemy, const CBotWeapon* weapon, const float range);
-
-	const IntervalTimer& GetLastFiredWeaponTimer() const { return m_lastfiredweapontimer; }
-	void StartLastFiredWeaponTimer() { m_lastfiredweapontimer.Start(); }
-	// returns true if the given weapon is the last used weapon by the bot.
-	bool IsLastUsedWeapon(const CBotWeapon* weapon) const { return m_lastusedweapon == weapon; }
-	void SetLastUsedWeapon(const CBotWeapon* weapon) { m_lastusedweapon = weapon; }
-	/**
-	 * @brief Called to nofity the weapon the bot is currently using to attack enemies has changed.
-	 * @param new_weapon Weapon the bot is currently using to attack enemies.
-	 */
-	virtual void OnLastUsedWeaponChanged(const CBotWeapon* new_weapon);
-
-	CountdownTimer& GetUndeployWeaponTimer() { return m_undeployWeaponTimer; }
-	CountdownTimer& GetWeaponSpecialFunctionUseTimer() { return m_weaponSpecialFunctionTimer; }
 private:
-	const CBotWeapon* m_lastusedweapon; // last weapon used to attack an enemy
-	IntervalTimer m_lastfiredweapontimer;
 	float m_lastUpdateTime; // time stamp of the last time CBaseBot::Update was invoked.
 	float m_lastUpdateDelta; // delta time between the current and the last update time stamp
 	float m_spawnTime;
@@ -401,6 +319,7 @@ private:
 	mutable std::unique_ptr<IBehavior> m_basebehavior; // Base AI Behavior interface
 	mutable std::unique_ptr<IInventory> m_baseinventory; // Base inventory interface
 	mutable std::unique_ptr<ISquad> m_basesquad; // Base Squad interface
+	mutable std::unique_ptr<ICombat> m_basecombat; // Base Combat interface
 	std::shared_ptr<DifficultyProfile> m_profile;
 	IntervalTimer m_cmdtimer; // Timer to prevent sending more than the string commands per second limit
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send
@@ -412,11 +331,8 @@ private:
 	IntervalTimer m_lasthurttimer; // timer for tracking the last time the bot took damage while alive
 	IntervalTimer m_lastkilledtimer; // timer for tracing the last time the bot was killed
 	CMeshNavigator* m_activeNavigator;
-	CountdownTimer m_reloadCheckDelay;
 	const CNavPrerequisite* m_lastPrerequisite; // Last prerequisite this bot used
 	CountdownTimer m_clearLastPrerequisiteTimer;
-	CountdownTimer m_undeployWeaponTimer; // timer to undeploy the weapon after firing it
-	CountdownTimer m_weaponSpecialFunctionTimer;
 
 	void ExecuteQueuedCommands();
 };

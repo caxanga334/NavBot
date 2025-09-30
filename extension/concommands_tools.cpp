@@ -295,15 +295,46 @@ CON_COMMAND_F(sm_navbot_tool_build_path, "Builds a path from your current positi
 	}
 }
 
-CON_COMMAND_F(sm_navbot_tool_report_hull_sizes, "Prints the player's hull size to the console.", FCVAR_CHEAT)
+CON_COMMAND_F(sm_navbot_tool_report_player_info, "Prints some information about the player entity.", FCVAR_CHEAT)
 {
 	edict_t* host = UtilHelpers::GetListenServerHost();
+	IPlayerInfo* info = playerinfomanager->GetPlayerInfo(host);
 
 	const Vector& mins = host->GetCollideable()->OBBMins();
 	const Vector& maxs = host->GetCollideable()->OBBMaxs();
 
-	META_CONPRINTF("Mins: %3.2f %3.2f %3.2f\n", mins.x, mins.y, mins.z);
-	META_CONPRINTF("Maxs: %3.2f %3.2f %3.2f\n", maxs.x, maxs.y, maxs.z);
+	META_CONPRINTF("OBB Mins: %3.2f %3.2f %3.2f\n", mins.x, mins.y, mins.z);
+	META_CONPRINTF("OBB Maxs: %3.2f %3.2f %3.2f\n", maxs.x, maxs.y, maxs.z);
+
+	Vector viewoffset;
+
+	if (entprops->GetEntPropVector(host, Prop_Data, "m_vecViewOffset", viewoffset))
+	{
+		META_CONPRINTF("View Offset: %3.2f %3.2f %3.2f \n", viewoffset.x, viewoffset.y, viewoffset.z);
+	}
+	else
+	{
+		META_CONPRINT("Warning: Failed to access m_vecViewOffset! \n");
+	}
+
+	if (info)
+	{
+		const char* model = info->GetModelName();
+
+		if (model && model[0] != '\0')
+		{
+			META_CONPRINTF("Model: %s \n", model);
+		}
+
+		META_CONPRINTF("Health %i Max Health %i Armor %i \n", info->GetHealth(), info->GetMaxHealth(), info->GetArmorValue());
+
+		Vector ear;
+		gameclients->ClientEarPosition(host, &ear);
+
+		const Vector origin = info->GetAbsOrigin();
+		const float origin_to_ear = (ear.z - origin.z);
+		META_CONPRINTF("Difference between ear and abs origin height: %3.2f \n", origin_to_ear);
+	}
 }
 
 CON_COMMAND_F(sm_navbot_tool_projectile_aim, "Tests projectile aim parameters", FCVAR_CHEAT)

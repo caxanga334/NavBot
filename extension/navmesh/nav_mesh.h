@@ -36,6 +36,7 @@
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
 #include <sdkports/sdk_ehandle.h>
+#include <util/librandom.h>
 #include <convar.h>
 #include <gametrace.h>
 
@@ -377,9 +378,20 @@ public:
 #if SOURCE_ENGINE >= SE_LEFT4DEAD
 	int	GetEventDebugID(void) override;
 #endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+	/**
+	 * @brief Invoked once during the initial load process.
+	 * @param cfgnavbot Pointer to NavBot's gamedata IGameConfig instance.
+	 */
+	virtual void InitializeGameData(SourceMod::IGameConfig* cfgnavbot);
 
 	// Used by CTraceFilterWalkableEntities to determine if this entity is walkable
 	virtual bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);
+	/**
+	 * @brief Invoked by CTraceFilterTransientAreas to determine if the given entity should block transient areas.
+	 * @param pEntity Entity blocking a transient area.
+	 * @return Returning true will allow the entity to block transient areas.
+	 */
+	virtual bool IsEntitySolidForTransientAreas(CBaseEntity* pEntity) const;
 
 	virtual void Precache(); // precache edit sounds here
 	virtual void OnMapStart();
@@ -454,6 +466,14 @@ public:
 	CNavArea *GetNavArea( const Vector &pos, float beneathLimt = 120.0f ) const;	// given a position, return the nav area that IsOverlapping and is *immediately* beneath it
 	CNavArea *GetNavArea( edict_t *pEntity, int nGetNavAreaFlags, float flBeneathLimit = 120.0f ) const;
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
+	/**
+	 * @brief Searches for a nav area of the given id by looping the area vector instead of using the hash table.
+	 * 
+	 * This function is for debugging only and should only be for finding issues with the hash table.
+	 * @param id Area ID to search.
+	 * @return Nav area pointer if found or NULL if none is found.
+	 */
+	static CNavArea* FindNavAreaByIDViaLoop(unsigned int id);
 	CNavArea *GetNearestNavArea( const Vector &pos, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = NAV_TEAM_ANY ) const;
 	CNavArea *GetNearestNavArea( edict_t *pEntity, int nGetNavAreaFlags = GETNAVAREA_CHECK_GROUND, float maxDist = 10000.0f ) const;
 	CNavArea* GetNearestNavArea(CBaseEntity* entity, float maxDist = 10000.0f, bool checkLOS = false, bool checkGround = true, int team = NAV_TEAM_ANY) const;
@@ -611,6 +631,7 @@ public:
 	void ClearDragSelectionSet( void );
 
 	CNavArea *GetMarkedArea( void ) const;										// return area marked by user in edit mode
+	inline bool IsMarkedArea(CNavArea* other) const { return GetMarkedArea() == other; } // returns true if the given area is the marked area.
 	CNavLadder *GetMarkedLadder( void ) const	{ return m_markedLadder; }		// return ladder marked by user in edit mode
 
 	CNavArea *GetSelectedArea( void ) const		{ return m_selectedArea; }		// return area user is pointing at in edit mode
@@ -700,7 +721,66 @@ public:
 	 * Populate the given vector with all navigation areas that overlap the given extent.
 	 */
 	template< typename NavAreaType >
-	void CollectAreasOverlappingExtent( const Extent &extent, CUtlVector< NavAreaType * > *outVector );
+	void CollectAreasOverlappingExtent(const Extent& extent, std::vector<NavAreaType*>& outVector)
+	{
+		if (!m_grid.Count())
+		{
+			return;
+		}
+
+		Extent areaExtent;
+		std::unordered_set<unsigned int> visitedAreas;
+
+		// get list in cell that contains position
+		int startX = WorldToGridX(extent.lo.x);
+		int endX = WorldToGridX(extent.hi.x);
+		int startY = WorldToGridY(extent.lo.y);
+		int endY = WorldToGridY(extent.hi.y);
+
+		for (int x = startX; x <= endX; ++x)
+		{
+			for (int y = startY; y <= endY; ++y)
+			{
+				int iGrid = x + y * m_gridSizeX;
+
+				if (iGrid >= m_grid.Count())
+				{
+#ifdef EXT_DEBUG
+					META_CONPRINT("** Walked off of the CNavMesh::m_grid in CollectAreasOverlappingExtent() \n");
+#endif // EXT_DEBUG
+					return;
+				}
+
+				NavAreaVector* areaVector = &m_grid[iGrid];
+
+				// find closest area in this cell
+				for (int v = 0; v < areaVector->Count(); ++v)
+				{
+					CNavArea* area = areaVector->Element(v);
+
+					// skip if we've already visited this area
+					if (visitedAreas.find(area->GetID()) != visitedAreas.end())
+						continue;
+
+					visitedAreas.insert(area->GetID());
+					area->GetExtent(&areaExtent);
+
+					if (extent.IsOverlapping(areaExtent))
+					{
+						outVector.push_back(static_cast<NavAreaType*>(area));
+					}
+				}
+			}
+		}
+	}
+
+	/**
+	 * @brief Collects all nav areas touching an entity.
+	 * @param entity Entity to test for touching areas.
+	 * @param centerOnly If true, only tests the nav area's center.
+	 * @param output Vector to store areas that touch the entity.
+	 */
+	void CollectAreasTouchingEntity(CBaseEntity* entity, const bool centerOnly, std::vector<CNavArea*>& output);
 
 	template < typename Functor >
 	bool ForAllAreasInRadius( Functor &func, const Vector &pos, float radius );
@@ -805,6 +885,12 @@ public:
 			ClearSelectedSet();
 			SetMarkedArea(nullptr);
 		}
+	}
+	// Utility function to clear the selected set and unmark areas.
+	inline void ClearEditedAreas()
+	{
+		ClearSelectedSet();
+		SetMarkedArea(nullptr);
 	}
 
 	//-------------------------------------------------------------------------------------

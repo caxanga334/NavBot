@@ -47,6 +47,7 @@ Example profile
 |:---:|:---:|
 | skill_level | Which skill level this profile part of. You can have multiple profiles with the same skill level. A random profile will be selected for the bot. |
 | game_awareness | The bot game awareness skill. Ranges from 0 to 100. |
+| weapon_skill | General purpose weapon skill of the bot. Ranges from 0 to 100. |
 | aimspeed | The bot aim turn rate in degrees per second. (AKA sensitivity) |
 | fov | The bot field of view in degrees. |
 | maxvisionrange | The bot maximum vision range in hammer units. |
@@ -63,3 +64,10 @@ Example profile
 | health_low_percent | If the bot HP% is less than this value, the bot is low on health. |
 | numerical_disadvantage_retreat_threshold | Threshold for retreating due to numerical disadvantage (visible enemies minus nearby allies). |
 
+
+## Notes
+
+Weapon config entries can have a minimum required skill set to be selected. See the [Weapon Info Config File] documentation.
+
+<!-- Links -->
+[Weapon Info Config File]: WEAPONINFO_CONFIG.md

@@ -9,17 +9,19 @@ public:
 	CDoDSBotMovement(CBaseBot* bot);
 	~CDoDSBotMovement() override;
 
-	// float GetHullWidth() override;
-	// float GetStandingHullHeight() override;
-	float GetCrouchedHullHeight() override;
-	float GetProneHullHeight() override;
+	void Reset() override;
+	void Update() override;
+
 	// Maximum gap jump distance without sprinting
 	float GetMaxGapJumpDistance() const override { return 160.0f; }
 	// this is the distance bots can drop without taking fall damage
 	float GetMaxDropHeight() const { return 200.0f; }
 
-private:
+	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) override;
 
+private:
+	bool m_goProne;
+	CountdownTimer m_unProneTimer;
 };
 
 #endif // !__NAVBOT_DODSBOT_MOVEMENT_INTERFACE_H_

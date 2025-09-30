@@ -364,6 +364,13 @@ namespace trace
 		normal = tr.plane.normal;
 		return tr.fraction < 1.0f;
 	}
+
+	/**
+	 * @brief Given a point, returns the water surface.
+	 * @param point Point to get the surface from.
+	 * @return Water surface position.
+	 */
+	Vector getwatersurface(const Vector& point);
 }
 
 #endif // !NAVBOT_SDKPORTS_TRACES_H_

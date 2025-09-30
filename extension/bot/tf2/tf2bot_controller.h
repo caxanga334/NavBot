@@ -1,5 +1,5 @@
-#ifndef NAVBOT_TF2_PLAYER_CONTROLLER_H_
-#define NAVBOT_TF2_PLAYER_CONTROLLER_H_
+#ifndef __NAVBOT_TF2_PLAYER_CONTROLLER_H_
+#define __NAVBOT_TF2_PLAYER_CONTROLLER_H_
 #pragma once
 
 #include <bot/interfaces/playercontrol.h>
@@ -11,4 +11,4 @@ public:
 	virtual ~CTF2BotPlayerController();
 };
 
-#endif // !NAVBOT_TF2_PLAYER_CONTROLLER_H_
+#endif // !__NAVBOT_TF2_PLAYER_CONTROLLER_H_

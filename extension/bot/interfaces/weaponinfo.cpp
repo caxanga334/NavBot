@@ -362,12 +362,36 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetPriority(atoi(value));
 	}
+	else if (std::strcmp(key, "min_required_skill") == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 0, 100);
+		m_current->SetMinRequiredSkill(v);
+	}
+	else if (std::strcmp(key, "weapon_type") == 0)
+	{
+		WeaponInfo::WeaponType type = WeaponInfo::GetWeaponTypeFromString(value);
+
+		if (type == WeaponInfo::WeaponType::MAX_WEAPON_TYPES)
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] %s is not a valid weapon type! line %u col %u", value, states->line, states->col);
+		}
+		else
+		{
+			m_current->SetWeaponType(type);
+		}
+	}
 	else if (strncmp(key, "can_headshot", 12) == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetCanHeadShot(v);
 	}
 	else if (strncmp(key, "infinite_reserve_ammo", 13) == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetInfiniteReserveAmmo(v);
+	}
+	else if (std::strcmp(key, "initial_attack_delay") == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetInfiniteReserveAmmo(v);
@@ -680,6 +704,37 @@ SourceMod::SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SourceMod:
 
 	m_parser_depth--;
 	return SourceMod::SMCResult_Continue;
+}
+
+WeaponInfo::WeaponType WeaponInfo::GetWeaponTypeFromString(const char* str)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array type_names = {
+		"not_useable_weapon"sv,
+		"combat_weapon"sv,
+		"buff_item"sv,
+		"defensive_buff_item"sv,
+		"heal_item"sv,
+		"medical_weapon"sv,
+		"mobility_tool"sv,
+		"combat_grenade"sv,
+		"support_grenade"sv,
+	};
+
+	static_assert(type_names.size() == static_cast<std::size_t>(WeaponInfo::WeaponType::MAX_WEAPON_TYPES), "WeaponInfo::WeaponType and type_names array size mismatch!");
+
+	for (int i = 0; i < static_cast<int>(WeaponInfo::WeaponType::MAX_WEAPON_TYPES); i++)
+	{
+		const std::string_view& name = type_names[i];
+
+		if (std::strcmp(str, name.data()) == 0)
+		{
+			return static_cast<WeaponInfo::WeaponType>(i);
+		}
+	}
+
+	return WeaponInfo::WeaponType::MAX_WEAPON_TYPES;
 }
 
 void WeaponInfo::PostLoad()

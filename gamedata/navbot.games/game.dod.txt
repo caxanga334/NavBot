@@ -7,8 +7,31 @@
 		{
 			// If a mod needs to hook OnPlayerRunCMD, set this to 1
 			"HookPlayerRunCMD"	"1"
-		}
 
+			/* Nav Mesh generation parameters */
+			"NavGen_StepSize"				"25.0"
+			"NavGen_JumpHeight"				"49.0"
+			"NavGen_JumpCrouchHeight"		"70.0"
+			"NavGen_StepHeight"				"18.0"
+			"NavGen_DeathDropHeight"		"250.0"
+			"NavGen_ClimbUpHeight"			"200.0"
+			"NavGen_HalfHumanWidth"			"16.0"
+			"NavGen_HumanHeight"			"72.0"
+			"NavGen_HumanCrouchHeight"		"55.0"
+			"NavGen_HumanEyeHeight"			"58.0"
+			"NavGen_HumanCrouchEyeHeight"	"34.0"
+
+			/* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"			"info_player_allies,info_player_axis,dod_control_point,dod_bomb_target"
+			/* Comma delimited list of entities used as walkable seed position (world space center) */
+			"NavGenerationWalkableEntsCenter"	"dod_bomb_dispenser,dod_capture_area,func_team_wall,func_teamblocker"
+
+			/* NavBot IMovement bot interface parameters */
+			"PlayerHull_StandHeight"		"72.0"
+			"PlayerHull_CrouchHeight"		"45.0"
+			"PlayerHull_ProneHeight"		"24.0"
+			"PlayerHull_Width"				"32.0"
+		}
 		"Offsets"
 		{
 			/* CDODPlayer::Event_Killed */

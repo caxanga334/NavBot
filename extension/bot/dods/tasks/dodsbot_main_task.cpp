@@ -26,19 +26,6 @@ TaskResult<CDoDSBot> CDoDSBotMainTask::OnTaskUpdate(CDoDSBot* bot)
 		return Continue();
 	}
 
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
-
-	if (threat)
-	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
-		bot->FireWeaponAtEnemy(threat, true);
-		bot->DodgeEnemies(threat);
-	}
-	else
-	{
-		bot->HandleWeaponsNoThreat();
-	}
-
 	return Continue();
 }
 

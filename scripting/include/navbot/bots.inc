@@ -39,19 +39,6 @@ methodmap NavBot
 	public native void DelayedFakeClientCommand(const char[] cmd);
 
 	/**
-	 * Makes the bot fire their weapon at the given enemy.
-	 * 
-	 * Note: This doesn't force the bot to fire their weapons, the standard checks will still apply.
-	 * 
-	 * @param enemy		Entity index of the enemy.
-	 * @param aimWeapon	If true, also aim the weapon at the enemy.
-	 * @param force		The given enemy must be present on the bot's entity memory, if force is true, the entity will be added to the bot's memory.
-	 * @return			True if the internal function was called. False if not. Will only return false if force is set to false and the entity is not known by the bot.
-	 * @error			Invalid bot instance. Invalid entity passed.
-	 */
-	public native bool FireWeaponAtEnemy(int enemy, const bool aimWeapon = true, const bool force = true);
-
-	/**
 	 * Makes the bot switch their weapon to the given weapon.
 	 * 
 	 * This internally SDKCalls CBasePlayer::Weapon_Switch.

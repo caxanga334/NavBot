@@ -16,6 +16,7 @@ void DifficultyProfile::RandomizeProfileValues()
 {
 	skill_level = SKILL_LEVEL_RANDOM_PROFILE;
 	game_awareness = randomgen->GetRandomInt<int>(0, 100);
+	weapon_skill = randomgen->GetRandomInt<int>(0, 100);
 	aimspeed = randomgen->GetRandomReal<float>(30.0f, 4000.0f);
 	fov = randomgen->GetRandomInt<int>(60, 179);
 	maxvisionrange = randomgen->GetRandomInt<int>(1024, MAX_COORD_INTEGER);
@@ -230,6 +231,12 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		int v = atoi(value);
 		v = std::clamp(v, 0, 100);
 		m_current->SetGameAwareness(v);
+	}
+	else if (strncasecmp(key, "weapon_skill", 12) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 0, 100);
+		m_current->SetWeaponSkill(v);
 	}
 	else if (strncasecmp(key, "aimspeed", 8) == 0)
 	{

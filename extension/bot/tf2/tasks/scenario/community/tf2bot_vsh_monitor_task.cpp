@@ -113,7 +113,7 @@ bool CTF2BotVSHMonitorTask::IsForwardJumpPossible(CTF2Bot* bot)
 	bot->EyeVectors(&forward);
 	forward.z = 0.0f;
 	Vector end = start + (forward * 512.0f);
-	start.z += CTF2BotMovement::PLAYER_HULL_STAND * 5.0f;
+	start.z += IMovement::s_playerhull.stand_height * 5.0f;
 	trace_t tr;
 	trace::line(start, end, MASK_PLAYERSOLID, bot->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT, tr);
 	return tr.fraction == 1.0f;

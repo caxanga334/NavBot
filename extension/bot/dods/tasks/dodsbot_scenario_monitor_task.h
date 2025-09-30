@@ -8,6 +8,7 @@ public:
 
 	TaskResult<CDoDSBot> OnTaskUpdate(CDoDSBot* bot) override;
 
+	TaskEventResponseResult<CDoDSBot> OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
 	TaskEventResponseResult<CDoDSBot> OnRoundStateChanged(CDoDSBot* bot) override;
 
 	const char* GetName() const override { return "ScenarioMonitor"; }

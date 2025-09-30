@@ -110,6 +110,24 @@ public:
 		MAX_WEAPON_ATTACKS
 	};
 
+	enum WeaponType
+	{
+		NOT_USEABLE_WEAPON, // Can't be used for anything
+		COMBAT_WEAPON, // (Default) Weapon used for combat.
+		BUFF_ITEM, // Provides a buff (IE: TF2 Crit-a-Cola, Soldier's banners)
+		DEFENSIVE_BUFF_ITEM, // Privdes a defensive buff (IE: TF2 bonk)
+		HEAL_ITEM, // Can be used to self heal
+		MEDICAL_WEAPON, // Can heal teammates (IE: TF2 medigun)
+		MOBILITY_TOOL, // Weapon provides extra mobility (grappling hook, jetpack, ...)
+		COMBAT_GRENADE, // Standard grenade for combat (IE: explosive grenades)
+		SUPPORT_GRENADE, // Support grenades (smoke, flashes, ...)
+
+		MAX_WEAPON_TYPES
+	};
+
+	// Converts a string to a weapon type
+	static WeaponInfo::WeaponType GetWeaponTypeFromString(const char* str);
+
 	struct SpecialFunction
 	{
 		SpecialFunction()
@@ -158,6 +176,7 @@ public:
 	{
 		classname.reserve(64);
 		configentry.reserve(64);
+		weapon_type = WeaponType::COMBAT_WEAPON;
 		custom_ammo_property_name.reserve(64);
 		econindex = -1;
 		priority = 0;
@@ -169,6 +188,7 @@ public:
 		custom_ammo_is_float = false;
 		custom_ammo_out_of_ammo = 0.0f;
 		interval_between_attacks = -1.0f;
+		initial_attack_delay = -1.0f;
 		headshot_range_mult = 1.0f;
 		no_clip1 = false;
 		no_clip2 = false;
@@ -184,6 +204,7 @@ public:
 		deployed_property_on_weapon = true;
 		selection_max_range = -1.0f;
 		selection_min_range = -1.0f;
+		min_required_skill = 0;
 	}
 
 	virtual ~WeaponInfo() {}
@@ -194,6 +215,7 @@ public:
 		this->classname = other->classname;
 		this->custom_ammo_property_name = other->custom_ammo_property_name;
 		this->attacksinfo = other->attacksinfo;
+		this->weapon_type = other->weapon_type;
 		this->headshot_aim_offset = other->headshot_aim_offset;
 		this->econindex = other->econindex;
 		this->priority = other->priority;
@@ -205,6 +227,7 @@ public:
 		this->custom_ammo_is_float = other->custom_ammo_is_float;
 		this->custom_ammo_out_of_ammo = other->custom_ammo_out_of_ammo;
 		this->interval_between_attacks = other->interval_between_attacks;
+		this->initial_attack_delay = other->initial_attack_delay;
 		this->headshot_range_mult = other->headshot_range_mult;
 		this->no_clip1 = other->no_clip1;
 		this->no_clip2 = other->no_clip2;
@@ -226,6 +249,7 @@ public:
 		this->dynprio_range = other->dynprio_range;
 		this->dynprio_sec_ammo = other->dynprio_sec_ammo;
 		this->dynprio_aggression = other->dynprio_aggression;
+		this->min_required_skill = other->min_required_skill;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
@@ -287,6 +311,7 @@ public:
 	void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	void SetSlot(int s) { slot = s; }
 	void SetAttackInterval(float v) { interval_between_attacks = v; }
+	void SetInitialAttackDelay(float v) { initial_attack_delay = v; }
 	void SetAttackRange(float v) { attack_move_range = v; }
 	void SetChanceToUseSecondaryAttack(int v) { use_secondary_chance = v; }
 	void SetCustomAmmoPropertyName(const char* name) { custom_ammo_property_name.assign(name); }
@@ -303,10 +328,12 @@ public:
 	void AddTag(const std::string& tag) { tags.emplace(tag); }
 	void RemoveTag(const std::string& tag) { tags.erase(tag); }
 	void SetIsTemplateEntry(const bool v) { is_template = v; }
+	void SetWeaponType(WeaponInfo::WeaponType type) { weapon_type = type; }
 	DynamicPriority* EditDynamicPriorityHealth() { return &dynprio_health; }
 	DynamicPriority* EditDynamicPriorityRange() { return &dynprio_range; }
 	DynamicPriority* EditDynamicPrioritySecAmmo() { return &dynprio_sec_ammo; }
 	DynamicPriority* EditDynamicPriorityAggression() { return &dynprio_aggression; }
+	void SetMinRequiredSkill(const int skill) { min_required_skill = skill; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -314,7 +341,25 @@ public:
 	bool HasPrimaryAttack() const { return attacksinfo[PRIMARY_ATTACK].HasFunction(); }
 	bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
 	bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
-	bool IsCombatWeapon() const { return priority >= 0; }
+	// Returns true for weapons that can be used in combat
+	bool IsCombatWeapon() const
+	{
+		switch (weapon_type)
+		{
+		case WeaponType::COMBAT_WEAPON:
+			[[fallthrough]];
+		case WeaponType::COMBAT_GRENADE:
+			[[fallthrough]];
+		case WeaponType::BUFF_ITEM:
+			[[fallthrough]];
+		case WeaponType::DEFENSIVE_BUFF_ITEM:
+			[[fallthrough]];
+		case WeaponType::MOBILITY_TOOL:
+			return true;
+		default:
+			return false;
+		}
+	}
 	bool HasLowPrimaryAmmoThreshold() const { return primammolow > 0; }
 	int GetLowPrimaryAmmoThreshold() const { return primammolow; }
 	bool HasLowSecondaryAmmoThreshold() const { return secammolow > 0; }
@@ -322,6 +367,7 @@ public:
 	int GetSlot() const { return slot; }
 	bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
 	float GetAttackInterval() const { return interval_between_attacks; }
+	float GetInitialAttackDelay() const { return initial_attack_delay; }
 	// if this returns true, the weapon doesn't uses clips for the primary attack
 	bool Clip1IsReserveAmmo() const { return no_clip1; }
 	// if this returns true, the weapon doesn't uses clips for the secondary attack
@@ -353,7 +399,8 @@ public:
 	}
 	bool HasTag(const std::string& tag) const { return tags.find(tag) != tags.end(); }
 	bool IsTemplateEntry() const { return is_template; }
-
+	WeaponInfo::WeaponType GetWeaponType() const { return weapon_type; }
+	const bool IsWeaponOfType(const WeaponInfo::WeaponType type) const { return type == weapon_type; }
 	const SpecialFunction& GetSpecialFunction() const { return special_function; }
 	// for writing
 	SpecialFunction* GetSpecialFunctionEx() { return &special_function; }
@@ -361,6 +408,7 @@ public:
 	const DynamicPriority& GetDynamicPriorityRange() const { return dynprio_range; }
 	const DynamicPriority& GetDynamicPrioritySecAmmo() const { return dynprio_sec_ammo; }
 	const DynamicPriority& GetDynamicPriorityAggression() const { return dynprio_aggression; }
+	const int GetMinRequiredSkill() const { return min_required_skill; }
  
 	virtual void PostLoad();
 
@@ -369,6 +417,7 @@ private:
 	std::string configentry;
 	std::string custom_ammo_property_name;
 	std::array<WeaponAttackFunctionInfo, AttackFunctionType::MAX_WEAPON_ATTACKS> attacksinfo;
+	WeaponType weapon_type;
 	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection
@@ -380,6 +429,7 @@ private:
 	bool custom_ammo_is_float; // if true, the custom ammo property is a float, else an integer.
 	float custom_ammo_out_of_ammo; // if the custom ammo is equal or less than this, the weapon is out of ammo
 	float interval_between_attacks; // delay between attacks
+	float initial_attack_delay; // delay before the bot should start attacking after entering combat.
 	float headshot_range_mult;
 	bool no_clip1; // Weapon doesn't uses clip 1 (primary)
 	bool no_clip2; // Weapon doesn't uses clip 2 (secondary)
@@ -395,6 +445,7 @@ private:
 	bool needs_to_be_deployed; // if true, the weapon needs to be deployed/scoped to fire it.
 	float selection_max_range;
 	float selection_min_range;
+	int min_required_skill;
 	SpecialFunction special_function;
 	std::unordered_set<std::string> tags;
 	DynamicPriority dynprio_health;

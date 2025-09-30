@@ -148,7 +148,7 @@ TaskResult<CTF2Bot> CTF2BotDemomanLayStickyTrapTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else
 		{
-			Vector lookat = m_trapLocation + Vector(0.0f, 0.0f, CTF2BotMovement::PLAYER_HULL_CROUCH);
+			Vector lookat = m_trapLocation + Vector(0.0f, 0.0f, IMovement::s_playerhull.crouch_height);
 			input->AimAt(lookat, IPlayerController::LOOK_PRIORITY, 1.0f, "Overwatching sticky trap!");
 			ShouldDetonateStickiesFunctor func{ m_trapLocation };
 

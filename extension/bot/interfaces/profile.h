@@ -22,6 +22,7 @@ public:
 	{
 		skill_level = -1;
 		game_awareness = 40;
+		weapon_skill = 60;
 		aimspeed = 800.0f;
 		fov = 90;
 		maxvisionrange = 2048;
@@ -52,6 +53,8 @@ public:
 	inline const int GetSkillLevel() const { return skill_level; }
 	// Bot game awareness skill. Range: 0 - 100
 	inline const int GetGameAwareness() const { return game_awareness; }
+	// General purpose weapon usage skill. Range: 0 - 100
+	inline const int GetWeaponSkill() const { return weapon_skill; }
 	inline const float GetAimSpeed() const { return aimspeed; }
 	inline const int GetFOV() const { return fov; }
 	inline const int GetMaxVisionRange() const { return maxvisionrange; }
@@ -70,6 +73,7 @@ public:
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
+	inline void SetWeaponSkill(const int skill) { weapon_skill = skill; }
 	inline void SetAimSpeed(const float speed) { aimspeed = speed; }
 	inline void SetFOV(const int v) { fov = v; }
 	inline void SetMaxVisionRange(const int range) { maxvisionrange = range; }
@@ -89,6 +93,7 @@ public:
 private:
 	int skill_level; // the skill level this profile represents
 	int game_awareness; // general purpose game awareness skill
+	int weapon_skill; // general purpose weapon skill
 	float aimspeed; // Aiming speed cap
 	int fov; // field of view in degrees
 	int maxvisionrange; // maximum distance the bot is able to see

@@ -48,6 +48,31 @@ public:
 	IMovement(CBaseBot* bot);
 	~IMovement() override;
 
+	struct PlayerHull
+	{
+		PlayerHull()
+		{
+			stand_height = 72.0f;
+			crouch_height = 36.0f;
+			prone_height = 0.0f;
+			width = 32.0f;
+		}
+
+		float stand_height; // standing player hull height
+		float crouch_height; // crouching player hull height
+		float prone_height; // proning player hull height
+		float width;
+	};
+
+	inline static PlayerHull s_playerhull{};
+
+	/**
+	 * @brief Invoked during the extension load process.
+	 * @param cfgnavbot Pointer to a gameconfig instance of NavBot's gamedata file.
+	 * @return Returing false will prevent the extension from loading.
+	 */
+	static bool InitializeGameData(SourceMod::IGameConfig* cfgnavbot);
+
 	class StuckStatus
 	{
 	public:

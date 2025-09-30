@@ -2,6 +2,29 @@
 {
 	"bms"
 	{
+		"Keys"
+		{
+			/* Nav Mesh generation parameters */
+			"NavGen_StepSize"				"25.0"
+			"NavGen_JumpHeight"				"41.8"
+			"NavGen_JumpCrouchHeight"		"64.0"
+			"NavGen_StepHeight"				"18.0"
+			"NavGen_DeathDropHeight"		"400.0"
+			"NavGen_ClimbUpHeight"			"200.0"
+			"NavGen_HalfHumanWidth"			"16.0"
+			"NavGen_HumanHeight"			"72.0"
+			"NavGen_HumanCrouchHeight"		"36.0"
+			"NavGen_HumanEyeHeight"			"64.0"
+			"NavGen_HumanCrouchEyeHeight"	"28.0"
+
+			/* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"			"info_player_marine,info_player_scientist"
+
+			/* NavBot IMovement bot interface parameters */
+			"PlayerHull_StandHeight"		"72.0"
+			"PlayerHull_CrouchHeight"		"36.0"
+			"PlayerHull_Width"				"32.0"
+		}
 		"Offsets"
 		{
 			"Event_Killed"

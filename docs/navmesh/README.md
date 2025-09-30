@@ -18,13 +18,10 @@
 - [Nav Mesh Places]
 - [Nav Mesh Scripting]
 
-## Game Specific
-
-- [Team Fortress 2 Nav Mesh Editing]
-
 ## Extras
 
 - [Importing From The Game]
+- [Game Specific Nav Mesh Editing]
 
 <!-- Links -->
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
@@ -38,5 +35,5 @@
 [Nav Mesh Prerequisites]: NAVMESH_PREREQUISITES.md
 [Nav Mesh Scripting]: NAVMESH_SCRIPTING.md
 [Nav Mesh Authors and Editors]: NAVMESH_AUTHOR_INFO.md
-[Team Fortress 2 Nav Mesh Editing]: TF2_EDITING.md
+[Game Specific Nav Mesh Editing]: gamespecific/README.md
 [Importing From The Game]: IMPORTING.md

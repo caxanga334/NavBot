@@ -15,6 +15,7 @@
 #include "tf2bot_movement.h"
 #include "tf2bot_sensor.h"
 #include "tf2bot_inventory.h"
+#include "tf2bot_combat.h"
 #include "tf2bot_spymonitor.h"
 #include "tf2bot_upgrades.h"
 
@@ -44,6 +45,7 @@ public:
 	CTF2BotBehavior* GetBehaviorInterface() const override { return m_tf2behavior.get(); }
 	CTF2BotSpyMonitor* GetSpyMonitorInterface() const { return m_tf2spymonitor.get(); }
 	CTF2BotInventory* GetInventoryInterface() const { return m_tf2inventory.get(); }
+	CTF2BotCombat* GetCombatInterface() const { return m_tf2combat.get(); }
 	int GetMaxHealth() const override;
 
 protected:
@@ -201,8 +203,6 @@ public:
 	CBaseEntity* GetObjectBeingCarriedByMe() const;
 	// Makes the bot run the upgrade logic on the next Update call
 	void DoMvMUpgrade() { m_doMvMUpgrade = true; }
-	void FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim = true) override;
-	bool HandleWeapon(const CBotWeapon* weapon) override;
 	void SendVoiceCommand(TeamFortress2::VoiceCommandsID id);
 	/**
 	 * @brief Gets the time left to capture the point before we lose the game.
@@ -211,9 +211,7 @@ public:
 	 * @return Time left on the timer.
 	 */
 	float GetTimeLeftToCapture() const;
-	bool IsAbleToDodgeEnemies(const CKnownEntity* threat) const override;
 	bool IsCarryingThePassTimeJack() const;
-	void UseSecondaryAbilities(const CKnownEntity* threat) override;
 	// Makes the bot use the weapon's taunt
 	void DoWeaponTaunt() { DelayedFakeClientCommand("weapon_taunt"); }
 private:
@@ -223,6 +221,7 @@ private:
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	std::unique_ptr<CTF2BotSpyMonitor> m_tf2spymonitor;
 	std::unique_ptr<CTF2BotInventory> m_tf2inventory;
+	std::unique_ptr<CTF2BotCombat> m_tf2combat;
 	CountdownTimer m_classswitchtimer; // class switch cooldown so we don't spam things
 	IntervalTimer m_voicecmdtimer;
 	CHandle<CBaseEntity> m_mySentryGun;
@@ -234,7 +233,6 @@ private:
 	bool m_doMvMUpgrade;
 
 	void SelectNewClass();
-	void PyroUseAirblast();
 };
 
 class CTF2BotPathCost : public IPathCost

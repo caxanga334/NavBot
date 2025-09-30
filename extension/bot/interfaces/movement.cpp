@@ -19,10 +19,6 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
-constexpr auto DEFAULT_PLAYER_STANDING_HEIGHT = 72.0f;
-constexpr auto DEFAULT_PLAYER_DUCKING_HEIGHT = 36.0f;
-constexpr auto DEFAULT_PLAYER_HULL_WIDTH = 32.0f;
-
 #ifdef EXT_DEBUG
 static ConVar cvar_dev_jump_hold_time("sm_navbot_dev_jump_hold_time", "1.0", FCVAR_GAMEDLL);
 #endif // EXT_DEBUG
@@ -125,6 +121,23 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 
 IMovement::~IMovement()
 {
+}
+
+bool IMovement::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
+{
+	const char* value = cfgnavbot->GetKeyValue("PlayerHull_StandHeight");
+	if (value) { IMovement::s_playerhull.stand_height = atof(value); }
+
+	value = cfgnavbot->GetKeyValue("PlayerHull_CrouchHeight");
+	if (value) { IMovement::s_playerhull.crouch_height = atof(value); }
+
+	value = cfgnavbot->GetKeyValue("PlayerHull_ProneHeight");
+	if (value) { IMovement::s_playerhull.prone_height = atof(value); }
+
+	value = cfgnavbot->GetKeyValue("PlayerHull_Width");
+	if (value) { IMovement::s_playerhull.width = atof(value); }
+
+	return true;
 }
 
 void IMovement::Reset()
@@ -385,24 +398,25 @@ void IMovement::Frame()
 float IMovement::GetHullWidth()
 {
 	float scale = GetBot()->GetModelScale();
-	return DEFAULT_PLAYER_HULL_WIDTH * scale;
+	return IMovement::s_playerhull.width * scale;
 }
 
 float IMovement::GetStandingHullHeight()
 {
 	float scale = GetBot()->GetModelScale();
-	return DEFAULT_PLAYER_STANDING_HEIGHT * scale;
+	return IMovement::s_playerhull.stand_height * scale;
 }
 
 float IMovement::GetCrouchedHullHeight()
 {
 	float scale = GetBot()->GetModelScale();
-	return DEFAULT_PLAYER_DUCKING_HEIGHT * scale;
+	return IMovement::s_playerhull.crouch_height * scale;
 }
 
 float IMovement::GetProneHullHeight()
 {
-	return 0.0f; // implement if mod has prone support (IE: DoD:S)
+	float scale = GetBot()->GetModelScale();
+	return IMovement::s_playerhull.prone_height * scale;
 }
 
 unsigned int IMovement::GetMovementTraceMask()
@@ -433,9 +447,9 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 
 	m_lastMoveWeight = weight;
 
-	auto me = GetBot();
-	auto input = me->GetControlInterface();
-	auto origin = me->GetAbsOrigin();
+	CBaseBot* me = GetBot<CBaseBot>();
+	IPlayerController* input = me->GetControlInterface();
+	Vector origin = me->GetAbsOrigin();
 	Vector eyeforward;
 	me->EyeVectors(&eyeforward);
 	m_stuck.OnMovementRequested();
@@ -456,6 +470,26 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
 		NDebugOverlay::Line(me->WorldSpaceCenter(), pos, 0, 255, 0, false, 0.2f);
+	}
+
+	if (me->IsUnderWater())
+	{
+		// While underwater, use move up/down to adjust the bot's height
+
+		/* const float distance2d = (origin - pos).AsVector2D().Length(); */
+		const float heightdiff = std::abs(origin.z - pos.z);
+		
+		if (/* distance2d <= GetHullWidth() * 1.2f && */ heightdiff > GetStepHeight())
+		{
+			if (pos.z > origin.z)
+			{
+				input->PressMoveDownButton(0.2f);
+			}
+			else
+			{
+				input->PressMoveUpButton(0.2f);
+			}
+		}
 	}
 
 	// handle ladder movement
@@ -623,7 +657,7 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 	m_wasLaunched = false;
 	ChangeLadderState(LadderState::APPROACHING_LADDER_UP);
 
-	auto bot = GetBot();
+	CBaseBot* bot = GetBot<CBaseBot>();
 	
 	if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
@@ -1770,45 +1804,72 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	{
 		return NOT_USING_LADDER;
 	}
+
+	// remember, the ladder is facing the opposide direction of the bot, -1.0 means the bot is facing the ladder directly
+	constexpr float FACING_LADDER_DOT = -0.85f;
 	
 	// the ladder should always have a connection to the ladder exit area, if not let it crash to notify a programmer
 	const LadderToAreaConnection* connection = m_ladder->GetConnectionToArea(m_ladderExit);
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const Vector origin = bot->GetAbsOrigin();
+	const bool debugging = bot->IsDebugging(BOTDEBUG_MOVEMENT);
 
 	if (IsOnLadder())
 	{
-		GetBot()->GetControlInterface()->ReleaseMovementButtons();
+		bot->GetControlInterface()->ReleaseMovementButtons();
 
 		if (!m_ladderWait.HasStarted())
 		{
 			m_ladderWait.Start(0.25f);
-			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (UP)! \n", GetBot()->GetDebugIdentifier());
+			bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s GRABBED LADDER (UP)! \n", bot->GetDebugIdentifier());
 		}
 		else if (m_ladderWait.IsElapsed())
 		{
-			GetBot()->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s WAIT TIMER EXPIRED (UP)! \n", GetBot()->GetDebugIdentifier());
+			bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 0, 200, 200, "%s WAIT TIMER EXPIRED (UP)! \n", bot->GetDebugIdentifier());
 			return USING_LADDER_UP; // wait timer expired, we are on a ladder
 		}
 	}
 	else
 	{
-		// move to the ladder connection point (this is on the ladder)
-		MoveTowards(m_ladderMoveGoal, MOVEWEIGHT_CRITICAL);
-		FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, navgenparams->human_eye_height), true);
+		Vector to = UtilHelpers::math::BuildDirectionVector(origin, m_ladderMoveGoal);
+		const float dot = DotProduct(to, m_ladder->GetNormal());
 
-		if (GetBot()->GetRangeTo(connection->GetConnectionPoint()) < CBaseExtPlayer::PLAYER_USE_RADIUS)
+		// not facing the ladder, move in front of it.
+		if (dot > FACING_LADDER_DOT)
 		{
-			if (m_useLadderTimer.IsElapsed())
+			Vector moveTo = m_ladderMoveGoal + (m_ladder->GetNormal() * GetHullWidth() * 1.6f);
+			MoveTowards(moveTo, MOVEWEIGHT_CRITICAL);
+			FaceTowards(moveTo + Vector(0.0f, 0.0f, navgenparams->human_eye_height), true);
+
+			if (debugging)
 			{
-				GetBot()->GetControlInterface()->PressUseButton();
-				m_useLadderTimer.Start(0.2f);
+				bot->DebugPrintToConsole(180, 220, 180, "%s APPROACHUPLADDER : NOT FACING LADDER! %g \n", bot->GetDebugIdentifier(), dot);
+				NDebugOverlay::HorzArrow(origin, moveTo, 8.0f, 255, 0, 0, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 			}
 		}
+		else
+		{
+			// move to the ladder connection point (this is on the ladder)
+			MoveTowards(m_ladderMoveGoal, MOVEWEIGHT_CRITICAL);
+			FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, navgenparams->human_eye_height), true);
+			const Vector& point = connection->GetConnectionPoint();
+
+			if (bot->GetRangeTo(point) < CBaseExtPlayer::PLAYER_USE_RADIUS)
+			{
+				if (m_useLadderTimer.IsElapsed())
+				{
+					bot->GetControlInterface()->PressUseButton();
+					m_useLadderTimer.Start(0.2f);
+				}
+			}
+		}
+
 	}
 
-	if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+	if (debugging)
 	{
 		NDebugOverlay::Cross3D(m_ladderMoveGoal, 24.0f, 0, 128, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
-		NDebugOverlay::Line(GetBot()->GetAbsOrigin(), m_ladderMoveGoal, 0, 128, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Line(bot->GetAbsOrigin(), m_ladderMoveGoal, 0, 128, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 	}
 
 	return APPROACHING_LADDER_UP;

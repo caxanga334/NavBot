@@ -13,6 +13,7 @@
 #include "dodsbot_deploy_bomb_task.h"
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
+#include <bot/tasks_shared/bot_shared_move_to_brush_entity.h>
 
 CDoDSBotAttackControlPointTask::CDoDSBotAttackControlPointTask(const CDayOfDefeatSourceMod::DoDControlPoint* controlpoint)
 {
@@ -71,6 +72,12 @@ bool CDoDSBotAttackControlPointTask::IsPossible(CDoDSBot* bot, const CDayOfDefea
 	}
 
 	return true;
+}
+
+AITask<CDoDSBot>* CDoDSBotAttackControlPointTask::InitialNextTask(CDoDSBot* bot)
+{
+	CBaseEntity* trigger = m_controlpoint->capture_trigger.Get();
+	return new CBotSharedMoveToBrushEntityTask<CDoDSBot, CDoDSBotPathCost, false>(bot, trigger); // it's safe if trigger is NULL, the task will just end
 }
 
 TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
@@ -182,6 +189,12 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskUpdate(CDoDSBot* bot)
 		}
 	}
 
+	if (GetNextTask() == nullptr)
+	{
+		return Done("Failed to reach the control point!");
+	}
+
+	/*
 	if (bot->GetControlPointIndex() == m_controlpoint->index)
 	{
 		return Continue(); // capturing the point
@@ -196,6 +209,8 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskUpdate(CDoDSBot* bot)
 	}
 
 	m_nav.Update(bot);
+
+	*/
 
 	return Continue();
 }

@@ -113,3 +113,10 @@ dayofdefeatsource::DoDRoundState dodslib::GetRoundState()
 	entprops->GameRules_GetProp("m_iRoundState", roundstate);
 	return static_cast<dayofdefeatsource::DoDRoundState>(roundstate);
 }
+
+bool dodslib::CanPlantBombAtTarget(CBaseEntity* bombTarget)
+{
+	int state = -1;
+	entprops->GetEntProp(bombTarget, Prop_Send, "m_iState", state);
+	return state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE);
+}

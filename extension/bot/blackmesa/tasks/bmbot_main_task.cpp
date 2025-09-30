@@ -21,19 +21,6 @@ AITask<CBlackMesaBot>* CBlackMesaBotMainTask::InitialNextTask(CBlackMesaBot* bot
 
 TaskResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTaskUpdate(CBlackMesaBot* bot)
 {
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
-
-	if (threat)
-	{
-		bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat);
-		bot->FireWeaponAtEnemy(threat, true);
-		bot->DodgeEnemies(threat);
-	}
-	else
-	{
-		bot->HandleWeaponsNoThreat();
-	}
-
 	return Continue();
 }
 

@@ -57,27 +57,7 @@ void IInventory::Update()
 	if (m_purgeStaleWeaponsTimer.IsElapsed())
 	{
 		m_purgeStaleWeaponsTimer.Start(0.5f);
-		const CBaseBot* me = GetBot<CBaseBot>();
-
-		m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [&me](const std::unique_ptr<CBotWeapon>& object) {
-
-			CBaseEntity* pWeapon = object->GetEntity();
-
-			if (!pWeapon)
-			{
-				return true; // NULL weapon entity
-			}
-			
-			CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
-
-			if (owner != me->GetEntity())
-			{
-				return true; // I no longer own this weapon
-			}
-
-			return false;
-
-		}), m_weapons.end());
+		RemoveInvalidWeapons();
 	}
 }
 
@@ -178,7 +158,8 @@ void IInventory::BuildInventory()
 	VPROF_BUDGET("IInventory::BuildInventory", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	m_weapons.clear();
+	RemoveInvalidWeapons();
+
 	m_cachedActiveWeapon = nullptr;
 
 	// array CHandle<CBaseEntity> weapons[MAX_WEAPONS]
@@ -202,6 +183,7 @@ void IInventory::BuildInventory()
 	}
 #endif // EXT_DEBUG
 
+	// TO-DO, might be better to replace the MAX_WEAPONS macros with a runtime array size from GetEntPropArraySize
 	for (int i = 0; i < MAX_WEAPONS; i++)
 	{
 		CBaseEntity* weapon = myweapons[i].Get();
@@ -211,85 +193,89 @@ void IInventory::BuildInventory()
 			continue;
 		}
 
-		// IsValidEdict checks if GetIServerEntity return is not NULL
-		m_weapons.emplace_back(CreateBotWeapon(weapon));
+		// AddWeaponToInventory will check for duplicates
+		AddWeaponToInventory(weapon);
 	}
 }
 
-void IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat)
+bool IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat, WeaponInfo::WeaponType typeOnly)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IInventory::SelectBestWeaponForThreat", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
+	if (!m_weaponSwitchCooldown.IsElapsed() || m_weapons.empty())
 	{
-		return;
+		return false;
 	}
-
-	if (m_weapons.empty())
-	{
-		BuildInventory();
-		m_weaponSwitchCooldown.Start(0.250f);
-		return;
-	}
-
-	CBaseBot* bot = GetBot();
-	const float rangeToThreat = bot->GetRangeTo(threat->GetEdict());
-	const CBotWeapon* best = nullptr;
-	int priority = std::numeric_limits<int>::min();
-	auto func = [&bot, &priority, &rangeToThreat, &best, &threat](const CBotWeapon* weapon) {
-
-		if (!weapon->IsValid())
-		{
-			return;
-		}
-
-		// weapon must be usable against enemies
-		if (!weapon->GetWeaponInfo()->IsCombatWeapon())
-		{
-			return;
-		}
-
-		CBaseEntity* pWeapon = weapon->GetEntity();
-		CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
-
-		// I must be the weapon's owner
-		if (bot->GetEntity() != owner)
-		{
-			return;
-		}
-
-		if (weapon->IsOutOfAmmo(bot))
-		{
-			return;
-		}
-
-		if (!weapon->GetWeaponInfo()->IsInSelectionRange(rangeToThreat))
-		{
-			return;
-		}
-
-		int currentprio = weapon->GetPriority(bot, &rangeToThreat, threat);
-
-		if (currentprio > priority)
-		{
-			best = weapon;
-			priority = currentprio;
-		}
-	};
-
-	ForEveryWeapon(func);
 
 	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
+
+	CBaseBot* bot = GetBot();
+	const float rangeToThreat = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity()));
+	const CBotWeapon* best = nullptr;
+	const DifficultyProfile* profile = bot->GetDifficultyProfile();
+
+	for (auto& weaponptr : m_weapons)
+	{
+		const CBotWeapon* weapon = weaponptr.get();
+		const WeaponInfo* info = weaponptr->GetWeaponInfo();
+
+		if (!IsWeaponUseableForThreat(bot, threat, rangeToThreat, weapon, info))
+		{
+			continue;
+		}
+
+		// Using type filter
+		if (typeOnly != WeaponInfo::WeaponType::MAX_WEAPON_TYPES)
+		{
+			if (info->GetWeaponType() != typeOnly)
+			{
+				continue;
+			}
+		}
+		else
+		{
+			// Default filter
+			if (!info->IsCombatWeapon())
+			{
+				continue;
+			}
+		}
+
+		// Too stupid to use it
+		if (info->GetMinRequiredSkill() > profile->GetWeaponSkill())
+		{
+			continue;
+		}
+
+		// assign the first weapon
+		if (best == nullptr)
+		{
+			best = weapon;
+			continue;
+		}
+
+		// sanity check
+		if (best == weapon) { continue; }
+
+		const CBotWeapon* result = FilterBestWeaponForThreat(bot, threat, rangeToThreat, best, weapon);
+
+		if (!result) { return false; }
+
+		best = result;
+	}
 
 	if (best != nullptr)
 	{
 		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
 		{
-			bot->SelectWeapon(best->GetEntity());
+			EquipWeapon(best);
+			return true;
 		}
 	}
+
+	return false;
 }
 
 void IInventory::SelectBestWeapon()
@@ -441,6 +427,69 @@ void IInventory::SelectBestWeaponForBreakables()
 	}
 }
 
+void IInventory::SelectBestWeaponOfType(WeaponInfo::WeaponType type, const float range)
+{
+	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
+	{
+		return;
+	}
+
+	CBaseBot* bot = GetBot();
+	const CBotWeapon* best = nullptr;
+
+	for (auto& ptr : m_weapons)
+	{
+		const CBotWeapon* weapon = ptr.get();
+		const WeaponInfo* info = weapon->GetWeaponInfo();
+
+		if (!weapon->IsValid() || !weapon->IsOwnedByBot(bot))
+		{
+			continue;
+		}
+
+		if (info->GetWeaponType() != type)
+		{
+			continue;
+		}
+
+		if (weapon->IsOutOfAmmo(bot))
+		{
+			continue;
+		}
+
+		if (range > 0.0f)
+		{
+			if (!info->IsInSelectionRange(range))
+			{
+				continue;
+			}
+		}
+
+		if (best == nullptr)
+		{
+			best = weapon;
+			continue;
+		}
+
+		if (weapon == best)
+		{
+			continue;
+		}
+
+		best = FilterSelectWeaponWithHighestStaticPriority(best, weapon);
+	}
+
+	if (best != nullptr)
+	{
+		m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
+
+		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
+		{
+			EquipWeapon(best);
+		}
+	}
+}
+
 void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 {
 	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
@@ -450,7 +499,6 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 
 	if (m_weapons.empty())
 	{
-		BuildInventory();
 		m_weaponSwitchCooldown.Start(0.250f);
 		return;
 	}
@@ -571,19 +619,17 @@ bool IInventory::IsAmmoLow(const bool heldOnly)
 
 		return weapon->IsAmmoLow(me);
 	}
-	else
-	{
-		for (auto& weapon : m_weapons)
-		{
-			if (!weapon->IsValid())
-			{
-				continue;
-			}
 
-			if (weapon->IsAmmoLow(me))
-			{
-				return true;
-			}
+	for (auto& weapon : m_weapons)
+	{
+		if (!weapon->IsValid())
+		{
+			continue;
+		}
+
+		if (weapon->IsAmmoLow(me))
+		{
+			return true;
 		}
 	}
 
@@ -609,3 +655,66 @@ int IInventory::GetOwnedWeaponCount() const
 
 	return count;
 }
+
+void IInventory::RemoveInvalidWeapons()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+	m_cachedActiveWeapon = nullptr; // purge the cache just to be safe
+
+	m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [&me](const std::unique_ptr<CBotWeapon>& object) {
+
+		CBaseEntity* pWeapon = object->GetEntity();
+
+		if (!pWeapon)
+		{
+			return true; // NULL weapon entity
+		}
+
+		CBaseEntity* owner = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(pWeapon, CEntPropUtils::CacheIndex::CBASECOMBATWEAPON_OWNER)->Get();
+
+		if (owner != me->GetEntity())
+		{
+			return true; // I no longer own this weapon
+		}
+
+		return false;
+
+	}), m_weapons.end());
+}
+
+const CBotWeapon* IInventory::FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* first, const CBotWeapon* second) const
+{
+	if (first->GetPriority(me, &rangeToThreat, threat) > second->GetPriority(me, &rangeToThreat, threat))
+	{
+		return first;
+	}
+
+	return second;
+}
+
+bool IInventory::IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info) const
+{
+	if (!weapon->IsValid() || !weapon->IsOwnedByBot(me) || weapon->IsOutOfAmmo(me) || !info->IsInSelectionRange(rangeToThreat))
+	{
+		return false;
+	}
+
+	if (!weapon->CanUsePrimaryAttack(me) && !weapon->CanUseSecondaryAttack(me))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+const CBotWeapon* IInventory::FilterSelectWeaponWithHighestStaticPriority(const CBotWeapon* first, const CBotWeapon* second) const
+{
+	if (first->GetWeaponInfo()->GetPriority() >= second->GetWeaponInfo()->GetPriority())
+	{
+		return first;
+	}
+
+	return second;
+}
+
+

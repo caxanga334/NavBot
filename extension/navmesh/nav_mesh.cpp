@@ -85,6 +85,7 @@ bool NavAttributeSetter::operator() ( CNavArea *area )
 	return true;
 }
 
+/*
 template<typename Functor>
 bool ForEachActor(Functor &func) {
 	// iterate all non-bot players
@@ -119,6 +120,7 @@ bool ForEachActor(Functor &func) {
 
 template bool ForEachActor(EditDestroyNotification&);
 template bool ForEachActor(ForgetArea&);
+*/
 
 //--------------------------------------------------------------------------------------------------------------
 CNavMesh::CNavMesh( void )
@@ -152,11 +154,18 @@ CNavMesh::CNavMesh( void )
 	AddWalkableEntity("info_player_start");
 	AddWalkableEntity("info_player_teamspawn");
 	AddWalkableEntity("info_player_deathmatch");
+}
 
+//--------------------------------------------------------------------------------------------------------------
+CNavMesh::~CNavMesh()
+{
+}
+
+void CNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
+{
 	// Load walkable entities from gamedata
-	SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
 
-	const char* buffer = gamedata->GetKeyValue("NavGenerationWalkableEnts");
+	const char* buffer = cfgnavbot->GetKeyValue("NavGenerationWalkableEnts");
 
 	if (buffer)
 	{
@@ -170,8 +179,7 @@ CNavMesh::CNavMesh( void )
 		}
 	}
 
-	buffer = nullptr;
-	buffer = gamedata->GetKeyValue("NavGenerationWalkableEntsCenter");
+	buffer = cfgnavbot->GetKeyValue("NavGenerationWalkableEntsCenter");
 
 	if (buffer)
 	{
@@ -184,11 +192,55 @@ CNavMesh::CNavMesh( void )
 			AddWalkableEntity(token.c_str(), true);
 		}
 	}
-}
 
-//--------------------------------------------------------------------------------------------------------------
-CNavMesh::~CNavMesh()
-{
+	buffer = cfgnavbot->GetKeyValue("NavGen_StepSize");
+
+	if (buffer) { navgenparams->generation_step_size = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_JumpHeight");
+
+	if (buffer) { navgenparams->jump_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_JumpCrouchHeight");
+
+	if (buffer) { navgenparams->jump_crouch_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_StepHeight");
+
+	if (buffer) { navgenparams->step_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_DeathDropHeight");
+
+	if (buffer) { navgenparams->death_drop = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_ClimbUpHeight");
+
+	if (buffer) { navgenparams->climb_up_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_HalfHumanWidth");
+
+	if (buffer) { navgenparams->half_human_width = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_HumanHeight");
+
+	if (buffer)
+	{
+		float temp = atof(buffer);
+		navgenparams->human_height = temp;
+		navgenparams->half_human_height = temp * 0.5f;
+	}
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_HumanCrouchHeight");
+
+	if (buffer) { navgenparams->human_crouch_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_HumanEyeHeight");
+
+	if (buffer) { navgenparams->human_eye_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavGen_HumanCrouchEyeHeight");
+
+	if (buffer) { navgenparams->human_crouch_eye_height = atof(buffer); }
 }
 
 bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
@@ -273,6 +325,40 @@ bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 	if (sm_nav_solid_props.GetBool() && UtilHelpers::FClassnameIs(pEntity, "prop_*"))
 		return false;
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX
+
+	return false;
+}
+
+bool CNavMesh::IsEntitySolidForTransientAreas(CBaseEntity* pEntity) const
+{
+	// These are always solid
+	if (UtilHelpers::FClassnameIs(pEntity, "func_brush") ||
+		UtilHelpers::FClassnameIs(pEntity, "func_door") ||
+		UtilHelpers::FClassnameIs(pEntity, "func_door_rotating") ||
+		UtilHelpers::FClassnameIs(pEntity, "prop_dynamic*") ||
+		UtilHelpers::FClassnameIs(pEntity, "prop_static") ||
+		UtilHelpers::FClassnameIs(pEntity, "func_wall_toggle") ||
+		UtilHelpers::FClassnameIs(pEntity, "func_tracktrain"))
+	{
+		return true;
+	}
+
+	if (UtilHelpers::FClassnameIs(pEntity, "func_breakable"))
+	{
+		entities::HBaseEntity be(pEntity);
+
+		// Doesn't take damage, blocks
+		if (be.GetTakeDamage() == DAMAGE_NO)
+		{
+			return true;
+		}
+
+		// Too much health, blocks
+		if (be.GetHealth() > 1000)
+		{
+			return true;
+		}
+	}
 
 	return false;
 }
@@ -456,11 +542,13 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 		CNavArea::m_isReset = true;
 
 		// tell players to forget about the areas
+		/*
 		FOR_EACH_VEC( TheNavAreas, it )
 		{
 			EditDestroyNotification notification( TheNavAreas[it] );
 			ForEachActor( notification );
 		}
+		*/
 
 		// remove each element of the list and delete them
 		FOR_EACH_VEC( TheNavAreas, it )
@@ -1168,6 +1256,21 @@ CNavArea *CNavMesh::GetNavArea( edict_t *pEntity, int nFlags, float flBeneathLim
 	return use;
 }
 
+
+CNavArea* CNavMesh::FindNavAreaByIDViaLoop(unsigned int id)
+{
+	FOR_EACH_VEC(TheNavAreas, it)
+	{
+		CNavArea* area = TheNavAreas[it];
+
+		if (area->GetID() == id)
+		{
+			return area;
+		}
+	}
+
+	return nullptr;
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -3566,7 +3669,7 @@ NavErrorType HidingSpot::PostLoad( void )
 
 	if ( !m_area )
 	{
-		DevWarning( "A Hiding Spot is off of the Nav Mesh at setpos %.0f %.0f %.0f\n", m_pos.x, m_pos.y, m_pos.z );
+		smutils->LogError(myself, "HidingSpot::PostLoad A Hiding Spot is off of the Nav Mesh at setpos %.0f %.0f %.0f", m_pos.x, m_pos.y, m_pos.z);
 	}
 
 	return NAV_OK;
@@ -4176,6 +4279,59 @@ void CNavMesh::NotifyDangerousEditCommandWasUsed()
 	extmanager->RemoveAllBots("Nav Mesh was edited, removing all bots.");
 	ConVarRef sm_navbot_quota_quantity{ "sm_navbot_quota_quantity" };
 	sm_navbot_quota_quantity.SetValue(0);
+}
+
+void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, const bool centerOnly, std::vector<CNavArea*>& output)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CNavMesh::CollectAreasTouchingEntity", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	std::vector<CNavArea*> areas;
+	Extent extent{ entity };
+	ICollideable* collider = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable();
+
+	extent.lo.z -= navgenparams->half_human_height;
+	extent.hi.z += navgenparams->half_human_height;
+
+	// Collects areas within the entity's bounds
+	CollectAreasOverlappingExtent<CNavArea>(extent, areas);
+
+	// Use engine trace to filter which areas are actually touching the entity
+	Ray_t ray;
+	trace_t tr;
+	Vector pos;
+
+	for (CNavArea* area : areas)
+	{
+		pos = area->GetCenter();
+		pos.z += navgenparams->half_human_height;
+		ray.Init(pos, pos);
+		enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+		if (tr.startsolid)
+		{
+			output.push_back(area);
+			continue;
+		}
+
+		if (centerOnly) { continue; }
+
+		for (int c = 0; c < static_cast<int>(NavCornerType::NUM_CORNERS); c++)
+		{
+			pos = area->GetCorner(static_cast<NavCornerType>(c));
+			pos.z += navgenparams->half_human_height;
+
+			ray.Init(pos, pos);
+			enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+			if (tr.startsolid)
+			{
+				output.push_back(area);
+				continue;
+			}
+		}
+	}
 }
 
 CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)

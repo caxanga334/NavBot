@@ -4,6 +4,9 @@
 
 #include <string>
 #include <sdkports/sdk_ehandle.h>
+#include <entities/baseentity.h>
+
+class CBaseExtPlayer;
 
 // Known Entity. Represents an entity that is known to the bot
 class CKnownEntity
@@ -78,7 +81,11 @@ public:
 	CBaseEntity* GetEntity() const { return m_handle.Get(); }
 	int GetIndex() const { return m_handle.GetEntryIndex(); }
 	const std::string& GetEntityClassname() const { return m_classname; }
-	bool IsPlayer() const;
+	bool IsPlayer() const { return m_player != nullptr; }
+	// Returns the player instance, NULL if this Known Entity is not a player entity
+	const CBaseExtPlayer* GetPlayerInstance() const { return m_player; }
+	// Returns the base entity helper instance.
+	const entities::HBaseEntity& GetBaseEntityHelper() const { return m_baseent; }
 	// Draws this known entity instance (debug)
 	void DebugDraw(const float duration = 1.0f) const;
 	/**
@@ -101,6 +108,8 @@ private:
 	float m_timesincelastnoise; // Timestamp of the last time the bot heard this entity
 	bool m_visible; // This entity is visible right now
 	bool m_lkpwasseen; // Last known position was seen by the bot
+	CBaseExtPlayer* m_player; // Extension player if a player
+	entities::HBaseEntity m_baseent; // Base entity helper
 	
 	void Init();
 };

@@ -88,6 +88,7 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 	AddWalkableEntity("trigger_timer_door", true);
 	AddWalkableEntity("info_powerup_spawn");
 
+	/* No longer hard coded, moved to gamedata file
 	navgenparams->half_human_width = 24.0f;
 	navgenparams->half_human_height = 41.0f;
 	navgenparams->human_height = 82.0f;
@@ -98,6 +99,7 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 	navgenparams->jump_crouch_height = 68.0f;
 	navgenparams->climb_up_height = 128.0f;
 	navgenparams->death_drop = 300.0f; // experimental
+	*/
 
 	ListenForGameEvent("mvm_wave_failed");
 	ListenForGameEvent("mvm_wave_complete");

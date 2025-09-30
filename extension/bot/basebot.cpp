@@ -39,6 +39,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_basesensor = nullptr;
 	m_basebehavior = nullptr;
 	m_baseinventory = nullptr;
+	m_basecombat = nullptr;
 	m_weaponselect = 0;
 	m_cmdtimer.Invalidate();
 	m_cmdsents = 0;
@@ -192,7 +193,6 @@ void CBaseBot::RefreshDifficulty(const CDifficultyManager* manager)
 void CBaseBot::Reset()
 {
 	m_nextupdatetime.Invalidate();
-	m_reloadCheckDelay.Invalidate();
 	m_lastPrerequisite = nullptr;
 	m_clearLastPrerequisiteTimer.Invalidate();
 
@@ -352,6 +352,11 @@ bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 		return true;
 	}
 
+	if (UtilHelpers::StringMatchesPattern(classname, "prop_phys*", 0))
+	{
+		return true;
+	}
+
 	return false;
 }
 
@@ -391,6 +396,7 @@ void CBaseBot::BuildUserCommand(const int buttons)
 
 	float forwardspeed = 0.0f;
 	float sidespeed = 0.0f;
+	float upspeed = 0.0f;
 	const float desiredspeed = mover->GetDesiredSpeed();
 
 	if ((buttons & INPUT_FORWARD) != 0)
@@ -411,7 +417,14 @@ void CBaseBot::BuildUserCommand(const int buttons)
 		sidespeed = -desiredspeed;
 	}
 
-	// TO-DO: Up speed
+	if (control->IsPressingMoveUpButton())
+	{
+		upspeed = desiredspeed;
+	}
+	else if (control->IsPressingMoveDownButton())
+	{
+		upspeed = -desiredspeed;
+	}
 
 	if (control->ShouldApplyScale())
 	{
@@ -421,7 +434,7 @@ void CBaseBot::BuildUserCommand(const int buttons)
 
 	m_cmd.forwardmove = forwardspeed;
 	m_cmd.sidemove = sidespeed;
-	m_cmd.upmove = 0.0f;
+	m_cmd.upmove = upspeed;
 
 	RunUserCommand(&m_cmd);
 
@@ -522,6 +535,16 @@ ISquad* CBaseBot::GetSquadInterface() const
 	return m_basesquad.get();
 }
 
+ICombat* CBaseBot::GetCombatInterface() const
+{
+	if (!m_basecombat)
+	{
+		m_basecombat = std::make_unique<ICombat>(const_cast<CBaseBot*>(this));
+	}
+
+	return m_basecombat.get();
+}
+
 ISharedBotMemory* CBaseBot::GetSharedMemoryInterface() const
 {
 	int team = 0;
@@ -551,7 +574,6 @@ void CBaseBot::Spawn()
 
 	m_spawnTime = gpGlobals->curtime;
 	m_homepos = GetAbsOrigin();
-	m_lastfiredweapontimer.Invalidate();
 	Reset();
 }
 
@@ -693,457 +715,6 @@ void CBaseBot::SendTeamChatMessage(const char* message)
 
 	ke::SafeSprintf(cmd.get(), MAX_SIZE, "say_team %s", message);
 	DelayedFakeClientCommand(cmd.get());
-}
-
-void CBaseBot::FireWeaponAtEnemy(const CKnownEntity* enemy, const bool doAim)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBaseBot::FireWeaponAtEnemy", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	if (!IsAlive())
-		return;
-
-	if (GetMovementInterface()->NeedsWeaponControl())
-		return;
-
-	if (!enemy->IsValid())
-		return;
-
-	const CBotWeapon* weapon = GetInventoryInterface()->GetActiveBotWeapon();
-
-	if (!weapon || !weapon->IsValid())
-		return;
-
-	if (GetBehaviorInterface()->ShouldAttack(this, enemy) == ANSWER_NO)
-		return;
-
-	if (!IsLastUsedWeapon(weapon))
-	{
-		OnLastUsedWeaponChanged(weapon);
-		SetLastUsedWeapon(weapon);
-	}
-
-	const float range = GetRangeTo(enemy->GetEdict());
-	bool primary = true; // primary attack by default
-	IPlayerController* control = GetControlInterface();
-
-	if (CanFireWeapon(weapon, range, true, primary))
-	{
-		if (!AimWeaponAtEnemy(enemy, weapon, doAim, range, primary))
-			return;
-
-		if (doAim && !control->IsAimOnTarget())
-			return;
-
-		if (!HandleWeapon(weapon))
-			return;
-
-		if (control->GetAimAtTarget() != enemy->GetEntity())
-			return; // Don't fire: bot is aiming at something else.
-
-		OpportunisticallyUseWeaponSpecialFunction(enemy, weapon, range);
-
-		const IntervalTimer& timer = GetLastFiredWeaponTimer();
-
-		// check attack interval
-		if (timer.HasStarted() && timer.IsLessThen(weapon->GetWeaponInfo()->GetAttackInterval()))
-			return;
-
-		StartLastFiredWeaponTimer();
-
-		if (primary)
-		{
-			control->PressAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
-		}
-		else
-		{
-			control->PressSecondaryAttackButton(weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetHoldButtonTime());
-		}
-	}
-	else
-	{
-		if (IsDebugging(BOTDEBUG_COMBAT))
-		{
-			DebugPrintToConsole(255, 127, 0, "%s CAN'T FIRE WEAPON AT ENEMY <%s> RANGE %g WEAPON <%s> : %i : <%s> IS %s\n", 
-				GetDebugIdentifier(), enemy->GetEntityClassname().c_str(), range, weapon->GetClassname().c_str(),
-				weapon->GetWeaponEconIndex(), weapon->GetWeaponInfo()->GetConfigEntryName(),
-				weapon->IsLoaded() ? "LOADED" : "NOT LOADED");
-		}
-
-		if (doAim)
-		{
-			// simply keep it aimed using the last result from AimWeaponAtEnemy
-			control->AimAt(enemy->GetEntity(), IPlayerController::LOOK_COMBAT, 1.0f, "Keeping weapon aimed at enemy.");
-		}
-
-		ReloadIfNeeded(weapon);
-	}
-}
-
-bool CBaseBot::IsAbleToDodgeEnemies(const CKnownEntity* threat) const
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBaseBot::IsAbleToDodgeEnemies", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	// Low skill bot not allowed to dodge
-	if (!GetDifficultyProfile()->IsAllowedToDodge())
-	{
-		return false;
-	}
-
-	// Precise movement required for this area, don't dodge
-	const CNavArea* area = GetLastKnownNavArea();
-	if (area && area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)))
-	{
-		return false;
-	}
-
-	// Avoid messing up advanced movements
-	if (GetMovementInterface()->IsControllingMovements())
-	{
-		return false;
-	}
-
-	if (threat)
-	{
-		// Only dodge visible enemies
-		if (!threat->IsVisibleNow())
-		{
-			return false;
-		}
-
-		// Only dodge enemy players
-		if (!threat->IsPlayer())
-		{
-			return false;
-		}
-	}
-
-	// Don't waste time dodging if I am in a hurry.
-	if (GetBehaviorInterface()->ShouldHurry(const_cast<CBaseBot*>(this)) == ANSWER_YES)
-	{
-		return false;
-	}
-
-	const CBotWeapon* activeWeapon = GetInventoryInterface()->GetActiveBotWeapon();
-
-	// Don't dodge if I'm not using a combat weapon
-	if (!activeWeapon || !activeWeapon->GetWeaponInfo()->IsCombatWeapon() || !activeWeapon->GetWeaponInfo()->IsAllowedToDodge())
-	{
-		return false;
-	}
-
-	return true;
-}
-
-void CBaseBot::DodgeEnemies(const CKnownEntity* threat)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBaseBot::DodgeEnemies", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	if (!IsAbleToDodgeEnemies(threat))
-	{
-		return;
-	}
-
-	Vector forward;
-	Vector origin = GetAbsOrigin();
-	EyeVectors(&forward);
-	Vector left(-forward.y, forward.x, 0.0f);
-	left.NormalizeInPlace();
-	IMovement* mover = GetMovementInterface();
-	const float sideStepSize = mover->GetHullWidth();
-
-	int rng = CBaseBot::s_botrng.GetRandomInt<int>(1, 100);
-
-	if (rng < 33)
-	{
-		if (!mover->HasPotentialGap(origin, origin + sideStepSize * left))
-		{
-			GetControlInterface()->PressMoveLeftButton();
-		}
-	}
-	else if (rng > 66)
-	{
-		if (!mover->HasPotentialGap(origin, origin - sideStepSize * left))
-		{
-			GetControlInterface()->PressMoveRightButton();
-		}
-	}
-
-	rng = CBaseBot::s_botrng.GetRandomInt<int>(1, 100);
-
-	if (rng < 11)
-	{
-		GetControlInterface()->PressCrouchButton(0.25f);
-	}
-	else if (rng > 86)
-	{
-		GetControlInterface()->PressJumpButton();
-	}
-}
-
-void CBaseBot::HandleWeaponsNoThreat()
-{
-	const CBotWeapon* activeWeapon = GetInventoryInterface()->GetActiveBotWeapon();
-	IPlayerController* control = GetControlInterface();
-
-	if (!activeWeapon)
-	{
-		return;
-	}
-
-	const bool isLoaded = activeWeapon->IsLoaded();
-
-	if (!isLoaded)
-	{
-		// reload first
-		control->PressReloadButton();
-		return;
-	}
-
-	if (m_undeployWeaponTimer.HasStarted() && m_undeployWeaponTimer.IsElapsed())
-	{
-		m_undeployWeaponTimer.Invalidate();
-
-		if (activeWeapon->IsDeployedOrScoped(this))
-		{
-			control->PressSecondaryAttackButton();
-		}
-	}
-}
-
-bool CBaseBot::CanFireWeapon(const CBotWeapon* weapon, const float range, const bool allowSecondary, bool& doPrimary)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBaseBot::CanFireWeapon", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	const WeaponInfo* info = weapon->GetWeaponInfo();
-	auto& primaryinfo = info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
-	auto& secondaryinfo = info->GetAttackInfo(WeaponInfo::SECONDARY_ATTACK);
-	auto& bcw = weapon->GetBaseCombatWeapon();
-	bool candoprimary = false;
-	bool candosecondary = false;
-
-	if (!weapon->IsLoaded())
-	{
-		return false;
-	}
-
-	if (primaryinfo.HasFunction())
-	{
-		if (weapon->CanUsePrimaryAttack(this) && weapon->IsInAttackRange(range, WeaponInfo::AttackFunctionType::PRIMARY_ATTACK))
-		{
-			candoprimary = true;
-		}
-	}
-
-	if (secondaryinfo.HasFunction())
-	{
-		if (weapon->CanUseSecondaryAttack(this) && weapon->IsInAttackRange(range, WeaponInfo::AttackFunctionType::SECONDARY_ATTACK))
-		{
-			candosecondary = true;
-		}
-	}
-
-	if (!candoprimary && !candosecondary)
-	{
-		return false;
-	}
-
-	if (candoprimary && !candosecondary)
-	{
-		doPrimary = true;
-	}
-	else if (!candoprimary && candosecondary)
-	{
-		doPrimary = false;
-	}
-	else
-	{
-		// can do both primary and seconadary
-		if (CBaseBot::s_botrng.GetRandomInt<int>(1, 100) <= weapon->GetWeaponInfo()->GetChanceToUseSecondaryAttack())
-		{
-			doPrimary = false;
-		}
-		else
-		{
-			doPrimary = true;
-		}
-	}
-
-	return true;
-}
-
-bool CBaseBot::HandleWeapon(const CBotWeapon* weapon)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBaseBot::HandleWeapon", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	// this function is used for stuff like hold primary attack for N seconds then release to fire
-	// or a weapon that must be deployed to be used
-	// etc...
-
-	const WeaponInfo* info = weapon->GetWeaponInfo();
-
-	if (info->NeedsToBeDeployedToFire() && !weapon->IsDeployedOrScoped(this))
-	{
-		GetControlInterface()->PressSecondaryAttackButton();
-		GetUndeployWeaponTimer().Start(6.0f);
-		return false;
-	}
-
-	return true;
-}
-
-void CBaseBot::ReloadIfNeeded(const CBotWeapon* weapon)
-{
-	// Most mods only needs to reload the primary ammo
-
-	if (m_reloadCheckDelay.IsElapsed())
-	{
-		auto& primaryinfo = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK);
-		int primarytype = weapon->GetBaseCombatWeapon().GetPrimaryAmmoType();
-
-		if (primarytype < 0)
-			return;
-
-		if (primaryinfo.HasFunction() && weapon->GetBaseCombatWeapon().GetClip1() == 0 && !primaryinfo.IsMelee())
-		{
-			if (GetAmmoOfIndex(primarytype) > 0 || weapon->GetWeaponInfo()->HasInfiniteReserveAmmo())
-			{
-				GetControlInterface()->ReleaseAllAttackButtons();
-				GetControlInterface()->PressReloadButton();
-				m_reloadCheckDelay.Start(0.2f);
-			}
-		}
-	}
-}
-
-bool CBaseBot::AimWeaponAtEnemy(const CKnownEntity* enemy, const CBotWeapon* weapon, const bool doAim, const float range, const bool isPrimary)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBaseBot::AimWeaponAtEnemy", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	IDecisionQuery::DesiredAimSpot desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
-
-	auto& origin = enemy->GetEdict()->GetCollideable()->GetCollisionOrigin();
-	auto center = UtilHelpers::getWorldSpaceCenter(enemy->GetEdict());
-	auto& max = enemy->GetEdict()->GetCollideable()->OBBMaxs();
-	Vector top = origin;
-	top.z += max.z - 1.0f;
-
-	bool headisclear = IsLineOfFireClear(top);
-	bool canheadshot = false;
-	const WeaponAttackFunctionInfo* funcinfo = nullptr;
-
-	if (isPrimary)
-	{
-		funcinfo = &weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
-	}
-	else
-	{
-		funcinfo = &weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK);
-	}
-
-	// allowed to headshot when: the bot is allowed by the difficulty profile, the weapon is capable of headshots
-	// and the enemy is within headshot range limits
-	if (GetDifficultyProfile()->IsAllowedToHeadshot() && weapon->GetWeaponInfo()->CanHeadShot() &&
-		range <= (funcinfo->GetMaxRange() * weapon->GetWeaponInfo()->GetHeadShotRangeMultiplier()))
-	{
-		canheadshot = true;
-	}
-
-	// priorize headshots if allowed
-	if (canheadshot && headisclear)
-	{
-		// head is clear
-		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
-	}
-	else if (IsLineOfFireClear(center))
-	{
-		// center is clear
-		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER;
-	}
-	else if (IsLineOfFireClear(origin))
-	{
-		// abs origin is clear
-		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN;
-	}
-	else if (GetDifficultyProfile()->IsAllowedToHeadshot() && headisclear)
-	{
-		// this handles cases where the weapon can't headshot but every body part minus the head is blocked
-		desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
-	}
-	else
-	{
-		if (IsDebugging(BOTDEBUG_MISC))
-		{
-			DebugPrintToConsole(255, 69, 0, "%s CAN'T FIRE WEAPON. LINE OF FIRE IS BLOCKED! <%s> RANGE: %g\n", GetDebugIdentifier(), enemy->GetEntityClassname().c_str(), range);
-			debugoverlay->AddLineOverlay(GetEyeOrigin(), center, 255, 0, 0, true, 0.1f);
-		}
-
-		return false; // all lines of fire are obstructed
-	}
-
-	if (doAim)
-	{
-		GetControlInterface()->SetDesiredAimSpot(desiredSpot);
-		GetControlInterface()->AimAt(enemy->GetEntity(), IPlayerController::LOOK_COMBAT, 1.0f, "Aiming my weapon at the current visible threat!");
-	}
-
-	return true;
-}
-
-void CBaseBot::OpportunisticallyUseWeaponSpecialFunction(const CKnownEntity* enemy, const CBotWeapon* weapon, const float range)
-{
-	if (!m_weaponSpecialFunctionTimer.IsElapsed())
-		return;
-
-	if (weapon->CanUseSpecialFunction(this, range))
-	{
-		const WeaponInfo::SpecialFunction& func = weapon->GetWeaponInfo()->GetSpecialFunction();
-		IPlayerController* control = GetControlInterface();
-		m_weaponSpecialFunctionTimer.Start(func.delay_between_uses);
-
-		if (IsDebugging(BOTDEBUG_MISC))
-		{
-			DebugPrintToConsole(255, 239, 0, "%s USING WEAPON (%s : %s) SPECIAL FUNCTION! \n",
-				GetDebugIdentifier(), weapon->GetClassname().c_str(), weapon->GetWeaponInfo()->GetConfigEntryName());
-		}
-
-		switch (func.button_to_press)
-		{
-		case INPUT_ATTACK2:
-
-			control->PressSecondaryAttackButton(func.hold_button_time);
-			break;
-		case INPUT_ATTACK3:
-			control->PressSpecialAttackButton(func.hold_button_time);
-			break;
-		case INPUT_RELOAD:
-			control->PressReloadButton(func.hold_button_time);
-			break;
-		default:
-#ifdef EXT_DEBUG
-			META_CONPRINTF("Bot Weapon \"%s\" special function with invalid button to press! \n", weapon->GetWeaponInfo()->GetConfigEntryName());
-#endif // EXT_DEBUG
-			break;
-		}
-	}
-}
-
-void CBaseBot::OnLastUsedWeaponChanged(const CBotWeapon* new_weapon)
-{
-	m_lastfiredweapontimer.Invalidate();
-	m_weaponSpecialFunctionTimer.Invalidate();
-	GetControlInterface()->ReleaseAllAttackButtons();
 }
 
 CBaseBotTraceFilterLineOfFire::CBaseBotTraceFilterLineOfFire(const CBaseBot* bot, const bool ignoreAllies) :

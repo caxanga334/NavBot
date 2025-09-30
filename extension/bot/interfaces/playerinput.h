@@ -84,8 +84,16 @@ public:
 	void ReleaseMoveLeftButton();
 	void PressMoveRightButton(const float duration = -1.0f);
 	void ReleaseMoveRightButton();
+	void PressMoveUpButton(const float duration = -1.0f);
+	void ReleaseMoveUpButton();
+	bool IsPressingMoveUpButton();
+	void PressMoveDownButton(const float duration = -1.0f);
+	void ReleaseMoveDownButton();
+	bool IsPressingMoveDownButton();
 	void PressReloadButton(const float duration = -1.0f);
 	void ReleaseReloadButton();
+	void PressAlt1Button(const float duration = -1.0f);
+	void ReleaseAlt1Button();
 	void SetMovementScale(const float forward, const float side, const float duration = 0.01f);
 	
 	inline const float GetForwardScale() const { return m_forwardscale; }
@@ -122,7 +130,10 @@ protected:
 	CountdownTimer m_usebuttontimer;
 	CountdownTimer m_moveleftbuttontimer;
 	CountdownTimer m_moverightbuttontimer;
+	CountdownTimer m_moveupbuttontimer;
+	CountdownTimer m_movedownbuttontimer;
 	CountdownTimer m_reloadbuttontimer;
+	CountdownTimer m_alt1buttontimer;
 	CountdownTimer m_buttonscaletimer;
 	AttackType m_lastUsedAttackType;
 
@@ -152,7 +163,10 @@ inline void IPlayerInput::ReleaseAllButtons()
 	m_usebuttontimer.Invalidate();
 	m_moveleftbuttontimer.Invalidate();
 	m_moverightbuttontimer.Invalidate();
+	m_moveupbuttontimer.Invalidate();
+	m_movedownbuttontimer.Invalidate();
 	m_reloadbuttontimer.Invalidate();
+	m_alt1buttontimer.Invalidate();
 }
 
 inline void IPlayerInput::ReleaseMovementButtons(const bool uncrouch)
@@ -161,6 +175,8 @@ inline void IPlayerInput::ReleaseMovementButtons(const bool uncrouch)
 	ReleaseBackwardsButton();
 	ReleaseMoveLeftButton();
 	ReleaseMoveRightButton();
+	ReleaseMoveUpButton();
+	ReleaseMoveDownButton();
 	ReleaseJumpButton();
 
 	if (uncrouch)
@@ -343,16 +359,58 @@ inline void IPlayerInput::ReleaseMoveRightButton()
 	m_moverightbuttontimer.Invalidate();
 }
 
+inline void IPlayerInput::PressMoveUpButton(const float duration)
+{
+	m_moveupbuttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseMoveUpButton()
+{
+	m_moveupbuttontimer.Invalidate();
+}
+
+inline bool IPlayerInput::IsPressingMoveUpButton()
+{
+	return m_moveupbuttontimer.HasStarted() && !m_moveupbuttontimer.IsElapsed();
+}
+
+inline void IPlayerInput::PressMoveDownButton(const float duration)
+{
+	m_movedownbuttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseMoveDownButton()
+{
+	m_movedownbuttontimer.Invalidate();
+}
+
+inline bool IPlayerInput::IsPressingMoveDownButton()
+{
+	return m_movedownbuttontimer.HasStarted() && !m_movedownbuttontimer.IsElapsed();
+}
+
 inline void IPlayerInput::PressReloadButton(const float duration)
 {
 	m_buttons |= INPUT_RELOAD;
-	m_reloadbuttontimer.Invalidate();
+	m_reloadbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseReloadButton()
 {
 	m_buttons &= ~INPUT_RELOAD;
 	m_reloadbuttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressAlt1Button(const float duration)
+{
+	m_buttons |= INPUT_ALT1;
+	m_alt1buttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseAlt1Button()
+{
+	m_buttons &= ~INPUT_ALT1;
+	m_alt1buttontimer.Invalidate();
 }
 
 inline void IPlayerInput::SetMovementScale(const float forward, const float side, const float duration)

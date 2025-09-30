@@ -13,23 +13,29 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
-CKnownEntity::CKnownEntity(edict_t* entity)
+CKnownEntity::CKnownEntity(edict_t* entity) :
+	m_baseent(entity)
 {
+	m_player = nullptr;
 	gamehelpers->SetHandleEntity(m_handle, entity);
 	Init();
 	UpdatePosition();
 }
 
-CKnownEntity::CKnownEntity(int entity)
+CKnownEntity::CKnownEntity(int entity) :
+	m_baseent(gamehelpers->EdictOfIndex(entity))
 {
+	m_player = nullptr;
 	auto edict = gamehelpers->EdictOfIndex(entity);
 	gamehelpers->SetHandleEntity(m_handle, edict);
 	Init();
 	UpdatePosition();
 }
 
-CKnownEntity::CKnownEntity(CBaseEntity* entity)
+CKnownEntity::CKnownEntity(CBaseEntity* entity) :
+	m_baseent(entity)
 {
+	m_player = nullptr;
 	m_handle.Set(entity);
 	Init();
 	UpdatePosition();
@@ -37,6 +43,11 @@ CKnownEntity::CKnownEntity(CBaseEntity* entity)
 
 CKnownEntity::~CKnownEntity()
 {
+	if (m_player)
+	{
+		delete m_player;
+		m_player = nullptr;
+	}
 }
 
 void CKnownEntity::Init()
@@ -48,6 +59,11 @@ void CKnownEntity::Init()
 	m_timesincelastnoise = -9999.0f;
 	m_visible = false;
 	m_lkpwasseen = false;
+
+	if (UtilHelpers::IsPlayerIndex(m_handle.GetEntryIndex()))
+	{
+		m_player = new CBaseExtPlayer(UtilHelpers::BaseEntityToEdict(m_handle.Get()));
+	}
 }
 
 bool CKnownEntity::operator==(const CKnownEntity& other)
@@ -124,11 +140,6 @@ bool CKnownEntity::IsEntity(edict_t* entity) const
 bool CKnownEntity::IsEntity(const int entity) const
 {
 	return entity == m_handle.GetEntryIndex();
-}
-
-bool CKnownEntity::IsPlayer() const
-{
-	return UtilHelpers::IsPlayerIndex(m_handle.GetEntryIndex());
 }
 
 void CKnownEntity::DebugDraw(const float duration) const

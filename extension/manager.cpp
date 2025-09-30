@@ -528,6 +528,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	bot->GetBehaviorInterface();
 	bot->GetInventoryInterface();
 	bot->GetSquadInterface();
+	bot->GetCombatInterface();
 
 	if (newbotedict != nullptr)
 	{

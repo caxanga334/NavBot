@@ -13,6 +13,7 @@ Welcome to the NavBot extension documentation index.
 - [Weapon Info Config File]
 - [NavBot ConVars]
 - [Detailed Game Support]
+- [Using Debug Commands]
 
 <!-- Links -->
 [Installing NavBot]: INSTALL.md
@@ -25,3 +26,4 @@ Welcome to the NavBot extension documentation index.
 [Weapon Info Config File]: WEAPONINFO_CONFIG.md
 [NavBot ConVars]: CONVARS.md
 [Detailed Game Support]: DGS.md
+[Using Debug Commands]: DEBUGGING.md
