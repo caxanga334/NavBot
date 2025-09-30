@@ -59,7 +59,9 @@ public:
 	CBaseMod* GetMod();
 
 	CBaseBot* GetBotByIndex(int index);
+	CBaseExtPlayer* GetPlayerByIndex(int index);
 	CBaseBot* GetBotFromEntity(CBaseEntity* entity);
+	CBaseExtPlayer* GetPlayerOfEntity(CBaseEntity* entity);
 	/**
 	 * @brief Find bots by name.
 	 * @param name Full or partial name.
@@ -139,6 +141,7 @@ public:
 
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
+	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of non NavBot players
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
 	std::unique_ptr<CSourcePawnMemoryManager> m_pawnmemory;

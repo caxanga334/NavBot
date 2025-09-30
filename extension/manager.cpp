@@ -75,6 +75,7 @@ static ConVar sm_navbot_hide_bots("sm_navbot_hide_bots", "0", FCVAR_GAMEDLL, "If
 CExtManager::CExtManager()
 {
 	m_bots.reserve(128); // 128 should be good for most mods
+	m_players.reserve(128);
 	m_botnames.reserve(256); // reserve space for 256 bot names, vector size will increase if needed
 	m_nextbotname = 0U;
 	m_botdebugmode = BOTDEBUG_NONE;
@@ -99,6 +100,7 @@ CExtManager::CExtManager()
 CExtManager::~CExtManager()
 {
 	m_bots.clear();
+	m_players.clear();
 #ifndef NO_SOURCEPAWN_API
 	forwards->ReleaseForward(m_prebotaddforward);
 	forwards->ReleaseForward(m_postbotaddforward);
@@ -190,6 +192,11 @@ void CExtManager::Frame()
 		m_callModUpdateTimer.Start(MOD_UPDATE_INTERVAL);
 		m_mod->Update();
 	}
+
+	for (auto& player : m_players)
+	{
+		player->PlayerThink(); // Call player think, updates last known nav area for non NavBot clients
+	}
 }
 
 void CExtManager::OnClientPutInServer(int client)
@@ -207,6 +214,11 @@ void CExtManager::OnClientPutInServer(int client)
 		smutils->LogMessage(myself, "Adding NavBot to the game. #%i<%p>", client, edict);
 		auto& bot = m_bots.emplace_back(m_mod->AllocateBot(edict));
 		bot->PostConstruct();
+	}
+	else
+	{
+		// not a NavBot, register as a player
+		m_players.emplace_back(new CBaseExtPlayer(edict));
 	}
 
 	auto gp = playerhelpers->GetGamePlayer(client);
@@ -241,6 +253,15 @@ void CExtManager::OnClientDisconnect(int client)
 
 		return false;
 	}), m_bots.end());
+
+	m_players.erase(std::remove_if(m_players.begin(), m_players.end(), [&client](const std::unique_ptr<CBaseExtPlayer>& object) {
+		if (object->GetIndex() == client)
+		{
+			return true;
+		}
+
+		return false;
+	}), m_players.end());
 }
 
 void CExtManager::OnMapStart()
@@ -351,6 +372,36 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 	return nullptr;
 }
 
+CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index)
+{
+	CBaseBot* bot = GetBotByIndex(index);
+
+	if (bot)
+	{
+		// CBaseExtPlayer is a base class of CBaseBot
+		return static_cast<CBaseExtPlayer*>(bot);
+	}
+
+	for (auto& ptr : m_players)
+	{
+		if (ptr->GetIndex() == index)
+		{
+			return ptr.get();
+		}
+	}
+
+#ifdef EXT_DEBUG
+	IGamePlayer* player = playerhelpers->GetGamePlayer(index);
+
+	if (player && player->IsInGame())
+	{
+		smutils->LogError(myself, "CExtManager::GetPlayerByIndex MISSED PLAYER OF INDEX %i!", index);
+	}
+#endif // EXT_DEBUG
+
+	return nullptr;
+}
+
 CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
 {
 	if (entity == nullptr) { return nullptr; }
@@ -361,6 +412,30 @@ CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
 		if (bot->GetEntity() == entity)
 		{
 			return bot;
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseExtPlayer* CExtManager::GetPlayerOfEntity(CBaseEntity* entity)
+{
+	if (entity == nullptr) { return nullptr; }
+
+	for (auto& botptr : m_bots)
+	{
+		auto bot = botptr.get();
+		if (bot->GetEntity() == entity)
+		{
+			return static_cast<CBaseExtPlayer*>(bot);
+		}
+	}
+
+	for (auto& player : m_players)
+	{
+		if (player->GetEntity() == entity)
+		{
+			return player.get();
 		}
 	}
 

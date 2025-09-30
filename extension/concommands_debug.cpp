@@ -15,6 +15,7 @@
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_game_util.h>
+#include <sdkports/sdk_entityoutput.h>
 #include <util/ehandle_edict.h>
 #include <sm_argbuffer.h>
 #include <am-platform.h>
@@ -1557,6 +1558,62 @@ CON_COMMAND(sm_navbot_debug_nav_ladder_dot, "")
 	const float dot = DotProduct(to, ladder->GetNormal());
 
 	META_CONPRINTF("Dot: %g\n    %g %g %g", dot, to.x, to.y, to.z);
+}
+
+CON_COMMAND(sm_navbot_debug_ent_outputs, "")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_outputs <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	datamap_t* datamap = gamehelpers->GetDataMap(pEntity);
+
+	while (datamap != nullptr)
+	{
+		int nfields = datamap->dataNumFields;
+
+		for (int i = 0; i < nfields; i++)
+		{
+			typedescription_t* dataDesc = &datamap->dataDesc[i];
+
+			if (dataDesc->fieldType == FIELD_CUSTOM && (dataDesc->flags & FTYPEDESC_OUTPUT) != 0)
+			{
+				CBaseEntityOutput* pOutput = reinterpret_cast<CBaseEntityOutput*>(reinterpret_cast<std::intptr_t>(pEntity) + static_cast<int>(dataDesc->fieldOffset[0]));
+
+				META_CONPRINTF("--- OUTPUT: %s ---\n", dataDesc->externalName);
+
+				for (CEventAction* ev = pOutput->GetFirstAction(); ev != nullptr; ev = ev->m_pNext)
+				{
+					META_CONPRINT("-- EVENT ACTION --\n");
+
+					if (ev->m_iTarget != NULL_STRING)
+					{
+						const char* target = STRING(ev->m_iTarget);
+						META_CONPRINTF("    Target: %s \n", target);
+					}
+
+					if (ev->m_iTargetInput != NULL_STRING)
+					{
+						const char* input = STRING(ev->m_iTargetInput);
+						META_CONPRINTF("    Input: %s \n", input);
+					}
+				}
+			}
+		}
+
+		datamap = datamap->baseMap;
+	}
 }
 
 #endif // EXT_DEBUG

@@ -1,5 +1,6 @@
 #include NAVBOT_PCH_FILE
 #include <extension.h>
+#include <extplayer.h>
 #include <bot/interfaces/base_interface.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
@@ -16,7 +17,6 @@
 CKnownEntity::CKnownEntity(edict_t* entity) :
 	m_baseent(entity)
 {
-	m_player = nullptr;
 	gamehelpers->SetHandleEntity(m_handle, entity);
 	Init();
 	UpdatePosition();
@@ -25,7 +25,6 @@ CKnownEntity::CKnownEntity(edict_t* entity) :
 CKnownEntity::CKnownEntity(int entity) :
 	m_baseent(gamehelpers->EdictOfIndex(entity))
 {
-	m_player = nullptr;
 	auto edict = gamehelpers->EdictOfIndex(entity);
 	gamehelpers->SetHandleEntity(m_handle, edict);
 	Init();
@@ -35,7 +34,6 @@ CKnownEntity::CKnownEntity(int entity) :
 CKnownEntity::CKnownEntity(CBaseEntity* entity) :
 	m_baseent(entity)
 {
-	m_player = nullptr;
 	m_handle.Set(entity);
 	Init();
 	UpdatePosition();
@@ -43,11 +41,6 @@ CKnownEntity::CKnownEntity(CBaseEntity* entity) :
 
 CKnownEntity::~CKnownEntity()
 {
-	if (m_player)
-	{
-		delete m_player;
-		m_player = nullptr;
-	}
 }
 
 void CKnownEntity::Init()
@@ -59,11 +52,7 @@ void CKnownEntity::Init()
 	m_timesincelastnoise = -9999.0f;
 	m_visible = false;
 	m_lkpwasseen = false;
-
-	if (UtilHelpers::IsPlayerIndex(m_handle.GetEntryIndex()))
-	{
-		m_player = new CBaseExtPlayer(UtilHelpers::BaseEntityToEdict(m_handle.Get()));
-	}
+	m_player = extmanager->GetPlayerOfEntity(m_handle.Get());
 }
 
 bool CKnownEntity::operator==(const CKnownEntity& other)
@@ -71,7 +60,17 @@ bool CKnownEntity::operator==(const CKnownEntity& other)
 	return m_handle == other.m_handle;
 }
 
+bool CKnownEntity::operator==(const CKnownEntity& other) const
+{
+	return m_handle == other.m_handle;
+}
+
 bool CKnownEntity::operator==(const CKnownEntity* other)
+{
+	return this->m_handle == other->m_handle;
+}
+
+bool CKnownEntity::operator==(const CKnownEntity* other) const
 {
 	return this->m_handle == other->m_handle;
 }

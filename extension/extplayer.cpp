@@ -31,6 +31,22 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 	m_navupdatetimer = 6;
 
 #ifdef EXT_DEBUG
+
+	if (!m_playerinfo)
+	{
+		smutils->LogError(myself, "CTOR CBaseExtPlayer NULL IPlayerInfo!");
+	}
+
+	if (!m_pl)
+	{
+		smutils->LogError(myself, "CTOR CBaseExtPlayer NULL CPlayerState!");
+	}
+
+	if (!m_pEntity)
+	{
+		smutils->LogError(myself, "CTOR CBaseExtPlayer NULL CBaseEntity!");
+	}
+
 	if (!UtilHelpers::IsPlayerIndex(m_index))
 	{
 		// this class only supports players, on debug mode, log this if it happens

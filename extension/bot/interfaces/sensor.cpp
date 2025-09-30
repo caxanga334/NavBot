@@ -438,9 +438,9 @@ CKnownEntity* ISensor::AddKnownEntity(CBaseEntity* entity)
 // Removes a entity from the known list
 void ISensor::ForgetKnownEntity(edict_t* entity)
 {
-	CKnownEntity other(entity);
+	const CKnownEntity other(entity);
 
-	m_knownlist.erase(std::remove_if(m_knownlist.begin(), m_knownlist.end(), [&other](CKnownEntity& obj) {
+	m_knownlist.erase(std::remove_if(m_knownlist.begin(), m_knownlist.end(), [&other](const CKnownEntity& obj) {
 		return obj == other;
 	}), m_knownlist.end());
 }

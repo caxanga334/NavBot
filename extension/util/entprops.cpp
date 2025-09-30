@@ -29,29 +29,12 @@
 
 #include NAVBOT_PCH_FILE
 #include <exception>
+#include <sdkports/sdk_entityoutput.h>
 #include "entprops.h"
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
-
-// From game/server/variant_t.h, same on all supported games.
-class variant_t
-{
-public:
-	union
-	{
-		bool bVal;
-		string_t iszVal;
-		int iVal;
-		float flVal;
-		float vecVal[3];
-		color32 rgbaVal;
-	};
-	
-	CBaseHandle eVal;
-	fieldtype_t fieldType;
-};
 
 enum PropEntType
 {

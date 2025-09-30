@@ -424,8 +424,17 @@ Vector botsharedutils::aiming::GetAimPositionForPlayers(CBaseBot* bot, CBaseExtP
 
 Vector botsharedutils::aiming::AimAtPlayerWithHitScan(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
 {
-	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
-	return botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
+	CBaseExtPlayer* enemy = extmanager->GetPlayerOfEntity(target);
+
+#ifdef EXT_DEBUG
+	if (!enemy)
+	{
+		smutils->LogError(myself, "AimAtPlayerWithHitScan NULL player!");
+		return vec3_origin;
+	}
+#endif // EXT_DEBUG
+
+	return botsharedutils::aiming::GetAimPositionForPlayers(bot, enemy, desiredAim, weapon, headbone);
 }
 
 Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone, const bool checkLOS)
