@@ -30,7 +30,7 @@ public:
 	// Returns true if the nav area has bomb related attributes assigned to it
 	inline bool HasBombRelatedAttributes() const
 	{
-		if ((m_dodAttributes & DoDNavAttributes::DODNAV_BLOCKED_UNTIL_BOMBED | DoDNavAttributes::DODNAV_BLOCKED_WITHOUT_BOMBS | DoDNavAttributes::DODNAV_PLANT_BOMB) != 0)
+		if ((m_dodAttributes & (DoDNavAttributes::DODNAV_BLOCKED_UNTIL_BOMBED | DoDNavAttributes::DODNAV_BLOCKED_WITHOUT_BOMBS | DoDNavAttributes::DODNAV_PLANT_BOMB)) != 0)
 		{
 			return true;
 		}

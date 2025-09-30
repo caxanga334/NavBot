@@ -51,7 +51,8 @@ start tf_win64.exe -steam -game tf -console -insecure -dev -condebug
 
 Save the file and double click it to launch the game, Steam needs to be running.    
 The game will run in insecure and developer mode.    
-Note: You need to load a map before checking if SM and MM:S is installed and working correctly.
+Note: You need to load a map before checking if SM and MM:S is installed and working correctly.    
+If you need help with installing on a Listen Server, join my discord server linked on the main README file.    
 
 ### Linux Listen Server
 
