@@ -74,8 +74,6 @@ void NavDrawHorizontalArrow( const Vector& from, const Vector& to, float width, 
 void NavDrawDashedLine( const Vector& from, const Vector& to, NavEditColor navColor );
 void NavDrawVolume( const Vector &vMin, const Vector &vMax, int zMidline, NavEditColor navColor );
 
-void HorzArrow(const Vector &startPos, const Vector &endPos, float width, int r,
-		int g, int b, int a, bool noDepthTest, float flDuration);
 //--------------------------------------------------------------------------------------------------------------
 
 #endif // NAV_COLORS_H

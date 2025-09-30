@@ -103,45 +103,15 @@ void NavDrawFilledTriangle(const Vector& point1, const Vector& point2,
 			color[2], 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 
-void HorzArrow(const Vector &startPos, const Vector &endPos, float width, int r,
-		int g, int b, int a, bool noDepthTest, float flDuration) {
-	Vector lineDir = (endPos - startPos);
-	VectorNormalize(lineDir);
-	Vector sideDir;
-	float radius = width / 2.0;
-
-	CrossProduct(lineDir, Vector(0, 0, 1.0f), sideDir);
-
-	const unsigned int POINTS = 7;
-	Vector p[POINTS] = {startPos - sideDir * radius, endPos - lineDir * width
-			- sideDir * radius, endPos - lineDir * width - sideDir * width,
-			endPos, endPos - lineDir * width + sideDir * width, endPos
-					- lineDir * width + sideDir * radius, startPos
-					+ sideDir * radius };
-	// Outline the arrow
-	for (unsigned int i = 0; i < POINTS + 1; i++) {
-		debugoverlay->AddLineOverlay(p[i], p[i + 1], r, g, b, noDepthTest, flDuration);
-	}
-	if (a > 0) {
-		// Fill us in with triangles
-		debugoverlay->AddTriangleOverlay(p[4], p[3], p[2], r, g, b, a, noDepthTest, flDuration); // Tip
-		debugoverlay->AddTriangleOverlay(p[0], p[6], p[5], r, g, b, a, noDepthTest, flDuration); // Shaft
-		debugoverlay->AddTriangleOverlay(p[5], p[2], p[0], r, g, b, a, noDepthTest, flDuration);
-		// And backfaces
-		debugoverlay->AddTriangleOverlay(p[2], p[3], p[4], r, g, b, a, noDepthTest, flDuration); // Tip
-		debugoverlay->AddTriangleOverlay(p[5], p[6], p[0], r, g, b, a, noDepthTest, flDuration); // Shaft
-		debugoverlay->AddTriangleOverlay(p[0], p[1], p[5], r, g, b, a, noDepthTest, flDuration);
-	}
-}
 //--------------------------------------------------------------------------------------------------------------
 void NavDrawHorizontalArrow(const Vector& from, const Vector& to, float width,
 		NavEditColor navColor) {
 	const Vector offset(0, 0, 1);
 
 	Color color = NavColors[navColor];
-	HorzArrow(from + offset, to + offset, width, color[0], color[1], color[2],
+	NDebugOverlay::HorzArrow(from + offset, to + offset, width, color[0], color[1], color[2],
 			255, false, NDEBUG_PERSIST_FOR_ONE_TICK);
-	HorzArrow(from + offset, to + offset, width, color[0] / 2, color[1] / 2,
+	NDebugOverlay::HorzArrow(from + offset, to + offset, width, color[0] / 2, color[1] / 2,
 			color[2] / 2, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 

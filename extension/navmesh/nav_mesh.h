@@ -32,13 +32,16 @@
 #include <algorithm>
 
 #include <util/commandargs_episode1.h>
-#include "nav.h"
 #include <sdkports/sdk_timers.h>
 #include <sdkports/eventlistenerhelper.h>
 #include <sdkports/sdk_ehandle.h>
 #include <util/librandom.h>
 #include <convar.h>
 #include <gametrace.h>
+
+#include "nav.h"
+#include "nav_area.h"
+#include "nav_colors.h"
 
 class HidingSpot;
 class CUtlBuffer;

@@ -290,17 +290,17 @@ void CNavNode::Draw( void )
 
 				if ( m_isBlocked[i] )
 				{
-					HorzArrow( m_pos, m_pos + scaled, 0.5, 255, 0, 0, 255, true, 0.1f );
+					NDebugOverlay::HorzArrow( m_pos, m_pos + scaled, 0.5, 255, 0, 0, 255, true, 0.1f );
 				}
 				else
 				{
-					HorzArrow( m_pos, m_pos + scaled, 0.5, 0, 0, 255, 255, true, 0.1f );
+					NDebugOverlay::HorzArrow( m_pos, m_pos + scaled, 0.5, 0, 0, 255, 255, true, 0.1f );
 				}
 			}
 		}
 	}
 
-	if (sm_nav_show_node_grid.GetBool() )
+	if (sm_nav_show_node_grid.GetBool())
 	{
 		for ( int i = NORTH; i < NUM_DIRECTIONS; i++ )
 		{
