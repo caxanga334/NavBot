@@ -742,7 +742,6 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 
 			META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
 		}
-	}
-
 #endif // #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
+	}
 }
