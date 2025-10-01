@@ -30,6 +30,7 @@ This is a list of keys available for all mods.
 |low_secondary_ammo_threshold|Threshold to consider the bot to be low on ammo for the secondary ammo type.|integer|
 |slot|Which slot this weapon uses.|integer|
 |attack_interval|Delay in seconds between attacks. The bot releases the attack buttons between intervals. Negative values to make the bot hold the attack button.|float|
+|scopein_attack_delay|Delay in seconds before the bot starts firing their weapon after deploying/scoping with their current weapon.|float|
 |initial_attack_delay|Delay in seconds before the bot starts firing their weapon when combat start.|float|
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|

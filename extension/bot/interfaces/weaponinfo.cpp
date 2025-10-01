@@ -393,8 +393,15 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	}
 	else if (std::strcmp(key, "initial_attack_delay") == 0)
 	{
-		bool v = UtilHelpers::StringToBoolean(value);
-		m_current->SetInfiniteReserveAmmo(v);
+		float v = atof(value);
+		v = std::clamp(v, -1.0f, 30.0f);
+		m_current->SetInitialAttackDelay(v);
+	}
+	else if (std::strcmp(key, "scopein_attack_delay") == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, -1.0f, 30.0f);
+		m_current->SetScopeInAttackDelay(v);
 	}
 	else if (strncmp(key, "headshot_range_multiplier", 25) == 0)
 	{

@@ -30,6 +30,7 @@
 #include NAVBOT_PCH_FILE
 #include <exception>
 #include <sdkports/sdk_entityoutput.h>
+#include "gamedata_const.h"
 #include "entprops.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -2548,4 +2549,47 @@ void entityprops::GetEntityAbsVelocity(CBaseEntity* entity, Vector& result)
 	result = *vel;
 
 	return;
+}
+
+CStudioHdr* entityprops::GetEntityModelPtr(CBaseEntity* entity, const bool validate)
+{
+	static unsigned int offset = 0U;
+
+	if (validate)
+	{
+		if (!entprops->HasEntProp(entity, Prop_Data, "m_OnIgnite"))
+		{
+			return nullptr;
+		}
+	}
+
+	// initialize
+	if (offset == 0U)
+	{
+		if (GamedataConstants::s_sizeof_COutputEvent == 0U)
+		{
+			return nullptr;
+		}
+
+		datamap_t* dmap = gamehelpers->GetDataMap(entity);
+
+		if (!dmap)
+		{
+			return nullptr;
+		}
+
+		SourceMod::sm_datatable_info_t info;
+
+		if (gamehelpers->FindDataMapInfo(dmap, "m_OnIgnite", &info))
+		{
+			offset = info.actual_offset + static_cast<unsigned int>(GamedataConstants::s_sizeof_COutputEvent);
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
+	// return reinterpret_cast<CStudioHdr*>(reinterpret_cast<std::intptr_t>(entity) + static_cast<std::intptr_t>(offset));
+	return entprops->GetPointerToEntData<CStudioHdr>(entity, offset);
 }

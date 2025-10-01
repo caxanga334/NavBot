@@ -22,7 +22,7 @@ public:
 
 	const char* GetName() const override { return "SnipeArea"; }
 
-	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
 	// I'm busy
@@ -33,7 +33,6 @@ private:
 	CountdownTimer m_boredTimer;
 	CountdownTimer m_changeAnglesTimer;
 	std::vector<Vector> m_lookPoints;
-	CountdownTimer m_fireWeaponDelay;
 
 	void BuildLookPoints(CTF2Bot* me);
 	void EquipAndScope(CTF2Bot* me);

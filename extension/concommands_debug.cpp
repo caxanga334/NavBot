@@ -1616,4 +1616,109 @@ CON_COMMAND(sm_navbot_debug_ent_outputs, "")
 	}
 }
 
+CON_COMMAND(sm_navbot_debug_get_model_ptr, "")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_outputs <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	CStudioHdr* modelptr = entityprops::GetEntityModelPtr(pEntity);
+	auto ptr = UtilHelpers::GetEntityModelPtr(UtilHelpers::BaseEntityToEdict(pEntity));
+
+	META_CONPRINTF("Model Ptr: %p\n", modelptr);
+
+	if (!modelptr)
+	{
+		return;
+	}
+
+	if (!modelptr->IsValid())
+	{
+		META_CONPRINT("Invalid CStudioHdr!\n");
+		return;
+	}
+
+	if (ptr)
+	{
+		int numbones = ptr->numbones();
+
+		for (int i = 0; i < numbones; i++)
+		{
+			auto bone = ptr->pBone(i);
+
+			META_CONPRINTF("Bone %i: %s\n", i, bone->pszName());
+		}
+
+		int numseqs = ptr->GetNumSeq();
+
+		for (int i = 0; i < numseqs; i++)
+		{
+			auto& seq = ptr->pSeqdesc(i);
+
+			META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
+		}
+	}
+}
+
+CON_COMMAND(sm_navbot_debug_dump_entity_inheritance, "")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_dump_entity_inheritance <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	datamap_t* dmap = gamehelpers->GetDataMap(pEntity);
+
+	if (!dmap)
+	{
+		return;
+	}
+
+	META_CONPRINTF("Entity inheritance for %s \n", gamehelpers->GetEntityClassname(pEntity));
+
+	std::array<char, 512> dump;
+	std::fill(dump.begin(), dump.end(), '\0');
+
+	ke::SafeSprintf(dump.data(), dump.size(), "%s ", dmap->dataClassName);
+
+	while (dmap != nullptr)
+	{
+		datamap_t* next = dmap->baseMap;
+
+		if (!next) { break; }
+
+		size_t pos = ke::SafeStrcat(dump.data(), dump.size(), next->dataClassName);
+
+		if (pos + 2U >= dump.size()) { break; }
+
+		dump[pos] = ' ';
+		dump[pos + 1U] = '\0';
+
+		dmap = next;
+	}
+
+	META_CONPRINTF("%s\n", dump.data());
+}
+
 #endif // EXT_DEBUG

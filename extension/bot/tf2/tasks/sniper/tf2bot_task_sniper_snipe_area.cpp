@@ -14,7 +14,6 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask
 {
 	m_boredTimer.StartRandom(15.0f, 60.0f);
 	m_changeAnglesTimer.StartRandom(5.0f, 10.0f);
-	m_fireWeaponDelay.Start(0.1f);
 
 	BuildLookPoints(bot);
 
@@ -37,6 +36,8 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
 
 	EquipAndScope(bot);
+	bot->GetCombatInterface()->ScopeInOrDeployWeapon();
+	bot->GetCombatInterface()->SetSelectWeaponState(false);
 
 	if (m_waypoint && m_waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH))
 	{
@@ -54,15 +55,6 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 			}
 
 			m_boredTimer.Reset();
-
-			botsharedutils::aiming::SelectDesiredAimSpotForTarget(bot, threat->GetEntity());
-			bot->GetControlInterface()->AimAt(threat->GetEntity(), IPlayerController::LOOK_COMBAT, 0.5f, "Looking at visible threat!");
-
-			if (m_fireWeaponDelay.IsElapsed() && bot->GetControlInterface()->IsAimOnTarget())
-			{
-				m_fireWeaponDelay.StartRandom(1.5f, 2.3f);
-				bot->GetControlInterface()->PressAttackButton();
-			}
 		}
 		else if (threat->GetTimeSinceLastVisible() < 3.0f)
 		{
@@ -88,12 +80,12 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 				Vector forward;
 				AngleVectors(currentAngles, &forward);
 				Vector lookat = bot->GetEyeOrigin() + (forward * 512.0f);
-				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
+				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_SEARCH, 5.0f, "Sniper: Looking at snipe angles.");
 			}
 			else
 			{
 				const Vector& lookat = m_lookPoints[randomgen->GetRandomInt<size_t>(0, m_lookPoints.size() - 1)];
-				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_ALERT, 5.0f, "Sniper: Looking at snipe angles.");
+				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_SEARCH, 5.0f, "Sniper: Looking at snipe angles.");
 			}
 		}
 	}
@@ -112,18 +104,15 @@ void CTF2BotSniperSnipeAreaTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTa
 	{
 		m_waypoint->StopUsing(bot);
 	}
+
+	bot->GetCombatInterface()->SetSelectWeaponState(true);
 }
 
 bool CTF2BotSniperSnipeAreaTask::OnTaskPause(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 {
 	// destroy on pause
+	bot->GetCombatInterface()->SetSelectWeaponState(true);
 	return false;
-}
-
-QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldAttack(CBaseBot* me, const CKnownEntity* them)
-{
-	// This task will take over the main task control of weapon firing
-	return ANSWER_NO;
 }
 
 QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldRetreat(CBaseBot* me)

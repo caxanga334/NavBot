@@ -58,10 +58,12 @@ public:
 
 	CBaseMod* GetMod();
 
-	CBaseBot* GetBotByIndex(int index);
-	CBaseExtPlayer* GetPlayerByIndex(int index);
-	CBaseBot* GetBotFromEntity(CBaseEntity* entity);
-	CBaseExtPlayer* GetPlayerOfEntity(CBaseEntity* entity);
+	CBaseBot* GetBotByIndex(int index) const;
+	CBaseExtPlayer* GetPlayerByIndex(int index) const;
+	CBaseBot* GetBotFromEntity(CBaseEntity* entity) const;
+	CBaseExtPlayer* GetPlayerOfEntity(CBaseEntity* entity) const;
+	CBaseExtPlayer* GetPlayerOfEdict(edict_t* edict) const;
+	CBaseExtPlayer* GetListenServerHost() const;
 	/**
 	 * @brief Find bots by name.
 	 * @param name Full or partial name.

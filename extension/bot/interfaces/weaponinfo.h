@@ -189,6 +189,7 @@ public:
 		custom_ammo_out_of_ammo = 0.0f;
 		interval_between_attacks = -1.0f;
 		initial_attack_delay = -1.0f;
+		scopein_attack_delay = -1.0f;
 		headshot_range_mult = 1.0f;
 		no_clip1 = false;
 		no_clip2 = false;
@@ -228,6 +229,7 @@ public:
 		this->custom_ammo_out_of_ammo = other->custom_ammo_out_of_ammo;
 		this->interval_between_attacks = other->interval_between_attacks;
 		this->initial_attack_delay = other->initial_attack_delay;
+		this->scopein_attack_delay = other->scopein_attack_delay;
 		this->headshot_range_mult = other->headshot_range_mult;
 		this->no_clip1 = other->no_clip1;
 		this->no_clip2 = other->no_clip2;
@@ -312,6 +314,7 @@ public:
 	void SetSlot(int s) { slot = s; }
 	void SetAttackInterval(float v) { interval_between_attacks = v; }
 	void SetInitialAttackDelay(float v) { initial_attack_delay = v; }
+	void SetScopeInAttackDelay(float v) { scopein_attack_delay = v; }
 	void SetAttackRange(float v) { attack_move_range = v; }
 	void SetChanceToUseSecondaryAttack(int v) { use_secondary_chance = v; }
 	void SetCustomAmmoPropertyName(const char* name) { custom_ammo_property_name.assign(name); }
@@ -368,6 +371,7 @@ public:
 	bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
 	float GetAttackInterval() const { return interval_between_attacks; }
 	float GetInitialAttackDelay() const { return initial_attack_delay; }
+	float GetScopeInAttackDelay() const { return scopein_attack_delay; }
 	// if this returns true, the weapon doesn't uses clips for the primary attack
 	bool Clip1IsReserveAmmo() const { return no_clip1; }
 	// if this returns true, the weapon doesn't uses clips for the secondary attack
@@ -430,6 +434,7 @@ private:
 	float custom_ammo_out_of_ammo; // if the custom ammo is equal or less than this, the weapon is out of ammo
 	float interval_between_attacks; // delay between attacks
 	float initial_attack_delay; // delay before the bot should start attacking after entering combat.
+	float scopein_attack_delay; // delay before the bot should atart attacking after scoping in with the weapon.
 	float headshot_range_mult;
 	bool no_clip1; // Weapon doesn't uses clip 1 (primary)
 	bool no_clip2; // Weapon doesn't uses clip 2 (secondary)

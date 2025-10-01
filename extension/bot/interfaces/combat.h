@@ -18,12 +18,13 @@ public:
 		float range_to_pos; // distance between the bot and the selected enemy position
 		Vector enemy_position; // enemy position (center or LKP)
 		Vector enemy_center; // enemy world space center
-		bool in_combat;
-		bool is_visible;
+		bool in_combat; // currently in combat
+		bool is_visible; // enemy is currently visible
 		bool is_head_clear; // clear line of fire to head
 		bool is_center_clear; // clear line of fire to center
 		bool is_origin_clear; //clear line of fire to abs origin
 		bool in_range; // enemy is is range of at least one attack type
+		bool in_headshot_range; // in range of a headshot attack
 		bool can_use_primary; // can use primary attack
 		bool can_fire; // true if has a clear LOF
 
@@ -33,11 +34,13 @@ public:
 			range_to_pos = 0.0f;
 			enemy_position.Init();
 			enemy_center.Init();
+			in_combat = false;
 			is_visible = false;
 			is_head_clear = false;
 			is_center_clear = false;
 			is_origin_clear = false;
 			in_range = false;
+			in_headshot_range = false;
 			can_use_primary = false;
 			can_fire = false;
 		}

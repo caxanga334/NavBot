@@ -340,6 +340,16 @@ bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 		}
 	}
 
+	CBaseEntity* damageFilter = nullptr;
+
+	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &damageFilter))
+	{
+		if (damageFilter)
+		{
+			return false; // entity has a damage filter assigned to it, assume we can't break
+		}
+	}
+
 	auto classname = gamehelpers->GetEntityClassname(entity);
 
 	if (strncmp(classname, "func_breakable", 14) == 0)
@@ -358,11 +368,6 @@ bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 	}
 
 	return false;
-}
-
-bool CBaseBot::IsAlive() const
-{
-	return UtilHelpers::IsEntityAlive(this->GetEntity());
 }
 
 void CBaseBot::RegisterInterface(IBotInterface* iface)

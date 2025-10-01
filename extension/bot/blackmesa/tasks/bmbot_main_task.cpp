@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
+#include <bot/bot_shared_utils.h>
 #include "bmbot_tactical_task.h"
 #include "bmbot_main_task.h"
 
@@ -26,33 +27,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTaskUpdate(CBlackMesaBot* bot
 
 Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	auto weapon = static_cast<CBlackMesaBot*>(me)->GetInventoryInterface()->GetActiveBotWeapon();
-
-	if (!weapon)
-	{
-		return vec3_origin;
-	}
-
-	if (UtilHelpers::IsPlayer(entity))
-	{
-		Vector result;
-		CBaseExtPlayer player(UtilHelpers::BaseEntityToEdict(entity));
-
-		bool secondary = false;
-
-		if (me->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
-		{
-			secondary = true;
-		}
-
-		if (AimAtEnemyPlayer(player, static_cast<CBlackMesaBot*>(me), result, weapon, desiredAim, secondary))
-		{
-			return result;
-		}
-	}
-
-	// default to aiming at the entity's center
-	return UtilHelpers::getWorldSpaceCenter(entity);
+	return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);
 }
 
 const CKnownEntity* CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)
@@ -85,58 +60,6 @@ const CKnownEntity* CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot,
 	}
 
 	return threat2;
-}
-
-bool CBlackMesaBotMainTask::AimAtEnemyPlayer(CBaseExtPlayer& them, CBlackMesaBot* me, Vector& out, const CBotWeapon* weapon, DesiredAimSpot desiredAim, bool isSecondaryAttack)
-{
-	/* TO-DO: Ballistics */
-
-	float range = me->GetRangeTo(them.GetEntity());
-	Vector aimat;
-
-	switch (desiredAim)
-	{
-	case IDecisionQuery::AIMSPOT_ABSORIGIN:
-		aimat = them.GetAbsOrigin();
-		break;
-	case IDecisionQuery::AIMSPOT_HEAD:
-	{
-		auto hdr = UtilHelpers::GetEntityModelPtr(them.GetEdict());
-
-		if (!hdr)
-		{
-			aimat = them.WorldSpaceCenter();
-			break;
-		}
-
-		/* In Black Mesa, the head isn't at the eye origin due to animations */
-
-		int bone = UtilHelpers::LookupBone(hdr.get(), "ValveBiped.Bip01_Head1");
-
-		if (bone < 0)
-		{
-#ifdef EXT_DEBUG
-			const char* modelname = them.GetEdict()->GetIServerEntity()->GetModelName().ToCStr();
-			smutils->LogError(myself, "Model \"%s\" doesn't have head bone \"ValveBiped.Bip01_Head1\"!", modelname);
-#endif // EXT_DEBUG
-
-			aimat = them.GetEyeOrigin();
-			break;
-		}
-
-		QAngle angles;
-		UtilHelpers::GetBonePosition(them.GetEntity(), bone, aimat, angles);
-		aimat = aimat + weapon->GetWeaponInfo()->GetHeadShotAimOffset();
-		break;
-	}
-	default:
-		aimat = them.WorldSpaceCenter();
-		break;
-	}
-
-
-	out = aimat;
-	return true;
 }
 
 TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnDebugMoveToCommand(CBlackMesaBot* bot, const Vector& moveTo)

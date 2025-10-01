@@ -185,9 +185,9 @@ bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
  * @param checkFOV if true, also check if the given player is in the bot field of view
  * @return true if visible, false otherwise
 */
-bool ISensor::IsAbleToSee(CBaseExtPlayer& player, const bool checkFOV)
+bool ISensor::IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV)
 {
-	return IsAbleToSee(player.GetEntity(), checkFOV);
+	return IsAbleToSee(player->GetEntity(), checkFOV);
 }
 
 bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)

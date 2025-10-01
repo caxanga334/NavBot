@@ -65,6 +65,9 @@
 			"PlayerHull_CrouchHeight"		"36.0"
 			"PlayerHull_ProneHeight"		"0.0"
 			"PlayerHull_Width"				"32.0"
+
+			/* Player model bone name to aim at when going for headshots */
+			"BotAim_HeadBoneName"			"ValveBiped.Bip01_Head1"
 		}
 		"Offsets"
 		{

@@ -44,6 +44,7 @@
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include "sourcepawn/misc.h"
+#include "util/gamedata_const.h"
 
 #if defined(EXT_DEBUG)
 #include <tier1/KeyValues.h>
@@ -211,6 +212,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	{
 		smutils->LogError(myself, "Failed to load SDKHooks gamedata!");
 		gameconfs->CloseGameConfigFile(m_cfg_sdkhooks);
+		return false;
+	}
+
+	if (!GamedataConstants::Initialize(m_cfg_navbot))
+	{
+		ke::SafeStrcpy(error, maxlen, "Failed to initialize gamedata constants!");
 		return false;
 	}
 
@@ -449,6 +456,7 @@ void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMa
 
 	librandom::ReSeedGlobalGenerators();
 	extmanager->OnMapStart();
+	GamedataConstants::OnMapStart(m_cfg_navbot);
 }
 
 void NavBotExt::OnCoreMapEnd()

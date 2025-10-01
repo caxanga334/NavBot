@@ -2381,7 +2381,7 @@ IMovement::ElevatorState IMovement::EState_CallElevator()
 		MoveTowards(pos, MOVEWEIGHT_CRITICAL);
 		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at elevator call button!");
 
-		if (bot->GetRangeTo(pos) < minrange)
+		if ((bot->GetEyeOrigin() - pos).IsLengthLessThan(minrange))
 		{
 			if (bot->GetControlInterface()->IsAimOnTarget())
 			{
@@ -2487,7 +2487,7 @@ IMovement::ElevatorState IMovement::EState_OperateElevator()
 
 	CBaseBot* me = GetBot();
 	Vector pos = UtilHelpers::getWorldSpaceCenter(button);
-	float minrange = (CBaseExtPlayer::PLAYER_USE_RADIUS * 0.7f);
+	float minrange = (CBaseExtPlayer::PLAYER_USE_RADIUS * 0.9f);
 
 	if (m_fromFloor->shootable_button)
 	{
@@ -2503,7 +2503,7 @@ IMovement::ElevatorState IMovement::EState_OperateElevator()
 	MoveTowards(pos, MOVEWEIGHT_CRITICAL);
 	me->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at elevator use button!");
 
-	if (me->GetRangeTo(pos) < minrange)
+	if ((me->GetEyeOrigin() - pos).IsLengthLessThan(minrange))
 	{
 		if (me->GetControlInterface()->IsAimOnTarget())
 		{

@@ -358,7 +358,7 @@ CBaseMod* CExtManager::GetMod()
 	return m_mod.get();
 }
 
-CBaseBot* CExtManager::GetBotByIndex(int index)
+CBaseBot* CExtManager::GetBotByIndex(int index) const
 {
 	for (auto& botptr : m_bots)
 	{
@@ -372,7 +372,7 @@ CBaseBot* CExtManager::GetBotByIndex(int index)
 	return nullptr;
 }
 
-CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index)
+CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index) const
 {
 	CBaseBot* bot = GetBotByIndex(index);
 
@@ -402,7 +402,7 @@ CBaseExtPlayer* CExtManager::GetPlayerByIndex(int index)
 	return nullptr;
 }
 
-CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
+CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity) const
 {
 	if (entity == nullptr) { return nullptr; }
 
@@ -418,7 +418,7 @@ CBaseBot* CExtManager::GetBotFromEntity(CBaseEntity* entity)
 	return nullptr;
 }
 
-CBaseExtPlayer* CExtManager::GetPlayerOfEntity(CBaseEntity* entity)
+CBaseExtPlayer* CExtManager::GetPlayerOfEntity(CBaseEntity* entity) const
 {
 	if (entity == nullptr) { return nullptr; }
 
@@ -434,6 +434,48 @@ CBaseExtPlayer* CExtManager::GetPlayerOfEntity(CBaseEntity* entity)
 	for (auto& player : m_players)
 	{
 		if (player->GetEntity() == entity)
+		{
+			return player.get();
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseExtPlayer* CExtManager::GetPlayerOfEdict(edict_t* edict) const
+{
+	if (edict == nullptr) { return nullptr; }
+
+	for (auto& botptr : m_bots)
+	{
+		auto bot = botptr.get();
+		if (bot->GetEdict() == edict)
+		{
+			return static_cast<CBaseExtPlayer*>(bot);
+		}
+	}
+
+	for (auto& player : m_players)
+	{
+		if (player->GetEdict() == edict)
+		{
+			return player.get();
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseExtPlayer* CExtManager::GetListenServerHost() const
+{
+	if (engine->IsDedicatedServer())
+	{
+		return nullptr;
+	}
+
+	for (auto& player : m_players)
+	{
+		if (player->GetIndex() == 1)
 		{
 			return player.get();
 		}

@@ -132,7 +132,6 @@ public:
 	virtual bool IsRangeLessThan(CBaseEntity* entity, const float range) const;
 
 	virtual bool IsAbleToBreak(CBaseEntity* entity);
-	virtual bool IsAlive() const;
 
 	IBotController* GetController() const { return m_controller; }
 

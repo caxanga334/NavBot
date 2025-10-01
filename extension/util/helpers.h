@@ -749,6 +749,14 @@ namespace UtilHelpers
 		 */
 		virtual bool IsSelected(T object) = 0;
 	};
+
+	/**
+	 * @brief Checks via datamaps if the given entity derives from the given class.
+	 * @param pEntity Entity to check.
+	 * @param classname The name of the class to check. (IE: CBaseCombatCharacter).
+	 * @return True if the entity derives from the given class, false if not.
+	 */
+	bool EntityDerivesFrom(CBaseEntity* pEntity, const char* classname);
 }
 
 template<typename T>

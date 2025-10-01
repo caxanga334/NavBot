@@ -1681,6 +1681,23 @@ std::size_t UtilHelpers::EntitiesInSphere(const Vector& origin, float radius, CE
 	return enumerator.Count();
 }
 
+bool UtilHelpers::EntityDerivesFrom(CBaseEntity* pEntity, const char* classname)
+{
+	datamap_t* dmap = gamehelpers->GetDataMap(pEntity);
+
+	while (dmap != nullptr)
+	{
+		if (V_stricmp(dmap->dataClassName, classname) == 0)
+		{
+			return true;
+		}
+
+		dmap = dmap->baseMap;
+	}
+
+	return false;
+}
+
 UtilHelpers::CEntityEnumerator::CEntityEnumerator()
 {
 	m_ents.reserve(256);

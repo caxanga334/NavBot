@@ -36,36 +36,7 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotMainTask::OnDebugMoveToCommand(CDoDSBo
 
 Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	auto weapon = me->GetInventoryInterface()->GetActiveBotWeapon();
-	constexpr std::string_view headbone{ "ValveBiped.Bip01_Head1" };
-
-	if (weapon)
-	{
-		WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
-
-		if (me->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
-		{
-			type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
-		}
-
-		if (UtilHelpers::IsPlayer(entity))
-		{
-			if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsHitscan())
-			{
-				return botsharedutils::aiming::AimAtPlayerWithHitScan(me, entity, desiredAim, weapon, headbone.data());
-			}
-			else if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
-			{
-				return botsharedutils::aiming::AimAtPlayerWithBallistic(me, entity, desiredAim, weapon, headbone.data());
-			}
-			else if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
-			{
-				return botsharedutils::aiming::AimAtPlayerWithProjectile(me, entity, desiredAim, weapon, headbone.data());
-			}
-		}
-	}
-
-	return UtilHelpers::getWorldSpaceCenter(entity);
+	return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);
 }
 
 const CKnownEntity* CDoDSBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)

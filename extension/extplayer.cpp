@@ -422,6 +422,11 @@ float CBaseExtPlayer::GetMaxSpeed() const
 	return speed;
 }
 
+bool CBaseExtPlayer::IsAlive() const
+{
+	return UtilHelpers::IsEntityAlive(this->GetEntity());
+}
+
 bool CBaseExtPlayer::SelectWeapon(CBaseEntity* weapon) const
 {
 	return sdkcalls->CBaseCombatCharacter_Weapon_Switch(GetEntity(), weapon);

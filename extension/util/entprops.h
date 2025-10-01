@@ -33,6 +33,8 @@
 // Indicates an invalid entity reference/index. Better compat between 32 bits integers and 64 bits integers than INVALID_EHANDLE_INDEX
 #define INVALID_ENT_REFERENCE -1
 
+class CStudioHdr;
+
 // Values for m_toggle_state property
 enum TOGGLE_STATE
 {
@@ -47,8 +49,6 @@ enum PropType
 	Prop_Send = 0,
 	Prop_Data
 };
-
-
 
 // from sourcemod
 enum RoundState
@@ -409,6 +409,15 @@ namespace entityprops
 	const char* GetEntityTargetname(CBaseEntity* entity);
 	// Gets an entity velocity
 	void GetEntityAbsVelocity(CBaseEntity* entity, Vector& result);
+	/**
+	 * @brief Returns an entity CStudioHdr pointer.
+	 * 
+	 * Currently broken, do not use.
+	 * @param entity Entity to get the CStudioHdr from.
+	 * @param validate If true, validates that the given entity derives from CBaseAnimating (Where the CStudioHdr *m_pStudioHdr variable is)
+	 * @return Entity model pointer.
+	 */
+	CStudioHdr* GetEntityModelPtr(CBaseEntity* entity, const bool validate = true);
 }
 
 #endif

@@ -273,6 +273,14 @@ namespace botsharedutils::weapons
 
 namespace botsharedutils::aiming
 {
+	/**
+	 * @brief Default implementation of the bot aim.
+	 * @param bot Bot pointer.
+	 * @param entity Entity the bot is going to aim at.
+	 * @param desiredAim Desired aim spot.
+	 * @return Vector of where the bot should aim at.
+	 */
+	Vector DefaultBotAim(CBaseBot* bot, CBaseEntity* entity, IDecisionQuery::DesiredAimSpot desiredAim);
 	// Gets a position to shoot enemy players
 	Vector GetAimPositionForPlayers(CBaseBot* bot, CBaseExtPlayer* player, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
 	/**

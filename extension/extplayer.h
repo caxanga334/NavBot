@@ -98,6 +98,7 @@ public:
 
 	virtual float GetMaxSpeed() const;
 	inline bool IsOnLadder() const { return GetMoveType() == MOVETYPE_LADDER; }
+	bool IsAlive() const;
 
 	/**
 	 * @brief Switch weapons by calling the game's function

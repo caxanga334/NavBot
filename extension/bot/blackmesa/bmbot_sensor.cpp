@@ -6,6 +6,10 @@
 #include "bmbot.h"
 #include "bmbot_sensor.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CBlackMesaBotSensor::CBlackMesaBotSensor(CBaseBot* bot) :
 	ISensor(bot)
 {
@@ -48,40 +52,45 @@ bool CBlackMesaBotSensor::IsEnemy(CBaseEntity* entity) const
 
 void CBlackMesaBotSensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBlackMesaBotSensor::CollectPlayers", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		auto edict = gamehelpers->EdictOfIndex(i);
+		edict_t* edict = gamehelpers->EdictOfIndex(i);
 
 		if (!UtilHelpers::IsValidEdict(edict))
 		{
 			continue;
 		}
 
+		CBaseExtPlayer* player = extmanager->GetPlayerOfEdict(edict);
+
+		if (!player) { continue; }
+
 		if (i == GetBot()->GetIndex())
 			continue; // skip self
 
-		auto gp = playerhelpers->GetGamePlayer(i);
-
-		if (!gp->IsInGame())
+		if (!ISensor::IsInPVS(player->GetAbsOrigin()))
 		{
-			continue; // Client must be fully connected
+			continue;
 		}
 
-		auto info = gp->GetPlayerInfo();
-
-		if (info && info->GetTeamIndex() == TEAM_SPECTATOR) {
-			continue; // On deathmatch mode, all players are on team unnasigned
+		if (player->GetCurrentTeamIndex() == TEAM_SPECTATOR)
+		{
+			continue;
 		}
 
-		if (info && info->IsDead()) {
-			continue; // Ignore dead players
+		if (!player->IsAlive())
+		{
+			continue;
 		}
 
-		if (IsIgnored(edict->GetIServerEntity()->GetBaseEntity())) {
+		if (IsIgnored(player->GetEntity()))
+		{
 			continue; // Ignored player
 		}
-
-		CBaseExtPlayer player(edict);
 
 		if (IsAbleToSee(player))
 		{

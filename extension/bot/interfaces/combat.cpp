@@ -133,6 +133,13 @@ bool ICombat::ScopeInOrDeployWeapon()
 	if (!m_isScopedOrDeployed)
 	{
 		bot->GetControlInterface()->PressSecondaryAttackButton();
+
+		const float time = weapon->GetWeaponInfo()->GetScopeInAttackDelay();
+
+		if (time > 0.0f)
+		{
+			DisableFiringWeapons(time);
+		}
 	}
 
 	return m_isScopedOrDeployed;
@@ -238,6 +245,13 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 			// scope/deploy
 			input->PressSecondaryAttackButton(0.25f);
 			GetUnscopeTimer().Start(1.0f);
+			const float time = info->GetScopeInAttackDelay();
+
+			if (time > 0.0f)
+			{
+				DisableFiringWeapons(time);
+			}
+
 			return false;
 		}
 	}
@@ -445,7 +459,7 @@ void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const C
 
 	if (data.is_visible)
 	{
-		const bool canHeadshot = (profile->IsAllowedToHeadshot() && data.is_head_clear);
+		const bool canHeadshot = (profile->IsAllowedToHeadshot() && activeWeapon->GetWeaponInfo()->CanHeadShot() && data.is_head_clear && data.in_headshot_range);
 
 		if (canHeadshot)
 		{
@@ -464,9 +478,18 @@ void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const C
 		}
 		else
 		{
-			// just keep aiming at the center
-			input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
-			input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
+			// not allowed to headshot but the head is the only visible body part
+			if (data.is_head_clear)
+			{
+				input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD);
+				input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
+			}
+			else
+			{
+				// just keep aiming at the center
+				input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
+				input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
+			}
 		}
 	}
 	else
@@ -530,6 +553,17 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	else if (primary && secondary)
 	{
 		this->can_use_primary = !CBaseBot::s_botrng.GetRandomChance(info->GetChanceToUseSecondaryAttack());
+	}
+
+	if (this->can_use_primary)
+	{
+		float maxrange = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange() * info->GetHeadShotRangeMultiplier();
+		this->in_headshot_range = (this->enemy_range <= maxrange);
+	}
+	else
+	{
+		float maxrange = info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMaxRange() * info->GetHeadShotRangeMultiplier();
+		this->in_headshot_range = (this->enemy_range <= maxrange);
 	}
 
 	if (this->is_visible)

@@ -699,6 +699,7 @@ bool CPath::ProcessElevatorsInPath(CBaseBot* bot, std::shared_ptr<CBasePathSegme
 	auto segment = CreateNewSegment();
 	segment->CopySegment(from);
 	segment->goal = from->area->GetCenter();
+	segment->area = to->area;
 	segment->type = AIPath::SegmentType::SEGMENT_ELEVATOR;
 	pathinsert.emplace(to, std::move(segment), false); // Insert before to
 

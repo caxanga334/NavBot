@@ -3,6 +3,7 @@
 #include <util/helpers.h>
 #include <util/prediction.h>
 #include <util/entprops.h>
+#include <util/gamedata_const.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_waypoint.h>
@@ -366,6 +367,48 @@ float botsharedutils::weapons::GetMaxAttackRangeForCurrentlyHeldWeapon(CBaseBot*
 	return range;
 }
 
+Vector botsharedutils::aiming::DefaultBotAim(CBaseBot* bot, CBaseEntity* entity, IDecisionQuery::DesiredAimSpot desiredAim)
+{
+	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+	if (!weapon)
+	{
+		return UtilHelpers::getWorldSpaceCenter(entity);
+	}
+
+	const WeaponInfo* info = weapon->GetWeaponInfo();
+	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
+
+	if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
+	{
+		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
+	}
+
+	if (UtilHelpers::IsPlayer(entity))
+	{
+		if (info->GetAttackInfo(type).IsHitscan())
+		{
+			return botsharedutils::aiming::AimAtPlayerWithHitScan(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+		}
+		else if (info->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
+		{
+			return botsharedutils::aiming::AimAtPlayerWithBallistic(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+		}
+		else if (info->GetAttackInfo(type).IsProjectile())
+		{
+			return botsharedutils::aiming::AimAtPlayerWithProjectile(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+		}
+	}
+	
+	if (info->GetAttackInfo(type).IsBallistic())
+	{
+		return botsharedutils::aiming::AimAtEntityWithBallistic(bot, entity, desiredAim, weapon);
+	}
+
+	// TO-DO: Projectile weapons
+	return botsharedutils::aiming::GetAimPositionForEntities(bot, entity, desiredAim, weapon);
+}
+
 Vector botsharedutils::aiming::GetAimPositionForPlayers(CBaseBot* bot, CBaseExtPlayer* player, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
 {
 	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
@@ -439,10 +482,10 @@ Vector botsharedutils::aiming::AimAtPlayerWithHitScan(CBaseBot* bot, CBaseEntity
 
 Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone, const bool checkLOS)
 {
-	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
+	CBaseExtPlayer* enemy = extmanager->GetPlayerOfEntity(target);
 
 	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
-	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
+	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, enemy, desiredAim, weapon, headbone);
 
 	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
 
@@ -452,12 +495,12 @@ Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEnt
 	}
 
 	float range = (theirPos - bot->GetEyeOrigin()).Length();
-	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy.GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
 
 	if (checkLOS && !bot->IsLineOfFireClear(predicted))
 	{
 		// obstruction between the predicted position and the bot, just fire at the enemy's center
-		return enemy.WorldSpaceCenter();
+		return enemy->WorldSpaceCenter();
 	}
 
 	return predicted;
@@ -465,10 +508,10 @@ Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEnt
 
 Vector botsharedutils::aiming::AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
 {
-	CBaseExtPlayer enemy{ UtilHelpers::BaseEntityToEdict(target) };
+	CBaseExtPlayer* enemy = extmanager->GetPlayerOfEntity(target);
 
 	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
-	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, &enemy, desiredAim, weapon, headbone);
+	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, enemy, desiredAim, weapon, headbone);
 
 	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
 
@@ -479,10 +522,10 @@ Vector botsharedutils::aiming::AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEnti
 
 	float range = (theirPos - bot->GetEyeOrigin()).Length();
 	auto& attackinfo = weapon->GetWeaponInfo()->GetAttackInfo(type);
-	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy.GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
 
 	Vector myEyePos = bot->GetEyeOrigin();
-	Vector enemyVel = enemy.GetAbsVelocity();
+	Vector enemyVel = enemy->GetAbsVelocity();
 	float rangeTo = (myEyePos - theirPos).Length();
 	const float projSpeed = attackinfo.GetProjectileSpeed();
 	const float gravity = attackinfo.GetGravity();

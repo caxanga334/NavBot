@@ -680,3 +680,65 @@ CON_COMMAND_F(sm_navbot_tool_weapon_report, "Reports some information about your
 		META_CONPRINTF("Weapon's secondary ammo type index: %i \n", secondaryammotype);
 	}
 }
+
+CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specific entity model.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_dump_model_info <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	if (!entprops->HasEntProp(pEntity, Prop_Data, "m_OnIgnite"))
+	{
+		datamap_t* dmap = gamehelpers->GetDataMap(pEntity);
+		const char* classname = gamehelpers->GetEntityClassname(pEntity);
+
+		if (dmap && classname)
+		{
+			META_CONPRINTF("Error: Entity %s <%s|%s> does not derives from CBaseAnimating! \n", args[1], classname, dmap->dataClassName);
+
+			datamap_t* next = dmap;
+
+			while (next != nullptr)
+			{
+				META_CONPRINTF("    %s\n", next->dataClassName);
+				next = next->baseMap;
+			}
+		}
+
+		return;
+	}
+
+	auto ptr = UtilHelpers::GetEntityModelPtr(UtilHelpers::BaseEntityToEdict(pEntity));
+
+	if (ptr)
+	{
+		int numbones = ptr->numbones();
+
+		for (int i = 0; i < numbones; i++)
+		{
+			auto bone = ptr->pBone(i);
+
+			META_CONPRINTF("Bone %i: %s\n", i, bone->pszName());
+		}
+
+		int numseqs = ptr->GetNumSeq();
+
+		for (int i = 0; i < numseqs; i++)
+		{
+			auto& seq = ptr->pSeqdesc(i);
+
+			META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
+		}
+	}
+}

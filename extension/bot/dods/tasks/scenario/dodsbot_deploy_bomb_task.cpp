@@ -8,9 +8,10 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #include <bot/dods/dodsbot.h>
 #include <bot/interfaces/path/meshnavigator.h>
+#include <bot/bot_shared_utils.h>
+#include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include "dodsbot_deploy_bomb_task.h"
 #include "dodsbot_fetch_bomb_task.h"
-#include <bot/tasks_shared/bot_shared_take_cover_from_spot.h>
 
 CDoDSBotDeployBombTask::CDoDSBotDeployBombTask(CBaseEntity* target)
 {
@@ -42,10 +43,41 @@ TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskUpdate(CDoDSBot* bot)
 	if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ARMED))
 	{
 		Vector center = UtilHelpers::getWorldSpaceCenter(target);
+		const float bot_to_bomb = bot->GetRangeTo(center);
 
-		if (bot->GetRangeTo(center) <= 512.0f)
+		if (bot_to_bomb <= 512.0f)
 		{
-			return SwitchTo(new CBotSharedTakeCoverFromSpotTask<CDoDSBot, CDoDSBotPathCost>(bot, center, 600.0f, false, false, 5000.0f, nullptr), "Taking cover from planted bomb!");
+			botsharedutils::IsReachableAreas collector{ bot, 3000.0f, true, true, false };
+
+			collector.Execute();
+
+			if (!collector.IsCollectedAreasEmpty())
+			{
+				CNavArea* selected = nullptr;
+				int i = 0;
+				int max = CBaseBot::s_botrng.GetRandomInt<int>(1, 9);
+
+				for (CNavArea* area : collector.GetCollectedAreas())
+				{
+					const float area_to_bomb = (center - area->GetCenter()).Length();
+
+					if (area_to_bomb > 900.0f && area_to_bomb > bot_to_bomb)
+					{
+						selected = area;
+						
+						if (++i >= max)
+						{
+							break;
+						}
+					}
+				}
+
+				if (selected)
+				{
+					Vector pos = selected->GetRandomPoint();
+					return SwitchTo(new CBotSharedGoToPositionTask<CDoDSBot, CDoDSBotPathCost>(bot, pos, "EscapeBomb", false, true, true), "Escaping from bomb!");
+				}
+			}
 		}
 
 		return Done("Bomb has been planted!");
