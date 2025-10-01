@@ -130,6 +130,8 @@ const virtualmodel_t* CStudioHdr::ResetVModel(const virtualmodel_t* pVModel) con
 	}
 }
 
+#if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
+
 //-----------------------------------------------------------------------------
 // Purpose:
 //-----------------------------------------------------------------------------
@@ -210,5 +212,7 @@ const studiohdr_t* CStudioHdr::GroupStudioHdr(int i)
 	Assert(pStudioHdr);
 	return pStudioHdr;
 }
+
+#endif // SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 
 #endif

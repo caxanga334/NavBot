@@ -732,6 +732,8 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 			META_CONPRINTF("Bone %i: %s\n", i, bone->pszName());
 		}
 
+#if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
+
 		int numseqs = ptr->GetNumSeq();
 
 		for (int i = 0; i < numseqs; i++)
@@ -741,4 +743,6 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 			META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
 		}
 	}
+
+#endif // #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 }

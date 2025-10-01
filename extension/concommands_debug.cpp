@@ -1616,6 +1616,7 @@ CON_COMMAND(sm_navbot_debug_ent_outputs, "")
 	}
 }
 
+#if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 CON_COMMAND(sm_navbot_debug_get_model_ptr, "")
 {
 	DECLARE_COMMAND_ARGS;
@@ -1670,6 +1671,7 @@ CON_COMMAND(sm_navbot_debug_get_model_ptr, "")
 		}
 	}
 }
+#endif // #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 
 CON_COMMAND(sm_navbot_debug_dump_entity_inheritance, "")
 {
