@@ -26,60 +26,48 @@ You should override this function and do what is necessary to have the bots join
 
 You may also override `bool HasJoinedGame()` and `bool CanJoinGame()`.
 
-## Interfaces
+# The bot interfaces
 
-The bot has 4 base interfaces. Player Controller, Sensor, Movement, Behavior.
+The bot has 8 base interfaces: Sensor (`ISensor`), Movement (`IMovement`), Player Controller (`IPlayerController`), Behavior (`IBehavior`), Inventory (`IInventory`), Combat (`ICombat`), Squad (`ISquad`) and Shared Memory (`ISharedBotMemory`).    
 
-Player Controller (`IPlayerController`) is responsible for the bot's inputs and aiming.
+## The Sensor Interface
 
-Sensor (`ISensor`) is responsible for the bot senses. It currently handles vision and hearing.
+The sensor interface is responsible for the bot's vision, hearing and local memory of entities.    
 
-Movement (`IMovement`) is responsible for moving the bot. It sends the necessary inputs to the player controller ir order for the bot to move towards a given position.
-It also provides a description of the bot movement capabilities for for pathfinder.
+### Vision Scan
 
-Behavior (`IBehavior`) is responsible for the bot 'brain'. It handles the decision queries (`IDecisionQuery`) and the task system (`AITaskManager<Class>`).
+The `ISensor::UpdateKnownEntities` is responsible for updating the bot's vision.    
+By default the bot scans for both players and non-player entities.    
+Players are scanned in `void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)` and non-players in `void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)`.    
+Override these functions based on your mod needs. For example, in Black Mesa, the non-player function is overriden to do nothing to safe performance since the bot doesn't need to see non-player entities.
 
-At minimum, you need to declare a new behavior interface for the new bot.
-You will also need to write new tasks for the bot, this will be explained later.
+### Identification of Friend or Foe
 
-A Sensor interface is also needed, since it handles what is enemy and what is ally for the bot.
+There are 3 functions responsible for identification of entities by the sensor interface.    
+The first function is `bool ISensor::IsIgnored(CBaseEntity* entity) const`, the purpose of this function is to determine if the given entity should be ignored by the bot's sensors.    
+Bots will not register ignored entities into the known entity list.    
+Then each entity being tracked by the sensor is further filtered by the `bool ISensor::IsEnemy(CBaseEntity* entity) const` and `bool ISensor::IsFriendly(CBaseEntity* entity) const` functions.    
+An entity is an enemy to the bot when the `IsEnemy` function returns true.    
 
-Movement may be needed if the mod movement differs from the HL2 movement.
+### Vision Simulation
 
-You can also create new mod specific interfaces to if needed. See `CTF2BotSpyMonitor` as an example.
+The `IsLineOfSightClear` functions uses raycast to determine if there are no vision blocking obstructions between the bot and the given entity or position.    
+The `IsInFieldOfView` function checks if the given position is inside the bot's field of view.    
+The `IsEntityHidden` and `IsPositionObscured` functions are used to check if a given entity or position is obstructed or hidden from view due to fog, smoke, etc. There is no default implementation for these functions, they always returns false.    
+The `IsAbleToSee` is an expensive function that calls all of the functions listed above to determine if a given position or entity is fully visible to the bot.
 
-## Tasks
+### Other ISensor Functions
 
-The task system consist of a Hierarchical Finite State Machine combined with Stack.
+The `int ISensor::GetKnownEntityTeamIndex(CKnownEntity* known)` returns the entity team number for knwon entities instances, the default implementation reads the `m_iTeamNum` member of the entity.    
 
-To create a new task, derive from `AITask<YourBotClass>`.
+## The Player Controller Interface
 
-Tasks have a lot of functions that you can override, I recommend reading the `tasks.h` file.
+The player controller interface is responsible for the bot's input buttons and mouse movements (view angles).
 
-Let's begin with a simple example.
+### Aim Commands
 
-The function `virtual TaskResult<BotClass> OnTaskUpdate(BotClass* bot)` is called while the task is being updated (active and running).
-This is where you would code the work the bot needs to do to complete that task.
-
-Each task must return a task result object, you don't create these objects manually, instead you use these functions.
-
-```cpp
-// Keep the current task running
-TaskResult<BotClass> Continue() const;
-// Switch to a new task, the current task will be destroyed
-TaskResult<BotClass> SwitchTo(AITask<BotClass>* newTask, const char* reason) const;
-// Put the current task on pause and begin running another one on it's place, the current task will be kept and returned to when the new task ends
-TaskResult<BotClass> PauseFor(AITask<BotClass>* newTask, const char* reason) const;
-// Ends and destroy the current task
-TaskResult<BotClass> Done(const char* reason) const;
-```
-
-There are four type of results for a task.
-
-`CONTINUE` will keep executing the current task.
-
-`SWITCH` will end and destroy the current task and start another task on it's place.
-
-`PAUSE` will pause the current task and start another task on it's place, the old task is placed below the new task. When the new task ends, the old task is resumed.
-
-`DONE` will end and destroy the current task, any task below it will be resumed.
+The `AimAt` functions are used send aim commands to the player controller interface.    
+The aim target can be a world position coordinate or an entity. If aiming at an entity, the entity position is updated in intervals, the frequency of updates depends on the bot's difficulty.    
+Each aim command has a duration in seconds and a priority, if the last aim command hasn't expired and a lower priority command is sent, the command is rejected.    
+The `SetDesiredAim*` group of functions sets where the bot should aim at when aiming at entities.    
+The `bool IPlayerController::IsAimOnTarget() const` returns true if the bot's is currently looking at the current aim target.    

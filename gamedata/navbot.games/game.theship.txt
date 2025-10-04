@@ -1,0 +1,32 @@
+"Games"
+{
+	"ship"
+	{
+		"Offsets"
+		{
+			/* CBasePlayer::Event_Killed */
+			"Event_Killed"
+			{
+				"windows"		"62"
+				"linux"			"63"
+			}
+			/* CBasePlayer::Event_KilledOther */
+			"Event_KilledOther"
+			{
+				"windows"		"63"
+				"linux"			"64"
+			}
+			/* CBasePlayer::PhysicsSimulate */
+			"PhysicsSimulate"
+			{
+				"windows"		"96"
+				"linux"			"97"
+			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"171"
+				"linux"		"172"
+			}
+		}
+	}
+}

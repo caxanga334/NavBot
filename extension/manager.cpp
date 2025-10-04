@@ -220,7 +220,7 @@ void CExtManager::OnClientPutInServer(int client)
 		// not a NavBot, register as a player
 		m_players.emplace_back(new CBaseExtPlayer(edict));
 	}
-
+	
 	auto gp = playerhelpers->GetGamePlayer(client);
 
 	if (gp->IsSourceTV() || gp->IsReplay())

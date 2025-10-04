@@ -81,6 +81,14 @@ void CBaseMod::OnMapStart()
 
 	m_modsettings.reset(CreateModSettings());
 	m_modsettings->ParseConfigFile();
+
+	for (auto& sbm : m_teamsharedmemory)
+	{
+		if (sbm)
+		{
+			sbm->Reset();
+		}
+	}
 }
 
 CBaseBot* CBaseMod::AllocateBot(edict_t* edict)

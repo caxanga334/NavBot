@@ -38,4 +38,24 @@
 	{
 		"game"		"zps"
 	}
+	// Left 4 Dead 2
+	"game.left4dead2.txt"
+	{
+		"game"		"left4dead2"
+	}
+	// Left 4 Dead
+	"game.left4dead.txt"
+	{
+		"game"		"left4dead"
+	}
+	// The Ship
+	"game.theship.txt"
+	{
+		"game"		"ship"
+	}
+	// Synergy
+	"game.synergy.txt"
+	{
+		"game"		"synergy"
+	}
 }

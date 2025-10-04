@@ -1,0 +1,39 @@
+"Games"
+{
+	"synergy"
+	{
+		"Keys"
+		{
+			/* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"		"info_player_coop"
+			/* Synergy already calls PlayerRunCommands on bots we create, just hook the function */
+			"HookPlayerRunCMD"	"1"
+		}
+		"Offsets"
+		{
+			/* CBasePlayer::Event_Killed */
+			"Event_Killed"
+			{
+				"windows"		"66"
+				"linux"			"67"
+			}
+			/* CBasePlayer::Event_KilledOther */
+			"Event_KilledOther"
+			{
+				"windows"		"67"
+				"linux"			"68"
+			}
+			/* CBasePlayer::PhysicsSimulate */
+			"PhysicsSimulate"
+			{
+				"windows"		"105"
+				"linux"			"106"
+			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"200"
+				"linux"		"201"
+			}
+		}
+	}
+}

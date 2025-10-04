@@ -46,23 +46,55 @@ public:
 	void OnAllLoaded();
 	// Called every server frame
 	void Frame();
-
+	/**
+	 * @brief Called when a client in put in server.
+	 * @param client Client index.
+	 */
 	void OnClientPutInServer(int client);
-
+	/**
+	 * @brief Called when a client disconnects from the server.
+	 * @param client Client index.
+	 */
 	void OnClientDisconnect(int client);
-
+	// Called when a new map loads
 	void OnMapStart();
+	// Called when the current map unloads.
 	void OnMapEnd();
-
+	// Called to allocate the mod interface, this is also where the mod detection code is.
 	void AllocateMod();
-
+	// Returns a pointer to the mod interface.
 	CBaseMod* GetMod();
-
+	/**
+	 * @brief Gets a bot pointer by client/entity index.
+	 * @param index Client/Entity index to search.
+	 * @return Bot of the given index, NULL if none.
+	 */
 	CBaseBot* GetBotByIndex(int index) const;
+	/**
+	 * @brief Gets a player pointer by client/entity index.
+	 * @param index Client/Entity index to search.
+	 * @return Player pointer or NULL if not found.
+	 */
 	CBaseExtPlayer* GetPlayerByIndex(int index) const;
+	/**
+	 * @brief Gets the bot pointer of the given entity.
+	 * @param entity Entity to search.
+	 * @return Bot pointer if the given entity is of a NavBot instance. NULL if the given entity is not a NavBot instance.
+	 */
 	CBaseBot* GetBotFromEntity(CBaseEntity* entity) const;
+	/**
+	 * @brief Gets the player pointer of the given entity.
+	 * @param entity Entity to search.
+	 * @return player pointer if the given entity is of a NavBot instance. NULL if the given entity is not a player with an allocated Player instance.
+	 */
 	CBaseExtPlayer* GetPlayerOfEntity(CBaseEntity* entity) const;
+	/**
+	 * @brief Gets the player pointer of the given edict_t pointer.
+	 * @param edict Edict_t to search.
+	 * @return player pointer if the given entity is of a NavBot instance. NULL if the given edict is not a player with an allocated Player instance.
+	 */
 	CBaseExtPlayer* GetPlayerOfEdict(edict_t* edict) const;
+	// Returns a player pointer of the listen server host. Always returns NULL on dedicated servers.
 	CBaseExtPlayer* GetListenServerHost() const;
 	/**
 	 * @brief Find bots by name.
@@ -70,18 +102,28 @@ public:
 	 * @return Bot pointer if found or NULL.
 	 */
 	CBaseBot* FindBotByName(const char* name) const;
+	// Returns true if the given client index is a NavBot instance.
 	bool IsNavBot(const int client) const;
-
+	/**
+	 * @brief Adds a new NavBot instance.
+	 * @param newbotname Optional bot name override.
+	 * @param newbotedict Optional pointer to get the edict of the bot added.
+	 */
 	void AddBot(std::string* newbotname = nullptr, edict_t** newbotedict = nullptr);
 	CBaseBot* AttachBotInstanceToEntity(edict_t* entity);
+	/**
+	 * @brief Removes a random bot from the game.
+	 * @param message Kick reason message.
+	 */
 	void RemoveRandomBot(const char* message);
+	/**
+	 * @brief Removes all NavBot bots from the game.
+	 * @param message Kick reason message.
+	 */
 	void RemoveAllBots(const char* message) const;
-
 	// Gets a vector of all bots currently in game
 	const auto &GetAllBots() const { return m_bots; }
-
 	void LoadBotNames();
-
 	inline void StopAllDebugging() { m_botdebugmode = 0; }
 	inline void ToggleDebugOption(int bits)
 	{
@@ -91,9 +133,7 @@ public:
 	{
 		return (m_botdebugmode & bits) ? true : false;
 	}
-
 	void UpdateBotQuota();
-
 	/**
 	 * @brief Runs a function on each bot.
 	 * @tparam T A class with operator() overload with one parameter (CBaseBot* bot).

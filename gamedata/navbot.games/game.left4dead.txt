@@ -1,0 +1,37 @@
+"Games"
+{
+	"left4dead"
+	{
+		"Keys"
+		{
+			/* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"		"info_survivor_position"
+		}
+		"Offsets"
+		{
+			/* CBasePlayer::Event_Killed */
+			"Event_Killed"
+			{
+				"windows"		"65"
+				"linux"			"66"
+			}
+			/* CBasePlayer::Event_KilledOther */
+			"Event_KilledOther"
+			{
+				"windows"		"66"
+				"linux"			"67"
+			}
+			/* CBasePlayer::PhysicsSimulate */
+			"PhysicsSimulate"
+			{
+				"windows"		"101"
+				"linux"			"102"
+			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"196"
+				"linux"		"197"
+			}
+		}
+	}
+}
