@@ -489,6 +489,11 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 	VPROF_BUDGET("NavBotExt::Hook_GameFrame", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	if (!simulating)
+	{
+		RETURN_META(MRES_IGNORED);
+	}
+
 	if (TheNavMesh)
 	{
 		TheNavMesh->Update();

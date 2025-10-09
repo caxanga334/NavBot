@@ -1727,4 +1727,23 @@ CON_COMMAND(sm_navbot_debug_dump_entity_inheritance, "")
 	META_CONPRINTF("%s\n", dump.data());
 }
 
+CON_COMMAND(sm_navbot_debug_command_args, "Debug command arguments functions.")
+{
+	DECLARE_COMMAND_ARGS;
+
+	const char* foo = args.FindArg("-foo");
+
+	if (foo && foo[0] != '\0')
+	{
+		META_CONPRINTF("Found \"-foo\" argument: %s \n", foo);
+	}
+
+	META_CONPRINT("Dumping all arguments: \n");
+
+	for (int i = 0; i < args.ArgC(); i++)
+	{
+		META_CONPRINTF("%s\n", args[i]);
+	}
+}
+
 #endif // EXT_DEBUG

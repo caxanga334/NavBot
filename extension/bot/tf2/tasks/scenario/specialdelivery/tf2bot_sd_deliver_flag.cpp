@@ -7,6 +7,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/meshnavigator.h>
+#include <bot/tasks_shared/bot_shared_roam.h>
 #include "tf2bot_sd_deliver_flag.h"
 
 TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
@@ -15,7 +16,9 @@ TaskResult<CTF2Bot> CTF2BotSDDeliverFlag::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 
 	if (!capturezone)
 	{
-		return Done("No capture zone!");
+		// Some halloween hold the flag maps are using the special delivery logic, if no zone is found, just roam
+		return SwitchTo(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 4096.0f, true), "No capture zone! Roaming!");
+		// return Done("No capture zone!");
 	}
 
 	m_goal = UtilHelpers::getWorldSpaceCenter(capturezone);

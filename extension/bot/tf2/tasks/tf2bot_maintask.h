@@ -30,13 +30,8 @@ public:
 	const char* GetName() const override { return "MainTask"; }
 
 private:
-	CountdownTimer m_abilityUseTimer;
-
-	void AimAtPlayerWithHitScanWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
-	void AimAtPlayerWithProjectileWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
-	void AimAtPlayerWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo);
-
 	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
+	bool IsImmediateThreat(CTF2Bot* me, const CKnownEntity* threat) const;
 };
 
 #endif // !NAVBOT_TF2BOT_MAIN_TASK_H_

@@ -41,32 +41,5 @@ Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desi
 
 const CKnownEntity* CDoDSBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
-	CDoDSBot* me = static_cast<CDoDSBot*>(baseBot);
-
-	// check for cases where one of them is NULL
-
-	if (threat1 && !threat2)
-	{
-		return threat1;
-	}
-	else if (!threat1 && threat2)
-	{
-		return threat2;
-	}
-	else if (threat1 == threat2)
-	{
-		return threat1; // if both are the same, return threat1
-	}
-
-	// both are valids now
-
-	float range1 = me->GetRangeToSqr(threat1->GetLastKnownPosition());
-	float range2 = me->GetRangeToSqr(threat2->GetLastKnownPosition());
-
-	if (range1 < range2)
-	{
-		return threat1;
-	}
-
-	return threat2;
+	return botsharedutils::threat::DefaultThreatSelection(baseBot, threat1, threat2);
 }

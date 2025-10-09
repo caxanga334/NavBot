@@ -12,6 +12,7 @@
 #include <cmath>
 
 #include <ITextParsers.h>
+#include <bot/interfaces/decisionquery.h>
 
 class WeaponAttackFunctionInfo
 {
@@ -208,6 +209,7 @@ public:
 		selection_max_range = -1.0f;
 		selection_min_range = -1.0f;
 		min_required_skill = 0;
+		preferred_aim_spot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 	}
 
 	virtual ~WeaponInfo() {}
@@ -256,6 +258,7 @@ public:
 		this->dynprio_sec_ammo = other->dynprio_sec_ammo;
 		this->dynprio_aggression = other->dynprio_aggression;
 		this->min_required_skill = other->min_required_skill;
+		this->preferred_aim_spot = other->preferred_aim_spot;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
@@ -343,6 +346,7 @@ public:
 	void SetMinRequiredSkill(const int skill) { min_required_skill = skill; }
 	void SetSpamTime(const float t) { spam_time = t; }
 	void SetMinimumRangeToUseScope(const float range) { scopein_min_range = range; }
+	void SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot spot) { preferred_aim_spot = spot; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -422,6 +426,8 @@ public:
 	const float GetSpamTime() const { return spam_time; }
 	const bool CanBeSpammed() const { return spam_time > 0.0f; }
 	const float GetMinimumScopeInRange() const { return scopein_min_range; }
+	IDecisionQuery::DesiredAimSpot GetPreferredAimSpot() const { return preferred_aim_spot; }
+	const bool HasAimSpotPreference() const { return preferred_aim_spot != IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE; }
 	// Returns true if the bot is allowed to use the weapon's scope in the given range between the bot and the enemy.
 	const bool IsAllowedToScopeIn(const float range) const
 	{
@@ -478,6 +484,7 @@ private:
 	DynamicPriority dynprio_range;
 	DynamicPriority dynprio_sec_ammo;
 	DynamicPriority dynprio_aggression;
+	IDecisionQuery::DesiredAimSpot preferred_aim_spot;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC

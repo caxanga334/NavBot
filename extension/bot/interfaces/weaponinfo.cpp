@@ -603,9 +603,28 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			m_current->RemoveTag(token);
 		}
 	}
+	else if (std::strcmp(key, "preferred_aim_spot") == 0)
+	{
+		if (std::strcmp(value, "head") == 0)
+		{
+			m_current->SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD);
+		}
+		else if (std::strcmp(value, "center") == 0)
+		{
+			m_current->SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
+		}
+		else if (std::strcmp(value, "origin") == 0 || std::strcmp(value, "feet") == 0)
+		{
+			m_current->SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN);
+		}
+		else
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] Invalid value for \"preferred_aim_spot\" at line %u col %u: \"%s\"", states->line, states->col, value);
+		}
+	}
 	else if (!IsParserInWeaponAttackSection())
 	{
-		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair <%s - %s> at line %i col %i", key, value, states->line, states->col);
+		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair <%s - %s> at line %u col %u", key, value, states->line, states->col);
 	}
 
 	if (IsParserInWeaponAttackSection())

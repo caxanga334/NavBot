@@ -2140,7 +2140,7 @@ void CNavMesh::ImportWaypointsFromRCBot2()
 
 	if (!std::filesystem::exists(path))
 	{
-		META_CONPRINTF("Failed to import RCBot2 waypoint! File does not exists.\n  \"%s\"", szpath);
+		META_CONPRINTF("Failed to import RCBot2 waypoint! File does not exists.\n  \"%s\" \n", szpath);
 		return;
 	}
 	
@@ -2150,7 +2150,7 @@ void CNavMesh::ImportWaypointsFromRCBot2()
 
 	if (!file.is_open() || file.bad())
 	{
-		META_CONPRINTF("Failed to import RCBot2 waypoint! Failed to open file for reading.\n  \"%s\"", szpath);
+		META_CONPRINTF("Failed to import RCBot2 waypoint! Failed to open file for reading.\n  \"%s\" \n", szpath);
 		return;
 	}
 

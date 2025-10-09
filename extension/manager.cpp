@@ -66,6 +66,7 @@ constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
 static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players", CExtManager::OnQuotaModeCvarChanged);
 static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 static ConVar sm_navbot_bot_name_prefix("sm_navbot_bot_name_prefix", "", FCVAR_GAMEDLL, "Prefix to add to bot names.");
+static ConVar sm_navbot_allow_hibernation("sm_navbot_allow_hibernation", "1", FCVAR_GAMEDLL, "If enabled, removes all bots when empty to allow the server to enter hibernation mode.");
 
 // Engine branches that supports engine->CreateFakeClientEx
 #if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
@@ -863,7 +864,7 @@ void CExtManager::UpdateBotQuota()
 
 	UtilHelpers::ForEachPlayer(func);
 
-	if (humans == 0) // server is empty of humans
+	if (humans == 0 && sm_navbot_allow_hibernation.GetBool()) // server is empty of humans
 	{
 		if (navbots > 0)
 		{
@@ -930,6 +931,10 @@ void CExtManager::OnQuotaModeCvarChanged(ConVar* var, char const* pOldString)
 	else if (strncasecmp(mode, "fill", 4) == 0)
 	{
 		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
+	}
+	else if (strncasecmp(mode, "fixed", 5) == 0)
+	{
+		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
 	}
 	else
 	{

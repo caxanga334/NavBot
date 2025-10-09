@@ -352,4 +352,14 @@ namespace botsharedutils::waypoints
 	CWaypoint* GetRandomSniperWaypoint(CBaseBot* bot, const Vector* defendSpot, const float maxRange = -1.0f);
 }
 
+/**
+ * @brief Threat selection
+ */
+namespace botsharedutils::threat
+{
+	const CKnownEntity* DefaultThreatSelection(CBaseBot* bot, const CKnownEntity* first, const CKnownEntity* second);
+	const CKnownEntity* SelectNearestThreat(CBaseBot* bot, const CKnownEntity* first, const CKnownEntity* second);
+	bool IsImmediateThreat(CBaseBot* bot, const CKnownEntity* threat);
+}
+
 #endif // !__NAVBOT_BASE_BOT_SHARED_UTILS_H_

@@ -50,6 +50,7 @@ This is a list of keys available for all mods.
 |add_tags|Comma delimited list of weapon tags. This version doesn't clear the existing tags.|string list|
 |clear_tags|Removes all tags from the weapon.|N/A|
 |remove_tags|Comma delimited list of weapon tags to remove from the weapon.|string list|
+|preferred_aim_spot| Preferred position to aim the weapon at. Available options are: head, center, origin. |string|
 |is_template|This is a template entry for variantof. More information below.|boolean|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
@@ -168,6 +169,13 @@ Examples:
 // Remove the health priority if the current weapon is a variant of another weapon that has a dynamic health priority
 "health" "remove"
 ```
+
+## Aim Spots
+
+The `preferred_aim_spot` is an optional property that allows overrinding the default aim position selection for a specific weapon.    
+For example, it's used in the TF2 soldier's rocket launcher to make the bots aim at the player's feet.    
+If no preferred aim spot is defined, the bot will aim at the first spot with a clear line of fire in the following order: Head (if allowed), center and origin.    
+To enable headshots, setting `can_headshot` to **true** is still required! `preferred_aim_spot` is not required for headshots.    
 
 ## Console Commands
 

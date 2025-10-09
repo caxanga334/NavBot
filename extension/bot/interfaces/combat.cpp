@@ -493,6 +493,34 @@ bool ICombat::CanUseSecondaryAbilitities() const
 	return true;
 }
 
+IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheadshots) const
+{
+	const CombatData& data = GetCachedCombatData();
+
+	if (allowheadshots)
+	{
+		return IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
+	}
+
+	if (data.is_center_clear)
+	{
+		return IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER;
+	}
+
+	if (data.is_origin_clear)
+	{
+		return IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN;
+	}
+
+	// Not allowed to headshot but the head is the only visible body part
+	if (data.is_head_clear)
+	{
+		return IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
+	}
+
+	return IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER;
+}
+
 void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon)
 {
 	using namespace std::literals::string_view_literals;
@@ -500,6 +528,7 @@ void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const C
 	const CombatData& data = GetCachedCombatData();
 	const DifficultyProfile* profile = bot->GetDifficultyProfile();
 	IPlayerController* input = bot->GetControlInterface();
+	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
 	ISensor* sensor = bot->GetSensorInterface();
 	constexpr auto visible_priority = IPlayerController::LookPriority::LOOK_COMBAT;
 	constexpr auto notvisible_priority = IPlayerController::LookPriority::LOOK_SEARCH;
@@ -509,38 +538,47 @@ void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const C
 
 	if (data.is_visible)
 	{
-		const bool canHeadshot = (profile->IsAllowedToHeadshot() && activeWeapon->GetWeaponInfo()->CanHeadShot() && data.is_head_clear && data.in_headshot_range);
+		const bool canHeadshot = (profile->IsAllowedToHeadshot() && info->CanHeadShot() && data.is_head_clear && data.in_headshot_range);
+		IDecisionQuery::DesiredAimSpot aimSpot = SelectClearAimSpot(canHeadshot);
+		
+		if (info->HasAimSpotPreference())
+		{
+			switch (info->GetPreferredAimSpot())
+			{
+			case IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD:
+			{
+				if (canHeadshot)
+				{
+					aimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD;
+				}
 
-		if (canHeadshot)
-		{
-			input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD);
-			input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
-		}
-		else if (data.is_center_clear)
-		{
-			input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
-			input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
-		}
-		else if (data.is_origin_clear)
-		{
-			input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN);
-			input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
-		}
-		else
-		{
-			// not allowed to headshot but the head is the only visible body part
-			if (data.is_head_clear)
-			{
-				input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_HEAD);
-				input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
+				break;
 			}
-			else
+			case IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER:
 			{
-				// just keep aiming at the center
-				input->SetDesiredAimSpot(IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER);
-				input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
+				if (data.is_center_clear)
+				{
+					aimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_CENTER;
+				}
+
+				break;
+			}
+			case IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN:
+			{
+				if (data.is_origin_clear)
+				{
+					aimSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_ABSORIGIN;
+				}
+
+				break;
+			}
+			default:
+				break;
 			}
 		}
+
+		input->SetDesiredAimSpot(aimSpot);
+		input->AimAt(threat->GetEntity(), visible_priority, aimat_duration, combat_aim_reason.data());
 	}
 	else
 	{

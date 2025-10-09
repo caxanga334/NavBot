@@ -21,6 +21,7 @@ List of console variables for NavBot.
 |sm_navbot_quota_quantity|The target number of bots.|Integer|N/A|
 |sm_navbot_bot_name_prefix|Prefix to add to bot names.|String|N/A|
 |sm_navbot_hide_bots|If enabled, bots are hidden from the server browser.|Boolean|Needs to be enable before adding bots to take effect. Only available on supported engine branches.|
+|sm_navbot_allow_hibernation|If enabled, bots will be kicked when the server is empty to allow hibernation.|Boolean|Some games automatically kicks bots to enter hibernation (IE: TF2), NavBot doesn't prevent that.|
 
 ## Team Fortress 2 Bot specific ConVars
 

@@ -85,50 +85,7 @@ const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKno
 
 Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	Vector aimat(0.0f, 0.0f, 0.0f);
-	CTF2Bot* tf2bot = static_cast<CTF2Bot*>(me);
-	auto tfweapon = tf2bot->GetInventoryInterface()->GetActiveTFWeapon();
-
-	if (!tfweapon)
-	{
-		tf2bot->GetInventoryInterface()->RequestRefresh();
-		return UtilHelpers::getWorldSpaceCenter(entity);
-	}
-
-	const WeaponAttackFunctionInfo* attackFunc = nullptr;
-
-	if (tf2bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
-	{
-		attackFunc = &(tfweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::SECONDARY_ATTACK));
-	}
-	else
-	{
-		attackFunc = &(tfweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK));
-	}
-
-	if (UtilHelpers::IsPlayer(entity))
-	{
-		std::unique_ptr<CBaseExtPlayer> player = std::make_unique<CBaseExtPlayer>(UtilHelpers::BaseEntityToEdict(entity));
-
-		if (attackFunc->IsBallistic())
-		{
-			AimAtPlayerWithBallisticWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon, attackFunc);
-		}
-		else if (attackFunc->IsProjectile())
-		{
-			AimAtPlayerWithProjectileWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon, attackFunc);
-		}
-		else
-		{
-			AimAtPlayerWithHitScanWeapon(tf2bot, player.get(), aimat, desiredAim, tfweapon, attackFunc);
-		}
-	}
-	else
-	{
-		aimat = UtilHelpers::getWorldSpaceCenter(entity);
-	}
-
-	return aimat;
+	return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const CTakeDamageInfo& info)
@@ -152,108 +109,91 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const C
 	return TrySwitchTo(new CTF2BotDeadTask, PRIORITY_MANDATORY, "I am dead!");
 }
 
-void CTF2BotMainTask::AimAtPlayerWithHitScanWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo)
-{
-	if (desiredAim == IDecisionQuery::AIMSPOT_HEAD)
-	{
-		player->GetHeadShotPosition("bip_head", result);
-		result = result + weapon->GetTF2Info()->GetHeadShotAimOffset();
-		return;
-	}
-
-	result = player->WorldSpaceCenter();
-}
-
-void CTF2BotMainTask::AimAtPlayerWithProjectileWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo)
-{
-	if (player->GetGroundEntity() == nullptr) // target is airborne
-	{
-		trace::CTraceFilterNoNPCsOrPlayers filter(me->GetEntity(), COLLISION_GROUP_NONE);
-		trace_t tr;
-		trace::line(player->GetAbsOrigin(), player->GetAbsOrigin() + Vector(0.0f, 0.0f, -256.0f), MASK_PLAYERSOLID, &filter, tr);
-
-		if (tr.DidHit())
-		{
-			result = tr.endpos;
-			return;
-		}
-	}
-
-	// lead target
-
-	float rangeBetween = me->GetRangeTo(player->GetAbsOrigin());
-
-	constexpr float veryCloseRange = 150.0f;
-	if (rangeBetween > veryCloseRange)
-	{
-		Vector targetPos = pred::SimpleProjectileLead(player->GetAbsOrigin(), player->GetAbsVelocity(), weapon->GetProjectileSpeed(), rangeBetween);
-
-		if (me->GetSensorInterface()->IsLineOfSightClear(targetPos))
-		{
-			result = targetPos;
-			return;
-		}
-
-		// try their head and hope
-		result = pred::SimpleProjectileLead(player->GetEyeOrigin(), player->GetAbsVelocity(), weapon->GetProjectileSpeed(), rangeBetween);
-		return;
-	}
-
-	result = player->GetEyeOrigin();
-}
-
-void CTF2BotMainTask::AimAtPlayerWithBallisticWeapon(CTF2Bot* me, CBaseExtPlayer* player, Vector& result, DesiredAimSpot desiredAim, const CTF2BotWeapon* weapon, const WeaponAttackFunctionInfo* attackInfo)
-{
-	Vector enemyPos;
-
-	if (desiredAim == IDecisionQuery::AIMSPOT_HEAD)
-	{
-		player->GetHeadShotPosition("bip_head", enemyPos);
-		enemyPos = enemyPos + weapon->GetTF2Info()->GetHeadShotAimOffset();
-	}
-	else
-	{
-		// aim at the enemy's center
-		enemyPos = player->WorldSpaceCenter();
-	}
-
-	Vector myEyePos = me->GetEyeOrigin();
-	Vector enemyVel = player->GetAbsVelocity();
-	float rangeTo = (myEyePos - enemyPos).Length();
-	const float projSpeed = weapon->GetProjectileSpeed();
-	const float gravity = weapon->GetProjectileGravity();
-
-	Vector aimPos = pred::SimpleProjectileLead(enemyPos, enemyVel, projSpeed, rangeTo);
-	rangeTo = (myEyePos - aimPos).Length();
-
-	const float elevation_rate = RemapValClamped(rangeTo, attackInfo->GetBallisticElevationStartRange(), attackInfo->GetBallisticElevationEndRange(), attackInfo->GetBallisticElevationMinRate(), attackInfo->GetBallisticElevationMaxRate());
-	float z = pred::GravityComp(rangeTo, gravity, elevation_rate);
-	aimPos.z += z;
-
-	result = aimPos;
-}
-
 const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
-	constexpr float SENTRY_GUN_RANGE = 1600.0f;
+	const CBotWeapon* weapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+	bool isMelee = (weapon != nullptr && weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee());
 
-	const float range1 = me->GetRangeTo(threat1->GetEdict());
-	const float range2 = me->GetRangeTo(threat2->GetEdict());
+	if (isMelee)
+	{
+		return botsharedutils::threat::SelectNearestThreat(me, threat1, threat2);
+	}
 
-	// Priorize sentries
-	if (range1 <= SENTRY_GUN_RANGE && threat1->IsEntityOfClassname("obj_sentrygun"))
+	if (IsImmediateThreat(me, threat1))
 	{
 		return threat1;
 	}
-	else if (range2 <= SENTRY_GUN_RANGE && threat2->IsEntityOfClassname("obj_sentrygun"))
+
+	if (IsImmediateThreat(me, threat2))
 	{
 		return threat2;
 	}
 
-	if (range1 < range2)
+	return botsharedutils::threat::SelectNearestThreat(me, threat1, threat2);
+}
+
+bool CTF2BotMainTask::IsImmediateThreat(CTF2Bot* me, const CKnownEntity* threat) const
+{
+	if (!threat->IsVisibleNow())
 	{
-		return threat1;
+		return false;
 	}
 
-	return threat2;
+	Vector to = (me->GetAbsOrigin() - threat->GetLastKnownPosition());
+	float range = to.NormalizeInPlace();
+
+	constexpr float MIN_RANGE_TO_CLASS_BASED_TARGETS = 900.0f;
+	constexpr float SPY_DANGER_RANGE = 300.0f;
+
+	if (threat->IsPlayer())
+	{
+		const CBaseExtPlayer* player = threat->GetPlayerInstance();
+		TeamFortress2::TFClassType theirclass = tf2lib::GetPlayerClassType(player->GetIndex());
+
+		if (theirclass == TeamFortress2::TFClassType::TFClass_Sniper)
+		{
+			Vector sniperForward;
+			player->EyeVectors(&sniperForward);
+
+			if (DotProduct(to, sniperForward) > 0.0f)
+			{
+				return true; // sniper is looking in my direction!
+			}
+		}
+
+		// Sniper can see a medic's head
+		if (me->GetDifficultyProfile()->GetGameAwareness() >= 75 && theirclass == TeamFortress2::TFClassType::TFClass_Medic &&
+			me->GetMyClassType() == TeamFortress2::TFClassType::TFClass_Sniper &&
+			me->IsLineOfFireClear(player->GetEyeOrigin()))
+		{
+			return true;
+		}
+
+		if (me->GetDifficultyProfile()->GetGameAwareness() >= 60 && range <= MIN_RANGE_TO_CLASS_BASED_TARGETS)
+		{
+			if (theirclass == TeamFortress2::TFClassType::TFClass_Medic)
+			{
+				return true;
+			}
+
+			if (theirclass == TeamFortress2::TFClassType::TFClass_Engineer)
+			{
+				return true;
+			}
+
+			if (theirclass == TeamFortress2::TFClassType::TFClass_Spy && range <= SPY_DANGER_RANGE)
+			{
+				return true;
+			}
+		}
+	}
+
+	constexpr float SENTRY_RANGE = 1100.0f;
+
+	if (range <= SENTRY_RANGE && threat->IsEntityOfClassname("obj_sentrygun"))
+	{
+		return true;
+	}
+
+	return botsharedutils::threat::IsImmediateThreat(me, threat);
 }

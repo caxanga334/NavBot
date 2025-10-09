@@ -2,6 +2,7 @@
 #define __NAVBOT_BOT_COMBAT_INTERFACE_H_
 
 #include "base_interface.h"
+#include <bot/interfaces/decisionquery.h>
 
 /**
  * @brief The combat interface. Responsible for the basic handling of combat such as firing, reloading weapons, using abilities, etc.
@@ -238,6 +239,8 @@ private:
 	bool m_shouldSelectWeapons;
 	bool m_isScopedOrDeployed;
 	bool m_reAim;
+
+	IDecisionQuery::DesiredAimSpot SelectClearAimSpot(const bool allowheadshots) const;
 };
 
 #endif // !__NAVBOT_BOT_COMBAT_INTERFACE_H_

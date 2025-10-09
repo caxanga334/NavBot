@@ -386,31 +386,39 @@ Vector botsharedutils::aiming::DefaultBotAim(CBaseBot* bot, CBaseEntity* entity,
 
 	if (UtilHelpers::IsPlayer(entity))
 	{
+		if (bot->GetDifficultyProfile()->ShouldPredictProjectiles())
+		{
+			if (info->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
+			{
+				return botsharedutils::aiming::AimAtPlayerWithBallistic(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+			}
+			if (info->GetAttackInfo(type).IsProjectile())
+			{
+				return botsharedutils::aiming::AimAtPlayerWithProjectile(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+			}
+		}
+
 		if (info->GetAttackInfo(type).IsHitscan())
 		{
 			return botsharedutils::aiming::AimAtPlayerWithHitScan(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
 		}
-		if (info->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
+	}
+	
+	if (bot->GetDifficultyProfile()->ShouldPredictProjectiles())
+	{
+		if (info->GetAttackInfo(type).IsBallistic())
 		{
-			return botsharedutils::aiming::AimAtPlayerWithBallistic(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+			return botsharedutils::aiming::AimAtEntityWithBallistic(bot, entity, desiredAim, weapon);
 		}
 		if (info->GetAttackInfo(type).IsProjectile())
 		{
-			return botsharedutils::aiming::AimAtPlayerWithProjectile(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
+			return botsharedutils::aiming::AimAtEntityWithProjectile(bot, entity, desiredAim, weapon);
 		}
 	}
-	
+
 	if (info->GetAttackInfo(type).IsHitscan())
 	{
 		return botsharedutils::aiming::AimAtEntityWithHitscan(bot, entity, desiredAim, weapon);
-	}
-	if (info->GetAttackInfo(type).IsBallistic())
-	{
-		return botsharedutils::aiming::AimAtEntityWithBallistic(bot, entity, desiredAim, weapon);
-	}
-	if (info->GetAttackInfo(type).IsProjectile())
-	{
-		return botsharedutils::aiming::AimAtEntityWithProjectile(bot, entity, desiredAim, weapon);
 	}
 
 	return UtilHelpers::getWorldSpaceCenter(entity);
@@ -1068,4 +1076,73 @@ CWaypoint* botsharedutils::waypoints::GetRandomSniperWaypoint(CBaseBot* bot, con
 	}
 
 	return wpts[randomgen->GetRandomInt<std::size_t>(0U, wpts.size() - 1U)];
+}
+
+const CKnownEntity* botsharedutils::threat::DefaultThreatSelection(CBaseBot* bot, const CKnownEntity* first, const CKnownEntity* second)
+{
+	if (first != nullptr && second == nullptr)
+	{
+		return first;
+	}
+
+	if (first == nullptr && second != nullptr)
+	{
+		return second;
+	}
+
+	if (first == second)
+	{
+		return first;
+	}
+
+	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+	bool isMelee = (weapon != nullptr && weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee());
+
+	// Melee always target the nearest threat
+	if (isMelee)
+	{
+		return botsharedutils::threat::SelectNearestThreat(bot, first, second);
+	}
+	
+	if (IsImmediateThreat(bot, first))
+	{
+		return first;
+	}
+
+	if (IsImmediateThreat(bot, second))
+	{
+		return second;
+	}
+
+	return botsharedutils::threat::SelectNearestThreat(bot, first, second);
+}
+
+const CKnownEntity* botsharedutils::threat::SelectNearestThreat(CBaseBot* bot, const CKnownEntity* first, const CKnownEntity* second)
+{
+	if (bot->GetRangeToSqr(first->GetLastKnownPosition()) > bot->GetRangeToSqr(second->GetLastKnownPosition()) && second->IsVisibleNow())
+	{
+		return second;
+	}
+
+	return first;
+}
+
+bool botsharedutils::threat::IsImmediateThreat(CBaseBot* bot, const CKnownEntity* threat)
+{
+	if (!threat->IsVisibleNow())
+	{
+		return false;
+	}
+
+	constexpr auto very_close_range = 512.0f;
+
+	Vector to = (bot->GetAbsOrigin() - threat->GetLastKnownPosition());
+	float range = to.NormalizeInPlace();
+
+	if (range <= very_close_range)
+	{
+		return true;
+	}
+
+	return false;
 }
