@@ -1589,7 +1589,11 @@ CON_COMMAND(sm_navbot_debug_ent_outputs, "")
 
 			if (dataDesc->fieldType == FIELD_CUSTOM && (dataDesc->flags & FTYPEDESC_OUTPUT) != 0)
 			{
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+				CBaseEntityOutput* pOutput = reinterpret_cast<CBaseEntityOutput*>(reinterpret_cast<std::intptr_t>(pEntity) + static_cast<int>(dataDesc->fieldOffset));
+#else
 				CBaseEntityOutput* pOutput = reinterpret_cast<CBaseEntityOutput*>(reinterpret_cast<std::intptr_t>(pEntity) + static_cast<int>(dataDesc->fieldOffset[0]));
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
 
 				META_CONPRINTF("--- OUTPUT: %s ---\n", dataDesc->externalName);
 

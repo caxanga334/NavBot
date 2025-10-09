@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <stdexcept>
 #include <cmath>
+#include <cstring>
 
 #include <extension.h>
 #include <sdkports/sdk_traces.h>
@@ -1866,7 +1867,10 @@ bool UtilHelpers::studio::GetBonePosition(CBaseEntity* pEntity, int bone, Vector
 
 	if (!sdkcalls->IsGetBoneTransformAvailable()) { return false; }
 
-	mat.Init(vec3_origin, vec3_origin, vec3_origin, vec3_origin);
+	// not available in all SDK branches
+	// mat.Init(vec3_origin, vec3_origin, vec3_origin, vec3_origin);
+
+	std::memset(&mat, 0, sizeof(matrix3x4_t));
 
 	sdkcalls->CBaseAnimating_GetBoneTransform(pEntity, bone, &mat);
 	MatrixAngles(mat, angles, position);
