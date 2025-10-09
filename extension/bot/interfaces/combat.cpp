@@ -200,7 +200,7 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
 	const bool canspam = (data.can_fire && info->CanBeSpammed() && GetTimeSinceLOSWasLost() <= info->GetSpamTime());
 
-	if (data.can_fire && data.is_visible || canspam || bypassLOS) // visible and has clear line of fire
+	if ((data.can_fire && data.is_visible) || canspam || bypassLOS) // visible and has clear line of fire
 	{
 		if (HandleWeapon(bot, activeWeapon))
 		{
