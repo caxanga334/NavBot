@@ -390,23 +390,30 @@ Vector botsharedutils::aiming::DefaultBotAim(CBaseBot* bot, CBaseEntity* entity,
 		{
 			return botsharedutils::aiming::AimAtPlayerWithHitScan(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
 		}
-		else if (info->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
+		if (info->GetAttackInfo(type).IsBallistic()) // ballistics needs to be checked first, every ballistic weapon is a projectile weapon
 		{
 			return botsharedutils::aiming::AimAtPlayerWithBallistic(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
 		}
-		else if (info->GetAttackInfo(type).IsProjectile())
+		if (info->GetAttackInfo(type).IsProjectile())
 		{
 			return botsharedutils::aiming::AimAtPlayerWithProjectile(bot, entity, desiredAim, weapon, GamedataConstants::s_head_aim_bone.c_str());
 		}
 	}
 	
+	if (info->GetAttackInfo(type).IsHitscan())
+	{
+		return botsharedutils::aiming::AimAtEntityWithHitscan(bot, entity, desiredAim, weapon);
+	}
 	if (info->GetAttackInfo(type).IsBallistic())
 	{
 		return botsharedutils::aiming::AimAtEntityWithBallistic(bot, entity, desiredAim, weapon);
 	}
+	if (info->GetAttackInfo(type).IsProjectile())
+	{
+		return botsharedutils::aiming::AimAtEntityWithProjectile(bot, entity, desiredAim, weapon);
+	}
 
-	// TO-DO: Projectile weapons
-	return botsharedutils::aiming::GetAimPositionForEntities(bot, entity, desiredAim, weapon);
+	return UtilHelpers::getWorldSpaceCenter(entity);
 }
 
 Vector botsharedutils::aiming::GetAimPositionForPlayers(CBaseBot* bot, CBaseExtPlayer* player, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
@@ -569,7 +576,7 @@ Vector botsharedutils::aiming::GetAimPositionForEntities(CBaseBot* bot, CBaseEnt
 			const Vector& maxs = collider->OBBMaxs();
 			const Vector& mins = collider->OBBMins();
 			float z = abs(maxs.z - mins.z);
-			z *= 0.90;
+			z *= 0.90f;
 			theirPos = UtilHelpers::getEntityOrigin(target);
 			theirPos.z += z;
 		}
@@ -609,6 +616,36 @@ Vector botsharedutils::aiming::GetAimPositionForEntities(CBaseBot* bot, CBaseEnt
 	}
 
 	return theirPos;
+}
+
+Vector botsharedutils::aiming::AimAtEntityWithHitscan(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon)
+{
+	return GetAimPositionForEntities(bot, target, desiredAim, weapon);
+}
+
+Vector botsharedutils::aiming::AimAtEntityWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon)
+{
+	Vector theirPos = botsharedutils::aiming::GetAimPositionForEntities(bot, target, desiredAim, weapon);
+	entities::HBaseEntity be(target);
+	Vector absVel = be.GetAbsVelocity();
+
+	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
+
+	if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
+	{
+		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
+	}
+
+	float range = (theirPos - bot->GetEyeOrigin()).Length();
+	Vector predicted = pred::SimpleProjectileLead(theirPos, absVel, weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+
+	if (!bot->IsLineOfFireClear(predicted))
+	{
+		// obstruction between the predicted position and the bot, just fire at the enemy's center
+		return UtilHelpers::getWorldSpaceCenter(target);
+	}
+
+	return predicted;
 }
 
 Vector botsharedutils::aiming::AimAtEntityWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon)

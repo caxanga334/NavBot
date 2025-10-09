@@ -3,14 +3,6 @@
 #include <util/entprops.h>
 #include "basecombatchar.h"
 
-entities::HBaseCombatCharacter::HBaseCombatCharacter(edict_t* edict) : HBaseEntity(edict)
-{
-}
-
-entities::HBaseCombatCharacter::HBaseCombatCharacter(CBaseEntity* entity) : HBaseEntity(entity)
-{
-}
-
 edict_t* entities::HBaseCombatCharacter::GetActiveWeapon() const
 {
 	int me = GetIndex();

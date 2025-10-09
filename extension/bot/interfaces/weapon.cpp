@@ -507,3 +507,12 @@ float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const
 
 	return result;
 }
+
+const char* CBotWeapon::GetDebugIdentifier() const
+{
+	static std::array<char, 512> string;
+
+	ke::SafeSprintf(string.data(), string.size(), "#%i %s (%s:%i)", m_entindex, m_info->GetConfigEntryName(), m_classname.c_str(), m_econindex);
+
+	return string.data();
+}

@@ -60,7 +60,7 @@ inline TaskResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnTaskUpdate(BT*
 		}
 		else
 		{
-			AITask<BT>::Done("No longer in a squad!");
+			return AITask<BT>::Done("No longer in a squad!");
 		}
 	}
 

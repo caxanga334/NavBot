@@ -50,6 +50,7 @@ void CKnownEntity::Init()
 	m_timelastvisible = -9999.0f;
 	m_timelastinfo = -9999.0f;
 	m_timesincelastnoise = -9999.0f;
+	m_timevisible = -9999.0f;
 	m_visible = false;
 	m_lkpwasseen = false;
 	m_player = extmanager->GetPlayerOfEntity(m_handle.Get());
@@ -77,11 +78,13 @@ bool CKnownEntity::operator==(const CKnownEntity* other) const
 
 float CKnownEntity::GetTimeSinceBecomeKnown() const { return gpGlobals->curtime - m_timeknown; }
 
-float CKnownEntity::GetTimeSinceLastVisible() const { return gpGlobals->curtime - m_timelastvisible; }
+float CKnownEntity::GetTimeSinceBecameVisible() const { return gpGlobals->curtime - m_timelastvisible; }
 
 float CKnownEntity::GetTimeSinceLastInfo() const { return gpGlobals->curtime - m_timelastinfo; }
 
 float CKnownEntity::GetTimeSinceLastHeard() const { return gpGlobals->curtime - m_timesincelastnoise; }
+
+float CKnownEntity::GetTimeSinceLastVisible() const { return gpGlobals->curtime - m_timevisible; }
 
 bool CKnownEntity::IsObsolete() const
 {
@@ -109,11 +112,26 @@ void CKnownEntity::UpdatePosition()
 		m_timelastinfo = gpGlobals->curtime;
 		m_lastknownposition = UtilHelpers::getEntityOrigin(pEntity);
 		m_lastknownvelocity = be.GetAbsVelocity();
-		CNavArea* newArea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
+		CNavArea* newArea = nullptr;
+
+		if (m_player)
+		{
+			newArea = m_player->GetLastKnownNavArea();
+		}
+		else
+		{
+			newArea = TheNavMesh->GetNearestNavArea(m_lastknownposition, NAV_AREA_DIST);
+		}
 
 		if (newArea != nullptr)
 		{
 			m_lastknownarea = newArea;
+		}
+
+
+		if (m_visible)
+		{
+			m_timevisible = gpGlobals->curtime;
 		}
 	}
 }
@@ -127,12 +145,13 @@ void CKnownEntity::UpdateHeard()
 void CKnownEntity::MarkAsFullyVisible()
 {
 	m_timelastvisible = gpGlobals->curtime;
+	m_timevisible = gpGlobals->curtime;
 	m_visible = true;
 }
 
 bool CKnownEntity::IsEntity(edict_t* entity) const
 {
-	auto me = UtilHelpers::GetEdictFromCBaseHandle(m_handle);
+	edict_t* me = UtilHelpers::GetEdictFromCBaseHandle(m_handle);
 	return me == entity;
 }
 
@@ -164,11 +183,20 @@ void CKnownEntity::DebugDraw(const float duration) const
 
 	NDebugOverlay::Box(m_lastknownposition, box_mins, box_maxs, r, g, b, 127, duration);
 	NDebugOverlay::Text(m_lastknownposition + text_height_offset, true, duration, "#%i <%s> TSK: %g TSV: %g TSI: %g TSH: %g", 
-		m_handle.GetEntryIndex(), m_classname.c_str(), GetTimeSinceBecomeKnown(), GetTimeSinceLastVisible(), GetTimeSinceLastInfo(), 
+		m_handle.GetEntryIndex(), m_classname.c_str(), GetTimeSinceBecomeKnown(), GetTimeSinceBecameVisible(), GetTimeSinceLastInfo(), 
 		GetTimeSinceLastHeard());
 }
 
 const bool CKnownEntity::IsEntityOfClassname(const char* classname) const
 {
 	return UtilHelpers::StringMatchesPattern(m_classname.c_str(), classname, 0);
+}
+
+const char* CKnownEntity::GetDebugIdentifier() const
+{
+	static std::array<char, 512> string;
+
+	ke::SafeSprintf(string.data(), string.size(), "#%i <%s>", m_handle.GetEntryIndex(), m_classname.c_str());
+
+	return string.data();
 }

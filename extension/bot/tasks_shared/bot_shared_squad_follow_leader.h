@@ -17,7 +17,7 @@ template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedSquadFollowLeaderTask : public AITask<BT>
 {
 public:
-	CBotSharedSquadFollowLeaderTask(BT* bot, const float followrange = 400.0f) :
+	CBotSharedSquadFollowLeaderTask(BT* bot, const float followrange = 200.0f) :
 		m_pathcost(bot), m_followrange(followrange)
 	{
 	}
@@ -34,21 +34,20 @@ private:
 };
 
 template<typename BT, typename CT>
-inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* __bot)
+inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	CBaseBot* bot = __bot;
 	ISquad* squadiface = bot->GetSquadInterface();
 
 	if (!squadiface->IsSquadValid())
 	{
-		AITask<BT>::Continue();
+		return AITask<BT>::Continue();
 	}
 
 	const ISquad::SquadMember* leader = squadiface->GetSquad()->GetSquadLeader();
 
 	if (!leader || !leader->IsValid())
 	{
-		AITask<BT>::Continue();
+		return AITask<BT>::Continue();
 	}
 
 	Vector goal = leader->GetPosition();

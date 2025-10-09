@@ -148,6 +148,40 @@ public:
 			functor(bot);
 		}
 	}
+	/**
+	 * @brief Runs a function on each player instance.
+	 * @tparam T A class with operator() overload with one parameter void (CBaseExtPlayer* player).
+	 * @param functor Function to run on each player.
+	 */
+	template <typename T>
+	void ForEachPlayer(T& functor)
+	{
+		for (auto& ptr : m_players)
+		{
+			CBaseExtPlayer* player = ptr.get();
+			functor(player);
+		}
+	}
+	/**
+	 * @brief Runs a function on each player and bot instance.
+	 * @tparam T A class with operator() overload with one parameter void (CBaseExtPlayer* player).
+	 * @param functor Function to run on each player/bot.
+	 */
+	template <typename T>
+	void ForEachClient(T& functor)
+	{
+		for (auto& ptr : m_bots)
+		{
+			CBaseBot* bot = ptr.get();
+			functor(static_cast<CBaseExtPlayer*>(bot));
+		}
+
+		for (auto& ptr : m_players)
+		{
+			CBaseExtPlayer* player = ptr.get();
+			functor(player);
+		}
+	}
 
 	void SetBotQuotaMode(BotQuotaMode mode) { m_quotamode = mode; }
 	void SetBotQuotaTarget(int target) { m_quotatarget = target; }

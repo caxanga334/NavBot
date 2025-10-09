@@ -829,6 +829,24 @@ namespace UtilHelpers::players
 	CBaseEntity* GetRandomTeammate(CBaseEntity* me, const bool alive = false, const bool onlyhumans = false);
 }
 
+/**
+ * @brief Studio/Models related helper functions
+ */
+namespace UtilHelpers::studio
+{
+	constexpr int INVALID_BONE_INDEX = -1;
+
+	/**
+	 * @brief Looks up a bone of the given entity.
+	 * @param pEntity Entity to get the bone from.
+	 * @param bone Bone name to search.
+	 * @return Bone index or INVALID_BONE_INDEX (-1) if not found.
+	 */
+	int LookupBone(CBaseEntity* pEntity, const char* bone);
+
+	bool GetBonePosition(CBaseEntity* pEntity, int bone, Vector& position, QAngle& angles);
+}
+
 #endif // !UTIL_HELPERS_H_
 
 

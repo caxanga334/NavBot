@@ -842,7 +842,7 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 		if (known.GetTimeSinceLastInfo() < 0.2f)
 		{
 			// reaction time check
-			if (known.GetTimeSinceLastVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
+			if (known.GetTimeSinceBecameVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
 			{
 				me->OnSight(pEntity);
 				m_threatvisibletimer.Start();

@@ -32,7 +32,9 @@ This is a list of keys available for all mods.
 |attack_interval|Delay in seconds between attacks. The bot releases the attack buttons between intervals. Negative values to make the bot hold the attack button.|float|
 |scopein_attack_delay|Delay in seconds before the bot starts firing their weapon after deploying/scoping with their current weapon.|float|
 |initial_attack_delay|Delay in seconds before the bot starts firing their weapon when combat start.|float|
+|scopein_min_range|Don't use scope/deploy weapon if the distance between the bot and the enemy is less than this.|float|
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
+|spam_time|How long in seconds to continue firing the weapon at the enemy LKP.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
 |custom_ammo_property_name|Entity property the ammo for this weapon is stored at.|string|
 |custom_ammo_property_source|Where is the entity property located. Valid values are "player" and "weapon".|string|

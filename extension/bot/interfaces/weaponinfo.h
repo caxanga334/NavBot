@@ -191,6 +191,8 @@ public:
 		initial_attack_delay = -1.0f;
 		scopein_attack_delay = -1.0f;
 		headshot_range_mult = 1.0f;
+		spam_time = -1.0f;
+		scopein_min_range = -1.0f;
 		no_clip1 = false;
 		no_clip2 = false;
 		sec_uses_prim = false;
@@ -231,6 +233,8 @@ public:
 		this->initial_attack_delay = other->initial_attack_delay;
 		this->scopein_attack_delay = other->scopein_attack_delay;
 		this->headshot_range_mult = other->headshot_range_mult;
+		this->spam_time = other->spam_time;
+		this->scopein_min_range = other->scopein_min_range;
 		this->no_clip1 = other->no_clip1;
 		this->no_clip2 = other->no_clip2;
 		this->sec_uses_prim = other->sec_uses_prim;
@@ -337,6 +341,8 @@ public:
 	DynamicPriority* EditDynamicPrioritySecAmmo() { return &dynprio_sec_ammo; }
 	DynamicPriority* EditDynamicPriorityAggression() { return &dynprio_aggression; }
 	void SetMinRequiredSkill(const int skill) { min_required_skill = skill; }
+	void SetSpamTime(const float t) { spam_time = t; }
+	void SetMinimumRangeToUseScope(const float range) { scopein_min_range = range; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -413,6 +419,19 @@ public:
 	const DynamicPriority& GetDynamicPrioritySecAmmo() const { return dynprio_sec_ammo; }
 	const DynamicPriority& GetDynamicPriorityAggression() const { return dynprio_aggression; }
 	const int GetMinRequiredSkill() const { return min_required_skill; }
+	const float GetSpamTime() const { return spam_time; }
+	const bool CanBeSpammed() const { return spam_time > 0.0f; }
+	const float GetMinimumScopeInRange() const { return scopein_min_range; }
+	// Returns true if the bot is allowed to use the weapon's scope in the given range between the bot and the enemy.
+	const bool IsAllowedToScopeIn(const float range) const
+	{
+		if (scopein_min_range > 0.0f)
+		{
+			return range >= scopein_min_range;
+		}
+
+		return true;
+	}
  
 	virtual void PostLoad();
 
@@ -436,6 +455,8 @@ private:
 	float initial_attack_delay; // delay before the bot should start attacking after entering combat.
 	float scopein_attack_delay; // delay before the bot should atart attacking after scoping in with the weapon.
 	float headshot_range_mult;
+	float spam_time; // how long to keep firing after losing LOS
+	float scopein_min_range;
 	bool no_clip1; // Weapon doesn't uses clip 1 (primary)
 	bool no_clip2; // Weapon doesn't uses clip 2 (secondary)
 	bool sec_uses_prim; // Secondary attack uses primary ammo type
@@ -502,7 +523,7 @@ public:
 	 * @param index Econ index to search
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
-	virtual const WeaponInfo* GetWeaponInfo(std::string classname, const int index) const;
+	virtual const WeaponInfo* GetWeaponInfo(const std::string& classname, const int index) const;
 
 	bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
@@ -583,7 +604,7 @@ protected:
 		m_section_ter = false;
 	}
 
-	const WeaponInfo* LookUpWeaponInfoByClassname(std::string classname) const
+	const WeaponInfo* LookUpWeaponInfoByClassname(const std::string& classname) const
 	{
 		auto it = m_classname_lookup.find(classname);
 

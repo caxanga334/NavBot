@@ -214,22 +214,17 @@ void CBaseExtPlayer::GetHeadShotPosition(const char* bonename, Vector& result) c
 	VPROF_BUDGET("CBaseExtPlayer::GetHeadShotPosition", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	std::unique_ptr<CStudioHdr> studiohdr = UtilHelpers::GetEntityModelPtr(GetEdict());
+	const int bone = UtilHelpers::studio::LookupBone(this->GetEntity(), bonename);
 
-	if (studiohdr)
+	if (bone != UtilHelpers::studio::INVALID_BONE_INDEX)
 	{
-		int bone = UtilHelpers::LookupBone(studiohdr.get(), bonename);
+		Vector position;
+		QAngle angle;
 
-		if (bone >= 0)
+		if (UtilHelpers::studio::GetBonePosition(this->GetEntity(), bone, position, angle))
 		{
-			Vector position;
-			QAngle angle;
-
-			if (UtilHelpers::GetBonePosition(GetEntity(), bone, position, angle))
-			{
-				result = position; // aim at the head bone
-				return;
-			}
+			result = position; // aim at the head bone
+			return;
 		}
 	}
 

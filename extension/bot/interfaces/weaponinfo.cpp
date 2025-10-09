@@ -165,7 +165,7 @@ void CWeaponInfoManager::ReadDynamicPrioritySection(const SourceMod::SMCStates* 
 	}
 }
 
-const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(std::string classname, const int index) const
+const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(const std::string& classname, const int index) const
 {
 	const WeaponInfo* result = nullptr;
 
@@ -327,7 +327,8 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 
 		return SourceMod::SMCResult_Continue;
 	}
-	else if (m_section_dynamicprio)
+
+	if (m_section_dynamicprio)
 	{
 		ReadDynamicPrioritySection(states, key, value);
 		return SourceMod::SMCResult_Continue;
@@ -408,6 +409,23 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		float hsrange = atof(value);
 		hsrange = std::clamp(hsrange, 0.0f, 1.0f);
 		m_current->SetHeadShotRangeMultiplier(hsrange);
+	}
+	else if (std::strcmp(key, "spam_time") == 0)
+	{
+		float t = atof(value);
+		t = std::clamp(t, -1.0f, 30.0f);
+		m_current->SetSpamTime(t);
+	}
+	else if (std::strcmp(key, "scopein_min_range") == 0)
+	{
+		float range = atof(value);
+		
+		if (range <= 0.0f)
+		{
+			range = -1.0f;
+		}
+
+		m_current->SetMinimumRangeToUseScope(range);
 	}
 	else if (strncmp(key, "headshot_aim_offset", 19) == 0)
 	{

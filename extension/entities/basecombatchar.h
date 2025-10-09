@@ -2,15 +2,15 @@
 #define NAVBOT_ENTITIES_BCC_H_
 #pragma once
 
-#include <entities/baseentity.h>
+#include <entities/baseanimating.h>
 
 namespace entities
 {
-	class HBaseCombatCharacter : public HBaseEntity
+	class HBaseCombatCharacter : public HBaseAnimating
 	{
 	public:
-		HBaseCombatCharacter(edict_t* edict);
-		HBaseCombatCharacter(CBaseEntity* entity);
+		HBaseCombatCharacter(edict_t* edict) : HBaseAnimating(edict) {}
+		HBaseCombatCharacter(CBaseEntity* entity) : HBaseAnimating(entity) {}
 
 		edict_t* GetActiveWeapon() const;
 		bool HasWeapon(const char* classname) const;

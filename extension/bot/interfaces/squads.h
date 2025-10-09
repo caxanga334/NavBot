@@ -168,6 +168,22 @@ public:
 	 * @return Pointer to a squad interface led by the given human player. NULL if none.
 	 */
 	static ISquad* GetSquadInterfaceOfHumanLeader(CBaseEntity* humanLeader);
+
+	class InviteBotsToSquadFunc
+	{
+	public:
+		InviteBotsToSquadFunc(CBaseBot* me, int max) : m_max(max)
+		{
+			m_me = me;
+		}
+
+		void operator()(CBaseBot* bot);
+
+	private:
+		CBaseBot* m_me;
+		int m_max;
+	};
+
 protected:
 	// Allocates a new SquadData object. Override if using a mod specific squad data
 	virtual SquadData* AllocateSquadData() const { return new SquadData; }

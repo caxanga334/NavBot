@@ -1827,3 +1827,49 @@ CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool
 
 	return librandom::utils::GetRandomElementFromVector(candidates);
 }
+
+int UtilHelpers::studio::LookupBone(CBaseEntity* pEntity, const char* bone)
+{
+	const model_t* model = reinterpret_cast<IServerUnknown*>(pEntity)->GetCollideable()->GetCollisionModel();
+
+	if (!model)
+	{
+		return INVALID_BONE_INDEX;
+	}
+
+	const studiohdr_t* studiomodel = modelinfo->GetStudiomodel(model);
+
+	if (!studiomodel)
+	{
+		return INVALID_BONE_INDEX;
+	}
+
+	const int n = studiomodel->numbones;
+
+	for (int i = 0; i < n; i++)
+	{
+		const mstudiobone_t* pBone = studiomodel->pBone(i);
+		const char* name = pBone->pszName();
+
+		if (V_strcmp(name, bone) == 0)
+		{
+			return i;
+		}
+	}
+
+	return INVALID_BONE_INDEX;
+}
+
+bool UtilHelpers::studio::GetBonePosition(CBaseEntity* pEntity, int bone, Vector& position, QAngle& angles)
+{
+	static matrix3x4_t mat;
+
+	if (!sdkcalls->IsGetBoneTransformAvailable()) { return false; }
+
+	mat.Init(vec3_origin, vec3_origin, vec3_origin, vec3_origin);
+
+	sdkcalls->CBaseAnimating_GetBoneTransform(pEntity, bone, &mat);
+	MatrixAngles(mat, angles, position);
+
+	return true;
+}

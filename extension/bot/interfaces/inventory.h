@@ -190,8 +190,9 @@ public:
 	/**
 	 * @brief Checks if the current active weapon is the given weapon, if it's not, equip the given weapon.
 	 * @param weapon Weapon to equip.
+	 * @return Returns true if the weapon was equipped.
 	 */
-	void EquipWeapon(const CBotWeapon* weapon) const;
+	bool EquipWeapon(const CBotWeapon* weapon) const;
 	/**
 	 * @brief Checks if the bot has a weapon of the given classname.
 	 * @param classname Weapon classname.
@@ -297,6 +298,11 @@ protected:
 	bool IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info) const;
 	// Selects the weapon with the highest static priority (no dynamic priority support)
 	const CBotWeapon* FilterSelectWeaponWithHighestStaticPriority(const CBotWeapon* first, const CBotWeapon* second) const;
+	/**
+	 * @brief Invoked when a new weapon is selected by the bot.
+	 * @param weapon Weapon the bot just selected.
+	 */
+	virtual void OnBotWeaponEquipped(const CBotWeapon* weapon) const {}
 private:
 	std::vector<std::unique_ptr<CBotWeapon>> m_weapons;
 	mutable CBotWeapon* m_cachedActiveWeapon;

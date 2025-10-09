@@ -90,16 +90,21 @@ const CBotWeapon* IInventory::FindWeaponByClassnamePattern(const char* pattern, 
 	return nullptr;
 }
 
-void IInventory::EquipWeapon(const CBotWeapon* weapon) const
+bool IInventory::EquipWeapon(const CBotWeapon* weapon) const
 {
 	const CBotWeapon* activeWeapon = GetActiveBotWeapon();
 
 	if (activeWeapon != nullptr && activeWeapon == weapon)
 	{
-		return;
+		return false;
 	}
 
-	GetBot<CBaseBot>()->SelectWeapon(weapon->GetEntity());
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	me->SelectWeapon(weapon->GetEntity());
+	OnBotWeaponEquipped(weapon);
+
+	return true;
 }
 
 bool IInventory::HasWeapon(const char* classname)
@@ -270,8 +275,7 @@ bool IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat, WeaponInf
 	{
 		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
 		{
-			EquipWeapon(best);
-			return true;
+			return EquipWeapon(best);
 		}
 	}
 

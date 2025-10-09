@@ -132,7 +132,7 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 		// Find a position based on the last known target velocity
 		Vector LKP = known->GetLastKnownPosition();
 		Vector speed = known->GetLastKnownVelocity();
-		m_moveGoal = LKP + (speed * (known->GetTimeSinceLastVisible() + 0.3f));
+		m_moveGoal = LKP + (speed * (known->GetTimeSinceBecameVisible() + 0.3f));
 		CNavArea* area = TheNavMesh->GetNearestNavArea(m_moveGoal, 1024.0f);
 
 		if (!area)

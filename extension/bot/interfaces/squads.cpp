@@ -353,6 +353,13 @@ void ISquad::AddToSquad(CBaseBot* member)
 		ISquad* other = member->GetSquadInterface();
 		other->m_squaddata = m_squaddata; // share a copy of my squad data with my member
 		member->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_JOINED);
+
+		CBaseBot* me = GetBot<CBaseBot>();
+
+		if (me->IsDebugging(BOTDEBUG_SQUADS))
+		{
+			me->DebugPrintToConsole(0, 180, 0, "%s BOT \"%s\" WAS ADDED TO MY SQUAD!\n", me->GetDebugIdentifier(), member->GetClientName());
+		}
 	}
 }
 
@@ -386,14 +393,26 @@ void ISquad::LeaveSquad()
 	{
 		leader->GetSquadInterface()->NotifyMemberLeftSquad(GetBot<CBaseBot>());
 	}
+
+	CBaseBot* me = GetBot<CBaseBot>();
+	if (me->IsDebugging(BOTDEBUG_SQUADS))
+	{
+		me->DebugPrintToConsole(255, 165, 0, "%s LEFT SQUAD!\n", me->GetDebugIdentifier());
+	}
 }
 
 void ISquad::NotifySquadDestruction()
 {
 	if (m_squaddata)
 	{
-		GetBot<CBaseBot>()->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_DISBANDED);
+		CBaseBot* me = GetBot<CBaseBot>();
+		me->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_DISBANDED);
 		m_squaddata = nullptr;
+
+		if (me->IsDebugging(BOTDEBUG_SQUADS))
+		{
+			me->DebugPrintToConsole(255, 165, 0, "%s SQUAD DESTROYED!\n", me->GetDebugIdentifier());
+		}
 	}
 }
 
@@ -403,7 +422,8 @@ void ISquad::NotifyMemberLeftSquad(CBaseBot* member, const bool is_deleting)
 
 	if (IsSquadLeader())
 	{
-		GetBot<CBaseBot>()->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_LEFT);
+		CBaseBot* me = GetBot<CBaseBot>();
+		me->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_LEFT);
 		
 		if (!is_deleting)
 		{
@@ -411,6 +431,11 @@ void ISquad::NotifyMemberLeftSquad(CBaseBot* member, const bool is_deleting)
 		}
 
 		m_squaddata->RemoveMember(member);
+
+		if (me->IsDebugging(BOTDEBUG_SQUADS))
+		{
+			me->DebugPrintToConsole(255, 165, 0, "%s MEMBER REMOVED FROM SQUAD!\n", me->GetDebugIdentifier());
+		}
 	}
 }
 
@@ -434,4 +459,16 @@ ISquad* ISquad::GetSquadInterfaceOfHumanLeader(CBaseEntity* humanLeader)
 	};
 
 	return iface;
+}
+
+void ISquad::InviteBotsToSquadFunc::operator()(CBaseBot* bot)
+{
+	if (bot == m_me) { return; }
+
+	if (m_me->GetSquadInterface()->GetSquad()->GetMembersCount() >= static_cast<size_t>(m_max)) { return; }
+
+	if (bot->IsAlive() && bot->GetCurrentTeamIndex() == m_me->GetCurrentTeamIndex() && !bot->GetSquadInterface()->IsInASquad())
+	{
+		m_me->GetSquadInterface()->TryToAddToSquad(bot);
+	}
 }

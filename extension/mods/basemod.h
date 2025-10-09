@@ -108,7 +108,12 @@ public:
 	void ReloadBotDifficultyProfile();
 	// Bot profile difficulty manager
 	const CDifficultyManager* GetBotDifficultyManager() const { return m_profilemanager.get(); }
-
+	/**
+	 * @brief Called by the client command hook.
+	 * @param pEdict Edict pointer of the player who sent the command.
+	 * @param player Sourcemod player pointer of the player who sent the command.
+	 * @param args The arguments passed to the command.
+	 */
 	virtual void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) {}
 	/**
 	 * @brief Gets a pointer to the bot shared memory interface for the given team index.

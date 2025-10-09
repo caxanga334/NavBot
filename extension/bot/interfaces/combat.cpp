@@ -12,9 +12,11 @@ ICombat::ICombat(CBaseBot* bot) :
 	IBotInterface(bot)
 {
 	m_lastWeaponPtr = nullptr;
+	m_lastThreatPtr = nullptr;
 	m_shouldAim = true;
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
+	m_reAim = false;
 	m_combatData.Clear();
 }
 
@@ -25,15 +27,18 @@ ICombat::~ICombat()
 void ICombat::Reset()
 {
 	m_lastWeaponPtr = nullptr;
+	m_lastThreatPtr = nullptr;
 	m_shouldAim = true;
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
+	m_reAim = false;
 	m_disableCombatTimer.Invalidate();
 	m_dontFireTimer.Invalidate();
 	m_unscopeTimer.Invalidate();
 	m_useSpecialFuncTimer.Invalidate();
 	m_selectWeaponTimer.Invalidate();
 	m_secondaryAbilityTimer.Invalidate();
+	m_scopeinDelayTimer.Invalidate();
 	m_combatData.Clear();
 }
 
@@ -69,11 +74,23 @@ void ICombat::Update()
 			return;
 		}
 
+		if (!m_combatData.in_combat)
+		{
+			OnStartCombat(threat, activeWeapon);
+		}
+
+		SetLastThreat(threat);
 		UpdateCombatData(threat, activeWeapon);
 
 		if (ShouldAim())
 		{
 			CombatAim(bot, threat, activeWeapon);
+
+			if (!m_reAim && !m_combatData.is_visible)
+			{
+				// This makes the bot wait a single update tick before firing their weapons after acquiring LOS again
+				m_reAim = true;
+			}
 		}
 
 		FireWeaponAtEnemy(bot, threat, activeWeapon);
@@ -138,7 +155,7 @@ bool ICombat::ScopeInOrDeployWeapon()
 
 		if (time > 0.0f)
 		{
-			DisableFiringWeapons(time);
+			GetScopeInDelayTimer().Start(time);
 		}
 	}
 
@@ -151,11 +168,15 @@ void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
 	m_isScopedOrDeployed = false;
 	m_unscopeTimer.Invalidate();
 	m_useSpecialFuncTimer.Invalidate();
+	m_scopeinDelayTimer.Invalidate();
 }
 
 bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon) const
 {
 	if (!m_dontFireTimer.IsElapsed())
+		return false;
+
+	if (!m_scopeinDelayTimer.IsElapsed())
 		return false;
 
 	if (bot->GetMovementInterface()->NeedsWeaponControl())
@@ -177,8 +198,9 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 	const CombatData& data = GetCachedCombatData();
 	IPlayerController* input = bot->GetControlInterface();
 	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
+	const bool canspam = (data.can_fire && info->CanBeSpammed() && GetTimeSinceLOSWasLost() <= info->GetSpamTime());
 
-	if (data.can_fire || bypassLOS) // visible and has clear line of fire
+	if (data.can_fire && data.is_visible || canspam || bypassLOS) // visible and has clear line of fire
 	{
 		if (HandleWeapon(bot, activeWeapon))
 		{
@@ -238,7 +260,7 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 
 	m_isScopedOrDeployed = activeWeapon->IsDeployedOrScoped(bot);
 
-	if (info->NeedsToBeDeployedToFire())
+	if (info->NeedsToBeDeployedToFire() && info->IsAllowedToScopeIn(data.range_to_pos))
 	{
 		if (!m_isScopedOrDeployed)
 		{
@@ -249,11 +271,23 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 
 			if (time > 0.0f)
 			{
-				DisableFiringWeapons(time);
+				GetScopeInDelayTimer().Start(time);
+			}
+
+			if (bot->IsDebugging(BOTDEBUG_COMBAT))
+			{
+				bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: SCOPE IN/DEPLOYING WEAPON %s! \n", bot->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
 			}
 
 			return false;
 		}
+	}
+
+	if (m_reAim)
+	{
+		// small reaim delay
+		m_reAim = false;
+		return false;
 	}
 
 	return true;
@@ -272,6 +306,12 @@ void ICombat::OpportunisticallyUseWeaponSpecialFunction(const CBaseBot* bot, con
 		if (weapon->CanUseSpecialFunction(bot, data.enemy_range))
 		{
 			timer.Start(func.delay_between_uses);
+
+			if (bot->IsDebugging(BOTDEBUG_COMBAT))
+			{
+				bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: USING WEAPON SPECIAL FUNCTION %s! DELAY: %g\n", 
+					bot->GetDebugIdentifier(), weapon->GetDebugIdentifier(), func.delay_between_uses);
+			}
 
 			switch (func.button_to_press)
 			{
@@ -426,6 +466,16 @@ void ICombat::OnStartCombat(const CKnownEntity* threat, const CBotWeapon* active
 	{
 		DisableFiringWeapons(time, true);
 	}
+
+	m_reAim = true;
+
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	if (bot->IsDebugging(BOTDEBUG_COMBAT))
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: STARTING COMBAT AGAINST THREAT %s! CURRENT WEAPON: %s\n",
+			bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
+	}
 }
 
 bool ICombat::CanUseSecondaryAbilitities() const
@@ -506,8 +556,17 @@ void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const C
 	}
 }
 
+float ICombat::CombatData::GetTimeSinceLostLOS() const
+{
+	return gpGlobals->curtime - this->time_lost_los;
+}
+
 void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::CombatData::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* entity = threat->GetEntity();
 	this->enemy_center = UtilHelpers::getWorldSpaceCenter(entity);
 	this->in_combat = true;
@@ -517,6 +576,7 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	if (this->is_visible)
 	{
 		this->enemy_position = this->enemy_center;
+		this->time_lost_los = gpGlobals->curtime;
 	}
 	else
 	{

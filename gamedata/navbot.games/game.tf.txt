@@ -26,6 +26,9 @@
 			"PlayerHull_StandHeight"		"82.0"
 			"PlayerHull_CrouchHeight"		"45.0"
 			"PlayerHull_Width"				"48.0"
+
+			/* Player model bone name to aim at when going for headshots */
+			"BotAim_HeadBoneName"			"bip_head"
 		}
 		"Offsets"
 		{

@@ -93,6 +93,8 @@ public:
 	virtual bool IsDeployedOrScoped(const CBaseBot* owner) const;
 	// returns true if the weapon's special function can be used.
 	bool CanUseSpecialFunction(const CBaseBot* owner, const float range) const;
+	// Weapon debug identifier string
+	const char* GetDebugIdentifier() const;
 protected:
 	const WeaponInfo* m_info;
 

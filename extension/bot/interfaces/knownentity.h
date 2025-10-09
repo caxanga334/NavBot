@@ -32,12 +32,14 @@ public:
 	inline bool WasEverHeard() const { return m_timesincelastnoise > 0.0f; }
 	// Returns how many seconds have passed since this entity became known to the bot
 	float GetTimeSinceBecomeKnown() const;
-	// Returns how many seconds have passed since this entity was completely visible
-	float GetTimeSinceLastVisible() const;
+	// Returns how many seconds have passed since this entity became completely visible
+	float GetTimeSinceBecameVisible() const;
 	// Returns how many seconds have passed since some info about this entity was received
 	float GetTimeSinceLastInfo() const;
 	// Returns how many seconds have passed since this entity was heard for the last time
 	float GetTimeSinceLastHeard() const;
+	// Returns how any seconds have passed since this entity was updated as visible.
+	float GetTimeSinceLastVisible() const;
 	// Returns the timestamp of the last time this entity was visible
 	inline float GetTimeWhenBecameVisible() const { return m_timelastvisible; }
 	// Gets the entity last known position
@@ -73,7 +75,7 @@ public:
 		if (m_visible)
 			return true;
 
-		if (WasEverFullyVisible() && GetTimeSinceLastVisible() < recenttime)
+		if (WasEverFullyVisible() && GetTimeSinceBecameVisible() < recenttime)
 			return true;
 
 		return false;
@@ -98,6 +100,8 @@ public:
 	 * @return True if the string pattern matches with this known entity classname. False otherwise.
 	 */
 	const bool IsEntityOfClassname(const char* classname) const;
+	// Returns the debug identifier string
+	const char* GetDebugIdentifier() const;
 private:
 	CHandle<CBaseEntity> m_handle; // Handle to the actual entity
 	std::string m_classname; // Entity classname (cached)
@@ -105,7 +109,8 @@ private:
 	Vector m_lastknownvelocity; // Last known velocity of this entity
 	CNavArea* m_lastknownarea; // Nav area nearest to the LKP
 	float m_timeknown; // Timestamp when this entity became known
-	float m_timelastvisible; // Timestamp of when this entity was fully visible to the bot
+	float m_timelastvisible; // Timestamp of when this entity became fully visible to the bot
+	float m_timevisible; // Timestamp of when this entity was still fully visible to the bot.
 	float m_timelastinfo; // Timestamp of the last time the bot received some info about this
 	float m_timesincelastnoise; // Timestamp of the last time the bot heard this entity
 	bool m_visible; // This entity is visible right now

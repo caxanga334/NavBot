@@ -58,7 +58,7 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else if (threat->GetTimeSinceLastVisible() < 3.0f)
 		{
-			bot->GetControlInterface()->AimAt(threat->GetLastKnownPosition(), IPlayerController::LOOK_DANGER, 0.5f, "Looking at threat last know position!");
+			bot->GetControlInterface()->AimAt(threat->GetLastKnownPosition(), IPlayerController::LOOK_ALERT, 0.5f, "Looking at threat last know position!");
 		}
 	}
 	else

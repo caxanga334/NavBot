@@ -31,6 +31,7 @@
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include <bot/tasks_shared/bot_shared_rogue_behavior.h>
+#include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
 #include "scenario/rd/tf2bot_rd_monitor_task.h"
@@ -370,4 +371,15 @@ TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnObjectSapped(CTF2Bot* bo
 	}
 
 	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnSquadEvent(CTF2Bot* bot, SquadEventType evtype)
+{
+	if (evtype == SquadEventType::SQUAD_EVENT_JOINED)
+	{
+		AITask<CTF2Bot>* task = static_cast<AITask<CTF2Bot>*>(new CTF2BotScenarioTask);
+		return TrySwitchTo(new CBotSharedSquadMemberMonitorTask<CTF2Bot, CTF2BotPathCost>(task), PRIORITY_CRITICAL, "I have joined a squad, starting squad member behavior!");
+	}
+
+	return TryContinue(PRIORITY_LOW);
 }

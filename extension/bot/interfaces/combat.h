@@ -27,6 +27,10 @@ public:
 		bool in_headshot_range; // in range of a headshot attack
 		bool can_use_primary; // can use primary attack
 		bool can_fire; // true if has a clear LOF
+		float time_lost_los; // timestamp of when LOS was lost
+
+		// Returns the amount of seconds passed since the bot lost line of sight with the current enemy.
+		float GetTimeSinceLostLOS() const;
 
 		void Clear()
 		{
@@ -43,6 +47,7 @@ public:
 			in_headshot_range = false;
 			can_use_primary = false;
 			can_fire = false;
+			time_lost_los = -9999.0f;
 		}
 
 		void Update(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon);
@@ -107,6 +112,12 @@ public:
 	bool ScopeInOrDeployWeapon();
 	// Tells the combat interface to stop scoping in with the current weapon.
 	void UnScopeWeapon() { m_unscopeTimer.Start(1.0f); }
+	// Returns true if the given threat is the last one the bot was in combat with.
+	const bool IsLastThreat(const CKnownEntity* threat) const { return threat != nullptr && threat == m_lastThreatPtr; }
+	// Returns how many seconds have passed since line of sight was lost to the current threat.
+	const float GetTimeSinceLOSWasLost() const { return m_combatData.GetTimeSinceLostLOS(); }
+	// Returns true if the bot is reaiming.
+	const bool IsReAiming() const { return m_reAim; }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -156,6 +167,7 @@ protected:
 	CountdownTimer& GetUnscopeTimer() { return m_unscopeTimer; }
 	CountdownTimer& GetSpecialWeaponFunctionTimer() { return m_useSpecialFuncTimer; }
 	CountdownTimer& GetWeaponSelectionTimer() { return m_selectWeaponTimer; }
+	CountdownTimer& GetScopeInDelayTimer() { return m_scopeinDelayTimer; }
 	// Sets the scoped/deployed status.
 	void SetScopedOrDeployedStatus(bool status) { m_isScopedOrDeployed = status; }
 	/**
@@ -176,6 +188,11 @@ protected:
 	 * @param activeWeapon Current weapon.
 	 */
 	virtual void OnStartCombat(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
+	/**
+	 * @brief Called when the bot's current threat changes.a
+	 * @param threat New threat.
+	 */
+	virtual void OnNewThreat(const CKnownEntity* threat) {};
 	// Returns true if the bot can use secondary abilities
 	virtual bool CanUseSecondaryAbilitities() const;
 	/**
@@ -185,19 +202,42 @@ protected:
 	 */
 	virtual void UseSecondaryAbilities(const CKnownEntity* threat, const CBotWeapon* activeWeapon) {}
 	CountdownTimer& GetSecondaryAbilitiesTimer() { return m_secondaryAbilityTimer; } // Timer for secondary abilities
+	/**
+	 * @brief Sets the last combat threat.
+	 * @param threat Threat to set. NULL to clear.
+	 */
+	void SetLastThreat(const CKnownEntity* threat)
+	{
+		if (threat == nullptr)
+		{
+			m_lastThreatPtr = nullptr;
+			return;
+		}
+
+		if (m_lastThreatPtr != threat)
+		{
+			OnNewThreat(threat);
+			m_lastThreatPtr = threat;
+		}
+	}
+	// Sets the ReAim variable
+	void SetReAim(bool status) { m_reAim = status; }
 private:
 	CBaseEntity* m_lastWeaponPtr;
+	const CKnownEntity* m_lastThreatPtr;
 	CountdownTimer m_disableCombatTimer;
 	CountdownTimer m_dontFireTimer;
 	CountdownTimer m_unscopeTimer;
 	CountdownTimer m_useSpecialFuncTimer;
 	CountdownTimer m_selectWeaponTimer; // cooldown for weapon selection
 	CountdownTimer m_secondaryAbilityTimer;
+	CountdownTimer m_scopeinDelayTimer;
 	IntervalTimer m_attackTimer;
 	CombatData m_combatData;
 	bool m_shouldAim;
 	bool m_shouldSelectWeapons;
 	bool m_isScopedOrDeployed;
+	bool m_reAim;
 };
 
 #endif // !__NAVBOT_BOT_COMBAT_INTERFACE_H_
