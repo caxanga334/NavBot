@@ -32,6 +32,7 @@ void DifficultyProfile::RandomizeProfileValues()
 	health_critical_percent = randomgen->GetRandomReal<float>(0.1f, 0.3f);
 	health_low_percent = randomgen->GetRandomReal<float>(0.4f, 0.8f);
 	numerical_disadvantage_retreat_threshold = randomgen->GetRandomInt<int>(3, 12);
+	prediction_max_iterations = randomgen->GetRandomInt<int>(1, 10);
 }
 
 void DifficultyProfile::ValidateProfileValues()
@@ -354,6 +355,12 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 		int v = atoi(value);
 		v = std::clamp(v, 2, 100);
 		m_current->SetRetreatFromNumericalDisadvantageThreshold(v);
+	}
+	else if (strncasecmp(key, "max_pred_it", 11) == 0)
+	{
+		int v = atoi(value);
+		v = std::clamp(v, 1, 30);
+		m_current->SetMaxPredictionIterations(v);
 	}
 	else
 	{

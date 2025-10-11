@@ -38,6 +38,7 @@ public:
 		health_critical_percent = 0.2f;
 		health_low_percent = 0.5f;
 		numerical_disadvantage_retreat_threshold = 5;
+		prediction_max_iterations = 1;
 	}
 
 	virtual ~DifficultyProfile() = default;
@@ -70,6 +71,7 @@ public:
 	inline const float GetHealthCriticalThreshold() const { return health_critical_percent; }
 	inline const float GetHealthLowThreshold() const { return health_low_percent; }
 	inline const int GetRetreatFromNumericalDisadvantageThreshold() const { return numerical_disadvantage_retreat_threshold; }
+	inline const int GetMaxPredictionIterations() const { return prediction_max_iterations; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
@@ -89,6 +91,7 @@ public:
 	inline void SetHealthCriticalThreshold(const float v) { health_critical_percent = v; }
 	inline void SetHealthLowThreshold(const float v) { health_low_percent = v; }
 	inline void SetRetreatFromNumericalDisadvantageThreshold(const int v) { numerical_disadvantage_retreat_threshold = v; }
+	inline void SetMaxPredictionIterations(const int v) { prediction_max_iterations = v; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -109,6 +112,7 @@ private:
 	float health_critical_percent; // If the bot HP % is less than this, the bot health is critical
 	float health_low_percent; // If the bot HP % is less than this, the bot health is low
 	int numerical_disadvantage_retreat_threshold; // If the numerical disadvantage (number of enemies - number of allies) is greater than this, the bot will retreat
+	int prediction_max_iterations; // Maximum number of iterations when prediting projectiles.
 };
 
 // Bot difficulty profile manager

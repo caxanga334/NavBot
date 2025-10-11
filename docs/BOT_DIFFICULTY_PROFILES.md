@@ -63,6 +63,7 @@ Example profile
 | health_critical_percent | If the bot HP% (range: 0.0-1.0) is less than this value, the bot is critically low on health. |
 | health_low_percent | If the bot HP% is less than this value, the bot is low on health. |
 | numerical_disadvantage_retreat_threshold | Threshold for retreating due to numerical disadvantage (visible enemies minus nearby allies). |
+| max_pred_it | Maximum number of iterations when predicting the target's position for projectile based weapons. |
 
 
 ## Notes

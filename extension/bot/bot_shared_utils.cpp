@@ -499,7 +499,7 @@ Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEnt
 {
 	CBaseExtPlayer* enemy = extmanager->GetPlayerOfEntity(target);
 
-	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
+	// Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
 	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, enemy, desiredAim, weapon, headbone);
 
 	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
@@ -509,8 +509,10 @@ Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEnt
 		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
 	}
 
-	float range = (theirPos - bot->GetEyeOrigin()).Length();
-	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+	// float range = (theirPos - bot->GetEyeOrigin()).Length();
+	// Vector predicted = pred::SimpleProjectileLead(theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+	const int maxIters = bot->GetDifficultyProfile()->GetMaxPredictionIterations();
+	Vector predicted = pred::IterativeProjectileLead(bot->GetEyeOrigin(), theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), maxIters);
 
 	if (checkLOS && !bot->IsLineOfFireClear(predicted))
 	{
@@ -524,8 +526,6 @@ Vector botsharedutils::aiming::AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEnt
 Vector botsharedutils::aiming::AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone)
 {
 	CBaseExtPlayer* enemy = extmanager->GetPlayerOfEntity(target);
-
-	Vector wepOffset = weapon->GetWeaponInfo()->GetHeadShotAimOffset();
 	Vector theirPos = botsharedutils::aiming::GetAimPositionForPlayers(bot, enemy, desiredAim, weapon, headbone);
 
 	WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
@@ -535,24 +535,28 @@ Vector botsharedutils::aiming::AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEnti
 		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
 	}
 
+#if 0
 	float range = (theirPos - bot->GetEyeOrigin()).Length();
 	auto& attackinfo = weapon->GetWeaponInfo()->GetAttackInfo(type);
-	Vector predicted = pred::SimpleProjectileLead(theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
 
 	Vector myEyePos = bot->GetEyeOrigin();
 	Vector enemyVel = enemy->GetAbsVelocity();
-	float rangeTo = (myEyePos - theirPos).Length();
+	// float rangeTo = (myEyePos - theirPos).Length();
 	const float projSpeed = attackinfo.GetProjectileSpeed();
 	const float gravity = attackinfo.GetGravity();
 
-	Vector aimPos = pred::SimpleProjectileLead(theirPos, enemyVel, projSpeed, rangeTo);
-	rangeTo = (myEyePos - aimPos).Length();
+	// Vector aimPos = pred::SimpleProjectileLead(theirPos, enemyVel, projSpeed, rangeTo);
+	Vector aimPos = pred::IterativeProjectileLead(bot->GetEyeOrigin(), theirPos, enemy->GetAbsVelocity(), weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), max_iterations_cvar.GetInt());
+	float rangeTo = (myEyePos - aimPos).Length();
 
 	const float elevation_rate = RemapValClamped(rangeTo, attackinfo.GetBallisticElevationStartRange(), attackinfo.GetBallisticElevationEndRange(), attackinfo.GetBallisticElevationMinRate(), attackinfo.GetBallisticElevationMaxRate());
 	float z = pred::GravityComp(rangeTo, gravity, elevation_rate);
 	aimPos.z += z;
+#endif
 
-	return aimPos;
+	const WeaponAttackFunctionInfo* attackInfo = &(weapon->GetWeaponInfo()->GetAttackInfo(type));
+	const int maxIters = bot->GetDifficultyProfile()->GetMaxPredictionIterations();
+	return pred::IterativeBallisticLeadAgaistPlayer(bot->GetEyeOrigin(), enemy->GetAbsOrigin(), enemy->GetAbsVelocity(), attackInfo, maxIters);
 }
 
 Vector botsharedutils::aiming::GetAimPositionForEntities(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon)
@@ -644,8 +648,10 @@ Vector botsharedutils::aiming::AimAtEntityWithProjectile(CBaseBot* bot, CBaseEnt
 		type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
 	}
 
-	float range = (theirPos - bot->GetEyeOrigin()).Length();
-	Vector predicted = pred::SimpleProjectileLead(theirPos, absVel, weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+	// float range = (theirPos - bot->GetEyeOrigin()).Length();
+	// Vector predicted = pred::SimpleProjectileLead(theirPos, absVel, weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), range);
+	const int maxIters = bot->GetDifficultyProfile()->GetMaxPredictionIterations();
+	Vector predicted = pred::IterativeProjectileLead(bot->GetEyeOrigin(), theirPos, absVel, weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed(), maxIters);
 
 	if (!bot->IsLineOfFireClear(predicted))
 	{

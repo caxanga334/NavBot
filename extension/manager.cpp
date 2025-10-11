@@ -194,19 +194,34 @@ void CExtManager::Frame()
 		m_mod->Update();
 	}
 
+	/* This is now called by the CBasePlayer::PreThink() hook for non-bots
 	for (auto& player : m_players)
 	{
 		player->PlayerThink(); // Call player think, updates last known nav area for non NavBot clients
 	}
+	*/
 }
 
 void CExtManager::OnClientPutInServer(int client)
 {
-	edict_t* edict = gamehelpers->EdictOfIndex(client);
+	SourceMod::IGamePlayer* gameplayer = playerhelpers->GetGamePlayer(client);
+
+	if (gameplayer == nullptr)
+	{
+		smutils->LogError(myself, "CExtManager::OnClientPutInServer failed to retrieve a SourceMod::IGamePlayer instance of client %i!", client);
+		return;
+	}
+
+	edict_t* edict = gameplayer->GetEdict();
 
 	if (edict == nullptr)
 	{
-		smutils->LogError(myself, "CExtManager::OnClientPutInServer failed to convert client index to edict pointer!");
+		smutils->LogError(myself, "CExtManager::OnClientPutInServer NULL edict for client %i!", client);
+		return;
+	}
+
+	if (gameplayer->IsSourceTV() || gameplayer->IsReplay())
+	{
 		return;
 	}
 
@@ -219,23 +234,20 @@ void CExtManager::OnClientPutInServer(int client)
 	else
 	{
 		// not a NavBot, register as a player
-		m_players.emplace_back(new CBaseExtPlayer(edict));
+		auto& player = m_players.emplace_back(new CBaseExtPlayer(edict));
+		player->PostConstruct();
 	}
 	
-	auto gp = playerhelpers->GetGamePlayer(client);
-
-	if (gp->IsSourceTV() || gp->IsReplay())
-		return; // Don't care about sourcetv bots
 
 #ifdef EXT_DEBUG
-	auto auth = gp->GetAuthString(true);
+	const char* auth = gameplayer->GetAuthString(true);
 
 	if (auth == nullptr)
 	{
 		auth = "NULL";
 	}
 
-	smutils->LogMessage(myself, "OnClientPutInServer -- %i %p '%s'", client, edict, auth);
+	smutils->LogMessage(myself, "OnClientPutInServer -- %i %p '%s' %p", client, edict, auth);
 #endif // EXT_DEBUG
 }
 

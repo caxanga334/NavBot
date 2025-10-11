@@ -2094,6 +2094,7 @@ void CommandNavDelete( void )
 		return;
 
 	TheNavMesh->CommandNavDelete();
+	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 static ConCommand sm_nav_delete( "sm_nav_delete", CommandNavDelete, "Deletes the currently highlighted Area.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
@@ -2105,6 +2106,7 @@ void CommandNavDeleteMarked( void )
 		return; 
 
 	TheNavMesh->CommandNavDeleteMarked(); 
+	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 } 
 static ConCommand sm_nav_delete_marked( "sm_nav_delete_marked", CommandNavDeleteMarked, "Deletes the currently marked Area (if any).", FCVAR_GAMEDLL | FCVAR_CHEAT );
 

@@ -29,6 +29,7 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 	m_pl = gameclients->GetPlayerState(edict);
 	m_lastnavarea = nullptr;
 	m_navupdatetimer = 6;
+	m_prethinkHook = -1;
 
 #ifdef EXT_DEBUG
 
@@ -58,12 +59,24 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 
 CBaseExtPlayer::~CBaseExtPlayer()
 {
+	if (m_prethinkHook != -1)
+	{
+		SH_REMOVE_HOOK_ID(m_prethinkHook);
+	}
 }
 
 bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other) const
 {
 	// Maybe also add something like a userid here?
 	return this->GetIndex() == other.GetIndex();
+}
+
+void CBaseExtPlayer::PostConstruct()
+{
+	if (!IsExtensionBot())
+	{
+		SetupPlayerHooks();
+	}
 }
 
 void CBaseExtPlayer::PlayerThink()

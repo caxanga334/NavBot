@@ -14,6 +14,8 @@ public:
 	CBaseExtPlayer(edict_t* edict);
 	virtual ~CBaseExtPlayer();
 
+	static bool InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConfig* gd_sdkhooks, SourceMod::IGameConfig* gd_sdktools);
+
 	/**
 	 * @brief Radius the player is able to use objects.
 	 * https://github.com/ValveSoftware/source-sdk-2013/blob/39f6dde8fbc238727c020d13b05ecadd31bda4c0/src/game/shared/baseplayer_shared.h#L15
@@ -34,6 +36,11 @@ public:
 	bool IsFakeClient() const { return m_playerinfo->IsFakeClient(); }
 
 	bool operator==(const CBaseExtPlayer& other) const;
+
+	/**
+	 * @brief Called post constructor while still inside the OnClientPutInServer callback.
+	 */
+	virtual void PostConstruct();
 
 	// Function called every server frame by the manager
 	virtual void PlayerThink();
@@ -184,6 +191,11 @@ private:
 	IPlayerInfo* m_playerinfo;
 	CNavArea* m_lastnavarea;
 	int m_navupdatetimer;
+	int m_prethinkHook;
+
+	void SetupPlayerHooks();
+	/* CBasePlayer::PreThink hook */
+	void Hook_PreThink();
 };
 
 

@@ -3,10 +3,10 @@
 
 #include <extension.h>
 #include <manager.h>
-#include <bot/basebot.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <entities/baseentity.h>
+#include <bot/basebot.h>
 #include "prediction.h"
 
 #undef min
@@ -43,4 +43,55 @@ float pred::GravityComp(const float rangeBetween, const float projGravity, const
 	float z = (CExtManager::GetSvGravityValue() * projGravity) * (elevationRate * steps);
 
 	return z;
+}
+
+Vector pred::IterativeProjectileLead(const Vector& shooterPosition, const Vector& initialTargetPosition, const Vector& targetVelocity, const float projectileSpeed, const int maxIterations)
+{
+	Vector targetPos = initialTargetPosition;
+	Vector targetDir = targetPos - shooterPosition;
+	float range = targetDir.NormalizeInPlace();
+	float time = GetProjectileTravelTime(projectileSpeed, range);
+
+	for (int i = 0; i < maxIterations; i++)
+	{
+		Vector predictedPosition = initialTargetPosition + (targetVelocity * time);
+
+		targetDir = predictedPosition - shooterPosition;
+		range = targetDir.NormalizeInPlace();
+		time = GetProjectileTravelTime(projectileSpeed, range);
+
+		targetPos = predictedPosition;
+	}
+
+	return targetPos;
+}
+
+Vector pred::IterativeBallisticLeadAgaistPlayer(const Vector& shooterPosition, const Vector& initialTargetPosition, const Vector& targetVelocity, const WeaponAttackFunctionInfo* attackInfo, const int maxIterations)
+{
+	const float projectileSpeed = attackInfo->GetProjectileSpeed();
+	Vector targetPos = initialTargetPosition;
+	Vector targetDir = targetPos - shooterPosition;
+	float range = targetDir.NormalizeInPlace();
+	float time = GetProjectileTravelTime(projectileSpeed, range);
+
+	for (int i = 0; i < maxIterations; i++)
+	{
+		Vector predictedPosition = initialTargetPosition + (targetVelocity * time);
+
+		targetDir = predictedPosition - shooterPosition;
+		range = targetDir.NormalizeInPlace();
+		time = GetProjectileTravelTime(projectileSpeed, range);
+
+		const float elevation_rate = RemapValClamped(range, attackInfo->GetBallisticElevationStartRange(), 
+			attackInfo->GetBallisticElevationEndRange(), 
+			attackInfo->GetBallisticElevationMinRate(), attackInfo->GetBallisticElevationMaxRate());
+
+		const float z = GravityComp(range, attackInfo->GetGravity(), elevation_rate);
+
+		predictedPosition.z += z;
+
+		targetPos = predictedPosition;
+	}
+
+	return targetPos;
 }

@@ -45,10 +45,6 @@ public:
 
 	// Called when the bot is added to the game
 	void PostAdd();
-	/**
-	 * @brief Called post constructor while still inside the OnClientPutInServer callback.
-	 */
-	virtual void PostConstruct() {}
 
 	// Returns the time the bot has spawned (Spawn() function called)
 	inline float GetLastSpawnTime() const { return m_spawnTime; }

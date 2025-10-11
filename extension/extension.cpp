@@ -249,6 +249,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		smutils->LogMessage(myself, "CBasePlayer::PlayerRunCommand hook enabled!");
 	}
 
+	if (!CBaseExtPlayer::InitHooks(m_cfg_navbot, m_cfg_sdkhooks, m_cfg_sdktools))
+	{
+		ke::SafeSprintf(error, maxlen, "Failed to setup player hooks!");
+		return false;
+	}
+
 	if (!CBaseBot::InitHooks(m_cfg_navbot, m_cfg_sdkhooks, m_cfg_sdktools))
 	{
 		smutils->LogMessage(myself, "Bot support disabled: Failed to setup virtual hooks used by bots.");
