@@ -969,3 +969,28 @@ bool tf2lib::vsh::IsPlayerTheSaxtonHale(CBaseEntity* player)
 {
 	return tf2lib::GetEntityTFTeam(player) == CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->GetVSHSaxtonHaleTeam();
 }
+
+tf2lib::TeamClassData::TeamClassData()
+{
+	players_on_team = 0;
+	std::fill(players_as_class.begin(), players_as_class.end(), 0);
+	team = TeamFortress2::TFTeam::TFTeam_Unassigned;
+}
+
+void tf2lib::TeamClassData::operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player)
+{
+	if (player && player->IsInGame())
+	{
+		if (tf2lib::GetEntityTFTeam(client) == this->team)
+		{
+			players_on_team += 1;
+
+			TeamFortress2::TFClassType theirclass = tf2lib::GetPlayerClassType(client);
+
+			if (TeamFortress2::IsValidTFClass(theirclass))
+			{
+				players_as_class[static_cast<int>(theirclass)] += 1;
+			}
+		}
+	}
+}

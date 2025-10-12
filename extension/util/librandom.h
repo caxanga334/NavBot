@@ -51,6 +51,30 @@ namespace librandom
 			return chance >= this->GetRandomInt<int>(1, 100);
 		}
 
+		/**
+		 * @brief Returns the random generator engine.
+		 * @return Reference to the generator engine.
+		 */
+		E& GetGeneratorEngine() { return engine; }
+
+		/**
+		 * @brief Selects a random option with weight.
+		 * 
+		 * The options and weights vectors must have the same number of elements or bad things will happen.
+		 * @tparam R Option type
+		 * @tparam WT Weight type
+		 * @param options Vector of options to return.
+		 * @param weights Vector of weights for each option.
+		 * @return Selected option.
+		 */
+		template <typename R, typename WT>
+		R GetWeightedRandom(const std::vector<R>& options, const std::vector<WT>& weights)
+		{
+			std::discrete_distribution<WT> dist{ std::begin(weights), std::end(weights) };
+			int index = dist(engine);
+			return options[index];
+		}
+
 	private:
 		E engine;
 	};

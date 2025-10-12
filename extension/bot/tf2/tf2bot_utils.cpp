@@ -469,37 +469,42 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 
 			return true;
 		}
+
+		// no tank on the map
+		CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
+
+		if (flag)
+		{
+			spot = UtilHelpers::getEntityOrigin(flag);
+		}
 		else
 		{
-			// no tank on the map
-			CBaseEntity* flag = tf2lib::mvm::GetMostDangerousFlag(false);
+			// no flag to defend, build near the frontlines
+			CTFNavArea* frontlineArea = TheTFNavMesh()->GetRandomFrontLineArea();
 
-			if (flag)
+			if (frontlineArea)
 			{
-				spot = UtilHelpers::getEntityOrigin(flag);
+				spot = frontlineArea->GetCenter();
 			}
 			else
 			{
-				// no flag to defend, build near the frontlines
-				CTFNavArea* frontlineArea = TheTFNavMesh()->GetRandomFrontLineArea();
-
-				if (frontlineArea)
-				{
-					spot = frontlineArea->GetCenter();
-				}
-				else
-				{
-					spot = bot->GetAbsOrigin();
-				}
+				spot = bot->GetAbsOrigin();
 			}
-
-			return true;
 		}
+
+		return true;
 	}
 	else if (gm == TeamFortress2::GameModeType::GM_CTF)
 	{
 		edict_t* flag = bot->GetFlagToDefend();
-		spot = tf2lib::GetFlagPosition(flag->GetIServerEntity()->GetBaseEntity());
+
+		if (flag)
+		{
+			spot = tf2lib::GetFlagPosition(flag->GetIServerEntity()->GetBaseEntity());
+			return true;
+		}
+
+		spot = bot->GetAbsOrigin();
 		return true;
 	}
 	else if (gm == TeamFortress2::GameModeType::GM_ADCP || gm == TeamFortress2::GameModeType::GM_CP || gm == TeamFortress2::GameModeType::GM_PL ||

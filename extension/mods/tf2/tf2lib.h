@@ -60,6 +60,25 @@ namespace tf2lib
 	int GetTeleporterUses(CBaseEntity* teleporter);
 	// Returns true if the given player is carrying a flag. Always false on non-player entities.
 	bool IsPlayerCarryingAFlag(CBaseEntity* player);
+
+	/**
+	 * @brief Utility struct for storing team class counts.
+	 */
+	struct TeamClassData
+	{
+		TeamClassData();
+
+		int players_on_team;
+		std::array<int, TeamFortress2::TF_CLASS_ARRAY_SIZE> players_as_class;
+		TeamFortress2::TFTeam team;
+
+		int GetNumAsClass(TeamFortress2::TFClassType _class)
+		{
+			return players_as_class[static_cast<int>(_class)];
+		}
+
+		void operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player);
+	};
 }
 
 namespace tf2lib::mvm

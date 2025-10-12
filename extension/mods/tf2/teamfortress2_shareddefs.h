@@ -72,6 +72,9 @@ namespace TeamFortress2
 		TFClass_Engineer
 	};
 
+	// Array size needed to use the class type as index
+	constexpr size_t TF_CLASS_ARRAY_SIZE = static_cast<size_t>(TFClassType::TFClass_Engineer) + 1U;
+
 	inline bool IsValidTFClass(TFClassType _class)
 	{
 		return _class > TFClassType::TFClass_Unknown && _class <= TFClassType::TFClass_Engineer;

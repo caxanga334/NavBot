@@ -53,12 +53,15 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 	available_classes.reserve(9);
 	bool has_priority = false; // signals priority
 
+	tf2lib::TeamClassData teamdata{};
+	teamdata.team = team;
+	UtilHelpers::ForEachPlayer<tf2lib::TeamClassData>(teamdata); // fill data
+
 	for (int i = 0; i < static_cast<int>(TeamFortress2::TFClassType::TFClass_Engineer); i++)
 	{
 		TeamFortress2::TFClassType current_class = static_cast<TeamFortress2::TFClassType>(i + 1); // array starts a 0, classes starts at 1
 
-		int onteam = UtilHelpers::GetNumberofPlayersOnTeam(static_cast<int>(team));
-		int asclass = tf2lib::GetNumberOfPlayersAsClass(current_class, team);
+		int asclass = teamdata.GetNumAsClass(current_class);
 		const auto& data = m_classdata[static_cast<int>(roster)][i];
 
 		if (data.IsDisabled())
@@ -67,7 +70,7 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		if (data.HasMaximum() && asclass >= data.GetMaximum())
 			continue; // at or over class limit
 
-		if (onteam < data.GetTeamSize())
+		if (teamdata.players_on_team < data.GetTeamSize())
 			continue; // not enough players on team
 
 		if (data.HasMinimum() && asclass < data.GetMinimum())
@@ -78,7 +81,7 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 			continue;
 		}
 
-		if (data.HasRate() && asclass < data.GetMinimumForRate(onteam))
+		if (data.HasRate() && asclass < data.GetMinimumForRate(teamdata.players_on_team))
 		{
 			// number of players as class below minimum based on per player class rate, priorize!
 			has_priority = true;
@@ -121,7 +124,30 @@ TeamFortress2::TFClassType CTF2ClassSelection::SelectAClass(TeamFortress2::TFTea
 		return available_classes[0];
 	}
 
-	return available_classes[randomgen->GetRandomInt<size_t>(0U, available_classes.size() - 1)];
+	// Old method, uniform random
+	// return available_classes[randomgen->GetRandomInt<size_t>(0U, available_classes.size() - 1)];
+
+	// New method with weights
+	std::vector<int> weights;
+
+	for (auto& cls : available_classes)
+	{
+		// weight decreases as more players pick this class
+		int weight = 10 - (teamdata.GetNumAsClass(cls) * 3);
+		weight = std::max(weight, 1);
+		weights.push_back(std::move(weight));
+	}
+
+#ifdef EXT_DEBUG
+	// Sanity check
+	if (weights.size() != available_classes.size())
+	{
+		smutils->LogError(myself, "CTF2ClassSelection::SelectAClass weight and class vector size doesn't match!");
+		return TeamFortress2::TFClassType::TFClass_Unknown;
+	}
+#endif // EXT_DEBUG
+
+	return randomgen->GetWeightedRandom<TeamFortress2::TFClassType, int>(available_classes, weights);
 }
 
 /**
