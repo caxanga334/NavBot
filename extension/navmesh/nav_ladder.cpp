@@ -772,3 +772,10 @@ void LadderToAreaConnection::PostLoad()
 
 	connect = area;
 }
+
+void CNavLadder::MergeLadders(CNavLadder* bottom, CNavLadder* top)
+{
+	META_CONPRINTF("Mergin ladders %u and %u\n", bottom->m_id, top->m_id);
+	bottom->m_top = top->m_top;
+	bottom->m_length = std::abs(top->m_top.z - bottom->m_bottom.z);
+}

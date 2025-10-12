@@ -4026,6 +4026,20 @@ void CNavMesh::ClearDragSelectionSet( void )
 	m_dragSelectionSet.RemoveAll();
 }
 
+void CNavMesh::RemoveAndDestroyArea(CNavArea* area)
+{
+	TheNavAreas.FindAndRemove(area);
+	TheNavMesh->OnEditDestroyNotify(area);
+	TheNavMesh->DestroyArea(area);
+}
+
+void CNavMesh::RemoveAndDestroyLadder(CNavLadder* ladder)
+{
+	TheNavMesh->m_ladders.FindAndRemove(ladder);
+	TheNavMesh->OnEditDestroyNotify(ladder);
+	delete ladder;
+}
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -5369,4 +5383,35 @@ CON_COMMAND_F(sm_nav_trace_clear_solid_entity_list, "Clears the entities added t
 {
 	TheNavMesh->RemoveAllEntitiesFromForcedSolidList();
 	META_CONPRINT("Forced solid entity list cleared!\n");
+}
+
+CON_COMMAND_F(sm_nav_merge_ladders, "Merges two ladders together", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_merge_ladders <bottom ladder ID> <top ladder ID> \n");
+		return;
+	}
+
+	unsigned int l1 = static_cast<unsigned int>(atoi(args[1]));
+	unsigned int l2 = static_cast<unsigned int>(atoi(args[2]));
+
+	CNavLadder* bottom = TheNavMesh->GetLadderByID(l1);
+	CNavLadder* top = TheNavMesh->GetLadderByID(l2);
+
+	if (!bottom || !top)
+	{
+		META_CONPRINTF("Failed to get ladders of ID %u and %u!\n", l1, l2);
+		return;
+	}
+
+	if (bottom == top)
+	{
+		META_CONPRINTF("Can't merge the ladder with itself!");
+		return;
+	}
+
+	TheNavMesh->MergeLadders(bottom, top);
 }

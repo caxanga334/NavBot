@@ -183,6 +183,8 @@ public:
 		return z;
 	}
 
+	static void MergeLadders(CNavLadder* bottom, CNavLadder* top);
+
 private:
 	friend class CNavMesh;
 	void FindLadderEntity( void );

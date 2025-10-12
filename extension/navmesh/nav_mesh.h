@@ -633,6 +633,9 @@ public:
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
 	void ClearDragSelectionSet( void );
 
+	static void RemoveAndDestroyArea(CNavArea* area);
+	static void RemoveAndDestroyLadder(CNavLadder* ladder);
+
 	CNavArea *GetMarkedArea( void ) const;										// return area marked by user in edit mode
 	inline bool IsMarkedArea(CNavArea* other) const { return GetMarkedArea() == other; } // returns true if the given area is the marked area.
 	CNavLadder *GetMarkedLadder( void ) const	{ return m_markedLadder; }		// return ladder marked by user in edit mode
@@ -655,6 +658,7 @@ public:
 	void CreateLadder( const Vector &mins, const Vector &maxs, float maxHeightAboveTopArea );
 	void CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea );
 	void CreateUseableLadder(CBaseEntity* pLadder);
+	void MergeLadders(CNavLadder* bottom, CNavLadder* top);
 
 	float SnapToGrid( float x, bool forceGrid = false ) const;					// snap given coordinate to generation grid boundary
 	Vector SnapToGrid( const Vector& in, bool snapX = true, bool snapY = true, bool forceGrid = false ) const;	// snap given vector's X & Y coordinates to generation grid boundary
