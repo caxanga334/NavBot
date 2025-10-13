@@ -414,12 +414,7 @@ void CNavMesh::OnMapStart()
 				smutils->LogMessage(myself, "Auto import successful! Running analysis.");
 				sm_nav_quicksave.SetValue(0);
 
-				CNavArea::CompressIDs(TheNavMesh);
-				CNavLadder::CompressIDs(TheNavMesh);
-				TheNavMesh->CompressWaypointsIDs();
-				TheNavMesh->CompressVolumesIDs();
-				TheNavMesh->CompressElevatorsIDs();
-				TheNavMesh->CompressPrerequisiteIDs();
+				TheNavMesh->CompressAllIDs();
 
 				TheNavMesh->BeginAnalysis(false);
 			}
@@ -596,8 +591,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	{
 		m_areaCount = 0;
 		// Reset the next area and ladder IDs to 1
-		CNavArea::CompressIDs(this);
-		CNavLadder::CompressIDs(this);
+		CompressAllIDs();
 		m_isLoaded = false;
 	}
 
@@ -3293,12 +3287,7 @@ void CommandNavCompressID( void )
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
-	CNavArea::CompressIDs(TheNavMesh);
-	CNavLadder::CompressIDs(TheNavMesh);
-	TheNavMesh->CompressWaypointsIDs();
-	TheNavMesh->CompressVolumesIDs();
-	TheNavMesh->CompressElevatorsIDs();
-	TheNavMesh->CompressPrerequisiteIDs();
+	TheNavMesh->CompressAllIDs();
 }
 static ConCommand sm_nav_compress_id( "sm_nav_compress_id", CommandNavCompressID, "Re-orders area and ladder ID's so they are continuous.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
@@ -3885,6 +3874,99 @@ void CNavMesh::RebuildPrerequisiteMap()
 	}
 
 	temp.clear();
+}
+
+void CNavMesh::CompressAllIDs()
+{
+	CNavArea::CompressIDs(TheNavMesh);
+	CNavLadder::CompressIDs(TheNavMesh);
+	CompressWaypointsIDs();
+	CompressVolumesIDs();
+	CompressElevatorsIDs();
+	CompressPrerequisiteIDs();
+}
+
+void CNavMesh::ShiftAllIDsToTop()
+{
+	unsigned int top = 1U;
+
+	FOR_EACH_VEC(TheNavAreas, it)
+	{
+		CNavArea* area = TheNavAreas[it];
+		
+		if (area->GetID() >= top)
+		{
+			top = area->GetID() + 1U;
+		}
+	}
+
+	CNavArea::m_nextID = top;
+	top = 1U;
+
+	FOR_EACH_VEC(m_ladders, it)
+	{
+		CNavLadder* ladder = m_ladders[it];
+
+		if (ladder->GetID() >= top)
+		{
+			top = ladder->GetID() + 1U;
+		}
+	}
+
+	CNavLadder::m_nextID = top;
+	top = 1U;
+	WaypointID wpTop = 1U;
+
+	for (auto& waypoint : m_waypoints)
+	{
+		if (waypoint.second->GetID() >= wpTop)
+		{
+			wpTop = waypoint.second->GetID() + 1U;
+		}
+	}
+
+	CWaypoint::g_NextWaypointID = wpTop;
+
+	for (auto& volume : m_volumes)
+	{
+		if (volume.second->GetID() >= top)
+		{
+			top = volume.second->GetID() + 1U;
+		}
+	}
+
+	CNavVolume::s_nextID = top;
+	top = 1U;
+
+	for (auto& elevator : m_elevators)
+	{
+		if (elevator.second->GetID() >= top)
+		{
+			top = elevator.second->GetID() + 1U;
+		}
+	}
+
+	CNavElevator::s_nextID = top;
+	top = 1U;
+
+	for (auto& prereq : m_prerequisites)
+	{
+		if (prereq.second->GetID() >= top)
+		{
+			top = prereq.second->GetID() + 1U;
+		}
+	}
+
+	CNavPrerequisite::s_nextID = top;
+
+#ifdef EXT_DEBUG
+	META_CONPRINTF("Top area ID: %u\n", CNavArea::m_nextID);
+	META_CONPRINTF("Top ladder ID: %u\n", CNavLadder::m_nextID);
+	META_CONPRINTF("Top waypoint ID: %u\n", CWaypoint::g_NextWaypointID);
+	META_CONPRINTF("Top volume ID: %u\n", CNavVolume::s_nextID);
+	META_CONPRINTF("Top elevator ID: %u\n", CNavElevator::s_nextID);
+	META_CONPRINTF("Top prerequisite ID: %u\n", CNavPrerequisite::s_nextID);
+#endif // EXT_DEBUG
 }
 
 std::optional<const std::shared_ptr<CWaypoint>> CNavMesh::AddWaypoint(const Vector& origin)

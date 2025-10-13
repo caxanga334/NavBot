@@ -628,6 +628,7 @@ public:
 	void CommandNavSelectAreasWithinEntity(CBaseEntity* pEntity, const std::string& classname, const bool centerOnly, const float heightOffset);
 	void CommandNavReloadMesh();										// Saves the navigation mesh and reloads it
 	void CommandNavMeasureDistance();									// Measures the distance between two nav areas
+	void CommandNavDumpToKeyValues();									// Dumps nav mesh data to a KV file
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );
@@ -1254,6 +1255,11 @@ protected:
 	void RebuildElevatorMap();
 	void RebuildPrerequisiteMap();
 public:
+	// Compresses all ids
+	void CompressAllIDs();
+	// Moves all ids to the highest value
+	void ShiftAllIDsToTop();
+
 	/**
 	 * @brief Adds a new waypoint.
 	 * @param origin Initial position of the new waypoint

@@ -5415,3 +5415,8 @@ CON_COMMAND_F(sm_nav_merge_ladders, "Merges two ladders together", FCVAR_GAMEDLL
 
 	TheNavMesh->MergeLadders(bottom, top);
 }
+
+CON_COMMAND_F(sm_nav_dump_as_keyvalues, "Dumps nav mesh data to a keyvalues file.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavDumpToKeyValues();
+}

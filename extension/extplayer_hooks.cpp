@@ -33,4 +33,6 @@ void CBaseExtPlayer::SetupPlayerHooks()
 void CBaseExtPlayer::Hook_PreThink()
 {
 	PlayerThink();
+	
+	RETURN_META(MRES_IGNORED);
 }

@@ -353,6 +353,8 @@ void CNavMesh::CreateUseableLadder(CBaseEntity* pLadder)
 
 void CNavMesh::MergeLadders(CNavLadder* bottom, CNavLadder* top)
 {
+	ShiftAllIDsToTop();
+
 	CNavLadder::MergeLadders(bottom, top);
 	CNavMesh::RemoveAndDestroyLadder(top);
 }

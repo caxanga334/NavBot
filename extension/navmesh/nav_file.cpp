@@ -27,6 +27,7 @@
 #include <utlbuffer.h>
 #include <filesystem.h>
 #include <eiface.h>
+#include <KeyValues.h>
 
 /*
 * Reminders:
@@ -430,9 +431,7 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 	else
 	{
 		m_invDxCorners = m_invDyCorners = 0;
-
-		DevWarning( "Degenerate Navigation Area #%d at setpos %g %g %g\n", 
-			m_id, m_center.x, m_center.y, m_center.z );
+		smutils->LogError(myself, "Degenerate Navigation Area #%d at setpos %g %g %g", m_id, m_center.x, m_center.y, m_center.z);
 	}
 
 	CheckWaterLevel();
@@ -1685,6 +1684,7 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 
 	// the Navigation Mesh has been successfully loaded
 	m_isLoaded = true;
+	ShiftAllIDsToTop();
 	extmanager->GetMod()->OnNavMeshLoaded();
 
 	return NAV_OK;
@@ -1987,9 +1987,7 @@ void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned
 	else
 	{
 		m_invDxCorners = m_invDyCorners = 0;
-
-		DevWarning("Degenerate Navigation Area #%d at setpos %g %g %g\n",
-			m_id, m_center.x, m_center.y, m_center.z);
+		smutils->LogError(myself, "Degenerate Navigation Area #%d at setpos %g %g %g", m_id, m_center.x, m_center.y, m_center.z);
 	}
 
 	// load heights of implicit corners
@@ -2174,4 +2172,208 @@ void CNavMesh::ImportWaypointsFromRCBot2()
 	{
 		OnRCBot2WaypointImported(wpt, loader);
 	}
+}
+
+void CNavMesh::CommandNavDumpToKeyValues()
+{
+#if SOURCE_ENGINE >= SE_CSS && SOURCE_ENGINE <= SE_TF2
+	if (!IsLoaded())
+	{
+		META_CONPRINT("Nav mesh not loaded! \n");
+		return;
+	}
+
+	if (GetNavAreaCount() == 0U)
+	{
+		META_CONPRINT("Can't dump an empty mesh! \n");
+		return;
+	}
+
+	META_CONPRINT("Dumping navigation mesh data in keyvalue format. \nThis may take a while.\n");
+
+	KeyValuesAD kv{ "NavBotNavMesh" };
+	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
+	const char* gamename = extmanager->GetMod()->GetModName();
+	const char* gamefolder = smutils->GetGameFolderName();
+
+	{
+		KeyValues* subKey = new KeyValues("Info");
+		subKey->SetInt("Version", static_cast<int>(CNavMesh::NavMeshVersion));
+		subKey->SetInt("SubVersion", static_cast<int>(GetSubVersionNumber()));
+		subKey->SetString("isAnalyzed", UtilHelpers::textformat::FormatBool(IsAnalyzed()));
+		subKey->SetString("Map", mapname.c_str());
+		subKey->SetInt("MapVersion", gpGlobals->mapversion);
+		subKey->SetString("Game", gamename);
+		subKey->SetString("GameFolder", gamefolder);
+		subKey->SetInt("AreaCount", static_cast<int>(GetNavAreaCount()));
+		subKey->SetInt("LadderCount", m_ladders.Count());
+		subKey->SetInt("WaypointCount", static_cast<int>(m_waypoints.size()));
+		subKey->SetInt("VolumeCount", static_cast<int>(m_volumes.size()));
+		subKey->SetInt("ElevatorCount", static_cast<int>(m_elevators.size()));
+		subKey->SetInt("PrerequisiteCount", static_cast<int>(m_prerequisites.size()));
+		subKey->SetInt("NumPlaces", static_cast<int>(m_placeMap.size()));
+		subKey->SetString("HasAuthorInfo", UtilHelpers::textformat::FormatBool(m_authorinfo.HasCreatorBeenSet()));
+
+		kv->AddSubKey(subKey);
+
+		if (m_authorinfo.HasCreatorBeenSet())
+		{
+			KeyValues* authors = new KeyValues("Authors");
+			KeyValues* subCreator = new KeyValues("Creator");
+
+			subCreator->SetString("Name", m_authorinfo.GetCreator().first.c_str());
+			subCreator->SetString("SID", UtilHelpers::textformat::FormatVarArgs("%llu", m_authorinfo.GetCreator().second));
+			authors->SetInt("NumEditors", static_cast<int>(m_authorinfo.GetEditorCount()));
+
+			authors->AddSubKey(subCreator);
+			subKey->AddSubKey(authors);
+
+			if (m_authorinfo.GetEditorCount() > 0U)
+			{
+				KeyValues* kvEditors = new KeyValues("Editors");
+
+				for (auto& editor : m_authorinfo.GetEditors())
+				{
+					KeyValues* subEditor = new KeyValues("Editor");
+
+					subEditor->SetString("Name", editor.first.c_str());
+					subEditor->SetString("SID", UtilHelpers::textformat::FormatVarArgs("%llu", editor.second));
+
+					kvEditors->AddSubKey(subEditor);
+				}
+
+				authors->AddSubKey(kvEditors);
+			}
+		}
+
+		KeyValues* grid = new KeyValues("Grid");
+
+		grid->SetFloat("GridCellSize", m_gridCellSize);
+		grid->SetFloat("GridSizeX", m_gridSizeX);
+		grid->SetFloat("GridSizeY", m_gridSizeY);
+		grid->SetFloat("GridMinX", m_minX);
+		grid->SetFloat("GridMinY", m_minY);
+
+		subKey->AddSubKey(grid);
+	}
+
+	if (!m_placeMap.empty())
+	{
+		KeyValues* sbPlaces = new KeyValues("Places");
+
+		for (auto& placePair : m_placeMap)
+		{
+			KeyValues* subKey = new KeyValues("PlaceDefinition");
+
+			subKey->SetInt("EntryIndex", static_cast<int>(placePair.first));
+			subKey->SetString("Hash", placePair.second.first.c_str());
+			subKey->SetString("PrettyName", placePair.second.second.c_str());
+
+			sbPlaces->AddSubKey(subKey);
+		}
+
+		kv->AddSubKey(sbPlaces);
+	}
+
+	{
+		KeyValues* sbAreas = new KeyValues("NavAreas");
+
+		FOR_EACH_VEC(TheNavAreas, it)
+		{
+			CNavArea* area = TheNavAreas[it];
+
+			KeyValues* subKey = new KeyValues("Area");
+
+			subKey->SetInt("ID", static_cast<int>(area->GetID()));
+			subKey->SetString("Center", UtilHelpers::textformat::FormatVector(area->GetCenter()));
+			subKey->SetString("CornerNorthWest", UtilHelpers::textformat::FormatVector(area->GetCorner(NavCornerType::NORTH_WEST)));
+			subKey->SetString("CornerNorthEast", UtilHelpers::textformat::FormatVector(area->GetCorner(NavCornerType::NORTH_EAST)));
+			subKey->SetString("CornerSouthEast", UtilHelpers::textformat::FormatVector(area->GetCorner(NavCornerType::SOUTH_EAST)));
+			subKey->SetString("CornerSouthWest", UtilHelpers::textformat::FormatVector(area->GetCorner(NavCornerType::SOUTH_WEST)));
+
+			if (area->IsDegenerate())
+			{
+				subKey->SetString("Degenerate", "Yes");
+			}
+
+			if (area->GetPlace() != UNDEFINED_PLACE)
+			{
+				const std::string* placename = GetPlaceName(area->GetPlace());
+				subKey->SetInt("PlaceIndex", static_cast<int>(area->GetPlace()));
+
+				if (placename)
+				{
+					subKey->SetString("PlaceName", placename->c_str());
+				}
+				else
+				{
+					subKey->SetString("PlaceName", "<<NULL STD::STRING>>");
+				}
+			}
+
+			sbAreas->AddSubKey(subKey);
+		}
+
+		kv->AddSubKey(sbAreas);
+	}
+
+	if (m_ladders.Count() > 0)
+	{
+		KeyValues* ladders = new KeyValues("NavLadders");
+
+		FOR_EACH_VEC(m_ladders, it)
+		{
+			CNavLadder* ladder = m_ladders[it];
+			KeyValues* subkey = new KeyValues("Ladder");
+
+			subkey->SetInt("ID", static_cast<int>(ladder->GetID()));
+			subkey->SetString("TopPosition", UtilHelpers::textformat::FormatVector(ladder->m_top));
+			subkey->SetString("BottomPosition", UtilHelpers::textformat::FormatVector(ladder->m_bottom));
+			
+			ladders->AddSubKey(subkey);
+		}
+
+		kv->AddSubKey(ladders);
+	}
+
+	if (!m_waypoints.empty())
+	{
+		KeyValues* sbWaypoints = new KeyValues("Waypoints");
+
+		for (auto& pair : m_waypoints)
+		{
+			const CWaypoint* waypoint = pair.second.get();
+
+			KeyValues* subkey = new KeyValues("Waypoint");
+
+			subkey->SetInt("ID", static_cast<int>(waypoint->GetID()));
+			subkey->SetString("Origin", UtilHelpers::textformat::FormatVector(waypoint->GetOrigin()));
+			subkey->SetInt("NumAngles", static_cast<int>(waypoint->GetNumOfAvailableAngles()));
+			
+			for (size_t i = 0U; i < waypoint->GetNumOfAvailableAngles(); i++)
+			{
+				const QAngle& angle = waypoint->GetAngle(i);
+				subkey->SetString(UtilHelpers::textformat::FormatVarArgs("Angle%zu", i), UtilHelpers::textformat::FormatAngles(angle));
+			}
+
+			subkey->SetInt("TeamID", waypoint->GetTeam());
+			subkey->SetFloat("Radius", waypoint->GetRadius());
+
+			sbWaypoints->AddSubKey(subkey);
+		}
+
+		kv->AddSubKey(sbWaypoints);
+	}
+
+	kv->SaveToFile(filesystem, "navmeshdump.txt", "MOD", false, true, false);
+
+	char path[PLATFORM_MAX_PATH];
+	smutils->BuildPath(Path_Game, path, sizeof(path), "navmeshdump.txt");
+	META_CONPRINTF("File saved to: %s \n", path);
+
+#else
+	META_CONPRINT("Error: Unsupported engine! \n");
+#endif // SOURCE_ENGINE >= SE_CSS && SOURCE_ENGINE <= SE_TF2
+	
+	return;
 }

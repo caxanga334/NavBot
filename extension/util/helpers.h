@@ -817,6 +817,28 @@ namespace UtilHelpers::parsers
 	bool ParseRandomInt(const char* str, int& out, const int min, const int max);
 }
 
+namespace UtilHelpers::textformat
+{
+	// Formats the given vector into a string and returns the string
+	const char* FormatVector(const Vector& vec);
+	// Formats the given angles into a string and returns the string
+	const char* FormatAngles(const QAngle& angles);
+	/**
+	 * @brief Formats the given boolean into a string and returns the string.
+	 * @param value Bool to format.
+	 * @param yesno If true. Use "Yes" to represent true and "No" for false.
+	 * @return String.
+	 */
+	const char* FormatBool(const bool value, const bool yesno = true);
+	/**
+	 * @brief Formats a string with variable arguments.
+	 * @param fmt String to format.
+	 * @param  Format args.
+	 * @return Pointer to string.
+	 */
+	const char* FormatVarArgs(const char* fmt, ...);
+}
+
 namespace UtilHelpers::players
 {
 	/**

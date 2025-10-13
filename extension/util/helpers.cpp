@@ -1877,3 +1877,54 @@ bool UtilHelpers::studio::GetBonePosition(CBaseEntity* pEntity, int bone, Vector
 
 	return true;
 }
+
+const char* UtilHelpers::textformat::FormatVector(const Vector& vec)
+{
+	static char buffer[64];
+	ke::SafeSprintf(buffer, sizeof(buffer), "%g %g %g", vec.x, vec.y, vec.z);
+	return buffer;
+}
+
+const char* UtilHelpers::textformat::FormatAngles(const QAngle& angles)
+{
+	static char buffer[64];
+	ke::SafeSprintf(buffer, sizeof(buffer), "%g %g %g", angles.x, angles.y, angles.z);
+	return buffer;
+}
+
+const char* UtilHelpers::textformat::FormatBool(const bool value, const bool yesno)
+{
+	static char buffer[16];
+
+	if (yesno)
+	{
+		ke::SafeSprintf(buffer, sizeof(buffer), "%s", value ? "Yes" : "No");
+	}
+	else
+	{
+		ke::SafeSprintf(buffer, sizeof(buffer), "%s", value ? "True" : "False");
+	}
+
+	return buffer;
+}
+
+const char* UtilHelpers::textformat::FormatVarArgs(const char* fmt, ...)
+{
+	static std::array<char, 4096> buffer;
+
+	va_list vaargs;
+	va_start(vaargs, fmt);
+	size_t length = ke::SafeVsprintf(buffer.data(), sizeof(buffer), fmt, vaargs);
+
+	if (length >= buffer.size() - 1U)
+	{
+		buffer[4095] = '\0';
+	}
+	else {
+		buffer[length] = '\0';
+	}
+
+	va_end(vaargs);
+
+	return buffer.data();
+}

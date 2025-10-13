@@ -2790,7 +2790,7 @@ void CNavArea::Draw( void ) const
 		else
 			color = NavDegenerateSecondColor;
 
-		Text( GetCenter(), UTIL_VarArgs( "Degenerate area %d", GetID() ), true, DebugDuration );
+		NDebugOverlay::Text(GetCenter(), true, DebugDuration, "Degenerate area %u", GetID());
 	}
 
 	Vector nw, ne, sw, se;
