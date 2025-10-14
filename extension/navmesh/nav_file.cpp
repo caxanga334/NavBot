@@ -187,7 +187,7 @@ void PlaceDirectory::Save(std::fstream& filestream)
 
 	for (auto& place : m_directory)
 	{
-		auto name = TheNavMesh->GetPlaceName(place.second);
+		auto name = TheNavMesh->GetPlaceHash(place.second);
 		uint64_t length = static_cast<uint64_t>(name->length() + 1U);
 		filestream.write(reinterpret_cast<char*>(&length), sizeof(uint64_t));
 		filestream.write(name->c_str(), length);
@@ -221,7 +221,7 @@ void PlaceDirectory::Load(std::fstream& filestream, uint32_t version)
 
 		if (place == UNDEFINED_PLACE)
 		{
-			Warning("Warning: NavMesh place \"%s\" is undefined? \n", placeName);
+			smutils->LogError(myself, "PlaceDirectory::Load Place name \"%s\" was not found in the Nav Mesh place map!", placeName);
 		}
 
 		LoadPlace(entry, place);

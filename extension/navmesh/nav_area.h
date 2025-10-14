@@ -380,6 +380,7 @@ public:
 
 	void SetPlace( Place place )		{ m_place = place; }	// set place descriptor
 	Place GetPlace( void ) const		{ return m_place; }		// get place descriptor
+	const bool HasPlaceName() const	{ return m_place != UNDEFINED_PLACE; } // returns true if the area has a place name assigned to it.
 
 	void MarkAsBlocked( int teamID, edict_t *blocker, bool bGenerateEvent = true );	// An entity can force a nav area to be blocked
 	virtual void UpdateBlocked( bool force = false, int teamID = NAV_TEAM_ANY );		// Updates the (un)blocked status of the nav area (throttled)

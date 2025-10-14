@@ -17,6 +17,7 @@ ICombat::ICombat(CBaseBot* bot) :
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
 	m_reAim = false;
+	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_combatData.Clear();
 }
 
@@ -32,6 +33,7 @@ void ICombat::Reset()
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
 	m_reAim = false;
+	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_disableCombatTimer.Invalidate();
 	m_dontFireTimer.Invalidate();
 	m_unscopeTimer.Invalidate();
@@ -39,6 +41,7 @@ void ICombat::Reset()
 	m_selectWeaponTimer.Invalidate();
 	m_secondaryAbilityTimer.Invalidate();
 	m_scopeinDelayTimer.Invalidate();
+	m_calloutTimer.Invalidate();
 	m_combatData.Clear();
 }
 
@@ -74,13 +77,30 @@ void ICombat::Update()
 			return;
 		}
 
+		bool wasNotVisible = false;
+
 		if (!m_combatData.in_combat)
 		{
 			OnStartCombat(threat, activeWeapon);
 		}
+		else
+		{
+			// is in combat already
+			if (!m_combatData.is_visible)
+			{
+				// flag as not visible before the update
+				wasNotVisible = true;
+			}
+		}
 
 		SetLastThreat(threat);
 		UpdateCombatData(threat, activeWeapon);
+
+		if (m_combatData.is_visible && wasNotVisible)
+		{
+			// threat was previously not visible and just became visible
+			OnThreatBecameVisible(threat, activeWeapon);
+		}
 
 		if (ShouldAim())
 		{
@@ -468,12 +488,28 @@ void ICombat::OnStartCombat(const CKnownEntity* threat, const CBotWeapon* active
 	}
 
 	m_reAim = true;
+	SetLastReportedPlace(static_cast<unsigned int>(UNDEFINED_PLACE));
+
+	TryToCalloutThreat(threat);
 
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	if (bot->IsDebugging(BOTDEBUG_COMBAT))
 	{
 		bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: STARTING COMBAT AGAINST THREAT %s! CURRENT WEAPON: %s\n",
+			bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
+	}
+}
+
+void ICombat::OnThreatBecameVisible(const CKnownEntity* threat, const CBotWeapon* activeWeapon)
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	TryToCalloutThreat(threat);
+
+	if (bot->IsDebugging(BOTDEBUG_COMBAT))
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: ON THREAT %s BECAME VISIBLE! CURRENT WEAPON: %s\n",
 			bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
 	}
 }
@@ -491,6 +527,84 @@ bool ICombat::CanUseSecondaryAbilitities() const
 	}
 
 	return true;
+}
+
+bool ICombat::CanCalloutThreat(const CKnownEntity* threat) const
+{
+	// Don't spam callouts
+	if (!m_calloutTimer.IsElapsed())
+	{
+		return false;
+	}
+
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	// This one doesn't like working with their team
+	if (bot->GetDifficultyProfile()->GetTeamwork() < 25)
+	{
+		return false;
+	}
+
+	const CNavArea* area = threat->GetLastKnownArea();
+
+	// Unknown last area
+	if (!area)
+	{
+		return false;
+	}
+
+	// Area isn't named
+	if (!area->HasPlaceName())
+	{
+		return false;
+	}
+
+	// Don't callout unless the place name changes
+	if (static_cast<Place>(GetLastReportedPlace()) == area->GetPlace())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+void ICombat::TryToCalloutThreat(const CKnownEntity* threat)
+{
+	if (CanCalloutThreat(threat))
+	{
+		SendCalloutOfTreat(threat);
+	}
+}
+
+void ICombat::SendCalloutOfTreat(const CKnownEntity* threat)
+{
+	m_calloutTimer.Start(CALLOUT_COOLDOWN);
+	// CanCalloutThreat already validates the current area (not NULL and has a name assigned to it)
+	const CNavArea* area = threat->GetLastKnownArea();
+	auto placename = TheNavMesh->GetPlaceDisplayName(area->GetPlace());
+
+	if (placename.has_value())
+	{
+		SetLastReportedPlace(static_cast<unsigned int>(area->GetPlace()));
+		CBaseBot* bot = GetBot<CBaseBot>();
+		char message[256];
+		const char* name = GetEnemyName(threat);
+
+		ke::SafeSprintf(message, sizeof(message), "Enemy %s spotted at %s!", name, placename->c_str());
+		bot->SendTeamChatMessage(message);
+
+		if (bot->IsDebugging(BOTDEBUG_COMBAT))
+		{
+			bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: SENDING CALLOUT OF THREAT %s! NAV AREA #%u (%s)\n",
+				bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), area->GetID(), placename->c_str());
+		}
+	}
+}
+
+const char* ICombat::GetEnemyName(const CKnownEntity* enemy) const
+{
+	// classname by default, convenient because the player's entity classname is "player", so it's becomes "Enemy player ..."
+	return enemy->GetEntityClassname().c_str();
 }
 
 IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheadshots) const

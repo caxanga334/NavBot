@@ -14,6 +14,7 @@ public:
 	NavPlaceDatabaseLoader();
 	~NavPlaceDatabaseLoader();
 
+	void SetAllowOverriding(bool set) { allow_overriding = set; }
 	bool ParseFile(const std::filesystem::path& path);
 
 	std::unordered_map<std::string, std::string>& GetEntries() { return entries; }
@@ -75,6 +76,7 @@ private:
 	SourceMod::SMCStates parser_states;
 	std::unordered_map<std::string, std::string> entries; // no duplicates allowed
 	bool valid;
+	bool allow_overriding; // if true, duplicates will override existing values
 };
 
 NavPlaceDatabaseLoader::NavPlaceDatabaseLoader()
@@ -83,6 +85,7 @@ NavPlaceDatabaseLoader::NavPlaceDatabaseLoader()
 	parser_states.line = 0;
 	entries.reserve(1024);
 	valid = false;
+	allow_overriding = false;
 }
 
 inline NavPlaceDatabaseLoader::~NavPlaceDatabaseLoader()
@@ -142,8 +145,18 @@ inline SourceMod::SMCResult NavPlaceDatabaseLoader::ReadSMC_KeyValue(const Sourc
 
 		if (entries.count(sKey) > 0)
 		{
-			smutils->LogError(myself, "NavPlaceDatabaseLoader ignoring duplicate entry <%s, %s> @ line %i col %i", key, value, states->line, states->col);
-			return SourceMod::SMCResult_Continue;
+			if (!allow_overriding)
+			{
+				smutils->LogError(myself, "NavPlaceDatabaseLoader ignoring duplicate entry <%s, %s> @ line %i col %i", key, value, states->line, states->col);
+				return SourceMod::SMCResult_Continue;
+			}
+#ifdef EXT_DEBUG
+			else
+			{
+				const char* original = entries[sKey].c_str();
+				smutils->LogMessage(myself, "NavPlaceDatabaseLoader overriding \"%s\". Original: \"%s\" New: \"%s\".", key, original, value);
+			}
+#endif // EXT_DEBUG
 		}
 
 		entries[sKey] = sValue;

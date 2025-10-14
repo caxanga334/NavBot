@@ -485,6 +485,7 @@ public:
 
 	Place GetPlace( const Vector &pos ) const;							// return Place at given coordinate
 	// const char *PlaceToName( Place place ) const;						// given a place, return its name
+	const std::string* GetPlaceHash(const Place place) const;			// returns the place hash string
 	const std::string* GetPlaceName(const Place place) const;
 	Place GetPlaceFromName(const std::string& name) const;
 	Place NameToPlace( const char *name ) const;						// given a place name, return a place ID or zero if no place is defined

@@ -1045,6 +1045,7 @@ static std::string s_debugoptionsnames[] = {
 	{ "MOVEMENT" },
 	{ "ERRORS" },
 	{ "MISC" },
+	{ "SQUADS" },
 	{ "COMBAT" }
 };
 

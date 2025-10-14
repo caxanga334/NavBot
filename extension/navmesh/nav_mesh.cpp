@@ -1532,6 +1532,7 @@ void CNavMesh::LoadPlaceDatabase( void )
 
 	ParseGlobalPlaceDatabase(loader);
 	ParseModPlaceDatabase(loader);
+	loader.SetAllowOverriding(true); // allow map specific place names to override existing places
 	ParseMapPlaceDatabase(loader);
 
 	auto& places = loader.GetEntries();
@@ -1596,6 +1597,19 @@ void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)
 }
 
 //--------------------------------------------------------------------------------------------------------------
+
+const std::string* CNavMesh::GetPlaceHash(const Place place) const
+{
+	auto it = m_placeMap.find(place);
+
+	if (it == m_placeMap.end())
+	{
+		return nullptr;
+	}
+
+	auto& name = it->second.first;
+	return &name;
+}
 
 const std::string* CNavMesh::GetPlaceName(const Place place) const
 {

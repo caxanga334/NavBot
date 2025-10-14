@@ -13,6 +13,8 @@ public:
 	ICombat(CBaseBot* bot);
 	~ICombat() override;
 
+	static constexpr float CALLOUT_COOLDOWN = 10.0f;
+
 	struct CombatData
 	{
 		float enemy_range; // distance between the bot and the enemy's world space center
@@ -119,6 +121,8 @@ public:
 	const float GetTimeSinceLOSWasLost() const { return m_combatData.GetTimeSinceLostLOS(); }
 	// Returns true if the bot is reaiming.
 	const bool IsReAiming() const { return m_reAim; }
+	// Returns the index of the last place reported by the bot in a callout
+	unsigned int GetLastReportedPlace() const { return m_lastPlace; }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -190,10 +194,16 @@ protected:
 	 */
 	virtual void OnStartCombat(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
 	/**
-	 * @brief Called when the bot's current threat changes.a
+	 * @brief Called when the bot's current threat changes.
 	 * @param threat New threat.
 	 */
 	virtual void OnNewThreat(const CKnownEntity* threat) {};
+	/**
+	 * @brief Called when the bot's current threat becomes visible
+	 * @param threat Current threat.
+	 * @param activeWeapon Current weapon.
+	 */
+	virtual void OnThreatBecameVisible(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
 	// Returns true if the bot can use secondary abilities
 	virtual bool CanUseSecondaryAbilitities() const;
 	/**
@@ -223,6 +233,34 @@ protected:
 	}
 	// Sets the ReAim variable
 	void SetReAim(bool status) { m_reAim = status; }
+	/**
+	 * @brief Checks if the bot can send a callout of a threat.
+	 * @param threat Current threat.
+	 * @return true if possible, false otherwise.
+	 */
+	virtual bool CanCalloutThreat(const CKnownEntity* threat) const;
+	/**
+	 * @brief Try to callout a threat.
+	 * @param threat Current threat.
+	 */
+	virtual void TryToCalloutThreat(const CKnownEntity* threat);
+	/**
+	 * @brief Formats and sends the actual callout.
+	 * @param threat Current threat.
+	 */
+	virtual void SendCalloutOfTreat(const CKnownEntity* threat);
+	// gets the callout cooldown timer
+	CountdownTimer& GetCalloutTimer() { return m_calloutTimer; }
+	/**
+	 * @brief Returns the enemy name to be sent in chat for callouts.
+	 * 
+	 * This function must return a valid string. NULL is NOT allowed.
+	 * @param enemy Enemy to get the name from
+	 * @return Enemy name string.
+	 */
+	virtual const char* GetEnemyName(const CKnownEntity* enemy) const;
+	// Sets the last reported place name index
+	void SetLastReportedPlace(unsigned int place) { m_lastPlace = place; }
 private:
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;
@@ -233,12 +271,14 @@ private:
 	CountdownTimer m_selectWeaponTimer; // cooldown for weapon selection
 	CountdownTimer m_secondaryAbilityTimer;
 	CountdownTimer m_scopeinDelayTimer;
+	CountdownTimer m_calloutTimer;
 	IntervalTimer m_attackTimer;
 	CombatData m_combatData;
 	bool m_shouldAim;
 	bool m_shouldSelectWeapons;
 	bool m_isScopedOrDeployed;
 	bool m_reAim;
+	unsigned int m_lastPlace;
 
 	IDecisionQuery::DesiredAimSpot SelectClearAimSpot(const bool allowheadshots) const;
 };

@@ -53,7 +53,8 @@ extern CNavMeshGeneratorParameters* navgenparams;
  * A place is a named group of navigation areas
  */
 typedef unsigned int Place;
-#define UNDEFINED_PLACE 0				// ie: "no place"
+constexpr Place UNDEFINED_PLACE = 0U;
+// #define UNDEFINED_PLACE 0				// ie: "no place"
 #define ANY_PLACE 0xFFFF
 
 enum NavErrorType
