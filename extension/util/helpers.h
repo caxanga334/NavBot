@@ -869,6 +869,23 @@ namespace UtilHelpers::studio
 	bool GetBonePosition(CBaseEntity* pEntity, int bone, Vector& position, QAngle& angles);
 }
 
+/**
+ * @brief Utility functions for compatibility between source engine branches.
+ */
+namespace UtilHelpers::sdkcompat
+{
+	/**
+	 * @brief Saves the given keyvalues to a file.
+	 * @param kvRoot Keyvalues to save.
+	 * @param filename File name.
+	 * @param pathid Filesystem path id. (IE: "MOD").
+	 * @param sortKeys Sort keys?
+	 * @param allowEmptyString Allow empty strings?
+	 * @return True if the file was saved.
+	 */
+	bool SaveKeyValuesToFile(KeyValues* kvRoot, const char* filename, const char* pathid, const bool sortKeys = false, const bool allowEmptyString = false);
+}
+
 #endif // !UTIL_HELPERS_H_
 
 

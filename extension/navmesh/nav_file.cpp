@@ -2176,7 +2176,6 @@ void CNavMesh::ImportWaypointsFromRCBot2()
 
 void CNavMesh::CommandNavDumpToKeyValues()
 {
-#if SOURCE_ENGINE >= SE_CSS && SOURCE_ENGINE <= SE_TF2
 	if (!IsLoaded())
 	{
 		META_CONPRINT("Nav mesh not loaded! \n");
@@ -2191,7 +2190,9 @@ void CNavMesh::CommandNavDumpToKeyValues()
 
 	META_CONPRINT("Dumping navigation mesh data in keyvalue format. \nThis may take a while.\n");
 
-	KeyValuesAD kv{ "NavBotNavMesh" };
+	// use raw KV until we fix auto delete compat with SDK branches
+	// or maybe switch to unique_ptr with custom deleter
+	KeyValues* kv = new KeyValues("NavBotNavMesh");
 	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
 	const char* gamename = extmanager->GetMod()->GetModName();
 	const char* gamefolder = smutils->GetGameFolderName();
@@ -2365,15 +2366,18 @@ void CNavMesh::CommandNavDumpToKeyValues()
 		kv->AddSubKey(sbWaypoints);
 	}
 
-	kv->SaveToFile(filesystem, "navmeshdump.txt", "MOD", false, true, false);
+	bool saved = UtilHelpers::sdkcompat::SaveKeyValuesToFile(kv, "navmeshdump.txt", "MOD");
+	kv->deleteThis();
+
+	if (!saved)
+	{
+		META_CONPRINT("Failed to save keyvalues files!\n");
+		return;
+	}
 
 	char path[PLATFORM_MAX_PATH];
 	smutils->BuildPath(Path_Game, path, sizeof(path), "navmeshdump.txt");
 	META_CONPRINTF("File saved to: %s \n", path);
-
-#else
-	META_CONPRINT("Error: Unsupported engine! \n");
-#endif // SOURCE_ENGINE >= SE_CSS && SOURCE_ENGINE <= SE_TF2
 	
 	return;
 }

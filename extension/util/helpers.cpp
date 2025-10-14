@@ -4,6 +4,7 @@
 #include <cstring>
 
 #include <extension.h>
+#include <KeyValues.h>
 #include <sdkports/sdk_traces.h>
 #include <entities/baseentity.h>
 #include <server_class.h>
@@ -1927,4 +1928,15 @@ const char* UtilHelpers::textformat::FormatVarArgs(const char* fmt, ...)
 	va_end(vaargs);
 
 	return buffer.data();
+}
+
+bool UtilHelpers::sdkcompat::SaveKeyValuesToFile(KeyValues* kvRoot, const char* filename, const char* pathid, const bool sortKeys, const bool allowEmptyString)
+{
+#if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_SDK2013
+	return kvRoot->SaveToFile(filesystem, filename, pathid, sortKeys, allowEmptyString, false);
+#elif SOURCE_ENGINE == SE_BMS
+	return kvRoot->SaveToFile(filesystem, filename, pathid, sortKeys, allowEmptyString);
+#else
+	return kvRoot->SaveToFile(filesystem, filename, pathid);
+#endif
 }

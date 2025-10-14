@@ -68,5 +68,4 @@ inline T fsel(T comparand, T val, T lt)
 
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
-
 #endif
