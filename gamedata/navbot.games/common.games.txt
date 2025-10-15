@@ -42,7 +42,15 @@
 			"NavEdit_SwitchOff" 		"buttons\combine_button7.wav"
 			"NavEdit_GenericOff" 		"buttons\combine_button2.wav"
 			"NavEdit_ConnectFail" 		"buttons\button10.wav"
+			"NavEdit_GenericEnable"		"buttons\button6.wav"
+			"NavEdit_GenericDisable"	"buttons\button8.wav"
 			"NavEdit_WaypointAdd"		"weapons\crossbow\hit1.wav"
+			"NavEdit_BeginArea"			"buttons\blip1.wav"
+			"NavEdit_EndArea"			"buttons\button16.wav"
+			"NavEdit_SplitArea"			"physics\glass\glass_cup_break2.wav"
+			"NavEdit_GenericToggle"		"buttons\button17.wav"
+			"NavEdit_MoveCorner"		"buttons\button14.wav"
+			"NavEdit_GenericDenied"		"buttons\combine_button_locked.wav"
 
 			/* Nav Mesh generation parameters */
 			"NavGen_StepSize"				"25.0"

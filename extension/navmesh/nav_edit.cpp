@@ -664,12 +664,6 @@ void CNavMesh::UpdateDragSelectionSet( void )
 	ForAllAreas( add );
 }
 
-void EmitSound(edict_t *player, const char* soundName) {
-	if (!engine->IsDedicatedServer()) {
-		engine->ClientCommand(player,"play %s",soundName);
-	}
-}
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Draw navigation areas and edit them
@@ -973,14 +967,12 @@ void CNavMesh::DrawEditMode( void )
 				m_selectedArea->ShowAreaInfo(); // call so mods can add their own area info
 
 				// do "place painting"
-				if (m_isPlacePainting
-						&& m_selectedArea->GetPlace()
-								!= TheNavMesh->GetNavPlace()) {
+				if (m_isPlacePainting && m_selectedArea->GetPlace() != TheNavMesh->GetNavPlace()) 
+				{
 					m_selectedArea->SetPlace(TheNavMesh->GetNavPlace());
-					EmitSound(ent, "Bot.EditSwitchOn");
+					PlayEditSound(CNavMesh::EditSoundType::SOUND_SWITCH_ON);
 				}
 			}
-			
 
 			// do continuous selecting into selected set
 			if ( m_isContinuouslySelecting )
@@ -1221,7 +1213,7 @@ void CNavMesh::CommandNavDelete( void )
 
 		if( markedArea )
 		{
-			EmitSound(player, "EDIT_DELETE" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 			META_CONPRINTF("Deleted nav area #%u \n", markedArea->GetID());
 			TheNavAreas.FindAndRemove( markedArea );
 			TheNavMesh->OnEditDestroyNotify( markedArea );
@@ -1229,7 +1221,7 @@ void CNavMesh::CommandNavDelete( void )
 		}
 		else if( markedLadder )
 		{
-			EmitSound(player, "EDIT_DELETE" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 			META_CONPRINTF("Deleted nav ladder #%u \n", markedLadder->GetID());
 			m_ladders.FindAndRemove( markedLadder );
 			OnEditDestroyNotify( markedLadder );
@@ -1237,7 +1229,7 @@ void CNavMesh::CommandNavDelete( void )
 		} 
 		else if ( m_selectedArea )
 		{
-			EmitSound(player, "EDIT_DELETE" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 			META_CONPRINTF("Deleted nav area #%u \n", m_selectedArea->GetID());
 			CNavArea* deadarea = m_selectedArea;
 			TheNavAreas.FindAndRemove(deadarea);
@@ -1246,7 +1238,7 @@ void CNavMesh::CommandNavDelete( void )
 		}
 		else if ( m_selectedLadder )
 		{
-			EmitSound(player, "EDIT_DELETE" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 			META_CONPRINTF("Deleted nav ladder #%u \n", m_selectedLadder->GetID());
 			CNavLadder* deadladder = m_selectedLadder;
 			m_ladders.FindAndRemove(deadladder);
@@ -1257,7 +1249,7 @@ void CNavMesh::CommandNavDelete( void )
 	else
 	{
 		// delete all areas in the selected set
-		EmitSound(player, "EDIT_DELETE" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 		
 		FOR_EACH_VEC( m_selectedSet, it )
 		{
@@ -1317,7 +1309,7 @@ void CNavMesh::CommandNavDeleteMarked( void )
 	CNavArea *markedArea = GetMarkedArea(); 
 	if( markedArea ) 
 	{ 
-		EmitSound(player, "EDIT_DELETE" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 		TheNavMesh->OnEditDestroyNotify( markedArea );
 		TheNavAreas.FindAndRemove( markedArea ); 
 		TheNavMesh->DestroyArea( markedArea ); 
@@ -1326,7 +1318,7 @@ void CNavMesh::CommandNavDeleteMarked( void )
 	CNavLadder *markedLadder = GetMarkedLadder(); 
 	if( markedLadder ) 
 	{ 
-		EmitSound(player, "EDIT_DELETE" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 		m_ladders.FindAndRemove( markedLadder );
 		OnEditDestroyNotify(markedLadder);
 		delete markedLadder; 
@@ -1421,7 +1413,7 @@ void CNavMesh::CommandNavFloodSelect( const CCommand &args )
 
 	if ( start )
 	{
-		EmitSound(player, "EDIT_DELETE" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 
 		int connections = INCLUDE_BLOCKED_AREAS | INCLUDE_INCOMING_CONNECTIONS;
 		if ( args.ArgC() == 2 ) {
@@ -1455,7 +1447,7 @@ void CNavMesh::CommandNavToggleSelectedSet( void )
 	if (player == NULL || (!IsEditMode( NORMAL ) && !IsEditMode( PLACE_PAINTING )))
 		return;
 
-	EmitSound(player, "EDIT_DELETE" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 
 	NavAreaVector notInSelectedSet;
 
@@ -1494,7 +1486,7 @@ void CNavMesh::CommandNavStoreSelectedSet( void )
 	if (player == NULL || (!IsEditMode( NORMAL ) && !IsEditMode( PLACE_PAINTING ) ))
 		return;
 
-	EmitSound(player, "EDIT_DELETE" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 
 	m_storedSelectedSet.RemoveAll();
 	FOR_EACH_VEC( m_selectedSet, it )
@@ -1515,7 +1507,7 @@ void CNavMesh::CommandNavRecallSelectedSet( void )
 	if (player == NULL || (!IsEditMode( NORMAL ) && !IsEditMode( PLACE_PAINTING ) ))
 		return;
 
-	EmitSound(player, "EDIT_DELETE" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 
 	ClearSelectedSet();
 
@@ -1543,7 +1535,7 @@ void CNavMesh::CommandNavAddToSelectedSet( void )
 	if ( m_selectedArea )
 	{
 		AddToSelectedSet( m_selectedArea );
-		EmitSound(player, "EDIT_MARK.Enable" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE);
 	}
 }
 
@@ -1562,8 +1554,8 @@ void CNavMesh::CommandNavAddToSelectedSetByID( const CCommand &args )
 	CNavArea *area = GetNavAreaByID( id );
 	if ( area )
 	{
-		AddToSelectedSet( area );
-		EmitSound(player, "EDIT_MARK.Enable" );
+		AddToSelectedSet(area);
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE);
 		Msg( "Added area %d.  ( to go there: setpos %f %f %f )\n", id, area->GetCenter().x, area->GetCenter().y, area->GetCenter().z + 5 );
 	}
 	else
@@ -1587,7 +1579,7 @@ void CNavMesh::CommandNavRemoveFromSelectedSet( void )
 	if ( m_selectedArea )
 	{
 		RemoveFromSelectedSet( m_selectedArea );
-		EmitSound(player, "EDIT_MARK.Disable" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 	}
 }
 
@@ -1614,7 +1606,7 @@ void CNavMesh::CommandNavToggleInSelectedSet( void )
 		{
 			AddToSelectedSet( m_selectedArea );
 		}
-		EmitSound(player, "EDIT_MARK.Disable" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 	}
 }
 
@@ -1630,7 +1622,7 @@ void CNavMesh::CommandNavClearSelectedSet( void )
 		return;
 
 	ClearSelectedSet();
-	EmitSound(player, "EDIT_MARK.Disable" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 }
 
 
@@ -1647,7 +1639,7 @@ void CNavMesh::CommandNavBeginSelecting( void )
 	m_isContinuouslySelecting = true;
 	m_isContinuouslyDeselecting = false;
 	
-	EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 }
 
 
@@ -1663,7 +1655,7 @@ void CNavMesh::CommandNavEndSelecting( void )
 	m_isContinuouslySelecting = false;
 	m_isContinuouslyDeselecting = false;
 
-	EmitSound(player, "EDIT_END_AREA.Creating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_END_AREA);
 }
 
 
@@ -1692,7 +1684,7 @@ void CNavMesh::CommandNavBeginDragSelecting( void )
 		m_nDragSelectionVolumeZMax = sm_nav_drag_selection_volume_zmax_offset.GetInt();
 		m_nDragSelectionVolumeZMin = sm_nav_drag_selection_volume_zmin_offset.GetInt();
 	}
-	EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	SetMarkedArea( NULL );			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
@@ -1716,7 +1708,7 @@ void CNavMesh::CommandNavEndDragSelecting( void )
 	}
 	else
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	}
 
 	ClearDragSelectionSet();
@@ -1751,7 +1743,7 @@ void CNavMesh::CommandNavBeginDragDeselecting( void )
 		m_nDragSelectionVolumeZMax = sm_nav_drag_selection_volume_zmax_offset.GetInt();
 		m_nDragSelectionVolumeZMin = sm_nav_drag_selection_volume_zmin_offset.GetInt();
 	}
-	EmitSound(player, "EDIT_BEGIN_AREA.NotCreating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 
 	SetMarkedArea( NULL );			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
@@ -1776,7 +1768,7 @@ void CNavMesh::CommandNavEndDragDeselecting( void )
 	}
 	else
 	{
-		EmitSound(player, "EDIT_END_AREA.NotCreating" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	}
 
 	ClearDragSelectionSet();
@@ -1845,7 +1837,7 @@ void CNavMesh::CommandNavToggleSelecting( bool playSound )
 
 	if ( playSound )
 	{
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_END_AREA);
 	}
 }
 
@@ -1864,7 +1856,7 @@ void CNavMesh::CommandNavBeginDeselecting( void )
 	m_isContinuouslyDeselecting = true;
 	m_isContinuouslySelecting = false;
 	
-	EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 }
 
 
@@ -1882,7 +1874,7 @@ void CNavMesh::CommandNavEndDeselecting( void )
 	m_isContinuouslyDeselecting = false;
 	m_isContinuouslySelecting = false;
 
-	EmitSound(player, "EDIT_END_AREA.Creating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 }
 
 
@@ -1902,7 +1894,7 @@ void CNavMesh::CommandNavToggleDeselecting( bool playSound )
 
 	if ( playSound )
 	{
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 	}
 }
 
@@ -2022,7 +2014,7 @@ void CNavMesh::CommandNavSelectHalfSpace( const CCommand &args )
 		}
 	}
 
-	EmitSound(player, "EDIT_DELETE" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
 
@@ -2039,11 +2031,11 @@ void CNavMesh::CommandNavBeginShiftXY( void )
 	if (GetEditMode() == SHIFTING_XY)
 	{
 		SetEditMode( NORMAL );
-		EmitSound(player, "EDIT_END_AREA.Creating" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 		return;
 	}
 	SetEditMode( SHIFTING_XY );
-	EmitSound(player, "EDIT_BEGIN_AREA.Creating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 
 	// m_anchor starting corner
 	m_anchor = m_editCursorPos;
@@ -2118,7 +2110,7 @@ void CNavMesh::CommandNavEndShiftXY( void )
 	// update the position of all areas in the selected set
 	TheNavMesh->ForAllSelectedAreas( shift );
 
-	EmitSound(player, "EDIT_END_AREA.Creating" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 }
 
 
@@ -2157,13 +2149,13 @@ CON_COMMAND_F(sm_nav_shift, "Shifts the selected areas by the specified amount",
 	// update the position of all areas in the selected set
 	TheNavMesh->ForAllSelectedAreas( shift );
 
-	EmitSound(player, "EDIT_END_AREA.Creating" );
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 }
 
 
 
 //--------------------------------------------------------------------------------------------------------
-void CommandNavCenterInWorld( void )
+static void CommandNavCenterInWorld( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2214,7 +2206,7 @@ void CommandNavCenterInWorld( void )
 		TheNavAreas[ it ]->Shift( shift );
 	}
 
-	EmitSound(player, "EDIT_END_AREA.Creating" );
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
 
 	Msg( "Shifting mesh by %f,%f\n", shift.x, shift.y );
 }
@@ -2263,7 +2255,7 @@ void CNavMesh::CommandNavSelectInvalidAreas( void )
 	}
 
 	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
-	EmitSound(player,  m_selectedSet.Count() ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
+	PlayEditSound(m_selectedSet.Count() > 0 ? CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE : CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 }
 
 
@@ -2290,7 +2282,7 @@ void CNavMesh::CommandNavSelectBlockedAreas( void )
 	}
 
 	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
-	EmitSound(player, m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
+	PlayEditSound(m_selectedSet.Count() > 0 ? CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE : CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 }
 
 
@@ -2317,7 +2309,7 @@ void CNavMesh::CommandNavSelectObstructedAreas( void )
 	}
 
 	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
-	EmitSound(player,  m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
+	PlayEditSound(m_selectedSet.Count() > 0 ? CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE : CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 }
 
 
@@ -2344,7 +2336,7 @@ void CNavMesh::CommandNavSelectDamagingAreas( void )
 	}
 
 	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
-	EmitSound(player, m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
+	PlayEditSound(m_selectedSet.Count() > 0 ? CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE : CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 }
 
 
@@ -2371,7 +2363,7 @@ void CNavMesh::CommandNavSelectStairs( void )
 	}
 
 	Msg( "Selected %d areas.\n", m_selectedSet.Count() );
-	EmitSound(player, m_selectedSet.Count() > 0 ? "EDIT_MARK.Enable" : "EDIT_MARK.Disable" );
+	PlayEditSound(m_selectedSet.Count() > 0 ? CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE : CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 }
 
 
@@ -2388,7 +2380,7 @@ void CNavMesh::CommandNavSelectOrphans( void )
 	CNavArea *start = m_selectedArea != nullptr ? m_selectedArea: m_markedArea;
 	if ( start )
 	{
-		EmitSound(player, "EDIT_DELETE" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 		// collect all areas connected to this area
 		SelectCollector collector;
 		SearchSurroundingAreas( start, start->GetCenter(), collector, -1,
@@ -2414,8 +2406,14 @@ void CNavMesh::CommandNavSplit( void )
 
 	if ( m_selectedArea )
 	{
-		EmitSound(player, m_selectedArea->SplitEdit( m_splitAlongX, m_splitEdge ) ? "EDIT_SPLIT.MarkedArea"
-				: "EDIT_SPLIT.NoMarkedArea" );
+		if (m_selectedArea->SplitEdit(m_splitAlongX, m_splitEdge))
+		{
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_SPLIT_AREA);
+		}
+		else
+		{
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_CONNECT_FAIL);
+		}
 	}
 
 	StripNavigationAreas();
@@ -2426,7 +2424,7 @@ void CNavMesh::CommandNavSplit( void )
 
 
 //--------------------------------------------------------------------------------------------------------------
-bool MakeSniperSpots( CNavArea *area )
+static bool MakeSniperSpots( CNavArea *area )
 {
 	if ( !area )
 		return false;
@@ -2486,11 +2484,12 @@ void CNavMesh::CommandNavMakeSniperSpots( void )
 	if ( m_selectedArea )
 	{
 		// recursively split the area
-		EmitSound(player, MakeSniperSpots( m_selectedArea )  ? "EDIT_SPLIT.MarkedArea" :  "EDIT_SPLIT.NoMarkedArea" );
+		MakeSniperSpots(m_selectedArea);
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_SPLIT_AREA);
 	}
 	else
 	{
-		EmitSound(player, "EDIT_SPLIT.NoMarkedArea" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 	}
 
 	StripNavigationAreas();
@@ -2519,12 +2518,12 @@ void CNavMesh::CommandNavMerge( void )
 
 		if ( other && other != m_selectedArea )
 		{
-			EmitSound(player, m_selectedArea->MergeEdit(this, other ) ? "EDIT_MERGE.Enable" : "EDIT_MERGE.Disable" );
+			PlayEditSound(m_selectedArea->MergeEdit(this, other) ? CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE : CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 		}
 		else
 		{
-			Msg( "To merge, mark an area, highlight a second area, then invoke the merge command" );
-			EmitSound(player, "EDIT_MERGE.Disable" );
+			META_CONPRINT( "To merge, mark an area, highlight a second area, then invoke the merge command \n" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		}
 	}
 
@@ -2662,7 +2661,7 @@ void CNavMesh::CommandNavUnmark( void )
 	if (player == NULL || !IsEditMode( NORMAL ) )
 		return;
 
-	EmitSound(player, "EDIT_MARK.Enable" );
+	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE);
 	SetMarkedArea( NULL );			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
@@ -3121,13 +3120,15 @@ void CNavMesh::CommandNavSplice( void )
 	{
 		if (GetMarkedArea())
 		{
-			EmitSound(player, m_selectedArea->SpliceEdit( GetMarkedArea() ) ? "EDIT_SPLICE.MarkedArea"
-						: "EDIT_SPLICE.NoMarkedArea" );
+			if (m_selectedArea->SpliceEdit(GetMarkedArea()))
+			{
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+			}
 		}
 		else
 		{
-			Msg( "To splice, mark an area, highlight a second area, then invoke the splice command to create an area between them" );
-			EmitSound(player, "EDIT_SPLICE.NoMarkedArea" );
+			META_CONPRINT( "To splice, mark an area, highlight a second area, then invoke the splice command to create an area between them. \n" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		}
 	}
 
@@ -3179,14 +3180,14 @@ void CNavMesh::CommandNavToggleAttribute( NavAttributeType attribute )
 
 		if ( m_selectedArea )
 		{
-			EmitSound(player, "EDIT.ToggleAttribute" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_TOGGLE);
 			DoToggleAttribute( m_selectedArea, attribute );			
 		}
 	}
 	else
 	{
 		// toggle the attribute in all areas in the selected set
-		EmitSound(player, "EDIT.ToggleAttribute" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_TOGGLE);
 
 		FOR_EACH_VEC( m_selectedSet, it )
 		{
@@ -3317,7 +3318,7 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 	{
 		if (GetMarkedArea())
 		{
-			EmitSound(player, "EDIT_MARK_UNNAMED.Enable" );
+			// EmitSound(player, "EDIT_MARK_UNNAMED.Enable" );
 			SetMarkedArea( NULL );
 		}
 		else
@@ -3335,11 +3336,11 @@ void CNavMesh::CommandNavMarkUnnamed( void )
 			}
 			if ( !GetMarkedArea() )
 			{
-				EmitSound(player, "EDIT_MARK_UNNAMED.NoMarkedArea" );
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 			}
 			else
 			{
-				EmitSound(player, "EDIT_MARK_UNNAMED.MarkedArea" );
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE);
 
 				int connected = 0;
 				connected += GetMarkedArea()->GetAdjacentCount( NORTH );
@@ -3381,11 +3382,11 @@ void CNavMesh::CommandNavCornerSelect( void )
 		{
 			int corner = (m_markedCorner + 1) % (NUM_CORNERS + 1);
 			m_markedCorner = (NavCornerType)corner;
-			EmitSound(player, "EDIT_SELECT_CORNER.MarkedArea" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ENABLE);
 		}
 		else
 		{
-			EmitSound(player, "EDIT_SELECT_CORNER.NoMarkedArea" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DISABLE);
 		}
 	}
 }
@@ -3414,18 +3415,18 @@ void CNavMesh::CommandNavCornerRaise( const CCommand &args )
 			if (GetMarkedArea())
 			{
 				GetMarkedArea()->RaiseCorner( m_markedCorner, amount );
-				EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 			}
 			else
 			{
-				EmitSound(player, "EDIT_MOVE_CORNER.NoMarkedArea" );
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DENIED);
 			}
 		}
 	}
 	else
 	{
 		// raise all areas in the selected set
-		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 
 		FOR_EACH_VEC( m_selectedSet, it )
 		{
@@ -3460,18 +3461,18 @@ void CNavMesh::CommandNavCornerLower( const CCommand &args )
 			if (GetMarkedArea())
 			{
 				GetMarkedArea()->RaiseCorner( m_markedCorner, amount );
-				EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 			}
 			else
 			{
-				EmitSound(player, "EDIT_MOVE_CORNER.NoMarkedArea" );
+				PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DENIED);
 			}
 		}
 	}
 	else
 	{
 		// raise all areas in the selected set
-		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 
 		FOR_EACH_VEC( m_selectedSet, it )
 		{
@@ -3511,17 +3512,17 @@ void CNavMesh::CommandNavCornerPlaceOnGround( const CCommand &args )
 			{
 				m_selectedArea->PlaceOnGround( NUM_CORNERS, inset );
 			}
-			EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 		}
 		else
 		{
-			EmitSound(player, "EDIT_MOVE_CORNER.NoMarkedArea" );
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_DENIED);
 		}
 	}
 	else
 	{
 		// snap all areas in the selected set to the ground
-		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 
 		FOR_EACH_VEC( m_selectedSet, it )
 		{
@@ -3596,7 +3597,7 @@ void CNavMesh::CommandNavWarpToMark( void )
 		QAngle angles = player->GetAbsAngles();
 		entities::HBaseEntity be(ent);
 		be.Teleport(origin, &angles, nullptr);
-		EmitSound(ent, "EDIT_WARP_TO_MARK");
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else if ( GetMarkedLadder() )
 	{
@@ -3608,11 +3609,11 @@ void CNavMesh::CommandNavWarpToMark( void )
 		origin.y += ladder->GetNormal().y * navgenparams->generation_step_size;
 		entities::HBaseEntity be(ent);
 		be.Teleport(origin, &angles, nullptr);
-		EmitSound(ent, "EDIT_WARP_TO_MARK" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	}
 	else
 	{
-		EmitSound(ent, "EDIT_WARP_TO_MARK" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 	}
 }
 
@@ -3629,7 +3630,7 @@ void CNavMesh::CommandNavLadderFlip( void )
 	if ( m_selectedLadder )
 	{
 		// flip direction
-		EmitSound(player, "EDIT_MOVE_CORNER.MarkedArea" );
+		PlayEditSound(CNavMesh::EditSoundType::SOUND_MOVE_CORNER);
 		m_selectedLadder->SetDir( OppositeDirection( m_selectedLadder->GetDir() ) );
 	}
 
@@ -4532,7 +4533,15 @@ void CNavMesh::LoadEditSounds(SourceMod::IGameConfig* gamedata)
 		"NavEdit_SwitchOff"sv,
 		"NavEdit_GenericOff"sv,
 		"NavEdit_ConnectFail"sv,
+		"NavEdit_GenericEnable"sv,
+		"NavEdit_GenericDisable"sv,
 		"NavEdit_WaypointAdd"sv,
+		"NavEdit_BeginArea"sv,
+		"NavEdit_EndArea"sv,
+		"NavEdit_SplitArea"sv,
+		"NavEdit_GenericToggle"sv,
+		"NavEdit_MoveCorner"sv,
+		"NavEdit_GenericDenied"sv,
 	};
 
 	static_assert(keyNames.size() == static_cast<size_t>(CNavMesh::EditSoundType::MAX_EDIT_SOUNDS), "EditSoundType enum and keyNames array size mismatch!");
@@ -5419,4 +5428,40 @@ CON_COMMAND_F(sm_nav_merge_ladders, "Merges two ladders together", FCVAR_GAMEDLL
 CON_COMMAND_F(sm_nav_dump_as_keyvalues, "Dumps nav mesh data to a keyvalues file.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
 	TheNavMesh->CommandNavDumpToKeyValues();
+}
+
+CON_COMMAND_F(sm_nav_highlight_unnamed_areas, "Highlights unnamed areas.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (extmanager->GetListenServerHost() == nullptr)
+	{
+		return;
+	}
+
+	std::vector<CNavArea*> unnamed;
+	unnamed.reserve(2048);
+
+	FOR_EACH_VEC(TheNavAreas, it)
+	{
+		CNavArea* area = TheNavAreas.Element(it);
+
+		if (!area->HasPlaceName())
+		{
+			unnamed.push_back(area);
+		}
+	}
+
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+
+	if (unnamed.empty())
+	{
+		META_CONPRINT("No unnamed areas found! \n");
+		return;
+	}
+
+	META_CONPRINTF("There are %zu unnamed areas! \n", unnamed.size());
+
+	for (CNavArea* area : unnamed)
+	{
+		area->DrawFilled(255, 255, 255, 255, 10.0f);
+	}
 }
