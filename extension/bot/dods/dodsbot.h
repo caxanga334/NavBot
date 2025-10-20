@@ -2,6 +2,7 @@
 #define NAVBOT_DODSBOT_H_
 
 #include <bot/basebot.h>
+#include <bot/bot_pathcosts.h>
 #include "dodsbot_sensor.h"
 #include "dodsbot_behavior.h"
 #include "dodsbot_inventory.h"
@@ -57,6 +58,7 @@ public:
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
 	void SetRouteType(RouteType type) override { m_routetype = type; }
+	RouteType GetRouteType() const override { return m_routetype; }
 private:
 	CDoDSBot* m_me;
 	RouteType m_routetype;

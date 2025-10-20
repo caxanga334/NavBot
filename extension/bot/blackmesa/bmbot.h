@@ -4,6 +4,7 @@
 #include <memory>
 #include <mods/blackmesa/blackmesa_shareddefs.h>
 #include <bot/basebot.h>
+#include <bot/bot_pathcosts.h>
 #include <bot/interfaces/path/basepath.h>
 #include "bmbot_movement.h"
 #include "bmbot_sensor.h"
@@ -40,7 +41,7 @@ private:
 	std::unique_ptr<CBlackMesaBotInventory> m_bminventory;
 };
 
-class CBlackMesaBotPathCost : public IPathCost
+class CBlackMesaBotPathCost : public IGroundPathCost
 {
 public:
 	CBlackMesaBotPathCost(CBlackMesaBot* bot, RouteType routetype = FASTEST_ROUTE);
@@ -48,16 +49,10 @@ public:
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
 	void SetRouteType(RouteType type) override { m_routetype = type; }
+	RouteType GetRouteType() const override { return m_routetype; }
 private:
 	CBlackMesaBot* m_me;
 	RouteType m_routetype;
-	float m_stepheight;
-	float m_maxjumpheight;
-	float m_maxdropheight;
-	float m_maxdjheight; // max double jump height
-	float m_maxgapjumpdistance;
-	bool m_candoublejump;
-	bool m_canblastjump;
 };
 
 #endif // !NAVBOT_BLACKMESA_BOT_H_

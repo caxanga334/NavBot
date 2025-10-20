@@ -17,6 +17,7 @@ folder_list = [
   'addons/sourcemod/configs/navbot/tf',
   'addons/sourcemod/configs/navbot/bms',
   'addons/sourcemod/configs/navbot/dod',
+  'addons/sourcemod/configs/navbot/zps',
   'addons/sourcemod/data/',
   'addons/sourcemod/data/navbot',
 ]
@@ -108,6 +109,12 @@ CopyFiles('configs/bms', 'addons/sourcemod/configs/navbot/bms',
 )
 
 CopyFiles('configs/dod', 'addons/sourcemod/configs/navbot/dod',
+  [ 
+    'weapons.cfg'
+  ]
+)
+
+CopyFiles('configs/zps', 'addons/sourcemod/configs/navbot/zps',
   [ 
     'weapons.cfg'
   ]

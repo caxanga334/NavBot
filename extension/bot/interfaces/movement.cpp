@@ -903,6 +903,23 @@ bool IMovement::IsAbleToClimbOntoEntity(edict_t* entity) const
 	return true;
 }
 
+bool IMovement::IsAbleToUseOffMeshConnection(OffMeshConnectionType type, const NavOffMeshConnection* connection) const
+{
+	switch (type)
+	{
+	case OffMeshConnectionType::OFFMESH_DOUBLE_JUMP:
+		return IsAbleToDoubleJump();
+	case OffMeshConnectionType::OFFMESH_BLAST_JUMP:
+		return IsAbleToBlastJump();
+	case OffMeshConnectionType::OFFMESH_GRAPPLING_HOOK:
+		return IsAbleToUseGrapplingHook();
+	case OffMeshConnectionType::OFFMESH_STRAFE_JUMP:
+		return IsAbleToStrafeJump();
+	default:
+		return true;
+	}
+}
+
 bool IMovement::IsAscendingOrDescendingLadder()
 {
 	switch (m_ladderState)

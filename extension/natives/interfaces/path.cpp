@@ -58,6 +58,7 @@ public:
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
 
 	void SetRouteType([[maybe_unused]] RouteType type) override {}
+	RouteType GetRouteType() const override { return DEFAULT_ROUTE; }
 
 private:
 	CBaseBot* m_me;

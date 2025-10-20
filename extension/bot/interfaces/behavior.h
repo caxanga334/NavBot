@@ -2,6 +2,7 @@
 #define SMNAV_BOT_BEHAVIOR_H_
 #pragma once
 
+#include <memory>
 #include "tasks.h"
 #include "base_interface.h"
 #include "decisionquery.h"
@@ -38,6 +39,45 @@ public:
 
 private:
 
+};
+
+template <class Bot, class Manager, class InitialTask>
+class CDefaultBehaviorImplementation : public IBehavior
+{
+public:
+	CDefaultBehaviorImplementation(Bot* bot) :
+		IBehavior(bot)
+	{
+		m_manager = std::make_unique<Manager>(new InitialTask);
+		m_listeners.reserve(2);
+		m_listeners.push_back(m_manager.get());
+	}
+
+	void Reset() override
+	{
+		m_manager = nullptr;
+		m_manager = std::make_unique<Manager>(new InitialTask);
+		m_listeners.clear();
+		m_listeners.push_back(m_manager.get());
+	}
+
+	void Update() override
+	{
+		m_manager->Update(GetBot<Bot>());
+	}
+
+	IDecisionQuery* GetDecisionQueryResponder() override { return m_manager.get(); }
+
+	std::vector<IEventListener*>* GetListenerVector() override
+	{
+		m_listeners.clear();
+		m_listeners.push_back(m_manager.get());
+		return &m_listeners;
+	}
+
+private:
+	std::unique_ptr<Manager> m_manager;
+	std::vector<IEventListener*> m_listeners;
 };
 
 #endif // !SMNAV_BOT_BEHAVIOR_H_

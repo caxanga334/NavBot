@@ -1,0 +1,18 @@
+#ifndef __NAVBOT_ZPS_SHAREDDEFS_H_
+#define __NAVBOT_ZPS_SHAREDDEFS_H_
+
+namespace zps
+{
+	enum ZPSTeam
+	{
+		ZPS_TEAM_UNASSIGNED = 0,
+		ZPS_TEAM_SPECTATOR,
+		ZPS_TEAM_SURVIVORS,
+		ZPS_TEAM_ZOMBIES,
+
+		MAX_ZPS_TEAMS
+	};
+}
+
+
+#endif // !__NAVBOT_ZPS_SHAREDDEFS_H_

@@ -292,7 +292,7 @@ public:
 	// Can the bot perform a strafe jump
 	virtual bool IsAbleToStrafeJump() const { return true; }
 	// Can the bot use the given off mesh connection?
-	virtual bool IsAbleToUseOffMeshConnection(OffMeshConnectionType type, const NavOffMeshConnection* connection) const { return true; }
+	virtual bool IsAbleToUseOffMeshConnection(OffMeshConnectionType type, const NavOffMeshConnection* connection) const;
 	/**
 	 * @brief Checks if the movement interface has taken control of the bot movements to perform a maneuver
 	 * @return True if controlling the bot's movements. False otherwise.

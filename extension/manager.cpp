@@ -47,6 +47,10 @@
 #include <mods/hl2dm/hl2dm_mod.h>
 #endif // SOURCE_ENGINE == SE_HL2DM
 
+#if SOURCE_ENGINE == SE_SDK2013
+#include <mods/zps/zps_mod.h> 
+#endif
+
 #if SOURCE_ENGINE == SE_EPISODEONE
 #include <sdkports/sdk_convarref_ep1.h>
 #endif // SOURCE_ENGINE == SE_EPISODEONE
@@ -353,6 +357,20 @@ void CExtManager::AllocateMod()
 		if (strncasecmp(gamefolder, "hl2mp", 5) == 0)
 		{
 			m_mod = std::make_unique<CHalfLife2DeathMatchMod>();
+		}
+		else
+		{
+			m_mod = std::make_unique<CBaseMod>();
+		}
+	}
+#elif SOURCE_ENGINE == SE_SDK2013
+	{
+		SourceMod::sm_sendprop_info_t info;
+
+		// Experimental: detect zombie panic via sendprops
+		if (gamehelpers->FindSendPropInfo("CZP_Player", "m_bIsInfected", &info))
+		{
+			m_mod = std::make_unique<CZombiePanicSourceMod>();
 		}
 		else
 		{

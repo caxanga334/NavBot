@@ -20,6 +20,7 @@ namespace Mods
 		MOD_HL2DM, // Half-Life 2: Deathmatch
 		MOD_HL1DM, // Half-Life Deathmatch Source
 		MOD_BLACKMESA, // Black Mesa Deathmatch
+		MOD_ZPS, // Zombie Panic Source
 
 		LAST_MOD_TYPE
 	};
