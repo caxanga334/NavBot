@@ -95,3 +95,42 @@ Vector pred::IterativeBallisticLeadAgaistPlayer(const Vector& shooterPosition, c
 
 	return targetPos;
 }
+
+void pred::ProjectileData_t::FillFromAttackInfo(const WeaponAttackFunctionInfo* attackInfo)
+{
+	this->speed = attackInfo->GetProjectileSpeed();
+	this->gravity = attackInfo->GetGravity();
+	this->ballistic_start_range = attackInfo->GetBallisticElevationStartRange();
+	this->ballistic_end_range = attackInfo->GetBallisticElevationEndRange();
+	this->ballistic_min_rate = attackInfo->GetBallisticElevationMinRate();
+	this->ballistic_max_rate = attackInfo->GetBallisticElevationMaxRate();
+}
+
+Vector pred::IterativeBallisticLead(const Vector& shooterPosition, const Vector& initialTargetPosition, const Vector& targetVelocity, const ProjectileData_t& data, const int maxIterations)
+{
+	const float projectileSpeed = data.speed;
+	Vector targetPos = initialTargetPosition;
+	Vector targetDir = targetPos - shooterPosition;
+	float range = targetDir.NormalizeInPlace();
+	float time = GetProjectileTravelTime(projectileSpeed, range);
+
+	for (int i = 0; i < maxIterations; i++)
+	{
+		Vector predictedPosition = initialTargetPosition + (targetVelocity * time);
+
+		targetDir = predictedPosition - shooterPosition;
+		range = targetDir.NormalizeInPlace();
+		time = GetProjectileTravelTime(projectileSpeed, range);
+
+		const float elevation_rate = RemapValClamped(range, data.ballistic_start_range, data.ballistic_end_range,
+			data.ballistic_min_rate, data.ballistic_max_rate);
+
+		const float z = GravityComp(range, data.gravity, elevation_rate);
+
+		predictedPosition.z += z;
+
+		targetPos = predictedPosition;
+	}
+
+	return targetPos;
+}

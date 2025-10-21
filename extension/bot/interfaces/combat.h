@@ -159,6 +159,14 @@ protected:
 	virtual void FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS = false);
 	// Invoked to handle the usage of the given weapon. Return true to allow the bot to fire the weapon.
 	virtual bool HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon);
+	/**
+	 * @brief Invoked when handle weapon returns false.
+	 * @param bot Bot that will be firing the weapon.
+	 * @param threat The current enemy.
+	 * @param activeWeapon The weapon to fire.
+	 */
+	virtual void OnHandleWeaponFailed(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon);
+	virtual void ReloadCurrentWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon);
 	void UpdateCombatData(const CKnownEntity* threat, const CBotWeapon* activeWeapon) { m_combatData.Update(GetBot<CBaseBot>(), threat, activeWeapon); }
 	/**
 	 * @brief Call to make bots use the weapon's special function
@@ -261,6 +269,8 @@ protected:
 	virtual const char* GetEnemyName(const CKnownEntity* enemy) const;
 	// Sets the last reported place name index
 	void SetLastReportedPlace(unsigned int place) { m_lastPlace = place; }
+	// Timer for weapon reloads
+	CountdownTimer& GetReloadTimer() { return m_reloadTimer; }
 private:
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;
@@ -272,6 +282,7 @@ private:
 	CountdownTimer m_secondaryAbilityTimer;
 	CountdownTimer m_scopeinDelayTimer;
 	CountdownTimer m_calloutTimer;
+	CountdownTimer m_reloadTimer;
 	IntervalTimer m_attackTimer;
 	CombatData m_combatData;
 	bool m_shouldAim;

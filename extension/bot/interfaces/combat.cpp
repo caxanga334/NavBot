@@ -42,6 +42,7 @@ void ICombat::Reset()
 	m_secondaryAbilityTimer.Invalidate();
 	m_scopeinDelayTimer.Invalidate();
 	m_calloutTimer.Invalidate();
+	m_reloadTimer.Invalidate();
 	m_combatData.Clear();
 }
 
@@ -189,6 +190,7 @@ void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
 	m_unscopeTimer.Invalidate();
 	m_useSpecialFuncTimer.Invalidate();
 	m_scopeinDelayTimer.Invalidate();
+	m_reloadTimer.Invalidate();
 }
 
 bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon) const
@@ -197,6 +199,9 @@ bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* thre
 		return false;
 
 	if (!m_scopeinDelayTimer.IsElapsed())
+		return false;
+
+	if (!m_reloadTimer.IsElapsed())
 		return false;
 
 	if (bot->GetMovementInterface()->NeedsWeaponControl())
@@ -245,11 +250,7 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 		}
 		else // HandleWeapon returned false
 		{
-			// Reloaded if needed
-			if (!activeWeapon->IsLoaded())
-			{
-				input->PressReloadButton();
-			}
+			OnHandleWeaponFailed(bot, threat, activeWeapon);
 		}
 	}
 }
@@ -311,6 +312,22 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 	}
 
 	return true;
+}
+
+void ICombat::OnHandleWeaponFailed(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon)
+{
+	if (!activeWeapon->IsLoaded() && activeWeapon->HasAmmo(bot))
+	{
+		ReloadCurrentWeapon(bot, activeWeapon);
+	}
+}
+
+void ICombat::ReloadCurrentWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
+{
+	IPlayerController* input = bot->GetControlInterface();
+	input->ReleaseAllAttackButtons();
+	input->PressReloadButton();
+	GetReloadTimer().Start(1.0f); // to-do: per weapon settings for this?
 }
 
 void ICombat::OpportunisticallyUseWeaponSpecialFunction(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon)
@@ -400,6 +417,17 @@ bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon*
 	if (!activeWeapon->GetWeaponInfo()->IsCombatWeapon() || !activeWeapon->GetWeaponInfo()->IsAllowedToDodge())
 	{
 		return false;
+	}
+
+	const WeaponAttackFunctionInfo& primaryAttackInfo = activeWeapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+
+	// Melee weapons: Don't dodge enemies if I'm close to the enemy
+	if (primaryAttackInfo.IsMelee())
+	{
+		if (GetCachedCombatData().enemy_range <= primaryAttackInfo.GetMaxRange() * 2.0f)
+		{
+			return false;
+		}
 	}
 
 	return true;

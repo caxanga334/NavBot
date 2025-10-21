@@ -107,3 +107,10 @@ bool entities::HBaseCombatWeapon::IsActive() const
 {
 	return GetState() == WEAPON_IS_ACTIVE;
 }
+
+int entities::HBaseCombatWeapon::GetSubTypeFromProperty() const
+{
+	int subtype = 0;
+	entprops->GetEntProp(GetIndex(), Prop_Data, "m_iSubType", subtype);
+	return subtype;
+}

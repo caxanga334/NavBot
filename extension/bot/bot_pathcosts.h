@@ -49,12 +49,14 @@ public:
 		m_teamindex = NAV_TEAM_ANY;
 	}
 
-	IGroundPathCost(IMovement* movement)
+	template <typename Bot>
+	IGroundPathCost(Bot* bot)
 	{
+		IMovement* movement = bot->GetMovementInterface();
 		m_movecaps.Init(movement);
 		m_moveiface = movement;
 		m_ignoreDanger = false;
-		m_teamindex = NAV_TEAM_ANY;
+		m_teamindex = bot->GetCurrentTeamIndex();
 	}
 
 	void SetIgnoreDanger(bool state) { m_ignoreDanger = state; }

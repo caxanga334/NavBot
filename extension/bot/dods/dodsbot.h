@@ -10,7 +10,7 @@
 #include "dodsbot_combat.h"
 #include "dodsbot_playercontrol.h"
 #include <mods/dods/dods_shareddefs.h>
-#include <bot/interfaces/path/basepath.h>
+#include <bot/bot_pathcosts.h>
 
 class CDoDSBot : public CBaseBot
 {
@@ -50,7 +50,7 @@ private:
 	bool m_droppedAmmo; // has the bot dropped ammo?
 };
 
-class CDoDSBotPathCost : public IPathCost
+class CDoDSBotPathCost : public IGroundPathCost
 {
 public:
 	CDoDSBotPathCost(CDoDSBot* bot, RouteType type = RouteType::FASTEST_ROUTE);
@@ -62,10 +62,6 @@ public:
 private:
 	CDoDSBot* m_me;
 	RouteType m_routetype;
-	float m_stepheight;
-	float m_maxjumpheight;
-	float m_maxdropheight;
-	float m_maxgapjumpdistance;
 	bool m_hasbomb;
 };
 

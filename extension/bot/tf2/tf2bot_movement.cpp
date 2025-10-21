@@ -159,6 +159,27 @@ bool CTF2BotMovement::IsAbleToUseGrapplingHook() const
 	return GetBot<CTF2Bot>()->GetInventoryInterface()->GetTheGrapplingHook() != nullptr;
 }
 
+bool CTF2BotMovement::IsAbleToUseOffMeshConnection(OffMeshConnectionType type, const NavOffMeshConnection* connection) const
+{
+	switch (type)
+	{
+	case OffMeshConnectionType::OFFMESH_JUMP_OVER_GAP:
+	{
+		Vector forward = UtilHelpers::math::BuildDirectionVector(connection->GetStart(), connection->GetEnd());
+		const bool needsdoublejump = GapJumpRequiresDoubleJump(connection->GetEnd(), forward);
+
+		if (needsdoublejump && !IsAbleToDoubleJump())
+		{
+			return false;
+		}
+
+		return true;
+	}
+	default:
+		return IMovement::IsAbleToUseOffMeshConnection(type, connection);
+	}
+}
+
 bool CTF2BotMovement::GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const
 {
 	float length = (GetBot<CTF2Bot>()->GetAbsOrigin() - landing).Length();

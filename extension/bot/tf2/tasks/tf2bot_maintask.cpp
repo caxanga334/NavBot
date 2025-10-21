@@ -85,7 +85,7 @@ const CKnownEntity* CTF2BotMainTask::SelectTargetThreat(CBaseBot* me, const CKno
 
 Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);
+	return m_aimhelper.SelectAimPosition(static_cast<CTF2Bot*>(me), entity, desiredAim);
 }
 
 TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const CTakeDamageInfo& info)

@@ -24,6 +24,20 @@ namespace pred
 	Vector IterativeProjectileLead(const Vector& shooterPosition, const Vector& initialTargetPosition, const Vector& targetVelocity, const float projectileSpeed, const int maxIterations);
 
 	Vector IterativeBallisticLeadAgaistPlayer(const Vector& shooterPosition, const Vector& initialTargetPosition, const Vector& targetVelocity, const WeaponAttackFunctionInfo* attackInfo, const int maxIterations);
+
+	struct ProjectileData_t
+	{
+		void FillFromAttackInfo(const WeaponAttackFunctionInfo* attackInfo);
+
+		float speed;
+		float gravity;
+		float ballistic_start_range;
+		float ballistic_end_range;
+		float ballistic_min_rate;
+		float ballistic_max_rate;
+	};
+
+	Vector IterativeBallisticLead(const Vector& shooterPosition, const Vector& initialTargetPosition, const Vector& targetVelocity, const ProjectileData_t& data, const int maxIterations);
 }
 
 #endif // !NAVBOT_PREDICTION_LIB_H_

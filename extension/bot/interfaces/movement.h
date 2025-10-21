@@ -212,13 +212,13 @@ public:
 	virtual float GetMaxDropHeight() const { return 450.0f; }
 	inline virtual float GetTraversableSlopeLimit() const { return 0.6f; }
 	// Bot collision hull width
-	virtual float GetHullWidth();
+	virtual float GetHullWidth() const;
 	// Bot collision hull height
-	virtual float GetStandingHullHeight();
-	virtual float GetCrouchedHullHeight();
-	virtual float GetProneHullHeight();
+	virtual float GetStandingHullHeight() const;
+	virtual float GetCrouchedHullHeight() const;
+	virtual float GetProneHullHeight() const;
 	// Trace mask for collision detection
-	virtual unsigned int GetMovementTraceMask();
+	virtual unsigned int GetMovementTraceMask() const;
 	// Gets the bot running speed
 	virtual float GetRunSpeed() const { return m_maxspeed; }
 	// Gets the bot walking speed

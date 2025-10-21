@@ -95,6 +95,8 @@ public:
 	bool CanUseSpecialFunction(const CBaseBot* owner, const float range) const;
 	// Weapon debug identifier string
 	const char* GetDebugIdentifier() const;
+	// Returns the weapon subtype. Used when selecting weapons via UserCmd
+	virtual int GetSubType() const;
 protected:
 	const WeaponInfo* m_info;
 

@@ -107,21 +107,43 @@ bool IInventory::EquipWeapon(const CBotWeapon* weapon) const
 	return true;
 }
 
-bool IInventory::HasWeapon(const char* classname)
+bool IInventory::EquipWeapon(CBaseEntity* weapon) const
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	CBaseEntity* active = me->GetActiveWeapon();
+
+	if (active == weapon)
+	{
+		return false;
+	}
+
+	me->SelectWeapon(weapon);
+	const CBotWeapon* botWeapon = GetWeaponOfEntity(weapon);
+
+	if (botWeapon)
+	{
+		OnBotWeaponEquipped(botWeapon);
+	}
+
+	return true;
+}
+
+bool IInventory::HasWeapon(const char* classname) const
 {
 	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->IsValid() && (strcmp(weaponptr->GetClassname().c_str(), classname) == 0);
 	});
 }
 
-bool IInventory::HasWeapon(CBaseEntity* weapon)
+bool IInventory::HasWeapon(CBaseEntity* weapon) const
 {
 	return std::any_of(std::begin(m_weapons), std::end(m_weapons), [&weapon](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->GetEntity() == weapon;
 	});
 }
 
-CBaseEntity* IInventory::GetWeaponEntity(const char* classname)
+CBaseEntity* IInventory::GetWeaponEntity(const char* classname) const
 {
 	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->IsValid() && (strcmp(weaponptr->GetClassname().c_str(), classname) == 0);
@@ -135,7 +157,7 @@ CBaseEntity* IInventory::GetWeaponEntity(const char* classname)
 	return nullptr;
 }
 
-const CBotWeapon* IInventory::GetWeaponOfEntity(CBaseEntity* weapon)
+const CBotWeapon* IInventory::GetWeaponOfEntity(CBaseEntity* weapon) const
 {
 	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&weapon](const std::unique_ptr<CBotWeapon>& weaponptr) {
 		return weaponptr->GetEntity() == weapon;
@@ -149,12 +171,37 @@ const CBotWeapon* IInventory::GetWeaponOfEntity(CBaseEntity* weapon)
 	return nullptr;
 }
 
-void IInventory::AddWeaponToInventory(CBaseEntity* weapon)
+const CBotWeapon* IInventory::AddWeaponToInventory(CBaseEntity* weapon)
 {
 	if (!HasWeapon(weapon))
 	{
-		m_weapons.emplace_back(CreateBotWeapon(weapon));
+		auto& instance =  m_weapons.emplace_back(CreateBotWeapon(weapon));
+		return instance.get();
 	}
+
+	return nullptr;
+}
+
+const CBotWeapon* IInventory::GetOrCreateWeaponOfEntity(CBaseEntity* weapon)
+{
+	CBaseEntity* owner = nullptr;
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	entprops->GetEntPropEnt(weapon, Prop_Send, "m_hOwner", nullptr, &owner);
+
+	if (owner != me->GetEntity())
+	{
+		return nullptr;
+	}
+
+	const CBotWeapon* instance = GetWeaponOfEntity(weapon);
+
+	if (instance)
+	{
+		return instance;
+	}
+
+	return AddWeaponToInventory(weapon);
 }
 
 void IInventory::BuildInventory()
@@ -426,7 +473,7 @@ void IInventory::SelectBestWeaponForBreakables()
 	{
 		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
 		{
-			bot->SelectWeapon(best->GetEntity());
+			EquipWeapon(best);
 		}
 	}
 }
@@ -566,7 +613,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 	{
 		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
 		{
-			bot->SelectWeapon(best->GetEntity());
+			EquipWeapon(best);
 		}
 	}
 }
@@ -721,4 +768,7 @@ const CBotWeapon* IInventory::FilterSelectWeaponWithHighestStaticPriority(const 
 	return second;
 }
 
-
+void IInventory::RefreshInventory::operator()(CBaseBot* bot)
+{
+	bot->GetInventoryInterface()->StartInventoryUpdateTimer(m_delay);
+}

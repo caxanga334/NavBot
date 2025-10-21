@@ -188,44 +188,52 @@ public:
 	}
 
 	/**
-	 * @brief Checks if the current active weapon is the given weapon, if it's not, equip the given weapon.
+	 * @brief Tells the inventory interface to equip this weapon.
 	 * @param weapon Weapon to equip.
 	 * @return Returns true if the weapon was equipped.
 	 */
-	bool EquipWeapon(const CBotWeapon* weapon) const;
+	virtual bool EquipWeapon(const CBotWeapon* weapon) const;
+	/**
+	 * @brief Tells the inventory interface to equip this weapon. Prefer using the CBotWeapon overload of this function.
+	 * @param weapon Weapon to equip.
+	 * @return Returns true if the weapon was equipped.
+	 */
+	virtual bool EquipWeapon(CBaseEntity* weapon) const;
 	/**
 	 * @brief Checks if the bot has a weapon of the given classname.
 	 * @param classname Weapon classname.
 	 * @return true if the bot has the weapon.
 	 */
-	bool HasWeapon(const char* classname);
+	bool HasWeapon(const char* classname) const;
 	/**
 	 * @brief Checks if the bot owns this weapon.
 	 * @param weapon Weapon entity;
 	 * @return true if the bot owns this weapon.
 	 */
-	bool HasWeapon(CBaseEntity* weapon);
-
+	bool HasWeapon(CBaseEntity* weapon) const;
 	/**
 	 * @brief Gets a weapon CBaseEntity pointer (if owned by the bot)
 	 * @param classname Weapon classname to search.
 	 * @return Weapon entity pointer or NULL if the bot doesn't own a weapon of the given classname.
 	 */
-	CBaseEntity* GetWeaponEntity(const char* classname);
-
+	CBaseEntity* GetWeaponEntity(const char* classname) const;
 	/**
 	 * @brief Given a weapon entity, returns a bot weapon interface pointer.
 	 * @param weapon Weapon entity.
 	 * @return Bot weapon interface pointer.
 	 */
-	const CBotWeapon* GetWeaponOfEntity(CBaseEntity* weapon);
-
+	const CBotWeapon* GetWeaponOfEntity(CBaseEntity* weapon) const;
 	/**
 	 * @brief Registers the given weapon to the bot inventory.
 	 * @param weapon Weapon entity.
 	 */
-	virtual void AddWeaponToInventory(CBaseEntity* weapon);
-
+	virtual const CBotWeapon* AddWeaponToInventory(CBaseEntity* weapon);
+	/**
+	 * @brief Returns a bot weapon instance of the given weapon. A new one is created if needed. This function also validates that the bot actually owns the weapon.
+	 * @param weapon Weapon entity.
+	 * @return Bot weapon instance or NULL if not owned by the bot.
+	 */
+	virtual const CBotWeapon* GetOrCreateWeaponOfEntity(CBaseEntity* weapon);
 	/**
 	 * @brief Builds the bot inventory of weapons and items.
 	 */
@@ -277,6 +285,25 @@ public:
 	const std::vector<std::unique_ptr<CBotWeapon>>& GetAllWeapons() const { return m_weapons; }
 	const bool IsWeaponSwitchInCooldown() const { return m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed(); }
 	void StartWeaponSwitchCooldown(const float time = 0.5f) { m_weaponSwitchCooldown.Start(time); }
+	// Starts the inventory update timer for delayed BuildInventory calls
+	void StartInventoryUpdateTimer(const float time) { m_updateWeaponsTimer.Start(time); }
+
+	/**
+	 * @brief Utility function for refreshing the bots inventory.
+	 */
+	class RefreshInventory
+	{
+	public:
+		RefreshInventory(const float delay)
+		{
+			m_delay = delay;
+		}
+
+		void operator()(CBaseBot* bot);
+
+	private:
+		float m_delay;
+	};
 
 protected:
 	// deletes invalid weapons from the weapon storage vector

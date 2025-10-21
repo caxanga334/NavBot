@@ -395,31 +395,31 @@ void IMovement::Frame()
 #endif // EXT_VPROF_ENABLED
 }
 
-float IMovement::GetHullWidth()
+float IMovement::GetHullWidth() const
 {
 	float scale = GetBot()->GetModelScale();
 	return IMovement::s_playerhull.width * scale;
 }
 
-float IMovement::GetStandingHullHeight()
+float IMovement::GetStandingHullHeight() const
 {
 	float scale = GetBot()->GetModelScale();
 	return IMovement::s_playerhull.stand_height * scale;
 }
 
-float IMovement::GetCrouchedHullHeight()
+float IMovement::GetCrouchedHullHeight() const
 {
 	float scale = GetBot()->GetModelScale();
 	return IMovement::s_playerhull.crouch_height * scale;
 }
 
-float IMovement::GetProneHullHeight()
+float IMovement::GetProneHullHeight() const
 {
 	float scale = GetBot()->GetModelScale();
 	return IMovement::s_playerhull.prone_height * scale;
 }
 
-unsigned int IMovement::GetMovementTraceMask()
+unsigned int IMovement::GetMovementTraceMask() const
 {
 	return MASK_PLAYERSOLID;
 }

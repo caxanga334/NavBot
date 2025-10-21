@@ -10,6 +10,8 @@ class CZPSBotInventory : public IInventory
 public:
 	CZPSBotInventory(CZPSBot* bot);
 
+	bool EquipWeapon(const CBotWeapon* weapon) const override;
+	bool EquipWeapon(CBaseEntity* weapon) const override;
 
 private:
 

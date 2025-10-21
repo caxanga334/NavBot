@@ -66,6 +66,7 @@ CNavMesh* CDayOfDefeatSourceMod::NavMeshFactory()
 
 void CDayOfDefeatSourceMod::OnRoundStart()
 {
+	CBaseMod::OnRoundStart();
 	librandom::ReSeedGlobalGenerators();
 
 	FindObjectiveResourceEntity();

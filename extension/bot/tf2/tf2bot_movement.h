@@ -25,6 +25,7 @@ public:
 	// Can the bot perform a 'blast jump' (Example: TF2's rocket jump)
 	bool IsAbleToBlastJump() const override;
 	bool IsAbleToUseGrapplingHook() const override;
+	bool IsAbleToUseOffMeshConnection(OffMeshConnectionType type, const NavOffMeshConnection* connection) const override;
 protected:
 	bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const override;
 public:

@@ -88,7 +88,7 @@ bool CBlackMesaBot::HasLongJump() const
 }
 
 CBlackMesaBotPathCost::CBlackMesaBotPathCost(CBlackMesaBot* bot, RouteType routetype) :
-	m_routetype(routetype), IGroundPathCost(bot->GetMovementInterface())
+	m_routetype(routetype), IGroundPathCost(bot)
 {
 	m_me = bot;
 

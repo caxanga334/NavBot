@@ -516,3 +516,9 @@ const char* CBotWeapon::GetDebugIdentifier() const
 
 	return string.data();
 }
+
+int CBotWeapon::GetSubType() const
+{
+	// base reads the datamap, if needed a mod can override to an SDKCall of CBaseCombatWeapon::GetSubType (virtual)
+	return m_bcw.GetSubTypeFromProperty();
+}

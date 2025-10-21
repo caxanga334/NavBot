@@ -176,9 +176,10 @@ public:
 	 * @brief Makes the bot switch weapons via user command.
 	 * Weapon switch will happen when the server receives the next user command.
 	 * Set to 0 to cancel a pending switch.
-	 * @param weapon_entity Entity index of the weapon the bot wants to switch to
+	 * @param weapon_entity Entity index of the weapon the bot wants to switch to.
+	 * @param subtype Weapon subtype to select, game/mod dependant.
 	*/
-	inline void SelectWeaponByUserCmd(int weapon_entity) { m_weaponselect = weapon_entity; }
+	inline void SelectWeaponByUserCmd(int weapon_entity, int subtype = 0) { m_weaponselect = weapon_entity; m_weaponsubtype = subtype; }
 	void SelectWeaponByClassname(const char* szclassname);
 	virtual void SafeWeaponSelectByClassname(const char* szclassname);
 	void SelectWeaponByCommand(const char* szclassname) const;
@@ -307,6 +308,7 @@ private:
 	CBotCmd m_cmd; // User command to send
 	QAngle m_viewangles; // The bot eye angles
 	int m_weaponselect;
+	int m_weaponsubtype;
 	int m_impulse; // impulse to send on the next PlayerRunCommand
 	mutable std::unique_ptr<IPlayerController> m_basecontrol; // Base controller interface
 	mutable std::unique_ptr<IMovement> m_basemover; // Base movement interface

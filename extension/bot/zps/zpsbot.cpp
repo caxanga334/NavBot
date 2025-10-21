@@ -9,6 +9,7 @@ CZPSBot::CZPSBot(edict_t* edict) :
 	m_zpssensor = std::make_unique<CZPSBotSensor>(this);
 	m_zpsmovement = std::make_unique<CZPSBotMovement>(this);
 	m_zpsinventory = std::make_unique<CZPSBotInventory>(this);
+	m_zpscombat = std::make_unique<CZPSBotCombat>(this);
 }
 
 CZPSBot::~CZPSBot()
@@ -21,7 +22,7 @@ zps::ZPSTeam CZPSBot::GetMyZPSTeam() const
 }
 
 CZPSBotPathCost::CZPSBotPathCost(CZPSBot* bot, RouteType type) :
-	m_routetype(type), IGroundPathCost(bot->GetMovementInterface())
+	m_routetype(type), IGroundPathCost(bot)
 {
 	m_me = bot;
 

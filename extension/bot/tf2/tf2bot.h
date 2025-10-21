@@ -8,7 +8,7 @@
 #include <sdkports/sdk_ehandle.h>
 #include <mods/tf2/teamfortress2_shareddefs.h>
 #include <bot/basebot.h>
-#include <bot/interfaces/path/basepath.h>
+#include <bot/bot_pathcosts.h>
 
 #include "tf2bot_behavior.h"
 #include "tf2bot_controller.h"
@@ -235,7 +235,7 @@ private:
 	void SelectNewClass();
 };
 
-class CTF2BotPathCost : public IPathCost
+class CTF2BotPathCost : public IGroundPathCost
 {
 public:
 	CTF2BotPathCost(CTF2Bot* bot, RouteType routetype = DEFAULT_ROUTE);
@@ -247,16 +247,6 @@ public:
 private:
 	CTF2Bot* m_me;
 	RouteType m_routetype;
-	float m_stepheight;
-	float m_maxjumpheight;
-	float m_maxdropheight;
-	float m_maxdjheight; // max double jump height
-	float m_maxgapjumpdistance;
-	float m_hullsize;
-	bool m_candoublejump;
-	bool m_canblastjump;
-	bool m_canusegrapple;
-	int m_teamID;
 };
 
 /**

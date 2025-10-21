@@ -9,12 +9,22 @@ class CZombiePanicSourceMod : public CBaseMod
 public:
 	CZombiePanicSourceMod();
 
+	void FireGameEvent(IGameEvent* event) override;
+
+	void Update() override;
+
 	CBaseBot* AllocateBot(edict_t* edict) override;
 
 	// Mod name (IE: Team Fortress 2)
 	const char* GetModName() override { return "Zombie Panic! Source"; }
 	// Mod ID
 	Mods::ModType GetModType() override { return Mods::ModType::MOD_ZPS; }
+
+	void OnRoundStart() override;
+	void OnRoundEnd() override;
+
+private:
+	CountdownTimer m_roundstarttimer;
 };
 
 

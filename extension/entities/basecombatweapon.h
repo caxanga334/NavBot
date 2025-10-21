@@ -27,6 +27,9 @@ namespace entities
 		bool IsOnGround() const;
 		bool IsCarried() const;
 		bool IsActive() const;
+		// Reads the m_iSubType property, this is where the weapon subtype is stored in the base class but since the subtype function is virtual, 
+		// this may not be the correct weapon subtype
+		int GetSubTypeFromProperty() const;
 	};
 }
 

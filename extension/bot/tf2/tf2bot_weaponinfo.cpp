@@ -174,28 +174,28 @@ float CTF2BotWeapon::GetChargePercentage() const
 	return *m_charge;
 }
 
-float CTF2BotWeapon::GetProjectileSpeed() const
+float CTF2BotWeapon::GetProjectileSpeed(WeaponInfo::AttackFunctionType type) const
 {
 	// maps the projectile speed to the charge percentage
 	if (GetTF2Info()->CanCharge())
 	{
 		return RemapValClamped(GetChargePercentage(), 0.0f, 1.0f,
-			m_info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed(), GetTF2Info()->GetMaxChargeProjectileSpeed());
+			m_info->GetAttackInfo(type).GetProjectileSpeed(), GetTF2Info()->GetMaxChargeProjectileSpeed());
 	}
 
-	return m_info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetProjectileSpeed();
+	return m_info->GetAttackInfo(type).GetProjectileSpeed();
 }
 
-float CTF2BotWeapon::GetProjectileGravity() const
+float CTF2BotWeapon::GetProjectileGravity(WeaponInfo::AttackFunctionType type) const
 {
 	// maps the projectile speed to the charge percentage
 	if (GetTF2Info()->CanCharge())
 	{
 		return RemapValClamped(GetChargePercentage(), 0.0f, 1.0f,
-			m_info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetGravity(), GetTF2Info()->GetMaxChargeProjectileGravity());
+			m_info->GetAttackInfo(type).GetGravity(), GetTF2Info()->GetMaxChargeProjectileGravity());
 	}
 
-	return m_info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetGravity();
+	return m_info->GetAttackInfo(type).GetGravity();
 }
 
 bool CTF2BotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const

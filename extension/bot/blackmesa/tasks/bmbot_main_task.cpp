@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
+#include <bot/tasks_shared/bot_shared_dead.h>
 #include <bot/bot_shared_utils.h>
 #include "bmbot_tactical_task.h"
 #include "bmbot_main_task.h"
@@ -38,5 +39,10 @@ const CKnownEntity* CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot,
 TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnDebugMoveToCommand(CBlackMesaBot* bot, const Vector& moveTo)
 {
 	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, moveTo), PRIORITY_CRITICAL, "Debug command received!");
+}
+
+TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotMainTask::OnKilled(CBlackMesaBot* bot, const CTakeDamageInfo& info)
+{
+	return TrySwitchTo(new CBotSharedDeadTask<CBlackMesaBot, CBlackMesaBotMainTask>, PRIORITY_MANDATORY, "I am dead!");
 }
 

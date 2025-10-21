@@ -206,6 +206,71 @@ CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
 	extmanager->ForEachBot(func);
 }
 
+CON_COMMAND(sm_navbot_debug_bot_select_weapon, "Tests weapon selection.")
+{
+	DECLARE_COMMAND_ARGS;
+	CBaseBot* bot = nullptr;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_bot_select_weapon <entindex> <method>\n");
+		META_CONPRINT("Valid methods: sdkcall usercmd inventory\n");
+		return;
+	}
+
+	// start at 2 since 1 is the listen server host
+	for (int i = 2; i <= gpGlobals->maxClients; i++)
+	{
+		bot = extmanager->GetBotByIndex(i);
+
+		if (bot)
+		{
+			break; // stop at the first bot found
+		}
+	}
+
+	if (!bot)
+	{
+		META_CONPRINT("Add a bot first! \n");
+		return;
+	}
+
+	CBaseEntity* pWeapon = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pWeapon)
+	{
+		META_CONPRINT("NULL weapon!\n");
+		return;
+	}
+
+	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetWeaponOfEntity(pWeapon);
+
+	if (!weapon)
+	{
+		META_CONPRINT("Weapon not registered in the bot's inventory!\n");
+		return;
+	}
+
+	const char* szMethod = args[2];
+
+	if (std::strcmp(szMethod, "sdkcall") == 0)
+	{
+		bot->SelectWeapon(pWeapon);
+	}
+	else if (std::strcmp(szMethod, "usercmd") == 0)
+	{
+		bot->SelectWeaponByUserCmd(weapon->GetIndex(), weapon->GetBaseCombatWeapon().GetSubTypeFromProperty());
+	}
+	else if (std::strcmp(szMethod, "inventory") == 0)
+	{
+		bot->GetInventoryInterface()->EquipWeapon(weapon);
+	}
+	else
+	{
+		META_CONPRINTF("Unknown equip method! %s\n", szMethod);
+	}
+}
+
 CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path to the console.")
 {
 	CBaseBot* bot = nullptr;

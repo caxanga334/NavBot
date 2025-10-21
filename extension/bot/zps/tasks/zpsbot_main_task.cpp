@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <bot/bot_shared_utils.h>
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
+#include <bot/tasks_shared/bot_shared_dead.h>
 #include <bot/zps/zpsbot.h>
 #include "zpsbot_main_task.h"
 
@@ -21,10 +22,16 @@ const CKnownEntity* CZPSBotMainTask::SelectTargetThreat(CBaseBot* me, const CKno
 
 Vector CZPSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);
+	// return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);a
+	return m_aimhelper.SelectAimPosition(static_cast<CZPSBot*>(me), entity, desiredAim);
 }
 
 TaskEventResponseResult<CZPSBot> CZPSBotMainTask::OnDebugMoveToCommand(CZPSBot* bot, const Vector& moveTo)
 {
 	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CZPSBot, CZPSBotPathCost>(bot, moveTo), PRIORITY_CRITICAL, "Debug command!");
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotMainTask::OnKilled(CZPSBot* bot, const CTakeDamageInfo& info)
+{
+	return TrySwitchTo(new CBotSharedDeadTask<CZPSBot, CZPSBotMainTask>(), PRIORITY_MANDATORY, "I am dead!");
 }

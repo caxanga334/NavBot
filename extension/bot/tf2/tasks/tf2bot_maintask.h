@@ -10,6 +10,8 @@ class CKnownEntity;
 class CTF2BotSensor;
 class WeaponAttackFunctionInfo;
 
+#include <bot/tf2/tf2bot_aim.h>
+
 class CTF2BotMainTask : public AITask<CTF2Bot>
 {
 public:
@@ -32,6 +34,8 @@ public:
 private:
 	const CKnownEntity* InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 	bool IsImmediateThreat(CTF2Bot* me, const CKnownEntity* threat) const;
+
+	CTF2BotAimHelper m_aimhelper;
 };
 
 #endif // !NAVBOT_TF2BOT_MAIN_TASK_H_

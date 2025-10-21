@@ -41,6 +41,7 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_baseinventory = nullptr;
 	m_basecombat = nullptr;
 	m_weaponselect = 0;
+	m_weaponsubtype = 0;
 	m_cmdtimer.Invalidate();
 	m_cmdsents = 0;
 	m_debugtextoffset = 0;
@@ -195,6 +196,8 @@ void CBaseBot::Reset()
 	m_nextupdatetime.Invalidate();
 	m_lastPrerequisite = nullptr;
 	m_clearLastPrerequisiteTimer.Invalidate();
+	m_weaponselect = 0;
+	m_weaponsubtype = 0;
 
 	for (auto iface : m_interfaces)
 	{
@@ -395,7 +398,7 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	m_cmd.impulse = static_cast<byte>(m_impulse);
 	m_cmd.viewangles = m_viewangles; // set view angles
 	m_cmd.weaponselect = m_weaponselect; // send weapon select
-	// TO-DO: weaponsubtype
+	m_cmd.weaponsubtype = m_weaponsubtype; // send weapon subtype
 	m_cmd.buttons = buttons; // send buttons
 	m_cmd.random_seed = CBaseBot::s_usercmdrng.GetRandomInt<int>(0, 0x7fffffff);
 

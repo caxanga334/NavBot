@@ -74,8 +74,10 @@ void GamedataConstants::OnMapStart(SourceMod::IGameConfig* gamedata, const bool 
 			}
 			else
 			{
-				smutils->LogError(myself, "gdc::OnMapStart got NULL for worldspawn entity!");
+				smutils->LogError(myself, "GamedataConstants::OnMapStart got NULL for worldspawn entity!");
 			}
 		}
+
+		init = true;
 	}
 }

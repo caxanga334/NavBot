@@ -100,10 +100,10 @@ public:
 	};
 
 	float GetChargePercentage() const;
-	// primary attack only, takes into account the weapon charge mechanic (IE: huntsman)
-	float GetProjectileSpeed() const;
-	// primary attack only, takes into account the weapon charge mechanic (IE: huntsman)
-	float GetProjectileGravity() const;
+	// takes into account the weapon charge mechanic (IE: huntsman)
+	float GetProjectileSpeed(WeaponInfo::AttackFunctionType type) const;
+	// takes into account the weapon charge mechanic (IE: huntsman)
+	float GetProjectileGravity(WeaponInfo::AttackFunctionType type) const;
 	const TF2WeaponInfo* GetTF2Info() const { return static_cast<const TF2WeaponInfo*>(GetWeaponInfo()); }
 
 	UberType GetMedigunUberType() const { return m_ubertype; }

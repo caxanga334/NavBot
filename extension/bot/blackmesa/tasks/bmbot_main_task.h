@@ -12,6 +12,7 @@ public:
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
 
 	TaskEventResponseResult<CBlackMesaBot> OnDebugMoveToCommand(CBlackMesaBot* bot, const Vector& moveTo) override;
+	TaskEventResponseResult<CBlackMesaBot> OnKilled(CBlackMesaBot* bot, const CTakeDamageInfo& info) override;
 
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
