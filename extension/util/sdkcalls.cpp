@@ -11,6 +11,7 @@ class CBasePlayer;
 
 #include <usercmd.h>
 #include <sm_argbuffer.h>
+#include <sdkports/sdk_entityoutput.h>
 #include "sdkcalls.h"
 
 static CSDKCaller s_sdkcalls;
@@ -29,6 +30,7 @@ CSDKCaller::CSDKCaller()
 	m_call_cbp_processusercmds = nullptr;
 	m_offsetof_cba_getbonetransform = invalid_offset();
 	m_call_cba_getbonetransform = nullptr;
+	InitVCallSetup(m_call_cbe_acceptinput);
 }
 
 CSDKCaller::~CSDKCaller()
@@ -93,6 +95,12 @@ bool CSDKCaller::Init()
 	{
 		// don't fail, this is optional
 		m_offsetof_cba_getbonetransform = invalid_offset();
+	}
+
+	if (!cfg_sdktools->GetOffset("AcceptInput", &m_call_cbe_acceptinput.first))
+	{
+		// don't fail, this is optional
+		m_call_cbe_acceptinput.first = invalid_offset();
 	}
 
 	gameconfs->CloseGameConfigFile(cfg_navbot);
@@ -168,6 +176,16 @@ void CSDKCaller::CBaseAnimating_GetBoneTransform(CBaseEntity* pBA, int bone, mat
 	m_call_cba_getbonetransform->Execute(vstk, nullptr);
 }
 
+bool CSDKCaller::CBaseEntity_AcceptInput(CBaseEntity* pThis, const char* szInputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID)
+{
+	ArgBuffer<void*, const char*, CBaseEntity*, CBaseEntity*, decltype(variant), int> vstk(static_cast<void*>(pThis), szInputName, pActivator, pCaller, variant, outputID);
+	bool ret = false;
+
+	m_call_cbe_acceptinput.second->Execute(vstk, &ret);
+
+	return ret;
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
@@ -175,6 +193,7 @@ bool CSDKCaller::SetupCalls()
 	SetupCGRShouldCollide();
 	SetupCBPProcessUserCmds();
 	SetupCBAGetBoneTransform();
+	SetupCBEAcceptInput();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
@@ -315,4 +334,31 @@ void CSDKCaller::SetupCBAGetBoneTransform()
 
 
 	m_call_cba_getbonetransform = g_pBinTools->CreateVCall(m_offsetof_cba_getbonetransform, 0, 0, nullptr, params, 2);
+}
+
+void CSDKCaller::SetupCBEAcceptInput()
+{
+	using namespace SourceMod;
+
+	if (m_call_cbe_acceptinput.first <= 0) { return; }
+
+	// yoink from SDKTools
+	PassInfo pass[6];
+	pass[0].type = PassType_Basic;
+	pass[0].flags = PASSFLAG_BYVAL;
+	pass[0].size = sizeof(const char*);
+	pass[1].type = pass[2].type = PassType_Basic;
+	pass[1].flags = pass[2].flags = PASSFLAG_BYVAL;
+	pass[1].size = pass[2].size = sizeof(CBaseEntity*);
+	pass[3].type = PassType_Object;
+	pass[3].flags = PASSFLAG_BYVAL | PASSFLAG_OCTOR | PASSFLAG_ODTOR | PASSFLAG_OASSIGNOP;
+	pass[3].size = sizeof(variant_t);
+	pass[4].type = PassType_Basic;
+	pass[4].flags = PASSFLAG_BYVAL;
+	pass[4].size = sizeof(int);
+	pass[5].type = PassType_Basic;
+	pass[5].flags = PASSFLAG_BYVAL;
+	pass[5].size = sizeof(bool);
+
+	m_call_cbe_acceptinput.second = g_pBinTools->CreateVCall(m_call_cbe_acceptinput.first, 0, 0, &pass[5], pass, 5);
 }

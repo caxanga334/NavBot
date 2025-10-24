@@ -451,7 +451,6 @@ protected:
 	void SetTravelDistance(const float dist) { m_travelDistance = dist; }
 
 	CountdownTimer* InternalGetRepathTimer() { return &m_repathTimer; }
-
 private:
 	std::vector<std::shared_ptr<CBasePathSegment>> m_segments;
 	IntervalTimer m_ageTimer;

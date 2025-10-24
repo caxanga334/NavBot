@@ -28,6 +28,7 @@
 #include "nav_prereq.h"
 #include "nav_entities.h"
 #include "nav_colors.h"
+#include "nav_blocker.h"
 #include <Color.h>
 #include <sdkports/sdk_collisionutils.h>
 #include <tier1/checksum_crc.h>
@@ -523,6 +524,7 @@ public:
 CNavArea::~CNavArea()
 {
 	m_offmeshconnections.clear();
+	m_navblockers.clear();
 
 	// if we are resetting the system, don't bother cleaning up - all areas are being destroyed
 	if (m_isReset)
@@ -4521,6 +4523,17 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		return false;
 	}
 
+	if (!ignoreNavBlockers)
+	{
+		for (INavBlocker* blocker : m_navblockers)
+		{
+			if (blocker->IsBlocked(teamID))
+			{
+				return true;
+			}
+		}
+	}
+
 	if (m_volume != nullptr)
 	{
 		if (m_volume->IsBlocked(teamID))
@@ -5187,3 +5200,22 @@ Vector CNavArea::GetRandomPoint( void ) const
 	return spot;
 }
 
+void CNavArea::RegisterNavBlocker(INavBlocker* blocker)
+{
+	for (INavBlocker* it : m_navblockers)
+	{
+		if (it == blocker)
+		{
+			return;
+		}
+	}
+
+	m_navblockers.push_back(blocker);
+}
+
+void CNavArea::UnregisterNavBlocker(INavBlocker* blocker)
+{
+	m_navblockers.erase(std::remove_if(m_navblockers.begin(), m_navblockers.end(), [&blocker](const INavBlocker* it) {
+		return it == blocker;
+	}), m_navblockers.end());
+}

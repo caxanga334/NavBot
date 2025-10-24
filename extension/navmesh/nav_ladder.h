@@ -92,13 +92,13 @@ public:
 		m_topCount = 0;
 	}
 
-	~CNavLadder();
+	virtual ~CNavLadder();
 
-	void OnRoundRestart( void );			///< invoked when a game round restarts
+	virtual void OnRoundRestart( void );			///< invoked when a game round restarts
 
-	void Save(std::fstream& filestream, uint32_t version);
-	void Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version);
-	void PostLoad(CNavMesh* TheNavMesh, uint32_t version);
+	virtual void Save(std::fstream& filestream, uint32_t version);
+	virtual void Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version, uint32_t subversion);
+	virtual void PostLoad(CNavMesh* TheNavMesh, uint32_t version);
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							///<re-orders ladder ID's so they are continuous

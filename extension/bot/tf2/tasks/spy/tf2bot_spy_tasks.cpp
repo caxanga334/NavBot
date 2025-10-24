@@ -594,11 +594,11 @@ TaskEventResponseResult<CTF2Bot> CTF2BotSpyAttackTask::OnInjured(CTF2Bot* bot, c
 	return TryContinue(PRIORITY_LOW);
 }
 
-QueryAnswerType CTF2BotSpyAttackTask::IsBlocker(CBaseBot* me, edict_t* blocker, const bool any)
+QueryAnswerType CTF2BotSpyAttackTask::IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any)
 {
 	if (!any)
 	{
-		if (blocker != nullptr && m_victim.ToEdict() == blocker)
+		if (blocker != nullptr && m_victim.Get() == blocker)
 		{
 			return ANSWER_NO; // tell the navigator to not avoid my target
 		}

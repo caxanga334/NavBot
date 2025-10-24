@@ -1437,8 +1437,8 @@ NavErrorType CNavMesh::Load( void )
 
 	for (i = 0; i < count; i++)
 	{
-		CNavLadder* ladder = new CNavLadder;
-		ladder->Load(this, filestream, header.version);
+		CNavLadder* ladder = CreateLadder();
+		ladder->Load(this, filestream, header.version, header.subversion);
 		m_ladders.AddToTail(ladder);
 	}
 

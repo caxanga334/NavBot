@@ -35,7 +35,7 @@ protected:
 	virtual bool Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
 	virtual bool JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
 	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
-	virtual edict_t* FindBlocker(CBaseBot* bot);
+	virtual CBaseEntity* FindBlocker(CBaseBot* bot);
 	virtual void BreakIfNeeded(CBaseBot* bot);
 	virtual void SearchForUseableObstacles(CBaseBot* bot);
 	virtual bool OffMeshLinksUpdate(CBaseBot* bot);
@@ -60,7 +60,7 @@ private:
 	CountdownTimer m_waitTimer; // timer for the bot to wait for stuff (lifts, doors, obstacles, ...)
 	CountdownTimer m_avoidTimer; // timer for collision avoidance
 	CountdownTimer m_useableTimer; // timer for checking for useable obstacles on the path
-	CBaseHandle m_blocker; // Entity blocking my path
+	CHandle<CBaseEntity> m_blocker; // Entity blocking my path
 	bool m_didAvoidCheck;
 	float m_goalTolerance;
 	float m_skipAheadDistance;

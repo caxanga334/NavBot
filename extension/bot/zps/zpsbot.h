@@ -24,7 +24,14 @@ public:
 	CZPSBotMovement* GetMovementInterface() const override { return m_zpsmovement.get(); }
 	CZPSBotCombat* GetCombatInterface() const override { return m_zpscombat.get(); }
 
+	void FirstSpawn() override;
+
+	bool IsAbleToBreak(CBaseEntity* entity) override;
+
 	zps::ZPSTeam GetMyZPSTeam() const;
+	bool IsCarrier() const;
+	bool IsInfected() const;
+	bool IsWalking() const;
 
 private:
 	std::unique_ptr<CZPSBotBehavior> m_zpsbehavior;

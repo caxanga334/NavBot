@@ -6,6 +6,10 @@
 namespace zpslib
 {
 	zps::ZPSTeam GetEntityZPSTeam(CBaseEntity* entity);
+	bool IsPlayerInfected(CBaseEntity* player);
+	bool IsPlayerWalking(CBaseEntity* player);
+	bool IsPlayerCarrier(CBaseEntity* player);
+	CBaseEntity* GetCarrierZombie();
 }
 
 

@@ -6,6 +6,7 @@
 class CBaseEntity;
 class CGameRules;
 class CBotCmd;
+class variant_t;
 
 /**
  * @brief Class to manager SDK Calls
@@ -15,6 +16,15 @@ class CSDKCaller
 public:
 	CSDKCaller();
 	~CSDKCaller();
+
+	/* Virtual calls: offset and callwrapper */
+	using SDKVCallSetup = std::pair<int, SourceMod::ICallWrapper*>;
+
+	constexpr static void InitVCallSetup(SDKVCallSetup& setup)
+	{
+		setup.first = invalid_offset();
+		setup.second = nullptr;
+	}
 
 	bool Init();
 	void PostInit();
@@ -47,9 +57,21 @@ public:
 	void CBasePlayer_ProcessUsercmds(CBaseEntity* pBP, CBotCmd* botcmd);
 
 	void CBaseAnimating_GetBoneTransform(CBaseEntity* pBA, int bone, matrix3x4_t* result);
+	/**
+	 * @brief Calls CBaseEntity::AcceptInput on the pThis entity.
+	 * @param pThis Entity to call the function.
+	 * @param szInputName Input name.
+	 * @param pActivator Input activator.
+	 * @param pCaller Input caller.
+	 * @param variant Variant_t to pass to the call.
+	 * @param outputID Output ID
+	 * @return True on success, false on failure.
+	 */
+	bool CBaseEntity_AcceptInput(CBaseEntity* pThis, const char* szInputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID);
 
 	inline bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
 	inline bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
+	inline bool IsAcceptInputAvailable() const { return m_call_cbe_acceptinput.first > 0; }
 
 private:
 	static constexpr int invalid_offset() { return -1; }
@@ -78,12 +100,15 @@ private:
 	int m_offsetof_cba_getbonetransform;
 	SourceMod::ICallWrapper* m_call_cba_getbonetransform;
 
+	SDKVCallSetup m_call_cbe_acceptinput;
+
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
 	void SetupCBCWeaponSlot();
 	void SetupCGRShouldCollide();
 	void SetupCBPProcessUserCmds();
 	void SetupCBAGetBoneTransform();
+	void SetupCBEAcceptInput();
 };
 
 extern CSDKCaller* sdkcalls;

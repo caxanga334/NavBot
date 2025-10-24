@@ -183,6 +183,32 @@ bool ICombat::ScopeInOrDeployWeapon()
 	return m_isScopedOrDeployed;
 }
 
+void ICombat::DoPrimaryAttack()
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+	if (!weapon) { return; }
+
+	SetLastUsedWeapon(weapon->GetEntity());
+	const WeaponInfo* info = weapon->GetWeaponInfo();
+	IntervalTimer& timer = GetAttackTimer();
+
+	if (timer.HasStarted() && timer.IsLessThen(info->GetAttackInterval()))
+	{
+		return;
+	}
+
+	if (!weapon->IsLoaded())
+	{
+		bot->GetControlInterface()->PressReloadButton();
+		return;
+	}
+
+	timer.Start();
+	bot->GetControlInterface()->PressAttackButton(info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
+}
+
 void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
 {
 	m_attackTimer.Invalidate();

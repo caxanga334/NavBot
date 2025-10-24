@@ -6,6 +6,7 @@
 #include <extension.h>
 #include <KeyValues.h>
 #include <sdkports/sdk_traces.h>
+#include <sdkports/sdk_entityoutput.h>
 #include <entities/baseentity.h>
 #include <server_class.h>
 #include <studio.h>
@@ -233,6 +234,19 @@ Vector UtilHelpers::collisionToWorldSpace(const Vector& in, ICollideable* collid
 	}
 
 	return result;
+}
+
+Vector UtilHelpers::WorldToCollisionSpace(ICollideable* collider, const Vector& in, Vector* pResult)
+{
+	if (!isBoundsDefinedInEntitySpace(collider) || (collider->GetCollisionAngles() == vec3_angle))
+	{
+		VectorSubtract(in, collider->GetCollisionOrigin(), *pResult);
+	}
+	else
+	{
+		VectorITransform(in, collider->CollisionToWorldTransform(), *pResult);
+	}
+	return *pResult;
 }
 
 /**
@@ -1939,4 +1953,201 @@ bool UtilHelpers::sdkcompat::SaveKeyValuesToFile(KeyValues* kvRoot, const char* 
 #else
 	return kvRoot->SaveToFile(filesystem, filename, pathid);
 #endif
+}
+
+int UtilHelpers::sdkcompat::GetTypeDescOffset(typedescription_t* td)
+{
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+	return td->fieldOffset;
+#else
+	return td->fieldOffset[TD_OFFSET_NORMAL];
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+}
+
+void UtilHelpers::math::CalcClosestPointOfEntity(CBaseEntity* entity, const Vector& vecWorldPt, Vector& VecNearestWorldPt)
+{
+	ICollideable* collision = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable();
+	Vector mins, maxs;
+	entprops->GetEntPropVector(entity, Prop_Data, "m_vecMins", mins);
+	entprops->GetEntPropVector(entity, Prop_Data, "m_vecMaxs", maxs);
+
+	Vector localPt, localClosestPt;
+	UtilHelpers::WorldToCollisionSpace(collision, vecWorldPt, &localPt);
+	UtilHelpers::CalcClosestPointOnAABB(mins, maxs, localPt, localClosestPt);
+	VecNearestWorldPt = UtilHelpers::collisionToWorldSpace(localClosestPt, collision);
+}
+
+inputfunc_t UtilHelpers::datamap::GetEntityInputFunc(CBaseEntity* entity, const char* inputName)
+{
+	datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+	SourceMod::sm_datatable_info_t info;
+
+	if (gamehelpers->FindDataMapInfo(datamap, inputName, &info))
+	{
+		return info.prop->inputFunc;
+	}
+
+	return nullptr;
+}
+
+CBaseEntityOutput* UtilHelpers::datamap::GetEntityOutputFromDataDesc(CBaseEntity* entity, typedescription_t* dataDesc)
+{
+#if SOURCE_ENGINE >= SE_LEFT4DEAD
+	CBaseEntityOutput* pOutput = reinterpret_cast<CBaseEntityOutput*>(reinterpret_cast<std::intptr_t>(entity) + static_cast<int>(dataDesc->fieldOffset));
+#else
+	CBaseEntityOutput* pOutput = reinterpret_cast<CBaseEntityOutput*>(reinterpret_cast<std::intptr_t>(entity) + static_cast<int>(dataDesc->fieldOffset[TD_OFFSET_NORMAL]));
+#endif // SOURCE_ENGINE >= SE_LEFT4DEAD
+
+	return pOutput;
+}
+
+CBaseEntityOutput* UtilHelpers::datamap::GetEntityOutput(CBaseEntity* entity, const char* outputName)
+{
+	datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+	SourceMod::sm_datatable_info_t info;
+
+	if (gamehelpers->FindDataMapInfo(datamap, outputName, &info))
+	{
+		return UtilHelpers::datamap::GetEntityOutputFromDataDesc(entity, info.prop);
+	}
+
+	return nullptr;
+}
+
+// inline utils
+namespace inutils
+{
+	static void WriteDatamapToFile(std::fstream& file, datamap_t* datamap, const bool isSubclass = false)
+	{
+		while (datamap != nullptr)
+		{
+			int nfields = datamap->dataNumFields;
+
+			if (isSubclass)
+			{
+				file << " SubClass <" << datamap->dataClassName << "> with " << nfields << " fields. \n";
+			}
+			else
+			{
+				file << "Class <" << datamap->dataClassName << "> with " << nfields << " fields. \n";
+			}
+
+			for (int i = 0; i < nfields; i++)
+			{
+				typedescription_t* dataDesc = &datamap->dataDesc[i];
+
+				if (dataDesc->fieldName == nullptr)
+				{
+					continue;
+				}
+
+				const char* externalName = dataDesc->externalName != nullptr ? dataDesc->externalName : "";
+
+				if (isSubclass)
+				{
+					file << "  ";
+				}
+
+				file << "  - " << dataDesc->fieldName;
+				file << " (Type " << static_cast<int>(dataDesc->fieldType) << ")";
+				file << " (Offset " << UtilHelpers::sdkcompat::GetTypeDescOffset(dataDesc) << ") ";
+				file << "(Size " << dataDesc->fieldSize << ") " << "(Bytes " << dataDesc->fieldSizeInBytes << ") ";
+				file << externalName << "\n";
+
+				if (dataDesc->td != nullptr)
+				{
+					WriteDatamapToFile(file, dataDesc->td, true);
+				}
+			}
+
+			datamap = datamap->baseMap;
+		}
+	}
+}
+
+void UtilHelpers::datamap::DumpEntityDatamap(CBaseEntity* entity)
+{
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+	char path[PLATFORM_MAX_PATH];
+	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "logs/datamap_dump_%s.txt", classname);
+	datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+	if (!datamap)
+	{
+		return;
+	}
+
+	std::fstream file;
+	file.open(path, std::ios_base::out | std::ios_base::trunc);
+	inutils::WriteDatamapToFile(file, datamap, false);
+	file << "NavBot datamap dump of entity " << classname << "\n";
+
+	file.close();
+	META_CONPRINTF("Datamap dump written to %s\n", path);
+}
+
+void UtilHelpers::io::RemoveEntity(CBaseEntity* entity)
+{
+	// Could use servertools but this may not work on every SDK mod
+	// Use the SM method
+	// servertools->RemoveEntity(entity);
+
+	static inputfunc_t fnKillEntity = nullptr;
+
+	if (!fnKillEntity)
+	{
+		// Get world, as other ents aren't guaranteed to inherit full datadesc (but kill func is same for all)
+		CBaseEntity* pGetterEnt = gamehelpers->ReferenceToEntity(0);
+		if (!pGetterEnt)
+		{
+			// If we don't have a world entity yet, we'll have to rely on the given entity. Does this even make sense???
+			pGetterEnt = entity;
+		}
+
+		fnKillEntity = UtilHelpers::datamap::GetEntityInputFunc(pGetterEnt, "InputKill");
+	}
+
+	// Input data is ignored for this. No need to initialize
+	static inputdata_t data;
+
+	(entity->*fnKillEntity)(data);
+}
+
+void UtilHelpers::io::FireInputRaw(CBaseEntity* entity, inputfunc_t func, inputdata_t data)
+{
+	(entity->*func)(data);
+}
+
+bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant)
+{
+	SourceMod::sm_datatable_info_t info;
+	datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+	if (!datamap)
+	{
+		return false;
+	}
+
+	if (gamehelpers->FindDataMapInfo(datamap, inputName, &info))
+	{
+		inputfunc_t func = info.prop->inputFunc;
+		inputdata_t data;
+		data.pActivator = pActivator;
+		data.pCaller = pCaller;
+		data.value = variant;
+		
+		(entity->*func)(data);
+		return true;
+	}
+#ifdef EXT_DEBUG
+	else
+	{
+		smutils->LogError(myself, "UtilHelpers::io::FireInput -- Input \"%s\" was not found on entity \"%s\" <%s>",
+			inputName, gamehelpers->GetEntityClassname(entity), datamap->dataClassName);
+	}
+#endif // EXT_DEBUG
+
+	return false;
 }

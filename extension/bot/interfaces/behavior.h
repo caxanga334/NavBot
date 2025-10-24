@@ -26,11 +26,11 @@ public:
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
-	QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override;
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override;
 	QueryAnswerType ShouldHurry(CBaseBot* me) override;
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 	QueryAnswerType IsIgnoringMapObjectives(CBaseBot* me) override;
-	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
+	QueryAnswerType IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any = false) override;
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
 	QueryAnswerType IsReady(CBaseBot* me) override;

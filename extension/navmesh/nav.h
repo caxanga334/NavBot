@@ -13,7 +13,6 @@
 #define _NAV_H_
 
 #include <cinttypes>
-
 #include "nav_consts.h"
 
 #include <vector.h>

@@ -6,12 +6,12 @@
 #include <util/entprops.h>
 #include <util/librandom.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include <mods/tf2/nav/tfnavmesh.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/chasenavigator.h>
-#include <bot/bot_shared_convars.h>
 #include <bot/tf2/tasks/general/tf2bot_remove_sapper_from_object_task.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
@@ -32,10 +32,34 @@
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include <bot/tasks_shared/bot_shared_rogue_behavior.h>
 #include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
+#include <bot/tasks_shared/bot_shared_collect_items.h>
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
 #include "scenario/rd/tf2bot_rd_monitor_task.h"
 #include "tf2bot_scenario_task.h"
+
+static bool HalloweenSpellPickupValidator(CTF2Bot* bot, CBaseEntity* spellPickup)
+{
+	const CBotWeapon* spellbook = bot->GetInventoryInterface()->FindWeaponByClassname("tf_weapon_spellbook");
+
+	if (spellbook)
+	{
+		int charges = 0;
+		entprops->GetEntProp(spellbook->GetEntity(), Prop_Send, "m_iSpellCharges", charges);
+
+		if (charges != 0)
+		{
+			return false; // got a spell
+		}
+	}
+
+	if (entityprops::IsEffectActiveOnEntity(spellPickup, EF_NODRAW))
+	{
+		return false;
+	}
+
+	return true;
+}
 
 AITask<CTF2Bot>* CTF2BotScenarioTask::InitialNextTask(CTF2Bot* bot)
 {
@@ -70,6 +94,18 @@ TaskResult<CTF2Bot> CTF2BotScenarioTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 		}
 	}
 
+	bool spellsenabled = false;
+
+	if (entprops->GameRules_GetPropBool("m_bIsUsingSpells", spellsenabled) && spellsenabled)
+	{
+		m_collectSpellTimer.Start(10.0f);
+	}
+	else
+	{
+		// start the timer with a very large time to basically disable it
+		m_collectSpellTimer.Start(1e6f);
+	}
+
 	return Continue();
 }
 
@@ -78,6 +114,45 @@ TaskResult<CTF2Bot> CTF2BotScenarioTask::OnTaskUpdate(CTF2Bot* bot)
 	if (GetNextTask() == nullptr)
 	{
 		return SwitchTo(new CTF2BotScenarioTask, "Restarting scenario monitor!");
+	}
+
+	if (m_collectSpellTimer.IsElapsed() && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
+	{
+		float delay = 10.0f;
+
+		const CBotWeapon* spellbook = bot->GetInventoryInterface()->FindWeaponByClassname("tf_weapon_spellbook");
+
+		if (spellbook)
+		{
+			int charges = 0;
+			entprops->GetEntProp(spellbook->GetEntity(), Prop_Send, "m_iSpellCharges", charges);
+
+			if (charges == 0)
+			{
+				NBotSharedCollectItemTask::ItemCollectFilter<CTF2Bot, CTFNavArea> filter{ bot };
+				CBaseEntity* spell = nullptr;
+
+				if (CBotSharedCollectItemsTask<CTF2Bot, CTF2BotPathCost>::IsPossible(bot, &filter, "tf_spell_pickup", &spell))
+				{
+					auto task = new CBotSharedCollectItemsTask<CTF2Bot, CTF2BotPathCost>(bot, spell, NBotSharedCollectItemTask::COLLECT_WALK_OVER);
+					auto func = std::bind(HalloweenSpellPickupValidator, std::placeholders::_1, std::placeholders::_2);
+					task->SetValidationFunction(func);
+					return PauseFor(task, "Collecting halloween spell!");
+				}
+			}
+			else
+			{
+				// already has a spell, big delay
+				delay = 30.0f;
+			}
+		}
+		else
+		{
+			// spellbook not equipped, probably won't be, bigger delay
+			delay = 300.0f;
+		}
+
+		m_collectSpellTimer.Start(delay);
 	}
 
 	return Continue();

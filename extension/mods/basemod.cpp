@@ -187,6 +187,75 @@ bool CBaseMod::IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEnti
 	return !result.DidHit();
 }
 
+bool CBaseMod::IsEntityDamageable(CBaseEntity* entity, const int maxhealth) const
+{
+	int takedamage = 0;
+
+	if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage) == true)
+	{
+		switch (takedamage)
+		{
+		case DAMAGE_NO:
+			[[fallthrough]];
+		case DAMAGE_EVENTS_ONLY:
+		{
+			return false; // entity doesn't take damage
+		}
+		default:
+			break;
+		}
+	}
+
+	int health = 0;
+
+	if (entprops->GetEntProp(entity, Prop_Data, "m_iHealth", health))
+	{
+		if (health > maxhealth)
+		{
+			return false; // too much health
+		}
+	}
+
+	CBaseEntity* damageFilter = nullptr;
+
+	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &damageFilter))
+	{
+		if (damageFilter)
+		{
+			return false; // entity has a damage filter assigned to it, assume these can't take damage for now
+		}
+	}
+
+	return true;
+}
+
+bool CBaseMod::IsEntityBreakable(CBaseEntity* entity) const
+{
+	auto classname = gamehelpers->GetEntityClassname(entity);
+
+	if (strncmp(classname, "func_breakable", 14) == 0)
+	{
+		return true;
+	}
+
+	if (strncmp(classname, "func_breakable_surf", 19) == 0)
+	{
+		return true;
+	}
+
+	if (strncmp(classname, "func_physbox", 12) == 0)
+	{
+		return true;
+	}
+
+	if (UtilHelpers::StringMatchesPattern(classname, "prop_phys*", 0))
+	{
+		return true;
+	}
+
+	return false;
+}
+
 void CBaseMod::InternalFindPlayerResourceEntity()
 {
 	SourceMod::IGameConfig* gamedata = nullptr;
@@ -269,3 +338,33 @@ CON_COMMAND(sm_navbot_reload_mod_settings, "Reloads the mod settings config file
 {
 	extmanager->GetMod()->ReloadModSettingsFile();
 }
+
+#ifdef EXT_DEBUG
+CON_COMMAND(sm_navbot_mod_debug_breakable, "Reports an entity breakable state.")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_mod_debug_breakable <entindex>\n");
+		return;
+	}
+
+	int index = atoi(args[1]);
+	CBaseEntity* pEnt = gamehelpers->ReferenceToEntity(index);
+
+	if (!pEnt)
+	{
+		META_CONPRINT("NULL ent!\n");
+		return;
+	}
+
+	CBaseMod* mod = extmanager->GetMod();
+
+	bool damageable = mod->IsEntityDamageable(pEnt);
+	bool breakable = mod->IsEntityBreakable(pEnt);
+	int health = UtilHelpers::GetEntityHealth(index);
+
+	META_CONPRINTF("Damageable %i Breakable %i Health %i\n", static_cast<int>(damageable), static_cast<int>(breakable), health);
+}
+#endif // EXT_DEBUG

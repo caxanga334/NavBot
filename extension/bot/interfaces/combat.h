@@ -123,6 +123,10 @@ public:
 	const bool IsReAiming() const { return m_reAim; }
 	// Returns the index of the last place reported by the bot in a callout
 	unsigned int GetLastReportedPlace() const { return m_lastPlace; }
+	/**
+	 * @brief Utility function for making the bot do a basic primary attack with the currently held weapon.
+	 */
+	virtual void DoPrimaryAttack();
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.

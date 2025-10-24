@@ -16,6 +16,9 @@ class SendTable;
 class CBaseHandle;
 class KeyValues;
 class ServerClass;
+class CBaseEntityOutput;
+class variant_t;
+struct typedescription_t;
 
 namespace UtilHelpers
 {
@@ -71,6 +74,7 @@ namespace UtilHelpers
 	Vector getOBBCenter(edict_t* pEntity);
 	Vector collisionToWorldSpace(const Vector& in, edict_t* pEntity); 
 	Vector collisionToWorldSpace(const Vector& in, ICollideable* collider);
+	Vector WorldToCollisionSpace(ICollideable* collider, const Vector& in, Vector* pResult);
 	Vector getWorldSpaceCenter(edict_t* pEntity);
 	Vector getWorldSpaceCenter(CBaseEntity* pEntity);
 	const Vector& getEntityOrigin(edict_t* entity);
@@ -800,6 +804,14 @@ namespace UtilHelpers::math
 		dir.NormalizeInPlace();
 		return dir;
 	}
+
+	/**
+	 * @brief Given an entity, calculates the nearest point to the entity's AABB
+	 * @param entity Entity to get the nearest point to.
+	 * @param vecWorldPt World position to search the nearest point from.
+	 * @param VecNearestWorldPt World position of the entity's AABB nearest of vecWorldPt
+	 */
+	void CalcClosestPointOfEntity(CBaseEntity* entity, const Vector& vecWorldPt, Vector& VecNearestWorldPt);
 }
 
 namespace UtilHelpers::parsers
@@ -884,6 +896,54 @@ namespace UtilHelpers::sdkcompat
 	 * @return True if the file was saved.
 	 */
 	bool SaveKeyValuesToFile(KeyValues* kvRoot, const char* filename, const char* pathid, const bool sortKeys = false, const bool allowEmptyString = false);
+
+	int GetTypeDescOffset(typedescription_t* td);
+}
+
+/**
+ * @brief Utility functions related to datamaps.
+ */
+namespace UtilHelpers::datamap
+{
+	/**
+	 * @brief Retrieves an entity input function.
+	 * @param entity Entity to get the input function from.
+	 * @param inputName Input field name. See a SourceMod datamap dump for a list of name.
+	 * @return Input function if found or NULL if not found.
+	 */
+	inputfunc_t GetEntityInputFunc(CBaseEntity* entity, const char* inputName);
+	// Converts a datadesc of an entity output into an entity output
+	CBaseEntityOutput* GetEntityOutputFromDataDesc(CBaseEntity* entity, typedescription_t* dataDesc);
+	/**
+	 * @brief Retrieves an entity output.
+	 * @param entity Entity to get the output from.
+	 * @param outputName Output field name. See a SourceMod datamap dump for a list of name.
+	 * @return Entity output or NULL if not found.
+	 */
+	CBaseEntityOutput* GetEntityOutput(CBaseEntity* entity, const char* outputName);
+
+	void DumpEntityDatamap(CBaseEntity* entity);
+}
+
+/**
+ * @brief Entity input/output helper functions.
+ */
+namespace UtilHelpers::io
+{
+	// Removes the given entity from the game (if supported).
+	void RemoveEntity(CBaseEntity* entity);
+	// Fire an input on the entity. Raw method.
+	void FireInputRaw(CBaseEntity* entity, inputfunc_t func, inputdata_t data);
+	/**
+	 * @brief Fires an input to the entity.
+	 * @param entity Entity to fire the input at.
+	 * @param inputName Input name. This function uses Sourcemod to look up the input function and input names must have a "Input" prefix. IE: "Kill" becomes "InputKill"
+	 * @param pActivator Input activator.
+	 * @param pCaller Input Caller.
+	 * @param variant Variant containing input data. (The data needed depends on the input being called).
+	 * @return True if the input was fired, false on failure.
+	 */
+	bool FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant);
 }
 
 #endif // !UTIL_HELPERS_H_

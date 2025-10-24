@@ -7,11 +7,22 @@
 entities::HBaseEntity::HBaseEntity(edict_t* entity)
 {
 	m_index = gamehelpers->IndexOfEdict(entity);
+	m_edict = entity;
+	m_pEntity = UtilHelpers::EdictToBaseEntity(entity);
 }
 
 entities::HBaseEntity::HBaseEntity(CBaseEntity* entity)
 {
 	m_index = gamehelpers->EntityToBCompatRef(entity);
+	m_edict = UtilHelpers::BaseEntityToEdict(entity);
+	m_pEntity = entity;
+}
+
+void entities::HBaseEntity::AssignNewEntity(CBaseEntity* entity)
+{
+	m_index = gamehelpers->EntityToBCompatRef(entity);
+	m_edict = UtilHelpers::BaseEntityToEdict(entity);
+	m_pEntity = entity;
 }
 
 /**
@@ -157,7 +168,7 @@ void entities::HBaseEntity::CalcNearestPoint(const Vector& worldPos, Vector& out
 {
 	Vector localPt, localClosestPt;
 	WorldToCollisionSpace(worldPos, localPt);
-	UtilHelpers::CalcClosestPointOnAABB(WorldAlignMins(), WorldAlignMaxs(), localPt, localClosestPt);
+	CalcClosestPointOnAABB(WorldAlignMins(), WorldAlignMaxs(), localPt, localClosestPt);
 	CollisionToWorldSpace(localClosestPt, out);
 }
 
@@ -255,7 +266,6 @@ matrix3x4_t entities::HBaseEntity::CollisionToWorldTransform() const
 
 void entities::HBaseEntity::CollisionToWorldSpace(const Vector& in, Vector& out) const
 {
-
 	if (!IsBoundsDefinedInEntitySpace() || (GetCollisionAngles() == vec3_angle))
 	{
 		VectorAdd(in, GetAbsOrigin(), out);

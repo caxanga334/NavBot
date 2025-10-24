@@ -274,50 +274,6 @@ namespace botsharedutils::weapons
 namespace botsharedutils::aiming
 {
 	/**
-	 * @brief Default implementation of the bot aim.
-	 * @param bot Bot pointer.
-	 * @param entity Entity the bot is going to aim at.
-	 * @param desiredAim Desired aim spot.
-	 * @return Vector of where the bot should aim at.
-	 */
-	Vector DefaultBotAim(CBaseBot* bot, CBaseEntity* entity, IDecisionQuery::DesiredAimSpot desiredAim);
-	// Gets a position to shoot enemy players
-	Vector GetAimPositionForPlayers(CBaseBot* bot, CBaseExtPlayer* player, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
-	/**
-	 * @brief Utility for bots aiming a hitscan weapon on a player.
-	 * @param bot Bot
-	 * @param target Enemy
-	 * @param desiredAim Desired aim spot.
-	 * @param headbone (optional) Bone to search when going for headshots.
-	 * @return Position to aim at.
-	 */
-	Vector AimAtPlayerWithHitScan(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
-	/**
-	 * @brief Utility for bots aiming a projectile weapon. (Projectile is not affected by gravity, moves in a constant speed).
-	 * @param bot Bot
-	 * @param target Enemy
-	 * @param desiredAim Desired aim spot.
-	 * @param headbone (optional) Bone to search when going for headshots.
-	 * @param checkLOS If true, tests for obstructions on the projectile's path.
-	 * @return Position to aim at.
-	 */
-	Vector AimAtPlayerWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr, const bool checkLOS = true);
-	/**
-	 * @brief Utility for bots aiming a ballistic weapon. (projectile is affected by gravity).
-	 * @param bot Bot
-	 * @param target Enemy
-	 * @param desiredAim Desired aim spot.
-	 * @param headbone (optional) Bone to search when going for headshots.
-	 * @return Position to aim at.
-	 */
-	Vector AimAtPlayerWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon, const char* headbone = nullptr);
-	// Gets a position to shoot non-player entities
-	Vector GetAimPositionForEntities(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon);
-	Vector AimAtEntityWithHitscan(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon);
-	Vector AimAtEntityWithProjectile(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon);
-	// Same as AimAtPlayerWithProjectile but for non-player entities
-	Vector AimAtEntityWithBallistic(CBaseBot* bot, CBaseEntity* target, IDecisionQuery::DesiredAimSpot desiredAim, const CBotWeapon* weapon);
-	/**
 	 * @brief Basic select between head, center and abs origin for aiming.
 	 * @param bot Bot that will aim at this target.
 	 * @param target Target to aim.

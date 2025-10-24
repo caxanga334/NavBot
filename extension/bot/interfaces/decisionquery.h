@@ -36,7 +36,7 @@ public:
 	// Should the bot seek and destroy this threat?
 	virtual QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them);
 	// Should the bot pick up this item/weapon?
-	virtual QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item);
+	virtual QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item);
 	// Should the bot be in a hurry?
 	virtual QueryAnswerType ShouldHurry(CBaseBot* me);
 	// Should the bot retreat?
@@ -50,7 +50,7 @@ public:
 	 * @param any if true, we're testing to see if ANYTHING can be considerated a blocker
 	 * @return Query Answer
 	*/
-	virtual QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false);
+	virtual QueryAnswerType IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any = false);
 	// Given two known entities, select which one the bot should target first
 	virtual const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2);
 
@@ -97,7 +97,7 @@ inline QueryAnswerType IDecisionQuery::ShouldSeekAndDestroy(CBaseBot* me, const 
 	return ANSWER_UNDEFINED;
 }
 
-inline QueryAnswerType IDecisionQuery::ShouldPickup(CBaseBot* me, edict_t* item)
+inline QueryAnswerType IDecisionQuery::ShouldPickup(CBaseBot* me, CBaseEntity* item)
 {
 	return ANSWER_UNDEFINED;
 }
@@ -117,7 +117,7 @@ inline QueryAnswerType IDecisionQuery::IsIgnoringMapObjectives(CBaseBot* me)
 	return ANSWER_UNDEFINED;
 }
 
-inline QueryAnswerType IDecisionQuery::IsBlocker(CBaseBot* me, edict_t* blocker, const bool any)
+inline QueryAnswerType IDecisionQuery::IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any)
 {
 	return ANSWER_UNDEFINED;
 }

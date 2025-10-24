@@ -157,6 +157,10 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			v = std::clamp(v, 30.0f, 600.0f);
 			SetRogueMinTime(v);
 		}
+		else if (strncasecmp(key, "movement_break_assist", 21) == 0)
+		{
+			SetBreakAssist(UtilHelpers::StringToBoolean(value));
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

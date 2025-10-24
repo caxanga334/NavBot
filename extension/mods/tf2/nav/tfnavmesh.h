@@ -4,10 +4,8 @@
 
 
 #include <navmesh/nav_mesh.h>
-
-class CountdownTimer;
-class CTFWaypoint;
-class CTFNavArea;
+#include "tfnavarea.h"
+#include "tfnav_waypoint.h"
 
 class CTFNavMesh : public CNavMesh
 {

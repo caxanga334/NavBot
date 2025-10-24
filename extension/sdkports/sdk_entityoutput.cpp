@@ -1,7 +1,19 @@
 #include NAVBOT_PCH_FILE
 #include "sdk_entityoutput.h"
 
-inline const CHandle<CBaseEntity>& variant_t::Entity(void) const
+void variant_t::SetString(const char* str)
+{
+	iszVal = MAKE_STRING(str);
+	fieldType = FIELD_STRING;
+}
+
+void variant_t::SetEntity(CBaseEntity* val)
+{
+	eVal.Set(reinterpret_cast<IHandleEntity*>(val));
+	fieldType = FIELD_EHANDLE;
+}
+
+const CHandle<CBaseEntity>& variant_t::Entity(void) const
 {
 	if (fieldType == FIELD_EHANDLE)
 		return reinterpret_cast<const CHandle<CBaseEntity>&>(eVal);
@@ -11,7 +23,7 @@ inline const CHandle<CBaseEntity>& variant_t::Entity(void) const
 	return hNull;
 }
 
-inline void variant_t::Vector3D(Vector& vec) const
+void variant_t::Vector3D(Vector& vec) const
 {
 	if ((fieldType == FIELD_VECTOR) || (fieldType == FIELD_POSITION_VECTOR))
 	{

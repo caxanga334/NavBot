@@ -129,6 +129,19 @@ public:
 	 * @return True if no obstruction is found, false otherwise.
 	 */
 	virtual bool IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt = nullptr) const;
+	/**
+	 * @brief Called to check if the given entity can take damage. This function checks for common things like the takedamage property.
+	 * @param entity Entity to check.
+	 * @param maxhealth If the entity's health is greater than this, consider as not damagable.
+	 * @return True if the given entity can take damage, false if not.
+	 */
+	virtual bool IsEntityDamageable(CBaseEntity* entity, const int maxhealth = 1000) const;
+	/**
+	 * @brief Called to check if the given entity is a breakable entity. Bots will attack these if they find one in their path.
+	 * @param entity Entity to check.
+	 * @return True if the given entity is a brakable entity, false if not.
+	 */
+	virtual bool IsEntityBreakable(CBaseEntity* entity) const;
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;

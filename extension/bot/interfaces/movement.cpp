@@ -2,6 +2,7 @@
 #include <cstring>
 #include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_entityoutput.h>
 #include <bot/interfaces/playercontrol.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
@@ -9,8 +10,6 @@
 #include <navmesh/nav_ladder.h>
 #include <manager.h>
 #include <mods/basemod.h>
-#include <util/entprops.h>
-#include <util/helpers.h>
 #include <entities/baseentity.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include "movement.h"
@@ -31,7 +30,7 @@ static ConVar sm_navbot_movement_strafejump_max_angle("sm_navbot_movement_strafe
 static ConVar sm_navbot_movement_strafejump_look_angle_offset("sm_navbot_movement_strafe_look_angle_offset", "15.0", FCVAR_GAMEDLL, "Angle offset for strafe jump look.");
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
-	trace::CTraceFilterSimple(bot->GetEntity(), COLLISION_GROUP_NONE)
+	trace::CTraceFilterSimple(bot->GetEntity(), mover->GetMovementCollisionGroup())
 {
 	m_me = bot;
 	m_mover = mover;
@@ -108,6 +107,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_elevatorState = NOT_USING_ELEVATOR;
 	m_lastMoveWeight = 0;
 	m_isBreakingObstacle = false;
+	m_crouchToBreak = false;
 	m_obstacleBreakTimeout.Invalidate();
 	m_obstacleEntity = nullptr;
 	m_desiredspeed = 0.0f;
@@ -173,6 +173,7 @@ void IMovement::Reset()
 	m_elevatorState = NOT_USING_ELEVATOR;
 	m_lastMoveWeight = 0;
 	m_isBreakingObstacle = false;
+	m_crouchToBreak = false;
 	m_obstacleBreakTimeout.Invalidate();
 	m_obstacleEntity = nullptr;
 	m_catapultStartPosition = vec3_origin;
@@ -424,6 +425,11 @@ unsigned int IMovement::GetMovementTraceMask() const
 	return MASK_PLAYERSOLID;
 }
 
+int IMovement::GetMovementCollisionGroup() const
+{
+	return static_cast<int>(Collision_Group_t::COLLISION_GROUP_PLAYER_MOVEMENT);
+}
+
 float IMovement::GetDesiredSpeed() const
 {
 	return m_desiredspeed;
@@ -625,12 +631,27 @@ void IMovement::AdjustSpeedForPath(CMeshNavigator* path)
 
 void IMovement::DetermineIdealPostureForPath(const CMeshNavigator* path)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::DetermineIdealPostureForPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	CNavArea* lastarea = bot->GetLastKnownNavArea();
+
+	if (lastarea && lastarea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
+	{
+		bot->GetControlInterface()->PressCrouchButton(0.25f);
+		return;
+	}
+
 	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
 	const CBasePathSegment* goal = path->GetGoalSegment();
 
 	if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) /* && GetBot<CBaseBot>()->GetRangeToSqr(goal->goal) <= GOAL_CROUCH_RANGE */)
 	{
-		GetBot<CBaseBot>()->GetControlInterface()->PressCrouchButton(0.25f);
+		bot->GetControlInterface()->PressCrouchButton(0.25f);
+		return;
 	}
 }
 
@@ -1102,10 +1123,7 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 			return true; // lookup failed, assume it's walkable
 		}
 
-		// https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/server/BasePropDoor.h#L84
-		constexpr auto DOOR_STATE_OPEN = 2; // value taken from enum at BasePropDoor.h
-
-		if (doorstate == DOOR_STATE_OPEN)
+		if (doorstate == static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_OPEN))
 		{
 			return false; // open doors are obstacles
 		}
@@ -1142,8 +1160,25 @@ bool IMovement::IsOnGround()
 	// return GetBot()->GetGroundEntity() != nullptr;
 	// TO-DO: See if it's worth to cache the m_fFlags pointer
 	int flags = 0;
-	entprops->GetEntProp(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_fFlags", flags);
+	entprops->GetEntProp(GetBot<CBaseBot>()->GetEntity(), Prop_Send, "m_fFlags", flags);
 	return (flags & FL_ONGROUND) != 0;
+}
+
+bool IMovement::IsCompletelyCrouched() const
+{
+	// m_bDucked seems reliable, at least on the modern SDK 2013
+	// Could try changing to checking FL_DUCKING flag
+
+	bool result = false;
+	entprops->GetEntPropBool(GetBot<CBaseBot>()->GetEntity(), Prop_Send, "m_bDucked", result);
+	return false;
+}
+
+bool IMovement::IsInCrouchTransition() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetBot<CBaseBot>()->GetEntity(), Prop_Send, "m_bDucking", result);
+	return false;
 }
 
 /**
@@ -1440,6 +1475,14 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity)
 	}
 	if (std::strcmp(classname, "prop_door_rotating") == 0)
 	{
+		int state = 0;
+		entprops->GetEntProp(entity, Prop_Data, "m_eDoorState", state);
+
+		if (state != static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_CLOSED))
+		{
+			return false; // only closed doors can be used
+		}
+
 		return true;
 	}
 
@@ -1488,14 +1531,35 @@ bool IMovement::DoStrafeJump(const Vector& start, const Vector& end)
 	return result;
 }
 
+void IMovement::OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimedout)
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	if (extmanager->GetMod()->GetModSettings()->ShouldUseMovementBreakAssist())
+	{
+		if (istimedout && obstacle)
+		{
+			CBaseEntity* myentity = me->GetEntity();
+			variant_t emptyvariant;
+
+			UtilHelpers::io::FireInput(obstacle, "InputBreak", myentity, myentity, emptyvariant);
+		}
+	}
+
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		me->DebugPrintToConsole(255, 255, 0, "%s DONE BREAKING OBSTACLE %p. IS TIME OUT: %s \n", me->GetDebugIdentifier(), obstacle, istimedout ? "YES" : "NO");
+	}
+}
+
 void IMovement::StuckMonitor()
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::StuckMonitor", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	auto bot = GetBot();
-	auto origin = bot->GetAbsOrigin();
+	CBaseBot* bot = GetBot<CBaseBot>();
+	Vector origin = bot->GetAbsOrigin();
 	constexpr auto STUCK_RADIUS = 100.0f; // distance the bot has to move to consider not stuck
 
 	if (!bot->IsAlive())
@@ -1545,12 +1609,14 @@ void IMovement::StuckMonitor()
 
 				if (m_stuck.counter > extmanager->GetMod()->GetModSettings()->GetStuckSuicideThreshold())
 				{
+					smutils->LogMessage(myself, "Bot \"%s\" suicided due to being stuck for too long. %g %g %g", bot->GetClientName(), origin.x, origin.y, origin.z);
 					bot->DelayedFakeClientCommand("kill");
+					ClearStuckStatus("Kill command sent."); // don't spam the log files
 				}
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{
-					bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s STILL STUCK! \n", bot->GetDebugIdentifier());
+					bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s STILL STUCK AT %g %g %g! \n", bot->GetDebugIdentifier(), origin.x, origin.y, origin.z);
 					NDebugOverlay::Circle(m_stuck.GetStuckPos() + Vector(0.0f, 0.0f, 5.0f), QAngle(-90.0f, 0.0f, 0.0f), 5.0f, 255, 0, 0, 255, true, 1.0f);
 				}
 			}
@@ -1577,7 +1643,7 @@ void IMovement::StuckMonitor()
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{
-					bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s GOT STUCK! \n", bot->GetDebugIdentifier());
+					bot->DebugPrintToConsole(BOTDEBUG_MOVEMENT, 200, 255, 200, "%s GOT STUCK AT %g %g %g! \n", bot->GetDebugIdentifier(), origin.x, origin.y, origin.z);
 					NDebugOverlay::Circle(origin + Vector(0.0f, 0.0f, 5.0f), QAngle(-90.0f, 0.0f, 0.0f), 5.0f, 255, 0, 0, 255, true, 1.0f);
 				}
 			}
@@ -1686,23 +1752,39 @@ void IMovement::ObstacleBreakUpdate()
 
 	if (m_obstacleBreakTimeout.IsElapsed() || obstacle == nullptr)
 	{
+		OnDoneBreakingObstacle(obstacle, m_obstacleBreakTimeout.IsElapsed());
+
 		m_obstacleBreakTimeout.Invalidate();
 		m_isBreakingObstacle = false;
 		m_obstacleEntity = nullptr;
 		GetBot()->GetControlInterface()->ReleaseAllAttackButtons();
+		ClearStuckStatus("DONE BREAKING OBSTACLE!");
 		return;
 	}
 
 	CBaseBot* bot = GetBot();
-	Vector pos = UtilHelpers::getWorldSpaceCenter(obstacle);
+	Vector eyepos = bot->GetEyeOrigin();
+	Vector origin = bot->GetAbsOrigin();
+	Vector pos;
+	Vector center = UtilHelpers::getWorldSpaceCenter(obstacle);
+	UtilHelpers::math::CalcClosestPointOfEntity(obstacle, eyepos, pos);
 	bot->GetInventoryInterface()->SelectBestWeaponForBreakables();
+	
+	MoveTowards(center, MOVEWEIGHT_CRITICAL);
 
-	bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at breakable entity!");
-	MoveTowards(pos, MOVEWEIGHT_CRITICAL);
-
-	if (bot->GetControlInterface()->IsAimOnTarget())
+	if ((eyepos - pos).IsLengthLessThan(256.0f))
 	{
-		bot->GetControlInterface()->PressAttackButton();
+		if (center.z < origin.z)
+		{
+			bot->GetControlInterface()->PressCrouchButton();
+		}
+
+		bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at breakable entity!");
+
+		if (bot->GetControlInterface()->IsAimOnTarget())
+		{
+			bot->GetCombatInterface()->DoPrimaryAttack();
+		}
 	}
 }
 

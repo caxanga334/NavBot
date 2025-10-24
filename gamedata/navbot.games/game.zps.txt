@@ -5,7 +5,7 @@
 		"Keys"
 		{
 			/* Comma delimited list of entities used as walkable seed position */
-			"NavGenerationWalkableEnts"		"info_player_human,info_player_zombie"
+			"NavGenerationWalkableEnts"		"info_player_human,info_player_zombie,info_player_carrier"
 			/* Comma delimited list of client command the bot should send to join the game. */
 			"BotJoinGameCommand"            "joingame,choose1"
 			/* ZPS already calls PlayerRunCommands on bots we create, just hook the function */

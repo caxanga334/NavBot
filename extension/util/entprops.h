@@ -418,6 +418,8 @@ namespace entityprops
 	 * @return Entity model pointer.
 	 */
 	CStudioHdr* GetEntityModelPtr(CBaseEntity* entity, const bool validate = true);
+	// Checks if the given effect (See EF_ enum) is active on the entity.
+	bool IsEffectActiveOnEntity(CBaseEntity* entity, int effects);
 }
 
 #endif

@@ -113,20 +113,24 @@ public:
 	 */
 	virtual void DeadSleepThink(int& buttons) {}
 
-	virtual float GetRangeTo(const Vector& pos) const;
-	virtual float GetRangeTo(edict_t* edict) const;
-	virtual float GetRangeTo(CBaseEntity* entity) const;
-	virtual float GetRangeToSqr(const Vector& pos) const;
-	virtual float GetRangeToSqr(edict_t* edict) const;
-	virtual float GetRangeToSqr(CBaseEntity* entity) const;
+	float GetRangeTo(const Vector& pos) const;
+	float GetRangeTo(edict_t* edict) const;
+	float GetRangeTo(CBaseEntity* entity) const;
+	float GetRangeToSqr(const Vector& pos) const;
+	float GetRangeToSqr(edict_t* edict) const;
+	float GetRangeToSqr(CBaseEntity* entity) const;
 
-	virtual bool IsRangeGreaterThan(const Vector& pos, const float range) const;
-	virtual bool IsRangeGreaterThan(edict_t* edict, const float range) const;
-	virtual bool IsRangeGreaterThan(CBaseEntity* entity, const float range) const;
-	virtual bool IsRangeLessThan(const Vector& pos, const float range) const;
-	virtual bool IsRangeLessThan(edict_t* edict, const float range) const;
-	virtual bool IsRangeLessThan(CBaseEntity* entity, const float range) const;
-
+	bool IsRangeGreaterThan(const Vector& pos, const float range) const;
+	bool IsRangeGreaterThan(edict_t* edict, const float range) const;
+	bool IsRangeGreaterThan(CBaseEntity* entity, const float range) const;
+	bool IsRangeLessThan(const Vector& pos, const float range) const;
+	bool IsRangeLessThan(edict_t* edict, const float range) const;
+	bool IsRangeLessThan(CBaseEntity* entity, const float range) const;
+	/**
+	 * @brief Called to determine if the bot can break the given entity.
+	 * @param entity Entity the bot may break.
+	 * @return True if breakable, false if not.
+	 */
 	virtual bool IsAbleToBreak(CBaseEntity* entity);
 
 	IBotController* GetController() const { return m_controller; }

@@ -43,6 +43,7 @@ inline void DebuggerBreakOnNaN_StagingOnly( float val )
 
 class CFuncElevator;
 class CFuncNavCost;
+class INavBlocker;
 // class KeyValues;
 
 inline bool FStrEq(const char *sz1, const char *sz2)
@@ -970,6 +971,8 @@ private:
 
 	const CNavVolume* m_volume; // Nav volume this area is inside
 
+	std::vector<INavBlocker*> m_navblockers; // nav blockers that affects this area
+
 public:
 	void SetNavVolume(const CNavVolume* volume) { m_volume = volume; }
 	const CNavVolume* GetNavVolume() const { return m_volume; }
@@ -981,7 +984,8 @@ public:
 		}
 	}
 
-
+	virtual void RegisterNavBlocker(INavBlocker* blocker);
+	virtual void UnregisterNavBlocker(INavBlocker* blocker);
 };
 
 typedef CUtlVector< CNavArea * > NavAreaVector;

@@ -1625,13 +1625,13 @@ CON_COMMAND(sm_navbot_debug_nav_ladder_dot, "")
 	META_CONPRINTF("Dot: %g\n    %g %g %g", dot, to.x, to.y, to.z);
 }
 
-CON_COMMAND(sm_navbot_debug_ent_outputs, "")
+CON_COMMAND(sm_navbot_debug_ent_io, "")
 {
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
 	{
-		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_outputs <ent index>\n");
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_io <ent index>\n");
 		return;
 	}
 
@@ -1651,6 +1651,11 @@ CON_COMMAND(sm_navbot_debug_ent_outputs, "")
 		for (int i = 0; i < nfields; i++)
 		{
 			typedescription_t* dataDesc = &datamap->dataDesc[i];
+
+			if (datamap->dataDesc[i].flags & FTYPEDESC_INPUT)
+			{
+				META_CONPRINTF("--- INPUT: %s ---\n", dataDesc->externalName);
+			}
 
 			if (dataDesc->fieldType == FIELD_CUSTOM && (dataDesc->flags & FTYPEDESC_OUTPUT) != 0)
 			{
@@ -1684,63 +1689,6 @@ CON_COMMAND(sm_navbot_debug_ent_outputs, "")
 		datamap = datamap->baseMap;
 	}
 }
-
-#if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
-CON_COMMAND(sm_navbot_debug_get_model_ptr, "")
-{
-	DECLARE_COMMAND_ARGS;
-
-	if (args.ArgC() < 2)
-	{
-		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_outputs <ent index>\n");
-		return;
-	}
-
-	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
-
-	if (!pEntity)
-	{
-		return;
-	}
-
-	CStudioHdr* modelptr = entityprops::GetEntityModelPtr(pEntity);
-	auto ptr = UtilHelpers::GetEntityModelPtr(UtilHelpers::BaseEntityToEdict(pEntity));
-
-	META_CONPRINTF("Model Ptr: %p\n", modelptr);
-
-	if (!modelptr)
-	{
-		return;
-	}
-
-	if (!modelptr->IsValid())
-	{
-		META_CONPRINT("Invalid CStudioHdr!\n");
-		return;
-	}
-
-	if (ptr)
-	{
-		int numbones = ptr->numbones();
-
-		for (int i = 0; i < numbones; i++)
-		{
-			auto bone = ptr->pBone(i);
-
-			META_CONPRINTF("Bone %i: %s\n", i, bone->pszName());
-		}
-
-		int numseqs = ptr->GetNumSeq();
-
-		for (int i = 0; i < numseqs; i++)
-		{
-			auto& seq = ptr->pSeqdesc(i);
-
-			META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
-		}
-	}
-}
-#endif // #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 
 CON_COMMAND(sm_navbot_debug_dump_entity_inheritance, "")
 {
@@ -1809,6 +1757,67 @@ CON_COMMAND(sm_navbot_debug_command_args, "Debug command arguments functions.")
 	{
 		META_CONPRINTF("%s\n", args[i]);
 	}
+}
+
+CON_COMMAND(sm_navbot_debug_closest_point, "Gets the closest point of the given entity AABB.")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_closest_point <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
+
+	if (host)
+	{
+		Vector from = host->GetEyeOrigin();
+		Vector point;
+		UtilHelpers::math::CalcClosestPointOfEntity(pEntity, from, point);
+		NDebugOverlay::Line(from, point, 255, 255, 0, true, 30.0f);
+		Vector mins{ -1.0f, -1.0f, -1.0f };
+		Vector maxs{ 1.0f, 1.0f, 1.0f };
+		NDebugOverlay::Box(point, mins, maxs, 255, 255, 0, 255, 30.0f);
+	}
+
+}
+
+CON_COMMAND(sm_navbot_debug_fireinput, "Gets the closest point of the given entity AABB.")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_fireinput <ent index> <input name>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
+
+	if (host)
+	{
+		const char* input = args[2];
+		variant_t variant;
+
+		UtilHelpers::io::FireInput(pEntity, input, host->GetEntity(), host->GetEntity(), variant);
+	}
+
 }
 
 #endif // EXT_DEBUG

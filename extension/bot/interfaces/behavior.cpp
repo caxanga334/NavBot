@@ -32,7 +32,7 @@ QueryAnswerType IBehavior::ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity
 	return GetDecisionQueryResponder()->ShouldSeekAndDestroy(me, them);
 }
 
-QueryAnswerType IBehavior::ShouldPickup(CBaseBot* me, edict_t* item)
+QueryAnswerType IBehavior::ShouldPickup(CBaseBot* me, CBaseEntity* item)
 {
 	return GetDecisionQueryResponder()->ShouldPickup(me, item);
 }
@@ -52,7 +52,7 @@ QueryAnswerType IBehavior::IsIgnoringMapObjectives(CBaseBot* me)
 	return GetDecisionQueryResponder()->IsIgnoringMapObjectives(me);
 }
 
-QueryAnswerType IBehavior::IsBlocker(CBaseBot* me, edict_t* blocker, const bool any)
+QueryAnswerType IBehavior::IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any)
 {
 	return GetDecisionQueryResponder()->IsBlocker(me, blocker, any);
 }

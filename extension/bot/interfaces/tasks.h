@@ -307,7 +307,7 @@ public:
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
 	}
 
-	QueryAnswerType ShouldPickup(CBaseBot* me, edict_t* item) override
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override
 	{
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldPickup, me, item);
 	}
@@ -327,7 +327,7 @@ public:
 		PROPAGATE_DECISION_WITH_1ARG(IsIgnoringMapObjectives, me);
 	}
 
-	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override
+	QueryAnswerType IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any = false) override
 	{
 		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
 	}

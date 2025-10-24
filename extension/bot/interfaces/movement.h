@@ -219,6 +219,11 @@ public:
 	virtual float GetProneHullHeight() const;
 	// Trace mask for collision detection
 	virtual unsigned int GetMovementTraceMask() const;
+	// Collision group used for detecting collision within the bot movement code.
+	virtual int GetMovementCollisionGroup() const;
+	static constexpr float BASE_AVOID_DISTANCE = 50.0f;
+	// The base distance the navigator should check for obstacle to avoid.
+	virtual float GetAvoidDistance() const { return BASE_AVOID_DISTANCE; }
 	// Gets the bot running speed
 	virtual float GetRunSpeed() const { return m_maxspeed; }
 	// Gets the bot walking speed
@@ -326,17 +331,17 @@ public:
 	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now = true, CBaseEntity** obstacle = nullptr);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float* fraction = nullptr);
-
 	virtual bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true);
-
+	// returns true if the bot is on ground
 	virtual bool IsOnGround();
-
+	// Returns true if the bot is fully crouched
+	virtual bool IsCompletelyCrouched() const;
+	// Returns true if the bot is currently in a transition of stand/crouch states
+	virtual bool IsInCrouchTransition() const;
 	virtual bool IsAttemptingToMove(const float time = 0.25f) const;
-
 	virtual bool IsStuck() { return m_stuck.isstuck; }
 	virtual float GetStuckDuration();
 	virtual void ClearStuckStatus(const char* reason = nullptr);
-
 	virtual float GetSpeed() const { return m_speed; }
 	virtual float GetGroundSpeed() const { return m_groundspeed; }
 	virtual const Vector& GetMotionVector() { return m_motionVector; }
@@ -423,6 +428,12 @@ public:
 	 * @return True if the movement action started, false if not.
 	 */
 	virtual bool UseGrapplingHook(const Vector& start, const Vector& end) { return false; }
+	/**
+	 * @brief Called when the bot is done breaking an obstacle.
+	 * @param obstacle Obstacle the bot was trying to break, may be NULL.
+	 * @param istimedout If true, the bot stopped breaking due to a timeout.
+	 */
+	virtual void OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimedout);
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -442,6 +453,7 @@ protected:
 	bool m_isClimbingObstacle;
 	bool m_isAirborne;
 	bool m_isBreakingObstacle;
+	bool m_crouchToBreak;
 	bool m_isUsingCatapult;
 	bool m_wasLaunched; // was the bot launched already? (CHEAT)
 	CountdownTimer m_catapultCorrectVelocityTimer;

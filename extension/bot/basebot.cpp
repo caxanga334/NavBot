@@ -314,58 +314,10 @@ bool CBaseBot::IsRangeLessThan(CBaseEntity* entity, const float range) const
 */
 bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 {
-	int index = UtilHelpers::IndexOfEntity(entity);
-	int takedamage = 0;
+	CBaseMod* mod = extmanager->GetMod();
+	constexpr int MAX_HEALTH_TO_BREAK = 1000;
 
-	if (entprops->GetEntProp(index, Prop_Data, "m_takedamage", takedamage) == true)
-	{
-		switch (takedamage)
-		{
-		case DAMAGE_NO:
-			[[fallthrough]];
-		case DAMAGE_EVENTS_ONLY:
-		{
-			return false; // entity doesn't take damage
-		}
-		default:
-			break;
-		}
-	}
-
-	int health = 0;
-	constexpr auto MAX_HEALTH_TO_BREAK = 1000; // if the entity health is greater than this, don't bother trying to break it
-	
-	if (entprops->GetEntProp(index, Prop_Data, "m_iHealth", health))
-	{
-		if (health > MAX_HEALTH_TO_BREAK)
-		{
-			return false; // don't bother
-		}
-	}
-
-	CBaseEntity* damageFilter = nullptr;
-
-	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &damageFilter))
-	{
-		if (damageFilter)
-		{
-			return false; // entity has a damage filter assigned to it, assume we can't break
-		}
-	}
-
-	auto classname = gamehelpers->GetEntityClassname(entity);
-
-	if (strncmp(classname, "func_breakable", 14) == 0)
-	{
-		return true;
-	}
-
-	if (strncmp(classname, "func_breakable_surf", 19) == 0)
-	{
-		return true;
-	}
-
-	if (UtilHelpers::StringMatchesPattern(classname, "prop_phys*", 0))
+	if (mod->IsEntityDamageable(entity, MAX_HEALTH_TO_BREAK) && mod->IsEntityBreakable(entity))
 	{
 		return true;
 	}

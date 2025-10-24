@@ -68,4 +68,7 @@ inline T fsel(T comparand, T val, T lt)
 
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX
 
+// Stuff that we need but doesn't include the header file from the SDK directly due to reasons
+#include <sdkports/sdk_defs.h>
+
 #endif

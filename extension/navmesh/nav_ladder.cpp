@@ -35,8 +35,6 @@ void CNavLadder::Shift( const Vector &shift )
 	m_bottom += shift;
 }
 
-
-
  void CNavLadder::CompressIDs( CNavMesh* TheNaVmesh )
 {
 	m_nextID = 1;
@@ -585,7 +583,7 @@ void CNavLadder::Save(std::fstream& filestream, uint32_t version)
 /**
  * Load a navigation ladder from the opened binary stream
  */
-void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version)
+void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version, uint32_t subversion)
 {
 	// load ID
 	filestream.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));

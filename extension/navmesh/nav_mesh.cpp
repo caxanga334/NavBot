@@ -33,6 +33,7 @@
 #include "nav_elevator.h"
 #include "nav_place_loader.h"
 #include "nav_prereq.h"
+#include "nav_blocker.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
 #include <generichash.h>
@@ -525,6 +526,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 		m_volumes.clear();
 		m_elevators.clear();
 		m_prerequisites.clear();
+		DestroyAllNavBlockers();
 	}
 
 	m_blockedAreas.RemoveAll();
@@ -633,6 +635,7 @@ void CNavMesh::Update( void )
 
 	UpdateBlockedAreas();
 	UpdateAvoidanceObstacleAreas();
+	UpdateNavBlockers();
 
 	if (sm_nav_edit.GetBool())
 	{
@@ -1032,6 +1035,7 @@ void CNavMesh::OnRoundRestart( void )
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
 	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
+	m_updateNavBlockersTimer.Start(NAV_BLOCKERS_UPDATE_INTERVAL);
 	RemoveAllEntitiesFromForcedSolidList(); // entities are deleted and re-created between rounds, clear the list
 
 #ifdef NEXT_BOT
@@ -1095,6 +1099,10 @@ void CNavMesh::PropagateOnRoundRestart()
 
 	std::for_each(m_prerequisites.begin(), m_prerequisites.end(), [](const std::pair<WaypointID, std::shared_ptr<CNavPrerequisite>>& object) {
 		object.second->OnRoundRestart();
+	});
+
+	std::for_each(m_navblockers.begin(), m_navblockers.end(), [](std::unique_ptr<INavBlocker>& blocker) {
+		blocker->OnRoundRestart();
 	});
 }
 
@@ -1496,7 +1504,7 @@ CNavArea *CNavMesh::GetNavAreaByID( unsigned int id ) const
 CNavLadder *CNavMesh::GetLadderByID( unsigned int id ) const
 {
 	if (id == 0)
-		return NULL;
+		return nullptr;
 
 	for ( int i=0; i<m_ladders.Count(); ++i )
 	{
@@ -3728,6 +3736,26 @@ void CNavMesh::UpdateBlockedAreas( void )
 	}
 }
 
+void CNavMesh::UpdateNavBlockers()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CNavMesh::UpdateNavBlockers", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (m_updateNavBlockersTimer.IsElapsed())
+	{
+		// Remove any blocker that is no longer valid
+		m_navblockers.erase(std::remove_if(m_navblockers.begin(), m_navblockers.end(), [](const std::unique_ptr<INavBlocker>& blocker) {
+			return !blocker->IsValid();
+		}), m_navblockers.end());
+
+		std::for_each(m_navblockers.begin(), m_navblockers.end(), [](std::unique_ptr<INavBlocker>& blocker) {
+			blocker->Update();
+		});
+
+		m_updateNavBlockersTimer.Start(NAV_BLOCKERS_UPDATE_INTERVAL);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::RegisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction )
@@ -3804,6 +3832,11 @@ CNavArea *CNavMesh::CreateArea( void ) const
 void CNavMesh::DestroyArea( CNavArea *pArea ) const
 {
 	delete pArea;
+}
+
+CNavLadder* CNavMesh::CreateLadder() const
+{
+	return new CNavLadder;
 }
 
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
@@ -4430,6 +4463,27 @@ void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, const bool center
 			}
 		}
 	}
+}
+
+void CNavMesh::RegisterNavBlocker(INavBlocker* blocker)
+{
+	m_navblockers.emplace_back(blocker);
+	blocker->PostRegister();
+}
+
+void CNavMesh::UnregisterNavBlocker(INavBlocker* blocker)
+{
+	INavBlocker::NotifyBlockerDestruction<CNavArea> functor{ blocker };
+	CNavMesh::ForAllAreas<decltype(functor)>(functor);
+
+	m_navblockers.erase(std::remove_if(m_navblockers.begin(), m_navblockers.end(), [&blocker](const std::unique_ptr<INavBlocker>& obj) {
+		return obj.get() == blocker;
+	}), m_navblockers.end());
+}
+
+void CNavMesh::DestroyAllNavBlockers()
+{
+	m_navblockers.clear();
 }
 
 CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)

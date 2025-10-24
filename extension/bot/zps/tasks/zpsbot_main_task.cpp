@@ -3,11 +3,17 @@
 #include <bot/tasks_shared/bot_shared_debug_move_to_origin.h>
 #include <bot/tasks_shared/bot_shared_dead.h>
 #include <bot/zps/zpsbot.h>
+#include "zpsbot_tactical_task.h"
 #include "zpsbot_main_task.h"
 
 AITask<CZPSBot>* CZPSBotMainTask::InitialNextTask(CZPSBot* bot)
 {
-	return nullptr;
+	if (cvar_bot_disable_behavior.GetBool())
+	{
+		return nullptr;
+	}
+
+	return new CZPSBotTacticalTask;
 }
 
 TaskResult<CZPSBot> CZPSBotMainTask::OnTaskUpdate(CZPSBot* bot)
@@ -22,7 +28,6 @@ const CKnownEntity* CZPSBotMainTask::SelectTargetThreat(CBaseBot* me, const CKno
 
 Vector CZPSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	// return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);a
 	return m_aimhelper.SelectAimPosition(static_cast<CZPSBot*>(me), entity, desiredAim);
 }
 

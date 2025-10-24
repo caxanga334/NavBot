@@ -297,6 +297,8 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	sharesys->RegisterLibrary(myself, "navbot");
 	spmisc::RegisterNavBotMultiTargetFilter();
 
+	MathLib_Init(2.2f, 2.2f, 0.0f, 2);
+
 	return true;
 }
 
@@ -375,6 +377,24 @@ void NavBotExt::SDK_OnAllLoaded()
 	sharesys->AddNatives(myself, m_natives.data());
 	smutils->LogMessage(myself, "Registered %i natives.", m_natives.size() - 1);
 #endif // !NO_SOURCEPAWN_API
+
+	SourceMod::sm_sendprop_info_t info;
+
+	if (gamehelpers->FindSendPropInfo("CBasePlayer", "m_fFlags", &info))
+	{
+		SendProp* prop = info.prop;
+		
+		if (prop->m_nBits != PLAYER_FLAG_BITS)
+		{
+			// If we get here this means the FL_* flags values are potentially wrong for this mod.
+			smutils->LogError(myself, "CBasePlayer::m_fFlags networked bits (%i) doesn't match the SendProp::m_nBits (%i)!", PLAYER_FLAG_BITS, prop->m_nBits);
+		}
+	}
+	else
+	{
+		// if we get here we have even bigger problems
+		smutils->LogError(myself, "Failed to get CBasePlayer::m_fFlags SendProp!");
+	}
 }
 
 bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, bool late)

@@ -64,7 +64,7 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnContact(CTF2Bot* bot, CBaseEntity* pOther) override;
 	TaskEventResponseResult<CTF2Bot> OnInjured(CTF2Bot* bot, const CTakeDamageInfo& info) override;
 
-	QueryAnswerType IsBlocker(CBaseBot* me, edict_t* blocker, const bool any = false) override;
+	QueryAnswerType IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any = false) override;
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;

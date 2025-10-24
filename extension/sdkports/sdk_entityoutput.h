@@ -32,12 +32,32 @@ public:
 	inline color32 Color32(void) const { return rgbaVal; }
 	inline void Vector3D(Vector& vec) const;
 
+	void SetBool(bool b) { bVal = b; fieldType = FIELD_BOOLEAN; }
+	void SetString(string_t str) { iszVal = str, fieldType = FIELD_STRING; }
+	void SetString(const char* str);
+	void SetInt(int val) { iVal = val, fieldType = FIELD_INTEGER; }
+	void SetFloat(float val) { flVal = val, fieldType = FIELD_FLOAT; }
+	void SetEntity(CBaseEntity* val);
+	void SetVector3D(const Vector& val) { vecVal[0] = val[0]; vecVal[1] = val[1]; vecVal[2] = val[2]; fieldType = FIELD_VECTOR; }
+	void SetPositionVector3D(const Vector& val) { vecVal[0] = val[0]; vecVal[1] = val[1]; vecVal[2] = val[2]; fieldType = FIELD_POSITION_VECTOR; }
+	void SetColor32(color32 val) { rgbaVal = val; fieldType = FIELD_COLOR32; }
+	void SetColor32(int r, int g, int b, int a) { rgbaVal.r = r; rgbaVal.g = g; rgbaVal.b = b; rgbaVal.a = a; fieldType = FIELD_COLOR32; }
+
 	fieldtype_t FieldType(void) { return fieldType; }
 
 protected:
 
 	const char* ToString(void) const;
 
+};
+
+// From game/server/baseentity.h, same on all supported games.
+struct inputdata_t
+{
+	CBaseEntity* pActivator;		// The entity that initially caused this chain of output events.
+	CBaseEntity* pCaller;			// The entity that fired this particular output.
+	variant_t value;				// The data parameter for this output.
+	int nOutputID;					// The unique ID of the output that was fired.
 };
 
 //-----------------------------------------------------------------------------

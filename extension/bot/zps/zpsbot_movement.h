@@ -10,6 +10,9 @@ class CZPSBotMovement : public IMovement
 public:
 	CZPSBotMovement(CZPSBot* bot);
 
+	float GetAvoidDistance() const override { return 32.0f; }
+	bool IsUseableObstacle(CBaseEntity* entity) override;
+
 private:
 
 };

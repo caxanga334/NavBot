@@ -2593,3 +2593,10 @@ CStudioHdr* entityprops::GetEntityModelPtr(CBaseEntity* entity, const bool valid
 	// return reinterpret_cast<CStudioHdr*>(reinterpret_cast<std::intptr_t>(entity) + static_cast<std::intptr_t>(offset));
 	return entprops->GetPointerToEntData<CStudioHdr>(entity, offset);
 }
+
+bool entityprops::IsEffectActiveOnEntity(CBaseEntity* entity, int effects)
+{
+	int m_fEffects = 0;
+	entprops->GetEntProp(entity, Prop_Data, "m_fEffects", m_fEffects);
+	return ((m_fEffects & effects) != 0);
+}

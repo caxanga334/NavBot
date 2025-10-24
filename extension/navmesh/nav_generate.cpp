@@ -174,7 +174,7 @@ void CNavMesh::BuildLadders(void)
  */
 void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float maxHeightAboveTopArea )
 {
-	CNavLadder *ladder = new CNavLadder;
+	CNavLadder *ladder = CreateLadder();
 
 	// compute top & bottom of ladder
 	ladder->m_top.x = (absMin.x + absMax.x) / 2.0f;
@@ -273,7 +273,7 @@ void CNavMesh::CreateLadder( const Vector& absMin, const Vector& absMax, float m
  */
 void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float width, const Vector2D &ladderDir, float maxHeightAboveTopArea )
 {
-	CNavLadder *ladder = new CNavLadder;
+	CNavLadder *ladder = CreateLadder();
 
 	ladder->m_top = top;
 	ladder->m_bottom = bottom;
@@ -344,7 +344,7 @@ void CNavMesh::CreateLadder( const Vector &top, const Vector &bottom, float widt
 
 void CNavMesh::CreateUseableLadder(CBaseEntity* pLadder)
 {
-	CNavLadder* ladder = new CNavLadder;
+	CNavLadder* ladder = CreateLadder();
 
 	ladder->BuildUseableLadder(pLadder);
 

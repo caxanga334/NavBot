@@ -19,7 +19,7 @@ public:
 	const char* GetName() const override { return "Scenario"; }
 private:
 	CountdownTimer m_respondToTeamMatesTimer;
-
+	CountdownTimer m_collectSpellTimer;
 };
 
 

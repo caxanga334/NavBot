@@ -21,9 +21,13 @@ namespace entities
 		HBaseEntity(edict_t* entity);
 		HBaseEntity(CBaseEntity* entity);
 
+		void AssignNewEntity(CBaseEntity* entity);
+
 		// returns an edict index or reference for non networked entities
 		inline int GetIndex() const { return m_index; }
 		bool GetEntity(CBaseEntity** entity, edict_t** edict) const;
+		CBaseEntity* GetBaseEntity() const { return m_pEntity; }
+		edict_t* GetEdict() const { return m_edict; }
 		const char* GetClassname() const;
 		bool IsBoundsDefinedInEntitySpace() const;
 		Vector GetAbsOrigin() const;
@@ -77,6 +81,8 @@ namespace entities
 	private:
 		void CalcAbsolutePosition(matrix3x4_t& result) const;
 		int m_index; // entity index or reference
+		CBaseEntity* m_pEntity;
+		edict_t* m_edict;
 	};
 
 	class HFuncBrush : public HBaseEntity
@@ -92,6 +98,48 @@ namespace entities
 		};
 
 		BrushSolidities_e GetSolidity() const;
+	};
+
+	/**
+	 * @brief EHANDLE made to store helper entities.
+	 * @tparam EntClass Helper entity class to store.
+	 */
+	template <typename EntClass>
+	class EntityHandle
+	{
+	public:
+		EntityHandle(CBaseEntity* entity) : EntClass(entity) {}
+
+		// returns the stored entity. NULL if the entity was removed.
+		EntClass* Get() const
+		{
+			CBaseEntity* ent = m_handle.Get();
+
+			if (ent)
+			{
+				return &m_entity;
+			}
+
+			return nullptr;
+		}
+
+		// Assigns a new entity.
+		void Set(EntClass* entity)
+		{
+			m_handle.Set(entity->GetBaseEntity());
+			m_entity.AssignNewEntity(entity->GetBaseEntity());
+		}
+
+		// Assigns a new entity.
+		void SetEntity(CBaseEntity* entity)
+		{
+			m_handle.Set(entity);
+			m_entity.AssignNewEntity(entity);
+		}
+
+	private:
+		CHandle<CBaseEntity> m_handle;
+		EntClass m_entity;
 	};
 }
 

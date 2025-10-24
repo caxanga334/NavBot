@@ -6,6 +6,7 @@
 #include <mods/basemod.h>
 #include <entities/basecombatweapon.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_entityfactory.h>
 #include <util/prediction.h>
 
 #if SOURCE_ENGINE == SE_EPISODEONE
@@ -744,4 +745,61 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 		}
 #endif // #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 	}
+}
+
+#if SOURCE_ENGINE == SE_TF2        \
+	|| SOURCE_ENGINE == SE_CSS     \
+	|| SOURCE_ENGINE == SE_DODS    \
+	|| SOURCE_ENGINE == SE_HL2DM   \
+	|| SOURCE_ENGINE == SE_SDK2013 \
+	|| SOURCE_ENGINE == SE_BMS     \
+	|| SOURCE_ENGINE == SE_BLADE   \
+	|| SOURCE_ENGINE == SE_NUCLEARDAWN \
+	|| SOURCE_ENGINE == SE_PVKII
+
+CON_COMMAND_F(sm_navbot_tool_dump_entity_factories, "Entity factories dump.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	CEntityFactoryDictionary* dict = reinterpret_cast<CEntityFactoryDictionary*>(servertools->GetEntityFactoryDictionary());
+	
+	char path[PLATFORM_MAX_PATH];
+	smutils->BuildPath(SourceMod::PathType::Path_SM, path, sizeof(path), "logs/entityfactories.txt");
+
+	std::fstream file;
+	file.open(path, std::ios_base::out | std::ios_base::trunc);
+
+	file << "NavBot dump of CEntityFactoryDictionary::m_Factories for " << smutils->GetGameFolderName() << "\n";
+
+	int c = 1;
+
+	for (unsigned short i = dict->m_Factories.First(); i != dict->m_Factories.InvalidIndex(); i = dict->m_Factories.Next(i))
+	{
+		file << c << " - " << dict->m_Factories.GetElementName(i) << "\n";
+		c++;
+	}
+
+	file.close();
+
+	META_CONPRINTF("Entity factories dumped to %s\n", path);
+}
+
+#endif
+
+CON_COMMAND_F(sm_navbot_tool_dump_entity_datamaps, "Dumps the datamap of a specific entity", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_dump_entity_datamaps <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	UtilHelpers::datamap::DumpEntityDatamap(pEntity);
 }

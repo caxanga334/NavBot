@@ -21,6 +21,7 @@ public:
 		rogue_chance = 8;
 		rogue_max_time = 300.0f;
 		rogue_min_time = 120.0f;
+		movement_break_assist = true;
 	}
 
 	virtual ~CModSettings() = default;
@@ -53,6 +54,7 @@ public:
 	void SetRogueChance(int v) { rogue_chance = v; }
 	void SetRogueMaxTime(float v) { rogue_max_time = v; }
 	void SetRogueMinTime(float v) { rogue_min_time = v; }
+	void SetBreakAssist(bool v) { movement_break_assist = v; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -68,6 +70,7 @@ public:
 	const int GetRogueBehaviorChance() const { return rogue_chance; }
 	const float GetRogueBehaviorMaxTime() const { return rogue_max_time; }
 	const float GetRogueBehaviorMinTime() const { return rogue_min_time; }
+	const bool ShouldUseMovementBreakAssist() const { return movement_break_assist; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -83,6 +86,7 @@ protected:
 	int rogue_chance; // chance for a bot to go rogue and ignore map objectives
 	float rogue_max_time;
 	float rogue_min_time;
+	bool movement_break_assist; // (Cheat) If the bot fails to break an object within the time limit, try breaking it via inputs
 };
 
 

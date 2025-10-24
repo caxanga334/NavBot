@@ -23,7 +23,7 @@
 ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
 ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_DONTRECORD, "Default navigator goal tolerance");
 ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
-ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "0.5", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
+ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "1.0", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
 
 #ifdef EXT_DEBUG
 static ConVar sm_navbot_path_debug_goal("sm_navbot_path_debug_goal", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs navigator path goal.");
@@ -1167,12 +1167,12 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	// Check for potential blockers along our path and wait if we're blocked
 	//
 	const Vector botorigin = bot->GetAbsOrigin();
-	auto blocker = FindBlocker(bot);
+	CBaseEntity* blocker = FindBlocker(bot);
 	if (blocker != nullptr)
 	{
 		// wait for some time
 		m_waitTimer.Start(avoidInterval * randomgen->GetRandomReal<float>(1.0f, 2.0f));
-		gamehelpers->SetHandleEntity(m_blocker, blocker);
+		m_blocker = blocker;
 
 		return botorigin;
 	}
@@ -1193,21 +1193,15 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	m_didAvoidCheck = true;
 
 	trace_t result;
-	trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_NONE);
-
+	CMovementTraverseFilter movementfilter(bot, mover, false);
 	unsigned int mask = mover->GetMovementTraceMask();
-
 	const float size = mover->GetHullWidth() / 4.0f;
 	const float offset = size + 2.0f;
-
-	float range = 50.0f;
+	float range = mover->GetAvoidDistance();
 	range *= bot->GetModelScale();
 
-	auto hullMin = Vector(-size, -size, mover->GetStepHeight() + 0.1f);
-	auto hullMax = Vector(size, size, mover->GetCrouchedHullHeight());
-
-	Vector nextStepHullMin(-size, -size, 2.0f * mover->GetStepHeight() + 0.1f);
-
+	Vector hullMin = Vector(-size, -size, mover->GetStepHeight() + 0.1f);
+	Vector hullMax = Vector(size, size, mover->GetCrouchedHullHeight());
 	CBaseEntity* door = nullptr;
 	CBaseEntity* leftEnt = nullptr;
 	CBaseEntity* rightEnt = nullptr;
@@ -1219,7 +1213,6 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	bool isLeftClear = true;
 	float leftAvoid = 0.0f;
 
-	CMovementTraverseFilter movementfilter(bot, mover, false);
 	trace::hull(leftFrom, leftTo, hullMin, hullMax, mask, &movementfilter, result);
 
 	if (result.fraction < 1.0f || result.startsolid)
@@ -1359,7 +1352,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	return adjustedGoal;
 }
 
-edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
+CBaseEntity* CMeshNavigator::FindBlocker(CBaseBot* bot)
 {
 	auto behavior = bot->GetBehaviorInterface();
 
@@ -1369,7 +1362,6 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 
 	auto mover = bot->GetMovementInterface();
 
-	edict_t* blocker = nullptr;
 	trace_t result;
 	CTraceFilterOnlyActors filter(bot->GetEntity(), COLLISION_GROUP_NONE);
 
@@ -1406,11 +1398,11 @@ edict_t* CMeshNavigator::FindBlocker(CBaseBot* bot)
 			Vector alongPath = segment->goal - from;
 			alongPath.z = 0.0f;
 
-			if (DotProduct(toBlocker, alongPath) > 0.0f && hitent.GetEntity(nullptr, &blocker) == true)
+			if (DotProduct(toBlocker, alongPath) > 0.0f)
 			{
-				if (behavior->IsBlocker(bot, blocker) == ANSWER_YES)
+				if (behavior->IsBlocker(bot, result.m_pEnt) == ANSWER_YES)
 				{
-					return blocker; // found a blocker the bot cares about
+					return result.m_pEnt; // found a blocker the bot cares about
 				}
 			}
 		}

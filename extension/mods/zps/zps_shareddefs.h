@@ -12,6 +12,15 @@ namespace zps
 
 		MAX_ZPS_TEAMS
 	};
+
+	enum ZPSGamemodes
+	{
+		GAMEMODE_SURVIVAL = 0,
+		GAMEMODE_OBJECTIVE,
+		GAMEMODE_HARDCORE,
+
+		MAX_ZPS_GAMEMODE_TYPES
+	};
 }
 
 

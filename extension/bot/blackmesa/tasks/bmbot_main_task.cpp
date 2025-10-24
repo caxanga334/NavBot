@@ -28,7 +28,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotMainTask::OnTaskUpdate(CBlackMesaBot* bot
 
 Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim)
 {
-	return botsharedutils::aiming::DefaultBotAim(me, entity, desiredAim);
+	return m_aimhelper.SelectAimPosition(static_cast<CBlackMesaBot*>(me), entity, desiredAim);
 }
 
 const CKnownEntity* CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)

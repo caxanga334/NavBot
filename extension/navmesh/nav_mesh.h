@@ -48,6 +48,7 @@ class CUtlBuffer;
 class NavPlaceDatabaseLoader;
 class CRCBot2Waypoint;
 class CRCBot2WaypointLoader;
+class INavBlocker;
 
 #if SOURCE_ENGINE == SE_EPISODEONE
 class CCommand;
@@ -405,7 +406,7 @@ public:
 	virtual CNavArea *CreateArea( void ) const;							// CNavArea factory
 	virtual void DestroyArea( CNavArea * ) const;
 	virtual HidingSpot *CreateHidingSpot( void ) const;					// Hiding Spot factory
-
+	virtual CNavLadder* CreateLadder() const;							// Allocates a new Ladder
 	virtual void Reset( void );											// destroy Navigation Mesh data and revert to initial state
 	virtual void Update( void );										// invoked on each game frame
 
@@ -991,6 +992,12 @@ public:
 		PlayEditSoundInternal(m_editsounds[static_cast<size_t>(type)]);
 	}
 
+	// Registers a nav blocker to the nav mesh list of blockers
+	virtual void RegisterNavBlocker(INavBlocker* blocker);
+	// Removes and destroys the given blocker from the nav mesh
+	virtual void UnregisterNavBlocker(INavBlocker* blocker);
+	void DestroyAllNavBlockers();
+
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -1236,6 +1243,7 @@ private:
 	Vector m_linkorigin;
 
 	void PlayEditSoundInternal(const std::string& sound) const;
+	void UpdateNavBlockers();
 
 private:
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> m_waypoints;
@@ -1247,8 +1255,12 @@ private:
 	std::unordered_map<unsigned int, std::shared_ptr<CNavPrerequisite>> m_prerequisites;
 	std::shared_ptr<CNavPrerequisite> m_selectedPrerequisite;
 	std::vector<CHandle<CBaseEntity>> m_forcedSolidEntities; // vector of entities overriden to be solid in walkable traces
+	std::vector<std::unique_ptr<INavBlocker>> m_navblockers;
+	CountdownTimer m_updateNavBlockersTimer;
 
 protected:
+	static constexpr float NAV_BLOCKERS_UPDATE_INTERVAL = 4.0f;
+
 	// Creates a new waypoint instance
 	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
 	// Creates a new nav volume instance
