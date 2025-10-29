@@ -68,6 +68,9 @@ namespace trace
 
 		void ClearExtraFunc() { m_extraHitFunc = nullptr; }
 
+		int GetCollisionGroup() const { return m_collisiongroup; }
+		CBaseEntity* GetPassEntity() const { return m_passEntity; }
+
 	private:
 		CBaseEntity* m_passEntity;
 		std::function<bool(IHandleEntity* pHandleEntity, int contentsMask)> m_extraHitFunc;

@@ -13,8 +13,16 @@
 
 ConVar sm_nav_waypoint_edit("sm_nav_waypoint_edit", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set one to enable NavMesh Waypoint editing.");
 
+bool CWaypoint::IsEditing()
+{
+	return CNavMesh::IsEditing() && sm_nav_waypoint_edit.GetBool();
+}
+
 CON_COMMAND_F(sm_nav_waypoint_add, "Adds a new waypoint at your position.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 	
@@ -34,6 +42,9 @@ CON_COMMAND_F(sm_nav_waypoint_add, "Adds a new waypoint at your position.", FCVA
 
 CON_COMMAND_F(sm_nav_waypoint_delete, "Deletes the nearest or selected waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 	TheNavMesh->NotifyDangerousEditCommandWasUsed();
@@ -82,6 +93,9 @@ CON_COMMAND_F(sm_nav_waypoint_delete, "Deletes the nearest or selected waypoint.
 
 CON_COMMAND_F(sm_nav_waypoint_purge, "Deletes all waypoints.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	TheNavMesh->RemoveAllWaypoints();
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
 	META_CONPRINT("All waypoints were deleted. \n");
@@ -89,6 +103,9 @@ CON_COMMAND_F(sm_nav_waypoint_purge, "Deletes all waypoints.", FCVAR_CHEAT)
 
 CON_COMMAND_F(sm_nav_waypoint_mark_crosshair, "Marks/select the waypoint nearest to your crosshair.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
 
 	Vector forward;
@@ -105,12 +122,18 @@ CON_COMMAND_F(sm_nav_waypoint_mark_crosshair, "Marks/select the waypoint nearest
 
 CON_COMMAND_F(sm_nav_waypoint_mark_nearest, "Marks/select the waypoint nearest to you.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
 	TheNavMesh->SelectNearestWaypoint(host.GetAbsOrigin());
 }
 
 CON_COMMAND_F(sm_nav_waypoint_mark_id, "Marks/select the waypoint of the given ID.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -128,12 +151,18 @@ CON_COMMAND_F(sm_nav_waypoint_mark_id, "Marks/select the waypoint of the given I
 
 CON_COMMAND_F(sm_nav_waypoint_unmark, "Clears the selected/marked waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	TheNavMesh->ClearSelectedWaypoint();
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
 CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 3)
@@ -176,6 +205,9 @@ CON_COMMAND_F(sm_nav_waypoint_connect, "Adds a connection between two waypoints.
 
 CON_COMMAND_F(sm_nav_waypoint_disconnect, "Removes a connection between two waypoints.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 3)
@@ -218,6 +250,9 @@ CON_COMMAND_F(sm_nav_waypoint_disconnect, "Removes a connection between two wayp
 
 CON_COMMAND_F(sm_nav_waypoint_info, "Shows information about the selected waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
 
 	if (waypoint)
@@ -233,6 +268,9 @@ CON_COMMAND_F(sm_nav_waypoint_info, "Shows information about the selected waypoi
 
 CON_COMMAND_F(sm_nav_waypoint_set_radius, "Sets the waypoint radius.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -259,6 +297,9 @@ CON_COMMAND_F(sm_nav_waypoint_set_radius, "Sets the waypoint radius.", FCVAR_CHE
 
 CON_COMMAND_F(sm_nav_waypoint_add_angle, "Adds a new angle to an waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	CBaseExtPlayer host(gamehelpers->EdictOfIndex(1));
 	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
 
@@ -285,6 +326,9 @@ CON_COMMAND_F(sm_nav_waypoint_add_angle, "Adds a new angle to an waypoint.", FCV
 
 CON_COMMAND_F(sm_nav_waypoint_update_angle, "Updates an existing angle on an waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -327,6 +371,9 @@ CON_COMMAND_F(sm_nav_waypoint_update_angle, "Updates an existing angle on an way
 
 CON_COMMAND_F(sm_nav_waypoint_clear_angles, "Removes all angles from an waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
 
 	if (waypoint)
@@ -344,6 +391,9 @@ CON_COMMAND_F(sm_nav_waypoint_clear_angles, "Removes all angles from an waypoint
 
 CON_COMMAND_F(sm_nav_waypoint_set_team, "Sets the waypoint owning team.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -376,6 +426,9 @@ CON_COMMAND_F(sm_nav_waypoint_set_team, "Sets the waypoint owning team.", FCVAR_
 
 CON_COMMAND_F(sm_nav_waypoint_warp_to, "Teleports you to the selected waypoint.", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
 
 	if (waypoint)
@@ -393,6 +446,9 @@ CON_COMMAND_F(sm_nav_waypoint_warp_to, "Teleports you to the selected waypoint."
 
 CON_COMMAND_F(sm_nav_waypoint_view_angle, "Sets your current angle to the given angle index", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -433,6 +489,9 @@ CON_COMMAND_F(sm_nav_waypoint_view_angle, "Sets your current angle to the given 
 
 CON_COMMAND_F(sm_nav_waypoint_toggle_flags, "Toggles base waypoint flags", FCVAR_CHEAT)
 {
+	if (!CWaypoint::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)

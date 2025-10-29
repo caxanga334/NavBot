@@ -775,6 +775,9 @@ namespace TeamFortress2
 
 		NUM_ROBOT_STATES
 	};
+
+	inline constexpr int CONTENTS_REDTEAM = CONTENTS_TEAM1;
+	inline constexpr int CONTENTS_BLUTEAM = CONTENTS_TEAM2;
 }
 
 

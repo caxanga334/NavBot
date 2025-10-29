@@ -40,7 +40,7 @@ class CEntityFactory : public IEntityFactory
 public:
 	CEntityFactory(const char* pClassName)
 	{
-		EntityFactoryDictionary()->InstallFactory(this, pClassName);
+		// EntityFactoryDictionary()->InstallFactory(this, pClassName);
 	}
 
 	IServerNetworkable* Create(const char* pClassName)

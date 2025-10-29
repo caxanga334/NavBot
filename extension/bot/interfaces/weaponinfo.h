@@ -210,6 +210,7 @@ public:
 		selection_min_range = -1.0f;
 		min_required_skill = 0;
 		preferred_aim_spot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
+		ammo_source_classname.reserve(32);
 	}
 
 	virtual ~WeaponInfo() {}
@@ -259,6 +260,7 @@ public:
 		this->dynprio_aggression = other->dynprio_aggression;
 		this->min_required_skill = other->min_required_skill;
 		this->preferred_aim_spot = other->preferred_aim_spot;
+		this->ammo_source_classname = other->ammo_source_classname;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
@@ -347,6 +349,7 @@ public:
 	void SetSpamTime(const float t) { spam_time = t; }
 	void SetMinimumRangeToUseScope(const float range) { scopein_min_range = range; }
 	void SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot spot) { preferred_aim_spot = spot; }
+	void SetAmmoSourceEntityClassname(const char* classname) { ammo_source_classname.assign(classname); }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -438,7 +441,9 @@ public:
 
 		return true;
 	}
- 
+	const bool HasAmmoSourceEntityClassname() const { return !ammo_source_classname.empty(); }
+	const std::string& GetAmmoSourceEntityClassname() const { return ammo_source_classname; }
+
 	virtual void PostLoad();
 
 private:
@@ -485,6 +490,7 @@ private:
 	DynamicPriority dynprio_sec_ammo;
 	DynamicPriority dynprio_aggression;
 	IDecisionQuery::DesiredAimSpot preferred_aim_spot;
+	std::string ammo_source_classname;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC

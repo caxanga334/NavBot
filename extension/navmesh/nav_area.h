@@ -485,6 +485,18 @@ public:
 	CNavArea *GetAdjacentArea( NavDirType dir, int i ) const;	// return the i'th adjacent area in the given direction
 	CNavArea *GetRandomAdjacentArea( NavDirType dir ) const;
 	void CollectAdjacentAreas( CUtlVector< CNavArea * > *adjVector ) const;	// build a vector of all adjacent areas
+	using AdjacentCountArray = std::array<int, static_cast<int>(NUM_DIRECTIONS)>;
+	/**
+	 * @brief Collects the number of nav areas adjacent to this area. This only includes ground connections and not other types of connections (ladder, off-mesh, elevator, etc)
+	 * @param out Array to fill the number of connected areas from each direction
+	 */
+	void GetAdjacentCounts(AdjacentCountArray& out)
+	{
+		for (int i = 0; i < static_cast<int>(NUM_DIRECTIONS); i++)
+		{
+			out[i] = m_connect[i].Count();
+		}
+	}
 
 	const NavConnectVector *GetAdjacentAreas( NavDirType dir ) const	{ return &m_connect[dir]; }
 	bool IsConnected( const CNavArea *area, NavDirType dir ) const;	// return true if given area is connected in given direction
@@ -624,6 +636,24 @@ public:
 	//- extents -----------------------------------------------------------------------------------------
 	float GetSizeX( void ) const			{ return m_seCorner.x - m_nwCorner.x; }
 	float GetSizeY( void ) const			{ return m_seCorner.y - m_nwCorner.y; }
+	bool IsSmallerThan(float width) const
+	{
+		if (GetSizeX() < width || GetSizeY() < width)
+		{
+			return true;
+		}
+
+		return false;
+	}
+	bool IsLargerThan(float width) const
+	{
+		if (GetSizeX() > width || GetSizeY() > width)
+		{
+			return true;
+		}
+
+		return false;
+	}
 	void GetExtent( Extent *extent ) const;						// return a computed extent (XY is in m_nwCorner and m_seCorner, Z is computed)
 	const Vector &GetCenter( void ) const	{ return m_center; }
 	Vector GetRandomPoint( void ) const;

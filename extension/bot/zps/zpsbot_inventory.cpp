@@ -6,6 +6,13 @@
 CZPSBotInventory::CZPSBotInventory(CZPSBot* bot) :
 	IInventory(bot)
 {
+	m_lastammosearchweapon = nullptr;
+}
+
+void CZPSBotInventory::Reset()
+{
+	m_lastammosearchweapon = nullptr;
+	IInventory::Reset();
 }
 
 bool CZPSBotInventory::EquipWeapon(const CBotWeapon* weapon) const
@@ -50,4 +57,28 @@ bool CZPSBotInventory::EquipWeapon(CBaseEntity* weapon) const
 	}
 
 	return true;
+}
+
+const CBotWeapon* CZPSBotInventory::GetWeaponWithLowAmmo()
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	for (auto& weaponptr : GetAllWeapons())
+	{
+		const CBotWeapon* weapon = weaponptr.get();
+
+		if (weapon->IsValid() && weapon->IsOwnedByBot(bot))
+		{
+			if (m_lastammosearchweapon == weapon) { continue; }
+
+			if (weapon->IsAmmoLow(bot))
+			{
+				m_lastammosearchweapon = weapon;
+				return weapon;
+			}
+		}
+	}
+
+	m_lastammosearchweapon = nullptr;
+	return nullptr;
 }

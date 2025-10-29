@@ -27,6 +27,11 @@ CNavPrerequisite::~CNavPrerequisite()
 	}
 }
 
+bool CNavPrerequisite::IsEditing()
+{
+	return CNavMesh::IsEditing() && sm_nav_prerequisite_edit.GetBool();
+}
+
 const char* CNavPrerequisite::TaskIDtoString(PrerequisiteTask task)
 {
 	using namespace std::literals::string_view_literals;

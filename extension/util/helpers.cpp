@@ -1944,6 +1944,39 @@ const char* UtilHelpers::textformat::FormatVarArgs(const char* fmt, ...)
 	return buffer.data();
 }
 
+const char* UtilHelpers::textformat::FormatEntity(CBaseEntity* entity)
+{
+	static std::array<char, 512> buffer;
+
+	if (!entity)
+	{
+		ke::SafeSprintf(buffer.data(), buffer.size(), "<NULL ENTITY>");
+		return buffer.data();
+	}
+
+	int index = reinterpret_cast<IServerUnknown*>(entity)->GetRefEHandle().GetEntryIndex();
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+	
+	if (!classname || classname[0] == '\0')
+	{
+		ke::SafeSprintf(buffer.data(), buffer.size(), "#%i", index);
+		return buffer.data();
+	}
+
+	datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+	if (datamap && datamap->dataClassName && datamap->dataClassName[0] != '\0')
+	{
+		ke::SafeSprintf(buffer.data(), buffer.size(), "#%i <%s> [%s]", index, classname, datamap->dataClassName);
+	}
+	else
+	{
+		ke::SafeSprintf(buffer.data(), buffer.size(), "#%i <%s>", index, classname);
+	}
+
+	return buffer.data();
+}
+
 bool UtilHelpers::sdkcompat::SaveKeyValuesToFile(KeyValues* kvRoot, const char* filename, const char* pathid, const bool sortKeys, const bool allowEmptyString)
 {
 #if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_SDK2013

@@ -52,6 +52,7 @@ This is a list of keys available for all mods.
 |remove_tags|Comma delimited list of weapon tags to remove from the weapon.|string list|
 |preferred_aim_spot| Preferred position to aim the weapon at. Available options are: head, center, origin. |string|
 |is_template|This is a template entry for variantof. More information below.|boolean|
+|ammo_source_entity|Classname of the ammo entity for this weapon. This is optional.|string|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
 

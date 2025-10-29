@@ -116,9 +116,9 @@ public:
 	// Note: SM does have it's own cache however the profiler (VS) reported some high self CPU time on Sourcemod's functions related to the offset search.
 	// It's faster to just cache locally.
 
-	bool HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
-	bool HasEntProp(edict_t* entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
-	bool HasEntProp(CBaseEntity* entity, PropType proptype, const char* prop, unsigned int* offset = nullptr);
+	bool HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset = nullptr, const bool logerror = false);
+	bool HasEntProp(edict_t* entity, PropType proptype, const char* prop, unsigned int* offset = nullptr, const bool logerror = false);
+	bool HasEntProp(CBaseEntity* entity, PropType proptype, const char* prop, unsigned int* offset = nullptr, const bool logerror = false);
 	bool GetEntProp(int entity, PropType proptype, const char *prop, int &result, int size = 4, int element = 0);
 	bool GetEntProp(edict_t* entity, PropType proptype, const char* prop, int& result, int size = 4, int element = 0);
 	bool GetEntProp(CBaseEntity* entity, PropType proptype, const char* prop, int& result, int size = 4, int element = 0);

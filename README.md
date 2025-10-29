@@ -23,6 +23,7 @@ The NavMesh is also standalone and can be used in games that doesn't already hav
 - Team Fortress 2
 - Black Mesa
 - Day of Defeat: Source
+- Zombie Panic! Source
 
 See [detailed game support].
 

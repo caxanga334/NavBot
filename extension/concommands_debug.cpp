@@ -175,14 +175,14 @@ CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
 	if (args.ArgC() < 3)
 	{
 		rootconsole->ConsolePrint("[SM] Usage: sm_navbot_debug_bot_send_button <button> <time>");
-		rootconsole->ConsolePrint("  Buttons: jump crouch use attack1");
+		rootconsole->ConsolePrint("  Buttons: jump crouch use attack1 attack2 attack3 reload speed run walk");
 		return;
 	}
 
 	const char* button = args[1];
 	float time = atof(args[2]);
 
-	time = std::clamp(time, 1.0f, 10.0f);
+	time = std::clamp(time, 0.0f, 10.0f);
 	auto func = [&button, &time](CBaseBot* bot) {
 
 		if (strcasecmp(button, "jump") == 0)
@@ -200,6 +200,30 @@ CON_COMMAND(sm_navbot_debug_bot_send_button, "All bots sends a client command.")
 		else if (strcasecmp(button, "attack1") == 0)
 		{
 			bot->GetControlInterface()->PressAttackButton(time);
+		}
+		else if (strcasecmp(button, "attack2") == 0)
+		{
+			bot->GetControlInterface()->PressSecondaryAttackButton(time);
+		}
+		else if (strcasecmp(button, "attack3") == 0)
+		{
+			bot->GetControlInterface()->PressSpecialAttackButton(time);
+		}
+		else if (strcasecmp(button, "reload") == 0)
+		{
+			bot->GetControlInterface()->PressReloadButton(time);
+		}
+		else if (strcasecmp(button, "speed") == 0)
+		{
+			bot->GetControlInterface()->PressSpeedButton(time);
+		}
+		else if (strcasecmp(button, "run") == 0)
+		{
+			bot->GetControlInterface()->PressRunButton(time);
+		}
+		else if (strcasecmp(button, "walk") == 0)
+		{
+			bot->GetControlInterface()->PressWalkButton(time);
 		}
 	};
 

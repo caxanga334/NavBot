@@ -18,6 +18,7 @@ public:
 
 private:
 	bool m_roundisactive;
+	CountdownTimer m_ammoSearchTimer;
 };
 
 #endif // !__NAVBOT_ZPSBOT_SCENARIO_TASK_H_

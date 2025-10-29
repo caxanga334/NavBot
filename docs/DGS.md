@@ -9,6 +9,7 @@ Detailed list of supported games/mods.
 | Team Fortress 2 | Good | Dev |
 | Black Mesa | Good | Dev |
 | Day of Defeat: Source | Poor | Dev |
+| Zombie Panic! Source | Poor | Dev |
 
 Support Status:
 

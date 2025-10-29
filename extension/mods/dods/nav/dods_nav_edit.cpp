@@ -172,7 +172,7 @@ CON_COMMAND_F_COMPLETION(sm_dod_nav_select_areas_with_attributes, "Adds nav area
 		
 		CNavMesh::ForAllAreas(func);
 
-		Msg("Toggling DoD Attribute \"%s\". \n", args[1]);
+		Msg("Marked areas with \"%s\" attribute.\n", args[1]);
 	}
 	else
 	{

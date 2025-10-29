@@ -318,4 +318,134 @@ namespace botsharedutils::threat
 	bool IsImmediateThreat(CBaseBot* bot, const CKnownEntity* threat);
 }
 
+namespace botsharedutils::search
+{
+	// Entity pointer, path finding cost
+	using EntitySearchData = std::pair<CBaseEntity*, float>;
+	using SearchData = std::vector<EntitySearchData>;
+	using SearchPatterns = std::vector<std::string>;
+
+	/**
+	 * @brief Utility class for searching and collecting reachable entities.
+	 * 
+	 * This does a breadth-first search.
+	 * @tparam BotClass Bot class.
+	 * @tparam NavClass Nav area class.
+	 */
+	template <typename BotClass, typename NavClass>
+	class SearchReachableEntities
+	{
+	public:
+		using Collector = botsharedutils::IsReachableAreas;
+
+		SearchReachableEntities(BotClass* bot, const float maxdist = -1.0f) :
+			m_position(0.0f, 0.0f, 0.0f)
+		{
+			m_bot = bot;
+			m_maxdist = maxdist;
+			m_area = nullptr;
+		}
+
+		SearchReachableEntities(BotClass* bot, SearchPatterns&& patterns, const float maxdist = -1.0f) :
+			m_patterns(patterns), m_position(0.0f, 0.0f, 0.0f)
+		{
+			m_bot = bot;
+			m_maxdist = maxdist;
+			m_area = nullptr;
+		}
+
+		virtual ~SearchReachableEntities() = default;
+
+		// Adds an entity classname pattern to search. Example: item_healthkit, item_armor*
+		void AddSearchPattern(const char* pattern) { m_patterns.emplace_back(pattern); }
+		void AssignCollector(Collector* collector) { m_collector.reset(collector); }
+
+		BotClass* GetBot() const { return m_bot; }
+		void SetMaximumSearchDistance(float maxdist) { m_maxdist = maxdist; }
+		float GetMaximumSearchDistance() const { return m_maxdist; }
+		// Vector of search results containing reachable entities and the travel cost to reach it
+		const SearchData& GetSearchResult() const { return m_data; }
+
+		void DoSearch()
+		{
+			if (!m_collector)
+			{
+				m_collector = std::make_unique<Collector>(static_cast<CBaseBot*>(m_bot), GetMaximumSearchDistance());
+			}
+			
+			m_collector->Execute();
+
+			for (const std::string& pattern : m_patterns)
+			{
+				UtilHelpers::ForEachEntityOfClassname(pattern.c_str(), *this);
+			}
+		}
+
+		bool operator()(int index, edict_t* edict, CBaseEntity* entity)
+		{
+			if (entity && IsSelected(entity))
+			{
+				float cost = -1.0f;
+
+				if (m_collector->IsReachable(static_cast<CNavArea*>(GetEntityNavArea()), &cost))
+				{
+					m_data.emplace_back(entity, cost);
+				}
+			}
+
+			return true;
+		}
+
+	protected:
+		virtual bool IsSelected(CBaseEntity* entity)
+		{
+			m_position = UtilHelpers::getWorldSpaceCenter(entity);
+			m_area = static_cast<NavClass*>(TheNavMesh->GetNearestNavArea(m_position, 512.0f));
+
+			if (IsEntityValid(entity, m_area) && IsPossible(entity, m_bot, m_area))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		// checks if the entity is valid
+		virtual bool IsEntityValid(CBaseEntity* entity, NavClass* area)
+		{
+			if (!area)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		// checks if it's possible for the given bot
+		virtual bool IsPossible(CBaseEntity* entity, BotClass* bot, NavClass* area)
+		{
+			if (!bot->GetMovementInterface()->IsAreaTraversable(static_cast<CNavArea*>(area)))
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		NavClass* GetEntityNavArea() const { return m_area; }
+		const Vector& GetEntityPosition() const { return m_position; }
+		void SetEntityNavArea(NavClass* area) { m_area = area; }
+		void SetEntityPosition(const Vector& vec) { m_position = vec; }
+
+	private:
+		BotClass* m_bot;
+		SearchData m_data;
+		SearchPatterns m_patterns;
+		float m_maxdist;
+		NavClass* m_area;
+		Vector m_position;
+		std::unique_ptr<Collector> m_collector;
+	};
+}
+
 #endif // !__NAVBOT_BASE_BOT_SHARED_UTILS_H_

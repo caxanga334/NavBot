@@ -331,6 +331,7 @@ public:
 
 	static constexpr uint32_t NavMeshVersion = 1;
 	static constexpr uint32_t NavMagicNumber = 0x20110FC0;
+	static bool IsEditing();
 
 	typedef std::pair<std::string, std::uint64_t> NavEditor; // name & steamid pair
 

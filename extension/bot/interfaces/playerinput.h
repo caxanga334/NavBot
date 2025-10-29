@@ -94,6 +94,12 @@ public:
 	void ReleaseReloadButton();
 	void PressAlt1Button(const float duration = -1.0f);
 	void ReleaseAlt1Button();
+	void PressRunButton(const float duration = -1.0f);
+	void ReleaseRunButton();
+	void PressSpeedButton(const float duration = -1.0f);
+	void ReleaseSpeedButton();
+	void PressWalkButton(const float duration = -1.0f);
+	void ReleaseWalkButton();
 	void SetMovementScale(const float forward, const float side, const float duration = 0.01f);
 	
 	inline const float GetForwardScale() const { return m_forwardscale; }
@@ -133,6 +139,9 @@ protected:
 	CountdownTimer m_moveupbuttontimer;
 	CountdownTimer m_movedownbuttontimer;
 	CountdownTimer m_reloadbuttontimer;
+	CountdownTimer m_runbuttontimer;
+	CountdownTimer m_speedbuttontimer;
+	CountdownTimer m_walkbuttontimer;
 	CountdownTimer m_alt1buttontimer;
 	CountdownTimer m_buttonscaletimer;
 	AttackType m_lastUsedAttackType;
@@ -413,6 +422,42 @@ inline void IPlayerInput::ReleaseAlt1Button()
 	m_alt1buttontimer.Invalidate();
 }
 
+inline void IPlayerInput::PressRunButton(const float duration)
+{
+	m_buttons |= INPUT_RUN;
+	m_runbuttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseRunButton()
+{
+	m_buttons &= ~INPUT_RUN;
+	m_runbuttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressSpeedButton(const float duration)
+{
+	m_buttons |= INPUT_SPEED;
+	m_speedbuttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseSpeedButton()
+{
+	m_buttons &= ~INPUT_SPEED;
+	m_speedbuttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressWalkButton(const float duration)
+{
+	m_buttons |= INPUT_WALK;
+	m_walkbuttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseWalkButton()
+{
+	m_buttons &= ~INPUT_WALK;
+	m_walkbuttontimer.Invalidate();
+}
+
 inline void IPlayerInput::SetMovementScale(const float forward, const float side, const float duration)
 {
 	m_forwardscale = forward;
@@ -454,6 +499,18 @@ inline void IPlayerInput::CompileButtons()
 
 	if (!m_reloadbuttontimer.IsElapsed())
 		m_buttons |= INPUT_RELOAD;
+
+	if (!m_alt1buttontimer.IsElapsed())
+		m_buttons |= INPUT_ALT1;
+
+	if (!m_runbuttontimer.IsElapsed())
+		m_buttons |= INPUT_RUN;
+
+	if (!m_speedbuttontimer.IsElapsed())
+		m_buttons |= INPUT_SPEED;
+
+	if (!m_walkbuttontimer.IsElapsed())
+		m_buttons |= INPUT_WALK;
 }
 
 #endif // !SMNAV_BOT_PLAYER_INPUT_H_

@@ -1837,7 +1837,14 @@ void CNavMesh::CommandNavToggleSelecting( bool playSound )
 
 	if ( playSound )
 	{
-		PlayEditSound(CNavMesh::EditSoundType::SOUND_END_AREA);
+		if (m_isContinuouslySelecting)
+		{
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_BEGIN_AREA);
+		}
+		else
+		{
+			PlayEditSound(CNavMesh::EditSoundType::SOUND_END_AREA);
+		}
 	}
 }
 

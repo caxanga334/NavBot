@@ -849,6 +849,8 @@ namespace UtilHelpers::textformat
 	 * @return Pointer to string.
 	 */
 	const char* FormatVarArgs(const char* fmt, ...);
+	// Formats the given entity into a string and returns the string. Accepts NULL entities.
+	const char* FormatEntity(CBaseEntity* entity);
 }
 
 namespace UtilHelpers::players

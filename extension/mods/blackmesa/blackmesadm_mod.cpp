@@ -56,7 +56,6 @@ void CBlackMesaDeathmatchMod::FireGameEvent(IGameEvent* event)
 
 		if (std::strcmp(name, "round_start") == 0)
 		{
-			OnNewRound();
 			OnRoundStart();
 		}
 	}
@@ -113,6 +112,7 @@ void CBlackMesaDeathmatchMod::OnMapStart()
 
 void CBlackMesaDeathmatchMod::OnRoundStart()
 {
+	CBaseMod::OnRoundStart();
 	librandom::ReSeedGlobalGenerators();
 }
 

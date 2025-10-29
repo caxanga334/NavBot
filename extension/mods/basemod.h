@@ -86,8 +86,6 @@ public:
 	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
 	// True if the given client should not count towards the number of clients in the server when checking the bot quota
 	virtual bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const { return false; }
-	// A new round has started
-	virtual void OnNewRound() {}
 	// A round has started
 	virtual void OnRoundStart();
 	// A round has ended

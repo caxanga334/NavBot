@@ -26,6 +26,8 @@ public:
 		MAX_TASK_TYPES
 	};
 
+	static bool IsEditing();
+
 	static const char* TaskIDtoString(PrerequisiteTask task);
 
 	static inline unsigned int s_nextID{ 0 };

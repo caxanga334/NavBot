@@ -277,19 +277,19 @@ void CEntPropUtils::Init(bool reset)
  * @param offset Optional variable to store the property offset if found.
  * @return True if the property was found. False otherwise.
  */
-bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset)
+bool CEntPropUtils::HasEntProp(int entity, PropType proptype, const char* prop, unsigned int* offset, const bool logerror)
 {
 	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
-	return HasEntProp(pEntity, proptype, prop, offset);
+	return HasEntProp(pEntity, proptype, prop, offset, logerror);
 }
 
-bool CEntPropUtils::HasEntProp(edict_t* entity, PropType proptype, const char* prop, unsigned int* offset)
+bool CEntPropUtils::HasEntProp(edict_t* entity, PropType proptype, const char* prop, unsigned int* offset, const bool logerror)
 {
 	CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
-	return HasEntProp(pEntity, proptype, prop, offset);
+	return HasEntProp(pEntity, proptype, prop, offset, logerror);
 }
 
-bool CEntPropUtils::HasEntProp(CBaseEntity* entity, PropType proptype, const char* prop, unsigned int* offset)
+bool CEntPropUtils::HasEntProp(CBaseEntity* entity, PropType proptype, const char* prop, unsigned int* offset, const bool logerror)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CEntPropUtils::HasEntProp", "NavBot");
@@ -306,6 +306,11 @@ bool CEntPropUtils::HasEntProp(CBaseEntity* entity, PropType proptype, const cha
 
 		if (!pClass)
 		{
+			if (logerror)
+			{
+				smutils->LogError(myself, "Failed to retrieve ServerClass of entity %s", UtilHelpers::textformat::FormatEntity(entity));
+			}
+
 			return false;
 		}
 
@@ -328,6 +333,11 @@ bool CEntPropUtils::HasEntProp(CBaseEntity* entity, PropType proptype, const cha
 
 		if (map == nullptr)
 		{
+			if (logerror)
+			{
+				smutils->LogError(myself, "Failed to retrieve datamap_t of entity %s", UtilHelpers::textformat::FormatEntity(entity));
+			}
+
 			return false;
 		}
 
@@ -347,6 +357,10 @@ bool CEntPropUtils::HasEntProp(CBaseEntity* entity, PropType proptype, const cha
 		return false;
 	}
 
+	if (logerror)
+	{
+		smutils->LogError(myself, "Entity %s doesn't have a property named \"%s\"!", UtilHelpers::textformat::FormatEntity(entity), prop);
+	}
 
 	return false;
 }

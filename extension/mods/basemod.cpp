@@ -191,7 +191,7 @@ bool CBaseMod::IsEntityDamageable(CBaseEntity* entity, const int maxhealth) cons
 {
 	int takedamage = 0;
 
-	if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage) == true)
+	if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage))
 	{
 		switch (takedamage)
 		{

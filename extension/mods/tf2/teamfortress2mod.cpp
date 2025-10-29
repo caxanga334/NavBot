@@ -1731,7 +1731,17 @@ CBaseEntity* CTeamFortress2Mod::GetRoundTimer(TeamFortress2::TFTeam team) const
 
 	if (entindex > 0)
 	{
-		return gamehelpers->ReferenceToEntity(entindex);
+		CBaseEntity* entity = gamehelpers->ReferenceToEntity(entindex);
+
+		// the objective resource 'm_iTimerToShowInHUD' property is a raw entity index which may point to a deleted timer entity.
+		// then another entity can take the timer index and we return an entity that isn't a timer.
+		// this checks if the entity is actually a timer entity.
+		if (entprops->HasEntProp(entity, Prop_Send, "m_flTimerEndTime", nullptr))
+		{
+			return entity;
+		}
+
+		return nullptr;
 	}
 
 	return nullptr;

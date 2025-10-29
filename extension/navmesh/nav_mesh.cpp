@@ -162,6 +162,11 @@ CNavMesh::~CNavMesh()
 {
 }
 
+bool CNavMesh::IsEditing()
+{
+	return sm_nav_edit.GetBool();
+}
+
 void CNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 {
 	// Load walkable entities from gamedata
@@ -2093,7 +2098,7 @@ void CNavMesh::IncreaseDangerNearby( int teamID, float amount, CNavArea *startAr
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavRemoveJumpAreas( void )
+static void CommandNavRemoveJumpAreas( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2104,9 +2109,9 @@ static ConCommand sm_nav_remove_jump_areas( "sm_nav_remove_jump_areas", CommandN
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavDelete( void )
+static void CommandNavDelete( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() || !sm_nav_edit.GetBool() )
+	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavDelete();
@@ -2116,10 +2121,10 @@ static ConCommand sm_nav_delete( "sm_nav_delete", CommandNavDelete, "Deletes the
 
 
 //-------------------------------------------------------------------------------------------------------------- 
-void CommandNavDeleteMarked( void ) 
+static void CommandNavDeleteMarked( void ) 
 { 
-	if ( !UTIL_IsCommandIssuedByServerAdmin() || !sm_nav_edit.GetBool() )
-		return; 
+	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
+		return;
 
 	TheNavMesh->CommandNavDeleteMarked(); 
 	TheNavMesh->NotifyDangerousEditCommandWasUsed();
@@ -2431,7 +2436,7 @@ static ConCommand sm_nav_raise_drag_volume_min( "sm_nav_raise_drag_volume_min", 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavLowerDragVolumeMin( void )
+static void CommandNavLowerDragVolumeMin( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2442,7 +2447,7 @@ static ConCommand sm_nav_lower_drag_volume_min( "sm_nav_lower_drag_volume_min", 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavToggleSelecting( void )
+static void CommandNavToggleSelecting( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2453,7 +2458,7 @@ static ConCommand sm_nav_toggle_selecting( "sm_nav_toggle_selecting", CommandNav
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavBeginDeselecting( void )
+static void CommandNavBeginDeselecting( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2464,7 +2469,7 @@ static ConCommand sm_nav_begin_deselecting( "sm_nav_begin_deselecting", CommandN
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavEndDeselecting( void )
+static void CommandNavEndDeselecting( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2475,7 +2480,7 @@ static ConCommand sm_nav_end_deselecting( "sm_nav_end_deselecting", CommandNavEn
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavToggleDeselecting( void )
+static void CommandNavToggleDeselecting( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2615,9 +2620,9 @@ static ConCommand sm_nav_merge( "sm_nav_merge", CommandNavMerge, "To merge two A
 
 //--------------------------------------------------------------------------------------------------------------
 #if SOURCE_ENGINE >= SE_ORANGEBOX
-void CommandNavMark(const CCommand& args)
+static void CommandNavMark(const CCommand& args)
 #else
-void CommandNavMark()
+static void CommandNavMark()
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
@@ -2631,7 +2636,7 @@ static ConCommand sm_nav_mark( "sm_nav_mark", CommandNavMark, "Marks the Area or
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavUnmark( void )
+static void CommandNavUnmark( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2642,9 +2647,9 @@ static ConCommand sm_nav_unmark( "sm_nav_unmark", CommandNavUnmark, "Clears the 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavBeginArea( void )
+static void CommandNavBeginArea( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavBeginArea();
@@ -2655,7 +2660,7 @@ static ConCommand sm_nav_begin_area( "sm_nav_begin_area", CommandNavBeginArea, "
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavEndArea( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavEndArea();

@@ -427,7 +427,7 @@ unsigned int IMovement::GetMovementTraceMask() const
 
 int IMovement::GetMovementCollisionGroup() const
 {
-	return static_cast<int>(Collision_Group_t::COLLISION_GROUP_PLAYER_MOVEMENT);
+	return static_cast<int>(Collision_Group_t::COLLISION_GROUP_NONE);
 }
 
 float IMovement::GetDesiredSpeed() const
@@ -1448,6 +1448,13 @@ bool IMovement::BreakObstacle(CBaseEntity* obstacle)
 	m_obstacleEntity = obstacle;
 	m_isBreakingObstacle = true;
 	m_obstacleBreakTimeout.Start(timeout);
+
+	if (GetBot<CBaseBot>()->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		GetBot<CBaseBot>()->DebugPrintToConsole(0, 255, 255, "%s BREAKING OBSTACLE %s HEALTH %i TIMEOUT %g\n", 
+			GetBot<CBaseBot>()->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle), health, timeout);
+	}
+
 	return true;
 }
 
@@ -1570,6 +1577,13 @@ void IMovement::StuckMonitor()
 	if (m_ladderWait.HasStarted() && !m_ladderWait.IsElapsed())
 	{
 		// not stuck, waiting on a ladder
+		m_stuck.UpdateNotStuck(origin);
+		return;
+	}
+
+	// These have timeout timers, don't send stuck events.
+	if (IsUsingElevator() || IsBreakingObstacle())
+	{
 		m_stuck.UpdateNotStuck(origin);
 		return;
 	}
@@ -1758,7 +1772,6 @@ void IMovement::ObstacleBreakUpdate()
 		m_isBreakingObstacle = false;
 		m_obstacleEntity = nullptr;
 		GetBot()->GetControlInterface()->ReleaseAllAttackButtons();
-		ClearStuckStatus("DONE BREAKING OBSTACLE!");
 		return;
 	}
 

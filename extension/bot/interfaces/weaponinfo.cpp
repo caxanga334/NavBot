@@ -355,6 +355,10 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		m_current->SetClassname(value);
 	}
+	else if (strncmp(key, "ammo_source_entity", 18) == 0)
+	{
+		m_current->SetAmmoSourceEntityClassname(value);
+	}
 	else if (strncmp(key, "itemindex", 9) == 0)
 	{
 		m_current->SetEconItemIndex(atoi(value));

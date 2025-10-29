@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include "nav/zps_nav_mesh.h"
 #include <bot/zps/zpsbot.h>
 #include <navmesh/nav_mesh.h>
 #include "zps_mod.h"
@@ -65,6 +66,11 @@ CBaseBot* CZombiePanicSourceMod::AllocateBot(edict_t* edict)
 	return new CZPSBot(edict);
 }
 
+CNavMesh* CZombiePanicSourceMod::NavMeshFactory()
+{
+	return new CZPSNavMesh;
+}
+
 void CZombiePanicSourceMod::OnMapStart()
 {
 	CBaseMod::OnMapStart();
@@ -105,6 +111,19 @@ bool CZombiePanicSourceMod::IsEntityDamageable(CBaseEntity* entity, const int ma
 		if (unbreakable != nullptr && *unbreakable == true)
 		{
 			return false;
+		}
+	}
+
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+
+	// ZPS: doors uses DAMAGE_EVENTS_ONLY but they still take damage from attacks
+	if (std::strcmp(classname, "prop_door_rotating") == 0)
+	{
+		int takedamage = DAMAGE_NO;
+
+		if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage) && takedamage != DAMAGE_NO)
+		{
+			return true;
 		}
 	}
 

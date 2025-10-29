@@ -257,11 +257,17 @@ public:
 			return AITask<BT>::Done("No items to collect!");
 		}
 
+		m_letgoofbuttonstimer.Invalidate();
 		return AITask<BT>::Continue();
 	}
 
 	TaskResult<BT> OnTaskUpdate(BT* bot)
 	{
+		if (!m_letgoofbuttonstimer.IsElapsed())
+		{
+			return AITask<BT>::Continue();
+		}
+
 		CHandle<CBaseEntity>& ehandle = *m_it;
 		CBaseEntity* item = ehandle.Get();
 
@@ -309,7 +315,8 @@ public:
 				{
 					if (bot->IsDebugging(BOTDEBUG_TASKS))
 					{
-						bot->DebugPrintToConsole(255, 0, 0, "%s FAILED TO FIND A PATH TO COLLECT ITEM AT %g %g %g \n", bot->GetDebugIdentifier(), pos.x, pos.y, pos.z);
+						bot->DebugPrintToConsole(255, 0, 0, "%s FAILED TO FIND A PATH TO COLLECT ITEM %s AT %g %g %g \n",
+							bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(item), pos.x, pos.y, pos.z);
 					}
 
 					m_it = std::next(m_it);
@@ -328,15 +335,22 @@ public:
 		if (m_collectmethod == NBotSharedCollectItemTask::COLLECT_PRESS_USE)
 		{
 			Vector pos = UtilHelpers::getWorldSpaceCenter(item);
+			Vector eyepos = bot->GetEyeOrigin();
+			const float crouchheight = bot->GetMovementInterface()->GetCrouchedHullHeight();
 
-			if ((bot->GetEyeOrigin() - pos).IsLengthLessThan(CBaseExtPlayer::PLAYER_USE_RADIUS))
+			if ((eyepos - pos).IsLengthLessThan(CBaseExtPlayer::PLAYER_USE_RADIUS))
 			{
-				//AimAt(const Vector& pos, const LookPriority priority, const float duration, const char* reason = nullptr)
+				if ((eyepos.z - pos.z) > crouchheight)
+				{
+					bot->GetControlInterface()->PressCrouchButton(2.0f);
+				}
+
 				bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_PRIORITY, 1.0f, "Looking at item to collect it!");
 
 				if (bot->GetControlInterface()->IsAimOnTarget())
 				{
 					bot->GetControlInterface()->PressUseButton();
+					m_letgoofbuttonstimer.Start(0.5f);
 				}
 			}
 			else
@@ -350,6 +364,12 @@ public:
 		}
 
 		return AITask<BT>::Continue();
+	}
+
+	void OnTaskEnd(BT* bot, AITask<BT>* nextTask) override
+	{
+		bot->GetControlInterface()->ReleaseUseButton();
+		bot->GetControlInterface()->ReleaseCrouchButton();
 	}
 
 	TaskEventResponseResult<BT> OnStuck(BT* bot) override
@@ -367,6 +387,7 @@ private:
 	std::vector<CHandle<CBaseEntity>>::iterator m_it;
 	std::function<bool(BT*, CBaseEntity*)> m_validatorFunc;
 	int m_pathfailures;
+	CountdownTimer m_letgoofbuttonstimer;
 };
 
 

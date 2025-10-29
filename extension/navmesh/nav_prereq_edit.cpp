@@ -10,6 +10,9 @@
 
 CON_COMMAND_F(sm_nav_prereq_create, "Creates a new prerequisite.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	edict_t* host = UtilHelpers::GetListenServerHost();
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 	auto result = TheNavMesh->AddNavPrerequisite(&origin);
@@ -28,6 +31,9 @@ CON_COMMAND_F(sm_nav_prereq_create, "Creates a new prerequisite.", FCVAR_CHEAT)
 
 CON_COMMAND_F(sm_nav_prereq_mark, "Selects/Deselects a nav prerequisite.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	auto& selected = TheNavMesh->GetSelectedPrerequisite();
@@ -65,6 +71,9 @@ CON_COMMAND_F(sm_nav_prereq_mark, "Selects/Deselects a nav prerequisite.", FCVAR
 
 CON_COMMAND_F(sm_nav_prereq_delete, "Deletes the currently selected prerequisite.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	auto& selected = TheNavMesh->GetSelectedPrerequisite();
 
 	if (selected)
@@ -76,6 +85,9 @@ CON_COMMAND_F(sm_nav_prereq_delete, "Deletes the currently selected prerequisite
 
 CON_COMMAND_F(sm_nav_prereq_draw_areas, "Draws nav areas affected by the currently selected prerequisite.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	auto& selected = TheNavMesh->GetSelectedPrerequisite();
 
 	if (selected)
@@ -86,6 +98,9 @@ CON_COMMAND_F(sm_nav_prereq_draw_areas, "Draws nav areas affected by the current
 
 CON_COMMAND_F(sm_nav_prereq_set_origin, "Updates the selected nav prerequisite origin to your position.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 
@@ -106,6 +121,9 @@ CON_COMMAND_F(sm_nav_prereq_set_origin, "Updates the selected nav prerequisite o
 
 CON_COMMAND_F(sm_nav_prereq_set_bounds, "Updates the selected nav prerequisite bounds.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 6)
@@ -141,6 +159,9 @@ CON_COMMAND_F(sm_nav_prereq_set_bounds, "Updates the selected nav prerequisite b
 
 CON_COMMAND_F(sm_nav_prereq_set_team, "Updates the selected nav prerequisite assigned team.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -166,6 +187,9 @@ CON_COMMAND_F(sm_nav_prereq_set_team, "Updates the selected nav prerequisite ass
 
 CON_COMMAND_F(sm_nav_prereq_set_task, "Updates the selected nav prerequisite goal task.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -194,12 +218,15 @@ CON_COMMAND_F(sm_nav_prereq_list_available_tasks, "Lists all available task for 
 
 	for (int i = static_cast<int>(CNavPrerequisite::PrerequisiteTask::TASK_NONE); i < static_cast<int>(CNavPrerequisite::PrerequisiteTask::MAX_TASK_TYPES); i++)
 	{
-		Msg("%i : %s \n", i, CNavPrerequisite::TaskIDtoString(static_cast<CNavPrerequisite::PrerequisiteTask>(i)));
+		Msg("ID: %i : %s \n", i, CNavPrerequisite::TaskIDtoString(static_cast<CNavPrerequisite::PrerequisiteTask>(i)));
 	}
 }
 
 CON_COMMAND_F(sm_nav_prereq_set_goal_position, "Updates the selected nav prerequisite task goal position.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 
@@ -219,6 +246,9 @@ CON_COMMAND_F(sm_nav_prereq_set_goal_position, "Updates the selected nav prerequ
 
 CON_COMMAND_F(sm_nav_prereq_set_goal_entity, "Updates the selected nav prerequisite task goal entity.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -255,6 +285,9 @@ CON_COMMAND_F(sm_nav_prereq_set_goal_entity, "Updates the selected nav prerequis
 
 CON_COMMAND_F(sm_nav_prereq_set_goal_data, "Updates the selected nav prerequisite task goal data.", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)
@@ -279,6 +312,9 @@ CON_COMMAND_F(sm_nav_prereq_set_goal_data, "Updates the selected nav prerequisit
 
 CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prerequisite toggle condition", FCVAR_CHEAT)
 {
+	if (!CNavPrerequisite::IsEditing())
+		return;
+
 	DECLARE_COMMAND_ARGS;
 
 	if (args.ArgC() < 2)

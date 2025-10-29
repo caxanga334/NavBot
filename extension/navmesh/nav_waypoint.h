@@ -57,6 +57,8 @@ public:
 	CWaypoint();
 	virtual ~CWaypoint();
 
+	static bool IsEditing();
+
 	static constexpr auto WAYPOINT_HEIGHT = 72.0f;
 	static constexpr auto WAYPOINT_AIM_HEIGHT = 64.0f;
 	static constexpr auto WAYPOINT_TEXT_HEIGHT = 50.0f;
