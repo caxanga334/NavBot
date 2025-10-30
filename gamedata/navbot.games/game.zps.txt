@@ -16,20 +16,20 @@
 			/* CBasePlayer::Event_Killed */
 			"Event_Killed"
 			{
-				"windows"		"73"
-				"linux"			"74"
+				"windows"		"65"
+				"linux"			"66"
 			}
 			/* CBasePlayer::Event_KilledOther */
 			"Event_KilledOther"
 			{
-				"windows"		"74"
-				"linux"			"75"
+				"windows"		"66"
+				"linux"			"67"
 			}
 			/* CBasePlayer::PhysicsSimulate */
 			"PhysicsSimulate"
 			{
-				"windows"		"111"
-				"linux"			"112"
+				"windows"		"103"
+				"linux"			"104"
 			}
 			"CBaseAnimating::GetBoneTransform"
 			{
