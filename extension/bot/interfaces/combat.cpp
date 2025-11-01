@@ -236,6 +236,9 @@ bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* thre
 	if (bot->GetBehaviorInterface()->ShouldAttack(GetBot<CBaseBot>(), threat) == ANSWER_NO)
 		return false;
 
+	if (!activeWeapon->GetWeaponInfo()->IsCombatWeapon())
+		return false;
+
 	return true;
 }
 

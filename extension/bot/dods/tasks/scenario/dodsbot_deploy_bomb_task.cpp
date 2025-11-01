@@ -134,8 +134,10 @@ TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskUpdate(CDoDSBot* bot)
 	if ((eyePos - center).Length() < CBaseExtPlayer::PLAYER_USE_RADIUS /* && tr.fraction == 1.0f */)
 	{
 		bot->GetControlInterface()->AimAt(center, IPlayerController::LOOK_CRITICAL, 0.5f, "Looking at bomb target to plant bomb!");
+		// Disable combat to stop weapon selection, causes bots to fail to plant the bomb while in combat
+		bot->GetCombatInterface()->DisableCombat(0.2f);
 
-		if (bot->IsLookingTowards(center, 0.84f))
+		if (bot->IsLookingTowards(center, 0.92f))
 		{
 			bot->GetControlInterface()->PressUseButton();
 		}
