@@ -69,9 +69,19 @@ public:
 	 */
 	bool CBaseEntity_AcceptInput(CBaseEntity* pThis, const char* szInputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID);
 
+	/**
+	 * @brief Calls CBaseEntity::Teleport on the pThis entity.
+	 * @param pThis Entity to call the function.
+	 * @param origin New position. NULL for no change.
+	 * @param angles New Angles. NULL for no change.
+	 * @param velocity New velocity. NULL for no change.
+	 */
+	void CBaseEntity_Teleport(CBaseEntity* pThis, const Vector* origin = nullptr, const QAngle* angles = nullptr, const Vector* velocity = nullptr);
+
 	inline bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
 	inline bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
 	inline bool IsAcceptInputAvailable() const { return m_call_cbe_acceptinput.first > 0; }
+	inline bool IsTeleportAvailable() const { return m_call_cbe_teleport.first > 0; }
 
 private:
 	static constexpr int invalid_offset() { return -1; }
@@ -101,6 +111,7 @@ private:
 	SourceMod::ICallWrapper* m_call_cba_getbonetransform;
 
 	SDKVCallSetup m_call_cbe_acceptinput;
+	SDKVCallSetup m_call_cbe_teleport;
 
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
@@ -109,6 +120,7 @@ private:
 	void SetupCBPProcessUserCmds();
 	void SetupCBAGetBoneTransform();
 	void SetupCBEAcceptInput();
+	void SetupCBETeleport();
 };
 
 extern CSDKCaller* sdkcalls;

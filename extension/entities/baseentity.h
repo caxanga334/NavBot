@@ -137,6 +137,11 @@ namespace entities
 			m_entity.AssignNewEntity(entity);
 		}
 
+		EntClass* operator->() const
+		{
+			return Get();
+		}
+
 	private:
 		CHandle<CBaseEntity> m_handle;
 		EntClass m_entity;

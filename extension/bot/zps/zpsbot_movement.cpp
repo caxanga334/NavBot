@@ -49,3 +49,11 @@ bool CZPSBotMovement::IsAreaTraversable(const CNavArea* area) const
 
 	return base;
 }
+
+void CZPSBotMovement::UpdateMovementButtons()
+{
+	if (IsWalking())
+	{
+		GetBot<CZPSBot>()->GetControlInterface()->PressWalkButton();
+	}
+}

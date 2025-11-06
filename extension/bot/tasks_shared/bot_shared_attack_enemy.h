@@ -5,6 +5,7 @@
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/chasenavigator.h>
+#include "bot_shared_clear_lkp.h"
 
 /**
  * @brief Shared task for bots to attack visible enemies.
@@ -61,6 +62,11 @@ inline TaskResult<BT> CBotSharedAttackEnemyTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 		if (threat->GetTimeSinceLastInfo() >= m_chaseTime)
 		{
+			if (bot->GetDifficultyProfile()->GetAggressiveness() >= 50)
+			{
+				return AITask<BT>::SwitchTo(new CBotSharedClearEnemyLKPTask<BT, CT>(bot, threat->GetLastKnownPosition()), "Searching for lost enemy!");
+			}
+
 			return AITask<BT>::Done("Threat has escaped!");
 		}
 	}

@@ -257,7 +257,7 @@ void CExtManager::OnClientPutInServer(int client)
 
 void CExtManager::OnClientDisconnect(int client)
 {
-	auto gp = playerhelpers->GetGamePlayer(client);
+	SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(client);
 
 	if (gp->IsSourceTV() || gp->IsReplay())
 		return; // Don't care about sourcetv bots
@@ -285,6 +285,8 @@ void CExtManager::OnMapStart()
 {
 	TheNavMesh->OnMapStart();
 	m_mod->OnMapStart();
+	ISquad::ResetSquadCounts();
+	ISquad::ResetSquadTeamTimers();
 
 	if (m_botnames.size() != 0)
 	{
@@ -292,7 +294,7 @@ void CExtManager::OnMapStart()
 		m_nextbotname = randomgen->GetRandomInt<size_t>(0U, m_botnames.size() - 1U);
 	}
 
-	auto mode = sm_navbot_quota_mode.GetString();
+	const char* mode = sm_navbot_quota_mode.GetString();
 
 	if (strncasecmp(mode, "normal", 6) == 0)
 	{

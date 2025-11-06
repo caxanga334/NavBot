@@ -10,10 +10,15 @@ class CZPSBotCombat : public ICombat
 public:
 	CZPSBotCombat(CZPSBot* bot);
 
+	void OnDifficultyProfileChanged() override;
+
+	void Update() override;
+	void Reset() override;
+
 	bool IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon) override;
 
 private:
-
+	bool m_shouldwalk;
 };
 
 #endif

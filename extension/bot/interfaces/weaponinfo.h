@@ -538,6 +538,16 @@ public:
 	 */
 	virtual const WeaponInfo* GetWeaponInfo(const std::string& classname, const int index) const;
 
+	/**
+	 * @brief Gets a weapon info via classname.
+	 * @param classname Classname to search.
+	 * @return Weapon info if found or NULL.
+	 */
+	const WeaponInfo* GetClassnameInfo(const std::string& classname) const
+	{
+		return LookUpWeaponInfoByClassname(classname);
+	}
+
 	bool IsWeaponInfoLoaded() const { return m_weapons.size() > 0; }
 
 protected:

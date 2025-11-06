@@ -2153,7 +2153,7 @@ void UtilHelpers::io::FireInputRaw(CBaseEntity* entity, inputfunc_t func, inputd
 	(entity->*func)(data);
 }
 
-bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant)
+bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID)
 {
 	SourceMod::sm_datatable_info_t info;
 	datamap_t* datamap = gamehelpers->GetDataMap(entity);
@@ -2170,6 +2170,7 @@ bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBas
 		data.pActivator = pActivator;
 		data.pCaller = pCaller;
 		data.value = variant;
+		data.nOutputID = outputID;
 		
 		(entity->*func)(data);
 		return true;

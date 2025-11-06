@@ -62,6 +62,15 @@ ISquad::SquadData::SquadData() :
 	m_destroyed = false;
 	m_humanled = false;
 	m_createdTime = gpGlobals->curtime;
+	m_teamNum = 0;
+}
+
+ISquad::SquadData::~SquadData()
+{
+	if (m_teamNum >= 0 && m_teamNum <= MAX_TEAMS)
+	{
+		ISquad::DecrementSquadCount(m_teamNum);
+	}
 }
 
 Vector ISquad::SquadData::GetSquadLeaderPosition() const
@@ -197,6 +206,14 @@ void ISquad::SquadData::RemoveMember(CBaseBot* bot)
 	}), m_members.end());
 }
 
+void ISquad::SquadData::Init()
+{
+	if (m_teamNum >= 0 && m_teamNum < MAX_TEAMS)
+	{
+		ISquad::IncrementSquadCount(m_teamNum);
+	}
+}
+
 ISquad::ISquad(CBaseBot* bot) :
 	IBotInterface(bot)
 {
@@ -329,6 +346,8 @@ void ISquad::CreateSquad(CBaseEntity* humanLeader)
 	CBaseBot* me = GetBot<CBaseBot>();
 
 	m_squaddata->m_botleader.Init(nullptr, me);
+	m_squaddata->m_teamNum = me->GetCurrentTeamIndex();
+	m_squaddata->Init();
 
 	if (humanLeader)
 	{
@@ -459,6 +478,22 @@ ISquad* ISquad::GetSquadInterfaceOfHumanLeader(CBaseEntity* humanLeader)
 	};
 
 	return iface;
+}
+
+void ISquad::DestroyAllSquadsFunc::operator()(CBaseBot* bot)
+{
+	ISquad* squad = bot->GetSquadInterface();
+
+	if (squad->IsInASquad() && squad->IsSquadLeader())
+	{
+		squad->LeaveSquad();
+	}
+}
+
+void ISquad::DestroyAllSquads()
+{
+	DestroyAllSquadsFunc func;
+	extmanager->ForEachBot(func);
 }
 
 void ISquad::InviteBotsToSquadFunc::operator()(CBaseBot* bot)

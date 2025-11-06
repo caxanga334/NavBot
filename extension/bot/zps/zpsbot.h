@@ -8,6 +8,7 @@
 #include "zpsbot_movement.h"
 #include "zpsbot_sensor.h"
 #include "zpsbot_combat.h"
+#include "zpsbot_squads.h"
 #include "tasks/zpsbot_main_task.h"
 
 class CZPSBot : public CBaseBot
@@ -23,6 +24,7 @@ public:
 	CZPSBotInventory* GetInventoryInterface() const override { return m_zpsinventory.get(); }
 	CZPSBotMovement* GetMovementInterface() const override { return m_zpsmovement.get(); }
 	CZPSBotCombat* GetCombatInterface() const override { return m_zpscombat.get(); }
+	CZPSBotSquad* GetSquadInterface() const override { return m_zpssquad.get(); }
 
 	void FirstSpawn() override;
 
@@ -39,6 +41,7 @@ private:
 	std::unique_ptr<CZPSBotInventory> m_zpsinventory;
 	std::unique_ptr<CZPSBotMovement> m_zpsmovement;
 	std::unique_ptr<CZPSBotCombat> m_zpscombat;
+	std::unique_ptr<CZPSBotSquad> m_zpssquad;
 };
 
 class CZPSBotPathCost : public IGroundPathCost

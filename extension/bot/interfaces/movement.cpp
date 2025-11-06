@@ -117,6 +117,7 @@ IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 	m_sjMidPoint = vec3_origin;
 	m_sjEndPoint = vec3_origin;
 	m_sjIsToTheLeft = false;
+	m_movementType = IMovement::MovementType::MOVE_RUNNING;
 }
 
 IMovement::~IMovement()
@@ -182,6 +183,7 @@ void IMovement::Reset()
 	m_strafeJumpState = NOT_STRAFE_JUMPING;
 	m_sjMidPoint = vec3_origin;
 	m_sjEndPoint = vec3_origin;
+	m_movementType = IMovement::MovementType::MOVE_RUNNING;
 }
 
 void IMovement::Update()
@@ -215,6 +217,9 @@ void IMovement::Update()
 		m_groundMotionVector.x = velocity.x / m_speed;
 		m_groundMotionVector.y = velocity.y / m_speed;
 	}
+
+	// do this after the speeds calculations
+	UpdateMovementButtons();
 
 	if (IsUsingLadder() || IsUsingElevator() || IsStrafeJumping())
 	{
@@ -1291,8 +1296,40 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 	}
 }
 
+class MovementFunctorMegaBreak
+{
+public:
+	MovementFunctorMegaBreak(CBaseBot* bot)
+	{
+		m_bot = bot;
+	}
+
+	bool operator()(CBaseEntity* entity)
+	{
+		if (!UtilHelpers::IsPlayer(entity))
+		{
+			if (m_bot->IsAbleToBreak(entity))
+			{
+				if (entprops->HasEntProp(entity, Prop_Data, "InputBreak"))
+				{
+					UtilHelpers::io::FireInput(entity, "InputBreak", m_bot->GetEntity(), entity, m_emptyVariant);
+				}
+			}
+		}
+
+		return true;
+	}
+
+	variant_t m_emptyVariant;
+	CBaseBot* m_bot;
+};
+
 void IMovement::TryToUnstuck()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::TryToUnstuck", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	auto bot = GetBot();
 
 	if (bot->IsOnLadder())
@@ -1342,6 +1379,50 @@ void IMovement::TryToUnstuck()
 		return;
 	}
 
+	const CModSettings* modsettings = extmanager->GetMod()->GetModSettings();
+
+	if (!IsBreakingObstacle())
+	{
+		CBaseEntity* pGroundEntity = bot->GetGroundEntity();
+
+		if (pGroundEntity)
+		{
+			entities::HBaseEntity groundent{ pGroundEntity };
+
+			// not world ent
+			if (groundent.GetIndex() != 0)
+			{
+				if (bot->IsAbleToBreak(pGroundEntity))
+				{
+					BreakObstacle(pGroundEntity);
+					return;
+				}
+			}
+		}
+
+		if (modsettings->AllowUnstuckCheats())
+		{
+			if (modsettings->AllowUnstuckTeleport() && sdkcalls->IsTeleportAvailable() && m_stuck.counter >= modsettings->GetUnstuckTeleportThreshold())
+			{
+				CMeshNavigator* path = bot->GetActiveNavigator();
+
+				if (path && path->GetGoalSegment())
+				{
+					sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), &path->GetGoalSegment()->goal);
+					ClearStuckStatus("Teleported!");
+					return;
+				}
+			}
+
+			const Vector& origin = m_stuck.GetStuckPos();
+			Vector size = { GetHullWidth() * 2.0f, GetHullWidth() * 2.0f, GetStandingHullHeight() * 1.4f };
+			UtilHelpers::CEntityEnumerator enumerator;
+			UtilHelpers::EntitiesInBox(origin - size, origin + size, enumerator);
+			MovementFunctorMegaBreak functor{ bot };
+			enumerator.ForEach(functor);
+		}
+	}
+
 	Vector start = bot->GetEyeOrigin();
 	Vector end(start.x, start.y, start.z + 64.0f);
 	trace::CTraceFilterNoNPCsOrPlayers filter(bot->GetEntity(), COLLISION_GROUP_PLAYER_MOVEMENT);
@@ -1356,7 +1437,20 @@ void IMovement::TryToUnstuck()
 			bot->DebugPrintToConsole(255, 69, 0, "%s IMovement::TryToUnstuck No obstacle on top, crouch jumping! \n", bot->GetDebugIdentifier());
 		}
 
-		CrouchJump();
+		if (modsettings->AllowUnstuckCheats())
+		{
+			CMeshNavigator* path = bot->GetActiveNavigator();
+
+			if (path && path->GetGoalSegment())
+			{
+				Vector launch = bot->CalculateLaunchVector(path->GetGoalSegment()->goal, GetMaxSpeed());
+				bot->SetAbsVelocity(launch);
+			}
+		}
+		else
+		{
+			CrouchJump();
+		}
 	}
 }
 

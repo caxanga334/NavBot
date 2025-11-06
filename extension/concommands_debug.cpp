@@ -1822,6 +1822,7 @@ CON_COMMAND(sm_navbot_debug_fireinput, "Gets the closest point of the given enti
 	if (args.ArgC() < 3)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_debug_fireinput <ent index> <input name>\n");
+		META_CONPRINT("Optional arguments: -caller <ent index>  -activator <ent index> -outputid <integer>\n");
 		return;
 	}
 
@@ -1838,8 +1839,48 @@ CON_COMMAND(sm_navbot_debug_fireinput, "Gets the closest point of the given enti
 	{
 		const char* input = args[2];
 		variant_t variant;
+		int outputID = 0;
+		CBaseEntity* pCaller = host->GetEntity();
+		CBaseEntity* pActivator = host->GetEntity();
 
-		UtilHelpers::io::FireInput(pEntity, input, host->GetEntity(), host->GetEntity(), variant);
+		if (args.ArgC() >= 5)
+		{
+			const char* arg = args.FindArg("-caller");
+			CBaseEntity* ent = nullptr;
+
+			if (arg)
+			{
+				ent = gamehelpers->ReferenceToEntity(atoi(arg));
+
+				if (ent)
+				{
+					pCaller = ent;
+				}
+			}
+
+			arg = args.FindArg("-activator");
+
+			if (arg)
+			{
+				ent = gamehelpers->ReferenceToEntity(atoi(arg));
+
+				if (ent)
+				{
+					pActivator = ent;
+				}
+			}
+
+			arg = args.FindArg("-outputid");
+
+			if (arg)
+			{
+				outputID = atoi(arg);
+			}
+		}
+
+
+		META_CONPRINTF("Firing Input \"%s\" on %s\n", input, UtilHelpers::textformat::FormatEntity(pEntity));
+		UtilHelpers::io::FireInput(pEntity, input, pActivator, pCaller, variant, outputID);
 	}
 
 }

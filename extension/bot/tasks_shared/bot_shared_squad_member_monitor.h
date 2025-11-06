@@ -26,6 +26,7 @@ public:
 
 	// No. I'm working with a squad
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
 
 	const char* GetName() const override { return "SquadMemberMonitor"; }
 private:
@@ -65,6 +66,49 @@ inline TaskResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnTaskUpdate(BT*
 	}
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline QueryAnswerType CBotSharedSquadMemberMonitorTask<BT, CT>::ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them)
+{
+	const CBotWeapon* activeWeapon = me->GetInventoryInterface()->GetActiveBotWeapon();
+	ISquad* squad = me->GetSquadInterface();
+
+	if (!activeWeapon || !squad->IsSquadValid())
+	{
+		return ANSWER_UNDEFINED;
+	}
+
+	const float range = (me->GetAbsOrigin() - them->GetLastKnownPosition()).Length();
+	const WeaponAttackFunctionInfo& info = activeWeapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+	
+	if (info.IsMelee())
+	{
+		if (info.HasMaxRange() && info.GetMaxRange() * 3.0f <= range)
+		{
+			return ANSWER_YES;
+		}
+		else
+		{
+			return ANSWER_NO;
+		}
+	}
+	else
+	{
+		if (range > activeWeapon->GetWeaponInfo()->GetAttackRange())
+		{
+			return ANSWER_NO;
+		}
+
+		const float leaderrange = (me->GetAbsOrigin() - squad->GetSquad()->GetSquadLeaderPosition()).Length();
+
+		if (leaderrange >= range)
+		{
+			return ANSWER_NO;
+		}
+	}
+
+	return ANSWER_UNDEFINED;
 }
 
 #endif // !__NAVBOT_BOT_SHARED_SQUAD_MEMBER_MONITOR_TASK_H_

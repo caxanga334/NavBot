@@ -15,6 +15,7 @@ public:
 
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override;
 
 	TaskEventResponseResult<CZPSBot> OnDebugMoveToCommand(CZPSBot* bot, const Vector& moveTo) override;
 	TaskEventResponseResult<CZPSBot> OnKilled(CZPSBot* bot, const CTakeDamageInfo& info) override;

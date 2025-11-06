@@ -48,6 +48,15 @@ public:
 	IMovement(CBaseBot* bot);
 	~IMovement() override;
 
+	enum MovementType : std::uint8_t
+	{
+		MOVE_WALKING = 0U,
+		MOVE_RUNNING,
+		MOVE_SPRINTING,
+
+		MAX_MOVEMENT_TYPES
+	};
+
 	struct PlayerHull
 	{
 		PlayerHull()
@@ -72,6 +81,14 @@ public:
 	 * @return Returing false will prevent the extension from loading.
 	 */
 	static bool InitializeGameData(SourceMod::IGameConfig* cfgnavbot);
+	// Returns the current movement type
+	MovementType GetMovementType() const { return m_movementType; }
+	// Is the bot walking
+	const bool IsWalking() const { return GetMovementType() == MovementType::MOVE_WALKING; }
+	// Is the bot running
+	const bool IsRunning() const { return GetMovementType() == MovementType::MOVE_RUNNING; }
+	// Is the bot sprinting
+	const bool IsSprinting() const { return GetMovementType() == MovementType::MOVE_SPRINTING; }
 
 	class StuckStatus
 	{
@@ -227,10 +244,16 @@ public:
 	// Gets the bot running speed
 	virtual float GetRunSpeed() const { return m_maxspeed; }
 	// Gets the bot walking speed
-	virtual float GetWalkSpeed() const { return m_maxspeed * 0.30f; }
+	virtual float GetWalkSpeed() const { return m_maxspeed * 0.40f; }
+	// Gets the bot sprinting speed
+	virtual float GetSprintingSpeed() const { return m_maxspeed; }
 	// Gets the bot desired move speed
 	virtual float GetDesiredSpeed() const;
 	virtual void SetDesiredSpeed(float speed);
+	// Returns the bot's maximum movement speed
+	float GetMaxSpeed() const { return m_maxspeed; }
+	// Sets the bot's maximum movement speed
+	void SetMaxSpeed(float spd) { m_maxspeed = spd; }
 	/**
 	 * @brief Instructs the movement interface to generate the inputs necessary to cause the bot to move towars the given position.
 	 * @param pos Position to move towards.
@@ -434,6 +457,17 @@ public:
 	 * @param istimedout If true, the bot stopped breaking due to a timeout.
 	 */
 	virtual void OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimedout);
+	/**
+	 * @brief Changes the bot movement type.
+	 * @param type Type to change to.
+	 */
+	void ChangeMovementType(MovementType type)
+	{
+		if (m_movementType == type) { return; }
+
+		OnMovementTypeChanged(GetMovementType(), type);
+		m_movementType = type;
+	}
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -495,6 +529,16 @@ protected:
 	bool CalculateStrafeJumpMidPoint(const Vector& start, const Vector& end);
 	// call to drive the strafe jump FSM. returns false if not strafe jumping
 	void StrafeJumpUpdate();
+	/**
+	 * @brief Invoked when the movement type changes.
+	 * @param oldtype Old movement type.
+	 * @param newtype New movement type.
+	 */
+	virtual void OnMovementTypeChanged(MovementType oldtype, MovementType newtype) {}
+	/**
+	 * @brief Invoked to update the buttons the bot needs to press.
+	 */
+	virtual void UpdateMovementButtons() {}
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed
@@ -503,6 +547,7 @@ private:
 	float m_maxspeed; // the bot's maximum speed
 	float m_desiredspeed; // speed the bot wants to move at
 	bool m_isStopAndWait;
+	MovementType m_movementType;
 	CountdownTimer m_stopAndWaitTimer;
 	StrafeJumpState m_strafeJumpState; // strafe jump FSM current state
 	Vector m_sjMidPoint; // strafe jump mid point

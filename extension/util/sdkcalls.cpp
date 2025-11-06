@@ -31,6 +31,7 @@ CSDKCaller::CSDKCaller()
 	m_offsetof_cba_getbonetransform = invalid_offset();
 	m_call_cba_getbonetransform = nullptr;
 	InitVCallSetup(m_call_cbe_acceptinput);
+	InitVCallSetup(m_call_cbe_teleport);
 }
 
 CSDKCaller::~CSDKCaller()
@@ -101,6 +102,12 @@ bool CSDKCaller::Init()
 	{
 		// don't fail, this is optional
 		m_call_cbe_acceptinput.first = invalid_offset();
+	}
+
+	if (!cfg_sdktools->GetOffset("Teleport", &m_call_cbe_teleport.first))
+	{
+		// don't fail, this is optional
+		m_call_cbe_teleport.first = invalid_offset();
 	}
 
 	gameconfs->CloseGameConfigFile(cfg_navbot);
@@ -186,6 +193,12 @@ bool CSDKCaller::CBaseEntity_AcceptInput(CBaseEntity* pThis, const char* szInput
 	return ret;
 }
 
+void CSDKCaller::CBaseEntity_Teleport(CBaseEntity* pThis, const Vector* origin, const QAngle* angles, const Vector* velocity)
+{
+	ArgBuffer<void*, const void*, const void*, const void*> vstk{ pThis, origin, angles, velocity };
+	m_call_cbe_teleport.second->Execute(vstk, nullptr);
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
@@ -194,6 +207,7 @@ bool CSDKCaller::SetupCalls()
 	SetupCBPProcessUserCmds();
 	SetupCBAGetBoneTransform();
 	SetupCBEAcceptInput();
+	SetupCBETeleport();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
@@ -361,4 +375,18 @@ void CSDKCaller::SetupCBEAcceptInput()
 	pass[5].size = sizeof(bool);
 
 	m_call_cbe_acceptinput.second = g_pBinTools->CreateVCall(m_call_cbe_acceptinput.first, 0, 0, &pass[5], pass, 5);
+}
+
+void CSDKCaller::SetupCBETeleport()
+{
+	using namespace SourceMod;
+
+	if (m_call_cbe_teleport.first <= 0) { return; }
+
+	PassInfo info[3];
+	info[0].flags = info[1].flags = info[2].flags = PASSFLAG_BYVAL;
+	info[0].size = info[1].size = info[2].size = sizeof(void*);
+	info[0].type = info[1].type = info[2].type = PassType_Basic;
+
+	m_call_cbe_teleport.second = g_pBinTools->CreateVCall(m_call_cbe_teleport.first, 0, 0, NULL, info, 3);
 }

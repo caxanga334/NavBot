@@ -943,9 +943,10 @@ namespace UtilHelpers::io
 	 * @param pActivator Input activator.
 	 * @param pCaller Input Caller.
 	 * @param variant Variant containing input data. (The data needed depends on the input being called).
+	 * @param outputID Output ID, depends on the input being used.
 	 * @return True if the input was fired, false on failure.
 	 */
-	bool FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant);
+	bool FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID = 0);
 }
 
 #endif // !UTIL_HELPERS_H_

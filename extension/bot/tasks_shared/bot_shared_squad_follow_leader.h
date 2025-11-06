@@ -7,6 +7,7 @@
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <sdkports/sdk_timers.h>
+#include "bot_shared_attack_enemy.h"
 
 /**
  * @brief Task for bots following their squad leader.
@@ -36,6 +37,16 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+
+	if (threat && threat->GetLastKnownArea() != nullptr && bot->GetMovementInterface()->IsAreaTraversable(threat->GetLastKnownArea()))
+	{
+		if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
+		{
+			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+		}
+	}
+
 	ISquad* squadiface = bot->GetSquadInterface();
 
 	if (!squadiface->IsSquadValid())

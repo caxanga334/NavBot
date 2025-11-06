@@ -14,6 +14,7 @@ public:
 
 	bool EquipWeapon(const CBotWeapon* weapon) const override;
 	bool EquipWeapon(CBaseEntity* weapon) const override;
+	void DropHeldWeapon() const override;
 	// Returns the first weapon with low ammo.
 	const CBotWeapon* GetWeaponWithLowAmmo();
 

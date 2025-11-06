@@ -1,6 +1,7 @@
 #ifndef NAVBOT_BOT_SQUAD_INTERFACE_H_
 #define NAVBOT_BOT_SQUAD_INTERFACE_H_
 
+#include <array>
 #include <vector>
 #include <memory>
 #include <sdkports/sdk_ehandle.h>
@@ -54,7 +55,7 @@ public:
 	public:
 		SquadData();
 
-		virtual ~SquadData() = default;
+		virtual ~SquadData();
 
 		// Is this squad data instance valid?
 		bool IsValid() const
@@ -91,6 +92,8 @@ public:
 		std::size_t GetSquadSize() const;
 		// Returns the squad member vector
 		const std::vector<SquadMember>& GetMembers() const { return m_members; }
+		// Returns the team index of this squad.
+		int GetTeamNumber() const { return m_teamNum; }
 	private:
 		friend class ISquad;
 
@@ -100,12 +103,14 @@ public:
 		SquadMember m_botleader;
 		SquadMember m_humanleader;
 		std::vector<SquadMember> m_members;
+		int m_teamNum;
 
 		void RemoveInvalidMembers(); // purges any members with a NULL player entity
 		void DoFullValidation(ISensor* sensor); // complex squad validation, destroyed if invalid
 		void Destroy(); // marks the squad as destroyed, notifies all members about it
 		void AddMember(CBaseBot* bot);
 		void RemoveMember(CBaseBot* bot);
+		virtual void Init(); // called when a new squaddata instance is allocated
 	};
 
 	ISquad(CBaseBot* bot);
@@ -184,6 +189,62 @@ public:
 		int m_max;
 	};
 
+	class DestroyAllSquadsFunc
+	{
+	public:
+		void operator()(CBaseBot* bot);
+
+	private:
+
+	};
+
+	static void DestroyAllSquads();
+
+	static void IncrementSquadCount(int team)
+	{
+		s_numsquads[team] += 1;
+	}
+
+	static void DecrementSquadCount(int team)
+	{
+		s_numsquads[team] -= 1;
+
+		if (s_numsquads[team] < 0)
+		{
+			s_numsquads[team] = 0;
+		}
+	}
+
+	static int GetNumSquadsOnTeam(int team)
+	{
+		if (team >= 0 && team < MAX_TEAMS)
+		{
+			return s_numsquads[team];
+		}
+
+		return 0;
+	}
+
+	static void ResetSquadCounts()
+	{
+		std::fill(s_numsquads.begin(), s_numsquads.end(), 0);
+	}
+
+	static CountdownTimer& GetSquadTeamTimer(int team)
+	{
+		if (team >= 0 && team < MAX_TEAMS)
+		{
+			return s_squadtimer[team];
+		}
+
+		return s_squadtimer[0];
+	}
+
+	static void ResetSquadTeamTimers()
+	{
+		std::for_each(s_squadtimer.begin(), s_squadtimer.end(), [](CountdownTimer& timer) { timer.Invalidate(); });
+	}
+
 protected:
 	// Allocates a new SquadData object. Override if using a mod specific squad data
 	virtual SquadData* AllocateSquadData() const { return new SquadData; }
@@ -193,6 +254,9 @@ private:
 	std::shared_ptr<SquadData> m_squaddata;
 	CountdownTimer m_fullValidationTimer;
 	CountdownTimer m_shareInfoTimer;
+
+	static inline std::array<int, MAX_TEAMS> s_numsquads{};
+	static inline std::array<CountdownTimer, MAX_TEAMS> s_squadtimer{}; // generic per team shared timer for squad creation cooldowns
 };
 
 // Utility bot squad stuff

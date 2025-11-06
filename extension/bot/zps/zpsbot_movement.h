@@ -15,6 +15,13 @@ public:
 	int GetMovementCollisionGroup() const override;
 	bool IsAreaTraversable(const CNavArea* area) const override;
 
+	/* GameMovement limits the speed for us, always use max */
+	virtual float GetWalkSpeed() const override { return GetMaxSpeed(); }
+
+protected:
+
+	void UpdateMovementButtons() override;
+
 private:
 
 };

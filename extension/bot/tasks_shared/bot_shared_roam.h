@@ -130,9 +130,12 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 	{
 		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
 
-		if (threat)
+		if (threat && threat->GetLastKnownArea() != nullptr && bot->GetMovementInterface()->IsAreaTraversable(threat->GetLastKnownArea()))
 		{
-			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+			if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
+			{
+				return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+			}
 		}
 	}
 

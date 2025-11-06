@@ -10,6 +10,7 @@ CZPSBot::CZPSBot(edict_t* edict) :
 	m_zpsmovement = std::make_unique<CZPSBotMovement>(this);
 	m_zpsinventory = std::make_unique<CZPSBotInventory>(this);
 	m_zpscombat = std::make_unique<CZPSBotCombat>(this);
+	m_zpssquad = std::make_unique<CZPSBotSquad>(this);
 }
 
 CZPSBot::~CZPSBot()

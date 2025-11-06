@@ -59,9 +59,14 @@ bool CZPSBotInventory::EquipWeapon(CBaseEntity* weapon) const
 	return true;
 }
 
+void CZPSBotInventory::DropHeldWeapon() const
+{
+	GetBot<CZPSBot>()->DelayedFakeClientCommand("dropweapon");
+}
+
 const CBotWeapon* CZPSBotInventory::GetWeaponWithLowAmmo()
 {
-	CBaseBot* bot = GetBot<CBaseBot>();
+	CZPSBot* bot = GetBot<CZPSBot>();
 
 	for (auto& weaponptr : GetAllWeapons())
 	{

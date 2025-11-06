@@ -61,6 +61,11 @@ void CModSettings::PostParse()
 	{
 		rogue_min_time = rogue_max_time - 1.0f;
 	}
+
+	if (unstuck_teleport_threshold >= stucksuicidethreshold)
+	{
+		unstuck_teleport_threshold = -1;
+	}
 }
 
 SourceMod::SMCResult CModSettings::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
@@ -160,6 +165,16 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 		else if (strncasecmp(key, "movement_break_assist", 21) == 0)
 		{
 			SetBreakAssist(UtilHelpers::StringToBoolean(value));
+		}
+		else if (strncasecmp(key, "unstuck_cheats", 14) == 0)
+		{
+			SetAllowUnstuckCheats(UtilHelpers::StringToBoolean(value));
+		}
+		else if (strncasecmp(key, "unstuck_teleport_threshold", 26) == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, -1, 60);
+			SetUnstuckTeleportThreshold(v);
 		}
 		else
 		{

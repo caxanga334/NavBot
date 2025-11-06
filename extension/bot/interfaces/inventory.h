@@ -186,6 +186,30 @@ public:
 
 		return nullptr;
 	}
+	
+	/**
+	 * @brief Finds the first weapon of the given slot. This uses the slot defined in the configuration file.
+	 * @param slot Slot to search.
+	 * @param validateOwnership If true, check if the weapon is still owned by the bot.
+	 * @return Bot Weapon interface pointer or NULL if not found. 
+	 */
+	const CBotWeapon* FindWeaponBySlot(const int slot, const bool validateOwnership = true) const
+	{
+		for (auto& weaponptr : m_weapons)
+		{
+			if (weaponptr->IsValid() && weaponptr->GetWeaponInfo()->GetSlot() == slot)
+			{
+				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+				{
+					continue;
+				}
+
+				return weaponptr.get();
+			}
+		}
+
+		return nullptr;
+	}
 
 	/**
 	 * @brief Tells the inventory interface to equip this weapon.
@@ -199,6 +223,10 @@ public:
 	 * @return Returns true if the weapon was equipped.
 	 */
 	virtual bool EquipWeapon(CBaseEntity* weapon) const;
+	/**
+	 * @brief Drops the currently held weapon. (NO-OP by default, each game implements how weapons are dropped).
+	 */
+	virtual void DropHeldWeapon() const {}
 	/**
 	 * @brief Checks if the bot has a weapon of the given classname.
 	 * @param classname Weapon classname.
