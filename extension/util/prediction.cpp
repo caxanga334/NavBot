@@ -10,6 +10,10 @@
 #include <model_types.h>
 #include "prediction.h"
 
+#if SOURCE_ENGINE == SE_EPISODEONE
+#include <sdkports/sdk_convarref_ep1.h>
+#endif
+
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
