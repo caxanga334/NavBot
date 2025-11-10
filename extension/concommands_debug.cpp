@@ -25,6 +25,10 @@
 #include <sdkports/sdk_convarref_ep1.h>
 #endif // SOURCE_ENGINE == SE_EPISODEONE
 
+#ifdef AUTO_GENERATED_VERSION
+#include "generated_version.h"
+#endif // AUTO_GENERATED_VERSION
+
 
 CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 {
@@ -36,7 +40,13 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 	Msg("Arch: x86\n");
 #endif // KE_ARCH_X64
 
-	Msg("Extension Version: %s\n", SMEXT_CONF_VERSION);
+	Msg("Extension Version: %s\n", extension->GetExtensionVerString());
+
+#ifdef AUTO_GENERATED_VERSION
+	Msg("Git Commit: %s\n", GIT_COMMIT_HASH);
+	Msg("Git URL: %s\n", GIT_URL);
+#endif // AUTO_GENERATED_VERSION
+
 	Msg("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
 	Msg("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");
 	CBaseMod* mod = extmanager->GetMod();

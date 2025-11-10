@@ -13,8 +13,8 @@ public:
 	bool IsFriendly(CBaseEntity* entity) const override;
 	bool IsEnemy(CBaseEntity* entity) const override;
 
-	bool IsEntityHidden(CBaseEntity* entity) override;
-	bool IsPositionObscured(const Vector& pos) override;
+	bool IsEntityHidden(CBaseEntity* entity) const override;
+	bool IsPositionObscured(const Vector& pos) const override;
 
 private:
 	void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec) override;

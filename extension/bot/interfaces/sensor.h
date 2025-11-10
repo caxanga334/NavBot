@@ -40,23 +40,23 @@ public:
 	virtual bool IsFriendly(CBaseEntity* entity) const { return false; }
 	virtual bool IsEnemy(CBaseEntity* entity) const { return false; }
 	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
-	bool IsAbleToSee(edict_t* entity, const bool checkFOV = true);
-	bool IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV = true);
-	virtual bool IsAbleToSee(CBaseEntity* entity, const bool checkFOV = true);
-	virtual bool IsAbleToSee(const Vector& pos, const bool checkFOV = true);
+	bool IsAbleToSee(edict_t* entity, const bool checkFOV = true) const;
+	bool IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV = true) const;
+	virtual bool IsAbleToSee(CBaseEntity* entity, const bool checkFOV = true) const;
+	virtual bool IsAbleToSee(const Vector& pos, const bool checkFOV = true) const;
 	// Is the bot able to hear this entity
-	virtual bool IsAbleToHear(edict_t* entity);
+	virtual bool IsAbleToHear(edict_t* entity) const;
 	// Checks if there are obstructions between the bot and the given position
-	virtual bool IsLineOfSightClear(const Vector& pos);
-	bool IsLineOfSightClear(CBaseExtPlayer& player);
-	bool IsLineOfSightClear(edict_t* entity);
-	virtual bool IsLineOfSightClear(CBaseEntity* entity);
-	virtual bool IsInFieldOfView(const Vector& pos);
+	virtual bool IsLineOfSightClear(const Vector& pos) const;
+	bool IsLineOfSightClear(CBaseExtPlayer& player) const;
+	bool IsLineOfSightClear(edict_t* entity) const;
+	virtual bool IsLineOfSightClear(CBaseEntity* entity) const;
+	virtual bool IsInFieldOfView(const Vector& pos) const;
 	// Is the entity hidden by fog, smoke, etc?
-	bool IsEntityHidden(edict_t* entity);
-	virtual bool IsEntityHidden(CBaseEntity* entity) { return false; }
+	bool IsEntityHidden(edict_t* entity) const;
+	virtual bool IsEntityHidden(CBaseEntity* entity) const { return false; }
 	// Is the given position obscured by fog, smoke, etc?
-	virtual bool IsPositionObscured(const Vector& pos) { return false; }
+	virtual bool IsPositionObscured(const Vector& pos) const { return false; }
 	// Adds a known entity to the list
 	virtual CKnownEntity* AddKnownEntity(edict_t* entity);
 	virtual CKnownEntity* AddKnownEntity(CBaseEntity* entity);

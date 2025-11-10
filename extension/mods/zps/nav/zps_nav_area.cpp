@@ -66,6 +66,24 @@ void CZPSNavArea::UpdateBlocked(bool force, int teamID)
 	return CNavArea::UpdateBlocked(force, teamID);
 }
 
+void CZPSNavArea::ShowAreaInfo() const
+{
+	if (m_zpsattributes != 0)
+	{
+		char attribs[256];
+		attribs[0] = '\0';
+
+		ke::SafeStrcpy(attribs, sizeof(attribs), "ZPS Attributes: ");
+
+		if (HasZPSAttributes(ZPS_ATTRIBUTE_NOZOMBIES)) { ke::SafeStrcat(attribs, sizeof(attribs), "NO_ZOMBIES"); }
+		if (HasZPSAttributes(ZPS_ATTRIBUTE_NOHUMANS)) { ke::SafeStrcat(attribs, sizeof(attribs), "NO_HUMANS"); }
+		if (HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_SURVIVORSONLY)) { ke::SafeStrcat(attribs, sizeof(attribs), "TRANSIENT_SURVIVORSONLY"); }
+		if (HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_PHYSPROPS)) { ke::SafeStrcat(attribs, sizeof(attribs), "TRANSIENT_PHYSPROPS"); }
+
+		debugoverlay->AddScreenTextOverlay(0.37f, 0.6f, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255, 0, 255, attribs);
+	}
+}
+
 static bool ZPSNavArea_EnumeratorFilter_PhysProps(IHandleEntity* handle)
 {
 	CBaseEntity* entity = trace::EntityFromEntityHandle(handle);

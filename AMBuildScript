@@ -435,6 +435,11 @@ class ExtensionConfig(object):
     self.ConfigureForHL2(context, binary, sdk)
     self.ConfigureForExtension(context, binary.compiler)
     return binary
+  
+  def AddVersioning(self, binary):
+    binary.compiler.sourcedeps += self.generated_headers
+    binary.compiler.defines += ['AUTO_GENERATED_VERSION']
+    return binary
 
 if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.environ:
   raise Exception("--breakpad-upload passed to configure.py but environment variable 'BREAKPAD_SYMBOL_SERVER' isn't set!")
@@ -442,6 +447,8 @@ if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.
 Extension = ExtensionConfig()
 Extension.detectSDKs()
 Extension.configure()
+
+Extension.generated_headers = builder.Build('tools/AMBuild', { 'Extension': Extension })
 
 # This will clone the list and each cxx object as we recurse, preventing child
 # scripts from messing up global state.
@@ -451,8 +458,6 @@ BuildScripts = [
   'AMBuilder',
   'PackageScript',
 ]
-
-
 
 builder.Build(BuildScripts, { 'Extension': Extension })
 

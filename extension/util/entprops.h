@@ -403,7 +403,6 @@ namespace entityprops
 	std::int8_t GetEntityLifeState(CBaseEntity* entity);
 	// Gets an entity health (m_iHealth) via datamaps
 	int GetEntityHealth(CBaseEntity* entity);
-
 	std::int8_t GetEntityWaterLevel(CBaseEntity* entity);
 	// Gets an entity targetname (name given by the level designer for I/O)
 	const char* GetEntityTargetname(CBaseEntity* entity);

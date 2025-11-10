@@ -30,6 +30,7 @@ public:
 	void ClearZPSAttributes(ZPSAttributes attribs) { m_zpsattributes &= ~attribs; }
 	bool HasZPSAttributes(ZPSAttributes attribs) const { return (m_zpsattributes & attribs) != 0; }
 	void WipeZPSAttributes() { m_zpsattributes = 0; }
+	void ShowAreaInfo() const override;
 
 private:
 	int m_zpsattributes;

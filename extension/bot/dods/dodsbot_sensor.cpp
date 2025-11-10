@@ -34,14 +34,14 @@ bool CDoDSBotSensor::IsEnemy(CBaseEntity* entity) const
 	return dodslib::GetDoDTeam(entity) != me->GetMyDoDTeam();
 }
 
-bool CDoDSBotSensor::IsEntityHidden(CBaseEntity* entity)
+bool CDoDSBotSensor::IsEntityHidden(CBaseEntity* entity) const
 {
 	// TO-DO: Implement smoke grenades vision blocking
 
 	return false;
 }
 
-bool CDoDSBotSensor::IsPositionObscured(const Vector& pos)
+bool CDoDSBotSensor::IsPositionObscured(const Vector& pos) const
 {
 	return false;
 }

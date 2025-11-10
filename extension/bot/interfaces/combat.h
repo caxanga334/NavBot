@@ -14,6 +14,9 @@ public:
 	~ICombat() override;
 
 	static constexpr float CALLOUT_COOLDOWN = 10.0f;
+	static constexpr float LOOK_AROUND_BASE_DURATION = 1.5f;
+	static constexpr float LOOK_AROUND_TIMER_BASE_MIN = 3.0f;
+	static constexpr float LOOK_AROUND_TIMER_BASE_MAX = 7.0f;
 
 	struct CombatData
 	{
@@ -127,13 +130,18 @@ public:
 	 * @brief Utility function for making the bot do a basic primary attack with the currently held weapon.
 	 */
 	virtual void DoPrimaryAttack();
+	// Stops the bot from looking around for the given time.
+	void StopLookingAround(float time = 1.0f) { m_disableLookingAroundTimer.Start(time); }
+	// Allows the bot to resume looking around
+	void StartLookingAround() { m_disableLookingAroundTimer.Invalidate(); }
+	// Is the bot allowed to look around?
+	virtual const bool CanLookAround() const;
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
 	 * @param newWeapon The new last used weapon.
 	 */
 	virtual void OnLastUsedWeaponChanged(CBaseEntity* newWeapon);
-
 	/**
 	 * @brief Sets the last used weapon by the bot in combat.
 	 * 
@@ -179,7 +187,6 @@ protected:
 	 * @param weapon The weapon itself.
 	 */
 	virtual void OpportunisticallyUseWeaponSpecialFunction(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon);
-
 	IntervalTimer& GetAttackTimer() { return m_attackTimer; }
 	CountdownTimer& GetUnscopeTimer() { return m_unscopeTimer; }
 	CountdownTimer& GetSpecialWeaponFunctionTimer() { return m_useSpecialFuncTimer; }
@@ -275,6 +282,12 @@ protected:
 	void SetLastReportedPlace(unsigned int place) { m_lastPlace = place; }
 	// Timer for weapon reloads
 	CountdownTimer& GetReloadTimer() { return m_reloadTimer; }
+	// Timer for look around
+	CountdownTimer& GetLookAroundTimer() { return m_lookAroundTimer; }
+	// Timer for disabling look round
+	CountdownTimer& GetDisableLookRoundTimer() { return m_disableLookingAroundTimer; }
+	// Invoked to update the look around logic.
+	virtual void UpdateLookingAround();
 private:
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;
@@ -287,6 +300,8 @@ private:
 	CountdownTimer m_scopeinDelayTimer;
 	CountdownTimer m_calloutTimer;
 	CountdownTimer m_reloadTimer;
+	CountdownTimer m_disableLookingAroundTimer;
+	CountdownTimer m_lookAroundTimer;
 	IntervalTimer m_attackTimer;
 	CombatData m_combatData;
 	bool m_shouldAim;
@@ -297,5 +312,22 @@ private:
 
 	IDecisionQuery::DesiredAimSpot SelectClearAimSpot(const bool allowheadshots) const;
 };
+
+namespace combatutils
+{
+	class GetRandomNeighorAreaOutsideFOVFunctor
+	{
+	public:
+		GetRandomNeighorAreaOutsideFOVFunctor(const CBaseBot* bot);
+
+		void operator()(CNavArea* area, bool isIncomingArea);
+
+		CNavArea* GetRandomArea() const;
+
+	private:
+		const ISensor* m_sensor;
+		std::vector<CNavArea*> m_areas;
+	};
+}
 
 #endif // !__NAVBOT_BOT_COMBAT_INTERFACE_H_

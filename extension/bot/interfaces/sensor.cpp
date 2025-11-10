@@ -174,7 +174,7 @@ void ISensor::ShowDebugInformation() const
 	}
 }
 
-bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
+bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV) const
 {
 	return IsAbleToSee(entity->GetIServerEntity()->GetBaseEntity(), checkFOV);
 }
@@ -185,12 +185,12 @@ bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV)
  * @param checkFOV if true, also check if the given player is in the bot field of view
  * @return true if visible, false otherwise
 */
-bool ISensor::IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV)
+bool ISensor::IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV) const
 {
 	return IsAbleToSee(player->GetEntity(), checkFOV);
 }
 
-bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
+bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsAbleToSee( CBaseEntity )", "NavBot");
@@ -236,7 +236,7 @@ bool ISensor::IsAbleToSee(CBaseEntity* entity, const bool checkFOV)
  * @param checkFOV if true, also check if the given position is in the bot field of view
  * @return true if visible
 */
-bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV)
+bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsAbleToSee( Vector )", "NavBot");
@@ -273,14 +273,14 @@ bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV)
 	return true;
 }
 
-bool ISensor::IsAbleToHear(edict_t* entity)
+bool ISensor::IsAbleToHear(edict_t* entity) const
 {
 	// Bots only hear other players by default
 	const auto index = gamehelpers->IndexOfEdict(entity);
 	return UtilHelpers::IsPlayerIndex(index);
 }
 
-bool ISensor::IsLineOfSightClear(const Vector& pos)
+bool ISensor::IsLineOfSightClear(const Vector& pos) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsLineOfSightClear( Vector )", "NavBot");
@@ -296,7 +296,7 @@ bool ISensor::IsLineOfSightClear(const Vector& pos)
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player)
+bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsLineOfSightClear( CBaseExtPlayer )", "NavBot");
@@ -321,7 +321,7 @@ bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player)
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-bool ISensor::IsLineOfSightClear(edict_t* entity)
+bool ISensor::IsLineOfSightClear(edict_t* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsLineOfSightClear( edict_t )", "NavBot");
@@ -347,7 +347,7 @@ bool ISensor::IsLineOfSightClear(edict_t* entity)
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
+bool ISensor::IsLineOfSightClear(CBaseEntity* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsLineOfSightClear( CBaseEntity )", "NavBot");
@@ -373,7 +373,7 @@ bool ISensor::IsLineOfSightClear(CBaseEntity* entity)
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-bool ISensor::IsInFieldOfView(const Vector& pos)
+bool ISensor::IsInFieldOfView(const Vector& pos) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::IsInFieldOfView( pos )", "NavBot");
@@ -384,7 +384,7 @@ bool ISensor::IsInFieldOfView(const Vector& pos)
 	return UtilHelpers::PointWithinViewAngle(GetBot()->GetEyeOrigin(), pos, forward, m_coshalfFOV);
 }
 
-bool ISensor::IsEntityHidden(edict_t* entity)
+bool ISensor::IsEntityHidden(edict_t* entity) const
 {
 	return IsEntityHidden(entity->GetIServerEntity()->GetBaseEntity());
 }

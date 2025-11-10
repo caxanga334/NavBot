@@ -102,7 +102,7 @@ enum NavDirType
 	SOUTH = 2,
 	WEST = 3,
 
-	NUM_DIRECTIONS
+	NUM_DIRECTIONS,
 };
 
 /**

@@ -28,11 +28,13 @@ project "NavBot-EPISODE1"
         path.join(Path_MMS, "core", "sourcehook"),
         "../build/navbot_pch_*/**",
         "../extension",
-        "../versioning/include"
+        "../versioning/include",
+        "../build/includes",
 	}
 	files {
         "../extension/**.h",
         "../extension/**.cpp",
+        "../build/includes/**.h",
         path.join(Path_SM, "public", "smsdk_ext.cpp"),
 	}
 

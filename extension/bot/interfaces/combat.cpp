@@ -43,6 +43,8 @@ void ICombat::Reset()
 	m_scopeinDelayTimer.Invalidate();
 	m_calloutTimer.Invalidate();
 	m_reloadTimer.Invalidate();
+	m_disableLookingAroundTimer.Invalidate();
+	m_lookAroundTimer.Start(LOOK_AROUND_TIMER_BASE_MAX);
 	m_combatData.Clear();
 }
 
@@ -122,6 +124,13 @@ void ICombat::Update()
 	{
 		m_combatData.in_combat = false;
 		UnscopeWeaponIfScoped();
+
+		if (CanLookAround() && m_lookAroundTimer.IsElapsed())
+		{
+			m_lookAroundTimer.StartRandom(LOOK_AROUND_TIMER_BASE_MIN, LOOK_AROUND_TIMER_BASE_MAX);
+
+			UpdateLookingAround();
+		}
 	}
 }
 
@@ -207,6 +216,17 @@ void ICombat::DoPrimaryAttack()
 
 	timer.Start();
 	bot->GetControlInterface()->PressAttackButton(info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
+}
+
+const bool ICombat::CanLookAround() const
+{
+	// makes low difficulty bots easy to approach from behind
+	if (GetBot<CBaseBot>()->GetDifficultyProfile()->GetGameAwareness() <= 25)
+	{
+		return false;
+	}
+
+	return m_disableLookingAroundTimer.IsElapsed();
 }
 
 void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
@@ -664,6 +684,26 @@ const char* ICombat::GetEnemyName(const CKnownEntity* enemy) const
 	return enemy->GetEntityClassname().c_str();
 }
 
+void ICombat::UpdateLookingAround()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+	CNavArea* area = me->GetLastKnownNavArea();
+
+	if (!area) { return; }
+
+	combatutils::GetRandomNeighorAreaOutsideFOVFunctor functor{ me };
+	area->ForEachAdjacentAndIncomingArea(functor);
+
+	CNavArea* lookarea = functor.GetRandomArea();
+
+	if (lookarea)
+	{
+		Vector aim = lookarea->GetCenter();
+		aim.z += navgenparams->half_human_height;
+		me->GetControlInterface()->AimAt(aim, IPlayerController::LookPriority::LOOK_INTERESTING, LOOK_AROUND_BASE_DURATION, "Looking around randomly.");
+	}
+}
+
 IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheadshots) const
 {
 	const CombatData& data = GetCachedCombatData();
@@ -866,4 +906,26 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	}
 
 	this->can_fire = (this->is_head_clear || this->is_center_clear || this->is_origin_clear);
+}
+
+combatutils::GetRandomNeighorAreaOutsideFOVFunctor::GetRandomNeighorAreaOutsideFOVFunctor(const CBaseBot* bot)
+{
+	m_sensor = bot->GetSensorInterface();
+}
+
+void combatutils::GetRandomNeighorAreaOutsideFOVFunctor::operator()(CNavArea* area, bool isIncomingArea)
+{
+	const Vector& center = area->GetCenter();
+
+	if (!m_sensor->IsInFieldOfView(center))
+	{
+		m_areas.push_back(area);
+	}
+}
+
+CNavArea* combatutils::GetRandomNeighorAreaOutsideFOVFunctor::GetRandomArea() const
+{
+	if (m_areas.empty()) { return nullptr; }
+	if (m_areas.size() == 1U) { return m_areas[0]; }
+	return librandom::utils::GetRandomElementFromVector(m_areas);
 }
