@@ -44,7 +44,7 @@ jobs:
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo'
-            os_ambuild_params: '--breakpad-upload'
+            os_ambuild_params: ''
     env:
       USER_BIN_PATH: ${{ github.workspace }}/bins
       BREAKPAD_SYMBOL_SERVER: "http://crash.limetech.org/symbols/submit"
