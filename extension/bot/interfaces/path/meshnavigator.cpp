@@ -255,7 +255,8 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	if (m_goal->area->IsUnderwater() || bot->GetWaterLevel() >= static_cast<int>(entityprops::WaterLevel::WL_Waist))
 	{
 		goalPos = AdjustGoalForUnderWater(bot, goalPos, m_goal);
-		input->AimAt(goalPos, IPlayerController::LOOK_MOVEMENT, 0.1f, "Looking at move goal (Underwater).");
+		/* LOOK_MOVEMENT here causes bots to not be able to attack enemies underwater */
+		input->AimAt(goalPos, IPlayerController::LOOK_PATH, 0.1f, "Looking at move goal (Underwater).");
 	}
 	else if (mover->IsOnGround())
 	{

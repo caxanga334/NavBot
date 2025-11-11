@@ -68,7 +68,16 @@ public:
 			if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
 			{
 				const float projSpeed = weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed();
-				Vector predicted = pred::IterativeProjectileLead(GetShooterPosition(), initialTargetPosition, GetTargetVelocity(), projSpeed, maxiterations);
+				Vector predicted;
+
+				if (!TargetEntityHasFlags(FL_ONGROUND) && IsTargetAPlayer() && bot->GetDifficultyProfile()->IsAllowedToUsePhysicsPrediction())
+				{
+					predicted = pred::IterativeEnginePredictedProjectileLead(entity, GetShooterPosition(), initialTargetPosition, GetTargetVelocity(), projSpeed, maxiterations);
+				}
+				else
+				{
+					predicted = pred::IterativeProjectileLead(GetShooterPosition(), initialTargetPosition, GetTargetVelocity(), projSpeed, maxiterations);
+				}
 
 				if (!bot->IsLineOfFireClear(predicted))
 				{
@@ -100,6 +109,9 @@ protected:
 	void SetShooterPosition(const Vector& pos) { m_shooterPosition = pos; }
 	const Vector& GetTargetVelocity() const { return m_targetVelocity; }
 	void SetTargetVelocity(const Vector& vel) { m_targetVelocity = vel; }
+	void SetTargetEntityFlags(int flags) { m_targetflags = flags; }
+	int GetTargetEntityFlags() const { return m_targetflags; }
+	bool TargetEntityHasFlags(int flags) { return (m_targetflags & flags) != 0; }
 
 	// Called to initialize values for a new aim position calculation
 	virtual void Initialize(BotClass* bot, CBaseEntity* entity, IDecisionQuery::DesiredAimSpot aimspot)
@@ -117,6 +129,9 @@ protected:
 		SetTargetPlayer(extmanager->GetPlayerOfEntity(entity));
 		RetrieveTargetVelocity(entity);
 		SetShooterPosition(bot->GetEyeOrigin());
+		int flags = 0;
+		entprops->GetEntProp(entity, Prop_Data, "m_fFlags", flags);
+		SetTargetEntityFlags(flags);
 	}
 
 	// Called to read the velocity of the target entity
@@ -267,6 +282,7 @@ private:
 	const CBotWeapon* m_weapon;
 	IDecisionQuery::DesiredAimSpot m_desiredSpot;
 	const CBaseExtPlayer* m_targetPlayer;
+	int m_targetflags; // target entity's CBaseEntity::m_fFlags
 
 };
 

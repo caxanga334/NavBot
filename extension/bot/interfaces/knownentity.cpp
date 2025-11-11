@@ -53,6 +53,9 @@ void CKnownEntity::Init()
 	m_timevisible = -9999.0f;
 	m_visible = false;
 	m_lkpwasseen = false;
+	m_lastknownarea = nullptr;
+	m_lastknownposition.Init(0.0f, 0.0f, 0.0f);
+	m_lastknownvelocity.Init(0.0f, 0.0f, 0.0f);
 	m_player = extmanager->GetPlayerOfEntity(m_handle.Get());
 }
 

@@ -46,11 +46,6 @@
 #include "sourcepawn/misc.h"
 #include "util/gamedata_const.h"
 
-#ifdef AUTO_GENERATED_VERSION
-#include "generated_version.h"
-#define GIT_AUTO_VERSION GIT_TAG "+git" GIT_REV_COUNT
-#endif // AUTO_GENERATED_VERSION
-
 #if defined(EXT_DEBUG)
 #include "util/prediction.h"
 #include <tier1/KeyValues.h>
@@ -182,24 +177,6 @@ NavBotExt::NavBotExt()
 	m_cfg_navbot = nullptr;
 	m_cfg_sdktools = nullptr;
 	m_cfg_sdkhooks = nullptr;
-}
-
-const char* NavBotExt::GetExtensionURL()
-{
-#ifdef AUTO_GENERATED_VERSION
-	return GIT_URL;
-#else
-	return SMEXT_CONF_URL;
-#endif
-}
-
-const char* NavBotExt::GetExtensionVerString()
-{
-#ifdef AUTO_GENERATED_VERSION
-	return GIT_AUTO_VERSION;
-#else
-	return SMEXT_CONF_VERSION;
-#endif
 }
 
 bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)

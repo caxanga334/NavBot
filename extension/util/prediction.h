@@ -90,6 +90,12 @@ namespace pred
 		CEnginePrediction();
 
 		void PredictEntity(CBaseEntity* entity, float time);
+		/**
+		 * @brief Predicts an entity movement until they hit ground.
+		 * @param entity Entity to simulate.
+		 * @param time How many seconds in the future to simulate.
+		 */
+		void PredictUntilGround(CBaseEntity* entity, float time);
 
 		void SetTraceMask(unsigned int mask) { m_entdata.mask = mask; }
 		unsigned int GetTraceMask() const { return m_entdata.mask; }

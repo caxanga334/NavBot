@@ -18,7 +18,6 @@ public:
 	virtual void Update(CBaseBot* bot);
 
 	const CBasePathSegment* GetGoalSegment() const override { return m_goal; }
-
 	// Distance to consider the goal reached
 	inline virtual void SetGoalTolerance(const float tolerance) { m_goalTolerance = tolerance; }
 	inline virtual const float GetGoalTolerance() const { return m_goalTolerance; }

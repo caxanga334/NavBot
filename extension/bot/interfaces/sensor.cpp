@@ -443,11 +443,14 @@ void ISensor::ForgetKnownEntity(edict_t* entity)
 	m_knownlist.erase(std::remove_if(m_knownlist.begin(), m_knownlist.end(), [&other](const CKnownEntity& obj) {
 		return obj == other;
 	}), m_knownlist.end());
+
+	m_primarythreatcache = nullptr;
 }
 
 void ISensor::ForgetAllKnownEntities()
 {
 	m_knownlist.clear();
+	m_primarythreatcache = nullptr;
 }
 
 bool ISensor::IsKnown(edict_t* entity)
@@ -557,6 +560,7 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 	}
 
 	const CKnownEntity* primarythreat = nullptr;
+	bool assigned = false;
 
 	// get the first valid threat
 
@@ -579,37 +583,21 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 		if (onlyvisible && !known->WasRecentlyVisible())
 			continue;
 
-		primarythreat = known;
-		break;
+		// assign the first valid instance.
+		if (!assigned)
+		{
+			primarythreat = known;
+			assigned = true;
+			continue;
+		}
+		
+		// select between two valid instances
+		primarythreat = GetBot()->GetBehaviorInterface()->SelectTargetThreat(GetBot(), primarythreat, known);
 	}
 
-	if (primarythreat == nullptr)
+	if (!primarythreat)
 	{
 		return nullptr;
-	}
-
-	// Selected best threat
-	for (auto& obj : m_knownlist)
-	{
-		CKnownEntity* known = &obj;
-
-		if (!IsAwareOf(known))
-			continue;
-
-		if (known->IsObsolete())
-			continue;
-
-		if (IsIgnored(known->GetEntity()))
-			continue;
-
-		if (!IsEnemy(known->GetEntity()))
-			continue;
-
-		if (onlyvisible && !known->WasRecentlyVisible())
-			continue;
-
-		// Ask behavior for the best threat
-		primarythreat = GetBot()->GetBehaviorInterface()->SelectTargetThreat(GetBot(), primarythreat, known);
 	}
 
 	m_primarythreatcache = primarythreat; // cache primary threat to skip calculations for multiple GetPrimaryKnownThreat calls, cache is cleared on the next server frame

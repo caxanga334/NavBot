@@ -28,6 +28,7 @@ Example profile
 {
     "skill_level"				"0"
     "game_awareness"			"0"
+    "weapon_skill"				"0"
     "aimspeed"					"120"
     "fov"						"60"
     "maxvisionrange"			"1024"
@@ -36,10 +37,15 @@ Example profile
     "predict_projectiles"		"no"
     "allow_headshots"			"no"
     "allow_dodging"				"no"
+    "use_physics_pred"			"no"
     "aim_tracking_interval"		"1.0"
     "aggressiveness"			"0"
     "teamwork"					"0"
     "ability_use_interval"		"1.0"
+    "health_critical_percent"	"0.05"
+    "health_low_percent"		"0.20"
+    "numerical_disadvantage_retreat_threshold" "12"
+    "max_pred_it"				"1"
 }
 ```
 
@@ -56,6 +62,7 @@ Example profile
 | predict_projectiles | Determines if the bot is allowed to use prediction when aiming with projectile weapons. |
 | allow_headshots | Determines if the bot is allowed to go for headshots. |
 | allow_dodging | Determines if the bot is allowed to dodge enemy attacks, making them harded to hit. |
+| use_physics_pred | Determines if the bot is allowed to use predict a target position using physics simulation. See notes below. |
 | aim_tracking_interval | How frequently the bot will update the target position when aiming at an entity. |
 | aggressiveness | How aggressive this bot is. |
 | teamwork | How likely this bot will cooperate with teammates. |
@@ -68,7 +75,13 @@ Example profile
 
 ## Notes
 
-Weapon config entries can have a minimum required skill set to be selected. See the [Weapon Info Config File] documentation.
+Weapon config entries can have a minimum required skill set to be selected. See the [Weapon Info Config File] documentation.    
+
+### Physics Simulated Prediction
+
+NavBot can simulate how Source handles entity physics to predict a target movement.    
+This is only used against players and if they're airborne since the simulation is not accurate for player ground movement.    
+
 
 <!-- Links -->
 [Weapon Info Config File]: WEAPONINFO_CONFIG.md

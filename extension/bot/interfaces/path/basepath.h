@@ -383,6 +383,19 @@ public:
 	const CBasePathSegment* GetLastSegment() const;
 	const CBasePathSegment* GetNextSegment(const CBasePathSegment* current) const;
 	const CBasePathSegment* GetPriorSegment(const CBasePathSegment* current) const;
+	/**
+	 * @brief Returns the first segment of the given type.
+	 * @param type Type to search.
+	 * @param startSeg Optional segment to start from, if NULL, starts from the first segment.
+	 * @return Path segment if found or NULL if not found.
+	 */
+	const CBasePathSegment* GetFirstSegmentOfType(AIPath::SegmentType type, const CBasePathSegment* startSeg = nullptr) const;
+	/**
+	 * @brief Returns the first segment of ground type.
+	 * @param startSeg Optional segment to start from, if NULL, starts from the first segment.
+	 * @return Path segment if found or NULL if not found.
+	 */
+	const CBasePathSegment* GetFirstGroundSegment(const CBasePathSegment* startSeg = nullptr) const;
 	// The segment the bot is trying to reach
 	virtual const CBasePathSegment* GetGoalSegment() const { return nullptr; /* implemented by derived classes */ }
 
@@ -598,6 +611,40 @@ inline const CBasePathSegment* CPath::GetPriorSegment(const CBasePathSegment* cu
 	it = std::prev(it);
 
 	return it->get();
+}
+
+inline const CBasePathSegment* CPath::GetFirstSegmentOfType(AIPath::SegmentType type, const CBasePathSegment* startSeg) const
+{
+	const CBasePathSegment* seg = startSeg != nullptr ? startSeg : GetFirstSegment();
+
+	while (seg != nullptr)
+	{
+		if (seg->type == type)
+		{
+			return seg;
+		}
+
+		seg = GetNextSegment(seg);
+	}
+
+	return nullptr;
+}
+
+inline const CBasePathSegment* CPath::GetFirstGroundSegment(const CBasePathSegment* startSeg) const
+{
+	const CBasePathSegment* seg = startSeg != nullptr ? startSeg : GetFirstSegment();
+
+	while (seg != nullptr)
+	{
+		if (seg->type == AIPath::SegmentType::SEGMENT_GROUND || seg->type == AIPath::SegmentType::SEGMENT_GROUND_NOSKIP)
+		{
+			return seg;
+		}
+
+		seg = GetNextSegment(seg);
+	}
+
+	return nullptr;
 }
 
 #endif // !SMNAV_BOT_BASE_PATH_H_

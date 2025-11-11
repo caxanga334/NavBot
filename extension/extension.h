@@ -73,9 +73,6 @@ class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public So
 public:
 	NavBotExt();
 
-	const char* GetExtensionURL() override;
-	const char* GetExtensionVerString() override;
-
 	/**
 	 * @brief This is called after the initial loading sequence has been processed.
 	 *

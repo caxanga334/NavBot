@@ -31,6 +31,7 @@ public:
 		predict_projectiles = false;
 		allow_headshots = false;
 		can_dodge = false;
+		use_physics_prediction = false;
 		aim_tracking_interval = 0.25f;
 		aggressiveness = 20;
 		teamwork = 20;
@@ -72,6 +73,7 @@ public:
 	inline const float GetHealthLowThreshold() const { return health_low_percent; }
 	inline const int GetRetreatFromNumericalDisadvantageThreshold() const { return numerical_disadvantage_retreat_threshold; }
 	inline const int GetMaxPredictionIterations() const { return prediction_max_iterations; }
+	inline const bool IsAllowedToUsePhysicsPrediction() const { return use_physics_prediction; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
@@ -92,6 +94,7 @@ public:
 	inline void SetHealthLowThreshold(const float v) { health_low_percent = v; }
 	inline void SetRetreatFromNumericalDisadvantageThreshold(const int v) { numerical_disadvantage_retreat_threshold = v; }
 	inline void SetMaxPredictionIterations(const int v) { prediction_max_iterations = v; }
+	inline void SetIsAllowedToUsePhysicsPrediction(const bool state) { use_physics_prediction = state; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -105,6 +108,7 @@ private:
 	bool predict_projectiles; // if true, bot will lead their targets with projectile weapons
 	bool allow_headshots; // Allow going for headshots
 	bool can_dodge; // Is allowed to dodge attacks?
+	bool use_physics_prediction; // Is allowed to use _physics prediction?
 	float aim_tracking_interval; // Interval between aim target position updates
 	int aggressiveness; // How aggressive will this bot play
 	int teamwork; // How likely this bot will cooperate with teammates

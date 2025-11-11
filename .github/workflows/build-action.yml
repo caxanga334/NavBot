@@ -44,7 +44,7 @@ jobs:
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo'
-            os_ambuild_params: ''
+            os_ambuild_params: '--breakpad-upload'
     env:
       USER_BIN_PATH: ${{ github.workspace }}/bins
       BREAKPAD_SYMBOL_SERVER: "http://crash.limetech.org/symbols/submit"
@@ -76,6 +76,15 @@ jobs:
           cd ${{ env.USER_BIN_PATH }}
           Invoke-WebRequest -Uri 'https://github.com/mozilla/dump_syms/releases/download/v2.3.4/dump_syms-x86_64-pc-windows-msvc.zip' -OutFile 'dump_syms-x86_64-pc-windows-msvc.zip'
           7z x dump_syms-x86_64-pc-windows-msvc.zip
+          ls
+
+      - name: Install Breakpad dump_syms (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p ${{ env.USER_BIN_PATH }}
+          cd ${{ env.USER_BIN_PATH }}
+          wget https://github.com/mozilla/dump_syms/releases/download/v2.3.5/dump_syms-x86_64-unknown-linux-gnu.tar.xz
+          tar -xvf dump_syms-x86_64-unknown-linux-gnu.tar.xz --strip-components 1
           ls
 
       - name: Update Path

@@ -99,7 +99,7 @@ Vector pred::IterativeEnginePredictedProjectileLead(CBaseEntity* target, const V
 
 	for (int i = 0; i < maxIterations; i++)
 	{
-		enginepred.PredictEntity(target, time);
+		enginepred.PredictUntilGround(target, time);
 		Vector predictedPosition = enginepred.GetPredictionData().pos;
 
 		targetDir = predictedPosition - shooterPosition;
@@ -232,6 +232,27 @@ void pred::CEnginePrediction::PredictEntity(CBaseEntity* entity, float time)
 	for (int i = 0; i < steps; i++)
 	{
 		RunPrediction(entity);
+	}
+}
+
+void pred::CEnginePrediction::PredictUntilGround(CBaseEntity* entity, float time)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEnginePrediction::PredictUntilGround", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	int steps = static_cast<int>(std::round(time / gpGlobals->interval_per_tick));
+	steps = std::max(steps, 1);
+	m_entdata.UpdateData(entity);
+
+	for (int i = 0; i < steps; i++)
+	{
+		RunPrediction(entity);
+
+		if (m_entdata.HasFlags(FL_ONGROUND))
+		{
+			return;
+		}
 	}
 }
 

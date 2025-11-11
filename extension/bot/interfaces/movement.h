@@ -539,6 +539,13 @@ protected:
 	 * @brief Invoked to update the buttons the bot needs to press.
 	 */
 	virtual void UpdateMovementButtons() {}
+	/**
+	 * @brief Invoked when teleporting a stuck bot.
+	 * @param bot The bot that is stuck.
+	 * @param navigator The bot's current navigator.
+	 * @param goal Current goal segment.
+	 */
+	virtual void UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const CBasePathSegment* goal);
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed

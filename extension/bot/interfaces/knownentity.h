@@ -46,7 +46,9 @@ public:
 	inline const Vector& GetLastKnownPosition() const { return m_lastknownposition; }
 	// Gets the entity last known velocity
 	inline const Vector& GetLastKnownVelocity() const { return m_lastknownvelocity; }
-	// Gets the entity last known Nav Area
+	// Returns true if this known instance has a last known nav area.
+	inline bool HasLastKnownArea() const { return m_lastknownarea != nullptr; }
+	// Gets the entity last known Nav Area (Can be NULL)
 	inline const CNavArea* GetLastKnownArea() const { return m_lastknownarea; }
 	// A known entity is obsolete if the stored entity is invalid or if enought time has passed
 	bool IsObsolete() const;

@@ -1408,8 +1408,7 @@ void IMovement::TryToUnstuck()
 
 				if (path && path->GetGoalSegment())
 				{
-					sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), &path->GetGoalSegment()->goal);
-					ClearStuckStatus("Teleported!");
+					UnstuckTeleport(bot, path, path->GetGoalSegment());
 					return;
 				}
 			}
@@ -1437,6 +1436,8 @@ void IMovement::TryToUnstuck()
 			bot->DebugPrintToConsole(255, 69, 0, "%s IMovement::TryToUnstuck No obstacle on top, crouch jumping! \n", bot->GetDebugIdentifier());
 		}
 
+		CrouchJump();
+
 		if (modsettings->AllowUnstuckCheats())
 		{
 			CMeshNavigator* path = bot->GetActiveNavigator();
@@ -1446,10 +1447,6 @@ void IMovement::TryToUnstuck()
 				Vector launch = bot->CalculateLaunchVector(path->GetGoalSegment()->goal, GetMaxSpeed());
 				bot->SetAbsVelocity(launch);
 			}
-		}
-		else
-		{
-			CrouchJump();
 		}
 	}
 }
@@ -2001,6 +1998,16 @@ void IMovement::StrafeJumpUpdate()
 	}
 
 	m_strafeJumpState = next;
+}
+
+void IMovement::UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const CBasePathSegment* goal)
+{
+	const CBasePathSegment* ground = navigator->GetFirstGroundSegment(goal);
+
+	if (!ground) { return; }
+
+	sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), &ground->goal);
+	ClearStuckStatus("Teleported!");
 }
 
 // approach a ladder that we will go up

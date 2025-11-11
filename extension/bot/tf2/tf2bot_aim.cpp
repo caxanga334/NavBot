@@ -47,7 +47,16 @@ Vector CTF2BotAimHelper::SelectAimPosition(CTF2Bot* bot, CBaseEntity* entity, ID
 		if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
 		{
 			const float projSpeed = weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed();
-			Vector predicted = pred::IterativeProjectileLead(GetShooterPosition(), initialTargetPosition, GetTargetVelocity(), projSpeed, maxiterations);
+			Vector predicted;
+
+			if (!TargetEntityHasFlags(FL_ONGROUND) && IsTargetAPlayer() && bot->GetDifficultyProfile()->IsAllowedToUsePhysicsPrediction())
+			{
+				predicted = pred::IterativeEnginePredictedProjectileLead(entity, GetShooterPosition(), initialTargetPosition, GetTargetVelocity(), projSpeed, maxiterations);
+			}
+			else
+			{
+				predicted = pred::IterativeProjectileLead(GetShooterPosition(), initialTargetPosition, GetTargetVelocity(), projSpeed, maxiterations);
+			}
 
 			if (!bot->IsLineOfFireClear(predicted))
 			{

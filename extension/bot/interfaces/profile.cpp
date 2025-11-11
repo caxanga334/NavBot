@@ -25,6 +25,7 @@ void DifficultyProfile::RandomizeProfileValues()
 	predict_projectiles = randomgen->GetRandomChance(); // GetRandomChance defauls to 50% chance for true
 	allow_headshots = randomgen->GetRandomChance();
 	can_dodge = randomgen->GetRandomChance();
+	use_physics_prediction = randomgen->GetRandomChance();
 	aim_tracking_interval = randomgen->GetRandomReal<float>(0.0001f, 1.0f);
 	aggressiveness = randomgen->GetRandomInt<int>(0, 100);
 	teamwork = randomgen->GetRandomInt<int>(0, 100);
@@ -313,6 +314,11 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	{
 		bool allow = UtilHelpers::StringToBoolean(value);
 		m_current->SetIsAllowedToDodge(allow);
+	}
+	else if (strncasecmp(key, "use_physics_pred", 16) == 0)
+	{
+		bool predict = UtilHelpers::StringToBoolean(value);
+		m_current->SetIsAllowedToUsePhysicsPrediction(predict);
 	}
 	else if (strncasecmp(key, "aim_tracking_interval", 21) == 0)
 	{
