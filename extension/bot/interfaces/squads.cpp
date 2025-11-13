@@ -286,6 +286,7 @@ void ISquad::Update()
 				if (m_squaddata->IsHumanLedSquad() && !m_squaddata->IsSquadLeaderAlive())
 				{
 					LeaveSquad();
+					return; // squad is invalid now, return to avoid crashes
 				}
 
 				if (m_fullValidationTimer.IsElapsed())

@@ -640,6 +640,27 @@ bool botsharedutils::CollectPatrolAreas::ShouldCollect(CNavArea* area)
 	return true;
 }
 
+void botsharedutils::HidingSpotCollector::OnDone()
+{
+	if (GetCollectedAreasCount() == 0U) { return; }
+
+	for (CNavArea* area : GetCollectedAreas())
+	{
+		const HidingSpotVector* vec = area->GetHidingSpots();
+
+		if (vec->Count() == 0) { continue; }
+
+		m_hidingareas.push_back(area);
+	}
+}
+
+CNavArea* botsharedutils::HidingSpotCollector::GetRandomHidingArea() const
+{
+	if (m_hidingareas.empty()) { return nullptr; }
+	if (m_hidingareas.size() == 1U) { return m_hidingareas[0]; }
+	return librandom::utils::GetRandomElementFromVector(m_hidingareas);
+}
+
 CWaypoint* botsharedutils::waypoints::GetRandomRoamWaypoint(CBaseBot* bot, const float maxRange)
 {
 	std::vector<CWaypoint*> wpts;
@@ -824,3 +845,4 @@ bool botsharedutils::threat::IsImmediateThreat(CBaseBot* bot, const CKnownEntity
 
 	return false;
 }
+

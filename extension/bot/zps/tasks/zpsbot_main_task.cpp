@@ -38,8 +38,8 @@ QueryAnswerType CZPSBotMainTask::ShouldPickup(CBaseBot* me, CBaseEntity* item)
 
 	if (UtilHelpers::StringMatchesPattern(classname, "weapon_*", 0))
 	{
-		Vector mins{ -8.0f, -8.0f, 1.0f };
-		Vector maxs{ 8.0f, 8.0f, 16.0f };
+		Vector mins{ -12.0f, -12.0f, 1.0f };
+		Vector maxs{ 12.0f, 12.0f, 16.0f };
 		Vector pos = UtilHelpers::getEntityOrigin(item);
 
 		trace_t tr;

@@ -5,6 +5,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
 #include <bot/tf2/tf2bot.h>
+#include <bot/tasks_shared/bot_shared_wait.h>
 #include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_attack_controlpoint.h"
 
@@ -53,6 +54,22 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskStart(CTF2Bot* bot, AIT
 		else
 		{
 			m_routeType = SAFEST_ROUTE;
+		}
+	}
+
+	int teamNum = static_cast<int>(bot->GetMyTFTeam());
+	CountdownTimer& squadtimer = ISquad::GetSquadTeamTimer(teamNum);
+
+	if (squadtimer.IsElapsed() && !bot->GetSquadInterface()->IsInASquad())
+	{
+		squadtimer.StartRandom();
+		bot->GetSquadInterface()->CreateSquad();
+		ISquad::InviteBotsToSquadFunc func{ static_cast<CBaseBot*>(bot), 4 };
+		extmanager->ForEachBot(bot);
+
+		if (bot->GetSquadInterface()->GetSquad()->GetMembersCount() > 0U)
+		{
+			return PauseFor(new CBotSharedWaitForSquadMembersTask<CTF2Bot>(15.0f, 512.0f), "Waiting for squad members to arrive!");
 		}
 	}
 

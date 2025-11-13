@@ -280,7 +280,7 @@ public:
 	/**
 	 * @brief Selects the best weapon from the bot inventory to attack breakable entities (func_breakable, prop_physics, etc...)
 	 */
-	virtual void SelectBestWeaponForBreakables();
+	virtual void SelectBestWeaponForBreakables(const bool force = true);
 	/**
 	 * @brief Selects the weapon with the highest priority that matches the given type.
 	 * @param type Weapon Type to filter.

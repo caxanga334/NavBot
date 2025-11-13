@@ -17,6 +17,9 @@ public:
 
 	bool IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon) override;
 
+protected:
+	void DodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon) override;
+
 private:
 	bool m_shouldwalk;
 };

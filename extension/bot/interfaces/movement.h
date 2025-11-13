@@ -48,6 +48,21 @@ public:
 	IMovement(CBaseBot* bot);
 	~IMovement() override;
 
+	// Movement type requests priorities
+	enum MovementRequestPriority
+	{
+		MOVEREQUEST_PRIO_LOW = 0, // Lowest priority
+		MOVEREQUEST_PRIO_MEDIUM, // Medium priority
+		MOVEREQUEST_PRIO_HIGH, // High priority
+		MOVEREQUEST_PRIO_VERY_HIGH, // Very high priority
+		MOVEREQUEST_PRIO_CRITICAL, // Critical priority
+		MOVEREQUEST_PRIO_MANDATORY, // Mandatory, highest priority, nothing can prevent this
+
+		MAX_MOVEREQUEST_PRIO_TYPES
+	};
+
+	static const char* MovementRequestPriorityTypeToString(MovementRequestPriority type);
+
 	enum MovementType : std::uint8_t
 	{
 		MOVE_WALKING = 0U,
@@ -56,6 +71,8 @@ public:
 
 		MAX_MOVEMENT_TYPES
 	};
+
+	static const char* MovementTypeToString(MovementType type);
 
 	struct PlayerHull
 	{
@@ -458,16 +475,14 @@ public:
 	 */
 	virtual void OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimedout);
 	/**
-	 * @brief Changes the bot movement type.
+	 * @brief Request the movement type to be changed.
 	 * @param type Type to change to.
+	 * @param priority Request change priority.
+	 * @param duration Duration of the request.
+	 * @param reason Optional reason for debugging purposes.
+	 * @return Returns true if the type was changed, false if the request was denied.
 	 */
-	void ChangeMovementType(MovementType type)
-	{
-		if (m_movementType == type) { return; }
-
-		OnMovementTypeChanged(GetMovementType(), type);
-		m_movementType = type;
-	}
+	virtual bool RequestMovementTypeChange(MovementType type, MovementRequestPriority priority, float duration, const char* reason = nullptr);
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -503,6 +518,18 @@ protected:
 
 	// stuck monitoring
 	StuckStatus m_stuck;
+
+	/**
+	 * @brief Changes the bot movement type.
+	 * @param type Type to change to.
+	 */
+	void ChangeMovementType(MovementType type)
+	{
+		if (m_movementType == type) { return; }
+
+		OnMovementTypeChanged(GetMovementType(), type);
+		m_movementType = type;
+	}
 
 	virtual void StuckMonitor();
 	virtual void TraverseLadder();
@@ -555,6 +582,8 @@ private:
 	float m_desiredspeed; // speed the bot wants to move at
 	bool m_isStopAndWait;
 	MovementType m_movementType;
+	MovementRequestPriority m_lastMTRequestPriority; // Last movement type request priority
+	CountdownTimer m_MTRequestTimer; // movement type request timer
 	CountdownTimer m_stopAndWaitTimer;
 	StrafeJumpState m_strafeJumpState; // strafe jump FSM current state
 	Vector m_sjMidPoint; // strafe jump mid point
@@ -595,6 +624,8 @@ private:
 	static constexpr float ELEV_MOVE_RANGE = 32.0f;
 	static constexpr float ELEV_SPEED_DIV = 400.0f; // timeout is this value divided by speed
 	static constexpr float ELEV_MOVESPEED_SCALE = 0.7f; // move at 70% of run speed
+
+	void _Reset();
 };
 
 inline bool IMovement::IsControllingMovements() const

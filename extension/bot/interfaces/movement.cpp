@@ -80,48 +80,44 @@ bool CTraceFilterOnlyActors::ShouldHitEntity(IHandleEntity* pHandleEntity, int c
 
 IMovement::IMovement(CBaseBot* bot) : IBotInterface(bot)
 {
-	m_ladder = nullptr;
-	m_ladderExit = nullptr;
-	m_ladderState = NOT_USING_LADDER;
-	m_ladderTimer.Invalidate();
-	m_ladderMoveGoal = vec3_origin;
-	m_useLadderTimer.Invalidate();
-	m_landingGoal = vec3_origin;
-	m_isJumping = false;
-	m_isClimbingObstacle = false;
-	m_isJumpingAcrossGap = false;
-	m_isAirborne = false;
-	m_isUsingCatapult = false;
-	m_wasLaunched = false;
-	m_stuck.Reset();
-	m_motionVector = vec3_origin;
-	m_groundMotionVector = vec2_origin;
-	m_speed = 0.0f;
-	m_groundspeed = 0.0f;
-	m_maxspeed = 0.0f;
-	m_ladderGoalZ = 0.0f;
-	m_elevator = nullptr;
-	m_fromFloor = nullptr;
-	m_toFloor = nullptr;
-	m_elevatorTimeout.Invalidate();
-	m_elevatorState = NOT_USING_ELEVATOR;
-	m_lastMoveWeight = 0;
-	m_isBreakingObstacle = false;
-	m_crouchToBreak = false;
-	m_obstacleBreakTimeout.Invalidate();
-	m_obstacleEntity = nullptr;
-	m_desiredspeed = 0.0f;
-	m_catapultStartPosition = vec3_origin;
-	m_isStopAndWait = false;
-	m_strafeJumpState = NOT_STRAFE_JUMPING;
-	m_sjMidPoint = vec3_origin;
-	m_sjEndPoint = vec3_origin;
-	m_sjIsToTheLeft = false;
-	m_movementType = IMovement::MovementType::MOVE_RUNNING;
+	_Reset();
 }
 
 IMovement::~IMovement()
 {
+}
+
+const char* IMovement::MovementRequestPriorityTypeToString(MovementRequestPriority type)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"MOVEREQUEST_PRIO_LOW"sv,
+		"MOVEREQUEST_PRIO_MEDIUM"sv,
+		"MOVEREQUEST_PRIO_HIGH"sv,
+		"MOVEREQUEST_PRIO_VERY_HIGH"sv,
+		"MOVEREQUEST_PRIO_CRITICAL"sv,
+		"MOVEREQUEST_PRIO_MANDATORY"sv,
+	};
+
+	static_assert(names.size() == static_cast<std::size_t>(MovementRequestPriority::MAX_MOVEREQUEST_PRIO_TYPES), "Movement Request Priority name array and enum count mismatch!");
+
+	return names[static_cast<std::size_t>(type)].data();
+}
+
+const char* IMovement::MovementTypeToString(MovementType type)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"WALKING"sv,
+		"RUNNING"sv,
+		"SPRINTING"sv,
+	};
+
+	static_assert(names.size() == static_cast<std::size_t>(MovementType::MAX_MOVEMENT_TYPES), "Movement Type name array and enum count mismatch!");
+
+	return names[static_cast<std::size_t>(type)].data();
 }
 
 bool IMovement::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
@@ -143,47 +139,7 @@ bool IMovement::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 
 void IMovement::Reset()
 {
-	m_ladder = nullptr;
-	m_ladderExit = nullptr;
-	m_ladderState = NOT_USING_LADDER;
-	m_ladderTimer.Invalidate();
-	m_useLadderTimer.Invalidate();
-	m_landingGoal = vec3_origin;
-	m_jumpCooldown.Invalidate();
-	m_jumpTimer.Invalidate();
-	m_doMidAirCJ.Invalidate();
-	m_isJumping = false;
-	m_isClimbingObstacle = false;
-	m_isJumpingAcrossGap = false;
-	m_isAirborne = false;
-	m_isUsingCatapult = false;
-	m_wasLaunched = false;
-	m_catapultCorrectVelocityTimer.Invalidate();
-	m_stuck.Reset();
-	m_motionVector = vec3_origin;
-	m_groundMotionVector = vec2_origin;
-	m_speed = 0.0f;
-	m_groundspeed = 0.0f;
-	m_maxspeed = GetBot()->GetMaxSpeed();
-	m_desiredspeed = m_maxspeed;
-	m_ladderGoalZ = 0.0f;
-	m_elevator = nullptr;
-	m_fromFloor = nullptr;
-	m_toFloor = nullptr;
-	m_elevatorTimeout.Invalidate();
-	m_elevatorState = NOT_USING_ELEVATOR;
-	m_lastMoveWeight = 0;
-	m_isBreakingObstacle = false;
-	m_crouchToBreak = false;
-	m_obstacleBreakTimeout.Invalidate();
-	m_obstacleEntity = nullptr;
-	m_catapultStartPosition = vec3_origin;
-	m_isStopAndWait = false;
-	m_stopAndWaitTimer.Invalidate();
-	m_strafeJumpState = NOT_STRAFE_JUMPING;
-	m_sjMidPoint = vec3_origin;
-	m_sjEndPoint = vec3_origin;
-	m_movementType = IMovement::MovementType::MOVE_RUNNING;
+	_Reset();
 }
 
 void IMovement::Update()
@@ -1650,6 +1606,51 @@ void IMovement::OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimed
 	}
 }
 
+bool IMovement::RequestMovementTypeChange(MovementType type, MovementRequestPriority priority, float duration, const char* reason)
+{
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	if (!m_MTRequestTimer.IsElapsed() && priority < m_lastMTRequestPriority)
+	{
+		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+		{
+			me->DebugPrintToConsole(255, 0, 0, "%s MOVEMENT TYPE CHANGE REQUEST DENIED! TYPE: \"%s\" PRIORITY: \"%s\" DURATION: %3.2f REASON: %s \n",
+				me->GetDebugIdentifier(), 
+				IMovement::MovementTypeToString(type),
+				IMovement::MovementRequestPriorityTypeToString(priority),
+				duration,
+				reason != nullptr ? reason : "");
+		}
+
+		return false;
+	}
+
+	// if the current type is the request type, just update the timer and the priority
+	if (GetMovementType() == type)
+	{
+		m_lastMTRequestPriority = priority;
+		m_MTRequestTimer.Start(duration);
+		return true;
+	}
+
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		me->DebugPrintToConsole(255, 0, 0, "%s MOVEMENT TYPE CHANGED! OLD TYPE: \"%s\" NEW TYPE: \"%s\" PRIORITY: \"%s\" DURATION: %3.2f REASON: %s \n",
+			me->GetDebugIdentifier(),
+			IMovement::MovementTypeToString(GetMovementType()),
+			IMovement::MovementTypeToString(type),
+			IMovement::MovementRequestPriorityTypeToString(priority),
+			duration,
+			reason != nullptr ? reason : "");
+	}
+
+	m_lastMTRequestPriority = priority;
+	m_MTRequestTimer.Start(duration);
+	ChangeMovementType(type);
+
+	return true;
+}
+
 void IMovement::StuckMonitor()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -2940,6 +2941,53 @@ IMovement::StrafeJumpState IMovement::StrafeJump_ToEndPoint()
 	}
 
 	return STRAFEJUMP_TO_ENDPOINT;
+}
+
+void IMovement::_Reset()
+{
+	m_ladder = nullptr;
+	m_ladderExit = nullptr;
+	m_ladderState = NOT_USING_LADDER;
+	m_ladderTimer.Invalidate();
+	m_useLadderTimer.Invalidate();
+	m_landingGoal = vec3_origin;
+	m_jumpCooldown.Invalidate();
+	m_jumpTimer.Invalidate();
+	m_doMidAirCJ.Invalidate();
+	m_isJumping = false;
+	m_isClimbingObstacle = false;
+	m_isJumpingAcrossGap = false;
+	m_isAirborne = false;
+	m_isUsingCatapult = false;
+	m_wasLaunched = false;
+	m_catapultCorrectVelocityTimer.Invalidate();
+	m_stuck.Reset();
+	m_motionVector = vec3_origin;
+	m_groundMotionVector = vec2_origin;
+	m_speed = 0.0f;
+	m_groundspeed = 0.0f;
+	m_maxspeed = GetBot()->GetMaxSpeed();
+	m_desiredspeed = m_maxspeed;
+	m_ladderGoalZ = 0.0f;
+	m_elevator = nullptr;
+	m_fromFloor = nullptr;
+	m_toFloor = nullptr;
+	m_elevatorTimeout.Invalidate();
+	m_elevatorState = NOT_USING_ELEVATOR;
+	m_lastMoveWeight = 0;
+	m_isBreakingObstacle = false;
+	m_crouchToBreak = false;
+	m_obstacleBreakTimeout.Invalidate();
+	m_obstacleEntity = nullptr;
+	m_catapultStartPosition = vec3_origin;
+	m_isStopAndWait = false;
+	m_stopAndWaitTimer.Invalidate();
+	m_strafeJumpState = NOT_STRAFE_JUMPING;
+	m_sjMidPoint = vec3_origin;
+	m_sjEndPoint = vec3_origin;
+	m_movementType = IMovement::MovementType::MOVE_RUNNING;
+	m_lastMTRequestPriority = IMovement::MovementRequestPriority::MOVEREQUEST_PRIO_LOW;
+	m_MTRequestTimer.Invalidate();
 }
 
 

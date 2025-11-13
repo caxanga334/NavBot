@@ -87,3 +87,28 @@ The bot will move to and attack the prerequisite task goal entity.
 ## TASK_USE_ENT
 
 The bot will move to and press their use button on the task goal entity.
+
+# Using Prerequisites
+
+Go to where you want to create a prerequisite and use the `sm_nav_prereq_create` command. A prerequisite will be created at your current position.    
+Bots will complete a prerequisite when they enter a nav area that has a prerequisite assigned to it. See *Assigning Nav Areas*.    
+Prerequisites can be team specific, use `sm_nav_prereq_set_team <team index>` to restrict which team will use it. Use a value of `-2` for **any** team.
+
+## Assigning Nav Areas
+
+Nav areas whose center is inside the prequisite bounds are assigned to it.    
+Use the `sm_nav_prereq_set_bounds <mins x> <mins y> <mins z> <maxs x> <maxs y> <maxs z>` command to update the prerequisite size and `sm_nav_prereq_set_origin` to update the prerequisite position.
+To visualize which areas are currently assigned to a prerequisite, run the `sm_nav_prereq_draw_areas` command.    
+
+## Setting The Task
+
+The `sm_nav_prereq_set_task <task ID Number>` sets the task the bot will complete. Use `sm_nav_prereq_list_available_tasks` to get a list of tasks and their ID number.    
+Tasks have a goal position, entity and data. **WAIT** tasks uses the task data, the data is the number of seconds a bot should wait.    
+Entity is used by **USE_ENT** and **DESTROY_ENT** and position is used by **MOVE_TO_POS**.
+
+## Setting The Toggle Condition
+
+The toggle condition is used to determine if the prerequisite is enabled/disabled.    
+The toggle condition is set via the `sm_nav_prereq_set_toggle_condition` command.    
+Run the `sm_nav_prereq_set_toggle_condition` without any arguments to print usage instructions.    
+

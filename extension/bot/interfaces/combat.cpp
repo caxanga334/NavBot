@@ -423,6 +423,10 @@ void ICombat::OpportunisticallyUseWeaponSpecialFunction(const CBaseBot* bot, con
 
 bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::IsAbleToDodgeEnemies", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	// Low skill bot not allowed to dodge
@@ -456,6 +460,14 @@ bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon*
 		return false;
 	}
 
+	Vector pos = bot->WorldSpaceCenter();
+
+	// Don't dodge if the enemy player is not looking at my direction
+	if (!threat->GetPlayerInstance()->IsLookingTowards(pos, -0.5f))
+	{
+		return false;
+	}
+
 	// Don't waste time dodging if I am in a hurry.
 	if (bot->GetBehaviorInterface()->ShouldHurry(bot) == ANSWER_YES)
 	{
@@ -484,6 +496,10 @@ bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon*
 
 void ICombat::DodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::DodgeEnemies", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	if (!IsAbleToDodgeEnemies(threat, activeWeapon))

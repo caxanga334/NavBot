@@ -2628,6 +2628,12 @@ NavDirType CNavArea::ComputeDirection( Vector *point ) const
 	return NUM_DIRECTIONS;
 }
 
+const HidingSpot* CNavArea::GetRandomHidingSpot() const
+{
+	if (m_hidingSpots.Count() == 0) { return nullptr; }
+	if (m_hidingSpots.Count() == 1) { return m_hidingSpots[0]; }
+	return m_hidingSpots[randomgen->GetRandomInt<int>(0, m_hidingSpots.Count() - 1)];
+}
 
 //--------------------------------------------------------------------------------------------------------------
 bool CNavArea::GetCornerHotspot( NavCornerType corner, Vector hotspot[NUM_CORNERS] ) const

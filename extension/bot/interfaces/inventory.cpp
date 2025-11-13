@@ -399,8 +399,10 @@ void IInventory::SelectBestWeapon()
 	}
 }
 
-void IInventory::SelectBestWeaponForBreakables()
+void IInventory::SelectBestWeaponForBreakables(const bool force)
 {
+	if (force) { m_weaponSwitchCooldown.Invalidate(); }
+
 	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
 	{
 		return;

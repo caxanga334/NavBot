@@ -568,6 +568,7 @@ public:
 
 	//- hiding spots ------------------------------------------------------------------------------------
 	const HidingSpotVector *GetHidingSpots( void ) const	{ return &m_hidingSpots; }
+	const HidingSpot* GetRandomHidingSpot() const;
 
 	/* Danger */
 

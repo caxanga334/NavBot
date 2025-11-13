@@ -336,7 +336,7 @@ public:
 		{
 			Vector pos = UtilHelpers::getWorldSpaceCenter(item);
 			Vector eyepos = bot->GetEyeOrigin();
-			const float crouchheight = bot->GetMovementInterface()->GetCrouchedHullHeight();
+			const float crouchheight = navgenparams->human_crouch_eye_height;
 
 			if ((eyepos - pos).IsLengthLessThan(CBaseExtPlayer::PLAYER_USE_RADIUS))
 			{

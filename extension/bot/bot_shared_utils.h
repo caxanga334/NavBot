@@ -173,6 +173,8 @@ namespace botsharedutils
 		// returns true if this area can be reached.
 		const bool IsReachable(CNavArea* area, float* cost = nullptr) const;
 
+		CBaseBot* GetBot() const { return m_bot; }
+
 	private:
 		CBaseBot* m_bot;
 	};
@@ -258,6 +260,24 @@ namespace botsharedutils
 		std::vector<Vector> m_points;
 
 		static constexpr float MAX_RANGE_FOR_VIS_CHECKS = 1024.0f;
+	};
+
+	/**
+	 * @brief Utility nav area collector for seaching for reachable nav areas with hiding spots.
+	 */
+	class HidingSpotCollector : public IsReachableAreas
+	{
+	public:
+		HidingSpotCollector(CBaseBot* bot, float maxDistance) :
+			IsReachableAreas(bot, maxDistance)
+		{
+		}
+
+		void OnDone() override;
+		CNavArea* GetRandomHidingArea() const;
+
+	private:
+		std::vector<CNavArea*> m_hidingareas; // areas with hiding spots
 	};
 }
 

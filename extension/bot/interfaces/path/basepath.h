@@ -181,7 +181,7 @@ public:
 	 * @return true if a path is found
 	*/
 	template <typename CostFunction>
-	bool ComputePathToPosition(CBaseBot* bot, const Vector& goal, CostFunction& costFunc, const float maxPathLength = 0.0f, const bool includeGoalOnFailure = false)
+	bool ComputePathToPosition(CBaseBot* bot, const Vector& goal, CostFunction& costFunc, const float maxPathLength = 0.0f, const bool includeGoalOnFailure = true)
 	{
 		Invalidate();
 
