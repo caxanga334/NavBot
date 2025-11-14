@@ -101,9 +101,7 @@ public:
 	// Gets the team index of a known entity since we don't have access to the CBaseEntity functions. Override per mod needs.
 	virtual int GetKnownEntityTeamIndex(CKnownEntity* known);
 	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
-
 	virtual const CKnownEntity* GetNearestHeardKnown(int teamIndex);
-
 	/**
 	 * @brief Runs a function on every known entity.
 	 * 

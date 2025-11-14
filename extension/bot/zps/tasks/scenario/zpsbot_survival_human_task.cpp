@@ -1,5 +1,6 @@
 #include NAVBOT_PCH_FILE
 #include <bot/zps/zpsbot.h>
+#include <bot/tasks_shared/bot_shared_hide.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
 #include "zpsbot_survival_human_task.h"
@@ -19,7 +20,7 @@ TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskStart(CZPSBot* bot, AITask<C
 
     if (bot->GetSquadInterface()->IsInASquad() && !bot->GetSquadInterface()->IsSquadLeader())
     {
-        return PauseFor(new CBotSharedSquadMemberMonitorTask<CZPSBot, CZPSBotPathCost>(new CZPSBotSurvivalHumanTask), "Starting squad behavior!");
+        return SwitchTo(new CBotSharedSquadMemberMonitorTask<CZPSBot, CZPSBotPathCost>(new CZPSBotSurvivalHumanTask), "Starting squad behavior!");
     }
 
     return Continue();
@@ -27,6 +28,15 @@ TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskStart(CZPSBot* bot, AITask<C
 
 TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskUpdate(CZPSBot* bot)
 {
+    if (CBaseBot::s_botrng.GetRandomInt<int>(1, 7) == 7)
+    {
+        const HidingSpot* spot = nullptr;
+        if (CBotSharedHideTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, 4096.0f, &spot))
+        {
+            return PauseFor(new CBotSharedHideTask<CZPSBot, CZPSBotPathCost>(bot, spot, CBaseBot::s_botrng.GetRandomReal<float>(10.0f, 20.0f)), "Hiding!");
+        }
+    }
+
     // Temporary
     return PauseFor(new CBotSharedRoamTask<CZPSBot, CZPSBotPathCost>(bot, 4096.0f), "Roaming!");
 }

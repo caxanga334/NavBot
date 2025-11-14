@@ -57,7 +57,7 @@ public:
 	 */
 	CBotSharedWaitForSquadMembersTask(float timeout, float minDistance)
 	{
-		m_duration = waitTime;
+		m_duration = timeout;
 		m_minDistance = minDistance;
 	}
 
@@ -100,7 +100,7 @@ public:
 
 			numMembers++;
 
-			if ((pos - member.GetPosition().IsLengthLessThan(m_minDistance)))
+			if ((pos - member.GetPosition()).IsLengthLessThan(m_minDistance))
 			{
 				numClose++;
 			}

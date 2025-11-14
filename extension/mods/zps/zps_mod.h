@@ -38,6 +38,7 @@ private:
 	bool m_roundactive;
 
 	void DetectGameMode();
+	void UpdateFootstepEvents();
 };
 
 

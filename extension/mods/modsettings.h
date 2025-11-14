@@ -23,6 +23,7 @@ public:
 		rogue_min_time = 120.0f;
 		movement_break_assist = true;
 		unstuck_cheats = true;
+		movement_jump_assist = true;
 		unstuck_teleport_threshold = 12;
 	}
 
@@ -57,7 +58,8 @@ public:
 	void SetRogueMaxTime(float v) { rogue_max_time = v; }
 	void SetRogueMinTime(float v) { rogue_min_time = v; }
 	void SetBreakAssist(bool v) { movement_break_assist = v; }
-	void SetAllowUnstuckCheats(bool state) { unstuck_cheats = true; }
+	void SetAllowUnstuckCheats(bool state) { unstuck_cheats = state; }
+	void SetAllowJumpAssist(bool state) { movement_jump_assist = state; }
 	void SetUnstuckTeleportThreshold(int i) { unstuck_teleport_threshold = i; }
 
 	const int GetDefendRate() const { return defendrate; }
@@ -76,6 +78,7 @@ public:
 	const float GetRogueBehaviorMinTime() const { return rogue_min_time; }
 	const bool ShouldUseMovementBreakAssist() const { return movement_break_assist; }
 	const bool AllowUnstuckCheats() const { return unstuck_cheats; }
+	const bool AllowJumpAssist() const { return movement_jump_assist; }
 	const bool AllowUnstuckTeleport() const { return unstuck_teleport_threshold > 0; }
 	const int GetUnstuckTeleportThreshold() const { return unstuck_teleport_threshold; }
 
@@ -95,6 +98,7 @@ protected:
 	float rogue_min_time;
 	bool movement_break_assist; // (Cheat) If the bot fails to break an object within the time limit, try breaking it via inputs
 	bool unstuck_cheats; // (Cheat) Allow cheating when trying to unstuck the bot.
+	bool movement_jump_assist; // (Cheat) Help the bot complete jumps
 	int unstuck_teleport_threshold; // if this many stuck events on a roll, teleport the bot forward.
 };
 

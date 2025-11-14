@@ -88,6 +88,13 @@ void CBaseExtPlayer::PlayerThink()
 	UpdateLastKnownNavArea();
 }
 
+int CBaseExtPlayer::GetFlags() const
+{
+	int flags = 0;
+	entprops->GetEntProp(GetEntity(), Prop_Data, "m_fFlags", flags);
+	return flags;
+}
+
 void CBaseExtPlayer::UpdateLastKnownNavArea(const bool forceupdate)
 {
 #ifdef EXT_VPROF_ENABLED

@@ -260,6 +260,12 @@ void IMovement::Update()
 		return; // block everything below
 	}
 
+	if (m_doJumpAssist)
+	{
+		m_doJumpAssist = false;
+		DoJumpAssist();
+	}
+
 	// the code below should not run when the bot is using ladders
 
 	if (m_isJumpingAcrossGap || m_isClimbingObstacle)
@@ -727,6 +733,11 @@ void IMovement::CrouchJump()
 	m_isJumping = true;
 	m_jumpTimer.Start(0.5f);
 
+	if (extmanager->GetMod()->GetModSettings()->AllowJumpAssist() && IsOnGround())
+	{
+		m_doJumpAssist = true;
+	}
+
 #ifdef EXT_DEBUG
 	me->GetControlInterface()->PressCrouchButton(cvar_dev_jump_hold_time.GetFloat());
 	me->GetControlInterface()->PressJumpButton(cvar_dev_jump_hold_time.GetFloat());
@@ -759,6 +770,11 @@ void IMovement::DoubleJump()
 
 	m_isJumping = true;
 	m_jumpTimer.Start(1.0f);
+
+	if (extmanager->GetMod()->GetModSettings()->AllowJumpAssist() && IsOnGround())
+	{
+		m_doJumpAssist = true;
+	}
 
 	GetBot()->GetControlInterface()->PressJumpButton(0.1f); // simple jump first
 
@@ -2011,6 +2027,18 @@ void IMovement::UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const 
 	ClearStuckStatus("Teleported!");
 }
 
+void IMovement::DoJumpAssist()
+{
+	if (sdkcalls->IsTeleportAvailable())
+	{
+		CBaseBot* bot = GetBot<CBaseBot>();
+		Vector velocity = bot->GetAbsVelocity();
+		velocity.z += 30.0f;
+
+		sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), nullptr, nullptr, &velocity);
+	}
+}
+
 // approach a ladder that we will go up
 IMovement::LadderState IMovement::ApproachUpLadder()
 {
@@ -2981,6 +3009,7 @@ void IMovement::_Reset()
 	m_obstacleEntity = nullptr;
 	m_catapultStartPosition = vec3_origin;
 	m_isStopAndWait = false;
+	m_doJumpAssist = false;
 	m_stopAndWaitTimer.Invalidate();
 	m_strafeJumpState = NOT_STRAFE_JUMPING;
 	m_sjMidPoint = vec3_origin;

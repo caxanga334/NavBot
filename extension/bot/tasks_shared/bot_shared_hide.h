@@ -14,11 +14,26 @@ template <typename BT, typename CT = CBaseBotPathCost>
 class CBotSharedHideTask : public AITask<BT>
 {
 public:
-	CBotSharedHideTask(BT* bot, const HidingSpot* hidingSpot, const float maxHideTime) :
+	static bool IsPossible(BT* bot, const float maxDistance, const HidingSpot** hidingspot)
+	{
+		botsharedutils::HidingSpotCollector collector{ static_cast<CBaseBot*>(bot), maxDistance };
+		collector.Execute();
+		
+		CNavArea* area = collector.GetRandomHidingArea();
+
+		if (!area) { return false; }
+
+		const HidingSpot* spot = area->GetRandomHidingSpot();
+		*hidingspot = spot;
+		return spot != nullptr;
+	}
+
+	CBotSharedHideTask(BT* bot, const HidingSpot* hidingSpot, const float maxHideTime, const bool crouch = true) :
 		m_pathcost(bot)
 	{
 		m_hidingspot = hidingSpot;
 		m_hidelength = maxHideTime;
+		m_shouldCrouch = crouch;
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override
@@ -38,12 +53,22 @@ public:
 		return AITask<BT>::Continue();
 	}
 
-	TaskResult<BT> OnTaskUpdate(BT* __bot) override
+	TaskResult<BT> OnTaskUpdate(BT* bot) override
 	{
-		CBaseBot* bot = __bot;
-
 		if (m_hideTimer.HasStarted())
 		{
+			bot->GetCombatInterface()->DisableDodging(0.2f);
+
+			if (m_shouldCrouch)
+			{
+				const CNavArea* area = m_hidingspot->GetArea();
+
+				if (area && !area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_STAND)))
+				{
+					bot->GetControlInterface()->PressCrouchButton(0.3f);
+				}
+			}
+
 			if (m_aimTimer.IsElapsed() && !m_aimSpots.empty())
 			{
 				m_aimTimer.StartRandom(3.0f, 5.0f);
@@ -71,12 +96,29 @@ public:
 		return AITask<BT>::Continue();
 	}
 
-	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override
+	bool OnTaskPause(BT* bot, AITask<BT>* nextTask) override
 	{
-
+		return false; // destroy this task when paused
 	}
 
+	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override
+	{
+		m_hideTimer.Start(m_hidelength);
+		botsharedutils::AimSpotCollector collector{ static_cast<CBaseBot*>(bot) };
+		collector.Execute();
+		collector.ExtractAimSpots(m_aimSpots);
+		bot->GetInventoryInterface()->SelectBestWeapon();
+		return AITask<BT>::TryContinue();
+	}
 
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override { return ANSWER_NO; }
+	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	QueryAnswerType IsIgnoringMapObjectives(CBaseBot* me) override { return ANSWER_YES; }
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
+
+	const char* GetName() const override { return "Hide"; }
 private:
 	CT m_pathcost;
 	CMeshNavigator m_nav;
@@ -84,6 +126,7 @@ private:
 	std::vector<Vector> m_aimSpots;
 	CountdownTimer m_aimTimer;
 	float m_hidelength;
+	bool m_shouldCrouch;
 	CountdownTimer m_hideTimer;
 };
 

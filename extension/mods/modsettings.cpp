@@ -166,6 +166,10 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 		{
 			SetBreakAssist(UtilHelpers::StringToBoolean(value));
 		}
+		else if (strncasecmp(key, "movement_jump_assist", 20) == 0)
+		{
+			SetAllowJumpAssist(UtilHelpers::StringToBoolean(value));
+		}
 		else if (strncasecmp(key, "unstuck_cheats", 14) == 0)
 		{
 			SetAllowUnstuckCheats(UtilHelpers::StringToBoolean(value));

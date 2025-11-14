@@ -136,6 +136,10 @@ public:
 	void StartLookingAround() { m_disableLookingAroundTimer.Invalidate(); }
 	// Is the bot allowed to look around?
 	virtual const bool CanLookAround() const;
+	// Disables dodging for the given time in seconds
+	void DisableDodging(float time) { m_disableDodgeTimer.Start(time); }
+	// Enable dodging
+	void EnableDodging() { m_disableDodgeTimer.Invalidate(); }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -286,6 +290,8 @@ protected:
 	CountdownTimer& GetLookAroundTimer() { return m_lookAroundTimer; }
 	// Timer for disabling look round
 	CountdownTimer& GetDisableLookRoundTimer() { return m_disableLookingAroundTimer; }
+	// Timer for disabling dodge
+	CountdownTimer& GetDisableDodgeTimer() { return m_disableDodgeTimer; }
 	// Invoked to update the look around logic.
 	virtual void UpdateLookingAround();
 private:
@@ -302,6 +308,7 @@ private:
 	CountdownTimer m_reloadTimer;
 	CountdownTimer m_disableLookingAroundTimer;
 	CountdownTimer m_lookAroundTimer;
+	CountdownTimer m_disableDodgeTimer;
 	IntervalTimer m_attackTimer;
 	CombatData m_combatData;
 	bool m_shouldAim;

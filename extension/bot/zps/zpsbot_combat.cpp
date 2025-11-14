@@ -86,6 +86,11 @@ void CZPSBotCombat::DodgeEnemies(const CKnownEntity* threat, const CBotWeapon* a
 		return ICombat::DodgeEnemies(threat, activeWeapon);
 	}
 
+	if (!IsAbleToDodgeEnemies(threat, activeWeapon))
+	{
+		return;
+	}
+
 	constexpr float BACKUP_DIST = 72.0f;
 
 	Vector origin = bot->GetAbsOrigin();

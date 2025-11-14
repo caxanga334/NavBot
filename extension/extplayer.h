@@ -34,17 +34,14 @@ public:
 	IServerNetworkable* GetServerNetworkable() const { return m_edict->GetNetworkable(); }
 	ICollideable* GetCollideable() const { return m_edict->GetCollideable(); }
 	bool IsFakeClient() const { return m_playerinfo->IsFakeClient(); }
-
 	bool operator==(const CBaseExtPlayer& other) const;
-
 	/**
 	 * @brief Called post constructor while still inside the OnClientPutInServer callback.
 	 */
 	virtual void PostConstruct();
-
 	// Function called every server frame by the manager
 	virtual void PlayerThink();
-
+	int GetFlags() const;
 	/**
 	 * @brief Called when the nearest nav area to the player changes. Areas can be NULL
 	 * @param old Old nav area

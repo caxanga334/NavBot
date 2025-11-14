@@ -44,6 +44,7 @@ void ICombat::Reset()
 	m_calloutTimer.Invalidate();
 	m_reloadTimer.Invalidate();
 	m_disableLookingAroundTimer.Invalidate();
+	m_disableDodgeTimer.Invalidate();
 	m_lookAroundTimer.Start(LOOK_AROUND_TIMER_BASE_MAX);
 	m_combatData.Clear();
 }
@@ -427,6 +428,11 @@ bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon*
 	VPROF_BUDGET("ICombat::IsAbleToDodgeEnemies", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	if (!GetDisableDodgeTimer().IsElapsed())
+	{
+		return false;
+	}
+
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	// Low skill bot not allowed to dodge
@@ -463,7 +469,7 @@ bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon*
 	Vector pos = bot->WorldSpaceCenter();
 
 	// Don't dodge if the enemy player is not looking at my direction
-	if (!threat->GetPlayerInstance()->IsLookingTowards(pos, -0.5f))
+	if (!threat->GetPlayerInstance()->IsLookingTowards(pos, 0.5f))
 	{
 		return false;
 	}

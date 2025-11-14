@@ -106,7 +106,7 @@ public:
 		int m_teamNum;
 
 		void RemoveInvalidMembers(); // purges any members with a NULL player entity
-		void DoFullValidation(ISensor* sensor); // complex squad validation, destroyed if invalid
+		bool DoFullValidation(ISensor* sensor); // complex squad validation, destroyed if invalid, returns false if the squad was destroyed
 		void Destroy(); // marks the squad as destroyed, notifies all members about it
 		void AddMember(CBaseBot* bot);
 		void RemoveMember(CBaseBot* bot);
@@ -161,6 +161,12 @@ public:
 	bool IsSquadLedByAHuman() const { return IsSquadValid() && m_squaddata->IsHumanLedSquad(); }
 	// Notifies this bot squad was destroyed.
 	virtual void NotifySquadDestruction();
+	// Sets a timer to automatically destroy the squad after N seconds.
+	void SetAutoDestroy(float time) { m_autodestroyTimer.Start(time); }
+	// Disables the auto destroy timer.
+	void StopAutoDestroy() { m_autodestroyTimer.Invalidate(); }
+	// Is the squad set for automatic destruction
+	bool IsAutoDestroySquad() const { return m_autodestroyTimer.HasStarted(); }
 	/**
 	 * @brief Notifies this bot a member left the squad.
 	 * @param member Bot that is leaving the squad.
@@ -250,10 +256,13 @@ protected:
 	virtual SquadData* AllocateSquadData() const { return new SquadData; }
 	// gets a copy of the squad data smart pointer
 	std::shared_ptr<SquadData> GetSquadDataPtr() const { return m_squaddata; }
+	CountdownTimer& GetSquadShareInfoTimer() { return m_shareInfoTimer; }
+	CountdownTimer& GetSquadAutoDestructionTimer() { return m_autodestroyTimer; }
 private:
 	std::shared_ptr<SquadData> m_squaddata;
 	CountdownTimer m_fullValidationTimer;
 	CountdownTimer m_shareInfoTimer;
+	CountdownTimer m_autodestroyTimer;
 
 	static inline std::array<int, MAX_TEAMS> s_numsquads{};
 	static inline std::array<CountdownTimer, MAX_TEAMS> s_squadtimer{}; // generic per team shared timer for squad creation cooldowns

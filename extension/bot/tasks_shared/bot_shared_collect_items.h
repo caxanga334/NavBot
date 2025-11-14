@@ -273,15 +273,7 @@ public:
 
 		if (!item)
 		{
-			m_it = std::next(m_it);
-			m_pathfailures = 0;
-
-			if (m_it == m_items.end())
-			{
-				return AITask<BT>::Done("Done collecting items.");
-			}
-
-			return AITask<BT>::Continue();
+			return AdvanceToNext();
 		}
 
 		if (m_validatorFunc)
@@ -290,21 +282,16 @@ public:
 
 			if (!result)
 			{
-				m_it = std::next(m_it);
-				m_pathfailures = 0;
-
-				if (m_it == m_items.end())
-				{
-					return AITask<BT>::Done("Done collecting items.");
-				}
-
-				return AITask<BT>::Continue();
+				return AdvanceToNext();
 			}
 		}
 
+		Vector pos = UtilHelpers::getWorldSpaceCenter(item);
+		
+
 		if (m_nav.NeedsRepath())
 		{
-			Vector pos = UtilHelpers::getWorldSpaceCenter(item);
+			
 			m_nav.StartRepathTimer();
 
 			if (!m_nav.ComputePathToPosition(bot, pos, m_pathcost, 0.0f, true))
@@ -313,29 +300,36 @@ public:
 
 				if (++m_pathfailures >= 20)
 				{
-					if (bot->IsDebugging(BOTDEBUG_TASKS))
+					if (bot->IsDebugging(BOTDEBUG_TASKS) || bot->IsDebugging(BOTDEBUG_ERRORS))
 					{
 						bot->DebugPrintToConsole(255, 0, 0, "%s FAILED TO FIND A PATH TO COLLECT ITEM %s AT %g %g %g \n",
 							bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(item), pos.x, pos.y, pos.z);
 					}
 
-					m_it = std::next(m_it);
-					m_pathfailures = 0;
+					return AdvanceToNext();
+				}
+			}
+		}
 
-					if (m_it == m_items.end())
-					{
-						return AITask<BT>::Done("Done collecting items.");
-					}
+		Vector eyepos = bot->GetEyeOrigin();
 
-					return AITask<BT>::Continue();
+		if ((eyepos - pos).IsLengthLessThan(300.0f))
+		{
+			if (!m_timeoutTimer.HasStarted())
+			{
+				m_timeoutTimer.Start(15.0f);
+			}
+			else
+			{
+				if (m_timeoutTimer.IsElapsed())
+				{
+					return AdvanceToNext();
 				}
 			}
 		}
 
 		if (m_collectmethod == NBotSharedCollectItemTask::COLLECT_PRESS_USE)
 		{
-			Vector pos = UtilHelpers::getWorldSpaceCenter(item);
-			Vector eyepos = bot->GetEyeOrigin();
 			const float crouchheight = navgenparams->human_crouch_eye_height;
 
 			if ((eyepos - pos).IsLengthLessThan(CBaseExtPlayer::PLAYER_USE_RADIUS))
@@ -388,6 +382,21 @@ private:
 	std::function<bool(BT*, CBaseEntity*)> m_validatorFunc;
 	int m_pathfailures;
 	CountdownTimer m_letgoofbuttonstimer;
+	CountdownTimer m_timeoutTimer;
+
+	TaskResult<BT> AdvanceToNext()
+	{
+		m_it = std::next(m_it);
+		m_pathfailures = 0;
+		m_timeoutTimer.Invalidate();
+
+		if (m_it == m_items.end())
+		{
+			return AITask<BT>::Done("Reached item vector end iterator!");
+		}
+
+		return AITask<BT>::Continue();
+	}
 };
 
 

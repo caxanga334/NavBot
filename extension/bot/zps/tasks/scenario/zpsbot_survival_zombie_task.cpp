@@ -2,6 +2,7 @@
 #include <bot/zps/zpsbot.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
+#include <bot/tasks_shared/bot_shared_investigate_heard_entity.h>
 #include "zpsbot_survival_zombie_task.h"
 
 TaskResult<CZPSBot> CZPSBotSurvivalZombieTask::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)

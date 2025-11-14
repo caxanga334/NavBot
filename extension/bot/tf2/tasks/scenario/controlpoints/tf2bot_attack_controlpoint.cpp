@@ -65,7 +65,7 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskStart(CTF2Bot* bot, AIT
 		squadtimer.StartRandom();
 		bot->GetSquadInterface()->CreateSquad();
 		ISquad::InviteBotsToSquadFunc func{ static_cast<CBaseBot*>(bot), 4 };
-		extmanager->ForEachBot(bot);
+		extmanager->ForEachBot(func);
 
 		if (bot->GetSquadInterface()->GetSquad()->GetMembersCount() > 0U)
 		{

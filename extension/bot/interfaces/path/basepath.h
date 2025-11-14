@@ -195,7 +195,7 @@ public:
 
 		const Vector start = bot->GetAbsOrigin();
 		CNavArea* startArea = bot->GetLastKnownNavArea();
-		const bool isDebugging = bot->IsDebugging(BOTDEBUG_PATH);
+		const bool isDebugging = (bot->IsDebugging(BOTDEBUG_PATH) || bot->IsDebugging(BOTDEBUG_ERRORS));
 		m_destination = goal;
 
 		if (startArea == nullptr)

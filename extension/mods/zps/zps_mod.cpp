@@ -59,6 +59,11 @@ void CZombiePanicSourceMod::Update()
 	}
 
 	entprops->GameRules_GetPropBool("m_bRoundInProgressClient", m_roundactive);
+
+	if (m_roundactive)
+	{
+		UpdateFootstepEvents();
+	}
 }
 
 CBaseBot* CZombiePanicSourceMod::AllocateBot(edict_t* edict)
@@ -166,4 +171,46 @@ void CZombiePanicSourceMod::DetectGameMode()
 	{
 		m_gamemode = zps::ZPSGamemodes::GAMEMODE_SURVIVAL;
 	}
+}
+
+void CZombiePanicSourceMod::UpdateFootstepEvents()
+{
+	std::vector<CBaseExtPlayer*> noiseplayers;
+
+	auto func = [&noiseplayers](CBaseExtPlayer* client) {
+		if (client->IsAlive() && client->GetCurrentTeamIndex() >= static_cast<int>(zps::ZPSTeam::ZPS_TEAM_SURVIVORS))
+		{
+			int flags = client->GetFlags();
+
+			if ((flags & FL_DUCKING) != 0)
+			{
+				return;
+			}
+
+			Vector vel = client->GetAbsVelocity();
+			float speed = vel.Length();
+
+			if (speed >= 90.0f)
+			{
+				noiseplayers.push_back(client);
+			}
+		}
+	};
+
+	extmanager->ForEachClient(func);
+
+	if (noiseplayers.empty()) { return; }
+
+	auto eventfunc = [&noiseplayers](CBaseBot* bot) {
+		
+		for (CBaseExtPlayer* client : noiseplayers)
+		{
+			if (client->MyBotPointer() == bot) { continue; }
+
+			static_cast<IEventListener*>(bot)->OnSound(client->GetEntity(), client->GetAbsOrigin(), IEventListener::SoundType::SOUND_FOOTSTEP, 600.0f);
+		}
+
+	};
+	
+	extmanager->ForEachBot(eventfunc);
 }

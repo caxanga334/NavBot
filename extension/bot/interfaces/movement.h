@@ -227,6 +227,9 @@ public:
 	static constexpr auto MOVEWEIGHT_PRIORITY = 500000; // priority move toward calls
 	static constexpr auto MOVEWEIGHT_CRITICAL = 900000; // critical move toward calls
 
+	// Reset movement when killed to stop any movement action
+	void OnKilled(const CTakeDamageInfo& info) override { this->Reset(); }
+
 	// Reset the interface to it's initial state
 	void Reset() override;
 	// Called at intervals
@@ -573,6 +576,10 @@ protected:
 	 * @param goal Current goal segment.
 	 */
 	virtual void UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const CBasePathSegment* goal);
+	/**
+	 * @brief Invoked when the bot is jumping to assist the bot with the jump.
+	 */
+	virtual void DoJumpAssist();
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed
@@ -581,6 +588,7 @@ private:
 	float m_maxspeed; // the bot's maximum speed
 	float m_desiredspeed; // speed the bot wants to move at
 	bool m_isStopAndWait;
+	bool m_doJumpAssist;
 	MovementType m_movementType;
 	MovementRequestPriority m_lastMTRequestPriority; // Last movement type request priority
 	CountdownTimer m_MTRequestTimer; // movement type request timer

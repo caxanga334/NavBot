@@ -129,20 +129,20 @@ void ISquad::SquadData::RemoveInvalidMembers()
 	}), m_members.end());
 }
 
-void ISquad::SquadData::DoFullValidation(ISensor* sensor)
+bool ISquad::SquadData::DoFullValidation(ISensor* sensor)
 {
 	if (m_humanled)
 	{
 		if (!m_humanleader.IsValid())
 		{
 			Destroy();
-			return;
+			return false;
 		}
 
 		if (!sensor->IsFriendly(m_humanleader.GetPlayerEntity()))
 		{
 			Destroy();
-			return;
+			return false;
 		}
 	}
 
@@ -164,6 +164,8 @@ void ISquad::SquadData::DoFullValidation(ISensor* sensor)
 
 		return false;
 	}), m_members.end());
+
+	return true;
 }
 
 void ISquad::SquadData::Destroy()
@@ -244,6 +246,7 @@ void ISquad::Reset()
 {
 	m_fullValidationTimer.Invalidate();
 	m_shareInfoTimer.Invalidate();
+	m_autodestroyTimer.Invalidate();
 
 	if (m_squaddata)
 	{
@@ -281,6 +284,12 @@ void ISquad::Update()
 		{
 			if (IsSquadLeader())
 			{
+				if (IsAutoDestroySquad() && GetSquadAutoDestructionTimer().IsElapsed())
+				{
+					LeaveSquad();
+					return; // squad is invalid now, return to avoid crashes
+				}
+
 				m_squaddata->RemoveInvalidMembers();
 
 				if (m_squaddata->IsHumanLedSquad() && !m_squaddata->IsSquadLeaderAlive())
@@ -293,7 +302,10 @@ void ISquad::Update()
 				{
 					m_fullValidationTimer.Start(0.5f);
 					// Removes any members that doesn't match the bot's current team
-					m_squaddata->DoFullValidation(me->GetSensorInterface());
+					if (!m_squaddata->DoFullValidation(me->GetSensorInterface()))
+					{
+						return; // DoFullValidation returns false if the squad was destroyed, return to avoid crashes
+					}
 				}
 
 				// Squad leader, share known entity list with the rest of the squad
