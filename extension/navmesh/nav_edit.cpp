@@ -17,6 +17,7 @@
 #include <extension.h>
 #include <manager.h>
 #include <mods/basemod.h>
+#include <mods/modhelpers.h>
 #include <entities/baseentity.h>
 #include <extplayer.h>
 #include "nav_trace.h"
@@ -4583,10 +4584,6 @@ CON_COMMAND(sm_nav_print_map_name, "Prints the current map name used by the Navi
 	rootconsole->ConsolePrint("Map: %s", name.c_str());
 }
 
-void CNavMesh::BuildNearestUseableLadder()
-{
-}
-
 CON_COMMAND_F(sm_nav_build_useable_ladder, "Builds a new useable ladder.", FCVAR_CHEAT)
 {
 	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
@@ -5290,8 +5287,7 @@ CON_COMMAND_F(sm_nav_draw_blocked_status, "Draws the blocked/unblocked status fo
 	}
 	else if (strncasecmp(arg1, "MY", 2) == 0)
 	{
-		CBaseEntity* host = gamehelpers->ReferenceToEntity(1);
-		team = entityprops::GetEntityTeamNum(host);
+		team = extmanager->GetListenServerHost()->GetCurrentTeamIndex();
 	}
 	else
 	{

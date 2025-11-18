@@ -148,6 +148,7 @@ for sdk_name in Extension.sdks:
       os.path.join(builder.currentSourcePath, 'extension', 'navbot_headers_post_sdk.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'sdkports', 'debugoverlay_shared.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'bot', 'bot_debug_shared.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'bot', 'basebot_constants.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'extension.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'util', 'helpers.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'util', 'entprops.h'),

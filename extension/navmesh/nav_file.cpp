@@ -2115,6 +2115,7 @@ void CNavMesh::ImportPost()
 	}
 
 	m_isAnalyzed = false;
+	OnNavMeshImportedPreSave();
 	Save();
 	META_CONPRINT("Nav mesh imported, reload the map!\n");
 }

@@ -266,6 +266,22 @@ QueryAnswerType CTF2BotMedicHealTask::ShouldRetreat(CBaseBot* me)
 	return ANSWER_UNDEFINED;
 }
 
+TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnSquadEvent(CTF2Bot* bot, SquadEventType evtype)
+{
+	// Medic: update follow target to be my squad leader
+	if (evtype == IEventListener::SquadEventType::SQUAD_EVENT_JOINED)
+	{
+		const ISquad::SquadMember* leader = bot->GetSquadInterface()->GetSquad()->GetSquadLeader();
+
+		if (leader->IsValid())
+		{
+			m_followTarget = leader->GetPlayerEntity();
+		}
+	}
+
+	return TryContinue();
+}
+
 TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command)
 {
 	if (subject == nullptr || tf2lib::GetEntityTFTeam(subject) != bot->GetMyTFTeam())

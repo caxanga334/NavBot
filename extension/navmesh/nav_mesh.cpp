@@ -34,6 +34,7 @@
 #include "nav_place_loader.h"
 #include "nav_prereq.h"
 #include "nav_blocker.h"
+#include "nav_blocker_door.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
 #include <generichash.h>
@@ -453,6 +454,7 @@ void CNavMesh::OnMapStart()
 
 void CNavMesh::OnMapEnd()
 {
+	m_recomputeInternalDataTimer.Invalidate();
 }
 
 void CNavMesh::OnReloaded()
@@ -537,6 +539,8 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	m_blockedAreas.RemoveAll();
 	m_avoidanceObstacleAreas.RemoveAll();
 	m_transientAreas.clear();
+	m_recomputeDataReason = RecomputeInternalDataReason::RECOMPUTEREASON_RESET;
+	m_recomputeInternalDataTimer.Invalidate();
 
 	if ( !incremental )
 	{
@@ -627,7 +631,7 @@ void CNavMesh::Update( void )
 
 	if (IsGenerating())
 	{
-		UpdateGeneration( 0.03 );
+		UpdateGeneration( 0.03f );
 		return; // don't bother trying to draw stuff while we're generating
 	}
 
@@ -641,6 +645,12 @@ void CNavMesh::Update( void )
 	UpdateBlockedAreas();
 	UpdateAvoidanceObstacleAreas();
 	UpdateNavBlockers();
+
+	if (m_recomputeInternalDataTimer.HasStarted() && m_recomputeInternalDataTimer.IsElapsed())
+	{
+		ComputeInternalData();
+		m_recomputeInternalDataTimer.Invalidate();
+	}
 
 	if (sm_nav_edit.GetBool())
 	{
@@ -1042,6 +1052,7 @@ void CNavMesh::OnRoundRestart( void )
 	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
 	m_updateNavBlockersTimer.Start(NAV_BLOCKERS_UPDATE_INTERVAL);
 	RemoveAllEntitiesFromForcedSolidList(); // entities are deleted and re-created between rounds, clear the list
+	ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_RESET);
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
@@ -3844,6 +3855,23 @@ CNavLadder* CNavMesh::CreateLadder() const
 	return new CNavLadder;
 }
 
+void CNavMesh::ComputeDoorBlockers()
+{
+	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			CDoorNavBlocker* blocker = this->CreateDoorBlocker();
+			blocker->Init(entity);
+			blocker->Register();
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_door*", func);
+	UtilHelpers::ForEachEntityOfClassname("prop_door_rotating", func);
+}
+
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
 {
 	return std::make_shared<CWaypoint>();
@@ -3862,6 +3890,11 @@ std::shared_ptr<CNavElevator> CNavMesh::CreateElevator() const
 std::shared_ptr<CNavPrerequisite> CNavMesh::CreatePrerequisite() const
 {
 	return std::make_shared<CNavPrerequisite>();
+}
+
+CDoorNavBlocker* CNavMesh::CreateDoorBlocker() const
+{
+	return new CDoorNavBlocker;
 }
 
 void CNavMesh::RebuildWaypointMap()
@@ -4489,6 +4522,23 @@ void CNavMesh::UnregisterNavBlocker(INavBlocker* blocker)
 void CNavMesh::DestroyAllNavBlockers()
 {
 	m_navblockers.clear();
+}
+
+void CNavMesh::ComputeInternalData()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CNavMesh::ComputeInternalData", "NavBotExpensive");
+#endif // EXT_VPROF_ENABLED
+
+	m_navblockers.erase(std::remove_if(m_navblockers.begin(), m_navblockers.end(), [](const std::unique_ptr<INavBlocker>& blocker) {
+		return blocker->RemoveOnRecompute();
+	}), m_navblockers.end());
+
+	std::for_each(m_navblockers.begin(), m_navblockers.end(), [](std::unique_ptr<INavBlocker>& blocker) {
+		blocker->OnRecomputeInternalData();
+	});
+
+	ComputeDoorBlockers();
 }
 
 CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)

@@ -2185,3 +2185,48 @@ bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBas
 
 	return false;
 }
+
+bool UtilHelpers::io::IsConnectedTo(CBaseEntity* entity, const char* targetname, std::string* inputName)
+{
+	datamap_t* datamap = gamehelpers->GetDataMap(entity);
+
+	while (datamap != nullptr)
+	{
+		int nfields = datamap->dataNumFields;
+
+		for (int i = 0; i < nfields; i++)
+		{
+			typedescription_t* dataDesc = &datamap->dataDesc[i];
+
+			if (dataDesc->fieldType == FIELD_CUSTOM && (dataDesc->flags & FTYPEDESC_OUTPUT) != 0)
+			{
+				CBaseEntityOutput* pOutput = UtilHelpers::datamap::GetEntityOutputFromDataDesc(entity, dataDesc);
+
+				// Output name is stored in dataDesc->externalName
+
+				for (CEventAction* ev = pOutput->GetFirstAction(); ev != nullptr; ev = ev->m_pNext)
+				{
+					if (ev->m_iTarget != NULL_STRING)
+					{
+						const char* target = STRING(ev->m_iTarget);
+						
+						if (V_strcmp(targetname, target) == 0)
+						{
+							if (inputName && ev->m_iTargetInput != NULL_STRING)
+							{
+								const char* input = STRING(ev->m_iTargetInput);
+								inputName->assign(input);
+							}
+
+							return true;
+						}
+					}
+				}
+			}
+		}
+
+		datamap = datamap->baseMap;
+	}
+
+	return false;
+}

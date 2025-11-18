@@ -245,6 +245,11 @@ class ExtensionConfig(object):
         '-Wno-implicit-exception-spec-mismatch',
         '-Wno-inconsistent-missing-override',
       ]
+  
+      if cxx.version >= 'clang-20.0':
+        cxx.cflags += ['-Wno-nontrivial-memcall']
+        if cxx.version >= 'clang-21.0':
+          cxx.cflags += ['-Wno-uninitialized-const-pointer']
 
     # Work around errors from HL2 SDK
     if have_gcc:

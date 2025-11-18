@@ -2396,32 +2396,6 @@ const char* entityprops::GetEntityClassname(CBaseEntity* entity)
 	return STRING(s);
 }
 
-int entityprops::GetEntityTeamNum(CBaseEntity* entity)
-{
-	static int s_offset = -1;
-
-	if (s_offset < 0)
-	{
-		SourceMod::sm_datatable_info_t info;
-
-		datamap_t* datamap = gamehelpers->GetDataMap(entity);
-
-		if (datamap == nullptr)
-		{
-			return TEAM_UNASSIGNED;
-		}
-
-		if (!gamehelpers->FindDataMapInfo(datamap, "m_iTeamNum", &info))
-		{
-			return TEAM_UNASSIGNED;
-		}
-
-		s_offset = static_cast<int>(info.actual_offset);
-	}
-
-	return *(int*)((uint8_t*)entity + s_offset);
-}
-
 std::int8_t entityprops::GetEntityLifeState(CBaseEntity* entity)
 {
 	/*

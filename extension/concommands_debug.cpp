@@ -364,6 +364,114 @@ CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path t
 	}
 }
 
+CON_COMMAND(sm_navbot_debug_bot_dump_path_kv, "Dumps the current bot path as a KeyValues file")
+{
+	CBaseBot* bot = nullptr;
+
+	// start at 2 since 1 is the listen server host
+	for (int i = 2; i <= gpGlobals->maxClients; i++)
+	{
+		bot = extmanager->GetBotByIndex(i);
+
+		if (bot)
+		{
+			break; // stop at the first bot found
+		}
+	}
+
+	if (!bot)
+	{
+		return;
+	}
+
+	CMeshNavigator* nav = bot->GetActiveNavigator();
+
+	if (!nav)
+	{
+		Msg("Bot doesn't have an active navigator!\n");
+		return;
+	}
+
+	const CBasePathSegment* goal = nav->GetGoalSegment();
+
+	if (!goal)
+	{
+		Warning("NULL goal segment!\n");
+		return;
+	}
+
+	Msg("Path Dump for %s\n", bot->GetClientName());
+
+	KeyValues* root = new KeyValues("BotPath");
+
+	{
+		KeyValues* sub = new KeyValues("BotData");
+
+		sub->SetString("EyeAngles", UtilHelpers::textformat::FormatAngles(bot->GetEyeAngles()));
+		sub->SetString("EyePosition", UtilHelpers::textformat::FormatVector(bot->GetEyeOrigin()));
+		sub->SetString("Position", UtilHelpers::textformat::FormatVector(bot->GetAbsOrigin()));
+
+		root->AddSubKey(sub);
+	}
+
+	{
+		KeyValues* sub = new KeyValues("Info");
+
+		sub->SetFloat("TravelDistance", nav->GetTravelDistance());
+		sub->SetString("Destination", UtilHelpers::textformat::FormatVector(nav->GetPathDestination()));
+
+		root->AddSubKey(sub);
+	}
+
+	const CBasePathSegment* segment = nav->GetFirstSegment();
+	int n = 0;
+
+	while (segment != nullptr)
+	{
+		KeyValues* kvSeg = new KeyValues("PathSegment");
+
+		kvSeg->SetInt("Index", n);
+		kvSeg->SetBool("IsCurrentGoal", segment == goal);
+		kvSeg->SetInt("Area", static_cast<int>(segment->area->GetID()));
+		kvSeg->SetString("TraverseHow", NavTraverseTypeToString(segment->how));
+
+		if (segment->ladder)
+		{
+			kvSeg->SetInt("Ladder", static_cast<int>(segment->ladder->GetID()));
+		}
+		else
+		{
+			kvSeg->SetString("Ladder", "NULL");
+		}
+
+		kvSeg->SetString("Position", UtilHelpers::textformat::FormatVector(segment->goal));
+		kvSeg->SetString("Type", AIPath::SegmentTypeToString(segment->type));
+		kvSeg->SetFloat("Length", segment->length);
+		kvSeg->SetFloat("Distance", segment->distance);
+		kvSeg->SetFloat("Curvature", segment->curvature);
+		kvSeg->SetString("Forward", UtilHelpers::textformat::FormatVector(segment->forward));
+		kvSeg->SetString("PortalCenter", UtilHelpers::textformat::FormatVector(segment->portalcenter));
+		kvSeg->SetFloat("PortalHalfWidth", segment->portalhalfwidth);
+
+		root->AddSubKey(kvSeg);
+		n++;
+		segment = nav->GetNextSegment(segment);
+	}
+
+	bool saved = UtilHelpers::sdkcompat::SaveKeyValuesToFile(root, "botpathdump.txt", "MOD");
+	root->deleteThis();
+
+	if (!saved)
+	{
+		META_CONPRINT("Failed to save keyvalues files!\n");
+		return;
+	}
+
+	char path[PLATFORM_MAX_PATH];
+	smutils->BuildPath(Path_Game, path, sizeof(path), "botpathdump.txt");
+	META_CONPRINTF("File saved to: %s \n", path);
+}
+
 CON_COMMAND(sm_navbot_debug_vectors, "[LISTEN SERVER] Debug player vectors")
 {
 	auto edict = gamehelpers->EdictOfIndex(1);
@@ -1825,7 +1933,7 @@ CON_COMMAND(sm_navbot_debug_closest_point, "Gets the closest point of the given 
 
 }
 
-CON_COMMAND(sm_navbot_debug_fireinput, "Gets the closest point of the given entity AABB.")
+CON_COMMAND(sm_navbot_debug_fireinput, "Fires an entity input.")
 {
 	DECLARE_COMMAND_ARGS;
 
@@ -1893,6 +2001,36 @@ CON_COMMAND(sm_navbot_debug_fireinput, "Gets the closest point of the given enti
 		UtilHelpers::io::FireInput(pEntity, input, pActivator, pCaller, variant, outputID);
 	}
 
+}
+
+CON_COMMAND_F(sm_navbot_debug_ent_targetname, "Debugs entities targetnames", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_ent_targetname <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	char targetname[128];
+	std::memset(targetname, 0, sizeof(targetname));
+	size_t length = 0;
+	entprops->GetEntPropString(pEntity, Prop_Data, "m_iName", targetname, sizeof(targetname), length);
+
+	META_CONPRINTF("Entity %s target name is %s <%zu>\n", UtilHelpers::textformat::FormatEntity(pEntity), targetname, length);
+
+	if (targetname[0] == '\0')
+	{
+		META_CONPRINTF("targetname[0] == 0\n");
+	}
 }
 
 #endif // EXT_DEBUG

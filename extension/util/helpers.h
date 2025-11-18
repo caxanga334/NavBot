@@ -947,6 +947,16 @@ namespace UtilHelpers::io
 	 * @return True if the input was fired, false on failure.
 	 */
 	bool FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID = 0);
+	/**
+	 * @brief Checks if the given entity has any Output targetting the given target name.
+	 * 
+	 * Notes: Stops on the first match, entity may have multiple outputs targetting the same entity.
+	 * @param entity Entity to search.
+	 * @param targetname Name of the target entity.
+	 * @param inputName Optional string to store the input targetting the entity.
+	 * @return True if the entity targets the given targetname, false otherwise.
+	 */
+	bool IsConnectedTo(CBaseEntity* entity, const char* targetname, std::string* inputName = nullptr);
 }
 
 #endif // !UTIL_HELPERS_H_

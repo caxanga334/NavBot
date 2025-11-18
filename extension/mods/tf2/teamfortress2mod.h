@@ -30,6 +30,7 @@ public:
 		engineer_help_ally_max_range = 1500.0f;
 		engineer_trust_waypoints = true;
 		engineer_nav_build_check_vis = false;
+		setup_time_allow_mess_around = true;
 		engineer_nav_build_range = 2048.0f;
 		vsh_saxton_hale_team = TeamFortress2::TFTeam::TFTeam_Blue;
 	}
@@ -46,6 +47,7 @@ public:
 	void SetEngineerHelpAllyMaxRange(float value) { engineer_help_ally_max_range = value; }
 	void SetEngineerTrustWaypoints(bool value) { engineer_trust_waypoints = value; }
 	void SetRandomNavAreaBuildCheckForVisiblity(bool value) { engineer_nav_build_check_vis = value; }
+	void SetIsAllowedToMessAroundDuringSetupTime(bool value) { setup_time_allow_mess_around = value; }
 	void SetEngineerRandomNavAreaBuildRange(float value) { engineer_nav_build_range = value; }
 	void SetVSHSaxtonHaleTeam(TeamFortress2::TFTeam team) { vsh_saxton_hale_team = team; }
 
@@ -61,6 +63,7 @@ public:
 	float GetEngineerHelpAllyMaxRange() const { return engineer_help_ally_max_range; }
 	bool ShouldEngineersTrustWaypoints() const { return engineer_trust_waypoints; }
 	bool ShouldRandomNavAreaBuildCheckForVisiblity() const { return engineer_nav_build_check_vis; }
+	bool IsAllowedToMessAroundDuringSetupTime() const { return setup_time_allow_mess_around; }
 	float GetEngineerRandomNavAreaBuildRange() const { return engineer_nav_build_range; }
 	TeamFortress2::TFTeam GetVSHSaxtonHaleTeam() const { return vsh_saxton_hale_team; }
 
@@ -80,6 +83,7 @@ private:
 	float engineer_help_ally_max_range;
 	bool engineer_trust_waypoints;
 	bool engineer_nav_build_check_vis; // If true, random areas to build must be visible from the map's objective
+	bool setup_time_allow_mess_around;
 	float engineer_nav_build_range; // maximum search distance for random nav areas to build on
 	TeamFortress2::TFTeam vsh_saxton_hale_team; // The team the hale plays in on VSH, used to detect which bot is the saxton hale
 };

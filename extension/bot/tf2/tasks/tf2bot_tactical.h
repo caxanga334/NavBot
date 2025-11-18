@@ -19,6 +19,7 @@ public:
 
 	const char* GetName() const override { return "Tactical"; }
 
+	TaskEventResponseResult<CTF2Bot> OnNavAreaChanged(CTF2Bot* bot, CNavArea* oldArea, CNavArea* newArea) override;
 	TaskEventResponseResult<CTF2Bot> OnInjured(CTF2Bot* bot, const CTakeDamageInfo& info) override;
 	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 	TaskEventResponseResult<CTF2Bot> OnObjectSapped(CTF2Bot* bot, CBaseEntity* owner, CBaseEntity* saboteur) override;

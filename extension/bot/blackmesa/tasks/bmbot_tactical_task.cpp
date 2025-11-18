@@ -10,6 +10,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/interfaces/behavior_utils.h>
 #include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
 
 AITask<CBlackMesaBot>* CBlackMesaBotTacticalTask::InitialNextTask(CBlackMesaBot* bot)
@@ -84,29 +85,7 @@ QueryAnswerType CBlackMesaBotTacticalTask::ShouldSeekAndDestroy(CBaseBot* baseBo
 
 TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnNavAreaChanged(CBlackMesaBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	if (newArea && newArea->HasPrerequisite())
-	{
-		const CNavPrerequisite* prereq = newArea->GetPrerequisite();
-
-		if (prereq->IsEnabled() && prereq != bot->GetLastUsedPrerequisite())
-		{
-			CNavPrerequisite::PrerequisiteTask task = prereq->GetTask();
-
-			switch (task)
-			{
-			case CNavPrerequisite::TASK_WAIT:
-				return TryPauseFor(new CBotSharedPrereqWaitTask<CBlackMesaBot>(prereq->GetFloatData()), PRIORITY_HIGH, "Prerequisite tells me to wait!");
-			case CNavPrerequisite::TASK_MOVE_TO_POS:
-				return TryPauseFor(new CBotSharedPrereqMoveToPositionTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to move to a position!");
-			case CNavPrerequisite::TASK_DESTROY_ENT:
-				return TryPauseFor(new CBotSharedPrereqDestroyEntityTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to destroy an entity!");
-			case CNavPrerequisite::TASK_USE_ENT:
-				return TryPauseFor(new CBotSharedPrereqUseEntityTask<CBlackMesaBot, CBlackMesaBotPathCost>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to use an entity!");
-			default:
-				break;
-			}
-		}
-	}
+	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CBlackMesaBot, CBlackMesaBotPathCost);
 
 	return TryContinue();
 }

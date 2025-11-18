@@ -12,6 +12,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/chasenavigator.h>
+#include <bot/interfaces/behavior_utils.h>
 #include <bot/tf2/tasks/general/tf2bot_remove_sapper_from_object_task.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/medic/tf2bot_medic_main_task.h>
@@ -335,7 +336,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnVoiceCommand(CTF2Bot* bo
 	}
 
 	constexpr float LISTEN_TO_TEAMMATE_MAX_RANGE = 1200.0f; // Limit range to listen to teammate voice commands
-	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(subject));
+	TeamFortress2::TFTeam theirteam = tf2lib::GetEntityTFTeam(subject);
 	TeamFortress2::VoiceCommandsID vcmd = static_cast<TeamFortress2::VoiceCommandsID>(command);
 
 	if (!IsPaused() && theirteam == bot->GetMyTFTeam() && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES
@@ -452,8 +453,11 @@ TaskEventResponseResult<CTF2Bot> CTF2BotScenarioTask::OnSquadEvent(CTF2Bot* bot,
 {
 	if (evtype == SquadEventType::SQUAD_EVENT_JOINED)
 	{
-		AITask<CTF2Bot>* task = static_cast<AITask<CTF2Bot>*>(new CTF2BotScenarioTask);
-		return TrySwitchTo(new CBotSharedSquadMemberMonitorTask<CTF2Bot, CTF2BotPathCost>(task), PRIORITY_CRITICAL, "I have joined a squad, starting squad member behavior!");
+		using CTF2BotSquadTask = CBotSharedSquadMemberMonitorTask<CTF2Bot, CTF2BotPathCost>;
+		return behaviorutils::ImplementSquadJoinEvent<CTF2Bot, CTF2BotPathCost, CTF2BotSquadTask, CTF2BotScenarioTask>(this, bot);
+
+		// AITask<CTF2Bot>* task = static_cast<AITask<CTF2Bot>*>(new CTF2BotScenarioTask);
+		// return TrySwitchTo(new CBotSharedSquadMemberMonitorTask<CTF2Bot, CTF2BotPathCost>(task), PRIORITY_CRITICAL, "I have joined a squad, starting squad member behavior!");
 	}
 
 	return TryContinue(PRIORITY_LOW);

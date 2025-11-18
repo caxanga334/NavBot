@@ -1,18 +1,8 @@
 #include NAVBOT_PCH_FILE
-#include <vector>
-#include <stdexcept>
-#include <filesystem>
-#include <string>
-#include <fstream>
-#include <memory>
-#include <algorithm>
-#include <cstring>
 
 #include "extension.h"
-
 #include <bot/basebot.h>
 #include <bot/bot_debug_shared.h>
-
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
 #include <extplayer.h>
@@ -114,6 +104,9 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_preremoverandombot);
 	forwards->ReleaseForward(m_botquotaisclientignored);
 #endif // !NO_SOURCEPAWN_API
+
+	// assign NULL to the smart ptr to detele the existing instance
+	IModHelpers::SetInstance(nullptr);
 }
 
 void CExtManager::OnAllLoaded()
@@ -384,6 +377,8 @@ void CExtManager::AllocateMod()
 #endif // SOURCE_ENGINE == SE_TF2
 
 	m_mod->PostCreation();
+
+	IModHelpers::SetInstance(m_mod->AllocModHelpers());
 }
 
 CBaseMod* CExtManager::GetMod()
@@ -633,6 +628,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	// Tell the bot manager to create a new bot. Now that we are using SourceHooks, we need to catch the bot on 'OnClientPutInServer'.
 	m_iscreatingbot = true;
 	edict_t* edict = nullptr;
+	const bool isfirstbot = m_bots.empty();
 
 	switch (CExtManager::s_botcreatemethod)
 	{
@@ -683,6 +679,12 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	if (newbotedict != nullptr)
 	{
 		*newbotedict = edict;
+	}
+
+	// Allow the nav mesh to react to bots being added for the first time
+	if (isfirstbot)
+	{
+		TheNavMesh->OnFirstBotAdded();
 	}
 
 #ifndef NO_SOURCEPAWN_API

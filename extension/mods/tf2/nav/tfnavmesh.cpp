@@ -11,6 +11,7 @@
 #include "tfnavarea.h"
 #include "tfnavmesh.h"
 #include "tfnav_waypoint.h"
+#include "tfnav_door_blocker.h"
 
 extern NavAreaVector TheNavAreas;
 
@@ -146,6 +147,13 @@ CNavArea* CTFNavMesh::CreateArea(void) const
 unsigned int CTFNavMesh::GetGenerationTraceMask(void) const
 {
 	return MASK_PLAYERSOLID_BRUSHONLY;
+}
+
+void CTFNavMesh::OnNavMeshImportedPreSave()
+{
+	CNavMesh::OnNavMeshImportedPreSave();
+
+	AutoAddSpawnroomAttribute();
 }
 
 void CTFNavMesh::Update()
@@ -368,6 +376,45 @@ CTFNavArea* CTFNavMesh::GetRandomSpawnRoomExitArea(int team) const
 	return librandom::utils::GetRandomElementFromVector<CTFNavArea*>(spawnexitareas);
 }
 
+void CTFNavMesh::AutoAddSpawnroomAttribute() const
+{
+	int areas = 0;
+
+	auto functor = [&areas](CNavArea* baseArea) {
+		CTFNavArea* area = static_cast<CTFNavArea*>(baseArea);
+		Vector center = area->GetCenter();
+		center.z += 24.0f;
+		bool inside = false;
+
+		auto functor2 = [&inside, &center](int index, edict_t* edict, CBaseEntity* entity) {
+			if (edict != nullptr && edict->GetCollideable() != nullptr)
+			{
+				if (trace::pointwithin(edict->GetCollideable(), center))
+				{
+					inside = true;
+					return false; // exit search
+				}
+			}
+
+			return true; // keep searching for entities
+			};
+
+		UtilHelpers::ForEachEntityOfClassname("func_respawnroom", functor2);
+
+		if (inside)
+		{
+			areas++;
+			area->SetTFPathAttributes(CTFNavArea::TFNAV_PATH_DYNAMIC_SPAWNROOM);
+		}
+
+		return true;
+	};
+
+	CNavMesh::ForAllAreas(functor);
+
+	Msg("Added spawn room attribute to %i nav areas!\n", areas);
+}
+
 void CTFNavMesh::PostCustomAnalysis(void)
 {
 	CTeamFortress2Mod* mod = CTeamFortress2Mod::GetTF2Mod();
@@ -396,6 +443,11 @@ void CTFNavMesh::PostCustomAnalysis(void)
 std::shared_ptr<CWaypoint> CTFNavMesh::CreateWaypoint() const
 {
 	return std::make_shared<CTFWaypoint>();
+}
+
+CDoorNavBlocker* CTFNavMesh::CreateDoorBlocker() const
+{
+	return new CTFDoorNavBlocker;
 }
 
 void CTFNavMesh::UpdateDebugDraw()

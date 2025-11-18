@@ -103,7 +103,7 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity) const
 	CTF2Bot* me = GetBot<CTF2Bot>();
 	const CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
 
-	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
+	TeamFortress2::TFTeam theirteam = tf2lib::GetEntityTFTeam(entity);
 
 	if (theirteam == me->GetMyTFTeam())
 	{
@@ -134,7 +134,7 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity) const
 	CTF2Bot* me = GetBot<CTF2Bot>();
 	const CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();
 	auto spymonitor = me->GetSpyMonitorInterface();
-	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(entity));
+	TeamFortress2::TFTeam theirteam = tf2lib::GetEntityTFTeam(entity);
 	
 	if (theirteam == me->GetMyTFTeam())
 	{
@@ -185,11 +185,6 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity) const
 	}
 
 	return true;
-}
-
-int CTF2BotSensor::GetKnownEntityTeamIndex(CKnownEntity* known)
-{
-	return entityprops::GetEntityTeamNum(known->GetEntity());
 }
 
 void CTF2BotSensor::OnTruceChanged(const bool enabled)

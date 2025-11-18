@@ -7,10 +7,15 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/bot_shared_convars.h>
+#include <bot/interfaces/behavior_utils.h>
 #include "tf2bot_tactical.h"
 #include "tf2bot_find_ammo_task.h"
 #include "tf2bot_find_health_task.h"
 #include "tf2bot_use_teleporter.h"
+#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
+#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
+#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
+#include <bot/tasks_shared/bot_shared_prereq_wait.h>
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include "tf2bot_scenario_task.h"
@@ -136,6 +141,13 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 	return ANSWER_UNDEFINED;
 }
 
+TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnNavAreaChanged(CTF2Bot* bot, CNavArea* oldArea, CNavArea* newArea)
+{
+	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CTF2Bot, CTF2BotPathCost);
+
+	return TryContinue();
+}
+
 TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnInjured(CTF2Bot* bot, const CTakeDamageInfo& info)
 {
 	if (bot->GetDifficultyProfile()->GetGameAwareness() >= 15)
@@ -161,7 +173,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnVoiceCommand(CTF2Bot* bo
 		return TryContinue(PRIORITY_DONT_CARE); // this one doesn't know about VCs yet
 	}
 
-	TeamFortress2::TFTeam theirteam = static_cast<TeamFortress2::TFTeam>(entityprops::GetEntityTeamNum(subject));
+	TeamFortress2::TFTeam theirteam = tf2lib::GetEntityTFTeam(subject);
 	TeamFortress2::VoiceCommandsID vcmd = static_cast<TeamFortress2::VoiceCommandsID>(command);
 
 	if (skill >= 75 && theirteam != bot->GetMyTFTeam())

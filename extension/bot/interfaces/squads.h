@@ -174,6 +174,11 @@ public:
 	 */
 	virtual void NotifyMemberLeftSquad(CBaseBot* member, const bool is_deleting = false);
 	/**
+	 * @brief Invoke to determine if this bot should use squad behavior.
+	 * @return Return true to use squad behavior, false to keep the existing behavior.
+	 */
+	virtual bool UsesSquadBehavior() const { return true; }
+	/**
 	 * @brief Searches for the squad interface currently led by the given player.
 	 * @param humanLeader Player pointer.
 	 * @return Pointer to a squad interface led by the given human player. NULL if none.

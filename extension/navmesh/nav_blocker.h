@@ -6,7 +6,7 @@
 class CNavArea;
 
 /**
- * @brief Interface for dynamin run-time nav area blockers
+ * @brief Interface for dynamic run-time nav area blockers
  */
 class INavBlocker
 {
@@ -47,6 +47,10 @@ public:
 	virtual void OnRoundRestart() = 0;
 	// Called to get the blocked/unblocked state
 	virtual bool IsBlocked(int teamID) = 0;
+	// Called when the nav mesh is recomputing internal data
+	virtual void OnRecomputeInternalData() = 0;
+	// Return true if this blocker should be deleted when the nav mesh internal data is recomputed
+	virtual bool RemoveOnRecompute() = 0;
 };
 
 /**
@@ -78,6 +82,8 @@ public:
 	void Update() override {}
 	void OnRoundRestart() override {}
 	bool IsBlocked(int teamID) { return true; }
+	void OnRecomputeInternalData() override {}
+	bool RemoveOnRecompute() override { return false; }
 
 protected:
 	std::vector<AreaType*> m_areas;

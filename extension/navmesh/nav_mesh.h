@@ -49,6 +49,7 @@ class NavPlaceDatabaseLoader;
 class CRCBot2Waypoint;
 class CRCBot2WaypointLoader;
 class INavBlocker;
+class CDoorNavBlocker;
 
 #if SOURCE_ENGINE == SE_EPISODEONE
 class CCommand;
@@ -457,8 +458,11 @@ public:
 	virtual void OnEditDestroyNotify( CNavArea *deadArea );				// invoked when given area has just been deleted from the mesh in edit mode
 	virtual void OnEditDestroyNotify( CNavLadder *deadLadder );			// invoked when given ladder has just been deleted from the mesh in edit mode
 	virtual void OnNodeAdded( CNavNode *node ) {};		
+	virtual void OnNavMeshImportedPreSave() {}							// invoked when a nav mesh is imported from the game but before it's saved
 	virtual void OnPreRCBot2WaypointImport(const CRCBot2WaypointLoader& loader) {};		// invoked before importing rcbot2 waypoints
 	virtual void OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader) {};		// invoked for each imported RCBot2 waypoint
+	// Invoked when the first bot is added to the game.
+	virtual void OnFirstBotAdded() { ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_RESET); }
 
 	// Obstructions
 	void RegisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction );
@@ -999,6 +1003,25 @@ public:
 	virtual void UnregisterNavBlocker(INavBlocker* blocker);
 	void DestroyAllNavBlockers();
 
+	enum RecomputeInternalDataReason
+	{
+		RECOMPUTEREASON_RESET, // Complete reset of internal data
+		RECOMPUTEREASON_OBJECTIVE_UPDATED, // Map objective updated (IE: point was captured, etc)
+	};
+
+	static constexpr float DEFAULT_RECOMPUTE_INTERNAL_DATA_DELAY = 5.0f;
+
+	void ScheduleRecomputationOfInternalData(RecomputeInternalDataReason reason, const float delay = DEFAULT_RECOMPUTE_INTERNAL_DATA_DELAY)
+	{
+		if (!IsLoaded()) { return; }
+
+		m_recomputeInternalDataTimer.Start(delay);
+		m_recomputeDataReason = reason;
+	}
+
+	bool IsInternalDataRecomputationScheduled() const { return m_recomputeInternalDataTimer.HasStarted(); }
+	RecomputeInternalDataReason GetRecomputeInternalDataReason() const { return m_recomputeDataReason; }
+
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -1006,22 +1029,18 @@ protected:
 	bool FindGroundForNode( Vector *pos, Vector *normal ) const;
 	void GenerateNodes( const Extent &bounds );
 	void RemoveNodes( void );
-
 	const NavAreaVector& GetSelectedAreaSet() const { return m_selectedSet; }
 	void SetMarkedCorner(NavCornerType corner) { m_markedCorner = corner; }
-
 	/**
 	 * @brief Is this surface climbable?
 	 * @param tr Trace result that hit the surface
 	 * @return true if climbable, false otherwise.
 	 */
 	virtual bool IsClimbableSurface(const trace_t& tr);
-
 	/**
-	 * @brief Builds a new useable ladder from the nearest useable ladder entity to the listen server host.
+	 * @brief Invoked to compute the nav mesh internal data.
 	 */
-	virtual void BuildNearestUseableLadder();
-
+	virtual void ComputeInternalData();
 private:
 	friend class CNavArea;
 	friend class CNavNode;
@@ -1258,9 +1277,13 @@ private:
 	std::vector<CHandle<CBaseEntity>> m_forcedSolidEntities; // vector of entities overriden to be solid in walkable traces
 	std::vector<std::unique_ptr<INavBlocker>> m_navblockers;
 	CountdownTimer m_updateNavBlockersTimer;
+	CountdownTimer m_recomputeInternalDataTimer;
+	RecomputeInternalDataReason m_recomputeDataReason;
+
+	void ComputeDoorBlockers();
 
 protected:
-	static constexpr float NAV_BLOCKERS_UPDATE_INTERVAL = 4.0f;
+	static constexpr float NAV_BLOCKERS_UPDATE_INTERVAL = 2.0f;
 
 	// Creates a new waypoint instance
 	virtual std::shared_ptr<CWaypoint> CreateWaypoint() const;
@@ -1270,6 +1293,8 @@ protected:
 	virtual std::shared_ptr<CNavElevator> CreateElevator() const;
 	// Creates a new nav prerequisite instance
 	virtual std::shared_ptr<CNavPrerequisite> CreatePrerequisite() const;
+	// Allocates a new door blocker instance, override to use mod specific door blocker implementation
+	virtual CDoorNavBlocker* CreateDoorBlocker() const;
 
 	// Rebuilds the waypoint ID map
 	void RebuildWaypointMap();

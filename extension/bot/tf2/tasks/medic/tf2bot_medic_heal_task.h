@@ -19,6 +19,7 @@ public:
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 
+	TaskEventResponseResult<CTF2Bot> OnSquadEvent(CTF2Bot* bot, SquadEventType evtype) override;
 	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 
 	const char* GetName() const override { return "MedicHeal"; }

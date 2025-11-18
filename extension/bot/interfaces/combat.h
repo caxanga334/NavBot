@@ -17,6 +17,7 @@ public:
 	static constexpr float LOOK_AROUND_BASE_DURATION = 1.5f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MIN = 3.0f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MAX = 7.0f;
+	static constexpr int LOOK_AROUND_MIN_SKILL = 25;
 
 	struct CombatData
 	{

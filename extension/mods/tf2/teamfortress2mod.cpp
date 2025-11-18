@@ -142,6 +142,11 @@ SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCState
 			SetRandomNavAreaBuildCheckForVisiblity(UtilHelpers::StringToBoolean(value));
 			return SourceMod::SMCResult_Continue;
 		}
+		if (strncasecmp(key, "setup_time_allow_mess_around", 28) == 0)
+		{
+			SetIsAllowedToMessAroundDuringSetupTime(UtilHelpers::StringToBoolean(value));
+			return SourceMod::SMCResult_Continue;
+		}
 		if (strncasecmp(key, "engineer_trust_waypoints", 24) == 0)
 		{
 			SetEngineerTrustWaypoints(UtilHelpers::StringToBoolean(value));

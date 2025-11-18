@@ -13,6 +13,7 @@
 #include <IPlayerHelpers.h>
 #include "gamemods_shared.h"
 #include "modsettings.h"
+#include "modhelpers.h"
 
 class CNavMesh;
 class CBaseBot;
@@ -140,6 +141,11 @@ public:
 	 * @return True if the given entity is a brakable entity, false if not.
 	 */
 	virtual bool IsEntityBreakable(CBaseEntity* entity) const;
+	/**
+	 * @brief Called to allocate the mod specific implementation of the Mod Helpers interface.
+	 * @return Pointer to a mod helper interface.
+	 */
+	virtual IModHelpers* AllocModHelpers() const;
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;

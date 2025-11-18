@@ -222,7 +222,7 @@ void ICombat::DoPrimaryAttack()
 const bool ICombat::CanLookAround() const
 {
 	// makes low difficulty bots easy to approach from behind
-	if (GetBot<CBaseBot>()->GetDifficultyProfile()->GetGameAwareness() <= 25)
+	if (GetBot<CBaseBot>()->GetDifficultyProfile()->GetGameAwareness() <= LOOK_AROUND_MIN_SKILL)
 	{
 		return false;
 	}

@@ -397,8 +397,6 @@ namespace entityprops
 
 	// Gets an entity classname, offset is cached localy
 	const char* GetEntityClassname(CBaseEntity* entity);
-	// Gets an entity team number (m_iTeamNum) via datamaps
-	int GetEntityTeamNum(CBaseEntity* entity);
 	// Gets an entity life state (m_lifeState) via datamaps
 	std::int8_t GetEntityLifeState(CBaseEntity* entity);
 	// Gets an entity health (m_iHealth) via datamaps

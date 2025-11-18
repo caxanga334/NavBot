@@ -256,6 +256,11 @@ bool CBaseMod::IsEntityBreakable(CBaseEntity* entity) const
 	return false;
 }
 
+IModHelpers* CBaseMod::AllocModHelpers() const
+{
+	return new IModHelpers;
+}
+
 void CBaseMod::InternalFindPlayerResourceEntity()
 {
 	SourceMod::IGameConfig* gamedata = nullptr;

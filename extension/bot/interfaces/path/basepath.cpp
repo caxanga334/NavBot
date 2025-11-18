@@ -1118,7 +1118,7 @@ void CPath::PostProcessPath()
 		toVec = to->forward.AsVector2D();
 		toVec.NormalizeInPlace();
 
-		to->curvature = 0.5f * (1.0f * fromVec.Dot(toVec));
+		to->curvature = 0.5f * (1.0f - fromVec.Dot(toVec));
 
 		Vector2D right(-fromVec.y, fromVec.x);
 

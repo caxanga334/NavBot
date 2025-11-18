@@ -235,6 +235,29 @@ class CNavVolume;
 class CNavElevator;
 class CNavPrerequisite;
 
+inline const char* NavTraverseTypeToString(NavTraverseType type)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"GO_NORTH"sv,
+		"GO_EAST"sv,
+		"GO_SOUTH"sv,
+		"GO_WEST"sv,
+		"GO_LADDER_UP"sv,
+		"GO_LADDER_DOWN"sv,
+		"GO_JUMP"sv,
+		"GO_ELEVATOR_UP"sv,
+		"GO_ELEVATOR_DOWN"sv,
+		"GO_OFF_MESH_CONNECTION"sv,
+		"NUM_TRAVERSE_TYPES"sv,
+	};
+
+	static_assert(names.size() == static_cast<std::size_t>(NavTraverseType::NUM_TRAVERSE_TYPES) + 1U, "Nav Traverse Type name array size and enum count mismatch!");
+
+	return names[static_cast<int>(type)].data();
+}
+
 //--------------------------------------------------------------------------------------------------------------
 inline NavDirType OppositeDirection( NavDirType dir )
 {

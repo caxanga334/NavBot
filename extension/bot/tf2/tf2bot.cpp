@@ -7,6 +7,7 @@
 #include <util/entprops.h>
 #include <util/librandom.h>
 #include <mods/tf2/teamfortress2mod.h>
+#include <mods/modhelpers.h>
 #include <mods/tf2/tf2lib.h>
 #include <mods/tf2/nav/tfnavarea.h>
 #include <mods/tf2/nav/tfnav_waypoint.h>
@@ -33,6 +34,7 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_tf2behavior = std::make_unique<CTF2BotBehavior>(this);
 	m_tf2inventory = std::make_unique<CTF2BotInventory>(this);
 	m_tf2spymonitor = std::make_unique<CTF2BotSpyMonitor>(this);
+	m_tf2squad = std::make_unique<CTF2BotSquad>(this);
 	m_tf2combat = std::make_unique<CTF2BotCombat>(this);
 	m_upgrademan.SetMe(this);
 	m_cloakMeter = nullptr;
@@ -768,7 +770,7 @@ bool CTF2TraceFilterIgnoreFriendlyCombatItems::ShouldHitEntity(IHandleEntity* pH
 	if (pEntity)
 	{
 		const char* classname = gamehelpers->GetEntityClassname(pEntity);
-		int team = entityprops::GetEntityTeamNum(pEntity);
+		int team = modhelpers->GetEntityTeamNumber(pEntity);
 
 		if (team == m_ignoreTeam)
 		{

@@ -16,7 +16,6 @@ public:
 	bool IsIgnored(CBaseEntity* entity) const override;
 	bool IsFriendly(CBaseEntity* entity) const override;
 	bool IsEnemy(CBaseEntity* entity) const override;
-	int GetKnownEntityTeamIndex(CKnownEntity* known) override;
 	void OnTruceChanged(const bool enabled) override;
 
 private:

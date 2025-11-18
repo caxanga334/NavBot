@@ -35,18 +35,6 @@ void GamedataConstants::OnMapStart(SourceMod::IGameConfig* gamedata, const bool 
 
 			if (worldspawn)
 			{
-				/*
-					int g_m_pStudioHdr = 0;
-
-					public void OnMapStart() {
-						if (g_sizeof_m_pStudioHdr == 0) {
-							int prop = CreateEntityByName("prop_dynamic");
-							int sizeof_COutputEvent = FindDataMapInfo(prop, "m_OnUser2") - FindDataMapInfo(prop, "m_OnUser1");
-							g_m_pStudioHdr = FindDataMapInfo(prop, "m_OnIgnite") + sizeof_COutputEvent;
-						}
-					}
-				*/
-
 				datamap_t* dmap = gamehelpers->GetDataMap(worldspawn);
 
 				SourceMod::sm_datatable_info_t onuser1;

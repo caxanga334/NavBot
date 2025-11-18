@@ -1,12 +1,13 @@
 #include NAVBOT_PCH_FILE
 #include <extension.h>
+#include <mods/modhelpers.h>
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include "dodslib.h"
 
 dayofdefeatsource::DoDTeam dodslib::GetDoDTeam(CBaseEntity* entity)
 {
-	return static_cast<dayofdefeatsource::DoDTeam>(entityprops::GetEntityTeamNum(entity));
+	return static_cast<dayofdefeatsource::DoDTeam>(modhelpers->GetEntityTeamNumber(entity));
 }
 
 dayofdefeatsource::DoDClassType dodslib::GetPlayerClassType(CBaseEntity* player)

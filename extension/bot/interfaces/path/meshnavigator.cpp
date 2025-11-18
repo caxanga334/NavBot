@@ -539,8 +539,8 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 					break; // movement interface disallows skipping the next segment area
 				}
 
-				bool IsPotentiallyTraversable = mover->IsPotentiallyTraversable(origin, next->goal, nullptr, false);
-				if (IsPotentiallyTraversable && mover->HasPotentialGap(origin, next->goal, nullptr) == false)
+				if (mover->IsPotentiallyTraversable(origin, next->goal, nullptr, false) && 
+					mover->HasPotentialGap(origin, next->goal, nullptr) == false)
 				{
 					// only skip a segment if the bot is able to move directly to it from it's current position
 					// and there isn't any holes on the ground

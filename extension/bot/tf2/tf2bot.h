@@ -11,12 +11,13 @@
 #include <bot/bot_pathcosts.h>
 
 #include "tf2bot_behavior.h"
+#include "tf2bot_combat.h"
 #include "tf2bot_controller.h"
+#include "tf2bot_inventory.h"
 #include "tf2bot_movement.h"
 #include "tf2bot_sensor.h"
-#include "tf2bot_inventory.h"
-#include "tf2bot_combat.h"
 #include "tf2bot_spymonitor.h"
+#include "tf2bot_squad.h"
 #include "tf2bot_upgrades.h"
 
 struct edict_t;
@@ -45,6 +46,7 @@ public:
 	CTF2BotBehavior* GetBehaviorInterface() const override { return m_tf2behavior.get(); }
 	CTF2BotSpyMonitor* GetSpyMonitorInterface() const { return m_tf2spymonitor.get(); }
 	CTF2BotInventory* GetInventoryInterface() const { return m_tf2inventory.get(); }
+	CTF2BotSquad* GetSquadInterface() const { return m_tf2squad.get(); }
 	CTF2BotCombat* GetCombatInterface() const { return m_tf2combat.get(); }
 	int GetMaxHealth() const override;
 
@@ -221,6 +223,7 @@ private:
 	std::unique_ptr<CTF2BotBehavior> m_tf2behavior;
 	std::unique_ptr<CTF2BotSpyMonitor> m_tf2spymonitor;
 	std::unique_ptr<CTF2BotInventory> m_tf2inventory;
+	std::unique_ptr<CTF2BotSquad> m_tf2squad;
 	std::unique_ptr<CTF2BotCombat> m_tf2combat;
 	CountdownTimer m_classswitchtimer; // class switch cooldown so we don't spam things
 	IntervalTimer m_voicecmdtimer;

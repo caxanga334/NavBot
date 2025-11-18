@@ -29,6 +29,11 @@ TaskResult<CTF2Bot> CTF2BotSetupTimeTask::OnTaskUpdate(CTF2Bot* bot)
 		return PauseFor(new CTF2BotTauntingTask, "Taunting!");
 	}
 
+	if (!CTeamFortress2Mod::GetTF2Mod()->GetTF2ModSettings()->IsAllowedToMessAroundDuringSetupTime())
+	{
+		return Continue();
+	}
+
 	if (m_nextActionTimer.IsElapsed())
 	{
 		m_action = static_cast<SetupActions>(randomgen->GetRandomInt<int>(0, static_cast<int>(MAX_ACTIONS) - 1));

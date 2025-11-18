@@ -4,6 +4,7 @@
 #include <util/helpers.h>
 #include <util/sdkcalls.h>
 #include <util/entprops.h>
+#include <mods/modhelpers.h>
 #include <ISDKTools.h>
 #include <server_class.h>
 #include <sm_argbuffer.h>
@@ -463,7 +464,7 @@ namespace trace
 			{
 				if (m_team >= 0)
 				{
-					if (entityprops::GetEntityTeamNum(pEntity) == m_team)
+					if (modhelpers->GetEntityTeamNumber(pEntity) == m_team)
 					{
 						// don't hit players from the passed team index
 						return false;

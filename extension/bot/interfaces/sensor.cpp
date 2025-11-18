@@ -4,6 +4,7 @@
 #include <extension.h>
 #include <manager.h>
 #include <mods/basemod.h>
+#include <mods/modhelpers.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
@@ -620,13 +621,16 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 		if (!IsAwareOf(known))
 			continue;
 
-		if (IsIgnored(known->GetEntity()))
+		// NULL check is done in IsObsolete
+		CBaseEntity* entity = known->GetEntity();
+
+		if (IsIgnored(entity))
 			continue;
 
-		if (!IsEnemy(known->GetEntity()))
+		if (!IsEnemy(entity))
 			continue;
 
-		if (teamindex >= 0 && GetKnownEntityTeamIndex(known) != teamindex)
+		if (teamindex >= 0 && modhelpers->GetEntityTeamNumber(entity) != teamindex)
 			continue;
 
 		if (onlyvisible && !known->WasRecentlyVisible())
@@ -643,18 +647,6 @@ int ISensor::GetKnownCount(const int teamindex, const bool onlyvisible, const fl
 	return quantity;
 }
 
-int ISensor::GetKnownEntityTeamIndex(CKnownEntity* known)
-{
-	int* teamNum = entprops->GetPointerToEntData<int>(known->GetEntity(), Prop_Data, "m_iTeamNum");
-
-	if (teamNum != nullptr)
-	{
-		return *teamNum;
-	}
-
-	return 0;
-}
-
 const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 {
 	const CKnownEntity* nearest = nullptr;
@@ -665,19 +657,22 @@ const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 	{
 		CKnownEntity* known = &obj;
 
-		if (!IsAwareOf(known))
-			continue;
-
 		if (known->IsObsolete())
 			continue;
 
-		if (IsIgnored(known->GetEntity()))
+		if (!IsAwareOf(known))
 			continue;
 
-		if (!IsEnemy(known->GetEntity()))
+		// NULL check is done in IsObsolete
+		CBaseEntity* entity = known->GetEntity();
+
+		if (IsIgnored(entity))
 			continue;
 
-		if (teamindex >= 0 && GetKnownEntityTeamIndex(known) != teamindex)
+		if (!IsEnemy(entity))
+			continue;
+
+		if (teamindex >= 0 && modhelpers->GetEntityTeamNumber(entity) != teamindex)
 			continue;
 
 		float distance = (origin - known->GetLastKnownPosition()).LengthSqr();
@@ -711,13 +706,16 @@ const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
 		if (!known->WasEverHeard())
 			continue;
 
-		if (IsIgnored(known->GetEntity()))
+		// NULL check is done in IsObsolete
+		CBaseEntity* entity = known->GetEntity();
+
+		if (IsIgnored(entity))
 			continue;
 
-		if (!IsEnemy(known->GetEntity()))
+		if (!IsEnemy(entity))
 			continue;
 
-		if (teamIndex >= TEAM_UNASSIGNED && GetKnownEntityTeamIndex(known) != teamIndex)
+		if (teamIndex >= TEAM_UNASSIGNED && modhelpers->GetEntityTeamNumber(entity) != teamIndex)
 			continue;
 
 		float distance = (origin - known->GetLastKnownPosition()).LengthSqr();
@@ -889,7 +887,7 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 
 		CBaseEntity* entity = gamehelpers->ReferenceToEntity(i);
 
-		if (!entity || entityprops::GetEntityTeamNum(entity) <= TEAM_SPECTATOR || entityprops::GetEntityLifeState(entity) != LIFE_ALIVE)
+		if (!entity || modhelpers->GetEntityTeamNumber(entity) <= TEAM_SPECTATOR || modhelpers->IsDead(entity))
 		{
 			continue;
 		}
