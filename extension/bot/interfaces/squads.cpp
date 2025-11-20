@@ -168,23 +168,18 @@ bool ISquad::SquadData::DoFullValidation(ISensor* sensor)
 	return true;
 }
 
-void ISquad::SquadData::Destroy()
+void ISquad::SquadData::Destroy(const bool no_events)
 {
 	for (SquadMember& member : m_members)
 	{
 		if (member.IsValid() && member.IsBot())
 		{
-			member.GetSquadInterface()->NotifySquadDestruction();
+			member.GetSquadInterface()->NotifySquadDestruction(no_events);
 		}
 	}
 
 	m_destroyed = true;
 	m_members.clear();
-
-	if (m_botleader.IsValid())
-	{
-		m_botleader.GetSquadInterface()->NotifySquadDestruction();
-	}
 }
 
 void ISquad::SquadData::AddMember(CBaseBot* bot)
@@ -228,7 +223,7 @@ ISquad::~ISquad()
 	{
 		if (IsSquadLeader())
 		{
-			m_squaddata->Destroy();
+			m_squaddata->Destroy(true);
 		}
 		else
 		{
@@ -240,6 +235,8 @@ ISquad::~ISquad()
 			}
 		}
 	}
+
+	m_squaddata = nullptr;
 }
 
 void ISquad::Reset()
@@ -279,60 +276,59 @@ void ISquad::Update()
 		if (!m_squaddata->IsValid())
 		{
 			NotifySquadDestruction();
+			return;
 		}
-		else
+
+		if (IsSquadLeader())
 		{
-			if (IsSquadLeader())
+			if (IsAutoDestroySquad() && GetSquadAutoDestructionTimer().IsElapsed())
 			{
-				if (IsAutoDestroySquad() && GetSquadAutoDestructionTimer().IsElapsed())
+				LeaveSquad();
+				return; // squad is invalid now, return to avoid crashes
+			}
+
+			m_squaddata->RemoveInvalidMembers();
+
+			if (m_squaddata->IsHumanLedSquad() && !m_squaddata->IsSquadLeaderAlive())
+			{
+				LeaveSquad();
+				return; // squad is invalid now, return to avoid crashes
+			}
+
+			if (m_fullValidationTimer.IsElapsed())
+			{
+				m_fullValidationTimer.Start(0.5f);
+				// Removes any members that doesn't match the bot's current team
+				if (!m_squaddata->DoFullValidation(me->GetSensorInterface()))
 				{
-					LeaveSquad();
-					return; // squad is invalid now, return to avoid crashes
+					return; // DoFullValidation returns false if the squad was destroyed, return to avoid crashes
 				}
+			}
 
-				m_squaddata->RemoveInvalidMembers();
+			// Squad leader, share known entity list with the rest of the squad
+			if (m_shareInfoTimer.IsElapsed())
+			{
+				m_shareInfoTimer.StartRandom(3.0f, 9.0f);
 
-				if (m_squaddata->IsHumanLedSquad() && !m_squaddata->IsSquadLeaderAlive())
+				ISensor* mysensor = me->GetSensorInterface();
+
+				for (const ISquad::SquadMember& member : m_squaddata->GetMembers())
 				{
-					LeaveSquad();
-					return; // squad is invalid now, return to avoid crashes
-				}
-
-				if (m_fullValidationTimer.IsElapsed())
-				{
-					m_fullValidationTimer.Start(0.5f);
-					// Removes any members that doesn't match the bot's current team
-					if (!m_squaddata->DoFullValidation(me->GetSensorInterface()))
+					if (member.IsValid() && member.IsBot())
 					{
-						return; // DoFullValidation returns false if the squad was destroyed, return to avoid crashes
-					}
-				}
-
-				// Squad leader, share known entity list with the rest of the squad
-				if (m_shareInfoTimer.IsElapsed())
-				{
-					m_shareInfoTimer.StartRandom(3.0f, 9.0f);
-
-					ISensor* mysensor = me->GetSensorInterface();
-
-					for (const ISquad::SquadMember& member : m_squaddata->GetMembers())
-					{
-						if (member.IsValid() && member.IsBot())
-						{
-							member.GetBot()->GetSensorInterface()->ShareKnownEntityList(mysensor);
-						}
+						member.GetBot()->GetSensorInterface()->ShareKnownEntityList(mysensor);
 					}
 				}
 			}
-			else
+		}
+		else
+		{
+			// Squad member, share the known entity list with my squad leader
+			if (m_shareInfoTimer.IsElapsed())
 			{
-				// Squad member, share the known entity list with my squad leader
-				if (m_shareInfoTimer.IsElapsed())
-				{
-					m_shareInfoTimer.StartRandom(3.0f, 9.0f);
+				m_shareInfoTimer.StartRandom(3.0f, 9.0f);
 
-					m_squaddata->GetBotLeader()->GetBot()->GetSensorInterface()->ShareKnownEntityList(me->GetSensorInterface());
-				}
+				m_squaddata->GetBotLeader()->GetBot()->GetSensorInterface()->ShareKnownEntityList(me->GetSensorInterface());
 			}
 		}
 	}
@@ -433,12 +429,17 @@ void ISquad::LeaveSquad()
 	}
 }
 
-void ISquad::NotifySquadDestruction()
+void ISquad::NotifySquadDestruction(const bool no_events)
 {
 	if (m_squaddata)
 	{
 		CBaseBot* me = GetBot<CBaseBot>();
-		me->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_DISBANDED);
+		
+		if (!no_events)
+		{
+			me->OnSquadEvent(IEventListener::SquadEventType::SQUAD_EVENT_DISBANDED);
+		}
+
 		m_squaddata = nullptr;
 
 		if (me->IsDebugging(BOTDEBUG_SQUADS))

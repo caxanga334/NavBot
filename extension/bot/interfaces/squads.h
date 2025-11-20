@@ -107,7 +107,7 @@ public:
 
 		void RemoveInvalidMembers(); // purges any members with a NULL player entity
 		bool DoFullValidation(ISensor* sensor); // complex squad validation, destroyed if invalid, returns false if the squad was destroyed
-		void Destroy(); // marks the squad as destroyed, notifies all members about it
+		void Destroy(const bool no_events = false); // marks the squad as destroyed, notifies all members about it
 		void AddMember(CBaseBot* bot);
 		void RemoveMember(CBaseBot* bot);
 		virtual void Init(); // called when a new squaddata instance is allocated
@@ -159,8 +159,11 @@ public:
 	bool IsSquadLeader() const { return IsSquadValid() && m_squaddata->GetBotLeader()->GetSquadInterface() == this; }
 	// Returns true if the bot current squad is led by a human
 	bool IsSquadLedByAHuman() const { return IsSquadValid() && m_squaddata->IsHumanLedSquad(); }
-	// Notifies this bot squad was destroyed.
-	virtual void NotifySquadDestruction();
+	/**
+	 * @brief Notifies this bot squad was destroyed.
+	 * @param no_events If true, don't send events.
+	 */
+	virtual void NotifySquadDestruction(const bool no_events = false);
 	// Sets a timer to automatically destroy the squad after N seconds.
 	void SetAutoDestroy(float time) { m_autodestroyTimer.Start(time); }
 	// Disables the auto destroy timer.
