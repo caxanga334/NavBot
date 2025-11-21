@@ -62,14 +62,17 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskStart(CTF2Bot* bot, AIT
 
 	if (squadtimer.IsElapsed() && !bot->GetSquadInterface()->IsInASquad())
 	{
-		squadtimer.StartRandom();
-		bot->GetSquadInterface()->CreateSquad();
-		ISquad::InviteBotsToSquadFunc func{ static_cast<CBaseBot*>(bot), 4 };
-		extmanager->ForEachBot(func);
-
-		if (bot->GetSquadInterface()->GetSquad()->GetMembersCount() > 0U)
+		if (bot->GetSquadInterface()->CreateSquad())
 		{
-			return PauseFor(new CBotSharedWaitForSquadMembersTask<CTF2Bot>(15.0f, 512.0f), "Waiting for squad members to arrive!");
+			squadtimer.StartRandom();
+
+			ISquad::InviteBotsToSquadFunc func{ static_cast<CBaseBot*>(bot), 4 };
+			extmanager->ForEachBot(func);
+
+			if (bot->GetSquadInterface()->GetSquad()->GetMembersCount() > 0U)
+			{
+				return PauseFor(new CBotSharedWaitForSquadMembersTask<CTF2Bot>(15.0f, 512.0f), "Waiting for squad members to arrive!");
+			}
 		}
 	}
 

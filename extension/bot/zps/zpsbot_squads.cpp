@@ -49,8 +49,12 @@ CZPSBotSquad* CZPSBotSquad::GetFirstCarrierSquadInterface(CZPSBot* bot)
 					return nullptr;
 				}
 
-				squad->CreateSquad(carrier->GetEntity());
-				return static_cast<CZPSBotSquad*>(squad);
+				if (squad->CreateSquad(carrier->GetEntity()))
+				{
+					return static_cast<CZPSBotSquad*>(squad);
+				}
+
+				return nullptr;
 			}
 
 			return static_cast<CZPSBotSquad*>(squad);

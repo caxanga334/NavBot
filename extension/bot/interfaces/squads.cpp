@@ -345,11 +345,11 @@ bool ISquad::OnInvitedToJoinSquad(CBaseBot* leader, const SquadData* squaddata) 
 	return me->GetSensorInterface()->IsFriendly(leaderEnt);
 }
 
-void ISquad::CreateSquad(CBaseEntity* humanLeader)
+bool ISquad::CreateSquad(CBaseEntity* humanLeader)
 {
-	if (!CanLeadSquads()) { return; }
+	if (!CanLeadSquads()) { return false; }
 
-	if (IsInASquad()) { return; }
+	if (IsInASquad()) { return false; }
 
 	m_squaddata.reset(AllocateSquadData());
 	CBaseBot* me = GetBot<CBaseBot>();
@@ -370,6 +370,8 @@ void ISquad::CreateSquad(CBaseEntity* humanLeader)
 	{
 		me->DebugPrintToConsole(136, 231, 136, "%s SQUAD CREATED!\n", me->GetDebugIdentifier());
 	}
+
+	return true;
 }
 
 void ISquad::AddToSquad(CBaseBot* member)

@@ -11,10 +11,11 @@ TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskStart(CZPSBot* bot, AITask<C
     {
         if (!bot->GetSquadInterface()->IsInASquad())
         {
-            bot->GetSquadInterface()->CreateSquad(nullptr);
-
-            ISquad::InviteBotsToSquadFunc func{ bot, 3 };
-            extmanager->ForEachBot(func);
+            if (bot->GetSquadInterface()->CreateSquad(nullptr))
+            {
+                ISquad::InviteBotsToSquadFunc func{ bot, 3 };
+                extmanager->ForEachBot(func);
+            }
         }
     }
 

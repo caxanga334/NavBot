@@ -18,9 +18,11 @@ TaskResult<CZPSBot> CZPSBotSurvivalZombieTask::OnTaskStart(CZPSBot* bot, AITask<
 
         if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
         {
-            squad->CreateSquad(nullptr);
-            ISquad::InviteBotsToSquadFunc func{ bot, 3 };
-            extmanager->ForEachBot(func);
+            if (squad->CreateSquad(nullptr))
+            {
+                ISquad::InviteBotsToSquadFunc func{ bot, 3 };
+                extmanager->ForEachBot(func);
+            }
         }
     }
     else

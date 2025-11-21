@@ -133,8 +133,9 @@ public:
 	/**
 	 * @brief Creates a new squad.
 	 * @param humanLeader If this is a human led squad, the CBaseEntity pointer of the human's player entity should be passed. NULL for a bot led squad.
+	 * @return True if a squad was created, false otherwise.
 	 */
-	virtual void CreateSquad(CBaseEntity* humanLeader = nullptr);
+	virtual bool CreateSquad(CBaseEntity* humanLeader = nullptr);
 	/**
 	 * @brief Adds a bot to the current squad. Does nothing unless the bot is a squad leader.
 	 * @param member Bot to add to the squad.

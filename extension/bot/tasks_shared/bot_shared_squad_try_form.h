@@ -51,8 +51,6 @@ inline TaskResult<BT> CBotSharedTryFormingSquadTask<BT>::OnTaskStart(BT* bot, AI
 		return AITask<BT>::Done("Failed to create squad!");
 	}
 
-
-
 	return AITask<BT>::Continue();
 }
 
