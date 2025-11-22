@@ -1,5 +1,4 @@
 #include NAVBOT_PCH_FILE
-
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <bot/bot_shared_utils.h>
@@ -2031,6 +2030,37 @@ CON_COMMAND_F(sm_navbot_debug_ent_targetname, "Debugs entities targetnames", FCV
 	{
 		META_CONPRINTF("targetname[0] == 0\n");
 	}
+}
+
+CON_COMMAND(sm_nav_debug_snap_to_line, "")
+{
+	CBaseExtPlayer* player = extmanager->GetListenServerHost();
+	Vector pos = player->GetAbsOrigin();
+
+	CNavArea* area = TheNavMesh->GetMarkedArea();
+
+	if (!area)
+	{
+		return;
+	}
+
+	const Vector& center = area->GetCenter();
+	Vector to = UtilHelpers::math::BuildDirectionVector(pos, center);
+	QAngle angles;
+	VectorAngles(to, angles);
+	const float yaw = angles.y;
+	const bool AlongX = (yaw < 45.0f || yaw > 315.0f) || (yaw > 135.0f && yaw < 225.0f);
+
+	if (!AlongX)
+	{
+		pos.x = center.x;
+	}
+	else
+	{
+		pos.y = center.y;
+	}
+
+	NDebugOverlay::Cross3D(pos, 10.0f, 255, 0, 0, true, 10.0f);
 }
 
 #endif // EXT_DEBUG

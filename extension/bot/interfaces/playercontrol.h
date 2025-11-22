@@ -98,6 +98,8 @@ public:
 	const float GetSteadyTime() const { return m_steadyTimer.HasStarted() ? m_steadyTimer.GetElapsedTime() : 0.0f; }
 	// Returns the current aim target entity. NULL if not currently aiming at an entity.
 	CBaseEntity* GetAimAtTarget() const { return m_lookentity.Get(); }
+	// Returns the current aim priority.
+	LookPriority GetAimAtPriority() const { return m_priority; }
 	/**
 	 * @brief Stops an AimAt command if the current command priority is equal or lower than the given priority.
 	 * @param priority Stop Aim command priority.

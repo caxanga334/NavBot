@@ -1059,6 +1059,12 @@ void CPath::ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& fro
 #endif // EXT_VPROF_ENABLED
 
 	from->ComputeClosestPointInPortal(to, dir, frompos, crosspoint);
+
+	// small areas: centralize the navigation
+	if (to->IsSmallerThan(bot->GetMovementInterface()->GetHullWidth() + 2.0f))
+	{
+		CentralizeAreaCrossing(bot, frompos, to, crosspoint);
+	}
 	
 	// Don't make adjustments to areas with precise attribute, trust the mesh
 	if (!from->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)) && !to->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)))
@@ -1139,6 +1145,25 @@ void CPath::PostProcessPath()
 	seglast->curvature = 0.0f;
 
 	m_ageTimer.Start();
+}
+
+void CPath::CentralizeAreaCrossing(CBaseBot* bot, const Vector& frompos, CNavArea* to, Vector* crosspoint)
+{
+	const Vector& center = to->GetCenter();
+	Vector dir = UtilHelpers::math::BuildDirectionVector(frompos, center);
+	QAngle angles;
+	VectorAngles(dir, angles);
+	const float yaw = angles.y;
+	const bool AlongX = (yaw < 45.0f || yaw > 315.0f) || (yaw > 135.0f && yaw < 225.0f);
+
+	if (!AlongX)
+	{
+		crosspoint->x = center.x;
+	}
+	else
+	{
+		crosspoint->y = center.y;
+	}
 }
 
 void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::SegmentType type, const float duration)

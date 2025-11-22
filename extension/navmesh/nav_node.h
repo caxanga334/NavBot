@@ -18,12 +18,6 @@
 // nav_show_node_id allows you to show the IDs of nodes that didn't get used to create areas.
 #define DEBUG_NAV_NODES 1
 
-void Text(const Vector &origin, const char *text, bool bViewCheck,
-		float duration);
-
-void Cross3D(const Vector &position, float size, int r, int g,
-		int b, bool noDepthTest, float flDuration);
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Navigation Nodes.

@@ -147,83 +147,6 @@ ConVar sm_nav_test_node_crouch_dir( "sm_nav_test_node_crouch_dir", "4", FCVAR_CH
 ConVar sm_nav_show_node_grid( "sm_nav_show_node_grid", "0", FCVAR_CHEAT );
 #endif // DEBUG_NAV_NODES
 
-
-void Cross3D(const Vector &position, const Vector &mins, const Vector &maxs,
-		int r, int g, int b, bool noDepthTest, float fDuration) {
-	Vector start = mins + position;
-	Vector end   = maxs + position;
-	debugoverlay->AddLineOverlay(start,end, r, g, b, noDepthTest,fDuration);
-
-	start.x += (maxs.x - mins.x);
-	end.x	-= (maxs.x - mins.x);
-	debugoverlay->AddLineOverlay(start,end, r, g, b, noDepthTest,fDuration);
-
-	start.y += (maxs.y - mins.y);
-	end.y	-= (maxs.y - mins.y);
-	debugoverlay->AddLineOverlay(start,end, r, g, b, noDepthTest,fDuration);
-
-	start.x -= (maxs.x - mins.x);
-	end.x	+= (maxs.x - mins.x);
-	debugoverlay->AddLineOverlay(start,end, r, g, b, noDepthTest,fDuration);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Draw a colored 3D cross of the given size at the given position
-//-----------------------------------------------------------------------------
-void Cross3D(const Vector &position, float size, int r, int g,
-		int b, bool noDepthTest, float flDuration) {
-	debugoverlay->AddLineOverlay(position + Vector(size, 0, 0),
-			position - Vector(size, 0, 0), r, g, b, noDepthTest, flDuration);
-	debugoverlay->AddLineOverlay(position + Vector(0, size, 0),
-			position - Vector(0, size, 0), r, g, b, noDepthTest, flDuration);
-	debugoverlay->AddLineOverlay(position + Vector(0, 0, size),
-			position - Vector(0, 0, size), r, g, b, noDepthTest, flDuration);
-}
-
-//-----------------------------------------------------------------------------
-// Purpose: Draw debug text at a position
-//-----------------------------------------------------------------------------
-void Text(const Vector &origin, const char *text, bool bViewCheck,
-		float duration) {
-	edict_t *ent = UTIL_GetListenServerEnt();
-	extern IPlayerInfoManager* playerinfomanager;
-	IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
-	if (!player)
-		return;
-	const unsigned int MAX_OVERLAY_DIST_SQR	= 90000000;
-
-	// Clip text that is far away
-	if ((player->GetAbsOrigin() - origin).LengthSqr() > MAX_OVERLAY_DIST_SQR)
-		return;
-	extern IServerGameClients* gameclients;
-	// Clip text that is behind the client
-	Vector clientForward;
-	gameclients->ClientEarPosition(ent, &clientForward);
-	AngleVectors( player->GetAbsAngles(), &clientForward, nullptr, nullptr );
-
-
-	Vector toText = origin - player->GetAbsOrigin();
-	float dotPr = DotProduct(clientForward, toText);
-
-	if (dotPr < 0)
-		return;
-
-	// Clip text that is obscured
-	if (bViewCheck) {
-		trace_t tr;
-
-		trace::line(player->GetAbsOrigin(), origin, MASK_OPAQUE, nullptr, COLLISION_GROUP_NONE, tr);
-
-		if ((tr.endpos - origin).Length() > 10)
-			return;
-	}
-
-	if (debugoverlay)
-	{
-		debugoverlay->AddTextOverlay(origin, duration, "%s", text);
-	}
-}
-
 //--------------------------------------------------------------------------------------------------------------
 void CNavNode::Draw( void )
 {
@@ -254,13 +177,13 @@ void CNavNode::Draw( void )
 		g = 255;
 	}
 
-	Cross3D( m_pos, 2, r, g, b, true, 0.1f );
+	NDebugOverlay::Cross3D( m_pos, 2, r, g, b, true, 0.1f );
 
 	if ( (!m_isCovered && sm_nav_show_node_id.GetBool()) || (m_isCovered && sm_nav_show_node_id.GetInt() < 0) )
 	{
 		char text[16];
 		Q_snprintf( text, sizeof( text ), "%d", m_id );
-		Text( m_pos, text, true, 0.1f );
+		NDebugOverlay::Text( m_pos, text, true, 0.1f );
 	}
 
 	if ( (unsigned int)(sm_nav_test_node.GetInt()) == m_id )

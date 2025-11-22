@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <cstring>
 #include <extension.h>
+#include <amtl/am-float.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_entityoutput.h>
 #include <bot/interfaces/playercontrol.h>
@@ -35,6 +36,7 @@ CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover
 	m_me = bot;
 	m_mover = mover;
 	m_now = now;
+	m_avoidEnt = nullptr;
 }
 
 bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
@@ -52,6 +54,11 @@ bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int 
 
 	if (CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
 	{
+		if (HasAvoidEntity() && IsAvoidEntity(pEntity))
+		{
+			return true;
+		}
+
 		return !(m_mover->IsEntityTraversable(index, pEdict, pEntity, m_now));
 	}
 
@@ -417,6 +424,10 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 	{
 		return;
 	}
+
+	EXT_ASSERT(!(ke::IsInfinite(pos.x) || ke::IsNaN(pos.x)), "MoveTowards Invalid Pos X!");
+	EXT_ASSERT(!(ke::IsInfinite(pos.y) || ke::IsNaN(pos.y)), "MoveTowards Invalid Pos Y!");
+	EXT_ASSERT(!(ke::IsInfinite(pos.z) || ke::IsNaN(pos.z)), "MoveTowards Invalid Pos Z!");
 
 	m_lastMoveWeight = weight;
 
@@ -825,7 +836,7 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 	}
 }
 
-bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
+bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle)
 {
 	CBaseBot* me = GetBot<CBaseBot>();
 
@@ -1087,12 +1098,12 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 		return true; // assume players are walkable since they will either move out of the way or get killed
 	}
 
-	if (UtilHelpers::FClassnameIs(entity, "func_door*") == true)
+	if (UtilHelpers::FClassnameIs(entity, "func_door*"))
 	{
 		return true;
 	}
 
-	if (UtilHelpers::FClassnameIs(entity, "prop_door*") == true)
+	if (UtilHelpers::FClassnameIs(entity, "prop_door*"))
 	{
 		int doorstate = 0;
 		if (!entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate))
@@ -1106,7 +1117,7 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 		}
 	}
 
-	if (UtilHelpers::FClassnameIs(entity, "func_brush") == true)
+	if (UtilHelpers::FClassnameIs(entity, "func_brush"))
 	{
 		entities::HFuncBrush brush(gamehelpers->EdictOfIndex(index));
 		auto solidity = brush.GetSolidity();

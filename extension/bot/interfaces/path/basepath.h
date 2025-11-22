@@ -457,6 +457,7 @@ protected:
 	virtual bool ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, std::shared_ptr<CBasePathSegment>& from, std::shared_ptr<CBasePathSegment>& to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	virtual void ComputeAreaCrossing(CBaseBot* bot, CNavArea* from, const Vector& frompos, CNavArea* to, NavDirType dir, Vector* crosspoint);
 	virtual void PostProcessPath();
+	void CentralizeAreaCrossing(CBaseBot* bot, const Vector& frompos, CNavArea* to, Vector* crosspoint);
 	
 	inline std::vector<std::shared_ptr<CBasePathSegment>>& GetAllSegments() { return m_segments; }
 	bool BuildTrivialPath(const Vector& start, const Vector& goal);

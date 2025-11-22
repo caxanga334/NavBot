@@ -406,17 +406,27 @@ bool CNavMesh::FindActiveNavArea( void )
 			}
 		}
 
-		auto player = playerinfomanager->GetPlayerInfo(ent);
-		if ( m_selectedArea && player != nullptr)
+		CBaseExtPlayer* extplayer = extmanager->GetListenServerHost();
+		if ( m_selectedArea && extplayer != nullptr)
 		{
-			float yaw = player->GetAbsAngles().y;
-			while( yaw > 360.0f )
+			float yaw = extplayer->GetEyeAngles().y;
+
+			while (yaw > 360.0f)
 				yaw -= 360.0f;
 
-			while( yaw < 0.0f )
+			while (yaw < 0.0f)
 				yaw += 360.0f;
-			m_splitAlongX = yaw < 45.0f || yaw > 315.0f || (yaw > 135.0f && yaw < 225.0f);
-			m_splitEdge = SnapToGrid( m_splitAlongX ? result.endpos.y : result.endpos.x, true );
+
+			if ((yaw < 45.0f || yaw > 315.0f) || (yaw > 135.0f && yaw < 225.0f))
+			{
+				m_splitEdge = SnapToGrid(result.endpos.y, true);
+				m_splitAlongX = true;
+			}
+			else
+			{
+				m_splitEdge = SnapToGrid(result.endpos.x, true);
+				m_splitAlongX = false;
+			}
 		}
 
 		if ( !m_climbableSurface && !IsEditMode( CREATING_LADDER ) )
@@ -758,11 +768,11 @@ void CNavMesh::DrawEditMode( void )
 	if ( FindActiveNavArea() || m_markedArea || m_markedLadder || !IsSelectedSetEmpty() || IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) )
 	{
 		// draw cursor
-		float cursorSize = 10.0f;
+		constexpr float cursorSize = 10.0f;
 
 		if ( m_climbableSurface )
 		{
-			Cross3D( m_editCursorPos, cursorSize, 0, 255, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK );
+			NDebugOverlay::Cross3D( m_editCursorPos, cursorSize, 0, 255, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK );
 		}
 		else
 		{
@@ -772,22 +782,22 @@ void CNavMesh::DrawEditMode( void )
 
 			if (sm_nav_show_compass.GetBool())
 			{
-				const float offset = cursorSize * 1.5f;
+				constexpr float offset = cursorSize * 1.5f;
 				Vector pos = m_editCursorPos;
 				AddDirectionVector( &pos, NORTH, offset );
-				Text( pos, "N", false, NDEBUG_PERSIST_FOR_ONE_TICK );
+				NDebugOverlay::Text( pos, "N", false, NDEBUG_PERSIST_FOR_ONE_TICK );
 
 				pos = m_editCursorPos;
 				AddDirectionVector( &pos, SOUTH, offset );
-				Text( pos, "S", false, NDEBUG_PERSIST_FOR_ONE_TICK );
+				NDebugOverlay::Text( pos, "S", false, NDEBUG_PERSIST_FOR_ONE_TICK );
 
 				pos = m_editCursorPos;
 				AddDirectionVector( &pos, EAST, offset );
-				Text( pos, "E", false, NDEBUG_PERSIST_FOR_ONE_TICK );
+				NDebugOverlay::Text( pos, "E", false, NDEBUG_PERSIST_FOR_ONE_TICK );
 
 				pos = m_editCursorPos;
 				AddDirectionVector( &pos, WEST, offset );
-				Text( pos, "W", false, NDEBUG_PERSIST_FOR_ONE_TICK );
+				NDebugOverlay::Text( pos, "W", false, NDEBUG_PERSIST_FOR_ONE_TICK );
 			}
 		}
 

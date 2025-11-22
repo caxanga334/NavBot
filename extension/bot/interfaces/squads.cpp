@@ -514,6 +514,8 @@ void ISquad::DestroyAllSquads()
 
 void ISquad::InviteBotsToSquadFunc::operator()(CBaseBot* bot)
 {
+	EXT_ASSERT(m_me->GetSquadInterface()->IsInASquad(), "ISquad::InviteBotsToSquadFunc squad leader not in squad!");
+
 	if (bot == m_me) { return; }
 
 	if (m_me->GetSquadInterface()->GetSquad()->GetMembersCount() >= static_cast<size_t>(m_max)) { return; }

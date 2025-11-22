@@ -46,6 +46,10 @@ CMeshNavigator::CMeshNavigator() : CPath()
 	m_blocker.Term();
 	m_didAvoidCheck = false;
 	m_me = nullptr;
+	m_useEntityMoveTo.Init(0.0f, 0.0f, 0.0f);
+	m_useEntityAimAt.Init(0.0f, 0.0f, 0.0f);
+	m_avoidIsLeftClear = true;
+	m_avoidIsRightClear = true;
 }
 
 CMeshNavigator::~CMeshNavigator()
@@ -61,7 +65,17 @@ void CMeshNavigator::Invalidate()
 	m_goal = nullptr;
 	m_waitTimer.Invalidate();
 	m_avoidTimer.Invalidate();
-	m_blocker.Term();
+	m_blocker = nullptr;
+	m_useEntityTimer.Invalidate();
+	m_useTarget = nullptr;
+	m_useEntityMoveTo = vec3_origin;
+	m_useEntityAimAt = vec3_origin;
+	m_useEntityCooldown.Invalidate();
+	m_avoidIsLeftClear = true;
+	m_avoidIsRightClear = true;
+	m_avoidLeftEntity = nullptr;
+	m_avoidRightEntity = nullptr;
+	m_avoidingEntity = nullptr;
 	CPath::Invalidate();
 }
 
@@ -125,19 +139,17 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		return;
 	}
 
-	if (m_useableTimer.IsElapsed())
-	{
-		m_useableTimer.Start(sm_navbot_path_useable_scan.GetFloat());
-		SearchForUseableObstacles(bot);
-	}
-
-	mover->DetermineIdealPostureForPath(this);
-	BreakIfNeeded(bot);
-	mover->AdjustSpeedForPath(this);
-
 	if (OffMeshLinksUpdate(bot))
 	{
 		return; // handling special off-mesh connection
+	}
+
+	mover->DetermineIdealPostureForPath(this);
+	mover->AdjustSpeedForPath(this);
+
+	if (CheckForObstacles(bot, m_goal))
+	{
+		return;
 	}
 
 	Vector origin = bot->GetAbsOrigin();
@@ -219,6 +231,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	}
 
 	Vector goalPos = m_goal->goal;
+
+	if (IsUsingEntity())
+	{
+		UpdateUseEntity(bot, goalPos);
+	}
 
 	// avoid small obstacles
 	forward = goalPos - origin;
@@ -595,6 +612,152 @@ Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goal
 	}
 
 	return goalPos;
+}
+
+bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const CBasePathSegment* goal)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CMeshNavigator::CheckForObstacles", "NavBot");
+#endif // EXT_VPROF_ENABLED
+	IMovement* mover = bot->GetMovementInterface();
+	Vector origin = bot->GetAbsOrigin();
+	Vector forward = (goal->goal - origin);
+	const bool isDebugging = bot->IsDebugging(BOTDEBUG_PATH);
+	const float rangeToGoal = forward.NormalizeInPlace();
+	const float halfhull = mover->GetHullWidth() * 0.5f;
+	const float crouchheight = mover->GetCrouchedHullHeight();
+	const float eyeheight = navgenparams->human_eye_height;
+	trace_t tr;
+	CMovementTraverseFilter filter{ bot, mover };
+	Vector mins{ -halfhull, -halfhull, 0.0f };
+	Vector maxs{ halfhull, halfhull, crouchheight - 1.0f };
+	origin.z += mover->GetStepHeight(); // ignore obstacles we can step over
+	Vector end = origin + (forward * (mover->GetHullWidth() * 1.5f));
+	const unsigned int mask = mover->GetMovementTraceMask();
+
+	EXT_ASSERT(maxs.z >= 1.0f, "Bad Maxs Z value!");
+
+	// check if there is a potential obstacle ahead
+	trace::hull(origin, end, mins, maxs, mask, &filter, tr);
+
+	// trace collided with something
+	if (tr.fraction < 1.0f)
+	{
+		CBaseEntity* obstacle = tr.m_pEnt;
+		const bool isWorld = tr.DidHitWorld();
+
+		if (!obstacle)
+		{
+			return false;
+		}
+
+		// Mark it for avoidance
+		SetAvoidingEntity(obstacle);
+
+		// avoid for the obstacle avoidance to become blocked
+		if (!ObstacleAvoidanceIsPathBlockedBySomething())
+		{
+			m_obstructedTimer.Start(1.0f);
+			return false;
+		}
+
+		// check if the bot can jump over the obstacle in path
+		Vector start = bot->GetAbsOrigin();
+		start.z += mover->GetMaxJumpHeight();
+		Vector endtmp = end;
+		endtmp.z += mover->GetMaxJumpHeight();
+
+		trace::hull(start, endtmp, mins, maxs, mask, &filter, tr);
+
+		if (isDebugging && !isWorld)
+		{
+			NDebugOverlay::EntityBounds(obstacle, 255, 255, 0, 127, 0.2f);
+			NDebugOverlay::Text(UtilHelpers::getWorldSpaceCenter(obstacle), "Path Obstacle!", true, 0.2f);
+		}
+
+		// no hit, we can jump over and we are blocked for a while
+		if (tr.fraction == 1.0f && m_obstructedTimer.IsElapsed())
+		{
+			if (isDebugging)
+			{
+				NDebugOverlay::SweptBox(start, endtmp, mins, maxs, vec3_angle, 0, 200, 50, 255, 1.0f);
+				bot->DebugPrintToConsole(62, 255, 62, "%s OBSTACLE ON PATH AT %s, TRYING TO CLIMB OVER IT! \n", 
+					bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatVector(tr.endpos));
+			}
+
+			if (mover->IsClimbingOrJumping())
+			{
+				return true;
+			}
+
+			Vector hitpos = tr.endpos;
+
+			hitpos.z += mover->GetMaxJumpHeight() * 0.7f;
+			mover->ClimbUpToLedge(hitpos, forward, obstacle);
+			return true;
+		}
+		
+		// hit something, jumping over may not be possible
+
+		// did not hit a world entity
+		if (!isWorld && ObstacleAvoidanceIsPathFullyBlocked())
+		{
+			// can we break it?
+			if (bot->IsAbleToBreak(obstacle))
+			{
+				mover->BreakObstacle(obstacle);
+				return true;
+			}
+
+			if (!IsUseEntityInCooldown() && !IsUsingEntity() && mover->IsUseableObstacle(obstacle))
+			{
+				if (isDebugging)
+				{
+					bot->DebugPrintToConsole(62, 255, 62, "%s USEABLE OBSTACLE ON PATH! %s\n",
+						bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
+				}
+
+				UseEntity(bot, obstacle);
+				return false;
+			}
+		}
+	}
+
+	return false;
+}
+
+void CMeshNavigator::UseEntity(CBaseBot* bot, CBaseEntity* entity, const float time)
+{
+	if (!m_useEntityCooldown.IsElapsed()) { return; }
+
+	m_useEntityTimer.Start(time);
+	m_useTarget = entity;
+	Vector origin = bot->GetAbsOrigin();
+	Vector eyepos = bot->GetEyeOrigin();
+	UtilHelpers::math::CalcClosestPointOfEntity(entity, origin, m_useEntityMoveTo);
+	// experimental
+	UtilHelpers::math::CalcClosestPointOfEntity(entity, eyepos, m_useEntityAimAt);
+}
+
+void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
+{
+	IMovement* mover = bot->GetMovementInterface();
+	moveGoal = m_useEntityMoveTo;
+	const float range = (bot->GetEyeOrigin() - m_useEntityAimAt).Length();
+
+	if (range < CBaseExtPlayer::PLAYER_USE_RADIUS)
+	{
+		IPlayerController* input = bot->GetControlInterface();
+
+		input->AimAt(m_useEntityAimAt, IPlayerController::LOOK_USE, 1.0f, "Looking at useable obstacle on my path!");
+
+		if (input->IsAimOnTarget())
+		{
+			input->PressUseButton();
+			StopUsingEntity();
+			StartUseEntityCooldown(1.0f);
+		}
+	}
 }
 
 bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
@@ -1035,7 +1198,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 
 			if (foundLedge)
 			{
-				if (!mover->ClimbUpToLedge(ledgePos, climbDir, obstacle))
+				if (!mover->ClimbUpToLedge(ledgePos, climbDir, UtilHelpers::EdictToBaseEntity(obstacle)))
 				{
 					return false;
 				}
@@ -1195,6 +1358,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 	trace_t result;
 	CMovementTraverseFilter movementfilter(bot, mover, false);
+	movementfilter.SetAvoidEntity(GetAvoidingEntity());
 	unsigned int mask = mover->GetMovementTraceMask();
 	const float size = mover->GetHullWidth() / 4.0f;
 	const float offset = size + 2.0f;
@@ -1211,7 +1375,8 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	Vector leftFrom = bot->GetAbsOrigin() + offset * left;
 	Vector leftTo = leftFrom + range * forward;
 
-	bool isLeftClear = true;
+	m_avoidIsLeftClear = true;
+	m_avoidIsRightClear = true;
 	float leftAvoid = 0.0f;
 
 	trace::hull(leftFrom, leftTo, hullMin, hullMax, mask, &movementfilter, result);
@@ -1226,7 +1391,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 		leftAvoid = std::clamp(1.0f - result.fraction, 0.0f, 1.0f);
 
-		isLeftClear = false;
+		m_avoidIsLeftClear = false;
 
 		// track any doors we need to avoid
 		if (result.DidHitNonWorldEntity())
@@ -1244,7 +1409,6 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	Vector rightFrom = bot->GetAbsOrigin() - offset * left;
 	Vector rightTo = rightFrom + range * forward;
 
-	bool isRightClear = true;
 	float rightAvoid = 0.0f;
 
 	trace::hull(rightFrom, rightTo, hullMin, hullMax, mask, &movementfilter, result);
@@ -1259,7 +1423,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 		rightAvoid = std::clamp(1.0f - result.fraction, 0.0f, 1.0f);
 
-		isRightClear = false;
+		m_avoidIsRightClear = false;
 
 		if (result.DidHitNonWorldEntity())
 		{
@@ -1274,8 +1438,11 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 	Vector adjustedGoal = goalPos;
 
+	m_avoidLeftEntity = leftEnt;
+	m_avoidRightEntity = rightEnt;
+
 	// avoid doors directly in our way
-	if (door != nullptr && isLeftClear == false && isRightClear == false)
+	if (door != nullptr && !m_avoidIsLeftClear && !m_avoidIsRightClear)
 	{
 		auto doorent = entities::HBaseEntity(door);
 
@@ -1290,32 +1457,37 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 
 		m_avoidTimer.Invalidate();
 	}
-	else if (isLeftClear == false || isRightClear == false)
+	else if (!m_avoidIsLeftClear || !m_avoidIsRightClear)
 	{
 		float avoidResult = 0.0f;
-		if (isLeftClear)
+		if (m_avoidIsLeftClear)
 		{
 			avoidResult = -rightAvoid;
+			m_avoidObstacle = rightEnt;
 		}
-		else if (isRightClear)
+		else if (m_avoidIsRightClear)
 		{
 			avoidResult = leftAvoid;
+			m_avoidObstacle = leftEnt;
 		}
 		else
 		{
 			// both left and right are blocked, avoid nearest
-			const float equalTolerance = 0.01f;
-			if (fabsf(rightAvoid - leftAvoid) < equalTolerance)
+			constexpr float equalTolerance = 0.01f;
+			if (std::abs(rightAvoid - leftAvoid) < equalTolerance)
 			{
+				m_avoidObstacle = leftEnt;
 				return adjustedGoal;
 			}
 			if (rightAvoid > leftAvoid)
 			{
 				avoidResult = -rightAvoid;
+				m_avoidObstacle = rightEnt;
 			}
 			else
 			{
 				avoidResult = leftAvoid;
+				m_avoidObstacle = leftEnt;
 			}
 		}
 
@@ -1330,24 +1502,22 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	}
 
 	// If the bot did not hit a door and the blocking entity is the same for both left and right, notify movement
-	if (door == nullptr && isLeftClear == false && isRightClear == false && leftEnt == rightEnt)
+	if (door == nullptr && !m_avoidIsLeftClear && !m_avoidIsRightClear && leftEnt == rightEnt)
 	{
 		mover->ObstacleOnPath(leftEnt, goalPos, forward, left);
 	}
 
 	if (bot->IsDebugging(BOTDEBUG_PATH))
 	{
-		static QAngle dbgangles(0, 0, 0);
-
-		if (isLeftClear)
-			NDebugOverlay::SweptBox(leftFrom, leftTo, hullMin, hullMax, dbgangles, 0, 255, 0, 255, 0.2f);
+		if (m_avoidIsLeftClear)
+			NDebugOverlay::SweptBox(leftFrom, leftTo, hullMin, hullMax, vec3_angle, 0, 255, 0, 255, 0.2f);
 		else
-			NDebugOverlay::SweptBox(leftFrom, leftTo, hullMin, hullMax, dbgangles, 255, 0, 0, 255, 0.2f);
+			NDebugOverlay::SweptBox(leftFrom, leftTo, hullMin, hullMax, vec3_angle, 255, 0, 0, 255, 0.2f);
 
-		if (isRightClear)
-			NDebugOverlay::SweptBox(rightFrom, rightTo, hullMin, hullMax, dbgangles, 0, 255, 0, 255, 0.2f);
+		if (m_avoidIsRightClear)
+			NDebugOverlay::SweptBox(rightFrom, rightTo, hullMin, hullMax, vec3_angle, 0, 255, 0, 255, 0.2f);
 		else
-			NDebugOverlay::SweptBox(rightFrom, rightTo, hullMin, hullMax, dbgangles, 255, 0, 0, 255, 0.2f);
+			NDebugOverlay::SweptBox(rightFrom, rightTo, hullMin, hullMax, vec3_angle, 255, 0, 0, 255, 0.2f);
 	}
 
 	return adjustedGoal;
@@ -1413,56 +1583,6 @@ CBaseEntity* CMeshNavigator::FindBlocker(CBaseBot* bot)
 	}
 
 	return nullptr;
-}
-
-void CMeshNavigator::BreakIfNeeded(CBaseBot* bot)
-{
-	constexpr auto CHECK_DIST = 300.0f * 300.0f;
-
-	if (bot->GetRangeToSqr(m_goal->goal) > CHECK_DIST)
-	{
-		return;
-	}
-
-	CBaseEntity* obstacle = nullptr;
-
-	if (!bot->GetMovementInterface()->IsPotentiallyTraversable(bot->GetAbsOrigin(), m_goal->goal, nullptr, true, &obstacle))
-	{
-		if (obstacle != nullptr && bot->IsAbleToBreak(obstacle))
-		{
-			bot->GetMovementInterface()->BreakObstacle(obstacle);
-		}
-	}
-}
-
-void CMeshNavigator::SearchForUseableObstacles(CBaseBot* bot)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CMeshNavigator::SearchForUseableObstacles", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	auto goal = GetGoalSegment();
-
-	if (!goal) { return; }
-
-	Vector eyePos = bot->GetEyeOrigin();
-	Vector to = (goal->goal - eyePos);
-	to.NormalizeInPlace();
-	Vector endPos = eyePos + (to * CBaseExtPlayer::PLAYER_USE_RADIUS);
-	trace_t tr;
-	trace::line(eyePos, endPos, MASK_PLAYERSOLID, bot->GetEntity(), COLLISION_GROUP_PLAYER, tr);
-
-	CBaseEntity* obstacle = tr.m_pEnt;
-
-	if (obstacle && tr.DidHitNonWorldEntity())
-	{
-		if (bot->GetMovementInterface()->IsUseableObstacle(obstacle))
-		{
-			Vector aimPos = UtilHelpers::getWorldSpaceCenter(obstacle);
-			bot->GetControlInterface()->AimAt(aimPos, IPlayerController::LOOK_USE, sm_navbot_path_useable_scan.GetFloat() + 0.2f, "Looking at useable obstacle on my path!");
-			bot->GetControlInterface()->PressUseButton();
-		}
-	}
 }
 
 bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)

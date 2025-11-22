@@ -22,10 +22,15 @@ public:
 
 	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 
+	void SetAvoidEntity(CBaseEntity* entity) { m_avoidEnt = entity; }
+	bool IsAvoidEntity(CBaseEntity* entity) const { return entity == m_avoidEnt; }
+	bool HasAvoidEntity() const { return m_avoidEnt != nullptr; }
+
 private:
 	CBaseBot* m_me;
 	IMovement* m_mover;
 	bool m_now;
+	CBaseEntity* m_avoidEnt; // additional entity to avoid (always solid)
 };
 
 class CTraceFilterOnlyActors : public trace::CTraceFilterSimple
@@ -321,7 +326,7 @@ protected:
 	// If true, the bot will perform a double jump over a gap. Called by JumpAcrossGap.
 	virtual bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const { return false; }
 public:
-	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
+	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle);
 	// Perform a blast jump
 	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
 	// Climb by double jumping

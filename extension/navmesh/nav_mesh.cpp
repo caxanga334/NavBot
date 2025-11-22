@@ -2244,6 +2244,8 @@ void CommandNavClearSelectedSet( void )
 static ConCommand sm_nav_clear_selected_set( "sm_nav_clear_selected_set", CommandNavClearSelectedSet, "Clear the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
 
+#if 0
+
 //----------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_dump_selected_set_positions, "Write the (x,y,z) coordinates of the centers of all selected nav areas to a file.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
@@ -2311,11 +2313,12 @@ CON_COMMAND_F(sm_nav_show_dumped_positions, "Show the (x,y,z) coordinate positio
 			}
 
 
-			Cross3D( center, 5.0f, 255, 255, 0, true, 99999.9f );
+			NDebugOverlay::Cross3D( center, 5.0f, 255, 255, 0, true, 99999.9f );
 		}
 	}
 };
 
+#endif // 0
 
 //----------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_larger_than, "Select nav areas where both dimensions are larger than the given size.", FCVAR_GAMEDLL | FCVAR_CHEAT )

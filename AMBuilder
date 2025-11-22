@@ -146,6 +146,7 @@ for sdk_name in Extension.sdks:
       os.path.join(sdk['path'],'public', 'igameevents.h'),
       os.path.join(sdk['path'],'public', 'PlayerState.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'navbot_headers_post_sdk.h'),
+      os.path.join(builder.currentSourcePath, 'extension', 'util', 'debug.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'sdkports', 'debugoverlay_shared.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'bot', 'bot_debug_shared.h'),
       os.path.join(builder.currentSourcePath, 'extension', 'bot', 'basebot_constants.h'),
