@@ -5,9 +5,9 @@
 #include <util/entprops.h>
 #include <util/gamedata_const.h>
 #include <navmesh/nav_mesh.h>
-#include <navmesh/nav_area.h>
 #include <navmesh/nav_waypoint.h>
 #include "basebot.h"
+#include "interfaces/path/meshnavigator.h"
 #include "bot_shared_utils.h"
 
 botsharedutils::AimSpotCollector::AimSpotCollector(CBaseBot* bot) :

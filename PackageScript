@@ -60,6 +60,7 @@ CopyFiles('scripting/include', 'addons/sourcemod/scripting/include',
 CopyFiles('scripting/include/navbot', 'addons/sourcemod/scripting/include/navbot',
   [ 
     'bots.inc',
+    'nav_mesh.inc',
   ]
 )
 

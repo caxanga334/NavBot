@@ -1,8 +1,6 @@
 #include NAVBOT_PCH_FILE
 
 #include "extension.h"
-#include <bot/basebot.h>
-#include <bot/bot_debug_shared.h>
 #include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
 #include <extplayer.h>
@@ -79,7 +77,6 @@ CExtManager::CExtManager()
 	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
 	m_iscreatingbot = false;
 	m_callModUpdateTimer.Invalidate();
-	m_pawnmemory = std::make_unique<CSourcePawnMemoryManager>();
 	m_allowbots = true;
 #ifndef NO_SOURCEPAWN_API
 	m_prebotaddforward = nullptr;

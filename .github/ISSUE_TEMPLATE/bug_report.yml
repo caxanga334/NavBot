@@ -12,6 +12,7 @@ body:
       placeholder: 'Team Fortress 2'
     validations:
       required: true
+
   - type: textarea
     id: in-mms-version
     attributes:
@@ -20,6 +21,7 @@ body:
       placeholder: 'The output of meta version'
     validations:
       required: true
+
   - type: textarea
     id: in-sm-version
     attributes:
@@ -28,6 +30,7 @@ body:
       placeholder: 'The output of sm version'
     validations:
       required: true
+
   - type: textarea
     id: in-sm-exts
     attributes:
@@ -36,6 +39,7 @@ body:
       placeholder: 'The output of sm exts list'
     validations:
       required: true
+
   - type: textarea
     id: in-sm-plugins
     attributes:
@@ -44,6 +48,7 @@ body:
       placeholder: 'The output of sm plugins list'
     validations:
       required: true
+
   - type: textarea
     id: in-ext-info
     attributes:
@@ -52,6 +57,7 @@ body:
       placeholder: 'The output of sm_navbot_info'
     validations:
       required: true
+
   - type: dropdown
     id: in-os
     attributes:
@@ -64,6 +70,7 @@ body:
       default: 0
     validations:
       required: true
+
   - type: dropdown
     id: in-sv-type
     attributes:
@@ -76,18 +83,16 @@ body:
       default: 0
     validations:
       required: true
-  - type: dropdown
-    id: in-download
+
+  - type: checkboxes
     attributes:
-      label: 'How did you download the extension?'
-      multiple: false
+      label: Sanity Checks
+      description: Please confirm that you ran these sanity tests.
       options:
-        - Github
-        - Built from Source
-        - Thirdparty
-      default: 0
-    validations:
-      required: true
+        - label: I have updated the NavBot extension to the [latest build](https://github.com/caxanga334/NavBot/actions) and the issue still persists.
+        - label: I have removed my customized configuration files and the issue still persists.
+        - label: I have done a clean install with only SM, MMS and NavBot and the issue still persists.
+
   - type: textarea
     id: in-bug-desc
     attributes:
@@ -96,6 +101,7 @@ body:
       placeholder: 'This is not working...'
     validations:
       required: true
+
   - type: textarea
     id: in-steps
     attributes:
@@ -105,6 +111,7 @@ body:
         1. Do this
         2. Do that
         3. Then this
+
   - type: textarea
     id: in-expected-behavior
     attributes:
@@ -113,6 +120,7 @@ body:
       placeholder: 'This should not happen'
     validations:
       required: false
+
   - type: textarea
     id: in-extras
     attributes:
@@ -123,6 +131,7 @@ body:
         'Text explaining something'
     validations:
       required: false
+
   - type: textarea
     id: in-crash-report-link
     attributes:

@@ -1,12 +1,8 @@
 #include NAVBOT_PCH_FILE
-#include <cstring>
-#include <unordered_set>
-#include <vector>
-
 #include <extension.h>
 #include <ports/rcbot2_waypoint.h>
 #include <mods/tf2/teamfortress2mod.h>
-#include <sdkports/sdk_timers.h>
+#include <sdkports/sdk_traces.h>
 #include <navmesh/nav_area.h>
 #include "tfnavarea.h"
 #include "tfnavmesh.h"

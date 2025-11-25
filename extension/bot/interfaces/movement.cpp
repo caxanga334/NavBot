@@ -429,6 +429,7 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 	EXT_ASSERT(!(ke::IsInfinite(pos.y) || ke::IsNaN(pos.y)), "MoveTowards Invalid Pos Y!");
 	EXT_ASSERT(!(ke::IsInfinite(pos.z) || ke::IsNaN(pos.z)), "MoveTowards Invalid Pos Z!");
 
+	bool isFirstMove = m_lastMoveWeight == 0;
 	m_lastMoveWeight = weight;
 
 	CBaseBot* me = GetBot<CBaseBot>();
@@ -454,6 +455,17 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 	{
 		NDebugOverlay::Line(me->WorldSpaceCenter(), pos, 0, 255, 0, false, 0.2f);
+	}
+
+	// If we get multiple MoveTowards calls on the same frame, release old buttons first
+	if (!isFirstMove)
+	{
+		input->ReleaseForwardButton();
+		input->ReleaseBackwardsButton();
+		input->ReleaseMoveLeftButton();
+		input->ReleaseMoveRightButton();
+		input->ReleaseMoveUpButton();
+		input->ReleaseMoveDownButton();
 	}
 
 	if (me->IsUnderWater())

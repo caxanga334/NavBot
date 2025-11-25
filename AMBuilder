@@ -86,7 +86,7 @@ for sdk_name in Extension.sdks:
     binary = Extension.HL2ExtConfig(project, builder, cxx, projectName + '.ext.' + sdk['extension'], sdk)
     binary.compiler.cxxincludes += includesDirs
     # fixes a compile error due to missing include
-    binary.compiler.defines += [ 'RAD_TELEMETRY_DISABLED' ]
+    binary.compiler.defines += [ 'RAD_TELEMETRY_DISABLED', 'NOMINMAX' ]
   
     # Disable some warnings from the SDK
     if sdk['name'] in ['episode1']:

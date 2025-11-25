@@ -190,6 +190,9 @@ workspace "navbot"
             "-Wno-implicit-float-conversion",
         }
 
+    filter {}
+        defines { "NOMINMAX" }
+
     filter { "configurations:Debug" }
         defines { "EXT_DEBUG" }
         targetdir "build/bin/%{cfg.architecture}/debug"

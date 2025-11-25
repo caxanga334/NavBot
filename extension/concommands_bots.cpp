@@ -5,6 +5,7 @@
 #include <extension.h>
 #include <manager.h>
 #include <extplayer.h>
+#include <navmesh/nav_mesh.h>
 #include <bot/basebot.h>
 
 CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")

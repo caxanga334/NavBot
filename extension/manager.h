@@ -3,10 +3,11 @@
 #pragma once
 
 #include <cstdint>
+#include <bot/bot_debug_shared.h>
 #include <bot/interfaces/profile.h>
+#include <bot/basebot.h>
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
-#include "pawn_mem_manager.h"
 
 class CBaseMod;
 class CBaseExtPlayer;
@@ -193,9 +194,6 @@ public:
 	static void OnQuotaModeCvarChanged(ConVar* var, char const* pOldString);
 	static void OnQuotaTargetCvarChanged(ConVar* var, char const* pOldString);
 #endif // SOURCE_ENGINE > SE_EPISODEONE
-
-
-	CSourcePawnMemoryManager* GetPawnMemoryManager() const { return m_pawnmemory.get(); }
 	
 	// Gets the value of sv_gravity cached at map start
 	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
@@ -220,7 +218,6 @@ private:
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of non NavBot players
 	std::vector<std::string> m_botnames; // Vector of names to be used by bots
 	std::unique_ptr<CBaseMod> m_mod; // mod pointer
-	std::unique_ptr<CSourcePawnMemoryManager> m_pawnmemory;
 #ifndef NO_SOURCEPAWN_API
 	SourceMod::IForward* m_prebotaddforward; // SM Forward, on pre bot add
 	SourceMod::IForward* m_postbotaddforward; // SM Forward, post bot add (normal bots)

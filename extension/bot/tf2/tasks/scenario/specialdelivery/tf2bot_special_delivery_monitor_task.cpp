@@ -10,6 +10,7 @@
 #include <sdkports/sdk_traces.h>
 #include <entities/tf2/tf_entities.h>
 #include "bot/tf2/tf2bot.h"
+#include <bot/interfaces/path/meshnavigator.h>
 #include "tf2bot_special_delivery_monitor_task.h"
 #include "tf2bot_sd_deliver_flag.h"
 #include "tf2bot_sd_wait_for_flag.h"

@@ -4,6 +4,7 @@
 #include <mods/basemod.h>
 #include <util/helpers.h>
 #include <bot/basebot.h>
+#include <bot/interfaces/path/basepath.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include "sharedmemory.h"

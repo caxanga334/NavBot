@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <unordered_set>
+#include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/sdk_traces.h>
 #include <bot/interfaces/decisionquery.h>

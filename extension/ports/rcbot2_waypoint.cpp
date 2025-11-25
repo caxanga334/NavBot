@@ -1,6 +1,10 @@
 #include NAVBOT_PCH_FILE
 #include "rcbot2_waypoint.h"
 
+#undef min
+#undef max
+#undef clamp
+
 CRCBot2Waypoint::CRCBot2Waypoint()
 {
 	// RCBot2 wpt ID isn't stored on the waypoint itself, this is a bit experimental as the Waypoint ID seems to be based on the load order.

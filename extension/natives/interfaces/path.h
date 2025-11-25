@@ -8,8 +8,6 @@
 namespace natives::bots::interfaces::path
 {
 	void setup(std::vector<sp_nativeinfo_t>& nv);
-	cell_t CreateNewPath(IPluginContext* context, const cell_t* params);
-	cell_t DestroyNavigator(IPluginContext* context, const cell_t* params);
 	cell_t UpdateNavigator(IPluginContext* context, const cell_t* params);
 	cell_t IsValid(IPluginContext* context, const cell_t* params);
 	cell_t ComputeToPos(IPluginContext* context, const cell_t* params);

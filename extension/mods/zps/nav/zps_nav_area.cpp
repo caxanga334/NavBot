@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include <sdkports/sdk_traces.h>
 #include <mods/zps/zps_mod.h>
 #include "zps_nav_area.h"
 

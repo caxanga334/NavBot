@@ -8,6 +8,7 @@
 #include <util/entprops.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
+#include "nav.h"
 #include "nav_scripting.h"
 
 // undef some stuff from mathlib that causes issues when using STL

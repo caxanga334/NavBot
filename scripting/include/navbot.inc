@@ -9,6 +9,7 @@
 
 #include <core>
 
+#include "navbot/nav_mesh.inc"
 #include "navbot/bots.inc"
 
 /**
@@ -19,23 +20,6 @@
  * @error               Invalid client index
  */
 native bool IsNavBot(int client);
-
-/**
- * Adds a NavBot.
- *
- * @param client			The index of the bot just added.
- * @param botName			Optional bot name. NULL_STRING to use a random name.
- * @return					True if the bot was added, false otherwise.
- * @error					AddBot unavailable.
- */
-native bool AddNavBot(int& client, const char[] botName = NULL_STRING);
-
-/**
- * Checks if NavBot's Navigation Mesh for the current map is loaded.
- *
- * @return					True if loaded, false otherwise.
- */
-native bool IsNavMeshLoaded();
 
 enum NavBotAISoundType
 {

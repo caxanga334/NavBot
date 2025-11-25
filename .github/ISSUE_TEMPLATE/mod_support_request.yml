@@ -12,6 +12,7 @@ body:
       placeholder: 'Team Fortress 2'
     validations:
       required: true
+
   - type: textarea
     id: in-mod-link
     attributes:
@@ -20,12 +21,14 @@ body:
       placeholder: 'https://store.steampowered.com/app/440/Team_Fortress_2/'
     validations:
       required: true
+
   - type: textarea
     id: in-engine-version
     attributes:
       label: 'Source Engine Version/Branch?'
-      description: 'What Source Engine branch does this mod runs'
+      description: 'What Source Engine branch does this mod runs or unknown if not known'
       placeholder: 'Source SDK 2013'
+
   - type: dropdown
     id: in-native-bots
     attributes:
@@ -37,6 +40,7 @@ body:
         - 'No'
     validations:
       required: true
+
   - type: dropdown
     id: in-native-open-source
     attributes:
@@ -46,6 +50,7 @@ body:
       options:
         - 'Yes'
         - 'No'
+
   - type: checkboxes
     id: in-os-support
     attributes:
@@ -54,6 +59,7 @@ body:
       options:
         - label: 'Windows'
         - label: 'Linux'
+  
   - type: dropdown
     id: in-arch
     attributes:
@@ -64,3 +70,8 @@ body:
         - 'x86 (32 bits) only'
         - 'x86-64 (64 bits) only'
         - 'x86 and x86-64 (both 32 and 64 bits)'
+
+  - type: textarea
+    attributes:
+      label: Additional Information
+      description: 'Add any extra information you want to share here.'

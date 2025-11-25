@@ -35,6 +35,7 @@
 #include "nav_prereq.h"
 #include "nav_blocker.h"
 #include "nav_blocker_door.h"
+#include "nav_pathfind.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
 #include <generichash.h>

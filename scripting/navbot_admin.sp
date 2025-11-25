@@ -31,7 +31,7 @@ public void OnLibraryRemoved(const char[] name)
 
 Action CMD_AddBot(int client, int args)
 {
-	if (!IsNavMeshLoaded())
+	if (!NavBotNavMesh.IsLoaded())
 	{
 		ReplyToCommand(client, "This map does not have a nav mesh loaded! Can't add bots.");
 		return Plugin_Handled;
@@ -39,8 +39,7 @@ Action CMD_AddBot(int client, int args)
 
 	char botname[MAX_NAME_LENGTH];
 	bool custom_name = false;
-	bool result = false;
-	int bot_index;
+	NavBot result = NULL_NAVBOT;
 
 	if (args >= 2)
 	{
@@ -54,14 +53,14 @@ Action CMD_AddBot(int client, int args)
 
 	if (custom_name)
 	{
-		result = AddNavBot(bot_index, botname);
+		result = NavBot(botname);
 	}
 	else
 	{
-		result = AddNavBot(bot_index);
+		result = NavBot();
 	}
 
-	if (!result)
+	if (result.IsNull)
 	{
 		ReplyToCommand(client, "Failed to add a NavBot!");
 		return Plugin_Handled;

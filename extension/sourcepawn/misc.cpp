@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include <bot/basebot.h>
 #include "misc.h"
 
 class NavBotTargetProcessor : public SourceMod::ICommandTargetProcessor

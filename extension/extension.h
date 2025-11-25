@@ -62,7 +62,6 @@ class CTakeDamageInfo;
 #include <IBinTools.h>
 #include <ISDKHooks.h>
 #include <ispatialpartition.h>
-#include "navmesh/nav_mesh.h"
 
 /**
  * @brief Sample implementation of the SDK Extension.
@@ -318,7 +317,6 @@ extern IServerGameDLL* servergamedll;
 extern IServerGameEnts* servergameents;
 extern IEngineTrace* enginetrace;
 extern IEngineSound* enginesound;
-// extern CNavMesh* TheNavMesh;
 extern IPlayerInfoManager* playerinfomanager;
 extern IServerGameClients* gameclients;
 extern IGameEventManager2* gameeventmanager;

@@ -17,9 +17,6 @@ methodmap NavBot
 	 * @error			AddBot unavailable.
 	 */
 	public native NavBot(const char[] botName = NULL_STRING);
-
-	// True if this NavBot instance is a Plugin Bot.
-	public native bool IsPluginBot();
 	/**
 	 * Sets the skill group used by this bot.
 	 * 
@@ -27,7 +24,6 @@ methodmap NavBot
 	 * @error				Invalid bot instance.
 	 */
 	public native void SetSkillLevel(int skill_level);
-
 	/**
 	 * Adds a client command to the bot client command's queue.
 	 * 
@@ -56,30 +52,8 @@ methodmap NavBot
 
 	property bool IsNull
 	{
-		public get() { return view_as<int>(this) == 0; }
+		public get() { return this.Index == 0; }
 	}
-}
-
-methodmap PluginBot < NavBot
-{
-	/**
-	 * Creates a new NavBot Plugin Bot instance or returns an existing one.
-	 * @param client Client index to attach the NavBot instance to.
-	 * @return PluginBot instance. Will be NULL on failure. Use IsNull to check.
-	 * @error Invalid client index.
-	 * @note This will return NULL if used on a valid NavBot that is not a Plugin Bot!
-	 */
-	public native PluginBot(int client);
-
-	/**
-	 * Plugin bots by default will not run player commands (call CBasePlayer::PlayerRunCommand).
-	 * This means the plugin is responsible for sending them.
-	 * If the plugin bot is attached on a human, then the plugin will always be responsible for running player commands.
-	 * 
-	 * @param run If true, the extension will run player commands for this PluginBot instance. If false the plugin will need to run player commands.
-	 * @error If trying to enable commands on a Plugin Bot attached to a non fake client (human player).
-	 */
-	public native void SetRunPlayerCommands(bool run);
 }
 
 /**
@@ -105,6 +79,5 @@ forward Action OnPrePluginBotAdd(int entity);
 forward void OnPluginBotAdded(int entity);
 
 const NavBot NULL_NAVBOT = view_as<NavBot>(0);
-const PluginBot NULL_PLUGINBOT = view_as<PluginBot>(0);
 
 #include "interfaces/path.inc"

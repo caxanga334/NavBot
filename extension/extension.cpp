@@ -44,7 +44,9 @@
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
 #include "sourcepawn/misc.h"
+#include "sourcepawn/spmanager.h"
 #include "util/gamedata_const.h"
+#include "navmesh/nav_mesh.h"
 
 #if defined(EXT_DEBUG)
 #include "util/prediction.h"
@@ -291,6 +293,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 	// This stuff needs to be after any load failures so we don't causes other stuff to crash
 	CONVAR_REGISTER(this);
+	SourcePawnManager::Init();
 	playerhelpers->AddClientListener(this);
 	sharesys->AddDependency(myself, "bintools.ext", true, true);
 	sharesys->AddDependency(myself, "sdktools.ext", true, true);
@@ -369,9 +372,11 @@ void NavBotExt::SDK_OnAllLoaded()
 
 	entprops->Init(true);
 	sdkcalls->PostInit(); // setup the calls
+	spmanager->SetupHandles();
 
 #ifndef NO_SOURCEPAWN_API
 	natives::setup(m_natives);
+	natives::navmesh::setup(m_natives);
 	natives::bots::setup(m_natives);
 	natives::bots::interfaces::path::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });

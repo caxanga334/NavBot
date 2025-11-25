@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <string_view>
 #include <extension.h>
+#include <navmesh/nav_mesh.h>
 #include <bot/basebot.h>
 #include "combat.h"
 

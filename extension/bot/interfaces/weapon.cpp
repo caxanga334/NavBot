@@ -7,6 +7,7 @@
 #include <util/helpers.h>
 #include <util/entprops.h>
 #include <mods/basemod.h>
+#include <bot/basebot.h>
 #include "weapon.h"
 
 // undef some macros from mathlib that causes conflicts with std::

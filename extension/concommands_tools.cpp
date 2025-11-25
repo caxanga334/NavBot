@@ -7,6 +7,7 @@
 #include <entities/basecombatweapon.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_entityfactory.h>
+#include <bot/basebot.h>
 #include <util/prediction.h>
 
 #if SOURCE_ENGINE == SE_EPISODEONE
