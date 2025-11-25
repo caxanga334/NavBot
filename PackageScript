@@ -46,7 +46,6 @@ def CopyFiles(src, dest, files):
 CopyFiles('scripting', 'addons/sourcemod/scripting',
   [ 
     'navbot_admin.sp',
-    'navbot_example.sp',
   ]
 )
 
