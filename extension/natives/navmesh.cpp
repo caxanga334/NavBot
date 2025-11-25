@@ -51,7 +51,7 @@ static cell_t Native_NavMeshGetAuthor(IPluginContext* context, const cell_t* par
 	context->LocalToString(params[3], &steamid);
 
 	ke::SafeStrcpy(name, static_cast<size_t>(params[2]), info.GetCreator().first.c_str());
-	ke::SafeSprintf(steamid, static_cast<size_t>(params[4]), "%lu", info.GetCreator().second);
+	ke::SafeSprintf(steamid, static_cast<size_t>(params[4]), "%" PRIu64 "", info.GetCreator().second);
 
 	return 1;
 }
@@ -80,7 +80,7 @@ static cell_t Native_NavMeshGetEditor(IPluginContext* context, const cell_t* par
 	context->LocalToString(params[4], &steamid);
 
 	ke::SafeStrcpy(name, static_cast<size_t>(params[3]), editors[index].first.c_str());
-	ke::SafeSprintf(steamid, static_cast<size_t>(params[5]), "%lu", editors[index].second);
+	ke::SafeSprintf(steamid, static_cast<size_t>(params[5]), "%" PRIu64 "", editors[index].second);
 
 	return 0;
 }
