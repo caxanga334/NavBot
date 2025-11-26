@@ -9,6 +9,12 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
+static void ValidateSquads(void* data)
+{
+	ISquad::ValidateAllSquadsFunc func;
+	extmanager->ForEachBot(func);
+}
+
 ISquad::SquadMember::SquadMember()
 {
 	m_player = nullptr;
@@ -170,16 +176,8 @@ bool ISquad::SquadData::DoFullValidation(ISensor* sensor)
 
 void ISquad::SquadData::Destroy(const bool no_events)
 {
-	for (SquadMember& member : m_members)
-	{
-		if (member.IsValid() && member.IsBot())
-		{
-			member.GetSquadInterface()->NotifySquadDestruction(no_events);
-		}
-	}
-
+	// mark as destroyed, Update will handle clean up.
 	m_destroyed = true;
-	m_members.clear();
 }
 
 void ISquad::SquadData::AddMember(CBaseBot* bot)
@@ -224,15 +222,7 @@ ISquad::~ISquad()
 		if (IsSquadLeader())
 		{
 			m_squaddata->Destroy(true);
-		}
-		else
-		{
-			const ISquad::SquadMember* leader = m_squaddata->GetBotLeader();
-
-			if (leader && leader->IsValid())
-			{
-				leader->GetSquadInterface()->NotifyMemberLeftSquad(GetBot<CBaseBot>(), true);
-			}
+			smutils->AddFrameAction(ValidateSquads, nullptr);
 		}
 	}
 
@@ -501,6 +491,16 @@ void ISquad::DestroyAllSquadsFunc::operator()(CBaseBot* bot)
 	ISquad* squad = bot->GetSquadInterface();
 
 	if (squad->IsInASquad() && squad->IsSquadLeader())
+	{
+		squad->LeaveSquad();
+	}
+}
+
+void ISquad::ValidateAllSquadsFunc::operator()(CBaseBot* bot)
+{
+	ISquad* squad = bot->GetSquadInterface();
+
+	if (squad->IsInASquad() && !squad->IsSquadValid())
 	{
 		squad->LeaveSquad();
 	}

@@ -208,9 +208,15 @@ public:
 	{
 	public:
 		void operator()(CBaseBot* bot);
+	};
 
-	private:
-
+	/**
+	 * @brief Functor for removing bots from invalid squads.
+	 */
+	class ValidateAllSquadsFunc
+	{
+	public:
+		void operator()(CBaseBot* bot);
 	};
 
 	static void DestroyAllSquads();
