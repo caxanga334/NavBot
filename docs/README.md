@@ -14,6 +14,7 @@ Welcome to the NavBot extension documentation index.
 - [NavBot ConVars]
 - [Detailed Game Support]
 - [Using Debug Commands]
+- [Additional Plugins]
 
 <!-- Links -->
 [Installing NavBot]: INSTALL.md
@@ -27,3 +28,4 @@ Welcome to the NavBot extension documentation index.
 [NavBot ConVars]: CONVARS.md
 [Detailed Game Support]: DGS.md
 [Using Debug Commands]: DEBUGGING.md
+[Additional Plugins]: PLUGINS.md
