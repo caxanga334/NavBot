@@ -13,21 +13,10 @@ class CBaseMod;
 class CBaseExtPlayer;
 class CBaseBot;
 
-#if SOURCE_ENGINE == SE_EPISODEONE
-#define IConVar ConVar
-#endif // SOURCE_ENGINE == SE_EPISODEONE
-
-
 // Primary Extension Manager
 class CExtManager
 {
 public:
-	enum class BotQuotaMode : uint8
-	{
-		QUOTA_FIXED = 0, // Manager keeps a fixed number of bots
-		QUOTA_FILL, // Fill with N bots, automatically kicked to free space for humans
-	};
-
 	enum class BotCreateMethod : std::uint8_t
 	{
 		CREATEFAKECLIENT = 0U,
@@ -134,7 +123,6 @@ public:
 	{
 		return (m_botdebugmode & bits) ? true : false;
 	}
-	void UpdateBotQuota();
 	/**
 	 * @brief Runs a function on each bot.
 	 * @tparam T A class with operator() overload with one parameter (CBaseBot* bot).
@@ -183,17 +171,6 @@ public:
 			functor(player);
 		}
 	}
-
-	void SetBotQuotaMode(BotQuotaMode mode) { m_quotamode = mode; }
-	void SetBotQuotaTarget(int target) { m_quotatarget = target; }
-
-#if SOURCE_ENGINE > SE_EPISODEONE
-	static void OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
-	static void OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue);
-#else
-	static void OnQuotaModeCvarChanged(ConVar* var, char const* pOldString);
-	static void OnQuotaTargetCvarChanged(ConVar* var, char const* pOldString);
-#endif // SOURCE_ENGINE > SE_EPISODEONE
 	
 	// Gets the value of sv_gravity cached at map start
 	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
@@ -208,11 +185,6 @@ public:
 	// Utility function that provides auto completion of in-game NavBot names
 	static int AutoComplete_BotNames(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH]);
 
-#ifndef NO_SOURCEPAWN_API
-	// returns true if a plugin tell us that the given client should be ignored by the bot quota.
-	bool SMAPIBotQuotaIsClientIgnored(int client);
-#endif // !NO_SOURCEPAWN_API
-
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of non NavBot players
@@ -223,15 +195,10 @@ private:
 	SourceMod::IForward* m_postbotaddforward; // SM Forward, post bot add (normal bots)
 	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
 	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
-	SourceMod::IForward* m_preremoverandombot; // SM Forward, called when kicking a random bot.
-	SourceMod::IForward* m_botquotaisclientignored; // SM Forward, called during the bot quota update.
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use
 	int m_botdebugmode;
-	int m_quotaupdatetime; // Bot quota timer
-	BotQuotaMode m_quotamode; // Bot quota mode
-	int m_quotatarget; // Bot quota target
 	bool m_iscreatingbot; // We are creating a NavBot
 	bool m_allowbots; // allow bots to be created
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function

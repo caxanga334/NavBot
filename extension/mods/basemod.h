@@ -85,8 +85,6 @@ public:
 	virtual std::optional<int> GetPlayerResourceEntity();
 	// Returns the economy item index for the given weapon if the mod uses it (IE: TF2)
 	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
-	// True if the given client should not count towards the number of clients in the server when checking the bot quota
-	virtual bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const { return false; }
 	// A round has started
 	virtual void OnRoundStart();
 	// A round has ended
@@ -95,9 +93,10 @@ public:
 	virtual void OnNavMeshLoaded() {}
 	// Called when the nav mesh is destroyed. Any stored nav mesh data is invalid at this point. Use this to clear anything that's stored on the mod.
 	virtual void OnNavMeshDestroyed() {}
-
 	// Mod settings data. Unavailable until a map is loaded.
 	const CModSettings* GetModSettings() const { return m_modsettings.get(); }
+	// SourcePawn API: Parses a custom mod settings file.
+	SourceMod::SMCError ParseCustomModSettingsFile(const char* file) { return m_modsettings->ParseCustomFile(file); }
 	// Reparses the mod settings file.
 	void ReloadModSettingsFile();
 	// Reloads the weapon info config file
@@ -105,6 +104,14 @@ public:
 	// Mod weapon info manager
 	const CWeaponInfoManager* GetWeaponInfoManager() const { return m_weaponinfomanager.get(); }
 	void ReloadBotDifficultyProfile();
+	/**
+	 * @brief Parses a custom bot difficulty profile file. Used by the SourcePawn API.
+	 * @param file Absolute path to the file to parse.
+	 * @param replace If true, existing difficulty profiles are erased, otherwise only adds new profiles.
+	 * @param refresh If true, refresh the profiles of any bots already in-game.
+	 * @return Parse result code.
+	 */
+	SourceMod::SMCError ParseCustomBotDifficultyProfileFile(const char* file, const bool replace, const bool refresh = true);
 	// Bot profile difficulty manager
 	const CDifficultyManager* GetBotDifficultyManager() const { return m_profilemanager.get(); }
 	/**

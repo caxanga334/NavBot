@@ -154,6 +154,24 @@ void CBaseMod::ReloadBotDifficultyProfile()
 	extmanager->ForEachBot(func);
 }
 
+SourceMod::SMCError CBaseMod::ParseCustomBotDifficultyProfileFile(const char* file, const bool replace, const bool refresh)
+{
+	SourceMod::SMCError result = m_profilemanager->ParseCustomProfileConfig(file, replace);
+
+	if (result == SourceMod::SMCError::SMCError_Okay && refresh)
+	{
+		const CDifficultyManager* manager = m_profilemanager.get();
+
+		auto func = [&manager](CBaseBot* bot) {
+			bot->RefreshDifficulty(manager);
+		};
+
+		extmanager->ForEachBot(func);
+	}
+
+	return result;
+}
+
 ISharedBotMemory* CBaseMod::GetSharedBotMemory(int teamindex)
 {
 	if (teamindex >= 0 && teamindex < static_cast<int>(m_teamsharedmemory.max_size()))

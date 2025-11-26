@@ -2,7 +2,7 @@
 
 Files: `manager.cpp, manager.h`    
 C++ Class: `CExtManager`    
-The extension manager is responsible for the storage of bots and players, the mod interface and the bot quota system.
+The extension manager is responsible for the storage of bots and players and the mod interface.
 
 ## Access
 

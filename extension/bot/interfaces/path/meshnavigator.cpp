@@ -50,6 +50,7 @@ CMeshNavigator::CMeshNavigator() : CPath()
 	m_useEntityAimAt.Init(0.0f, 0.0f, 0.0f);
 	m_avoidIsLeftClear = true;
 	m_avoidIsRightClear = true;
+	m_moveToPos.Init(0.0f, 0.0f, 0.0f);
 }
 
 CMeshNavigator::~CMeshNavigator()
@@ -76,6 +77,7 @@ void CMeshNavigator::Invalidate()
 	m_avoidLeftEntity = nullptr;
 	m_avoidRightEntity = nullptr;
 	m_avoidingEntity = nullptr;
+	m_moveToPos = vec3_origin;
 	CPath::Invalidate();
 }
 
@@ -286,6 +288,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 
 	// move bot along path
 	mover->MoveTowards(goalPos, IMovement::MOVEWEIGHT_NAVIGATOR);
+	SetMoveToPos(goalPos);
 
 #ifdef EXT_DEBUG
 	if (sm_navbot_path_debug_goal.GetInt() > 1 && m_goal)

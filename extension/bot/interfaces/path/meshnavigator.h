@@ -38,6 +38,7 @@ public:
 	CBaseEntity* ObstacleAvoidanceGetRightBlocker() const { return m_avoidRightEntity.Get(); }
 	CBaseEntity* ObstacleAvoidanceGetNearestObstacle() const { return m_avoidObstacle.Get(); }
 	CBaseEntity* GetAvoidingEntity() const { return m_avoidingEntity.Get(); }
+	const Vector& GetMoveToPos() const { return m_moveToPos; }
 
 protected:
 	// true while the bot is using ladders
@@ -82,6 +83,7 @@ protected:
 	void StartUseEntityCooldown(float time) { m_useEntityCooldown.Start(time); }
 	void SetAvoidingEntity(CBaseEntity* entity) { m_avoidingEntity = entity; }
 	bool IsUseEntityInCooldown() const { return !m_useEntityCooldown.IsElapsed(); }
+	void SetMoveToPos(const Vector& pos) { m_moveToPos = pos; }
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator
@@ -105,6 +107,7 @@ private:
 	CHandle<CBaseEntity> m_useTarget;
 	Vector m_useEntityMoveTo;
 	Vector m_useEntityAimAt;
+	Vector m_moveToPos; // The position the bot is trying to move to since the last Update call
 };
 
 /**

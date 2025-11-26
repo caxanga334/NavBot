@@ -10,6 +10,8 @@ Returning anything higher than `Plugin_Continue` will block the bot from being a
 
 ## On Create Plugin Bot
 
+**This forward is currently deprecated!**
+
 `Action OnPrePluginBotAdd(int entity)` is called when a plugin has requested to attach a NavBot Plugin Bot instance on the given entity.    
 Returning anything higher than `Plugin_Continue` will block the plugin bot from being created.
 
@@ -19,9 +21,3 @@ Returning anything higher than `Plugin_Continue` will block the plugin bot from 
 
 * `int entity`: Client index that the plugin bot will attach to.
 
-## On Pre Kick Random Bot
-
-`Action OnPreKickRandomBot(int& bot)` called when a random bot is about to be kicked, invoked by the bot quota system or the remove bot console command.    
-Returning anything higher than `Plugin_Continue` will allow you to override the bot selected to be kicked.
-
-* `int& bot`: Client index of the bot that should be kicked, this is a value that should be set by your plugin.

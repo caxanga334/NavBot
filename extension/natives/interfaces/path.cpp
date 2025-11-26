@@ -199,7 +199,7 @@ cell_t natives::bots::interfaces::path::GetMoveGoal(IPluginContext* context, con
 
 	cell_t* goal = nullptr;
 	context->LocalToPhysAddr(params[2], &goal);
-	const Vector& moveGoal = nav->GetPathDestination();
+	const Vector& moveGoal = nav->GetMoveToPos();
 	pawnutils::VectorToPawnFloatArray(goal, moveGoal);
 
 	return 0;

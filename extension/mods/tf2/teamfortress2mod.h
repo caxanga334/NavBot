@@ -114,22 +114,15 @@ public:
 #endif // SOURCE_ENGINE == SE_TF2
 
 	void Update() override;
-
 	const char* GetModName() override { return "Team Fortress 2"; }
-
 	Mods::ModType GetModType() override { return Mods::ModType::MOD_TF2; }
 	void OnMapStart() override;
 	void OnMapEnd() override;
-
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
-
 	int GetWeaponEconIndex(edict_t* weapon) const override;
-	bool BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const override;
-
 	void OnNavMeshLoaded() override;
 	void OnNavMeshDestroyed() override;
-
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
 	// This function checks if class changes are allowed (IE: MvM after wave start)

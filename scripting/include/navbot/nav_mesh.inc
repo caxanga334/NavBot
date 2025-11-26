@@ -3,6 +3,7 @@
 #endif
 #define _navbot_navmesh_included
 
+// In the nav mesh code, this value is used to signal 'ANY' team.
 #define NAV_TEAM_ANY -2
 
 methodmap NavBotNavArea

@@ -11,15 +11,7 @@
 
 #include "navbot/nav_mesh.inc"
 #include "navbot/bots.inc"
-
-/**
- * Checks if the given client is a NavBot managed fake client.
- *
- * @param client        Client index.
- * @return					True if the given client is a NavBot, false otherwise.
- * @error               Invalid client index
- */
-native bool IsNavBot(int client);
+#include "navbot/mod.inc"
 
 enum NavBotAISoundType
 {
@@ -64,28 +56,6 @@ forward Action OnPreNavBotAdd();
 forward void OnNavBotAdded(int bot);
 
 /**
- * Called when a random NavBot instance is about to be kicked, either due to the bot quota or the remove bot command.
- * Allow plugins to implement their own random bot selection.
- * 
- * @param bot Client index of the NavBot instance that should be kicked. Initially 0.
- * @return Returning Plugin_Continue will run the standard behavior. Anything else to kick the bot set on the 'bot' parameter.
- * Returning Plugin_Stop stops the bot from getting kicked.
- */
-forward Action OnPreKickRandomBot(int& bot);
-
-/**
- * Called whe updating the bot quota to determine if the given client should not count towards the total player count.
- * 
- * @return Returning true will ignore the given client.
- */
-forward bool OnUpdateBotQuotaIsClientIgnored(int client);
-
-/**
- * Returns the number of Navbots in-game.
- */
-native int GetNavBotCount();
-
-/**
  * Builds a path from the start position to the end position.
  * 
  * @param vStart				Path start position.
@@ -112,6 +82,32 @@ native void GetPathSegment(const int index, float position[3]);
 // Returns the number of stored path segments.
 native int GetPathSegmentCount();
 
+methodmap NavBotManager
+{
+	/**
+	 * Checks if the given client is a NavBot managed fake client.
+	 *
+	 * @param client        	Client index.
+	 * @return					True if the given client is a NavBot, false otherwise.
+	 * @error               	Invalid client index
+	 */
+	public static native bool IsNavBot(int client);
+	/**
+	 * Returns the number of Navbots in-game.
+	 */
+	public static native int GetNavBotCount();
+	/**
+	 * Gets a NavBot instance by client index.
+	 * @param client  Client index
+	 * @return  NavBot instance or NULL_NAVBOT is a navbot doesn't exists for the given client index.
+	 */
+	public static native NavBot GetNavBotByIndex(int client);
+	/**
+	 * Returns true if the extension's bot feature is supported.
+	 */
+	public static native bool AreBotsSupported();
+}
+
 /**
  * Do not edit below this line!
  */
@@ -130,3 +126,60 @@ public Extension __ext_navbot =
 	required = 0,
 #endif
 };
+
+#if !defined REQUIRE_EXTENSIONS
+public __ext_navbot_SetNTVOptional()
+{
+	MarkNativeAsOptional("FireNavBotSoundEvent");
+	MarkNativeAsOptional("BuildPathSimple");
+	MarkNativeAsOptional("GetPathSegment");
+	MarkNativeAsOptional("GetPathSegmentCount");
+
+	/* Manager */
+	MarkNativeAsOptional("NavBotManager.IsNavBot");
+	MarkNativeAsOptional("NavBotManager.GetNavBotCount");
+	MarkNativeAsOptional("NavBotManager.GetNavBotByIndex");
+	MarkNativeAsOptional("NavBotManager.AreBotsSupported");
+
+	/* Nav Area */
+	MarkNativeAsOptional("NavBotNavArea.GetID");
+	MarkNativeAsOptional("NavBotNavArea.GetCenter");
+
+	/* Nav Mesh */
+	MarkNativeAsOptional("NavBotNavMesh.IsLoaded");
+	MarkNativeAsOptional("NavBotNavMesh.GetNearestNavArea");
+	MarkNativeAsOptional("NavBotNavMesh.GetNavAreaByID");
+	MarkNativeAsOptional("NavBotNavMesh.GetAuthor");
+	MarkNativeAsOptional("NavBotNavMesh.GetEditorCount");
+	MarkNativeAsOptional("NavBotNavMesh.GetEditor");
+
+	/* Mod Interface */
+	MarkNativeAsOptional("NavBotModInterface.GetModName");
+	MarkNativeAsOptional("NavBotModInterface.ParseModSettingsFile");
+	MarkNativeAsOptional("NavBotModInterface.ParseDifficultyProfileFile");
+
+	/* Navigator */
+	MarkNativeAsOptional("MeshNavigator.MeshNavigator");
+	MarkNativeAsOptional("MeshNavigator.Update");
+	MarkNativeAsOptional("MeshNavigator.IsValid");
+	MarkNativeAsOptional("MeshNavigator.ComputeToPos");
+	MarkNativeAsOptional("MeshNavigator.GetMoveGoal");
+	MarkNativeAsOptional("MeshNavigator.StartRepathTimer");
+	MarkNativeAsOptional("MeshNavigator.NeedsRepath");
+	MarkNativeAsOptional("MeshNavigator.Invalidate");
+
+	/* Bots */
+	MarkNativeAsOptional("NavBot.NavBot");
+	MarkNativeAsOptional("NavBot.SetSkillLevel");
+	MarkNativeAsOptional("NavBot.DelayedFakeClientCommand");
+	MarkNativeAsOptional("NavBot.GetInventoryInterface");
+
+	/* Base Interface */
+	MarkNativeAsOptional("NavBotBotInterface.Reset");
+
+	/* Inventory Interface */
+	MarkNativeAsOptional("NavBotInventoryInterface.EquipWeapon");
+	MarkNativeAsOptional("NavBotInventoryInterface.RegisterWeapon");
+	MarkNativeAsOptional("NavBotInventoryInterface.RequestUpdate");
+}
+#endif

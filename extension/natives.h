@@ -6,7 +6,9 @@
 #include <ISourceMod.h>
 
 #include "natives/bots.h"
+#include "natives/mods.h"
 #include "natives/navmesh.h"
+#include "natives/navarea.h"
 #include "natives/interfaces/path.h"
 
 namespace natives

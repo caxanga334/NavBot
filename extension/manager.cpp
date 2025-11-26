@@ -55,15 +55,7 @@
 
 constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
 
-static ConVar sm_navbot_quota_mode("sm_navbot_quota_mode", "normal", FCVAR_GAMEDLL, "NavBot bot quota mode. \n'normal' = Keep N number of bots in the game.\n'fill' = Fill to N bots, remove to make space for human players", CExtManager::OnQuotaModeCvarChanged);
-static ConVar sm_navbot_quota_quantity("sm_navbot_quota_quantity", "0", FCVAR_GAMEDLL, "Number of bots to add.", CExtManager::OnQuotaTargetCvarChanged);
 static ConVar sm_navbot_bot_name_prefix("sm_navbot_bot_name_prefix", "", FCVAR_GAMEDLL, "Prefix to add to bot names.");
-static ConVar sm_navbot_allow_hibernation("sm_navbot_allow_hibernation", "1", FCVAR_GAMEDLL, "If enabled, removes all bots when empty to allow the server to enter hibernation mode.");
-
-// Engine branches that supports engine->CreateFakeClientEx
-#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
-static ConVar sm_navbot_hide_bots("sm_navbot_hide_bots", "0", FCVAR_GAMEDLL, "If enabled, bots will be hidden from the server browser.");
-#endif
 
 CExtManager::CExtManager()
 {
@@ -72,9 +64,6 @@ CExtManager::CExtManager()
 	m_botnames.reserve(256); // reserve space for 256 bot names, vector size will increase if needed
 	m_nextbotname = 0U;
 	m_botdebugmode = BOTDEBUG_NONE;
-	m_quotamode = BotQuotaMode::QUOTA_FIXED;
-	m_quotatarget = 0;
-	m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
 	m_iscreatingbot = false;
 	m_callModUpdateTimer.Invalidate();
 	m_allowbots = true;
@@ -83,8 +72,6 @@ CExtManager::CExtManager()
 	m_postbotaddforward = nullptr;
 	m_prepluginbotaddforward = nullptr;
 	m_postpluginbotaddforward = nullptr;
-	m_preremoverandombot = nullptr;
-	m_botquotaisclientignored = nullptr;
 #endif // !NO_SOURCEPAWN_API
 
 }
@@ -98,8 +85,6 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_postbotaddforward);
 	forwards->ReleaseForward(m_prepluginbotaddforward);
 	forwards->ReleaseForward(m_postpluginbotaddforward);
-	forwards->ReleaseForward(m_preremoverandombot);
-	forwards->ReleaseForward(m_botquotaisclientignored);
 #endif // !NO_SOURCEPAWN_API
 
 	// assign NULL to the smart ptr to detele the existing instance
@@ -113,8 +98,6 @@ void CExtManager::OnAllLoaded()
 	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_preremoverandombot = forwards->CreateForward("OnPreKickRandomBot", ET_Event, 1, nullptr, SourceMod::ParamType::Param_CellByRef);
-	m_botquotaisclientignored = forwards->CreateForward("OnUpdateBotQuotaIsClientIgnored", ET_Single, 1, nullptr, SourceMod::ParamType::Param_Cell);
 #endif // !NO_SOURCEPAWN_API
 
 	AllocateMod();
@@ -163,13 +146,6 @@ void CExtManager::Frame()
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CExtManager::Frame", "NavBot");
 #endif // EXT_VPROF_ENABLED
-
-	if (--m_quotaupdatetime <= 0)
-	{
-		m_quotaupdatetime = TIME_TO_TICKS(BOT_QUOTA_UPDATE_INTERVAL);
-
-		UpdateBotQuota();
-	}
 
 	/*
 	* This is now called by the CBasePlayer::PhysicsSimulate() hook
@@ -284,26 +260,6 @@ void CExtManager::OnMapStart()
 		m_nextbotname = randomgen->GetRandomInt<size_t>(0U, m_botnames.size() - 1U);
 	}
 
-	const char* mode = sm_navbot_quota_mode.GetString();
-
-	if (strncasecmp(mode, "normal", 6) == 0)
-	{
-		SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
-	}
-	else if (strncasecmp(mode, "fill", 4) == 0)
-	{
-		SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
-	}
-	else
-	{
-		SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
-		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
-	}
-
-	int target = sm_navbot_quota_quantity.GetInt();
-	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
-	SetBotQuotaTarget(target);
-
 	ConVarRef sv_quota_stringcmdspersecond("sv_quota_stringcmdspersecond");
 
 	if (sv_quota_stringcmdspersecond.IsValid())
@@ -320,7 +276,6 @@ void CExtManager::OnMapStart()
 
 	CExtManager::s_sv_gravity = sv_gravity.GetFloat();
 	m_callModUpdateTimer.Start(MOD_UPDATE_AFTER_MAP_LOAD);
-	m_quotaupdatetime = TIME_TO_TICKS(10.0f);
 }
 
 void CExtManager::OnMapEnd()
@@ -630,14 +585,9 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	switch (CExtManager::s_botcreatemethod)
 	{
 	case BotCreateMethod::CREATEFAKECLIENT:
-		edict = engine->CreateFakeClient(finalname);
-		break;
+		[[fallthrough]];
 	case BotCreateMethod::CREATEFAKECLIENTEX:
-#if SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
-		edict = engine->CreateFakeClientEx(finalname, !sm_navbot_hide_bots.GetBool());
-#else
 		edict = engine->CreateFakeClient(finalname);
-#endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 		break;
 	case BotCreateMethod::BOTMANAGER:
 		[[fallthrough]];
@@ -730,34 +680,6 @@ void CExtManager::RemoveRandomBot(const char* message)
 		return;
 	}
 
-#ifndef NO_SOURCEPAWN_API
-	cell_t plugin_target = 0;
-	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
-
-	m_preremoverandombot->PushCellByRef(&plugin_target);
-	m_preremoverandombot->Execute(&result);
-
-	if (result >= static_cast<cell_t>(SourceMod::ResultType::Pl_Changed))
-	{
-		if (result == static_cast<cell_t>(SourceMod::ResultType::Pl_Stop))
-		{
-			return;
-		}
-
-		CBaseBot* bot = GetBotByIndex(static_cast<int>(plugin_target));
-
-		if (!bot)
-		{
-			smutils->LogError(myself, "Forward error: OnPreKickRandomBot! Given client index %i is not a NavBot instance.", static_cast<int>(plugin_target));
-			return;
-		}
-
-		IGamePlayer* gp = playerhelpers->GetGamePlayer(bot->GetIndex());
-		gp->Kick(message);
-		return;
-	}
-#endif // !NO_SOURCEPAWN_API
-
 	auto& botptr = m_bots[randomgen->GetRandomInt<size_t>(0U, m_bots.size() - 1)];
 	auto player = playerhelpers->GetGamePlayer(botptr->GetIndex());
 	player->Kick(message);
@@ -833,163 +755,6 @@ void CExtManager::LoadBotNames()
 	rootconsole->ConsolePrint("[NavBot] Bot name list loaded with %i names.", m_botnames.size());
 }
 
-void CExtManager::UpdateBotQuota()
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CExtManager::UpdateBotQuota", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	if (!m_allowbots || m_quotatarget == 0 || !TheNavMesh->IsLoaded())
-		return;
-
-	int humans = 0;
-	int navbots = 0;
-	int otherbots = 0;
-	const CBaseMod* mod = m_mod.get();
-	std::array<bool, ABSOLUTE_PLAYER_LIMIT + 1> isnavbot;
-	std::fill(std::begin(isnavbot), std::end(isnavbot), false);
-
-	for (auto& ptr : m_bots)
-	{
-		isnavbot[ptr->GetIndex()] = true;
-	}
-	
-	auto func = [&mod, &humans, &navbots, &otherbots, &isnavbot](int client, edict_t* entity, SourceMod::IGamePlayer* player) -> void {
-		if (player->IsInGame())
-		{
-#ifndef NO_SOURCEPAWN_API
-			if (extmanager->SMAPIBotQuotaIsClientIgnored(client))
-			{
-				return;
-			}
-#endif
-
-			if (mod->BotQuotaIsClientIgnored(client, entity, player))
-			{
-				return;
-			}
-
-			// Ignore STV/Replay bots.
-			if (player->IsSourceTV() || player->IsReplay())
-			{
-				return;
-			}
-
-			if (player->IsFakeClient())
-			{
-				if (isnavbot[client])
-				{
-					++navbots;
-				}
-				else
-				{
-					++otherbots;
-				}
-			}
-			else
-			{
-				++humans;
-			}
-		}
-	};
-
-	UtilHelpers::ForEachPlayer(func);
-
-	if (humans == 0 && sm_navbot_allow_hibernation.GetBool()) // server is empty of humans
-	{
-		if (navbots > 0)
-		{
-			// Remove all NavBots to save server CPU
-			// Some games will do this automatically for us
-			RemoveAllBots("NavBot: Server is Empty. Removing Bots.");
-		}
-
-		return;
-	}
-
-#ifdef EXT_DEBUG
-	rootconsole->ConsolePrint("[NavBot] Updating Bot Quota \n   %i humans %i navbots %i otherbots ", humans, navbots, otherbots);
-#endif // EXT_DEBUG
-
-	switch (m_quotamode)
-	{
-
-	case CExtManager::BotQuotaMode::QUOTA_FILL:
-	{
-		int target = m_quotatarget - (humans + otherbots);
-
-		if (target == 0 && navbots == 0)
-			return;
-
-		if (navbots < target)
-		{
-			AddBot();
-		}
-		else if (navbots > target)
-		{
-			RemoveRandomBot("Nav Bot: Kicked by bot quota manager.");
-		}
-
-		break;
-	}
-	case CExtManager::BotQuotaMode::QUOTA_FIXED:
-	default:
-		if (navbots < m_quotatarget) // number of bots is below desired quantity
-		{
-			AddBot();
-		}
-		else if (navbots > m_quotatarget) // number of bots is above desired quantity
-		{
-			RemoveRandomBot("Nav Bot: Kicked by bot quota manager.");
-		}
-
-		break;
-	}
-}
-
-#if SOURCE_ENGINE > SE_EPISODEONE
-void CExtManager::OnQuotaModeCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
-#else
-void CExtManager::OnQuotaModeCvarChanged(ConVar* var, char const* pOldString)
-#endif
-{
-	auto mode = sm_navbot_quota_mode.GetString();
-
-	if (strncasecmp(mode, "normal", 6) == 0)
-	{
-		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
-	}
-	else if (strncasecmp(mode, "fill", 4) == 0)
-	{
-		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FILL);
-	}
-	else if (strncasecmp(mode, "fixed", 5) == 0)
-	{
-		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
-	}
-	else
-	{
-		extmanager->SetBotQuotaMode(BotQuotaMode::QUOTA_FIXED);
-		smutils->LogError(myself, "Unknown bot quota mode \"%s\"!", mode);
-	}
-
-	if (!TheNavMesh->IsLoaded())
-	{
-		Warning("[NAVBOT] Nav mesh not loaded, bot quota unavailable.\n");
-	}
-}
-
-#if SOURCE_ENGINE > SE_EPISODEONE
-void CExtManager::OnQuotaTargetCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
-#else
-void CExtManager::OnQuotaTargetCvarChanged(ConVar* var, char const* pOldString)
-#endif
-{
-	int target = sm_navbot_quota_quantity.GetInt();
-	target = std::clamp(target, 0, gpGlobals->maxClients - 1); // limit max bots to server maxplayers - 1
-	extmanager->SetBotQuotaTarget(target);
-}
-
 void CExtManager::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args)
 {
 	m_mod->OnClientCommand(pEdict, player, args);
@@ -1037,17 +802,6 @@ int CExtManager::AutoComplete_BotNames(const char* partial, char commands[COMMAN
 
 	return count;
 }
-
-#ifndef NO_SOURCEPAWN_API
-bool CExtManager::SMAPIBotQuotaIsClientIgnored(int client)
-{
-	cell_t result = 0;
-	m_botquotaisclientignored->PushCell(static_cast<cell_t>(client));
-	m_botquotaisclientignored->Execute(&result);
-
-	return result != 0;
-}
-#endif // !NO_SOURCEPAWN_API
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {

@@ -59,12 +59,15 @@ CopyFiles('scripting/include', 'addons/sourcemod/scripting/include',
 CopyFiles('scripting/include/navbot', 'addons/sourcemod/scripting/include/navbot',
   [ 
     'bots.inc',
+    'mod.inc',
     'nav_mesh.inc',
   ]
 )
 
 CopyFiles('scripting/include/navbot/interfaces', 'addons/sourcemod/scripting/include/navbot/interfaces',
   [ 
+    'base_interface.inc',
+    'inventory.inc',
     'path.inc',
   ]
 )

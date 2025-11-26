@@ -473,19 +473,6 @@ int CTeamFortress2Mod::GetWeaponEconIndex(edict_t* weapon) const
 	return tf2lib::GetWeaponItemDefinitionIndex(weapon);
 }
 
-bool CTeamFortress2Mod::BotQuotaIsClientIgnored(int client, edict_t* entity, SourceMod::IGamePlayer* player) const
-{
-	if (m_gamemode == TeamFortress2::GameModeType::GM_MVM)
-	{
-		if (player->IsFakeClient() && tf2lib::GetEntityTFTeam(client) != TeamFortress2::TFTeam::TFTeam_Red)
-		{
-			return true; // ignore spectator and BLU team bots on MvM
-		}
-	}
-
-	return false;
-}
-
 void CTeamFortress2Mod::OnNavMeshLoaded()
 {
 	auto functor = [this](CTFWaypoint* waypoint) {

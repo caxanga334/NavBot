@@ -119,14 +119,20 @@ namespace pathhelpers
 	}
 }
 
+static cell_t Native_AreBotsSupported(IPluginContext* context, const cell_t* params)
+{
+	return extmanager->AreBotsSupported() ? 1 : 0;
+}
+
 namespace natives
 {
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
 		sp_nativeinfo_t list[] = {
-			{"IsNavBot", IsNavBot},
+			{"NavBotManager.IsNavBot", IsNavBot},
 			{"FireNavBotSoundEvent", FireNavBotSoundEvent},
-			{"GetNavBotCount", GetNavBotCount},
+			{"NavBotManager.GetNavBotCount", GetNavBotCount},
+			{"NavBotManager.AreBotsSupported", Native_AreBotsSupported},
 			{"BuildPathSimple", BuildPathSimple},
 			{"GetPathSegment", GetPathSegment},
 			{"GetPathSegmentCount", GetPathSegmentCount},

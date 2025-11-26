@@ -372,11 +372,14 @@ void NavBotExt::SDK_OnAllLoaded()
 
 	entprops->Init(true);
 	sdkcalls->PostInit(); // setup the calls
-	spmanager->SetupHandles();
 
 #ifndef NO_SOURCEPAWN_API
+	spmanager->SetupHandles();
+
 	natives::setup(m_natives);
 	natives::navmesh::setup(m_natives);
+	natives::navarea::setup(m_natives);
+	natives::mods::setup(m_natives);
 	natives::bots::setup(m_natives);
 	natives::bots::interfaces::path::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });

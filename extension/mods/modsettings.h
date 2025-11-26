@@ -31,6 +31,12 @@ public:
 
 	virtual void ParseConfigFile();
 	virtual void PostParse();
+	/**
+	 * @brief Parses a custom mod settings file. Used in the SourcePawn API. Returns error code.
+	 * @param file Absolute path to the mod settings file.
+	 * @return 
+	 */
+	SourceMod::SMCError ParseCustomFile(const char* file);
 protected:
 
 	void ReadSMC_ParseStart() override
@@ -43,6 +49,12 @@ protected:
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
 	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
 	SourceMod::SMCResult ReadSMC_RawLine(const SourceMod::SMCStates* states, const char* line) override { return SourceMod::SMCResult_Continue; }
+
+	/**
+	 * @brief Parses the given mod settings file.
+	 * @param file Absolute path to the mod settings file.
+	 */
+	void ParseFile(const char* file);
 public:
 
 	void SetDefendRate(int v) { defendrate = v; }

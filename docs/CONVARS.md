@@ -17,11 +17,7 @@ List of console variables for NavBot.
 |sm_navbot_path_skip_ahead_distance|Default distance to look ahead on the path and skip ground segments that can be reached directly.|Float|Default value used when a hard coded value isn't set.|
 |sm_navbot_path_useable_scan|How frequently bots scans for useable obstacles on the path. (IE: Doors)|Float|Lower values improves the bot reaction time to obstacles, higher values improves performance.|
 |sm_navbot_aim_stability_max_rate|Maximum angle change rate to consider the bot aim to be stable.|Float|N/A|
-|sm_navbot_quota_mode|Bot quota mode.|String|'normal' to keep N number of bots in the game. 'fill' to fill until there area N players on the server, bots will leave as human players join in this mode.|
-|sm_navbot_quota_quantity|The target number of bots.|Integer|N/A|
 |sm_navbot_bot_name_prefix|Prefix to add to bot names.|String|N/A|
-|sm_navbot_hide_bots|If enabled, bots are hidden from the server browser.|Boolean|Needs to be enable before adding bots to take effect. Only available on supported engine branches.|
-|sm_navbot_allow_hibernation|If enabled, bots will be kicked when the server is empty to allow hibernation.|Boolean|Some games automatically kicks bots to enter hibernation (IE: TF2), NavBot doesn't prevent that.|
 
 ## Team Fortress 2 Bot specific ConVars
 

@@ -13,43 +13,51 @@ void CModSettings::ParseConfigFile()
 	const CBaseMod* mod = extmanager->GetMod();
 	std::string map = mod->GetCurrentMapName();
 
-	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s.cfg", modfolder, map.c_str());
 
-	if (!std::filesystem::exists(path))
+	// Parse the global file first if it exists
+	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.custom.cfg");
+
+	if (std::filesystem::exists(path))
 	{
-		META_CONPRINTF("[NavBot] Map specific mod settings file at \"%s\" not found, not parsing. \n", path);
+		ParseFile(path);
+	}
+	else
+	{
+		smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.cfg");
 
-		smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/settings.custom.cfg", modfolder);
-
-		if (!std::filesystem::exists(path))
+		if (std::filesystem::exists(path))
 		{
-			smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/settings.cfg", modfolder);
-
-			if (!std::filesystem::exists(path))
-			{
-				smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.custom.cfg");
-
-				if (!std::filesystem::exists(path))
-				{
-					smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.cfg");
-
-					if (!std::filesystem::exists(path))
-					{
-						return; // Use default values set by the constructor
-					}
-				}
-			}
+			ParseFile(path);
 		}
 	}
 
-	META_CONPRINTF("[NavBot] Parsing mod settings file: %s \n", path);
+	// Then parse the per mod global if it exists
+	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/settings.custom.cfg", modfolder);
 
-	SourceMod::SMCStates states;
-	SourceMod::SMCError result = textparsers->ParseFile_SMC(path, this, &states);
-
-	if (result != SourceMod::SMCError::SMCError_Okay)
+	if (std::filesystem::exists(path))
 	{
-		smutils->LogError(myself, "Error parsing mod settings file \"%s\"!", path);
+		ParseFile(path);
+	}
+	else
+	{
+		smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/settings.cfg", modfolder);
+
+		if (std::filesystem::exists(path))
+		{
+			ParseFile(path);
+		}
+	}
+
+	// Finally, parse the per map override
+	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s.cfg", modfolder, map.c_str());
+
+	if (std::filesystem::exists(path))
+	{
+		ParseFile(path);
+	}
+	else
+	{
+		META_CONPRINTF("[NavBot] Map specific mod settings file at \"%s\" not found, not parsing. \n", path);
 	}
 
 	PostParse();
@@ -66,6 +74,12 @@ void CModSettings::PostParse()
 	{
 		unstuck_teleport_threshold = -1;
 	}
+}
+
+SourceMod::SMCError CModSettings::ParseCustomFile(const char* file)
+{
+	SourceMod::SMCStates states;
+	return textparsers->ParseFile_SMC(file, this, &states);
 }
 
 SourceMod::SMCResult CModSettings::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
@@ -198,6 +212,19 @@ SourceMod::SMCResult CModSettings::ReadSMC_LeavingSection(const SourceMod::SMCSt
 	}
 
 	return SourceMod::SMCResult_Continue;
+}
+
+void CModSettings::ParseFile(const char* file)
+{
+	META_CONPRINTF("[NavBot] Parsing mod settings file: %s \n", file);
+
+	SourceMod::SMCStates states;
+	SourceMod::SMCError result = textparsers->ParseFile_SMC(file, this, &states);
+
+	if (result != SourceMod::SMCError::SMCError_Okay)
+	{
+		smutils->LogError(myself, "Error parsing mod settings file \"%s\"!", file);
+	}
 }
 
 bool CModSettings::RollDefendChance() const

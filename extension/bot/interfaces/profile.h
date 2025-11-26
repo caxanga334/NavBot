@@ -131,23 +131,25 @@ public:
 	}
 
 	virtual ~CDifficultyManager();
-
 	void LoadProfiles();
-
+	/**
+	 * @brief Parses a custom difficulty profile file. Used by the SourcePawn API.
+	 * @param path Absolute path to the difficulty profile config file.
+	 * @param replace If true, clears the existing profiles from memory.
+	 * @return Parse result code.
+	 */
+	SourceMod::SMCError ParseCustomProfileConfig(const char* path, const bool replace = true);
 	virtual DifficultyProfile* CreateNewProfile() const { return new DifficultyProfile; }
-
 	/**
 	 * @brief Given a skill level, gets a random difficulty profile for that skill level
 	 * @param level Skill level
 	 * @return Difficulty profile
 	*/
 	std::shared_ptr<DifficultyProfile> GetProfileForSkillLevel(const int level) const;
-
 	/**
 	 * @brief Called when starting parsing.
 	 */
 	void ReadSMC_ParseStart() override;
-
 	/**
 	 * @brief Called when ending parsing.
 	 *
@@ -155,7 +157,6 @@ public:
 	 * @param failed			True if parsing failed, false otherwise.
 	 */
 	void ReadSMC_ParseEnd(bool halted, bool failed) override;
-
 	/**
 	 * @brief Called when entering a new section
 	 *
@@ -164,7 +165,6 @@ public:
 	 * @return				SMCResult directive.
 	 */
 	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
-
 	/**
 	 * @brief Called when encountering a key/value pair in a section.
 	 *
@@ -175,7 +175,6 @@ public:
 	 * @return				SMCResult directive.
 	 */
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
-
 	/**
 	 * @brief Called when leaving the current section.
 	 *
@@ -183,7 +182,6 @@ public:
 	 * @return				SMCResult directive.
 	 */
 	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
-
 	/**
 	 * @brief Runs a function on every bot difficulty profile.
 	 * @tparam F Functor: void (T* profile)

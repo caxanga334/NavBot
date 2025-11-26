@@ -12,7 +12,6 @@ namespace natives::bots
 	cell_t SetSkillLevel(IPluginContext* context, const cell_t* params);
 	cell_t GetNavBotByIndex(IPluginContext* context, const cell_t* params);
 	cell_t DelayedFakeClientCommand(IPluginContext* context, const cell_t* params);
-	cell_t SelectWeapon(IPluginContext* context, const cell_t* params);
 }
 
 #endif // !NAVBOT_BOTS_NATIVES_H_

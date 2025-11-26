@@ -136,6 +136,30 @@ void CDifficultyManager::LoadProfiles()
 	smutils->LogMessage(myself, "Loaded bot difficulty profiles. Number of profiles: %i", m_profiles.size());
 }
 
+SourceMod::SMCError CDifficultyManager::ParseCustomProfileConfig(const char* path, const bool replace)
+{
+	if (replace)
+	{
+		m_profiles.clear();
+	}
+
+	SourceMod::SMCStates states;
+	SourceMod::SMCError error = textparsers->ParseFile_SMC(path, this, &states);
+
+	if (error != SourceMod::SMCError_Okay)
+	{
+		m_profiles.clear();
+		return error;
+	}
+
+	for (auto& profile : m_profiles)
+	{
+		profile->ValidateProfileValues();
+	}
+
+	return error;
+}
+
 std::shared_ptr<DifficultyProfile> CDifficultyManager::GetProfileForSkillLevel(const int level) const
 {
 	// random profile

@@ -3,6 +3,9 @@
 #endif
 #define _navbot_bots_included
 
+#include "interfaces/base_interface.inc"
+#include "interfaces/inventory.inc"
+
 // Pass this to SetSkillLevel to generate a random difficulty profile for the bot.
 #define NAVBOT_SKILL_RANDOM -1
 
@@ -33,17 +36,12 @@ methodmap NavBot
 	 * @error			Invalid bot instance or NULL string passed.
 	 */
 	public native void DelayedFakeClientCommand(const char[] cmd);
-
 	/**
-	 * Makes the bot switch their weapon to the given weapon.
+	 * Returns a memory address to the bot's inventory interface.
 	 * 
-	 * This internally SDKCalls CBasePlayer::Weapon_Switch.
-	 * 
-	 * @param weapon	Weapon entity index.
-	 * @return bool		SDKCall return value.
-	 * @error			Invalid bot instance or invalid weapon entity passed.
+	 * @return			Memory address of the bot's inventory interface.
 	 */
-	public native bool SelectWeapon(int weapon);
+	public native NavBotInventoryInterface GetInventoryInterface();
 
 	property int Index
 	{
@@ -55,13 +53,6 @@ methodmap NavBot
 		public get() { return this.Index == 0; }
 	}
 }
-
-/**
- * Gets a NavBot instance by client index.
- * @param client  Client index
- * @return  NavBot instance or NULL_NAVBOT is a navbot doesn't exists for the given client index.
- */
-native NavBot GetNavBotByIndex(int client);
 
 /**
  * Called when a new NavBot Plugin Bot instance is about to be attached to an entity
