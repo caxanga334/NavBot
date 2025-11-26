@@ -266,7 +266,7 @@ inline bool NavErrorShouldBeLoggedAsError(NavErrorType error)
 	switch (error)
 	{
 	case NAV_OK:
-		[[fallthough]];
+		[[fallthrough]];
 	case NAV_CANT_ACCESS_FILE:
 		return false;
 	default:
