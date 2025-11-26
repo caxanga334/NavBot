@@ -775,7 +775,6 @@ void CNavMesh::Update( void )
 	}
 }
 
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Check all nav areas inside the breakable's extent to see if players would now fall through
@@ -4544,6 +4543,17 @@ void CNavMesh::ComputeInternalData()
 
 	ComputeDoorBlockers();
 }
+
+void NavNotifyClientsOfReload::operator()(CBaseExtPlayer* player)
+{
+	player->ClearLastKnownNavArea();
+
+	if (player->MyBotPointer() != nullptr)
+	{
+		player->MyBotPointer()->Reset();
+	}
+}
+
 
 CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {

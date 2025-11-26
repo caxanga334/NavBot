@@ -1057,6 +1057,76 @@ bool CNavMesh::Save(void)
 	return true;
 }
 
+void CNavMesh::ReloadNavigationMesh()
+{
+	META_CONPRINT("Saving and loading the navigaiton mesh, this may freeze your game for a few seconds. \n");
+
+	if (!Save())
+	{
+		META_CONPRINT("Failed to reload the navigation mesh: Error while trying to save! \n");
+		return;
+	}
+
+	LoadPlaceDatabase();
+
+	NavErrorType error = NAV_CORRUPT_DATA;
+
+	try
+	{
+		error = Load();
+	}
+	catch (const std::ios_base::failure& ex)
+	{
+		smutils->LogError(myself, "Exception throw while reading navigation mesh file: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "Failed to load navigation mesh: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+
+	NavNotifyClientsOfReload func;
+	extmanager->ForEachClient(func);
+
+	switch (error)
+	{
+	case NAV_OK:
+		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
+		break;
+	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
+		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
+		break;
+	case NAV_INVALID_FILE:
+		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
+		break;
+	case NAV_BAD_FILE_VERSION:
+		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
+		break;
+	case NAV_FILE_OUT_OF_DATE:
+		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
+		break;
+	case NAV_CORRUPT_DATA:
+		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
+		break;
+	case NAV_OUT_OF_MEMORY:
+		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
+		break;
+	default:
+		break;
+	}
+
+	OnReloaded();
+	// Simulate a round restart to relink the nav mesh with entities.
+	CNavMesh::NotifyRoundRestart();
+}
+
+void CNavMesh::FrameAction_ReloadNavMesh(void* data)
+{
+	TheNavMesh->ReloadNavigationMesh();
+}
 
 //--------------------------------------------------------------------------------------------------------------
 static NavErrorType CheckNavFile( const char *bspFilename )

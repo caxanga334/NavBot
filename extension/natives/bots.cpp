@@ -161,14 +161,6 @@ cell_t natives::bots::AddNavBotMM(IPluginContext* context, const cell_t* params)
 		return 0;
 	}
 
-#if defined(KE_ARCH_X64)
-	if (context->GetRuntime()->FindPubvarByName("__Virtual_Address__", nullptr) != SP_ERROR_NONE)
-	{
-		context->ReportError("Virtual address is required to use natives on x64!");
-		return 0;
-	}
-#endif
-
 	edict_t* edict = nullptr;
 	char* szName = nullptr;
 
@@ -216,14 +208,6 @@ cell_t natives::bots::SetSkillLevel(IPluginContext* context, const cell_t* param
 
 cell_t natives::bots::GetNavBotByIndex(IPluginContext* context, const cell_t* params)
 {
-#if defined(KE_ARCH_X64)
-	if (context->GetRuntime()->FindPubvarByName("__Virtual_Address__", nullptr) != SP_ERROR_NONE)
-	{
-		context->ReportError("Virtual address is required to use the navigator on x64!");
-		return 0;
-	}
-#endif
-
 	int client = static_cast<int>(params[1]);
 
 	if (!UtilHelpers::IsPlayerIndex(client))

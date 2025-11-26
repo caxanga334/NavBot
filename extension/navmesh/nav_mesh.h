@@ -50,6 +50,8 @@ class CRCBot2Waypoint;
 class CRCBot2WaypointLoader;
 class INavBlocker;
 class CDoorNavBlocker;
+class CBaseBot;
+class CBaseExtPlayer;
 
 #if SOURCE_ENGINE == SE_EPISODEONE
 class CCommand;
@@ -180,6 +182,15 @@ public:
 
 private:
 	std::unordered_set<unsigned int> added_areas;
+};
+
+/**
+ * @brief Utility functor for when the nav mesh is reloaded. Clears the last known nav areas and resets the bots.
+ */
+class NavNotifyClientsOfReload
+{
+public:
+	void operator()(CBaseExtPlayer* player);
 };
 
 //--------------------------------------------------------------------------------------------------------
@@ -411,7 +422,6 @@ public:
 	virtual CNavLadder* CreateLadder() const;							// Allocates a new Ladder
 	virtual void Reset( void );											// destroy Navigation Mesh data and revert to initial state
 	virtual void Update( void );										// invoked on each game frame
-
 	virtual NavErrorType Load( void );									// load navigation data from a file
 	virtual NavErrorType PostLoad( uint32_t version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 	inline bool IsLoaded( void ) const		{ return m_isLoaded; }				// return true if a Navigation Mesh has been loaded
@@ -425,6 +435,8 @@ public:
 	virtual bool IsAuthoritative( void ) const { return true; }
 
 	virtual bool Save(void);									// store Navigation Mesh to a file
+	void ReloadNavigationMesh();								// Reloads the navigation mesh.
+	static void FrameAction_ReloadNavMesh(void* data);			// Reloads the navigation mesh, for use with smutils->AddFrameAction
 	inline bool IsOutOfDate( void ) const	{ return m_isOutOfDate; }			// return true if the Navigation Mesh is older than the current map version
 
 	virtual uint32_t GetSubVersionNumber( void ) const;										// returns sub-version number of data format used by derived classes

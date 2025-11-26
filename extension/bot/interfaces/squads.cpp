@@ -269,6 +269,12 @@ void ISquad::Update()
 			return;
 		}
 
+		if (m_squaddata->GetMembersCount() == 0U)
+		{
+			NotifySquadDestruction();
+			return;
+		}
+
 		if (IsSquadLeader())
 		{
 			if (IsAutoDestroySquad() && GetSquadAutoDestructionTimer().IsElapsed())

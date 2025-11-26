@@ -65,6 +65,8 @@ enum NavErrorType
 	NAV_FILE_OUT_OF_DATE,
 	NAV_CORRUPT_DATA,
 	NAV_OUT_OF_MEMORY,
+
+	MAX_NAV_ERROR_TYPES
 };
 
 enum NavAttributeType
@@ -256,6 +258,40 @@ inline const char* NavTraverseTypeToString(NavTraverseType type)
 	static_assert(names.size() == static_cast<std::size_t>(NavTraverseType::NUM_TRAVERSE_TYPES) + 1U, "Nav Traverse Type name array size and enum count mismatch!");
 
 	return names[static_cast<int>(type)].data();
+}
+
+// Returns true if the given error code should be logged as an error.
+inline bool NavErrorShouldBeLoggedAsError(NavErrorType error)
+{
+	switch (error)
+	{
+	case NAV_OK:
+		[[fallthough]];
+	case NAV_CANT_ACCESS_FILE:
+		return false;
+	default:
+		return true;
+	}
+}
+
+// Returns a description of the given nav error
+inline const char* NavGetErrorDescription(NavErrorType error)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array description = {
+		"No errors."sv,
+		"Navigation mesh file not found."sv,
+		"Navigation mesh file is invalid."sv,
+		"Navigation mesh file version mismatch!"sv,
+		"Navigation mesh file is out of date."sv,
+		"Navigation mesh file is corrupt!"sv,
+		"Out of memory!"sv,
+	};
+
+	static_assert(description.size() == static_cast<std::size_t>(NavErrorType::MAX_NAV_ERROR_TYPES), "Nav Error Type description array size and enum count mismatch!");
+
+	return description[static_cast<int>(error)].data();
 }
 
 //--------------------------------------------------------------------------------------------------------------

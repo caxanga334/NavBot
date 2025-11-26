@@ -56,6 +56,7 @@ ConVar sm_nav_generate_fixup_jump_areas( "sm_nav_generate_fixup_jump_areas", "1"
 ConVar sm_nav_generate_incremental_range( "sm_nav_generate_incremental_range", "2000", FCVAR_CHEAT );
 ConVar sm_nav_generate_incremental_tolerance( "sm_nav_generate_incremental_tolerance", "0", FCVAR_CHEAT, "Z tolerance for adding new nav areas." );
 ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "50", FCVAR_CHEAT, "Max area size created in nav generation" );
+static ConVar sm_nav_prefer_reload("sm_nav_prefer_reload", "1", FCVAR_GAMEDLL, "(Experimental) If enabled, reloads the navigation mesh instead of reloading the entire map.");
 
 // Common bounding box for traces
 Vector NavTraceMins( -0.45, -0.45, 0 );
@@ -64,8 +65,6 @@ Vector NavTraceMaxs( 0.45, 0.45, 64.0f /* navgenparams->human_crouch_height */);
 constexpr float MaxTraversableHeight = 18.0f;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 constexpr float MinObstacleAreaWidth = 10.0f;		// min width of a nav area we will generate on top of an obstacle
 
-extern IVEngineServer* engine;
-extern CGlobalVars *gpGlobals;
 extern CNavMesh* TheNavMesh;
 extern NavAreaVector TheNavAreas;
 
@@ -3907,15 +3906,22 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 			}
 			else if ( restart )
 			{
-				// sm_nextmap keeps overriding the map
-				ConVar* sm_nextmap = g_pCVar->FindVar("sm_nextmap");
-
-				if (sm_nextmap)
+				if (sm_nav_prefer_reload.GetBool())
 				{
-					sm_nextmap->SetValue(STRING(gpGlobals->mapname));
+					smutils->AddFrameAction(CNavMesh::FrameAction_ReloadNavMesh, nullptr);
 				}
+				else
+				{
+					// sm_nextmap keeps overriding the map
+					ConVar* sm_nextmap = g_pCVar->FindVar("sm_nextmap");
 
-				engine->ChangeLevel( STRING( gpGlobals->mapname ), NULL );
+					if (sm_nextmap)
+					{
+						sm_nextmap->SetValue(STRING(gpGlobals->mapname));
+					}
+
+					engine->ChangeLevel(STRING(gpGlobals->mapname), NULL);
+				}
 			}
 			else
 			{
