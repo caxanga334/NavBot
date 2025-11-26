@@ -1432,17 +1432,6 @@ void IMovement::TryToUnstuck()
 		}
 
 		CrouchJump();
-
-		if (modsettings->AllowUnstuckCheats())
-		{
-			CMeshNavigator* path = bot->GetActiveNavigator();
-
-			if (path && path->GetGoalSegment())
-			{
-				Vector launch = bot->CalculateLaunchVector(path->GetGoalSegment()->goal, GetMaxSpeed());
-				bot->SetAbsVelocity(launch);
-			}
-		}
 	}
 }
 
