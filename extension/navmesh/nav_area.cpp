@@ -4385,10 +4385,10 @@ static float FindGroundZ( const Vector& original, const Vector& corner1, const V
 	float first = FindGroundZFromPoint( original, corner1 );
 	float second = FindGroundZFromPoint( original, corner2 );
 
-	if ( fabs( first - second ) > navgenparams->step_height )
+	if ( std::abs( first - second ) > navgenparams->step_height )
 	{
 		// approaching the point from the two directions didn't agree.  Take the one closest to the original z.
-		if ( fabs( original.z - first ) > fabs( original.z - second ) )
+		if ( std::abs( original.z - first ) > std::abs( original.z - second ) )
 		{
 			return second;
 		}

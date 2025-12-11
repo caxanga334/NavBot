@@ -70,14 +70,17 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 
 		if (deltaZ >= m_movecaps.m_stepheight)
 		{
-			if (m_movecaps.m_candoublejump && deltaZ > m_movecaps.m_maxdjheight)
+			if (m_movecaps.m_candoublejump)
 			{
-				// too high to reach with double jumps
-				return -1.0f;
+				if (deltaZ > m_movecaps.m_maxdjheight)
+				{
+					// too high to reach by jumping
+					return -1.0f;
+				}
 			}
 			else if (deltaZ > m_movecaps.m_maxjumpheight)
 			{
-				// too high to reach with regular jumps
+				// too high to reach by jumping
 				return -1.0f;
 			}
 
@@ -90,6 +93,7 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		else if (deltaZ < -m_movecaps.m_maxdropheight)
 		{
 			// too far to drop
+			// TO-DO: Handle areas that breaks fall damage.
 			return -1.0f;
 		}
 

@@ -223,6 +223,12 @@ TaskResult<CTF2Bot> CTF2BotFindHealthTask::OnTaskUpdate(CTF2Bot* bot)
 		return Done("I'm at full health!");
 	}
 
+	// Stop going for health if a medic deploys an uber
+	if (tf2lib::IsPlayerInvulnerable(bot->GetIndex()))
+	{
+		return Done("I'm invulnerable!");
+	}
+
 	if (!IsSourceStillValid(bot))
 		return Done("Health Source is invalid!");
 

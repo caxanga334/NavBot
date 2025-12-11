@@ -194,6 +194,11 @@ void IMovement::Update()
 		CrouchJump();
 		m_doMidAirCJ.Invalidate();
 
+		if (extmanager->GetMod()->GetModSettings()->AllowJumpAssist())
+		{
+			m_doJumpAssist = true;
+		}
+
 		if (me->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
 			me->DebugPrintToConsole(255, 255, 0, "%s MID AIR CROUCH JUMP! \n", me->GetDebugIdentifier());
@@ -666,6 +671,7 @@ void IMovement::ClimbLadder(const CNavLadder* ladder, CNavArea* dismount)
 	m_ladder = ladder;
 	m_ladderExit = dismount;
 	m_wasLaunched = false;
+	m_ladderIsAligned = false;
 	ChangeLadderState(LadderState::APPROACHING_LADDER_UP);
 
 	CBaseBot* bot = GetBot<CBaseBot>();
@@ -684,6 +690,7 @@ void IMovement::DescendLadder(const CNavLadder* ladder, CNavArea* dismount)
 	m_ladder = ladder;
 	m_ladderExit = dismount;
 	m_wasLaunched = false;
+	m_ladderIsAligned = false;
 	ChangeLadderState(LadderState::APPROACHING_LADDER_DOWN);
 
 	auto bot = GetBot();
@@ -2089,7 +2096,7 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 		const float dot = DotProduct(to, m_ladder->GetNormal());
 
 		// not facing the ladder, move in front of it.
-		if (dot > FACING_LADDER_DOT)
+		if (!m_ladderIsAligned && dot > FACING_LADDER_DOT)
 		{
 			Vector moveTo = m_ladderMoveGoal + (m_ladder->GetNormal() * GetHullWidth() * 1.6f);
 			MoveTowards(moveTo, MOVEWEIGHT_CRITICAL);
@@ -2107,6 +2114,7 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 			MoveTowards(m_ladderMoveGoal, MOVEWEIGHT_CRITICAL);
 			FaceTowards(m_ladderMoveGoal + Vector(0.0f, 0.0f, navgenparams->human_eye_height), true);
 			const Vector& point = connection->GetConnectionPoint();
+			m_ladderIsAligned = true;
 
 			if (bot->GetRangeTo(point) < CBaseExtPlayer::PLAYER_USE_RADIUS)
 			{
@@ -2989,6 +2997,7 @@ void IMovement::_Reset()
 	m_ladderExit = nullptr;
 	m_ladderState = NOT_USING_LADDER;
 	m_ladderTimer.Invalidate();
+	m_ladderIsAligned = false;
 	m_useLadderTimer.Invalidate();
 	m_landingGoal = vec3_origin;
 	m_jumpCooldown.Invalidate();

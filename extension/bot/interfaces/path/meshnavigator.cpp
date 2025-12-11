@@ -619,6 +619,7 @@ Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goal
 
 bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const CBasePathSegment* goal)
 {
+	// TO-DO: Rewrite this!
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CMeshNavigator::CheckForObstacles", "NavBot");
 #endif // EXT_VPROF_ENABLED
@@ -678,6 +679,8 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const CBasePathSegment* go
 			NDebugOverlay::Text(UtilHelpers::getWorldSpaceCenter(obstacle), "Path Obstacle!", true, 0.2f);
 		}
 
+		// There is a reason TheNavMesh->IsAuthoritative() returns true
+#if PROBLEMATIC
 		// no hit, we can jump over and we are blocked for a while
 		if (tr.fraction == 1.0f && m_obstructedTimer.IsElapsed())
 		{
@@ -699,6 +702,7 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const CBasePathSegment* go
 			mover->ClimbUpToLedge(hitpos, forward, obstacle);
 			return true;
 		}
+#endif // PROBLEMATIC
 		
 		// hit something, jumping over may not be possible
 

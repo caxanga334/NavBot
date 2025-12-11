@@ -501,6 +501,7 @@ protected:
 	CountdownTimer m_ladderWait; // ladder wait timer
 	Vector m_ladderMoveGoal; // ladder move to goal vector
 	float m_ladderGoalZ; // ladder exit Z coordinate
+	bool m_ladderIsAligned;
 	CountdownTimer m_jumpCooldown;
 	CountdownTimer m_jumpTimer;
 	CountdownTimer m_doMidAirCJ; // do a mid air crouch jump (for double jumps)
