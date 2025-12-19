@@ -12,7 +12,7 @@ class CNavLadder;
 class CNavArea;
 class IMovement;
 class CMeshNavigator;
-class CBasePathSegment;
+class BotPathSegment;
 class NavOffMeshConnection;
 
 class CMovementTraverseFilter : public trace::CTraceFilterSimple
@@ -362,7 +362,7 @@ public:
 	 * @param resultoverride return value override. Set to true to consider as reached, false to not reached.
 	 * @return Return true to use the value of resultoverride, otherwise resultoverride is ignored.
 	 */
-	virtual bool IsPathSegmentReached(const CMeshNavigator* nav, const CBasePathSegment* goal, bool &resultoverride) const { return false; }
+	virtual bool IsPathSegmentReached(const CMeshNavigator* nav, const BotPathSegment* goal, bool &resultoverride) const { return false; }
 	/**
 	 * @brief Current movement action needs to control the bot weapons (IE: use the rocket launcher to rocket jump)
 	 * 
@@ -491,6 +491,23 @@ public:
 	 * @return Returns true if the type was changed, false if the request was denied.
 	 */
 	virtual bool RequestMovementTypeChange(MovementType type, MovementRequestPriority priority, float duration, const char* reason = nullptr);
+	/**
+	 * @brief Marks an area as 'dead'. (Dead areas are considered as an impossible path).
+	 * @param area Area to mark as dead end.
+	 * @param duration How long to keep this area marked as dead end. Negative for infinite.
+	 */
+	void AddDeadArea(CNavArea* area, const float duration);
+	/**
+	 * @brief Marks an area with a modified path cost.
+	 * @param area Area to mark.
+	 * @param costMult Cost multiplier for this area.
+	 * @param duration How long to keep this area with modified cost. Negative for infinite.
+	 */
+	void AddCostModArea(CNavArea* area, const float costMult, const float duration);
+	// Returns true if the given area is marked as dead end.
+	bool IsDeadArea(const CNavArea* area) const;
+	// Applies a cost multiplier to the given area.
+	void GetCostMod(const CNavArea* area, float& cost) const;
 protected:
 	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
 	CNavArea* m_ladderExit; // Nav area after the ladder
@@ -581,11 +598,15 @@ protected:
 	 * @param navigator The bot's current navigator.
 	 * @param goal Current goal segment.
 	 */
-	virtual void UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const CBasePathSegment* goal);
+	virtual void UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const BotPathSegment* goal);
 	/**
 	 * @brief Invoked when the bot is jumping to assist the bot with the jump.
 	 */
 	virtual void DoJumpAssist();
+
+	void ClearDeadAreas() { m_deadAreas.clear(); }
+	void ClearCostModAreas() { m_costModAreas.clear(); }
+
 private:
 	float m_speed; // Bot current speed
 	float m_groundspeed; // Bot ground (2D) speed
@@ -603,6 +624,8 @@ private:
 	Vector m_sjMidPoint; // strafe jump mid point
 	Vector m_sjEndPoint; // strafe jump end point
 	bool m_sjIsToTheLeft;
+	std::unordered_map<unsigned int, float> m_deadAreas; // nav areas marked as Dead
+	std::unordered_map<unsigned int, std::pair<float, float>> m_costModAreas; // nav areas marked with modified travel costs, first is cost multiplier, second is max time
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();

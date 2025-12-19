@@ -49,6 +49,7 @@ class NavPlaceDatabaseLoader;
 class CRCBot2Waypoint;
 class CRCBot2WaypointLoader;
 class INavBlocker;
+class INavPathCostMod;
 class CDoorNavBlocker;
 class CBaseBot;
 class CBaseExtPlayer;
@@ -1276,6 +1277,7 @@ private:
 
 	void PlayEditSoundInternal(const std::string& sound) const;
 	void UpdateNavBlockers();
+	void UpdateNavPathCostModifiers();
 
 private:
 	std::unordered_map<WaypointID, std::shared_ptr<CWaypoint>> m_waypoints;
@@ -1288,7 +1290,9 @@ private:
 	std::shared_ptr<CNavPrerequisite> m_selectedPrerequisite;
 	std::vector<CHandle<CBaseEntity>> m_forcedSolidEntities; // vector of entities overriden to be solid in walkable traces
 	std::vector<std::unique_ptr<INavBlocker>> m_navblockers;
+	std::vector<std::unique_ptr<INavPathCostMod>> m_navcostmods; // cost modifiers
 	CountdownTimer m_updateNavBlockersTimer;
+	CountdownTimer m_updateNavPathCostModsTimer;
 	CountdownTimer m_recomputeInternalDataTimer;
 	RecomputeInternalDataReason m_recomputeDataReason;
 
@@ -1318,7 +1322,25 @@ public:
 	void CompressAllIDs();
 	// Moves all ids to the highest value
 	void ShiftAllIDsToTop();
-
+	/**
+	 * @brief Creates a new nav cost modifier. Memory is managed by the nav mesh.
+	 * @tparam T Class of the nav cost modifier to create.
+	 * @tparam ...CArgs Constructor arguments.
+	 * @param ..._args Constructor arguments.
+	 * @return Pointer to the created cost modifier.
+	 */
+	template <typename T, typename... CArgs>
+	T* CreateNavCostModifier(CArgs&&... _args)
+	{
+		T* costmod = new T(std::forward<CArgs>(_args)...);
+		m_navcostmods.emplace_back(costmod);
+		return costmod;
+	}
+	/**
+	 * @brief Removes the given path cost modifier from the nav mesh. This does NOT notify nav areas of the removal.
+	 * @param pathcostmod Path cost mod to remove.
+	 */
+	void RemovePathCostModifier(const INavPathCostMod* pathcostmod);
 	/**
 	 * @brief Adds a new waypoint.
 	 * @param origin Initial position of the new waypoint

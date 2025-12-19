@@ -1,18 +1,61 @@
 #include NAVBOT_PCH_FILE
-#include <queue>
-#include <vector>
 #include <extension.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
-#include <sdkports/sdk_ehandle.h>
-#include <sdkports/sdk_timers.h>
+#include <mods/dods/nav/dods_nav_mesh.h>
+#include <mods/dods/nav/dods_nav_area.h>
+#include <bot/bot_shared_utils.h>
 #include <mods/dods/dayofdefeatsourcemod.h>
 #include <bot/dods/dodsbot.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include "dodsbot_fetch_bomb_task.h"
 
-CDoDSBotFetchBombTask::CDoDSBotFetchBombTask(AITask<CDoDSBot>* exitTask) :
-	m_goal(0.0f, 0.0f, 0.0f)
+class CDoDSBombDispenserFilter : public UtilHelpers::IGenericFilter<CBaseEntity*>
+{
+public:
+	CDoDSBombDispenserFilter(CDoDSBot* dodbot)
+	{
+		this->bot = dodbot;
+		this->dispenser_area = nullptr;
+	}
+
+	bool IsSelected(CBaseEntity* object) override
+	{
+		const int teamIndex = static_cast<int>(this->bot->GetMyDoDTeam());
+		Vector pos = UtilHelpers::getWorldSpaceCenter(object);
+		this->dispenser_area = static_cast<CDODSNavArea*>(TheNavMesh->GetNearestNavArea(pos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f, false, true, teamIndex));
+
+		// entity is off the nav-mesh (unreachable)
+		if (!this->dispenser_area)
+		{
+			return false;
+		}
+
+		int dispenseTeam = 0;
+		entprops->GetEntProp(object, Prop_Data, "m_iDispenseToTeam", dispenseTeam);
+
+		// Team specific dispenser
+		if (dispenseTeam != 0 && dispenseTeam != teamIndex)
+		{
+			return false;
+		}
+
+		bool disabled = false;
+		entprops->GetEntPropBool(object, Prop_Data, "m_bDisabled", disabled);
+
+		// entity is disabled
+		if (disabled)
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	CDoDSBot* bot;
+	CDODSNavArea* dispenser_area;
+};
+
+CDoDSBotFetchBombTask::CDoDSBotFetchBombTask(AITask<CDoDSBot>* exitTask, CBaseEntity* dispenser) :
+	m_goal(0.0f, 0.0f, 0.0f), m_dispenser(dispenser)
 {
 	m_exittask = exitTask;
 }
@@ -25,13 +68,56 @@ CDoDSBotFetchBombTask::~CDoDSBotFetchBombTask()
 	}
 }
 
-TaskResult<CDoDSBot> CDoDSBotFetchBombTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
+bool CDoDSBotFetchBombTask::IsPossible(CDoDSBot* bot, CBaseEntity** dispenser)
 {
-	if (!SelectNearestBombDispenser(bot))
+	botsharedutils::IsReachableAreas collector{ bot, 12000.0f };
+	collector.Execute();
+	CDoDSBombDispenserFilter filter{ bot };
+
+	if (collector.IsCollectedAreasEmpty())
 	{
-		return Done("No bomb dispenser to fetch bomb from!");
+		return false;
 	}
 
+	float distance = std::numeric_limits<float>::max();
+
+	UtilHelpers::ForEachEntityOfClassname("dod_bomb_dispenser", [&dispenser, &distance, &filter, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (filter.IsSelected(entity))
+			{
+				float cost = 0.0f;
+
+				if (collector.IsReachable(filter.dispenser_area, &cost))
+				{
+					if (cost < distance)
+					{
+						distance = cost;
+						*dispenser = entity;
+					}
+				}
+			}
+		}
+
+		return true;
+	});
+
+	return *dispenser != nullptr;
+}
+
+TaskResult<CDoDSBot> CDoDSBotFetchBombTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
+{
+	CBaseEntity* dispenser = m_dispenser.Get();
+
+	if (!dispenser)
+	{
+		if (!CDoDSBotFetchBombTask::IsPossible(bot, &dispenser))
+		{
+			return Done("No bomb dispenser to fetch bomb from!");
+		}
+	}
+
+	m_goal = UtilHelpers::getWorldSpaceCenter(dispenser);
 	return Continue();
 }
 
@@ -80,52 +166,4 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotFetchBombTask::OnMoveToSuccess(CDoDSBo
 	}
 
 	return TryContinue();
-}
-
-bool CDoDSBotFetchBombTask::SelectNearestBombDispenser(CDoDSBot* bot)
-{
-	auto cmp = [&bot](CBaseEntity* lhs, CBaseEntity* rhs) {
-		float range1 = bot->GetRangeToSqr(UtilHelpers::getWorldSpaceCenter(lhs));
-		float range2 = bot->GetRangeToSqr(UtilHelpers::getWorldSpaceCenter(rhs));
-
-		return range1 > range2;
-	};
-
-	std::priority_queue<CBaseEntity*, std::vector<CBaseEntity*>, decltype(cmp)> nearest_dispenser_queue(cmp);
-
-	auto functor = [&nearest_dispenser_queue, &bot](int index, edict_t* edict, CBaseEntity* entity) {
-
-		if (entity)
-		{
-			bool disabled = false;
-			entprops->GetEntPropBool(index, Prop_Data, "m_bDisabled", disabled);
-
-			if (disabled)
-			{
-				return true; // exit early, keep loop
-			}
-
-			int teamIndex = static_cast<int>(dayofdefeatsource::DoDTeam::DODTEAM_UNASSIGNED);
-			entprops->GetEntProp(index, Prop_Data, "m_iDispenseToTeam", teamIndex);
-
-			if (teamIndex > static_cast<int>(dayofdefeatsource::DoDTeam::DODTEAM_SPECTATOR) && teamIndex != static_cast<int>(bot->GetMyDoDTeam()))
-			{
-				return true; // has team restriction and not for my team
-			}
-
-			nearest_dispenser_queue.push(entity);
-		}
-
-		return true;
-	};
-
-	UtilHelpers::ForEachEntityOfClassname("dod_bomb_dispenser", functor);
-
-	if (nearest_dispenser_queue.empty())
-	{
-		return false;
-	}
-
-	m_goal = UtilHelpers::getWorldSpaceCenter(nearest_dispenser_queue.top());
-	return true;
 }

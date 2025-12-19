@@ -34,7 +34,7 @@ bool SourcePawnManager::GetHandleApproxSize(SourceMod::HandleType_t type, void* 
 {
 	if (type == m_meshnavigator_type)
 	{
-		*pSize = static_cast<unsigned int>(sizeof(CMeshNavigator)) + static_cast<unsigned int>(sizeof(CBasePathSegment) * 128);
+		*pSize = static_cast<unsigned int>(sizeof(CMeshNavigator)) + static_cast<unsigned int>(sizeof(BotPathSegment) * 128);
 
 		return true;
 	}

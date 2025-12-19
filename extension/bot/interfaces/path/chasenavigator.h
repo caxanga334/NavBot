@@ -38,7 +38,7 @@ public:
 	template <typename CF>
 	void Update(CBaseBot* bot, CBaseEntity* subject, CF& costFunc, Vector* predictedSubjectPosition = nullptr);
 
-	virtual Vector PredictSubjectPosition(CBaseBot* bot, CBaseEntity* subject) const;
+	Vector PredictSubjectPosition(CBaseBot* bot, CBaseEntity* subject) const;
 
 	// How far ahead of the subject the bot should try to move to.
 	void SetLeadRadius(float radius) { m_leadRadius = radius; }
@@ -47,7 +47,7 @@ public:
 	float GetPathLifeTimeDuration() const { return m_lifetimeduration; }
 
 protected:
-	virtual bool IsRepathNeeded(CBaseBot* bot, CBaseEntity* subject);
+	bool IsRepathNeeded(CBaseBot* bot, CBaseEntity* subject);
 
 private:
 	SubjectLeadType m_leadtype;

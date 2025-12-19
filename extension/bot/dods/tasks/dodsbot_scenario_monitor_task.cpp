@@ -11,6 +11,7 @@
 #include "scenario/dodsbot_attack_control_point_task.h"
 #include "scenario/dodsbot_defuse_bomb_task.h"
 #include "scenario/dodsbot_deploy_bomb_task.h"
+#include "scenario/dodsbot_fetch_bomb_task.h"
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 
 AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
@@ -48,6 +49,23 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 	return new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true);
 }
 
+TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
+{
+#if 0
+	if (CDayOfDefeatSourceMod::GetDODMod()->MapUsesBombs() && !bot->GetInventoryInterface()->HasBomb())
+	{
+		CBaseEntity* dispenser = nullptr;
+
+		if (CDoDSBotFetchBombTask::IsPossible(bot, &dispenser))
+		{
+			return PauseFor(new CDoDSBotFetchBombTask(nullptr, dispenser), "Map uses bombs, going to fetch!");
+		}
+	}
+#endif // 0
+
+	return Continue();
+}
+
 TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 {
 	if (GetNextTask() == nullptr)
@@ -60,6 +78,7 @@ TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
+#if 0
 	CDODSNavArea* area = static_cast<CDODSNavArea*>(newArea);
 
 	if (area->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_PLANT_BOMB) && !area->WasBombed() && area->CanPlantBomb())
@@ -67,6 +86,7 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(
 		CBaseEntity* target = area->GetAssignedBombTarget();
 		return TryPauseFor(new CDoDSBotDeployBombTask(target), PRIORITY_HIGH, "Nav area tells me I need to plant a bomb!");
 	}
+#endif 
 
 	return TryContinue(PRIORITY_LOW);
 }
@@ -74,6 +94,27 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnRoundStateChanged(CDoDSBot* bot)
 {
 	return TrySwitchTo(new CDoDSBotScenarioMonitorTask, PRIORITY_CRITICAL, "Round state changed, restart ScenarioMonitor!");
+}
+
+TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChanged(CDoDSBot* bot)
+{
+	const CDODSNavArea* area = static_cast<const CDODSNavArea*>(bot->GetPathProcessorInterface()->GetBombArea());
+
+	if (area && area->CanPlantBomb())
+	{
+		CBaseEntity* bombTarget = area->GetAssignedBombTarget();
+
+		if (bombTarget)
+		{
+			// don't start multiple deploy bomb tasks
+			if (!bot->GetBehaviorInterface()->IsBehaviorRunning(CDoDSBotDeployBombTask::IDENTIFIER, 0, true))
+			{
+				return TryPauseFor(new CDoDSBotDeployBombTask(bombTarget, false), PRIORITY_HIGH, "Bombing obstacle on my path!");
+			}
+		}
+	}
+
+	return TryContinue(PRIORITY_LOW);
 }
 
 void CDoDSBotScenarioMonitorTask::FindControlPointToDefend(CDoDSBot* bot, CBaseEntity** defuse, const CDayOfDefeatSourceMod::DoDControlPoint** defend)

@@ -35,6 +35,7 @@
 #include "nav_prereq.h"
 #include "nav_blocker.h"
 #include "nav_blocker_door.h"
+#include "nav_pathcost_mod.h"
 #include "nav_pathfind.h"
 #include <utlbuffer.h>
 #include <utlhash.h>
@@ -535,6 +536,7 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 		m_elevators.clear();
 		m_prerequisites.clear();
 		DestroyAllNavBlockers();
+		m_navcostmods.clear();
 	}
 
 	m_blockedAreas.RemoveAll();
@@ -646,6 +648,7 @@ void CNavMesh::Update( void )
 	UpdateBlockedAreas();
 	UpdateAvoidanceObstacleAreas();
 	UpdateNavBlockers();
+	UpdateNavPathCostModifiers();
 
 	if (m_recomputeInternalDataTimer.HasStarted() && m_recomputeInternalDataTimer.IsElapsed())
 	{
@@ -3776,6 +3779,26 @@ void CNavMesh::UpdateNavBlockers()
 	}
 }
 
+void CNavMesh::UpdateNavPathCostModifiers()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CNavMesh::UpdateNavPathCostModifiers", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (m_updateNavPathCostModsTimer.IsElapsed())
+	{
+		m_navcostmods.erase(std::remove_if(m_navcostmods.begin(), m_navcostmods.end(), [](const std::unique_ptr<INavPathCostMod>& mod) {
+			return !mod->IsValid();
+		}), m_navcostmods.end());
+
+		std::for_each(m_navcostmods.begin(), m_navcostmods.end(), [](std::unique_ptr<INavPathCostMod>& mod) {
+			mod->OnUpdate();
+		});
+
+		m_updateNavPathCostModsTimer.Start(INavPathCostMod::UPDATE_RATE);
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::RegisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction )
 {
@@ -4055,6 +4078,20 @@ void CNavMesh::ShiftAllIDsToTop()
 	META_CONPRINTF("Top elevator ID: %u\n", CNavElevator::s_nextID);
 	META_CONPRINTF("Top prerequisite ID: %u\n", CNavPrerequisite::s_nextID);
 #endif // EXT_DEBUG
+}
+
+void CNavMesh::RemovePathCostModifier(const INavPathCostMod* pathcostmod)
+{
+	for (auto& it = m_navcostmods.begin(); it != m_navcostmods.end(); it++)
+	{
+		const INavPathCostMod* ptr = it->get();
+
+		if (ptr == pathcostmod)
+		{
+			m_navcostmods.erase(it);
+			return;
+		}
+	}
 }
 
 std::optional<const std::shared_ptr<CWaypoint>> CNavMesh::AddWaypoint(const Vector& origin)
@@ -4449,8 +4486,6 @@ void CNavMesh::NotifyDangerousEditCommandWasUsed()
 {
 	m_isInDangerousState = true;
 	extmanager->RemoveAllBots("Nav Mesh was edited, removing all bots.");
-	ConVarRef sm_navbot_quota_quantity{ "sm_navbot_quota_quantity" };
-	sm_navbot_quota_quantity.SetValue(0);
 }
 
 void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, const bool centerOnly, std::vector<CNavArea*>& output)

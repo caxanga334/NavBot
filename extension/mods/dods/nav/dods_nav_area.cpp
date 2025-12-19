@@ -10,10 +10,32 @@ CDODSNavArea::CDODSNavArea(unsigned int place) :
 {
 	m_dodAttributes = 0;
 	m_bombTarget = nullptr;
+	m_bombed = false;
 }
 
 CDODSNavArea::~CDODSNavArea()
 {
+}
+
+void CDODSNavArea::OnUpdate()
+{
+	CNavArea::OnUpdate();
+
+	if (HasBombRelatedAttributes() && !m_bombed)
+	{
+		CBaseEntity* bomb = GetAssignedBombTarget();
+
+		if (bomb)
+		{
+			int state = static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_INACTIVE);
+			entprops->GetEntProp(bomb, Prop_Send, "m_iState", state);
+			m_bombed = (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_INACTIVE));
+		}
+		else
+		{
+			m_bombed = true; // NULL bomb target entity
+		}
+	}
 }
 
 void CDODSNavArea::OnRoundRestart(void)
@@ -49,6 +71,18 @@ NavErrorType CDODSNavArea::PostLoad(void)
 {
 	NavErrorType code = CNavArea::PostLoad();
 
+	if (HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED1))
+	{
+		smutils->LogError(myself, "Removing deprecated DoD attributes from Nav area %i at %s!", GetID(), UtilHelpers::textformat::FormatVector(GetCenter()));
+		ClearDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED1);
+	}
+
+	if (HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED2))
+	{
+		smutils->LogError(myself, "Removing deprecated DoD attributes from Nav area %i at %s!", GetID(), UtilHelpers::textformat::FormatVector(GetCenter()));
+		ClearDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED2);
+	}
+
 	return code;
 }
 
@@ -70,35 +104,7 @@ bool CDODSNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 		}
 	}
 
-	if (HasDoDAttributes(DODNAV_BLOCKED_UNTIL_BOMBED))
-	{
-		if (!WasBombed())
-		{
-			return true;
-		}
-	}
-
 	return CNavArea::IsBlocked(teamID, ignoreNavBlockers);
-}
-
-const bool CDODSNavArea::WasBombed() const
-{
-	CBaseEntity* bomb = GetAssignedBombTarget();
-
-	if (!bomb)
-	{
-		return true; // entity may have been deleted, assume it's open.
-	}
-
-	int state = -1;
-	entprops->GetEntProp(bomb, Prop_Send, "m_iState", state);
-
-	if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_INACTIVE))
-	{
-		return true;
-	}
-
-	return false;
 }
 
 const bool CDODSNavArea::CanPlantBomb() const
@@ -112,13 +118,7 @@ const bool CDODSNavArea::CanPlantBomb() const
 
 	int state = -1;
 	entprops->GetEntProp(bomb, Prop_Send, "m_iState", state);
-
-	if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE))
-	{
-		return true;
-	}
-
-	return false;
+	return state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE);
 }
 
 void CDODSNavArea::ShowAreaInfo() const
@@ -132,9 +132,9 @@ void CDODSNavArea::ShowAreaInfo() const
 
 		if (HasDoDAttributes(DODNAV_NO_ALLIES)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "NO_ALLIES"); }
 		if (HasDoDAttributes(DODNAV_NO_AXIS)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "NO_AXIS"); }
-		if (HasDoDAttributes(DODNAV_BLOCKED_UNTIL_BOMBED)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "BLOCKED_UNTIL_BOMBED"); }
-		if (HasDoDAttributes(DODNAV_BLOCKED_WITHOUT_BOMBS)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "BLOCKED_WITHOUT_BOMBS"); }
-		if (HasDoDAttributes(DODNAV_PLANT_BOMB)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "PLANT_BOMB"); }
+		// if (HasDoDAttributes(DODNAV_BLOCKED_UNTIL_BOMBED)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "BLOCKED_UNTIL_BOMBED"); }
+		// if (HasDoDAttributes(DODNAV_BLOCKED_WITHOUT_BOMBS)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "BLOCKED_WITHOUT_BOMBS"); }
+		if (HasDoDAttributes(DODNAV_BOMBS_TO_OPEN)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "BOMBS_TO_OPEN"); }
 		if (HasDoDAttributes(DODNAV_REQUIRES_PRONE)) { ke::SafeStrcat(dodattribs, sizeof(dodattribs), "REQUIRES_PRONE"); }
 
 		debugoverlay->AddScreenTextOverlay(0.37f, 0.6f, NDEBUG_PERSIST_FOR_ONE_TICK, 255, 255, 0, 255, dodattribs);
@@ -165,4 +165,5 @@ void CDODSNavArea::FindAndAssignNearestBombTarget()
 	}
 
 	m_bombTarget = bomb;
+	m_bombed = false;
 }

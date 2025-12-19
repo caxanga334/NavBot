@@ -397,6 +397,31 @@ public:
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSwitchToWeapon, me, weapon);
 	}
 
+	bool IsBehaviorRunning(int id, int flags, bool ismod) override
+	{
+		bool result = false;
+
+		if (m_task)
+		{
+			AITask<BotClass>* respondingTask = nullptr;
+			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
+
+			while (respondingTask != nullptr && !result)
+			{
+				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
+				while (respondingTask != nullptr && !result)
+				{
+					result = respondingTask->IsBehaviorRunning(id, flags, ismod);
+					respondingTask = respondingTask->GetTaskBelowMe();
+				}
+
+				respondingTask = previousTask;
+			}
+		}
+
+		return result;
+	}
+
 private:
 	friend class AITask<BotClass>;
 
@@ -589,6 +614,7 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnSquadEvent(BotClass* bot, SquadEventType evtype) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnObjectSapped(BotClass* bot, CBaseEntity* owner, CBaseEntity* saboteur) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnGameEvent(BotClass* bot, const IGameEvent* event, void* moddata) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnPathStatusChanged(BotClass* bot) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -610,7 +636,7 @@ protected:
 	 * @param newTask Task to become the new next task.
 	 * @param reason Reason for debugging
 	 */
-	inline void StartNewNextTask(BotClass* bot, AITask<BotClass>* newTask, const char* reason)
+	void StartNewNextTask(BotClass* bot, AITask<BotClass>* newTask, const char* reason)
 	{
 		if (newTask != nullptr && this->m_hasStarted && this->m_nextTask == nullptr && this->m_replacementNextTask == nullptr)
 		{
@@ -912,7 +938,7 @@ private:
 	IEventListener::EFUNC(ARG1, ARG2, ARG3, ARG4, ARG5);				\
 
 
-	virtual std::vector<IEventListener*>* GetListenerVector() override final
+	std::vector<IEventListener*>* GetListenerVector() final
 	{
 		if (m_nextTask == nullptr)
 		{
@@ -1013,134 +1039,139 @@ private:
 	AITask<BotClass>* ProcessTaskPause(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 	TaskResult<BotClass> ProcessTaskResume(BotClass* bot, AITaskManager<BotClass>* manager, AITask<BotClass>* task);
 
-	void OnDebugMoveToCommand(const Vector& moveTo) override final
+	void OnDebugMoveToCommand(const Vector& moveTo) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnDebugMoveToCommand, moveTo);
 	}
 
-	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) override final
+	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnNavAreaChanged, oldArea, newArea);
 	}
 
-	void OnStuck() override final
+	void OnStuck() final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnStuck);
 	}
 
-	void OnUnstuck() override final
+	void OnUnstuck() final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnUnstuck);
 	}
 
-	void OnMoveToFailure(CPath* path, IEventListener::MovementFailureType reason) override final
+	void OnMoveToFailure(CPath* path, IEventListener::MovementFailureType reason) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnMoveToFailure, path, reason);
 	}
 
-	void OnMoveToSuccess(CPath* path) override final
+	void OnMoveToSuccess(CPath* path) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnMoveToSuccess, path);
 	}
 
-	void OnContact(CBaseEntity* pOther) override final
+	void OnContact(CBaseEntity* pOther) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnContact, pOther);
 	}
 
-	void OnIgnited(const CTakeDamageInfo& info) override final
+	void OnIgnited(const CTakeDamageInfo& info) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnIgnited, info);
 	}
 
-	void OnInjured(const CTakeDamageInfo& info) override final
+	void OnInjured(const CTakeDamageInfo& info) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnInjured, info);
 	}
 
-	void OnKilled(const CTakeDamageInfo& info) override final
+	void OnKilled(const CTakeDamageInfo& info) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnKilled, info);
 	}
 
-	void OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info) override final
+	void OnOtherKilled(CBaseEntity* pVictim, const CTakeDamageInfo& info) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnOtherKilled, pVictim, info);
 	}
 
-	void OnSight(CBaseEntity* subject) override final
+	void OnSight(CBaseEntity* subject) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSight, subject);
 	}
 
-	void OnLostSight(CBaseEntity* subject) override final
+	void OnLostSight(CBaseEntity* subject) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnLostSight, subject);
 	}
 
-	void OnSound(CBaseEntity* source, const Vector& position, SoundType type, const float maxRadius) override final
+	void OnSound(CBaseEntity* source, const Vector& position, SoundType type, const float maxRadius) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnSound, source, position, type, maxRadius);
 	}
 
-	void OnRoundStateChanged() override final
+	void OnRoundStateChanged() final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnRoundStateChanged);
 	}
 
-	void OnFlagTaken(CBaseEntity* player) override final
+	void OnFlagTaken(CBaseEntity* player) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagTaken, player);
 	}
 
-	void OnFlagDropped(CBaseEntity* player) override final
+	void OnFlagDropped(CBaseEntity* player) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnFlagDropped, player);
 	}
 
-	void OnControlPointCaptured(CBaseEntity* point) override final
+	void OnControlPointCaptured(CBaseEntity* point) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointCaptured, point);
 	}
 
-	void OnControlPointLost(CBaseEntity* point) override final
+	void OnControlPointLost(CBaseEntity* point) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointLost, point);
 	}
 
-	void OnControlPointContested(CBaseEntity* point) override final
+	void OnControlPointContested(CBaseEntity* point) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnControlPointContested, point);
 	}
 
-	void OnWeaponEquip(CBaseEntity* weapon) override final
+	void OnWeaponEquip(CBaseEntity* weapon) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnWeaponEquip, weapon);
 	}
 
-	void OnVoiceCommand(CBaseEntity* subject, int command) override final
+	void OnVoiceCommand(CBaseEntity* subject, int command) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnVoiceCommand, subject, command);
 	}
 
-	void OnTruceChanged(const bool enabled) override final
+	void OnTruceChanged(const bool enabled) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnTruceChanged, enabled);
 	}
 
-	void OnSquadEvent(SquadEventType evtype) override final
+	void OnSquadEvent(SquadEventType evtype) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_1_ARGS(OnSquadEvent, evtype);
 	}
 
-	void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur) override final
+	void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnObjectSapped, owner, saboteur);
 	}
 
-	void OnGameEvent(const IGameEvent* event, void* moddata) override final
+	void OnGameEvent(const IGameEvent* event, void* moddata) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnGameEvent, event, moddata);
+	}
+
+	void OnPathStatusChanged() final
+	{
+		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnPathStatusChanged);
 	}
 };
 

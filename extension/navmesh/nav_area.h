@@ -44,6 +44,7 @@ inline void DebuggerBreakOnNaN_StagingOnly( float val )
 class CFuncElevator;
 class CFuncNavCost;
 class INavBlocker;
+class INavPathCostMod;
 // class KeyValues;
 
 inline bool FStrEq(const char *sz1, const char *sz2)
@@ -1031,6 +1032,7 @@ private:
 	const CNavVolume* m_volume; // Nav volume this area is inside
 
 	std::vector<INavBlocker*> m_navblockers; // nav blockers that affects this area
+	std::vector<const INavPathCostMod*> m_navpathcostmods; // nav path cost mods that affects this area
 
 public:
 	void SetNavVolume(const CNavVolume* volume) { m_volume = volume; }
@@ -1045,6 +1047,17 @@ public:
 
 	virtual void RegisterNavBlocker(INavBlocker* blocker);
 	virtual void UnregisterNavBlocker(INavBlocker* blocker);
+
+	void RegisterNavPathCostMod(const INavPathCostMod* pathcostmod);
+	void UnregisterNavPathCostMod(const INavPathCostMod* pathcostmod);
+
+	/**
+	 * @brief Gets the path cost for this nav area.
+	 * @param originalCost Original cost.
+	 * @param cost Modified cost.
+	 * @param bot Optional bot using the path.
+	 */
+	virtual void GetPathCost(const float originalCost, float& cost, CBaseBot* bot = nullptr) const;
 };
 
 typedef CUtlVector< CNavArea * > NavAreaVector;

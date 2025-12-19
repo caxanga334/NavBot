@@ -347,7 +347,7 @@ CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path t
 	Msg("Range to Goal: %3.2f \n", range);
 	Msg("[%i] Current Goal: <%3.2f, %3.2f, %3.2f> type #%i\n", counter, goal->goal.x, goal->goal.y, goal->goal.z, static_cast<int>(goal->type));
 
-	const CBasePathSegment* next = goal;
+	const BotPathSegment* next = goal;
 
 	for (;;)
 	{
@@ -391,7 +391,7 @@ CON_COMMAND(sm_navbot_debug_bot_dump_path_kv, "Dumps the current bot path as a K
 		return;
 	}
 
-	const CBasePathSegment* goal = nav->GetGoalSegment();
+	const BotPathSegment* goal = nav->GetGoalSegment();
 
 	if (!goal)
 	{
@@ -422,7 +422,7 @@ CON_COMMAND(sm_navbot_debug_bot_dump_path_kv, "Dumps the current bot path as a K
 		root->AddSubKey(sub);
 	}
 
-	const CBasePathSegment* segment = nav->GetFirstSegment();
+	const BotPathSegment* segment = nav->GetFirstSegment();
 	int n = 0;
 
 	while (segment != nullptr)

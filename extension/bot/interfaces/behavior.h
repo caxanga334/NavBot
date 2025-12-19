@@ -36,6 +36,7 @@ public:
 	QueryAnswerType IsReady(CBaseBot* me) override;
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
+	bool IsBehaviorRunning(int id, int flags, bool ismod) override;
 
 private:
 

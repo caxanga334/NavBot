@@ -13,9 +13,9 @@
 #include "dodsbot_deploy_bomb_task.h"
 #include "dodsbot_fetch_bomb_task.h"
 
-CDoDSBotDeployBombTask::CDoDSBotDeployBombTask(CBaseEntity* target)
+CDoDSBotDeployBombTask::CDoDSBotDeployBombTask(CBaseEntity* target, const bool isObjective) :
+	m_target(target), m_isObjective(isObjective)
 {
-	m_target = target;
 }
 
 TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
@@ -155,4 +155,27 @@ TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskUpdate(CDoDSBot* bot)
 	}
 
 	return Continue();
+}
+
+void CDoDSBotDeployBombTask::OnTaskEnd(CDoDSBot* bot, AITask<CDoDSBot>* nextTask)
+{
+	if (!m_isObjective)
+	{
+		bot->GetPathProcessorInterface()->ClearBombArea(); // area was bombed
+	}
+}
+
+bool CDoDSBotDeployBombTask::IsBehaviorRunning(int id, int flags, bool ismod)
+{
+	if (ismod && id == IDENTIFIER)
+	{
+		if ((flags & FLAG_IS_OBJECTIVE) != 0)
+		{
+			return m_isObjective;
+		}
+
+		return !m_isObjective;
+	}
+
+	return false;
 }

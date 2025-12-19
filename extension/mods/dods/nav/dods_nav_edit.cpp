@@ -8,9 +8,9 @@
 static const std::unordered_map<std::string, CDODSNavArea::DoDNavAttributes> s_dodattribsmap = {
 	{"noallies", CDODSNavArea::DODNAV_NO_ALLIES},
 	{"noaxis", CDODSNavArea::DODNAV_NO_AXIS},
-	{"blocked_until_bombed", CDODSNavArea::DODNAV_BLOCKED_UNTIL_BOMBED},
-	{"blocked_without_bombs", CDODSNavArea::DODNAV_BLOCKED_WITHOUT_BOMBS},
-	{"plant_bomb", CDODSNavArea::DODNAV_PLANT_BOMB},
+	{"deprecated1", CDODSNavArea::DODNAV_DEPRECATED1},
+	{"deprecated2", CDODSNavArea::DODNAV_DEPRECATED2},
+	{"bombs_to_open", CDODSNavArea::DODNAV_BOMBS_TO_OPEN},
 	{"requires_prone", CDODSNavArea::DODNAV_REQUIRES_PRONE},
 };
 

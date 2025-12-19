@@ -4,8 +4,10 @@
 class CDoDSBotFetchBombTask : public AITask<CDoDSBot>
 {
 public:
-	CDoDSBotFetchBombTask(AITask<CDoDSBot>* exitTask = nullptr);
+	CDoDSBotFetchBombTask(AITask<CDoDSBot>* exitTask = nullptr, CBaseEntity* dispenser = nullptr);
 	~CDoDSBotFetchBombTask() override;
+
+	static bool IsPossible(CDoDSBot* bot, CBaseEntity** dispenser);
 
 	TaskResult<CDoDSBot> OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask) override;
 	TaskResult<CDoDSBot> OnTaskUpdate(CDoDSBot* bot) override;
@@ -17,8 +19,7 @@ private:
 	Vector m_goal;
 	CMeshNavigator m_nav;
 	AITask<CDoDSBot>* m_exittask;
-
-	bool SelectNearestBombDispenser(CDoDSBot* bot);
+	CHandle<CBaseEntity> m_dispenser;
 };
 
 #endif // !__NAVBOT_DODSBOT_FETCH_BOMB_TASK_H_

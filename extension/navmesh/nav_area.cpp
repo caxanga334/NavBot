@@ -29,6 +29,7 @@
 #include "nav_entities.h"
 #include "nav_colors.h"
 #include "nav_blocker.h"
+#include "nav_pathcost_mod.h"
 #include <Color.h>
 #include <sdkports/sdk_collisionutils.h>
 #include <tier1/checksum_crc.h>
@@ -5224,4 +5225,40 @@ void CNavArea::UnregisterNavBlocker(INavBlocker* blocker)
 	m_navblockers.erase(std::remove_if(m_navblockers.begin(), m_navblockers.end(), [&blocker](const INavBlocker* it) {
 		return it == blocker;
 	}), m_navblockers.end());
+}
+
+void CNavArea::RegisterNavPathCostMod(const INavPathCostMod* pathcostmod)
+{
+	for (const INavPathCostMod* mod : m_navpathcostmods)
+	{
+		if (mod == pathcostmod)
+		{
+			return;
+		}
+	}
+
+	m_navpathcostmods.push_back(pathcostmod);
+}
+
+void CNavArea::UnregisterNavPathCostMod(const INavPathCostMod* pathcostmod)
+{
+	m_navpathcostmods.erase(std::remove_if(m_navpathcostmods.begin(), m_navpathcostmods.end(), [&pathcostmod](const INavPathCostMod* it) {
+		return it == pathcostmod;
+	}), m_navpathcostmods.end());
+}
+
+void CNavArea::GetPathCost(const float originalCost, float& cost, CBaseBot* bot) const
+{
+	float out = originalCost;
+	const int team = bot != nullptr ? bot->GetCurrentTeamIndex() : NAV_TEAM_ANY;
+
+	for (const INavPathCostMod* mod : m_navpathcostmods)
+	{
+		if (mod->IsEnabled() && mod->AppliesTo(team, bot))
+		{
+			out = mod->GetCostMod(this, originalCost, out, team, bot);
+		}
+	}
+
+	cost = out;
 }

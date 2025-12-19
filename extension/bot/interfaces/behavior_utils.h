@@ -2,7 +2,7 @@
 #define __NAVBOT_BOT_BEHAVIOR_INTERFACE_UTILS_H_
 
 /*
-                                CTF2BotScenarioTask::OnSquadEvent(CTF2Bot* bot, SquadEventType evtype)
+								CTF2BotScenarioTask::OnSquadEvent(CTF2Bot* bot, SquadEventType evtype)
 {
 	if (evtype == SquadEventType::SQUAD_EVENT_JOINED)
 	{

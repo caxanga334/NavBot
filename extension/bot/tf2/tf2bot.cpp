@@ -730,6 +730,7 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 #endif // EXT_VPROF_ENABLED
 
 	float cost = GetGroundMovementCost(toArea, fromArea, ladder, link, elevator, length);
+	cost = ApplyCostModifiers(m_me, toArea, cost);
 
 	if (cost < 0.0f)
 	{
@@ -737,6 +738,7 @@ float CTF2BotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	}
 
 	CTFNavArea* area = static_cast<CTFNavArea*>(toArea);
+	
 
 	if (area->HasTFPathAttributes(CTFNavArea::TFNAV_PATH_NO_CARRIERS))
 	{

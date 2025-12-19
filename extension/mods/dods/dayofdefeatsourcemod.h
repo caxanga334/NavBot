@@ -95,17 +95,19 @@ public:
 	// Called by the manager when allocating a new bot instance
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
+	void OnMapStart() override;
 	void OnRoundStart() override;
 	// NULL if the objective resource entity is invalid
 	const CDODObjectiveResource* GetDODObjectiveResource() const;
 	const CDayOfDefeatSourceMod::DoDControlPoint* GetControlPointByIndex(int index) const;
 	void CollectControlPointsToAttack(dayofdefeatsource::DoDTeam team, std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*>& points) const;
 	void CollectControlPointsToDefend(dayofdefeatsource::DoDTeam team, std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*>& points) const;
-
+	bool MapUsesBombs() const { return m_mapUsesBombs; }
 private:
 	CDODObjectiveResource m_objectiveres;
 	CHandle<CBaseEntity> m_objectiveentity;
 	std::array<DoDControlPoint, MAX_CONTROL_POINTS> m_controlpoints;
+	bool m_mapUsesBombs;
 
 	void FindObjectiveResourceEntity();
 	void FindControlPoints();

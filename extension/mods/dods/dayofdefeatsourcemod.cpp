@@ -27,7 +27,7 @@ void CDODObjectiveResource::Init(CBaseEntity* entity)
 }
 
 CDayOfDefeatSourceMod::CDayOfDefeatSourceMod() :
-	CBaseMod(), m_objectiveres()
+	CBaseMod(), m_objectiveres(), m_mapUsesBombs(false)
 {
 	ListenForGameEvent("dod_round_start");
 }
@@ -62,6 +62,13 @@ CBaseBot* CDayOfDefeatSourceMod::AllocateBot(edict_t* edict)
 CNavMesh* CDayOfDefeatSourceMod::NavMeshFactory()
 {
 	return new CDODSNavMesh;
+}
+
+void CDayOfDefeatSourceMod::OnMapStart()
+{
+	CBaseMod::OnMapStart();
+
+	m_mapUsesBombs = (UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "dod_bomb_target") != INVALID_EHANDLE_INDEX);
 }
 
 void CDayOfDefeatSourceMod::OnRoundStart()

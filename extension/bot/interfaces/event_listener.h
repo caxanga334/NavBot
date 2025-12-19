@@ -85,6 +85,7 @@ public:
 	virtual void OnSquadEvent(SquadEventType evtype); // Squad events
 	virtual void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur); // An object was sapped (TF2)
 	virtual void OnGameEvent(const IGameEvent* event, void* moddata = nullptr); // Generic AI event for passing game events
+	virtual void OnPathStatusChanged(); // Called by the path processor to notify the path status has changed
 };
 
 inline void IEventListener::OnDebugMoveToCommand(const Vector& moveTo)
@@ -421,6 +422,19 @@ inline void IEventListener::OnGameEvent(const IGameEvent* event, void* moddata)
 		for (auto listener : *vec)
 		{
 			listener->OnGameEvent(event, moddata);
+		}
+	}
+}
+
+inline void IEventListener::OnPathStatusChanged()
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnPathStatusChanged();
 		}
 	}
 }

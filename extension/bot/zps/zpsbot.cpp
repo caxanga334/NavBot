@@ -92,6 +92,12 @@ CZPSBotPathCost::CZPSBotPathCost(CZPSBot* bot, RouteType type) :
 float CZPSBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
 {
 	float cost = GetGroundMovementCost(toArea, fromArea, ladder, link, elevator, length);
+	cost = ApplyCostModifiers(m_me, toArea, cost);
+
+	if (cost < 0.0f)
+	{
+		return -1.0f; // dead end
+	}
 
 	// add any ZPS specific cost changes here
 

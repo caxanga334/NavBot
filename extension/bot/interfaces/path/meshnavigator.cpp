@@ -20,10 +20,11 @@
 #undef max
 #undef clamp // ugly hack to be able to use std functions without conflicts with valve's mathlib
 
-ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
-ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_DONTRECORD, "Default navigator goal tolerance");
-ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
-ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "1.0", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
+static ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
+static ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_DONTRECORD, "Default navigator goal tolerance");
+static ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
+static ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "1.0", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
+static ConVar sm_navbot_path_obstacle_scan("sm_navbot_path_obstacle_scan", "0.5", FCVAR_DONTRECORD, "How frequently the navigation will scan for obstacles on the bot's path.");
 
 #ifdef EXT_DEBUG
 static ConVar sm_navbot_path_debug_goal("sm_navbot_path_debug_goal", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs navigator path goal.");
@@ -72,6 +73,7 @@ void CMeshNavigator::Invalidate()
 	m_useEntityMoveTo = vec3_origin;
 	m_useEntityAimAt = vec3_origin;
 	m_useEntityCooldown.Invalidate();
+	m_obstacleScanTimer.Invalidate();
 	m_avoidIsLeftClear = true;
 	m_avoidIsRightClear = true;
 	m_avoidLeftEntity = nullptr;
@@ -149,9 +151,14 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	mover->DetermineIdealPostureForPath(this);
 	mover->AdjustSpeedForPath(this);
 
-	if (CheckForObstacles(bot, m_goal))
+	if (m_obstacleScanTimer.IsElapsed())
 	{
-		return;
+		m_obstacleScanTimer.Start(sm_navbot_path_obstacle_scan.GetFloat());
+
+		if (CheckForObstacles(bot, m_goal))
+		{
+			return;
+		}
 	}
 
 	Vector origin = bot->GetAbsOrigin();
@@ -515,7 +522,7 @@ bool CMeshNavigator::CheckProgress(CBaseBot* bot)
 	return true;
 }
 
-const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const
+const BotPathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const BotPathSegment* from) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CMeshNavigator::CheckSkipPath", "NavBot");
@@ -523,7 +530,7 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 
 	auto mover = bot->GetMovementInterface();
 
-	const CBasePathSegment* skip = nullptr;
+	const BotPathSegment* skip = nullptr;
 
 	if (m_skipAheadDistance > 0.0f)
 	{
@@ -594,7 +601,7 @@ const CBasePathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const CBase
 	return skip;
 }
 
-Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const CBasePathSegment* seg)
+Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const BotPathSegment* seg)
 {
 	Vector origin = bot->GetAbsOrigin();
 
@@ -617,9 +624,8 @@ Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goal
 	return goalPos;
 }
 
-bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const CBasePathSegment* goal)
+bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal)
 {
-	// TO-DO: Rewrite this!
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CMeshNavigator::CheckForObstacles", "NavBot");
 #endif // EXT_VPROF_ENABLED
@@ -655,59 +661,7 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const CBasePathSegment* go
 			return false;
 		}
 
-		// Mark it for avoidance
-		SetAvoidingEntity(obstacle);
-
-		// avoid for the obstacle avoidance to become blocked
-		if (!ObstacleAvoidanceIsPathBlockedBySomething())
-		{
-			m_obstructedTimer.Start(1.0f);
-			return false;
-		}
-
-		// check if the bot can jump over the obstacle in path
-		Vector start = bot->GetAbsOrigin();
-		start.z += mover->GetMaxJumpHeight();
-		Vector endtmp = end;
-		endtmp.z += mover->GetMaxJumpHeight();
-
-		trace::hull(start, endtmp, mins, maxs, mask, &filter, tr);
-
-		if (isDebugging && !isWorld)
-		{
-			NDebugOverlay::EntityBounds(obstacle, 255, 255, 0, 127, 0.2f);
-			NDebugOverlay::Text(UtilHelpers::getWorldSpaceCenter(obstacle), "Path Obstacle!", true, 0.2f);
-		}
-
-		// There is a reason TheNavMesh->IsAuthoritative() returns true
-#if PROBLEMATIC
-		// no hit, we can jump over and we are blocked for a while
-		if (tr.fraction == 1.0f && m_obstructedTimer.IsElapsed())
-		{
-			if (isDebugging)
-			{
-				NDebugOverlay::SweptBox(start, endtmp, mins, maxs, vec3_angle, 0, 200, 50, 255, 1.0f);
-				bot->DebugPrintToConsole(62, 255, 62, "%s OBSTACLE ON PATH AT %s, TRYING TO CLIMB OVER IT! \n", 
-					bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatVector(tr.endpos));
-			}
-
-			if (mover->IsClimbingOrJumping())
-			{
-				return true;
-			}
-
-			Vector hitpos = tr.endpos;
-
-			hitpos.z += mover->GetMaxJumpHeight() * 0.7f;
-			mover->ClimbUpToLedge(hitpos, forward, obstacle);
-			return true;
-		}
-#endif // PROBLEMATIC
-		
-		// hit something, jumping over may not be possible
-
-		// did not hit a world entity
-		if (!isWorld && ObstacleAvoidanceIsPathFullyBlocked())
+		if (!isWorld)
 		{
 			// can we break it?
 			if (bot->IsAbleToBreak(obstacle))
@@ -767,7 +721,7 @@ void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
 	}
 }
 
-bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
+bool CMeshNavigator::Climbing(CBaseBot* bot, const BotPathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CMeshNavigator::Climbing", "NavBot");
@@ -1218,7 +1172,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const CBasePathSegment* segment, co
 	return false;
 }
 
-bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
+bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const BotPathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("CMeshNavigator::JumpOverGaps", "NavBot");
@@ -1255,7 +1209,7 @@ bool CMeshNavigator::JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment
 
 	const float minGapJumpRange = 2.0f * hullWidth;
 
-	const CBasePathSegment* gap = nullptr;
+	const BotPathSegment* gap = nullptr;
 
 	if (current->type == AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP)
 	{
@@ -1607,7 +1561,7 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 	{
 	case AIPath::SegmentType::SEGMENT_CATAPULT:
 	{
-		const CBasePathSegment* next = GetNextSegment(m_goal);
+		const BotPathSegment* next = GetNextSegment(m_goal);
 
 		if (next)
 		{
@@ -1622,7 +1576,7 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 	/*
 	case AIPath::SegmentType::SEGMENT_STRAFE_JUMP:
 	{
-		const CBasePathSegment* next = GetNextSegment(m_goal);
+		const BotPathSegment* next = GetNextSegment(m_goal);
 		const float range = bot->GetRangeTo(m_goal->goal) - (bot->GetMovementInterface()->GetHullWidth());
 
 		if (next && range <= GetGoalTolerance())
@@ -1644,7 +1598,7 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 	}
 	case AIPath::SegmentType::SEGMENT_GRAPPLING_HOOK:
 	{
-		const CBasePathSegment* next = GetNextSegment(m_goal);
+		const BotPathSegment* next = GetNextSegment(m_goal);
 		const float range = bot->GetRangeTo(m_goal->goal) - (bot->GetMovementInterface()->GetHullWidth());
 
 		if (next && range <= GetGoalTolerance())
@@ -1662,7 +1616,7 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 	return false;
 }
 
-void CMeshNavigator::OnGoalSegmentReached(const CBasePathSegment* goal, const CBasePathSegment* next) const
+void CMeshNavigator::OnGoalSegmentReached(const BotPathSegment* goal, const BotPathSegment* next) const
 {
 	CBaseBot* bot = GetBot();
 
@@ -1703,19 +1657,19 @@ void CMeshNavigator::AdvanceGoalToNearest()
 
 	CBaseBot* me = GetBot();
 
-	const CBasePathSegment* start = m_goal != nullptr ? m_goal : GetFirstSegment();
+	const BotPathSegment* start = m_goal != nullptr ? m_goal : GetFirstSegment();
 
 	if (!start)
 	{
 		return;
 	}
 
-	const CBasePathSegment* nearest = nullptr;
+	const BotPathSegment* nearest = nullptr;
 	float best_distance = me->GetRangeTo(start->goal);
 	unsigned char max_i = 0U;
 	constexpr unsigned char MAX_SEARCH_ITERATIONS = 15U;
 
-	const CBasePathSegment* next = GetNextSegment(start);
+	const BotPathSegment* next = GetNextSegment(start);
 
 	while (next != nullptr)
 	{

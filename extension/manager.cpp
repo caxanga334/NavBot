@@ -53,8 +53,6 @@
 #undef min
 #undef clamp
 
-constexpr auto BOT_QUOTA_UPDATE_INTERVAL = 2.0f;
-
 static ConVar sm_navbot_bot_name_prefix("sm_navbot_bot_name_prefix", "", FCVAR_GAMEDLL, "Prefix to add to bot names.");
 
 CExtManager::CExtManager()
@@ -622,6 +620,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	bot->GetInventoryInterface();
 	bot->GetSquadInterface();
 	bot->GetCombatInterface();
+	bot->GetPathProcessorInterface();
 
 	if (newbotedict != nullptr)
 	{

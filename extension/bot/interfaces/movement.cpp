@@ -181,6 +181,32 @@ void IMovement::Update()
 		m_groundMotionVector.y = velocity.y / m_speed;
 	}
 
+	const float curTime = gpGlobals->curtime;
+
+	for (auto it = m_deadAreas.begin(); it != m_deadAreas.end();)
+	{
+		if (it->second <= curTime)
+		{
+			it = m_deadAreas.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
+
+	for (auto it = m_costModAreas.begin(); it != m_costModAreas.end();)
+	{
+		if (it->second.second <= curTime)
+		{
+			it = m_costModAreas.erase(it);
+		}
+		else
+		{
+			it++;
+		}
+	}
+
 	// do this after the speeds calculations
 	UpdateMovementButtons();
 
@@ -641,7 +667,7 @@ void IMovement::DetermineIdealPostureForPath(const CMeshNavigator* path)
 	}
 
 	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
-	const CBasePathSegment* goal = path->GetGoalSegment();
+	const BotPathSegment* goal = path->GetGoalSegment();
 
 	if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) /* && GetBot<CBaseBot>()->GetRangeToSqr(goal->goal) <= GOAL_CROUCH_RANGE */)
 	{
@@ -1220,9 +1246,14 @@ void IMovement::ClearStuckStatus(const char* reason)
 
 bool IMovement::IsAreaTraversable(const CNavArea* area) const
 {
-	auto bot = GetBot();
+	CBaseBot* bot = GetBot<CBaseBot>();
 
 	if (area->IsBlocked(bot->GetCurrentTeamIndex()))
+	{
+		return false;
+	}
+
+	if (IsDeadArea(area))
 	{
 		return false;
 	}
@@ -1686,6 +1717,35 @@ bool IMovement::RequestMovementTypeChange(MovementType type, MovementRequestPrio
 	return true;
 }
 
+void IMovement::AddDeadArea(CNavArea* area, const float duration)
+{
+	unsigned int id = area->GetID();
+	m_deadAreas[id] = duration;
+}
+
+void IMovement::AddCostModArea(CNavArea* area, const float costMult, const float duration)
+{
+	unsigned int id = area->GetID();
+	auto& it = m_costModAreas[id];
+	it.first = costMult;
+	it.second = duration;
+}
+
+bool IMovement::IsDeadArea(const CNavArea* area) const
+{
+	return m_deadAreas.find(area->GetID()) != m_deadAreas.end();
+}
+
+void IMovement::GetCostMod(const CNavArea* area, float& cost) const
+{
+	auto it = m_costModAreas.find(area->GetID());
+
+	if (it != m_costModAreas.end())
+	{
+		cost *= it->first;
+	}
+}
+
 void IMovement::StuckMonitor()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -2036,9 +2096,9 @@ void IMovement::StrafeJumpUpdate()
 	m_strafeJumpState = next;
 }
 
-void IMovement::UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const CBasePathSegment* goal)
+void IMovement::UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const BotPathSegment* goal)
 {
-	const CBasePathSegment* ground = navigator->GetFirstGroundSegment(goal);
+	const BotPathSegment* ground = navigator->GetFirstGroundSegment(goal);
 
 	if (!ground) { return; }
 
@@ -3038,6 +3098,8 @@ void IMovement::_Reset()
 	m_movementType = IMovement::MovementType::MOVE_RUNNING;
 	m_lastMTRequestPriority = IMovement::MovementRequestPriority::MOVEREQUEST_PRIO_LOW;
 	m_MTRequestTimer.Invalidate();
+	m_deadAreas.clear();
+	m_costModAreas.clear();
 }
 
 

@@ -297,7 +297,7 @@ bool CTF2BotMovement::UseGrapplingHook(const Vector& start, const Vector& end)
 	return true;
 }
 
-bool CTF2BotMovement::IsPathSegmentReached(const CMeshNavigator* nav, const CBasePathSegment* goal, bool& resultoverride) const
+bool CTF2BotMovement::IsPathSegmentReached(const CMeshNavigator* nav, const BotPathSegment* goal, bool& resultoverride) const
 {
 	if (goal->type == AIPath::SegmentType::SEGMENT_GRAPPLING_HOOK && m_bIsUsingGrapplingHook)
 	{

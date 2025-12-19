@@ -12,17 +12,18 @@
 #include <sdkports/sdk_timers.h>
 #include <sdkports/sdk_traces.h>
 #include <util/librandom.h>
-#include <bot/interfaces/playercontrol.h>
-#include <bot/interfaces/movement.h>
-#include <bot/interfaces/sensor.h>
-#include <bot/interfaces/event_listener.h>
-#include <bot/interfaces/behavior.h>
-#include <bot/interfaces/profile.h>
-#include <bot/interfaces/weapon.h>
-#include <bot/interfaces/inventory.h>
-#include <bot/interfaces/squads.h>
-#include <bot/interfaces/sharedmemory.h>
-#include <bot/interfaces/combat.h>
+#include "interfaces/event_listener.h"
+#include "interfaces/playercontrol.h"
+#include "interfaces/movement.h"
+#include "interfaces/sensor.h"
+#include "interfaces/behavior.h"
+#include "interfaces/profile.h"
+#include "interfaces/weapon.h"
+#include "interfaces/inventory.h"
+#include "interfaces/squads.h"
+#include "interfaces/sharedmemory.h"
+#include "interfaces/combat.h"
+#include "interfaces/pathprocessor.h"
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
@@ -138,9 +139,9 @@ public:
 	void RegisterInterface(IBotInterface* iface);
 	void BuildUserCommand(const int buttons);
 	void RunUserCommand(CBotCmd* ucmd);
-	inline CBotCmd* GetUserCommand() { return &m_cmd; }
+	CBotCmd* GetUserCommand() { return &m_cmd; }
 	// Sets the view angles to be sent on the next User Command
-	inline void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
+	void SetViewAngles(QAngle& angle) { m_viewangles = angle; }
 	virtual IPlayerController* GetControlInterface() const;
 	virtual IMovement* GetMovementInterface() const;
 	virtual ISensor* GetSensorInterface() const;
@@ -149,8 +150,9 @@ public:
 	virtual ISquad* GetSquadInterface() const;
 	virtual ICombat* GetCombatInterface() const;
 	virtual ISharedBotMemory* GetSharedMemoryInterface() const;
+	virtual IPathProcessor* GetPathProcessorInterface() const;
 
-	inline const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
+	const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 
 	// Called every the player_spawn event is fired for this bot
 	virtual void Spawn();
@@ -183,13 +185,13 @@ public:
 	 * @param weapon_entity Entity index of the weapon the bot wants to switch to.
 	 * @param subtype Weapon subtype to select, game/mod dependant.
 	*/
-	inline void SelectWeaponByUserCmd(int weapon_entity, int subtype = 0) { m_weaponselect = weapon_entity; m_weaponsubtype = subtype; }
+	void SelectWeaponByUserCmd(int weapon_entity, int subtype = 0) { m_weaponselect = weapon_entity; m_weaponsubtype = subtype; }
 	void SelectWeaponByClassname(const char* szclassname);
 	virtual void SafeWeaponSelectByClassname(const char* szclassname);
 	void SelectWeaponByCommand(const char* szclassname) const;
 
-	inline const DifficultyProfile* GetDifficultyProfile() const { return m_profile.get(); }
-	inline void SetDifficultyProfile(std::shared_ptr<DifficultyProfile> profile)
+	const DifficultyProfile* GetDifficultyProfile() const { return m_profile.get(); }
+	void SetDifficultyProfile(std::shared_ptr<DifficultyProfile> profile)
 	{
 		m_profile = profile;
 
@@ -203,7 +205,7 @@ public:
 	 * @brief Inserts a console command in the bot queue, prevents the bot flooding the server with commands
 	 * @param command command to send
 	*/
-	inline void DelayedFakeClientCommand(const char* command)
+	void DelayedFakeClientCommand(const char* command)
 	{
 		m_cmdqueue.emplace(command);
 	}
@@ -224,7 +226,7 @@ public:
 	 */
 	virtual bool IsLineOfFireClear(const Vector& to) const;
 
-	inline const Vector& GetHomePos() const { return m_homepos; }
+	const Vector& GetHomePos() const { return m_homepos; }
 	void SetHomePos(const Vector& home) { m_homepos = home; }
 
 	void SetActiveNavigator(CMeshNavigator* nav) { m_activeNavigator = nav; }
@@ -321,6 +323,7 @@ private:
 	mutable std::unique_ptr<IInventory> m_baseinventory; // Base inventory interface
 	mutable std::unique_ptr<ISquad> m_basesquad; // Base Squad interface
 	mutable std::unique_ptr<ICombat> m_basecombat; // Base Combat interface
+	mutable std::unique_ptr<IPathProcessor> m_basepathprocessor; // Base Path Processor interface
 	std::shared_ptr<DifficultyProfile> m_profile;
 	IntervalTimer m_cmdtimer; // Timer to prevent sending more than the string commands per second limit
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send

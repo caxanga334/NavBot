@@ -15,11 +15,17 @@ CDoDSBot::CDoDSBot(edict_t* edict) :
 	m_dodmovement = std::make_unique<CDoDSBotMovement>(this);
 	m_dodcombat = std::make_unique<CDoDSBotCombat>(this);
 	m_dodcontrol = std::make_unique<CDoDSBotPlayerController>(this);
+	m_dodpathprocessor = std::make_unique<CDoDSBotPathProcessor>(this);
 	m_droppedAmmo = false;
 }
 
 CDoDSBot::~CDoDSBot()
 {
+}
+
+void CDoDSBot::Reset()
+{
+	CBaseBot::Reset();
 }
 
 bool CDoDSBot::HasJoinedGame()
@@ -101,6 +107,7 @@ CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type) :
 	IGroundPathCost(bot)
 {
 	m_me = bot;
+	m_dodpathprocessor = bot->GetPathProcessorInterface();
 	m_routetype = type;
 	m_hasbomb = bot->GetInventoryInterface()->HasBomb();
 }
@@ -108,6 +115,7 @@ CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type) :
 float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
 {
 	float cost = GetGroundMovementCost(baseToArea, fromArea, ladder, link, elevator, length);
+	cost = ApplyCostModifiers(m_me, baseToArea, cost);
 
 	if (cost < 0.0f)
 	{
@@ -117,9 +125,15 @@ float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, con
 	CDODSNavArea* toArea = static_cast<CDODSNavArea*>(baseToArea);
 
 	// Area is blocked if we don't have bombs
-	if (toArea->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_BLOCKED_WITHOUT_BOMBS) && !m_hasbomb)
+	if (toArea->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_BOMBS_TO_OPEN) && !toArea->WasBombed())
 	{
-		return  -1.0f;
+		m_dodpathprocessor->OnAreaBlockedByBomb(baseToArea);
+
+		if (!m_hasbomb)
+		{
+			// Soft block this path by returning a very high cost
+			return 1e12f;
+		}
 	}
 
 	return cost;

@@ -34,7 +34,7 @@ public:
 	bool IsPathingAllowed() const override;
 	bool NeedsWeaponControl() const override;
 	bool UseGrapplingHook(const Vector& start, const Vector& end) override;
-	bool IsPathSegmentReached(const CMeshNavigator* nav, const CBasePathSegment* goal, bool& resultoverride) const override;
+	bool IsPathSegmentReached(const CMeshNavigator* nav, const BotPathSegment* goal, bool& resultoverride) const override;
 
 private:
 	static constexpr float min_health_for_rocket_jumps() { return 130.0f; }

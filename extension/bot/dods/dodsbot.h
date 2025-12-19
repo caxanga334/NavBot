@@ -9,8 +9,8 @@
 #include "dodsbot_movement.h"
 #include "dodsbot_combat.h"
 #include "dodsbot_playercontrol.h"
+#include "dodsbot_pathprocessor.h"
 #include <mods/dods/dods_shareddefs.h>
-#include <bot/bot_pathcosts.h>
 
 class CDoDSBot : public CBaseBot
 {
@@ -24,7 +24,9 @@ public:
 	CDoDSBotMovement* GetMovementInterface() const override { return m_dodmovement.get(); }
 	CDoDSBotInventory* GetInventoryInterface() const override { return m_dodinventory.get(); }
 	CDoDSBotCombat* GetCombatInterface() const override { return m_dodcombat.get(); }
+	CDoDSBotPathProcessor* GetPathProcessorInterface() const override { return m_dodpathprocessor.get(); }
 
+	void Reset() override;
 	bool HasJoinedGame() override;
 	void TryJoinGame() override;
 	void Spawn() override;
@@ -40,6 +42,7 @@ public:
 	bool IsPlantingBomb() const;
 	bool IsDefusingBomb() const;
 	bool CanDropAmmo() const { return !m_droppedAmmo; } // ammo can only be dropped once per life
+
 private:
 	std::unique_ptr<CDoDSBotSensor> m_dodsensor;
 	std::unique_ptr<CDoDSBotBehavior> m_dodbehavior;
@@ -47,6 +50,7 @@ private:
 	std::unique_ptr<CDoDSBotInventory> m_dodinventory;
 	std::unique_ptr<CDoDSBotCombat> m_dodcombat;
 	std::unique_ptr<CDoDSBotPlayerController> m_dodcontrol;
+	std::unique_ptr<CDoDSBotPathProcessor> m_dodpathprocessor;
 	bool m_droppedAmmo; // has the bot dropped ammo?
 };
 
@@ -61,6 +65,7 @@ public:
 	RouteType GetRouteType() const override { return m_routetype; }
 private:
 	CDoDSBot* m_me;
+	CDoDSBotPathProcessor* m_dodpathprocessor;
 	RouteType m_routetype;
 	bool m_hasbomb;
 };

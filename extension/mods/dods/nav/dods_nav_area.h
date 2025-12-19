@@ -14,14 +14,15 @@ public:
 	enum DoDNavAttributes
 	{
 		DODNAV_NONE = 0,
-		DODNAV_NO_ALLIES = (1 << 0), // always blocked to the allies team
-		DODNAV_NO_AXIS = (1 << 1), // always blocked to the axis team
-		DODNAV_BLOCKED_UNTIL_BOMBED = (1 << 2), // nav area is blocked until the nearest bomb target is bombed
-		DODNAV_BLOCKED_WITHOUT_BOMBS = (1 << 3), // nav area is blocked if the bot doesn't have a bomb on their inventory
-		DODNAV_PLANT_BOMB = (1 << 4), // the bot will stop and plant a bomb if the target hasn't been bombed yet
-		DODNAV_REQUIRES_PRONE = (1 << 5), // the bot must go prone to pass on this area.
+		DODNAV_NO_ALLIES = 0x1, // always blocked to the allies team
+		DODNAV_NO_AXIS = 0x2, // always blocked to the axis team
+		DODNAV_DEPRECATED1 = 0x4, // nav area is blocked until the nearest bomb target is bombed
+		DODNAV_DEPRECATED2 = 0x8, // nav area is blocked if the bot doesn't have a bomb on their inventory
+		DODNAV_BOMBS_TO_OPEN = 0x10, // path is blocked by a obstacle that can be bombed
+		DODNAV_REQUIRES_PRONE = 0x20, // the bot must go prone to pass on this area.
 	};
 
+	void OnUpdate() override;
 	void OnRoundRestart(void) override;
 	void Save(std::fstream& filestream, uint32_t version) override;
 	NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion) override;
@@ -30,7 +31,7 @@ public:
 	// Returns true if the nav area has bomb related attributes assigned to it
 	inline bool HasBombRelatedAttributes() const
 	{
-		if ((m_dodAttributes & (DoDNavAttributes::DODNAV_BLOCKED_UNTIL_BOMBED | DoDNavAttributes::DODNAV_BLOCKED_WITHOUT_BOMBS | DoDNavAttributes::DODNAV_PLANT_BOMB)) != 0)
+		if ((m_dodAttributes & DODNAV_BOMBS_TO_OPEN) != 0)
 		{
 			return true;
 		}
@@ -40,7 +41,7 @@ public:
 	// Returns the assigned bomb target entity to this nav area. May be NULL if the bomb target entity was deleted.
 	CBaseEntity* GetAssignedBombTarget() const { return m_bombTarget.Get(); }
 	// Returns true if the nav area was bombed and is now open.
-	const bool WasBombed() const;
+	const bool WasBombed() const { return m_bombed; }
 	// Returns true if it's possible to plant a bomb
 	const bool CanPlantBomb() const;
 
@@ -69,6 +70,7 @@ public:
 private:
 	int m_dodAttributes;
 	CHandle<CBaseEntity> m_bombTarget; // bomb target nearest of this nav area
+	bool m_bombed; // true if the bomb target is bombed
 
 	void FindAndAssignNearestBombTarget();
 };

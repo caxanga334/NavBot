@@ -17,7 +17,7 @@ public:
 	// Moves the bot along the path
 	virtual void Update(CBaseBot* bot);
 
-	const CBasePathSegment* GetGoalSegment() const override { return m_goal; }
+	const BotPathSegment* GetGoalSegment() const override { return m_goal; }
 	// Distance to consider the goal reached
 	virtual void SetGoalTolerance(const float tolerance) { m_goalTolerance = tolerance; }
 	virtual const float GetGoalTolerance() const { return m_goalTolerance; }
@@ -25,7 +25,7 @@ public:
 	virtual void SetSkipAheadDistance(const float distance) { m_skipAheadDistance = distance; }
 	virtual const float GetSkipAheadDistance() { return m_skipAheadDistance; }
 	// Updates the goal segment to the segment nearest to the bot.
-	virtual void AdvanceGoalToNearest();
+	void AdvanceGoalToNearest();
 	// Returns true if the bot is currently trying to +USE an useable entity blocking the path.
 	bool IsUsingEntity() const { return !m_useEntityTimer.IsElapsed(); }
 	// Gets the last +USE target entity. NULL if none or entity was deleted.
@@ -42,19 +42,19 @@ public:
 
 protected:
 	// true while the bot is using ladders
-	virtual bool LadderUpdate(CBaseBot* bot);
-	virtual bool ElevatorUpdate(CBaseBot* bot);
-	virtual bool Climbing(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
-	virtual bool JumpOverGaps(CBaseBot* bot, const CBasePathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
-	virtual Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
-	virtual CBaseEntity* FindBlocker(CBaseBot* bot);
-	virtual bool OffMeshLinksUpdate(CBaseBot* bot);
-	virtual void OnGoalSegmentReached(const CBasePathSegment* goal, const CBasePathSegment* next) const;
+	bool LadderUpdate(CBaseBot* bot);
+	bool ElevatorUpdate(CBaseBot* bot);
+	bool Climbing(CBaseBot* bot, const BotPathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
+	bool JumpOverGaps(CBaseBot* bot, const BotPathSegment* segment, const Vector& forward, const Vector& right, const float goalRange);
+	Vector Avoid(CBaseBot* bot, const Vector& goalPos, const Vector& forward, const Vector& left);
+	CBaseEntity* FindBlocker(CBaseBot* bot);
+	bool OffMeshLinksUpdate(CBaseBot* bot);
+	void OnGoalSegmentReached(const BotPathSegment* goal, const BotPathSegment* next) const;
 
 	bool IsAtGoal(CBaseBot* bot);
 	bool IsAtUnderwaterGoal(CBaseBot* bot);
 	bool CheckProgress(CBaseBot* bot);
-	const CBasePathSegment* CheckSkipPath(CBaseBot* bot, const CBasePathSegment* from) const;
+	const BotPathSegment* CheckSkipPath(CBaseBot* bot, const BotPathSegment* from) const;
 
 	void SetBot(CBaseBot* bot) { m_me = bot; }
 	// Bot using this navigator, may be NULL
@@ -62,14 +62,14 @@ protected:
 	// Waiting for obstacles
 	bool IsWaitingForSomething() { return !m_waitTimer.IsElapsed(); }
 
-	virtual Vector AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const CBasePathSegment* seg);
+	Vector AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const BotPathSegment* seg);
 	/**
 	 * @brief Scans the path for obstacles.
 	 * @param bot Bot currently using this navigator.
 	 * @param goal Current segment the bot is trying to reach.
 	 * @return Return true to return early in the navigator update function. False to continue the function.
 	 */
-	virtual bool CheckForObstacles(CBaseBot* bot, const CBasePathSegment* goal);
+	bool CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal);
 	/**
 	 * @brief Instructs the navigator to +USE an entity on the bot's path.
 	 * @param bot Bot that will +USE the entity.
@@ -78,7 +78,7 @@ protected:
 	 */
 	void UseEntity(CBaseBot* bot, CBaseEntity* entity, const float time = 3.0f);
 	// Handles the +USE entity logic
-	virtual void UpdateUseEntity(CBaseBot* bot, Vector& moveGoal);
+	void UpdateUseEntity(CBaseBot* bot, Vector& moveGoal);
 	void StopUsingEntity() { m_useEntityTimer.Invalidate(); }
 	void StartUseEntityCooldown(float time) { m_useEntityCooldown.Start(time); }
 	void SetAvoidingEntity(CBaseEntity* entity) { m_avoidingEntity = entity; }
@@ -87,11 +87,12 @@ protected:
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator
-	const CBasePathSegment* m_goal; // the segment the bot is currently trying to reach
+	const BotPathSegment* m_goal; // the segment the bot is currently trying to reach
 	CountdownTimer m_waitTimer; // timer for the bot to wait for stuff (lifts, doors, obstacles, ...)
 	CountdownTimer m_avoidTimer; // timer for collision avoidance
 	CountdownTimer m_useableTimer; // timer for checking for useable obstacles on the path
 	CountdownTimer m_obstructedTimer; // timer for checking how long the path has been obstructed
+	CountdownTimer m_obstacleScanTimer; // timer for checking for obstacles
 	CHandle<CBaseEntity> m_blocker; // Entity blocking my path
 	CHandle<CBaseEntity> m_avoidLeftEntity;
 	CHandle<CBaseEntity> m_avoidRightEntity;
