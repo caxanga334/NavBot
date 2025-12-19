@@ -418,18 +418,15 @@ public:
 
 	/**
 	 * @brief Runs a function on every path segment.
-	 * @tparam T Path Segment class.
-	 * @tparam F Function. bool (const T* segment)
+	 * @tparam F Function. bool (const BotPathSegment& segment)
 	 * @param functor Function to run, return false to end loop early.
 	 */
-	template <typename T, typename F>
+	template <typename F>
 	void ForEveryPathSegment(F& functor)
 	{
-		for (auto& segptr : m_segments)
+		for (const BotPathSegment& segment : m_segments)
 		{
-			const T* segment = static_cast<T*>(segptr.get());
-
-			if (functor(segment) == false)
+			if (!functor(segment))
 			{
 				return;
 			}

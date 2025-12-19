@@ -80,8 +80,7 @@ bool CDoDSBotFetchBombTask::IsPossible(CDoDSBot* bot, CBaseEntity** dispenser)
 	}
 
 	float distance = std::numeric_limits<float>::max();
-
-	UtilHelpers::ForEachEntityOfClassname("dod_bomb_dispenser", [&dispenser, &distance, &filter, &collector](int index, edict_t* edict, CBaseEntity* entity) {
+	auto func = [&dispenser, &distance, &filter, &collector](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
 			if (filter.IsSelected(entity))
@@ -100,7 +99,9 @@ bool CDoDSBotFetchBombTask::IsPossible(CDoDSBot* bot, CBaseEntity** dispenser)
 		}
 
 		return true;
-	});
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("dod_bomb_dispenser", func);
 
 	return *dispenser != nullptr;
 }

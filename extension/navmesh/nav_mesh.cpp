@@ -4082,7 +4082,7 @@ void CNavMesh::ShiftAllIDsToTop()
 
 void CNavMesh::RemovePathCostModifier(const INavPathCostMod* pathcostmod)
 {
-	for (auto& it = m_navcostmods.begin(); it != m_navcostmods.end(); it++)
+	for (auto it = m_navcostmods.begin(); it != m_navcostmods.end(); it++)
 	{
 		const INavPathCostMod* ptr = it->get();
 
