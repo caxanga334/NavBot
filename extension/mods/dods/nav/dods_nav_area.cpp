@@ -11,6 +11,7 @@ CDODSNavArea::CDODSNavArea(unsigned int place) :
 	m_dodAttributes = 0;
 	m_bombTarget = nullptr;
 	m_bombed = false;
+	m_bombTeam = NAV_TEAM_ANY;
 }
 
 CDODSNavArea::~CDODSNavArea()
@@ -166,4 +167,16 @@ void CDODSNavArea::FindAndAssignNearestBombTarget()
 
 	m_bombTarget = bomb;
 	m_bombed = false;
+
+	int team = NAV_TEAM_ANY;
+	entprops->GetEntProp(bomb, Prop_Send, "m_iBombingTeam", team);
+
+	if (team == static_cast<int>(dayofdefeatsource::DoDTeam::DODTEAM_ALLIES) || team == static_cast<int>(dayofdefeatsource::DoDTeam::DODTEAM_AXIS))
+	{
+		m_bombTeam = team;
+	}
+	else
+	{
+		m_bombTeam = NAV_TEAM_ANY;
+	}
 }

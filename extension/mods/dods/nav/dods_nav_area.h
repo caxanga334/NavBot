@@ -44,6 +44,8 @@ public:
 	const bool WasBombed() const { return m_bombed; }
 	// Returns true if it's possible to plant a bomb
 	const bool CanPlantBomb() const;
+	// Returns true if the given team index is allowed to plant a bomb here.
+	const bool CanMyTeamPlantBomb(const int team) const { return m_bombTeam == NAV_TEAM_ANY || m_bombTeam == team; }
 
 	void SetDoDAttributes(DoDNavAttributes attribute)
 	{
@@ -71,6 +73,7 @@ private:
 	int m_dodAttributes;
 	CHandle<CBaseEntity> m_bombTarget; // bomb target nearest of this nav area
 	bool m_bombed; // true if the bomb target is bombed
+	int m_bombTeam; // team the bomb target is assigned to
 
 	void FindAndAssignNearestBombTarget();
 };

@@ -2,6 +2,7 @@
 #define __NAVBOT_DODS_MOD_H_
 #pragma once
 
+#include <queue>
 #include <array>
 #include <vector>
 #include <mods/basemod.h>
@@ -91,7 +92,7 @@ public:
 
 	const char* GetModName() override { return "Day of Defeat: Source"; }
 	Mods::ModType GetModType() override { return Mods::ModType::MOD_DODS; }
-
+	void Update() override;
 	// Called by the manager when allocating a new bot instance
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
@@ -99,9 +100,34 @@ public:
 	void OnRoundStart() override;
 	// NULL if the objective resource entity is invalid
 	const CDODObjectiveResource* GetDODObjectiveResource() const;
+	/**
+	 * @brief Gets the control point data struct by index.
+	 * @param index Index of the control point.
+	 * @return Control point data struct or NULL if the control point index is invalid or doesn't exists.
+	 */
 	const CDayOfDefeatSourceMod::DoDControlPoint* GetControlPointByIndex(int index) const;
+	/**
+	 * @brief Given a control point entity, returns a bomb that needs to be defused.
+	 * @param pControlPoint Control point entity.
+	 * @return Bomb entity or NULL if no bomb is planted.
+	 */
+	CBaseEntity* GetControlPointBombToDefuse(CBaseEntity* pControlPoint) const;
+	/**
+	 * @brief Collects control points a team can attack.
+	 * @param team Team which will be attacking the control points.
+	 * @param points Vector to store the collected control points.
+	 */
 	void CollectControlPointsToAttack(dayofdefeatsource::DoDTeam team, std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*>& points) const;
+	/**
+	 * @brief Collects control points a team can defend.
+	 * @param team Team which will be defending the control points.
+	 * @param points Vector to store the collected control points.
+	 */
 	void CollectControlPointsToDefend(dayofdefeatsource::DoDTeam team, std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*>& points) const;
+	/**
+	 * @brief Returns if the current map uses bombs.
+	 * @return True if yes, false if no.
+	 */
 	bool MapUsesBombs() const { return m_mapUsesBombs; }
 private:
 	CDODObjectiveResource m_objectiveres;
@@ -113,6 +139,21 @@ private:
 	void FindControlPoints();
 	void FindAndAssignCaptureAreas();
 	void FindAndAssignBombTargets();
+	static constexpr auto BOMB_PLANTED = false;
+	static constexpr auto BOMB_DEFUSED = true;
+
+	struct BombEvent
+	{
+		BombEvent(IGameEvent* event, bool isDefused);
+
+		bool isDefused;
+		int userid;
+		int cpindex;
+		int team;
+	};
+
+	std::queue<BombEvent> m_bombevents;
+	void OnBombEvent(const BombEvent& event) const;
 };
 
 #endif // !__NAVBOT_DODS_MOD_H_

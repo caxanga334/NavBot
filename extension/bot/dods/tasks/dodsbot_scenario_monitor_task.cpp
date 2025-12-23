@@ -117,6 +117,22 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChang
 	return TryContinue(PRIORITY_LOW);
 }
 
+TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnBombPlanted(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
+{
+	// bomb was planted on my team's control point
+	if (ent && teamIndex == static_cast<int>(bot->GetMyDoDTeam()))
+	{
+		CBaseEntity* bomb = CDayOfDefeatSourceMod::GetDODMod()->GetControlPointBombToDefuse(ent);
+
+		if (bomb)
+		{
+			return TryPauseFor(new CDoDSBotDefuseBombTask(bomb), PRIORITY_HIGH, "Bomb was planted, going to defuse!");
+		}
+	}
+
+	return TryContinue(PRIORITY_LOW);
+}
+
 void CDoDSBotScenarioMonitorTask::FindControlPointToDefend(CDoDSBot* bot, CBaseEntity** defuse, const CDayOfDefeatSourceMod::DoDControlPoint** defend)
 {
 	CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();

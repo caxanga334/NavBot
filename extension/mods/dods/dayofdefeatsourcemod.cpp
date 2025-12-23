@@ -30,6 +30,8 @@ CDayOfDefeatSourceMod::CDayOfDefeatSourceMod() :
 	CBaseMod(), m_objectiveres(), m_mapUsesBombs(false)
 {
 	ListenForGameEvent("dod_round_start");
+	ListenForGameEvent("dod_bomb_planted");
+	ListenForGameEvent("dod_bomb_defused");
 }
 
 CDayOfDefeatSourceMod::~CDayOfDefeatSourceMod()
@@ -45,13 +47,38 @@ void CDayOfDefeatSourceMod::FireGameEvent(IGameEvent* event)
 {
 	if (event)
 	{
+#if defined(EXT_DEBUG) && SOURCE_ENGINE == SE_DODS
+		ConColorMsg(Color(71, 98, 145, 255), "CDayOfDefeatSourceMod::FireGameEvent %s \n", event->GetName());
+#endif // defined(EXT_DEBUG) && SOURCE_ENGINE == SE_DODS
+
 		if (std::strcmp("dod_round_start", event->GetName()) == 0)
 		{
 			OnRoundStart();
 		}
+		else if (std::strcmp("dod_bomb_planted", event->GetName()) == 0)
+		{
+			// we need to delay this a bit
+			m_bombevents.emplace(event, BOMB_PLANTED);
+		}
+		else if (std::strcmp("dod_bomb_defused", event->GetName()) == 0)
+		{
+			m_bombevents.emplace(event, BOMB_DEFUSED);
+		}
 	}
 
 	CBaseMod::FireGameEvent(event);
+}
+
+void CDayOfDefeatSourceMod::Update()
+{
+	CBaseMod::Update();
+
+	if (!m_bombevents.empty())
+	{
+		auto& event = m_bombevents.front();
+		OnBombEvent(event);
+		m_bombevents.pop();
+	}
 }
 
 CBaseBot* CDayOfDefeatSourceMod::AllocateBot(edict_t* edict)
@@ -68,11 +95,28 @@ void CDayOfDefeatSourceMod::OnMapStart()
 {
 	CBaseMod::OnMapStart();
 
+	{
+		// clear the bomb event queue
+		std::queue<BombEvent> emptyQueue;
+		std::swap(m_bombevents, emptyQueue);
+	}
+
 	m_mapUsesBombs = (UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "dod_bomb_target") != INVALID_EHANDLE_INDEX);
 }
 
 void CDayOfDefeatSourceMod::OnRoundStart()
 {
+	{
+		// clear the bomb event queue
+		std::queue<BombEvent> emptyQueue;
+		std::swap(m_bombevents, emptyQueue);
+	}
+
+	while (!m_bombevents.empty())
+	{
+		m_bombevents.pop();
+	}
+
 	CBaseMod::OnRoundStart();
 	librandom::ReSeedGlobalGenerators();
 
@@ -108,6 +152,35 @@ const CDayOfDefeatSourceMod::DoDControlPoint* CDayOfDefeatSourceMod::GetControlP
 		if (controlpoint.index == index)
 		{
 			return &controlpoint;
+		}
+	}
+
+	return nullptr;
+}
+
+CBaseEntity* CDayOfDefeatSourceMod::GetControlPointBombToDefuse(CBaseEntity* pControlPoint) const
+{
+	for (auto& controlpoint : m_controlpoints)
+	{
+		if (controlpoint.point.Get() == pControlPoint)
+		{
+			for (auto& bomb : controlpoint.bomb_targets)
+			{
+				CBaseEntity* pBomb = bomb.Get();
+
+				if (pBomb)
+				{
+					int state = 0;
+					entprops->GetEntProp(pBomb, Prop_Send, "m_iState", state);
+
+					if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ARMED))
+					{
+						return pBomb;
+					}
+				}
+			}
+
+			break;
 		}
 	}
 
@@ -399,6 +472,57 @@ void CDayOfDefeatSourceMod::FindAndAssignBombTargets()
 			UtilHelpers::ForEachEntityOfClassname("dod_bomb_target", functor);
 		}
 	}
+}
+
+void CDayOfDefeatSourceMod::OnBombEvent(const CDayOfDefeatSourceMod::BombEvent& event) const
+{
+	int clientindex = playerhelpers->GetClientOfUserId(event.userid);
+	CBaseEntity* planter = nullptr;
+	CBaseEntity* cp = nullptr;
+	const CDayOfDefeatSourceMod::DoDControlPoint* pointdata = GetControlPointByIndex(event.cpindex);
+
+	if (!pointdata)
+	{
+		return;
+	}
+
+	cp = pointdata->point.Get();
+
+	if (!cp)
+	{
+		return;
+	}
+
+	Vector pos{ vec3_origin };
+
+	if (clientindex != 0)
+	{
+		planter = gamehelpers->ReferenceToEntity(clientindex);
+	}
+
+	int team = event.team;
+	bool isDefused = event.isDefused;
+
+	auto func = [pos, planter, cp, team, isDefused](CBaseBot* bot) {
+		if (isDefused)
+		{
+			bot->OnBombDefused(pos, team, planter, cp);
+		}
+		else
+		{
+			bot->OnBombPlanted(pos, team, planter, cp);
+		}
+	};
+
+	extmanager->ForEachBot(func);
+}
+
+CDayOfDefeatSourceMod::BombEvent::BombEvent(IGameEvent* event, bool isDefused)
+{
+	this->team = event->GetInt("team", NAV_TEAM_ANY);
+	this->cpindex = event->GetInt("cp", -1);
+	this->userid = event->GetInt("userid", -1);
+	this->isDefused = isDefused;
 }
 
 #ifdef EXT_DEBUG

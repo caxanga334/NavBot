@@ -127,6 +127,11 @@ float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, con
 	// Area is blocked if we don't have bombs
 	if (toArea->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_BOMBS_TO_OPEN) && !toArea->WasBombed())
 	{
+		if (!toArea->CanMyTeamPlantBomb(m_teamindex))
+		{
+			return -1.0f; // I can't open this path, dead end
+		}
+
 		m_dodpathprocessor->OnAreaBlockedByBomb(baseToArea);
 
 		if (!m_hasbomb)

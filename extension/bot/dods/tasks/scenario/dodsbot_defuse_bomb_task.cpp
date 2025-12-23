@@ -64,3 +64,9 @@ TaskResult<CDoDSBot> CDoDSBotDefuseBombTask::OnTaskUpdate(CDoDSBot* bot)
 
 	return Continue();
 }
+
+TaskEventResponseResult<CDoDSBot> CDoDSBotDefuseBombTask::OnBombDefused(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
+{
+	// TO-DO
+	return TryContinue(PRIORITY_LOW);
+}

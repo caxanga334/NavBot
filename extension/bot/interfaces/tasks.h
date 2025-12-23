@@ -615,6 +615,8 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnObjectSapped(BotClass* bot, CBaseEntity* owner, CBaseEntity* saboteur) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnGameEvent(BotClass* bot, const IGameEvent* event, void* moddata) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnPathStatusChanged(BotClass* bot) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnBombPlanted(BotClass* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnBombDefused(BotClass* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1172,6 +1174,16 @@ private:
 	void OnPathStatusChanged() final
 	{
 		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnPathStatusChanged);
+	}
+
+	void OnBombPlanted(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) final
+	{
+		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnBombPlanted, position, teamIndex, player, ent);
+	}
+
+	void OnBombDefused(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) final
+	{
+		PROPAGATE_TASK_EVENT_WITH_4_ARGS(OnBombDefused, position, teamIndex, player, ent);
 	}
 };
 

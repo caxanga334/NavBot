@@ -311,9 +311,12 @@ Vector CTF2BotSniperMoveToSnipingSpotTask::GetSnipingSearchStartPosition(CTF2Bot
 			payload = CTeamFortress2Mod::GetTF2Mod()->GetREDPayload();
 		}
 
-		return UtilHelpers::getWorldSpaceCenter(payload);
+		if (!payload)
+		{
+			break;
+		}
 
-		break;
+		return UtilHelpers::getWorldSpaceCenter(payload);
 	}
 	case TeamFortress2::GameModeType::GM_CTF:
 	{
@@ -375,8 +378,6 @@ Vector CTF2BotSniperMoveToSnipingSpotTask::GetSnipingSearchStartPosition(CTF2Bot
 	default:
 		break;
 	}
-
-
 
 	return bot->GetAbsOrigin();
 }

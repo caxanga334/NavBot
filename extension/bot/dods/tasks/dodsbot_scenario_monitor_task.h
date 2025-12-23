@@ -11,6 +11,7 @@ public:
 	TaskEventResponseResult<CDoDSBot> OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
 	TaskEventResponseResult<CDoDSBot> OnRoundStateChanged(CDoDSBot* bot) override;
 	TaskEventResponseResult<CDoDSBot> OnPathStatusChanged(CDoDSBot* bot) override;
+	TaskEventResponseResult<CDoDSBot> OnBombPlanted(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) override;
 
 	const char* GetName() const override { return "ScenarioMonitor"; }
 private:

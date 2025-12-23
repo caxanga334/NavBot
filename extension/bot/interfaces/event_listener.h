@@ -86,6 +86,8 @@ public:
 	virtual void OnObjectSapped(CBaseEntity* owner, CBaseEntity* saboteur); // An object was sapped (TF2)
 	virtual void OnGameEvent(const IGameEvent* event, void* moddata = nullptr); // Generic AI event for passing game events
 	virtual void OnPathStatusChanged(); // Called by the path processor to notify the path status has changed
+	virtual void OnBombPlanted(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent); // Called when a bomb has been planted, data passed depends on the current mod
+	virtual void OnBombDefused(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent); // Called when a bomb has been defused, data passed depends on the current mod
 };
 
 inline void IEventListener::OnDebugMoveToCommand(const Vector& moveTo)
@@ -435,6 +437,32 @@ inline void IEventListener::OnPathStatusChanged()
 		for (auto listener : *vec)
 		{
 			listener->OnPathStatusChanged();
+		}
+	}
+}
+
+inline void IEventListener::OnBombPlanted(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnBombPlanted(position, teamIndex, player, ent);
+		}
+	}
+}
+
+inline void IEventListener::OnBombDefused(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnBombDefused(position, teamIndex, player, ent);
 		}
 	}
 }
