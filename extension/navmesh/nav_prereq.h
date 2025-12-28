@@ -32,12 +32,14 @@ public:
 
 	static inline unsigned int s_nextID{ 0 };
 	static constexpr auto MAX_EDIT_DRAW_DISTANCE = 1024.0f;
+	static constexpr auto UPDATE_INTERVAL = 2.5f;
 
 	virtual void Save(std::fstream& filestream, uint32_t version);
 	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);
 	virtual NavErrorType PostLoad(void);
+	virtual void Update();
 	virtual void OnRoundRestart();
-	virtual bool IsEnabled() const { return m_toggle_condition.RunTestCondition(); }
+	virtual bool IsEnabled() const { return m_enabled; }
 
 	void SetFloatData(float value) { m_flData = value; }
 	void SetGoalPosition(const Vector& pos) { m_goalPosition = pos; }
@@ -52,21 +54,22 @@ public:
 			m_teamIndex = team;
 		}
 	}
+
 	void SetOrigin(const Vector& origin)
 	{
 		m_origin = origin;
-		m_calculatedMins = (m_origin + m_mins);
-		m_calculatedMaxs = (m_origin + m_maxs);
+		CalculateBounds();
 		OnSizeChanged();
 	}
+
 	void SetBounds(const Vector& mins, const Vector& maxs)
 	{
 		m_mins = mins;
 		m_maxs = maxs;
-		m_calculatedMins = (m_origin + m_mins);
-		m_calculatedMaxs = (m_origin + m_maxs);
+		CalculateBounds();
 		OnSizeChanged();
 	}
+
 	void SetTask(int taskID)
 	{
 		if (taskID <= static_cast<int>(PrerequisiteTask::TASK_NONE) || taskID >= static_cast<int>(PrerequisiteTask::MAX_TASK_TYPES))
@@ -78,6 +81,7 @@ public:
 			m_task = static_cast<PrerequisiteTask>(taskID);
 		}
 	}
+
 	void AssignTaskEntity(CBaseEntity* entity)
 	{
 		m_goalEntity.LinkToEntity(entity);
@@ -120,9 +124,16 @@ protected:
 
 	navscripting::EntityLink& GetGoalEntity() { return m_goalEntity; }
 	navscripting::ToggleCondition& GetToggleCondition() { return m_toggle_condition; }
+	void SetEnabledState(bool state) { m_enabled = state; }
 
 	static constexpr auto BASE_SCREENY = 0.20f;
 	static constexpr auto BASE_SCREENX = 0.16f;
+
+	void CalculateBounds()
+	{
+		m_calculatedMins = (m_origin + m_mins);
+		m_calculatedMaxs = (m_origin + m_maxs);
+	}
 
 private:
 	friend class CNavMesh;
@@ -140,6 +151,7 @@ private:
 	float m_flData;
 	int m_teamIndex;
 	std::vector<CNavArea*> m_areas; // areas inside the prerequisite bounds
+	bool m_enabled; // cached enabled status
 };
 
 extern ConVar sm_nav_prerequisite_edit;

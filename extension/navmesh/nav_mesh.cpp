@@ -139,6 +139,7 @@ CNavMesh::CNavMesh( void )
 	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
 	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
 	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
+	m_invokePrereqUpdateTimer.Start(CNavPrerequisite::UPDATE_INTERVAL);
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
 	m_waypoints.reserve(128);
@@ -759,6 +760,15 @@ void CNavMesh::Update( void )
 		m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
 
 		std::for_each(m_elevators.begin(), m_elevators.end(), [](const std::pair<unsigned int, std::shared_ptr<CNavElevator>>& object) {
+			object.second->Update();
+		});
+	}
+
+	if (m_invokePrereqUpdateTimer.IsElapsed())
+	{
+		m_invokePrereqUpdateTimer.Start(CNavPrerequisite::UPDATE_INTERVAL);
+
+		std::for_each(m_prerequisites.begin(), m_prerequisites.end(), [](const std::pair<unsigned int, std::shared_ptr<CNavPrerequisite>>& object) {
 			object.second->Update();
 		});
 	}

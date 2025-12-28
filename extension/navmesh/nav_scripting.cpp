@@ -201,6 +201,7 @@ const char* navscripting::ToggleCondition::TCTypeToString(navscripting::ToggleCo
 		"TYPE_ENTITY_DISTANCE"sv,
 		"TYPE_ENTITY_VISIBLE"sv,
 		"TYPE_TRACEHULL_SOLIDWORLD"sv,
+		"TYPE_BASETOGGLE_POSITION"sv,
 	};
 
 	static_assert(names.size() == static_cast<std::size_t>(navscripting::ToggleCondition::TCTypes::MAX_TOGGLE_TYPES), "Toggle Type name array and enum size mismatch!");
@@ -267,6 +268,9 @@ bool navscripting::ToggleCondition::RunTestCondition() const
 		break;
 	case navscripting::ToggleCondition::TYPE_TRACEHULL_SOLIDWORLD:
 		result = TestCondition_TraceHullSolidWorld();
+		break;
+	case navscripting::ToggleCondition::TYPE_BASETOGGLE_POSITION:
+		result = TestCondition_BaseToggle_Position();
 		break;
 	case navscripting::ToggleCondition::MAX_TOGGLE_TYPES:
 		[[fallthrough]];
@@ -340,6 +344,13 @@ void navscripting::ToggleCondition::OnTestConditionChanged() const
 		if (m_flData < 1.0f)
 		{
 			rootconsole->ConsolePrint("nav scripting: Toggle type set to trace hull solid world but hull size (float data) is less than 1!");
+		}
+	}
+	else if (m_toggle_type == TCTypes::TYPE_BASETOGGLE_POSITION)
+	{
+		if (!entprops->HasEntProp(entity, Prop_Data, "m_vecPosition1") || !entprops->HasEntProp(entity, Prop_Data, "m_vecPosition2"))
+		{
+			rootconsole->ConsolePrint("nav scripting: Toggle type set to base toggle position but the target entity isn't an instance of \"CBaseToggle\"!");
 		}
 	}
 }
@@ -464,7 +475,7 @@ bool navscripting::ToggleCondition::TestCondition_TraceHullSolidWorld() const
 {
 	CTraceFilterWorldAndPropsOnly filter;
 
-	// limit size to 1
+	// minimum value of 1 for size
 	float size = std::max(m_flData, 1.0f);
 	Vector mins(-size, -size, -size);
 	Vector maxs(size, size, size);
@@ -477,4 +488,32 @@ bool navscripting::ToggleCondition::TestCondition_TraceHullSolidWorld() const
 	}
 
 	return tr.DidHit();
+}
+
+bool navscripting::ToggleCondition::TestCondition_BaseToggle_Position() const
+{
+	CBaseEntity* pEntity = m_targetEnt.GetEntity();
+
+	if (pEntity)
+	{
+		Vector position1;
+		Vector position2;
+		Vector local = UtilHelpers::getEntityLocalOrigin(pEntity);
+
+		entprops->GetEntPropVector(pEntity, Prop_Data, "m_vecPosition1", position1);
+		entprops->GetEntPropVector(pEntity, Prop_Data, "m_vecPosition2", position2);
+
+		float flTravelDist = (position1 - position2).Length();
+		float flCurDist = (position1 - local).Length();
+		float position = flCurDist / flTravelDist;
+
+		if (m_inverted)
+		{
+			return m_flData <= position;
+		}
+
+		return m_flData >= position;
+	}
+
+	return false;
 }

@@ -41,9 +41,8 @@ Checks if the linked entity assigned team index is equal to the stored integer d
 
 ## TYPE_ENTITY_TOGGLE_STATE
 
-Checks if the linked entity toggle state is equal to the stored integer data.
-
-Toggle state is used by doors to determine if they're open or closed.
+Checks if the linked entity toggle state is equal to the stored integer data.    
+Toggle state is used by doors to determine if they're open or closed.    
 
 ## TYPE_ENTITY_DISTANCE
 
@@ -55,6 +54,10 @@ Checks if the linked entity is visible or not by checking if the `EF_NODRAW` fla
 
 ## TYPE_TRACEHULL_SOLIDWORLD
 
-Peforms a trace hull and check for colisions with the world.
+Peforms a trace hull and check for colisions with the world.    
+Vector data sets the hull origin, float data sets the hull size.    
 
-Vector data sets the hull origin, float data sets the hull size.
+## TYPE_BASETOGGLE_POSITION
+
+For entities that derives from `CBaseToggle` class, calculates the entity position and tests it against the passed float data.    
+Float data should be in a 0 to 1 range.    

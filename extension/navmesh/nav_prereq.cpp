@@ -10,13 +10,15 @@
 ConVar sm_nav_prerequisite_edit("sm_nav_prerequisite_edit", "0", FCVAR_GAMEDLL, "Controls the Nav Prerequisite edit mode.");
 
 CNavPrerequisite::CNavPrerequisite() :
-	m_goalPosition(0.0f, 0.0f, 0.0f), m_mins(-32.0f, -32.0f, 0.0f), m_maxs(32.0f, 32.0f, 72.0f), m_origin(0.0f, 0.0f, 0.0f)
+	m_goalPosition(0.0f, 0.0f, 0.0f), m_mins(-32.0f, -32.0f, 0.0f), m_maxs(32.0f, 32.0f, 72.0f), m_origin(0.0f, 0.0f, 0.0f),
+	m_calculatedMins(0.0f, 0.0f, 0.0f), m_calculatedMaxs(0.0f, 0.0f, 0.0f)
 {
 	m_id = CNavPrerequisite::s_nextID;
 	CNavPrerequisite::s_nextID++;
 	m_task = TASK_NONE;
 	m_flData = 0.0f;
 	m_teamIndex = NAV_TEAM_ANY;
+	m_enabled = true;
 }
 
 CNavPrerequisite::~CNavPrerequisite()
@@ -88,11 +90,37 @@ NavErrorType CNavPrerequisite::PostLoad(void)
 {
 	m_goalEntity.PostLoad();
 	m_toggle_condition.PostLoad();
-	m_calculatedMins = (m_origin + m_mins);
-	m_calculatedMaxs = (m_origin + m_maxs);
+	CalculateBounds();
 	SearchForNavAreas();
 
 	return NAV_OK;
+}
+
+void CNavPrerequisite::Update()
+{
+	switch (m_task)
+	{
+	case PrerequisiteTask::TASK_DESTROY_ENT:
+		[[fallthrough]];
+	case PrerequisiteTask::TASK_USE_ENT:
+	{
+		CBaseEntity* taskEnt = m_goalEntity.GetEntity();
+
+		if (!taskEnt)
+		{
+			// If the goal entity no longer exists, set this as disabled.
+			SetEnabledState(false);
+			return;
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+
+	bool state = m_toggle_condition.RunTestCondition();
+	SetEnabledState(state);
 }
 
 void CNavPrerequisite::OnRoundRestart()
@@ -143,7 +171,9 @@ void CNavPrerequisite::ScreenText() const
 	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Selected Prerequisite #%i Team %i %s %s", 
 		m_id, m_teamIndex, TaskIDtoString(m_task), IsEnabled() ? "ENABLED" : "DISABLED");
 
-	m_toggle_condition.DebugScreenOverlay(BASE_SCREENX, BASE_SCREENY + 0.04f, NDEBUG_PERSIST_FOR_ONE_TICK);
+	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY + 0.04f, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Task Goal Entity %s", UtilHelpers::textformat::FormatEntity(m_goalEntity.GetEntity()));
+
+	m_toggle_condition.DebugScreenOverlay(BASE_SCREENX, BASE_SCREENY + 0.08f, NDEBUG_PERSIST_FOR_ONE_TICK);
 }
 
 void CNavPrerequisite::DrawAreas() const

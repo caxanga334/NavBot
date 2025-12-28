@@ -79,6 +79,12 @@ namespace UtilHelpers
 	Vector getWorldSpaceCenter(CBaseEntity* pEntity);
 	const Vector& getEntityOrigin(edict_t* entity);
 	const Vector& getEntityOrigin(CBaseEntity* entity);
+	/**
+	 * @brief Reimplementation of CBaseEntity::GetLocalOrigin
+	 * @param entity Entity to get the local origin from
+	 * @return Entity local origin vector.
+	 */
+	Vector getEntityLocalOrigin(CBaseEntity* entity);
 	const QAngle& getEntityAngles(edict_t* entity);
 	const QAngle& getEntityAngles(CBaseEntity* entity);
 	void getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs);

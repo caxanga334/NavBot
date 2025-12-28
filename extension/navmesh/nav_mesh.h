@@ -1269,6 +1269,7 @@ private:
 	CountdownTimer m_invokeWaypointUpdateTimer;
 	CountdownTimer m_invokeVolumeUpdateTimer;
 	CountdownTimer m_invokeElevatorUpdateTimer;
+	CountdownTimer m_invokePrereqUpdateTimer;
 	static constexpr auto NAV_AREA_UPDATE_INTERVAL = 1.0f;
 	void BuildAuthorInfo();
 	AuthorInfo m_authorinfo;

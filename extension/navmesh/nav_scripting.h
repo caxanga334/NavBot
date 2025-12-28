@@ -88,6 +88,7 @@ namespace navscripting
 			TYPE_ENTITY_DISTANCE,
 			TYPE_ENTITY_VISIBLE,
 			TYPE_TRACEHULL_SOLIDWORLD,
+			TYPE_BASETOGGLE_POSITION,
 
 			MAX_TOGGLE_TYPES
 		};
@@ -167,6 +168,7 @@ namespace navscripting
 		bool TestCondition_EntityDistance() const;
 		bool TestCondition_EntityVisible() const;
 		bool TestCondition_TraceHullSolidWorld() const;
+		bool TestCondition_BaseToggle_Position() const;
 	};
 
 }

@@ -302,6 +302,13 @@ const Vector& UtilHelpers::getEntityOrigin(CBaseEntity* entity)
 	return reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionOrigin();
 }
 
+Vector UtilHelpers::getEntityLocalOrigin(CBaseEntity* entity)
+{
+	Vector origin{ 0.0f, 0.0f, 0.0f };
+	entprops->GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
+	return origin;
+}
+
 const QAngle& UtilHelpers::getEntityAngles(edict_t* entity)
 {
 	return entity->GetCollideable()->GetCollisionAngles();
