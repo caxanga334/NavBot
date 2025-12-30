@@ -59,6 +59,8 @@ void CServerCommandManager::RegisterConCommandAutoComplete(const char* name, con
 	m_cmdptrs.push_back(ptr);
 }
 
+#if SOURCE_ENGINE > SE_DARKMESSIAH
+
 void CServerCommandManager::OnCommandCallback(const CCommand& command)
 {
 	std::string name{ command.Arg(0) };
@@ -79,6 +81,33 @@ void CServerCommandManager::OnCommandCallback(const CCommand& command)
 		it->second.m_callback(args);
 	}
 }
+
+#else
+
+// Old Engine games ( Source 2006 )
+void CServerCommandManager::OnCommandCallback(void)
+{
+
+	std::string name{ engine->Cmd_Argv(0) };
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
+
+	auto it = manager.m_commands.find(name);
+
+	if (it != manager.m_commands.end())
+	{
+		SVCommandArgs args;
+
+		// push arguments
+		for (int i = 0; i < engine->Cmd_Argc(); i++)
+		{
+			args.PushArg(engine->Cmd_Argv(i));
+		}
+
+		it->second.m_callback(args);
+	}
+}
+
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
 int CServerCommandManager::OnCommandAutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
