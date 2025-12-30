@@ -6,6 +6,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <mods/tf2/tf2lib.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include "teamfortress2_shareddefs.h"
 #include "tf2_class_selection.h"
 
@@ -20,11 +21,12 @@ CTF2ClassSelection::~CTF2ClassSelection()
 void CTF2ClassSelection::LoadClassSelectionData()
 {
 	char filepath[PLATFORM_MAX_PATH];
-	smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/tf/class_selection.custom.cfg");
+	const std::string& gamefolder = extmanager->GetMod()->GetModFolder();
+	smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/%s/class_selection.custom.cfg", gamefolder.c_str());
 
 	if (!std::filesystem::exists(filepath))
 	{
-		smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/tf/class_selection.cfg");
+		smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/%s/class_selection.cfg", gamefolder.c_str());
 
 		if (!std::filesystem::exists(filepath))
 		{

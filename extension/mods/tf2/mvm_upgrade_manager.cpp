@@ -5,6 +5,7 @@
 #include <manager.h>
 #include <tier1/KeyValues.h>
 #include <mods/tf2/tf2lib.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <bot/tf2/tf2bot.h>
 #include "mvm_upgrade_manager.h"
 
@@ -152,7 +153,8 @@ void CMvMUpgradeManager::ParseBotUpgradeInfoFile()
 	InitUpgradeInfo();
 
 	char path[PLATFORM_MAX_PATH];
-	smutils->BuildPath(SourceMod::Path_SM, path, sizeof(path), "configs/navbot/tf/mvm_upgrades.cfg");
+	const std::string& gamefolder = CTeamFortress2Mod::GetTF2Mod()->GetModFolder();
+	smutils->BuildPath(SourceMod::Path_SM, path, sizeof(path), "configs/navbot/%s/mvm_upgrades.cfg", gamefolder.c_str());
 	SourceMod::SMCStates states;
 	auto error = textparsers->ParseFile_SMC(path, this, &states);
 

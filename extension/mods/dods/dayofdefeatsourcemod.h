@@ -89,9 +89,6 @@ public:
 	};
 
 	void FireGameEvent(IGameEvent* event) override;
-
-	const char* GetModName() override { return "Day of Defeat: Source"; }
-	Mods::ModType GetModType() override { return Mods::ModType::MOD_DODS; }
 	void Update() override;
 	// Called by the manager when allocating a new bot instance
 	CBaseBot* AllocateBot(edict_t* edict) override;

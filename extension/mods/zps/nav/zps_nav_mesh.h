@@ -10,6 +10,9 @@ public:
 
 	CNavArea* CreateArea(void) const override;
 
+protected:
+	void RegisterModCommands() override;
+
 private:
 
 };

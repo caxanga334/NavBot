@@ -114,8 +114,6 @@ public:
 #endif // SOURCE_ENGINE == SE_TF2
 
 	void Update() override;
-	const char* GetModName() override { return "Team Fortress 2"; }
-	Mods::ModType GetModType() override { return Mods::ModType::MOD_TF2; }
 	void OnMapStart() override;
 	void OnMapEnd() override;
 	CBaseBot* AllocateBot(edict_t* edict) override;

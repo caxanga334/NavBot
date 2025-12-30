@@ -9,8 +9,9 @@
 void CModSettings::ParseConfigFile()
 {
 	char path[PLATFORM_MAX_PATH]{};
-	const char* modfolder = smutils->GetGameFolderName();
+	
 	const CBaseMod* mod = extmanager->GetMod();
+	const char* modfolder = mod->GetModFolder().c_str();
 	std::string map = mod->GetCurrentMapName();
 
 

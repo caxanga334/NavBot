@@ -21,7 +21,7 @@ public:
 	{
 		const int teamIndex = static_cast<int>(this->bot->GetMyDoDTeam());
 		Vector pos = UtilHelpers::getWorldSpaceCenter(object);
-		this->dispenser_area = static_cast<CDODSNavArea*>(TheNavMesh->GetNearestNavArea(pos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f, false, true, teamIndex));
+		this->dispenser_area = static_cast<CDoDSNavArea*>(TheNavMesh->GetNearestNavArea(pos, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f, false, true, teamIndex));
 
 		// entity is off the nav-mesh (unreachable)
 		if (!this->dispenser_area)
@@ -51,7 +51,7 @@ public:
 	}
 
 	CDoDSBot* bot;
-	CDODSNavArea* dispenser_area;
+	CDoDSNavArea* dispenser_area;
 };
 
 CDoDSBotFetchBombTask::CDoDSBotFetchBombTask(AITask<CDoDSBot>* exitTask, CBaseEntity* dispenser) :

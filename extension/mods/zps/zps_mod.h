@@ -17,10 +17,6 @@ public:
 
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
-	// Mod name (IE: Team Fortress 2)
-	const char* GetModName() override { return "Zombie Panic! Source"; }
-	// Mod ID
-	Mods::ModType GetModType() override { return Mods::ModType::MOD_ZPS; }
 	void OnMapStart() override;
 	void OnRoundStart() override;
 	void OnRoundEnd() override;

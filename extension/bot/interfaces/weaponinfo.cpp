@@ -18,7 +18,7 @@ bool CWeaponInfoManager::LoadConfigFile()
 {
 	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
 
-	auto gamefolder = smutils->GetGameFolderName();
+	auto gamefolder = extmanager->GetMod()->GetModFolder().c_str();
 	smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/weapons.custom.cfg", gamefolder);
 
 	if (!std::filesystem::exists(path.get()))

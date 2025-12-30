@@ -3,21 +3,26 @@
 #include "dods_nav_area.h"
 #include "dods_nav_mesh.h"
 
-CDODSNavMesh::CDODSNavMesh() :
+CDoDSNavMesh::CDoDSNavMesh() :
 	CNavMesh()
 {
 }
 
-CDODSNavMesh::~CDODSNavMesh()
+CDoDSNavMesh::~CDoDSNavMesh()
 {
 }
 
-unsigned int CDODSNavMesh::GetGenerationTraceMask(void) const
+void CDoDSNavMesh::RegisterModCommands()
+{
+	RegisterEditCommands();
+}
+
+unsigned int CDoDSNavMesh::GetGenerationTraceMask(void) const
 {
 	return MASK_PLAYERSOLID_BRUSHONLY;
 }
 
-CNavArea* CDODSNavMesh::CreateArea(void) const
+CNavArea* CDoDSNavMesh::CreateArea(void) const
 {
-	return new CDODSNavArea(GetNavPlace());
+	return new CDoDSNavArea(GetNavPlace());
 }

@@ -59,9 +59,9 @@ void CDoDSBotMovement::Update()
 
 void CDoDSBotMovement::OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea)
 {
-	CDODSNavArea* area = static_cast<CDODSNavArea*>(newArea);
+	CDoDSNavArea* area = static_cast<CDoDSNavArea*>(newArea);
 
-	if (area->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_REQUIRES_PRONE))
+	if (area->HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_REQUIRES_PRONE))
 	{
 		GetBot<CDoDSBot>()->GetControlInterface()->PressProneButton();
 		m_unProneTimer.Start(1.0f);

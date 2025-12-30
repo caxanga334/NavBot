@@ -3,18 +3,16 @@
 #include <mods/dods/nav/dods_nav_mesh.h>
 #include <mods/dods/nav/dods_nav_area.h>
 
-#ifdef DOD_DLL
-
-static const std::unordered_map<std::string, CDODSNavArea::DoDNavAttributes> s_dodattribsmap = {
-	{"noallies", CDODSNavArea::DODNAV_NO_ALLIES},
-	{"noaxis", CDODSNavArea::DODNAV_NO_AXIS},
-	{"deprecated1", CDODSNavArea::DODNAV_DEPRECATED1},
-	{"deprecated2", CDODSNavArea::DODNAV_DEPRECATED2},
-	{"bombs_to_open", CDODSNavArea::DODNAV_BOMBS_TO_OPEN},
-	{"requires_prone", CDODSNavArea::DODNAV_REQUIRES_PRONE},
+static const std::unordered_map<std::string, CDoDSNavArea::DoDNavAttributes> s_dodattribsmap = {
+	{"noallies", CDoDSNavArea::DODNAV_NO_ALLIES},
+	{"noaxis", CDoDSNavArea::DODNAV_NO_AXIS},
+	{"deprecated1", CDoDSNavArea::DODNAV_DEPRECATED1},
+	{"deprecated2", CDoDSNavArea::DODNAV_DEPRECATED2},
+	{"bombs_to_open", CDoDSNavArea::DODNAV_BOMBS_TO_OPEN},
+	{"requires_prone", CDoDSNavArea::DODNAV_REQUIRES_PRONE},
 };
 
-static CDODSNavArea::DoDNavAttributes NameToDoDAttributes(const std::string& name)
+static CDoDSNavArea::DoDNavAttributes NameToDoDAttributes(const std::string& name)
 {
 	auto it = s_dodattribsmap.find(name);
 
@@ -23,18 +21,18 @@ static CDODSNavArea::DoDNavAttributes NameToDoDAttributes(const std::string& nam
 		return it->second;
 	}
 
-	return CDODSNavArea::DoDNavAttributes::DODNAV_NONE;
+	return CDoDSNavArea::DoDNavAttributes::DODNAV_NONE;
 }
 
 class CDoDNavEditToggleDodAttribute
 {
 public:
-	CDoDNavEditToggleDodAttribute(CDODSNavArea::DoDNavAttributes attribute)
+	CDoDNavEditToggleDodAttribute(CDoDSNavArea::DoDNavAttributes attribute)
 	{
 		m_attribute = attribute;
 	}
 
-	bool operator() (CDODSNavArea* area)
+	bool operator() (CDoDSNavArea* area)
 	{
 		if (area->HasDoDAttributes(m_attribute))
 		{
@@ -49,51 +47,21 @@ public:
 	}
 
 private:
-	CDODSNavArea::DoDNavAttributes m_attribute;
+	CDoDSNavArea::DoDNavAttributes m_attribute;
 };
 
-static int DoDAttributes_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+static void DoDNavEdit_DodAttributes_AutoComplete(const char* partialArg, int partialArgLength, SVCommandAutoCompletion& entries)
 {
-	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
-	{
-		return 0;
-	}
-
-	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
-	V_strncpy(cmd, partial, sizeof(cmd));
-
-	// skip to start of argument
-	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
-	{
-		return 0;
-	}
-
-	// chop command from partial argument
-	*partialArg = '\000';
-	++partialArg;
-
-	int partialArgLength = V_strlen(partialArg);
-
-	int count = 0;
-
 	for (auto& pair : s_dodattribsmap)
 	{
-		if (count >= COMMAND_COMPLETION_MAXITEMS)
-		{
-			break;
-		}
-
 		if (V_strnicmp(pair.first.c_str(), partialArg, partialArgLength) == 0)
 		{
-			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.first.c_str());
+			entries.AddAutoCompletionEntry(pair.first.c_str());
 		}
 	}
-
-	return count;
 }
 
-CON_COMMAND_F_COMPLETION(sm_dod_nav_set_attribute, "Assigns DoD specific nav area attributes", FCVAR_CHEAT | FCVAR_GAMEDLL, DoDAttributes_AutoComplete)
+static void sm_dod_nav_set_attribute(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -114,10 +82,10 @@ CON_COMMAND_F_COMPLETION(sm_dod_nav_set_attribute, "Assigns DoD specific nav are
 	{
 		auto attrib = NameToDoDAttributes(args[i]);
 
-		if (attrib != CDODSNavArea::DoDNavAttributes::DODNAV_NONE)
+		if (attrib != CDoDSNavArea::DoDNavAttributes::DODNAV_NONE)
 		{
 			CDoDNavEditToggleDodAttribute toggle{ attrib };
-			TheNavMesh->ExecuteAreaEditCommand<CDODSNavArea, decltype(toggle)>(toggle, false);
+			TheNavMesh->ExecuteAreaEditCommand<CDoDSNavArea, decltype(toggle)>(toggle, false);
 			Msg("Toggling DoD Attribute \"%s\". \n", args[i]);
 		}
 		else
@@ -130,15 +98,15 @@ CON_COMMAND_F_COMPLETION(sm_dod_nav_set_attribute, "Assigns DoD specific nav are
 	TheNavMesh->ClearEditedAreas();
 }
 
-CON_COMMAND_F(sm_dod_nav_wipe_attributes, "Removes all DoD attributes from the selected nav areas.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+static void sm_dod_nav_wipe_attributes(const SVCommandArgs& args)
 {
-	auto func = [](CDODSNavArea* area) { area->WipeDoDAttributes(); };
+	auto func = [](CDoDSNavArea* area) { area->WipeDoDAttributes(); };
 
-	TheNavMesh->ExecuteAreaEditCommand<CDODSNavArea, decltype(func)>(func);
+	TheNavMesh->ExecuteAreaEditCommand<CDoDSNavArea, decltype(func)>(func);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-CON_COMMAND_F_COMPLETION(sm_dod_nav_select_areas_with_attributes, "Adds nav areas with the given DoD attrib to the selected set.", FCVAR_CHEAT | FCVAR_GAMEDLL, DoDAttributes_AutoComplete)
+static void sm_dod_nav_select_areas_with_attributes(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -155,14 +123,14 @@ CON_COMMAND_F_COMPLETION(sm_dod_nav_select_areas_with_attributes, "Adds nav area
 		return;
 	}
 
-	CDODSNavArea::DoDNavAttributes attrib = NameToDoDAttributes(args[1]);
+	CDoDSNavArea::DoDNavAttributes attrib = NameToDoDAttributes(args[1]);
 	TheNavMesh->ClearSelectedSet();
 
-	if (attrib != CDODSNavArea::DoDNavAttributes::DODNAV_NONE)
+	if (attrib != CDoDSNavArea::DoDNavAttributes::DODNAV_NONE)
 	{
 		auto func = [attrib](CNavArea* area) -> bool {
 
-			if (static_cast<CDODSNavArea*>(area)->HasDoDAttributes(attrib))
+			if (static_cast<CDoDSNavArea*>(area)->HasDoDAttributes(attrib))
 			{
 				TheNavMesh->AddToSelectedSet(area);
 			}
@@ -183,4 +151,11 @@ CON_COMMAND_F_COMPLETION(sm_dod_nav_select_areas_with_attributes, "Adds nav area
 	TheNavMesh->SetMarkedArea(nullptr);
 }
 
-#endif // DOD_DLL
+void CDoDSNavMesh::RegisterEditCommands()
+{
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
+
+	manager.RegisterConCommand("sm_dod_nav_wipe_attributes", "Removes all DoD attributes from the selected nav areas.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_dod_nav_wipe_attributes);
+	manager.RegisterConCommandAutoComplete("sm_dod_nav_set_attribute", "Assigns DoD specific nav area attributes.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_dod_nav_set_attribute, DoDNavEdit_DodAttributes_AutoComplete);
+	manager.RegisterConCommandAutoComplete("sm_dod_nav_select_areas_with_attributes", "Adds nav areas with the given DoD attrib to the selected set.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_dod_nav_select_areas_with_attributes, DoDNavEdit_DodAttributes_AutoComplete);
+}

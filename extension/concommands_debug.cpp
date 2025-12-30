@@ -50,6 +50,7 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 	Msg("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");
 	CBaseMod* mod = extmanager->GetMod();
 	Msg("Game Folder: %s\n", smutils->GetGameFolderName() != nullptr ? smutils->GetGameFolderName() : "");
+	Msg("Mod Folder: %s\n", mod->GetModFolder().c_str());
 	Msg("Current Mod (Extension): %s\n", mod->GetModName());
 	Msg("Current Map: %s\n", STRING(gpGlobals->mapname));
 	Msg("Nav Mesh:\n    Status: %s\n    Version: %i\n    Subversion: %i\n", TheNavMesh->IsLoaded() ? "Loaded" : "NOT Loaded", CNavMesh::NavMeshVersion, TheNavMesh->GetSubVersionNumber());

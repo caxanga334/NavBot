@@ -15,6 +15,7 @@ Welcome to the NavBot extension documentation index.
 - [Detailed Game Support]
 - [Using Debug Commands]
 - [Additional Plugins]
+- [Game Detection (Advanced)]
 
 <!-- Links -->
 [Installing NavBot]: INSTALL.md
@@ -29,3 +30,4 @@ Welcome to the NavBot extension documentation index.
 [Detailed Game Support]: DGS.md
 [Using Debug Commands]: DEBUGGING.md
 [Additional Plugins]: PLUGINS.md
+[Game Detection (Advanced)]: GAME_DETECTION.md

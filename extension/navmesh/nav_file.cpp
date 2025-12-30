@@ -847,13 +847,13 @@ void CNavMesh::ComputeBattlefrontAreas( void )
  */
 const char *CNavMesh::GetFilename( void )
 {
-	auto modfolder = smutils->GetGameFolderName();
+	const std::string& modfolder = extmanager->GetMod()->GetModFolder();
 	auto mapname = STRING(gpGlobals->mapname); // TO-DO: Clean up workshop maps
 
 	// filename is local to game dir for Steam, so we need to prepend game dir for regular file save
 	char gamePath[256];
 	// engine->GetGameDir( gamePath, 256 );
-	smutils->BuildPath(SourceMod::Path_SM, gamePath, sizeof(gamePath), "data/navbot/%s/%s.smnav", modfolder, mapname);
+	smutils->BuildPath(SourceMod::Path_SM, gamePath, sizeof(gamePath), "data/navbot/%s/%s.smnav", modfolder.c_str(), mapname);
 
 	// persistant return value
 	static char filename[256];
@@ -1764,8 +1764,8 @@ std::filesystem::path CNavMesh::GetFullPathToNavMeshFile() const
 {
 	char fullpath[PLATFORM_MAX_PATH];
 	std::string map = extmanager->GetMod()->GetCurrentMapName();
-	auto mod = smutils->GetGameFolderName();
-	smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod, map.c_str());
+	const std::string& mod = extmanager->GetMod()->GetModFolder();
+	smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod.c_str(), map.c_str());
 	return std::filesystem::path(fullpath);
 }
 
@@ -2267,6 +2267,7 @@ void CNavMesh::CommandNavDumpToKeyValues()
 	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
 	const char* gamename = extmanager->GetMod()->GetModName();
 	const char* gamefolder = smutils->GetGameFolderName();
+	const char* modfolder = extmanager->GetMod()->GetModFolder().c_str();
 
 	{
 		KeyValues* subKey = new KeyValues("Info");
@@ -2277,6 +2278,7 @@ void CNavMesh::CommandNavDumpToKeyValues()
 		subKey->SetInt("MapVersion", gpGlobals->mapversion);
 		subKey->SetString("Game", gamename);
 		subKey->SetString("GameFolder", gamefolder);
+		subKey->SetString("ModFolder", modfolder);
 		subKey->SetInt("AreaCount", static_cast<int>(GetNavAreaCount()));
 		subKey->SetInt("LadderCount", m_ladders.Count());
 		subKey->SetInt("WaypointCount", static_cast<int>(m_waypoints.size()));

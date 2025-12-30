@@ -27,7 +27,7 @@ void CDoDSBotPathProcessor::Update()
 
 		if (m_bombArea)
 		{
-			const CDODSNavArea* area = static_cast<const CDODSNavArea*>(m_bombArea);
+			const CDoDSNavArea* area = static_cast<const CDoDSNavArea*>(m_bombArea);
 
 			if (area->WasBombed() || !area->CanPlantBomb())
 			{

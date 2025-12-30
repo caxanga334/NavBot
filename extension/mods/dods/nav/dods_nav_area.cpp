@@ -5,7 +5,7 @@
 #include "dods_nav_mesh.h"
 #include "dods_nav_area.h"
 
-CDODSNavArea::CDODSNavArea(unsigned int place) :
+CDoDSNavArea::CDoDSNavArea(unsigned int place) :
 	CNavArea(place)
 {
 	m_dodAttributes = 0;
@@ -14,11 +14,11 @@ CDODSNavArea::CDODSNavArea(unsigned int place) :
 	m_bombTeam = NAV_TEAM_ANY;
 }
 
-CDODSNavArea::~CDODSNavArea()
+CDoDSNavArea::~CDoDSNavArea()
 {
 }
 
-void CDODSNavArea::OnUpdate()
+void CDoDSNavArea::OnUpdate()
 {
 	CNavArea::OnUpdate();
 
@@ -39,7 +39,7 @@ void CDODSNavArea::OnUpdate()
 	}
 }
 
-void CDODSNavArea::OnRoundRestart(void)
+void CDoDSNavArea::OnRoundRestart(void)
 {
 	CNavArea::OnRoundRestart();
 
@@ -49,14 +49,14 @@ void CDODSNavArea::OnRoundRestart(void)
 	}
 }
 
-void CDODSNavArea::Save(std::fstream& filestream, uint32_t version)
+void CDoDSNavArea::Save(std::fstream& filestream, uint32_t version)
 {
 	CNavArea::Save(filestream, version);
 
 	filestream.write(reinterpret_cast<char*>(&m_dodAttributes), sizeof(int));
 }
 
-NavErrorType CDODSNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
+NavErrorType CDoDSNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
 {
 	NavErrorType code = CNavArea::Load(filestream, version, subVersion);
 
@@ -68,26 +68,26 @@ NavErrorType CDODSNavArea::Load(std::fstream& filestream, uint32_t version, uint
 	return code;
 }
 
-NavErrorType CDODSNavArea::PostLoad(void)
+NavErrorType CDoDSNavArea::PostLoad(void)
 {
 	NavErrorType code = CNavArea::PostLoad();
 
-	if (HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED1))
+	if (HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_DEPRECATED1))
 	{
 		smutils->LogError(myself, "Removing deprecated DoD attributes from Nav area %i at %s!", GetID(), UtilHelpers::textformat::FormatVector(GetCenter()));
-		ClearDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED1);
+		ClearDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_DEPRECATED1);
 	}
 
-	if (HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED2))
+	if (HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_DEPRECATED2))
 	{
 		smutils->LogError(myself, "Removing deprecated DoD attributes from Nav area %i at %s!", GetID(), UtilHelpers::textformat::FormatVector(GetCenter()));
-		ClearDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_DEPRECATED2);
+		ClearDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_DEPRECATED2);
 	}
 
 	return code;
 }
 
-bool CDODSNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
+bool CDoDSNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 {
 	if (teamID == static_cast<int>(dayofdefeatsource::DoDTeam::DODTEAM_ALLIES))
 	{
@@ -108,7 +108,7 @@ bool CDODSNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 	return CNavArea::IsBlocked(teamID, ignoreNavBlockers);
 }
 
-const bool CDODSNavArea::CanPlantBomb() const
+const bool CDoDSNavArea::CanPlantBomb() const
 {
 	CBaseEntity* bomb = GetAssignedBombTarget();
 
@@ -122,7 +122,7 @@ const bool CDODSNavArea::CanPlantBomb() const
 	return state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE);
 }
 
-void CDODSNavArea::ShowAreaInfo() const
+void CDoDSNavArea::ShowAreaInfo() const
 {
 	if (m_dodAttributes != 0)
 	{
@@ -153,7 +153,7 @@ void CDODSNavArea::ShowAreaInfo() const
 	}
 }
 
-void CDODSNavArea::FindAndAssignNearestBombTarget()
+void CDoDSNavArea::FindAndAssignNearestBombTarget()
 {
 	m_bombTarget = nullptr;
 	const Vector& center = GetCenter();
@@ -161,7 +161,7 @@ void CDODSNavArea::FindAndAssignNearestBombTarget()
 
 	if (!bomb)
 	{
-		smutils->LogError(myself, "CDODSNavArea #%u at %g %g %g has bomb attributes but could not find any dod_bomb_target entity!", GetID(), center.x, center.y, center.z);
+		smutils->LogError(myself, "CDoDSNavArea #%u at %g %g %g has bomb attributes but could not find any dod_bomb_target entity!", GetID(), center.x, center.y, center.z);
 		return;
 	}
 

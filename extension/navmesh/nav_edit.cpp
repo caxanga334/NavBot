@@ -5416,3 +5416,9 @@ CON_COMMAND_F(sm_nav_highlight_unnamed_areas, "Highlights unnamed areas.", FCVAR
 		area->DrawFilled(255, 255, 255, 255, 10.0f);
 	}
 }
+
+void CNavMesh::RegisterCommands()
+{
+	// Call the virtual one for derived classes
+	RegisterModCommands();
+}

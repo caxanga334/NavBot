@@ -3,10 +3,7 @@
 #include "tfnavmesh.h"
 #include "tfnav_waypoint.h"
 
-// Don't registers these commands on non TF2 mods
-#if SOURCE_ENGINE == SE_TF2
-
-CON_COMMAND_F(sm_tf_nav_waypoint_set_control_point, "Associate a control point index to the selected waypoint.", FCVAR_CHEAT)
+static void sm_tf_nav_waypoint_set_control_point(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -37,7 +34,7 @@ CON_COMMAND_F(sm_tf_nav_waypoint_set_control_point, "Associate a control point i
 	wpt->SetControlPointIndex(cpindex);
 }
 
-CON_COMMAND_F(sm_tf_nav_waypoint_set_hint, "Assings a TF hint to the selected waypoint.", FCVAR_CHEAT)
+static void sm_tf_nav_waypoint_set_hint(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -68,14 +65,20 @@ CON_COMMAND_F(sm_tf_nav_waypoint_set_hint, "Assings a TF hint to the selected wa
 	wpt->SetTFHint(static_cast<CTFWaypoint::TFHint>(hint));
 }
 
-CON_COMMAND_F(sm_tf_nav_waypoint_list_all_hints, "List all available hints and their ID.", FCVAR_CHEAT)
+void CTFNavMesh::RegisterWaypointEditCommands()
 {
-	Msg("Listing all TF Hints.\n");
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
 
-	for (unsigned int i = 0; i < static_cast<unsigned int>(CTFWaypoint::TFHint::MAX_TFHINT_TYPES); i++)
-	{
-		Msg("  TF Hint #%i : %s\n", i, CTFWaypoint::TFHintToString(static_cast<CTFWaypoint::TFHint>(i)));
-	}
+	auto sm_tf_nav_waypoint_list_all_hints = [](const SVCommandArgs& args) {
+		META_CONPRINT("Listing all TF Hints.\n");
+
+		for (unsigned int i = 0; i < static_cast<unsigned int>(CTFWaypoint::TFHint::MAX_TFHINT_TYPES); i++)
+		{
+			META_CONPRINTF("  TF Hint #%i : %s\n", i, CTFWaypoint::TFHintToString(static_cast<CTFWaypoint::TFHint>(i)));
+		}
+	};
+
+	manager.RegisterConCommand("sm_tf_nav_waypoint_list_all_hints", "List all available hints and their ID.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_waypoint_list_all_hints);
+	manager.RegisterConCommand("sm_tf_nav_waypoint_set_hint", "Assings a TF hint to the selected waypoint.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_waypoint_set_hint);
+	manager.RegisterConCommand("sm_tf_nav_waypoint_set_control_point", "Associate a control point index to the selected waypoint.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_waypoint_set_control_point);
 }
-
-#endif // SOURCE_ENGINE == SE_TF2

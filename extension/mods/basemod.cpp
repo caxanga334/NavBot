@@ -20,9 +20,12 @@ void CBaseMod::PropagateGameEventToBots::operator()(CBaseBot* bot)
 	bot->OnGameEvent(this->event, this->moddata);
 }
 
-CBaseMod::CBaseMod()
+CBaseMod::CBaseMod() :
+	m_modName("CBaseMod")
 {
 	m_playerresourceentity.Term();
+	m_modID = Mods::ModType::MOD_BASE;
+	m_modFolder.assign(smutils->GetGameFolderName());
 
 	for (std::size_t i = 0; i < m_teamsharedmemory.max_size(); i++)
 	{
@@ -32,6 +35,12 @@ CBaseMod::CBaseMod()
 
 CBaseMod::~CBaseMod()
 {
+}
+
+void CBaseMod::RegisterCommands()
+{
+	// register mod commands (virtual)
+	RegisterModCommands();
 }
 
 std::string CBaseMod::GetCurrentMapName() const

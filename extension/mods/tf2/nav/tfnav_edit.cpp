@@ -4,8 +4,6 @@
 #include "tfnavarea.h"
 #include "tfnavmesh.h"
 
-#if SOURCE_ENGINE == SE_TF2
-
 static const std::unordered_map<std::string, CTFNavArea::TFNavPathAttributes> s_tfnavpathattribs = {
 	{"noredteam", CTFNavArea::TFNAV_PATH_NO_RED_TEAM},
 	{"nobluteam", CTFNavArea::TFNAV_PATH_NO_BLU_TEAM},
@@ -144,48 +142,18 @@ private:
 	CTFNavArea::MvMNavAttributes m_attribute;
 };
 
-static int PathAttributes_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+static void TFNav_PathAttributes_AutoComplete(const char* partialArg, int partialArgLength, SVCommandAutoCompletion& entries)
 {
-	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
-	{
-		return 0;
-	}
-
-	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
-	V_strncpy(cmd, partial, sizeof(cmd));
-
-	// skip to start of argument
-	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
-	{
-		return 0;
-	}
-
-	// chop command from partial argument
-	*partialArg = '\000';
-	++partialArg;
-
-	int partialArgLength = V_strlen(partialArg);
-
-	int count = 0;
-
 	for (auto& pair : s_tfnavpathattribs)
 	{
-		if (count >= COMMAND_COMPLETION_MAXITEMS)
-		{
-			break;
-		}
-
 		if (V_strnicmp(pair.first.c_str(), partialArg, partialArgLength) == 0)
 		{
-			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.first.c_str());
+			entries.AddAutoCompletionEntry(pair.first.c_str());
 		}
 	}
-
-	return count;
 }
 
-CON_COMMAND_F_COMPLETION(sm_tf_nav_toggle_path_attrib, "Toggles NavBot TF Path Attributes on the selected set", FCVAR_CHEAT, PathAttributes_AutoComplete)
+static void sm_tf_nav_toggle_path_attrib(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -221,7 +189,7 @@ CON_COMMAND_F_COMPLETION(sm_tf_nav_toggle_path_attrib, "Toggles NavBot TF Path A
 	TheNavMesh->ClearSelectedSet();
 }
 
-CON_COMMAND_F(sm_tf_nav_toggle_attrib, "Toggles NavBot TF Attributes on the selected set", FCVAR_CHEAT)
+static void sm_tf_nav_toggle_attrib(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -257,48 +225,18 @@ CON_COMMAND_F(sm_tf_nav_toggle_attrib, "Toggles NavBot TF Attributes on the sele
 	TheNavMesh->ClearSelectedSet();
 }
 
-static int MvMAttributes_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+static void TFNav_MvMAttributes_AutoComplete(const char* partialArg, int partialArgLength, SVCommandAutoCompletion& entries)
 {
-	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
-	{
-		return 0;
-	}
-
-	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
-	V_strncpy(cmd, partial, sizeof(cmd));
-
-	// skip to start of argument
-	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
-	{
-		return 0;
-	}
-
-	// chop command from partial argument
-	*partialArg = '\000';
-	++partialArg;
-
-	int partialArgLength = V_strlen(partialArg);
-
-	int count = 0;
-
 	for (auto& pair : s_mvmattribs)
 	{
-		if (count >= COMMAND_COMPLETION_MAXITEMS)
-		{
-			break;
-		}
-
 		if (V_strnicmp(pair.first.c_str(), partialArg, partialArgLength) == 0)
 		{
-			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.first.c_str());
+			entries.AddAutoCompletionEntry(pair.first.c_str());
 		}
 	}
-
-	return count;
 }
 
-CON_COMMAND_F_COMPLETION(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Attributes on the selected set", FCVAR_CHEAT, MvMAttributes_AutoComplete)
+static void sm_tf_nav_toggle_mvm_attrib(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -334,9 +272,16 @@ CON_COMMAND_F_COMPLETION(sm_tf_nav_toggle_mvm_attrib, "Toggles NavBot TF MvM Att
 	TheNavMesh->ClearSelectedSet();
 }
 
-CON_COMMAND_F(sm_tf_nav_auto_set_spawnrooms, "Detects and set spawn room areas automatically.", FCVAR_CHEAT)
+void CTFNavMesh::RegisterEditCommands()
 {
-	TheTFNavMesh()->AutoAddSpawnroomAttribute();
-}
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
 
-#endif
+	auto sm_tf_nav_auto_set_spawnrooms = [](const SVCommandArgs& args) {
+		TheTFNavMesh()->AutoAddSpawnroomAttribute();
+	};
+
+	manager.RegisterConCommand("sm_tf_nav_auto_set_spawnrooms", "Detects and set spawn room areas automatically.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_auto_set_spawnrooms);
+	manager.RegisterConCommand("sm_tf_nav_toggle_attrib", "Toggles NavBot TF Attributes on the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_toggle_attrib);
+	manager.RegisterConCommandAutoComplete("sm_tf_nav_toggle_path_attrib", "Toggles NavBot TF Path Attributes on the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_toggle_path_attrib, TFNav_PathAttributes_AutoComplete);
+	manager.RegisterConCommandAutoComplete("sm_tf_nav_toggle_mvm_attrib", "Toggles NavBot TF MvM Attributes on the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_toggle_mvm_attrib, TFNav_MvMAttributes_AutoComplete);
+}

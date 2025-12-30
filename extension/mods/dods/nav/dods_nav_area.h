@@ -5,11 +5,11 @@
 #include <navmesh/nav_area.h>
 #include <cstdint>
 
-class CDODSNavArea : public CNavArea
+class CDoDSNavArea : public CNavArea
 {
 public:
-	CDODSNavArea(unsigned int place);
-	~CDODSNavArea() override;
+	CDoDSNavArea(unsigned int place);
+	~CDoDSNavArea() override;
 
 	enum DoDNavAttributes
 	{

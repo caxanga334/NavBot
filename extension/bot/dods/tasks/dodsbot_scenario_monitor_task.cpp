@@ -79,9 +79,9 @@ TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
 #if 0
-	CDODSNavArea* area = static_cast<CDODSNavArea*>(newArea);
+	CDoDSNavArea* area = static_cast<CDoDSNavArea*>(newArea);
 
-	if (area->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_PLANT_BOMB) && !area->WasBombed() && area->CanPlantBomb())
+	if (area->HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_PLANT_BOMB) && !area->WasBombed() && area->CanPlantBomb())
 	{
 		CBaseEntity* target = area->GetAssignedBombTarget();
 		return TryPauseFor(new CDoDSBotDeployBombTask(target), PRIORITY_HIGH, "Nav area tells me I need to plant a bomb!");
@@ -98,7 +98,7 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnRoundStateChang
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChanged(CDoDSBot* bot)
 {
-	const CDODSNavArea* area = static_cast<const CDODSNavArea*>(bot->GetPathProcessorInterface()->GetBombArea());
+	const CDoDSNavArea* area = static_cast<const CDoDSNavArea*>(bot->GetPathProcessorInterface()->GetBombArea());
 
 	if (area && area->CanPlantBomb())
 	{

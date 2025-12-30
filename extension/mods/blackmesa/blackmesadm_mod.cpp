@@ -224,7 +224,7 @@ void CBlackMesaDeathmatchMod::BuildMaxCarryArray()
 void CBlackMesaDeathmatchMod::ParsePlayerModelsConfigFile()
 {
 	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
-	const char* modfolder = smutils->GetGameFolderName();
+	const char* modfolder = GetModFolder().c_str();
 
 	smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/player_models.custom.ini", modfolder);
 	

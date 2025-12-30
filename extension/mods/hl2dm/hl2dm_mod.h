@@ -9,9 +9,6 @@ public:
 	CHalfLife2DeathMatchMod();
 	~CHalfLife2DeathMatchMod() override;
 
-	const char* GetModName() override { return "Half-Life 2: Deathmatch"; }
-	Mods::ModType GetModType() override { return Mods::ModType::MOD_HL2DM; }
-
 	CBaseBot* AllocateBot(edict_t* edict) override;
 
 private:

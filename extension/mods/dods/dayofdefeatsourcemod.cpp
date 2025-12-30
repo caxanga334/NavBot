@@ -88,7 +88,7 @@ CBaseBot* CDayOfDefeatSourceMod::AllocateBot(edict_t* edict)
 
 CNavMesh* CDayOfDefeatSourceMod::NavMeshFactory()
 {
-	return new CDODSNavMesh;
+	return new CDoDSNavMesh;
 }
 
 void CDayOfDefeatSourceMod::OnMapStart()

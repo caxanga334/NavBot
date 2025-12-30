@@ -47,6 +47,7 @@
 #include "sourcepawn/spmanager.h"
 #include "util/gamedata_const.h"
 #include "navmesh/nav_mesh.h"
+#include "mod_loader.h"
 
 #if defined(EXT_DEBUG)
 #include "util/prediction.h"
@@ -191,12 +192,6 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	// generate a random seed for the global generators
 	librandom::ReSeedGlobalGenerators();
 
-	// Create the directory
-	auto mod = smutils->GetGameFolderName();
-
-	Utils::CreateDataDirectory(mod);
-	Utils::CreateConfigDirectory(mod);
-
 	if (!gameconfs->LoadGameConfigFile("navbot.games", &m_cfg_navbot, error, maxlen))
 	{
 		smutils->LogError(myself, "Failed to open NavBot gamedata file!");
@@ -215,6 +210,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	{
 		smutils->LogError(myself, "Failed to load SDKHooks gamedata!");
 		gameconfs->CloseGameConfigFile(m_cfg_sdkhooks);
+		return false;
+	}
+
+	if (!ExtModLoader::ModLoaderFileExists())
+	{
+		ke::SafeStrcpy(error, maxlen, "mod_loader.cfg not present, not parsing!");
 		return false;
 	}
 
@@ -340,6 +341,11 @@ void NavBotExt::SDK_OnAllLoaded()
 		extmanager = new CExtManager;
 		extmanager->OnAllLoaded();
 
+		const std::string& gamefolder = extmanager->GetMod()->GetModFolder();
+
+		Utils::CreateDataDirectory(gamefolder.c_str());
+		Utils::CreateConfigDirectory(gamefolder.c_str());
+
 		if (!m_botsAreSupported)
 		{
 			extmanager->NotifyBotsAreUnsupported();
@@ -372,6 +378,9 @@ void NavBotExt::SDK_OnAllLoaded()
 
 	entprops->Init(true);
 	sdkcalls->PostInit(); // setup the calls
+
+	extmanager->GetMod()->RegisterCommands();
+	TheNavMesh->RegisterCommands();
 
 #ifndef NO_SOURCEPAWN_API
 	spmanager->SetupHandles();

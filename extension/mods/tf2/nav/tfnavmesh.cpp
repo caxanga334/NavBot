@@ -129,6 +129,10 @@ void CTFNavMesh::FireGameEvent(IGameEvent* event)
 	CNavMesh::FireGameEvent(event);
 }
 
+void CTFNavMesh::RegisterModCommands()
+{
+}
+
 void CTFNavMesh::OnRoundRestart(void)
 {
 	CNavMesh::OnRoundRestart();

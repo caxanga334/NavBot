@@ -3,6 +3,7 @@
 #include <algorithm>
 
 #include <extension.h>
+#include <mods/basemod.h>
 #include <util/librandom.h>
 #include <util/helpers.h>
 #include <coordsize.h>
@@ -59,7 +60,7 @@ void CDifficultyManager::LoadProfiles()
 
 	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
 
-	const char* modfolder = smutils->GetGameFolderName();
+	const char* modfolder = extmanager->GetMod()->GetModFolder().c_str();
 	bool found = false;
 	bool is_override = false;
 

@@ -7,6 +7,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include "manager.h"
+#include "mod_loader.h"
 
 #include <navmesh/nav_mesh.h>
 
@@ -18,26 +19,6 @@
 #include <bot/interfaces/path/basepath.h>
 #include <entities/baseentity.h>
 #endif // EXT_DEBUG
-
-#if SOURCE_ENGINE == SE_TF2
-#include <mods/tf2/teamfortress2mod.h>
-#endif // SOURCE_ENGINE == SE_TF2
-
-#if SOURCE_ENGINE == SE_DODS
-#include <mods/dods/dayofdefeatsourcemod.h>
-#endif // SOURCE_ENGINE == SE_DODS
-
-#if SOURCE_ENGINE == SE_BMS
-#include <mods/blackmesa/blackmesadm_mod.h>
-#endif // SOURCE_ENGINE == SE_BMS
-
-#if SOURCE_ENGINE == SE_HL2DM
-#include <mods/hl2dm/hl2dm_mod.h>
-#endif // SOURCE_ENGINE == SE_HL2DM
-
-#if SOURCE_ENGINE == SE_SDK2013
-#include <mods/zps/zps_mod.h> 
-#endif
 
 #if SOURCE_ENGINE == SE_EPISODEONE
 #include <sdkports/sdk_convarref_ep1.h>
@@ -71,7 +52,6 @@ CExtManager::CExtManager()
 	m_prepluginbotaddforward = nullptr;
 	m_postpluginbotaddforward = nullptr;
 #endif // !NO_SOURCEPAWN_API
-
 }
 
 CExtManager::~CExtManager()
@@ -285,49 +265,10 @@ void CExtManager::OnMapEnd()
 // Detect current mod and initializes it
 void CExtManager::AllocateMod()
 {
-	// Don't check game folder name unless the SDK supports multiple mods (SDK2013, EP2 (Orange box), EP1 (Original))
-
-#if SOURCE_ENGINE == SE_TF2
-	m_mod = std::make_unique<CTeamFortress2Mod>();
-#elif SOURCE_ENGINE == SE_DODS
-	m_mod = std::make_unique<CDayOfDefeatSourceMod>();
-#elif SOURCE_ENGINE == SE_BMS
-	m_mod = std::make_unique<CBlackMesaDeathmatchMod>();
-#elif SOURCE_ENGINE == SE_HL2DM
-	{
-		const char* gamefolder = smutils->GetGameFolderName();
-
-		// Mods based on the new version of the Source 2013 SDK are detected as HL2DM engine.
-		// See: https://github.com/alliedmodders/metamod-source/pull/210
-		if (strncasecmp(gamefolder, "hl2mp", 5) == 0)
-		{
-			m_mod = std::make_unique<CHalfLife2DeathMatchMod>();
-		}
-		else
-		{
-			m_mod = std::make_unique<CBaseMod>();
-		}
-	}
-#elif SOURCE_ENGINE == SE_SDK2013
-	{
-		SourceMod::sm_sendprop_info_t info;
-
-		// Experimental: detect zombie panic via sendprops
-		if (gamehelpers->FindSendPropInfo("CZP_Player", "m_bIsInfected", &info))
-		{
-			m_mod = std::make_unique<CZombiePanicSourceMod>();
-		}
-		else
-		{
-			m_mod = std::make_unique<CBaseMod>();
-		}
-	}
-#else
-	m_mod = std::make_unique<CBaseMod>();
-#endif // SOURCE_ENGINE == SE_TF2
-
+	ExtModLoader loader;
+	loader.DetectMod();
+	m_mod.reset(loader.AllocDetectedMod());
 	m_mod->PostCreation();
-
 	IModHelpers::SetInstance(m_mod->AllocModHelpers());
 }
 

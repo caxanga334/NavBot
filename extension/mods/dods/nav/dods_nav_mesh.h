@@ -3,13 +3,13 @@
 
 #include <navmesh/nav_mesh.h>
 
-class CDODSNavArea;
+class CDoDSNavArea;
 
-class CDODSNavMesh : public CNavMesh
+class CDoDSNavMesh : public CNavMesh
 {
 public:
-	CDODSNavMesh();
-	~CDODSNavMesh() override;
+	CDoDSNavMesh();
+	~CDoDSNavMesh() override;
 	
 	/* DoD Sub Version History:
 	* 1: Initial implementation of the DoD specific nav mesh
@@ -17,6 +17,7 @@ public:
 
 	static constexpr uint32_t DoDNavSubVersion = 1U; // current dod nav mesh sub version
 
+	void RegisterModCommands() override;
 	unsigned int GetGenerationTraceMask(void) const override;
 	CNavArea* CreateArea(void) const override;
 
@@ -24,6 +25,7 @@ public:
 
 private:
 
+	void RegisterEditCommands();
 };
 
 #endif // !__NAVBOT_DODS_NAV_MESH_H_

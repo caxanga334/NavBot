@@ -17,6 +17,7 @@
 
 class CNavMesh;
 class CBaseBot;
+class ExtModLoader;
 
 // Base game mod class
 class CBaseMod : public CEventListenerHelper
@@ -60,7 +61,10 @@ protected:
 	virtual CDifficultyManager* CreateBotDifficultyProfileManager() const { return new CDifficultyManager; }
 	// Creates a new shared memory object
 	virtual ISharedBotMemory* CreateSharedMemory() const { return new ISharedBotMemory; }
+	// Called to register the mod specific commands.
+	virtual void RegisterModCommands() {}
 public:
+	void RegisterCommands();
 	// Gets the cleaned up current map name used for loading config files.
 	virtual std::string GetCurrentMapName() const;
 	// Called once after the manager has allocated the mod class
@@ -76,9 +80,11 @@ public:
 	// Called by the manager when allocating a new bot instance
 	virtual CBaseBot* AllocateBot(edict_t* edict);
 	// Mod name (IE: Team Fortress 2)
-	virtual const char* GetModName() { return "CBaseMod"; }
+	const char* GetModName() const { return m_modName.c_str(); }
 	// Mod ID
-	virtual Mods::ModType GetModType() { return Mods::ModType::MOD_BASE; }
+	Mods::ModType GetModType() const { return m_modID; }
+	// Mod folder name used to load files from
+	const std::string& GetModFolder() const { return m_modFolder; }
 	// Allocates the nav mesh class used by the mod
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
@@ -159,8 +165,13 @@ protected:
 	std::unique_ptr<CDifficultyManager> m_profilemanager;
 
 private:
+	friend class ExtModLoader;
+
 	CBaseHandle m_playerresourceentity;
 	std::array<std::unique_ptr<ISharedBotMemory>, MAX_TEAMS> m_teamsharedmemory;
+	Mods::ModType m_modID;
+	std::string m_modName;
+	std::string m_modFolder; // mod folder name
 
 	void InternalFindPlayerResourceEntity();
 };

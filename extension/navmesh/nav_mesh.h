@@ -402,6 +402,15 @@ public:
 	 */
 	virtual void InitializeGameData(SourceMod::IGameConfig* cfgnavbot);
 
+protected:
+	/**
+	 * @brief Called to register mod specific commands.
+	 */
+	virtual void RegisterModCommands() {}
+public:
+	// Called to register nav mesh commands
+	void RegisterCommands();
+
 	// Used by CTraceFilterWalkableEntities to determine if this entity is walkable
 	virtual bool IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags);
 	/**

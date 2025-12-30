@@ -122,10 +122,10 @@ float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, con
 		return -1.0f; // base reports dead end
 	}
 
-	CDODSNavArea* toArea = static_cast<CDODSNavArea*>(baseToArea);
+	CDoDSNavArea* toArea = static_cast<CDoDSNavArea*>(baseToArea);
 
 	// Area is blocked if we don't have bombs
-	if (toArea->HasDoDAttributes(CDODSNavArea::DoDNavAttributes::DODNAV_BOMBS_TO_OPEN) && !toArea->WasBombed())
+	if (toArea->HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_BOMBS_TO_OPEN) && !toArea->WasBombed())
 	{
 		if (!toArea->CanMyTeamPlantBomb(m_teamindex))
 		{

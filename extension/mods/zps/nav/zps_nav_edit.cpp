@@ -1,8 +1,6 @@
 #include NAVBOT_PCH_FILE
 #include "zps_nav_mesh.h"
 
-#if SOURCE_ENGINE == SE_SDK2013
-
 static const std::unordered_map<std::string, CZPSNavArea::ZPSAttributes> s_zpsattribsmap = {
 	{"nozombies", CZPSNavArea::ZPSAttributes::ZPS_ATTRIBUTE_NOZOMBIES},
 	{"nohumans", CZPSNavArea::ZPSAttributes::ZPS_ATTRIBUTE_NOHUMANS},
@@ -49,48 +47,18 @@ private:
 	CZPSNavArea::ZPSAttributes m_attribute;
 };
 
-static int ZPSAttributes_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
+static void ZPSEdit_Attributes_AutoComplete(const char* partialArg, int partialArgLength, SVCommandAutoCompletion& entries)
 {
-	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
-	{
-		return 0;
-	}
-
-	char cmd[COMMAND_COMPLETION_ITEM_LENGTH + 2];
-	V_strncpy(cmd, partial, sizeof(cmd));
-
-	// skip to start of argument
-	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
-	{
-		return 0;
-	}
-
-	// chop command from partial argument
-	*partialArg = '\000';
-	++partialArg;
-
-	int partialArgLength = V_strlen(partialArg);
-
-	int count = 0;
-
 	for (auto& pair : s_zpsattribsmap)
 	{
-		if (count >= COMMAND_COMPLETION_MAXITEMS)
-		{
-			break;
-		}
-
 		if (V_strnicmp(pair.first.c_str(), partialArg, partialArgLength) == 0)
 		{
-			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, pair.first.c_str());
+			entries.AddAutoCompletionEntry(pair.first.c_str());
 		}
 	}
-
-	return count;
 }
 
-CON_COMMAND_F_COMPLETION(sm_zps_nav_set_attribute, "Assigns ZPS specific nav area attributes", FCVAR_CHEAT | FCVAR_GAMEDLL, ZPSAttributes_AutoComplete)
+static void sm_zps_nav_set_attribute(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -127,7 +95,7 @@ CON_COMMAND_F_COMPLETION(sm_zps_nav_set_attribute, "Assigns ZPS specific nav are
 	TheNavMesh->ClearEditedAreas();
 }
 
-CON_COMMAND_F(sm_zps_nav_wipe_attributes, "Removes all ZPS attributes from the selected nav areas.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+static void sm_zps_nav_wipe_attributes(const SVCommandArgs&)
 {
 	auto func = [](CZPSNavArea* area) { area->WipeZPSAttributes(); };
 
@@ -135,7 +103,7 @@ CON_COMMAND_F(sm_zps_nav_wipe_attributes, "Removes all ZPS attributes from the s
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-CON_COMMAND_F_COMPLETION(sm_zps_nav_select_areas_with_attributes, "Adds nav areas with the given ZPS attrib to the selected set.", FCVAR_CHEAT | FCVAR_GAMEDLL, ZPSAttributes_AutoComplete)
+static void sm_zps_nav_select_areas_with_attributes(const SVCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -180,4 +148,11 @@ CON_COMMAND_F_COMPLETION(sm_zps_nav_select_areas_with_attributes, "Adds nav area
 	TheNavMesh->SetMarkedArea(nullptr);
 }
 
-#endif // SOURCE_ENGINE == SE_SDK2013
+void CZPSNavMesh::RegisterModCommands()
+{
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
+
+	manager.RegisterConCommand("sm_zps_nav_wipe_attributes", "Removes all ZPS attributes from the selected nav areas.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_wipe_attributes);
+	manager.RegisterConCommandAutoComplete("sm_zps_nav_set_attribute", "Assigns ZPS specific nav area attributes.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_set_attribute, ZPSEdit_Attributes_AutoComplete);
+	manager.RegisterConCommandAutoComplete("sm_zps_nav_select_areas_with_attributes", "Adds nav areas with the given ZPS attrib to the selected set.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_select_areas_with_attributes, ZPSEdit_Attributes_AutoComplete);
+}

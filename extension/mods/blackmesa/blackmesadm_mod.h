@@ -14,10 +14,6 @@ public:
 
 	void FireGameEvent(IGameEvent* event) override;
 	void PostCreation() override;
-	// Mod name (IE: Team Fortress 2)
-	const char* GetModName() override { return "Black Mesa Deathmatch"; }
-	// Mod ID
-	Mods::ModType GetModType() override { return Mods::ModType::MOD_BLACKMESA; }
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
 	void OnMapStart() override;

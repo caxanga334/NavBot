@@ -14,6 +14,7 @@ public:
 	~CTFNavMesh() override;
 
 	void FireGameEvent(IGameEvent* event) override;
+	void RegisterModCommands() override;
 	void OnRoundRestart(void) override;
 	CNavArea* CreateArea(void) const override;
 	uint32_t GetSubVersionNumber(void) const override;
@@ -47,6 +48,9 @@ private:
 	std::unordered_map<int, int> m_rcbot2areatoindexmap;
 
 	void UpdateDebugDraw();
+
+	void RegisterEditCommands();
+	void RegisterWaypointEditCommands();
 };
 
 inline uint32_t CTFNavMesh::GetSubVersionNumber(void) const

@@ -8,6 +8,8 @@
 #include <bot/basebot.h>
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
+#include "servercommand_mgr.h"
+#include "clientcommand_mgr.h"
 
 class CBaseMod;
 class CBaseExtPlayer;
@@ -185,6 +187,8 @@ public:
 	// Utility function that provides auto completion of in-game NavBot names
 	static int AutoComplete_BotNames(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH]);
 
+	CServerCommandManager& GetServerCommandManager() { return m_serverCommandManager; }
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of non NavBot players
@@ -202,6 +206,7 @@ private:
 	bool m_iscreatingbot; // We are creating a NavBot
 	bool m_allowbots; // allow bots to be created
 	CountdownTimer m_callModUpdateTimer; // timer for calling the mod update function
+	CServerCommandManager m_serverCommandManager;
 
 	// Getting horrible performance at vstdlib.dll from a function called by ConVarRef::Init, so we are caching the sv_gravity value here
 	static inline float s_sv_gravity{ 800.0f };
