@@ -93,6 +93,7 @@ CopyFiles('configs', 'addons/sourcemod/configs/navbot',
     'bot_difficulty.cfg',
     'bot_names.cfg.example',
     'settings.example.cfg',
+    'mod_loader.cfg',
   ]
 )
 
