@@ -58,7 +58,7 @@ static void ZPSEdit_Attributes_AutoComplete(const char* partialArg, int partialA
 	}
 }
 
-static void sm_zps_nav_set_attribute(const SVCommandArgs& args)
+static void sm_zps_nav_set_attribute(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -95,7 +95,7 @@ static void sm_zps_nav_set_attribute(const SVCommandArgs& args)
 	TheNavMesh->ClearEditedAreas();
 }
 
-static void sm_zps_nav_wipe_attributes(const SVCommandArgs&)
+static void sm_zps_nav_wipe_attributes(const CConCommandArgs&)
 {
 	auto func = [](CZPSNavArea* area) { area->WipeZPSAttributes(); };
 
@@ -103,7 +103,7 @@ static void sm_zps_nav_wipe_attributes(const SVCommandArgs&)
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-static void sm_zps_nav_select_areas_with_attributes(const SVCommandArgs& args)
+static void sm_zps_nav_select_areas_with_attributes(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{

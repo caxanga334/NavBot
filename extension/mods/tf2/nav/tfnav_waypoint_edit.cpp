@@ -3,7 +3,7 @@
 #include "tfnavmesh.h"
 #include "tfnav_waypoint.h"
 
-static void sm_tf_nav_waypoint_set_control_point(const SVCommandArgs& args)
+static void sm_tf_nav_waypoint_set_control_point(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -34,7 +34,7 @@ static void sm_tf_nav_waypoint_set_control_point(const SVCommandArgs& args)
 	wpt->SetControlPointIndex(cpindex);
 }
 
-static void sm_tf_nav_waypoint_set_hint(const SVCommandArgs& args)
+static void sm_tf_nav_waypoint_set_hint(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -69,7 +69,7 @@ void CTFNavMesh::RegisterWaypointEditCommands()
 {
 	CServerCommandManager& manager = extmanager->GetServerCommandManager();
 
-	auto sm_tf_nav_waypoint_list_all_hints = [](const SVCommandArgs& args) {
+	auto sm_tf_nav_waypoint_list_all_hints = [](const CConCommandArgs& args) {
 		META_CONPRINT("Listing all TF Hints.\n");
 
 		for (unsigned int i = 0; i < static_cast<unsigned int>(CTFWaypoint::TFHint::MAX_TFHINT_TYPES); i++)

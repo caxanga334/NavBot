@@ -34,9 +34,9 @@
 #include <sdkports/sdk_collisionutils.h>
 #include <tier1/checksum_crc.h>
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 #include <sdkports/sdk_convarref_ep1.h>
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 
 // #include <tslist.h>
@@ -104,11 +104,11 @@ bool UTIL_IsCommandIssuedByServerAdmin()
 	return true;
 }
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 static void SelectedSetColorChaged(ConVar* var, char const* pOldString)
 #else
 static void SelectedSetColorChaged(IConVar* var, const char* pOldValue, float flOldValue)
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 {
 	ConVarRef colorVar(var->GetName());
 

@@ -10,7 +10,7 @@
 #include <model_types.h>
 #include "prediction.h"
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 #include <sdkports/sdk_convarref_ep1.h>
 #endif
 

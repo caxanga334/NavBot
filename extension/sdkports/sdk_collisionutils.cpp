@@ -10,7 +10,7 @@
 
 #if !defined(_STATIC_LINKED) || defined(_SHARED_LIB)
 
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 #include "sdk_collisionutils.h"
 #include "cmodel.h"
 #include "mathlib/mathlib.h"
@@ -28,7 +28,7 @@
 #include <cfloat>
 #include "vector4d.h"
 #include "trace.h"  
-#endif // SOURCE_ENGINE > SE_EPISODEONE
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
 
 #define UNINIT		-99999.0
@@ -636,9 +636,9 @@ bool IsOBBIntersectingOBB( const Vector &vecOrigin1, const QAngle &vecAngles1, c
 }
 
 // NOTE: This is only very slightly faster on high end PCs and x360
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 #define USE_SIMD_RAY_CHECKS 1
-#endif
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 //-----------------------------------------------------------------------------
 // returns true if there's an intersection between box and ray
 //-----------------------------------------------------------------------------
@@ -929,7 +929,7 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& vecBoxMin, const Vector& vecBo
 // returns true if there's an intersection between box and ray (SIMD version)
 //-----------------------------------------------------------------------------
 
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 
 #ifdef _X360
 bool FASTCALL IsBoxIntersectingRay( fltx4 boxMin, fltx4 boxMax, 
@@ -1019,7 +1019,7 @@ bool FASTCALL IsBoxIntersectingRay( const fltx4& boxMin, const fltx4& boxMax,
 	return IsBoxIntersectingRay( vecExpandedBoxMin, vecExpandedBoxMax, rayStart, rayDelta, ReciprocalSIMD(rayDelta), ReplicateX4(flTolerance) );
 }
 
-#endif // SOURCE_ENGINE > SE_EPISODEONE
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
 //-----------------------------------------------------------------------------
 // Intersects a ray with a ray, return true if they intersect

@@ -103,17 +103,17 @@ for sdk_name in Extension.sdks:
     shareddefs_path = None
     touchlink_path = None
 
-    if sdk['name'] in ['episode1']:
+    if sdk['name'] in ['episode1', 'darkm']:
       vmatrix_path = os.path.join(sdk['path'],'public', 'vmatrix.h')
     else:
       vmatrix_path = os.path.join(sdk['path'],'public', 'mathlib', 'vmatrix.h')
 
-    if sdk['name'] in ['episode1']:
+    if sdk['name'] in ['episode1', 'darkm']:
       shareddefs_path = os.path.join(sdk['path'],'game_shared', 'shareddefs.h')
     else:
       shareddefs_path = os.path.join(sdk['path'],'game', 'shared', 'shareddefs.h')
 
-    if sdk['name'] in ['episode1']:
+    if sdk['name'] in ['episode1', 'darkm']:
       touchlink_path = os.path.join(sdk['path'],'game_shared', 'touchlink.h')
     else:
       touchlink_path = os.path.join(sdk['path'],'game', 'shared', 'touchlink.h')

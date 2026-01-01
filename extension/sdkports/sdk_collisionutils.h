@@ -258,7 +258,7 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& boxMin, const Vector& boxMax,
 									const Vector& origin, const Vector& delta,
 									const Vector& invDelta, float flTolerance = 0.0f );
 
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 
 
 // On the PC, we can't pass fltx4's in registers like this. On the x360, it is 
@@ -286,7 +286,7 @@ bool FASTCALL IsBoxIntersectingRay(const fltx4& boxMin, const fltx4& boxMax,
 	const Ray_t& ray, float flTolerance = 0.0f);
 
 
-#endif // SOURCE_ENGINE > SE_EPISODEONE
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
 
 //-----------------------------------------------------------------------------
@@ -298,7 +298,7 @@ bool FASTCALL IsBoxIntersectingRay(const fltx4& boxMin, const fltx4& boxMax,
 //-----------------------------------------------------------------------------
 bool IsPointInBox( const Vector& pt, const Vector& boxMin, const Vector& boxMax );
 
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 
 // SIMD version
 FORCEINLINE bool IsPointInBox( const fltx4& pt, const fltx4& boxMin, const fltx4& boxMax )
@@ -308,7 +308,7 @@ FORCEINLINE bool IsPointInBox( const fltx4& pt, const fltx4& boxMin, const fltx4
 	return (IsAllZeros(SetWToZeroSIMD(OrSIMD(greater,less))));
 }
 
-#endif // SOURCE_ENGINE > SE_EPISODEONE
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
 //-----------------------------------------------------------------------------
 // Purpose: returns true if pt intersects the truncated cone

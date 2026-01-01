@@ -105,13 +105,11 @@ protected:
 	void FireGameEvent(IGameEvent* event) override;
 	virtual CModSettings* CreateModSettings() const override { return new CTF2ModSettings; }
 	CWeaponInfoManager* CreateWeaponInfoManager() const override { return new CTF2WeaponInfoManager; }
+	void OnPostInit() override;
+	void RegisterModCommands() override;
 
 public:
 	virtual std::string GetCurrentMapName() const;
-
-#if SOURCE_ENGINE == SE_TF2
-	static void OnForceGameModeConVarChanged(IConVar* var, const char* pOldValue, float flOldValue);
-#endif // SOURCE_ENGINE == SE_TF2
 
 	void Update() override;
 	void OnMapStart() override;
@@ -166,7 +164,7 @@ public:
 	const std::vector<CTFWaypoint*>& GetAllTeleEntranceWaypoints() const { return m_teleentranceWaypoints; }
 	const std::vector<CTFWaypoint*>& GetAllTeleExitWaypoints() const { return m_teleexitWaypoints; }
 
-	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) override;
+	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args) override;
 	const CTF2ModSettings* GetTF2ModSettings() const { return static_cast<const CTF2ModSettings*>(CBaseMod::GetModSettings()); }
 	const Vector& GetMvMBombHatchPosition() const { return m_MvMHatchPos; }
 	// If true, bots will only use deathmatch behavior (including spies, medics, engineers and snipers).
@@ -223,6 +221,11 @@ private:
 	Vector m_MvMHatchPos; // bomb hatch position in MvM
 	CountdownTimer m_updateTruceStatus;
 
+	ConVar* m_cvar_forceclass;
+	ConVar* m_cvar_forcegamemode;
+	ConVar* m_cvar_debug;
+	ConVar* m_cvar_gamemode_fs;
+
 	void DetectCurrentGameMode();
 	bool DetectMapViaName();
 	bool DetectCommunityGameModes();
@@ -236,6 +239,11 @@ private:
 	void UpdateObjectiveResource();
 	bool TeamMayCapturePoint(int team, int pointindex) const;
 	void FindMvMBombHatchPosition();
+
+	inline static void OnForceGamemodeConVarChanged(ConVar* cvar, const char* pOldValue)
+	{
+		CTeamFortress2Mod::GetTF2Mod()->DetectCurrentGameMode();
+	}
 };
 
 #endif // !SMNAV_TF2_MOD_H_

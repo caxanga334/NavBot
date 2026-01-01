@@ -153,7 +153,7 @@ static void TFNav_PathAttributes_AutoComplete(const char* partialArg, int partia
 	}
 }
 
-static void sm_tf_nav_toggle_path_attrib(const SVCommandArgs& args)
+static void sm_tf_nav_toggle_path_attrib(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -189,7 +189,7 @@ static void sm_tf_nav_toggle_path_attrib(const SVCommandArgs& args)
 	TheNavMesh->ClearSelectedSet();
 }
 
-static void sm_tf_nav_toggle_attrib(const SVCommandArgs& args)
+static void sm_tf_nav_toggle_attrib(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -236,7 +236,7 @@ static void TFNav_MvMAttributes_AutoComplete(const char* partialArg, int partial
 	}
 }
 
-static void sm_tf_nav_toggle_mvm_attrib(const SVCommandArgs& args)
+static void sm_tf_nav_toggle_mvm_attrib(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -276,7 +276,7 @@ void CTFNavMesh::RegisterEditCommands()
 {
 	CServerCommandManager& manager = extmanager->GetServerCommandManager();
 
-	auto sm_tf_nav_auto_set_spawnrooms = [](const SVCommandArgs& args) {
+	auto sm_tf_nav_auto_set_spawnrooms = [](const CConCommandArgs& args) {
 		TheTFNavMesh()->AutoAddSpawnroomAttribute();
 	};
 

@@ -20,9 +20,9 @@
 #include <entities/baseentity.h>
 #endif // EXT_DEBUG
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 #include <sdkports/sdk_convarref_ep1.h>
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 #include <bot/pluginbot/pluginbot.h>
 
@@ -115,6 +115,20 @@ void CExtManager::OnAllLoaded()
 
 		gameconfs->CloseGameConfigFile(gameconf);
 	}
+
+#ifdef EXT_DEBUG
+	auto cmd = [](const CConCommandArgs& args) {
+		auto& vec = args.GetArgVector();
+
+		for (auto& arg : vec)
+		{
+			META_CONPRINTF("Argument: %s \n", arg.c_str());
+		}
+	};
+
+	m_serverCommandManager.RegisterConCommand("sm_navbot_debug_sv_args", "Debugs the server side command args.", FCVAR_GAMEDLL, cmd);
+#endif // EXT_DEBUG
+
 
 	smutils->LogMessage(myself, "Extension fully loaded. Source Engine '%s'. Detected Mod: '%s'", UtilHelpers::GetEngineBranchName(), m_mod->GetModName());
 }
@@ -268,6 +282,7 @@ void CExtManager::AllocateMod()
 	ExtModLoader loader;
 	loader.DetectMod();
 	m_mod.reset(loader.AllocDetectedMod());
+	m_mod->InvokePostInit();
 	m_mod->PostCreation();
 	IModHelpers::SetInstance(m_mod->AllocModHelpers());
 }
@@ -695,10 +710,38 @@ void CExtManager::LoadBotNames()
 	rootconsole->ConsolePrint("[NavBot] Bot name list loaded with %i names.", m_botnames.size());
 }
 
-void CExtManager::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args)
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+	// Source 2006
+void CExtManager::OnClientCommand_OldEngine(edict_t* pEdict, SourceMod::IGamePlayer* player)
 {
+	// Pass arguments to a CConCommandArgs for better multi-sdk compat
+	// So the mod code doesn't have to ifdef on older engines
+	CConCommandArgs args;
+
+	// push arguments
+	for (int i = 0; i < engine->Cmd_Argc(); i++)
+	{
+		args.PushArg(engine->Cmd_Argv(i));
+	}
+
 	m_mod->OnClientCommand(pEdict, player, args);
 }
+#else
+	// Source 2007 and newer
+void CExtManager::OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args)
+{
+	// Pass arguments to a CConCommandArgs for better multi-sdk compat
+	// So the mod code doesn't have to ifdef on older engines
+	CConCommandArgs cmdargs;
+
+	for (int i = 0; i < args.ArgC(); i++)
+	{
+		cmdargs.PushArg(args.Arg(i));
+	}
+
+	m_mod->OnClientCommand(pEdict, player, cmdargs);
+}
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 int CExtManager::AutoComplete_BotNames(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {

@@ -20,7 +20,7 @@
 #include <entities/baseentity.h>
 #include <ports/rcbot2_waypoint.h>
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 #include <sdkports/sdk_convarref_ep1.h>
 #endif
 

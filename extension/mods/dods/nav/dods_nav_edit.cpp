@@ -61,7 +61,7 @@ static void DoDNavEdit_DodAttributes_AutoComplete(const char* partialArg, int pa
 	}
 }
 
-static void sm_dod_nav_set_attribute(const SVCommandArgs& args)
+static void sm_dod_nav_set_attribute(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{
@@ -98,7 +98,7 @@ static void sm_dod_nav_set_attribute(const SVCommandArgs& args)
 	TheNavMesh->ClearEditedAreas();
 }
 
-static void sm_dod_nav_wipe_attributes(const SVCommandArgs& args)
+static void sm_dod_nav_wipe_attributes(const CConCommandArgs& args)
 {
 	auto func = [](CDoDSNavArea* area) { area->WipeDoDAttributes(); };
 
@@ -106,7 +106,7 @@ static void sm_dod_nav_wipe_attributes(const SVCommandArgs& args)
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 
-static void sm_dod_nav_select_areas_with_attributes(const SVCommandArgs& args)
+static void sm_dod_nav_select_areas_with_attributes(const CConCommandArgs& args)
 {
 	if (args.ArgC() < 2)
 	{

@@ -11,6 +11,11 @@ CServerCommandManager::~CServerCommandManager()
 	{
 		delete ptr;
 	}
+
+	for (auto& pair : m_convars)
+	{
+		delete pair.second.first;
+	}
 }
 
 void CServerCommandManager::RegisterConCommand(const char* name, const char* description, int flags, ConCmdCallback callback, bool listenserveronly)
@@ -19,7 +24,6 @@ void CServerCommandManager::RegisterConCommand(const char* name, const char* des
 	{
 		return;
 	}
-
 	
 	std::string szName{ name };
 
@@ -59,6 +63,63 @@ void CServerCommandManager::RegisterConCommandAutoComplete(const char* name, con
 	m_cmdptrs.push_back(ptr);
 }
 
+ConVar* CServerCommandManager::RegisterConVar(const char* name, const char* description, const char* defaultValue, int flags)
+{
+	std::string szName{ name };
+
+	if (m_convars.find(szName) != m_convars.end())
+	{
+		EXT_ASSERT(false, "CServerCommandManager::RegisterConVar trying to register duplicate ConVar!");
+		return nullptr;
+	}
+
+	ConVar* var = new ConVar(name, defaultValue, flags, description, CServerCommandManager::OnConVarChanged);
+	ConVarPair tmp;
+
+	auto result = m_convars.emplace(std::make_pair(szName, tmp));
+
+	if (!result.second)
+	{
+		EXT_ASSERT(false, "CServerCommandManager::RegisterConVar failed to create ConVarPair!");
+		return nullptr;
+	}
+
+	auto& element = *result.first;
+	element.second.first = var;
+	
+	return var;
+}
+
+ConVar* CServerCommandManager::RegisterConVar(const char* name, const char* description, const char* defaultValue, int flags, ConVarChangedCallback changecallback)
+{
+	RegisterConVar(name, description, defaultValue, flags);
+
+	std::string szName{ name };
+	auto it = m_convars.find(szName);
+
+	if (it == m_convars.end())
+	{
+		EXT_ASSERT(false, "CServerCommandManager::RegisterConVar ConVar not found to add change callback!");
+		return nullptr;
+	}
+
+	it->second.second.emplace_back(changecallback);
+	return it->second.first;
+}
+
+ConVar* CServerCommandManager::FindVar(const char* name) const
+{
+	std::string szName{ name };
+	auto it = m_convars.find(szName);
+
+	if (it == m_convars.end())
+	{
+		return nullptr;
+	}
+
+	return it->second.first;
+}
+
 #if SOURCE_ENGINE > SE_DARKMESSIAH
 
 void CServerCommandManager::OnCommandCallback(const CCommand& command)
@@ -70,7 +131,7 @@ void CServerCommandManager::OnCommandCallback(const CCommand& command)
 
 	if (it != manager.m_commands.end())
 	{
-		SVCommandArgs args;
+		CConCommandArgs args;
 
 		// push arguments
 		for (int i = 0; i < command.ArgC(); i++)
@@ -79,6 +140,20 @@ void CServerCommandManager::OnCommandCallback(const CCommand& command)
 		}
 
 		it->second.m_callback(args);
+	}
+}
+
+void CServerCommandManager::OnConVarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
+	const ConVarPair* pair = manager.FindConVarPair(var->GetName());
+
+	if (pair)
+	{
+		for (auto& func : pair->second)
+		{
+			func(pair->first, pOldValue);
+		}
 	}
 }
 
@@ -95,7 +170,7 @@ void CServerCommandManager::OnCommandCallback(void)
 
 	if (it != manager.m_commands.end())
 	{
-		SVCommandArgs args;
+		CConCommandArgs args;
 
 		// push arguments
 		for (int i = 0; i < engine->Cmd_Argc(); i++)
@@ -104,6 +179,20 @@ void CServerCommandManager::OnCommandCallback(void)
 		}
 
 		it->second.m_callback(args);
+	}
+}
+
+void CServerCommandManager::OnConVarChanged(ConVar* var, char const* pOldString)
+{
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
+	const ConVarPair* pair = manager.FindConVarPair(var->GetName());
+
+	if (pair)
+	{
+		for (auto& func : pair->second)
+		{
+			func(pair->first, pOldString);
+		}
 	}
 }
 
@@ -164,4 +253,17 @@ int CServerCommandManager::OnCommandAutoComplete(const char* partial, char comma
 	}
 
 	return 0;
+}
+
+const CServerCommandManager::ConVarPair* CServerCommandManager::FindConVarPair(const char* name) const
+{
+	std::string szName{ name };
+	auto it = m_convars.find(szName);
+
+	if (it == m_convars.end())
+	{
+		return nullptr;
+	}
+
+	return &(it->second);
 }

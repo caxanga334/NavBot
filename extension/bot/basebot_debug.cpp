@@ -4,21 +4,21 @@
 #include <sdkports/debugoverlay_shared.h>
 #include "basebot.h"
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 static void OnBotDebugFilterChanged(ConVar* var, char const* pOldString);
 #else
 static void OnBotDebugFilterChanged(IConVar* var, const char* pOldValue, float flOldValue);
-#endif
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 ConVar cvar_bot_debug_filter("sm_navbot_debug_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL | FCVAR_DONTRECORD, "Bot client index filter when debugging.", OnBotDebugFilterChanged);
 
 static int s_bot_debug_filter;
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 static void OnBotDebugFilterChanged(ConVar* var, char const* pOldString)
 #else
 static void OnBotDebugFilterChanged(IConVar* var, const char* pOldValue, float flOldValue)
-#endif
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 {
 	s_bot_debug_filter = cvar_bot_debug_filter.GetInt();
 }
@@ -72,11 +72,11 @@ void CBaseBot::DebugPrintToConsole(const int bits,const int red,const int green,
 
 	va_end(vaargs);
 
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 	ConColorMsg(Color(red, green, blue, 255), "%s", buffer);
 #else
 	META_CONPRINTF("%s", buffer);
-#endif // SOURCE_ENGINE > SE_EPISODEONE
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
 }
 
@@ -97,11 +97,11 @@ void CBaseBot::DebugPrintToConsole(const int red, const int green, const int blu
 
 	va_end(vaargs);
 
-#if SOURCE_ENGINE > SE_EPISODEONE
+#if SOURCE_ENGINE > SE_DARKMESSIAH
 	ConColorMsg(Color(red, green, blue, 255), "%s", buffer);
 #else
 	META_CONPRINTF("%s", buffer);
-#endif // SOURCE_ENGINE > SE_EPISODEONE
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
 }
 
 void CBaseBot::DebugDisplayText(const char* text)

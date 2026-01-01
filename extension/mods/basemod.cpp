@@ -37,6 +37,11 @@ CBaseMod::~CBaseMod()
 {
 }
 
+void CBaseMod::InvokePostInit()
+{
+	OnPostInit(); // propagate to derived classes
+}
+
 void CBaseMod::RegisterCommands()
 {
 	// register mod commands (virtual)

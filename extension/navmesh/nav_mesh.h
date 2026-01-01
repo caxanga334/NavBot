@@ -54,10 +54,6 @@ class CDoorNavBlocker;
 class CBaseBot;
 class CBaseExtPlayer;
 
-#if SOURCE_ENGINE == SE_EPISODEONE
-class CCommand;
-#endif
-
 namespace SourceMod
 {
 	class IGameConfig;

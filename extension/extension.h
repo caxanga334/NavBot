@@ -285,7 +285,15 @@ public:
 	}
 
 	void Hook_GameFrame(bool simulating); // Post hook
+
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+	// Source 2006
+	void Hook_ClientCommand_OldEngine(edict_t* pEntity);
+#else
+	// Source 2007 and newer
 	void Hook_ClientCommand(edict_t* pEntity, const CCommand& args);
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
+
 
 #if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 	void Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues);
@@ -325,9 +333,9 @@ extern IVModelInfo* modelinfo;
 extern IMDLCache* imdlcache;
 extern IFileSystem* filesystem;
 extern ICvar* icvar;
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 extern ICvar* g_pCVar;
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 extern IServerTools* servertools;
 extern IServerPluginHelpers* serverpluginhelpers;
 extern IStaticPropMgrServer* staticpropmgr;

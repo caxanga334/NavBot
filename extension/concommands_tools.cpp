@@ -10,10 +10,10 @@
 #include <bot/basebot.h>
 #include <util/prediction.h>
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 #include <util/commandargs_episode1.h>
 #include <sdkports/sdk_convarref_ep1.h>
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 class CToolsPlayerPathCost : public NavAStarPathCost
 {

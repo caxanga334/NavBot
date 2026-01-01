@@ -2,7 +2,7 @@
 #include <extension.h>
 #include "sdk_convarref_ep1.h"
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 
 ConVarRef::ConVarRef(const char* name)
 {
@@ -61,4 +61,4 @@ void ConVarRef::SetValue(bool bValue)
 	m_pCvar->SetValue(bValue ? 1 : 0);
 }
 
-#endif
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH

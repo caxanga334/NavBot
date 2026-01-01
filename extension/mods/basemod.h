@@ -18,6 +18,7 @@
 class CNavMesh;
 class CBaseBot;
 class ExtModLoader;
+class CConCommandArgs;
 
 // Base game mod class
 class CBaseMod : public CEventListenerHelper
@@ -63,7 +64,12 @@ protected:
 	virtual ISharedBotMemory* CreateSharedMemory() const { return new ISharedBotMemory; }
 	// Called to register the mod specific commands.
 	virtual void RegisterModCommands() {}
+	/**
+	 * @brief Called after initialization. Anything that depends on mod detection should run here.
+	 */
+	virtual void OnPostInit() {}
 public:
+	void InvokePostInit();
 	void RegisterCommands();
 	// Gets the cleaned up current map name used for loading config files.
 	virtual std::string GetCurrentMapName() const;
@@ -126,7 +132,7 @@ public:
 	 * @param player Sourcemod player pointer of the player who sent the command.
 	 * @param args The arguments passed to the command.
 	 */
-	virtual void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args) {}
+	virtual void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CConCommandArgs& args) {}
 	/**
 	 * @brief Gets a pointer to the bot shared memory interface for the given team index.
 	 * @param teamindex Team index number.

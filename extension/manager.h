@@ -9,7 +9,6 @@
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
 #include "servercommand_mgr.h"
-#include "clientcommand_mgr.h"
 
 class CBaseMod;
 class CBaseExtPlayer;
@@ -177,7 +176,14 @@ public:
 	// Gets the value of sv_gravity cached at map start
 	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
 
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+	// Source 2006
+	void OnClientCommand_OldEngine(edict_t* pEdict, SourceMod::IGamePlayer* player);
+#else
+	// Source 2007 and newer
 	void OnClientCommand(edict_t* pEdict, SourceMod::IGamePlayer* player, const CCommand& args);
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
+
 	// Tells the manager that bots cannot be added due to lack of support
 	void NotifyBotsAreUnsupported() { m_allowbots = false; }
 	bool AreBotsSupported() const { return m_allowbots; }

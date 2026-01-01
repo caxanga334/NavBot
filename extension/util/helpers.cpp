@@ -381,7 +381,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityByClassname(GetEntity(start), searchname);
 	return gamehelpers->EntityToBCompatRef(pEntity);
-#elif SOURCE_ENGINE == SE_EPISODEONE
+#elif SOURCE_ENGINE <= SE_DARKMESSIAH
 	CBaseEntity* pEntity = nullptr;
 	CBaseHandle hCurrent;
 
@@ -519,7 +519,7 @@ int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radiu
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	CBaseEntity* pEntity = servertools->FindEntityInSphere(GetEntity(start), center, radius);
 	return gamehelpers->EntityToBCompatRef(pEntity);
-#elif SOURCE_ENGINE == SE_EPISODEONE
+#elif SOURCE_ENGINE <= SE_DARKMESSIAH
 	CBaseEntity* pEntity = nullptr;
 	CBaseHandle hCurrent;
 
@@ -659,7 +659,7 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	auto result = servertools->FindEntityByName(UtilHelpers::GetEntity(start), targetname);
 	return gamehelpers->EntityToBCompatRef(result);
-#elif SOURCE_ENGINE == SE_EPISODEONE
+#elif SOURCE_ENGINE <= SE_DARKMESSIAH
 
 	if (!targetname || targetname[0] == 0)
 	{
@@ -1298,7 +1298,7 @@ CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)
 {
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	return servertools->FindEntityByHammerID(iHammerID);
-#elif SOURCE_ENGINE == SE_EPISODEONE
+#elif SOURCE_ENGINE <= SE_DARKMESSIAH
 	return nullptr;
 #else
 	CBaseEntity* entity = static_cast<CBaseEntity*>(servertools->FirstEntity());

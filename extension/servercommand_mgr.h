@@ -8,10 +8,13 @@ class ConCommand;
 class CServerCommandManager
 {
 public:
-	// void (const SVCommandArgs& args)
-	using ConCmdCallback = std::function<void(const SVCommandArgs&)>;
+	// void (const CConCommandArgs& args)
+	using ConCmdCallback = std::function<void(const CConCommandArgs&)>;
 	// void (const char* partialArg, int partialArgLength, SVCommandAutoCompletion& entries)
 	using ConCmdAutoComplete = std::function<void(const char*,int,SVCommandAutoCompletion&)>;
+	// void (ConVar* pCvar, const char* pOldValue)
+	using ConVarChangedCallback = std::function<void(ConVar*, const char*)>;
+	using ConVarPair = std::pair<ConVar*, std::vector<ConVarChangedCallback>>;
 
 	CServerCommandManager();
 	~CServerCommandManager();
@@ -35,7 +38,31 @@ public:
 	 * @param listenserveronly If true, only registers this command if running on a listen server.
 	 */
 	void RegisterConCommandAutoComplete(const char* name, const char* description, int flags, ConCmdCallback callback, ConCmdAutoComplete autocomplete, bool listenserveronly = false);
-
+	/**
+	 * @brief Register a console variable.
+	 * @param name ConVar name.
+	 * @param description ConVar description.
+	 * @param defaultValue ConVar default value.
+	 * @param flags ConVar flags.
+	 * @return Pointer to the ConVar just registered.
+	 */
+	ConVar* RegisterConVar(const char* name, const char* description, const char* defaultValue, int flags);
+	/**
+	 * @brief Register a console variable.
+	 * @param name ConVar name.
+	 * @param description ConVar description.
+	 * @param defaultValue ConVar default value.
+	 * @param flags ConVar flags.
+	 * @param changecallback Callback function for when the ConVar has changed values.
+	 * @return Pointer to the ConVar just registered.
+	 */
+	ConVar* RegisterConVar(const char* name, const char* description, const char* defaultValue, int flags, ConVarChangedCallback changecallback);
+	/**
+	 * @brief Searches for a ConVar by it's name.
+	 * @param name ConVar name to search for.
+	 * @return Pointer to the ConVar or NULL if not found.
+	 */
+	ConVar* FindVar(const char* name) const;
 private:
 	class SVConCmd
 	{
@@ -47,6 +74,7 @@ private:
 
 	std::unordered_map<std::string, SVConCmd> m_commands;
 	std::vector<ConCommand*> m_cmdptrs;
+	std::unordered_map<std::string, ConVarPair> m_convars;
 
 #if SOURCE_ENGINE > SE_DARKMESSIAH
 	static void OnCommandCallback(const CCommand& command);
@@ -54,8 +82,15 @@ private:
 	static void OnCommandCallback(void);
 #endif // SOURCE_ENGINE > SE_DARKMESSIAH
 
+#if SOURCE_ENGINE > SE_DARKMESSIAH
+	static void OnConVarChanged(IConVar* var, const char* pOldValue, float flOldValue);
+#else
+	static void OnConVarChanged(ConVar* var, char const* pOldString);
+#endif // SOURCE_ENGINE > SE_DARKMESSI
 	
 	static int OnCommandAutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH]);
+
+	const ConVarPair* FindConVarPair(const char* name) const;
 };
 
 

@@ -19,10 +19,10 @@
 #include <sm_argbuffer.h>
 #include <am-platform.h>
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 #include <util/commandargs_episode1.h>
 #include <sdkports/sdk_convarref_ep1.h>
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 #ifdef AUTO_GENERATED_VERSION
 #include "generated_version.h"
@@ -431,7 +431,7 @@ CON_COMMAND(sm_navbot_debug_bot_dump_path_kv, "Dumps the current bot path as a K
 		KeyValues* kvSeg = new KeyValues("PathSegment");
 
 		kvSeg->SetInt("Index", n);
-		kvSeg->SetBool("IsCurrentGoal", segment == goal);
+		kvSeg->SetString("IsCurrentGoal", segment == goal ? "Yes" : "No");
 		kvSeg->SetInt("Area", static_cast<int>(segment->area->GetID()));
 		kvSeg->SetString("TraverseHow", NavTraverseTypeToString(segment->how));
 
@@ -803,7 +803,7 @@ CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHE
 			Msg("Hit Solid!\n");
 		}
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 		if ((tr.contents & CONTENTS_MIST) != 0)
 		{
 			Msg("Hit Mist!\n");
@@ -813,7 +813,7 @@ CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHE
 		{
 			Msg("Hit Block LOS!\n");
 		}
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 		surfacedata_t* surfacedata = physprops->GetSurfaceData(tr.surface.surfaceProps);
 

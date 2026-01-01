@@ -1,7 +1,7 @@
 #ifndef NAVBOT_CON_COMMANDS_ARGS_EPISODE1_COMPAT_H_
 #define NAVBOT_CON_COMMANDS_ARGS_EPISODE1_COMPAT_H_
 
-#if SOURCE_ENGINE == SE_EPISODEONE
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
 
 // Episode 1/Source 2006 lacks CCommand args parameter for console commands, this macros creates one and does nothing on SDK branches that already have CCommand args
 #define DECLARE_COMMAND_ARGS	\
@@ -101,7 +101,7 @@ inline int CCommand::FindArgInt(const char* pName, int nDefaultVal) const
 
 #define DECLARE_COMMAND_ARGS
 
-#endif // SOURCE_ENGINE == SE_EPISODEONE
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 
 
