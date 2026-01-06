@@ -39,6 +39,7 @@ CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 	m_upgrademan.SetMe(this);
 	m_cloakMeter = nullptr;
 	m_doMvMUpgrade = false;
+	m_isSaxtonHale = false;
 	m_classswitchtimer.Start(5.0f);
 }
 
@@ -50,6 +51,7 @@ void CTF2Bot::Reset()
 {
 	CBaseBot::Reset();
 
+	m_isSaxtonHale = false;
 	m_voicecmdtimer.Reset();
 }
 

@@ -216,6 +216,8 @@ public:
 	bool IsCarryingThePassTimeJack() const;
 	// Makes the bot use the weapon's taunt
 	void DoWeaponTaunt() { DelayedFakeClientCommand("weapon_taunt"); }
+	void SetSaxtonHale(bool state) { m_isSaxtonHale = state; }
+	bool IsSaxtonHale() const { return m_isSaxtonHale; }
 private:
 	std::unique_ptr<CTF2BotMovement> m_tf2movement;
 	std::unique_ptr<CTF2BotPlayerController> m_tf2controller;
@@ -234,6 +236,7 @@ private:
 	CTF2BotUpgradeManager m_upgrademan;
 	float* m_cloakMeter;
 	bool m_doMvMUpgrade;
+	bool m_isSaxtonHale;
 
 	void SelectNewClass();
 };

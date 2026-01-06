@@ -501,6 +501,7 @@ namespace TeamFortress2
 		GM_DM, // Deathmatch
 		GM_SF, // Slender Fortress
 		GM_VSFFA, // Vscript Free for All Deathmatch
+		GM_TOW, // Tug of War (Community)
 
 		GM_MAX_GAMEMODE_TYPES
 	};

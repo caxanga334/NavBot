@@ -820,6 +820,19 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 	return INVALID_EHANDLE_INDEX;
 }
 
+int UtilHelpers::GetEntityOfClassnameCount(const char* classname)
+{
+	int i = INVALID_EHANDLE_INDEX;
+	int c = 0;
+
+	while ((i = FindEntityByClassname(i, classname)) != INVALID_EHANDLE_INDEX)
+	{
+		c++;
+	}
+
+	return c;
+}
+
 /// @brief check if a point is in the field of a view of an object. supports up to 180 degree fov.
 /// @param vecSrcPosition Source position of the view.
 /// @param vecTargetPosition Point to check if within view angle.
@@ -1830,7 +1843,7 @@ CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool
 		}
 
 		int theirteam = -1;
-		entprops->GetEntProp(me, Prop_Send, "m_iTeamNum", theirteam);
+		entprops->GetEntProp(ent, Prop_Send, "m_iTeamNum", theirteam);
 
 		if (myteam == theirteam)
 		{

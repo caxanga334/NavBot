@@ -3,6 +3,7 @@
 #include <sdkports/debugoverlay_shared.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/tf2lib.h>
+#include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
 #include "tf2bot_movement.h"
 
@@ -51,8 +52,29 @@ void CTF2BotMovement::Update()
 	}
 }
 
+float CTF2BotMovement::GetMaxDoubleJumpHeight() const
+{
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_VSH)
+	{
+		if (GetBot<CTF2Bot>()->IsSaxtonHale())
+		{
+			return 250.0f;
+		}
+	}
+
+	return 116.0f;
+}
+
 float CTF2BotMovement::GetMaxGapJumpDistance() const
 {
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_VSH)
+	{
+		if (GetBot<CTF2Bot>()->IsSaxtonHale())
+		{
+			return 600.0f;
+		}
+	}
+
 	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());
 
 	switch (cls)
@@ -126,6 +148,14 @@ void CTF2BotMovement::BlastJumpTo(const Vector& start, const Vector& landingGoal
 
 bool CTF2BotMovement::IsAbleToDoubleJump() const
 {
+	if (CTeamFortress2Mod::GetTF2Mod()->GetCurrentGameMode() == TeamFortress2::GameModeType::GM_VSH)
+	{
+		if (GetBot<CTF2Bot>()->IsSaxtonHale())
+		{
+			return true;
+		}
+	}
+
 	auto cls = tf2lib::GetPlayerClassType(GetBot()->GetIndex());
 
 	if (cls == TeamFortress2::TFClass_Scout)

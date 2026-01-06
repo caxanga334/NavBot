@@ -17,7 +17,7 @@ public:
 
 	// https://developer.valvesoftware.com/wiki/Team_Fortress_2/Mapper%27s_Reference#Jump_Distances
 	float GetMaxJumpHeight() const override { return 72.0f; }
-	float GetMaxDoubleJumpHeight() const override { return 116.0f; }
+	float GetMaxDoubleJumpHeight() const override;
 	float GetMaxGapJumpDistance() const override;
 	void CrouchJump() override;
 	void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) override;

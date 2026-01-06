@@ -43,7 +43,8 @@ static const char* s_tf2gamemodenames[] = {
 	"GUN GAME",
 	"DEATHMATCH",
 	"SLENDER FORTRESS",
-	"FREE FOR ALL DEATHMATCH (VSCRIPT)"
+	"FREE FOR ALL DEATHMATCH (VSCRIPT)",
+	"TUG OF WAR"
 };
 
 static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES), 
@@ -716,6 +717,14 @@ bool CTeamFortress2Mod::DetectMapViaGameRules()
 
 	if (result != 0)
 	{
+		if (UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "team_train_watcher") != INVALID_EHANDLE_INDEX &&
+			UtilHelpers::GetEntityOfClassnameCount("team_control_point") == 3)
+		{
+			m_gamemode = TeamFortress2::GameModeType::GM_TOW;
+			rootconsole->ConsolePrint("[NavBot] Gamerules 'm_bPlayingKoth' == 1, Map setup suggests it's a tug of war map.");
+			return true;
+		}
+
 		m_gamemode = TeamFortress2::GameModeType::GM_KOTH;
 		rootconsole->ConsolePrint("[NavBot] Gamerules 'm_bPlayingKoth' == 1, game mode is King Of The Hill.");
 		return true;
@@ -1298,6 +1307,26 @@ void CTeamFortress2Mod::FindMvMBombHatchPosition()
 	}
 }
 
+void CTeamFortress2Mod::FindGameModeSpecifics()
+{
+	switch (m_gamemode)
+	{
+	case TeamFortress2::GameModeType::GM_TOW:
+	{
+		int iEnt = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "trigger_capture_area");
+
+		if (iEnt != INVALID_EHANDLE_INDEX)
+		{
+			m_towGoalEntity = gamehelpers->ReferenceToEntity(iEnt);
+		}
+
+		break;
+	}
+	default:
+		break;
+	}
+}
+
 bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
 {
 	switch (m_gamemode)
@@ -1466,11 +1495,14 @@ edict_t* CTeamFortress2Mod::GetFlagToFetch(TeamFortress2::TFTeam team)
 
 void CTeamFortress2Mod::OnRoundStart()
 {
+	CBaseMod::OnRoundStart();
+
 	m_isTruceActive = false;
 	librandom::ReSeedGlobalGenerators();
 	UpdateObjectiveResource(); // call this first
 	FindControlPoints(); // this must be before findpayloadcarts
 	FindPayloadCarts();
+	FindGameModeSpecifics();
 
 	auto func = [](CBaseBot* bot) {
 		bot->OnRoundStateChanged();

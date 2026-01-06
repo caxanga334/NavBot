@@ -275,6 +275,17 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 	IPlayerController* input = bot->GetControlInterface();
 	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
 	const bool canspam = (data.can_fire && info->CanBeSpammed() && GetTimeSinceLOSWasLost() <= info->GetSpamTime());
+	auto& primInfo = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+
+	// for melee weapons, see if the bot needs to crouch to hit something below then
+	if (primInfo.IsMelee() && data.enemy_range <= (primInfo.GetMaxRange() * 2.0f))
+	{
+		if (data.enemy_center.z < bot->GetAbsOrigin().z)
+		{
+			// enemy is below me
+			input->PressCrouchButton(0.250f);
+		}
+	}
 
 	if ((data.can_fire && data.is_visible) || canspam || bypassLOS) // visible and has clear line of fire
 	{

@@ -173,6 +173,5 @@ for sdk_name in Extension.sdks:
     pch = builder.Add(pch_builder)
     binary.compiler.cxxincludes += [pch]
     binary.compiler.defines += [ 'NAVBOT_PCH_FILE=\"' + pch_name + '.h\"' ]
-    Extension.AddVersioning(binary)
 
 Extension.extensions += builder.Add(project)

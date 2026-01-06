@@ -111,6 +111,12 @@ namespace UtilHelpers
 	int FindEntityByNetClass(int start, const char* classname);
 	int FindEntityByTargetname(int start, const char* targetname);
 	int FindNamedEntityByClassname(int start, const char* targetname, const char* classname);
+	/**
+	 * @brief Returns the number of instances that exists of a specific entity by classname.
+	 * @param classname Entity classname to count the number of instances.
+	 * @return Number of entity instances that currently exists.
+	 */
+	int GetEntityOfClassnameCount(const char* classname);
 	bool PointWithinViewAngle(const Vector& vecSrcPosition, const Vector& vecTargetPosition, const Vector& vecLookDirection, float flCosHalfFOV);
 	float GetForwardViewCone(float angle);
 	std::unique_ptr<CStudioHdr> GetEntityModelPtr(edict_t* pEntity);

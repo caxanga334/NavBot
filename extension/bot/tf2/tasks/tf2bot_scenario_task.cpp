@@ -37,6 +37,7 @@
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
 #include "scenario/rd/tf2bot_rd_monitor_task.h"
+#include "scenario/tow/tf2bot_tug_of_war_tasks.h"
 #include "tf2bot_scenario_task.h"
 
 static bool HalloweenSpellPickupValidator(CTF2Bot* bot, CBaseEntity* spellPickup)
@@ -237,6 +238,8 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 		[[fallthrough]];
 	case TeamFortress2::GameModeType::GM_KOTH:
 		return new CTF2BotControlPointMonitorTask;
+	case TeamFortress2::GameModeType::GM_TOW:
+		return new CTF2BotTugOfWarMonitorTask;
 	case TeamFortress2::GameModeType::GM_SD:
 		return new CTF2BotSDMonitorTask;
 	case TeamFortress2::GameModeType::GM_PD:

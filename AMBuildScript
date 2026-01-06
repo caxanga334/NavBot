@@ -56,7 +56,6 @@ class ExtensionConfig(object):
     self.sdks = {}
     self.sdk_targets = []
     self.extensions = []
-    self.generated_headers = None
     self.mms_root = None
     self.sm_root = None
     self.all_targets = []
@@ -371,7 +370,6 @@ class ExtensionConfig(object):
     
   def LibraryBuilder(self, compiler, name):
     binary = compiler.Library(name)
-    self.AddVersioning(binary)
     if binary.compiler.like('msvc'):
       binary.compiler.linkflags += ['/SUBSYSTEM:WINDOWS']
     self.AddCxxCompat(binary)
@@ -440,11 +438,6 @@ class ExtensionConfig(object):
     self.ConfigureForHL2(context, binary, sdk)
     self.ConfigureForExtension(context, binary.compiler)
     return binary
-  
-  def AddVersioning(self, binary):
-    binary.compiler.sourcedeps += self.generated_headers
-    binary.compiler.defines += ['AUTO_GENERATED_VERSION']
-    return binary
 
 if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.environ:
   raise Exception("--breakpad-upload passed to configure.py but environment variable 'BREAKPAD_SYMBOL_SERVER' isn't set!")
@@ -452,8 +445,6 @@ if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.
 Extension = ExtensionConfig()
 Extension.detectSDKs()
 Extension.configure()
-
-Extension.generated_headers = builder.Build('tools/AMBuild', { 'Extension': Extension })
 
 # This will clone the list and each cxx object as we recurse, preventing child
 # scripts from messing up global state.

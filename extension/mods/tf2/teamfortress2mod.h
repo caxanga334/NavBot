@@ -198,6 +198,7 @@ public:
 	inline bool IsTruceActive() const { return m_isTruceActive; }
 	const bool IsPlayingMedievalMode() const;
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt = nullptr) const override;
+	CBaseEntity* GetTugOfWarGoal() const { return m_towGoalEntity.Get(); }
 
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
@@ -220,6 +221,7 @@ private:
 	std::vector<CTFWaypoint*> m_teleexitWaypoints;
 	Vector m_MvMHatchPos; // bomb hatch position in MvM
 	CountdownTimer m_updateTruceStatus;
+	CHandle<CBaseEntity> m_towGoalEntity; // Tug of War game mode goal entity
 
 	ConVar* m_cvar_forceclass;
 	ConVar* m_cvar_forcegamemode;
@@ -239,6 +241,7 @@ private:
 	void UpdateObjectiveResource();
 	bool TeamMayCapturePoint(int team, int pointindex) const;
 	void FindMvMBombHatchPosition();
+	void FindGameModeSpecifics();
 
 	inline static void OnForceGamemodeConVarChanged(ConVar* cvar, const char* pOldValue)
 	{

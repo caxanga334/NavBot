@@ -131,6 +131,8 @@ void CTFNavMesh::FireGameEvent(IGameEvent* event)
 
 void CTFNavMesh::RegisterModCommands()
 {
+	RegisterEditCommands();
+	RegisterWaypointEditCommands();
 }
 
 void CTFNavMesh::OnRoundRestart(void)
