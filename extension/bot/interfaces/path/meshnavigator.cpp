@@ -764,17 +764,20 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const BotPathSegment* segment, cons
 		return false;
 	}
 
+#if 0
 	float rangeToGoal = (origin - m_goal->goal).Length();
 
 	if (rangeToGoal - (mover->GetHullWidth() * 0.5f) > GetGoalTolerance())
 	{
 		return false;
 	}
+#endif
 
 	if (TheNavMesh->IsAuthoritative())
 	{
 		// Authorative nav mesh can be trusted for climbing
 
+#if 0
 		/* For normal jumps and double jumps, wait until the bot is aligned before jumping */
 		if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP || m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP)
 		{
@@ -794,6 +797,7 @@ bool CMeshNavigator::Climbing(CBaseBot* bot, const BotPathSegment* segment, cons
 				return false;
 			}
 		}
+#endif
 
 		if (m_goal->type == AIPath::SegmentType::SEGMENT_CLIMB_UP)
 		{

@@ -881,8 +881,38 @@ void IMovement::JumpAcrossGap(const Vector& landing, const Vector& forward)
 	}
 }
 
+bool IMovement::IsClimbPossible(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle, const bool isDoubleJump) const
+{
+	AIPath::SegmentType segtype = isDoubleJump ? AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP : AIPath::SegmentType::SEGMENT_CLIMB_UP;
+	CBaseBot* me = GetBot<CBaseBot>();
+	const CMeshNavigator* nav = me->GetActiveNavigator();
+
+	if (nav)
+	{
+		float watchForClimbRange = GetHullWidth() * 2.0f;
+
+		if (!nav->IsDiscontinuityAhead(me, segtype, watchForClimbRange))
+		{
+			// navigation isn't planning to climb
+
+			if (!IsStuck())
+			{
+				// not stuck on something, don't try to jump yet
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle)
 {
+	if (!IsClimbPossible(landingGoal, landingForward, obstacle, false))
+	{
+		return false;
+	}
+
 	CBaseBot* me = GetBot<CBaseBot>();
 
 	// 60 degress tolerance ( t = cos(deg2rad(60)) )
@@ -919,8 +949,13 @@ bool IMovement::ClimbUpToLedge(const Vector& landingGoal, const Vector& landingF
 	return true;
 }
 
-bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle)
+bool IMovement::DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle)
 {
+	if (!IsClimbPossible(landingGoal, landingForward, obstacle, true))
+	{
+		return false;
+	}
+
 	if (!IsAbleToDoubleJump())
 		return false;
 
@@ -1224,7 +1259,7 @@ bool IMovement::IsAttemptingToMove(const float time) const
 	return m_stuck.movementrequesttimer.HasStarted() && m_stuck.movementrequesttimer.IsLessThen(time);
 }
 
-float IMovement::GetStuckDuration()
+float IMovement::GetStuckDuration() const
 {
 	if (m_stuck.isstuck)
 	{

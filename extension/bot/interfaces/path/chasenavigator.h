@@ -47,7 +47,7 @@ public:
 	float GetPathLifeTimeDuration() const { return m_lifetimeduration; }
 
 protected:
-	bool IsRepathNeeded(CBaseBot* bot, CBaseEntity* subject);
+	virtual bool IsRepathNeeded(CBaseBot* bot, CBaseEntity* subject);
 
 private:
 	SubjectLeadType m_leadtype;
@@ -115,9 +115,10 @@ inline void CChaseNavigator::RefreshPath(CBaseBot* bot, CBaseEntity* subject, CF
 
 	if (!IsValid() || IsRepathNeeded(bot, subject))
 	{
-		entities::HBaseEntity sbjEntity(subject);
 		bool foundpath = false;
-		Vector pathGoal = sbjEntity.GetAbsOrigin();
+		Vector subjectPos = UtilHelpers::getEntityOrigin(subject);
+		Vector pathGoal = subjectPos;
+		pathGoal = trace::getground(pathGoal);
 
 		if (m_leadtype == LEAD_SUBJECT)
 		{
@@ -151,8 +152,10 @@ inline void CChaseNavigator::RefreshPath(CBaseBot* bot, CBaseEntity* subject, CF
 		}
 		else
 		{
-			Invalidate();
-			Vector subjectPos = sbjEntity.GetAbsOrigin();
+			// Experimental: don't destroy the path, this will move the bot to the nearest point of the target
+			// Invalidate();
+			m_lifeTimer.Invalidate();
+			m_throttleTimer.Invalidate();
 
 			// path to subject failed - try again later, time is based on distance.
 			float time = (bot->GetRangeTo(subjectPos) * 0.005f);

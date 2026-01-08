@@ -85,9 +85,8 @@ public:
 	const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
 	// Time since a threat was visible
 	virtual const float GetTimeSinceVisibleThreat() const;
-
-	static constexpr bool ONLY_VISIBLE_THREATS = true;
-
+	static constexpr bool ONLY_VISIBLE_THREATS = true; // For GetPrimaryKnownThreat, only get visible threats
+	static constexpr bool ANY_THREATS = false; // For GetPrimaryKnownThreat, get any threat
 	// Gets the primary known threat to the bot or NULL if none
 	virtual const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
 	/**
@@ -184,10 +183,29 @@ public:
 	// Shares known entity information another sensor interface
 	void ShareKnownEntityList(ISensor* other);
 protected:
+	/**
+	 * @brief Called to update the list of known entities.
+	 */
 	virtual void UpdateKnownEntities();
-	virtual void CollectVisibleEntities(std::vector<edict_t*>& visibleVec);
+	/**
+	 * @brief Update the visible status of all known entities.
+	 * @param visibleVec Vector of entities that are visible to the bot right now.
+	 * @param includeNPCs If true, NPCs/non player entities are also being updated, if false, only player entities are being updated.
+	 */
+	virtual void UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, const bool includeNPCs);
+	/**
+	 * @brief Collects player entities to test for visibility.
+	 * @param visibleVec Vector to store the player entities.
+	 */
 	virtual void CollectPlayers(std::vector<edict_t*>& visibleVec);
+	/**
+	 * @brief Collects non-player entities.
+	 * @param visibleVec Vector to store the non-player entities to test for visibility.
+	 */
 	virtual void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec);
+	/**
+	 * @brief Removes obsolete known entity instances from the list of known entities.
+	 */
 	virtual void CleanKnownEntities();
 	// Same as GetKnown but it's not const, use this internally when updating known entities
 	CKnownEntity* FindKnownEntity(edict_t* edict);

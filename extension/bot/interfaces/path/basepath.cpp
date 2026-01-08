@@ -318,6 +318,40 @@ const CPath::PathCursor& CPath::GetCursorData()
 	return m_cursor;
 }
 
+bool CPath::IsDiscontinuityAhead(CBaseBot* bot, AIPath::SegmentType type, float range) const
+{
+	const BotPathSegment* goal = GetGoalSegment();
+
+	if (goal)
+	{
+		const BotPathSegment* current = GetPriorSegment(goal);
+		if (current && current->type == type)
+		{
+			// we're on the discontinuity now
+			return true;
+		}
+
+		float rangeSoFar = (goal->goal - bot->GetAbsOrigin()).Length();
+
+		for (const BotPathSegment* s = goal; s; s = GetNextSegment(s))
+		{
+			if (rangeSoFar >= range)
+			{
+				break;
+			}
+
+			if (s->type == type)
+			{
+				return true;
+			}
+
+			rangeSoFar += s->length;
+		}
+	}
+
+	return false;
+}
+
 /**
  * @brief Analyze the current path
  * @param bot Bot that will use this path

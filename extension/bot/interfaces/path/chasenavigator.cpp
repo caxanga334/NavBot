@@ -108,17 +108,17 @@ Vector CChaseNavigator::PredictSubjectPosition(CBaseBot* bot, CBaseEntity* subje
 
 bool CChaseNavigator::IsRepathNeeded(CBaseBot* bot, CBaseEntity* subject)
 {
-	entities::HBaseEntity sbjEntity(subject);
+	const Vector& vSbjPos = UtilHelpers::getEntityOrigin(subject);
 
 	// the closer we get, the more accurate our path needs to be
-	Vector to = (sbjEntity.GetAbsOrigin() - bot->GetAbsOrigin());
+	Vector to = (vSbjPos - bot->GetAbsOrigin());
 
 	constexpr float minTolerance = 0.0f;
 	constexpr float toleranceRate = 0.33f;
 
 	float tolerance = minTolerance + toleranceRate * to.Length();
 
-	return (sbjEntity.GetAbsOrigin() - GetEndPosition()).IsLengthGreaterThan(tolerance);
+	return (vSbjPos - GetEndPosition()).IsLengthGreaterThan(tolerance);
 }
 
 void CChaseNavigator::Update(CBaseBot* bot)

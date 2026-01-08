@@ -325,12 +325,14 @@ public:
 protected:
 	// If true, the bot will perform a double jump over a gap. Called by JumpAcrossGap.
 	virtual bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const { return false; }
+	// Queries if the given climb is possible.
+	virtual bool IsClimbPossible(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle, const bool isDoubleJump) const;
 public:
 	virtual bool ClimbUpToLedge(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle);
 	// Perform a blast jump
 	virtual void BlastJumpTo(const Vector& start, const Vector& landingGoal, const Vector& forward) {}
 	// Climb by double jumping
-	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, edict_t* obstacle);
+	virtual bool DoubleJumpToLedge(const Vector& landingGoal, const Vector& landingForward, CBaseEntity* obstacle);
 	// Can the bot climb obstacles
 	virtual bool IsAbleToClimb() const { return true; }
 	// Can the bot jump across a gap on the ground
@@ -387,8 +389,8 @@ public:
 	// Returns true if the bot is currently in a transition of stand/crouch states
 	virtual bool IsInCrouchTransition() const;
 	virtual bool IsAttemptingToMove(const float time = 0.25f) const;
-	virtual bool IsStuck() { return m_stuck.isstuck; }
-	virtual float GetStuckDuration();
+	virtual bool IsStuck() const { return m_stuck.isstuck; }
+	virtual float GetStuckDuration() const;
 	virtual void ClearStuckStatus(const char* reason = nullptr);
 	virtual float GetSpeed() const { return m_speed; }
 	virtual float GetGroundSpeed() const { return m_groundspeed; }

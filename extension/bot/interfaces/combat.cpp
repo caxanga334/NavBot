@@ -278,7 +278,7 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 	auto& primInfo = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
 
 	// for melee weapons, see if the bot needs to crouch to hit something below then
-	if (primInfo.IsMelee() && data.enemy_range <= (primInfo.GetMaxRange() * 2.0f))
+	if (data.can_fire && primInfo.IsMelee() && data.enemy_range <= (primInfo.GetMaxRange() * 1.15f))
 	{
 		if (data.enemy_center.z < bot->GetAbsOrigin().z)
 		{

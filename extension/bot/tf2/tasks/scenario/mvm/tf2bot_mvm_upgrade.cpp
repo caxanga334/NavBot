@@ -76,6 +76,9 @@ TaskResult<CTF2Bot> CTF2BotMvMUpgradeTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 	else
 	{
+		// don't look around while buying upgrades
+		bot->GetCombatInterface()->StopLookingAround();
+
 		if (!m_buydelay.HasStarted()) // Bot reached the upgrade station, start the timer
 		{
 			m_buydelay.Start(randomgen->GetRandomReal<float>(1.0f, 2.0f));

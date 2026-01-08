@@ -439,6 +439,14 @@ public:
 	static constexpr float DEFAULT_REPATH_DURATION = 2.0f;
 	void StartRepathTimer(const float duration = DEFAULT_REPATH_DURATION) { m_repathTimer.Start(duration); }
 	const bool NeedsRepath() const { return m_repathTimer.IsElapsed(); }
+	/**
+	 * @brief Checks if there is a the given discontinuity ahead in the path within the given range.
+	 * @param bot Bot using the path.
+	 * @param type Segment type to check.
+	 * @param range Range to check. -1 to check until the path ends.
+	 * @return True if a discontinuity is found. False otherwise.
+	 */
+	bool IsDiscontinuityAhead(CBaseBot* bot, AIPath::SegmentType type, float range = -1.0f) const;
 
 protected:
 	bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);

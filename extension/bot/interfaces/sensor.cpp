@@ -753,6 +753,7 @@ void ISensor::UpdateKnownEntities()
 
 	std::vector<edict_t*> visibleVec;
 	visibleVec.reserve(1024);
+	bool includeNPCs = false;
 
 	if (cvar_navbot_notarget.GetInt() == 0)
 	{
@@ -765,6 +766,7 @@ void ISensor::UpdateKnownEntities()
 		{
 			m_updateNonPlayerTimer.Start(m_cachedNPCupdaterate);
 			CollectNonPlayerEntities(visibleVec);
+			includeNPCs = true;
 		}
 	}
 
@@ -772,7 +774,7 @@ void ISensor::UpdateKnownEntities()
 	CleanKnownEntities();
 
 	// Vision Update - Phase 3 - Update database
-	CollectVisibleEntities(visibleVec);
+	UpdateVisibleEntities(visibleVec, includeNPCs);
 
 	if (m_updateStatisticsTimer.IsElapsed())
 	{
@@ -783,10 +785,10 @@ void ISensor::UpdateKnownEntities()
 	m_lastupdatetime = gpGlobals->curtime;
 }
 
-void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
+void ISensor::UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, const bool includeNPCs)
 {
 #ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("ISensor::CollectVisibleEntities", "NavBot");
+	VPROF_BUDGET("ISensor::UpdateVisibleEntities", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
 	CBaseBot* me = GetBot<CBaseBot>();
@@ -794,34 +796,38 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 	for (edict_t* edict : visibleVec)
 	{
 #ifdef EXT_VPROF_ENABLED
-		VPROF_BUDGET("ISensor::CollectVisibleEntities( collect visible )", "NavBot");
+		VPROF_BUDGET("ISensor::UpdateVisibleEntities( collect visible )", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
 		// all entities inside visibleVec are visible to the bot RIGHT NOW!
 		CKnownEntity* known = FindKnownEntity(edict);
 
-		if (known == nullptr) // first time seening this entity
+		if (!known) // first time seening this entity
 		{
 			CKnownEntity& entry = m_knownlist.emplace_back(edict);
 			entry.MarkAsFullyVisible();
 			continue;
 		}
-		else
-		{
-			known->UpdatePosition(); // we can see it, so update it's position
 
-			if (known->IsVisibleNow() == false)
-			{
-				known->MarkAsFullyVisible();
-			}
+		known->UpdatePosition(); // we can see it, so update it's position
+
+		if (!known->IsVisibleNow())
+		{
+			known->MarkAsFullyVisible();
 		}
 	}
 
 	for (CKnownEntity& known : m_knownlist)
 	{
 #ifdef EXT_VPROF_ENABLED
-		VPROF_BUDGET("ISensor::CollectVisibleEntities( update status )", "NavBot");
+		VPROF_BUDGET("ISensor::UpdateVisibleEntities( update status )", "NavBot");
 #endif // EXT_VPROF_ENABLED
+
+		// Updating players only, NPCs keep their status
+		if (!known.IsPlayer() && !includeNPCs)
+		{
+			continue;
+		}
 
 		CBaseEntity* pEntity = known.GetEntity();
 
@@ -844,26 +850,24 @@ void ISensor::CollectVisibleEntities(std::vector<edict_t*>& visibleVec)
 
 			continue; // this known entity was updated recently
 		}
-		else
+
+		if (IsAbleToSee(known.GetLastKnownPosition()) == true)
 		{
-			if (IsAbleToSee(known.GetLastKnownPosition()) == true)
+			known.MarkLastKnownPositionAsSeen();
+		}
+
+		// this entity was visible, mark as not visible and notify the bot lost sight of it
+		if (known.IsVisibleNow() == true)
+		{
+			known.MarkAsNotVisible();
+			me->OnLostSight(pEntity);
+
+			if (me->IsDebugging(BOTDEBUG_SENSOR))
 			{
-				known.MarkLastKnownPositionAsSeen();
-			}
+				me->DebugPrintToConsole(255, 0, 0, "%s lost line of sight with entity %i (%s) \n",
+					me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
 
-			// this entity was visible, mark as not visible and notify the bot lost sight of it
-			if (known.IsVisibleNow() == true)
-			{
-				known.MarkAsNotVisible();
-				me->OnLostSight(pEntity);
-
-				if (me->IsDebugging(BOTDEBUG_SENSOR))
-				{
-					me->DebugPrintToConsole(255, 0, 0, "%s lost line of sight with entity %i (%s) \n",
-						me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
-
-					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
-				}
+				NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
 			}
 		}
 	}
