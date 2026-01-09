@@ -121,3 +121,36 @@ bool dodslib::CanPlantBombAtTarget(CBaseEntity* bombTarget)
 	entprops->GetEntProp(bombTarget, Prop_Send, "m_iState", state);
 	return state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE);
 }
+
+bool dodslib::CanTeamPlantBombAtTarget(CBaseEntity* bombTarget, int TeamNum)
+{
+	int team = -1;
+	entprops->GetEntProp(bombTarget, Prop_Send, "m_iBombingTeam", team);
+	return team == TEAM_UNASSIGNED || team == TeamNum;
+}
+
+void dodslib::GetTeamClassCount(dayofdefeatsource::DoDTeam team, DoDClassCountArray& classes)
+{
+	std::fill(std::begin(classes), std::end(classes), 0);
+
+	for (int client = 1; client <= gpGlobals->maxClients; client++)
+	{
+		SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(client);
+
+		if (!gp || !gp->IsInGame()) { continue; }
+
+		CBaseEntity* pPlayer = gamehelpers->ReferenceToEntity(client);
+
+		if (!pPlayer) { continue; }
+
+		dayofdefeatsource::DoDTeam theirteam = GetDoDTeam(pPlayer);
+
+		if (theirteam != team) { continue; }
+
+		int idx = static_cast<int>(GetPlayerClassType(pPlayer));
+
+		int c = classes[idx];
+		c++;
+		classes[idx] = c;
+	}
+}

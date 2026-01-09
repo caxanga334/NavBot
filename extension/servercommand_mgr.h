@@ -16,6 +16,8 @@ public:
 	using ConVarChangedCallback = std::function<void(ConVar*, const char*)>;
 	using ConVarPair = std::pair<ConVar*, std::vector<ConVarChangedCallback>>;
 
+	static constexpr bool COMMAND_ONLY_ON_LISTEN_SERVERS = true;
+
 	CServerCommandManager();
 	~CServerCommandManager();
 

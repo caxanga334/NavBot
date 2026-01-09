@@ -5,9 +5,35 @@
 #include <queue>
 #include <array>
 #include <vector>
+#include <bot/dods/dodsbot_sharedmemory.h>
 #include <mods/basemod.h>
 #include <sdkports/sdk_ehandle.h>
 #include "dods_shareddefs.h"
+
+class CDoDModSettings : public CModSettings
+{
+public:
+	CDoDModSettings()
+	{
+		bomb_plant_respond_dist = 3000.0f;
+		bomb_max_defusers = 3;
+	}
+
+	void SetMaxBombPlantedRespondDistance(float dist) { bomb_plant_respond_dist = dist; }
+	void SetMaxBombDefusers(int num) { bomb_max_defusers = num; }
+
+	const float GetMaxBombPlantedRespondDistance() const { return bomb_plant_respond_dist; }
+	int GetMaxBombDefusers() const { return bomb_max_defusers; }
+
+protected:
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
+
+private:
+	float bomb_plant_respond_dist; // maximum distance for a bot to respond to a bomb plant event
+	int bomb_max_defusers; // maximum number of bots trying to defuse the same bomb
+};
+
+class CDoDSBot;
 
 class CDODObjectiveResource
 {
@@ -126,6 +152,35 @@ public:
 	 * @return True if yes, false if no.
 	 */
 	bool MapUsesBombs() const { return m_mapUsesBombs; }
+	/**
+	 * @brief Checks if the given control point index is valid.
+	 * @param index Control point index to check.
+	 * @return True if valid, false if invalid.
+	 */
+	bool IsValidControlPointIndex(const int index) const
+	{
+		return GetControlPointByIndex(index) != nullptr;
+	}
+	/**
+	 * @brief Selects a random DoD class for the given bot.
+	 * @param bot Bot that wants to change classes.
+	 * @return Bot class.
+	 */
+	dayofdefeatsource::DoDClassType SelectClassForBot(CDoDSBot* bot) const;
+	/**
+	 * @brief Gets the class limit for the given class and team.
+	 * @param cls Class to check.
+	 * @param team Which team?
+	 * @return Class limit.
+	 */
+	int GetClassLimit(dayofdefeatsource::DoDClassType cls, dayofdefeatsource::DoDTeam team) const;
+	CDoDSSharedBotMemory* GetSharedBotMemory(int teamindex) override;
+	const CDoDModSettings* GetDoDModSettings() const { return static_cast<const CDoDModSettings*>(GetModSettings()); }
+protected:
+	CModSettings* CreateModSettings() const override;
+	ISharedBotMemory* CreateSharedMemory() const override;
+	void RegisterModCommands() override;
+
 private:
 	CDODObjectiveResource m_objectiveres;
 	CHandle<CBaseEntity> m_objectiveentity;
@@ -151,6 +206,32 @@ private:
 
 	std::queue<BombEvent> m_bombevents;
 	void OnBombEvent(const BombEvent& event) const;
+
+	struct ClassLimits
+	{
+		ClassLimits()
+		{
+			rifleman = -1;
+			assault = -1;
+			support = -1;
+			sniper = -1;
+			mg = -1;
+			rocket = -1;
+		}
+
+		int rifleman;
+		int assault;
+		int support;
+		int sniper;
+		int mg;
+		int rocket;
+	};
+
+	ClassLimits m_classlimits_allies;
+	ClassLimits m_classlimits_axis;
+	bool m_random_class_allowed;
+
+	void UpdateClassLimits();
 };
 
 #endif // !__NAVBOT_DODS_MOD_H_

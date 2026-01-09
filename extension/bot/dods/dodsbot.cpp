@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <util/entprops.h>
 #include <mods/dods/dodslib.h>
+#include <mods/dods/dayofdefeatsourcemod.h>
 #include <mods/dods/nav/dods_nav_mesh.h>
 #include <mods/dods/nav/dods_nav_area.h>
 #include "dodsbot.h"
@@ -21,6 +22,11 @@ CDoDSBot::CDoDSBot(edict_t* edict) :
 
 CDoDSBot::~CDoDSBot()
 {
+}
+
+CDoDSSharedBotMemory* CDoDSBot::GetSharedMemoryInterface() const
+{
+	return CDayOfDefeatSourceMod::GetDODMod()->GetSharedBotMemory(GetCurrentTeamIndex());
 }
 
 void CDoDSBot::Reset()
@@ -44,6 +50,8 @@ void CDoDSBot::Spawn()
 	CBaseBot::Spawn();
 
 	m_droppedAmmo = false;
+	
+	TryChangingClasses();
 }
 
 void CDoDSBot::FirstSpawn()
@@ -51,6 +59,7 @@ void CDoDSBot::FirstSpawn()
 	CBaseBot::FirstSpawn();
 
 	engine->SetFakeClientConVarValue(GetEdict(), "cl_autoreload", "1");
+	m_nextClassChangeTimer.Start(1.0f);
 }
 
 dayofdefeatsource::DoDTeam CDoDSBot::GetMyDoDTeam() const
@@ -101,6 +110,39 @@ bool CDoDSBot::IsDefusingBomb() const
 	bool result = false;
 	entprops->GetEntPropBool(GetIndex(), Prop_Send, "m_bDefusing", result);
 	return result;
+}
+
+void CDoDSBot::TryChangingClasses()
+{
+	if (m_nextClassChangeTimer.IsElapsed())
+	{
+		if (IsDebugging(BOTDEBUG_MISC))
+		{
+			DebugPrintToConsole(255, 255, 0, "%s IS CHANGING CLASSES! \n", GetDebugIdentifier());
+		}
+
+		CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();
+		const CModSettings* settings = mod->GetModSettings();
+		
+		m_nextClassChangeTimer.StartRandom(settings->GetMinClassChangeTime(), settings->GetMaxClassChangeTime());
+
+		if (!settings->IsAllowedToChangeClasses())
+		{
+			return;
+		}
+
+		if (!CBaseBot::s_botrng.GetRandomChance(settings->GetChangeClassChance()))
+		{
+			return;
+		}
+
+		auto newclass = mod->SelectClassForBot(this);
+
+		if (newclass != dayofdefeatsource::DoDClassType::DODCLASS_INVALID)
+		{
+			DelayedFakeClientCommand(dodslib::GetJoinClassCommand(newclass, GetMyDoDTeam()));
+		}
+	}
 }
 
 CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type) :

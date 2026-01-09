@@ -75,6 +75,17 @@ void CModSettings::PostParse()
 	{
 		unstuck_teleport_threshold = -1;
 	}
+
+	if (class_change_chance <= 0)
+	{
+		allow_class_changes = false;
+	}
+	
+	if (class_change_min_time >= class_change_max_time)
+	{
+		class_change_min_time = 60.0f;
+		class_change_max_time = 180.0f;
+	}
 }
 
 SourceMod::SMCError CModSettings::ParseCustomFile(const char* file)
@@ -194,6 +205,28 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			int v = atoi(value);
 			v = std::clamp(v, -1, 60);
 			SetUnstuckTeleportThreshold(v);
+		}
+		else if (std::strcmp(key, "allow_class_changes") == 0)
+		{
+			SetAllowClassChanges(UtilHelpers::StringToBoolean(value));
+		}
+		else if (std::strcmp(key, "class_change_min_time") == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 30.0f, 300.0f);
+			SetMinClassChangeTime(v);
+		}
+		else if (std::strcmp(key, "class_change_max_time") == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 60.0f, 1200.0f);
+			SetMaxClassChangeTime(v);
+		}
+		else if (std::strcmp(key, "class_change_chance") == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, 0, 100);
+			SetChangeClassChance(v);
 		}
 		else
 		{

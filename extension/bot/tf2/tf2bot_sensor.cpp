@@ -14,10 +14,7 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
-#if SOURCE_ENGINE == SE_TF2
-// ConVar sm_navbot_tf_attack_nextbots("sm_navbot_tf_attack_nextbots", "1", FCVAR_GAMEDLL, "If enabled, allow bots to attacks NextBot entities.");
-static ConVar cvar_teammates_are_enemies("sm_navbot_tf_teammates_are_enemies", "0", FCVAR_GAMEDLL, "If enabled, bots will consider players from the same team as enemies.");
-#endif // SOURCE_ENGINE == SE_TF2
+static ConVar* s_cvar_teammates_are_enemies = nullptr;
 
 
 CTF2BotSensor::CTF2BotSensor(CBaseBot* bot) : ISensor(bot)
@@ -62,24 +59,6 @@ bool CTF2BotSensor::IsIgnored(CBaseEntity* entity) const
 		return IsPlayerIgnoredInternal(entity);
 	}
 
-#if SOURCE_ENGINE == SE_TF2
-/* Causes bad CPU perf, look for a better solution (probably an SDK call)
-	if (sm_navbot_tf_attack_nextbots.GetBool())
-	{
-		CBaseEntity* be = reinterpret_cast<CBaseEntity*>(entity->GetIServerEntity());
-		ServerClass* sc = gamehelpers->FindEntityServerClass(be);
-
-		if (sc != nullptr)
-		{
-			if (UtilHelpers::HasDataTable(sc->m_pTable, "DT_NextBot"))
-			{
-				return false; // Don't ignore NextBot entities.
-			}
-		}
-	}
-*/
-#endif // SOURCE_ENGINE == SE_TF2
-
 	if (IsClassnameIgnored(classname))
 		return true;
 
@@ -107,12 +86,10 @@ bool CTF2BotSensor::IsFriendly(CBaseEntity* entity) const
 
 	if (theirteam == me->GetMyTFTeam())
 	{
-#if SOURCE_ENGINE == SE_TF2
-		if (cvar_teammates_are_enemies.GetBool())
+		if (s_cvar_teammates_are_enemies->GetBool())
 		{
 			return false;
 		}
-#endif // SOURCE_ENGINE == SE_TF2
 
 		if (tf2mod->GameModeIsFreeForAll())
 		{
@@ -138,12 +115,10 @@ bool CTF2BotSensor::IsEnemy(CBaseEntity* entity) const
 	
 	if (theirteam == me->GetMyTFTeam())
 	{
-#if SOURCE_ENGINE == SE_TF2
-		if (cvar_teammates_are_enemies.GetBool())
+		if (s_cvar_teammates_are_enemies->GetBool())
 		{
 			return true;
 		}
-#endif // SOURCE_ENGINE == SE_TF2
 
 		if (tf2mod->GameModeIsFreeForAll())
 		{
@@ -245,4 +220,10 @@ bool CTF2BotSensor::IsClassnameIgnored(const char* classname) const
 
 	// classname filter contains a list of classnames the bot cares about, if not found on the list, ignore it
 	return m_classname_filter.find(key) == m_classname_filter.end();
+}
+
+void CTF2BotSensor::RegisterTF2ConVars()
+{
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
+	s_cvar_teammates_are_enemies = manager.RegisterConVar("sm_navbot_tf_teammates_are_enemies", "If enabled, bots will consider players from the same team as enemies.", "0", FCVAR_GAMEDLL);
 }

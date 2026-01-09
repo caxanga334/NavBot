@@ -51,18 +51,6 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 
 TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
 {
-#if 0
-	if (CDayOfDefeatSourceMod::GetDODMod()->MapUsesBombs() && !bot->GetInventoryInterface()->HasBomb())
-	{
-		CBaseEntity* dispenser = nullptr;
-
-		if (CDoDSBotFetchBombTask::IsPossible(bot, &dispenser))
-		{
-			return PauseFor(new CDoDSBotFetchBombTask(nullptr, dispenser), "Map uses bombs, going to fetch!");
-		}
-	}
-#endif // 0
-
 	return Continue();
 }
 
@@ -78,16 +66,6 @@ TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-#if 0
-	CDoDSNavArea* area = static_cast<CDoDSNavArea*>(newArea);
-
-	if (area->HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_PLANT_BOMB) && !area->WasBombed() && area->CanPlantBomb())
-	{
-		CBaseEntity* target = area->GetAssignedBombTarget();
-		return TryPauseFor(new CDoDSBotDeployBombTask(target), PRIORITY_HIGH, "Nav area tells me I need to plant a bomb!");
-	}
-#endif 
-
 	return TryContinue(PRIORITY_LOW);
 }
 
@@ -119,14 +97,30 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChang
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnBombPlanted(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
 {
+	if (bot->GetBehaviorInterface()->IsBehaviorRunning(CDoDSBotDefuseBombTask::IDENTIFIER, 0, true))
+	{
+		// already defusing a bomb, don't try to defuse another
+		return TryContinue(PRIORITY_LOW);
+	}
+
 	// bomb was planted on my team's control point
 	if (ent && teamIndex == static_cast<int>(bot->GetMyDoDTeam()))
 	{
-		CBaseEntity* bomb = CDayOfDefeatSourceMod::GetDODMod()->GetControlPointBombToDefuse(ent);
+		CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();
+		CBaseEntity* bomb = mod->GetControlPointBombToDefuse(ent);
 
 		if (bomb)
 		{
-			return TryPauseFor(new CDoDSBotDefuseBombTask(bomb), PRIORITY_HIGH, "Bomb was planted, going to defuse!");
+			Vector vPos = UtilHelpers::getWorldSpaceCenter(bomb);
+			const float range = (bot->GetAbsOrigin() - vPos).Length();
+			const CDoDModSettings* settings = mod->GetDoDModSettings();
+			int entindex = UtilHelpers::IndexOfEntity(bomb);
+			
+			if (range <= settings->GetMaxBombPlantedRespondDistance() && 
+				bot->GetSharedMemoryInterface()->GetDefusersCount(entindex) < settings->GetMaxBombDefusers())
+			{
+				return TryPauseFor(new CDoDSBotDefuseBombTask(bomb), PRIORITY_HIGH, "Bomb was planted, going to defuse!");
+			}
 		}
 	}
 

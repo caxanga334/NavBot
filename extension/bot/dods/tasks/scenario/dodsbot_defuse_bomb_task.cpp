@@ -17,6 +17,14 @@ CDoDSBotDefuseBombTask::CDoDSBotDefuseBombTask(CBaseEntity* target) :
 
 TaskResult<CDoDSBot> CDoDSBotDefuseBombTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
 {
+	CBaseEntity* target = m_target.Get();
+
+	if (!target)
+	{
+		return Done("Bomb target is NULL!");
+	}
+
+	m_defuseNotification.Notify(bot, m_target.GetEntryIndex());
 	return Continue();
 }
 
@@ -69,4 +77,14 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotDefuseBombTask::OnBombDefused(CDoDSBot
 {
 	// TO-DO
 	return TryContinue(PRIORITY_LOW);
+}
+
+bool CDoDSBotDefuseBombTask::IsBehaviorRunning(int id, int flags, bool ismod)
+{
+	if (ismod && id == IDENTIFIER)
+	{
+		return true;
+	}
+
+	return false;
 }

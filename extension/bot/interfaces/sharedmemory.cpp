@@ -59,6 +59,7 @@ bool ISharedBotMemory::EntityInfo::ClassnameMatches(const char* pattern) const
 
 ISharedBotMemory::ISharedBotMemory()
 {
+	m_defenders = 0;
 }
 
 ISharedBotMemory::~ISharedBotMemory()
@@ -67,6 +68,7 @@ ISharedBotMemory::~ISharedBotMemory()
 
 void ISharedBotMemory::Reset()
 {
+	m_defenders = 0;
 }
 
 void ISharedBotMemory::Update()

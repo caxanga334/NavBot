@@ -18,6 +18,8 @@ public:
 	bool IsEnemy(CBaseEntity* entity) const override;
 	void OnTruceChanged(const bool enabled) override;
 
+	static void RegisterTF2ConVars();
+
 private:
 	std::unordered_set<std::string> m_classname_filter;
 

@@ -81,6 +81,16 @@ public:
 		}
 	}
 
+	void IncrementDefendersCount() { m_defenders++; }
+	void DecrementDefendersCount()
+	{
+		if (--m_defenders < 0)
+		{
+			m_defenders = 0;
+		}
+	}
+	int GetDefendersCount() const { return m_defenders; }
+
 protected:
 	std::vector<EntityInfo>* GetEntityInfoStorageVector() { return &m_ents; }
 
@@ -88,7 +98,7 @@ protected:
 
 private:
 	std::vector<EntityInfo> m_ents; // entity info stoarge
-
+	int m_defenders; // number of bots doing defensive tasks
 
 };
 
@@ -99,7 +109,45 @@ private:
  */
 namespace bsmu
 {
+	/**
+	 * @brief Notifies the shared bot memory interface that a bot is doing defensive tasks.
+	 */
+	template <typename Bot>
+	class OnDefending
+	{
+	public:
+		OnDefending() :
+			botmem(nullptr)
+		{
+		}
 
+		OnDefending(Bot* bot)
+		{
+			botmem = bot->GetSharedMemoryInterface();
+			botmem->IncrementDefendersCount();
+		}
+
+		~OnDefending()
+		{
+			if (botmem)
+			{
+				botmem->DecrementDefendersCount();
+			}
+		}
+
+		// Call this function once to notify the bot is defending
+		void Notify(Bot* bot)
+		{
+			if (!botmem)
+			{
+				botmem = bot->GetSharedMemoryInterface();
+				botmem->IncrementDefendersCount();
+			}
+		}
+
+	private:
+		ISharedBotMemory* botmem;
+	};
 }
 
 #endif // !__NAVBOT_BOT_SHARED_MEMORY_INTERFACE_H_

@@ -6,6 +6,7 @@
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_timers.h>
 #include <mods/dods/dayofdefeatsourcemod.h>
+#include <mods/dods/dodslib.h>
 #include <bot/dods/dodsbot.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include "dodsbot_attack_control_point_task.h"
@@ -83,8 +84,9 @@ AITask<CDoDSBot>* CDoDSBotAttackControlPointTask::InitialNextTask(CDoDSBot* bot)
 TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
 {
 	const CDODObjectiveResource* objres = CDayOfDefeatSourceMod::GetDODMod()->GetDODObjectiveResource();
+	CBaseEntity* pTrigger = m_controlpoint->capture_trigger.Get();
 
-	if (m_controlpoint->capture_trigger.Get() == nullptr)
+	if (!pTrigger)
 	{
 		if (!objres || objres->GetNumBombsRequired(m_controlpoint->index) == 0)
 		{
@@ -97,6 +99,7 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 		// need bombs
 
 		CBaseEntity* target = nullptr;
+		int myteam = static_cast<int>(bot->GetMyDoDTeam());
 
 		for (auto& handle : m_controlpoint->bomb_targets)
 		{
@@ -107,18 +110,14 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 				continue;
 			}
 
-			int state = 0;
-			entprops->GetEntProp(handle.GetEntryIndex(), Prop_Send, "m_iState", state);
-
-			if (state != static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE))
+			if (dodslib::CanPlantBombAtTarget(ent) && dodslib::CanTeamPlantBombAtTarget(ent, myteam))
 			{
-				continue;
+				target = ent;
+				break;
 			}
-
-			target = ent;
-			break;
 		}
 
+		// no bomb to plant
 		if (!target)
 		{
 			// all bomb targets are unavailable
@@ -134,16 +133,14 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 				int state = 0;
 				entprops->GetEntProp(handle.GetEntryIndex(), Prop_Send, "m_iState", state);
 
-				// armed bomb that needs to be guarded
-				if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ARMED))
+				if (state == static_cast<int>(dayofdefeatsource::DoDBombTargetState::BOMB_TARGET_ACTIVE))
 				{
 					target = ent;
 					break;
 				}
-
-				break;
 			}
 
+			// found planted bomb, defending it!
 			if (target)
 			{
 				const Vector& pos = UtilHelpers::getEntityOrigin(target);
@@ -151,6 +148,14 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 			}
 			else
 			{
+				// No bomb target found
+
+				if (pTrigger)
+				{
+					// if a capture trigger exists, assume we can cap it anyways
+					return Continue();
+				}
+
 				// No point to attack, no bomb to plant or defend
 				return SwitchTo(new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
 			}

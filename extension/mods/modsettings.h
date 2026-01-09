@@ -24,7 +24,11 @@ public:
 		movement_break_assist = true;
 		unstuck_cheats = true;
 		movement_jump_assist = true;
+		allow_class_changes = true;
 		unstuck_teleport_threshold = 12;
+		class_change_min_time = 60.0f;
+		class_change_max_time = 180.0f;
+		class_change_chance = 75;
 	}
 
 	virtual ~CModSettings() = default;
@@ -72,7 +76,11 @@ public:
 	void SetBreakAssist(bool v) { movement_break_assist = v; }
 	void SetAllowUnstuckCheats(bool state) { unstuck_cheats = state; }
 	void SetAllowJumpAssist(bool state) { movement_jump_assist = state; }
+	void SetAllowClassChanges(bool state) { allow_class_changes = state; }
 	void SetUnstuckTeleportThreshold(int i) { unstuck_teleport_threshold = i; }
+	void SetMinClassChangeTime(float time) { class_change_min_time = time; }
+	void SetMaxClassChangeTime(float time) { class_change_max_time = time; }
+	void SetChangeClassChance(int chance) { class_change_chance = chance; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -92,7 +100,11 @@ public:
 	const bool AllowUnstuckCheats() const { return unstuck_cheats; }
 	const bool AllowJumpAssist() const { return movement_jump_assist; }
 	const bool AllowUnstuckTeleport() const { return unstuck_teleport_threshold > 0; }
+	const bool IsAllowedToChangeClasses() const { return allow_class_changes; }
 	const int GetUnstuckTeleportThreshold() const { return unstuck_teleport_threshold; }
+	const float GetMinClassChangeTime() const { return class_change_min_time; }
+	const float GetMaxClassChangeTime() const { return class_change_max_time; }
+	const int GetChangeClassChance() const { return class_change_chance; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -111,7 +123,11 @@ protected:
 	bool movement_break_assist; // (Cheat) If the bot fails to break an object within the time limit, try breaking it via inputs
 	bool unstuck_cheats; // (Cheat) Allow cheating when trying to unstuck the bot.
 	bool movement_jump_assist; // (Cheat) Help the bot complete jumps
+	bool allow_class_changes; // Allow bots to change classes on class based games.
 	int unstuck_teleport_threshold; // if this many stuck events on a roll, teleport the bot forward.
+	float class_change_min_time; // Minimum time between class changes.
+	float class_change_max_time; // Maximum time between class changes.
+	int class_change_chance; // Random chance for a bot to change class.
 };
 
 

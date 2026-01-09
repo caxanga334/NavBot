@@ -38,6 +38,16 @@ namespace dodslib
 	}
 
 	bool CanPlantBombAtTarget(CBaseEntity* bombTarget);
+	bool CanTeamPlantBombAtTarget(CBaseEntity* bombTarget, int TeamNum);
+
+	using DoDClassCountArray = std::array<int, dayofdefeatsource::DoDClassType::NUM_DOD_CLASSES>;
+
+	/**
+	 * @brief Fills an array with the number of players on each DoD class.
+	 * @param team Team to get the class count of.
+	 * @param classes Array to store the number of players as each class.
+	 */
+	void GetTeamClassCount(dayofdefeatsource::DoDTeam team, DoDClassCountArray& classes);
 }
 
 

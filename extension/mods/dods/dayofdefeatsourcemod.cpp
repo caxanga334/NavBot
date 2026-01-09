@@ -10,6 +10,14 @@
 #include "nav/dods_nav_mesh.h"
 #include "dayofdefeatsourcemod.h"
 
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+#include <sdkports/sdk_convarref_ep1.h>
+#endif
+
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 void CDODObjectiveResource::Init(CBaseEntity* entity)
 {
 	m_iNumControlPoints = entprops->GetPointerToEntData<int>(entity, Prop_Send, "m_iNumControlPoints");
@@ -27,7 +35,7 @@ void CDODObjectiveResource::Init(CBaseEntity* entity)
 }
 
 CDayOfDefeatSourceMod::CDayOfDefeatSourceMod() :
-	CBaseMod(), m_objectiveres(), m_mapUsesBombs(false)
+	CBaseMod(), m_objectiveres(), m_mapUsesBombs(false), m_random_class_allowed(true)
 {
 	ListenForGameEvent("dod_round_start");
 	ListenForGameEvent("dod_bomb_planted");
@@ -106,6 +114,10 @@ void CDayOfDefeatSourceMod::OnMapStart()
 
 void CDayOfDefeatSourceMod::OnRoundStart()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CDayOfDefeatSourceMod::OnRoundStart", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	{
 		// clear the bomb event queue
 		std::queue<BombEvent> emptyQueue;
@@ -125,6 +137,7 @@ void CDayOfDefeatSourceMod::OnRoundStart()
 	// These two needs to be after findcontrolpoints
 	FindAndAssignCaptureAreas();
 	FindAndAssignBombTargets();
+	UpdateClassLimits();
 
 	CNavMesh::NotifyRoundRestart();
 
@@ -309,6 +322,140 @@ void CDayOfDefeatSourceMod::CollectControlPointsToDefend(dayofdefeatsource::DoDT
 
 		points.push_back(&controlpoint);
 	}
+}
+
+dayofdefeatsource::DoDClassType CDayOfDefeatSourceMod::SelectClassForBot(CDoDSBot* bot) const
+{
+	// TO-DO: add chance config
+	if (m_random_class_allowed && CBaseBot::s_botrng.GetRandomChance(20))
+	{
+		return dayofdefeatsource::DoDClassType::NUM_DOD_CLASSES;
+	}
+
+	auto myteam = bot->GetMyDoDTeam();
+	dodslib::DoDClassCountArray as_class;
+	dodslib::GetTeamClassCount(myteam, as_class);
+	auto myclass = dodslib::GetPlayerClassType(bot->GetEntity());
+	std::vector<dayofdefeatsource::DoDClassType> available_classes;
+	std::vector<int> weights;
+	
+	for (int cls = 0; cls < static_cast<int>(dayofdefeatsource::DoDClassType::NUM_DOD_CLASSES); cls++)
+	{
+		if (static_cast<dayofdefeatsource::DoDClassType>(cls) == myclass)
+		{
+			continue; // already using this class
+		}
+
+		int c = as_class[cls]; // players as this class
+		int limit = GetClassLimit(static_cast<dayofdefeatsource::DoDClassType>(cls), myteam);
+
+		// 0 means not allowed to use this class
+		if (limit == 0)
+		{
+			continue;
+		}
+
+		// negative numbers means unlimited
+		if (limit <= dayofdefeatsource::DOD_NO_CLASS_LIMIT || c < limit)
+		{
+			available_classes.push_back(static_cast<dayofdefeatsource::DoDClassType>(cls));
+			continue;
+		}
+	}
+
+	if (available_classes.empty())
+	{
+		return dayofdefeatsource::DoDClassType::DODCLASS_INVALID;
+	}
+
+	if (available_classes.size() == 1)
+	{
+		return available_classes[0];
+	}
+
+	// calculate weights
+	int t = 0;
+
+	for (auto& cls : available_classes)
+	{
+		t += as_class[static_cast<int>(cls)];
+	}
+
+	for (auto& cls : available_classes)
+	{
+		// avoid division by zero
+		if (as_class[static_cast<int>(cls)] == 0)
+		{
+			weights.push_back(t);
+			continue;
+		}
+
+		int weight = t / as_class[static_cast<int>(cls)];
+		weights.push_back(weight);
+	}
+
+	EXT_ASSERT(weights.size() == available_classes.size(), "Available classes and class weight vector size mismatch!");
+
+	return CBaseBot::s_botrng.GetWeightedRandom(available_classes, weights);
+}
+
+int CDayOfDefeatSourceMod::GetClassLimit(dayofdefeatsource::DoDClassType cls, dayofdefeatsource::DoDTeam team) const
+{
+	if (team == dayofdefeatsource::DoDTeam::DODTEAM_ALLIES)
+	{
+		switch (cls)
+		{
+		case dayofdefeatsource::DoDClassType::DODCLASS_RIFLEMAN:
+			return m_classlimits_allies.rifleman;
+		case dayofdefeatsource::DoDClassType::DODCLASS_ASSAULT:
+			return m_classlimits_allies.assault;
+		case dayofdefeatsource::DoDClassType::DODCLASS_SUPPORT:
+			return m_classlimits_allies.support;
+		case dayofdefeatsource::DoDClassType::DODCLASS_SNIPER:
+			return m_classlimits_allies.sniper;
+		case dayofdefeatsource::DoDClassType::DODCLASS_MACHINEGUNNER:
+			return m_classlimits_allies.mg;
+		case dayofdefeatsource::DoDClassType::DODCLASS_ROCKET:
+			return m_classlimits_allies.rocket;
+		default:
+			break;
+		}
+	}
+
+	switch (cls)
+	{
+	case dayofdefeatsource::DoDClassType::DODCLASS_RIFLEMAN:
+		return m_classlimits_axis.rifleman;
+	case dayofdefeatsource::DoDClassType::DODCLASS_ASSAULT:
+		return m_classlimits_axis.assault;
+	case dayofdefeatsource::DoDClassType::DODCLASS_SUPPORT:
+		return m_classlimits_axis.support;
+	case dayofdefeatsource::DoDClassType::DODCLASS_SNIPER:
+		return m_classlimits_axis.sniper;
+	case dayofdefeatsource::DoDClassType::DODCLASS_MACHINEGUNNER:
+		return m_classlimits_axis.mg;
+	case dayofdefeatsource::DoDClassType::DODCLASS_ROCKET:
+		return m_classlimits_axis.rocket;
+	default:
+		break;
+	}
+
+	return dayofdefeatsource::DOD_NO_CLASS_LIMIT;
+}
+
+CDoDSSharedBotMemory* CDayOfDefeatSourceMod::GetSharedBotMemory(int teamindex)
+{
+	return static_cast<CDoDSSharedBotMemory*>(CBaseMod::GetSharedBotMemory(teamindex));
+}
+
+CModSettings* CDayOfDefeatSourceMod::CreateModSettings() const
+{
+	return new CDoDModSettings;
+}
+
+ISharedBotMemory* CDayOfDefeatSourceMod::CreateSharedMemory() const
+{
+	return new CDoDSSharedBotMemory;
 }
 
 void CDayOfDefeatSourceMod::FindObjectiveResourceEntity()
@@ -517,6 +664,43 @@ void CDayOfDefeatSourceMod::OnBombEvent(const CDayOfDefeatSourceMod::BombEvent& 
 	extmanager->ForEachBot(func);
 }
 
+void CDayOfDefeatSourceMod::UpdateClassLimits()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CDayOfDefeatSourceMod::UpdateClassLimits", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	ConVarRef mp_allowrandomclass{ "mp_allowrandomclass" };
+	ConVarRef mp_limit_allies_assault{ "mp_limit_allies_assault" };
+	ConVarRef mp_limit_allies_mg{ "mp_limit_allies_mg" };
+	ConVarRef mp_limit_allies_rifleman{ "mp_limit_allies_rifleman" };
+	ConVarRef mp_limit_allies_rocket{ "mp_limit_allies_rocket" };
+	ConVarRef mp_limit_allies_sniper{ "mp_limit_allies_sniper" };
+	ConVarRef mp_limit_allies_support{ "mp_limit_allies_support" };
+	ConVarRef mp_limit_axis_assault{ "mp_limit_axis_assault" };
+	ConVarRef mp_limit_axis_mg{ "mp_limit_axis_mg" };
+	ConVarRef mp_limit_axis_rifleman{ "mp_limit_axis_rifleman" };
+	ConVarRef mp_limit_axis_rocket{ "mp_limit_axis_rocket" };
+	ConVarRef mp_limit_axis_sniper{ "mp_limit_axis_sniper" };
+	ConVarRef mp_limit_axis_support{ "mp_limit_axis_support" };
+
+
+	m_random_class_allowed = mp_allowrandomclass.GetBool();
+
+	m_classlimits_allies.rifleman = mp_limit_allies_rifleman.GetInt();
+	m_classlimits_allies.assault = mp_limit_allies_assault.GetInt();
+	m_classlimits_allies.support = mp_limit_allies_support.GetInt();
+	m_classlimits_allies.sniper = mp_limit_allies_sniper.GetInt();
+	m_classlimits_allies.mg = mp_limit_allies_mg.GetInt();
+	m_classlimits_allies.rocket = mp_limit_allies_rocket.GetInt();
+	m_classlimits_axis.rifleman = mp_limit_axis_rifleman.GetInt();
+	m_classlimits_axis.assault = mp_limit_axis_assault.GetInt();
+	m_classlimits_axis.support = mp_limit_axis_support.GetInt();
+	m_classlimits_axis.sniper = mp_limit_axis_sniper.GetInt();
+	m_classlimits_axis.mg = mp_limit_axis_mg.GetInt();
+	m_classlimits_axis.rocket = mp_limit_axis_rocket.GetInt();
+}
+
 CDayOfDefeatSourceMod::BombEvent::BombEvent(IGameEvent* event, bool isDefused)
 {
 	this->team = event->GetInt("team", NAV_TEAM_ANY);
@@ -525,63 +709,86 @@ CDayOfDefeatSourceMod::BombEvent::BombEvent(IGameEvent* event, bool isDefused)
 	this->isDefused = isDefused;
 }
 
-#ifdef EXT_DEBUG
-
-CON_COMMAND(sm_dod_navbot_debug_control_point_index, "Tests access to the CControlPoint::m_iPointIndex member variable.")
+void CDayOfDefeatSourceMod::RegisterModCommands()
 {
-	auto functor = [](int index, edict_t* edict, CBaseEntity* entity) {
+	CServerCommandManager& manager = extmanager->GetServerCommandManager();
 
-		if (entity)
-		{
-			auto datamap = gamehelpers->GetDataMap(entity);
-			SourceMod::sm_datatable_info_t info;
+	auto dbg_control_point_cmd = [](const CConCommandArgs& args) {
+		auto functor = [](int index, edict_t* edict, CBaseEntity* entity) {
 
-			if (gamehelpers->FindDataMapInfo(datamap, "m_iCPGroup", &info))
+			if (entity)
 			{
-				unsigned int offset = info.actual_offset - sizeof(int);
-				int* pointindex = entprops->GetPointerToEntData<int>(entity, offset);
-				std::string printname(512, '\0');
-				std::size_t strlen = 0U;
-				entprops->GetEntPropString(index, Prop_Data, "m_iszPrintName", printname.data(), 512, strlen);
+				auto datamap = gamehelpers->GetDataMap(entity);
+				SourceMod::sm_datatable_info_t info;
 
-				rootconsole->ConsolePrint("Control Point entity #%i (%s), point index #%i <%p>", index, printname.c_str(), *pointindex, pointindex);
+				if (gamehelpers->FindDataMapInfo(datamap, "m_iCPGroup", &info))
+				{
+					unsigned int offset = info.actual_offset - sizeof(int);
+					int* pointindex = entprops->GetPointerToEntData<int>(entity, offset);
+					std::string printname(512, '\0');
+					std::size_t strlen = 0U;
+					entprops->GetEntPropString(index, Prop_Data, "m_iszPrintName", printname.data(), 512, strlen);
+
+					rootconsole->ConsolePrint("Control Point entity #%i (%s), point index #%i <%p>", index, printname.c_str(), *pointindex, pointindex);
+				}
 			}
-		}
 
-		return true;
+			return true;
+			};
+
+		UtilHelpers::ForEachEntityOfClassname("dod_control_point", functor);
 	};
 
-	UtilHelpers::ForEachEntityOfClassname("dod_control_point", functor);
+	auto dbg_attackdefend_points = [](const CConCommandArgs& args) {
+		CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();
+
+		std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*> attack;
+		std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*> defend;
+		attack.reserve(8);
+		defend.reserve(8);
+
+		dayofdefeatsource::DoDTeam team = dodslib::GetDoDTeam(UtilHelpers::EdictToBaseEntity(UtilHelpers::GetListenServerHost()));
+
+		mod->CollectControlPointsToAttack(team, attack);
+		mod->CollectControlPointsToDefend(team, defend);
+
+		META_CONPRINTF("Control Points to Attack for %s \n", dodslib::GetDoDTeamName(team));
+
+		for (auto point : attack)
+		{
+			META_CONPRINTF("  Attack: #%i \n", point->index);
+		}
+
+		META_CONPRINTF("Control Points to Defend for %s \n", dodslib::GetDoDTeamName(team));
+
+		for (auto point : defend)
+		{
+			META_CONPRINTF("  Defend: #%i \n", point->index);
+		}
+	};
+
+	manager.RegisterConCommand("sm_dod_navbot_debug_control_point_index", "Tests access to the CControlPoint::m_iPointIndex member variable.", FCVAR_GAMEDLL, dbg_control_point_cmd);
+	manager.RegisterConCommand("sm_dod_navbot_debug_attackdefend_points", "List which control point your current team can attack and defend",
+		FCVAR_GAMEDLL, dbg_attackdefend_points, CServerCommandManager::COMMAND_ONLY_ON_LISTEN_SERVERS);
 }
 
-CON_COMMAND(sm_dod_navbot_debug_attackdefend_points, "List which control point your current team can attack and defend")
+SourceMod::SMCResult CDoDModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
 {
-	CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();
-
-	std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*> attack;
-	std::vector<const CDayOfDefeatSourceMod::DoDControlPoint*> defend;
-	attack.reserve(8);
-	defend.reserve(8);
-
-	dayofdefeatsource::DoDTeam team = dodslib::GetDoDTeam(UtilHelpers::EdictToBaseEntity(UtilHelpers::GetListenServerHost()));
-
-	mod->CollectControlPointsToAttack(team, attack);
-	mod->CollectControlPointsToDefend(team, defend);
-
-	META_CONPRINTF("Control Points to Attack for %s \n", dodslib::GetDoDTeamName(team));
-
-	for (auto point : attack)
+	if (std::strcmp(key, "dod_bomb_plant_respond_dist") == 0)
 	{
-		META_CONPRINTF("  Attack: #%i \n", point->index);
+		float dist = atof(value);
+		dist = std::clamp(dist, 1000.0f, 10000.0f);
+		SetMaxBombPlantedRespondDistance(dist);
+		return SourceMod::SMCResult::SMCResult_Continue;
 	}
 
-	META_CONPRINTF("Control Points to Defend for %s \n", dodslib::GetDoDTeamName(team));
-
-	for (auto point : defend)
+	if (std::strcmp(key, "dod_bomb_max_defusers") == 0)
 	{
-		META_CONPRINTF("  Defend: #%i \n", point->index);
+		int num = atoi(value);
+		num = std::clamp(num, 2, 16);
+		SetMaxBombDefusers(num);
+		return SourceMod::SMCResult::SMCResult_Continue;
 	}
+
+	return CModSettings::ReadSMC_KeyValue(states, key, value);
 }
-
-#endif // EXT_DEBUG
-

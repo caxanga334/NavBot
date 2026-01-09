@@ -48,6 +48,7 @@ namespace dayofdefeatsource
 		NUM_DOD_ROUND_STATES
 	};
 
+	constexpr int DOD_NO_CLASS_LIMIT = -1; // class limit convars are set to this value to indicate no class limit
 	constexpr int INVALID_CONTROL_POINT = -1;
 	constexpr float DOD_PLAYER_STANDING_HEIGHT = 72.0f;
 	constexpr float DOD_PLAYER_CROUCHING_HEIGHT = 45.0f;

@@ -22,10 +22,6 @@
 #undef min
 #undef clamp
 
-#if SOURCE_ENGINE == SE_TF2
-static ConVar tf2bot_change_class_allowed("sm_navbot_tf_allow_class_changes", "1", FCVAR_GAMEDLL, "Are bots allowed to change classes?");
-#endif // SOURCE_ENGINE == SE_TF2
-
 CTF2Bot::CTF2Bot(edict_t* edict) : CBaseBot(edict)
 {
 	m_tf2movement = std::make_unique<CTF2BotMovement>(this);
@@ -437,16 +433,16 @@ bool CTF2Bot::IsCarryingThePassTimeJack() const
 
 void CTF2Bot::SelectNewClass()
 {
-#if SOURCE_ENGINE == SE_TF2
-	// Not allowed to change classes
-	if (!tf2bot_change_class_allowed.GetBool()) 
+	CTeamFortress2Mod* mod = CTeamFortress2Mod::GetTF2Mod();
+
+	// Saxton Hale doesn't change classes
+	if (IsSaxtonHale())
 	{
 		return;
 	}
-#endif // SOURCE_ENGINE == SE_TF2
 
 	// change class not possible
-	if (!CTeamFortress2Mod::GetTF2Mod()->IsAllowedToChangeClasses())
+	if (!mod->IsAllowedToChangeClasses())
 	{
 		return;
 	}
@@ -458,9 +454,9 @@ void CTF2Bot::SelectNewClass()
 	}
 
 	// Change class if needs, or a small random chance
-	if (CTeamFortress2Mod::GetTF2Mod()->ShouldSwitchClass(this) || randomgen->GetRandomInt<int>(1, 10) == 5)
+	if (mod->ShouldSwitchClass(this) || randomgen->GetRandomInt<int>(1, 10) == 5)
 	{
-		TeamFortress2::TFClassType tfclass = CTeamFortress2Mod::GetTF2Mod()->SelectAClassForBot(this);
+		TeamFortress2::TFClassType tfclass = mod->SelectAClassForBot(this);
 
 		if (TeamFortress2::IsValidTFClass(tfclass) && tfclass != GetMyClassType())
 		{

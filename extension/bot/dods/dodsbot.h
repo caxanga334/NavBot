@@ -10,6 +10,7 @@
 #include "dodsbot_combat.h"
 #include "dodsbot_playercontrol.h"
 #include "dodsbot_pathprocessor.h"
+#include "dodsbot_sharedmemory.h"
 #include <mods/dods/dods_shareddefs.h>
 
 class CDoDSBot : public CBaseBot
@@ -25,6 +26,7 @@ public:
 	CDoDSBotInventory* GetInventoryInterface() const override { return m_dodinventory.get(); }
 	CDoDSBotCombat* GetCombatInterface() const override { return m_dodcombat.get(); }
 	CDoDSBotPathProcessor* GetPathProcessorInterface() const override { return m_dodpathprocessor.get(); }
+	CDoDSSharedBotMemory* GetSharedMemoryInterface() const override;
 
 	void Reset() override;
 	bool HasJoinedGame() override;
@@ -52,6 +54,9 @@ private:
 	std::unique_ptr<CDoDSBotPlayerController> m_dodcontrol;
 	std::unique_ptr<CDoDSBotPathProcessor> m_dodpathprocessor;
 	bool m_droppedAmmo; // has the bot dropped ammo?
+	CountdownTimer m_nextClassChangeTimer;
+
+	void TryChangingClasses();
 };
 
 class CDoDSBotPathCost : public IGroundPathCost

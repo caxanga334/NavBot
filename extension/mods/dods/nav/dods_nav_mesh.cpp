@@ -2,6 +2,7 @@
 #include <extension.h>
 #include "dods_nav_area.h"
 #include "dods_nav_mesh.h"
+#include "dods_nav_waypoint.h"
 
 CDoDSNavMesh::CDoDSNavMesh() :
 	CNavMesh()
@@ -15,6 +16,7 @@ CDoDSNavMesh::~CDoDSNavMesh()
 void CDoDSNavMesh::RegisterModCommands()
 {
 	RegisterEditCommands();
+	CDoDSWaypoint::RegisterCommands();
 }
 
 unsigned int CDoDSNavMesh::GetGenerationTraceMask(void) const

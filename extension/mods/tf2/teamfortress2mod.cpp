@@ -1329,6 +1329,11 @@ void CTeamFortress2Mod::FindGameModeSpecifics()
 
 bool CTeamFortress2Mod::IsAllowedToChangeClasses() const
 {
+	if (!GetModSettings()->IsAllowedToChangeClasses())
+	{
+		return false;
+	}
+
 	switch (m_gamemode)
 	{
 	case TeamFortress2::GameModeType::GM_MVM:
@@ -1925,4 +1930,6 @@ void CTeamFortress2Mod::RegisterModCommands()
 	manager.RegisterConCommand("sm_navbot_tf_reload_upgrades", "[TF2] Reload MvM Upgrades.", FCVAR_GAMEDLL, reloadupgrades);
 	manager.RegisterConCommand("sm_navbot_tf_debug_control_points", "[TF2] Show control point data.", FCVAR_GAMEDLL | FCVAR_CHEAT, debugcps);
 	manager.RegisterConCommand("sm_navbot_tf_list_control_points", "[TF2] Shows a list of control points on this map.", FCVAR_GAMEDLL | FCVAR_CHEAT, listcps);
+
+	CTF2BotSensor::RegisterTF2ConVars();
 }
