@@ -138,7 +138,7 @@ public:
 	// Is the bot allowed to look around?
 	virtual const bool CanLookAround() const;
 	// Disables dodging for the given time in seconds
-	void DisableDodging(float time) { m_disableDodgeTimer.Start(time); }
+	void DisableDodging(float time = 1.0f) { m_disableDodgeTimer.Start(time); }
 	// Enable dodging
 	void EnableDodging() { m_disableDodgeTimer.Invalidate(); }
 protected:

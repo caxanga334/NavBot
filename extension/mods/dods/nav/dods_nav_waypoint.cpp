@@ -16,6 +16,7 @@ void CDoDSWaypoint::Save(std::fstream& filestream, uint32_t version)
 	CWaypoint::Save(filestream, version);
 
 	filestream.write(reinterpret_cast<char*>(&m_dodattributes), sizeof(int));
+	filestream.write(reinterpret_cast<char*>(&m_CPIndex), sizeof(int));
 }
 
 NavErrorType CDoDSWaypoint::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
@@ -27,10 +28,11 @@ NavErrorType CDoDSWaypoint::Load(std::fstream& filestream, uint32_t version, uin
 		return baseCode;
 	}
 
-	/* version 2: Added dod specific waypoints */
-	if (subVersion >= 2)
+	/* version 3: Added dod specific waypoint data */
+	if (subVersion >= 3)
 	{
 		filestream.read(reinterpret_cast<char*>(&m_dodattributes), sizeof(int));
+		filestream.read(reinterpret_cast<char*>(&m_CPIndex), sizeof(int));
 	}
 
 	if (filestream.bad())

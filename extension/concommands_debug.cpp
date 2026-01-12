@@ -453,6 +453,24 @@ CON_COMMAND(sm_navbot_debug_bot_dump_path_kv, "Dumps the current bot path as a K
 		kvSeg->SetString("PortalCenter", UtilHelpers::textformat::FormatVector(segment->portalcenter));
 		kvSeg->SetFloat("PortalHalfWidth", segment->portalhalfwidth);
 
+		const BotPathSegment* prev = nav->GetPriorSegment(segment);
+
+		if (prev)
+		{
+			float verticalDistance = std::abs(segment->goal.z - prev->goal.z);
+			float horizontalDistance = (segment->goal.AsVector2D() - prev->goal.AsVector2D()).Length();
+			kvSeg->SetFloat("VerticalDistance", verticalDistance);
+			kvSeg->SetFloat("HorizontalDistance", horizontalDistance);
+
+			if (horizontalDistance > 0.0f)
+			{
+				float t = verticalDistance / horizontalDistance;
+				float elevAngle = std::atan(t);
+				kvSeg->SetFloat("ElevationAngleRAD", elevAngle);
+				kvSeg->SetFloat("ElevationAngleDEG", RAD2DEG(elevAngle));
+			}
+		}
+
 		root->AddSubKey(kvSeg);
 		n++;
 		segment = nav->GetNextSegment(segment);
@@ -2062,6 +2080,36 @@ CON_COMMAND(sm_nav_debug_snap_to_line, "")
 	}
 
 	NDebugOverlay::Cross3D(pos, 10.0f, 255, 0, 0, true, 10.0f);
+}
+
+CON_COMMAND_F(sm_nav_debug_slope, "Tests nav area ground slope", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	CNavArea* area = TheNavMesh->GetMarkedArea();
+
+	if (!area)
+	{
+		area = TheNavMesh->GetSelectedArea();
+
+		if (!area)
+		{
+			META_CONPRINTF("Mark an area first!\n");
+			return;
+		}
+	}
+
+	trace_t tr;
+	CTraceFilterWorldAndPropsOnly filter;
+	Vector start = area->GetCenter();
+	Vector end = start;
+	start.z += 16.0f;
+	end.z -= 128.0f;
+
+	trace::line(start, end, TheNavMesh->GetGenerationTraceMask(), tr);
+
+	if (tr.fraction < 1.0f)
+	{
+		META_CONPRINTF("Surface normal: %s\n", UtilHelpers::textformat::FormatVector(tr.plane.normal));
+	}
 }
 
 #endif // EXT_DEBUG

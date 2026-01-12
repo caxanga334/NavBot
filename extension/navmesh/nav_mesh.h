@@ -1370,6 +1370,36 @@ public:
 		return it->second;
 	}
 
+	/**
+	 * @brief Collects waypoints that can be used by a bot.
+	 * @tparam B Bot class.
+	 * @tparam T Waypoint class.
+	 * @tparam F Predicate function. bool (B* bot, T* waypoint)
+	 * @param bot Bot that will be using the waypoint.
+	 * @param out Vector to store the collected waypoints.
+	 * @param pred Predicate function used to filter waypoints. Return true to allow the waypoint to be collected.
+	 */
+	template <typename B, typename T, typename F>
+	inline void CollectUsableWaypoints(B* bot, std::vector<T*>& out, F pred)
+	{
+		for (auto& pair : m_waypoints)
+		{
+			T* waypoint = static_cast<T*>(pair.second.get());
+
+			// basic checks (virtual funcs)
+			if (waypoint->IsEnabled() &&
+				waypoint->IsAvailableToTeam(bot->GetCurrentTeamIndex()) &&
+				waypoint->CanBeUsedByBot(bot))
+			{
+				// predicate check
+				if (pred(bot, waypoint))
+				{
+					out.push_back(waypoint);
+				}
+			}
+		}
+	}
+
 	std::optional<const std::shared_ptr<CNavVolume>> AddNavVolume(const Vector& origin);
 
 	void RemoveSelectedVolume();

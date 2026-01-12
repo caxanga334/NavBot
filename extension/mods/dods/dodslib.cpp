@@ -154,3 +154,35 @@ void dodslib::GetTeamClassCount(dayofdefeatsource::DoDTeam team, DoDClassCountAr
 		classes[idx] = c;
 	}
 }
+
+bool dodslib::IsTeamAllowedToCapture(CBaseEntity* captureArea, dayofdefeatsource::DoDTeam team)
+{
+#ifdef EXT_DEBUG
+	const char* classname = gamehelpers->GetEntityClassname(captureArea);
+
+	if (std::strcmp(classname, "dod_capture_area") != 0)
+	{
+		smutils->LogError(myself, "dodslib::IsTeamAllowedToCapture Entity %s is not a capture area!", UtilHelpers::textformat::FormatEntity(captureArea));
+	}
+#endif // EXT_DEBUG
+
+	switch (team)
+	{
+	case dayofdefeatsource::DoDTeam::DODTEAM_ALLIES:
+	{
+		bool cap = false;
+		entprops->GetEntPropBool(captureArea, Prop_Data, "m_bAlliesCanCap", cap);
+		return cap;
+	}
+	case dayofdefeatsource::DoDTeam::DODTEAM_AXIS:
+	{
+		bool cap = false;
+		entprops->GetEntPropBool(captureArea, Prop_Data, "m_bAxisCanCap", cap);
+		return cap;
+	}
+	default:
+		break;
+	}
+
+	return false;
+}

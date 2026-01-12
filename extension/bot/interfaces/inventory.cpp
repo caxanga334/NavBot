@@ -40,6 +40,9 @@ void IInventory::Reset()
 	m_updateWeaponsTimer.Start(UPDATE_WEAPONS_INTERVAL_AFTER_RESET);
 	m_cachedActiveWeapon = nullptr;
 	m_purgeStaleWeaponsTimer.Start(2.0f);
+	// Building the inventory at reset is fine for vanilla since the bot already has their weapons
+	// Might have issues with weapons given post spawn
+	BuildInventory();
 }
 
 void IInventory::Update()

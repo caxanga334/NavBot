@@ -25,6 +25,8 @@ public:
 		{
 		}
 
+		NotifyDefusing(CDoDSBot* bot, int entindex);
+
 		~NotifyDefusing()
 		{
 			if (botmem)

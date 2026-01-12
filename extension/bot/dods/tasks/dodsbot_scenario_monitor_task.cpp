@@ -12,10 +12,17 @@
 #include "scenario/dodsbot_defuse_bomb_task.h"
 #include "scenario/dodsbot_deploy_bomb_task.h"
 #include "scenario/dodsbot_fetch_bomb_task.h"
+#include "machinegunner/dodsbot_deploy_mg_task.h"
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 
 AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 {
+	// machine gunners will go deploy their mgs
+	if (CDoDSBotDeployMachineGunTask::IsPossible(bot))
+	{
+		return new CDoDSBotDeployMachineGunTask;
+	}
+
 	CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();
 	const int defrate = mod->GetModSettings()->GetDefendRate();
 
@@ -115,11 +122,16 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnBombPlanted(CDo
 			const float range = (bot->GetAbsOrigin() - vPos).Length();
 			const CDoDModSettings* settings = mod->GetDoDModSettings();
 			int entindex = UtilHelpers::IndexOfEntity(bomb);
+
+			if (bot->IsDebugging(BOTDEBUG_TASKS))
+			{
+				bot->DebugPrintToConsole(255, 255, 0, "%s ON BOMB PLANTED EVENT! %s RANGE: %g\n", bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(bomb), range);
+			}
 			
 			if (range <= settings->GetMaxBombPlantedRespondDistance() && 
 				bot->GetSharedMemoryInterface()->GetDefusersCount(entindex) < settings->GetMaxBombDefusers())
 			{
-				return TryPauseFor(new CDoDSBotDefuseBombTask(bomb), PRIORITY_HIGH, "Bomb was planted, going to defuse!");
+				return TryPauseFor(new CDoDSBotDefuseBombTask(bomb, bot), PRIORITY_HIGH, "Bomb was planted, going to defuse!");
 			}
 		}
 	}

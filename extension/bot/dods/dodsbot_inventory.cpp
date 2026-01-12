@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <extension.h>
 #include "dodsbot.h"
+#include "dodsbot_weaponinfo.h"
 #include "dodsbot_inventory.h"
 
 CDoDSBotInventory::CDoDSBotInventory(CBaseBot* bot) :
@@ -12,7 +13,7 @@ CDoDSBotInventory::~CDoDSBotInventory()
 {
 }
 
-bool CDoDSBotInventory::HasBomb() const
+CBotWeapon* CDoDSBotInventory::CreateBotWeapon(CBaseEntity* weapon)
 {
-	return IInventory::FindWeaponByClassname("weapon_basebomb") != nullptr;
+	return new CDoDSBotWeapon(weapon);
 }

@@ -86,6 +86,12 @@ void CModSettings::PostParse()
 		class_change_min_time = 60.0f;
 		class_change_max_time = 180.0f;
 	}
+
+	if (camp_time_min >= camp_time_max)
+	{
+		camp_time_min = 15.0f;
+		camp_time_max = 90.0f;
+	}
 }
 
 SourceMod::SMCError CModSettings::ParseCustomFile(const char* file)
@@ -227,6 +233,18 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			int v = atoi(value);
 			v = std::clamp(v, 0, 100);
 			SetChangeClassChance(v);
+		}
+		else if (std::strcmp(key, "camp_time_min") == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 15.0f, 300.0f);
+			SetCampMinTime(v);
+		}
+		else if (std::strcmp(key, "camp_time_max") == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 30.0f, 1200.0f);
+			SetCampMaxTime(v);
 		}
 		else
 		{

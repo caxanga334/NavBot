@@ -57,8 +57,17 @@ int CDoDSSharedBotMemory::GetDefusersCount(int entindex) const
 	return 0;
 }
 
-void CDoDSSharedBotMemory::NotifyDefusing::Notify(CDoDSBot* bot, int entindex)
+CDoDSSharedBotMemory::NotifyDefusing::NotifyDefusing(CDoDSBot* bot, int entindex)
 {
 	botmem = bot->GetSharedMemoryInterface();
 	botmem->IncrementDefusersCount(entindex);
+}
+
+void CDoDSSharedBotMemory::NotifyDefusing::Notify(CDoDSBot* bot, int entindex)
+{
+	if (!botmem)
+	{
+		botmem = bot->GetSharedMemoryInterface();
+		botmem->IncrementDefusersCount(entindex);
+	}
 }

@@ -15,6 +15,11 @@ CDoDSBotDefuseBombTask::CDoDSBotDefuseBombTask(CBaseEntity* target) :
 {
 }
 
+CDoDSBotDefuseBombTask::CDoDSBotDefuseBombTask(CBaseEntity* target, CDoDSBot* bot) :
+	m_target(target), m_defuseNotification(bot, m_target.GetEntryIndex())
+{
+}
+
 TaskResult<CDoDSBot> CDoDSBotDefuseBombTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
 {
 	CBaseEntity* target = m_target.Get();

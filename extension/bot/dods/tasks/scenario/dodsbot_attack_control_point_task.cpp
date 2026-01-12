@@ -6,9 +6,11 @@
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_timers.h>
 #include <mods/dods/dayofdefeatsourcemod.h>
+#include <mods/dods/nav/dods_nav_waypoint.h>
 #include <mods/dods/dodslib.h>
 #include <bot/dods/dodsbot.h>
 #include <bot/interfaces/path/meshnavigator.h>
+#include <bot/dods/tasks/rifleman/dodsbot_fire_rifle_grenade_task.h>
 #include "dodsbot_attack_control_point_task.h"
 #include "dodsbot_fetch_bomb_task.h"
 #include "dodsbot_deploy_bomb_task.h"
@@ -150,9 +152,9 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 			{
 				// No bomb target found
 
-				if (pTrigger)
+				if (pTrigger && dodslib::IsTeamAllowedToCapture(pTrigger, bot->GetMyDoDTeam()))
 				{
-					// if a capture trigger exists, assume we can cap it anyways
+					// if a capture trigger exists, go cap it
 					return Continue();
 				}
 
@@ -168,6 +170,19 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 
 		CDoDSBotDeployBombTask* task = new CDoDSBotDeployBombTask(target);
 		return SwitchTo(new CDoDSBotFetchBombTask(task), "Going to fetch a bomb to plant at the control point!");
+	}
+
+	// Double check we can actually capture this control point
+	if (pTrigger && !dodslib::IsTeamAllowedToCapture(pTrigger, bot->GetMyDoDTeam()))
+	{
+		return SwitchTo(new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
+	}
+
+	CDoDSWaypoint* waypoint = nullptr;
+
+	if (CDoDSBotFireRifleGrenadeTask::IsPossible(bot, &waypoint, m_controlpoint->index))
+	{
+		return PauseFor(new CDoDSBotFireRifleGrenadeTask(waypoint), "Opportunistically using rifle grenades.");
 	}
 
 	return Continue();

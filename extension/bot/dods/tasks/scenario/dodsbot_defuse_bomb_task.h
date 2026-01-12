@@ -5,6 +5,8 @@ class CDoDSBotDefuseBombTask : public AITask<CDoDSBot>
 {
 public:
 	CDoDSBotDefuseBombTask(CBaseEntity* target);
+	// This version of the constructors sends the notification early
+	CDoDSBotDefuseBombTask(CBaseEntity* target, CDoDSBot* bot);
 
 	static constexpr int IDENTIFIER = 0xD0DDEF; // task identifier
 

@@ -10,6 +10,10 @@
 #include <sdkports/sdk_ehandle.h>
 #include "dods_shareddefs.h"
 
+class CDoDSBot;
+class CDoDSNavArea;
+class CDoDSWaypoint;
+
 class CDoDModSettings : public CModSettings
 {
 public:
@@ -32,8 +36,6 @@ private:
 	float bomb_plant_respond_dist; // maximum distance for a bot to respond to a bomb plant event
 	int bomb_max_defusers; // maximum number of bots trying to defuse the same bomb
 };
-
-class CDoDSBot;
 
 class CDODObjectiveResource
 {

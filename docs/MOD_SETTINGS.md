@@ -54,6 +54,8 @@ These settings are used by all mods.
 | class_change_min_time | Minimum time in seconds before bots may try to change classes. | 30 - 300 | 60 |
 | class_change_max_time | Maximum time in seconds before bots may try to change classes. | 60 - 1200 | 180 |
 | class_change_chance | Chance that a bot will actually change their class. | 0 - 100 | 75 |
+| camp_time_min | Minimum time in seconds a bot will camp. | 15 - 300 | 15 |
+| camp_time_max | Maximum time in seconds a bot will camp. | 30 - 1200 | 90 |
 
 
 ### Macro Values

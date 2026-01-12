@@ -48,6 +48,13 @@ namespace dodslib
 	 * @param classes Array to store the number of players as each class.
 	 */
 	void GetTeamClassCount(dayofdefeatsource::DoDTeam team, DoDClassCountArray& classes);
+	/**
+	 * @brief Checks if a given team is allowed to capture at the given capture area.
+	 * @param captureArea Entity pointer to a dod_capture_area entity.
+	 * @param team Team to check if it's allowed to capture.
+	 * @return True if the team can capture, false otherwise.
+	 */
+	bool IsTeamAllowedToCapture(CBaseEntity* captureArea, dayofdefeatsource::DoDTeam team);
 }
 
 

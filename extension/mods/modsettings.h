@@ -29,6 +29,8 @@ public:
 		class_change_min_time = 60.0f;
 		class_change_max_time = 180.0f;
 		class_change_chance = 75;
+		camp_time_min = 15.0f;
+		camp_time_max = 90.0f;
 	}
 
 	virtual ~CModSettings() = default;
@@ -81,6 +83,8 @@ public:
 	void SetMinClassChangeTime(float time) { class_change_min_time = time; }
 	void SetMaxClassChangeTime(float time) { class_change_max_time = time; }
 	void SetChangeClassChance(int chance) { class_change_chance = chance; }
+	void SetCampMinTime(float time) { camp_time_min = time; }
+	void SetCampMaxTime(float time) { camp_time_max = time; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -105,6 +109,8 @@ public:
 	const float GetMinClassChangeTime() const { return class_change_min_time; }
 	const float GetMaxClassChangeTime() const { return class_change_max_time; }
 	const int GetChangeClassChance() const { return class_change_chance; }
+	const float GetCampMinTime() const { return camp_time_min; }
+	const float GetCampMaxTime() const { return camp_time_max; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -128,6 +134,8 @@ protected:
 	float class_change_min_time; // Minimum time between class changes.
 	float class_change_max_time; // Maximum time between class changes.
 	int class_change_chance; // Random chance for a bot to change class.
+	float camp_time_min; // Minimum time a bot will 'camp'
+	float camp_time_max; // Maximum time a bot will 'camp'
 };
 
 

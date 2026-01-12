@@ -250,11 +250,16 @@ void CDayOfDefeatSourceMod::CollectControlPointsToAttack(dayofdefeatsource::DoDT
 			}
 
 			bool disabled = false;
-			entprops->GetEntPropBool(controlpoint.capture_trigger.GetEntryIndex(), Prop_Data, "m_bDisabled", disabled);
+			entprops->GetEntPropBool(captureArea, Prop_Data, "m_bDisabled", disabled);
 
 			if (disabled)
 			{
 				continue; // capture trigger for this control point is disabled
+			}
+
+			if (!dodslib::IsTeamAllowedToCapture(captureArea, team))
+			{
+				continue; // team is not allowed to capture it
 			}
 		}
 
@@ -767,9 +772,10 @@ void CDayOfDefeatSourceMod::RegisterModCommands()
 		}
 	};
 
-	manager.RegisterConCommand("sm_dod_navbot_debug_control_point_index", "Tests access to the CControlPoint::m_iPointIndex member variable.", FCVAR_GAMEDLL, dbg_control_point_cmd);
+	manager.RegisterConCommand("sm_dod_navbot_debug_control_point_index", "Tests access to the CControlPoint::m_iPointIndex member variable.", 
+		FCVAR_GAMEDLL | FCVAR_CHEAT, dbg_control_point_cmd);
 	manager.RegisterConCommand("sm_dod_navbot_debug_attackdefend_points", "List which control point your current team can attack and defend",
-		FCVAR_GAMEDLL, dbg_attackdefend_points, CServerCommandManager::COMMAND_ONLY_ON_LISTEN_SERVERS);
+		FCVAR_GAMEDLL | FCVAR_CHEAT, dbg_attackdefend_points, CServerCommandManager::COMMAND_ONLY_ON_LISTEN_SERVERS);
 }
 
 SourceMod::SMCResult CDoDModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
