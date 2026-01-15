@@ -2,18 +2,18 @@
 
 The mod setting files is used to load some configuration options for NavBot.
 
-## Load Priority
+## File Parsing
 
-The first file found is parsed.    
-The load order is:
+The mod setting values are reset to default on every level change, then the config files are parsed.    
+The files are parsed in the following order:    
 
-1. `configs/navbot/[mod folder]/maps/settings.[map name].cfg`
-2. `configs/navbot/[mod folder]/settings.custom.cfg`
-3. `configs/navbot/[mod folder]/settings.cfg`
-4. `configs/navbot/settings.custom.cfg`
-5. `configs/navbot/settings.cfg`
+1. `configs/navbot/settings.cfg` or `configs/navbot/settings.custom.cfg`
+2. `configs/navbot/[mod folder]/settings.cfg` or `configs/navbot/[mod folder]/settings.custom.cfg`
+3. `configs/navbot/[mod folder]/maps/settings.[map name].cfg`
 
-`[map name]` should match the name given by the `sm_nav_print_map_name` command.
+The parser will parse multiple files if they're present.    
+`[map name]` should match the name given by the `sm_nav_print_map_name` command.    
+Prefer using the `.custom` suffix.    
 
 ## File Format
 
