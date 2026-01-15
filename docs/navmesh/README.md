@@ -4,6 +4,7 @@
 
 - [Nav Mesh Editing Basics]
 - [Nav Mesh Editing Tips]
+- [Nav Mesh Base Attributes]
 - [Waypoint Editing Basics]
 - [Nav Mesh Authors and Editors]
 
@@ -26,6 +27,7 @@
 <!-- Links -->
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md
+[Nav Mesh Base Attributes]: NAVMESH_BASE_ATTRIBUTES.md
 [Nav Mesh Places]: NAVMESH_PLACES.md
 [Nav Mesh Ladders]: NAVMESH_LADDERS.md
 [Nav Mesh Off-Mesh Link Connections]: NAVMESH_OFFMESHLINKS.md

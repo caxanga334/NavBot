@@ -2685,7 +2685,7 @@ static ConCommand sm_nav_begin_area( "sm_nav_begin_area", CommandNavBeginArea, "
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavEndArea( void )
+static void CommandNavEndArea( void )
 {
 	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
@@ -2696,7 +2696,7 @@ static ConCommand sm_nav_end_area( "sm_nav_end_area", CommandNavEndArea, "Define
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavConnect( void )
+static void CommandNavConnect( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2707,7 +2707,7 @@ static ConCommand sm_nav_connect( "sm_nav_connect", CommandNavConnect, "To conne
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavDisconnect( void )
+static void CommandNavDisconnect( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2718,7 +2718,7 @@ static ConCommand sm_nav_disconnect( "sm_nav_disconnect", CommandNavDisconnect, 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavDisconnectOutgoingOneWays( void )
+static void CommandNavDisconnectOutgoingOneWays( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2729,7 +2729,7 @@ static ConCommand sm_nav_disconnect_outgoing_oneways( "sm_nav_disconnect_outgoin
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavSplice( void )
+static void CommandNavSplice( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2740,7 +2740,7 @@ static ConCommand sm_nav_splice( "sm_nav_splice", CommandNavSplice, "To splice, 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavCrouch( void )
+static void CommandNavCrouch( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2751,7 +2751,7 @@ static ConCommand sm_nav_crouch( "sm_nav_crouch", CommandNavCrouch, "Toggles the
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavPrecise( void )
+static void CommandNavPrecise( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2762,7 +2762,7 @@ static ConCommand sm_nav_precise( "sm_nav_precise", CommandNavPrecise, "Toggles 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavJump( void )
+static void CommandNavJump( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2773,7 +2773,7 @@ static ConCommand sm_nav_jump( "sm_nav_jump", CommandNavJump, "Toggles the 'trav
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavNoJump( void )
+static void CommandNavNoJump( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2784,7 +2784,7 @@ static ConCommand sm_nav_no_jump( "sm_nav_no_jump", CommandNavNoJump, "Toggles t
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavStop( void )
+static void CommandNavStop( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2795,7 +2795,7 @@ static ConCommand sm_nav_stop( "sm_nav_stop", CommandNavStop, "Toggles the 'must
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavWalk( void )
+static void CommandNavWalk( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2806,7 +2806,7 @@ static ConCommand sm_nav_walk( "sm_nav_walk", CommandNavWalk, "Toggles the 'trav
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavRun( void )
+static void CommandNavRun( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;

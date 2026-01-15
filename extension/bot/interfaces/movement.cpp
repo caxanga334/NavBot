@@ -144,6 +144,15 @@ bool IMovement::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 	return true;
 }
 
+void IMovement::OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea)
+{
+	if (newArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_STOP)))
+	{
+		DoCounterStrafe(0.5f);
+		StopAndWait(0.5f);
+	}
+}
+
 void IMovement::Reset()
 {
 	_Reset();
@@ -367,7 +376,7 @@ void IMovement::Update()
 
 	if (m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed())
 	{
-		constexpr auto DISABLE_COUNTERSTRAFE_SPEED = 32.0f;
+		constexpr auto DISABLE_COUNTERSTRAFE_SPEED = 80.0f;
 
 		if (m_groundspeed <= DISABLE_COUNTERSTRAFE_SPEED)
 		{
@@ -1036,7 +1045,9 @@ bool IMovement::IsGap(const Vector& pos, const Vector& forward)
 	trace_t result;
 	trace::CTraceFilterNoNPCsOrPlayers filter(GetBot()->GetEntity(), COLLISION_GROUP_NONE);
 	Vector start = pos + Vector(0.0f, 0.0f, GetStepHeight());
-	Vector end = pos + Vector(0.0f, 0.0f, -GetMaxJumpHeight());
+	// The end Vector originally was using GetMaxJumpHeight()
+	// Changed to stepheight so the bots jump over small trenches
+	Vector end = pos + Vector(0.0f, 0.0f, -GetStepHeight());
 	trace::line(start, end, GetMovementTraceMask(), &filter, result);
 	return result.fraction >= 1.0f && !result.startsolid;
 }

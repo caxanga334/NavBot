@@ -59,6 +59,8 @@ void CDoDSBotMovement::Update()
 
 void CDoDSBotMovement::OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea)
 {
+	IMovement::OnNavAreaChanged(oldArea, newArea);
+
 	CDoDSNavArea* area = static_cast<CDoDSNavArea*>(newArea);
 
 	if (area->HasDoDAttributes(CDoDSNavArea::DoDNavAttributes::DODNAV_REQUIRES_PRONE))

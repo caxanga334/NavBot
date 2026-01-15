@@ -234,6 +234,7 @@ public:
 
 	// Reset movement when killed to stop any movement action
 	void OnKilled(const CTakeDamageInfo& info) override { this->Reset(); }
+	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) override;
 
 	// Reset the interface to it's initial state
 	void Reset() override;
@@ -432,7 +433,7 @@ public:
 	 * @brief Tell the movement interface to perform a counter-strafe. (Move in the opposite direction of motion).
 	 * @param time How long to keep counter-strafing. Disabled automatically once the bot reaches near zero speed.
 	 */
-	void DoCounterStrafe(const float time = 0.1f) { m_counterStrafeTimer.Start(time); }
+	void DoCounterStrafe(const float time = 0.2f) { m_counterStrafeTimer.Start(time); }
 	// Is the bot counter-strafing?
 	bool IsCounterStrafing() const { return m_counterStrafeTimer.HasStarted() && !m_counterStrafeTimer.IsElapsed(); }
 	/**
