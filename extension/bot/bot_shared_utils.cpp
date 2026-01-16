@@ -136,6 +136,7 @@ botsharedutils::RandomDefendSpotCollector::RandomDefendSpotCollector(const Vecto
 
 	CNavArea* area = TheNavMesh->GetNearestNavArea(spot, 512.0f, true, true);
 	SetStartArea(area);
+	m_area = area;
 }
 
 bool botsharedutils::RandomDefendSpotCollector::ShouldSearch(CNavArea* area)
@@ -156,23 +157,20 @@ bool botsharedutils::RandomDefendSpotCollector::ShouldCollect(CNavArea* area)
 		return false;
 	}
 
-	trace_t tr;
-	trace::line(m_spot, area->GetCenter() + m_vecOffset, MASK_VISIBLE, &m_filter, tr);
+	/*
+	* V2: Use IsPartiallyVisible. Originally we checked for a trace line between the given spot and the area's center.
+	* However the given spot may be inside the world, for better reliability, use the starting nav area to test for vis.
+	* This will only fail if no area is near the starting search point.
+	*/
 
-	if (tr.fraction < 1.0f)
-	{
-		return false; // area can't be seen from the position we're going to defend
-	}
-
-	return true;
+	return area->IsPartiallyVisible(m_area);
 }
 
 botsharedutils::RandomSnipingSpotCollector::RandomSnipingSpotCollector(const Vector& spot, CBaseBot* bot, const float maxRange) :
-	m_vecOffset1(0.0f, 0.0f, 0.0f), m_vecOffset2(0.0f, 0.0f, 0.0f), m_spot(spot)
+	m_spot(spot)
 {
 	m_bot = bot;
 	m_snipeArea = nullptr;
-	m_filter.SetPassEntity(bot->GetEntity());
 
 	float halfvisrange = (bot->GetSensorInterface()->GetMaxVisionRange() * 0.5f);
 	m_minRange = std::clamp(halfvisrange, 256.0f, 512.0f);
@@ -182,6 +180,7 @@ botsharedutils::RandomSnipingSpotCollector::RandomSnipingSpotCollector(const Vec
 
 	CNavArea* area = TheNavMesh->GetNavArea(spot);
 	SetStartArea(area);
+	m_area = area;
 }
 
 bool botsharedutils::RandomSnipingSpotCollector::ShouldSearch(CNavArea* area)
@@ -201,11 +200,12 @@ bool botsharedutils::RandomSnipingSpotCollector::ShouldCollect(CNavArea* area)
 		return false;
 	}
 
-	bool nolos = (BlockedLOS(area->GetCenter() + m_vecOffset1) && BlockedLOS(area->GetCenter() + m_vecOffset2));
-
-	if (nolos) { return false; }
-
-	return true;
+	/*
+	* V2: Use IsPartiallyVisible. Originally we checked for a trace line between the given spot and the area's center.
+	* However the given spot may be inside the world, for better reliability, use the starting nav area to test for vis.
+	* This will only fail if no area is near the starting search point.
+	*/
+	return area->IsPartiallyVisible(m_area);
 }
 
 void botsharedutils::RandomSnipingSpotCollector::OnDone()
@@ -231,13 +231,6 @@ void botsharedutils::RandomSnipingSpotCollector::OnDone()
 	}
 
 	m_snipeArea = candidate;
-}
-
-bool botsharedutils::RandomSnipingSpotCollector::BlockedLOS(Vector endPos)
-{
-	trace_t tr;
-	trace::line(m_spot, endPos, MASK_VISIBLE, &m_filter, tr);
-	return tr.fraction < 1.0f;
 }
 
 botsharedutils::FindCoverCollector::FindCoverCollector(const Vector& fromSpot, const float radius, const bool checkLOS, const bool checkCorners, const float maxSearchRange, CBaseBot* bot) :

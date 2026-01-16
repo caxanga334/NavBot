@@ -1734,6 +1734,37 @@ bool UtilHelpers::EntityDerivesFrom(CBaseEntity* pEntity, const char* classname)
 	return false;
 }
 
+bool UtilHelpers::GetPrefixFromMapName(const std::string& mapname, std::string& prefix, const std::size_t searchMax)
+{
+	constexpr char PREFIX_CHAR1 = '_';
+	constexpr char PREFIX_CHAR2 = '-';
+
+	std::size_t n = 0;
+	bool found = false;
+
+	for (auto& ch : mapname)
+	{
+		if (ch == PREFIX_CHAR1 || ch == PREFIX_CHAR2)
+		{
+			found = true;
+			break;
+		}
+
+		if (++n >= searchMax)
+		{
+			return false;
+		}
+	}
+
+	if (!found)
+	{
+		return false;
+	}
+
+	prefix = mapname.substr(0, n);
+	return true;
+}
+
 UtilHelpers::CEntityEnumerator::CEntityEnumerator()
 {
 	m_ents.reserve(256);

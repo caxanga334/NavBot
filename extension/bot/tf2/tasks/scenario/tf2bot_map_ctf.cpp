@@ -22,7 +22,7 @@ class CTF2BotCTFDefendBaseTask : public CBotSharedDefendSpotTask<CTF2Bot, CTF2Bo
 {
 public:
 	CTF2BotCTFDefendBaseTask(CTF2Bot* bot, const Vector& pos) :
-		CBotSharedDefendSpotTask<CTF2Bot, CTF2BotPathCost>(bot, pos, CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f), true)
+		CBotSharedDefendSpotTask<CTF2Bot, CTF2BotPathCost>(bot, pos, -1.0f, true)
 	{
 	}
 

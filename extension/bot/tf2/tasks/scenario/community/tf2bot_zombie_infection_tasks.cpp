@@ -169,7 +169,7 @@ TaskResult<CTF2Bot> CTF2BotZISurvivorBehaviorTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (waypoint)
 		{
-			return PauseFor(new CBotSharedDefendSpotTask<CTF2Bot, CTF2BotPathCost>(bot, waypoint, CBaseBot::s_botrng.GetRandomReal<float>(10.0f, 20.0f), true), "Camping");
+			return PauseFor(new CBotSharedDefendSpotTask<CTF2Bot, CTF2BotPathCost>(bot, waypoint, -1.0f, true), "Camping");
 		}
 	}
 

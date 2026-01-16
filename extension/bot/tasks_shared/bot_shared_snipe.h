@@ -120,6 +120,8 @@ inline TaskResult<BT> CBotSharedSnipeTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	if (m_atgoal)
 	{
+		bot->GetCombatInterface()->StopLookingAround();
+
 		if (m_timeout.IsElapsed())
 		{
 			return AITask<BT>::Done("Done sniping!");

@@ -9,10 +9,12 @@ The files are parsed in the following order:
 
 1. `configs/navbot/settings.cfg` or `configs/navbot/settings.custom.cfg`
 2. `configs/navbot/[mod folder]/settings.cfg` or `configs/navbot/[mod folder]/settings.custom.cfg`
-3. `configs/navbot/[mod folder]/maps/settings.[map name].cfg`
+3. `configs/navbot/[mod folder]/maps/settings.[map prefix].cfg`
+4. `configs/navbot/[mod folder]/maps/settings.[map name].cfg`
 
 The parser will parse multiple files if they're present.    
 `[map name]` should match the name given by the `sm_nav_print_map_name` command.    
+`[map prefix]` map prefix is the map's name until the first `_` or `-`. If the current map is `ctf_2fort`, the config file name must be `settings.ctf_.cfg`.    
 Prefer using the `.custom` suffix.    
 
 ## File Format

@@ -59,6 +59,7 @@ namespace botsharedutils
 		CBaseBot* m_bot;
 		Vector m_spot;
 		Vector m_vecOffset;
+		CNavArea* m_area;
 		TraceFilterVisibleSimple m_filter;
 	};
 
@@ -86,13 +87,9 @@ namespace botsharedutils
 	private:
 		CBaseBot* m_bot;
 		Vector m_spot;
-		Vector m_vecOffset1;
-		Vector m_vecOffset2;
-		TraceFilterVisibleSimple m_filter;
+		CNavArea* m_area;
 		CNavArea* m_snipeArea;
 		float m_minRange;
-
-		bool BlockedLOS(Vector endPos);
 	};
 
 	/**

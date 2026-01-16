@@ -41,8 +41,7 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 
 		if (defend)
 		{
-			return new CBotSharedDefendSpotTask<CDoDSBot, CDoDSBotPathCost>(bot, UtilHelpers::getWorldSpaceCenter(defend->point.Get()), 
-				CBaseBot::s_botrng.GetRandomReal<float>(30.0f, 60.0f), true);
+			return new CBotSharedDefendSpotTask<CDoDSBot, CDoDSBotPathCost>(bot, UtilHelpers::getWorldSpaceCenter(defend->point.Get()), -1.0f, true);
 		}
 	}
 

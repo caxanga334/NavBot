@@ -49,6 +49,23 @@ void CModSettings::ParseConfigFile()
 		}
 	}
 
+	std::string prefix;
+
+	if (UtilHelpers::GetPrefixFromMapName(map, prefix))
+	{
+		// Finally, parse the per map override
+		smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s_.cfg", modfolder, prefix.c_str());
+
+		if (std::filesystem::exists(path))
+		{
+			ParseFile(path);
+		}
+		else
+		{
+			META_CONPRINTF("[NavBot] Map prefix specific mod settings file at \"%s\" not found, not parsing. \n", path);
+		}
+	}
+
 	// Finally, parse the per map override
 	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s.cfg", modfolder, map.c_str());
 

@@ -1,5 +1,6 @@
 #include NAVBOT_PCH_FILE
 #include <extension.h>
+#include <mods/basemod.h>
 #include <util/entprops.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/nav/tfnavarea.h>
@@ -12,7 +13,8 @@ constexpr auto SNIPER_THREAT_TOO_CLOSE_FOR_CONFORT_RANGE = 600.0f;
 
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	m_boredTimer.StartRandom(15.0f, 60.0f);
+	const CModSettings* settings = extmanager->GetMod()->GetModSettings();
+	m_boredTimer.StartRandom(settings->GetCampMinTime(), settings->GetCampMaxTime());
 	m_changeAnglesTimer.StartRandom(5.0f, 10.0f);
 
 	BuildLookPoints(bot);

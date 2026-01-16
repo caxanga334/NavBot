@@ -50,7 +50,7 @@ inline TaskResult<BT> CBotSharedSimpleDMBehaviorTask<BT, CT>::OnTaskUpdate(BT* b
 		// Use defend task to simulate camping
 		// TO-DO: Proper camping task that selects a corner/hiding spot?
 		const Vector origin = bot->GetAbsOrigin();
-		return AITask<BT>::PauseFor(new CBotSharedDefendSpotTask<BT, CT>(bot, origin, randomgen->GetRandomReal<float>(30.0f, 60.0f), true), "Camping!");
+		return AITask<BT>::PauseFor(new CBotSharedDefendSpotTask<BT, CT>(bot, origin, -1.0f, true), "Camping!");
 	}
 
 	return AITask<BT>::PauseFor(new CBotSharedRoamTask<BT, CT>(bot, 10000.0f, true, -1.0f, true), "Roaming!");

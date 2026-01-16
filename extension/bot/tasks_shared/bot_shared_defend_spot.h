@@ -22,7 +22,7 @@ public:
 	 * @brief Constructor
 	 * @param bot Bot.
 	 * @param spot Position the bot will defend.
-	 * @param maxtime Maximum defend time.
+	 * @param maxtime Maximum defend time. 0 to generate a random max time based on the camp time setting value.
 	 * @param endifenemy If true, the task will end early if an enemy is VISIBLE.
 	 */
 	CBotSharedDefendSpotTask(BT* bot, const Vector& spot, const float maxtime, const bool endifenemy) :
@@ -73,6 +73,13 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
+	// if a maximum time wasn't given in the constructor, generate a random one.
+	if (m_maxtime <= 0.0f)
+	{
+		const CModSettings* settings = extmanager->GetMod()->GetModSettings();
+		m_maxtime = randomgen->GetRandomReal<float>(settings->GetCampMinTime(), settings->GetCampMaxTime());
+	}
+
 	// No waypoint given by the constructor, search for a random one.
 	if (!m_waypoint)
 	{
@@ -116,6 +123,8 @@ inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
 	if (m_reached)
 	{
+		bot->GetCombatInterface()->StopLookingAround();
+
 		if (m_waypoint && m_waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH))
 		{
 			bot->GetControlInterface()->PressCrouchButton(0.250f);

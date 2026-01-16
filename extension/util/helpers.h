@@ -773,6 +773,16 @@ namespace UtilHelpers
 	 * @return True if the entity derives from the given class, false if not.
 	 */
 	bool EntityDerivesFrom(CBaseEntity* pEntity, const char* classname);
+	/**
+	 * @brief Retrives a prefix from a map name.
+	 * 
+	 * Example: ctf_turbine outputs 'ctf'
+	 * @param mapname Map name to get the prefix from.
+	 * @param prefix String to store the prefix.
+	 * @param searchMax Maximum number of characters to search.
+	 * @return True if a prefix was found, false otherwise.
+	 */
+	bool GetPrefixFromMapName(const std::string& mapname, std::string& prefix, const std::size_t searchMax = 15U);
 }
 
 template<typename T>
