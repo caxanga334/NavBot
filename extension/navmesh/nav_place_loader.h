@@ -16,6 +16,8 @@ public:
 
 	void SetAllowOverriding(bool set) { allow_overriding = set; }
 	bool ParseFile(const std::filesystem::path& path);
+	bool HasIncludeFile() const { return !include_file.empty(); }
+	const std::string& GetIncludeFile() const { return include_file; }
 
 	std::unordered_map<std::string, std::string>& GetEntries() { return entries; }
 
@@ -24,7 +26,7 @@ private:
 	/**
 	 * @brief Called when starting parsing.
 	 */
-	void ReadSMC_ParseStart() override {}
+	void ReadSMC_ParseStart() override;
 
 	/**
 	 * @brief Called when ending parsing.
@@ -76,7 +78,9 @@ private:
 	SourceMod::SMCStates parser_states;
 	std::unordered_map<std::string, std::string> entries; // no duplicates allowed
 	bool valid;
+	bool in_settings; // if true, we are parsing the settings block
 	bool allow_overriding; // if true, duplicates will override existing values
+	std::string include_file; // additional file to parse
 };
 
 NavPlaceDatabaseLoader::NavPlaceDatabaseLoader()
@@ -85,6 +89,7 @@ NavPlaceDatabaseLoader::NavPlaceDatabaseLoader()
 	parser_states.line = 0;
 	entries.reserve(1024);
 	valid = false;
+	in_settings = false;
 	allow_overriding = false;
 }
 
@@ -115,6 +120,11 @@ inline bool NavPlaceDatabaseLoader::ParseFile(const std::filesystem::path& path)
 	return true;
 }
 
+inline void NavPlaceDatabaseLoader::ReadSMC_ParseStart()
+{
+	include_file.clear();
+}
+
 inline SourceMod::SMCResult NavPlaceDatabaseLoader::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
 {
 	if (!valid)
@@ -126,12 +136,35 @@ inline SourceMod::SMCResult NavPlaceDatabaseLoader::ReadSMC_NewSection(const Sou
 		}
 	}
 
+	if (valid)
+	{
+		if (strncasecmp(name, "Settings", 8) == 0)
+		{
+			in_settings = true;
+			return SourceMod::SMCResult_Continue;
+		}
+	}
+
 	smutils->LogError(myself, "NavPlaceDatabaseLoader::ReadSMC_NewSection Unknown Section %s line %i col %i", name, states->line, states->col);
 	return SourceMod::SMCResult_HaltFail;
 }
 
 inline SourceMod::SMCResult NavPlaceDatabaseLoader::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
 {
+	if (valid && in_settings)
+	{
+		if (strncasecmp(key, "Include", 7) == 0)
+		{
+			include_file.assign(value);
+		}
+		else
+		{
+			smutils->LogError(myself, "NavPlaceDatabaseLoader unknown settings key value pair <%s, %s> @ line %i col %i", key, value, states->line, states->col);
+		}
+
+		return SourceMod::SMCResult_Continue;
+	}
+
 	if (std::strlen(key) <= 2 || std::strlen(value) <= 2)
 	{
 		smutils->LogError(myself, "NavPlaceDatabaseLoader ignoring entry <%s, %s> @ line %i col %i", key, value, states->line, states->col);
@@ -167,6 +200,11 @@ inline SourceMod::SMCResult NavPlaceDatabaseLoader::ReadSMC_KeyValue(const Sourc
 
 inline SourceMod::SMCResult NavPlaceDatabaseLoader::ReadSMC_LeavingSection(const SourceMod::SMCStates* states)
 {
+	if (in_settings)
+	{
+		in_settings = false;
+	}
+
 	return SourceMod::SMCResult_Continue;
 }
 

@@ -23,6 +23,13 @@ Add the areas you want to disconnect to the selected set, then run the command. 
 The command `sm_nav_corner_place_at_feet (adjust nearby)` can be used to adjust the vertical position of the currently select area corner.    
 The command has one optional boolean parameter that determines if the vertical position of nearby areas should also be adjusted.
 
+# Advanced Place On Ground
+
+The `sm_nav_corner_place_on_ground_custom <offset number or "origin"> [raise adjacent]` offers a bit more control over the default place on ground command.    
+It takes two parameters, the first one can either be a height offset number or a `"origin"` string.    
+If `"origin"` is passed, the trace start position will use the listen server host height. If a number is passed, it will sum the given offset to the corner's height.    
+The second parameter is optional and is default true. If true, adjancent areas will also be raised. Pass false to only raised the marked area.    
+
 # Testing Path Finding Without Bots
 
 The command `sm_navbot_tool_build_path <preset>` can be used to build the shortest path to a given area.    

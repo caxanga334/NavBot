@@ -48,6 +48,32 @@ NavPlaces
 }
 ```
 
+## Includes
+
+The map specific database supports including additional files. Use includes to avoid repeating common place names.    
+It's good practice to make the included file names unique with stuff like gamemode prefix and author names.    
+Also included files **CANNOT** override existing place names.    
+Example:    
+
+```
+NavPlaces
+{
+	"Settings"
+	{
+		/* Include Foobar's common TF place names.
+		 * The file must be in data/navbot/[mod]/
+		 * The final path will be: data/navbot/[mod]/[include name].cfg
+		*/
+		"Include"			"foobar_tf_common"
+	}
+
+	/* Custom names */
+	"2fortbridgeroof"		"Bridge Roof"
+	"2fortrsewers"			"RED Sewers"
+	"2fortbsewers"			"BLU Sewers"
+}
+```
+
 ### Tips
 
 The map specific place database is allowed to override an existing place entry display name.    

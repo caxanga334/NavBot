@@ -1246,11 +1246,11 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 	if ( ret == STAIRS_NO )
 		return ret;
 
-	const float inc = 5.0f;
+	constexpr float inc = 5.0f;
 
 	// the minimum height change each step to be a step and not a slope
-	const float minStepZ = inc * tan( acos(sm_nav_slope_limit.GetFloat() ) );
-	const float MinStairNormal = 0.97f; // we don't care about ramps, just actual flat steps
+	const float minStepZ = inc * std::tan( acos(sm_nav_slope_limit.GetFloat() ) );
+	constexpr float MinStairNormal = 0.97f; // we don't care about ramps, just actual flat steps
 
 	float t;
 	Vector pos, normal;
@@ -1261,11 +1261,11 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 
 	trace_t trace;
 	trace::CTraceFilterNoNPCsOrPlayers filter( nullptr, COLLISION_GROUP_PLAYER_MOVEMENT );
-	Vector hullMins( -inc/2, -inc/2, 0 );
-	Vector hullMaxs( inc/2, inc/2, 0 );
+	Vector hullMins( -inc/2.0f, -inc/2.0f, 0.0f );
+	Vector hullMaxs( inc/2.0f, inc/2.0f, 0.0f );
 	hullMaxs.z = 1; // don't care about vertical clearance
 
-	if ( fabs( start.x - end.x ) > fabs( start.y - end.y ) )
+	if ( std::abs( start.x - end.x ) > std::abs( start.y - end.y ) )
 	{
 		hullMins.x = -8;
 		hullMaxs.x = 8;
@@ -1276,10 +1276,10 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 		hullMaxs.y = 8;
 	}
 
-	Vector traceOffset( 0, 0, navgenparams->human_height );
+	Vector traceOffset( 0.0f, 0.0f, navgenparams->human_height );
 
 	// total height change must exceed a single step to be stairs
-	if ( fabs( start.z - end.z ) > navgenparams->step_height )
+	if ( std::abs( start.z - end.z ) > navgenparams->step_height )
 	{
 		// initialize the height delta
 		trace::hull(start + traceOffset, start - traceOffset, hullMins, hullMaxs, MASK_PLAYERSOLID, &filter, trace);
@@ -1309,14 +1309,14 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 			normal = trace.plane.normal;
 
 			// Save a copy for debug overlays
-			Vector ground( pos );
-			ground.z = height;
+			// Vector ground( pos );
+			// ground.z = height;
 			//NDebugOverlay::Cross3D( ground, 3, 0, 0, 255, true, 100.0f );
 			//NDebugOverlay::Box( ground, hullMins, hullMaxs, 0, 0, 255, 0.0f, 100.0f );
 
-			if ( (t == 0.0f && fabs( height - start.z ) > navgenparams->step_height)
+			if ( (t == 0.0f && std::abs( height - start.z ) > navgenparams->step_height)
 				// Discontinuity at start
-				|| (t == 1.0f && fabs( height - end.z ) > navgenparams->step_height) 	// Discontinuity at end
+				|| (t == 1.0f && std::abs( height - end.z ) > navgenparams->step_height) 	// Discontinuity at end
 				|| normal.z < MinStairNormal )
 			{
 				// too steep here
@@ -1324,7 +1324,7 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 			}
 
 
-			float deltaZ = fabs( height - priorHeight );
+			float deltaZ = std::abs( height - priorHeight );
 
 			if ( deltaZ >= minStepZ && deltaZ <= navgenparams->step_height )
 			{

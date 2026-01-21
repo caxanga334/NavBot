@@ -3165,7 +3165,7 @@ void CNavMesh::DoToggleAttribute( CNavArea *area, NavAttributeType attribute )
 	area->SetAttributes( area->GetAttributes() ^ attribute );
 
 	// keep a list of all "transient" nav areas
-	if ( attribute == NAV_MESH_TRANSIENT )
+	if ((attribute & NAV_MESH_TRANSIENT) != 0)
 	{
 		if ( area->GetAttributes() & NAV_MESH_TRANSIENT )
 		{
@@ -3595,6 +3595,49 @@ void CNavMesh::CommandNavCornerPlaceAtFeet(const CCommand& args)
 	}
 }
 
+void CNavMesh::CommandNavCornerPlaceOnGroundCustom(float z, const Vector* start, bool raiseAdjacent)
+{
+	trace_t tr;
+	unsigned int mask = GetGenerationTraceMask();
+	Vector end;
+
+	if (m_markedArea)
+	{
+		if (m_markedCorner == NUM_CORNERS)
+		{
+			for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
+			{
+				Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
+				float original_z = corner.z;
+				corner.z = start != nullptr ? start->z : (corner.z + z);
+				end = corner;
+				end.z -= 8192.0f;
+				trace::line(corner, end, mask, tr);
+				float end_z = (tr.endpos.z - original_z);
+				m_markedArea->RaiseCorner(static_cast<NavCornerType>(i), static_cast<int>(std::round(end_z)), raiseAdjacent);
+			}
+		}
+		else
+		{
+			Vector corner = m_markedArea->GetCorner(m_markedCorner);
+			float original_z = corner.z;
+			corner.z = start != nullptr ? start->z : (corner.z + z);
+			end = corner;
+			end.z -= 8192.0f;
+			trace::line(corner, end, mask, tr);
+			float end_z = (tr.endpos.z - original_z);
+			m_markedArea->RaiseCorner(m_markedCorner, static_cast<int>(std::round(end_z)), raiseAdjacent);
+		}
+
+		Msg("Area corner placed at ground. \n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+	}
+	else
+	{
+		Msg("Mark an area first! \n");
+		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::CommandNavWarpToMark( void )

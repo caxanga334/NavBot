@@ -1631,6 +1631,39 @@ void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)
 	{
 		rootconsole->ConsolePrint("Could not parse Nav map specific place database. <%s>", szPath.get());
 	}
+
+	// parse includes
+
+	loader.SetAllowOverriding(false); // don't allow includes to override existing entries
+
+	int parses = 0;
+	constexpr auto MAX_INCLUDES = 5;
+
+	while (loader.HasIncludeFile())
+	{
+		if (++parses >= MAX_INCLUDES)
+		{
+			smutils->LogError(myself, "Nav Mesh place name database loader: Error, maximum includes (%i) reached!", MAX_INCLUDES);
+			return;
+		}
+
+		const std::string& includename = loader.GetIncludeFile();
+
+		smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "data/navbot/%s/%s.cfg", mod, includename.c_str());
+
+		if (!std::filesystem::exists(szPath.get()))
+		{
+			smutils->LogError(myself, "Nav Mesh place name database loader: Cannot parse included file! File \"%s\" does not exists!", szPath.get());
+			return;
+		}
+
+		path = std::filesystem::path{ szPath.get() };
+
+		if (!loader.ParseFile(path))
+		{
+			smutils->LogError(myself, "Nav Mesh place name database loader: Include file \"%s\" could not be parsed!", szPath.get());
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -2817,7 +2850,7 @@ static ConCommand sm_nav_run( "sm_nav_run", CommandNavRun, "Toggles the 'travers
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavAvoid( void )
+static void CommandNavAvoid( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2828,7 +2861,7 @@ static ConCommand sm_nav_avoid( "sm_nav_avoid", CommandNavAvoid, "Toggles the 'a
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavTransient( void )
+static void CommandNavTransient( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2839,7 +2872,7 @@ static ConCommand sm_nav_transient( "sm_nav_transient", CommandNavTransient, "To
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavDontHide( void )
+static void CommandNavDontHide( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2850,7 +2883,7 @@ static ConCommand sm_nav_dont_hide( "sm_nav_dont_hide", CommandNavDontHide, "Tog
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavStand( void )
+static void CommandNavStand( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2861,7 +2894,7 @@ static ConCommand sm_nav_stand( "sm_nav_stand", CommandNavStand, "Toggles the 's
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavNoHostages( void )
+static void CommandNavNoHostages( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2872,7 +2905,7 @@ static ConCommand sm_nav_no_hostages( "sm_nav_no_hostages", CommandNavNoHostages
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavStrip( void )
+static void CommandNavStrip( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2883,7 +2916,7 @@ static ConCommand sm_nav_strip( "sm_nav_strip", CommandNavStrip, "Strips all Hid
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavSave( void )
+static void CommandNavSave( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2902,7 +2935,7 @@ static ConCommand sm_nav_save( "sm_nav_save", CommandNavSave, "Saves the current
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavLoad( void )
+static void CommandNavLoad( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -2924,9 +2957,9 @@ static int PlaceNameAutocompleteCallback( char const *partial, char commands[ CO
 
 //--------------------------------------------------------------------------------------------------------------
 #if SOURCE_ENGINE >= SE_ORANGEBOX
-void CommandNavUsePlace( const CCommand &args )
+static void CommandNavUsePlace( const CCommand &args )
 #else
-void CommandNavUsePlace(void)
+static void CommandNavUsePlace(void)
 #endif
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
@@ -2960,9 +2993,9 @@ static ConCommand sm_nav_use_place( "sm_nav_use_place", CommandNavUsePlace, "If 
 
 //--------------------------------------------------------------------------------------------------------------
 #if SOURCE_ENGINE >= SE_ORANGEBOX
-void CommandNavPlaceReplace(const CCommand& args)
+static void CommandNavPlaceReplace(const CCommand& args)
 #else
-void CommandNavPlaceReplace(void)
+static void CommandNavPlaceReplace(void)
 #endif
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
@@ -3002,7 +3035,7 @@ static ConCommand sm_nav_place_replace( "sm_nav_place_replace", CommandNavPlaceR
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavPlaceList( void )
+static void CommandNavPlaceList( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3031,7 +3064,7 @@ static ConCommand sm_nav_place_list( "sm_nav_place_list", CommandNavPlaceList, "
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavTogglePlaceMode( void )
+static void CommandNavTogglePlaceMode( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3043,9 +3076,9 @@ static ConCommand sm_nav_toggle_place_mode( "sm_nav_toggle_place_mode", CommandN
 
 //--------------------------------------------------------------------------------------------------------------
 #if SOURCE_ENGINE >= SE_ORANGEBOX
-void CommandNavSetPlaceMode( const CCommand &args )
+static void CommandNavSetPlaceMode( const CCommand &args )
 #else
-void CommandNavSetPlaceMode(void)
+static void CommandNavSetPlaceMode(void)
 #endif
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
@@ -3068,7 +3101,7 @@ static ConCommand sm_nav_set_place_mode( "sm_nav_set_place_mode", CommandNavSetP
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavPlaceFloodFill( void )
+static void CommandNavPlaceFloodFill( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3079,7 +3112,7 @@ static ConCommand sm_nav_place_floodfill( "sm_nav_place_floodfill", CommandNavPl
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavPlaceSet( void )
+static void CommandNavPlaceSet( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3090,7 +3123,7 @@ static ConCommand sm_nav_place_set( "sm_nav_place_set", CommandNavPlaceSet, "Set
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavPlacePick( void )
+static void CommandNavPlacePick( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3101,7 +3134,7 @@ static ConCommand sm_nav_place_pick( "sm_nav_place_pick", CommandNavPlacePick, "
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavTogglePlacePainting( void )
+static void CommandNavTogglePlacePainting( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3112,7 +3145,7 @@ static ConCommand sm_nav_toggle_place_painting( "sm_nav_toggle_place_painting", 
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavMarkUnnamed( void )
+static void CommandNavMarkUnnamed( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3123,7 +3156,7 @@ static ConCommand sm_nav_mark_unnamed( "sm_nav_mark_unnamed", CommandNavMarkUnna
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavCornerSelect( void )
+static void CommandNavCornerSelect( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3176,6 +3209,40 @@ CON_COMMAND_F(sm_nav_corner_place_at_feet, "Places the selected corner of the cu
 	DECLARE_COMMAND_ARGS;
 
 	TheNavMesh->CommandNavCornerPlaceAtFeet(args);
+}
+
+CON_COMMAND_F(sm_nav_corner_place_on_ground_custom, "Places the selected corner of the currently marked Area on the ground.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (!UTIL_IsCommandIssuedByServerAdmin())
+		return;
+
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_corner_place_on_ground_custom <origin or height offset> [bool: raise adjacent areas]\n");
+		META_CONPRINT("origin will use your current Z value as a starting point.\n");
+		return;
+	}
+
+	const char* arg1 = args[1];
+
+	bool raiseAdjacent = true;
+
+	if (args.ArgC() >= 3)
+	{
+		raiseAdjacent = UtilHelpers::StringToBoolean(args[2]);
+	}
+
+	if (strncasecmp(arg1, "origin", 6) == 0)
+	{
+		Vector pos = extmanager->GetListenServerHost()->GetAbsOrigin();
+		TheNavMesh->CommandNavCornerPlaceOnGroundCustom(0.0f, &pos, raiseAdjacent);
+		return;
+	}
+
+	float offset = atof(arg1);
+	TheNavMesh->CommandNavCornerPlaceOnGroundCustom(offset, nullptr, raiseAdjacent);
 }
 
 //--------------------------------------------------------------------------------------------------------------
