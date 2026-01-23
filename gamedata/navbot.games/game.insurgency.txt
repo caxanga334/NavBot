@@ -1,0 +1,37 @@
+"Games"
+{
+	"insurgency"
+	{
+		"Keys"
+		{
+			/* CBaseCombatCharacter doesn't exists in insurgency. */
+			"NoBaseCombatCharacter"		"true"
+		}
+		"Offsets"
+		{
+			/* CBasePlayer::Event_Killed */
+			"Event_Killed"
+			{
+				"windows"		"55"
+				"linux"			"56"
+			}
+			/* CBasePlayer::Event_KilledOther */
+			"Event_KilledOther"
+			{
+				"windows"		"63"
+				"linux"			"64"
+			}
+			/* CBasePlayer::PhysicsSimulate */
+			"PhysicsSimulate"
+			{
+				"windows"		"88"
+				"linux"			"89"
+			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"167"
+				"linux"		"168"
+			}
+		}
+	}
+}

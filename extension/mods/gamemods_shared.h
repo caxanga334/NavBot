@@ -21,6 +21,7 @@ namespace Mods
 		MOD_HL1DM, // Half-Life Deathmatch Source
 		MOD_BLACKMESA, // Black Mesa Deathmatch
 		MOD_ZPS, // Zombie Panic Source
+		MOD_INSMIC, // Insurgency: Modern Infantry Combat
 
 		LAST_MOD_TYPE
 	};

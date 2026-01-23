@@ -328,7 +328,16 @@ CON_COMMAND_F(sm_navbot_tool_report_player_info, "Prints some information about 
 			META_CONPRINTF("Model: %s \n", model);
 		}
 
-		META_CONPRINTF("Health %i Max Health %i Armor %i \n", info->GetHealth(), info->GetMaxHealth(), info->GetArmorValue());
+		const char* weapon = info->GetWeaponName();
+
+		if (weapon && weapon[0] != '\0')
+		{
+			META_CONPRINTF("Weapon Name: %s \n", weapon);
+		}
+
+		META_CONPRINTF("Health %i Max Health %i Armor %i Team Index %i\n", info->GetHealth(), info->GetMaxHealth(), info->GetArmorValue(), info->GetTeamIndex());
+		META_CONPRINTF("Frags %i Deaths %i \n", info->GetFragCount(), info->GetDeathCount());
+		META_CONPRINTF("Angles: %s \n", UtilHelpers::textformat::FormatAngles(info->GetAbsAngles()));
 
 		Vector ear;
 		gameclients->ClientEarPosition(host, &ear);

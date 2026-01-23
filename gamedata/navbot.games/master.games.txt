@@ -58,4 +58,9 @@
 	{
 		"game"		"synergy"
 	}
+	// Insurgency: Modern Infantry Combat
+	"game.insurgency.txt"
+	{
+		"game"		"insurgency"
+	}
 }

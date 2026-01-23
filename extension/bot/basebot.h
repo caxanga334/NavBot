@@ -66,6 +66,7 @@ private:
 	void Hook_Weapon_Equip_Post(CBaseEntity* weapon);
 	bool Hook_CanBeAutobalanced();
 	inline static bool s_hookCanBeAutobalanced{ false };
+	inline static bool s_hookBCC{ true }; // should CBaseCombatCharacter functions be hooked?
 
 protected:
 	/**

@@ -1,5 +1,5 @@
 # vim: set ts=8 sts=2 sw=2 tw=99 et ft=python:
-import os
+import os, pathlib
 
 # This is where the files will be output to
 # package is the default
@@ -42,6 +42,15 @@ def CopyFiles(src, dest, files):
     source_path = os.path.join(builder.sourcePath, src, source_file)
     builder.AddCopy(source_path, dest_entry)
 
+def CopyFilesGlob(src, dest, pattern):
+  p = pathlib.Path(os.path.join(builder.sourcePath, src))
+  files = p.glob(pattern)
+  if not dest:
+    dest = src
+  dest_entry = folder_map[dest]
+  for f in files:
+    builder.AddCopy(str(f), dest_entry)
+
 # plugin sources
 CopyFiles('scripting', 'addons/sourcemod/scripting',
   [ 
@@ -73,19 +82,7 @@ CopyFiles('scripting/include/navbot/interfaces', 'addons/sourcemod/scripting/inc
 )
 
 # GameData files
-CopyFiles('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games',
-  [ 
-    'common.games.txt',
-    'game.bms.txt',
-    'game.cstrike.txt',
-    'game.dod.txt',
-    'game.hl2mp.txt',
-    'game.hl1mp.txt',
-    'game.tf.txt',
-    'game.zps.txt',
-    'master.games.txt'
-  ]
-)
+CopyFilesGlob('gamedata/navbot.games', 'addons/sourcemod/gamedata/navbot.games', '*.txt')
 
 # Config Files
 CopyFiles('configs', 'addons/sourcemod/configs/navbot',

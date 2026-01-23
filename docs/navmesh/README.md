@@ -2,6 +2,7 @@
 
 ## Basics
 
+- [Nav Mesh File]
 - [Nav Mesh Editing Basics]
 - [Nav Mesh Editing Tips]
 - [Nav Mesh Base Attributes]
@@ -25,6 +26,7 @@
 - [Game Specific Nav Mesh Editing]
 
 <!-- Links -->
+[Nav Mesh File]: NAVMESH_FILE.md
 [Nav Mesh Editing Basics]: NAVMESH_BASIC_EDITING.md
 [Waypoint Editing Basics]: WAYPOINT_BASICS.md
 [Nav Mesh Base Attributes]: NAVMESH_BASE_ATTRIBUTES.md

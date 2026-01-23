@@ -52,6 +52,13 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 {
 	int offset = 0;
 	CBaseBot::s_hookCanBeAutobalanced = false;
+	CBaseBot::s_hookBCC = true;
+	const char* szValue = gd_navbot->GetKeyValue("NoBaseCombatCharacter");
+
+	if (szValue && szValue[0] != '\0')
+	{
+		CBaseBot::s_hookBCC = UtilHelpers::StringToBoolean(szValue);
+	}
 
 	if (!gd_sdkhooks->GetOffset("Spawn", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Spawn"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Spawn, offset, 0, 0);
@@ -59,14 +66,26 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 	if (!gd_sdkhooks->GetOffset("Touch", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Touch"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Touch, offset, 0, 0);
 
-	if (!gd_sdkhooks->GetOffset("OnTakeDamage_Alive", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::OnTakeDamage_Alive"); return false; }
-	SH_MANUALHOOK_RECONFIGURE(CBaseBot_OnTakeDamage_Alive, offset, 0, 0);
+	if (CBaseBot::s_hookBCC)
+	{
+		if (!gd_sdkhooks->GetOffset("OnTakeDamage_Alive", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::OnTakeDamage_Alive"); return false; }
+		SH_MANUALHOOK_RECONFIGURE(CBaseBot_OnTakeDamage_Alive, offset, 0, 0);
+	}
+	else
+	{
+		// fallback to OnTakeDamage
+		if (!gd_sdkhooks->GetOffset("OnTakeDamage", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::OnTakeDamage"); return false; }
+		SH_MANUALHOOK_RECONFIGURE(CBaseBot_OnTakeDamage_Alive, offset, 0, 0);
+	}
 
 	if (!gd_navbot->GetOffset("Event_Killed", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Event_Killed"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Event_Killed, offset, 0, 0);
 
-	if (!gd_navbot->GetOffset("Event_KilledOther", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Event_KilledOther"); return false; }
-	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Event_KilledOther, offset, 0, 0);
+	if (CBaseBot::s_hookBCC)
+	{
+		if (!gd_navbot->GetOffset("Event_KilledOther", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Event_KilledOther"); return false; }
+		SH_MANUALHOOK_RECONFIGURE(CBaseBot_Event_KilledOther, offset, 0, 0);
+	}
 
 	if (!gd_navbot->GetOffset("PhysicsSimulate", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::PhysicsSimulate"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_PhysicsSimulate, offset, 0, 0);
@@ -81,7 +100,7 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 		SH_MANUALHOOK_RECONFIGURE(CBaseBot_PlayerRunCommand, offset, 0, 0);
 	}
 
-	const char* szValue = gd_navbot->GetKeyValue("HookCanBeAutobalanced");
+	szValue = gd_navbot->GetKeyValue("HookCanBeAutobalanced");
 
 	if (szValue && szValue[0] != '\0' && UtilHelpers::StringToBoolean(szValue))
 	{
@@ -112,9 +131,13 @@ void CBaseBot::AddHooks()
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Touch, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Touch), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_OnTakeDamage_Alive, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_OnTakeDamage_Alive), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_Killed, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_Killed), false));
-	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_KilledOther, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_KilledOther), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_PhysicsSimulate, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_PhysicsSimulate), false));
 	m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Weapon_Equip, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Weapon_Equip_Post), true));
+
+	if (CBaseBot::s_hookBCC)
+	{
+		m_shhooks.push_back(SH_ADD_MANUALHOOK(CBaseBot_Event_KilledOther, ifaceptr, SH_MEMBER(this, &CBaseBot::Hook_Event_KilledOther), false));
+	}
 
 	if (extension->ShouldHookRunPlayerCommand())
 	{

@@ -5,6 +5,7 @@
 #include <mods/dods/dayofdefeatsourcemod.h>
 #include <mods/hl2dm/hl2dm_mod.h>
 #include <mods/zps/zps_mod.h>
+#include <mods/insmic/insmicmod.h>
 #include "mod_loader.h"
 
 ExtModLoader::ExtModLoader()
@@ -170,6 +171,9 @@ CBaseMod* ExtModLoader::AllocDetectedMod() const
 		break;
 	case Mods::ModType::MOD_ZPS:
 		mod = new CZombiePanicSourceMod;
+		break;
+	case Mods::ModType::MOD_INSMIC:
+		mod = new CInsMICMod;
 		break;
 	default:
 		mod = new CBaseMod;
