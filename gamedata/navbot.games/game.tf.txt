@@ -29,6 +29,8 @@
 
 			/* Player model bone name to aim at when going for headshots */
 			"BotAim_HeadBoneName"			"bip_head"
+
+			"UsesWorkshopMaps"				"true"
 		}
 		"Offsets"
 		{

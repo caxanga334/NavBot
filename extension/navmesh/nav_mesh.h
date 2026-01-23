@@ -978,13 +978,14 @@ public:
 	EditModeType GetEditMode( void ) const;						// return the current edit mode
 	void SetEditMode( EditModeType mode );						// change the edit mode
 	bool IsEditMode( EditModeType mode ) const;					// return true if current mode matches given mode
-
 	bool FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &end, CNavArea **area, CNavLadder **ladder, CNavArea *ignore = NULL );
-
 	void SimplifySelectedAreas( void );	// Simplifies the selected set by reducing to 1x1 areas and re-merging them up with loosened tolerances
-
-	// Formats the map filename for save/load
-	std::filesystem::path GetFullPathToNavMeshFile() const;
+	/**
+	 * @brief Gets the full path to the nav mesh file.
+	 * @param isLoad True if we are loading a file, false if saving.
+	 * @return Absolute path to the nav mesh file.
+	 */
+	std::filesystem::path GetFullPathToNavMeshFile(const bool isLoad) const;
 	const AuthorInfo& GetAuthorInfo() const { return m_authorinfo; }
 
 	void LoadEditSounds(SourceMod::IGameConfig* gamedata);

@@ -48,7 +48,7 @@ void CBaseMod::RegisterCommands()
 	RegisterModCommands();
 }
 
-std::string CBaseMod::GetCurrentMapName() const
+std::string CBaseMod::GetCurrentMapName(Mods::MapNameType type) const
 {
 	return std::string(STRING(gpGlobals->mapname));
 }

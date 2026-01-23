@@ -12,8 +12,6 @@ void CModSettings::ParseConfigFile()
 	
 	const CBaseMod* mod = extmanager->GetMod();
 	const char* modfolder = mod->GetModFolder().c_str();
-	std::string map = mod->GetCurrentMapName();
-
 
 	// Parse the global file first if it exists
 	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/settings.custom.cfg");
@@ -50,8 +48,9 @@ void CModSettings::ParseConfigFile()
 	}
 
 	std::string prefix;
+	std::string cleanmap = mod->GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN); // always use clean map names for prefix detection
 
-	if (UtilHelpers::GetPrefixFromMapName(map, prefix))
+	if (UtilHelpers::GetPrefixFromMapName(cleanmap, prefix))
 	{
 		// Finally, parse the per map override
 		smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s_.cfg", modfolder, prefix.c_str());
@@ -67,6 +66,18 @@ void CModSettings::ParseConfigFile()
 	}
 
 	// Finally, parse the per map override
+
+	Mods::MapNameType type = Mods::MapNameType::MAPNAME_CLEAN;
+
+	if (CExtManager::ModUsesWorkshopMaps())
+	{
+		if (CExtManager::ShouldPreferUniqueMapNames())
+		{
+			type = Mods::MapNameType::MAPNAME_UNIQUE;
+		}
+	}
+
+	std::string map = mod->GetCurrentMapName(type);
 	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s.cfg", modfolder, map.c_str());
 
 	if (std::filesystem::exists(path))
@@ -75,6 +86,12 @@ void CModSettings::ParseConfigFile()
 	}
 	else
 	{
+		if (CExtManager::ModUsesWorkshopMaps())
+		{
+			std::string map = mod->GetCurrentMapName(Mods::InvertMapNameType(type));
+			smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/maps/settings.%s.cfg", modfolder, map.c_str());
+		}
+
 		META_CONPRINTF("[NavBot] Map specific mod settings file at \"%s\" not found, not parsing. \n", path);
 	}
 

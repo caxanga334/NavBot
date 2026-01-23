@@ -1622,9 +1622,29 @@ void CNavMesh::ParseModPlaceDatabase(NavPlaceDatabaseLoader& loader)
 void CNavMesh::ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader)
 {
 	std::unique_ptr<char[]> szPath = std::make_unique<char[]>(PLATFORM_MAX_PATH);
-	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
+	CBaseMod* basemod = extmanager->GetMod();
+	Mods::MapNameType type = Mods::MapNameType::MAPNAME_CLEAN;
+
+	if (CExtManager::ModUsesWorkshopMaps())
+	{
+		if (CExtManager::ShouldPreferUniqueMapNames())
+		{
+			type = Mods::MapNameType::MAPNAME_UNIQUE;
+		}
+	}
+
+	std::string mapname = basemod->GetCurrentMapName(type);
 	const char* mod = extmanager->GetMod()->GetModFolder().c_str();
 	smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "data/navbot/%s/%s_places.cfg", mod, mapname.c_str());
+
+	// if the file doesn't exists, try inverting the map name type if workshop maps are supported since it's may be searching for a unique map name.
+	if (!std::filesystem::exists(szPath.get()) && CExtManager::ModUsesWorkshopMaps())
+	{
+		mapname = basemod->GetCurrentMapName(Mods::InvertMapNameType(type));
+		const char* mod = extmanager->GetMod()->GetModFolder().c_str();
+		smutils->BuildPath(SourceMod::Path_SM, szPath.get(), PLATFORM_MAX_PATH, "data/navbot/%s/%s_places.cfg", mod, mapname.c_str());
+	}
+
 	std::filesystem::path path{ szPath.get() };
 
 	if (!loader.ParseFile(path))

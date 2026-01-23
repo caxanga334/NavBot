@@ -230,6 +230,12 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 		return false;
 	}
 
+	if (!CExtManager::ParseGamedata(m_cfg_navbot))
+	{
+		ke::SafeStrcpy(error, maxlen, "Failed to initialize manager gamedata!");
+		return false;
+	}
+
 	const char* value = m_cfg_navbot->GetKeyValue("HookPlayerRunCMD");
 
 	if (value)

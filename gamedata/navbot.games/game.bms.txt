@@ -24,6 +24,7 @@
 			"PlayerHull_StandHeight"		"72.0"
 			"PlayerHull_CrouchHeight"		"36.0"
 			"PlayerHull_Width"				"32.0"
+			"UsesWorkshopMaps"				"true"
 		}
 		"Offsets"
 		{

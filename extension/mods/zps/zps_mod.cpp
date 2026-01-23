@@ -153,7 +153,7 @@ bool CZombiePanicSourceMod::IsEntityBreakable(CBaseEntity* entity) const
 
 void CZombiePanicSourceMod::DetectGameMode()
 {
-	std::string mapname = GetCurrentMapName();
+	std::string mapname = GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN);
 
 	if (mapname.find("zps_") != std::string::npos)
 	{

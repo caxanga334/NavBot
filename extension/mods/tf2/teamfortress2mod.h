@@ -103,13 +103,13 @@ public:
 protected:
 
 	void FireGameEvent(IGameEvent* event) override;
-	virtual CModSettings* CreateModSettings() const override { return new CTF2ModSettings; }
+	CModSettings* CreateModSettings() const override { return new CTF2ModSettings; }
 	CWeaponInfoManager* CreateWeaponInfoManager() const override { return new CTF2WeaponInfoManager; }
 	void OnPostInit() override;
 	void RegisterModCommands() override;
 
 public:
-	virtual std::string GetCurrentMapName() const;
+	std::string GetCurrentMapName(Mods::MapNameType type) const override;
 
 	void Update() override;
 	void OnMapStart() override;

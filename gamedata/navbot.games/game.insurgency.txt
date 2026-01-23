@@ -6,6 +6,15 @@
 		{
 			/* CBaseCombatCharacter doesn't exists in insurgency. */
 			"NoBaseCombatCharacter"		"true"
+
+			/* NavBot IMovement bot interface parameters */
+			"PlayerHull_StandHeight"		"72.0"
+			"PlayerHull_CrouchHeight"		"45.0"
+			"PlayerHull_ProneHeight"		"16.0"
+			"PlayerHull_Width"				"32.0"
+
+			/* Player model bone name to aim at when going for headshots */
+			"BotAim_HeadBoneName"		"Head"
 		}
 		"Offsets"
 		{

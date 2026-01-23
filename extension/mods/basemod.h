@@ -72,7 +72,7 @@ public:
 	void InvokePostInit();
 	void RegisterCommands();
 	// Gets the cleaned up current map name used for loading config files.
-	virtual std::string GetCurrentMapName() const;
+	virtual std::string GetCurrentMapName(Mods::MapNameType type) const;
 	// Called once after the manager has allocated the mod class
 	virtual void PostCreation();
 	// Called every server frame

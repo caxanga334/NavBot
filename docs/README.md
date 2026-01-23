@@ -12,6 +12,7 @@ Welcome to the NavBot extension documentation index.
 - [Navigation Mesh Documentation]
 - [Weapon Info Config File]
 - [NavBot ConVars]
+- [Steam Workshop Map Support]
 - [Detailed Game Support]
 - [Using Debug Commands]
 - [Additional Plugins]
@@ -31,3 +32,4 @@ Welcome to the NavBot extension documentation index.
 [Using Debug Commands]: DEBUGGING.md
 [Additional Plugins]: PLUGINS.md
 [Game Detection (Advanced)]: GAME_DETECTION.md
+[Steam Workshop Map Support]: WORKSHOP_SUPPORT.md

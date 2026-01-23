@@ -8,6 +8,7 @@
 #include <bot/basebot.h>
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
+#include <IGameConfigs.h>
 #include "servercommand_mgr.h"
 
 class CBaseMod;
@@ -115,15 +116,9 @@ public:
 	// Gets a vector of all bots currently in game
 	const auto &GetAllBots() const { return m_bots; }
 	void LoadBotNames();
-	inline void StopAllDebugging() { m_botdebugmode = 0; }
-	inline void ToggleDebugOption(int bits)
-	{
-		m_botdebugmode = m_botdebugmode ^ bits;
-	}
-	inline bool IsDebugging(int bits) const
-	{
-		return (m_botdebugmode & bits) ? true : false;
-	}
+	void StopAllDebugging() { m_botdebugmode = 0; }
+	void ToggleDebugOption(int bits) { m_botdebugmode = m_botdebugmode ^ bits; }
+	bool IsDebugging(int bits) const { return (m_botdebugmode & bits) ? true : false; }
 	/**
 	 * @brief Runs a function on each bot.
 	 * @tparam T A class with operator() overload with one parameter (CBaseBot* bot).
@@ -195,6 +190,14 @@ public:
 
 	CServerCommandManager& GetServerCommandManager() { return m_serverCommandManager; }
 
+	// If true, the current game/mod has support for loading maps from steam workshop.
+	static bool ModUsesWorkshopMaps() { return s_usesworkshop; }
+	static void SetModUsesWorkshopMaps(bool state) { s_usesworkshop = state; }
+	// If true, prefer using unique map names for workshop maps
+	static bool ShouldPreferUniqueMapNames() { return s_preferuniquemapnames; }
+	static void SetShouldPreferUniqueMapNames(bool state) { s_preferuniquemapnames = state; }
+	static bool ParseGamedata(SourceMod::IGameConfig* gamedata);
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of non NavBot players
@@ -218,6 +221,8 @@ private:
 	static inline float s_sv_gravity{ 800.0f };
 	static inline BotCreateMethod s_botcreatemethod{ BotCreateMethod::BOTMANAGER };
 	static inline bool s_fixupbotflags{ false };
+	static inline bool s_usesworkshop{ false };
+	static inline bool s_preferuniquemapnames{ false };
 };
 
 extern CExtManager* extmanager;

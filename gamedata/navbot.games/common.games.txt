@@ -31,6 +31,9 @@
 			 * Currently only set to true on TF2 since TF2 doesn't allow bots to be auto team balanced by default.
 			*/
 			"HookCanBeAutobalanced"		"false"
+
+			/* Does this game/mod uses workshop maps? */
+			"UsesWorkshopMaps"			"false"
 			
 			/* Nav Mesh editing sounds 
 			 * Default sounds are from HL2, should be compatible with most mods

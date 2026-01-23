@@ -25,6 +25,26 @@ namespace Mods
 
 		LAST_MOD_TYPE
 	};
+
+	enum MapNameType
+	{
+		MAPNAME_RAW = 0, // Raw map name without any modifications.
+		MAPNAME_CLEAN, // Clean map name without workshop stuff
+		MAPNAME_UNIQUE, // Clean and unique map name with a workshop ID
+	};
+
+	inline MapNameType InvertMapNameType(MapNameType in)
+	{
+		switch (in)
+		{
+		case MapNameType::MAPNAME_CLEAN:
+			return MapNameType::MAPNAME_UNIQUE;
+		case MapNameType::MAPNAME_UNIQUE:
+			return MapNameType::MAPNAME_CLEAN;
+		default:
+			return MapNameType::MAPNAME_CLEAN;
+		}
+	}
 }
 
 

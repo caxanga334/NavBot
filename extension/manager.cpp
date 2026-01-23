@@ -786,6 +786,19 @@ int CExtManager::AutoComplete_BotNames(const char* partial, char commands[COMMAN
 	return count;
 }
 
+bool CExtManager::ParseGamedata(SourceMod::IGameConfig* gamedata)
+{
+	const char* value = gamedata->GetKeyValue("UsesWorkshopMaps");
+
+	if (!value)
+	{
+		return false;
+	}
+
+	CExtManager::SetModUsesWorkshopMaps(UtilHelpers::StringToBoolean(value));
+	return true;
+}
+
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {
 	extmanager->LoadBotNames();
@@ -927,3 +940,15 @@ CON_COMMAND_F_COMPLETION(sm_navbot_debug, "Toggles between debug modes", FCVAR_C
 	}
 }
 
+/* convar changed callback is different on EP1 plus I don't think Source 2006 games have Steam workshop support. */
+#if SOURCE_ENGINE > SE_DARKMESSIAH
+
+static void OnUniqueMapNameCvarChanged(IConVar* var, const char* pOldValue, float flOldValue)
+{
+	ConVarRef ref{ var };
+	CExtManager::SetShouldPreferUniqueMapNames(ref.GetBool());
+}
+
+ConVar cvar_prefer_unique_map_names("sm_navbot_prefer_unique_map_names", "0", FCVAR_GAMEDLL, "If enable, prefer unique map names for workshop maps.", OnUniqueMapNameCvarChanged);
+
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH

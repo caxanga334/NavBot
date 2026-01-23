@@ -352,7 +352,7 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 	}
 }
 
-std::string CTeamFortress2Mod::GetCurrentMapName() const
+std::string CTeamFortress2Mod::GetCurrentMapName(Mods::MapNameType type) const
 {
 	// TF2 workshop names follows this format: workshop/ctf_harbine.ugc3067683041
 	// this method should be fine for most maps
@@ -361,7 +361,7 @@ std::string CTeamFortress2Mod::GetCurrentMapName() const
 	auto n1 = mapname.find("workshop/");
 	auto n2 = mapname.find(".ugc");
 
-	if (n1 == std::string::npos)
+	if (n1 == std::string::npos || type == Mods::MapNameType::MAPNAME_RAW)
 	{
 		return mapname; // not a workshop map
 	}
@@ -371,7 +371,17 @@ std::string CTeamFortress2Mod::GetCurrentMapName() const
 	auto count = n2 - (n1 + WORKSHOP_STR_SIZE);
 	auto sub1 = mapname.substr(n1 + WORKSHOP_STR_SIZE, count);
 	auto sub2 = mapname.substr(n2 + UGC_STR_SIZE);
-	std::string finalname = sub1 + "_ugc" + sub2; // becomes something like this: ctf_harbine_ugc3067683041
+	std::string finalname;
+
+	if (type == Mods::MapNameType::MAPNAME_UNIQUE)
+	{
+		finalname = sub1 + "_ugc" + sub2; // becomes something like this: ctf_harbine_ugc3067683041
+	}
+	else // type == Mods::MapNameType::MAPNAME_CLEAN
+	{
+		finalname = sub1;
+	}
+	
 	return finalname;
 }
 

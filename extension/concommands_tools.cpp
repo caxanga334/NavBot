@@ -757,6 +757,68 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 	}
 }
 
+CON_COMMAND_F(sm_navbot_tool_show_bone_pos, "Shows the position of a specific bone on a given entity.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_show_bone_pos <ent index> <bone name>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		return;
+	}
+
+	if (!entprops->HasEntProp(pEntity, Prop_Data, "m_OnIgnite"))
+	{
+		datamap_t* dmap = gamehelpers->GetDataMap(pEntity);
+		const char* classname = gamehelpers->GetEntityClassname(pEntity);
+
+		if (dmap && classname)
+		{
+			META_CONPRINTF("Error: Entity %s <%s|%s> does not derives from CBaseAnimating! \n", args[1], classname, dmap->dataClassName);
+
+			datamap_t* next = dmap;
+
+			while (next != nullptr)
+			{
+				META_CONPRINTF("    %s\n", next->dataClassName);
+				next = next->baseMap;
+			}
+		}
+
+		return;
+	}
+
+	auto ptr = UtilHelpers::GetEntityModelPtr(UtilHelpers::BaseEntityToEdict(pEntity));
+
+	if (ptr)
+	{
+		const char* name = args[2];
+		Vector pos;
+		QAngle angle;
+
+		if (UtilHelpers::GetBonePosition(pEntity, ptr.get(), name, pos, angle))
+		{
+			Vector mins{ -2.0f, -2.0f, -2.0f };
+			Vector maxs{ 2.0f, 2.0f, 2.0f };
+
+			META_CONPRINTF("Bone position %s angles %s\n", UtilHelpers::textformat::FormatVector(pos), UtilHelpers::textformat::FormatAngles(angle));
+			NDebugOverlay::Box(pos, mins, maxs, 255, 255, 0, 255, 10.0f);
+		}
+		else
+		{
+			META_CONPRINTF("Bone \"%s\" not found on model! \n", name);
+			META_CONPRINT("Use \"sm_navbot_tool_dump_model_info\" to list all bone names. \n");
+		}
+	}
+}
+
 #if SOURCE_ENGINE == SE_TF2        \
 	|| SOURCE_ENGINE == SE_CSS     \
 	|| SOURCE_ENGINE == SE_DODS    \

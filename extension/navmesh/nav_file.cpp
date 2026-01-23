@@ -911,7 +911,7 @@ bool CNavMesh::Save(void)
 	BuildAuthorInfo();
 	WarnIfMeshNeedsAnalysis(CNavMesh::NavMeshVersion);
 
-	auto path = GetFullPathToNavMeshFile();
+	auto path = GetFullPathToNavMeshFile(false);
 
 	std::fstream filestream;
 	filestream.open(path, std::fstream::out | std::fstream::binary | std::fstream::trunc);
@@ -1234,7 +1234,7 @@ NavErrorType CNavMesh::Load( void )
 	Reset();
 	placeDirectory.Reset();
 	CNavArea::m_nextID = 1;
-	auto path = GetFullPathToNavMeshFile();
+	auto path = GetFullPathToNavMeshFile(true);
 
 	if (!std::filesystem::exists(path))
 	{
@@ -1760,11 +1760,35 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	return NAV_OK;
 }
 
-std::filesystem::path CNavMesh::GetFullPathToNavMeshFile() const
+std::filesystem::path CNavMesh::GetFullPathToNavMeshFile(const bool isLoad) const
 {
 	char fullpath[PLATFORM_MAX_PATH];
-	std::string map = extmanager->GetMod()->GetCurrentMapName();
 	const std::string& mod = extmanager->GetMod()->GetModFolder();
+
+	// workshop is supported
+	if (CExtManager::ModUsesWorkshopMaps())
+	{
+		Mods::MapNameType type = CExtManager::ShouldPreferUniqueMapNames() ? Mods::MapNameType::MAPNAME_UNIQUE : Mods::MapNameType::MAPNAME_CLEAN;
+
+		std::string map = extmanager->GetMod()->GetCurrentMapName(type);
+		smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod.c_str(), map.c_str());
+
+		// if a file exists, use it
+		if (!isLoad || std::filesystem::exists(fullpath))
+		{
+			return std::filesystem::path(fullpath);
+		}
+
+		// invert type, unique goes to clean, clean goes to unique
+		type = Mods::InvertMapNameType(type);
+
+		map = extmanager->GetMod()->GetCurrentMapName(type);
+		smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod.c_str(), map.c_str());
+		return std::filesystem::path(fullpath);
+	}
+
+	// workshop is not supported by this mod, always use clean map names
+	std::string map = extmanager->GetMod()->GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN);
 	smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod.c_str(), map.c_str());
 	return std::filesystem::path(fullpath);
 }
@@ -2264,7 +2288,7 @@ void CNavMesh::CommandNavDumpToKeyValues()
 	// use raw KV until we fix auto delete compat with SDK branches
 	// or maybe switch to unique_ptr with custom deleter
 	KeyValues* kv = new KeyValues("NavBotNavMesh");
-	std::string mapname = extmanager->GetMod()->GetCurrentMapName();
+	std::string mapname = extmanager->GetMod()->GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN);
 	const char* gamename = extmanager->GetMod()->GetModName();
 	const char* gamefolder = smutils->GetGameFolderName();
 	const char* modfolder = extmanager->GetMod()->GetModFolder().c_str();

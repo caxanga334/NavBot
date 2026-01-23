@@ -4633,8 +4633,10 @@ void CNavMesh::PlayEditSoundInternal(const std::string& sound) const
 
 CON_COMMAND(sm_nav_print_map_name, "Prints the current map name used by the Navigaiton Mesh.")
 {
-	std::string name = extmanager->GetMod()->GetCurrentMapName();
-	rootconsole->ConsolePrint("Map: %s", name.c_str());
+	std::string cleanname = extmanager->GetMod()->GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN);
+	std::string uniquename = extmanager->GetMod()->GetCurrentMapName(Mods::MapNameType::MAPNAME_UNIQUE);
+	rootconsole->ConsolePrint("Map (Clean): %s", cleanname.c_str());
+	rootconsole->ConsolePrint("Map (Unique): %s", uniquename.c_str());
 }
 
 CON_COMMAND_F(sm_nav_build_useable_ladder, "Builds a new useable ladder.", FCVAR_CHEAT)
