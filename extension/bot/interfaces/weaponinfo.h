@@ -612,6 +612,10 @@ protected:
 	bool m_section_dynamicprio; // dynamic priority section
 	int m_parser_depth; // section depth
 
+	static constexpr int PARSER_DEPTH_ROOT = 0; // root section
+	static constexpr int PARSER_DEPTH_WEAPONLIST = 1; // weapons list
+	static constexpr int PARSER_DEPTH_WEAPONDATA = 2; // weapon data
+
 	WeaponInfo* m_current; // Current weapon info being parsed
 
 	bool IsParserInWeaponAttackSection() const

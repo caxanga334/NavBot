@@ -9,11 +9,13 @@ CServerCommandManager::~CServerCommandManager()
 {
 	for (ConCommand* ptr : m_cmdptrs)
 	{
+		g_SMAPI->UnregisterConCommandBase(g_PLAPI, ptr);
 		delete ptr;
 	}
 
 	for (auto& pair : m_convars)
 	{
+		META_UNREGCVAR(pair.second.first);
 		delete pair.second.first;
 	}
 }

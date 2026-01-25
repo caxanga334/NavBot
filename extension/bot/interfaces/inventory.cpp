@@ -212,6 +212,7 @@ void IInventory::BuildInventory()
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IInventory::BuildInventory", "NavBot");
 #endif // EXT_VPROF_ENABLED
+	static int arraylength = 0;
 
 	RemoveInvalidWeapons();
 
@@ -238,8 +239,22 @@ void IInventory::BuildInventory()
 	}
 #endif // EXT_DEBUG
 
-	// TO-DO, might be better to replace the MAX_WEAPONS macros with a runtime array size from GetEntPropArraySize
-	for (int i = 0; i < MAX_WEAPONS; i++)
+	if (arraylength <= 0)
+	{
+		// try to get the m_hMyWeapons array size at runtime
+		arraylength = static_cast<int>(entprops->GetEntPropArraySize(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_hMyWeapons"));
+
+		// if look up fails, use the SDK's MAX_WEAPONS macro
+		if (arraylength <= 0)
+		{
+			arraylength = MAX_WEAPONS;
+#ifdef EXT_DEBUG
+			smutils->LogError(myself, "Look up of m_hMyWeapons array size failed!");
+#endif // EXT_DEBUG
+		}
+	}
+
+	for (int i = 0; i < arraylength; i++)
 	{
 		CBaseEntity* weapon = myweapons[i].Get();
 

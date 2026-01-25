@@ -2112,4 +2112,29 @@ CON_COMMAND_F(sm_nav_debug_slope, "Tests nav area ground slope", FCVAR_CHEAT | F
 	}
 }
 
+CON_COMMAND_F(sm_navbot_debug_find_offs, "Debug find offset without inheritance.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINTF("sm_navbot_debug_find_offs <server class> <prop name>\n");
+		return;
+	}
+
+	const char* name = args[1];
+	const char* prop = args[2];
+
+	unsigned int offs = UtilHelpers::sendprop::FindOffsetNoInheritance(name, prop);
+
+	if (offs > 0)
+	{
+		META_CONPRINTF("Offset for %s::%s is %u\n", name, prop, offs);
+	}
+	else
+	{
+		META_CONPRINTF("%s is not a member of %s!\n", prop, name);
+	}
+}
+
 #endif // EXT_DEBUG

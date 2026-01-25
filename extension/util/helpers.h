@@ -925,6 +925,20 @@ namespace UtilHelpers::sdkcompat
 }
 
 /**
+ * @brief Utility functions related to SendProps
+ */
+namespace UtilHelpers::sendprop
+{
+	/**
+	 * @brief Searches for the offset of a networked property in a specific server class.
+	 * @param[in] svclassname Server class to search.
+	 * @param[in] propertyname Property name to search for.
+	 * @return Offset value or 0 if not found.
+	 */
+	unsigned int FindOffsetNoInheritance(const char* svclassname, const char* propertyname);
+}
+
+/**
  * @brief Utility functions related to datamaps.
  */
 namespace UtilHelpers::datamap

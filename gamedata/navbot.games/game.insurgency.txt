@@ -7,6 +7,11 @@
 			/* CBaseCombatCharacter doesn't exists in insurgency. */
 			"NoBaseCombatCharacter"		"true"
 
+			/* Comma delimited list of entities used as walkable seed position */
+			"NavGenerationWalkableEnts"			"ins_spawnpoint"
+			/* Comma delimited list of entities used as walkable seed position (world space center) */
+			"NavGenerationWalkableEntsCenter"	"ins_objective"
+
 			/* NavBot IMovement bot interface parameters */
 			"PlayerHull_StandHeight"		"72.0"
 			"PlayerHull_CrouchHeight"		"45.0"
@@ -40,6 +45,13 @@
 			{
 				"windows"	"167"
 				"linux"		"168"
+			}
+			/* Relative offset to m_iID member variable, starting from the offset of the networked property CINSSquad::m_iParentTeam */
+			"CINSSquad::m_iID"
+			{
+				"windows"	"-44"
+				/* TO-DO: Check if this is correct for Linux */
+				"linux"		"-44"
 			}
 		}
 	}

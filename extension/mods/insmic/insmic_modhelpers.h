@@ -8,6 +8,7 @@ class CInsMICModHelpers : public IModHelpers
 public:
 
 	int GetEntityTeamNumber(CBaseEntity* entity) override;
+	bool IsCombatCharacter(CBaseEntity* entity) override;
 };
 
 #endif // !__NAVBOT_INSMIC_MODHELPERS_H_

@@ -25,6 +25,29 @@ namespace insmic
 		INSMIC_MAX_SQUADS
 	};
 
+	enum InsMICTeamSelect_t
+	{
+		TEAMSELECT_INVALID = -1,
+		TEAMSELECT_ONE = 0,
+		TEAMSELECT_TWO,
+		TEAMSELECT_AUTOASSIGN,
+		TEAMSELECT_SPECTATOR,
+		TEAMSELECT_COUNT
+	};
+
+	enum InsMICGameTypes_t
+	{
+		GAMETYPE_INVALID = -1,
+		GAMETYPE_BATTLE = 0,
+		GAMETYPE_FIREFIGHT,
+		GAMETYPE_PUSH,
+		GAMETYPE_STRIKE,
+		GAMETYPE_TDM,
+		GAMETYPE_POWERBALL,
+
+		MAX_GAMETYPES
+	};
+
 	struct InsMICEncodedSquadInfoData_t
 	{
 		unsigned squad : 2;

@@ -399,6 +399,7 @@ int UtilHelpers::FindEntityByClassname(int start, const char* searchname)
 			return INVALID_EHANDLE_INDEX;
 		}
 
+		hCurrent = reinterpret_cast<IServerUnknown*>(pEntity)->GetRefEHandle();
 		hCurrent = g_EntList->NextHandle(hCurrent);
 		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
 	}
@@ -537,6 +538,7 @@ int UtilHelpers::FindEntityInSphere(int start, const Vector& center, float radiu
 			return INVALID_EHANDLE_INDEX;
 		}
 
+		hCurrent = reinterpret_cast<IServerUnknown*>(pEntity)->GetRefEHandle();
 		hCurrent = g_EntList->NextHandle(hCurrent);
 		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
 	}
@@ -689,6 +691,7 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 			return INVALID_EHANDLE_INDEX;
 		}
 
+		hCurrent = reinterpret_cast<IServerUnknown*>(pEntity)->GetRefEHandle();
 		hCurrent = g_EntList->NextHandle(hCurrent);
 		pEntity = UtilHelpers::GetBaseEntityFromCBaseHandle(hCurrent);
 	}
@@ -2280,4 +2283,29 @@ bool UtilHelpers::io::IsConnectedTo(CBaseEntity* entity, const char* targetname,
 	}
 
 	return false;
+}
+
+unsigned int UtilHelpers::sendprop::FindOffsetNoInheritance(const char* svclassname, const char* propertyname)
+{
+	ServerClass* svclass = gamehelpers->FindServerClass(svclassname);
+
+	if (svclass && svclass->m_pTable)
+	{
+		SendTable* table = svclass->m_pTable;
+
+		for (int i = 0; i < table->GetNumProps(); i++)
+		{
+			SendProp* prop = table->GetProp(i);
+
+			if (prop)
+			{
+				if (ke::StrCaseCmp(prop->GetName(), propertyname) == 0)
+				{
+					return static_cast<unsigned int>(prop->GetOffset());
+				}
+			}
+		}
+	}
+
+	return 0;
 }

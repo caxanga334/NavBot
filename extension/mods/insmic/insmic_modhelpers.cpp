@@ -22,3 +22,9 @@ int CInsMICModHelpers::GetEntityTeamNumber(CBaseEntity* entity)
 
 	return 0;
 }
+
+bool CInsMICModHelpers::IsCombatCharacter(CBaseEntity* entity)
+{
+	// CBaseCombatCharacter doesn't exists in insurgency, check for the networked property instead of the datamap
+	return entprops->HasEntProp(entity, Prop_Send, "m_hActiveWeapon");
+}

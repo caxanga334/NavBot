@@ -191,13 +191,13 @@ SourceMod::SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMC
 {
 	/*
 	
-	WeaponInfoConfig // depth 0
+	WeaponInfoConfig // depth 0 (ROOT)
 	{
-		"entry" // depth 1
+		"entry" // depth 1 (WEAPON LIST)
 		{
 			"k1" "v1"
 			...
-			"sub_section" // depth 2
+			"sub_section" // depth 2 (WEAPON DATA)
 			{
 				...
 			}
@@ -206,7 +206,7 @@ SourceMod::SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMC
 	
 	*/
 
-	if (m_parser_depth == 0)
+	if (m_parser_depth == PARSER_DEPTH_ROOT)
 	{
 		if (std::strcmp(name, "WeaponInfoConfig") == 0)
 		{
@@ -218,7 +218,7 @@ SourceMod::SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMC
 			return SourceMod::SMCResult_HaltFail;
 		}
 	}
-	else if (m_parser_depth == 1)
+	else if (m_parser_depth == PARSER_DEPTH_WEAPONLIST)
 	{
 		if (!m_section_weapon)
 		{
@@ -228,7 +228,7 @@ SourceMod::SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMC
 			m_current->SetConfigEntryName(name);
 		}
 	}
-	else if (m_parser_depth == 2)
+	else if (m_parser_depth == PARSER_DEPTH_WEAPONDATA)
 	{
 		if (std::strcmp(name, "primary_attack_info") == 0)
 		{

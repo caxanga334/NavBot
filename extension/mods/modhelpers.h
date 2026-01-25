@@ -40,6 +40,12 @@ public:
 	 * @return Returns true if the entity is dead, false otherwise.
 	 */
 	bool IsDead(CBaseEntity* entity) { return !IsAlive(entity); }
+	/**
+	 * @brief Checks if the given entity is a combat character (IE: players and npcs).
+	 * @param entity Entity to check.
+	 * @return True if given entity is a combat character, false otherwise.
+	 */
+	virtual bool IsCombatCharacter(CBaseEntity* entity);
 };
 
 // Global singleton to access the mod helpers interface

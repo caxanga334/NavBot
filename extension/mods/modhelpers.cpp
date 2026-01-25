@@ -47,3 +47,9 @@ bool IModHelpers::IsAlive(CBaseEntity* entity)
 	return lifestate == LIFE_ALIVE;
 }
 
+bool IModHelpers::IsCombatCharacter(CBaseEntity* entity)
+{
+	// In most games, m_hActiveWeapon is a member of CBaseCombatCharacter
+	return entprops->HasEntProp(entity, Prop_Data, "m_hActiveWeapon");
+}
+

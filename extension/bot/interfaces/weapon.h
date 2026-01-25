@@ -57,9 +57,9 @@ public:
 	 */
 	bool IsOutOfAmmo(const CBaseBot* owner) const;
 	// Amount of primary ammo left.
-	int GetPrimaryAmmoLeft(const CBaseBot* owner) const;
+	virtual int GetPrimaryAmmoLeft(const CBaseBot* owner) const;
 	// Amount of secondary ammo left.
-	int GetSecondaryAmmoLeft(const CBaseBot* owner) const;
+	virtual int GetSecondaryAmmoLeft(const CBaseBot* owner) const;
 	// Total amount of ammo left in the weapon (primary + secondary ammo)
 	int GetAmmoLeft(const CBaseBot* owner) const { return GetPrimaryAmmoLeft(owner) + GetSecondaryAmmoLeft(owner); }
 
@@ -73,7 +73,7 @@ public:
 	bool CanUseSecondaryAttack(const CBaseBot* owner) const;
 	// Returns true if the weapon has ammo loaded in the clip.
 	// If the weapon doesn't uses clips, also returns true.
-	bool IsLoaded() const;
+	virtual bool IsLoaded() const;
 
 	// Gets the minimum attack range based on the attack type used by the bot
 	virtual float GetCurrentMinimumAttackRange(CBaseBot* owner) const;
