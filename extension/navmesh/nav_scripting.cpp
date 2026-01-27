@@ -8,6 +8,7 @@
 #include <util/entprops.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
+#include <mods/modhelpers.h>
 #include "nav.h"
 #include "nav_scripting.h"
 
@@ -325,13 +326,6 @@ void navscripting::ToggleCondition::OnTestConditionChanged() const
 			rootconsole->ConsolePrint("nav scripting: Toggle type set to entity locked but target entity doesn't have \"m_bLocked\" property!");
 		}
 	}
-	else if (m_toggle_type == TCTypes::TYPE_ENTITY_TEAM)
-	{
-		if (!entprops->HasEntProp(index, Prop_Data, "m_iTeamNum"))
-		{
-			rootconsole->ConsolePrint("nav scripting: Toggle type set to entity team but target entity doesn't have \"m_iTeamNum\" property!");
-		}
-	}
 	else if (m_toggle_type == TCTypes::TYPE_ENTITY_TOGGLE_STATE)
 	{
 		if (!entprops->HasEntProp(index, Prop_Data, "m_toggle_state"))
@@ -407,10 +401,7 @@ bool navscripting::ToggleCondition::TestCondition_EntityTeam() const
 
 	if (pEntity)
 	{
-		int index = gamehelpers->EntityToBCompatRef(pEntity);
-
-		int team = NAV_TEAM_ANY;
-		entprops->GetEntProp(index, Prop_Data, "m_iTeamNum", team);
+		int team = modhelpers->GetEntityTeamNumber(pEntity);
 		return team == m_iData;
 	}
 

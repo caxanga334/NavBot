@@ -34,8 +34,8 @@ constexpr auto INPUT_GRENADE1 = (1 << 23);
 constexpr auto INPUT_GRENADE2 = (1 << 24);
 constexpr auto INPUT_ATTACK3 = (1 << 25); // Special attack (TF2)
 
-
 #include <sdkports/sdk_timers.h>
+#include <util/gamedata_const.h>
 
 // Handles client buttons sent to the server
 class IPlayerInput
@@ -94,6 +94,14 @@ public:
 	void ReleaseReloadButton();
 	void PressAlt1Button(const float duration = -1.0f);
 	void ReleaseAlt1Button();
+	void PressModCustom1Button(const float duration = -1.0f);
+	void ReleaseModCustom1Button();
+	void PressModCustom2Button(const float duration = -1.0f);
+	void ReleaseModCustom2Button();
+	void PressModCustom3Button(const float duration = -1.0f);
+	void ReleaseModCustom3Button();
+	void PressModCustom4Button(const float duration = -1.0f);
+	void ReleaseModCustom4Button();
 	void PressRunButton(const float duration = -1.0f);
 	void ReleaseRunButton();
 	void PressSpeedButton(const float duration = -1.0f);
@@ -143,6 +151,10 @@ protected:
 	CountdownTimer m_speedbuttontimer;
 	CountdownTimer m_walkbuttontimer;
 	CountdownTimer m_alt1buttontimer;
+	CountdownTimer m_modcustom1buttontimer;
+	CountdownTimer m_modcustom2buttontimer;
+	CountdownTimer m_modcustom3buttontimer;
+	CountdownTimer m_modcustom4buttontimer;
 	CountdownTimer m_buttonscaletimer;
 	AttackType m_lastUsedAttackType;
 
@@ -213,14 +225,14 @@ inline void IPlayerInput::ResetInputData()
 
 inline void IPlayerInput::PressAttackButton(const float duration)
 {
-	m_buttons |= INPUT_ATTACK;
+	m_buttons |= GamedataConstants::s_user_buttons.attack1;
 	m_leftmousebuttontimer.Start(duration);
 	m_lastUsedAttackType = AttackType::ATTACK_PRIMARY;
 }
 
 inline void IPlayerInput::ReleaseAttackButton()
 {
-	m_buttons &= ~INPUT_ATTACK;
+	m_buttons &= ~GamedataConstants::s_user_buttons.attack1;
 	m_leftmousebuttontimer.Invalidate();
 
 	if (m_lastUsedAttackType == AttackType::ATTACK_PRIMARY)
@@ -236,14 +248,14 @@ inline bool IPlayerInput::IsPressingAttackButton()
 
 inline void IPlayerInput::PressSecondaryAttackButton(const float duration)
 {
-	m_buttons |= INPUT_ATTACK2;
+	m_buttons |= GamedataConstants::s_user_buttons.attack2;
 	m_rightmousebuttontimer.Start(duration);
 	m_lastUsedAttackType = AttackType::ATTACK_SECONDARY;
 }
 
 inline void IPlayerInput::ReleaseSecondaryAttackButton()
 {
-	m_buttons &= ~INPUT_ATTACK2;
+	m_buttons &= ~GamedataConstants::s_user_buttons.attack2;
 	m_rightmousebuttontimer.Invalidate();
 
 	if (m_lastUsedAttackType == AttackType::ATTACK_SECONDARY)
@@ -259,25 +271,25 @@ inline bool IPlayerInput::IsPressingSecondaryAttackButton()
 
 inline void IPlayerInput::PressSpecialAttackButton(const float duration)
 {
-	m_buttons |= INPUT_ATTACK3;
+	m_buttons |= GamedataConstants::s_user_buttons.attack3;
 	m_specialmousebuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseSpecialAttackButton()
 {
-	m_buttons &= ~INPUT_ATTACK3;
+	m_buttons &= ~GamedataConstants::s_user_buttons.attack3;
 	m_specialmousebuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressJumpButton(const float duration)
 {
-	m_buttons |= INPUT_JUMP;
+	m_buttons |= GamedataConstants::s_user_buttons.jump;
 	m_jumpbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseJumpButton()
 {
-	m_buttons &= ~INPUT_JUMP;
+	m_buttons &= ~GamedataConstants::s_user_buttons.jump;
 	m_jumpbuttontimer.Invalidate();
 }
 
@@ -288,13 +300,13 @@ inline bool IPlayerInput::IsPressingJumpButton() const
 
 inline void IPlayerInput::PressCrouchButton(const float duration)
 {
-	m_buttons |= INPUT_DUCK;
+	m_buttons |= GamedataConstants::s_user_buttons.crouch;
 	m_crouchbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseCrouchButton()
 {
-	m_buttons &= ~INPUT_DUCK;
+	m_buttons &= ~GamedataConstants::s_user_buttons.crouch;
 	m_crouchbuttontimer.Invalidate();
 }
 
@@ -305,37 +317,37 @@ inline bool IPlayerInput::IsPressingCrouchButton() const
 
 inline void IPlayerInput::PressForwardButton(const float duration)
 {
-	m_buttons |= INPUT_FORWARD;
+	m_buttons |= GamedataConstants::s_user_buttons.forward;
 	m_forwardbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseForwardButton()
 {
-	m_buttons &= ~INPUT_FORWARD;
+	m_buttons &= ~GamedataConstants::s_user_buttons.forward;
 	m_forwardbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressBackwardsButton(const float duration)
 {
-	m_buttons |= INPUT_BACK;
+	m_buttons |= GamedataConstants::s_user_buttons.backward;
 	m_backwardsbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::ReleaseBackwardsButton()
 {
-	m_buttons &= ~INPUT_BACK;
+	m_buttons &= ~GamedataConstants::s_user_buttons.backward;
 	m_backwardsbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressUseButton(const float duration)
 {
-	m_buttons |= INPUT_USE;
+	m_buttons |= GamedataConstants::s_user_buttons.use;
 	m_usebuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseUseButton()
 {
-	m_buttons &= ~INPUT_USE;
+	m_buttons &= ~GamedataConstants::s_user_buttons.use;
 	m_usebuttontimer.Invalidate();
 }
 
@@ -346,25 +358,25 @@ inline bool IPlayerInput::IsPressingTheUseButton()
 
 inline void IPlayerInput::PressMoveLeftButton(const float duration)
 {
-	m_buttons |= INPUT_MOVELEFT;
+	m_buttons |= GamedataConstants::s_user_buttons.moveleft;
 	m_moveleftbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseMoveLeftButton()
 {
-	m_buttons &= ~INPUT_MOVELEFT;
+	m_buttons &= ~GamedataConstants::s_user_buttons.moveleft;
 	m_moveleftbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressMoveRightButton(const float duration)
 {
-	m_buttons |= INPUT_MOVERIGHT;
+	m_buttons |= GamedataConstants::s_user_buttons.moveright;
 	m_moverightbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseMoveRightButton()
 {
-	m_buttons &= ~INPUT_MOVERIGHT;
+	m_buttons &= ~GamedataConstants::s_user_buttons.moveright;
 	m_moverightbuttontimer.Invalidate();
 }
 
@@ -400,61 +412,109 @@ inline bool IPlayerInput::IsPressingMoveDownButton()
 
 inline void IPlayerInput::PressReloadButton(const float duration)
 {
-	m_buttons |= INPUT_RELOAD;
+	m_buttons |= GamedataConstants::s_user_buttons.reload;
 	m_reloadbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseReloadButton()
 {
-	m_buttons &= ~INPUT_RELOAD;
+	m_buttons &= ~GamedataConstants::s_user_buttons.reload;
 	m_reloadbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressAlt1Button(const float duration)
 {
-	m_buttons |= INPUT_ALT1;
+	m_buttons |= GamedataConstants::s_user_buttons.alt1;
 	m_alt1buttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseAlt1Button()
 {
-	m_buttons &= ~INPUT_ALT1;
+	m_buttons &= ~GamedataConstants::s_user_buttons.alt1;
 	m_alt1buttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressModCustom1Button(const float duration)
+{
+	m_buttons |= GamedataConstants::s_user_buttons.modcustom1;
+	m_modcustom1buttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseModCustom1Button()
+{
+	m_buttons &= ~GamedataConstants::s_user_buttons.modcustom1;
+	m_modcustom1buttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressModCustom2Button(const float duration)
+{
+	m_buttons |= GamedataConstants::s_user_buttons.modcustom2;
+	m_modcustom2buttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseModCustom2Button()
+{
+	m_buttons &= ~GamedataConstants::s_user_buttons.modcustom2;
+	m_modcustom2buttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressModCustom3Button(const float duration)
+{
+	m_buttons |= GamedataConstants::s_user_buttons.modcustom3;
+	m_modcustom3buttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseModCustom3Button()
+{
+	m_buttons &= ~GamedataConstants::s_user_buttons.modcustom3;
+	m_modcustom3buttontimer.Invalidate();
+}
+
+inline void IPlayerInput::PressModCustom4Button(const float duration)
+{
+	m_buttons |= GamedataConstants::s_user_buttons.modcustom4;
+	m_modcustom4buttontimer.Start(duration);
+}
+
+inline void IPlayerInput::ReleaseModCustom4Button()
+{
+	m_buttons &= ~GamedataConstants::s_user_buttons.modcustom4;
+	m_modcustom4buttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressRunButton(const float duration)
 {
-	m_buttons |= INPUT_RUN;
+	m_buttons |= GamedataConstants::s_user_buttons.run;
 	m_runbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseRunButton()
 {
-	m_buttons &= ~INPUT_RUN;
+	m_buttons &= ~GamedataConstants::s_user_buttons.run;
 	m_runbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressSpeedButton(const float duration)
 {
-	m_buttons |= INPUT_SPEED;
+	m_buttons |= GamedataConstants::s_user_buttons.speed;
 	m_speedbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseSpeedButton()
 {
-	m_buttons &= ~INPUT_SPEED;
+	m_buttons &= ~GamedataConstants::s_user_buttons.speed;
 	m_speedbuttontimer.Invalidate();
 }
 
 inline void IPlayerInput::PressWalkButton(const float duration)
 {
-	m_buttons |= INPUT_WALK;
+	m_buttons |= GamedataConstants::s_user_buttons.walk;
 	m_walkbuttontimer.Start(duration);
 }
 
 inline void IPlayerInput::ReleaseWalkButton()
 {
-	m_buttons &= ~INPUT_WALK;
+	m_buttons &= ~GamedataConstants::s_user_buttons.walk;
 	m_walkbuttontimer.Invalidate();
 }
 
@@ -468,49 +528,61 @@ inline void IPlayerInput::SetMovementScale(const float forward, const float side
 inline void IPlayerInput::CompileButtons()
 {
 	if (!m_leftmousebuttontimer.IsElapsed())
-		m_buttons |= INPUT_ATTACK;
+		m_buttons |= GamedataConstants::s_user_buttons.attack1;
 
 	if (!m_rightmousebuttontimer.IsElapsed())
-		m_buttons |= INPUT_ATTACK2;
+		m_buttons |= GamedataConstants::s_user_buttons.attack2;
 
 	if (!m_specialmousebuttontimer.IsElapsed())
-		m_buttons |= INPUT_ATTACK3;
+		m_buttons |= GamedataConstants::s_user_buttons.attack3;
 
 	if (!m_jumpbuttontimer.IsElapsed())
-		m_buttons |= INPUT_JUMP;
+		m_buttons |= GamedataConstants::s_user_buttons.jump;
 
 	if (!m_crouchbuttontimer.IsElapsed())
-		m_buttons |= INPUT_DUCK;
+		m_buttons |= GamedataConstants::s_user_buttons.crouch;
 
 	if (!m_forwardbuttontimer.IsElapsed())
-		m_buttons |= INPUT_FORWARD;
+		m_buttons |= GamedataConstants::s_user_buttons.forward;
 
 	if (!m_backwardsbuttontimer.IsElapsed())
-		m_buttons |= INPUT_BACK;
+		m_buttons |= GamedataConstants::s_user_buttons.backward;
 
 	if (!m_usebuttontimer.IsElapsed())
-		m_buttons |= INPUT_USE;
+		m_buttons |= GamedataConstants::s_user_buttons.use;
 
 	if (!m_moveleftbuttontimer.IsElapsed())
-		m_buttons |= INPUT_MOVELEFT;
+		m_buttons |= GamedataConstants::s_user_buttons.moveleft;
 
 	if (!m_moverightbuttontimer.IsElapsed())
-		m_buttons |= INPUT_MOVERIGHT;
+		m_buttons |= GamedataConstants::s_user_buttons.moveright;
 
 	if (!m_reloadbuttontimer.IsElapsed())
-		m_buttons |= INPUT_RELOAD;
+		m_buttons |= GamedataConstants::s_user_buttons.reload;
 
 	if (!m_alt1buttontimer.IsElapsed())
-		m_buttons |= INPUT_ALT1;
+		m_buttons |= GamedataConstants::s_user_buttons.alt1;
 
 	if (!m_runbuttontimer.IsElapsed())
-		m_buttons |= INPUT_RUN;
+		m_buttons |= GamedataConstants::s_user_buttons.run;
 
 	if (!m_speedbuttontimer.IsElapsed())
-		m_buttons |= INPUT_SPEED;
+		m_buttons |= GamedataConstants::s_user_buttons.speed;
 
 	if (!m_walkbuttontimer.IsElapsed())
-		m_buttons |= INPUT_WALK;
+		m_buttons |= GamedataConstants::s_user_buttons.walk;
+
+	if (!m_modcustom1buttontimer.IsElapsed())
+		m_buttons |= GamedataConstants::s_user_buttons.modcustom1;
+
+	if (!m_modcustom2buttontimer.IsElapsed())
+		m_buttons |= GamedataConstants::s_user_buttons.modcustom2;
+
+	if (!m_modcustom3buttontimer.IsElapsed())
+		m_buttons |= GamedataConstants::s_user_buttons.modcustom3;
+
+	if (!m_modcustom4buttontimer.IsElapsed())
+		m_buttons |= GamedataConstants::s_user_buttons.modcustom4;
 }
 
 #endif // !SMNAV_BOT_PLAYER_INPUT_H_

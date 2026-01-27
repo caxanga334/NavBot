@@ -10,6 +10,10 @@ class CInsMICBotInventory : public IInventory
 public:
 	CInsMICBotInventory(CInsMICBot* bot);
 
+	void BuildInventory() override;
+	bool EquipWeapon(const CBotWeapon* weapon) const override;
+	bool EquipWeapon(CBaseEntity* weapon) const override;
+
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override;
 

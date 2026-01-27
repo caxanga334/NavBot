@@ -618,7 +618,7 @@ CON_COMMAND_F(sm_navbot_tool_dump_weapons, "Lists all CBaseCombatCharacter weapo
 			continue;
 		}
 
-		META_CONPRINTF("[%zu] Weapon %s #%i <%p> \n", i, gamehelpers->GetEntityClassname(pWeapon), UtilHelpers::IndexOfEntity(pWeapon));
+		META_CONPRINTF("[%zu] Weapon %s #%i <%p> \n", i, gamehelpers->GetEntityClassname(pWeapon), UtilHelpers::IndexOfEntity(pWeapon), pWeapon);
 	}
 
 	CBaseBot* bot = extmanager->GetBotByIndex(iEnt);

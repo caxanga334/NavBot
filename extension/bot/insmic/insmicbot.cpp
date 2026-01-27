@@ -8,28 +8,52 @@ CInsMICBot::CInsMICBot(edict_t* edict) :
 	m_insmicsensor = std::make_unique<CInsMICBotSensor>(this);
 	m_insmicbehavior = std::make_unique<CInsMICBotBehavior>(this);
 	m_insmicinventory = std::make_unique<CInsMICBotInventory>(this);
+	m_insmicmovement = std::make_unique<CInsMICBotMovement>(this);
+	m_insmiccombat = std::make_unique<CInsMICBotCombat>(this);
+}
+
+CBaseEntity* CInsMICBot::GetActiveWeapon() const
+{
+	CBaseEntity* weapon = nullptr;
+	entprops->GetEntPropEnt(GetEntity(), Prop_Send, "m_hActiveWeapon", nullptr, &weapon);
+	return weapon;
 }
 
 bool CInsMICBot::HasJoinedGame()
 {
 	insmic::InsMICTeam myteam = GetMyInsurgencyTeam();
-	return myteam == insmic::InsMICTeam::INSMICTEAM_USMC || myteam == insmic::InsMICTeam::INSMICTEAM_INSURGENTS;
+	
+	if (myteam == insmic::InsMICTeam::INSMICTEAM_USMC || myteam == insmic::InsMICTeam::INSMICTEAM_INSURGENTS)
+	{
+		if (CInsMICMod::GetInsurgencyMod()->GetPlayerSquadData(GetEntity()) != 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void CInsMICBot::TryJoinGame()
 {
-	/*
-	int teamid, data;
+	insmic::InsMICTeam myteam = GetMyInsurgencyTeam();
 
-	CInsMICMod::GetInsurgencyMod()->SelectTeamAndSquadForBot(teamid, data);
-
-	if (data != insmic::INVALID_SLOT)
+	// auto assign doesn't work on maps without an IMC config
+	if (myteam == insmic::InsMICTeam::INSMICTEAM_USMC || myteam == insmic::InsMICTeam::INSMICTEAM_INSURGENTS)
 	{
-		char cmd[64];
-		ke::SafeSprintf(cmd, sizeof(cmd), "pfullsetup %i %i\n", teamid, data);
-		DelayedFakeClientCommand(cmd);
+		int teamid, data;
+
+		CInsMICMod::GetInsurgencyMod()->SelectTeamAndSquadForBot(teamid, data);
+
+		if (data != insmic::INVALID_SLOT)
+		{
+			char cmd[64];
+			ke::SafeSprintf(cmd, sizeof(cmd), "pfullsetup %i %i\n", teamid, data);
+			DelayedFakeClientCommand(cmd);
+		}
+
+		return;
 	}
-	*/
 
 	// this seems to auto assign bots to both a team and squad.
 	DelayedFakeClientCommand("pteamsetup 2");

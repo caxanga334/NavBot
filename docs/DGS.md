@@ -8,8 +8,9 @@ Detailed list of supported games/mods.
 |:---:|:---:|:---:|
 | Team Fortress 2 | Good | Dev |
 | Black Mesa | Good | Dev |
-| Day of Defeat: Source | Poor | Dev |
-| Zombie Panic! Source | Poor | Dev |
+| Day of Defeat: Source | Average | Dev |
+| Zombie Panic! Source | Average | Dev |
+| Insurgency: Modern Infantry Combat | Average | Dev |
 
 Support Status:
 
@@ -22,25 +23,4 @@ Nav Mesh Status:
 
 - Stable: Navigation mesh is considered stable and versioning is in effect.
 - Dev: Navigaiton mesh is still being developed, versioning is not in effect meaning NavBot updates may not be compatible with existing nav mesh files.
-
-
-## Supported Source Engine Branches
-
-Source engine branches compatible with the extension.
-
-| Engine Branch Names |
-|:---:|
-| Team Fortress 2 |
-| Half-Life 2 Deathmatch |
-| Counter-Strike: Source |
-| Day of Defeat: Source |
-| Source SDK 2013 (tf2 branch) |
-| Source SDK 2013 (old) |
-| Episode One/Source SDK 2006 |
-| Black Mesa |
-| Episode Two/Orangebox |
-| Counter-Strike: Global Offensive |
-| Left 4 Dead |
-| Left 4 Dead 2 |
-| Alien Swarm |
 

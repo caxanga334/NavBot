@@ -17,6 +17,8 @@ namespace insmic
 		INSMICTEAM_SPECTATOR,
 	};
 
+	constexpr int TEAM_NEUTRAL = 0;
+
 	enum InsMICSquads_t
 	{
 		INSMIC_INVALID_SQUAD = DISABLED_SQUAD,
@@ -48,11 +50,26 @@ namespace insmic
 		MAX_GAMETYPES
 	};
 
+	enum Stance_t
+	{
+		STANCE_INVALID = -1,
+		STANCE_STAND = 0,
+		STANCE_CROUCH,
+		STANCE_PRONE,
+		STANCE_COUNT
+	};
+
 	struct InsMICEncodedSquadInfoData_t
 	{
 		unsigned squad : 2;
 		unsigned slot : 4;
 	};
+
+	// bit flags for CINSPlayer::m_iPlayerFlags
+	constexpr int PLAYERFLAG_AIMING = 0x1; // player is aiming/using their weapon sights
+	constexpr int PLAYERFLAG_BIPOD = 0x2; // player has deployed their bipod
+	constexpr int PLAYERFLAG_SPRINTING = 0x4; // player is sprinting
+	constexpr int PLAYERFLAG_WALKING = 0x8; // player is walking
 }
 
 #endif // !__NAVBOT_INSMIC_MOD_SHAREDDEFS_H_

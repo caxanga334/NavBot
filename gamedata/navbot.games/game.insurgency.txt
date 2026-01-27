@@ -20,6 +20,20 @@
 
 			/* Player model bone name to aim at when going for headshots */
 			"BotAim_HeadBoneName"		"Head"
+
+			/* Default buttons from the HL2-SDK doesn't match, override their values */
+			"UserCmdButton_forward"		"16"
+			"UserCmdButton_backward"	"32"
+			"UserCmdButton_moveleft"	"512"
+			"UserCmdButton_moveright"	"1024"
+			"UserCmdButton_attack2"		"262144"
+			"UserCmdButton_attack3"		"131072"
+			"UserCmdButton_use"			"64"
+			"UserCmdButton_reload"		"2048"
+			"UserCmdButton_alt1"		"8"
+			"UserCmdButton_speed"		"32768"
+			/* Replaced with fire mode select */
+			"UserCmdButton_run"			"4096"
 		}
 		"Offsets"
 		{
@@ -52,6 +66,12 @@
 				"windows"	"-44"
 				/* TO-DO: Check if this is correct for Linux */
 				"linux"		"-44"
+			}
+			/* Relative offset to m_Clips member variable, starting from the offset of the networked property CWeaponBallisticBase::m_iClip */
+			"CWeaponBallisticBase::m_Clips"
+			{
+				"windows"	"4"
+				"linux"		"4"
 			}
 		}
 	}

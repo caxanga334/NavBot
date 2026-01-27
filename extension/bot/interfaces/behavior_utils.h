@@ -14,6 +14,16 @@
 }
 */
 
+// Simple rogue behavior check.
+#define BOTBEHAVIOR_IMPLEMENT_SIMPLE_ROGUE_CHECK(BOTCLASS, PATHCOST)													\
+int __roguechance = extmanager->GetMod()->GetModSettings()->GetRogueBehaviorChance();									\
+																														\
+if (__roguechance > 0 && CBaseBot::s_botrng.GetRandomChance(__roguechance))												\
+{																														\
+	return PauseFor(new CBotSharedRogueBehaviorTask<BOTCLASS, PATHCOST>(), "Starting rogue behavior!");					\
+}																														\
+																														\
+
 #define BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(BOTCLASS, PATHCOST)			\
 if (newArea && newArea->HasPrerequisite())										\
 {																				\

@@ -50,6 +50,31 @@ namespace insmiclib
 	 * @return Converted game type.
 	 */
 	insmic::InsMICGameTypes_t StringToGameType(const char* str);
+	/**
+	 * @brief Returns the amount of reserve ammo left in a ballistic weapon.
+	 * @param pEntity Entity pointer of the weapon.
+	 * @return Amount of reserve ammo left.
+	 */
+	int GetBallisticWeaponReserveAmmoLeft(CBaseEntity* pEntity);
+	/**
+	 * @brief Checks if the given PLAYERFLAG_* flag is set. See incmic_shareddefs.h
+	 * @param pPlayer Player to read the flags from.
+	 * @param flags Flag bits to check.
+	 * @return True if the given flags are set.
+	 */
+	bool IsPlayerFlagSet(CBaseEntity* pPlayer, const int flags);
+	/**
+	 * @brief Gets a player's current stance.
+	 * @param pPlayer Player to read the stance from.
+	 * @return Player's stance.
+	 */
+	insmic::Stance_t GetPlayerStance(CBaseEntity* pPlayer);
+	/**
+	 * @brief Gets the owner team of an objective.
+	 * @param pEntity Objective entity pointer.
+	 * @return Team that owns the given objective.
+	 */
+	insmic::InsMICTeam GetObjectiveOwnerTeam(CBaseEntity* pEntity);
 }
 
 

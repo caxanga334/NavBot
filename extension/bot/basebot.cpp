@@ -359,20 +359,20 @@ void CBaseBot::BuildUserCommand(const int buttons)
 	float upspeed = 0.0f;
 	const float desiredspeed = mover->GetDesiredSpeed();
 
-	if ((buttons & INPUT_FORWARD) != 0)
+	if ((buttons & GamedataConstants::s_user_buttons.forward) != 0)
 	{
 		forwardspeed = desiredspeed;
 	}
-	else if ((buttons & INPUT_BACK) != 0)
+	else if ((buttons & GamedataConstants::s_user_buttons.backward) != 0)
 	{
 		forwardspeed = -desiredspeed;
 	}
 
-	if ((buttons & INPUT_MOVERIGHT) != 0)
+	if ((buttons & GamedataConstants::s_user_buttons.moveright) != 0)
 	{
 		sidespeed = desiredspeed;
 	}
-	else if ((buttons & INPUT_MOVELEFT) != 0)
+	else if ((buttons & GamedataConstants::s_user_buttons.moveleft) != 0)
 	{
 		sidespeed = -desiredspeed;
 	}
@@ -507,9 +507,7 @@ ICombat* CBaseBot::GetCombatInterface() const
 
 ISharedBotMemory* CBaseBot::GetSharedMemoryInterface() const
 {
-	int team = 0;
-	entprops->GetEntProp(GetIndex(), Prop_Send, "m_iTeamNum", team);
-	return extmanager->GetMod()->GetSharedBotMemory(team);
+	return extmanager->GetMod()->GetSharedBotMemory(GetCurrentTeamIndex());
 }
 
 IPathProcessor* CBaseBot::GetPathProcessorInterface() const

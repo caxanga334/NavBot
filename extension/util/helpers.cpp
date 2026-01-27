@@ -12,6 +12,7 @@
 #include <studio.h>
 #include "sdkcalls.h"
 #include "entprops.h"
+#include <mods/modhelpers.h>
 #include "helpers.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -1789,8 +1790,7 @@ IterationRetval_t UtilHelpers::CEntityEnumerator::EnumElement(IHandleEntity* pHa
 
 bool UtilHelpers::PredPlayersInTeam::operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player)
 {
-	int client_team = 0;
-	entprops->GetEntProp(client, Prop_Send, "m_iTeamNum", client_team);
+	int client_team = player->GetPlayerInfo() != nullptr ? player->GetPlayerInfo()->GetTeamIndex() : 0;
 	return client_team == m_team;
 }
 
@@ -1840,8 +1840,7 @@ CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool
 	std::vector<CBaseEntity*> candidates;
 	candidates.reserve(ABSOLUTE_PLAYER_LIMIT);
 
-	int myteam = -2;
-	entprops->GetEntProp(me, Prop_Send, "m_iTeamNum", myteam);
+	int myteam = modhelpers->GetEntityTeamNumber(me);
 
 	for (int client = 1; client <= gpGlobals->maxClients; client++)
 	{
@@ -1876,8 +1875,7 @@ CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool
 			continue;
 		}
 
-		int theirteam = -1;
-		entprops->GetEntProp(ent, Prop_Send, "m_iTeamNum", theirteam);
+		int theirteam = modhelpers->GetEntityTeamNumber(ent);
 
 		if (myteam == theirteam)
 		{

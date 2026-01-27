@@ -159,3 +159,63 @@ insmic::InsMICGameTypes_t insmiclib::StringToGameType(const char* str)
 
 	return insmic::InsMICGameTypes_t::GAMETYPE_INVALID;
 }
+
+int insmiclib::GetBallisticWeaponReserveAmmoLeft(CBaseEntity* pEntity)
+{
+	static int offset = 0;
+
+	if (offset == 0)
+	{
+		SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
+
+		int offs = 0;
+
+		if (!gamedata->GetOffset("CWeaponBallisticBase::m_Clips", &offs))
+		{
+			smutils->LogError(myself, "Offset \"CWeaponBallisticBase::m_Clips\" not found on NavBot's gamedata!");
+			return 0;
+		}
+
+		SourceMod::sm_sendprop_info_t info;
+
+		if (!gamehelpers->FindSendPropInfo("CWeaponBallisticBase", "m_iClip", &info))
+		{
+			smutils->LogError(myself, "Networked property offset \"CWeaponBallisticBase::m_iClip\" not found!");
+			return 0;
+		}
+
+		offset = static_cast<int>(info.actual_offset) + offs;
+	}
+
+	CUtlVector<int>* clips = entprops->GetPointerToEntData<CUtlVector<int>>(pEntity, static_cast<unsigned int>(offset));
+
+	int ammo = 0;
+
+	for (int i = 0; i < clips->Count(); i++)
+	{
+		ammo += clips->Element(i);
+	}
+
+	return ammo;
+}
+
+bool insmiclib::IsPlayerFlagSet(CBaseEntity* pPlayer, const int flags)
+{
+	int var = 0;
+	entprops->GetEntProp(pPlayer, Prop_Send, "m_iPlayerFlags", var);
+	return (flags & var) != 0;
+}
+
+insmic::Stance_t insmiclib::GetPlayerStance(CBaseEntity* pPlayer)
+{
+	int var = 0;
+	entprops->GetEntProp(pPlayer, Prop_Send, "m_iCurrentStance", var);
+	return static_cast<insmic::Stance_t>(var);
+}
+
+insmic::InsMICTeam insmiclib::GetObjectiveOwnerTeam(CBaseEntity* pEntity)
+{
+	int var = 0;
+	entprops->GetEntProp(pEntity, Prop_Send, "m_iCapturedTeam", var);
+	return static_cast<insmic::InsMICTeam>(var);
+}

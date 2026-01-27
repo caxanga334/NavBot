@@ -10,6 +10,8 @@ class CInsMICBotSensor : public CSimplePvPSensor<CInsMICBot>
 public:
 	CInsMICBotSensor(CInsMICBot* bot);
 
+protected:
+	void CollectPlayers(std::vector<edict_t*>& visibleVec) override;
 
 private:
 

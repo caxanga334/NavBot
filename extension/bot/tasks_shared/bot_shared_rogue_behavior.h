@@ -45,7 +45,6 @@ private:
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedRogueBehaviorTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
-
 	if (m_maxTime > 0.0f)
 	{
 		m_endTimer.Start(m_maxTime);
@@ -54,7 +53,13 @@ inline TaskResult<BT> CBotSharedRogueBehaviorTask<BT, CT>::OnTaskStart(BT* bot, 
 	{
 		const CModSettings* settings = extmanager->GetMod()->GetModSettings();
 		const float duration = CBaseBot::s_botrng.GetRandomReal<float>(settings->GetRogueBehaviorMinTime(), settings->GetRogueBehaviorMaxTime());
+		m_maxTime = duration;
 		m_endTimer.Start(duration);
+	}
+
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s STARTED ROGUE BEHAVIOR! MAX ROGUE TIME %g \n", bot->GetDebugIdentifier(), m_maxTime);
 	}
 
 	return AITask<BT>::Continue();

@@ -179,6 +179,12 @@ public:
 	Vector CalculateLaunchVector(const Vector& landing, const float speed) const;
 	// returns true if the player is touching an entity of the given classnamew
 	bool IsTouching(const char* classname) const;
+	/**
+	 * @brief Checks if the player is touching a specific entity.
+	 * @param other Entity pointer to check if the player is touching.
+	 * @return True if the player is touching the given entity, false otherwise.
+	 */
+	bool IsTouching(CBaseEntity* other) const;
 protected:
 
 private:

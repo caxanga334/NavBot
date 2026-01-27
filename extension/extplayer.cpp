@@ -602,6 +602,36 @@ bool CBaseExtPlayer::IsTouching(const char* classname) const
 	return result;
 }
 
+bool CBaseExtPlayer::IsTouching(CBaseEntity* other) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseExtPlayer::IsTouching( CBaseEntity )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!other) { return false; }
+
+	const ICollideable* collider = GetCollideable();
+	Vector mins = collider->OBBMins() + collider->GetCollisionOrigin();
+	Vector maxs = collider->OBBMaxs() + collider->GetCollisionOrigin();
+	bool result = false;
+	UtilHelpers::CEntityEnumerator enumerator;
+	UtilHelpers::EntitiesInBox(mins, maxs, enumerator);
+	auto func = [&result, other](CBaseEntity* entity) -> bool {
+
+		if (entity == other)
+		{
+			result = true;
+			return false; // stop looping
+		}
+
+		return true;
+	};
+
+	enumerator.ForEach(func);
+
+	return result;
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {
