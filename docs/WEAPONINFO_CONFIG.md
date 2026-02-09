@@ -1,7 +1,7 @@
 # Weapon Information Configuration File
 
 The weapon information provide bots with information about how a weapon can be used.    
-The configuration file is stored at `config/<mod folder>/weapons.cfg`.    
+The configuration file is stored at `config/navbot/<mod folder>/weapons.cfg`.    
 It's recommended that you create a copy and rename it to `weapons.custom.cfg` before making modifications to it.
 
 ## File Format
