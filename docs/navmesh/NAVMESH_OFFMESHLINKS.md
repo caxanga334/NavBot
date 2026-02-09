@@ -1,6 +1,6 @@
 # Nav Links
 
-Links is a new form of connections between nav areas added to NavBot.
+Links are a new form of connections between nav areas added to NavBot.
 
 They allow two areas to be connected in ways that the standard connections doesn't allow.
 
@@ -18,13 +18,17 @@ They allow two areas to be connected in ways that the standard connections doesn
 
 # Creating Links
 
-First you must prepare the starting area and point.
+First you prepare the starting area and point.
 
-Mark the starting area with `sm_nav_mark`, then go to where the link should start and use `sm_nav_offmesh_set_origin` to mark the link starting point.
+Mark the starting area with `sm_nav_mark`, then stand on that area and use `sm_nav_offmesh_set_origin` to mark the link starting point.
 
-The area under your crosshair is selected as the destination area and your current position is used as the link end point.
+Next go to where the link's destination area will be.
 
-Now use `sm_nav_offmesh_connect <Link type ID>` to create the link.
+The area under your crosshair will be selected as the destination area and your current position is used as the link end point.
+
+Now use `sm_nav_offmesh_connect <Link type ID>` to create the link between the starting and destination areas.
+
+The starting area will now be marked with 'Nav Link' and a connection will be made to the destination area.
 
 # Removing Links
 
