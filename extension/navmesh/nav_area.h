@@ -718,6 +718,7 @@ public:
 	bool SpliceEdit( CNavArea *other );							// create a new area between this area and given area 
 	void RaiseCorner( NavCornerType corner, int amount, bool raiseAdjacentCorners = true );	// raise/lower a corner (or all corners if corner == NUM_CORNERS)
 	void PlaceOnGround( NavCornerType corner, float inset = 0.0f );	// places a corner (or all corners if corner == NUM_CORNERS) on the ground
+	void PlaceOnWaterSurface(NavCornerType corner); // raises the nav area corner to the water surface.
 	NavCornerType GetCornerUnderCursor( void ) const;
 	bool GetCornerHotspot( NavCornerType corner, Vector hotspot[NUM_CORNERS] ) const;	// returns true if the corner is under the cursor
 	void Shift( const Vector &shift );							// shift the nav area

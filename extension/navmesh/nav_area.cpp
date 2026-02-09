@@ -4447,6 +4447,23 @@ void CNavArea::PlaceOnGround( NavCornerType corner, float inset )
 	}
 }
 
+void CNavArea::PlaceOnWaterSurface(NavCornerType corner)
+{
+	if (corner == NavCornerType::NUM_CORNERS)
+	{
+		for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
+		{
+			PlaceOnWaterSurface(static_cast<NavCornerType>(i));
+		}
+
+		return;
+	}
+
+	Vector vCorner = GetCorner(corner);
+	Vector vSurface = trace::getwatersurface(vCorner);
+
+	RaiseCorner(corner, static_cast<int>(std::round(vSurface.z - vCorner.z)), false);
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**

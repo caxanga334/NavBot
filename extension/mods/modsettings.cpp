@@ -280,6 +280,12 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			v = std::clamp(v, 30.0f, 1200.0f);
 			SetCampMaxTime(v);
 		}
+		else if (std::strcmp(key, "breakable_max_health") == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, 500, 10000);
+			SetBreakableMaxHealth(v);
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

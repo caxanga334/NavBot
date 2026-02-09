@@ -315,9 +315,8 @@ bool CBaseBot::IsRangeLessThan(CBaseEntity* entity, const float range) const
 bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 {
 	CBaseMod* mod = extmanager->GetMod();
-	constexpr int MAX_HEALTH_TO_BREAK = 1000;
 
-	if (mod->IsEntityDamageable(entity, MAX_HEALTH_TO_BREAK) && mod->IsEntityBreakable(entity))
+	if (mod->IsEntityDamageable(entity, mod->GetModSettings()->GetBreakableMaxHealth()) && mod->IsEntityBreakable(entity))
 	{
 		return true;
 	}

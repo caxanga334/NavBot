@@ -60,21 +60,21 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 		CBaseBot::s_hookBCC = UtilHelpers::StringToBoolean(szValue);
 	}
 
-	if (!gd_sdkhooks->GetOffset("Spawn", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Spawn"); return false; }
+	if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "Spawn")) { return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Spawn, offset, 0, 0);
 
-	if (!gd_sdkhooks->GetOffset("Touch", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Touch"); return false; }
+	if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "Touch")) { return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Touch, offset, 0, 0);
 
 	if (CBaseBot::s_hookBCC)
 	{
-		if (!gd_sdkhooks->GetOffset("OnTakeDamage_Alive", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::OnTakeDamage_Alive"); return false; }
+		if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "OnTakeDamage_Alive")) { return false; }
 		SH_MANUALHOOK_RECONFIGURE(CBaseBot_OnTakeDamage_Alive, offset, 0, 0);
 	}
 	else
 	{
 		// fallback to OnTakeDamage
-		if (!gd_sdkhooks->GetOffset("OnTakeDamage", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::OnTakeDamage"); return false; }
+		if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "OnTakeDamage")) { return false; }
 		SH_MANUALHOOK_RECONFIGURE(CBaseBot_OnTakeDamage_Alive, offset, 0, 0);
 	}
 
@@ -90,13 +90,13 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 	if (!gd_navbot->GetOffset("PhysicsSimulate", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::PhysicsSimulate"); return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_PhysicsSimulate, offset, 0, 0);
 
-	if (!gd_sdkhooks->GetOffset("Weapon_Equip", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::Weapon_Equip"); return false; }
+	if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "Weapon_Equip")) { return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseBot_Weapon_Equip, offset, 0, 0);
 
 	// This mod needs to hook CBasePlayer::PlayerRunCommand
 	if (extension->ShouldHookRunPlayerCommand())
 	{
-		if (!gd_sdktools->GetOffset("PlayerRunCmd", &offset)) { smutils->LogError(myself, "Failed to setup hook CBasePlayer::PlayerRunCommand"); return false; }
+		if (!UtilHelpers::gamedata::GetOffset(gd_sdktools, gd_navbot, offset, "PlayerRunCmd")) { return false; }
 		SH_MANUALHOOK_RECONFIGURE(CBaseBot_PlayerRunCommand, offset, 0, 0);
 	}
 
@@ -104,7 +104,7 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 
 	if (szValue && szValue[0] != '\0' && UtilHelpers::StringToBoolean(szValue))
 	{
-		if (gd_sdkhooks->GetOffset("CanBeAutobalanced", &offset))
+		if (UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "CanBeAutobalanced"))
 		{
 			CBaseBot::s_hookCanBeAutobalanced = true;
 			SH_MANUALHOOK_RECONFIGURE(CBaseBot_CanBeAutobalanced, offset, 0, 0);

@@ -178,7 +178,7 @@ bool UtilHelpers::FindDataTable(SendTable* pTable, const char* name, sm_sendprop
 	{
 		prop = pTable->GetProp(i);
 
-		if ((table = prop->GetDataTable()) != NULL)
+		if ((table = prop->GetDataTable()) != nullptr)
 		{
 			pname = table->GetName();
 			if (pname && strcmp(name, pname) == 0)
@@ -1375,7 +1375,7 @@ bool UtilHelpers::StringMatchesPattern(const char* source, const char* pattern, 
 	const char* pszPattern = pattern;
 	bool bExact = true;
 
-	while (1)
+	while (true)
 	{
 		if ((*pszPattern) == 0)
 		{
@@ -1403,7 +1403,7 @@ bool UtilHelpers::StringMatchesPattern(const char* source, const char* pattern, 
 			pszPattern++;
 		}
 
-		while (1)
+		while (true)
 		{
 			const char* pszStartPattern = pszPattern - nLength;
 			const char* pszSearch = pszSource;
@@ -1456,7 +1456,7 @@ bool UtilHelpers::StringMatchesPattern(const std::string& source, const std::str
 	const char* pszPattern = pattern.c_str();
 	bool bExact = true;
 
-	while (1)
+	while (true)
 	{
 		if ((*pszPattern) == 0)
 		{
@@ -1484,7 +1484,7 @@ bool UtilHelpers::StringMatchesPattern(const std::string& source, const std::str
 			pszPattern++;
 		}
 
-		while (1)
+		while (true)
 		{
 			const char* pszStartPattern = pszPattern - nLength;
 			const char* pszSearch = pszSource;
@@ -1788,7 +1788,7 @@ IterationRetval_t UtilHelpers::CEntityEnumerator::EnumElement(IHandleEntity* pHa
 	return IterationRetval_t::ITERATION_CONTINUE;
 }
 
-bool UtilHelpers::PredPlayersInTeam::operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player)
+bool UtilHelpers::PredPlayersInTeam::operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player) const
 {
 	int client_team = player->GetPlayerInfo() != nullptr ? player->GetPlayerInfo()->GetTeamIndex() : 0;
 	return client_team == m_team;
@@ -2205,7 +2205,7 @@ void UtilHelpers::io::FireInputRaw(CBaseEntity* entity, inputfunc_t func, inputd
 	(entity->*func)(data);
 }
 
-bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID)
+bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, const variant_t& variant, int outputID)
 {
 	SourceMod::sm_datatable_info_t info;
 	datamap_t* datamap = gamehelpers->GetDataMap(entity);
@@ -2228,11 +2228,8 @@ bool UtilHelpers::io::FireInput(CBaseEntity* entity, const char* inputName, CBas
 		return true;
 	}
 #ifdef EXT_DEBUG
-	else
-	{
-		smutils->LogError(myself, "UtilHelpers::io::FireInput -- Input \"%s\" was not found on entity \"%s\" <%s>",
-			inputName, gamehelpers->GetEntityClassname(entity), datamap->dataClassName);
-	}
+	smutils->LogError(myself, "UtilHelpers::io::FireInput -- Input \"%s\" was not found on entity \"%s\" <%s>", 
+		inputName, gamehelpers->GetEntityClassname(entity), datamap->dataClassName);
 #endif // EXT_DEBUG
 
 	return false;
@@ -2264,7 +2261,7 @@ bool UtilHelpers::io::IsConnectedTo(CBaseEntity* entity, const char* targetname,
 						
 						if (V_strcmp(targetname, target) == 0)
 						{
-							if (inputName && ev->m_iTargetInput != NULL_STRING)
+							if (inputName != nullptr && ev->m_iTargetInput != NULL_STRING)
 							{
 								const char* input = STRING(ev->m_iTargetInput);
 								inputName->assign(input);
@@ -2306,4 +2303,24 @@ unsigned int UtilHelpers::sendprop::FindOffsetNoInheritance(const char* svclassn
 	}
 
 	return 0;
+}
+
+bool UtilHelpers::gamedata::GetOffset(SourceMod::IGameConfig* main, SourceMod::IGameConfig* backup, int& offset, const std::string_view& name, const bool error /* = true */)
+{
+	if (main->GetOffset(name.data(), &offset))
+	{
+		return true;
+	}
+
+	if (backup->GetOffset(name.data(), &offset))
+	{
+		return true;
+	}
+
+	if (error)
+	{
+		smutils->LogError(myself, "Failed to lookup offset \"%s\"!", name.data());
+	}
+
+	return false;
 }

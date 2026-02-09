@@ -31,6 +31,7 @@ public:
 		class_change_chance = 75;
 		camp_time_min = 15.0f;
 		camp_time_max = 90.0f;
+		breakable_max_health = 3000;
 	}
 
 	virtual ~CModSettings() = default;
@@ -85,6 +86,7 @@ public:
 	void SetChangeClassChance(int chance) { class_change_chance = chance; }
 	void SetCampMinTime(float time) { camp_time_min = time; }
 	void SetCampMaxTime(float time) { camp_time_max = time; }
+	void SetBreakableMaxHealth(int value) { breakable_max_health = value; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -111,6 +113,7 @@ public:
 	const int GetChangeClassChance() const { return class_change_chance; }
 	const float GetCampMinTime() const { return camp_time_min; }
 	const float GetCampMaxTime() const { return camp_time_max; }
+	const int GetBreakableMaxHealth() const { return breakable_max_health; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -136,6 +139,7 @@ protected:
 	int class_change_chance; // Random chance for a bot to change class.
 	float camp_time_min; // Minimum time a bot will 'camp'
 	float camp_time_max; // Maximum time a bot will 'camp'
+	int breakable_max_health; // If an entity health is greater than this, it is considered as unbreakable
 };
 
 

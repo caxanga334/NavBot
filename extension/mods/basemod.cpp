@@ -398,7 +398,7 @@ CON_COMMAND(sm_navbot_mod_debug_breakable, "Reports an entity breakable state.")
 
 	CBaseMod* mod = extmanager->GetMod();
 
-	bool damageable = mod->IsEntityDamageable(pEnt);
+	bool damageable = mod->IsEntityDamageable(pEnt, mod->GetModSettings()->GetBreakableMaxHealth());
 	bool breakable = mod->IsEntityBreakable(pEnt);
 	int health = UtilHelpers::GetEntityHealth(index);
 

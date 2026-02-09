@@ -157,64 +157,6 @@ namespace trace
 		return true;
 	}
 
-	static bool CBaseEntity_ShouldCollide(CBaseEntity* entity, int collisiongroup, int contentsmask)
-	{
-		static int vtable_offset = -1;
-		static SourceMod::ICallWrapper* pCall = nullptr;
-
-		if (vtable_offset == -2) { return false; }
-
-		if (vtable_offset == -1)
-		{
-			// initialize
-			SourceMod::IGameConfig* cfg;
-			char buffer[256];
-			
-			if (!gameconfs->LoadGameConfigFile("sdkhooks.games", &cfg, buffer, sizeof(buffer)))
-			{
-				smutils->LogError(myself, "CBaseEntity_ShouldCollide failed to load SDK Hooks gamedata! %s", buffer);
-				vtable_offset = -2;
-				return false;
-			}
-
-			if (!cfg->GetOffset("ShouldCollide", &vtable_offset))
-			{
-				smutils->LogError(myself, "Failed to get CBaseEntity::ShouldCollide offset from SDK Hooks gamedata!");
-				vtable_offset = -2;
-				gameconfs->CloseGameConfigFile(cfg);
-				return false;
-			}
-
-			gameconfs->CloseGameConfigFile(cfg);
-		}
-
-		if (pCall == nullptr)
-		{
-			SourceMod::PassInfo ret;
-			ret.flags = PASSFLAG_BYVAL;
-			ret.size = sizeof(bool);
-			ret.type = PassType_Basic;
-			SourceMod::PassInfo params[2];
-			params[0].flags = PASSFLAG_BYVAL;
-			params[0].size = sizeof(int);
-			params[0].type = PassType_Basic;
-			params[1].flags = PASSFLAG_BYVAL;
-			params[1].size = sizeof(int);
-			params[1].type = PassType_Basic;
-
-			pCall = g_pBinTools->CreateVCall(vtable_offset, 0, 0, &ret, params, 2);
-
-#ifdef EXT_DEBUG
-			smutils->LogMessage(myself, "Initialized gamedata for Virtual call CBaseEntity::ShouldCollide");
-#endif // EXT_DEBUG
-		}
-
-		ArgBuffer<void*, int, int> vstk(entity, collisiongroup, contentsmask);
-		bool retval = false;
-		pCall->Execute(vstk, &retval);
-		return retval;
-	}
-
 	// Local copy of the gamerules ShouldCollide
 	// This is used as a fallback in case the SDKCall is not available.
 	inline static bool CGameRules_ShouldCollide(int collisionGroup0, int collisionGroup1)
@@ -359,7 +301,7 @@ namespace trace
 			return false;
 		}
 
-		if (!CBaseEntity_ShouldCollide(pEntity, m_collisiongroup, contentsMask))
+		if (!sdkcalls->CBaseEntity_ShouldCollide(pEntity, m_collisiongroup, contentsMask))
 		{
 			return false;
 		}

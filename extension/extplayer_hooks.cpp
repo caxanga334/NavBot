@@ -8,12 +8,7 @@ bool CBaseExtPlayer::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGa
 {
 	int offset = 0;
 
-	if (!gd_sdkhooks->GetOffset("PreThink", &offset))
-	{
-		smutils->LogError(myself, "Failed to get virutal offset to CBasePlayer::PreThink from SDKHooks gamedata!");
-		return false;
-	}
-
+	if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "PreThink")) { return false; }
 	SH_MANUALHOOK_RECONFIGURE(CBaseExtPlayer_PreThink, offset, 0, 0);
 
 	return true;

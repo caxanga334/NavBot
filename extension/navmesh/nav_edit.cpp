@@ -5462,6 +5462,26 @@ CON_COMMAND_F(sm_nav_highlight_unnamed_areas, "Highlights unnamed areas.", FCVAR
 	}
 }
 
+CON_COMMAND_F(sm_nav_corner_place_on_water_surface, "Places nav areas on the water surface.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (extmanager->GetListenServerHost() == nullptr)
+	{
+		return;
+	}
+
+	if (TheNavMesh->GetMarkedArea() != nullptr)
+	{
+		TheNavMesh->GetMarkedArea()->PlaceOnWaterSurface(TheNavMesh->GetMarkedCorner());
+		return;
+	}
+
+	auto func = [](CNavArea* area) {
+		area->PlaceOnWaterSurface(NavCornerType::NUM_CORNERS);
+	};
+
+	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
+}
+
 void CNavMesh::RegisterCommands()
 {
 	// Call the virtual one for derived classes

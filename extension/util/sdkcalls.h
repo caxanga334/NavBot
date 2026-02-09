@@ -28,7 +28,6 @@ public:
 
 	bool Init();
 	void PostInit();
-
 	/**
 	 * @brief Calls the game's CBaseCombatCharacter::Weapon_Switch function.
 	 * @param pBCC A pointer to a CBaseCombatCharacter entity.
@@ -36,7 +35,6 @@ public:
 	 * @return true if the weapon switch was made.
 	 */
 	bool CBaseCombatCharacter_Weapon_Switch(CBaseEntity* pBCC, CBaseEntity* pWeapon);
-
 	/**
 	 * @brief Calls the game's CBaseCombatCharacter::Weapon_GetSlot function.
 	 * @param pBCC A pointer to a CBaseCombatCharacter entity.
@@ -44,7 +42,6 @@ public:
 	 * @return Entity to a weapon at the given weapon slot. NULL if none.
 	 */
 	CBaseEntity* CBaseCombatCharacter_Weapon_GetSlot(CBaseEntity* pBCC, int slot);
-
 	/**
 	 * @brief Calls the game's CGameRules::ShouldCollide function.
 	 * @param pGR Pointer to the gamerules object
@@ -53,9 +50,7 @@ public:
 	 * @return true if the given groups should collide, false otherwise
 	 */
 	bool CGameRules_ShouldCollide(CGameRules* pGR, int collisionGroup0, int collisionGroup1);
-
 	void CBasePlayer_ProcessUsercmds(CBaseEntity* pBP, CBotCmd* botcmd);
-
 	void CBaseAnimating_GetBoneTransform(CBaseEntity* pBA, int bone, matrix3x4_t* result);
 	/**
 	 * @brief Calls CBaseEntity::AcceptInput on the pThis entity.
@@ -68,7 +63,6 @@ public:
 	 * @return True on success, false on failure.
 	 */
 	bool CBaseEntity_AcceptInput(CBaseEntity* pThis, const char* szInputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID);
-
 	/**
 	 * @brief Calls CBaseEntity::Teleport on the pThis entity.
 	 * @param pThis Entity to call the function.
@@ -77,11 +71,19 @@ public:
 	 * @param velocity New velocity. NULL for no change.
 	 */
 	void CBaseEntity_Teleport(CBaseEntity* pThis, const Vector* origin = nullptr, const QAngle* angles = nullptr, const Vector* velocity = nullptr);
+	/**
+	 * @brief Calls CBaseEntity::ShouldCollide on the pThis entity.
+	 * @param pThis Entity to call the function on.
+	 * @param collisiongroup Collision group.
+	 * @param contentsmask Contents mask.
+	 * @return Result of ShouldCollide.
+	 */
+	bool CBaseEntity_ShouldCollide(CBaseEntity* pThis, int collisiongroup, int contentsmask);
 
-	inline bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
-	inline bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
-	inline bool IsAcceptInputAvailable() const { return m_call_cbe_acceptinput.first > 0; }
-	inline bool IsTeleportAvailable() const { return m_call_cbe_teleport.first > 0; }
+	bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
+	bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
+	bool IsAcceptInputAvailable() const { return m_call_cbe_acceptinput.first > 0; }
+	bool IsTeleportAvailable() const { return m_call_cbe_teleport.first > 0; }
 
 private:
 	static constexpr int invalid_offset() { return -1; }
@@ -112,6 +114,7 @@ private:
 
 	SDKVCallSetup m_call_cbe_acceptinput;
 	SDKVCallSetup m_call_cbe_teleport;
+	SDKVCallSetup m_call_cbe_shouldcollide;
 
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
@@ -121,6 +124,7 @@ private:
 	void SetupCBAGetBoneTransform();
 	void SetupCBEAcceptInput();
 	void SetupCBETeleport();
+	void SetupCBEShouldCollide();
 };
 
 extern CSDKCaller* sdkcalls;

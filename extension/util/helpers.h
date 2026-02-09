@@ -338,7 +338,7 @@ namespace UtilHelpers
 		{
 		}
 
-		bool operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player);
+		bool operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player) const;
 
 	private:
 		int m_team;
@@ -982,7 +982,7 @@ namespace UtilHelpers::io
 	 * @param outputID Output ID, depends on the input being used.
 	 * @return True if the input was fired, false on failure.
 	 */
-	bool FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, variant_t variant, int outputID = 0);
+	bool FireInput(CBaseEntity* entity, const char* inputName, CBaseEntity* pActivator, CBaseEntity* pCaller, const variant_t& variant, int outputID = 0);
 	/**
 	 * @brief Checks if the given entity has any Output targetting the given target name.
 	 * 
@@ -993,6 +993,23 @@ namespace UtilHelpers::io
 	 * @return True if the entity targets the given targetname, false otherwise.
 	 */
 	bool IsConnectedTo(CBaseEntity* entity, const char* targetname, std::string* inputName = nullptr);
+}
+
+/**
+ * @brief SourceMod gamedata helper functions.
+ */
+namespace UtilHelpers::gamedata
+{
+	/**
+	 * @brief Looks up an offset on gamedata.
+	 * @param[in] main Primary gameconf to search.
+	 * @param[in] backup Alternative gameconf to search.
+	 * @param[out] offset The offset (if found) is stored here.
+	 * @param[in] name Name of the offset to search.
+	 * @param[in] error If true, logs an error if the offset cannot be found.
+	 * @return True if the offset was found, false otherwise.
+	 */
+	bool GetOffset(SourceMod::IGameConfig* main, SourceMod::IGameConfig* backup, int& offset, const std::string_view& name, const bool error = true);
 }
 
 #endif // !UTIL_HELPERS_H_

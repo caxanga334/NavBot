@@ -1041,6 +1041,7 @@ public:
 
 	bool IsInternalDataRecomputationScheduled() const { return m_recomputeInternalDataTimer.HasStarted(); }
 	RecomputeInternalDataReason GetRecomputeInternalDataReason() const { return m_recomputeDataReason; }
+	NavCornerType GetMarkedCorner() const { return m_markedCorner; }
 
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete

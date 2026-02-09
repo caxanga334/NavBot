@@ -32,6 +32,7 @@ CSDKCaller::CSDKCaller()
 	m_call_cba_getbonetransform = nullptr;
 	InitVCallSetup(m_call_cbe_acceptinput);
 	InitVCallSetup(m_call_cbe_teleport);
+	InitVCallSetup(m_call_cbe_shouldcollide);
 }
 
 CSDKCaller::~CSDKCaller()
@@ -68,17 +69,8 @@ bool CSDKCaller::Init()
 		return false;
 	}
 
-	if (!cfg_sdkhooks->GetOffset("Weapon_Switch", &m_offsetof_cbc_weaponswitch))
-	{
-		smutils->LogError(myself, "Failed to get offset for CBaseCombatCharacter::Weapon_Switch!");
-		fail = true;
-	}
-
-	if (!cfg_sdktools->GetOffset("Weapon_GetSlot", &m_offsetof_cbc_weaponslot))
-	{
-		smutils->LogError(myself, "Failed to get offset for CBaseCombatCharacter::Weapon_GetSlot from SDKTool's gamedata!");
-		fail = true;
-	}
+	if (!UtilHelpers::gamedata::GetOffset(cfg_sdkhooks, cfg_navbot, m_offsetof_cbc_weaponswitch, "Weapon_Switch")) { fail = true; }
+	if (!UtilHelpers::gamedata::GetOffset(cfg_sdktools, cfg_navbot, m_offsetof_cbc_weaponslot, "Weapon_GetSlot")) { fail = true; }
 
 	if (!cfg_navbot->GetOffset("CGameRules::ShouldCollide", &m_offsetof_cgr_shouldcollide))
 	{
@@ -98,17 +90,11 @@ bool CSDKCaller::Init()
 		m_offsetof_cba_getbonetransform = invalid_offset();
 	}
 
-	if (!cfg_sdktools->GetOffset("AcceptInput", &m_call_cbe_acceptinput.first))
-	{
-		// don't fail, this is optional
-		m_call_cbe_acceptinput.first = invalid_offset();
-	}
+	// optionals
+	UtilHelpers::gamedata::GetOffset(cfg_sdktools, cfg_navbot, m_call_cbe_acceptinput.first, "AcceptInput");
+	UtilHelpers::gamedata::GetOffset(cfg_sdktools, cfg_navbot, m_call_cbe_teleport.first, "Teleport");
 
-	if (!cfg_sdktools->GetOffset("Teleport", &m_call_cbe_teleport.first))
-	{
-		// don't fail, this is optional
-		m_call_cbe_teleport.first = invalid_offset();
-	}
+	if (!UtilHelpers::gamedata::GetOffset(cfg_sdkhooks, cfg_navbot, m_call_cbe_shouldcollide.first, "ShouldCollide")) { fail = true; }
 
 	gameconfs->CloseGameConfigFile(cfg_navbot);
 	gameconfs->CloseGameConfigFile(cfg_sdktools);
@@ -199,6 +185,14 @@ void CSDKCaller::CBaseEntity_Teleport(CBaseEntity* pThis, const Vector* origin, 
 	m_call_cbe_teleport.second->Execute(vstk, nullptr);
 }
 
+bool CSDKCaller::CBaseEntity_ShouldCollide(CBaseEntity* pThis, int collisiongroup, int contentsmask)
+{
+	ArgBuffer<void*, int, int> vstk(pThis, collisiongroup, contentsmask);
+	bool retval = false;
+	m_call_cbe_shouldcollide.second->Execute(vstk, &retval);
+	return retval;
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
@@ -208,10 +202,12 @@ bool CSDKCaller::SetupCalls()
 	SetupCBAGetBoneTransform();
 	SetupCBEAcceptInput();
 	SetupCBETeleport();
+	SetupCBEShouldCollide();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
-		m_call_cgr_shouldcollide == nullptr)
+		m_call_cgr_shouldcollide == nullptr || 
+		m_call_cbe_shouldcollide.second == nullptr)
 	{
 		return false;
 	}
@@ -389,4 +385,25 @@ void CSDKCaller::SetupCBETeleport()
 	info[0].type = info[1].type = info[2].type = PassType_Basic;
 
 	m_call_cbe_teleport.second = g_pBinTools->CreateVCall(m_call_cbe_teleport.first, 0, 0, NULL, info, 3);
+}
+
+void CSDKCaller::SetupCBEShouldCollide()
+{
+	using namespace SourceMod;
+
+	if (m_call_cbe_shouldcollide.first <= 0) { return; }
+
+	SourceMod::PassInfo ret;
+	ret.flags = PASSFLAG_BYVAL;
+	ret.size = sizeof(bool);
+	ret.type = PassType_Basic;
+	SourceMod::PassInfo params[2];
+	params[0].flags = PASSFLAG_BYVAL;
+	params[0].size = sizeof(int);
+	params[0].type = PassType_Basic;
+	params[1].flags = PASSFLAG_BYVAL;
+	params[1].size = sizeof(int);
+	params[1].type = PassType_Basic;
+
+	m_call_cbe_shouldcollide.second = g_pBinTools->CreateVCall(m_call_cbe_shouldcollide.first, 0, 0, &ret, params, 2);
 }
