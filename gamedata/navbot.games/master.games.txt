@@ -63,4 +63,14 @@
 	{
 		"game"		"insurgency"
 	}
+	// Team Fortress 2 Classified
+	"game.tf2classified.txt"
+	{
+		"game"		"tf2classified"
+	}
+	// Pre Fortress 2
+	"game.pf2.txt"
+	{
+		"game"		"pf2"
+	}
 }

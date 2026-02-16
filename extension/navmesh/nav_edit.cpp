@@ -3634,6 +3634,50 @@ void CNavMesh::CommandNavCornerPlaceOnGroundCustom(float z, const Vector* start,
 	}
 	else
 	{
+		if (!IsSelectedSetEmpty())
+		{
+			FOR_EACH_VEC(m_selectedSet, it)
+			{
+				CNavArea* area = m_selectedSet[it];
+
+				for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
+				{
+					Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
+					float original_z = corner.z;
+					corner.z = start != nullptr ? start->z : (corner.z + z);
+					end = corner;
+					end.z -= 8192.0f;
+					trace::line(corner, end, mask, tr);
+					float end_z = (tr.endpos.z - original_z);
+					area->RaiseCorner(static_cast<NavCornerType>(i), static_cast<int>(std::round(end_z)), raiseAdjacent);
+				}
+			}
+
+			Msg("Area corner placed at ground. \n");
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			return;
+		}
+
+		if (FindActiveNavArea() && m_selectedArea)
+		{
+			for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
+			{
+				Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
+				float original_z = corner.z;
+				corner.z = start != nullptr ? start->z : (corner.z + z);
+				end = corner;
+				end.z -= 8192.0f;
+				trace::line(corner, end, mask, tr);
+				float end_z = (tr.endpos.z - original_z);
+				m_selectedArea->RaiseCorner(static_cast<NavCornerType>(i), static_cast<int>(std::round(end_z)), raiseAdjacent);
+			}
+
+			Msg("Area corner placed at ground. \n");
+			PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
+			return;
+		}
+
+
 		Msg("Mark an area first! \n");
 		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 	}

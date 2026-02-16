@@ -1,0 +1,103 @@
+"Games"
+{
+	"pf2"
+	{
+		"Keys"
+		{
+			/* Enable the CBaseMultiplayerPlayer::CanBeAutobalanced hook */
+			"HookCanBeAutobalanced"		"true"
+
+			/* Nav Mesh generation parameters */
+			"NavGen_StepSize"				"25.0"
+			"NavGen_JumpHeight"				"41.8"
+			/* 120 for scout's double jump */
+			"NavGen_JumpCrouchHeight"		"120.0"
+			"NavGen_StepHeight"				"18.0"
+			"NavGen_DeathDropHeight"		"400.0"
+			"NavGen_ClimbUpHeight"			"200.0"
+			"NavGen_HalfHumanWidth"			"24.0"
+			"NavGen_HumanHeight"			"82.0"
+			"NavGen_HumanCrouchHeight"		"62.0"
+			"NavGen_HumanEyeHeight"			"75.0"
+			"NavGen_HumanCrouchEyeHeight"	"45.0"
+
+			/* NavBot IMovement bot interface parameters */
+			"PlayerHull_StandHeight"		"82.0"
+			"PlayerHull_CrouchHeight"		"45.0"
+			"PlayerHull_Width"				"48.0"
+
+			/* Player model bone name to aim at when going for headshots */
+			"BotAim_HeadBoneName"			"bip_head"
+			"UsesWorkshopMaps"				"false"
+		}
+		"Offsets"
+		{
+			"Event_Killed"
+			{
+				"windows"	"66"
+				"linux"		"67"
+			}
+			"Event_KilledOther"
+			{
+				"windows"	"67"
+				"linux"		"68"
+			}
+			"PhysicsSimulate"
+			{
+				"windows"	"104"
+				"linux"		"105"
+			}
+			"CBasePlayer::ProcessUsercmds"
+			{
+				"windows"	"418"
+				"linux"		"419"
+			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"199"
+				"linux"		"200"
+			}
+
+			/**
+			 * offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/aea94b32cbefeba5d16ef6fc70eff9508cf11673/src/game/shared/tf/entity_capture_flag.h#L413
+			*/
+			"CCaptureFlag::m_vecResetPos"
+			{
+				"windows"	"8"
+				"linux"		"8"
+			}
+
+			/** https://github.com/ValveSoftware/source-sdk-2013/blob/master/src/game/server/team_objectiveresource.h#L225
+			 * offset to member m_flCapPercentages
+			 * Starting from the offset of the networked property m_iCPGroup
+			 * Generally will be sizeof(int[MAX_CONTROL_POINTS])
+			*/
+			"CBaseTeamObjectiveResource::m_flCapPercentages"
+			{
+				"windows"	"32"
+				"linux"		"32"
+			}
+
+			/**
+			 * offset of netprop m_bMatchBuilding + this to get to the offset of m_hMatchingTeleporter
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/0565403b153dfcde602f6f58d8f4d13483696a13/src/game/server/tf/tf_obj_teleporter.h#L138-L140
+			*/
+			"CObjectTeleporter::m_hMatchingTeleporter"
+			{
+				"windows"	"4"
+				"linux"		"4"
+			}
+
+			/**
+			 * relative offset to m_bShielded member variable from the offset of the networked variable m_eType.
+			 * https://github.com/ValveSoftware/source-sdk-2013/blob/39f6dde8fbc238727c020d13b05ecadd31bda4c0/src/game/shared/tf/tf_robot_destruction_robot.h#L348-L349
+			*/
+			"CTFRobotDestruction_Robot::m_bShielded"
+			{
+				"windows"	"-4"
+				"linux"		"-4"
+			}
+		}
+	}
+}

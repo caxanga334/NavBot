@@ -48,6 +48,7 @@ private:
 		Mods::ModType id; // mod id
 		std::string name; // mod name
 		std::string mod_folder; // mod folder name override
+		std::string mod_fallback; // fallback folder for loading files from
 		ModDetectionType detection_type; // detection type
 		std::string detection_data; // string data, depends on the type
 		std::string detection_sendprop_class;

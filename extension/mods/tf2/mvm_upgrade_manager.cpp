@@ -152,11 +152,17 @@ void CMvMUpgradeManager::ParseBotUpgradeInfoFile()
 {	
 	InitUpgradeInfo();
 
-	char path[PLATFORM_MAX_PATH];
-	const std::string& gamefolder = CTeamFortress2Mod::GetTF2Mod()->GetModFolder();
-	smutils->BuildPath(SourceMod::Path_SM, path, sizeof(path), "configs/navbot/%s/mvm_upgrades.cfg", gamefolder.c_str());
+	std::string path;
+	const CBaseMod* mod = extmanager->GetMod();
+
+	if (!mod->BuildPathToModFile("configs/navbot", "mvm_upgrades.cfg", "mvm_upgrades.custom.cfg", path))
+	{
+		smutils->LogError(myself, "Failed to parse MvM Upgrades configuration file! File does not exists!");
+		return;
+	}
+
 	SourceMod::SMCStates states;
-	auto error = textparsers->ParseFile_SMC(path, this, &states);
+	auto error = textparsers->ParseFile_SMC(path.c_str(), this, &states);
 
 	if (error != SourceMod::SMCError_Okay)
 	{

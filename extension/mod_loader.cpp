@@ -189,6 +189,11 @@ CBaseMod* ExtModLoader::AllocDetectedMod() const
 		mod->m_modFolder = m_detectedMod->mod_folder;
 	}
 
+	if (!m_detectedMod->mod_fallback.empty())
+	{
+		mod->m_modFallbackFolder = m_detectedMod->mod_fallback;
+	}
+
 	return mod;
 }
 
@@ -346,6 +351,10 @@ SourceMod::SMCResult ExtModLoader::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 		if (std::strcmp(key, "Mod_Folder") == 0)
 		{
 			m_parser_current->mod_folder.assign(value);
+		}
+		else if (std::strcmp(key, "Mod_Fallback_Folder") == 0)
+		{
+			m_parser_current->mod_fallback.assign(value);
 		}
 
 		break;

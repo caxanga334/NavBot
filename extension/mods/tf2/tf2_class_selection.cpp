@@ -20,28 +20,23 @@ CTF2ClassSelection::~CTF2ClassSelection()
 
 void CTF2ClassSelection::LoadClassSelectionData()
 {
-	char filepath[PLATFORM_MAX_PATH];
+	std::string path;
+	const CBaseMod* mod = extmanager->GetMod();
 	const std::string& gamefolder = extmanager->GetMod()->GetModFolder();
-	smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/%s/class_selection.custom.cfg", gamefolder.c_str());
 
-	if (!std::filesystem::exists(filepath))
+	if (!mod->BuildPathToModFile("configs/navbot", "class_selection.cfg", "class_selection.custom.cfg", path))
 	{
-		smutils->BuildPath(SourceMod::Path_SM, filepath, sizeof(filepath), "configs/navbot/%s/class_selection.cfg", gamefolder.c_str());
-
-		if (!std::filesystem::exists(filepath))
-		{
-			smutils->LogError(myself, "Failed to load Class Selection config file! File \"%s\" does not exists!", filepath);
-			return;
-		}
+		smutils->LogError(myself, "Failed to load Class Selection config file! File \"%s\" does not exists!", path.c_str());
+		return;
 	}
 
 	m_parserdata.BeginParse();
 	SourceMod::SMCStates state{};
-	auto errorcode = textparsers->ParseFile_SMC(filepath, this, &state);
+	auto errorcode = textparsers->ParseFile_SMC(path.c_str(), this, &state);
 
 	if (errorcode != SourceMod::SMCError_Okay)
 	{
-		smutils->LogError(myself, "Failed to parse Class Selection config file! File \"%s\"! Error: %s", filepath, textparsers->GetSMCErrorString(errorcode));
+		smutils->LogError(myself, "Failed to parse Class Selection config file! File \"%s\"! Error: %s", path.c_str(), textparsers->GetSMCErrorString(errorcode));
 		return;
 	}
 

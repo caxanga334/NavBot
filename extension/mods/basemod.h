@@ -91,6 +91,10 @@ public:
 	Mods::ModType GetModType() const { return m_modID; }
 	// Mod folder name used to load files from
 	const std::string& GetModFolder() const { return m_modFolder; }
+	// Fallback mod folder name used to load mod specific files from
+	const std::string& GetModFallbackFolder() const { return m_modFallbackFolder; }
+	// Returns true if a fallback mod folder is available.
+	bool HasFallbackModFolder() const { return !m_modFallbackFolder.empty(); }
 	// Allocates the nav mesh class used by the mod
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
@@ -165,6 +169,15 @@ public:
 	 * @return Pointer to a mod helper interface.
 	 */
 	virtual IModHelpers* AllocModHelpers() const;
+	/**
+	 * @brief Builds a path to a file stored inside the mod folder.
+	 * @param[in] basepath Base path to the file relative to SM. Example: "configs/navbot"
+	 * @param[in] filepath Path to the file. Example: "foobar.cfg"
+	 * @param[in] userfilepath Path to the user custom file. Example: "foobar.custom.cfg"
+	 * @param[out] path Full path to the file (if found) will be stored here. 
+	 * @return True if a file was found, false otherwise.
+	 */
+	bool BuildPathToModFile(const std::string_view& basepath, const std::string_view& filepath, const std::string_view& userfilepath, std::string& path) const;
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;
@@ -178,6 +191,7 @@ private:
 	Mods::ModType m_modID;
 	std::string m_modName;
 	std::string m_modFolder; // mod folder name
+	std::string m_modFallbackFolder; // optional fallback mod folder name
 
 	void InternalFindPlayerResourceEntity();
 };

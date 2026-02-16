@@ -105,5 +105,8 @@ Currently the only configuration available is an optional game folder name overr
     // override the game folder to be "tf".
     // this is used when parsing config file and loading nav mesh files.
     "Mod_Folder"    "tf"
+    // Fallback folder for loading game specific files.
+    // If a file cannot be found on the main mod folder, search this one.
+    "Mod_Fallback_Folder" "foo"
 }
 ```

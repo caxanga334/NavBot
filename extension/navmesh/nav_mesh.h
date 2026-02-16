@@ -920,6 +920,47 @@ public:
 			SetMarkedArea(nullptr);
 		}
 	}
+	/**
+	 * @brief Utility function for applying an edit command on nav areas with corner support.
+	 *
+	 * Uses the first available: selected area set, marked area, active area.
+	 * @tparam T Nav Area class
+	 * @tparam F Edit command functor. requires an operator() overload with one parameter: void (T* area, NavCornerType corner)
+	 * @param cmd Edit command functor to run.
+	 * @param clearOnEnd If true, the selected set/marked area is cleared when done.
+	 */
+	template <typename T, typename F>
+	void ExecuteAreaCornerEditCommand(F& cmd, const bool clearOnEnd = true)
+	{
+		if (!IsSelectedSetEmpty())
+		{
+			FOR_EACH_VEC(m_selectedSet, it)
+			{
+				T* area = static_cast<T*>(m_selectedSet[it], NavCornerType::NUM_CORNERS);
+				cmd(area);
+			}
+		}
+		else
+		{
+			if (m_markedArea)
+			{
+				cmd(static_cast<T*>(m_markedArea, m_markedCorner));
+			}
+			else
+			{
+				if (FindActiveNavArea() && m_selectedArea)
+				{
+					cmd(static_cast<T*>(m_selectedArea, NavCornerType::NUM_CORNERS));
+				}
+			}
+		}
+
+		if (clearOnEnd)
+		{
+			ClearSelectedSet();
+			SetMarkedArea(nullptr);
+		}
+	}
 	// Utility function to clear the selected set and unmark areas.
 	inline void ClearEditedAreas()
 	{

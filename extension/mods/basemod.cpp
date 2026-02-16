@@ -293,6 +293,57 @@ IModHelpers* CBaseMod::AllocModHelpers() const
 	return new IModHelpers;
 }
 
+bool CBaseMod::BuildPathToModFile(const std::string_view& basepath, const std::string_view& filepath, const std::string_view& userfilepath, std::string& path) const
+{
+	char tmp[PLATFORM_MAX_PATH];
+
+	// check main folder
+
+	if (!userfilepath.empty())
+	{
+		// check user custom file
+		smutils->BuildPath(SourceMod::PathType::Path_SM, tmp, sizeof(tmp), "%s/%s/%s", basepath.data(), m_modFolder.c_str(), userfilepath.data());
+
+		if (std::filesystem::exists(tmp))
+		{
+			path.assign(tmp);
+			return true;
+		}
+	}
+
+	smutils->BuildPath(SourceMod::PathType::Path_SM, tmp, sizeof(tmp), "%s/%s/%s", basepath.data(), m_modFolder.c_str(), filepath.data());
+
+	if (std::filesystem::exists(tmp))
+	{
+		path.assign(tmp);
+		return true;
+	}
+
+	// check fallback folder
+
+	if (!userfilepath.empty())
+	{
+		// check user custom file
+		smutils->BuildPath(SourceMod::PathType::Path_SM, tmp, sizeof(tmp), "%s/%s/%s", basepath.data(), m_modFallbackFolder.c_str(), userfilepath.data());
+
+		if (std::filesystem::exists(tmp))
+		{
+			path.assign(tmp);
+			return true;
+		}
+	}
+
+	smutils->BuildPath(SourceMod::PathType::Path_SM, tmp, sizeof(tmp), "%s/%s/%s", basepath.data(), m_modFallbackFolder.c_str(), filepath.data());
+
+	if (std::filesystem::exists(tmp))
+	{
+		path.assign(tmp);
+		return true;
+	}
+
+	return false;
+}
+
 void CBaseMod::InternalFindPlayerResourceEntity()
 {
 	SourceMod::IGameConfig* gamedata = nullptr;

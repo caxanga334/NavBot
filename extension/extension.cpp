@@ -252,9 +252,17 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 		if (i != 0)
 		{
-			smutils->LogMessage(myself, "Bot support disabled: NoBots == true on gamedata file.");
+			smutils->LogMessage(myself, "Bot support disabled by gamedata!");
 			m_botsAreSupported = false;
 		}
+	}
+
+	value = m_cfg_navbot->GetKeyValue("NotSupported");
+
+	if (value && UtilHelpers::StringToBoolean(value))
+	{
+		ke::SafeStrcpy(error, maxlen, "Error: This mod is not supported by NavBot!");
+		return false;
 	}
 
 	int offset = 0;

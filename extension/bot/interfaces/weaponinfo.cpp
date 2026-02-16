@@ -16,20 +16,13 @@
 
 bool CWeaponInfoManager::LoadConfigFile()
 {
-	std::unique_ptr<char[]> path = std::make_unique<char[]>(PLATFORM_MAX_PATH);
+	std::string spath;
+	const CBaseMod* mod = extmanager->GetMod();
 
-	auto gamefolder = extmanager->GetMod()->GetModFolder().c_str();
-	smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/weapons.custom.cfg", gamefolder);
-
-	if (!std::filesystem::exists(path.get()))
+	if (!mod->BuildPathToModFile("configs/navbot", "weapons.cfg", "weapons.custom.cfg", spath))
 	{
-		smutils->BuildPath(SourceMod::Path_SM, path.get(), PLATFORM_MAX_PATH, "configs/navbot/%s/weapons.cfg", gamefolder);
-
-		if (!std::filesystem::exists(path.get()))
-		{
-			smutils->LogError(myself, "Failed to load Weapon Info configuration file \"%s\". File does not exists!", path.get());
-			return false;
-		}
+		smutils->LogError(myself, "Failed to load Weapon Info configuration file. File does not exists!");
+		return false;
 	}
 
 	m_index_lookup.clear();
@@ -38,12 +31,12 @@ bool CWeaponInfoManager::LoadConfigFile()
 
 	InitParserData();
 	SourceMod::SMCStates state;
-	auto errorcode = textparsers->ParseFile_SMC(path.get(), this, &state);
+	auto errorcode = textparsers->ParseFile_SMC(spath.c_str(), this, &state);
 
 	if (errorcode != SourceMod::SMCError::SMCError_Okay)
 	{
 		smutils->LogError(myself, "Failed to parse Weapon Info configuration file \"%s\". Parser received error %i (%s)", 
-			path.get(), static_cast<int>(errorcode), textparsers->GetSMCErrorString(errorcode));
+			spath.c_str(), static_cast<int>(errorcode), textparsers->GetSMCErrorString(errorcode));
 
 		return false;
 	}
@@ -85,6 +78,10 @@ bool CWeaponInfoManager::LoadConfigFile()
 	};
 
 	extmanager->ForEachBot(functor);
+
+#ifdef EXT_DEBUG
+	META_CONPRINTF("[NavBot] Parsed weapon config file: %s \n", spath.c_str());
+#endif // EXT_DEBUG
 
 	return true;
 }

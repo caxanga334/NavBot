@@ -30,21 +30,12 @@ void CModSettings::ParseConfigFile()
 		}
 	}
 
-	// Then parse the per mod global if it exists
-	smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/settings.custom.cfg", modfolder);
+	std::string spath;
 
-	if (std::filesystem::exists(path))
+	// parse settings file inside the mod folder
+	if (mod->BuildPathToModFile("configs/navbot", "settings.cfg", "settings.custom.cfg", spath))
 	{
-		ParseFile(path);
-	}
-	else
-	{
-		smutils->BuildPath(SourceMod::Path_SM, path, PLATFORM_MAX_PATH, "configs/navbot/%s/settings.cfg", modfolder);
-
-		if (std::filesystem::exists(path))
-		{
-			ParseFile(path);
-		}
+		ParseFile(spath.c_str());
 	}
 
 	std::string prefix;

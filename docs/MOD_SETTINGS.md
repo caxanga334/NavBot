@@ -58,6 +58,7 @@ These settings are used by all mods.
 | class_change_chance | Chance that a bot will actually change their class. | 0 - 100 | 75 |
 | camp_time_min | Minimum time in seconds a bot will camp. | 15 - 300 | 15 |
 | camp_time_max | Maximum time in seconds a bot will camp. | 30 - 1200 | 90 |
+| breakable_max_health | Entities with more health than this value are considered as unbreakable. | 500 - 10000 | 3000 |
 
 
 ### Macro Values
