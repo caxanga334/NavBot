@@ -166,7 +166,7 @@ void CMvMUpgradeManager::ParseBotUpgradeInfoFile()
 
 	if (error != SourceMod::SMCError_Okay)
 	{
-		smutils->LogError(myself, "Failed to parse configuration file \"%s\"!", path);
+		smutils->LogError(myself, "Failed to parse configuration file \"%s\"!", path.c_str());
 		return;
 	}
 
