@@ -31,6 +31,8 @@ public:
 	{
 		bot = tfbot;
 		healtharea = nullptr;
+		debug = (tfbot->IsDebugging(BOTDEBUG_TASKS) && tfbot->IsDebugging(BOTDEBUG_MISC));
+		teamindex = static_cast<int>(tfbot->GetMyTFTeam());
 	}
 
 	// Inherited via IGenericFilter
@@ -38,16 +40,23 @@ public:
 
 	CTF2Bot* bot;
 	CNavArea* healtharea;
+	bool debug;
+	int teamindex;
 };
 
 bool CTF2HealthFilter::IsSelected(CBaseEntity* object)
 {
 	Vector position = UtilHelpers::getWorldSpaceCenter(object);
 	position = trace::getground(position);
-	this->healtharea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f);
+	this->healtharea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f, false, true, teamindex);
 
 	if (this->healtharea == nullptr)
 	{
+		if (debug)
+		{
+			bot->DebugPrintToConsole(255, 0, 0, "NULL nearest nav area of entity %s (%s)!\n", UtilHelpers::textformat::FormatEntity(object), UtilHelpers::textformat::FormatVector(position));
+		}
+
 		return false; // no nav area
 	}
 
@@ -73,6 +82,13 @@ bool CTF2HealthFilter::IsSelected(CBaseEntity* object)
 		{
 			return false;
 		}
+	}
+
+	if (debug)
+	{
+		bot->DebugPrintToConsole(255, 0, 0, "FindHealth Candidate %s (%s)!\n", UtilHelpers::textformat::FormatEntity(object), UtilHelpers::textformat::FormatVector(position));
+		healtharea->DrawFilled(0, 64, 200, 160, 2.0f);
+		NDebugOverlay::Text(healtharea->GetCenter(), false, 2.0f, "%s", UtilHelpers::textformat::FormatEntity(object));
 	}
 
 	return true;

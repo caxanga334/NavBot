@@ -37,6 +37,7 @@ public:
 		bot = tfbot;
 		myclass = tfbot->GetMyClassType();
 		ammoarea = nullptr;
+		teamindex = static_cast<int>(tfbot->GetMyTFTeam());
 	}
 
 	// Inherited via IGenericFilter
@@ -45,13 +46,14 @@ public:
 	CTF2Bot* bot;
 	TeamFortress2::TFClassType myclass;
 	CNavArea* ammoarea;
+	int teamindex;
 };
 
 bool CTF2AmmoFilter::IsSelected(CBaseEntity* object)
 {
 	Vector position = UtilHelpers::getWorldSpaceCenter(object);
 	position = trace::getground(position);
-	this->ammoarea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f);
+	this->ammoarea = TheNavMesh->GetNearestNavArea(position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f, false, true, teamindex);
 
 	if (this->ammoarea == nullptr)
 	{

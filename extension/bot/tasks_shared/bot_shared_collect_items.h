@@ -40,7 +40,7 @@ namespace NBotSharedCollectItemTask
 		bool IsSelected(CBaseEntity* object) override
 		{
 			m_position = UtilHelpers::getWorldSpaceCenter(object);
-			m_navarea = static_cast<NavAreaClass*>(TheNavMesh->GetNearestNavArea(m_position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f));
+			m_navarea = static_cast<NavAreaClass*>(TheNavMesh->GetNearestNavArea(m_position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.0f, false, true, m_bot->GetCurrentTeamIndex()));
 
 			if (!IsItemValid(object, m_navarea))
 			{
