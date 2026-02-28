@@ -1,8 +1,7 @@
 # Nav Links
 
-Links is a new form of connections between nav areas added to NavBot.
-
-They allow two areas to be connected in ways that the standard connections doesn't allow.
+Links are a new form of connections between nav areas added to NavBot.    
+They allow two areas to be connected in ways that the standard connections doesn't allow.    
 
 # Commands
 
@@ -18,13 +17,12 @@ They allow two areas to be connected in ways that the standard connections doesn
 
 # Creating Links
 
-First you must prepare the starting area and point.
-
-Mark the starting area with `sm_nav_mark`, then go to where the link should start and use `sm_nav_offmesh_set_origin` to mark the link starting point.
-
-The area under your crosshair is selected as the destination area and your current position is used as the link end point.
-
-Now use `sm_nav_offmesh_connect <Link type ID>` to create the link.
+First you prepare the starting area and point.    
+Mark the starting area with `sm_nav_mark`, then stand on that area and use `sm_nav_offmesh_set_origin` to mark the link starting point.    
+Next go to where the link's destination area will be.    
+The area under your crosshair will be selected as the destination area and your current position is used as the link end point.    
+Now use `sm_nav_offmesh_connect <Link type ID>` to create the link between the starting and destination areas.    
+The starting area will now be marked with 'Nav Link' and a connection will be made to the destination area.    
 
 # Removing Links
 
@@ -51,5 +49,5 @@ Note: `sm_nav_offmesh_list_all` will always list all available link types.
 
 Finding the ideal position for the off-mesh link start and end position requires a bit of trial and error.    
 For **Teleport** link types, place the link start at inside the teleporter's trigger entity.    
-For **Grappling Hook** link types, the bot will aim the grappling hook slightly above the end position.        
+For **Grappling Hook** link types, the bot will aim the grappling hook slightly above the end position.    
 For **Catapult** link types, the link start should be placed outside the catapult's trigger entity.    
