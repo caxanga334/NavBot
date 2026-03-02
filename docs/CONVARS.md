@@ -23,7 +23,6 @@ List of console variables for NavBot.
 
 |ConVar Name|Description|Type|Additional Information|
 |:---:|:---:|:---:|:---:|
-|sm_navbot_tf_allow_class_changes|If disabled, bots won't change classes.|Boolean|Useful on game modes/maps that forces a specific class.|
 |sm_navbot_tf_teammates_are_enemies|If enabled, bots will attack teammates.|Boolean|Useful on deathmatch game modes.|
 |sm_navbot_tf_force_class|Forces bots to select this class.|String|Must be a valid class name: scout, soldier, pyro, demoman, heavyweapons, engineer, medic, sniper, spies.|
 |sm_navbot_tf_force_gamemode|Force a specific game mode.|Integer|Set to a negative value to use the automatic game mode detection.|
@@ -53,6 +52,7 @@ Values for `sm_navbot_tf_force_gamemode`.
 * 17: Deathmatch
 * 18: Slender Fortress
 * 19: Lizard Of Oz's FFA Deathmatch (Vscript)
+* 20: Tug of War
 
 ### Notes For TF2 Game Modes
 
