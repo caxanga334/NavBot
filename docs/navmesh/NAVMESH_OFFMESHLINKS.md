@@ -1,36 +1,32 @@
-# Nav Links
+# Nav Areas Off-Mesh Connections
 
-Links is a new form of connections between nav areas added to NavBot.
+Off-mesh connections allows creating less restricted connections between two nav areas.
 
-They allow two areas to be connected in ways that the standard connections doesn't allow.
-
-# Commands
+## Commands
 
 | Command | Arguments | Description |
 |:---:|:---:|:---:|
 | sm_nav_offmesh_list_all | None | Lists all available link type. |
 | sm_nav_offmesh_connect | (Link type ID) | Creates a new nav link with the given type. |
 | sm_nav_offmesh_disconnect | (Link type ID) | Removes a nav link with the given type. |
-| sm_nav_offmesh_purge | None | Removes all off-mesh connections. |
+| sm_nav_offmesh_purge | None | Removes all off-mesh connections from a specific area. |
 | sm_nav_offmesh_set_origin | None | Sets the starting point when creating new links. |
 | sm_nav_offmesh_warp_to_origin | None | Teleports you to the starting point used for new links. |
 | sm_nav_auto_create_teleports | None | Automatically creates off-mesh connection on trigger_teleport entities. |
 
-# Creating Links
+## Creating Off-Mesh Connections
 
-First you must prepare the starting area and point.
+To create an off-mesh connection from area A to area B, you need to first use `sm_nav_mark` to mark the starting (A) area.    
+Then use the `sm_nav_offmesh_set_origin` command to mark the off-mesh connection starting position. This position doesn't have to be inside the starting area however make sure the bots can reach it via walking.    
+The area currently under your crosshair will be the destination (B) area and your current position will be used as the destination position.   
+To finish creating an off-mesh link, use the `sm_nav_offmesh_connect <Link type numeric ID>` to create the connection.     
 
-Mark the starting area with `sm_nav_mark`, then go to where the link should start and use `sm_nav_offmesh_set_origin` to mark the link starting point.
+## Removing Off-Mesh Connections
 
-The area under your crosshair is selected as the destination area and your current position is used as the link end point.
+To remove an off-mesh connection from area A to area B.
+Mark the starting area (A) with `sm_nav_mark` and then while the destination (B) area is currently under your crosshair, type the following command: `sm_nav_offmesh_disconnect <Link type numeric ID>`.    
 
-Now use `sm_nav_offmesh_connect <Link type ID>` to create the link.
-
-# Removing Links
-
-Mark the link's starting area, put your crosshair on the destination area and then use `sm_nav_offmesh_disconnect <Link type ID>` to remove the link of given type.
-
-# Current Link Types
+## Current Off-Mesh Connection Types
 
 Note: `sm_nav_offmesh_list_all` will always list all available link types.
 
@@ -51,5 +47,5 @@ Note: `sm_nav_offmesh_list_all` will always list all available link types.
 
 Finding the ideal position for the off-mesh link start and end position requires a bit of trial and error.    
 For **Teleport** link types, place the link start at inside the teleporter's trigger entity.    
-For **Grappling Hook** link types, the bot will aim the grappling hook slightly above the end position.        
+For **Grappling Hook** link types, the bot will aim the grappling hook slightly above the end position.    
 For **Catapult** link types, the link start should be placed outside the catapult's trigger entity.    
