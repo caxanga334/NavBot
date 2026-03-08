@@ -14,7 +14,7 @@ public:
 
 	const char* GetName() const override { return "TacticalMonitor"; }
 private:
-	
+	CountdownTimer m_reloadCheckTimer; // throttles the tactical reload check to once per second
 };
 
 #endif // !__NAVBOT_DODSBOT_TACTICAL_MONITOR_TASK_H_
