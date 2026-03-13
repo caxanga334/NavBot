@@ -486,6 +486,24 @@ bool CBotWeapon::CanUseSpecialFunction(const CBaseBot* owner, const float range)
 	return false;
 }
 
+bool CBotWeapon::CanBeReloaded(const CBaseBot* owner) const
+{
+	const WeaponInfo* info = GetWeaponInfo();
+
+	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	{
+		return false; // if a weapon's primary attack is melee, assume it doesn't need to reload
+	}
+
+	// this one is tricky, if a weapon uses the reserve ammo directly, assume it doesn't have clips (IE: TF2's sniper rifle)
+	if (info->Clip1IsReserveAmmo())
+	{
+		return false;
+	}
+
+	return true;
+}
+
 float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const
 {
 	const WeaponInfo* info = GetWeaponInfo();

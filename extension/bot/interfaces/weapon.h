@@ -97,6 +97,12 @@ public:
 	const char* GetDebugIdentifier() const;
 	// Returns the weapon subtype. Used when selecting weapons via UserCmd
 	virtual int GetSubType() const;
+	/**
+	 * @brief Called to determine if this weapon can be reloaded.
+	 * @param owner Bot that currently owns this weapon.
+	 * @return True if the weapon can be reloaded, false otherwise.
+	 */
+	virtual bool CanBeReloaded(const CBaseBot* owner) const;
 protected:
 	const WeaponInfo* m_info;
 

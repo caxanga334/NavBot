@@ -50,58 +50,36 @@ newoption {
 Path_HL2SDKROOT = ""
 Path_SM = ""
 Path_MMS = ""
-g_Compiler = ""
 
 -- when "premake5 --help" is ran, _ACTION is NULL (nil)
 if (_ACTION ~= nil) then
-	if (_OPTIONS["hl2sdk-root"] == nil) then
-		error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
-	end
-
-	if (_OPTIONS["mms-path"] == nil) then
-		error("Failed to get path to Metamod Source. Set path with --mms-path=path")
-	end
-
-	if (_OPTIONS["sm-path"] == nil) then
-		error("Failed to get path to SourceMod. Set path with --sm-path=path")
-	end
-
-	if (not os.isdir(_OPTIONS["hl2sdk-root"])) then
-		error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
-	end
-
-	if (not os.isdir(_OPTIONS["mms-path"])) then
-		error("Failed to get path to Metamod Source. Set path with --mms-path=path")
-	end
-
-	if (not os.isdir(_OPTIONS["sm-path"])) then
-		error("Failed to get path to SourceMod. Set path with --sm-path=path")
-	end
-
-	Path_HL2SDKROOT = path.normalize(_OPTIONS["hl2sdk-root"])
-	Path_SM = path.normalize(_OPTIONS["sm-path"])
-	Path_MMS = path.normalize(_OPTIONS["mms-path"])
-end
-
--- check compiler
-if os.host() == "windows" then
-    g_Compiler = "MSVC"
-    print("Microsoft C++ compiler selected.")
-elseif os.host() == "linux" then
-    local cxx = os.getenv("CXX")
-
-    if cxx == nil then
-        g_Compiler = "CLANG"
-        print("CXX env not set. Using clang.")
-    else
-        if string.startswith(cxx, "clang") then
-            g_Compiler = "CLANG"
-            print("Clang selected.")
-        else
-            g_Compiler = "GCC"
-            print("GCC selected.")
-        end
+    if (_OPTIONS["hl2sdk-root"] == nil) then
+        error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
     end
+
+    if (_OPTIONS["mms-path"] == nil) then
+        error("Failed to get path to Metamod Source. Set path with --mms-path=path")
+    end
+
+    if (_OPTIONS["sm-path"] == nil) then
+        error("Failed to get path to SourceMod. Set path with --sm-path=path")
+    end
+
+    if (not os.isdir(_OPTIONS["hl2sdk-root"])) then
+        error("Failed to get path to HL2SDKs. Set path with --hl2sdk-root=path")
+    end
+
+    if (not os.isdir(_OPTIONS["mms-path"])) then
+        error("Failed to get path to Metamod Source. Set path with --mms-path=path")
+    end
+
+    if (not os.isdir(_OPTIONS["sm-path"])) then
+        error("Failed to get path to SourceMod. Set path with --sm-path=path")
+    end
+
+    Path_HL2SDKROOT = path.normalize(_OPTIONS["hl2sdk-root"])
+    Path_SM = path.normalize(_OPTIONS["sm-path"])
+    Path_MMS = path.normalize(_OPTIONS["mms-path"])
 end
 
 workspace "navbot"
@@ -110,33 +88,30 @@ workspace "navbot"
         "Release"
     }
 
-    platforms { 
-        "Win32",
-        "Win64",
-        "Linux32",
-        "Linux64"
-    }
+    if os.host() == "windows" then
+        platforms { 
+            "Win32",
+            "Win64"
+        }
+    end
+
+    if os.host() == "linux" then
+        platforms { 
+            "Linux32",
+            "Linux64"
+        }
+    end
 
     location (todir)
 
     symbols "On"
-	exceptionhandling "On"
-	rtti "On"
+    exceptionhandling "On"
+    rtti "On"
     stringpooling "On"
     omitframepointer "Off"
     vectorextensions "SSE2"
     pic "On"
     include("premake/common_sdk.lua")
-
-    if g_Compiler == "MSVC" then
-        toolset "msc"
-		clangtidy("On")
-		runcodeanalysis("On")
-    elseif g_Compiler == "CLANG" then
-        toolset "clang"
-    else
-        toolset "gcc"
-    end
 
     filter { "options:instructions-set=avx2" }
         vectorextensions "AVX2"
@@ -151,8 +126,11 @@ workspace "navbot"
         defines { "NO_SOURCEPAWN_API" }
 
     filter { "system:Windows" }
+        toolset "msc"
+        clangtidy("On")
+        runcodeanalysis("On")
         defines { "_CRT_SECURE_NO_DEPRECATE", "_CRT_SECURE_NO_WARNINGS", "_CRT_NONSTDC_NO_DEPRECATE", "_WINDOWS", "_ITERATOR_DEBUG_LEVEL=0" }
-        flags { "MultiProcessorCompile" }
+        multiprocessorcompile "on"
         characterset "MBCS"
         staticruntime "on"
         runtime "Release"
@@ -167,6 +145,7 @@ workspace "navbot"
 
     -- Linux options shared for both GCC/Clang
     filter { "system:Linux" }
+        toolset "clang"
         defines { "LINUX", "_LINUX", "POSIX", "_FILE_OFFSET_BITS=64", "COMPILER_GCC" }
         defines { "stricmp=strcasecmp", "_stricmp=strcasecmp", "_snprintf=snprintf", "_vsnprintf=vsnprintf", "HAVE_STDINT_H", "GNUC" }
         buildoptions { 
@@ -175,10 +154,10 @@ workspace "navbot"
         }
         -- disable prefixes for Linux
         targetprefix ""
-		
-		if os.host() == "linux" then
-			visibility "Hidden"
-		end
+        
+        if os.host() == "linux" then
+            visibility "Hidden"
+        end
 
     -- Linux options for Clang only
     filter { "system:linux", "toolset:clang" }
@@ -199,7 +178,7 @@ workspace "navbot"
         defines { "NDEBUG" }
         targetdir "build/bin/%{cfg.architecture}/release"
         optimize "Full"
-		linktimeoptimization "On"
+        linktimeoptimization "On"
 
     filter { "platforms:Win32" }
         system "Windows"

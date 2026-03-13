@@ -18,6 +18,7 @@ ICombat::ICombat(CBaseBot* bot) :
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
 	m_reAim = false;
+	m_shouldReloadPostCombat = false;
 	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_combatData.Clear();
 }
@@ -100,6 +101,7 @@ void ICombat::Update()
 
 		SetLastThreat(threat);
 		UpdateCombatData(threat, activeWeapon);
+		GetPostCombatChecksTimer().Start(POST_COMBAT_TIMER_DURATION);
 
 		if (m_combatData.is_visible && wasNotVisible)
 		{
@@ -132,6 +134,12 @@ void ICombat::Update()
 			m_lookAroundTimer.StartRandom(LOOK_AROUND_TIMER_BASE_MIN, LOOK_AROUND_TIMER_BASE_MAX);
 
 			UpdateLookingAround();
+		}
+
+		if (GetPostCombatChecksTimer().HasStarted() && GetPostCombatChecksTimer().IsElapsed())
+		{
+			GetPostCombatChecksTimer().Invalidate();
+			OnPostCombat();
 		}
 	}
 }
@@ -298,6 +306,7 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 				{
 					OpportunisticallyUseWeaponSpecialFunction(bot, threat, activeWeapon);
 					GetAttackTimer().Start(); // just attacked
+					SetShouldReloadPostCombat(true); // remember to reload my weapon
 
 					if (data.can_use_primary)
 					{
@@ -735,6 +744,34 @@ void ICombat::UpdateLookingAround()
 		Vector aim = lookarea->GetCenter();
 		aim.z += navgenparams->half_human_height;
 		me->GetControlInterface()->AimAt(aim, IPlayerController::LookPriority::LOOK_INTERESTING, LOOK_AROUND_BASE_DURATION, "Looking around randomly.");
+	}
+}
+
+void ICombat::OnPostCombat()
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const bool isDebugging = bot->IsDebugging(BOTDEBUG_COMBAT);
+
+	if (isDebugging)
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s OnPostCombat\n", bot->GetDebugIdentifier());
+	}
+
+	if (GetShouldReloadPostCombat())
+	{
+		const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+		if (activeWeapon && activeWeapon->CanBeReloaded(bot))
+		{
+			if (isDebugging)
+			{
+				bot->DebugPrintToConsole(0, 255, 255, "%s RELOADING WEAPON POST COMBAT!\n", bot->GetDebugIdentifier());
+			}
+
+			bot->GetControlInterface()->PressReloadButton();
+		}
+
+		SetShouldReloadPostCombat(false);
 	}
 }
 

@@ -18,6 +18,7 @@ public:
 	static constexpr float LOOK_AROUND_TIMER_BASE_MIN = 3.0f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MAX = 7.0f;
 	static constexpr int LOOK_AROUND_MIN_SKILL = 25;
+	static constexpr float POST_COMBAT_TIMER_DURATION = 5.0f;
 
 	struct CombatData
 	{
@@ -141,6 +142,13 @@ public:
 	void DisableDodging(float time = 1.0f) { m_disableDodgeTimer.Start(time); }
 	// Enable dodging
 	void EnableDodging() { m_disableDodgeTimer.Invalidate(); }
+	/**
+	 * @brief Sets if the bot should reload their weapon post combat.
+	 * @param state State
+	 */
+	void SetShouldReloadPostCombat(bool state) { m_shouldReloadPostCombat = state; }
+	// Returns true if the bot should reload their weapon post combat.
+	const bool GetShouldReloadPostCombat() const { return m_shouldReloadPostCombat; }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -283,18 +291,24 @@ protected:
 	 * @return Enemy name string.
 	 */
 	virtual const char* GetEnemyName(const CKnownEntity* enemy) const;
-	// Sets the last reported place name index
+	// Sets the last reported place name index.
 	void SetLastReportedPlace(unsigned int place) { m_lastPlace = place; }
-	// Timer for weapon reloads
+	// Timer for weapon reloads.
 	CountdownTimer& GetReloadTimer() { return m_reloadTimer; }
-	// Timer for look around
+	// Timer for look around.
 	CountdownTimer& GetLookAroundTimer() { return m_lookAroundTimer; }
-	// Timer for disabling look round
+	// Timer for disabling look round.
 	CountdownTimer& GetDisableLookRoundTimer() { return m_disableLookingAroundTimer; }
-	// Timer for disabling dodge
+	// Timer for disabling dodge.
 	CountdownTimer& GetDisableDodgeTimer() { return m_disableDodgeTimer; }
+	// Timer for post combat checks.
+	CountdownTimer& GetPostCombatChecksTimer() { return m_postCombatChecks; }
 	// Invoked to update the look around logic.
 	virtual void UpdateLookingAround();
+	/**
+	 * @brief Called after a bot has left combat.
+	 */
+	virtual void OnPostCombat();
 private:
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;
@@ -310,12 +324,14 @@ private:
 	CountdownTimer m_disableLookingAroundTimer;
 	CountdownTimer m_lookAroundTimer;
 	CountdownTimer m_disableDodgeTimer;
+	CountdownTimer m_postCombatChecks;
 	IntervalTimer m_attackTimer;
 	CombatData m_combatData;
 	bool m_shouldAim;
 	bool m_shouldSelectWeapons;
 	bool m_isScopedOrDeployed;
 	bool m_reAim;
+	bool m_shouldReloadPostCombat;
 	unsigned int m_lastPlace;
 
 	IDecisionQuery::DesiredAimSpot SelectClearAimSpot(const bool allowheadshots) const;
