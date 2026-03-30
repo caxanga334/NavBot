@@ -7,6 +7,8 @@
 #include <mods/tf2/nav/tfnav_waypoint.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
+#include <bot/tasks_shared/bot_shared_take_cover_from_spot.h>
+#include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_build_object.h"
 
@@ -120,6 +122,20 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 
 TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+	if (threat)
+	{
+		// random chance to attack the enemy based on aggression level
+		if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
+		{
+			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible threat!");
+		}
+
+		// else retreat
+		return PauseFor(new CBotSharedTakeCoverFromSpotTask<CTF2Bot, CTF2BotPathCost>(bot, threat->GetLastKnownPosition(), 1024.0f, true, true, 8192.0f), "Taking cover from threat!");
+	}
+
 	switch (m_type)
 	{
 	case CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN:

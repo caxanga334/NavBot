@@ -12,15 +12,18 @@ public:
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
 	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
 
-	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return m_inrange ? ANSWER_NO : ANSWER_UNDEFINED; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
-	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return m_inrange ? ANSWER_NO : ANSWER_UNDEFINED; }
 
 	const char* GetName() const override { return "UpgradeObject"; }
 private:
 	CHandle<CBaseEntity> m_object;
 	CMeshNavigator m_nav;
+	bool m_inrange;
 
+	// if this close to the object, ignore enemies
+	static constexpr auto IGNORE_ENEMIES_RANGE = 160.0f;
 	static constexpr auto get_object_melee_range() { return 80.0f; }
 };
 

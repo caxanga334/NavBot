@@ -324,6 +324,16 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 			OnHandleWeaponFailed(bot, threat, activeWeapon);
 		}
 	}
+	else
+	{
+		if (!data.can_fire && data.is_visible)
+		{
+			if (bot->IsDebugging(BOTDEBUG_COMBAT))
+			{
+				bot->DebugPrintToConsole(255, 213, 128, "%s THREAT VISIBLE BUT LINE OF FIRE IS OBSTRUCTED! \n", bot->GetDebugIdentifier());
+			}
+		}
+	}
 }
 
 bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)

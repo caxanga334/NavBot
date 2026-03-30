@@ -41,6 +41,8 @@ public:
 	void OnTaskEnd(BT* bot, AITask<BT>* nextTask) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
 
 	const char* GetName() const override { return "Snipe"; }
 private:

@@ -28,6 +28,9 @@ public:
 	}
 
 	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;

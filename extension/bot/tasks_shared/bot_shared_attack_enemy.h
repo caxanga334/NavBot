@@ -31,6 +31,10 @@ public:
 
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
+
 	const char* GetName() const override { return "AttackEnemy"; }
 private:
 	CT m_pathcost;

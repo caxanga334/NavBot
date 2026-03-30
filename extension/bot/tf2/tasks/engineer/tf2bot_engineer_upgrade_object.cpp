@@ -8,7 +8,7 @@
 #include "tf2bot_engineer_upgrade_object.h"
 
 CTF2BotEngineerUpgradeObjectTask::CTF2BotEngineerUpgradeObjectTask(CBaseEntity* object) :
-	m_object(object)
+	m_object(object), m_inrange(false)
 {
 }
 
@@ -57,19 +57,24 @@ TaskResult<CTF2Bot> CTF2BotEngineerUpgradeObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 	}
 
-	auto myweapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
-
-	if (myweapon && myweapon->GetWeaponInfo()->GetSlot() != static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee))
+	const float range = bot->GetRangeTo(object.WorldSpaceCenter());
+	m_inrange = range <= IGNORE_ENEMIES_RANGE;
+	const CTF2BotInventory* inventory = bot->GetInventoryInterface();
+	
+	if (m_inrange)
 	{
-		CBaseEntity* wrench = bot->GetWeaponOfSlot(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee);
+		const CBotWeapon* myweapon = inventory->GetActiveBotWeapon();
 
-		if (wrench)
+		if (myweapon && myweapon->GetWeaponInfo()->GetSlot() != static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee))
 		{
-			bot->SelectWeapon(wrench);
+			const CBotWeapon* wrench = inventory->FindWeaponBySlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Melee));
+
+			if (wrench)
+			{
+				inventory->EquipWeapon(wrench);
+			}
 		}
 	}
-
-	const float range = bot->GetRangeTo(object.WorldSpaceCenter());
 
 	if (range > get_object_melee_range())
 	{
