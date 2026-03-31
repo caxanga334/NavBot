@@ -4686,6 +4686,16 @@ void NavNotifyClientsOfReload::operator()(CBaseExtPlayer* player)
 	}
 }
 
+void CNavMesh::CommandNavDebugAutoBlockers()
+{
+	std::for_each(m_navblockers.begin(), m_navblockers.end(), [](std::unique_ptr<INavBlocker>& blocker) {
+		META_CONPRINTF("Nav Blocker: \"%s\". Valid: %s. Status (ANY TEAM): %s \n",
+			blocker->GetName(), 
+			UtilHelpers::textformat::FormatBool(blocker->IsValid()), 
+			blocker->IsBlocked(NAV_TEAM_ANY) ? "BLOCKED" : "UNBLOCKED");
+		blocker->PrintDebugInfo();
+	});
+}
 
 CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
@@ -4695,4 +4705,9 @@ CON_COMMAND_F(sm_nav_import, "Imports an existing official navigation mesh.", FC
 CON_COMMAND_F(sm_nav_rcbot2_import, "Imports waypoints from RCBot2", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
 	TheNavMesh->ImportWaypointsFromRCBot2();
+}
+
+CON_COMMAND_F(sm_nav_debug_blockers, "Shows debug information of nav blockers.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	TheNavMesh->CommandNavDebugAutoBlockers();
 }

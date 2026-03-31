@@ -655,6 +655,7 @@ public:
 	void CommandNavReloadMesh();										// Saves the navigation mesh and reloads it
 	void CommandNavMeasureDistance();									// Measures the distance between two nav areas
 	void CommandNavDumpToKeyValues();									// Dumps nav mesh data to a KV file
+	void CommandNavDebugAutoBlockers();									// Debug automatic nav blockers
 
 	void AddToDragSelectionSet( CNavArea *pArea );
 	void RemoveFromDragSelectionSet( CNavArea *pArea );

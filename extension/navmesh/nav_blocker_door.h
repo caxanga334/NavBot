@@ -31,6 +31,8 @@ public:
 	void Update() override;
 	bool IsBlocked(int teamID) override;
 	bool RemoveOnRecompute() override { return true; }
+	const char* GetName() override { return "CDoorNavBlocker"; }
+	void PrintDebugInfo() override;
 
 protected:
 	DoorType m_doortype;

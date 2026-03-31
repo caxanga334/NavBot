@@ -51,6 +51,10 @@ public:
 	virtual void OnRecomputeInternalData() = 0;
 	// Return true if this blocker should be deleted when the nav mesh internal data is recomputed
 	virtual bool RemoveOnRecompute() = 0;
+	// The name of this blocker, for debugging purposes
+	virtual const char* GetName() = 0;
+	// Prints debug information to the console.
+	virtual void PrintDebugInfo() = 0;
 };
 
 /**
@@ -84,6 +88,8 @@ public:
 	bool IsBlocked(int teamID) { return true; }
 	void OnRecomputeInternalData() override {}
 	bool RemoveOnRecompute() override { return false; }
+	const char* GetName() override { return "CNavBlocker"; }
+	void PrintDebugInfo() override {}
 
 protected:
 	std::vector<AreaType*> m_areas;

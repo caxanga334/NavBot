@@ -270,6 +270,7 @@ void CTeamFortress2Mod::FireGameEvent(IGameEvent* event)
 		}
 		else if (strncasecmp(name, "teamplay_point_captured", 23) == 0)
 		{
+			TheNavMesh->ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_OBJECTIVE_UPDATED);
 			int pointID = event->GetInt("cp");
 			int teamWhoCapped = event->GetInt("team");
 			CBaseEntity* entity = GetControlPointByIndex(pointID);
@@ -1524,6 +1525,7 @@ void CTeamFortress2Mod::OnRoundStart()
 	};
 
 	extmanager->ForEachBot(func);
+	TheNavMesh->ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_RESET);
 }
 
 const TeamFortress2::TFObjectiveResource* CTeamFortress2Mod::GetTFObjectiveResource() const

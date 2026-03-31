@@ -77,6 +77,14 @@ bool CDoorNavBlocker::IsBlocked(int teamID)
 	return m_blocked;
 }
 
+void CDoorNavBlocker::PrintDebugInfo()
+{
+	META_CONPRINTF("Door: %s\n", UtilHelpers::textformat::FormatEntity(m_door.Get()));
+	META_CONPRINTF("Trigger: %s\n", UtilHelpers::textformat::FormatEntity(m_trigger.Get()));
+	META_CONPRINTF("Filter: %s\n", UtilHelpers::textformat::FormatEntity(m_filter.Get()));
+	META_CONPRINTF("Team Only: %s Team: %i\n", UtilHelpers::textformat::FormatBool(m_teamOnly), m_teamNum);
+}
+
 void CDoorNavBlocker::UpdateDoor()
 {
 	CBaseEntity* door = m_door.Get();
@@ -108,6 +116,15 @@ void CDoorNavBlocker::UpdateDoor()
 	auto func = [&targetname, &trigger](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
+			bool disabled = false;
+			entprops->GetEntPropBool(entity, Prop_Data, "m_bDisabled", disabled);
+
+			// some doors (IE: pl_goldrush) have one trigger per team
+			if (disabled)
+			{
+				return true; // skip, continue loop
+			}
+
 			if (UtilHelpers::io::IsConnectedTo(entity, targetname))
 			{
 				trigger = entity;
