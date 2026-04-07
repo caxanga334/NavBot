@@ -54,14 +54,14 @@ inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* 
 		return AITask<BT>::Continue();
 	}
 
-	const ISquad::SquadMember* leader = squadiface->GetSquad()->GetSquadLeader();
+	const ISquad::Member* leader = squadiface->GetSquadData()->GetSquadLeader();
 
 	if (!leader || !leader->IsValid())
 	{
 		return AITask<BT>::Continue();
 	}
 
-	Vector goal = leader->GetPosition();
+	const Vector& goal = squadiface->GetSquadData()->GetSquadLeaderPosition();
 
 	if (bot->GetRangeTo(goal) > m_followrange)
 	{

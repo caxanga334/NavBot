@@ -25,6 +25,7 @@ public:
 	bool operator==(const CKnownEntity* other);
 	bool operator==(const CKnownEntity* other) const;
 	inline bool operator!=(const CKnownEntity& other) { return !(*this == other); }
+	explicit operator bool() const { return IsValid(); }
 
 	// Returns true if the entity was completely visible to the bot at some point
 	inline bool WasEverFullyVisible() const { return m_timelastvisible > 0.0f; }

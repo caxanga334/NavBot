@@ -7,16 +7,11 @@
 
 TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)
 {
-    if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
+    if (!bot->GetSquadInterface()->IsInASquad() && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
     {
-        if (!bot->GetSquadInterface()->IsInASquad())
-        {
-            if (bot->GetSquadInterface()->CreateSquad(nullptr))
-            {
-                ISquad::InviteBotsToSquadFunc func{ bot, 3 };
-                extmanager->ForEachBot(func);
-            }
-        }
+        botsquadutils::TryFormSquadFunc func{ bot, nullptr, 4 };
+        extmanager->ForEachBot(func);
+        func.CreateSquad();
     }
 
     if (bot->GetSquadInterface()->IsInASquad() && !bot->GetSquadInterface()->IsSquadLeader())

@@ -243,8 +243,6 @@ void CExtManager::OnMapStart()
 {
 	TheNavMesh->OnMapStart();
 	m_mod->OnMapStart();
-	ISquad::ResetSquadCounts();
-	ISquad::ResetSquadTeamTimers();
 
 	if (m_botnames.size() != 0)
 	{
@@ -521,7 +519,7 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	const char* prefix = sm_navbot_bot_name_prefix.GetString();
 
 	// add prefix if set
-	if (prefix && prefix[0] && std::strlen(prefix) > 0)
+	if (prefix && prefix[0] != '\0' && std::strlen(prefix) > 0)
 	{
 		ke::SafeSprintf(finalname, sizeof(finalname), "%s%s", prefix, name);
 	}

@@ -271,7 +271,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnSquadEvent(CTF2Bot* bot
 	// Medic: update follow target to be my squad leader
 	if (evtype == IEventListener::SquadEventType::SQUAD_EVENT_JOINED)
 	{
-		const ISquad::SquadMember* leader = bot->GetSquadInterface()->GetSquad()->GetSquadLeader();
+		const ISquad::Member* leader = bot->GetSquadInterface()->GetSquadData()->GetSquadLeader();
 
 		if (leader->IsValid())
 		{

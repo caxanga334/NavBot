@@ -277,6 +277,12 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			v = std::clamp(v, 500, 10000);
 			SetBreakableMaxHealth(v);
 		}
+		else if (std::strcmp(key, "squad_invite_max_distance") == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 512.0f, 16384.0f);
+			SetSquadMaxInviteDistance(v);
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

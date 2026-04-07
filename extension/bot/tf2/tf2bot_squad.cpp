@@ -23,7 +23,7 @@ bool CTF2BotSquad::CanJoinSquads() const
 		break;
 	}
 
-	return true;
+	return ISquad::CanJoinSquads();
 }
 
 bool CTF2BotSquad::CanLeadSquads() const
@@ -42,7 +42,28 @@ bool CTF2BotSquad::CanLeadSquads() const
 		break;
 	}
 
-	return true;
+	return ISquad::CanLeadSquads();
+}
+
+bool CTF2BotSquad::CanBePromoted() const
+{
+	CTF2Bot* bot = GetBot<CTF2Bot>();
+
+	switch (bot->GetMyClassType())
+	{
+	case TeamFortress2::TFClassType::TFClass_Medic:
+		[[fallthrough]];
+	case TeamFortress2::TFClassType::TFClass_Engineer:
+		[[fallthrough]];
+	case TeamFortress2::TFClassType::TFClass_Sniper:
+		[[fallthrough]];
+	case TeamFortress2::TFClassType::TFClass_Spy:
+		return false;
+	default:
+		break;
+	}
+
+	return ISquad::CanBePromoted();
 }
 
 bool CTF2BotSquad::UsesSquadBehavior() const
@@ -61,5 +82,5 @@ bool CTF2BotSquad::UsesSquadBehavior() const
 		break;
 	}
 
-	return true;
+	return ISquad::UsesSquadBehavior();
 }

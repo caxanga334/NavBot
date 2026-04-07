@@ -24,6 +24,10 @@ public:
 	AITask<BT>* InitialNextTask(BT* bot) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 
+	TaskEventResponseResult<BT> OnSquadEvent(BT* bot, IEventListener::SquadEventType evtype) override;
+
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 	// No. I'm working with a squad
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
@@ -51,7 +55,7 @@ inline AITask<BT>* CBotSharedSquadMemberMonitorTask<BT, CT>::InitialNextTask(BT*
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	if (!bot->GetSquadInterface()->IsSquadValid())
+	if (!bot->GetSquadInterface()->IsSquadValid() || bot->GetSquadInterface()->IsSquadLeader())
 	{
 		if (m_exitTask != nullptr)
 		{
@@ -59,13 +63,29 @@ inline TaskResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnTaskUpdate(BT*
 			m_exitTask = nullptr;
 			return AITask<BT>::SwitchTo(task, "No longer in a squad!");
 		}
-		else
-		{
-			return AITask<BT>::Done("No longer in a squad!");
-		}
+
+		return AITask<BT>::Done("No longer in a squad!");
 	}
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnSquadEvent(BT* bot, IEventListener::SquadEventType evtype)
+{
+	if (evtype == IEventListener::SquadEventType::SQUAD_EVENT_PROMOTED)
+	{
+		if (m_exitTask != nullptr)
+		{
+			AITask<BT>* task = m_exitTask;
+			m_exitTask = nullptr;
+			return AITask<BT>::TrySwitchTo(task, PRIORITY_CRITICAL, "I was promoted to squad leader!");
+		}
+
+		return AITask<BT>::TryDone(PRIORITY_CRITICAL, "I was promoted to squad leader!");
+	}
+
+	return AITask<BT>::TryContinue(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>
@@ -100,7 +120,7 @@ inline QueryAnswerType CBotSharedSquadMemberMonitorTask<BT, CT>::ShouldSeekAndDe
 			return ANSWER_NO;
 		}
 
-		const float leaderrange = (me->GetAbsOrigin() - squad->GetSquad()->GetSquadLeaderPosition()).Length();
+		const float leaderrange = (me->GetAbsOrigin() - squad->GetSquadData()->GetSquadLeaderPosition()).Length();
 
 		if (leaderrange >= range)
 		{

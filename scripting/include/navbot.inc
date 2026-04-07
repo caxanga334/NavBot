@@ -115,11 +115,15 @@ public Extension __ext_navbot =
 {
 	name = "navbot",
 	file = "navbot.ext",
+/*
 #if defined AUTOLOAD_EXTENSIONS
 	autoload = 1,
 #else
 	autoload = 0,
 #endif
+*/
+	// NavBot ships a .autoload file
+	autoload = 0,
 #if defined REQUIRE_EXTENSIONS
 	required = 1,
 #else

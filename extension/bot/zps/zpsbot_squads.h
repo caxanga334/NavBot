@@ -10,7 +10,7 @@ public:
 
 	bool CanLeadSquads() const override;
 
-	static CZPSBotSquad* GetFirstCarrierSquadInterface(CZPSBot* bot);
+	static CZPSBotSquad* GetFirstCarrierSquadInterface(CZPSBot* bot, CBaseEntity** humancarrier);
 
 private:
 

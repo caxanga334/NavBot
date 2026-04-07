@@ -57,22 +57,18 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskStart(CTF2Bot* bot, AIT
 		}
 	}
 
-	int teamNum = static_cast<int>(bot->GetMyTFTeam());
-	CountdownTimer& squadtimer = ISquad::GetSquadTeamTimer(teamNum);
+	CTF2BotSquad* squad = bot->GetSquadInterface();
 
-	if (squadtimer.IsElapsed() && !bot->GetSquadInterface()->IsInASquad())
+	// random chance for the bot to form a squad.
+	if (!squad->IsInASquad() && squad->CanLeadSquads() && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
 	{
-		if (bot->GetSquadInterface()->CreateSquad())
+		botsquadutils::TryFormSquadFunc func{ bot, nullptr, 4 };
+		extmanager->ForEachBot(func);
+		func.CreateSquad();
+
+		if (squad->IsSquadValid())
 		{
-			squadtimer.StartRandom();
-
-			ISquad::InviteBotsToSquadFunc func{ static_cast<CBaseBot*>(bot), 4 };
-			extmanager->ForEachBot(func);
-
-			if (bot->GetSquadInterface()->GetSquad()->GetMembersCount() > 0U)
-			{
-				return PauseFor(new CBotSharedWaitForSquadMembersTask<CTF2Bot>(15.0f, 512.0f), "Waiting for squad members to arrive!");
-			}
+			return PauseFor(new CBotSharedWaitForSquadMembersTask<CTF2Bot>(5.0f, 800.0f), "Waiting for squad members to arrive!");
 		}
 	}
 
@@ -132,13 +128,8 @@ TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskUpdate(CTF2Bot* bot)
 		CBaseEntity* newPoint = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(Vecpoints);
 		return SwitchTo(new CTF2BotAttackControlPointTask(newPoint), "Attacking another control point!");
 	}
-	else
-	{
-		// list of control points to attack is empty
-		return Done("No more control points to attack.");
-	}
 
-	return Continue();
+	return Done("No more control points to attack.");
 }
 
 TaskResult<CTF2Bot> CTF2BotAttackControlPointTask::OnTaskResume(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)

@@ -618,15 +618,15 @@ namespace UtilHelpers
 		{
 			return true;
 		}
-		else if (strncasecmp(str, "true", 4) == 0)
+		if (strncasecmp(str, "true", 4) == 0)
 		{
 			return true;
 		}
-		else if (strncasecmp(str, "no", 2) == 0)
+		if (strncasecmp(str, "no", 2) == 0)
 		{
 			return false;
 		}
-		else if (strncasecmp(str, "false", 5) == 0)
+		if (strncasecmp(str, "false", 5) == 0)
 		{
 			return false;
 		}
@@ -691,7 +691,7 @@ namespace UtilHelpers
 		 * @param filterfunctor 
 		 */
 		template <typename F>
-		inline CEntityEnumerator(F filterfunctor)
+		CEntityEnumerator(F filterfunctor)
 		{
 			m_filter = filterfunctor;
 			m_ents.reserve(256);
@@ -700,7 +700,7 @@ namespace UtilHelpers
 		// Inherited via IPartitionEnumerator
 		IterationRetval_t EnumElement(IHandleEntity* pHandleEntity) override;
 		// Number of entities collected
-		inline std::size_t Count() const { return m_ents.size(); }
+		std::size_t Count() const { return m_ents.size(); }
 		const std::vector<CBaseEntity*>& GetEntityVector() { return m_ents; }
 
 		/**
@@ -709,7 +709,7 @@ namespace UtilHelpers
 		 * @param func function to run. Return false to stop looping
 		 */
 		template <typename F>
-		inline void ForEach(F& func)
+		void ForEach(F& func)
 		{
 			for (CBaseEntity* entity : m_ents)
 			{
@@ -1010,6 +1010,48 @@ namespace UtilHelpers::gamedata
 	 * @return True if the offset was found, false otherwise.
 	 */
 	bool GetOffset(SourceMod::IGameConfig* main, SourceMod::IGameConfig* backup, int& offset, const std::string_view& name, const bool error = true);
+}
+
+/**
+ * @brief General purpose helper algorithms
+ */
+namespace UtilHelpers::algorithm
+{
+	/**
+	 * @brief Utility class to sort an std::vector<CBaseEntity*> by distance to the given position.
+	 */
+	class SortEntityVectorNearest
+	{
+	public:
+		SortEntityVectorNearest(const Vector& source) :
+			m_origin(source)
+		{}
+
+		bool operator()(CBaseEntity* lhs, CBaseEntity* rhs) const
+		{
+			return (UtilHelpers::getWorldSpaceCenter(lhs) - m_origin).LengthSqr() < (UtilHelpers::getWorldSpaceCenter(rhs) - m_origin).LengthSqr();
+		}
+
+	private:
+		Vector m_origin;
+	};
+
+	/**
+	 * @brief Utility class to sort an std::vector<CBaseBot*> by distance to the given position.
+	 */
+	class SortBotVectorNearest
+	{
+	public:
+		SortBotVectorNearest(const Vector& source) :
+			m_origin(source)
+		{
+		}
+
+		bool operator()(const CBaseBot* lhs, const CBaseBot* rhs) const;
+
+	private:
+		Vector m_origin;
+	};
 }
 
 #endif // !UTIL_HELPERS_H_

@@ -13,7 +13,7 @@ bool CZPSBotSquad::CanLeadSquads() const
 	return true;
 }
 
-CZPSBotSquad* CZPSBotSquad::GetFirstCarrierSquadInterface(CZPSBot* bot)
+CZPSBotSquad* CZPSBotSquad::GetFirstCarrierSquadInterface(CZPSBot* bot, CBaseEntity** humancarrier)
 {
 	CBaseExtPlayer* carrier = nullptr;
 
@@ -35,30 +35,24 @@ CZPSBotSquad* CZPSBotSquad::GetFirstCarrierSquadInterface(CZPSBot* bot)
 		{
 			return static_cast<CZPSBotSquad*>(carrier->MyBotPointer()->GetSquadInterface());
 		}
-		else
+
+		// human carrier
+		ISquad* squad = ISquad::GetHumanPlayerSquad(carrier->GetEntity(), true);
+
+		if (!squad)
 		{
-			// human carrier
-			ISquad* squad = ISquad::GetSquadInterfaceOfHumanLeader(carrier->GetEntity());
+			squad = bot->GetSquadInterface();
 
-			if (!squad)
+			if (squad->IsInASquad())
 			{
-				squad = bot->GetSquadInterface();
-
-				if (squad->IsInASquad())
-				{
-					return nullptr;
-				}
-
-				if (squad->CreateSquad(carrier->GetEntity()))
-				{
-					return static_cast<CZPSBotSquad*>(squad);
-				}
-
 				return nullptr;
 			}
 
+			*humancarrier = carrier->GetEntity();
 			return static_cast<CZPSBotSquad*>(squad);
 		}
+
+		return static_cast<CZPSBotSquad*>(squad);
 	}
 
 	return nullptr;

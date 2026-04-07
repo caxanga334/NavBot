@@ -4,6 +4,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <bot/basebot.h>
+#include <mods/modhelpers.h>
 
 /**
  * @brief Generic simple task to make the bot wait N seconds.
@@ -76,37 +77,36 @@ public:
 
 		ISquad* squad = bot->GetSquadInterface();
 
-		if (!squad->IsInASquad())
+		if (!squad->IsSquadValid())
 		{
 			return AITask<BT>::Done("No longer in an squad.");
 		}
 
-		if (!squad->IsSquadLeader() || squad->IsSquadLedByAHuman())
+		if (!squad->IsSquadLeader())
 		{
 			return AITask<BT>::Done("Must be a squad leader!");
 		}
 
-		int numMembers = 0;
-		int numClose = 0;
-
-		const ISquad::SquadData* data = squad->GetSquad();
-		Vector pos = bot->GetAbsOrigin();
-
-		for (const ISquad::SquadMember& member : data->GetMembers())
+		if (squad->IsHumanLedSquad())
 		{
-			if (!member.IsValid()) { continue; }
+			return AITask<BT>::Done("Leader is a human!");
+		}
 
-			if (!UtilHelpers::IsPlayerAlive(member.GetPlayerIndex())) { continue; }
+		std::size_t numClose = 0;
 
-			numMembers++;
-
-			if ((pos - member.GetPosition()).IsLengthLessThan(m_minDistance))
+		const ISquad::SquadData* data = squad->GetSquadData();
+		Vector pos = bot->GetAbsOrigin();
+		float min_dist = m_minDistance;
+		auto func = [&numClose, &pos, min_dist](const ISquad::Member& member) {
+			if ((pos - member.GetPosition()).IsLengthLessThan(min_dist))
 			{
 				numClose++;
 			}
-		}
+		};
 
-		if (numMembers == numClose)
+		data->ForEachMember(func);
+
+		if (numClose >= (data->GetMemberCount() - 1U))
 		{
 			return AITask<BT>::Done("All squad members are near me!");
 		}

@@ -2324,3 +2324,8 @@ bool UtilHelpers::gamedata::GetOffset(SourceMod::IGameConfig* main, SourceMod::I
 
 	return false;
 }
+
+bool UtilHelpers::algorithm::SortBotVectorNearest::operator()(const CBaseBot* lhs, const CBaseBot* rhs) const
+{
+	return (lhs->GetAbsOrigin() - m_origin).LengthSqr() < (rhs->GetAbsOrigin() - m_origin).LengthSqr();
+}

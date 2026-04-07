@@ -7,8 +7,8 @@
 #include <bot/basebot.h>
 
 /**
- * @brief 
- * @tparam BT 
+ * @brief Utility tasks for forming bot squads.
+ * @tparam BT Bot class.
  */
 template <typename BT>
 class CBotSharedTryFormingSquadTask : public AITask<BT>
@@ -30,9 +30,11 @@ private:
 template<typename BT>
 inline TaskResult<BT> CBotSharedTryFormingSquadTask<BT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
-	if (CBaseBot::s_botrng.GetRandomChance(33))
+	ISquad* squad = bot->GetSquadInterface();
+
+	if (!squad->CanLeadSquads())
 	{
-		return AITask<BT>::Done("Not creating squad (random chance).");
+		return AITask<BT>::Done("I can't lead squads!");
 	}
 
 	int teamwork = std::clamp(bot->GetDifficultyProfile()->GetTeamwork(), 0, 80);
@@ -40,15 +42,6 @@ inline TaskResult<BT> CBotSharedTryFormingSquadTask<BT>::OnTaskStart(BT* bot, AI
 	if (!CBaseBot::s_botrng.GetRandomChance(teamwork))
 	{
 		return AITask<BT>::Done("Not creating squad (random chance, teamwork skill based).");
-	}
-
-	ISquad* squad = bot->GetSquadInterface();
-
-	squad->CreateSquad(nullptr);
-	
-	if (!squad->IsSquadLeader())
-	{
-		return AITask<BT>::Done("Failed to create squad!");
 	}
 
 	return AITask<BT>::Continue();
@@ -59,16 +52,14 @@ inline TaskResult<BT> CBotSharedTryFormingSquadTask<BT>::OnTaskUpdate(BT* bot)
 {
 	ISquad* squad = bot->GetSquadInterface();
 
-	ISquad::InviteBotsToSquadFunc func{ bot, m_maxmembers };
-
-	extmanager->ForEachBot(func);
-
-	// No members were added
-	if (squad->GetSquad()->GetMembersCount() == 0U)
+	if (squad->IsInASquad())
 	{
-		squad->LeaveSquad();
+		return AITask<BT>::Done("Already in a squad!");
 	}
 
+	botsquadutils::TryFormSquadFunc func{ bot, nullptr, m_maxmembers };
+	extmanager->ForEachBot(func); // collect candidates for my squad
+	func.CreateSquad();
 	return AITask<BT>::Done("Done inviting to squad!");
 }
 

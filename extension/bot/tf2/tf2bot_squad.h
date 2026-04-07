@@ -3,6 +3,8 @@
 
 #include <bot/interfaces/squads.h>
 
+class CTF2Bot;
+
 class CTF2BotSquad : public ISquad
 {
 public:
@@ -13,6 +15,8 @@ public:
 	bool CanJoinSquads() const override;
 	// Returns true if this bot can create and lead squads.
 	bool CanLeadSquads() const override;
+	// Returns true if this bot can replace the squad leader.
+	bool CanBePromoted() const override;
 	/**
 	 * @brief Invoke to determine if this bot should use squad behavior.
 	 * @return Return true to use squad behavior, false to keep the existing behavior.

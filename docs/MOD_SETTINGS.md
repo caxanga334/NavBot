@@ -59,6 +59,7 @@ These settings are used by all mods.
 | camp_time_min | Minimum time in seconds a bot will camp. | 15 - 300 | 15 |
 | camp_time_max | Maximum time in seconds a bot will camp. | 30 - 1200 | 90 |
 | breakable_max_health | Entities with more health than this value are considered as unbreakable. | 500 - 10000 | 3000 |
+| squad_invite_max_distance | Maximum distance between the squad leaders and potential members to form a squad. | 512 - 16384 | 1200 |
 
 
 ### Macro Values

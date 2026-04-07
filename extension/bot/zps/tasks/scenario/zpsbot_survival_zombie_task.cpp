@@ -11,29 +11,36 @@ TaskResult<CZPSBot> CZPSBotSurvivalZombieTask::OnTaskStart(CZPSBot* bot, AITask<
     {
         CZPSBotSquad* squad = bot->GetSquadInterface();
 
-        if (squad->IsInASquad())
+        if (squad->CanLeadSquads() && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
         {
-            squad->LeaveSquad();
-        }
-
-        if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
-        {
-            if (squad->CreateSquad(nullptr))
-            {
-                ISquad::InviteBotsToSquadFunc func{ bot, 3 };
-                extmanager->ForEachBot(func);
-            }
+            botsquadutils::TryFormSquadFunc func{ bot, nullptr, 3 };
+            extmanager->ForEachBot(func);
+            func.CreateSquad();
         }
     }
     else
     {
-        if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
+        if (bot->GetSquadInterface()->CanJoinSquads() && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
         {
-            CZPSBotSquad* squad = CZPSBotSquad::GetFirstCarrierSquadInterface(bot);
+            CBaseEntity* human = nullptr;
+            CZPSBotSquad* squad = CZPSBotSquad::GetFirstCarrierSquadInterface(bot, &human);
 
             if (squad)
             {
-                squad->TryToAddToSquad(bot);
+                if (squad->IsInASquad())
+                {
+                    squad->AddMemberToSquad(bot);
+                }
+                else
+                {
+                    // carrier is a human, try forming a squad.
+                    if (human)
+                    {
+                        botsquadutils::TryFormSquadFunc func{ bot, human, 3 };
+                        extmanager->ForEachBot(func);
+                        func.CreateSquad();
+                    }
+                }
             }
         }
     }

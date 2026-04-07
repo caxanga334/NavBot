@@ -121,7 +121,7 @@ public:
 	bool IsDebugging(int bits) const { return (m_botdebugmode & bits) ? true : false; }
 	/**
 	 * @brief Runs a function on each bot.
-	 * @tparam T A class with operator() overload with one parameter (CBaseBot* bot).
+	 * @tparam T A class with operator() overload with one parameter void (CBaseBot* bot).
 	 * @param functor Function to call on each bot.
 	 */
 	template <typename T>

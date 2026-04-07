@@ -46,12 +46,11 @@ public:
 
 	enum SquadEventType
 	{
-		SQUAD_EVENT_FORMED = 0, // Squad was formed
-		SQUAD_EVENT_DISBANDED, // Squad was disbanded
-		SQUAD_EVENT_JOINED, // Member joined
-		SQUAD_EVENT_LEFT, // Member left
-		SQUAD_EVENT_LEADER_DIED, // Squad leader was killed
-		SQUAD_EVENT_REMOVED_FROM, // Member was removed from a squad
+		SQUAD_EVENT_CREATED = 0, // A new squad was created
+		SQUAD_EVENT_JOINED, // bot was added to a squad
+		SQUAD_EVENT_DESTROYED, // squad was destroyed
+		SQUAD_EVENT_PROMOTED, // bot was promoted from member to leader
+		SQUAD_EVENT_LEADER_KILLER, // squad leader was killed.
 
 		MAX_SQUAD_EVENT_TYPES
 	};
