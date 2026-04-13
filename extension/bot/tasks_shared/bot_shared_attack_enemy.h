@@ -86,7 +86,7 @@ inline TaskResult<BT> CBotSharedAttackEnemyTask<BT, CT>::OnTaskUpdate(BT* bot)
 	CBaseEntity* pEntity = threat->GetEntity();
 
 	// Move towards the enemy if they are outside my weapon range, not visible or there is something blocking my line of fire (IE: bullet proof glass)
-	if (bot->GetRangeTo(pEntity) >= moveRange || !threat->IsVisibleNow() || !bot->IsLineOfFireClear(UtilHelpers::getWorldSpaceCenter(threat->GetEntity())))
+	if (bot->GetRangeTo(pEntity) >= moveRange || !threat->IsVisibleNow() || bot->GetCombatInterface()->IsVisibleButLineOfFireIsObstructed())
 	{
 		m_nav.Update(bot, pEntity, m_pathcost);
 	}

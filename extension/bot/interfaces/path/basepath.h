@@ -41,6 +41,10 @@ public:
 
 	virtual void SetRouteType(RouteType type) = 0;
 	virtual RouteType GetRouteType() const = 0;
+
+	static constexpr float SOFTBLOCK_COST = 1e16f; // return this to 'soft' block the area.
+	static constexpr float DEADEND_COST = -1.0f; // return this to mark the area as dead end. (hard block)
+	static constexpr float NO_TRAVERSE_COST = 0.0f; // return this to mark the area as no cost
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments

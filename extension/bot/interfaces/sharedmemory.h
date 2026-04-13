@@ -25,8 +25,11 @@ public:
 
 		bool operator==(const EntityInfo& other) const;
 		bool operator!=(const EntityInfo& other) const;
-
-		bool IsObsolete();
+		explicit operator bool() const { return IsValid(); }
+		// Returns true if the entity handle dereferences into a valid entity.
+		bool IsValid() const { return GetEntity() != nullptr; }
+		// Returns true if this entity info instance is still valid.
+		bool IsObsolete() const;
 		CBaseEntity* GetEntity() const { return m_handle.Get(); }
 		void Update();
 		// Entity's last known position
@@ -77,6 +80,22 @@ public:
 			if (!info.IsObsolete())
 			{
 				out.push_back(&info);
+			}
+		}
+	}
+	/**
+	 * @brief Runs a function on every entity info stored.
+	 * @tparam F a lambda expression or class with void (const ISharedBotMemory::EntityInfo& entinfo) function.
+	 * @param func Function to run.
+	 */
+	template <typename F>
+	void ForEveryEntityInfo(const F& func) const
+	{
+		for (const EntityInfo& info : m_ents)
+		{
+			if (!info.IsObsolete())
+			{
+				func(info);
 			}
 		}
 	}

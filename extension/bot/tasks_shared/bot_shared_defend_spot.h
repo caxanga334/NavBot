@@ -50,6 +50,7 @@ public:
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
+	TaskResult<BT> OnTaskResume(BT* bot, AITask<BT>* pastTask) override;
 
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 
@@ -172,6 +173,12 @@ inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 	}
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskResume(BT* bot, AITask<BT>* pastTask)
+{
+	return AITask<BT>::Done("No longer in my defend spot.");
 }
 
 template<typename BT, typename CT>

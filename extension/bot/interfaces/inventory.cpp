@@ -727,6 +727,27 @@ int IInventory::GetOwnedWeaponCount() const
 	return count;
 }
 
+const CBotWeapon* IInventory::GetBestLowAmmoWeapon() const
+{
+	const CBotWeapon* best = nullptr;
+	int priority = std::numeric_limits<int>::min();
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	for (auto& weapon : m_weapons)
+	{
+		if (weapon->IsValid() && weapon->IsOwnedByBot(bot) && weapon->IsAmmoLow(bot))
+		{
+			if (weapon->GetWeaponInfo()->GetPriority() > priority)
+			{
+				best = weapon.get();
+				priority = weapon->GetWeaponInfo()->GetPriority();
+			}
+		}
+	}
+
+	return best;
+}
+
 void IInventory::RemoveInvalidWeapons()
 {
 	CBaseBot* me = GetBot<CBaseBot>();

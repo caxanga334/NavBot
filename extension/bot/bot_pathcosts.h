@@ -10,6 +10,10 @@
 
 class IMovement;
 class IPathProcessor;
+class CNavArea;
+class CNavLadder;
+class NavOffMeshConnection;
+class CNavElevator;
 
 /**
  * @brief Describes the movement capabilities of a human based player
@@ -103,6 +107,44 @@ protected:
 		m_moveiface->GetCostMod(area, cost);
 		return cost;
 	}
+};
+
+/**
+ * @brief Template class for a basic path cost class implementation.
+ * @tparam Bot Bot class
+ */
+template <typename Bot>
+class CBasicPathCost : public IGroundPathCost
+{
+public:
+	CBasicPathCost(Bot* bot, RouteType type = RouteType::DEFAULT_ROUTE) :
+		IGroundPathCost(bot)
+	{
+		m_me = bot;
+		m_rt = type;
+	}
+
+	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override
+	{
+		float cost = GetGroundMovementCost(toArea, fromArea, ladder, link, elevator, length);
+		cost = ApplyCostModifiers<Bot, CNavArea, true>(m_me, toArea, cost);
+
+		if (cost < 0.0f)
+		{
+			return DEADEND_COST; // base reports dead end
+		}
+
+		return cost;
+	}
+
+	void SetRouteType(RouteType type) override { m_rt = type; }
+	RouteType GetRouteType() const override { return m_rt; }
+protected:
+	Bot* GetBot() const { return m_me; }
+
+private:
+	Bot* m_me;
+	RouteType m_rt;
 };
 
 #endif // !__NAVBOT_BOT_PATHCOSTS_H_

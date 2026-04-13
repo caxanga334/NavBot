@@ -333,6 +333,12 @@ public:
 		float m_delay;
 	};
 
+	/**
+	 * @brief Gets the best (highest priority) weapon with low ammo.
+	 * @return Weapon with low ammo or NULL if none has low ammo.
+	 */
+	const CBotWeapon* GetBestLowAmmoWeapon() const;
+
 protected:
 	// deletes invalid weapons from the weapon storage vector
 	void RemoveInvalidWeapons();

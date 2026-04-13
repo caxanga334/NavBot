@@ -142,6 +142,7 @@ void ISensor::Reset()
 	m_lastupdatetime = 0.0f;
 	m_threatvisibletimer.Invalidate();
 	m_updateNonPlayerTimer.Invalidate();
+	m_shareKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
 	m_updateStatisticsTimer.Reset();
 	m_primarythreatcache = nullptr;
 	m_statsvisibleallies = 0;
@@ -152,6 +153,12 @@ void ISensor::Reset()
 void ISensor::Update()
 {
 	UpdateKnownEntities();
+
+	if (m_shareKnownsTimer.IsElapsed())
+	{
+		m_shareKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
+		UpdateSharedKnowns();
+	}
 }
 
 void ISensor::Frame()
@@ -969,6 +976,51 @@ CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
 	}
 
 	return nullptr;
+}
+
+void ISensor::UpdateSharedKnowns()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::UpdateSharedKnowns", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const DifficultyProfile* profile = bot->GetDifficultyProfile();
+
+	// low skill bots don't use shared information.
+	if (profile->GetTeamwork() < 20 || profile->GetGameAwareness() < 20) { return; }
+
+	std::vector<const CKnownEntity*> knowns;
+
+	// collect valid and visible known entities
+	for (auto& known : m_knownlist)
+	{
+		if (!known.IsObsolete() && known.IsVisibleNow())
+		{
+			knowns.push_back(&known);
+		}
+	}
+
+	ISharedBotMemory* sbm = bot->GetSharedMemoryInterface();
+
+	sbm->ForEveryEntityInfo([this](const ISharedBotMemory::EntityInfo& entinfo) {
+		CKnownEntity* known = this->AddKnownEntity(entinfo.GetEntity());
+
+		if (known->GetTimeSinceBecomeKnown() > 1.0f)
+		{
+			// shared memory is more recent
+			if (entinfo.GetTimeSinceLastUpdated() < known->GetTimeSinceLastInfo())
+			{
+				known->UpdatePosition();
+			}
+		}
+	});
+
+	// add updated information of visible entities.
+	for (auto known : knowns)
+	{
+		sbm->AddEntityInfo(known->GetEntity());
+	}
 }
 
 void ISensor::UpdateStatistics()

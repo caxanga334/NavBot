@@ -29,7 +29,7 @@ bool ISharedBotMemory::EntityInfo::operator!=(const ISharedBotMemory::EntityInfo
 	return this->m_handle != other.m_handle;
 }
 
-bool ISharedBotMemory::EntityInfo::IsObsolete()
+bool ISharedBotMemory::EntityInfo::IsObsolete() const
 {
 	return m_handle.Get() == nullptr || GetTimeSinceLastUpdated() >= ISharedBotMemory::ENTITY_INFO_EXPIRE_TIME;
 }

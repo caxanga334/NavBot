@@ -6,6 +6,7 @@
 #include <mods/hl2dm/hl2dm_mod.h>
 #include <mods/zps/zps_mod.h>
 #include <mods/insmic/insmicmod.h>
+#include <mods/hl1mp/hl1mp_mod.h>
 #include "mod_loader.h"
 
 ExtModLoader::ExtModLoader()
@@ -168,6 +169,9 @@ CBaseMod* ExtModLoader::AllocDetectedMod() const
 		break;
 	case Mods::ModType::MOD_HL2DM:
 		mod = new CHalfLife2DeathMatchMod;
+		break;
+	case Mods::ModType::MOD_HL1DM:
+		mod = new CHL1MPMod;
 		break;
 	case Mods::ModType::MOD_ZPS:
 		mod = new CZombiePanicSourceMod;
@@ -334,10 +338,11 @@ SourceMod::SMCResult ExtModLoader::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 		}
 		else if (std::strcmp(key, "ID") == 0)
 		{
-			Mods::ModType id = static_cast<Mods::ModType>(atoi(value));
+			Mods::ModType id = Mods::GetModTypeFromString(value);
 
-			if (id < Mods::ModType::MOD_BASE)
+			if (id == Mods::ModType::MOD_INVALID_ID)
 			{
+				smutils->LogError(myself, "[Mod Loader]: Invalid mod id at line %u col %u", states->line, states->col);
 				id = Mods::ModType::MOD_BASE;
 			}
 

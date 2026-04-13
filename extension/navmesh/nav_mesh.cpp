@@ -1313,9 +1313,9 @@ CNavArea* CNavMesh::FindNavAreaByIDViaLoop(unsigned int id)
 CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool checkLOS, bool checkGround, int team ) const
 {
 	if ( !m_grid.Count() )
-		return NULL;	
+		return nullptr;	
 
-	CNavArea *close = NULL;
+	CNavArea *close = nullptr;
 	float closeDistSq = maxDist * maxDist;
 
 	// quick check
@@ -1340,7 +1340,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 		}
 		else
 		{
-			return NULL;
+			return nullptr;
 		}
 	}
 
@@ -1920,13 +1920,13 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 
 	trace_t result;
 	Vector to( pos.x, pos.y, pos.z - 10000.0f );
-	Vector from( pos.x, pos.y, pos.z + navgenparams->human_height + 1e-3 );
+	Vector from( pos.x, pos.y, pos.z + navgenparams->half_human_height + 1e-3f );
 
 	while( to.z - pos.z < flMaxOffset ) 
 	{
 		trace::line(from, to, MASK_PLAYERSOLID_BRUSHONLY, &filter, result);
 
-		if (!result.startsolid && ((result.fraction == 1.0f) || ((from.z - result.endpos.z) >= navgenparams->human_height)))
+		if (!result.startsolid && ((result.fraction == 1.0f) || ((from.z - result.endpos.z) >= navgenparams->half_human_height)))
 		{
 			*height = result.endpos.z;
 
@@ -1939,7 +1939,7 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 		}
 
 		to.z = ( result.startsolid ) ? from.z : result.endpos.z;
-		from.z = to.z + navgenparams->human_height + 1e-3;
+		from.z = to.z + navgenparams->half_human_height + 1e-3f;
 	}
 
 	*height = 0.0f;

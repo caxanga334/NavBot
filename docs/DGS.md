@@ -11,6 +11,7 @@ Detailed list of supported games/mods.
 | Day of Defeat: Source | Average | Dev |
 | Zombie Panic! Source | Average | Dev |
 | Insurgency: Modern Infantry Combat | Average | Dev |
+| Half-Life Deathmatch: Source | Average | Dev |
 
 Support Status:
 

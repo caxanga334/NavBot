@@ -25,6 +25,7 @@ The NavMesh is also standalone and can be used in games that doesn't already hav
 - Day of Defeat: Source
 - Zombie Panic! Source
 - Insurgency: Modern Infantry Combat
+- Half-Life Deathmatch: Source
 
 See [detailed game support].
 

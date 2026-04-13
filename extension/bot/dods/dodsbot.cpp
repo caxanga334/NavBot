@@ -161,7 +161,7 @@ float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, con
 
 	if (cost < 0.0f)
 	{
-		return -1.0f; // base reports dead end
+		return DEADEND_COST; // base reports dead end
 	}
 
 	CDoDSNavArea* toArea = static_cast<CDoDSNavArea*>(baseToArea);
@@ -179,7 +179,7 @@ float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, con
 		if (!m_hasbomb)
 		{
 			// Soft block this path by returning a very high cost
-			return 1e12f;
+			return SOFTBLOCK_COST;
 		}
 	}
 

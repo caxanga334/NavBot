@@ -149,6 +149,8 @@ public:
 	void SetShouldReloadPostCombat(bool state) { m_shouldReloadPostCombat = state; }
 	// Returns true if the bot should reload their weapon post combat.
 	const bool GetShouldReloadPostCombat() const { return m_shouldReloadPostCombat; }
+	// Returns true if the current enemy is visible but the line of fire is obstructed (used cached information).
+	const bool IsVisibleButLineOfFireIsObstructed() const { return m_combatData.is_visible && !m_combatData.can_fire; }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.

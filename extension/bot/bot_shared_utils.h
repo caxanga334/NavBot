@@ -357,7 +357,7 @@ namespace botsharedutils::search
 		using Collector = botsharedutils::IsReachableAreas;
 
 		SearchReachableEntities(BotClass* bot, const float maxdist = -1.0f) :
-			m_position(0.0f, 0.0f, 0.0f)
+			m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(false)
 		{
 			m_bot = bot;
 			m_maxdist = maxdist;
@@ -365,7 +365,7 @@ namespace botsharedutils::search
 		}
 
 		SearchReachableEntities(BotClass* bot, SearchPatterns&& patterns, const float maxdist = -1.0f) :
-			m_patterns(patterns), m_position(0.0f, 0.0f, 0.0f)
+			m_patterns(patterns), m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(false)
 		{
 			m_bot = bot;
 			m_maxdist = maxdist;
@@ -383,6 +383,36 @@ namespace botsharedutils::search
 		float GetMaximumSearchDistance() const { return m_maxdist; }
 		// Vector of search results containing reachable entities and the travel cost to reach it
 		const SearchData& GetSearchResult() const { return m_data; }
+		// True if the result vector is empty
+		bool IsResultEmpty() const { return m_data.empty(); }
+		// Returns the entity with the smallest travel cost.
+		CBaseEntity* SelectNearest() const
+		{
+			if (IsResultEmpty()) { return nullptr; }
+
+			CBaseEntity* ret = nullptr;
+			float cost = std::numeric_limits<float>::max();
+			
+			for (auto& result : m_data)
+			{
+				if (result.second < cost)
+				{
+					cost = result.second;
+					ret = result.first;
+				}
+			}
+
+			return ret;
+		}
+		
+		// sets if GetNearestNavArea should check for LOS
+		void SetCheckLOS(bool state) { m_checklos = state; }
+		// sets if GetNearestNavArea should check for ground
+		void SetCheckGround(bool state) { m_checkground = state; }
+		// sets if ShouldPickup query should be used.
+		void SetCheckCanPickup(bool state) { m_checkcanpickup = state; }
+		// Returns true if the ShouldPickup query should be used.
+		bool GetCheckCanPickup() const { return m_checkcanpickup; }
 
 		void DoSearch()
 		{
@@ -415,10 +445,15 @@ namespace botsharedutils::search
 		}
 
 	protected:
+		virtual Vector GetEntityPosition(CBaseEntity* entity) const
+		{
+			return UtilHelpers::getWorldSpaceCenter(entity);
+		}
+
 		virtual bool IsSelected(CBaseEntity* entity)
 		{
-			m_position = UtilHelpers::getWorldSpaceCenter(entity);
-			m_area = static_cast<NavClass*>(TheNavMesh->GetNearestNavArea(m_position, 512.0f));
+			m_position = GetEntityPosition(entity);
+			m_area = static_cast<NavClass*>(TheNavMesh->GetNearestNavArea(m_position, 600.0f, m_checklos, m_checkground, m_bot->GetCurrentTeamIndex()));
 
 			if (IsEntityValid(entity, m_area) && IsPossible(entity, m_bot, m_area))
 			{
@@ -447,6 +482,11 @@ namespace botsharedutils::search
 				return false;
 			}
 
+			if (bot->GetBehaviorInterface()->ShouldPickup(static_cast<CBaseBot*>(bot), entity) == ANSWER_NO)
+			{
+				return false;
+			}
+
 			return true;
 		}
 
@@ -463,6 +503,9 @@ namespace botsharedutils::search
 		NavClass* m_area;
 		Vector m_position;
 		std::unique_ptr<Collector> m_collector;
+		bool m_checklos;
+		bool m_checkground;
+		bool m_checkcanpickup;
 	};
 }
 

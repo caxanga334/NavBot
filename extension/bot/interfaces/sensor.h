@@ -18,6 +18,7 @@ public:
 	~ISensor() override;
 
 	static inline std::array<byte, MAX_MAP_CLUSTERS / 8> s_pvs{};
+	static constexpr float UPDATE_SHARED_MEMORY_FREQ = 2.0f; // frequency of shared memory updates
 
 	// Setups PVS for a given bot.
 	static void SetupPVS(CBaseBot* bot);
@@ -215,6 +216,10 @@ protected:
 	{
 		return known->GetTimeSinceBecomeKnown() >= GetMinRecognitionTime();
 	}
+	/**
+	 * @brief Called to update the shared memory information.
+	 */
+	virtual void UpdateSharedKnowns();
 
 	void UpdateStatistics();
 private:
@@ -222,6 +227,7 @@ private:
 	const CKnownEntity* m_primarythreatcache;
 	CountdownTimer m_updateNonPlayerTimer;
 	CountdownTimer m_updateStatisticsTimer;
+	CountdownTimer m_shareKnownsTimer; // timer for sharing and updating the known list
 	float m_cachedNPCupdaterate;
 	float m_fieldofview;
 	float m_coshalfFOV;

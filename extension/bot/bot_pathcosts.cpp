@@ -25,12 +25,12 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 	if (fromArea == nullptr)
 	{
 		// first area in path, no cost
-		return 0.0f;
+		return NO_TRAVERSE_COST;
 	}
 
 	if (!m_moveiface->IsAreaTraversable(toArea))
 	{
-		return -1.0f;
+		return DEADEND_COST;
 	}
 
 	float dist = 0.0f;
@@ -49,7 +49,7 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 
 		if (!fromFloor->HasCallButton() && !fromFloor->is_here)
 		{
-			return -1.0f; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
+			return DEADEND_COST; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
 		}
 
 		dist = elevator->GetLengthBetweenFloors(fromArea, toArea);
@@ -75,13 +75,13 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 				if (deltaZ > m_movecaps.m_maxdjheight)
 				{
 					// too high to reach by jumping
-					return -1.0f;
+					return DEADEND_COST;
 				}
 			}
 			else if (deltaZ > m_movecaps.m_maxjumpheight)
 			{
 				// too high to reach by jumping
-				return -1.0f;
+				return DEADEND_COST;
 			}
 
 			// jump type is resolved by the navigator
@@ -94,14 +94,14 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		{
 			// too far to drop
 			// TO-DO: Handle areas that breaks fall damage.
-			return -1.0f;
+			return DEADEND_COST;
 		}
 
 		float gap = fromArea->ComputeAdjacentConnectionGapDistance(toArea);
 
 		if (gap >= m_movecaps.m_maxgapjumpdistance)
 		{
-			return -1.0f; // can't jump over this gap
+			return DEADEND_COST; // can't jump over this gap
 		}
 	}
 	else if (link != nullptr)
@@ -109,7 +109,7 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		// Query the movement interface to see if we're allowed to use this off-mesh connection
 		if (!m_moveiface->IsAbleToUseOffMeshConnection(link->GetType(), link))
 		{
-			return -1.0f;
+			return DEADEND_COST;
 		}
 	}
 
