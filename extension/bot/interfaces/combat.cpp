@@ -1018,21 +1018,3 @@ CNavArea* combatutils::GetRandomNeighorAreaOutsideFOVFunctor::GetRandomArea() co
 	if (m_areas.size() == 1U) { return m_areas[0]; }
 	return librandom::utils::GetRandomElementFromVector(m_areas);
 }
-
-CON_COMMAND_F(sm_navbot_debug_disable_bot_combat, "Disables the bot's combat interface.", FCVAR_GAMEDLL | FCVAR_CHEAT)
-{
-	float time = 60.0f;
-
-	if (args.ArgC() >= 2)
-	{
-		time = atof(args[1]);
-	}
-
-	if (time < 1.0f) { return; }
-
-	auto func = [time](CBaseBot* bot) -> void {
-		bot->GetCombatInterface()->DisableCombat(time);
-	};
-
-	META_CONPRINTF("Bot combat disabled for %3.2f seconds! \n", time);
-}

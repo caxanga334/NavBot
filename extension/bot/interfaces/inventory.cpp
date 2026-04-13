@@ -735,7 +735,7 @@ const CBotWeapon* IInventory::GetBestLowAmmoWeapon() const
 
 	for (auto& weapon : m_weapons)
 	{
-		if (weapon->IsValid() && weapon->IsOwnedByBot(bot) && weapon->IsAmmoLow(bot))
+		if (weapon->IsValid() && weapon->GetWeaponInfo()->IsCombatWeapon() && weapon->IsOwnedByBot(bot) && weapon->IsAmmoLow(bot))
 		{
 			if (weapon->GetWeaponInfo()->GetPriority() > priority)
 			{

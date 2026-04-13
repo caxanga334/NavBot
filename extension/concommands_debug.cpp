@@ -81,6 +81,26 @@ CON_COMMAND_F_COMPLETION(sm_navbot_debug_bot_sensor_memory, "Debugs the bot Sens
 	bot->GetSensorInterface()->ShowDebugInformation();
 }
 
+CON_COMMAND_F(sm_navbot_debug_disable_bot_combat, "Disables the bot's combat interface.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	float time = 60.0f;
+
+	if (args.ArgC() >= 2)
+	{
+		time = atof(args[1]);
+	}
+
+	if (time < 1.0f) { return; }
+
+	auto func = [time](CBaseBot* bot) -> void {
+		bot->GetCombatInterface()->DisableCombat(time);
+		};
+
+	META_CONPRINTF("Bot combat disabled for %3.2f seconds! \n", time);
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 {
