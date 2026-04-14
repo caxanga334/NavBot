@@ -698,7 +698,7 @@ bool CBaseBotTraceFilterLineOfFire::ShouldHitEntity(IHandleEntity* pHandleEntity
 	{
 		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
 
-		if (pEntity)
+		if (pEntity && !m_sensor->IsIgnored(pEntity))
 		{
 			// Don't collide with enemies
 			if (m_sensor->IsEnemy(pEntity))
