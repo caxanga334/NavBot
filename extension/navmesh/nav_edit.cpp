@@ -3642,7 +3642,7 @@ void CNavMesh::CommandNavCornerPlaceOnGroundCustom(float z, const Vector* start,
 
 				for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
 				{
-					Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
+					Vector corner = area->GetCorner(static_cast<NavCornerType>(i));
 					float original_z = corner.z;
 					corner.z = start != nullptr ? start->z : (corner.z + z);
 					end = corner;
@@ -3662,7 +3662,7 @@ void CNavMesh::CommandNavCornerPlaceOnGroundCustom(float z, const Vector* start,
 		{
 			for (int i = 0; i < static_cast<int>(NavCornerType::NUM_CORNERS); i++)
 			{
-				Vector corner = m_markedArea->GetCorner(static_cast<NavCornerType>(i));
+				Vector corner = m_selectedArea->GetCorner(static_cast<NavCornerType>(i));
 				float original_z = corner.z;
 				corner.z = start != nullptr ? start->z : (corner.z + z);
 				end = corner;
