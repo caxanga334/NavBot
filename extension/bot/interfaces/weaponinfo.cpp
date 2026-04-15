@@ -383,6 +383,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			m_current->SetWeaponType(type);
 		}
 	}
+	else if (std::strcmp(key, "can_fire_underwater") == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetCanBeFiredUnderwater(v);
+	}
 	else if (strncmp(key, "can_headshot", 12) == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);

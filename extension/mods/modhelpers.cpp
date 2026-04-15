@@ -53,3 +53,17 @@ bool IModHelpers::IsCombatCharacter(CBaseEntity* entity)
 	return entprops->HasEntProp(entity, Prop_Data, "m_hActiveWeapon");
 }
 
+int IModHelpers::GetEntityWaterLevel(CBaseEntity* entity)
+{
+#ifdef EXT_DEBUG
+	if (!entprops->HasEntProp(entity, Prop_Data, "m_nWaterLevel"))
+	{
+		META_CONPRINTF("IModHelpers::GetEntityWaterLevel: Entity %s doesn't have CBaseEntity::m_nWaterLevel property!\n", UtilHelpers::textformat::FormatEntity(entity));
+	}
+#endif // EXT_DEBUG
+
+	int level = 0;
+	entprops->GetEntProp(entity, Prop_Data, "m_nWaterLevel", level);
+	return level;
+}
+

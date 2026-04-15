@@ -8,6 +8,7 @@
 #include <entities/baseentity.h>
 #include <bot/basebot.h>
 #include <model_types.h>
+#include <mods/modhelpers.h>
 #include "prediction.h"
 
 #if SOURCE_ENGINE <= SE_DARKMESSIAH
@@ -517,7 +518,7 @@ int sdkphysics::PhysicsClipVelocity(pred::PredictionEntityData* entity, const Ve
 
 bool sdkphysics::PhysicsCheckWater(pred::PredictionEntityData* entity)
 {
-	int waterlevel = static_cast<int>(entityprops::GetEntityWaterLevel(entity->entity));
+	int waterlevel = modhelpers->GetEntityWaterLevel(entity->entity);
 
 	if (entity->moveparent != nullptr)
 		return waterlevel > 1;
@@ -588,7 +589,7 @@ void sdkphysics::PhysicsStepRunTimestep(pred::PredictionEntityData* entity, floa
 	{
 		if (!(entity->fFlags & FL_FLY))
 		{
-			if (!((entity->fFlags & FL_SWIM) && (entityprops::GetEntityWaterLevel(entity->entity) > 0)))
+			if (!((entity->fFlags & FL_SWIM) && (modhelpers->GetEntityWaterLevel(entity->entity) > 0)))
 			{
 
 				if (!inwater)

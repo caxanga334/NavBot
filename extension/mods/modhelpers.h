@@ -46,6 +46,12 @@ public:
 	 * @return True if given entity is a combat character, false otherwise.
 	 */
 	virtual bool IsCombatCharacter(CBaseEntity* entity);
+	/**
+	 * @brief Gets the entity's current water level.
+	 * @param entity Entity to read the water level.
+	 * @return Entity's water level.
+	 */
+	virtual int GetEntityWaterLevel(CBaseEntity* entity);
 };
 
 // Global singleton to access the mod helpers interface

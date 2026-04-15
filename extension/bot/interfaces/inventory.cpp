@@ -285,13 +285,14 @@ bool IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat, WeaponInf
 	const float rangeToThreat = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity()));
 	const CBotWeapon* best = nullptr;
 	const DifficultyProfile* profile = bot->GetDifficultyProfile();
+	const bool isunderwater = bot->IsUnderWater();
 
 	for (auto& weaponptr : m_weapons)
 	{
 		const CBotWeapon* weapon = weaponptr.get();
 		const WeaponInfo* info = weaponptr->GetWeaponInfo();
 
-		if (!IsWeaponUseableForThreat(bot, threat, rangeToThreat, weapon, info))
+		if (!IsWeaponUseableForThreat(bot, threat, rangeToThreat, weapon, info, isunderwater))
 		{
 			continue;
 		}
@@ -784,9 +785,14 @@ const CBotWeapon* IInventory::FilterBestWeaponForThreat(CBaseBot* me, const CKno
 	return second;
 }
 
-bool IInventory::IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info) const
+bool IInventory::IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info, const bool underwater) const
 {
 	if (!weapon->IsValid() || !weapon->IsOwnedByBot(me) || weapon->IsOutOfAmmo(me) || !info->IsInSelectionRange(rangeToThreat))
+	{
+		return false;
+	}
+
+	if (underwater && !info->CanBeFiredUnderwater())
 	{
 		return false;
 	}

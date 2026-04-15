@@ -269,6 +269,9 @@ bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* thre
 	if (!activeWeapon->GetWeaponInfo()->IsCombatWeapon())
 		return false;
 
+	if (bot->IsUnderWater() && !activeWeapon->GetWeaponInfo()->CanBeFiredUnderwater())
+		return false;
+
 	return true;
 }
 

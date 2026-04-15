@@ -7,6 +7,7 @@
 #include <util/entprops.h>
 #include <util/helpers.h>
 #include <util/sdkcalls.h>
+#include "mods/modhelpers.h"
 #include "extplayer.h"
 
 #ifdef EXT_DEBUG
@@ -494,12 +495,12 @@ bool CBaseExtPlayer::IsLookingTowards(const Vector& position, const float tolera
 
 int CBaseExtPlayer::GetWaterLevel() const
 {
-	return static_cast<int>(entityprops::GetEntityWaterLevel(GetEntity()));
+	return modhelpers->GetEntityWaterLevel(GetEntity());
 }
 
 bool CBaseExtPlayer::IsUnderWater() const
 {
-	return entityprops::GetEntityWaterLevel(GetEntity()) == static_cast<std::int8_t>(entityprops::WaterLevel::WL_Eyes);
+	return GetWaterLevel() == static_cast<int>(entityprops::WaterLevel::WL_Eyes);
 }
 
 bool CBaseExtPlayer::IsMovingTowards(const Vector& position, const float tolerance, float* distance) const

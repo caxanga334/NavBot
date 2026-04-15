@@ -2445,35 +2445,6 @@ int entityprops::GetEntityHealth(CBaseEntity* entity)
 	return *(int*)((uint8_t*)entity + s_offset);
 }
 
-std::int8_t entityprops::GetEntityWaterLevel(CBaseEntity* entity)
-{
-	/*
-	 * Offset is the same for every entity on TF2 datamap dump.
-	 * TO-DO: This is generally a signed char, if some mods change the variable type, type detection will be required for this.
-	*/
-
-	static int s_offset = -1;
-
-	if (s_offset < 0)
-	{
-		SourceMod::sm_datatable_info_t info;
-		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(entity), "m_nWaterLevel", &info))
-		{
-			return LIFE_ALIVE;
-		}
-
-		if (info.prop->fieldType != FIELD_CHARACTER)
-		{
-			// this will warn if any mods have changed the variable type
-			smutils->LogError(myself, "[NAVBOT] m_nWaterLevel datamap is not a FIELD_CHARACTER!");
-		}
-
-		s_offset = static_cast<int>(info.actual_offset);
-	}
-
-	return *(std::int8_t*)((uint8_t*)entity + s_offset);
-}
-
 const char* entityprops::GetEntityTargetname(CBaseEntity* entity)
 {
 	static int s_offset = -1;

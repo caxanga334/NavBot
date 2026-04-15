@@ -206,6 +206,7 @@ public:
 		deployed_property_name.reserve(64);
 		needs_to_be_deployed = false;
 		deployed_property_on_weapon = true;
+		can_fire_underwater = true;
 		selection_max_range = -1.0f;
 		selection_min_range = -1.0f;
 		min_required_skill = 0;
@@ -249,6 +250,7 @@ public:
 		this->use_secondary_chance = other->use_secondary_chance;
 		this->deployed_property_name = other->deployed_property_name;
 		this->deployed_property_on_weapon = other->deployed_property_on_weapon;
+		this->can_fire_underwater = other->can_fire_underwater;
 		this->needs_to_be_deployed = other->needs_to_be_deployed;
 		this->selection_max_range = other->selection_max_range;
 		this->selection_min_range = other->selection_min_range;
@@ -350,6 +352,7 @@ public:
 	void SetMinimumRangeToUseScope(const float range) { scopein_min_range = range; }
 	void SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot spot) { preferred_aim_spot = spot; }
 	void SetAmmoSourceEntityClassname(const char* classname) { ammo_source_classname.assign(classname); }
+	void SetCanBeFiredUnderwater(bool state) { can_fire_underwater = state; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -443,6 +446,7 @@ public:
 	}
 	const bool HasAmmoSourceEntityClassname() const { return !ammo_source_classname.empty(); }
 	const std::string& GetAmmoSourceEntityClassname() const { return ammo_source_classname; }
+	const bool CanBeFiredUnderwater() const { return can_fire_underwater; }
 
 	virtual void PostLoad();
 
@@ -480,6 +484,7 @@ private:
 	std::string deployed_property_name;
 	bool deployed_property_on_weapon; // if true, the property is on the weapon, else is on the player.
 	bool needs_to_be_deployed; // if true, the weapon needs to be deployed/scoped to fire it.
+	bool can_fire_underwater; // if true, the weapon can be fired while underwater
 	float selection_max_range;
 	float selection_min_range;
 	int min_required_skill;

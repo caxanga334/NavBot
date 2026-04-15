@@ -60,7 +60,7 @@ jobs:
           echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
 
       - name: Setup Python
-        uses: actions/setup-python@v5.3.0
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.12'
   
@@ -98,7 +98,7 @@ jobs:
           dump_syms.exe --version
 
       - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
         with:
           repository: alliedmodders/metamod-source
           ref: ${{ matrix.meta_branch }}
@@ -106,7 +106,7 @@ jobs:
           submodules: recursive
     
       - name: Fetch SourceMod ${{ matrix.sm_branch }}
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
         with:
           repository: alliedmodders/sourcemod
           ref: ${{ matrix.sm_branch }}
@@ -125,7 +125,7 @@ jobs:
           ls -lah
 
       - name: Fetch Extension
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
         with:
           path: navbot
           submodules: recursive
@@ -143,14 +143,14 @@ jobs:
         id: short-sha
 
       - name: Upload Extension as Artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
           path: |
               navbot/build/package/*
 
       - name: Upload Debugging Symbols Artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: navbot-dbgsym-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
           path: |
@@ -178,7 +178,7 @@ jobs:
 
     steps:
       - name: Fetch Extension
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v6.0.2
         with:
           path: navbot
           submodules: recursive
@@ -192,6 +192,7 @@ jobs:
         uses: rumblefrog/setup-sp@master
         with:
           version: ${{ matrix.sm_version }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Create Folders
         run: |
@@ -233,7 +234,7 @@ jobs:
           rsync -rv ${{ env.BUILD_PATH }}/*.smx ${{ env.BINARY_PATH }}/
 
       - name: Upload Compiled Plugins Artifact
-        uses: actions/upload-artifact@v4.4.3
+        uses: actions/upload-artifact@v7.0.1
         with:
           name: navbot-sm-plugins-${{ steps.short-sha.outputs.sha }}
           path: |
@@ -255,28 +256,28 @@ jobs:
           mkdir -p ${{ github.workspace }}/download/symbols/files/
 
       - name: Download Artifacts (Windows)
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: 'navbot-windows*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/windows/
 
       - name: Download Artifacts (Linux)
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: 'navbot-linux*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/linux/
   
       - name: Download Artifacts (Shared)
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: '*sm-plugins*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/shared/
 
       - name: Download Debugging Symbols
-        uses: actions/download-artifact@v4.1.8
+        uses: actions/download-artifact@v8.0.1
         with:
           pattern: '*dbgsym*'
           merge-multiple: true

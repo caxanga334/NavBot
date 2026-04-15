@@ -356,7 +356,7 @@ protected:
 	 */
 	virtual const CBotWeapon* FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* first, const CBotWeapon* second) const;
 	// Returns true if the weapon can be used agains the given threat
-	bool IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info) const;
+	bool IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info, const bool underwater) const;
 	// Selects the weapon with the highest static priority (no dynamic priority support)
 	const CBotWeapon* FilterSelectWeaponWithHighestStaticPriority(const CBotWeapon* first, const CBotWeapon* second) const;
 	/**
