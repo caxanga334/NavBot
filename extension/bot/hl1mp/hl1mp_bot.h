@@ -21,6 +21,7 @@ public:
 	CHL1MPBotMovement* GetMovementInterface() const override { return m_hl1mpmovement.get(); }
 	CHL1MPBotSquad* GetSquadInterface() const override { return m_hl1mpsquad.get(); }
 	bool HasJoinedGame() override { return true; } // HL1DM doesn't appear to have team selection or spec
+	bool HasLongJumpModule() const;
 
 private:
 	std::unique_ptr<CHL1MPBotSensor> m_hl1mpsensor;

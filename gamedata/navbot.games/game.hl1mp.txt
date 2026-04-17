@@ -7,7 +7,7 @@
 			/* Nav Mesh generation parameters */
 			"NavGen_StepSize"				"20.0"
 			"NavGen_JumpHeight"				"41.8"
-			"NavGen_JumpCrouchHeight"		"56.0"
+			"NavGen_JumpCrouchHeight"		"68.0"
 			"NavGen_StepHeight"				"18.0"
 			"NavGen_DeathDropHeight"		"400.0"
 			"NavGen_ClimbUpHeight"			"128.0"

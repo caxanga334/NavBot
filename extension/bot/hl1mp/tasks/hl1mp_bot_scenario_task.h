@@ -16,6 +16,7 @@ public:
 private:
 	CountdownTimer m_pickupWeaponsTimer;
 	CountdownTimer m_pickupAmmoTimer;
+	CountdownTimer m_pickupLongJumpModuleTimer;
 };
 
 #endif // !__NAVBOT_HL1MPBOT_SCENARIO_TASK_H_

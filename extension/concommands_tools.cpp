@@ -492,7 +492,7 @@ CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current positio
 		Msg("This command can only be used on a Listen Server! \n");
 		return;
 	}
-
+	
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	Vector goal = host->GetCollideable()->GetCollisionOrigin();
 

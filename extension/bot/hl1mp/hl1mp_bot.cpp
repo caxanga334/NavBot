@@ -13,3 +13,10 @@ CHL1MPBot::CHL1MPBot(edict_t* edict) :
 CHL1MPBot::~CHL1MPBot()
 {
 }
+
+bool CHL1MPBot::HasLongJumpModule() const
+{
+	bool result = false;
+	entprops->GetEntPropBool(GetEntity(), Prop_Send, "m_bHasLongJump", result);
+	return result;
+}

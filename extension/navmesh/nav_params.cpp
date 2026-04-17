@@ -4,7 +4,7 @@
 // Default values goes here.
 // From: https://github.com/ValveSoftware/source-sdk-2013/blob/master/mp/src/game/server/nav.h
 // DO NOT IFDEF HERE!
-// Override these values at the mod's specific NavMesh constructor
+// Mod/Game specific values are now set via gamedata files.
 
 CNavMeshGeneratorParameters::CNavMeshGeneratorParameters()
 {

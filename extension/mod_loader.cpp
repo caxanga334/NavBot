@@ -74,6 +74,12 @@ void ExtModLoader::DetectMod()
 
 	for (const ModEntry& entry : m_mods)
 	{
+		// filter mods with invalid IDs (outdated mod_loader file)
+		if (entry.id == Mods::ModType::MOD_INVALID_ID)
+		{
+			continue;
+		}
+
 		switch (entry.detection_type)
 		{
 		case ModDetectionType::DETECTION_MOD_FOLDER:
@@ -152,7 +158,7 @@ CBaseMod* ExtModLoader::AllocDetectedMod() const
 		// detection failed;
 		mod = new CBaseMod;
 		mod->m_modID = Mods::ModType::MOD_BASE;
-		mod->m_modName.assign("CBaseMod");
+		mod->m_modName.assign("Unknown Game/Mod");
 		return mod;
 	}
 
@@ -343,7 +349,6 @@ SourceMod::SMCResult ExtModLoader::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			if (id == Mods::ModType::MOD_INVALID_ID)
 			{
 				smutils->LogError(myself, "[Mod Loader]: Invalid mod id at line %u col %u", states->line, states->col);
-				id = Mods::ModType::MOD_BASE;
 			}
 
 			m_parser_current->id = id;

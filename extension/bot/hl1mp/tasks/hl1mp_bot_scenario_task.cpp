@@ -58,6 +58,21 @@ static bool PickupWeaponValidatorFunc(CHL1MPBot* bot, CBaseEntity* entity)
     return true;
 }
 
+static bool PickupLongJumpValidatorFunc(CHL1MPBot* bot, CBaseEntity* entity)
+{
+    if (entityprops::IsEffectActiveOnEntity(entity, EF_NODRAW))
+    {
+        return false;
+    }
+
+    if (bot->HasLongJumpModule())
+    {
+        return false;
+    }
+
+    return true;
+}
+
 AITask<CHL1MPBot>* CHL1MPBotScenarioTask::InitialNextTask(CHL1MPBot* bot)
 {
     return new CBotSharedSimpleDMBehaviorTask<CHL1MPBot, CHL1MPBotPathCost>();
@@ -67,12 +82,34 @@ TaskResult<CHL1MPBot> CHL1MPBotScenarioTask::OnTaskStart(CHL1MPBot* bot, AITask<
 {
     m_pickupWeaponsTimer.StartRandom(2.0f, 15.0f);
     m_pickupAmmoTimer.StartRandom(5.0f, 20.0f);
+    m_pickupLongJumpModuleTimer.StartRandom(30.0f, 90.0f);
 
     return Continue();
 }
 
 TaskResult<CHL1MPBot> CHL1MPBotScenarioTask::OnTaskUpdate(CHL1MPBot* bot)
 {
+    if (m_pickupLongJumpModuleTimer.IsElapsed())
+    {
+        if (bot->HasLongJumpModule())
+        {
+            m_pickupLongJumpModuleTimer.Start(999999.0f);
+            return Continue();
+        }
+
+        m_pickupLongJumpModuleTimer.StartRandom(20.0f, 60.0f);
+        NBotSharedCollectItemTask::ItemCollectFilter<CHL1MPBot, CNavArea> filter{ bot };
+        CBaseEntity* longjump = nullptr;
+
+        if (CBotSharedCollectItemsTask<CHL1MPBot, CHL1MPBotPathCost>::IsPossible(bot, &filter, "item_longjump", &longjump))
+        {
+            auto task = new CBotSharedCollectItemsTask<CHL1MPBot, CHL1MPBotPathCost>(bot, longjump, NBotSharedCollectItemTask::COLLECT_WALK_OVER);
+            auto func = std::bind(PickupLongJumpValidatorFunc, std::placeholders::_1, std::placeholders::_2);
+            task->SetValidationFunction(func);
+            return PauseFor(task, "Picking up a long jump module!");
+        }
+    }
+
     if (m_pickupWeaponsTimer.IsElapsed())
     {
         m_pickupWeaponsTimer.StartRandom(15.0f, 30.0f);
