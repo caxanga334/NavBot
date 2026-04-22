@@ -40,12 +40,7 @@ public:
 		Vector initialTargetPosition = GetInitialAimPosition(bot);
 		const bool canpredict = bot->GetDifficultyProfile()->ShouldPredictProjectiles();
 
-		WeaponInfo::AttackFunctionType type = WeaponInfo::AttackFunctionType::PRIMARY_ATTACK;
-
-		if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerInput::AttackType::ATTACK_SECONDARY)
-		{
-			type = WeaponInfo::AttackFunctionType::SECONDARY_ATTACK;
-		}
+		botweapons::AttackType type = botweapons::GetValidAttackType(bot->GetControlInterface()->GetLastUsedAttackType());
 		
 		if (canpredict)
 		{

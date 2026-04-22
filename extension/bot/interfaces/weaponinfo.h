@@ -13,6 +13,7 @@
 
 #include <ITextParsers.h>
 #include <bot/interfaces/decisionquery.h>
+#include "weapons_shared.h"
 
 class WeaponAttackFunctionInfo
 {
@@ -28,6 +29,8 @@ public:
 		ballistic_elevation_min = -1.0f;
 		ballistic_elevation_max = -1.0f;
 		hold_time = -1.0f;
+		delay_between_attacks = -1.0f;
+		block_attacks_time = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
@@ -43,6 +46,8 @@ public:
 		ballistic_elevation_min = -1.0f;
 		ballistic_elevation_max = -1.0f;
 		hold_time = -1.0f;
+		delay_between_attacks = -1.0f;
+		block_attacks_time = -1.0f;
 		ismelee = false;
 		isexplosive = false;
 	}
@@ -69,6 +74,8 @@ public:
 	float GetTravelTimeForDistance(const float dist) const { return dist / projectilespeed; }
 	bool HasFunction() const { return maxrange > -9000.0f; }
 	float GetHoldButtonTime() const { return hold_time; }
+	float GetDelayBetweenAttacks() const { return delay_between_attacks; }
+	float GetBlockAttackTime() const { return block_attacks_time; }
 
 	void SetMaxRange(float v) { maxrange = v; }
 	void SetMinRange(float v) { minrange = v; }
@@ -81,6 +88,8 @@ public:
 	void SetMelee(bool v) { ismelee = v; }
 	void SetExplosive(bool v) { isexplosive = v; }
 	void SetHoldButtonTime(float v) { hold_time = v; }
+	void SetDelayBetweenAttacks(float v) { delay_between_attacks = v; }
+	void SetBlockAttackTime(float time) { block_attacks_time = time; }
 
 private:
 	float maxrange;
@@ -92,6 +101,8 @@ private:
 	float ballistic_elevation_min;
 	float ballistic_elevation_max;
 	float hold_time;
+	float delay_between_attacks;
+	float block_attacks_time;
 	bool ismelee;
 	bool isexplosive;
 };
@@ -101,15 +112,6 @@ class WeaponInfo
 public:
 	// Random Number used to indicate an invalid weapon slot
 	static constexpr int INVALID_WEAPON_SLOT = -7912742;
-
-	enum AttackFunctionType
-	{
-		PRIMARY_ATTACK = 0,
-		SECONDARY_ATTACK,
-		TERTIARY_ATTACK,
-
-		MAX_WEAPON_ATTACKS
-	};
 
 	enum WeaponType
 	{
@@ -188,7 +190,6 @@ public:
 		custom_ammo_prop_is_net = true;
 		custom_ammo_is_float = false;
 		custom_ammo_out_of_ammo = 0.0f;
-		interval_between_attacks = -1.0f;
 		initial_attack_delay = -1.0f;
 		scopein_attack_delay = -1.0f;
 		headshot_range_mult = 1.0f;
@@ -233,7 +234,6 @@ public:
 		this->custom_ammo_prop_is_net = other->custom_ammo_prop_is_net;
 		this->custom_ammo_is_float = other->custom_ammo_is_float;
 		this->custom_ammo_out_of_ammo = other->custom_ammo_out_of_ammo;
-		this->interval_between_attacks = other->interval_between_attacks;
 		this->initial_attack_delay = other->initial_attack_delay;
 		this->scopein_attack_delay = other->scopein_attack_delay;
 		this->headshot_range_mult = other->headshot_range_mult;
@@ -265,9 +265,9 @@ public:
 		this->ammo_source_classname = other->ammo_source_classname;
 	}
 
-	const WeaponAttackFunctionInfo& operator[](AttackFunctionType type) const
+	const WeaponAttackFunctionInfo& operator[](botweapons::AttackType type) const
 	{
-		return attacksinfo[type];
+		return attacksinfo[static_cast<int>(botweapons::AttackType::PRIMARY)];
 	}
 
 	const char* GetClassname() const { return classname.c_str(); }
@@ -277,9 +277,9 @@ public:
 	int GetPriority() const { return priority; }
 	int GetItemDefIndex() const { return econindex; }
 
-	void SetAttackInfo(AttackFunctionType type, WeaponAttackFunctionInfo info)
+	void SetAttackInfo(botweapons::AttackType type, WeaponAttackFunctionInfo info)
 	{
-		attacksinfo[type] = info;
+		attacksinfo[static_cast<int>(type)] = info;
 	}
 
 	void SetClassname(const char* szclassname)
@@ -297,14 +297,14 @@ public:
 	void SetHeadShotRangeMultiplier(float v) { headshot_range_mult = v; }
 	void SetHeadShotAimOffset(const Vector& offset) { headshot_aim_offset = offset; }
 
-	WeaponAttackFunctionInfo* GetAttackInfoForEditing(AttackFunctionType type)
+	WeaponAttackFunctionInfo* GetAttackInfoForEditing(botweapons::AttackType type)
 	{
-		return &attacksinfo[type];
+		return &attacksinfo[static_cast<int>(type)];
 	}
 
-	const WeaponAttackFunctionInfo& GetAttackInfo(AttackFunctionType type) const
+	const WeaponAttackFunctionInfo& GetAttackInfo(botweapons::AttackType type) const
 	{
-		return attacksinfo[type];
+		return attacksinfo[static_cast<int>(type)];
 	}
 
 	// Returns true if this is the default weapon info profile
@@ -312,7 +312,7 @@ public:
 	bool CanHeadShot() const { return can_headshot; }
 	bool HasInfiniteReserveAmmo() const { return infinite_reserve_ammo; }
 	float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
-	float GetMaxPrimaryHeadShotRange() const { return attacksinfo[PRIMARY_ATTACK].GetMaxRange() * headshot_range_mult; }
+	float GetMaxPrimaryHeadShotRange() const { return attacksinfo[static_cast<int>(botweapons::AttackType::PRIMARY)].GetMaxRange() * headshot_range_mult; }
 	const Vector& GetHeadShotAimOffset() const { return headshot_aim_offset; }
 
 	void SetEconItemIndex(int index) { econindex = index; }
@@ -323,7 +323,6 @@ public:
 	void SetLowPrimaryAmmoThreshold(int v) { primammolow = v; }
 	void SetLowSecondaryAmmoThreshold(int v) { secammolow = v; }
 	void SetSlot(int s) { slot = s; }
-	void SetAttackInterval(float v) { interval_between_attacks = v; }
 	void SetInitialAttackDelay(float v) { initial_attack_delay = v; }
 	void SetScopeInAttackDelay(float v) { scopein_attack_delay = v; }
 	void SetAttackRange(float v) { attack_move_range = v; }
@@ -357,9 +356,9 @@ public:
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
 	bool IsClassname(std::string& name) const { return classname == name; }
-	bool HasPrimaryAttack() const { return attacksinfo[PRIMARY_ATTACK].HasFunction(); }
-	bool HasSecondaryAttack() const { return attacksinfo[SECONDARY_ATTACK].HasFunction(); }
-	bool HasTertiaryAttack() const { return attacksinfo[TERTIARY_ATTACK].HasFunction(); }
+	bool HasPrimaryAttack() const { return attacksinfo[static_cast<int>(botweapons::AttackType::PRIMARY)].HasFunction(); }
+	bool HasSecondaryAttack() const { return attacksinfo[static_cast<int>(botweapons::AttackType::SECONDARY)].HasFunction(); }
+	bool HasTertiaryAttack() const { return attacksinfo[static_cast<int>(botweapons::AttackType::TERTIARY)].HasFunction(); }
 	// Returns true for weapons that can be used in combat
 	bool IsCombatWeapon() const
 	{
@@ -385,7 +384,6 @@ public:
 	int GetLowSecondaryAmmoThreshold() const { return secammolow; }
 	int GetSlot() const { return slot; }
 	bool HasSlot() const { return slot != INVALID_WEAPON_SLOT; }
-	float GetAttackInterval() const { return interval_between_attacks; }
 	float GetInitialAttackDelay() const { return initial_attack_delay; }
 	float GetScopeInAttackDelay() const { return scopein_attack_delay; }
 	// if this returns true, the weapon doesn't uses clips for the primary attack
@@ -454,7 +452,7 @@ private:
 	std::string classname;
 	std::string configentry;
 	std::string custom_ammo_property_name;
-	std::array<WeaponAttackFunctionInfo, AttackFunctionType::MAX_WEAPON_ATTACKS> attacksinfo;
+	std::array<WeaponAttackFunctionInfo, static_cast<std::size_t>(botweapons::AttackType::MAX_ATTACK_TYPES)> attacksinfo;
 	WeaponType weapon_type;
 	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
@@ -466,7 +464,6 @@ private:
 	bool custom_ammo_prop_is_net; // if true, the custom ammo property is a networked property, else it's a datamap
 	bool custom_ammo_is_float; // if true, the custom ammo property is a float, else an integer.
 	float custom_ammo_out_of_ammo; // if the custom ammo is equal or less than this, the weapon is out of ammo
-	float interval_between_attacks; // delay between attacks
 	float initial_attack_delay; // delay before the bot should start attacking after entering combat.
 	float scopein_attack_delay; // delay before the bot should atart attacking after scoping in with the weapon.
 	float headshot_range_mult;
@@ -563,7 +560,7 @@ protected:
 	 * @param name			Name of section, with the colon omitted.
 	 * @return				SMCResult directive.
 	 */
-	SMCResult ReadSMC_NewSection(const SMCStates* states, const char* name) override;
+	SourceMod::SMCResult ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name) override;
 
 	/**
 	 * @brief Called when encountering a key/value pair in a section.
@@ -574,7 +571,7 @@ protected:
 	 *						and key will contain the entire string.
 	 * @return				SMCResult directive.
 	 */
-	SMCResult ReadSMC_KeyValue(const SMCStates* states, const char* key, const char* value) override;
+	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
 
 	/**
 	 * @brief Called when leaving the current section.
@@ -582,7 +579,7 @@ protected:
 	 * @param states		Parsing states.
 	 * @return				SMCResult directive.
 	 */
-	SMCResult ReadSMC_LeavingSection(const SMCStates* states) override;
+	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
 
 public:
 
@@ -681,6 +678,7 @@ protected:
 private:
 
 	void ReadDynamicPrioritySection(const SourceMod::SMCStates* states, const char* key, const char* value);
+	void ReadAttackInfoSection(botweapons::AttackType type, const SourceMod::SMCStates* states, const char* key, const char* value);
 };
 
 #endif // !NAVBOT_WEAPON_INFO_H_

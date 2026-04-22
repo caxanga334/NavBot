@@ -466,7 +466,7 @@ void IInventory::SelectBestWeaponForBreakables(const bool force)
 		}
 
 		int currentprio = weapon->GetPriority(bot);
-		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee();
+		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee();
 
 		if (!is_melee && found_melee)
 		{
@@ -591,7 +591,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 			return;
 		}
 
-		if (!weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsHitscan())
+		if (!weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).IsHitscan())
 		{
 			return;
 		}
@@ -611,7 +611,7 @@ void IInventory::SelectBestHitscanWeapon(const bool meleeIsHitscan)
 		}
 
 		int currentprio = weapon->GetPriority(bot);
-		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee();
+		bool is_melee = weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee();
 
 		if (is_melee && !meleeIsHitscan)
 		{

@@ -112,7 +112,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const C
 const CKnownEntity* CTF2BotMainTask::InternalSelectTargetThreat(CTF2Bot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	const CBotWeapon* weapon = me->GetInventoryInterface()->GetActiveBotWeapon();
-	bool isMelee = (weapon != nullptr && weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee());
+	bool isMelee = (weapon != nullptr && weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee());
 
 	if (isMelee)
 	{

@@ -36,24 +36,13 @@ constexpr auto INPUT_ATTACK3 = (1 << 25); // Special attack (TF2)
 
 #include <sdkports/sdk_timers.h>
 #include <util/gamedata_const.h>
+#include <bot/interfaces/weapons_shared.h>
 
 // Handles client buttons sent to the server
 class IPlayerInput
 {
 public:
 	IPlayerInput();
-
-	/**
-	 * @brief Which attack type was last used by the bot?
-	 */
-	enum class AttackType : int
-	{
-		ATTACK_NONE,
-		ATTACK_PRIMARY,
-		ATTACK_SECONDARY,
-
-		MAX_ATTACK_TYPES
-	};
 
 	void ReleaseAllButtons();
 	void ReleaseMovementButtons(const bool uncrouch = false);
@@ -110,24 +99,24 @@ public:
 	void ReleaseWalkButton();
 	void SetMovementScale(const float forward, const float side, const float duration = 0.01f);
 	
-	inline const float GetForwardScale() const { return m_forwardscale; }
-	inline const float GetSideScale() const { return m_sidescale; }
-	inline bool ShouldApplyScale() const { return !m_buttonscaletimer.IsElapsed(); }
+	const float GetForwardScale() const { return m_forwardscale; }
+	const float GetSideScale() const { return m_sidescale; }
+	bool ShouldApplyScale() const { return !m_buttonscaletimer.IsElapsed(); }
 
 	// Buttons that will be sent between update
-	inline int GetOldButtonsToSend() const
+	int GetOldButtonsToSend() const
 	{
 		return m_oldbuttons | m_buttons;
 	}
 
-	inline void OnPostRunCommand()
+	void OnPostRunCommand()
 	{
 		m_buttons = 0;
 	}
 
 	virtual void ProcessButtons(int& buttons) = 0;
 
-	inline AttackType GetLastUsedAttackType() const { return m_lastUsedAttackType; }
+	botweapons::AttackType GetLastUsedAttackType() const { return m_lastUsedAttackType; }
 
 protected:
 	int m_buttons; // Buttons to be sent in the next user command
@@ -156,7 +145,7 @@ protected:
 	CountdownTimer m_modcustom3buttontimer;
 	CountdownTimer m_modcustom4buttontimer;
 	CountdownTimer m_buttonscaletimer;
-	AttackType m_lastUsedAttackType;
+	botweapons::AttackType m_lastUsedAttackType;
 
 	// Updates m_buttons with a list of button currently held down
 	void CompileButtons();
@@ -168,7 +157,7 @@ inline IPlayerInput::IPlayerInput()
 	m_oldbuttons = 0;
 	m_forwardscale = 1.0f;
 	m_sidescale = 1.0f;
-	m_lastUsedAttackType = AttackType::ATTACK_NONE;
+	m_lastUsedAttackType = botweapons::AttackType::MAX_ATTACK_TYPES;
 }
 
 inline void IPlayerInput::ReleaseAllButtons()
@@ -211,7 +200,7 @@ inline void IPlayerInput::ReleaseAllAttackButtons()
 	ReleaseAttackButton();
 	ReleaseSecondaryAttackButton();
 	ReleaseSpecialAttackButton();
-	m_lastUsedAttackType = AttackType::ATTACK_NONE;
+	m_lastUsedAttackType = botweapons::AttackType::MAX_ATTACK_TYPES;
 }
 
 inline void IPlayerInput::ResetInputData()
@@ -220,14 +209,14 @@ inline void IPlayerInput::ResetInputData()
 	m_forwardscale = 1.0f;
 	m_sidescale = 1.0f;
 	m_buttonscaletimer.Invalidate();
-	m_lastUsedAttackType = AttackType::ATTACK_NONE;
+	m_lastUsedAttackType = botweapons::AttackType::MAX_ATTACK_TYPES;
 }
 
 inline void IPlayerInput::PressAttackButton(const float duration)
 {
 	m_buttons |= GamedataConstants::s_user_buttons.attack1;
 	m_leftmousebuttontimer.Start(duration);
-	m_lastUsedAttackType = AttackType::ATTACK_PRIMARY;
+	m_lastUsedAttackType = botweapons::AttackType::PRIMARY;
 }
 
 inline void IPlayerInput::ReleaseAttackButton()
@@ -235,9 +224,9 @@ inline void IPlayerInput::ReleaseAttackButton()
 	m_buttons &= ~GamedataConstants::s_user_buttons.attack1;
 	m_leftmousebuttontimer.Invalidate();
 
-	if (m_lastUsedAttackType == AttackType::ATTACK_PRIMARY)
+	if (m_lastUsedAttackType == botweapons::AttackType::PRIMARY)
 	{
-		m_lastUsedAttackType = AttackType::ATTACK_NONE;
+		m_lastUsedAttackType = botweapons::AttackType::MAX_ATTACK_TYPES;
 	}
 }
 
@@ -250,7 +239,7 @@ inline void IPlayerInput::PressSecondaryAttackButton(const float duration)
 {
 	m_buttons |= GamedataConstants::s_user_buttons.attack2;
 	m_rightmousebuttontimer.Start(duration);
-	m_lastUsedAttackType = AttackType::ATTACK_SECONDARY;
+	m_lastUsedAttackType = botweapons::AttackType::SECONDARY;
 }
 
 inline void IPlayerInput::ReleaseSecondaryAttackButton()
@@ -258,9 +247,9 @@ inline void IPlayerInput::ReleaseSecondaryAttackButton()
 	m_buttons &= ~GamedataConstants::s_user_buttons.attack2;
 	m_rightmousebuttontimer.Invalidate();
 
-	if (m_lastUsedAttackType == AttackType::ATTACK_SECONDARY)
+	if (m_lastUsedAttackType == botweapons::AttackType::SECONDARY)
 	{
-		m_lastUsedAttackType = AttackType::ATTACK_NONE;
+		m_lastUsedAttackType = botweapons::AttackType::MAX_ATTACK_TYPES;
 	}
 }
 
@@ -273,12 +262,18 @@ inline void IPlayerInput::PressSpecialAttackButton(const float duration)
 {
 	m_buttons |= GamedataConstants::s_user_buttons.attack3;
 	m_specialmousebuttontimer.Start(duration);
+	m_lastUsedAttackType = botweapons::AttackType::TERTIARY;
 }
 
 inline void IPlayerInput::ReleaseSpecialAttackButton()
 {
 	m_buttons &= ~GamedataConstants::s_user_buttons.attack3;
 	m_specialmousebuttontimer.Invalidate();
+
+	if (m_lastUsedAttackType == botweapons::AttackType::TERTIARY)
+	{
+		m_lastUsedAttackType = botweapons::AttackType::MAX_ATTACK_TYPES;
+	}
 }
 
 inline void IPlayerInput::PressJumpButton(const float duration)

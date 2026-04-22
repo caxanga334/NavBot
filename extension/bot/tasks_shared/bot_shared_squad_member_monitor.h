@@ -100,7 +100,7 @@ inline QueryAnswerType CBotSharedSquadMemberMonitorTask<BT, CT>::ShouldSeekAndDe
 	}
 
 	const float range = (me->GetAbsOrigin() - them->GetLastKnownPosition()).Length();
-	const WeaponAttackFunctionInfo& info = activeWeapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+	const WeaponAttackFunctionInfo& info = activeWeapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY);
 	
 	if (info.IsMelee())
 	{

@@ -2735,7 +2735,7 @@ IMovement::ElevatorState IMovement::EState_CallElevator()
 
 		if (weapon)
 		{
-			minrange = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
+			minrange = weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange();
 		}
 	}
 
@@ -2864,7 +2864,7 @@ IMovement::ElevatorState IMovement::EState_OperateElevator()
 
 		if (weapon)
 		{
-			minrange = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
+			minrange = weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange();
 		}
 	}
 

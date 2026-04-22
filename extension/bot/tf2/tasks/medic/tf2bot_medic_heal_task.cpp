@@ -430,7 +430,7 @@ void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* 
 	
 	if (myweapon)
 	{
-		moveRange = (myweapon->GetTF2Info()->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).GetMaxRange() * 0.6f);
+		moveRange = (myweapon->GetTF2Info()->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange() * 0.6f);
 	}
 	else
 	{

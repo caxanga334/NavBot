@@ -66,7 +66,7 @@ public:
 	bool HasPrimaryAmmo(const CBaseBot* owner) const { return GetPrimaryAmmoLeft(owner) > 0; }
 	bool hasSecondaryAmmo(const CBaseBot* owner) const { return GetSecondaryAmmoLeft(owner) > 0; }
 	bool HasAmmo(const CBaseBot* owner) const { return !IsOutOfAmmo(owner); }
-	bool IsInAttackRange(const float range, const WeaponInfo::AttackFunctionType attackType) const;
+	bool IsInAttackRange(const float range, const botweapons::AttackType attackType) const;
 	// Returns true if it's possible to use the weapon's primary attack
 	bool CanUsePrimaryAttack(const CBaseBot* owner) const;
 	// Returns true if it's possible to use the weapon's secondary attack

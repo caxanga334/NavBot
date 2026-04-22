@@ -3,6 +3,7 @@
 
 #include "base_interface.h"
 #include <bot/interfaces/decisionquery.h>
+#include <bot/interfaces/weapons_shared.h>
 
 /**
  * @brief The combat interface. Responsible for the basic handling of combat such as firing, reloading weapons, using abilities, etc.
@@ -36,6 +37,7 @@ public:
 		bool can_use_primary; // can use primary attack
 		bool can_fire; // true if has a clear LOF
 		float time_lost_los; // timestamp of when LOS was lost
+		botweapons::AttackType selected_attack_type; // currently selected attack type
 
 		// Returns the amount of seconds passed since the bot lost line of sight with the current enemy.
 		float GetTimeSinceLostLOS() const;
@@ -56,6 +58,7 @@ public:
 			can_use_primary = false;
 			can_fire = false;
 			time_lost_los = -9999.0f;
+			selected_attack_type = botweapons::AttackType::MAX_ATTACK_TYPES;
 		}
 
 		void Update(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon);
@@ -151,6 +154,8 @@ public:
 	const bool GetShouldReloadPostCombat() const { return m_shouldReloadPostCombat; }
 	// Returns true if the current enemy is visible but the line of fire is obstructed (used cached information).
 	const bool IsVisibleButLineOfFireIsObstructed() const { return m_combatData.is_visible && !m_combatData.can_fire; }
+	// Returns the attack type selected to be used against the current enemy
+	botweapons::AttackType GetSelectedAttackType() const { return m_combatData.selected_attack_type; }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -194,7 +199,18 @@ protected:
 	 */
 	virtual void OnHandleWeaponFailed(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon);
 	virtual void ReloadCurrentWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon);
-	void UpdateCombatData(const CKnownEntity* threat, const CBotWeapon* activeWeapon) { m_combatData.Update(GetBot<CBaseBot>(), threat, activeWeapon); }
+	void UpdateCombatData(const CKnownEntity* threat, const CBotWeapon* activeWeapon) 
+	{
+		botweapons::AttackType lastUsedAttackType = m_combatData.selected_attack_type;
+		m_combatData.Update(GetBot<CBaseBot>(), threat, activeWeapon);
+
+		if (botweapons::IsValidAttackType(lastUsedAttackType) && 
+			botweapons::IsValidAttackType(m_combatData.selected_attack_type) &&
+			lastUsedAttackType != m_combatData.selected_attack_type)
+		{
+
+		}
+	}
 	/**
 	 * @brief Call to make bots use the weapon's special function
 	 * @param bot Bot that is using the weapon.
@@ -218,7 +234,11 @@ protected:
 	virtual bool IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
 	// returns if the bot is allowed to jump or crouch while dodging enemies in combat.
 	virtual bool CanJumpOrCrouchToDodge() const { return true; }
-
+	/**
+	 * @brief Called to make bots dodges enemies.
+	 * @param threat Current enemy.
+	 * @param activeWeapon Current weapon.
+	 */
 	virtual void DodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
 	void UnscopeWeaponIfScoped();
 	/**
@@ -238,6 +258,13 @@ protected:
 	 * @param activeWeapon Current weapon.
 	 */
 	virtual void OnThreatBecameVisible(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
+	/**
+	 * @brief Called when the selected weapon attack type changes. (IE: primary to secondary)
+	 * @param threat Current enemy being attacked.
+	 * @param activeWeapon Current weapon being used.
+	 * @param oldtype The old attack type being used. The current attack type is stored in the combat data.
+	 */
+	virtual void OnSelectedAttackTypeChanged(const CKnownEntity* threat, const CBotWeapon* activeWeapon, botweapons::AttackType oldtype);
 	// Returns true if the bot can use secondary abilities
 	virtual bool CanUseSecondaryAbilitities() const;
 	/**
@@ -305,6 +332,8 @@ protected:
 	CountdownTimer& GetDisableDodgeTimer() { return m_disableDodgeTimer; }
 	// Timer for post combat checks.
 	CountdownTimer& GetPostCombatChecksTimer() { return m_postCombatChecks; }
+	// Timer to block firing the weapon.
+	CountdownTimer& GetBlockFiringTimer() { return m_blockFiringTimer; }
 	// Invoked to update the look around logic.
 	virtual void UpdateLookingAround();
 	/**
@@ -327,7 +356,8 @@ private:
 	CountdownTimer m_lookAroundTimer;
 	CountdownTimer m_disableDodgeTimer;
 	CountdownTimer m_postCombatChecks;
-	IntervalTimer m_attackTimer;
+	CountdownTimer m_blockFiringTimer; // timer used for cooldown between attacks (shared)
+	IntervalTimer m_attackTimer; // timer used for cooldown between attacks (not shared)
 	CombatData m_combatData;
 	bool m_shouldAim;
 	bool m_shouldSelectWeapons;

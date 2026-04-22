@@ -47,6 +47,8 @@ void ICombat::Reset()
 	m_reloadTimer.Invalidate();
 	m_disableLookingAroundTimer.Invalidate();
 	m_disableDodgeTimer.Invalidate();
+	m_blockFiringTimer.Invalidate();
+	m_attackTimer.Invalidate();
 	m_lookAroundTimer.Start(LOOK_AROUND_TIMER_BASE_MAX);
 	m_combatData.Clear();
 }
@@ -213,7 +215,7 @@ void ICombat::DoPrimaryAttack()
 	const WeaponInfo* info = weapon->GetWeaponInfo();
 	IntervalTimer& timer = GetAttackTimer();
 
-	if (timer.HasStarted() && timer.IsLessThen(info->GetAttackInterval()))
+	if (timer.HasStarted() && timer.IsLessThen(info->GetAttackInfo(botweapons::AttackType::PRIMARY).GetDelayBetweenAttacks()))
 	{
 		return;
 	}
@@ -225,7 +227,7 @@ void ICombat::DoPrimaryAttack()
 	}
 
 	timer.Start();
-	bot->GetControlInterface()->PressAttackButton(info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
+	bot->GetControlInterface()->PressAttackButton(info->GetAttackInfo(botweapons::AttackType::PRIMARY).GetHoldButtonTime());
 }
 
 const bool ICombat::CanLookAround() const
@@ -247,10 +249,15 @@ void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
 	m_useSpecialFuncTimer.Invalidate();
 	m_scopeinDelayTimer.Invalidate();
 	m_reloadTimer.Invalidate();
+	m_blockFiringTimer.Invalidate();
 }
 
 bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::CanFireWeaponAtEnemy", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!m_dontFireTimer.IsElapsed())
 		return false;
 
@@ -277,6 +284,10 @@ bool ICombat::CanFireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* thre
 
 void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon, const bool bypassLOS)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::FireWeaponAtEnemy", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (!CanFireWeaponAtEnemy(bot, threat, activeWeapon)) { return; }
 
 	// Update last used weapon
@@ -286,7 +297,7 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 	IPlayerController* input = bot->GetControlInterface();
 	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
 	const bool canspam = (data.can_fire && info->CanBeSpammed() && GetTimeSinceLOSWasLost() <= info->GetSpamTime());
-	auto& primInfo = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+	auto& primInfo = info->GetAttackInfo(botweapons::AttackType::PRIMARY);
 
 	// for melee weapons, see if the bot needs to crouch to hit something below then
 	if (data.can_fire && primInfo.IsMelee() && data.enemy_range <= (primInfo.GetMaxRange() * 1.15f))
@@ -303,22 +314,20 @@ void ICombat::FireWeaponAtEnemy(const CBaseBot* bot, const CKnownEntity* threat,
 		if (HandleWeapon(bot, activeWeapon))
 		{
 			// aiming at the current enemy
-			if (input->GetAimAtTarget() == threat->GetEntity())
+			if (input->GetAimAtTarget() == threat->GetEntity() && input->IsAimOnTarget())
 			{
-				if (input->IsAimOnTarget())
-				{
-					OpportunisticallyUseWeaponSpecialFunction(bot, threat, activeWeapon);
-					GetAttackTimer().Start(); // just attacked
-					SetShouldReloadPostCombat(true); // remember to reload my weapon
+				OpportunisticallyUseWeaponSpecialFunction(bot, threat, activeWeapon);
+				GetAttackTimer().Start(); // just attacked
+				SetShouldReloadPostCombat(true); // remember to reload my weapon
+				GetBlockFiringTimer().Start(info->GetAttackInfo(botweapons::GetValidAttackType(GetSelectedAttackType())).GetBlockAttackTime());
 
-					if (data.can_use_primary)
-					{
-						input->PressAttackButton(info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetHoldButtonTime());
-					}
-					else
-					{
-						input->PressSecondaryAttackButton(info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetHoldButtonTime());
-					}
+				if (data.can_use_primary)
+				{
+					input->PressAttackButton(info->GetAttackInfo(botweapons::AttackType::PRIMARY).GetHoldButtonTime());
+				}
+				else
+				{
+					input->PressSecondaryAttackButton(info->GetAttackInfo(botweapons::AttackType::SECONDARY).GetHoldButtonTime());
 				}
 			}
 		}
@@ -345,14 +354,21 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
 	const CombatData& data = GetCachedCombatData();
 	IPlayerController* input = bot->GetControlInterface();
+	const WeaponAttackFunctionInfo& attackfunc = info->GetAttackInfo(botweapons::GetValidAttackType(GetSelectedAttackType()));
 
 	if (!data.in_range)
 	{
 		return false; // out side firing range
 	}
+	
+	// check block attack timer
+	if (!GetBlockFiringTimer().IsElapsed())
+	{
+		return false;
+	}
 
 	// check attack interval
-	if (timer.HasStarted() && timer.IsLessThen(info->GetAttackInterval()))
+	if (timer.HasStarted() && timer.IsLessThen(attackfunc.GetDelayBetweenAttacks()))
 	{
 		return false;
 	}
@@ -528,7 +544,7 @@ bool ICombat::IsAbleToDodgeEnemies(const CKnownEntity* threat, const CBotWeapon*
 		return false;
 	}
 
-	const WeaponAttackFunctionInfo& primaryAttackInfo = activeWeapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK);
+	const WeaponAttackFunctionInfo& primaryAttackInfo = activeWeapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY);
 
 	// Melee weapons: Don't dodge enemies if I'm close to the enemy
 	if (primaryAttackInfo.IsMelee())
@@ -653,6 +669,12 @@ void ICombat::OnThreatBecameVisible(const CKnownEntity* threat, const CBotWeapon
 		bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: ON THREAT %s BECAME VISIBLE! CURRENT WEAPON: %s\n",
 			bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
 	}
+}
+
+void ICombat::OnSelectedAttackTypeChanged(const CKnownEntity* threat, const CBotWeapon* activeWeapon, botweapons::AttackType oldtype)
+{
+	// this timer is now per attack
+	GetAttackTimer().Invalidate();
 }
 
 bool ICombat::CanUseSecondaryAbilitities() const
@@ -931,12 +953,12 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	bool primary = false;
 	bool secondary = false;
 
-	if (activeWeapon->CanUsePrimaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, WeaponInfo::AttackFunctionType::PRIMARY_ATTACK))
+	if (activeWeapon->CanUsePrimaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, botweapons::AttackType::PRIMARY))
 	{
 		primary = true;
 	}
 
-	if (activeWeapon->CanUseSecondaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, WeaponInfo::AttackFunctionType::SECONDARY_ATTACK))
+	if (activeWeapon->CanUseSecondaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, botweapons::AttackType::SECONDARY))
 	{
 		secondary = true;
 	}
@@ -946,24 +968,27 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	if (primary && !secondary)
 	{
 		this->can_use_primary = true;
+		this->selected_attack_type = botweapons::AttackType::PRIMARY;
 	}
 	else if (secondary && !primary)
 	{
 		this->can_use_primary = false;
+		this->selected_attack_type = botweapons::AttackType::SECONDARY;
 	}
 	else if (primary && secondary)
 	{
 		this->can_use_primary = !CBaseBot::s_botrng.GetRandomChance(info->GetChanceToUseSecondaryAttack());
+		this->selected_attack_type = this->can_use_primary ? botweapons::AttackType::PRIMARY : botweapons::AttackType::SECONDARY;
 	}
 
 	if (this->can_use_primary)
 	{
-		float maxrange = info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange() * info->GetHeadShotRangeMultiplier();
+		float maxrange = info->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange() * info->GetHeadShotRangeMultiplier();
 		this->in_headshot_range = (this->enemy_range <= maxrange);
 	}
 	else
 	{
-		float maxrange = info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMaxRange() * info->GetHeadShotRangeMultiplier();
+		float maxrange = info->GetAttackInfo(botweapons::AttackType::SECONDARY).GetMaxRange() * info->GetHeadShotRangeMultiplier();
 		this->in_headshot_range = (this->enemy_range <= maxrange);
 	}
 

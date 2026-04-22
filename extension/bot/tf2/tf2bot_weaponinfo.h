@@ -101,9 +101,9 @@ public:
 
 	float GetChargePercentage() const;
 	// takes into account the weapon charge mechanic (IE: huntsman)
-	float GetProjectileSpeed(WeaponInfo::AttackFunctionType type) const;
+	float GetProjectileSpeed(botweapons::AttackType type) const;
 	// takes into account the weapon charge mechanic (IE: huntsman)
-	float GetProjectileGravity(WeaponInfo::AttackFunctionType type) const;
+	float GetProjectileGravity(botweapons::AttackType type) const;
 	const TF2WeaponInfo* GetTF2Info() const { return static_cast<const TF2WeaponInfo*>(GetWeaponInfo()); }
 
 	UberType GetMedigunUberType() const { return m_ubertype; }

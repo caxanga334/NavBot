@@ -346,15 +346,11 @@ float botsharedutils::weapons::GetMaxAttackRangeForCurrentlyHeldWeapon(CBaseBot*
 	}
 
 	float range = 0.0f;
+	auto type = bot->GetControlInterface()->GetLastUsedAttackType();
 
-	if (bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerController::AttackType::ATTACK_NONE ||
-		bot->GetControlInterface()->GetLastUsedAttackType() == IPlayerController::AttackType::ATTACK_PRIMARY)
+	if (botweapons::IsValidAttackType(type))
 	{
-		range = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
-	}
-	else
-	{
-		range = weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMaxRange();
+		range = weapon->GetWeaponInfo()->GetAttackInfo(type).GetMaxRange();
 	}
 
 	return range;
@@ -788,7 +784,7 @@ const CKnownEntity* botsharedutils::threat::DefaultThreatSelection(CBaseBot* bot
 	}
 
 	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
-	bool isMelee = (weapon != nullptr && weapon->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee());
+	bool isMelee = (weapon != nullptr && weapon->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee());
 
 	// Melee always target the nearest threat
 	if (isMelee)

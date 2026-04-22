@@ -162,6 +162,88 @@ void CWeaponInfoManager::ReadDynamicPrioritySection(const SourceMod::SMCStates* 
 	}
 }
 
+void CWeaponInfoManager::ReadAttackInfoSection(botweapons::AttackType type, const SourceMod::SMCStates* states, const char* key, const char* value)
+{
+	if (strncmp(key, "maxrange", 8) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetMaxRange(atof(value));
+	}
+	else if (strncmp(key, "minrange", 8) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetMinRange(atof(value));
+	}
+	else if (std::strcmp(key, "projectilespeed") == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetProjectileSpeed(atof(value));
+	}
+	else if (std::strcmp(key, "gravity") == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetGravity(atof(value));
+	}
+	else if (strncmp(key, "ballistic_elevation_range_start", 31) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetBallisticElevationStartRange(atof(value));
+	}
+	else if (strncmp(key, "ballistic_elevation_range_end", 30) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetBallisticElevationEndRange(atof(value));
+	}
+	else if (strncmp(key, "ballistic_elevation_min", 23) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetBallisticElevationMin(atof(value));
+	}
+	else if (strncmp(key, "ballistic_elevation_max", 23) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetBallisticElevationMax(atof(value));
+	}
+	else if (strncmp(key, "melee", 5) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetMelee(UtilHelpers::StringToBoolean(value));
+	}
+	else if (strncmp(key, "explosive", 7) == 0)
+	{
+		m_current->GetAttackInfoForEditing(type)->SetExplosive(UtilHelpers::StringToBoolean(value));
+	}
+	else if (strncmp(key, "hold_button_time", 16) == 0)
+	{
+		float v = atof(value);
+
+		if (v <= 0.0f)
+		{
+			v = -1.0f;
+		}
+
+		m_current->GetAttackInfoForEditing(type)->SetHoldButtonTime(v);
+	}
+	else if (strncmp(key, "delay_between_attacks", 21) == 0)
+	{
+		float v = atof(value);
+
+		if (v <= 0.0f)
+		{
+			v = -1.0f;
+		}
+
+		m_current->GetAttackInfoForEditing(type)->SetDelayBetweenAttacks(v);
+	}
+	else if (strncmp(key, "block_attacks_time", 18) == 0)
+	{
+		float v = atof(value);
+
+		if (v <= 0.0f)
+		{
+			v = -1.0f;
+		}
+
+		m_current->GetAttackInfoForEditing(type)->SetBlockAttackTime(v);
+	}
+	else
+	{
+		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair (Attack Info %i) <%s - %s> at line %i col %i",
+			static_cast<int>(type), key, value, states->line, states->col);
+	}
+}
+
 const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(const std::string& classname, const int index) const
 {
 	const WeaponInfo* result = nullptr;
@@ -322,13 +404,13 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair on special function <%s - %s> at line %i col %i", key, value, states->line, states->col);
 		}
 
-		return SourceMod::SMCResult_Continue;
+		return SourceMod::SMCResult::SMCResult_Continue;
 	}
 
 	if (m_section_dynamicprio)
 	{
 		ReadDynamicPrioritySection(states, key, value);
-		return SourceMod::SMCResult_Continue;
+		return SourceMod::SMCResult::SMCResult_Continue;
 	}
 
 	if (std::strcmp(key, "variantof") == 0)
@@ -469,15 +551,7 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	}
 	else if (strncmp(key, "attack_interval", 15) == 0)
 	{
-		float v = atof(value);
-		
-		if (v <= 0.0f)
-		{
-			v = -1.0f;
-		}
-
-		m_current->SetAttackInterval(v);
-
+		smutils->LogError(myself, "Deprecated key \"attack_interval\" at line %u col %u!", states->line, states->col);
 	}
 	else if (strncmp(key, "attack_range_override", 21) == 0)
 	{
@@ -635,76 +709,21 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 
 	if (IsParserInWeaponAttackSection())
 	{
-		WeaponInfo::AttackFunctionType type = WeaponInfo::PRIMARY_ATTACK;
+		botweapons::AttackType type = botweapons::AttackType::PRIMARY;
 
 		if (m_section_sec)
 		{
-			type = WeaponInfo::SECONDARY_ATTACK;
+			type = botweapons::AttackType::SECONDARY;
 		}
 		else if (m_section_ter)
 		{
-			type = WeaponInfo::TERTIARY_ATTACK;
+			type = botweapons::AttackType::TERTIARY;
 		}
 
-		if (strncmp(key, "maxrange", 8) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetMaxRange(atof(value));
-		}
-		else if (strncmp(key, "minrange", 8) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetMinRange(atof(value));
-		}
-		else if (std::strcmp(key, "projectilespeed") == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetProjectileSpeed(atof(value));
-		}
-		else if (std::strcmp(key, "gravity") == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetGravity(atof(value));
-		}
-		else if (strncmp(key, "ballistic_elevation_range_start", 31) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationStartRange(atof(value));
-		}
-		else if (strncmp(key, "ballistic_elevation_range_end", 30) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationEndRange(atof(value));
-		}
-		else if (strncmp(key, "ballistic_elevation_min", 23) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationMin(atof(value));
-		}
-		else if (strncmp(key, "ballistic_elevation_max", 23) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetBallisticElevationMax(atof(value));
-		}
-		else if (strncmp(key, "melee", 5) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetMelee(UtilHelpers::StringToBoolean(value));
-		}
-		else if (strncmp(key, "explosive", 7) == 0)
-		{
-			m_current->GetAttackInfoForEditing(type)->SetExplosive(UtilHelpers::StringToBoolean(value));
-		}
-		else if (strncmp(key, "hold_button_time", 16) == 0)
-		{
-			float v = atof(value);
-
-			if (v <= 0.0f)
-			{
-				v = -1.0f;
-			}
-
-			m_current->GetAttackInfoForEditing(type)->SetHoldButtonTime(v);
-		}
-		else
-		{
-			smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair (Attack Info %i) <%s - %s> at line %i col %i", 
-				static_cast<int>(type), key, value, states->line, states->col);
-		}
+		ReadAttackInfoSection(type, states, key, value);
 	}
 
-	return SMCResult_Continue;
+	return SourceMod::SMCResult::SMCResult_Continue;
 }
 
 SourceMod::SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SourceMod::SMCStates* states)
@@ -792,7 +811,7 @@ void WeaponInfo::PostLoad()
 	// If not set by the config file, use the largest distance between all available attacks.
 	if (attack_move_range <= 0.0f)
 	{
-		for (size_t i = 0; i < static_cast<size_t>(MAX_WEAPON_ATTACKS); i++)
+		for (size_t i = 0; i < static_cast<size_t>(botweapons::AttackType::MAX_ATTACK_TYPES); i++)
 		{
 			if (attacksinfo[i].HasFunction() && attacksinfo[i].GetMaxRange() > attack_move_range)
 			{
@@ -804,9 +823,9 @@ void WeaponInfo::PostLoad()
 	// not set by the config file
 	if (selection_max_range <= 0.0f)
 	{
-		float minrange = 9999999999.0f;
+		float minrange = std::numeric_limits<float>::max();
 
-		for (size_t i = 0; i < static_cast<size_t>(MAX_WEAPON_ATTACKS); i++)
+		for (size_t i = 0; i < static_cast<size_t>(botweapons::AttackType::MAX_ATTACK_TYPES); i++)
 		{
 			if (attacksinfo[i].HasFunction())
 			{

@@ -174,7 +174,7 @@ float CTF2BotWeapon::GetChargePercentage() const
 	return *m_charge;
 }
 
-float CTF2BotWeapon::GetProjectileSpeed(WeaponInfo::AttackFunctionType type) const
+float CTF2BotWeapon::GetProjectileSpeed(botweapons::AttackType type) const
 {
 	// maps the projectile speed to the charge percentage
 	if (GetTF2Info()->CanCharge())
@@ -186,7 +186,7 @@ float CTF2BotWeapon::GetProjectileSpeed(WeaponInfo::AttackFunctionType type) con
 	return m_info->GetAttackInfo(type).GetProjectileSpeed();
 }
 
-float CTF2BotWeapon::GetProjectileGravity(WeaponInfo::AttackFunctionType type) const
+float CTF2BotWeapon::GetProjectileGravity(botweapons::AttackType type) const
 {
 	// maps the projectile speed to the charge percentage
 	if (GetTF2Info()->CanCharge())

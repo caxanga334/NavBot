@@ -34,7 +34,7 @@ CBaseEntity* CTF2BotMedicCrossbowHealTask::IsPossible(CTF2Bot* me, const CBotWea
 
 			const float range = me->GetRangeTo(entity);
 
-			if (range > min_range && range <= crossbow->GetWeaponInfo()->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange())
+			if (range > min_range && range <= crossbow->GetWeaponInfo()->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange())
 			{
 				if (me->IsLineOfFireClear(UtilHelpers::getWorldSpaceCenter(entity)))
 				{

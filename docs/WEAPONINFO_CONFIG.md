@@ -29,7 +29,6 @@ This is a list of keys available for all mods.
 |low_primary_ammo_threshold|Threshold to consider the bot to be low on ammo for the primary ammo type.|integer|
 |low_secondary_ammo_threshold|Threshold to consider the bot to be low on ammo for the secondary ammo type.|integer|
 |slot|Which slot this weapon uses.|integer|
-|attack_interval|Delay in seconds between attacks. The bot releases the attack buttons between intervals. Negative values to make the bot hold the attack button.|float|
 |scopein_attack_delay|Delay in seconds before the bot starts firing their weapon after deploying/scoping with their current weapon.|float|
 |initial_attack_delay|Delay in seconds before the bot starts firing their weapon when combat start.|float|
 |scopein_min_range|Don't use scope/deploy weapon if the distance between the bot and the enemy is less than this.|float|
@@ -68,6 +67,8 @@ The following keys applies to attack info sections (`primary_attack_info`, `seco
 |ballistic_elevation_range_start|Range to apply the minimum elevation value.|float|
 |ballistic_elevation_range_end|Range to apply the maximum elevation value.|float|
 |hold_button_time|How long to keep pressing the attack button in seconds. Negative values for a single tap.|float|
+|delay_between_attacks|Delay in seconds between attacks (button presses). This delay is per attack.|float|
+|block_attacks_time|Delay in seconds between attacks (button presses). This delay is shared between attack types.|float|
 |melee|Is melee attack?|boolean|
 |explosive|Is explosive attack?|boolean|
 
@@ -96,21 +97,16 @@ Additional information:
 
 ### Special Values and Additional Info
 
-If `maxrange` is less than *-9000*, the attack function is considered to the disabled.
-
-If `projectilespeed` is negative, the weapon is considered to be a hitscan weapon.
-
-`headshot_range_multiplier` ranges from 0.0 to 1.0 and is used to multiply the attack's `maxrange` value. Example: If a weapon has a `maxrange` of 2048 and a `headshot_range_multiplier` of 0.5, the bots will only aim at the head if the range to the enemy is 1024 or less.
-
-When attacking enemies, bots will only move towards the enemy if they are not visible or if they are outside the range of all weapons owned by the bot.  
-By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be overriden with `attack_range_override`.  
-This can be used to make the bot close the distance between them and the enemy without having to reduce the weapon's maximum range.
-
-Bots identify weapons via their entity classname and economy index if available for the mod.
-
-This means on games like Team Fortress 2, you can have unique settings for weapons that share the same classname but not economy index like the stock Rocket Launcher and The Liberty Launcher.
-
-When searching for weapon information, economy index is searched first, then classname.
+* If `maxrange` is less than *-9000*, the attack function is considered to the disabled.    
+* If `projectilespeed` is negative, the weapon is considered to be a hitscan weapon.    
+`headshot_range_multiplier` ranges from 0.0 to 1.0 and is used to multiply the attack's `maxrange` value. Example: If a weapon has a `maxrange` of 2048 and a `headshot_range_multiplier` of 0.5, the bots will only aim at the head if the range to the enemy is 1024 or less.    
+* When attacking enemies, bots will only move towards the enemy if they are not visible or if they are outside the range of all weapons owned by the bot.  
+* By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be overriden with `attack_range_override`.  
+* This can be used to make the bot close the distance between them and the enemy without having to reduce the weapon's maximum range.    
+* Bots identify weapons via their entity classname and economy index if available for the mod.     
+* This means on games like Team Fortress 2, you can have unique settings for weapons that share the same classname but not economy index like the stock Rocket Launcher and The Liberty Launcher.    
+* When searching for weapon information, economy index is searched first, then classname.
+* Both `delay_between_attacks` and `block_attacks_time` is a delay in button presses, the former is reset when the used attack type changes (primary, secondary) while the latter does not.
 
 ## Weapon Types
 

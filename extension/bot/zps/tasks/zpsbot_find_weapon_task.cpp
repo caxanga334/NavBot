@@ -61,7 +61,7 @@ private:
 				return false;
 			}
 
-			if (!info->GetAttackInfo(WeaponInfo::PRIMARY_ATTACK).IsMelee())
+			if (!info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
 			{
 				int clip = 0;
 				entprops->GetEntProp(entity, Prop_Data, "m_iClip1", clip);

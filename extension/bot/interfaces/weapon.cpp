@@ -25,31 +25,6 @@ CBotWeapon::CBotWeapon(CBaseEntity* entity) : m_bcw(entity)
 	m_info = extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(classname, m_econindex);
 	m_handle = entity;
 	m_classname.assign(classname);
-
-#ifdef EXT_DEBUG
-	
-	if (m_info != nullptr && m_info->IsCombatWeapon())
-	{
-		int clip = 0;
-		entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip1", clip);
-
-		if (clip == WEAPON_NOCLIP && !m_info->Clip1IsReserveAmmo() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
-		{
-			smutils->LogError(myself, "Weapon %s CLIP1 == WEAPON_NOCLIP but lacks \"primary_no_clip\" attribute. %s #%i",
-				m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
-		}
-
-		clip = 0;
-		entprops->GetEntProp(m_entindex, Prop_Data, "m_iClip2", clip);
-
-		if (clip == WEAPON_NOCLIP && !m_info->Clip2IsReserveAmmo() && m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction() && !m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
-		{
-			smutils->LogError(myself, "Weapon %s CLIP2 == WEAPON_NOCLIP but lacks \"secondary_no_clip\" attribute. %s #%i",
-				m_classname.c_str(), m_info->GetConfigEntryName(), m_econindex);
-		}
-	}
-
-#endif // EXT_DEBUG
 }
 
 CBotWeapon::~CBotWeapon()
@@ -97,13 +72,13 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 	auto& bcw = GetBaseCombatWeapon();
 
 	// Ignore weapons that doesn't have a primary attack or aren't a combat weapon
-	if (!info->IsCombatWeapon() || !info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasFunction())
+	if (!info->IsCombatWeapon() || !info->GetAttackInfo(botweapons::AttackType::PRIMARY).HasFunction())
 	{
 		return false;
 	}
 
 	// If the weapon is primary melee or tagged with infinite reserve ammo, it's never low on ammo.
-	if (info->HasInfiniteReserveAmmo() || info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	if (info->HasInfiniteReserveAmmo() || info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
 	{
 		return false;
 	}
@@ -135,7 +110,7 @@ bool CBotWeapon::IsAmmoLow(const CBaseBot* owner) const
 		}
 	}
 
-	if (info->HasLowSecondaryAmmoThreshold() && !info->SecondaryUsesPrimaryAmmo() && info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
+	if (info->HasLowSecondaryAmmoThreshold() && !info->SecondaryUsesPrimaryAmmo() && info->GetAttackInfo(botweapons::AttackType::SECONDARY).HasFunction())
 	{
 		int ammo = 0;
 
@@ -167,7 +142,7 @@ bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner) const
 	auto info = GetWeaponInfo();
 
 	// primary melee never runs out of ammo
-	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	if (info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
 	{
 		return false;
 	}
@@ -186,7 +161,7 @@ bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner) const
 	
 	ammo += GetPrimaryAmmoLeft(owner);
 
-	if (!info->SecondaryUsesPrimaryAmmo() && info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
+	if (!info->SecondaryUsesPrimaryAmmo() && info->GetAttackInfo(botweapons::AttackType::SECONDARY).HasFunction())
 	{
 		ammo += GetSecondaryAmmoLeft(owner);
 	}
@@ -239,7 +214,7 @@ int CBotWeapon::GetSecondaryAmmoLeft(const CBaseBot* owner) const
 	return ammo;
 }
 
-bool CBotWeapon::IsInAttackRange(const float range, const WeaponInfo::AttackFunctionType attackType) const
+bool CBotWeapon::IsInAttackRange(const float range, const botweapons::AttackType attackType) const
 {
 	auto& info = GetWeaponInfo()->GetAttackInfo(attackType);
 
@@ -262,7 +237,7 @@ bool CBotWeapon::CanUsePrimaryAttack(const CBaseBot* owner) const
 {
 	const WeaponInfo* info = GetWeaponInfo();
 
-	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	if (info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
 	{
 		return true;
 	}
@@ -279,12 +254,12 @@ bool CBotWeapon::CanUseSecondaryAttack(const CBaseBot* owner) const
 		return false;
 	}
 
-	if (!info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction())
+	if (!info->GetAttackInfo(botweapons::AttackType::SECONDARY).HasFunction())
 	{
 		return false;
 	}
 
-	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).IsMelee())
+	if (info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
 	{
 		return true;
 	}
@@ -303,7 +278,7 @@ bool CBotWeapon::IsLoaded() const
 		loaded = false;
 	}
 
-	if (loaded && !info->Clip2IsReserveAmmo() && info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasFunction() && bcw.UsesClipsForAmmo2() && bcw.GetClip2() == 0)
+	if (loaded && !info->Clip2IsReserveAmmo() && info->GetAttackInfo(botweapons::AttackType::SECONDARY).HasFunction() && bcw.UsesClipsForAmmo2() && bcw.GetClip2() == 0)
 	{
 		loaded = false;
 	}
@@ -313,26 +288,11 @@ bool CBotWeapon::IsLoaded() const
 
 float CBotWeapon::GetCurrentMinimumAttackRange(CBaseBot* owner) const
 {
-	switch (owner->GetControlInterface()->GetLastUsedAttackType())
+	botweapons::AttackType type = botweapons::GetValidAttackType(owner->GetControlInterface()->GetLastUsedAttackType());
+	
+	if (m_info->GetAttackInfo(type).HasMinRange())
 	{
-	case IPlayerInput::AttackType::ATTACK_SECONDARY:
-	{
-		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasMinRange())
-		{
-			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMinRange();
-		}
-		break;
-	}
-	case IPlayerInput::AttackType::ATTACK_PRIMARY:
-		[[fallthrough]];
-	default:
-	{
-		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasMinRange())
-		{
-			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMinRange();
-		}
-		break;
-	}
+		return m_info->GetAttackInfo(type).GetMinRange();
 	}
 
 	return 0.0f;
@@ -340,26 +300,11 @@ float CBotWeapon::GetCurrentMinimumAttackRange(CBaseBot* owner) const
 
 float CBotWeapon::GetCurrentMaximumAttackRange(CBaseBot* owner) const
 {
-	switch (owner->GetControlInterface()->GetLastUsedAttackType())
+	botweapons::AttackType type = botweapons::GetValidAttackType(owner->GetControlInterface()->GetLastUsedAttackType());
+
+	if (m_info->GetAttackInfo(type).HasMaxRange())
 	{
-	case IPlayerInput::AttackType::ATTACK_SECONDARY:
-	{
-		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).HasMaxRange())
-		{
-			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::SECONDARY_ATTACK).GetMaxRange();
-		}
-		break;
-	}
-	case IPlayerInput::AttackType::ATTACK_PRIMARY:
-		[[fallthrough]];
-	default:
-	{
-		if (m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).HasMaxRange())
-		{
-			return m_info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).GetMaxRange();
-		}
-		break;
-	}
+		return m_info->GetAttackInfo(type).GetMaxRange();
 	}
 
 	return std::numeric_limits<float>::max();
@@ -475,12 +420,10 @@ bool CBotWeapon::CanUseSpecialFunction(const CBaseBot* owner, const float range)
 			entprops->GetEntPropFloat(entsource, Prop_Send, func.property_name.c_str(), value);
 			return value >= func.available_threshold;
 		}
-		else
-		{
-			int value = 0;
-			entprops->GetEntProp(entsource, Prop_Send, func.property_name.c_str(), value);
-			return value >= static_cast<int>(func.available_threshold);
-		}
+
+		int value = 0;
+		entprops->GetEntProp(entsource, Prop_Send, func.property_name.c_str(), value);
+		return value >= static_cast<int>(func.available_threshold);
 	}
 
 	return false;
@@ -490,7 +433,7 @@ bool CBotWeapon::CanBeReloaded(const CBaseBot* owner) const
 {
 	const WeaponInfo* info = GetWeaponInfo();
 
-	if (info->GetAttackInfo(WeaponInfo::AttackFunctionType::PRIMARY_ATTACK).IsMelee())
+	if (info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
 	{
 		return false; // if a weapon's primary attack is melee, assume it doesn't need to reload
 	}
