@@ -96,7 +96,9 @@ CON_COMMAND_F(sm_navbot_debug_disable_bot_combat, "Disables the bot's combat int
 
 	auto func = [time](CBaseBot* bot) -> void {
 		bot->GetCombatInterface()->DisableCombat(time);
-		};
+	};
+
+	extmanager->ForEachBot(func);
 
 	META_CONPRINTF("Bot combat disabled for %3.2f seconds! \n", time);
 }

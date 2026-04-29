@@ -2914,14 +2914,14 @@ static ConCommand sm_nav_stand( "sm_nav_stand", CommandNavStand, "Toggles the 's
 
 
 //--------------------------------------------------------------------------------------------------------------
-static void CommandNavNoHostages( void )
+static void CommandNavNoAutoBlockers( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
-	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_NO_HOSTAGES );
+	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_NO_AUTO_BLOCKERS );
 }
-static ConCommand sm_nav_no_hostages( "sm_nav_no_hostages", CommandNavNoHostages, "Toggles the 'hostages cannot use this area' flag used by the AI system.", FCVAR_GAMEDLL | FCVAR_CHEAT );
+static ConCommand sm_nav_no_auto_blockers( "sm_nav_no_auto_blockers", CommandNavNoAutoBlockers, "Toggles the no auto blockers attribute. Areas with this attribute cannot be blocked by automatic blockers.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3504,14 +3504,16 @@ NavAttributeLookup TheNavAttributeTable[] =
 	{ "TRANSIENT", NAV_MESH_TRANSIENT },
 	{ "DONT_HIDE", NAV_MESH_DONT_HIDE },
 	{ "STAND", NAV_MESH_STAND },
-	{ "NO_HOSTAGES", NAV_MESH_NO_HOSTAGES },
+	{ "NO_AUTO_BLOCKERS", NAV_MESH_NO_AUTO_BLOCKERS },
 	{ "STAIRS", NAV_MESH_STAIRS },
 	{ "NO_MERGE", NAV_MESH_NO_MERGE },
 	{ "OBSTACLE_TOP", NAV_MESH_OBSTACLE_TOP },
+/*
 #ifdef TERROR
 	{ "PLAYERCLIP", (NavAttributeType)CNavArea::NAV_PLAYERCLIP },
 	{ "BREAKABLEWALL", (NavAttributeType)CNavArea::NAV_BREAKABLEWALL },
 #endif
+*/
 	{ NULL, NAV_MESH_INVALID }
 };
 

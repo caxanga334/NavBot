@@ -943,7 +943,7 @@ void CNavMesh::DrawEditMode( void )
 					if ( attributes & NAV_MESH_TRANSIENT )	Q_strncat( attrib, "TRANSIENT ", sizeof( attrib ), -1 );
 					if ( attributes & NAV_MESH_DONT_HIDE )	Q_strncat( attrib, "DONT_HIDE ", sizeof( attrib ), -1 );
 					if ( attributes & NAV_MESH_STAND )		Q_strncat( attrib, "STAND ", sizeof( attrib ), -1 );
-					if ( attributes & NAV_MESH_NO_HOSTAGES )Q_strncat( attrib, "NO HOSTAGES ", sizeof( attrib ), -1 );
+					if ( attributes & NAV_MESH_NO_AUTO_BLOCKERS ) Q_strncat( attrib, "NO AUTO BLOCKERS ", sizeof( attrib ), -1 );
 					if ( attributes & NAV_MESH_STAIRS )		Q_strncat( attrib, "STAIRS ", sizeof( attrib ), -1 );
 					if ( attributes & NAV_MESH_OBSTACLE_TOP ) Q_strncat( attrib, "OBSTACLE ", sizeof( attrib ), -1 );
 
@@ -960,6 +960,8 @@ void CNavMesh::DrawEditMode( void )
 					if ( m_selectedArea->IsDamaging() )		Q_strncat( attrib, "DAMAGING ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsUnderwater() )	Q_strncat( attrib, "UNDERWATER ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->HasPrerequisite() )	Q_strncat(attrib, "PREREQUISITE ", sizeof(attrib), -1);
+
+					if (!m_navblockers.empty()) { Q_strncat(attrib, "AUTOBLOCKER ", sizeof(attrib), -1); }
 
 					int connected = 0;
 					connected += m_selectedArea->GetAdjacentCount( NORTH );

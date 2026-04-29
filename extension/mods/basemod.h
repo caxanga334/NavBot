@@ -25,7 +25,7 @@ class CBaseMod : public CEventListenerHelper
 {
 public:
 	CBaseMod();
-	virtual ~CBaseMod();
+	~CBaseMod() override;
 
 	/**
 	 * @brief Utility class for propagating game events to bots.

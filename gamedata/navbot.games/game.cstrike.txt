@@ -8,6 +8,8 @@
 			"NavGenerationWalkableEnts"			"info_player_counterterrorist,info_player_terrorist,hostage_entity"
 			/* Same as above but uses WorldSpaceCenter instead of AbsOrigin */
 			"NavGenerationWalkableEntsCenter"	"func_buyzone,func_bomb_target,func_hostage_rescue"
+			/* Comma delimited list of client command the bot should send to join the game. */
+			"BotJoinGameCommand"			"joingame,jointeam 0,joinclass 0"
 		}
 		"Offsets"
 		{

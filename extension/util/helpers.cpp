@@ -1769,6 +1769,25 @@ bool UtilHelpers::GetPrefixFromMapName(const std::string& mapname, std::string& 
 	return true;
 }
 
+CBaseEntity* UtilHelpers::GetRandomEntityOfClassname(const char* classname)
+{
+	std::vector<CBaseEntity*> vec;
+	auto func = [&vec](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			vec.push_back(entity);
+		}
+
+		return true;
+	};
+
+	ForEachEntityOfClassname(classname, func);
+
+	if (vec.empty()) { return nullptr; }
+	if (vec.size() == 1) { return vec[0]; }
+	return librandom::utils::GetRandomElementFromVector(vec);
+}
+
 UtilHelpers::CEntityEnumerator::CEntityEnumerator()
 {
 	m_ents.reserve(256);
@@ -2259,7 +2278,8 @@ bool UtilHelpers::io::IsConnectedTo(CBaseEntity* entity, const char* targetname,
 					{
 						const char* target = STRING(ev->m_iTarget);
 						
-						if (V_strcmp(targetname, target) == 0)
+						// entities can be connected via pattern. IE: a door named my_door_1 will be triggered by my_door*
+						if (UtilHelpers::StringMatchesPattern(targetname, target, 0) /* V_strcmp(targetname, target) == 0 */)
 						{
 							if (inputName != nullptr && ev->m_iTargetInput != NULL_STRING)
 							{

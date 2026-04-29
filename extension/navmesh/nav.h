@@ -83,7 +83,7 @@ enum NavAttributeType
 	NAV_MESH_TRANSIENT		= 0x00000100,				// area may become blocked, and should be periodically checked
 	NAV_MESH_DONT_HIDE		= 0x00000200,				// area should not be considered for hiding spot generation
 	NAV_MESH_STAND			= 0x00000400,				// bots hiding in this area should stand
-	NAV_MESH_NO_HOSTAGES	= 0x00000800,				// hostages shouldn't use this area
+	NAV_MESH_NO_AUTO_BLOCKERS	= 0x00000800,			// this area should never be blocked by automatic blockers
 	NAV_MESH_STAIRS			= 0x00001000,				// this area represents stairs, do not attempt to climb or jump them - just walk up
 	NAV_MESH_NO_MERGE		= 0x00002000,				// don't merge this area with adjacent areas
 	NAV_MESH_OBSTACLE_TOP	= 0x00004000,				// this nav area is the climb point on the tip of an obstacle

@@ -7,6 +7,7 @@
 #include <mods/zps/zps_mod.h>
 #include <mods/insmic/insmicmod.h>
 #include <mods/hl1mp/hl1mp_mod.h>
+#include <mods/css/css_mod.h>
 #include "mod_loader.h"
 
 ExtModLoader::ExtModLoader()
@@ -166,6 +167,9 @@ CBaseMod* ExtModLoader::AllocDetectedMod() const
 	{
 	case Mods::ModType::MOD_TF2:
 		mod = new CTeamFortress2Mod;
+		break;
+	case Mods::ModType::MOD_CSS:
+		mod = new CCounterStrikeSourceMod;
 		break;
 	case Mods::ModType::MOD_DODS:
 		mod = new CDayOfDefeatSourceMod;

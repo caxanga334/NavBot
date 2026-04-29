@@ -4547,7 +4547,7 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		return false;
 	}
 
-	if (!ignoreNavBlockers)
+	if (!ignoreNavBlockers && !HasAttributes(NAV_MESH_NO_AUTO_BLOCKERS))
 	{
 		for (INavBlocker* blocker : m_navblockers)
 		{

@@ -112,23 +112,14 @@ void CDoorNavBlocker::UpdateDoor()
 	doorExtent.hi.z += navgenparams->step_height;
 	TheNavMesh->CollectAreasOverlappingExtent(doorExtent, m_areas);
 
-	CBaseEntity* trigger = nullptr;
-	auto func = [&targetname, &trigger](int index, edict_t* edict, CBaseEntity* entity) {
+	// collect triggers connected to this door
+	std::vector<CBaseEntity*> triggers;
+	auto func = [&targetname, &triggers](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
-			bool disabled = false;
-			entprops->GetEntPropBool(entity, Prop_Data, "m_bDisabled", disabled);
-
-			// some doors (IE: pl_goldrush) have one trigger per team
-			if (disabled)
-			{
-				return true; // skip, continue loop
-			}
-
 			if (UtilHelpers::io::IsConnectedTo(entity, targetname))
 			{
-				trigger = entity;
-				return false; // stop the loop
+				triggers.push_back(entity);
 			}
 		}
 
@@ -137,16 +128,53 @@ void CDoorNavBlocker::UpdateDoor()
 
 	UtilHelpers::ForEachEntityOfClassname("trigger_multiple", func);
 
-	if (trigger)
+	if (!triggers.empty())
 	{
-		m_activatortype = ACTIVATOR_TRIGGER;
-		m_trigger = trigger;
-		CBaseEntity* filter = nullptr;
-		entprops->GetEntPropEnt(trigger, Prop_Data, "m_hFilter", nullptr, &filter);
+		CBaseEntity* trigger = nullptr; // selected trigger
 
-		if (filter)
+		// filter triggers
+		if (triggers.size() == 1)
 		{
-			m_filter = filter;
+			// if only one trigger, always use it
+			trigger = triggers[0];
+		}
+		else
+		{
+			for (auto& entity : triggers)
+			{
+				bool disabled = false;
+				entprops->GetEntPropBool(entity, Prop_Data, "m_bDisabled", disabled);
+
+				// TF2: some doors have one trigger per team, we need to find which trigger is currently active.
+				if (disabled)
+				{
+					continue;
+				}
+
+				// use the first available entity
+				trigger = entity;
+				break;
+			}
+
+			// all triggers were filtered
+			if (!trigger)
+			{
+				// take the first one
+				trigger = triggers[0];
+			}
+		}
+
+		if (trigger)
+		{
+			m_activatortype = ACTIVATOR_TRIGGER;
+			m_trigger = trigger;
+			CBaseEntity* filter = nullptr;
+			entprops->GetEntPropEnt(trigger, Prop_Data, "m_hFilter", nullptr, &filter);
+
+			if (filter)
+			{
+				m_filter = filter;
+			}
 		}
 	}
 

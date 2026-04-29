@@ -20,6 +20,7 @@ folder_list = [
   'addons/sourcemod/configs/navbot/zps',
   'addons/sourcemod/configs/navbot/insmic',
   'addons/sourcemod/configs/navbot/hl1mp',
+  'addons/sourcemod/configs/navbot/cstrike',
   'addons/sourcemod/data/',
   'addons/sourcemod/data/navbot',
 ]
@@ -132,6 +133,13 @@ CopyFiles('configs/insmic', 'addons/sourcemod/configs/navbot/insmic',
 CopyFiles('configs/hl1mp', 'addons/sourcemod/configs/navbot/hl1mp',
   [ 
     'weapons.cfg'
+  ]
+)
+
+CopyFiles('configs/cstrike', 'addons/sourcemod/configs/navbot/cstrike',
+  [ 
+    'weapons.cfg',
+    'buy_profiles.cfg'
   ]
 )
 

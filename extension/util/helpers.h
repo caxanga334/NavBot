@@ -783,6 +783,12 @@ namespace UtilHelpers
 	 * @return True if a prefix was found, false otherwise.
 	 */
 	bool GetPrefixFromMapName(const std::string& mapname, std::string& prefix, const std::size_t searchMax = 15U);
+	/**
+	 * @brief Searches and returns a single randomly selected entity of the given classname.
+	 * @param classname Classname to search.
+	 * @return Pointer to a randomly selected entity or NULL if none is found.
+	 */
+	CBaseEntity* GetRandomEntityOfClassname(const char* classname);
 }
 
 template<typename T>
