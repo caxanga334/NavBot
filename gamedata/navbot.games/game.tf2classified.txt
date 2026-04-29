@@ -33,6 +33,13 @@
 		}
 		"Offsets"
 		{
+			"CGameRules::ShouldCollide"
+			{
+				"windows"	"30"
+				"windows64" "30"
+				"linux"		"31"
+				"linux64"	"31"
+			}
 			"Event_Killed"
 			{
 				"windows64" "80"
