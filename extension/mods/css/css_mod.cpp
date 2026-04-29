@@ -101,7 +101,7 @@ void CCounterStrikeSourceMod::OnRoundStart()
 			switch (team)
 			{
 			case counterstrikesource::CSSTeam::TERRORIST:
-				[[fallthrought]];
+				[[fallthrough]];
 			case counterstrikesource::CSSTeam::COUNTERTERRORIST:
 			{
 				totalmoney[static_cast<int>(team)] += csslib::GetPlayerMoney(pEntity);
