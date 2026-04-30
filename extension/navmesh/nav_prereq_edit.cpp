@@ -319,10 +319,8 @@ CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prer
 
 	if (args.ArgC() < 2)
 	{
-		Msg("[SM] Usage: sm_nav_prereq_set_toggle_condition clear\n   Clears all toggle condition data. \n");
-		Msg("[SM] Usage: sm_nav_prereq_set_toggle_condition <int data> <float data> <ent index> <test condition> <inverted>\n   Set toggle condition values \n");
-		Msg("[SM] Usage: sm_nav_prereq_set_toggle_condition setvectordata\n    Sets the toggle condition vector data to your current position. \n");
-		Msg("For a list of condition types, use sm_nav_scripting_list_conditions. \n");
+		META_CONPRINT("[SM] Usage: sm_nav_prereq_set_toggle_condition <options ...> \n");
+		META_CONPRINT(" Valid Options: \n  -clear -setvectorme -setvectordata -setintdata -setfloatdata -setentity -toggleinverted -settoggletypebyid \n");
 		return;
 	}
 
@@ -330,77 +328,95 @@ CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prer
 
 	if (!selected)
 	{
-		Warning("No prerequisite selected!\n");
+		META_CONPRINT("Select a nav prerequisite first! \n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
 
-	const char* arg1 = args[1];
-
-	if (std::strcmp(arg1, "clear") == 0)
+	if (args.FindArg("-clear") != nullptr)
 	{
+		META_CONPRINTF("Toggle condition data for prerequisite %u cleared! \n", selected->GetID());
 		selected->ClearToggleData();
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 		return;
 	}
-	else if (std::strcmp(arg1, "setvectordata") == 0)
+
+	if (args.FindArg("-setvectorme") != nullptr)
 	{
-		edict_t* host = gamehelpers->EdictOfIndex(1);
-		const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
-		selected->SetToggleData(origin);
+		CBaseExtPlayer* host = extmanager->GetListenServerHost();
+		Vector pos = host->GetAbsOrigin();
+		selected->SetToggleData(pos);
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-		return;
+		META_CONPRINTF("Prerequisite %u vector data set to <%s> \n", selected->GetID(), UtilHelpers::textformat::FormatVector(pos));
 	}
 
-	if (args.ArgC() < 5)
+	const char* szvecarg = args.FindArg("-setvectordata");
+
+	if (szvecarg != nullptr)
 	{
-		Msg("[SM] Usage: sm_nav_prereq_set_toggle_condition <int data> <float data> <ent index> <test condition> <inverted>\n   Set toggle condition values \n");
-		return;
-	}
+		Vector vec{ 0.0f, 0.0f, 0.0f };
 
-	int i = atoi(args[1]);
-	float f = atof(args[2]);
-	int ent = atoi(args[3]);
-	int test = atoi(args[4]);
-	bool inv = !!atoi(args[5]);
-
-	selected->SetToggleData(i);
-	selected->SetToggleData(f);
-
-	CBaseEntity* pEntity;
-
-	if (ent == 0)
-	{
-		pEntity = nullptr;
-	}
-	else
-	{
-		pEntity = gamehelpers->ReferenceToEntity(ent);
-	}
-
-	selected->SetToggleData(pEntity);
-
-	navscripting::ToggleCondition::TCTypes type = navscripting::ToggleCondition::TCTypes::TYPE_NOT_SET;
-
-	if (test > static_cast<int>(navscripting::ToggleCondition::TCTypes::TYPE_NOT_SET) && test < static_cast<int>(navscripting::ToggleCondition::TCTypes::MAX_TOGGLE_TYPES))
-	{
-		type = static_cast<navscripting::ToggleCondition::TCTypes>(test);
-	}
-
-	selected->SetToggleData(type);
-
-	if (inv)
-	{
-		if (!selected->IsToggleConditionInverted())
+		if (sscanf(szvecarg, "%f %f %f", &vec.x, &vec.y, &vec.z) == 3)
 		{
-			selected->InvertToggleCondition();
+			selected->SetToggleData(vec);
+			META_CONPRINTF("Prerequisite %u vector data set to <%s> \n", selected->GetID(), UtilHelpers::textformat::FormatVector(vec));
+		}
+		else
+		{
+			META_CONPRINTF("Error: Could not parse a vector from \"%s\"! \n", szvecarg);
 		}
 	}
-	else
+
+	int idata = args.FindArgInt("-setintdata", std::numeric_limits<int>::min());
+
+	if (idata != std::numeric_limits<int>::min())
 	{
-		if (selected->IsToggleConditionInverted())
+		META_CONPRINTF("Prerequisite %u int data changed to \"%i\"! \n", selected->GetID(), idata);
+		selected->SetToggleData(idata);
+	}
+
+	const char* szfloatarg = args.FindArg("-setfloatdata");
+
+	if (szfloatarg != nullptr)
+	{
+		float val = atof(szfloatarg);
+		META_CONPRINTF("Prerequisite %u float data changed to \"%g\"! \n", selected->GetID(), val);
+		selected->SetToggleData(val);
+	}
+
+	int iEntIndex = args.FindArgInt("-setentity", INVALID_EHANDLE_INDEX);
+
+	if (iEntIndex != INVALID_EHANDLE_INDEX)
+	{
+		CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(iEntIndex);
+
+		if (!pEntity)
 		{
-			selected->InvertToggleCondition();
+			META_CONPRINTF("Error: NULL entity of index \"%i\"! \n", iEntIndex);
+		}
+		else
+		{
+			selected->SetToggleData(pEntity);
+			META_CONPRINTF("Prerequisite %u toggle condition target entity set to %s!", selected->GetID(), UtilHelpers::textformat::FormatEntity(pEntity));
+		}
+	}
+
+	if (args.FindArg("-toggleinverted") != nullptr)
+	{
+		selected->InvertToggleCondition();
+		META_CONPRINTF("Prerequisite %u toggle condition is now %s! \n", selected->GetID(), selected->IsToggleConditionInverted() ? "INVERTED" : "NOT INVERTED");
+	}
+
+	int tctypeidx = args.FindArgInt("-settoggletypebyid", -1);
+
+	if (tctypeidx != -1)
+	{
+		navscripting::ToggleCondition::TCTypes type;
+
+		if (navscripting::ToggleCondition::IndexToTCType(tctypeidx, type))
+		{
+			selected->SetToggleData(type);
+			META_CONPRINTF("Prerequisite %u toggle condition type changed to \"%s\"! \n", selected->GetID(), navscripting::ToggleCondition::TCTypeToString(type));
 		}
 	}
 

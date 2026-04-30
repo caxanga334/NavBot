@@ -8,12 +8,12 @@ public:
 	TaskResult<CCSSBot> OnTaskStart(CCSSBot* bot, AITask<CCSSBot>* pastTask) override;
 	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override;
 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
-
+	TaskEventResponseResult<CCSSBot> OnNavAreaChanged(CCSSBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
 	QueryAnswerType ShouldHurry(CBaseBot* me) override;
 
 	const char* GetName() const override { return "Tactical"; }
 private:
-
+	CountdownTimer m_gunEquipTimer;
 };
 
 

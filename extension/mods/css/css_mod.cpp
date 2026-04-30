@@ -68,7 +68,7 @@ void CCounterStrikeSourceMod::FireGameEvent(IGameEvent* event)
 		}
 		else if (std::strcmp(name, "bomb_planted") == 0)
 		{
-			OnBombPlanted();
+			OnBombPlanted(event->GetInt("userid"));
 		}
 	}
 
@@ -328,20 +328,85 @@ void CCounterStrikeSourceMod::OnPostInit()
 
 void CCounterStrikeSourceMod::OnFlashbangDetonated(int userid, const Vector& pos)
 {
+#ifdef EXT_DEBUG
+	META_CONPRINTF("%3.2f: [NavBot] OnFlashbangDetonated %i <%s> \n", gpGlobals->curtime, userid, UtilHelpers::textformat::FormatVector(pos));
+	
+	auto dbgfunc = [](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (player->IsInGame())
+		{
+			CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+
+			if (pEntity)
+			{
+				float flashtime = csslib::GetFlashbangMaxDuration(pEntity);
+				float flashalpha = csslib::GetFlashbangMaxAlpha(pEntity);
+
+				META_CONPRINTF("%s [%i:%i] flash length: %3.2f flash alpha: %3.2f\n", player->GetName(), client, player->GetUserId(), flashtime, flashalpha);
+			}
+		}
+	};
+
+	UtilHelpers::ForEachPlayer(dbgfunc);
+
+#endif // EXT_DEBUG
+
+	auto func = [&pos](CBaseBot* bot) {
+		CCSSBot* csbot = static_cast<CCSSBot*>(bot);
+
+		float flashtime = csslib::GetFlashbangMaxDuration(csbot->GetEntity());
+
+		// not flashed
+		if (flashtime <= 0.05f) { return; }
+
+		float flashalpha = csslib::GetFlashbangMaxAlpha(csbot->GetEntity());
+
+		// if not fully flashed, subtract 0.5 seconds from the flash time
+		if (flashalpha < 250.0f)
+		{
+			flashtime -= 0.5f;
+			flashtime = std::max(flashtime, 0.25f);
+		}
+
+		csbot->GetCombatInterface()->SetFlashbangedTime(flashtime);
+
+		if (csbot->IsDebugging(BOTDEBUG_COMBAT))
+		{
+			csbot->DebugPrintToConsole(255, 255, 0, "%s IS FLASHED FOR %3.2f SECONDS (ALPHA: %3.2f) \n", csbot->GetDebugIdentifier(), flashtime, flashalpha);
+		}
+	};
+
+	extmanager->ForEachBot(func);
 }
 
-void CCounterStrikeSourceMod::OnBombPlanted()
+void CCounterStrikeSourceMod::OnBombPlanted(int userid)
 {
 	m_bombactive = true;
 	int bomb = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "planted_c4");
+	Vector pos{ 0.0f, 0.0f, 0.0f };
+	CBaseEntity* pBomb = nullptr;
+	CBaseEntity* pPlayer = nullptr;
+	int client = playerhelpers->GetClientOfUserId(userid);
+
+	if (client != 0)
+	{
+		pPlayer = gamehelpers->ReferenceToEntity(client);
+	}
 
 	if (bomb != INVALID_EHANDLE_INDEX)
 	{
-		m_c4 = gamehelpers->ReferenceToEntity(bomb);
+		pBomb = gamehelpers->ReferenceToEntity(bomb);
+		pos = UtilHelpers::getEntityOrigin(pBomb);
+		m_c4 = pBomb;
 	}
 
+	auto func = [pBomb, pos, pPlayer](CBaseBot* bot) {
+		bot->OnBombPlanted(pos, static_cast<int>(counterstrikesource::CSSTeam::TERRORIST), pPlayer, pBomb);
+	};
+
+	extmanager->ForEachBot(func);
+
 #ifdef EXT_DEBUG
-	META_CONPRINTF("[NavBot] OnBombPlanted: bomb entity index %i \n", bomb);
+	META_CONPRINTF("[NavBot] OnBombPlanted: bomb entity %s <%s>\n", UtilHelpers::textformat::FormatEntity(pBomb), UtilHelpers::textformat::FormatVector(pos));
 #endif // EXT_DEBUG
 }
 

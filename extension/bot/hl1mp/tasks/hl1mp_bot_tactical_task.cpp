@@ -6,6 +6,11 @@
 #include <bot/bot_shared_utils.h>
 #include <bot/tasks_shared/bot_shared_find_health.h>
 #include <bot/tasks_shared/bot_shared_find_armor.h>
+#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
+#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
+#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
+#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/interfaces/behavior_utils.h>
 #include "hl1mp_bot_use_charger_task.h"
 #include "hl1mp_bot_scenario_task.h"
 #include "hl1mp_bot_tactical_task.h"
@@ -96,6 +101,13 @@ TaskResult<CHL1MPBot> CHL1MPBotTacticalTask::OnTaskResume(CHL1MPBot* bot, AITask
 	m_armorscantimer.Start(0.5f);
 
 	return Continue();
+}
+
+TaskEventResponseResult<CHL1MPBot> CHL1MPBotTacticalTask::OnNavAreaChanged(CHL1MPBot* bot, CNavArea* oldArea, CNavArea* newArea)
+{
+	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CHL1MPBot, CHL1MPBotPathCost);
+
+	return TryContinue(PRIORITY_LOW);
 }
 
 QueryAnswerType CHL1MPBotTacticalTask::ShouldRetreat(CBaseBot* me)

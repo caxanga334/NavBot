@@ -18,6 +18,7 @@ public:
 		m_eco_limit = 2000;
 		m_team_eco_limit = 1500;
 		m_timeleft_hurry = 40.0f;
+		SetDefendRate(64); // increase default defend chance
 	}
 
 	int GetEcoLimit() const { return m_eco_limit; }
@@ -29,7 +30,6 @@ public:
 	void SetTimeLeftToHurry(float value) { m_timeleft_hurry = value; }
 
 protected:
-
 	SourceMod::SMCResult ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value) override;
 
 private:
@@ -64,6 +64,7 @@ public:
 	void MarkBombAsKnown() { m_bombisknown = true; }
 	// Gets the planted bomb entity. NULL if none.
 	CBaseEntity* GetActiveBombEntity() const { return m_c4.Get(); }
+	// CSS mod access
 	static CCounterStrikeSourceMod* GetCSSMod();
 protected:
 	void RegisterModCommands() override;
@@ -72,7 +73,7 @@ protected:
 
 private:
 	void OnFlashbangDetonated(int userid, const Vector& pos);
-	void OnBombPlanted();
+	void OnBombPlanted(int userid);
 	// resets per round stuff
 	void RoundReset();
 

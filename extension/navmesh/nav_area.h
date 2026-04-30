@@ -347,6 +347,8 @@ public:
 	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);		// (EXTEND)
 	virtual NavErrorType PostLoad( void );								// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 	void ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion);	// Invoked when importing a nav mesh file from the game.
+	// Invoked when importing a nav mesh file from the game, loads game/mod specific nav mesh data.
+	virtual void ImportLoadGameSpecific(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion);
 
 	// virtual void SaveToSelectedSet( KeyValues *areaKey ) const;		// (EXTEND) saves attributes for the area to a KeyValues
 	// virtual void RestoreFromSelectedSet( KeyValues *areaKey );		// (EXTEND) restores attributes from a KeyValues

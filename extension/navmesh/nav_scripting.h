@@ -93,6 +93,24 @@ namespace navscripting
 			MAX_TOGGLE_TYPES
 		};
 
+		/**
+		 * @brief Converts an index to a Toggle Condition type.
+		 * @param[in] index Index to convert.
+		 * @param[out] type Converted toggle condition type.
+		 * @return True if the index was valid, false if out of bounds.
+		 */
+		static bool IndexToTCType(int index, TCTypes& type)
+		{
+			if (index < static_cast<int>(TCTypes::TYPE_NOT_SET) || index >= static_cast<int>(TCTypes::MAX_TOGGLE_TYPES))
+			{
+				type = TCTypes::TYPE_NOT_SET;
+				return false;
+			}
+
+			type = static_cast<TCTypes>(index);
+			return true;
+		}
+
 		static const char* TCTypeToString(navscripting::ToggleCondition::TCTypes type);
 
 		ToggleCondition() :

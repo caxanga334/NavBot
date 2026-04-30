@@ -12,7 +12,8 @@
 
 unsigned int CNavVolume::s_nextID = 0;
 
-CNavVolume::CNavVolume()
+CNavVolume::CNavVolume() :
+	m_calculatedMaxs(0.0f, 0.0f, 0.0f), m_calculatedMins(0.0f, 0.0f, 0.0f), m_maxs(0.0f, 0.0f, 0.0f), m_mins(0.0f, 0.0f, 0.0f), m_origin(0.0f, 0.0f, 0.0f)
 {
 	m_id = s_nextID;
 	s_nextID++;
@@ -26,6 +27,11 @@ CNavVolume::~CNavVolume()
 	{
 		area->NotifyNavVolumeDestruction(this);
 	}
+}
+
+bool CNavVolume::IsEditing()
+{
+	return CNavMesh::IsEditing() && sm_nav_volume_edit.GetBool();
 }
 
 void CNavVolume::SetOrigin(const Vector& origin)

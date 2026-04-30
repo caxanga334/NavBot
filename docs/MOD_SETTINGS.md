@@ -74,7 +74,9 @@ These generally depends on the SDK branch NavBot was compiled for.
 
 - [DoD:S Mod Settings]
 - [TF2 Mod Settings]
+- [CS:S Mod Settings]
 
 <!-- Links -->
 [DoD:S Mod Settings]: game_docs/DODS_MOD_SETTINGS.md
 [TF2 Mod Settings]: game_docs/TF2_MOD_SETTINGS.md
+[CS:S Mod Settings]: game_docs/CSS_MOD_SETTINGS.md

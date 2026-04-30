@@ -644,7 +644,7 @@ protected:
 		{
 			if (bot->IsDebugging(BOTDEBUG_TASKS))
 			{
-				bot->DebugPrintToConsole(152, 251, 152, "%s TASK %s START NEW NEXT TASK: ACCEPTED NEW TASK %s. REASON: %s", bot->GetDebugIdentifier(), this->GetName(), newTask->GetName(), reason);
+				bot->DebugPrintToConsole(152, 251, 152, "%s TASK %s START NEW NEXT TASK: ACCEPTED NEW TASK %s. REASON: %s \n", bot->GetDebugIdentifier(), this->GetName(), newTask->GetName(), reason);
 			}
 
 			this->m_replacementNextTask = newTask;

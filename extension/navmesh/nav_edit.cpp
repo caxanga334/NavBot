@@ -4893,11 +4893,11 @@ void CNavMesh::CommandNavMarkVolume(const CCommand& args)
 
 CON_COMMAND_F(sm_nav_scripting_list_conditions, "Lists all available conditions type for scripting.", FCVAR_CHEAT)
 {
-	Msg("Nav Scripting Condition Types: \n");
+	META_CONPRINT("Nav Scripting Condition Types: \n");
 
 	for (int i = static_cast<int>(navscripting::ToggleCondition::TCTypes::TYPE_NOT_SET); i < static_cast<int>(navscripting::ToggleCondition::TCTypes::MAX_TOGGLE_TYPES); i++)
 	{
-		Msg("%i : %s \n", i, navscripting::ToggleCondition::TCTypeToString(static_cast<navscripting::ToggleCondition::TCTypes>(i)));
+		META_CONPRINTF("Type \"%s\" ID: %i \n", navscripting::ToggleCondition::TCTypeToString(static_cast<navscripting::ToggleCondition::TCTypes>(i)), i);
 	}
 }
 

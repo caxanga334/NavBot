@@ -78,6 +78,20 @@ float csslib::GetC4TimeRemaining(CBaseEntity* c4)
 	return time - gpGlobals->curtime;
 }
 
+bool csslib::IsC4BeingDefused(CBaseEntity* c4)
+{
+	float time = 0.0f;
+	entprops->GetEntPropFloat(c4, Prop_Send, "m_flDefuseCountDown", time);
+	return time > 0.0f;
+}
+
+float csslib::GetC4DefuseTimeRemaining(CBaseEntity* c4)
+{
+	float time = 0.0f;
+	entprops->GetEntPropFloat(c4, Prop_Send, "m_flDefuseCountDown", time);
+	return time - gpGlobals->curtime;
+}
+
 bool csslib::IsHostageRescued(CBaseEntity* hostage)
 {
 	bool ret = false;
@@ -137,4 +151,18 @@ float csslib::GetRoundTimeRemaining()
 	}
 
 	return std::numeric_limits<float>::max();
+}
+
+float csslib::GetFlashbangMaxDuration(CBaseEntity* player)
+{
+	float time = 0.0f;
+	entprops->GetEntPropFloat(player, Prop_Send, "m_flFlashDuration", time);
+	return time;
+}
+
+float csslib::GetFlashbangMaxAlpha(CBaseEntity* player)
+{
+	float time = 0.0f;
+	entprops->GetEntPropFloat(player, Prop_Send, "m_flFlashMaxAlpha", time);
+	return time;
 }

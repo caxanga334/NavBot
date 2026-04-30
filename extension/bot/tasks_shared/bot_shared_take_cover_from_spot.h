@@ -76,7 +76,7 @@ inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskStart(BT* b
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	if (m_nav.NeedsRepath())
+	if (!m_nav.IsValid() || m_nav.NeedsRepath())
 	{
 		m_nav.StartRepathTimer();
 		m_nav.ComputePathToPosition(bot, m_goal, m_pathcost);

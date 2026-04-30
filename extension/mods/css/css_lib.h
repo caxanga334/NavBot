@@ -3,6 +3,8 @@
 
 #include "css_shareddefs.h"
 
+class CBaseEntity;
+
 namespace csslib
 {
 	/**
@@ -72,6 +74,18 @@ namespace csslib
 	 */
 	float GetC4TimeRemaining(CBaseEntity* c4);
 	/**
+	 * @brief Checks if the given c4 if being defused.
+	 * @param c4 C4 entity (planted_c4).
+	 * @return True if the c4 if being defused, false if not.
+	 */
+	bool IsC4BeingDefused(CBaseEntity* c4);
+	/**
+	 * @brief Gets the amount of time in seconds left until the c4 is defused.
+	 * @param c4 C4 entity (planted_c4).
+	 * @return Amount of time left until the c4 is defused.
+	 */
+	float GetC4DefuseTimeRemaining(CBaseEntity* c4);
+	/**
 	 * @brief Checks if the given hostage is rescued.
 	 * @param hostage Hostage to check. (hostage_entity)
 	 * @return True if the given hostage was rescued, false otherwise.
@@ -95,6 +109,18 @@ namespace csslib
 	float GetRoundStartTime();
 	// Returns the amount of time in seconds remaining for the current round.
 	float GetRoundTimeRemaining();
+	/**
+	 * @brief Gets the flashbang 'flash' max duration of a player.
+	 * @param player Player to read.
+	 * @return Flash max duration. Returns 0 if not flashed.
+	 */
+	float GetFlashbangMaxDuration(CBaseEntity* player);
+	/**
+	 * @brief Gets the flashbang 'max alpha' of a player.
+	 * @param player Player to read.
+	 * @return Max alpha. Returns 0 if not flashed.
+	 */
+	float GetFlashbangMaxAlpha(CBaseEntity* player);
 }
 
 #endif // !__NAVBOT_CSS_LIB_H_

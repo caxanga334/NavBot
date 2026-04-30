@@ -16,6 +16,8 @@ public:
 	CNavVolume();
 	virtual ~CNavVolume();
 
+	static bool IsEditing();
+
 	// Condition type for determining if the volume is blocked or not
 	enum ConditionType : int
 	{

@@ -413,7 +413,7 @@ void IInventory::SelectBestWeapon()
 	{
 		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
 		{
-			bot->SelectWeapon(best->GetEntity());
+			EquipWeapon(best);
 		}
 	}
 }

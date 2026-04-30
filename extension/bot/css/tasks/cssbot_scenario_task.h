@@ -7,8 +7,10 @@ public:
 	CCSSBotScenarioTask();
 
 	AITask<CCSSBot>* InitialNextTask(CCSSBot* bot) override;
-
+	TaskResult<CCSSBot> OnTaskStart(CCSSBot* bot, AITask<CCSSBot>* pastTask) override;
 	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override;
+
+	QueryAnswerType ShouldHurry(CBaseBot* me) override;
 
 	const char* GetName() const override { return "Scenario"; }
 private:

@@ -69,6 +69,18 @@ Sets the task goal data.
 ## sm_nav_prereq_set_toggle_condition
 
 Sets the prerequisite toggle condition used to determine if the prerequisite is enabled or disabled.
+The command accepts the following arguments:    
+
+* -clear: Clears the toggle condition data.
+* -setvectorme: Sets the vector data to your current position.
+* -setvectordata <pos>: Sets the vector data to the given position. The position must be in quotes. Example: `-setvectordata "128.0 64.0 -256.0"`.
+* -setintdata <data>: Sets the interger data used by some toggle condition types.
+* -setfloatdata <data>: Sets the float data used by some toggle condition types.
+* -setentity <ent index>: Sets the toggle condition target entity by index.
+* -toggleinverted: Toggles the toggle condition inverted status.
+* -settoggletypebyid <index>: Sets the toggle condition type by their index.
+
+Use the `sm_nav_scripting_list_conditions` command to get a list of toggle conditions and their IDs.
 
 # Task Types
 

@@ -86,6 +86,11 @@ Use `sm_nav_trace_clear_solid_entity_list` to clear the forced solid entity list
 **func_brush** entities must be in their solid state otherwise the engine sees it as non-solid and traces won't collide with them. You can use the `ent_fire` command to change their solid state.    
 `sm_nav_solid_props` includes prop_physics entities, you may want to generate the initial mesh with it turned off and enable when needed.    
 
+# Bypassing Auto Blockers
+
+In some games, the nav mesh may automatically mark areas as blocked.    
+These areas will have a **AUTOBLOCKER** text when aiming at them.    
+If the auto blocker is incorrectly marking an area as blocked, they can be bypassed by adding the **NO AUTO BLOCKERS** attribute to areas using the `sm_nav_no_auto_blockers` console command.    
 
 <!-- LINKS -->
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md

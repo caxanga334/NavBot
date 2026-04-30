@@ -10,6 +10,8 @@ public:
 	TaskResult<CHL1MPBot> OnTaskUpdate(CHL1MPBot* bot) override;
 	TaskResult<CHL1MPBot> OnTaskResume(CHL1MPBot* bot, AITask<CHL1MPBot>* pastTask) override;
 
+	TaskEventResponseResult<CHL1MPBot> OnNavAreaChanged(CHL1MPBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
+
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 
 	const char* GetName() const override { return "Tactical"; }

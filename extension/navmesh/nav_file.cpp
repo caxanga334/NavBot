@@ -1826,39 +1826,37 @@ void CNavMesh::BuildAuthorInfo()
 		rootconsole->ConsolePrint("Saved author information: %s,%lli", szname.c_str(), steamid);
 		return;
 	}
-	else // add editor
+
+	const char* name = host->GetName();
+
+	if (!name)
 	{
-		auto name = host->GetName();
-
-		if (!name)
-		{
-			rootconsole->ConsolePrint("Warning: Nav Mesh editor information not saved! Failed to get player name!");
-			return;
-		}
-
-		auto steamid = host->GetSteamId64(true);
-
-		if (steamid == 0)
-		{
-			rootconsole->ConsolePrint("Warning: Nav Mesh editor information not saved! Not authenticated with Steam!");
-			return;
-		}
-
-		if (m_authorinfo.IsCreator(steamid))
-		{
-			return; // already saved, skip
-		}
-
-		if (m_authorinfo.IsEditor(steamid))
-		{
-			return; // already saved, skip
-		}
-
-		std::string szname(name);
-		m_authorinfo.AddEditor(szname, steamid);
-		rootconsole->ConsolePrint("Saved editor information: %s,%lli", szname.c_str(), steamid);
+		rootconsole->ConsolePrint("Warning: Nav Mesh editor information not saved! Failed to get player name!");
 		return;
 	}
+
+	auto steamid = host->GetSteamId64(true);
+
+	if (steamid == 0)
+	{
+		rootconsole->ConsolePrint("Warning: Nav Mesh editor information not saved! Not authenticated with Steam!");
+		return;
+	}
+
+	if (m_authorinfo.IsCreator(steamid))
+	{
+		return; // already saved, skip
+	}
+
+	if (m_authorinfo.IsEditor(steamid))
+	{
+		return; // already saved, skip
+	}
+
+	std::string szname(name);
+	m_authorinfo.AddEditor(szname, steamid);
+	rootconsole->ConsolePrint("Saved editor information: %s,%lli", szname.c_str(), steamid);
+	return;
 }
 
 #define FORMAT_BSPFILE "maps\\%s.bsp"
@@ -2062,8 +2060,14 @@ void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned
 	if (m_id >= m_nextID)
 		m_nextID = m_id + 1;
 
+	constexpr auto DEPRECATED_NO_HOSTAGES = 0x00000800;
+
 	// TO-DO: This will probably need to be changed in the future
 	m_attributeFlags = filebuffer.GetInt();
+
+	// no hostages no longer exists in the base nav mesh code and has a different meaning.
+	// to avoid issues we strip this attribute if it was present.
+	if (HasAttributes(DEPRECATED_NO_HOSTAGES)) { RemoveAttributes(DEPRECATED_NO_HOSTAGES); }
 
 	// load extent of area
 	filebuffer.Get(&m_nwCorner, 3 * sizeof(float));
@@ -2184,6 +2188,9 @@ void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned
 	filebuffer.GetUnsignedInt();
 
 	// eat game specific data
+	ImportLoadGameSpecific(filebuffer, version, subVersion);
+
+	/*
 	if (extmanager->GetMod()->GetModType() == Mods::ModType::MOD_TF2)
 	{
 		// TF nav mesh current subversion is 2. TO-DO: move this to gamedata or virtualize the import functions
@@ -2192,10 +2199,36 @@ void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned
 			filebuffer.GetUnsignedInt(); // eat tf attributes
 		}
 	}
+	*/
 
 	if (!filebuffer.IsValid())
 	{
 		DevWarning("NavBot Import NavArea: file buffer is invalid! \n");
+	}
+}
+
+void CNavArea::ImportLoadGameSpecific(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion)
+{
+	const char* szvalue = extension->GetExtensionGameData()->GetKeyValue("NavImport_AreaBytesToDiscard");
+
+	if (!szvalue)
+	{
+		return;
+	}
+
+	try
+	{
+		int bytesToDiscard = std::stoi(szvalue);
+		std::unique_ptr<char[]> buffer = std::make_unique<char[]>(static_cast<std::size_t>(bytesToDiscard + 4));
+		filebuffer.Get(reinterpret_cast<void*>(buffer.get()), bytesToDiscard);
+	}
+	catch (std::invalid_argument const& ex)
+	{
+		smutils->LogError(myself, "%s", ex.what());
+	}
+	catch (std::out_of_range const& ex)
+	{
+		smutils->LogError(myself, "%s", ex.what());
 	}
 }
 

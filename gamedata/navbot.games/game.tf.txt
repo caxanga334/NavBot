@@ -4,7 +4,10 @@
 	{
 		"Keys"
 		{
+			/* Importing nav mesh SubVersion number must match this. */
 			"NavImportSubVersion"		"2"
+			/* Number of bytes to discard from the game/mod specific nav area save data. */
+			"NavImport_AreaBytesToDiscard"	"4"
 			/* Enable the CBaseMultiplayerPlayer::CanBeAutobalanced hook */
 			"HookCanBeAutobalanced"		"true"
 
