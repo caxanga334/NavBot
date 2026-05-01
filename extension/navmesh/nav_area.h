@@ -1050,9 +1050,23 @@ public:
 
 	virtual void RegisterNavBlocker(INavBlocker* blocker);
 	virtual void UnregisterNavBlocker(INavBlocker* blocker);
-
+	// Returns true if this area contains nav blockers
+	bool HasNavBlockers() const { return !m_navblockers.empty(); }
 	void RegisterNavPathCostMod(const INavPathCostMod* pathcostmod);
 	void UnregisterNavPathCostMod(const INavPathCostMod* pathcostmod);
+	/**
+	 * @brief Runs a function on every nav blocker registered to this nav area.
+	 * @tparam F Function to run. void (INavBlocker* blocker)
+	 * @param func Function to run.
+	 */
+	template <typename F>
+	inline void ForEachNavBlocker(F& func)
+	{
+		for (INavBlocker* blocker : m_navblockers)
+		{
+			func(blocker);
+		}
+	}
 
 	/**
 	 * @brief Gets the path cost for this nav area.

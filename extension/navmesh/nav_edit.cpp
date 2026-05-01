@@ -961,7 +961,7 @@ void CNavMesh::DrawEditMode( void )
 					if ( m_selectedArea->IsUnderwater() )	Q_strncat( attrib, "UNDERWATER ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->HasPrerequisite() )	Q_strncat(attrib, "PREREQUISITE ", sizeof(attrib), -1);
 
-					if (!m_navblockers.empty()) { Q_strncat(attrib, "AUTOBLOCKER ", sizeof(attrib), -1); }
+					if (m_selectedArea->HasNavBlockers()) { Q_strncat(attrib, "AUTOBLOCKER ", sizeof(attrib), -1); }
 
 					int connected = 0;
 					connected += m_selectedArea->GetAdjacentCount( NORTH );
@@ -998,7 +998,6 @@ void CNavMesh::DrawEditMode( void )
 				RemoveFromSelectedSet( m_selectedArea );
 			}
 
-
 			if (IsEditMode( PLACE_PAINTING ))
 			{
 				m_selectedArea->DrawConnectedAreas(this);
@@ -1009,7 +1008,7 @@ void CNavMesh::DrawEditMode( void )
 				Extent extent;
 				m_selectedArea->GetExtent( &extent );
 
-				float yaw = player->GetPlayerInfo()->GetAbsAngles().y;
+				float yaw = extmanager->GetListenServerHost()->GetEyeAngles().y;
 				while( yaw > 360.0f )
 					yaw -= 360.0f;
 
