@@ -121,6 +121,18 @@ namespace csslib
 	 * @return Max alpha. Returns 0 if not flashed.
 	 */
 	float GetFlashbangMaxAlpha(CBaseEntity* player);
+	// Returns the player currently carrying the C4. Returns NULL if the c4 is dropped or if it doesn't exists.
+	CBaseEntity* GetC4Carrier();
+	// Returns the entity of a dropped c4. NULL if the c4 isn't dropped or doesn't exists.
+	CBaseEntity* GetDroppedC4();
+	// Returns a random hostage that can be rescued. Returns NULL if none is available.
+	CBaseEntity* GetRandomHostageToRescue();
+	/**
+	 * @brief Checks if the given player is escorting hostages.
+	 * @param player Player to check.
+	 * @return True if escorting hostages, false otherwise.
+	 */
+	bool IsEscortingHostages(CBaseEntity* player);
 }
 
 #endif // !__NAVBOT_CSS_LIB_H_

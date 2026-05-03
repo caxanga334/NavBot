@@ -11,9 +11,15 @@ public:
 
 	CNavArea* CreateArea(void) const override;
 	uint32_t GetSubVersionNumber(void) const override;
+	void Update() override;
+	bool IsDrawingCSSAttributes() const;
+
+protected:
+	void RegisterModCommands() override;
 
 private:
-
+	void RegisterCSSNavAreaEditCommands() const;
+	ConVar* m_drawcssattribs;
 };
 
 inline CCSSNavMesh* TheCSSNavMesh()

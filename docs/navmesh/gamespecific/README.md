@@ -2,7 +2,9 @@
 
 - [Team Fortress 2]
 - [Day of Defeat: Source]
+- [Counter-Strike: Source]
 
 <!-- Links -->
 [Team Fortress 2]: TF2.md
 [Day of Defeat: Source]: DODS.md
+[Counter-Strike: Source]: CSS.md

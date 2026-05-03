@@ -68,6 +68,7 @@ The following keys applies to attack info sections (`primary_attack_info`, `seco
 |ballistic_elevation_range_end|Range to apply the maximum elevation value.|float|
 |hold_button_time|How long to keep pressing the attack button in seconds. Negative values for a single tap.|float|
 |delay_between_attacks|Delay in seconds between attacks (button presses). This delay is per attack.|float|
+|range_mapped_attack_delay|Sets the enemy distance mapped attack delay.|string|
 |block_attacks_time|Delay in seconds between attacks (button presses). This delay is shared between attack types.|float|
 |melee|Is melee attack?|boolean|
 |explosive|Is explosive attack?|boolean|
@@ -107,6 +108,12 @@ Additional information:
 * This means on games like Team Fortress 2, you can have unique settings for weapons that share the same classname but not economy index like the stock Rocket Launcher and The Liberty Launcher.    
 * When searching for weapon information, economy index is searched first, then classname.
 * Both `delay_between_attacks` and `block_attacks_time` is a delay in button presses, the former is reset when the used attack type changes (primary, secondary) while the latter does not.
+
+### Using **range_mapped_attack_delay**
+
+The attack function's `range_mapped_attack_delay` property needs four parameters.    
+`range_mapped_attack_delay <range min> <range max> <delay min> <delay max>`.    
+To disable it, use `range_mapped_attack_delay disable`.    
 
 ## Weapon Types
 

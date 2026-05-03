@@ -33,23 +33,11 @@ public:
 		block_attacks_time = -1.0f;
 		ismelee = false;
 		isexplosive = false;
-	}
-
-	void Reset()
-	{
-		maxrange = -10000.0f;
-		minrange = -1.0f;
-		projectilespeed = -1.0f;
-		gravity = -1.0f;
-		ballistic_elevation_range_start = -1.0f;
-		ballistic_elevation_range_end = -1.0f;
-		ballistic_elevation_min = -1.0f;
-		ballistic_elevation_max = -1.0f;
-		hold_time = -1.0f;
-		delay_between_attacks = -1.0f;
-		block_attacks_time = -1.0f;
-		ismelee = false;
-		isexplosive = false;
+		dmad.enabled = false;
+		dmad.range_max = 0.0f;
+		dmad.range_max = 0.0f;
+		dmad.delay_min = 0.0f;
+		dmad.delay_max = 0.0f;
 	}
 
 	float GetMaxRange() const { return maxrange; }
@@ -76,6 +64,8 @@ public:
 	float GetHoldButtonTime() const { return hold_time; }
 	float GetDelayBetweenAttacks() const { return delay_between_attacks; }
 	float GetBlockAttackTime() const { return block_attacks_time; }
+	bool UsesDistanceMappedAttackDelays() const { return dmad.enabled; }
+	float GetDistanceMappedAttackDelay(const float dist) const;
 
 	void SetMaxRange(float v) { maxrange = v; }
 	void SetMinRange(float v) { minrange = v; }
@@ -90,6 +80,7 @@ public:
 	void SetHoldButtonTime(float v) { hold_time = v; }
 	void SetDelayBetweenAttacks(float v) { delay_between_attacks = v; }
 	void SetBlockAttackTime(float time) { block_attacks_time = time; }
+	bool ParseDistanceMappedAttackDelay(const char* input);
 
 private:
 	float maxrange;
@@ -105,6 +96,17 @@ private:
 	float block_attacks_time;
 	bool ismelee;
 	bool isexplosive;
+
+	struct DistanceMappedAttackDelay
+	{
+		bool enabled;
+		float range_min;
+		float range_max;
+		float delay_min;
+		float delay_max;
+	};
+
+	DistanceMappedAttackDelay dmad;
 };
 
 class WeaponInfo

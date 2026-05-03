@@ -39,7 +39,7 @@ TaskResult<CCSSBot> CCSSBotDefendPlantedBombTask::OnTaskUpdate(CCSSBot* bot)
 
 	const float timetoexplode = csslib::GetC4TimeRemaining(c4);
 
-	if (timetoexplode < 5.0f)
+	if (timetoexplode < 8.0f)
 	{
 		const CBotWeapon* knife = bot->GetInventoryInterface()->FindWeaponBySlot(counterstrikesource::CSS_WEAPON_SLOT_KNIFE);
 

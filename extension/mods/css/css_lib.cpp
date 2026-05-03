@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include <mods/modhelpers.h>
 #include "css_lib.h"
 
 counterstrikesource::CSSTeam csslib::GetEntityCSSTeam(CBaseEntity* entity)
@@ -165,4 +166,112 @@ float csslib::GetFlashbangMaxAlpha(CBaseEntity* player)
 	float time = 0.0f;
 	entprops->GetEntPropFloat(player, Prop_Send, "m_flFlashMaxAlpha", time);
 	return time;
+}
+
+CBaseEntity* csslib::GetC4Carrier()
+{
+	int iC4 = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "weapon_c4");
+	
+	if (iC4 == INVALID_EHANDLE_INDEX)
+	{
+		return nullptr;
+	}
+
+	CBaseEntity* pOwner = nullptr;
+	entprops->GetEntPropEnt(iC4, Prop_Send, "m_hOwner", nullptr, &pOwner);
+	return pOwner;
+}
+
+CBaseEntity* csslib::GetDroppedC4()
+{
+	int iC4 = UtilHelpers::FindEntityByClassname(INVALID_EHANDLE_INDEX, "weapon_c4");
+
+	if (iC4 == INVALID_EHANDLE_INDEX)
+	{
+		return nullptr;
+	}
+
+	CBaseEntity* pOwner = nullptr;
+	entprops->GetEntPropEnt(iC4, Prop_Send, "m_hOwner", nullptr, &pOwner);
+
+	// not dropped
+	if (pOwner != nullptr)
+	{
+		return nullptr;
+	}
+
+	return gamehelpers->ReferenceToEntity(iC4);
+}
+
+CBaseEntity* csslib::GetRandomHostageToRescue()
+{
+	std::vector<CBaseEntity*> candidates;
+
+	auto func = [&candidates](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (modhelpers->IsDead(entity))
+			{
+				return true;
+			}
+
+			if (csslib::IsHostageRescued(entity))
+			{
+				return true;
+			}
+
+			if (csslib::GetHostageLeader(entity) != nullptr)
+			{
+				return true;
+			}
+
+			candidates.push_back(entity);
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("hostage_entity", func);
+
+	if (candidates.empty())
+	{
+		return nullptr;
+	}
+
+	if (candidates.size() == 1)
+	{
+		return candidates[0];
+	}
+
+	return librandom::utils::GetRandomElementFromVector(candidates);
+}
+
+bool csslib::IsEscortingHostages(CBaseEntity* player)
+{
+	bool result = false;
+	auto func = [player, &result](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (modhelpers->IsDead(entity))
+			{
+				return true;
+			}
+
+			if (csslib::IsHostageRescued(entity))
+			{
+				return true;
+			}
+
+			if (csslib::GetHostageLeader(entity) == player)
+			{
+				result = true;
+				return false; // stop loop
+			}
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("hostage_entity", func);
+	return result;
 }

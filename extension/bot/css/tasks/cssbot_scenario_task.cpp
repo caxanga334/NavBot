@@ -7,13 +7,60 @@
 #include <bot/tasks_shared/bot_shared_attack_enemy.h>
 #include <bot/tasks_shared/bot_shared_collect_items.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
+#include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include "scenario/cssbot_plant_bomb_task.h"
 #include "scenario/cssbot_search_for_armed_bomb_task.h"
 #include "scenario/cssbot_defuse_bomb_task.h"
 #include "scenario/cssbot_defend_planted_bomb_task.h"
 #include "scenario/cssbot_guard_bomb_site_task.h"
+#include "scenario/cssbot_deliver_hostage_task.h"
+#include "scenario/cssbot_rescue_hostage_task.h"
 #include <bot/interfaces/behavior_utils.h>
 #include "cssbot_scenario_task.h"
+
+class CCSSBotRoamTask : public CBotSharedRoamTask<CCSSBot, CCSSBotPathCost>
+{
+public:
+	CCSSBotRoamTask(CCSSBot* bot) :
+		CBotSharedRoamTask<CCSSBot, CCSSBotPathCost>(bot, 8192.0f, true)
+	{
+	}
+
+	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override
+	{
+		CCounterStrikeSourceMod* csmod = CCounterStrikeSourceMod::GetCSSMod();
+
+		if (csmod->IsBombActive())
+		{
+			return Done("Bomb was planted!");
+		}
+
+		return CBotSharedRoamTask<CCSSBot, CCSSBotPathCost>::OnTaskUpdate(bot);
+	}
+};
+
+class CCSSBotFollowBombCarrierTask : public CBotSharedEscortEntityTask<CCSSBot, CCSSBotPathCost>
+{
+public:
+	CCSSBotFollowBombCarrierTask(CCSSBot* bot, CBaseEntity* c4carrier) :
+		CBotSharedEscortEntityTask<CCSSBot, CCSSBotPathCost>(bot, c4carrier, 120.0f, 160.0f)
+	{
+	}
+
+	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override
+	{
+		CCounterStrikeSourceMod* csmod = CCounterStrikeSourceMod::GetCSSMod();
+
+		if (csmod->IsBombActive())
+		{
+			return Done("Bomb was planted!");
+		}
+
+		return CBotSharedEscortEntityTask<CCSSBot, CCSSBotPathCost>::OnTaskUpdate(bot);
+	}
+
+	const char* GetName() const override { return "FollowBombCarrier"; }
+};
 
 CCSSBotScenarioTask::CCSSBotScenarioTask()
 {
@@ -81,6 +128,28 @@ static bool CollectItemsValidationHasDefuser(CCSSBot* bot, CBaseEntity* entity)
 	return true;
 }
 
+static bool CollectItemsValidationHasC4(CCSSBot* bot, CBaseEntity* entity)
+{
+	if (bot->GetInventoryInterface()->FindWeaponByClassname("weapon_c4") != nullptr)
+	{
+		return false;
+	}
+
+	CBaseEntity* c4 = csslib::GetDroppedC4();
+
+	if (!c4)
+	{
+		return false;
+	}
+
+	if (c4 != entity)
+	{
+		return false;
+	}
+
+	return true;
+}
+
 AITask<CCSSBot>* CCSSBotScenarioTask::SelectScenarioTask(CCSSBot* bot) const
 {
 	Vector goal;
@@ -140,8 +209,53 @@ AITask<CCSSBot>* CCSSBotScenarioTask::SelectScenarioTask(CCSSBot* bot) const
 				return new CCSSBotGuardBombSiteTask;
 			}
 		}
+
+		if (myteam == counterstrikesource::CSSTeam::TERRORIST)
+		{
+			CBaseEntity* droppedc4 = csslib::GetDroppedC4();
+
+			if (droppedc4)
+			{
+				NBotSharedCollectItemTask::ItemCollectFilter<CCSSBot, CCSSNavArea> filter{ bot };
+				CBaseEntity* c4weapon = nullptr;
+
+				if (CBotSharedCollectItemsTask<CCSSBot, CCSSBotPathCost>::IsPossible(bot, &filter, "weapon_c4", &c4weapon))
+				{
+					auto task = new CBotSharedCollectItemsTask<CCSSBot, CCSSBotPathCost>(bot, c4weapon, NBotSharedCollectItemTask::COLLECT_WALK_OVER);
+					auto func = std::bind(CollectItemsValidationHasC4, std::placeholders::_1, std::placeholders::_2);
+					task->SetValidationFunction(func);
+					return task;
+				}
+			}
+
+			CBaseEntity* c4carrier = csslib::GetC4Carrier();
+			
+			if (c4carrier && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
+			{
+				return new CCSSBotFollowBombCarrierTask(bot, c4carrier);
+			}
+		}
+	}
+
+	// handle hostage rescue behavior
+	if (csslib::GetNumberOfRemainingHostages() > 0)
+	{
+		if (myteam == counterstrikesource::CSSTeam::COUNTERTERRORIST)
+		{
+			if (csslib::IsEscortingHostages(bot->GetEntity()))
+			{
+				return new CCSSBotDeliverHostageTask;
+			}
+
+			CBaseEntity* hostage = csslib::GetRandomHostageToRescue();
+
+			if (hostage)
+			{
+				return new CCSSBotRescueHostageTask(hostage);
+			}
+		}
 	}
 
 	// if nothing to do, roam randomly
-	return new CBotSharedRoamTask<CCSSBot, CCSSBotPathCost>(bot, 8000.0f);
+	return new CCSSBotRoamTask(bot);
 }

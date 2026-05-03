@@ -1299,5 +1299,39 @@ inline Vector CNavArea::GetCorner( NavCornerType corner ) const
 	}
 }
 
+// Utility macro for implementing Set/Clear/Toggle/WipeAll/Has functions for nav area attributes.
+// VARNAME: Name of the member varaible to read/write
+// ATTRIBTYPE: Attribute type
+// NAME: Function name. Example: FOO Becomes SetFOOAttributes
+#define IMPLEMENT_ATTRIBUTE_BIT_FUNCS(VARNAME, ATTRIBTYPE, NAME)			\
+	inline void Set##NAME##Attributes(ATTRIBTYPE __val)						\
+	{																		\
+		VARNAME |= __val;													\
+	}																		\
+	inline void Clear##NAME##Attributes(ATTRIBTYPE __val)					\
+	{																		\
+		VARNAME &= ~__val;													\
+	}																		\
+	inline bool Has##NAME##Attributes(ATTRIBTYPE __val) const				\
+	{																		\
+		return ((VARNAME & __val) != 0);									\
+	}																		\
+	inline void Toggle##NAME##Attributes(ATTRIBTYPE __val)					\
+	{																		\
+		if (Has##NAME##Attributes(__val))									\
+		{																	\
+			Clear##NAME##Attributes(__val);									\
+		}																	\
+		else																\
+		{																	\
+			Set##NAME##Attributes(__val);									\
+		}																	\
+	}																		\
+	inline void WipeAll##NAME##Attributes()									\
+	{																		\
+		VARNAME = 0;														\
+	}																		\
+																			\
+
 
 #endif // _NAV_AREA_H_

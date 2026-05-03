@@ -14,6 +14,33 @@
 #undef max
 #undef clamp
 
+float WeaponAttackFunctionInfo::GetDistanceMappedAttackDelay(const float dist) const
+{
+	return RemapValClamped(dist, dmad.range_min, dmad.range_max, dmad.delay_min, dmad.delay_max);
+}
+
+bool WeaponAttackFunctionInfo::ParseDistanceMappedAttackDelay(const char* input)
+{
+	if (std::strcmp(input, "disable") == 0)
+	{
+		dmad.enabled = false;
+		return true;
+	}
+
+	if (sscanf(input, "%f %f %f %f", &dmad.range_min, &dmad.range_max, &dmad.delay_min, &dmad.delay_max) == 4)
+	{
+		if (dmad.range_min >= dmad.range_max)
+		{
+			return false;
+		}
+
+		dmad.enabled = true;
+		return true;
+	}
+
+	return false;
+}
+
 bool CWeaponInfoManager::LoadConfigFile()
 {
 	std::string spath;
@@ -236,6 +263,14 @@ void CWeaponInfoManager::ReadAttackInfoSection(botweapons::AttackType type, cons
 		}
 
 		m_current->GetAttackInfoForEditing(type)->SetBlockAttackTime(v);
+	}
+	else if (strncmp(key, "range_mapped_attack_delay", 25) == 0)
+	{
+		if (!m_current->GetAttackInfoForEditing(type)->ParseDistanceMappedAttackDelay(value))
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] Error parsing \"range_mapped_attack_delay\" (Attack Info %i) <%s - %s> at line %i col %i",
+				static_cast<int>(type), key, value, states->line, states->col);
+		}
 	}
 	else
 	{

@@ -50,9 +50,16 @@ public:
 	CCSSBotPathCost(CCSSBot* bot, RouteType type = RouteType::DEFAULT_ROUTE) :
 		CBasicPathCost<CCSSBot>(bot, type)
 	{
+		m_isEscortingHostages = false;
 	}
 
 	float operator()(CNavArea* toArea, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const override;
+
+	void SetEscortingHostages(bool state) { m_isEscortingHostages = state; }
+	bool IsEscortingHostages() const { return m_isEscortingHostages; }
+
+private:
+	bool m_isEscortingHostages;
 };
 
 #endif // !__NAVBOT_CSS_BOT_H_

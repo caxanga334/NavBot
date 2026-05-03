@@ -368,9 +368,23 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 	}
 
 	// check attack interval
-	if (timer.HasStarted() && timer.IsLessThen(attackfunc.GetDelayBetweenAttacks()))
+	if (timer.HasStarted())
 	{
-		return false;
+		// attack uses distance mapped delays
+		if (attackfunc.UsesDistanceMappedAttackDelays())
+		{
+			if (timer.IsLessThen(attackfunc.GetDistanceMappedAttackDelay(data.range_to_pos)))
+			{
+				return false;
+			}
+		}
+		else // standard attack delay
+		{
+			if (timer.IsLessThen(attackfunc.GetDelayBetweenAttacks()))
+			{
+				return false;
+			}
+		}
 	}
 
 	// no ammo in clip

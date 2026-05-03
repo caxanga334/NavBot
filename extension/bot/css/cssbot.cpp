@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include <mods/css/nav/css_nav_mesh.h>
 #include <mods/css/css_mod.h>
 #include "cssbot.h"
 
@@ -41,6 +42,23 @@ float CCSSBotPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, const CN
 	if (fromArea == nullptr)
 	{
 		return cost;
+	}
+
+	CCSSNavArea* csarea = static_cast<CCSSNavArea*>(toArea);
+
+	// this area is blocked while escorting hostages
+	if (IsEscortingHostages())
+	{
+		if (csarea->HasCSAttributes(CCSSNavArea::CSSAttributes::CSSATTRIB_NO_HOSTAGES))
+		{
+			return DEADEND_COST;
+		}
+
+		// hostages can't use ladders
+		if (ladder)
+		{
+			return DEADEND_COST;
+		}
 	}
 
 	return cost;
