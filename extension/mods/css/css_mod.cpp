@@ -36,10 +36,12 @@ CCounterStrikeSourceMod::CCounterStrikeSourceMod()
 	ListenForGameEvent("round_end");
 	ListenForGameEvent("flashbang_detonate");
 	ListenForGameEvent("bomb_planted");
+	ListenForGameEvent("hostage_follows");
 
 	std::fill(m_teammoney.begin(), m_teammoney.end(), 0);
 	m_bombactive = false;
 	m_bombisknown = false;
+	m_hostagestaken = false;
 	m_c4.Term();
 }
 
@@ -69,6 +71,10 @@ void CCounterStrikeSourceMod::FireGameEvent(IGameEvent* event)
 		else if (std::strcmp(name, "bomb_planted") == 0)
 		{
 			OnBombPlanted(event->GetInt("userid"));
+		}
+		else if (std::strcmp(name, "hostage_follows") == 0)
+		{
+			m_hostagestaken = true;
 		}
 	}
 
@@ -414,6 +420,7 @@ void CCounterStrikeSourceMod::RoundReset()
 {
 	m_bombactive = false;
 	m_bombisknown = false;
+	m_hostagestaken = false;
 	m_c4.Term();
 }
 

@@ -12,6 +12,7 @@ Detailed list of supported games/mods.
 | Zombie Panic! Source | Average | Dev |
 | Insurgency: Modern Infantry Combat | Average | Dev |
 | Half-Life Deathmatch: Source | Average | Dev |
+| Counter-Strike: Source | Average | Dev |
 
 Support Status:
 

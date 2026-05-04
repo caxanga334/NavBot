@@ -10,12 +10,12 @@ If Sourcemod is loaded, check there is anything in the error logs.
 
 ## Bots Doesn't Move
 
-If the bots aren't moving, run the `sm_navbot_info` command. This command will output a bunch of information, one of them is the Nav Mesh status.    
-If the Nav Mesh status is `NOT Loaded`, then your map is missing a nav mesh.    
-If it's `Loaded`, then it could either be an unsupported mod or unsupported game mode.    
+A common issues is either a missing or bad nav mesh. Run the `sm_navbot_info` command, it will output a bunch of information to the console, one of them is the Nav Mesh status.
+If it says the nav mesh is **NOT Loaded**, then a nav mesh is missing for the current map.    
+If a nav mesh is present, then it could be an unsupported game or game mode.    
+It could also be a bad/incomplete nav mesh.    
 
 ## Debugging Crashes
 
 Install and configure [Accelerator](https://forums.alliedmods.net/showthread.php?t=277703&).    
-If you're on x64, you need to either manually compile [Accelerator](https://github.com/asherkin/accelerator) or download the latest build artifact from [here](https://github.com/asherkin/accelerator/actions) if available.    
 Accelerator doesn't catch every type of crash. If you're experiencing crashes but the accelerator logs are empty, check the Steam's dump folder if you're running on a Windows Listen Server. (Default path is `C:\Program Files (x86)\Steam\dumps`). If you're running on a Dedicated Server, attach a debugger.    

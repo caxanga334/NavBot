@@ -62,10 +62,13 @@ public:
 	bool IsTheBombKnownByCTs() const { return m_bombisknown; }
 	// Marks the bomb position was known by the CTs.
 	void MarkBombAsKnown() { m_bombisknown = true; }
+	// Returns true if the CTs managed to take at least one hostage
+	bool AreTheHostagesBeingRescued() const { return m_hostagestaken; }
 	// Gets the planted bomb entity. NULL if none.
 	CBaseEntity* GetActiveBombEntity() const { return m_c4.Get(); }
 	// CSS mod access
 	static CCounterStrikeSourceMod* GetCSSMod();
+
 protected:
 	void RegisterModCommands() override;
 	void OnPostInit() override;
@@ -81,6 +84,7 @@ private:
 	std::array<int, static_cast<std::size_t>(counterstrikesource::CSSTeam::MAX_CSS_TEAMS)> m_teammoney; // average team money
 	bool m_bombactive;
 	bool m_bombisknown;
+	bool m_hostagestaken;
 	CHandle<CBaseEntity> m_c4;
 
 	static void OnReloadBuyManagerCommand(const CConCommandArgs& args);

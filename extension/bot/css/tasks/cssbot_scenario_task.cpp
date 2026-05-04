@@ -8,6 +8,7 @@
 #include <bot/tasks_shared/bot_shared_collect_items.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
+#include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include "scenario/cssbot_plant_bomb_task.h"
 #include "scenario/cssbot_search_for_armed_bomb_task.h"
 #include "scenario/cssbot_defuse_bomb_task.h"
@@ -15,6 +16,8 @@
 #include "scenario/cssbot_guard_bomb_site_task.h"
 #include "scenario/cssbot_deliver_hostage_task.h"
 #include "scenario/cssbot_rescue_hostage_task.h"
+#include "scenario/cssbot_guard_hostage_task.h"
+#include "scenario/cssbot_guard_rescue_zone_task.h"
 #include <bot/interfaces/behavior_utils.h>
 #include "cssbot_scenario_task.h"
 
@@ -252,6 +255,38 @@ AITask<CCSSBot>* CCSSBotScenarioTask::SelectScenarioTask(CCSSBot* bot) const
 			if (hostage)
 			{
 				return new CCSSBotRescueHostageTask(hostage);
+			}
+		}
+
+		if (myteam == counterstrikesource::CSSTeam::TERRORIST)
+		{
+			if (csmod->AreTheHostagesBeingRescued())
+			{
+				return new CCSSBotGuardRescueZoneTask;
+			}
+
+			// cap rush chance to 50%
+			const int rushchance = std::min(bot->GetDifficultyProfile()->GetAggressiveness(), 50);
+			if (CBaseBot::s_botrng.GetRandomChance(rushchance))
+			{
+				CBaseEntity* rescuezone = UtilHelpers::GetRandomEntityOfClassname("func_hostage_rescue");
+
+				if (rescuezone)
+				{
+					Vector pos = trace::getground(UtilHelpers::getWorldSpaceCenter(rescuezone));
+					return new CBotSharedGoToPositionTask<CCSSBot, CCSSBotPathCost>(bot, pos, "RushRescueZone");
+				}
+			}
+
+			// random chance to defend
+			if (csmod->GetCSSModSettings()->RollDefendChance())
+			{
+				CBaseEntity* hostage = csslib::GetRandomHostageToRescue();
+
+				if (hostage)
+				{
+					return new CCSSBotGuardHostageTask(hostage);
+				}
 			}
 		}
 	}
