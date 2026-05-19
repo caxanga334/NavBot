@@ -98,6 +98,31 @@ private:
 	bool m_isSentryGun;
 };
 
+class CTF2BotSpyFindCoverAndDecloakTask : public AITask<CTF2Bot>
+{
+public:
+	CTF2BotSpyFindCoverAndDecloakTask(const Vector& from);
+
+	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;
+	TaskResult<CTF2Bot> OnTaskUpdate(CTF2Bot* bot) override;
+
+	TaskEventResponseResult<CTF2Bot> OnStuck(CTF2Bot* bot) override;
+	TaskEventResponseResult<CTF2Bot> OnUnstuck(CTF2Bot* bot) override;
+	TaskEventResponseResult<CTF2Bot> OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
+	TaskEventResponseResult<CTF2Bot> OnMoveToSuccess(CTF2Bot* bot, CPath* path) override;
+
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+
+	const char* GetName() const override { return "SpyFindCoverAndDecloak"; }
+
+private:
+	CMeshNavigator m_nav;
+	Vector m_goal;
+	Vector m_from;
+};
+
 #endif // !NAVBOT_TF2BOT_SPY_TASKS_H_
 
 

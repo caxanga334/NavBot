@@ -35,7 +35,7 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskStart(CTF2Bot* bot, AITask
 
 TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
+	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 
 	EquipAndScope(bot);
 	bot->GetCombatInterface()->ScopeInOrDeployWeapon();
@@ -45,6 +45,8 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		bot->GetControlInterface()->PressCrouchButton();
 	}
+
+	bool changeangles = true;
 
 	if (threat)
 	{
@@ -56,20 +58,18 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 				return SwitchTo(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference::FURTHEST), "Threat too close, backing off!");
 			}
 
+			changeangles = false;
 			m_boredTimer.Reset();
 		}
 		else if (threat->GetTimeSinceLastVisible() < 3.0f)
 		{
 			bot->GetControlInterface()->AimAt(threat->GetLastKnownPosition(), IPlayerController::LOOK_ALERT, 0.5f, "Looking at threat last know position!");
+			changeangles = false;
 		}
 	}
-	else
-	{
-		if (m_boredTimer.IsElapsed())
-		{
-			return Done("Bored timer expired, no visible threat!");
-		}
 
+	if (changeangles)
+	{
 		if (m_changeAnglesTimer.IsElapsed())
 		{
 			m_changeAnglesTimer.StartRandom(5.0f, 10.0f);
@@ -90,6 +90,11 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 				bot->GetControlInterface()->AimAt(lookat, IPlayerController::LOOK_SEARCH, 5.0f, "Sniper: Looking at snipe angles.");
 			}
 		}
+	}
+
+	if (m_boredTimer.IsElapsed())
+	{
+		return Done("Bored timer expired, no visible threat!");
 	}
 
 	return Continue();

@@ -15,6 +15,7 @@
 #include <sdkports/sdk_takedamageinfo.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
+#include <bot/tasks_shared/bot_shared_wait.h>
 #include "tf2bot_spy_mvm_tasks.h"
 #include "tf2bot_spy_tasks.h"
 
@@ -94,13 +95,13 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 		DisguiseMe(bot);
 	}
 
-	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(true);
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
 
 	if (threat)
 	{
 		CBaseEntity* entity = threat->GetEntity();
 
-		if (UtilHelpers::FClassnameIs(entity, "obj_*"))
+		if (threat->IsEntityOfClassname("obj_*"))
 		{
 			return PauseFor(new CTF2BotSpySapObjectTask(entity), "Sapping visible enemy buildings!");
 		}
@@ -442,9 +443,14 @@ CTF2BotSpyAttackTask::CTF2BotSpyAttackTask(CBaseEntity* victim) :
 
 TaskResult<CTF2Bot> CTF2BotSpyAttackTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
 {
-	if (bot->IsCloaked())
+	CBaseEntity* victim = m_victim.Get();
+
+	if (victim)
 	{
-		bot->GetControlInterface()->PressSecondaryAttackButton();
+		if (bot->IsCloaked())
+		{
+			return PauseFor(new CTF2BotSpyFindCoverAndDecloakTask(UtilHelpers::getEntityOrigin(victim)), "Decloaking to attack an enemy!");
+		}
 	}
 
 	return Continue();
@@ -758,4 +764,73 @@ TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	return Continue();
+}
+
+CTF2BotSpyFindCoverAndDecloakTask::CTF2BotSpyFindCoverAndDecloakTask(const Vector& from) :
+	m_goal(0.0f, 0.0f, 0.0f), m_from(from)
+{
+}
+
+TaskResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)
+{
+	botsharedutils::FindCoverCollector collector(m_from, 128.0f, true, true, 4096, bot);
+	collector.SetSearchElevators(false); // too slow
+	collector.Execute();
+	
+	if (collector.IsCollectedAreasEmpty())
+	{
+		if (bot->IsCloaked())
+		{
+			bot->GetControlInterface()->PressSecondaryAttackButton();
+		}
+
+		return Done("Failed to find cover!");
+	}
+
+	CNavArea* area = collector.GetNearestCollectedArea();
+	m_goal = area->GetCenter();
+	return Continue();
+}
+
+TaskResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnTaskUpdate(CTF2Bot* bot)
+{
+	if (!bot->IsCloaked())
+	{
+		return Done("No longer cloaked!");
+	}
+
+	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	{
+		CTF2BotPathCost cost{ bot, RouteType::FASTEST_ROUTE };
+		m_nav.ComputePathToPosition(bot, m_goal, cost);
+		m_nav.StartRepathTimer();
+	}
+
+	m_nav.Update(bot);
+	return Continue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnStuck(CTF2Bot* bot)
+{
+	return TryContinue();
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnUnstuck(CTF2Bot* bot)
+{
+	return TryToMaintain(PRIORITY_LOW);
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnMoveToFailure(CTF2Bot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	return TryToMaintain(PRIORITY_LOW);
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnMoveToSuccess(CTF2Bot* bot, CPath* path)
+{
+	if (bot->IsCloaked())
+	{
+		bot->GetControlInterface()->PressSecondaryAttackButton();
+	}
+
+	return TrySwitchTo(new CBotSharedWaitTask<CTF2Bot>(1.0f), PRIORITY_HIGH, "Waiting for decloak!");
 }

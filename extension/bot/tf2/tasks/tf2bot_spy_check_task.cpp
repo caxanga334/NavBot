@@ -50,6 +50,12 @@ bool CTF2BotSpyCheckTask::IsPossible(CTF2Bot* bot, CBaseEntity* spy)
 		return false;
 	}
 
+	// don't spycheck spies from my own team.
+	if (bot->GetSensorInterface()->IsFriendly(spy))
+	{
+		return false;
+	}
+
 	auto& known = bot->GetSpyMonitorInterface()->GetKnownSpy(spy);
 
 	// already spotted it

@@ -24,9 +24,9 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 
 TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 {
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 	bool move = true;
-	constexpr auto SCOPE_IN_TIME = 10.0f;
+	constexpr auto SCOPE_IN_TIME = 5.0f;
 
 	const CTF2BotWeapon* weapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
 

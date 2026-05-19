@@ -1245,8 +1245,62 @@ public:
 	bool IsCollectedAreasEmpty() const { return m_collected.empty(); }
 	size_t GetCollectedAreasCount() const { return m_collected.size(); }
 	// Returns a random collected area. No filtering.
+	// This should only be called if IsCollectedAreasEmpty() returns false!
 	T* GetRandomCollectedArea() const { return m_collected[randomgen->GetRandomInt<size_t>(0, m_collected.size() - 1)]; }
+	/**
+	 * @brief Gets the collected nav area with the highest travel cost.
+	 * @return Nav area with the highest travel cost, NULL if the collected areas vector is empty.
+	 */
+	T* GetFarthestCollectedArea() const
+	{
+		T* selected = nullptr;
+		float best = std::numeric_limits<float>::min();
 
+		for (T* area : m_collected)
+		{
+			auto node = GetNodeForArea(area);
+
+			if (!node) // this should be impossible, every nav area in the collected vector should have a node
+			{
+				continue;
+			}
+
+			if (node->GetTravelCostFromStart() > best)
+			{
+				best = node->GetTravelCostFromStart();
+				selected = area;
+			}
+		}
+
+		return selected;
+	}
+	/**
+	 * @brief Gets the collected nav area with the smallest travel cost.
+	 * @return Collected nav area with the smallest travel cost, NULL if the collected areas vector is empty.
+	 */
+	T* GetNearestCollectedArea() const
+	{
+		T* selected = nullptr;
+		float best = std::numeric_limits<float>::max();
+
+		for (T* area : m_collected)
+		{
+			auto node = GetNodeForArea(area);
+
+			if (!node) // this should be impossible, every nav area in the collected vector should have a node
+			{
+				continue;
+			}
+
+			if (node->GetTravelCostFromStart() < best)
+			{
+				best = node->GetTravelCostFromStart();
+				selected = area;
+			}
+		}
+
+		return selected;
+	}
 	/**
 	 * @brief Gets a random collected area
 	 * @tparam F Filter function
