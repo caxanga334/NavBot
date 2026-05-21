@@ -368,7 +368,7 @@ public:
 
 	TaskEventResponseResult<BT> OnStuck(BT* bot) override
 	{
-		return AITask<BT>::TryContinue();
+		return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 	}
 
 	const char* GetName() const override { return "CollectItems"; }

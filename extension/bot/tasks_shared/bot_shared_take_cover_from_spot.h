@@ -65,7 +65,7 @@ inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskStart(BT* b
 		}
 	}
 
-	CNavArea* area = m_collector.GetRandomCollectedArea();
+	CNavArea* area = m_collector.GetNearestCollectedArea();
 	m_goal = area->GetCenter();
 
 	m_pathcost.SetRouteType(FASTEST_ROUTE);

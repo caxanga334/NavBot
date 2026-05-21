@@ -50,6 +50,7 @@ Color NavColors[] = {
 		Color(0, 0, 255),			// NavConnectedOneWayColor
 		Color(0, 255, 0),			// NavConnectedContiguous
 		Color(255, 0, 0),			// NavConnectedNonContiguous
+		Color(255, 255, 0),			// NavConnectedIncomingOneWay
 
 		// Editing colors
 		Color(255, 255, 255),		// NavCursorColor
@@ -69,7 +70,9 @@ Color NavColors[] = {
 		Color(0, 255, 0),			// NavAttributeWalkColor
 		Color(255, 0, 0),			// NavAttributeAvoidColor
 		Color(0, 200, 0),			// NavAttributeStairColor
-		};
+};
+
+static_assert((sizeof(NavColors) / sizeof(Color)) == static_cast<std::size_t>(NavEditColor::MAX_NAV_COLORS), "NavColors array size and max enum value mismatch!");
 
 //--------------------------------------------------------------------------------------------------------------
 void NavDrawLine(const Vector& from, const Vector& to, NavEditColor navColor) {

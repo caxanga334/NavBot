@@ -44,6 +44,7 @@ enum NavEditColor
 	NavConnectedOneWayColor,
 	NavConnectedContiguous,
 	NavConnectedNonContiguous,
+	NavConnectedIncomingOneWay,
 
 	// Editing colors
 	NavCursorColor,
@@ -63,6 +64,8 @@ enum NavEditColor
 	NavAttributeWalkColor,
 	NavAttributeAvoidColor,
 	NavAttributeStairColor,
+
+	MAX_NAV_COLORS
 };
 
 //--------------------------------------------------------------------------------------------------------------

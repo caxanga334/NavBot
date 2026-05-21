@@ -43,7 +43,7 @@ public:
 			return AITask<BT>::Done("Failed to find a cover position!");
 		}
 
-		CNavArea* coverArea = collector.GetRandomCollectedArea();
+		CNavArea* coverArea = collector.GetNearestCollectedArea();
 		m_goal = coverArea->GetRandomPoint();
 
 		return AITask<BT>::Continue();

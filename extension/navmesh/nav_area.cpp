@@ -71,6 +71,7 @@ ConVar sm_nav_show_light_intensity( "sm_nav_show_light_intensity", "0", FCVAR_CH
 #endif // NAVMESH_REMOVED_FEATURES
 ConVar sm_nav_debug_blocked( "sm_nav_debug_blocked", "0", FCVAR_CHEAT );
 ConVar sm_nav_show_contiguous( "sm_nav_show_continguous", "0", FCVAR_CHEAT, "Highlight non-contiguous connections" );
+ConVar sm_nav_show_incoming("sm_nav_show_incoming", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "If enabled, shows incoming area connections in edit mode.", true, 0.0f, true, 1.0f);
 
 constexpr float DEF_NAV_VIEW_DISTANCE = 1500.0;
 // ConVar sm_nav_max_view_distance( "sm_nav_max_view_distance", "6000", FCVAR_CHEAT, "Maximum range for precomputed nav mesh visibility (0 = default 1500 units)" );
@@ -3327,6 +3328,26 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 		char message[64];
 		ke::SafeSprintf(message, sizeof(message), "Nav Link <%s>", NavOffMeshConnection::OffMeshConnectionTypeToString(link.m_type));
 		NDebugOverlay::Text(start, message, false, NDEBUG_PERSIST_FOR_ONE_TICK);
+	}
+
+	if (sm_nav_show_incoming.GetBool())
+	{
+		for (int dir = 0; dir < static_cast<int>(NavDirType::NUM_DIRECTIONS); dir++)
+		{
+			const NavConnectVector* vec = GetIncomingConnections(static_cast<NavDirType>(dir));
+
+			for (int i = 0; i < vec->Count(); i++)
+			{
+				const NavConnect& conn = vec->Element(i);
+				CNavArea* other = conn.area;
+				Vector from;
+				other->GetClosestPointOnArea(this->GetCenter(), &from);
+				Vector to;
+				this->GetClosestPointOnArea(other->GetCenter(), &to);
+				other->Draw();
+				NavDrawLine(from, to, NavConnectedIncomingOneWay);
+			}
+		}
 	}
 }
 

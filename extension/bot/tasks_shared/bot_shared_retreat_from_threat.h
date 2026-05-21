@@ -106,7 +106,7 @@ inline TaskEventResponseResult<BT> CBotSharedRetreatFromThreatTask<BT, CT>::OnMo
 		m_goal = collector.GetRetreatToArea()->GetRandomPoint();
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>
@@ -117,7 +117,7 @@ inline TaskEventResponseResult<BT> CBotSharedRetreatFromThreatTask<BT, CT>::OnSi
 		return AITask<BT>::TryDone(PRIORITY_MEDIUM, "Ally visible!");
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 #endif // !__NAVBOT_BOT_TASK_SHARED_RETREAT_FROM_THREAT_H_

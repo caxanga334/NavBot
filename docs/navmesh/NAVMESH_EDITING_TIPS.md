@@ -92,5 +92,9 @@ In some games, the nav mesh may automatically mark areas as blocked.
 These areas will have a **AUTOBLOCKER** text when aiming at them.    
 If the auto blocker is incorrectly marking an area as blocked, they can be bypassed by adding the **NO AUTO BLOCKERS** attribute to areas using the `sm_nav_no_auto_blockers` console command.    
 
+# Drawing Incoming One-ways
+
+The drawing of incoming one-way connections to nav areas can be enabled using the `sm_nav_show_incoming` ConVar.    
+
 <!-- LINKS -->
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md

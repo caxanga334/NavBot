@@ -872,8 +872,8 @@ void ISensor::UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, con
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					me->DebugPrintToConsole(0, 128, 0, "%s caught line of sight with entity %i (%s) \n", 
-						me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
+					me->DebugPrintToConsole(0, 128, 0, "%s CAUGHT LINE OF SIGHT WITH %s\n", 
+						me->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(pEntity));
 
 					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 0, 255, 0, 255, false, 5.0f);
 				}
@@ -882,21 +882,21 @@ void ISensor::UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, con
 			continue; // this known entity was updated recently
 		}
 
-		if (IsAbleToSee(known.GetLastKnownPosition()) == true)
+		if (IsAbleToSee(known.GetLastKnownPosition()))
 		{
 			known.MarkLastKnownPositionAsSeen();
 		}
 
 		// this entity was visible, mark as not visible and notify the bot lost sight of it
-		if (known.IsVisibleNow() == true)
+		if (known.IsVisibleNow())
 		{
 			known.MarkAsNotVisible();
 			me->OnLostSight(pEntity);
 
 			if (me->IsDebugging(BOTDEBUG_SENSOR))
 			{
-				me->DebugPrintToConsole(255, 0, 0, "%s lost line of sight with entity %i (%s) \n",
-					me->GetDebugIdentifier(), gamehelpers->EntityToBCompatRef(pEntity), gamehelpers->GetEntityClassname(pEntity));
+				me->DebugPrintToConsole(255, 0, 0, "%s LOST LINE OF SIGHT WITH ENTITY %s \n",
+					me->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(pEntity));
 
 				NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
 			}

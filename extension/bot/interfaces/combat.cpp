@@ -18,6 +18,7 @@ ICombat::ICombat(CBaseBot* bot) :
 	m_shouldAim = true;
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
+	m_wantsToScope = false;
 	m_reAim = false;
 	m_shouldReloadPostCombat = false;
 	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
@@ -35,12 +36,13 @@ void ICombat::Reset()
 	m_shouldAim = true;
 	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
+	m_wantsToScope = false;
 	m_reAim = false;
 	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_dangerScanTimer.Invalidate();
 	m_disableCombatTimer.Invalidate();
 	m_dontFireTimer.Invalidate();
-	m_unscopeTimer.Invalidate();
+	m_toggleScopeTimer.Invalidate();
 	m_useSpecialFuncTimer.Invalidate();
 	m_selectWeaponTimer.Invalidate();
 	m_secondaryAbilityTimer.Invalidate();
@@ -114,6 +116,12 @@ void ICombat::Update()
 			OnThreatBecameVisible(threat, activeWeapon);
 		}
 
+		// if the threat is no longer visible and more than 5 seconds have passed, unscope.
+		if (!m_combatData.is_visible && WantstoBeScoped() && GetTimeSinceLOSWasLost() >= 5.0f)
+		{
+			SetWantsToScopeState(false);
+		}
+
 		if (ShouldAim())
 		{
 			CombatAim(bot, threat, activeWeapon);
@@ -132,7 +140,12 @@ void ICombat::Update()
 	else
 	{
 		m_combatData.in_combat = false;
-		UnscopeWeaponIfScoped();
+
+		// no threat, unscope
+		if (WantstoBeScoped())
+		{
+			SetWantsToScopeState(false);
+		}
 
 		if (CanLookAround() && m_lookAroundTimer.IsElapsed())
 		{
@@ -148,6 +161,7 @@ void ICombat::Update()
 		}
 	}
 
+	UpdateScopeState();
 	DangerScanUpdate();
 }
 
@@ -295,7 +309,7 @@ void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
 {
 	m_attackTimer.Invalidate();
 	m_isScopedOrDeployed = false;
-	m_unscopeTimer.Invalidate();
+	m_toggleScopeTimer.Invalidate();
 	m_useSpecialFuncTimer.Invalidate();
 	m_scopeinDelayTimer.Invalidate();
 	m_reloadTimer.Invalidate();
@@ -443,29 +457,20 @@ bool ICombat::HandleWeapon(const CBaseBot* bot, const CBotWeapon* activeWeapon)
 		return false;
 	}
 
-	m_isScopedOrDeployed = activeWeapon->IsDeployedOrScoped(bot);
+	SetScopedOrDeployedStatus(activeWeapon->IsDeployedOrScoped(bot));
 
 	if (info->NeedsToBeDeployedToFire() && info->IsAllowedToScopeIn(data.range_to_pos))
 	{
-		if (!m_isScopedOrDeployed)
+		SetWantsToScopeState(true);
+
+		if (!IsScopedInOrDeployed())
 		{
-			// scope/deploy
-			input->PressSecondaryAttackButton(0.25f);
-			GetUnscopeTimer().Start(1.0f);
-			const float time = info->GetScopeInAttackDelay();
-
-			if (time > 0.0f)
-			{
-				GetScopeInDelayTimer().Start(time);
-			}
-
-			if (bot->IsDebugging(BOTDEBUG_COMBAT))
-			{
-				bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: SCOPE IN/DEPLOYING WEAPON %s! \n", bot->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
-			}
-
 			return false;
 		}
+	}
+	else
+	{
+		SetWantsToScopeState(false);
 	}
 
 	if (m_reAim)
@@ -673,30 +678,6 @@ void ICombat::DodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeW
 			bot->GetControlInterface()->PressJumpButton();
 		}
 	}
-}
-
-void ICombat::UnscopeWeaponIfScoped()
-{
-	if (!m_unscopeTimer.IsElapsed()) { return; }
-
-	CBaseBot* bot = GetBot<CBaseBot>();
-	const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
-
-	if (!activeWeapon) { return; }
-
-	m_isScopedOrDeployed = activeWeapon->IsDeployedOrScoped(bot);
-
-	if (m_isScopedOrDeployed)
-	{
-		bot->GetControlInterface()->PressSecondaryAttackButton(0.2f);
-		m_unscopeTimer.Start(1.0f); // check again after 1 second
-	}
-	else
-	{
-		// stop checking, this timer gets reset when the bot changes weapon or scopes during combat
-		m_unscopeTimer.Start(1e6f);
-	}
-	
 }
 
 void ICombat::OnStartCombat(const CKnownEntity* threat, const CBotWeapon* activeWeapon)
@@ -1129,6 +1110,49 @@ void ICombat::DangerScanUpdate()
 	SetMostDangerousEntity(first);
 	// dispatch event so behavior can react
 	bot->OnDangerousEntityChanged(first, last);
+}
+
+void ICombat::UpdateScopeState()
+{
+	if (GetToggleScopeTimer().IsElapsed())
+	{
+		GetToggleScopeTimer().Start(TOGGLE_SCOPE_COOLDOWN_TIME);
+
+		CBaseBot* bot = GetBot<CBaseBot>();
+		const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+		if (activeWeapon)
+		{
+			SetScopedOrDeployedStatus(activeWeapon->IsDeployedOrScoped(bot));
+			const bool wantstoscope = WantstoBeScoped();
+			const bool isscoped = IsScopedInOrDeployed();
+
+			// if the scoped state is different from what the bot wants
+			if (wantstoscope != isscoped)
+			{
+				if (bot->IsDebugging(BOTDEBUG_COMBAT))
+				{
+					bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: TOGGLING SCOPE MODE! WEAPON %s! WANTS TO SCOPE: %i IS SCOPED: %i \n", 
+						bot->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier(), static_cast<int>(wantstoscope), static_cast<int>(isscoped));
+				}
+
+				// press the secondary attack button to change states
+				// So far every game supported by navbot uses the secondary button
+				bot->GetControlInterface()->PressSecondaryAttackButton();
+
+				// If the bot wants to be scoped, apply the attack timer
+				if (wantstoscope)
+				{
+					const float time = activeWeapon->GetWeaponInfo()->GetScopeInAttackDelay();
+
+					if (time > 0.0f)
+					{
+						GetScopeInDelayTimer().Start(time);
+					}
+				}
+			}
+		}
+	}
 }
 
 float ICombat::CombatData::GetTimeSinceLostLOS() const

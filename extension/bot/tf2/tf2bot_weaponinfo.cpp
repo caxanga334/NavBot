@@ -4,6 +4,7 @@
 #include <util/entprops.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/basebot.h>
+#include "tf2bot.h"
 #include "tf2bot_weaponinfo.h"
 
 #undef min
@@ -200,6 +201,5 @@ float CTF2BotWeapon::GetProjectileGravity(botweapons::AttackType type) const
 
 bool CTF2BotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 {
-	CBaseEntity* me = owner->GetEntity();
-	return tf2lib::IsPlayerInCondition(me, TeamFortress2::TFCond::TFCond_Slowed);
+	return static_cast<const CTF2Bot*>(owner)->IsUsingSniperScope();
 }

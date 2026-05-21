@@ -146,7 +146,7 @@ inline TaskEventResponseResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnStuck(BT*
 		m_fails = 0;
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>
@@ -163,7 +163,7 @@ inline TaskEventResponseResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnMoveToSuc
 		bot->DebugPrintToConsole(0, 180, 0, "%s PATROL POINT REACHED! MOVING TO NEXT POINT AT %g %g %g! \n", bot->GetDebugIdentifier(), goal.x, goal.y, goal.z);
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>
@@ -177,7 +177,7 @@ inline TaskEventResponseResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnMoveToFai
 		m_fails = 0;
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 #endif // !__NAVBOT_BOT_SHARED_SEARCH_AREA_TASK_H_

@@ -179,7 +179,7 @@ inline TaskEventResponseResult<BT> CBotSharedRoamTask<BT, CT>::OnStuck(BT* bot)
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
 	}
 
-	return AITask<BT>::TryContinue(PRIORITY_LOW);
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>
@@ -190,7 +190,7 @@ inline TaskEventResponseResult<BT> CBotSharedRoamTask<BT, CT>::OnMoveToFailure(B
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
 	}
 
-	return AITask<BT>::TryContinue(PRIORITY_LOW);
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>

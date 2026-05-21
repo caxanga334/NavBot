@@ -145,13 +145,13 @@ inline TaskEventResponseResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::On
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnMoveToSuccess(BT* bot, CPath* path)
 {
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>

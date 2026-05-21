@@ -21,6 +21,7 @@ public:
 	static constexpr int LOOK_AROUND_MIN_SKILL = 25;
 	static constexpr float POST_COMBAT_TIMER_DURATION = 5.0f;
 	static constexpr int DANGER_SCAN_IGNORE_FOV_SKILL = 90;
+	static constexpr float TOGGLE_SCOPE_COOLDOWN_TIME = 0.5f;
 
 	struct CombatData
 	{
@@ -122,8 +123,13 @@ public:
 	 * @return True if the weapon is currently scoped in/deployed, false otherwise.
 	 */
 	bool ScopeInOrDeployWeapon();
-	// Tells the combat interface to stop scoping in with the current weapon.
-	void UnScopeWeapon() { m_unscopeTimer.Start(1.0f); }
+	/**
+	 * @brief Sets the wants to scope state.
+	 * @param state If true, the bot will try to use the scope, if false, the bot will try to unscope.
+	 */
+	void SetWantsToScopeState(bool state) { m_wantsToScope = state; }
+	// Returns true if the bot wants to use their weapon's scope, false otherwise.
+	bool WantstoBeScoped() const { return m_wantsToScope; }
 	// Returns true if the given threat is the last one the bot was in combat with.
 	const bool IsLastThreat(const CKnownEntity* threat) const { return threat != nullptr && threat == m_lastThreatPtr; }
 	// Returns how many seconds have passed since line of sight was lost to the current threat.
@@ -230,7 +236,9 @@ protected:
 	 */
 	virtual void OpportunisticallyUseWeaponSpecialFunction(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* weapon);
 	IntervalTimer& GetAttackTimer() { return m_attackTimer; }
-	CountdownTimer& GetUnscopeTimer() { return m_unscopeTimer; }
+	// Timer used for toggling between scope/unscoped mode.
+	CountdownTimer& GetToggleScopeTimer() { return m_toggleScopeTimer; }
+	// Timer used for special weapon functions
 	CountdownTimer& GetSpecialWeaponFunctionTimer() { return m_useSpecialFuncTimer; }
 	CountdownTimer& GetWeaponSelectionTimer() { return m_selectWeaponTimer; }
 	CountdownTimer& GetScopeInDelayTimer() { return m_scopeinDelayTimer; }
@@ -251,7 +259,6 @@ protected:
 	 * @param activeWeapon Current weapon.
 	 */
 	virtual void DodgeEnemies(const CKnownEntity* threat, const CBotWeapon* activeWeapon);
-	void UnscopeWeaponIfScoped();
 	/**
 	 * @brief Called when the bot initially enters combat with an enemy.
 	 * @param threat Current enemy.
@@ -385,7 +392,7 @@ private:
 	CountdownTimer m_dangerScanTimer;
 	CountdownTimer m_disableCombatTimer;
 	CountdownTimer m_dontFireTimer;
-	CountdownTimer m_unscopeTimer;
+	CountdownTimer m_toggleScopeTimer;
 	CountdownTimer m_useSpecialFuncTimer;
 	CountdownTimer m_selectWeaponTimer; // cooldown for weapon selection
 	CountdownTimer m_secondaryAbilityTimer;
@@ -402,6 +409,7 @@ private:
 	bool m_shouldAim;
 	bool m_shouldSelectWeapons;
 	bool m_isScopedOrDeployed;
+	bool m_wantsToScope; // true if the bot wants to use a scope, false otherwise
 	bool m_reAim;
 	bool m_shouldReloadPostCombat;
 	unsigned int m_lastPlace;
@@ -415,6 +423,7 @@ private:
 	static inline std::unordered_set<std::string> s_dangerEnts{};
 
 	void DangerScanUpdate(); // runs danger scan logic
+	void UpdateScopeState();
 };
 
 namespace combatutils
