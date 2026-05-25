@@ -114,6 +114,15 @@ const ISharedBotMemory::EntityInfo* ISharedBotMemory::GetEntityInfo(CBaseEntity*
 	return nullptr;
 }
 
+void ISharedBotMemory::ForgetEntity(CBaseEntity* entity)
+{
+	const ISharedBotMemory::EntityInfo other(entity);
+
+	m_ents.erase(std::remove_if(m_ents.begin(), m_ents.end(), [&other](const ISharedBotMemory::EntityInfo& obj) {
+		return obj == other;
+	}), m_ents.end());
+}
+
 void ISharedBotMemory::PurgeInvalidEntityInfos()
 {
 	if (m_ents.empty()) { return; }

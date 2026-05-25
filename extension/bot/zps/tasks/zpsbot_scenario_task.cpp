@@ -5,6 +5,8 @@
 #include <bot/tasks_shared/bot_shared_collect_items.h>
 #include "scenario/zpsbot_survival_human_task.h"
 #include "scenario/zpsbot_survival_zombie_task.h"
+#include "scenario/zpsbot_objective_human_task.h"
+#include "scenario/zpsbot_objective_zombie_task.h"
 #include "zpsbot_find_weapon_task.h"
 #include "zpsbot_scenario_task.h"
 
@@ -21,7 +23,7 @@ AITask<CZPSBot>* CZPSBotScenarioTask::SelectScenarioTask(CZPSBot* bot)
 {
 	zps::ZPSGamemodes gamemode = CZombiePanicSourceMod::GetZPSMod()->GetGameMode();
 
-	if (gamemode == zps::ZPSGamemodes::GAMEMODE_SURVIVAL)
+	if (gamemode == zps::ZPSGamemodes::GAMEMODE_SURVIVAL || gamemode == zps::ZPSGamemodes::GAMEMODE_HARDCORE)
 	{
 		if (bot->GetMyZPSTeam() == zps::ZPSTeam::ZPS_TEAM_SURVIVORS)
 		{
@@ -33,22 +35,40 @@ AITask<CZPSBot>* CZPSBotScenarioTask::SelectScenarioTask(CZPSBot* bot)
 		return new CZPSBotSurvivalZombieTask;
 	}
 
+	if (gamemode == zps::ZPSGamemodes::GAMEMODE_OBJECTIVE)
+	{
+		if (bot->GetMyZPSTeam() == zps::ZPSTeam::ZPS_TEAM_SURVIVORS)
+		{
+			// survivor bot
+			return new CZPSBotObjectiveHumanTask;
+		}
+
+		// zombie bot
+		return new CZPSBotObjectiveZombieTask;
+	}
+
 	return nullptr;
 }
 
 AITask<CZPSBot>* CZPSBotScenarioTask::InitialNextTask(CZPSBot* bot)
 {
-	// Wait until the round is active to pick a scenario behavior
-	if (!m_roundisactive)
-	{
-		return nullptr;
-	}
-
 	return CZPSBotScenarioTask::SelectScenarioTask(bot);
 }
 
 TaskResult<CZPSBot> CZPSBotScenarioTask::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)
 {
+	// bot is in the waiting room
+	if (bot->GetMyZPSTeam() == zps::ZPSTeam::ZPS_TEAM_UNASSIGNED)
+	{
+		if (bot->IsDebugging(BOTDEBUG_TASKS) || bot->IsDebugging(BOTDEBUG_MISC))
+		{
+			bot->DebugPrintToConsole(0, 160, 0, "%s IN WAITING ROOM, SENDING JOIN SURVIVORS COMMAND! \n", bot->GetDebugIdentifier());
+		}
+
+		// join survivors
+		bot->DelayedFakeClientCommand("choose1");
+	}
+
 	return Continue();
 }
 

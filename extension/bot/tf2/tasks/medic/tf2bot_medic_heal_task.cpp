@@ -11,7 +11,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_medic_retreat_task.h"
 #include "tf2bot_medic_revive_task.h"
 #include "tf2bot_medic_crossbow_heal_task.h"
@@ -121,7 +121,7 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (threat)
 		{
-			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Nobody to heal. Attacking visible threat!");
+			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Nobody to heal. Attacking visible threat!");
 		}
 
 		return Continue();

@@ -7,14 +7,14 @@
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <sdkports/sdk_timers.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 
 /**
  * @brief Task for bots following their squad leader.
  * @tparam BT Bot class.
  * @tparam CT Path cost class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedSquadFollowLeaderTask : public AITask<BT>
 {
 public:
@@ -43,7 +43,7 @@ inline TaskResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnTaskUpdate(BT* 
 	{
 		if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
 		{
-			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible enemy!");
 		}
 	}
 

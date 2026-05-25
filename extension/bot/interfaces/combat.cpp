@@ -4,6 +4,7 @@
 #include <mods/modhelpers.h>
 #include <navmesh/nav_mesh.h>
 #include <bot/basebot.h>
+#include <bot/bot_shared_utils.h>
 #include "combat.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -53,6 +54,7 @@ void ICombat::Reset()
 	m_disableDodgeTimer.Invalidate();
 	m_blockFiringTimer.Invalidate();
 	m_attackTimer.Invalidate();
+	m_clearAreasTimer.Invalidate();
 	m_lookAroundTimer.Start(LOOK_AROUND_TIMER_BASE_MAX);
 	m_combatData.Clear();
 	m_lastDangerEntity.Term();
@@ -163,6 +165,7 @@ void ICombat::Update()
 
 	UpdateScopeState();
 	DangerScanUpdate();
+	UpdateMarkAreasAsCleared(threat);
 }
 
 void ICombat::Frame()
@@ -1152,6 +1155,28 @@ void ICombat::UpdateScopeState()
 				}
 			}
 		}
+	}
+}
+
+void ICombat::UpdateMarkAreasAsCleared(const CKnownEntity* threat)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::UpdateMarkAreasAsCleared", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!IsMarkVisibleAreasAsClearedEnabled()) { return; }
+
+	if (!threat || !threat->IsVisibleNow())
+	{
+		CountdownTimer& timer = GetClearAreasTimer();
+
+		if (timer.IsElapsed())
+		{
+			timer.StartRandom(CLEAR_AREAS_TIMER_MIN, CLEAR_AREAS_TIMER_MAX);
+		}
+
+		botsharedutils::search::MarkVisibleAreasAsCleared functor(GetBot<CBaseBot>());
+		functor.Execute();
 	}
 }
 

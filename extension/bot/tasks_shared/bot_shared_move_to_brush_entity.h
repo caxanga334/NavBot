@@ -17,7 +17,7 @@
  * @tparam CT Bot path class.
  * @tparam autoEnd If true, automatically ends the task when OnMoveToSuccess is invoked.
  */
-template <typename BT, typename CT = CBaseBotPathCost, bool autoEnd = false>
+template <typename BT, typename CT, bool autoEnd = false>
 class CBotSharedMoveToBrushEntityTask : public AITask<BT>
 {
 public:
@@ -85,7 +85,7 @@ inline TaskResult<BT> CBotSharedMoveToBrushEntityTask<BT, CT, autoEnd>::OnTaskUp
 		UpdateEntityPosition(ent);
 	}
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		if (!m_nav.ComputePathToPosition(bot, m_cachedBrushPosition, m_pathcost, 0.0f, true))
 		{

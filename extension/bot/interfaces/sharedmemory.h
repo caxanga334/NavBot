@@ -70,6 +70,11 @@ public:
 	 */
 	const EntityInfo* GetEntityInfo(CBaseEntity* entity) const;
 	/**
+	 * @brief Removes an entity info entry of the given entity.
+	 * @param entity Entity to remove info of.
+	 */
+	void ForgetEntity(CBaseEntity* entity);
+	/**
 	 * @brief Collects entity infos into a vector. Obsolete infos are excluded.
 	 * @param out Vector to store the entity infos
 	 */

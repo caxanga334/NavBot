@@ -282,6 +282,65 @@ bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV) const
 	return true;
 }
 
+bool ISensor::IsAbleToSee(const CNavArea* area, const bool checkFOV, const bool checkCorners) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::IsAbleToSee( CNavArea )", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CBaseBot* me = GetBot<CBaseBot>();
+	const Vector& center = area->GetCenter();
+	const Vector eyePos = me->GetEyeOrigin();
+	const auto maxdist = GetMaxVisionRange() * GetMaxVisionRange();
+	float distance = (center - eyePos).LengthSqr();
+	const float crouchHeight = me->GetMovementInterface()->GetCrouchedHullHeight();
+	Vector testPos = center;
+	testPos.z += crouchHeight;
+
+	// not visible, outside the bot's max vision range
+	if (distance > maxdist)
+	{
+		return false;
+	}
+
+	if (checkFOV)
+	{
+		if (!IsInFieldOfView(testPos))
+		{
+			return false;
+		}
+	}
+
+	if (!IsLineOfSightClear(testPos))
+	{
+		return false;
+	}
+
+	if (IsPositionObscured(testPos))
+	{
+		return false; // obstructed by smoke/fog
+	}
+
+	// skipping corners, center is visible
+	if (!checkCorners)
+	{
+		return true;
+	}
+
+	for (int c1 = 0; c1 < static_cast<int>(NavCornerType::NUM_CORNERS); c1++)
+	{
+		testPos = area->GetCorner(static_cast<NavCornerType>(c1));
+		testPos.z += crouchHeight;
+
+		if (!IsLineOfSightClear(testPos))
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool ISensor::IsAbleToHear(edict_t* entity) const
 {
 	// Bots only hear other players by default
@@ -456,6 +515,17 @@ void ISensor::ForgetKnownEntity(edict_t* entity)
 	m_primarythreatcache = nullptr;
 }
 
+void ISensor::ForgetKnownEntity(CBaseEntity* entity)
+{
+	const CKnownEntity other(entity);
+
+	m_knownlist.erase(std::remove_if(m_knownlist.begin(), m_knownlist.end(), [&other](const CKnownEntity& obj) {
+		return obj == other;
+	}), m_knownlist.end());
+
+	m_primarythreatcache = nullptr;
+}
+
 void ISensor::ForgetAllKnownEntities()
 {
 	m_knownlist.clear();
@@ -477,7 +547,7 @@ bool ISensor::IsKnown(edict_t* entity)
 	return false;
 }
 
-const CKnownEntity* ISensor::GetKnown(CBaseEntity* entity)
+const CKnownEntity* ISensor::GetKnown(CBaseEntity* entity) const
 {
 	if (entity == nullptr)
 	{
@@ -502,7 +572,7 @@ const CKnownEntity* ISensor::GetKnown(CBaseEntity* entity)
  * @param entity Entity to search
  * @return Pointer to a Knownentity of the given entity or NULL if the bot doesn't known this entity
 */
-const CKnownEntity* ISensor::GetKnown(edict_t* entity)
+const CKnownEntity* ISensor::GetKnown(edict_t* entity) const
 {
 	if (entity == nullptr)
 	{
@@ -564,7 +634,8 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 		{
 			return m_primarythreatcache;
 		}
-		else if (!onlyvisible) // allow non visible and we have a cached threat.
+
+		if (!onlyvisible) // allow non visible and we have a cached threat.
 		{
 			return m_primarythreatcache;
 		}
@@ -699,7 +770,7 @@ const CKnownEntity* ISensor::GetNearestKnown(const int teamindex)
 	return nearest;
 }
 
-const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
+const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex) const
 {
 	const CKnownEntity* nearest = nullptr;
 	float smallest = std::numeric_limits<float>::max();
@@ -707,7 +778,7 @@ const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
 
 	for (auto& obj : m_knownlist)
 	{
-		CKnownEntity* known = &obj;
+		const CKnownEntity* known = &obj;
 
 		if (!IsAwareOf(known))
 			continue;
@@ -740,6 +811,31 @@ const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex)
 	}
 
 	return nearest;
+}
+
+const CKnownEntity* ISensor::GetNearestUnseenKnownEntity() const
+{
+	const CKnownEntity* selected = nullptr;
+	float dist_s = std::numeric_limits<float>::max(); // distance selected
+	const CBaseBot* bot = GetBot<CBaseBot>();
+
+	for (const CKnownEntity& known : m_knownlist)
+	{
+		if (known.IsObsolete()) { continue; }
+		if (known.WasEverFullyVisible()) { continue; }
+		if (known.WasLastKnownPositionSeen()) { continue; }
+
+		// distance current
+		float dist_c = (bot->GetRangeTo(known.GetLastKnownPosition()));
+
+		if (dist_c < dist_s)
+		{
+			dist_s = dist_c;
+			selected = &known;
+		}
+	}
+
+	return selected;
 }
 
 void ISensor::ShareKnownEntityList(ISensor* other)
@@ -994,6 +1090,19 @@ CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
 	for (auto& known : m_knownlist)
 	{
 		if (gamehelpers->IndexOfEdict(known.GetEdict()) == index)
+		{
+			return &known;
+		}
+	}
+
+	return nullptr;
+}
+
+CKnownEntity* ISensor::FindKnownEntity(CBaseEntity* entity)
+{
+	for (auto& known : m_knownlist)
+	{
+		if (known.GetEntity() == entity)
 		{
 			return &known;
 		}

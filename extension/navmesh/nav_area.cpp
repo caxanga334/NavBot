@@ -274,6 +274,7 @@ CNavArea::CNavArea(unsigned int place)
 	m_offmeshconnections.reserve(4);
 	m_volume = nullptr;
 	m_prerequisite = nullptr;
+	std::fill(m_clearedTimestamp.begin(), m_clearedTimestamp.end(), NAV_AREA_NEVER_CLEARED_STATUS_VALUE);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -565,6 +566,7 @@ void CNavArea::OnRoundRestart( void )
 	m_damagingTickCount = 0;
 	ClearAllNavCostEntities();
 	ClearDanger(NAV_TEAM_ANY);
+	ResetClearedTimestamp(NAV_TEAM_ANY);
 }
 
 #ifdef DEBUG_AREA_PLAYERCOUNTS
@@ -3682,6 +3684,52 @@ bool CNavArea::IsCompletelyVisible(const CNavArea* other, const bool checkPVS) c
 	return true;
 }
 
+bool CNavArea::IsCompletelyVisible(const Vector& eyePos, const bool checkPVS, const bool smallOpt) const
+{
+	if (checkPVS)
+	{
+		int cluster = engine->GetClusterForOrigin(GetCenter());
+		engine->GetPVSForCluster(cluster, static_cast<int>(CNavArea::s_pvs.size()), CNavArea::s_pvs.data());
+
+		if (!engine->CheckOriginInPVS(eyePos, CNavArea::s_pvs.data(), static_cast<int>(CNavArea::s_pvs.size())))
+		{
+			return false; // outside PVS
+		}
+	}
+
+	const Vector offset(0.0f, 0.0f, navgenparams->human_eye_height);
+	Vector end = GetCenter() + offset;
+	trace::CTraceFilterIgnoreCombatChars filter;
+	trace_t tr;
+	trace::line(eyePos, end, MASK_VISIBLE, &filter, tr);
+
+	// center not visible
+	if (tr.fraction < 1.0f)
+	{
+		return false;
+	}
+
+	// center is visible, if the area is small and small area optimization is true, skip corners and return true
+	if (smallOpt && !IsLargerThan(navgenparams->half_human_width * 2.0f))
+	{
+		return true;
+	}
+
+	// test corners
+	for (int c1 = 0; c1 < static_cast<int>(NavCornerType::NUM_CORNERS); c1++)
+	{
+		end = GetCorner(static_cast<NavCornerType>(c1)) + offset;
+		trace::line(eyePos, end, MASK_VISIBLE, &filter, tr);
+
+		if (tr.fraction < 1.0f)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Clears the open and closed lists for a new search
@@ -5301,4 +5349,39 @@ void CNavArea::GetPathCost(const float originalCost, float& cost, CBaseBot* bot)
 	}
 
 	cost = out;
+}
+
+void CNavArea::MarkAsCleared(const int team)
+{
+	if (team < 0 || team >= static_cast<int>(m_clearedTimestamp.size()))
+	{
+		const float time = gpGlobals->curtime;
+		std::fill(m_clearedTimestamp.begin(), m_clearedTimestamp.end(), time);
+		return;
+	}
+
+	m_clearedTimestamp[team] = gpGlobals->curtime;
+}
+
+float CNavArea::GetTimeSinceLastCleared(const int team) const
+{
+	if (team < 0 || team >= static_cast<int>(m_clearedTimestamp.size()))
+	{
+		for (const float& time : m_clearedTimestamp)
+		{
+			if (time > 0.0f)
+			{
+				return gpGlobals->curtime - time;
+			}
+		}
+
+		return NAV_AREA_NEVER_CLEARED_STATUS_VALUE;
+	}
+
+	if (m_clearedTimestamp[team] > 0.0f)
+	{
+		return gpGlobals->curtime - m_clearedTimestamp[team];
+	}
+
+	return NAV_AREA_NEVER_CLEARED_STATUS_VALUE;
 }

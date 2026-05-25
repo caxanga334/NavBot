@@ -5,13 +5,16 @@
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/chasenavigator.h>
 #include <bot/tf2/tasks/tf2bot_scenario_task.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include <bot/tasks_shared/bot_shared_search_area.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tasks_shared/bot_shared_seek_and_destroy_entity.h>
+#include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
+#include <bot/tasks_shared/bot_shared_investigate_known.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_zombie_infection_tasks.h"
 
 namespace zi
@@ -206,10 +209,32 @@ TaskResult<CTF2Bot> CTF2BotZIZombieBehaviorTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (threat->IsVisibleNow())
 		{
-			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot, CBaseBot::s_botrng.GetRandomReal<float>(6.0f, 12.0f)), "Attacking visible survivor!");
+			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>, "Attacking visible survivor!");
 		}
 
-		return PauseFor(new CBotSharedSearchAreaTask<CTF2Bot, CTF2BotPathCost>(bot, threat->GetLastKnownPosition(), 128.0f, 8000.0f), "Searching for lost enemy!");
+		// if this is false, then the bot knowns about this enemy from the shared memory interface
+		if (!threat->WasLastKnownPositionSeen())
+		{
+			CBaseEntity* target;
+
+			if (CBotSharedInvestigateKnownTask<CTF2Bot, CTF2BotPathCost>::IsPossible(bot, &target))
+			{
+				return PauseFor(new CBotSharedInvestigateKnownTask<CTF2Bot, CTF2BotPathCost>(target), "Investigating last known enemy position!");
+			}
+		}
+
+		// to-do improve this
+		// return PauseFor(new CBotSharedSearchAreaTask<CTF2Bot, CTF2BotPathCost>(bot, threat->GetLastKnownPosition(), 128.0f, 8000.0f), "Searching for lost enemy!");
+	}
+
+	if (CBaseBot::s_botrng.GetRandomChance(90))
+	{
+		CNavArea* area;
+
+		if (CBotSharedPatrolUnclearedAreasTask<CTF2Bot, CTF2BotPathCost>::IsPossible(bot, &area))
+		{
+			return PauseFor(new CBotSharedPatrolUnclearedAreasTask<CTF2Bot, CTF2BotPathCost>(area), "Patrolling!");
+		}
 	}
 
 	return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 10000.0f, true, -1.0f, true), "Roaming!");

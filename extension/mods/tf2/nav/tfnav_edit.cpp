@@ -272,6 +272,17 @@ static void sm_tf_nav_toggle_mvm_attrib(const CConCommandArgs& args)
 	TheNavMesh->ClearSelectedSet();
 }
 
+static void sm_tf_nav_wipe_all_attribs(const CConCommandArgs& args)
+{
+	auto func = [](CTFNavArea* area) {
+		area->WipeAllTFAttribs();
+	};
+
+	TheNavMesh->ExecuteAreaEditCommand<CTFNavArea>(func);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+	META_CONPRINT("All TF attributes were wiped from nav areas. \n");
+}
+
 void CTFNavMesh::RegisterEditCommands()
 {
 	CServerCommandManager& manager = extmanager->GetServerCommandManager();
@@ -284,4 +295,5 @@ void CTFNavMesh::RegisterEditCommands()
 	manager.RegisterConCommand("sm_tf_nav_toggle_attrib", "Toggles NavBot TF Attributes on the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_toggle_attrib);
 	manager.RegisterConCommandAutoComplete("sm_tf_nav_toggle_path_attrib", "Toggles NavBot TF Path Attributes on the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_toggle_path_attrib, TFNav_PathAttributes_AutoComplete);
 	manager.RegisterConCommandAutoComplete("sm_tf_nav_toggle_mvm_attrib", "Toggles NavBot TF MvM Attributes on the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_toggle_mvm_attrib, TFNav_MvMAttributes_AutoComplete);
+	manager.RegisterConCommand("sm_tf_nav_wipe_all_attribs", "Clears nav areas of all TF related attributes.", FCVAR_GAMEDLL | FCVAR_CHEAT, sm_tf_nav_wipe_all_attribs);
 }

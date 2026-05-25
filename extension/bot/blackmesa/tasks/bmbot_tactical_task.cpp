@@ -11,7 +11,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
 #include <bot/interfaces/behavior_utils.h>
-#include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 
 AITask<CBlackMesaBot>* CBlackMesaBotTacticalTask::InitialNextTask(CBlackMesaBot* bot)
 {
@@ -57,7 +57,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnTaskUpdate(CBlackMesaBot*
 
 	if (threat && bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
 	{
-		return PauseFor(new CBotSharedPursueAndDestroyTask(bot, threat->GetEntity()), "Pursuing visible threat!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CBlackMesaBot, CBlackMesaBotPathCost>, "Attacking visible threat!");
 	}
 
 	return Continue();

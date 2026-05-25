@@ -10,7 +10,7 @@
 #include <bot/bot_shared_utils.h>
 #include <bot/interfaces/path/meshnavigator.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedHideTask : public AITask<BT>
 {
 public:

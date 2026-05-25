@@ -72,7 +72,7 @@ TaskResult<CInsMICBot> CInsMICBotCheckPointCaptureObjectiveTask::OnTaskUpdate(CI
 		return Done("Objective captured by my team!");
 	}
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		CInsMICBotPathCost cost{ bot };
 		m_nav.ComputePathToPosition(bot, m_moveTo, cost);

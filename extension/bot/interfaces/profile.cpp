@@ -37,17 +37,24 @@ void DifficultyProfile::RandomizeProfileValues()
 	prediction_max_iterations = randomgen->GetRandomInt<int>(1, 10);
 	danger_scan_interval = randomgen->GetRandomReal<float>(0.25f, 5.0f);
 	danger_scan_size = randomgen->GetRandomReal<float>(64.0f, 256.0f);
+	enemy_close_range = randomgen->GetRandomReal<float>(200.0f, 900.0f);
+	enemy_far_range = randomgen->GetRandomReal<float>(1024.0f, 2048.0f);
 }
 
 void DifficultyProfile::ValidateProfileValues()
 {
-
 	if (health_low_percent <= health_critical_percent)
 	{
 		smutils->LogError(myself, "Difficulty profile with health low value less than or equals to health critical value!");
 
 		health_low_percent = 0.5f;
 		health_critical_percent = 0.2f;
+	}
+
+	if (enemy_far_range <= enemy_close_range)
+	{
+		enemy_far_range = 1024.0f;
+		enemy_close_range = 350.0f;
 	}
 }
 
@@ -402,6 +409,14 @@ SourceMod::SMCResult CDifficultyManager::ReadSMC_KeyValue(const SourceMod::SMCSt
 	else if (strncasecmp(key, "danger_scan_size", 16) == 0)
 	{
 		m_current->SetDangerScanSize(std::clamp(std::stof(value), 64.0f, 2048.0f));
+	}
+	else if (strncasecmp(key, "enemy_close_range", 17) == 0)
+	{
+		m_current->SetEnemyCloseRange(std::clamp(std::stof(value), 128.0f, 1024.0f));
+	}
+	else if (strncasecmp(key, "enemy_far_range", 15) == 0)
+	{
+		m_current->SetEnemyFarRange(std::clamp(std::stof(value), 1024.0f, 4096.0f));
 	}
 	else
 	{

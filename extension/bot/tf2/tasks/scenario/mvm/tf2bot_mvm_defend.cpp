@@ -52,7 +52,7 @@ TaskResult<CTF2Bot> CTF2BotMvMDefendTask::OnTaskUpdate(CTF2Bot* bot)
 
 	bool isFlag = UtilHelpers::FClassnameIs(target, "item_teamflag");
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		if (isFlag)
 		{

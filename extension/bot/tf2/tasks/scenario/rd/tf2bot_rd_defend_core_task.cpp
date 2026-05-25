@@ -7,7 +7,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <entities/tf2/tf_entities.h>
 #include <bot/interfaces/path/chasenavigator.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include "tf2bot_rd_defend_core_task.h"
 
@@ -60,7 +60,7 @@ TaskResult<CTF2Bot> CTF2BotRDDefendCoreTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat)
 	{
-		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot, 7.5f), "Attacking visible threat!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible threat!");
 	}
 
 	tfentities::HCaptureFlag core(ent);

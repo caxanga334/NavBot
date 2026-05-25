@@ -158,7 +158,7 @@ TaskResult<CHL1MPBot> CHL1MPBotUseChargerTask::OnTaskUpdate(CHL1MPBot* bot)
 	}
 	else
 	{
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			CHL1MPBotPathCost cost{ bot, RouteType::FASTEST_ROUTE };
 			m_nav.StartRepathTimer();

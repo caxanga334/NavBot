@@ -26,14 +26,20 @@ if (__roguechance > 0 && CBaseBot::s_botrng.GetRandomChance(__roguechance))					
 
 // Simple take cover from incoming danger check.
 #define BOTVEHAVIOR_IMPLEMENT_SIMPLE_DANGER_COVER(BOTCLASS, PATHCOST)													\
-Vector __hitpos = vec3_origin;																							\
 																														\
-if (extmanager->GetMod()->IsInProjectilesPath(bot, newent, __hitpos))													\
+if (bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO)														\
 {																														\
-	return TryPauseFor(new CBotSharedTakeCoverFromDangerTask<BOTCLASS, PATHCOST>(newent, __hitpos),						\
-		PRIORITY_MEDIUM, "Taking cover from incoming projectile!");														\
+	Vector __hitpos = vec3_origin;																						\
+																														\
+		if (extmanager->GetMod()->IsInProjectilesPath(bot, newent, __hitpos))											\
+		{																												\
+			return TryPauseFor(new CBotSharedTakeCoverFromDangerTask<BOTCLASS, PATHCOST>(newent, __hitpos),				\
+				PRIORITY_MEDIUM, "Taking cover from incoming projectile!");												\
+		}																												\
+																														\
 }																														\
 																														\
+
 
 #define BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(BOTCLASS, PATHCOST)			\
 if (newArea && newArea->HasPrerequisite())										\

@@ -68,7 +68,7 @@ TaskResult<CCSSBot> CCSSBotSearchForArmedBombTask::OnTaskUpdate(CCSSBot* bot)
 		return SwitchTo(new CCSSBotDefuseBombTask, "Found bomb, going to defuse it!");
 	}
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		CCSSBotPathCost cost{ bot };
 		m_nav.ComputePathToPosition(bot, m_goal, cost);

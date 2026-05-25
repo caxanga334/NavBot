@@ -9,7 +9,7 @@
 #include <sdkports/sdk_ehandle.h>
 #include <sdkports/sdk_traces.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_pick_jack_task.h"
 #include "tf2bot_wait_for_jack_task.h"
 
@@ -31,7 +31,7 @@ TaskResult<CTF2Bot> CTF2BotWaitForJackTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat)
 	{
-		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible enemy!");
 	}
 
 	if (tf2lib::passtime::IsJackActive())

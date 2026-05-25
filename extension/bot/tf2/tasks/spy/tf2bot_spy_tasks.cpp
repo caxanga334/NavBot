@@ -127,7 +127,7 @@ TaskResult<CTF2Bot> CTF2BotSpyInfiltrateTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		// move to lurk position
 
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			CTF2BotPathCost cost(bot, SAFEST_ROUTE);
 			m_nav.ComputePathToPosition(bot, m_goal, cost);
@@ -799,7 +799,7 @@ TaskResult<CTF2Bot> CTF2BotSpyFindCoverAndDecloakTask::OnTaskUpdate(CTF2Bot* bot
 		return Done("No longer cloaked!");
 	}
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		CTF2BotPathCost cost{ bot, RouteType::FASTEST_ROUTE };
 		m_nav.ComputePathToPosition(bot, m_goal, cost);

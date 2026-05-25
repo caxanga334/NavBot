@@ -14,7 +14,7 @@
 
 // Deprecated, use bot_shared_seek_and_destroy_entity.h
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedPursueAndDestroyTask : public AITask<BT>
 {
 public:
@@ -144,7 +144,7 @@ inline TaskResult<BT> CBotSharedPursueAndDestroyTask<BT, CT>::OnTaskUpdate(BT* b
 		m_patrolDone = true;
 	}
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		m_nav.StartRepathTimer();
 

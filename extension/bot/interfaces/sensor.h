@@ -10,6 +10,8 @@
 #include <bot/interfaces/knownentity.h>
 #include <bspfile.h>
 
+class CNavArea;
+
 // Sensor interface manages the bot perception (vision and hearing)
 class ISensor : public IBotInterface
 {
@@ -45,6 +47,14 @@ public:
 	bool IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV = true) const;
 	virtual bool IsAbleToSee(CBaseEntity* entity, const bool checkFOV = true) const;
 	virtual bool IsAbleToSee(const Vector& pos, const bool checkFOV = true) const;
+	/**
+	 * @brief Checks if the bot can see the given nav area.
+	 * @param area Area to check if it's visible to the bot.
+	 * @param checkFOV If true, check if the area is in the bot's field of view.
+	 * @param checkCorners If true, also tests if the area's corners are visible.
+	 * @return True if the given nav area is visible, false otherwise.
+	 */
+	bool IsAbleToSee(const CNavArea* area, const bool checkFOV = true, const bool checkCorners = true) const;
 	// Is the bot able to hear this entity
 	virtual bool IsAbleToHear(edict_t* entity) const;
 	// Checks if there are obstructions between the bot and the given position
@@ -59,21 +69,36 @@ public:
 	// Is the given position obscured by fog, smoke, etc?
 	virtual bool IsPositionObscured(const Vector& pos) const { return false; }
 	// Adds a known entity to the list
-	virtual CKnownEntity* AddKnownEntity(edict_t* entity);
-	virtual CKnownEntity* AddKnownEntity(CBaseEntity* entity);
+	CKnownEntity* AddKnownEntity(edict_t* entity);
+	CKnownEntity* AddKnownEntity(CBaseEntity* entity);
 	// Removes a specific entity from the known entity list
-	virtual void ForgetKnownEntity(edict_t* entity);
+	void ForgetKnownEntity(edict_t* entity);
+	// Removes a specific entity from the known entity list
+	void ForgetKnownEntity(CBaseEntity* entity);
 	// Removes all known entities from the list
 	virtual void ForgetAllKnownEntities();
-
 	// Returns true if the given entity is already known by the bot
-	virtual bool IsKnown(edict_t* entity);
+	bool IsKnown(edict_t* entity);
 	// Gets the Known entity of the given entity or NULL if not known by the bot
-	virtual const CKnownEntity* GetKnown(CBaseEntity* entity);
-	const CKnownEntity* GetKnown(edict_t* edict);
+	const CKnownEntity* GetKnown(CBaseEntity* entity) const;
+	const CKnownEntity* GetKnown(edict_t* edict) const;
 	// Updates the position of a known entity or adds it to the list if not known
 	virtual void UpdateKnownEntity(edict_t* entity);
+	/**
+	 * @brief Marks the last known position of an entity as investigated (seen).
+	 * @param entity Entity to update the status of.
+	 */
+	void MarkEntityLKPAsInvestigated(CBaseEntity* entity)
+	{
+		if (!entity) { return; }
 
+		CKnownEntity* known = FindKnownEntity(entity);
+
+		if (known)
+		{
+			known->MarkLastKnownPositionAsSeen();
+		}
+	}
 	/**
 	 * @brief Sets the bot field of view
 	 * @param fov The FOV in degrees
@@ -85,11 +110,11 @@ public:
 	// Time it takes for the bot to become aware of an entity
 	const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
 	// Time since a threat was visible
-	virtual const float GetTimeSinceVisibleThreat() const;
+	const float GetTimeSinceVisibleThreat() const;
 	static constexpr bool ONLY_VISIBLE_THREATS = true; // For GetPrimaryKnownThreat, only get visible threats
 	static constexpr bool ANY_THREATS = false; // For GetPrimaryKnownThreat, get any threat
 	// Gets the primary known threat to the bot or NULL if none
-	virtual const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
+	 const CKnownEntity* GetPrimaryKnownThreat(const bool onlyvisible = false);
 	/**
 	 * @brief Gets the quantity of known entities
 	 * @param teamindex Filter known entities by team or negative number if don't care
@@ -97,9 +122,15 @@ public:
 	 * @param rangelimit Filter known entities by distance (SQUARED)
 	 * @return Quantity of known entities
 	*/
-	virtual int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
-	virtual const CKnownEntity* GetNearestKnown(const int teamindex);
-	virtual const CKnownEntity* GetNearestHeardKnown(int teamIndex);
+	int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
+	const CKnownEntity* GetNearestKnown(const int teamindex);
+	const CKnownEntity* GetNearestHeardKnown(int teamIndex) const;
+	/**
+	 * @brief Gets the nearest (via euclidean distance) known entity instance that the bot hasn't seen.
+	 * This could be an instance heard or shared to the bot.
+	 * @return Known entity instace, NULL if none matches.
+	 */
+	const CKnownEntity* GetNearestUnseenKnownEntity() const;
 	/**
 	 * @brief Runs a function on every known entity.
 	 * 
@@ -230,6 +261,8 @@ protected:
 	virtual void CleanKnownEntities();
 	// Same as GetKnown but it's not const, use this internally when updating known entities
 	CKnownEntity* FindKnownEntity(edict_t* edict);
+	// Same as GetKnown but it's not const, use this internally when updating known entities
+	CKnownEntity* FindKnownEntity(CBaseEntity* entity);
 	inline std::vector<CKnownEntity>& GetKnownEntityList() { return m_knownlist; }
 
 	inline bool IsAwareOf(const CKnownEntity* known) const

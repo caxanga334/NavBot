@@ -56,7 +56,7 @@ TaskResult<CDoDSBot> CDoDSBotDeployMachineGunTask::OnTaskUpdate(CDoDSBot* bot)
 
 	if (!m_atPos)
 	{
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			CDoDSBotPathCost cost{ bot };
 			m_nav.ComputePathToPosition(bot, m_pos, cost);

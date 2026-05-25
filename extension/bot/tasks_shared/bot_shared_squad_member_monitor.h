@@ -10,7 +10,7 @@
  * @brief Default main behavior for squad member bots.
  * @tparam BT 
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedSquadMemberMonitorTask : public AITask<BT>
 {
 public:
@@ -85,7 +85,7 @@ inline TaskEventResponseResult<BT> CBotSharedSquadMemberMonitorTask<BT, CT>::OnS
 		return AITask<BT>::TryDone(PRIORITY_CRITICAL, "I was promoted to squad leader!");
 	}
 
-	return AITask<BT>::TryContinue(PRIORITY_LOW);
+	return AITask<BT>::TryToMaintain(PRIORITY_LOW);
 }
 
 template<typename BT, typename CT>

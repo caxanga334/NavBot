@@ -7,7 +7,7 @@
 #include <sdkports/sdk_timers.h>
 #include <bot/bot_shared_utils.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedRetreatFromThreatTask : public AITask<BT>
 {
 public:
@@ -35,6 +35,11 @@ public:
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 	TaskEventResponseResult<BT> OnSight(BT* bot, CBaseEntity* subject) override;
+
+	// Don't retreat twice
+	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	// Not right now
+	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
 
 	const char* GetName() const override { return "RetreatFromThreat"; }
 private:

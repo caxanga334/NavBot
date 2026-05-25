@@ -441,8 +441,16 @@ public:
 	const float GetTravelDistance() const { return m_travelDistance; }
 	const CountdownTimer& GetRepathTimer() const { return m_repathTimer; }
 	static constexpr float DEFAULT_REPATH_DURATION = 2.0f;
+	/**
+	 * @brief Starts the path's internal repath timer.
+	 * @param duration Timer length.
+	 */
 	void StartRepathTimer(const float duration = DEFAULT_REPATH_DURATION) { m_repathTimer.Start(duration); }
-	const bool NeedsRepath() const { return m_repathTimer.IsElapsed(); }
+	// Returns true if the internal repath timer is elapsed.
+	const bool IsRepathTimerElapsed() const { return m_repathTimer.IsElapsed(); }
+	// Returns true if the path needs to be computed again.
+	// This is true under two conditions: The path is invalid or the reapth timer is elapsed.
+	const bool NeedsRepath() const { return !IsValid() || IsRepathTimerElapsed(); }
 	/**
 	 * @brief Checks if there is a the given discontinuity ahead in the path within the given range.
 	 * @param bot Bot using the path.

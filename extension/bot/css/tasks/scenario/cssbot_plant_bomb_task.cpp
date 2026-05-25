@@ -101,7 +101,7 @@ TaskResult<CCSSBot> CCSSBotPlantBombTask::OnTaskUpdate(CCSSBot* bot)
 	}
 	else
 	{
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			CCSSBotPathCost cost{ bot, RouteType::SAFEST_ROUTE };
 			m_nav.ComputePathToPosition(bot, m_moveGoal, cost);

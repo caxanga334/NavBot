@@ -6,7 +6,7 @@
 #include <util/librandom.h>
 #include <bot/tf2/tf2bot.h>
 #include <mods/tf2/tf2lib.h>
-#include <bot/tf2/tasks/tf2bot_roam.h>
+#include <bot/tasks_shared/bot_shared_roam.h>
 #include "tf2bot_medic_retreat_task.h"
 
 #undef max
@@ -51,7 +51,7 @@ TaskResult<CTF2Bot> CTF2BotMedicRetreatTask::OnTaskUpdate(CTF2Bot* bot)
 		if (m_atHomeTimer.IsElapsed())
 		{
 			m_atHomeTimer.Invalidate();
-			return PauseFor(new CTF2BotRoamTask(), "No patient nearby, roaming the map!");
+			return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot), "No patient nearby, roaming the map!");
 		}
 	}
 

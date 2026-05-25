@@ -7,47 +7,47 @@
 
 TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)
 {
-    if (!bot->GetSquadInterface()->IsInASquad() && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
-    {
-        botsquadutils::TryFormSquadFunc func{ bot, nullptr, 4 };
-        extmanager->ForEachBot(func);
-        func.CreateSquad();
-    }
+	if (!bot->GetSquadInterface()->IsInASquad() && CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetTeamwork()))
+	{
+		botsquadutils::TryFormSquadFunc func{ bot, nullptr, 4 };
+		extmanager->ForEachBot(func);
+		func.CreateSquad();
+	}
 
-    if (bot->GetSquadInterface()->IsInASquad() && !bot->GetSquadInterface()->IsSquadLeader())
-    {
-        return SwitchTo(new CBotSharedSquadMemberMonitorTask<CZPSBot, CZPSBotPathCost>(new CZPSBotSurvivalHumanTask), "Starting squad behavior!");
-    }
+	if (bot->GetSquadInterface()->IsInASquad() && !bot->GetSquadInterface()->IsSquadLeader())
+	{
+		return SwitchTo(new CBotSharedSquadMemberMonitorTask<CZPSBot, CZPSBotPathCost>(new CZPSBotSurvivalHumanTask), "Starting squad behavior!");
+	}
 
-    return Continue();
+	return Continue();
 }
 
 TaskResult<CZPSBot> CZPSBotSurvivalHumanTask::OnTaskUpdate(CZPSBot* bot)
 {
-    if (CBaseBot::s_botrng.GetRandomInt<int>(1, 7) == 7)
-    {
-        const HidingSpot* spot = nullptr;
-        if (CBotSharedHideTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, 4096.0f, &spot))
-        {
-            return PauseFor(new CBotSharedHideTask<CZPSBot, CZPSBotPathCost>(bot, spot, CBaseBot::s_botrng.GetRandomReal<float>(10.0f, 20.0f)), "Hiding!");
-        }
-    }
+	if (CBaseBot::s_botrng.GetRandomInt<int>(1, 7) == 7)
+	{
+		const HidingSpot* spot = nullptr;
+		if (CBotSharedHideTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, 4096.0f, &spot))
+		{
+			return PauseFor(new CBotSharedHideTask<CZPSBot, CZPSBotPathCost>(bot, spot, CBaseBot::s_botrng.GetRandomReal<float>(10.0f, 20.0f)), "Hiding!");
+		}
+	}
 
-    // Temporary
-    return PauseFor(new CBotSharedRoamTask<CZPSBot, CZPSBotPathCost>(bot, 4096.0f), "Roaming!");
+	// Temporary
+	return PauseFor(new CBotSharedRoamTask<CZPSBot, CZPSBotPathCost>(bot, 4096.0f), "Roaming!");
 }
 
 TaskEventResponseResult<CZPSBot> CZPSBotSurvivalHumanTask::OnSquadEvent(CZPSBot* bot, SquadEventType evtype)
 {
-    switch (evtype)
-    {
-    case SquadEventType::SQUAD_EVENT_JOINED:
-    {
-        return TrySwitchTo(new CBotSharedSquadMemberMonitorTask<CZPSBot, CZPSBotPathCost>(new CZPSBotSurvivalHumanTask), PRIORITY_HIGH, "I have joined a squad!");
-    }
-    default:
-        break;
-    }
+	switch (evtype)
+	{
+	case SquadEventType::SQUAD_EVENT_JOINED:
+	{
+		return TrySwitchTo(new CBotSharedSquadMemberMonitorTask<CZPSBot, CZPSBotPathCost>(new CZPSBotSurvivalHumanTask), PRIORITY_HIGH, "I have joined a squad!");
+	}
+	default:
+		break;
+	}
 
-    return TryContinue();
+	return TryContinue();
 }

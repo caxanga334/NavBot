@@ -1,21 +1,14 @@
 #ifndef NAVBOT_BOT_SHARED_ESCORT_ENTITY_TASK_H_
 #define NAVBOT_BOT_SHARED_ESCORT_ENTITY_TASK_H_
 
-#include <functional>
-#include <extension.h>
-#include <util/helpers.h>
-#include <bot/basebot.h>
-#include <bot/basebot_pathcost.h>
-#include <bot/interfaces/path/meshnavigator.h>
-#include <sdkports/sdk_timers.h>
-#include <sdkports/sdk_ehandle.h>
+#include <mods/modhelpers.h>
 
 /**
  * @brief Generic task for following an entity.
  * @tparam BT Bot class.
  * @tparam CT Bot path cost class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedEscortEntityTask : public AITask<BT>
 {
 public:
@@ -104,9 +97,19 @@ inline TaskResult<BT> CBotSharedEscortEntityTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	CBaseEntity* entity = m_ent.Get();
 
-	if (!entity || !UtilHelpers::IsEntityAlive(entity))
+	if (!entity)
 	{
-		return AITask<BT>::Done("Escort entity is invalid or dead!");
+		return AITask<BT>::Done("Escort entity is NULL!");
+	}
+
+	if (modhelpers->IsDead(entity))
+	{
+		return AITask<BT>::Done("Escort entity is dead!");
+	}
+
+	if (bot->GetSensorInterface()->IsEnemy(entity))
+	{
+		return AITask<BT>::Done("Escort entity is considered an enemy!");
 	}
 
 	if (m_validatorFunc)
@@ -124,7 +127,7 @@ inline TaskResult<BT> CBotSharedEscortEntityTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	if (range > m_escortDistance)
 	{
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			m_nav.StartRepathTimer(1.0f);
 			m_nav.ComputePathToPosition(bot, pos, m_pathCost);

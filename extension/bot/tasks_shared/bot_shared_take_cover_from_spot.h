@@ -1,15 +1,16 @@
 #ifndef __NAVBOT_BOT_SHARED_TAKE_COVER_FROM_SPOT_TASK_H_
 #define __NAVBOT_BOT_SHARED_TAKE_COVER_FROM_SPOT_TASK_H_
 
-#include <extension.h>
-#include <sdkports/sdk_timers.h>
-#include <bot/basebot.h>
-#include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <bot/bot_shared_utils.h>
 #include <navmesh/nav_area.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+/**
+ * @brief General purpose task for finding a cover position from another position.
+ * @tparam BT Bot class.
+ * @tparam CT Bot path cost class.
+ */
+template <typename BT, typename CT>
 class CBotSharedTakeCoverFromSpotTask : public AITask<BT>
 {
 public:
@@ -76,7 +77,7 @@ inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskStart(BT* b
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedTakeCoverFromSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 {
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		m_nav.StartRepathTimer();
 		m_nav.ComputePathToPosition(bot, m_goal, m_pathcost);

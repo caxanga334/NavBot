@@ -289,6 +289,12 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			v = std::clamp(v, 1.0f, 1024.0f);
 			SetDefaultBlastRadius(v);
 		}
+		else if (std::strcmp(key, "area_cleared_time") == 0)
+		{
+			float v = atof(value);
+			v = std::clamp(v, 30.0f, 600.0f);
+			SetMaxAreaClearedTime(v);
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

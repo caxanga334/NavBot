@@ -3,7 +3,7 @@
 
 #include <bot/basebot_pathcost.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedFindHealthTask : public AITask<BT>
 {
 public:
@@ -116,7 +116,7 @@ public:
 			return AITask<BT>::Done("I am at full health!");
 		}
 
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			const Vector& goal = UtilHelpers::getEntityOrigin(entity);
 			m_nav.ComputePathToPosition(bot, goal, m_pathcost);

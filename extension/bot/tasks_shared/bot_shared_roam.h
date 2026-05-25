@@ -11,9 +11,9 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <navmesh/nav_waypoint.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedRoamTask : public AITask<BT>
 {
 public:
@@ -45,7 +45,14 @@ public:
 			randomWpt->Use(bot, 30.0f);
 		}
 	}
-
+	/**
+	 * @brief Makes the bot roams to a specific position.
+	 * @param bot Bot that will be using this task.
+	 * @param goal The position the bot should roam to.
+	 * @param timeout If greater than zero, sets a maximum time allowed to reach the goal position.
+	 * @param attackvisiblenemies If true, switch to combat behavior when an enemy is spotted.
+	 * @param interruptTask If true, the tasks ends if it's interrupted (IE: paused by another task).
+	 */
 	CBotSharedRoamTask(BT* bot, const Vector& goal, const float timeout = -1.0f, const bool attackvisiblenemies = false, const bool interruptTask = false) :
 		m_pathcost(bot), m_goal(goal)
 	{
@@ -59,7 +66,14 @@ public:
 		m_moveFailures = 0;
 		m_interrupt = interruptTask;
 	}
-
+	/**
+	 * @brief Makes the bot roams to a specific waypoint.
+	 * @param bot Bot that will be using this task.
+	 * @param waypoint Waypoint to roam to. The waypoint will be marked as used by this bot.
+	 * @param timeout If greater than zero, sets a maximum time allowed to reach the goal position.
+	 * @param attackvisiblenemies If true, switch to combat behavior when an enemy is spotted.
+	 * @param interruptTask If true, the tasks ends if it's interrupted (IE: paused by another task).
+	 */
 	CBotSharedRoamTask(BT* bot, CWaypoint* waypoint, const float timeout = -1.0f, const bool attackvisiblenemies = false, const bool interruptTask = false) :
 		m_pathcost(bot)
 	{
@@ -134,7 +148,7 @@ inline TaskResult<BT> CBotSharedRoamTask<BT, CT>::OnTaskUpdate(BT* bot)
 		{
 			if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
 			{
-				return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+				return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible enemy!");
 			}
 		}
 	}

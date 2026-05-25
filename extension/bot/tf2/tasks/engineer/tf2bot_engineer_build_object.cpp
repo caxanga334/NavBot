@@ -8,7 +8,7 @@
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_spot.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_build_object.h"
 
@@ -129,7 +129,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		// random chance to attack the enemy based on aggression level
 		if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
 		{
-			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible threat!");
+			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible threat!");
 		}
 
 		// else retreat

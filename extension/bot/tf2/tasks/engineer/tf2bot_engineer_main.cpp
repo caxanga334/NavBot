@@ -7,7 +7,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tf2/tasks/scenario/tf2bot_map_ctf.h>
 #include <bot/tf2/tasks/scenario/specialdelivery/tf2bot_sd_deliver_flag.h>
@@ -92,7 +92,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
 			{
-				return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible threat!");
+				return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible threat!");
 			}
 			else
 			{

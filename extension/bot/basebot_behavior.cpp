@@ -99,7 +99,7 @@ TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskStart(CBaseBot* bot, AITask<CBa
 
 TaskResult<CBaseBot> CBaseBotPathTestTask::OnTaskUpdate(CBaseBot* bot)
 {
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		CBaseBotPathCost cost(bot);
 		bool result = m_nav.ComputePathToPosition(bot, m_goal, cost);

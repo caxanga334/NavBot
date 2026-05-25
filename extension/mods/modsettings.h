@@ -34,6 +34,7 @@ public:
 		breakable_max_health = 3000.0f;
 		squad_invite_max_distance = 1200.0f;
 		def_blast_radius = 600.0f;
+		area_cleared_time = 120.0f;
 	}
 
 	virtual ~CModSettings() = default;
@@ -91,6 +92,7 @@ public:
 	void SetBreakableMaxHealth(int value) { breakable_max_health = value; }
 	void SetSquadMaxInviteDistance(float dist) { squad_invite_max_distance = dist; }
 	void SetDefaultBlastRadius(float radius) { def_blast_radius = radius; }
+	void SetMaxAreaClearedTime(float time) { area_cleared_time = time; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -120,6 +122,7 @@ public:
 	const int GetBreakableMaxHealth() const { return breakable_max_health; }
 	const float GetSquadMaxInviteDistance() const { return squad_invite_max_distance; }
 	const float GetDefaultBlastRadius() const { return def_blast_radius; }
+	const float GetMaxAreaClearedTime() const { return area_cleared_time; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -148,6 +151,7 @@ protected:
 	int breakable_max_health; // If an entity health is greater than this, it is considered as unbreakable
 	float squad_invite_max_distance; // maximum distance between the squad leader and other bots to form a squad
 	float def_blast_radius; // Default blast radius used for projectiles.
+	float area_cleared_time; // Maximum time in seconds for a nav area to be considered as cleared.
 };
 
 

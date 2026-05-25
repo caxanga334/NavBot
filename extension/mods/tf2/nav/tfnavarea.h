@@ -148,6 +148,13 @@ public:
 		return (m_rtattributes & attributes) ? true : false;
 	}
 
+	void WipeAllTFAttribs()
+	{
+		m_tfattributes = 0;
+		m_tfpathattributes = 0;
+		m_mvmattributes = 0;
+	}
+
 	void UpdateDynamicSpawnRoom();
 
 	void Debug_ShowTFPathAttributes() const;

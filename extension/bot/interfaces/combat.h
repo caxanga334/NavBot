@@ -22,6 +22,8 @@ public:
 	static constexpr float POST_COMBAT_TIMER_DURATION = 5.0f;
 	static constexpr int DANGER_SCAN_IGNORE_FOV_SKILL = 90;
 	static constexpr float TOGGLE_SCOPE_COOLDOWN_TIME = 0.5f;
+	static constexpr float CLEAR_AREAS_TIMER_MIN = 1.0f;
+	static constexpr float CLEAR_AREAS_TIMER_MAX = 1.5f;
 
 	struct CombatData
 	{
@@ -43,6 +45,8 @@ public:
 
 		// Returns the amount of seconds passed since the bot lost line of sight with the current enemy.
 		float GetTimeSinceLostLOS() const;
+		// Returns true if the current threat is visible but the bot doesn't have a clear line of fire
+		bool IsVisibleButNoClearLOF() const { return is_visible && !can_fire; }
 
 		void Clear()
 		{
@@ -173,6 +177,12 @@ public:
 	static const std::unordered_set<std::string>& GetDangerScanEntities() { return s_dangerEnts; }
 	// Returns the entity selected as the most dangerous entity in the last danger scan update. NULL if none or if the entity is no longer valid.
 	CBaseEntity* GetMostDangerousEntity() const { return m_lastDangerEntity.Get(); }
+	// Returns true if the combat interface is marking visible areas as cleared of enemies.
+	const bool IsMarkVisibleAreasAsClearedEnabled() const { return m_clearAreasTimer.HasStarted(); }
+	// Enables marking visible areas as cleared.
+	void StartMarkingVisibleAreasAsCleared() { m_clearAreasTimer.StartRandom(CLEAR_AREAS_TIMER_MIN, CLEAR_AREAS_TIMER_MAX); }
+	// Disables marking visible areas as cleared.
+	void StopMarkingVisibleAreasAsCleared() { m_clearAreasTimer.Invalidate(); }
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -354,6 +364,8 @@ protected:
 	CountdownTimer& GetPostCombatChecksTimer() { return m_postCombatChecks; }
 	// Timer to block firing the weapon.
 	CountdownTimer& GetBlockFiringTimer() { return m_blockFiringTimer; }
+	// Timer for marking nav areas as cleared
+	CountdownTimer& GetClearAreasTimer() { return m_clearAreasTimer; }
 	// Invoked to update the look around logic.
 	virtual void UpdateLookingAround();
 	/**
@@ -404,6 +416,7 @@ private:
 	CountdownTimer m_disableDodgeTimer;
 	CountdownTimer m_postCombatChecks;
 	CountdownTimer m_blockFiringTimer; // timer used for cooldown between attacks (shared)
+	CountdownTimer m_clearAreasTimer; // time used for the cooldown between marking visible nav areas as cleared
 	IntervalTimer m_attackTimer; // timer used for cooldown between attacks (not shared)
 	CombatData m_combatData;
 	bool m_shouldAim;
@@ -424,6 +437,7 @@ private:
 
 	void DangerScanUpdate(); // runs danger scan logic
 	void UpdateScopeState();
+	void UpdateMarkAreasAsCleared(const CKnownEntity* threat);
 };
 
 namespace combatutils
@@ -440,6 +454,52 @@ namespace combatutils
 	private:
 		const ISensor* m_sensor;
 		std::vector<CNavArea*> m_areas;
+	};
+
+	/**
+	 * @brief Utility class for toggle the combat interface area clearing feature. The destructor will automatically disable it.
+	 */
+	class ToggleAreaClearing
+	{
+	public:
+		ToggleAreaClearing(ICombat* combat = nullptr)
+		{
+			m_combat = combat;
+
+			if (combat)
+			{
+				combat->StartMarkingVisibleAreasAsCleared();
+			}
+		}
+
+		~ToggleAreaClearing()
+		{
+			if (m_combat)
+			{
+				m_combat->StopMarkingVisibleAreasAsCleared();
+				m_combat = nullptr;
+			}
+		}
+
+		void Enable(ICombat* combat)
+		{
+			m_combat = combat;
+			combat->StartMarkingVisibleAreasAsCleared();
+		}
+
+		void Disable()
+		{
+			if (m_combat)
+			{
+				m_combat->StopMarkingVisibleAreasAsCleared();
+				m_combat = nullptr;
+			}
+		}
+
+		bool IsEnabled() const { return m_combat != nullptr; }
+
+	private:
+		ICombat* m_combat;
 	};
 }
 

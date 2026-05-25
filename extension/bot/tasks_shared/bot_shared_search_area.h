@@ -13,7 +13,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <navmesh/nav_waypoint.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 
 /**
  * @brief General purpose task to make bots search the surrounding areas for enemies.
@@ -22,7 +22,7 @@
  * @tparam BT Bot Class
  * @tparam CT Path Cost functor class
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedSearchAreaTask : public AITask<BT>
 {
 public:
@@ -33,7 +33,7 @@ public:
 	 * @param minDistanceFromStart Don't patrol areas this close to the start point.
 	 * @param maxPatrolDistance Max distance from the start to patrol.
 	 */
-	CBotSharedSearchAreaTask(BT* bot, const Vector& startPoint, const float minDistanceFromStart = 256.0f, const float maxPatrolDistance = 4096.0f, const std::size_t maxPatrolAreas = 32U) :
+	CBotSharedSearchAreaTask(BT* bot, const Vector& startPoint, const float minDistanceFromStart = 256.0f, const float maxPatrolDistance = 4096.0f, const std::size_t maxPatrolAreas = 6U) :
 		m_pathcost(bot)
 	{
 		botsharedutils::CollectPatrolAreas collector{ bot, startPoint, minDistanceFromStart, maxPatrolDistance };
@@ -106,7 +106,7 @@ inline TaskResult<BT> CBotSharedSearchAreaTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 	if (threat)
 	{
-		return AITask<BT>::SwitchTo(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Found enemy, attacking!");
+		return AITask<BT>::SwitchTo(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Found enemy, attacking!");
 	}
 
 	if (m_patrolPoints.empty())

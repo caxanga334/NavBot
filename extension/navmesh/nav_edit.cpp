@@ -5545,6 +5545,46 @@ CON_COMMAND_F(sm_nav_corner_place_on_water_surface, "Places nav areas on the wat
 	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
 }
 
+CON_COMMAND_F(sm_nav_draw_cleared_time, "Draws the nav area's cleared time.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (extmanager->GetListenServerHost() == nullptr)
+	{
+		return;
+	}
+
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_draw_cleared_time <team index> \n");
+		return;
+	}
+
+	int index = NAV_TEAM_ANY;
+
+	try
+	{
+		index = std::stoi(args[1]);
+	}
+	catch (const std::exception& ex)
+	{
+		META_CONPRINTF("FATAL ERROR: %s \n", ex.what());
+		return;
+	}
+
+	if (index < 0 || index >= MAX_TEAMS)
+	{
+		index = NAV_TEAM_ANY;
+	}
+
+	auto func = [&index](CNavArea* area) {
+		const float time = area->GetTimeSinceLastCleared(index);
+		NDebugOverlay::Text(area->GetCenter(), false, 10.0f, "%3.2f", time);
+	};
+
+	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
+}
+
 void CNavMesh::RegisterCommands()
 {
 	// Call the virtual one for derived classes

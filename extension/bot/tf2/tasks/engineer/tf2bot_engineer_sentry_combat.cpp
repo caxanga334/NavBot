@@ -1,7 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <bot/tf2/tf2bot.h>
 #include <entities/tf2/tf_entities.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_repair_object.h"
 #include "tf2bot_engineer_sentry_combat.h"
@@ -19,7 +19,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerSentryCombatTask::OnTaskStart(CTF2Bot* bot, A
 
 	if (!sentry)
 	{
-		return SwitchTo(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Sentry destroyed, attacking enemy!");
+		return SwitchTo(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Sentry destroyed, attacking enemy!");
 	}
 
 	tfentities::HObjectSentryGun object(sentry);
@@ -55,7 +55,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerSentryCombatTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (!sentry)
 	{
-		return SwitchTo(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Sentry destroyed, attacking enemy!");
+		return SwitchTo(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Sentry destroyed, attacking enemy!");
 	}
 
 	tfentities::HObjectSentryGun object(sentry);

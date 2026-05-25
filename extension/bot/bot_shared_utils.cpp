@@ -1,5 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include <extension.h>
+#include <mods/basemod.h>
+#include <mods/modsettings.h>
 #include <util/helpers.h>
 #include <util/prediction.h>
 #include <util/entprops.h>
@@ -830,6 +832,55 @@ bool botsharedutils::threat::IsImmediateThreat(CBaseBot* bot, const CKnownEntity
 	if (range <= very_close_range)
 	{
 		return true;
+	}
+
+	return false;
+}
+
+botsharedutils::search::MarkVisibleAreasAsCleared::MarkVisibleAreasAsCleared(CBaseBot* bot) :
+	IsReachableAreas(bot, bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false)
+{
+}
+
+void botsharedutils::search::MarkVisibleAreasAsCleared::OnDone()
+{
+	if (IsCollectedAreasEmpty())
+	{
+		return;
+	}
+
+	const CBaseBot* bot = GetBot();
+	const ISensor* sensor = bot->GetSensorInterface();
+	const Vector eyePos = bot->GetEyeOrigin();
+	const int teamIndex = bot->GetCurrentTeamIndex();
+
+	auto func = [&eyePos, &sensor, &teamIndex](CNavArea* area) -> bool {
+
+		// skip corner check for nav areas smaller than a player's hull width
+		if (sensor->IsAbleToSee(area, true, area->GetGeometricArea() >= (navgenparams->half_human_width * 2.0f)))
+		{
+			area->MarkAsCleared(teamIndex);
+		}
+
+		return true;
+	};
+
+	ForEachCollectedNavArea(func);
+}
+
+botsharedutils::SelectReachableUnclearedArea::SelectReachableUnclearedArea(CBaseBot* bot) :
+	IsReachableAreas(bot, 8192.0f)
+{
+	m_teamIndex = bot->GetCurrentTeamIndex();
+	m_timeLimit = extmanager->GetMod()->GetModSettings()->GetMaxAreaClearedTime();
+}
+
+bool botsharedutils::SelectReachableUnclearedArea::ShouldCollect(CNavArea* area)
+{
+	if (IsReachableAreas::ShouldCollect(area))
+	{
+		// only collect uncleared areas
+		return !area->WasClearedWithinTime(m_teamIndex, m_timeLimit);
 	}
 
 	return false;

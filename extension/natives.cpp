@@ -188,7 +188,11 @@ namespace natives
 		float maxRadius = sp_ctof(params[4]);
 
 		auto functor = [&entity, &origin, &type, &maxRadius](CBaseBot* bot) {
-			bot->OnSound(entity, origin, type, maxRadius);
+			// if the bot is the source entity, don't fire the event.
+			if (entity != bot->GetEntity())
+			{
+				bot->OnSound(entity, origin, type, maxRadius);
+			}
 		};
 
 		extmanager->ForEachBot(functor);

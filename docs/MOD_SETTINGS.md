@@ -61,6 +61,7 @@ These settings are used by all mods.
 | breakable_max_health | Entities with more health than this value are considered as unbreakable. | 500 - 10000 | 3000 |
 | squad_invite_max_distance | Maximum distance between the squad leaders and potential members to form a squad. | 512 - 16384 | 1200 |
 | default_blast_radius | Default grenade/explosives blast radius. | 1 - 1024 | 600 |
+| area_cleared_time | Maximum time in seconds a nav area is considered cleared of enemies. | 30 - 600 | 120 |
 
 ### Macro Values
 

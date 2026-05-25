@@ -13,7 +13,7 @@
  * @tparam BT Bot class.
  * @tparam CT Bot path cost class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedPrereqMoveToPositionTask : public AITask<BT>
 {
 public:

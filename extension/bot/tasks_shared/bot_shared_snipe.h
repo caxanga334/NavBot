@@ -22,7 +22,7 @@
  * @tparam BT Bot class.
  * @tparam CT Bot path cost functor class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedSnipeTask : public AITask<BT>
 {
 public:

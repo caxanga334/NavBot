@@ -9,7 +9,7 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #include <sdkports/sdk_timers.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedInvestigateHeardEntityTask : public AITask<BT>
 {
 public:

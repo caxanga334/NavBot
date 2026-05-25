@@ -7,7 +7,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <sdkports/sdk_ehandle.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_seek_and_destroy_jack_carrier_task.h"
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
@@ -57,7 +57,7 @@ TaskResult<CTF2Bot> CTF2BotPickJackTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat)
 	{
-		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible enemy!");
 	}
 
 	const Vector& origin = UtilHelpers::getEntityOrigin(jack);

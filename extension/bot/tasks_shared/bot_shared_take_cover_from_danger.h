@@ -9,7 +9,7 @@
 #include <bot/bot_shared_utils.h>
 #include <navmesh/nav_area.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedTakeCoverFromDangerTask : public AITask<BT>
 {
 public:
@@ -58,7 +58,7 @@ public:
 			return AITask<BT>::Done("Danger entity is NULL!");
 		}
 
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			CT cost(bot);
 			cost.SetRouteType(RouteType::FASTEST_ROUTE);

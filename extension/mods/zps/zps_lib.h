@@ -10,6 +10,12 @@ namespace zpslib
 	bool IsPlayerWalking(CBaseEntity* player);
 	bool IsPlayerCarrier(CBaseEntity* player);
 	CBaseEntity* GetCarrierZombie();
+	/**
+	 * @brief Gets a random living survivor player.
+	 * @param nobots If true, ignore bots.
+	 * @return Random survivor. NULL if none matches.
+	 */
+	CBaseEntity* GetRandomLivingSurvivor(const bool nobots);
 }
 
 

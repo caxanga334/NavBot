@@ -50,7 +50,7 @@ TaskResult<CCSSBot> CCSSBotDeliverHostageTask::OnTaskUpdate(CCSSBot* bot)
 		}
 	}
 
-	if (!m_nav.IsValid() || m_nav.NeedsRepath())
+	if (m_nav.NeedsRepath())
 	{
 		CCSSBotPathCost cost{ bot, RouteType::SAFEST_ROUTE };
 		cost.SetEscortingHostages(true);

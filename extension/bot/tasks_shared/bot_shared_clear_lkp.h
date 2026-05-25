@@ -6,7 +6,7 @@
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/chasenavigator.h>
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedClearEnemyLKPTask : public AITask<BT>
 {
 public:

@@ -277,6 +277,21 @@ namespace botsharedutils
 	private:
 		std::vector<CNavArea*> m_hidingareas; // areas with hiding spots
 	};
+
+	/**
+	 * @brief Utility nav area collector for selecting a nav area that isn't cleared of enemies. Useful for patrolling.
+	 */
+	class SelectReachableUnclearedArea : public IsReachableAreas
+	{
+	public:
+		SelectReachableUnclearedArea(CBaseBot* bot);
+
+		bool ShouldCollect(CNavArea* area) override;
+
+	private:
+		int m_teamIndex;
+		float m_timeLimit;
+	};
 }
 
 namespace botsharedutils::weapons
@@ -506,6 +521,13 @@ namespace botsharedutils::search
 		bool m_checklos;
 		bool m_checkground;
 		bool m_checkcanpickup;
+	};
+
+	class MarkVisibleAreasAsCleared : public IsReachableAreas
+	{
+	public:
+		MarkVisibleAreasAsCleared(CBaseBot* bot);
+		void OnDone() override;
 	};
 }
 

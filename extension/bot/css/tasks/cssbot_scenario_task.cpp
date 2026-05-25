@@ -4,7 +4,7 @@
 #include <mods/css/css_mod.h>
 #include <bot/css/cssbot.h>
 #include <bot/tasks_shared/bot_shared_rogue_behavior.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include <bot/tasks_shared/bot_shared_collect_items.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
@@ -87,7 +87,7 @@ TaskResult<CCSSBot> CCSSBotScenarioTask::OnTaskUpdate(CCSSBot* bot)
 
 	if (threat && bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) != ANSWER_NO)
 	{
-		return PauseFor(new CBotSharedAttackEnemyTask<CCSSBot, CCSSBotPathCost>(bot), "Stopping to attack visible threat!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CCSSBot, CCSSBotPathCost>(), "Stopping to attack visible threat!");
 	}
 
 	if (GetNextTask() == nullptr)

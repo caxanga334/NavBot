@@ -6,7 +6,7 @@
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 #include "bot_shared_search_area.h"
 #include "bot_shared_defend_spot.h"
 #include "bot_shared_roam.h"
@@ -16,7 +16,7 @@
  * @tparam BT Bot class.
  * @tparam CT Bot path cost class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedSimpleDMBehaviorTask : public AITask<BT>
 {
 public:
@@ -34,7 +34,7 @@ inline TaskResult<BT> CBotSharedSimpleDMBehaviorTask<BT, CT>::OnTaskUpdate(BT* b
 	{
 		if (known->IsVisibleNow())
 		{
-			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible threat!");
+			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible threat!");
 		}
 		else
 		{

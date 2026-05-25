@@ -12,9 +12,9 @@
 #include <bot/bot_shared_utils.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <mods/basemod.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedDefendSpotTask : public AITask<BT>
 {
 public:
@@ -137,7 +137,7 @@ inline TaskResult<BT> CBotSharedDefendSpotTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 			if (threat)
 			{
-				return AITask<BT>::SwitchTo(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+				return AITask<BT>::SwitchTo(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible enemy!");
 			}
 		}
 

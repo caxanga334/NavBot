@@ -483,6 +483,14 @@ public:
 	 * @return true if the given area is completely visible from this area.
 	 */
 	bool IsCompletelyVisible(const CNavArea* other, const bool checkPVS = false) const;
+	/**
+	 * @brief Checks if this area is completely visible form the given position.
+	 * @param eyePos Position to check from.
+	 * @param checkPVS If true, check PVS first (cheaper than raycast).
+	 * @param smallOpt If true, only check the center for nav areas smaller than a human hull width.
+	 * @return True if the area is completely visible from the given position.
+	 */
+	bool IsCompletelyVisible(const Vector& eyePos, const bool checkPVS = false, const bool smallOpt = true) const;
 
 	int GetAdjacentCount( NavDirType dir ) const	{ return m_connect[ dir ].Count(); }	// return number of connected areas in given direction
 	CNavArea *GetAdjacentArea( NavDirType dir, int i ) const;	// return the i'th adjacent area in the given direction
@@ -658,6 +666,8 @@ public:
 
 		return false;
 	}
+	// Returns the nav area geometric area (2D)
+	float GetGeometricArea() const { return GetSizeX() * GetSizeY(); }
 	void GetExtent( Extent *extent ) const;						// return a computed extent (XY is in m_nwCorner and m_seCorner, Z is computed)
 	const Vector &GetCenter( void ) const	{ return m_center; }
 	Vector GetRandomPoint( void ) const;
@@ -1036,6 +1046,7 @@ private:
 
 	std::vector<INavBlocker*> m_navblockers; // nav blockers that affects this area
 	std::vector<const INavPathCostMod*> m_navpathcostmods; // nav path cost mods that affects this area
+	std::array<float, MAX_TEAMS> m_clearedTimestamp; // timestamp of when this nav area was cleared (of enemies). Used when searching for enemies.
 
 public:
 	void SetNavVolume(const CNavVolume* volume) { m_volume = volume; }
@@ -1075,6 +1086,73 @@ public:
 	 * @param bot Optional bot using the path.
 	 */
 	virtual void GetPathCost(const float originalCost, float& cost, CBaseBot* bot = nullptr) const;
+	
+	static constexpr float NAV_AREA_NEVER_CLEARED_STATUS_VALUE = -1.0f; // when a nav area was never cleared, the cleared timestamp is set to this.
+
+	/**
+	 * @brief Resets the cleared timestamp.
+	 * @param team Team index to reset or NAV_TEAM_ANY for all teams.
+	 */
+	void ResetClearedTimestamp(const int team)
+	{
+		if (team < 0 || team >= static_cast<int>(m_clearedTimestamp.size()))
+		{
+			std::fill(m_clearedTimestamp.begin(), m_clearedTimestamp.end(), NAV_AREA_NEVER_CLEARED_STATUS_VALUE);
+			return;
+		}
+
+		m_clearedTimestamp[team] = NAV_AREA_NEVER_CLEARED_STATUS_VALUE;
+	}
+	/**
+	 * @brief Marks the area as cleared. Sets the timestamp.
+	 * @param team Team index. NAV_TEAM_ANY for all teams.
+	 */
+	void MarkAsCleared(const int team);
+	/**
+	 * @brief Was this nav area cleared at some point.
+	 * @param team Team index to check or NAV_TEAM_ANY for any team.
+	 * @return True if the nav area was cleared at some point, false otherwise.
+	 */
+	bool WasCleared(const int team) const
+	{
+		if (team < 0 || team >= static_cast<int>(m_clearedTimestamp.size()))
+		{
+			for (const float& time : m_clearedTimestamp)
+			{
+				if (time > 0.0f)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		return m_clearedTimestamp[team] > 0.0f;
+	}
+	/**
+	 * @brief Checks if this nav area was cleared within the given time limit in seconds.
+	 * @param team Team index to check or NAV_TEAM_ANY for any team.
+	 * @param timelimit Max time in seconds to consider this area cleared.
+	 * @return True if cleared, false otherwise.
+	 */
+	bool WasClearedWithinTime(const int team, const float timelimit) const
+	{
+		const float time = GetTimeSinceLastCleared(team);
+
+		if (time < 0.0f)
+		{
+			return false;
+		}
+
+		return time >= timelimit;
+	}
+	/**
+	 * @brief Returns the time in seconds since this nav area was last cleared.
+	 * @param team Team index to get. NAV_TEAM_ANY for any team.
+	 * @return Time in seconds since this area was last cleared. Returns NAV_AREA_NEVER_CLEARED_STATUS_VALUE if not cleared.
+	 */
+	float GetTimeSinceLastCleared(const int team) const;
 };
 
 typedef CUtlVector< CNavArea * > NavAreaVector;

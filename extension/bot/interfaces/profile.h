@@ -42,6 +42,8 @@ public:
 		prediction_max_iterations = 1;
 		danger_scan_interval = 2.0f;
 		danger_scan_size = 256.0f;
+		enemy_close_range = 350.0f;
+		enemy_far_range = 1500.0f;
 	}
 
 	virtual ~DifficultyProfile() = default;
@@ -79,6 +81,8 @@ public:
 	inline const bool IsAllowedToScanForDanger() const { return danger_scan_interval > 0.0f; }
 	inline const float GetDangerScanFrequency() const { return danger_scan_interval; }
 	inline const float GetDangerScanSize() const { return danger_scan_size; }
+	inline const float GetEnemyCloseRange() const { return enemy_close_range; }
+	inline const float GetEnemyFarRange() const { return enemy_far_range; }
 
 	inline void SetSkillLevel(const int skill) { skill_level = skill; }
 	inline void SetGameAwareness(const int awareness) { game_awareness = awareness; }
@@ -102,6 +106,8 @@ public:
 	inline void SetIsAllowedToUsePhysicsPrediction(const bool state) { use_physics_prediction = state; }
 	inline void SetDangerScanFrequency(const float v) { danger_scan_interval = v; }
 	inline void SetDangerScanSize(const float v) { danger_scan_size = v; }
+	inline void SetEnemyCloseRange(const float range) { enemy_close_range = range; }
+	inline void SetEnemyFarRange(const float range) { enemy_far_range = range; }
 
 private:
 	int skill_level; // the skill level this profile represents
@@ -126,6 +132,8 @@ private:
 	int prediction_max_iterations; // Maximum number of iterations when prediting projectiles.
 	float danger_scan_interval; // Frequency in seconds of scans for incoming danger (grenades, projectiles, etc).
 	float danger_scan_size; // Size of the danger scan.
+	float enemy_close_range; // Enemy is considered to be close when the distance is less than this
+	float enemy_far_range; // Enemy is considered to be far when the distance is more than this
 };
 
 // Bot difficulty profile manager

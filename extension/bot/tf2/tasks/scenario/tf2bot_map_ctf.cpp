@@ -8,7 +8,7 @@
 #include <entities/tf2/tf_entities.h>
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
@@ -148,7 +148,7 @@ TaskResult<CTF2Bot> CTF2BotCTFFetchFlagTask::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat)
 	{
-		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible enemy!");
 	}
 
 	if (m_nav.NeedsRepath())
@@ -290,7 +290,7 @@ TaskResult<CTF2Bot> CTF2BotCTFDefendFlag::OnTaskUpdate(CTF2Bot* bot)
 
 	if (threat)
 	{
-		return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+		return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible enemy!");
 	}
 
 	if (m_giveupTimer.IsElapsed())

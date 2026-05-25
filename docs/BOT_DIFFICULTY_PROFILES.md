@@ -73,7 +73,8 @@ Example profile
 | max_pred_it | Maximum number of iterations when predicting the target's position for projectile based weapons. |
 | danger_scan_interval | Frequency in seconds to scan for incoming danger (grenades, projectiles, etc). Setting this to a negative number disables it. |
 | danger_scan_size | Size of the area scanned for incoming danger. |
-
+| enemy_close_range | Maximum distance to consider an enemy to be close. |
+| enemy_far_range | Minimum distance to consider an enemy to be far. |
 
 ## Notes
 

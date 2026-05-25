@@ -6,7 +6,7 @@
 #include <mods/tf2/tf2lib.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tf2/tasks/tf2bot_find_ammo_task.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_engineer_repair_object.h"
 
 CTF2BotEngineerRepairObjectTask::CTF2BotEngineerRepairObjectTask(CBaseEntity* object) :
@@ -67,7 +67,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 		// if the object is sapped and I see an enemy spy, priorize attacking the spy
 		if (threat && threat->IsPlayer() && tf2lib::GetPlayerClassType(threat->GetIndex()) == TeamFortress2::TFClassType::TFClass_Spy)
 		{
-			return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible spy!");
+			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible spy!");
 		}
 	}
 

@@ -5,7 +5,7 @@
 #include <entities/tf2/tf_entities.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/interfaces/path/meshnavigator.h>
-#include <bot/tf2/tasks/tf2bot_roam.h>
+#include <bot/tasks_shared/bot_shared_roam.h>
 #include "tf2bot_attack_controlpoint.h"
 #include "tf2bot_defend_controlpoint.h"
 #include "tf2bot_controlpoints_monitor.h"
@@ -34,7 +34,7 @@ TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 	// no attack or defend
 	if (defendPoints.empty() && attackPoints.empty())
 	{
-		return PauseFor(new CTF2BotRoamTask, "No point to attack or defend, roaming around!");
+		return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot), "No point to attack or defend, roaming around!");
 	}
 	else if (defendPoints.empty())
 	{
@@ -52,7 +52,7 @@ TaskResult<CTF2Bot> CTF2BotControlPointMonitorTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else
 		{
-			return PauseFor(new CTF2BotRoamTask, "No points to attack, roaming around!");
+			return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot), "No points to attack, roaming around!");
 		}
 	}
 	else

@@ -6,7 +6,7 @@
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 #include "bot_shared_search_area.h"
 #include "bot_shared_roam.h"
 #include "bot_shared_escort_entity.h"
@@ -18,7 +18,7 @@
  * @tparam BT Bot class.
  * @tparam CT Bot path cost class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedRogueBehaviorTask : public AITask<BT>
 {
 public:
@@ -79,7 +79,7 @@ inline TaskResult<BT> CBotSharedRogueBehaviorTask<BT, CT>::OnTaskUpdate(BT* bot)
 	{
 		if (known->IsVisibleNow())
 		{
-			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible enemy!");
 		}
 		else
 		{

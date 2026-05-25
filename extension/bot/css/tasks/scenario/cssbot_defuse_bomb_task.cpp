@@ -82,7 +82,7 @@ TaskResult<CCSSBot> CCSSBotDefuseBombTask::OnTaskUpdate(CCSSBot* bot)
 	}
 	else
 	{
-		if (!m_nav.IsValid() || m_nav.NeedsRepath())
+		if (m_nav.NeedsRepath())
 		{
 			CCSSBotPathCost cost{ bot, RouteType::FASTEST_ROUTE };
 			m_nav.ComputePathToPosition(bot, pos, cost);

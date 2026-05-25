@@ -7,7 +7,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <sdkports/sdk_takedamageinfo.h>
-#include <bot/tasks_shared/bot_shared_attack_enemy.h>
+#include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_demoman_lay_sticky_trap_task.h"
 
 class ShouldDetonateStickiesFunctor
@@ -179,7 +179,7 @@ TaskResult<CTF2Bot> CTF2BotDemomanLayStickyTrapTask::OnTaskUpdate(CTF2Bot* bot)
 
 			if (known)
 			{
-				return PauseFor(new CBotSharedAttackEnemyTask<CTF2Bot, CTF2BotPathCost>(bot), "Attacking visible enemy!");
+				return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible enemy!");
 			}
 
 			if (m_nav.NeedsRepath())

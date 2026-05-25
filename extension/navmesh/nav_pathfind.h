@@ -1308,11 +1308,27 @@ public:
 	 * @return A random area from the output vector.
 	 */
 	template<typename F>
-	T* GetRandomCollectedArea(F functor) const;
+	T* GetRandomCollectedArea(const F& functor) const;
 	// Gets the NavSearchNode for the given area. NULL if not found.
 	const INavSearchNode<T>* GetNodeForArea(T* area) const;
 	// Forces the search to end early
 	void EndSearch() { m_endSearch = true; }
+	/**
+	 * @brief Runs a function on each collected nav area.
+	 * @tparam F Function to run. bool (T* area)
+	 * @param functor Function to run, returning false stops the loop early.
+	 */
+	template <typename F>
+	void ForEachCollectedNavArea(F& functor) const
+	{
+		for (T* area : m_collected)
+		{
+			if (!functor(area))
+			{
+				return;
+			}
+		}
+	}
 
 protected:
 
@@ -1596,7 +1612,7 @@ inline void INavAreaCollector<T>::InitSearch()
 
 template<typename T>
 template<typename F>
-inline T* INavAreaCollector<T>::GetRandomCollectedArea(F functor) const
+inline T* INavAreaCollector<T>::GetRandomCollectedArea(const F& functor) const
 {
 	std::vector<T*> out;
 	out.reserve(m_collected.size());

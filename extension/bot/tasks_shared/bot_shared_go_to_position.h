@@ -11,7 +11,7 @@
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
 #include <navmesh/nav_waypoint.h>
-#include "bot_shared_attack_enemy.h"
+#include "bot_shared_default_combat_tasks.h"
 
 /**
  * @brief General purpose task for making the bot go to a given position.
@@ -20,7 +20,7 @@
  * @tparam BT Bot class.
  * @tparam CT Path cost class.
  */
-template <typename BT, typename CT = CBaseBotPathCost>
+template <typename BT, typename CT>
 class CBotSharedGoToPositionTask : public AITask<BT>
 {
 public:
@@ -125,7 +125,7 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskUpdate(BT* bot)
 
 		if (threat)
 		{
-			return AITask<BT>::PauseFor(new CBotSharedAttackEnemyTask<BT, CT>(bot), "Attacking visible enemy!");
+			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible enemy!");
 		}
 	}
 
@@ -208,7 +208,7 @@ inline TaskEventResponseResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnMoveToS
 
 	if (threat)
 	{
-		return AITask<BT>::TrySwitchTo(new CBotSharedAttackEnemyTask<BT, CT>(bot), EventResultPriorityType::PRIORITY_HIGH, "Goal reached, attacking visible enemy!");
+		return AITask<BT>::TrySwitchTo(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), EventResultPriorityType::PRIORITY_HIGH, "Goal reached, attacking visible enemy!");
 	}
 
 	return AITask<BT>::TryDone(EventResultPriorityType::PRIORITY_HIGH, "Goal reached!");
