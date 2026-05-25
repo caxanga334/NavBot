@@ -125,7 +125,6 @@ jobs:
         working-directory: navbot
         shell: bash
         run: |
-          ls -lah ${{ steps.path_helper.outputs.dependencies }}/
           mkdir build
           cd build
           python3 ../configure.py \
