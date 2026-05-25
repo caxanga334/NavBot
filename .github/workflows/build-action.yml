@@ -105,8 +105,8 @@ jobs:
       - name: Fetch SDKs
         shell: bash
         run: |
-          mkdir -p ${{ steps.path_helper.outputs.dependencies }}
-          cd ${{ steps.path_helper.outputs.dependencies }}
+          mkdir -p '${{ steps.path_helper.outputs.dependencies }}'
+          cd '${{ steps.path_helper.outputs.dependencies }}'
           git clone --mirror https://github.com/alliedmodders/hl2sdk hl2sdk-proxy-repo
           sdks=(${{ matrix.sdks_to_fetch }})
           for sdk in "${sdks[@]}"
@@ -125,14 +125,16 @@ jobs:
         working-directory: navbot
         shell: bash
         run: |
+          ls -lah ${{ steps.path_helper.outputs.dependencies }}/
           mkdir build
           cd build
           python3 ../configure.py \
           --sdks=${{ matrix.build_sdks }} \
-          '--hl2sdk-root=${{ steps.path_helper.outputs.dependencies }}' \
-          '--sm-path=${{ steps.path_helper.outputs.basedir }}/sourcemod' \
-          '--mms-path=${{ steps.path_helper.outputs.basedir }}/mmsource' \
-          --enable-optimize --targets "${{ matrix.ambuild_target }}" \
+          --hl2sdk-root="${{ steps.path_helper.outputs.dependencies }}" \
+          --sm-path="${{ steps.path_helper.outputs.basedir }}/sourcemod" \
+          --mms-path="${{ steps.path_helper.outputs.basedir }}/mmsource" \
+          --enable-optimize \
+          --targets "${{ matrix.ambuild_target }}" \
           --symbol-files ${{ matrix.os_ambuild_params }}
           ambuild
 
