@@ -11,6 +11,8 @@ jobs:
   build_ext:
     name: Build for ${{ matrix.identifier }}
     runs-on: ${{ matrix.os_version }}
+    container:
+      image: ${{ matrix.container_image }}
 
     strategy:
       fail-fast: false
@@ -35,36 +37,37 @@ jobs:
             os_ambuild_params: '--breakpad-upload'
 
           - buildjobs: linux-stable
-            os_version: ubuntu-22.04
+            os_version: ubuntu-latest
             identifier: 'Linux'
-            cc: clang-15
-            cxx: clang++-15
             ambuild_target: 'x86,x86_64'
             package_name: 'linux'
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo'
             os_ambuild_params: ''
+            container_image: ghcr.io/alliedmodders/build-containers/debian11-clang22:latest
     env:
-      USER_BIN_PATH: ${{ github.workspace }}/bins
       BREAKPAD_SYMBOL_SERVER: "http://crash.limetech.org/symbols/submit"
 
     steps:
-      - name: Install Packages (Linux)
-        if: runner.os == 'Linux'
+      # Largely a workaround for issue where github.workspace doesn't match $GITHUB_WORKSPACE
+      # in containerized jobs. See https://github.com/actions/runner/issues/2058
+      - name: Resolve paths
+        id: path_helper
+        shell: bash
         run: |
-          sudo dpkg --add-architecture i386
-          sudo apt-get update
-          sudo apt-get install -y ${{ matrix.cc }} ${{ matrix.cxx }} g++-multilib
-          echo "CC=${{ matrix.cc }}" >> $GITHUB_ENV
-          echo "CXX=${{ matrix.cxx }}" >> $GITHUB_ENV
+          echo "dependencies=$GITHUB_WORKSPACE/dependencies" >> $GITHUB_OUTPUT
+          echo "userbins=$GITHUB_WORKSPACE/userbins" >> $GITHUB_OUTPUT
+          echo "basedir=$GITHUB_WORKSPACE" >> $GITHUB_OUTPUT
 
       - name: Setup Python
+        if: runner.os == 'Windows'
         uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.12'
   
       - name: Setup AMBuild
+        if: runner.os == 'Windows'
         run: |
           python -m pip install --upgrade pip setuptools wheel
           pip install git+https://github.com/alliedmodders/ambuild
@@ -72,30 +75,16 @@ jobs:
       - name: Install Breakpad dump_syms (Windows)
         if: runner.os == 'Windows'
         run: |
-          mkdir -p ${{ env.USER_BIN_PATH }}
-          cd ${{ env.USER_BIN_PATH }}
-          Invoke-WebRequest -Uri 'https://github.com/mozilla/dump_syms/releases/download/v2.3.4/dump_syms-x86_64-pc-windows-msvc.zip' -OutFile 'dump_syms-x86_64-pc-windows-msvc.zip'
+          mkdir -p ${{ steps.path_helper.outputs.userbins }}
+          cd ${{ steps.path_helper.outputs.userbins }}
+          Invoke-WebRequest -Uri 'https://github.com/mozilla/dump_syms/releases/download/v2.3.7/dump_syms-x86_64-pc-windows-msvc.zip' -OutFile 'dump_syms-x86_64-pc-windows-msvc.zip'
           7z x dump_syms-x86_64-pc-windows-msvc.zip
-          ls
-
-      - name: Install Breakpad dump_syms (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          mkdir -p ${{ env.USER_BIN_PATH }}
-          cd ${{ env.USER_BIN_PATH }}
-          wget https://github.com/mozilla/dump_syms/releases/download/v2.3.5/dump_syms-x86_64-unknown-linux-gnu.tar.xz
-          tar -xvf dump_syms-x86_64-unknown-linux-gnu.tar.xz --strip-components 1
           ls
 
       - name: Update Path
         shell: bash
         run: |
-          echo "${{ env.USER_BIN_PATH }}" >> "$GITHUB_PATH"
-
-      - name: Check If Breakpad Dump Syms is Installed
-        if: runner.os == 'Windows'
-        run: |
-          dump_syms.exe --version
+          echo "${{ steps.path_helper.outputs.userbins }}" >> "$GITHUB_PATH"
 
       - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
         uses: actions/checkout@v6.0.2
@@ -116,6 +105,8 @@ jobs:
       - name: Fetch SDKs
         shell: bash
         run: |
+          mkdir -p ${{ steps.path_helper.outputs.dependencies }}
+          cd ${{ steps.path_helper.outputs.dependencies }}
           git clone --mirror https://github.com/alliedmodders/hl2sdk hl2sdk-proxy-repo
           sdks=(${{ matrix.sdks_to_fetch }})
           for sdk in "${sdks[@]}"
@@ -135,11 +126,11 @@ jobs:
         run: |
           mkdir build
           cd build
-          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --sm-path="${{ github.workspace }}/sourcemod" --mms-path="${{ github.workspace }}/mmsource" --enable-optimize --targets "${{ matrix.ambuild_target }}" --symbol-files ${{ matrix.os_ambuild_params }}
+          python3 ../configure.py --sdks="${{ matrix.build_sdks }}" --hl2sdk-root="${{ steps.path_helper.outputs.dependencies }}" --sm-path="${{ steps.path_helper.outputs.basedir }}/sourcemod" --mms-path="${{ steps.path_helper.outputs.basedir }}/mmsource" --enable-optimize --targets "${{ matrix.ambuild_target }}" --symbol-files ${{ matrix.os_ambuild_params }}
           ambuild
 
       - name: Get commit SHA
-        uses: benjlevesque/short-sha@v3.0
+        uses: benjlevesque/short-sha@v4.0
         id: short-sha
 
       - name: Upload Extension as Artifact
@@ -184,7 +175,7 @@ jobs:
           submodules: recursive
 
       - name: Get short SHA
-        uses: benjlevesque/short-sha@v3.0
+        uses: benjlevesque/short-sha@v4.0
         id: short-sha
       
       - name: Setup SourcePawn Compiler ${{ matrix.sm_version }}
@@ -303,7 +294,7 @@ jobs:
           ls -lah
 
       - name: Create Pre-release
-        uses: softprops/action-gh-release@v2.1.0
+        uses: softprops/action-gh-release@v3.0.0
         if: contains(github.ref_name, 'pr') == true
         with:
           name: "NavBot ${{ github.ref_name }}"
@@ -314,7 +305,7 @@ jobs:
             upload/*.tar.gz
 
       - name: Create Release
-        uses: softprops/action-gh-release@v2.1.0
+        uses: softprops/action-gh-release@v3.0.0
         if: contains(github.ref_name, 'pr') == false
         with:
           name: "NavBot ${{ github.ref_name }}"
