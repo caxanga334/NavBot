@@ -129,7 +129,7 @@ jobs:
           cd build
           python3 ../configure.py \
           --sdks=${{ matrix.build_sdks }} \
-          '--hl2sdk-root="${{ steps.path_helper.outputs.dependencies }}' \
+          '--hl2sdk-root=${{ steps.path_helper.outputs.dependencies }}' \
           '--sm-path=${{ steps.path_helper.outputs.basedir }}/sourcemod' \
           '--mms-path=${{ steps.path_helper.outputs.basedir }}/mmsource' \
           --enable-optimize --targets "${{ matrix.ambuild_target }}" \
