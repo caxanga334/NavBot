@@ -1,6 +1,8 @@
 #ifndef __NAVBOT_BOT_SHARED_CLEAR_REPORTED_ENEMY_TASK_H_
 #define __NAVBOT_BOT_SHARED_CLEAR_REPORTED_ENEMY_TASK_H_
 
+#include <manager.h>
+#include <mods/basemod.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <bot/bot_shared_utils.h>
 #include "bot_shared_roam.h"
