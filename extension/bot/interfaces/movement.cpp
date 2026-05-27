@@ -1383,7 +1383,7 @@ public:
 		m_bot = bot;
 	}
 
-	bool operator()(CBaseEntity* entity)
+	bool operator()(CBaseEntity* entity) const
 	{
 		if (!UtilHelpers::IsPlayer(entity))
 		{
@@ -2000,7 +2000,16 @@ void IMovement::ObstacleBreakUpdate()
 	if (m_obstacleBreakTimeout.IsElapsed() || obstacle == nullptr)
 	{
 		OnDoneBreakingObstacle(obstacle, m_obstacleBreakTimeout.IsElapsed());
+		m_obstacleBreakTimeout.Invalidate();
+		m_isBreakingObstacle = false;
+		m_obstacleEntity = nullptr;
+		GetBot()->GetControlInterface()->ReleaseAllAttackButtons();
+		return;
+	}
 
+	if (extmanager->GetMod()->IsBreakableBroken(obstacle))
+	{
+		OnDoneBreakingObstacle(obstacle, false);
 		m_obstacleBreakTimeout.Invalidate();
 		m_isBreakingObstacle = false;
 		m_obstacleEntity = nullptr;
@@ -2484,6 +2493,17 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	const bool isOnGround = IsOnGround();
 
 	input->AimAt(dismountGoal + Vector(0.0f, 0.0f, GetCrouchedHullHeight()), IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at ladder top dismount goal!");
+
+	// on ground and above the ladder exit point, dismount
+	if (isOnGround && origin.z >= (dismountGoal.z - GetStepHeight()))
+	{
+		if (isOnLadder)
+		{
+			input->PressJumpButton();
+		}
+
+		return NOT_USING_LADDER;
+	}
 
 	// not on a ladder, not on the ground and above the dismount goal Z, probably overshot the ladder and airborne
 	if (!isOnLadder && !isOnGround && origin.z >= (dismountGoal.z - GetStepHeight()))

@@ -118,6 +118,12 @@ void ICombat::Update()
 			OnThreatBecameVisible(threat, activeWeapon);
 		}
 
+		if (!m_combatData.is_visible && !m_combatData.ten_seconds_passed && m_combatData.GetTimeSinceLostLOS() >= 10.0f)
+		{
+			m_combatData.ten_seconds_passed = true;
+			OnTenSecondsSinceThreatVisible();
+		}
+
 		// if the threat is no longer visible and more than 5 seconds have passed, unscope.
 		if (!m_combatData.is_visible && WantstoBeScoped() && GetTimeSinceLOSWasLost() >= 5.0f)
 		{
@@ -941,6 +947,35 @@ CBaseEntity* ICombat::SelectMostDangerousEntity(CBaseEntity* first, CBaseEntity*
 	return second;
 }
 
+void ICombat::OnTenSecondsSinceThreatVisible()
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const bool isDebugging = bot->IsDebugging(BOTDEBUG_COMBAT);
+
+	if (isDebugging)
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s OnTenSecondsSinceThreatVisible\n", bot->GetDebugIdentifier());
+	}
+
+	// also do a reload check here since it may take a long time to enter post combat
+	if (GetShouldReloadPostCombat())
+	{
+		const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+		if (activeWeapon && activeWeapon->CanBeReloaded(bot))
+		{
+			if (isDebugging)
+			{
+				bot->DebugPrintToConsole(0, 255, 255, "%s RELOADING WEAPON (NO LOS TO THREAT)!\n", bot->GetDebugIdentifier());
+			}
+
+			bot->GetControlInterface()->PressReloadButton();
+		}
+
+		SetShouldReloadPostCombat(false);
+	}
+}
+
 IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheadshots) const
 {
 	const CombatData& data = GetCachedCombatData();
@@ -1194,13 +1229,13 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	CBaseEntity* entity = threat->GetEntity();
 	this->enemy_center = UtilHelpers::getWorldSpaceCenter(entity);
 	this->in_combat = true;
-
 	this->is_visible = threat->IsVisibleNow();
 
 	if (this->is_visible)
 	{
 		this->enemy_position = this->enemy_center;
 		this->time_lost_los = gpGlobals->curtime;
+		this->ten_seconds_passed = false;
 	}
 	else
 	{
@@ -1225,6 +1260,7 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 	}
 
 	this->in_range = (primary || secondary);
+	this->should_move = this->enemy_range >= info->GetAttackRange();
 
 	if (primary && !secondary)
 	{

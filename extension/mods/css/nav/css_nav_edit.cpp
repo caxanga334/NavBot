@@ -48,7 +48,7 @@ static void sm_css_nav_toggle_attribute(const CConCommandArgs& args)
 		return;
 	}
 
-	for (int i = 1; i < args.ArgC(); i++)
+	for (std::size_t i = 1; i < args.ArgC(); i++)
 	{
 		CCSSNavArea::CSSAttributes attrib = CCSSNavArea::NameToCSSAttrib(args[i]);
 

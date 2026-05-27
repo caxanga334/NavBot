@@ -142,7 +142,7 @@ void ISensor::Reset()
 	m_lastupdatetime = 0.0f;
 	m_threatvisibletimer.Invalidate();
 	m_updateNonPlayerTimer.Invalidate();
-	m_shareKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
+	m_reportKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
 	m_updateStatisticsTimer.Reset();
 	m_primarythreatoverride.reset(nullptr);
 	m_primarythreatcache = nullptr;
@@ -155,10 +155,10 @@ void ISensor::Update()
 {
 	UpdateKnownEntities();
 
-	if (m_shareKnownsTimer.IsElapsed())
+	if (m_reportKnownsTimer.IsElapsed())
 	{
-		m_shareKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
-		UpdateSharedKnowns();
+		m_reportKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
+		ReportVisibleEntities();
 	}
 }
 
@@ -1111,48 +1111,25 @@ CKnownEntity* ISensor::FindKnownEntity(CBaseEntity* entity)
 	return nullptr;
 }
 
-void ISensor::UpdateSharedKnowns()
+void ISensor::ReportVisibleEntities()
 {
 #ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("ISensor::UpdateSharedKnowns", "NavBot");
+	VPROF_BUDGET("ISensor::ReportVisibleEntities", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
 	CBaseBot* bot = GetBot<CBaseBot>();
 	const DifficultyProfile* profile = bot->GetDifficultyProfile();
+	ISharedBotMemory* sbm = bot->GetSharedMemoryInterface();
 
 	// low skill bots don't use shared information.
 	if (profile->GetTeamwork() < 20 || profile->GetGameAwareness() < 20) { return; }
 
-	std::vector<const CKnownEntity*> knowns;
-
-	// collect valid and visible known entities
-	for (auto& known : m_knownlist)
+	for (CKnownEntity& known : m_knownlist)
 	{
-		if (!known.IsObsolete() && known.IsVisibleNow())
+		if (known.IsVisibleNow() && known && IsEnemy(known.GetEntity()))
 		{
-			knowns.push_back(&known);
+			sbm->ReportEntityVisible(known.GetEntity());
 		}
-	}
-
-	ISharedBotMemory* sbm = bot->GetSharedMemoryInterface();
-
-	sbm->ForEveryEntityInfo([this](const ISharedBotMemory::EntityInfo& entinfo) {
-		CKnownEntity* known = this->AddKnownEntity(entinfo.GetEntity());
-
-		if (known->GetTimeSinceBecomeKnown() > 1.0f)
-		{
-			// shared memory is more recent
-			if (entinfo.GetTimeSinceLastUpdated() < known->GetTimeSinceLastInfo())
-			{
-				known->UpdatePosition();
-			}
-		}
-	});
-
-	// add updated information of visible entities.
-	for (auto known : knowns)
-	{
-		sbm->AddEntityInfo(known->GetEntity());
 	}
 }
 

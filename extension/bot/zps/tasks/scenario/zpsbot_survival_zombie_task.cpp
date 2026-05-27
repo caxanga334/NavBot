@@ -3,7 +3,7 @@
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
 #include <bot/tasks_shared/bot_shared_investigate_heard_entity.h>
-#include <bot/tasks_shared/bot_shared_investigate_known.h>
+#include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
 #include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
 #include "zpsbot_survival_zombie_task.h"
 
@@ -62,9 +62,9 @@ TaskResult<CZPSBot> CZPSBotSurvivalZombieTask::OnTaskUpdate(CZPSBot* bot)
 
     CBaseEntity* target;
     // Investigate if possible.
-    if (CBotSharedInvestigateKnownTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &target))
+    if (CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &target))
     {
-        return PauseFor(new CBotSharedInvestigateKnownTask<CZPSBot, CZPSBotPathCost>(target), "Investigating known enemy position!");
+        return PauseFor(new CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>(target), "Investigating reported enemy position!");
     }
 
     // Patrol chance based on game awareness skill, capped at 90%

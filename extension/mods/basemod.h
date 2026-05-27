@@ -165,6 +165,13 @@ public:
 	 */
 	virtual bool IsEntityBreakable(CBaseEntity* entity) const;
 	/**
+	 * @brief Called to check if the given breakable entity is already broken.
+	 * Some entities break but aren't deleted. This should return true when the entity is broken and no longer solid for players.
+	 * @param entity Entity being checked.
+	 * @return True if the entity is broken and passable, false otherwise.
+	 */
+	virtual bool IsBreakableBroken(CBaseEntity* entity) const;
+	/**
 	 * @brief Called to allocate the mod specific implementation of the Mod Helpers interface.
 	 * @return Pointer to a mod helper interface.
 	 */

@@ -148,6 +148,29 @@ static void sm_zps_nav_select_areas_with_attributes(const CConCommandArgs& args)
 	TheNavMesh->SetMarkedArea(nullptr);
 }
 
+static void sm_zps_nav_select_human_clip_areas(const CConCommandArgs& args)
+{
+	TheNavMesh->ClearSelectedSet();
+	TheNavMesh->SetMarkedArea(nullptr);
+
+	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			std::vector<CNavArea*> areas;
+			TheNavMesh->CollectAreasTouchingEntity(entity, areas);
+
+			for (CNavArea* area : areas)
+			{
+				TheNavMesh->AddToSelectedSet(area);
+			}
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_humanclip", func);
+}
+
 void CZPSNavMesh::RegisterModCommands()
 {
 	CServerCommandManager& manager = extmanager->GetServerCommandManager();
@@ -155,4 +178,5 @@ void CZPSNavMesh::RegisterModCommands()
 	manager.RegisterConCommand("sm_zps_nav_wipe_attributes", "Removes all ZPS attributes from the selected nav areas.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_wipe_attributes);
 	manager.RegisterConCommandAutoComplete("sm_zps_nav_set_attribute", "Assigns ZPS specific nav area attributes.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_set_attribute, ZPSEdit_Attributes_AutoComplete);
 	manager.RegisterConCommandAutoComplete("sm_zps_nav_select_areas_with_attributes", "Adds nav areas with the given ZPS attrib to the selected set.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_select_areas_with_attributes, ZPSEdit_Attributes_AutoComplete);
+	manager.RegisterConCommand("sm_zps_nav_select_human_clip_areas", "Selects all nav areas that collides with a humanclip brush.", FCVAR_CHEAT | FCVAR_GAMEDLL, sm_zps_nav_select_human_clip_areas);
 }

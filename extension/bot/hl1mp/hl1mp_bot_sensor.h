@@ -20,7 +20,7 @@ public:
 protected:
 	void CollectPlayers(std::vector<edict_t*>& visibleVec) override;
 	// no-op on HL1:DMS since it's deathmatch only
-	void UpdateSharedKnowns() override {}
+	void ReportVisibleEntities() override {}
 
 private:
 

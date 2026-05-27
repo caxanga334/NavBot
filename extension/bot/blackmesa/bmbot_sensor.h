@@ -19,6 +19,7 @@ public:
 protected:
 	void CollectPlayers(std::vector<edict_t*>& visibleVec) override;
 	void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec) override;
+	void ReportVisibleEntities() override;
 };
 
 #endif // !NAVBOT_BLACK_MESA_BOT_SENSOR_H_

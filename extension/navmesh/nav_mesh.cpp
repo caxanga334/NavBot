@@ -4640,6 +4640,42 @@ void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, const bool center
 	}
 }
 
+void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, std::vector<CNavArea*>& output)
+{
+	std::vector<CNavArea*> areas;
+	Extent extent{ entity };
+	ICollideable* collider = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable();
+
+	extent.lo.z -= navgenparams->half_human_height;
+	extent.hi.z += navgenparams->half_human_height;
+
+	// Collects areas within the entity's bounds
+	CollectAreasOverlappingExtent<CNavArea>(extent, areas);
+
+	// Use engine trace to filter which areas are actually touching the entity
+	Ray_t ray;
+	trace_t tr;
+	Vector p1, p2;
+
+	for (CNavArea* area : areas)
+	{
+		p1 = area->GetCorner(NavCornerType::NORTH_WEST);
+		p2 = area->GetCorner(NavCornerType::SOUTH_EAST);
+
+		p1.z += navgenparams->human_crouch_height;
+		p2.z += navgenparams->human_crouch_height;
+
+		ray.Init(p1, p2);
+		enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+		if (tr.startsolid || tr.fraction < 1.0f)
+		{
+			output.push_back(area);
+			continue;
+		}
+	}
+}
+
 void CNavMesh::RegisterNavBlocker(INavBlocker* blocker)
 {
 	m_navblockers.emplace_back(blocker);

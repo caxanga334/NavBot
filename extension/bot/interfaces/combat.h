@@ -40,6 +40,8 @@ public:
 		bool in_headshot_range; // in range of a headshot attack
 		bool can_use_primary; // can use primary attack
 		bool can_fire; // true if has a clear LOF
+		bool should_move; // for behaviors, if true, the bot should move towards the threat
+		bool ten_seconds_passed; // 10 seconds have passed since any threat was visible
 		float time_lost_los; // timestamp of when LOS was lost
 		botweapons::AttackType selected_attack_type; // currently selected attack type
 
@@ -47,6 +49,8 @@ public:
 		float GetTimeSinceLostLOS() const;
 		// Returns true if the current threat is visible but the bot doesn't have a clear line of fire
 		bool IsVisibleButNoClearLOF() const { return is_visible && !can_fire; }
+		// Returns true if the bot should path towards the current enemy.
+		bool ShouldPathToEnemy() const { return should_move || !in_range || IsVisibleButNoClearLOF(); }
 
 		void Clear()
 		{
@@ -63,6 +67,8 @@ public:
 			in_headshot_range = false;
 			can_use_primary = false;
 			can_fire = false;
+			should_move = false;
+			ten_seconds_passed = false;
 			time_lost_los = -9999.0f;
 			selected_attack_type = botweapons::AttackType::MAX_ATTACK_TYPES;
 		}
@@ -235,7 +241,7 @@ protected:
 			botweapons::IsValidAttackType(m_combatData.selected_attack_type) &&
 			lastUsedAttackType != m_combatData.selected_attack_type)
 		{
-
+			OnSelectedAttackTypeChanged(threat, activeWeapon, lastUsedAttackType);
 		}
 	}
 	/**
@@ -398,6 +404,10 @@ protected:
 	 * @param entity Entity to store.
 	 */
 	void SetMostDangerousEntity(CBaseEntity* entity) { m_lastDangerEntity = entity; }
+	/**
+	 * @brief Called after ~10 seconds have passed since the last threat was visible.
+	 */
+	virtual void OnTenSecondsSinceThreatVisible();
 private:
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;

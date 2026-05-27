@@ -4,7 +4,7 @@
 #include <mods/basemod.h>
 #include <bot/bot_shared_utils.h>
 #include <navmesh/nav_area.h>
-#include "bot_shared_investigate_known.h"
+#include "bot_shared_clear_reported_enemy.h"
 
 /**
  * @brief General purpose tasks for bots to patrol and clear areas of enemies.
@@ -100,12 +100,19 @@ public:
 			return AITask<BT>::Done("Area is cleared!");
 		}
 
-		CBaseEntity* target;
-
-		// see if we have anything to investigate
-		if (CBotSharedInvestigateKnownTask<BT, CT>::IsPossible(bot, &target))
+		if (m_checkReportsTimer.IsElapsed())
 		{
-			return AITask<BT>::PauseFor(new CBotSharedInvestigateKnownTask<BT, CT>(target), "Investigating last known enemy position!");
+			m_checkReportsTimer.Start(2.5f);
+
+			CBaseEntity* target;
+
+			// see if we have anything to investigate
+			if (CBotSharedClearReportedEnemyTask<BT, CT>::IsPossible(bot, &target))
+			{
+				botsharedutils::search::MarkVisibleAreasAsCleared functor(bot);
+				functor.Execute();
+				return AITask<BT>::PauseFor(new CBotSharedClearReportedEnemyTask<BT, CT>(target), "Investigating reported enemy position!");
+			}
 		}
 
 		if (m_nav.NeedsRepath())
@@ -201,6 +208,7 @@ private:
 	float m_clearTimeLimit;
 	int m_pathFails;
 	combatutils::ToggleAreaClearing m_tac;
+	CountdownTimer m_checkReportsTimer;
 };
 
 

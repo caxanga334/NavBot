@@ -416,7 +416,7 @@ botsharedutils::IsReachableAreas::IsReachableAreas(CBaseBot* bot, const float li
 
 bool botsharedutils::IsReachableAreas::ShouldSearch(CNavArea* area)
 {
-	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
+	return m_bot->GetMovementInterface()->IsAreaTraversable(area);
 }
 
 const bool botsharedutils::IsReachableAreas::IsReachable(CNavArea* area, float* cost) const

@@ -35,6 +35,7 @@ public:
 		squad_invite_max_distance = 1200.0f;
 		def_blast_radius = 600.0f;
 		area_cleared_time = 120.0f;
+		stuck_giveup_threshold = 10;
 	}
 
 	virtual ~CModSettings() = default;
@@ -93,6 +94,7 @@ public:
 	void SetSquadMaxInviteDistance(float dist) { squad_invite_max_distance = dist; }
 	void SetDefaultBlastRadius(float radius) { def_blast_radius = radius; }
 	void SetMaxAreaClearedTime(float time) { area_cleared_time = time; }
+	void SetStuckGiveUpThreshold(int c) { stuck_giveup_threshold = c; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -123,6 +125,7 @@ public:
 	const float GetSquadMaxInviteDistance() const { return squad_invite_max_distance; }
 	const float GetDefaultBlastRadius() const { return def_blast_radius; }
 	const float GetMaxAreaClearedTime() const { return area_cleared_time; }
+	const int GetStuckGiveUpThreshold() const { return stuck_giveup_threshold; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -152,6 +155,7 @@ protected:
 	float squad_invite_max_distance; // maximum distance between the squad leader and other bots to form a squad
 	float def_blast_radius; // Default blast radius used for projectiles.
 	float area_cleared_time; // Maximum time in seconds for a nav area to be considered as cleared.
+	int stuck_giveup_threshold; // Threshold for giving up doing something if the bot gets this many stuck events.
 };
 
 

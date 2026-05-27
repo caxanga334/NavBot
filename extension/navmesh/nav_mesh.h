@@ -811,11 +811,18 @@ public:
 
 	/**
 	 * @brief Collects all nav areas touching an entity.
-	 * @param entity Entity to test for touching areas.
-	 * @param centerOnly If true, only tests the nav area's center.
-	 * @param output Vector to store areas that touch the entity.
+	 * @param[in] entity Entity to test for touching areas.
+	 * @param[in] centerOnly If true, only tests the nav area's center.
+	 * @param[out] output Vector to store areas that touch the entity.
 	 */
 	void CollectAreasTouchingEntity(CBaseEntity* entity, const bool centerOnly, std::vector<CNavArea*>& output);
+	/**
+	 * @brief Collects all nav areas that intersects with the given entity.
+	 * This overload determines intersection by tracing a line from two corners of the nav area.
+	 * @param[in] entity Entity to test for intersection.
+	 * @param[out] output Vector to store nav areas that intersects with the given entity.
+	 */
+	void CollectAreasTouchingEntity(CBaseEntity* entity, std::vector<CNavArea*>& output);
 
 	template < typename Functor >
 	bool ForAllAreasInRadius( Functor &func, const Vector &pos, float radius );

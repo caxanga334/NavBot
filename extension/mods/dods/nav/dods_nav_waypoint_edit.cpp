@@ -51,7 +51,7 @@ static void DoDSWaypoint_Edit_SetDodAttribs(const CConCommandArgs& args)
 
 	CDoDSWaypoint* dodwpt = static_cast<CDoDSWaypoint*>(wpt.get());
 
-	for (int i = 1; i < args.Count(); i++)
+	for (std::size_t i = 1; i < args.Count(); i++)
 	{
 		const char* arg = args[i];
 		CDoDSWaypoint::DoDWPAttributes attrib = CDoDSWaypoint::StringToDoDWPAttribute(arg);

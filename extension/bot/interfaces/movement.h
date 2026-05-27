@@ -408,6 +408,7 @@ public:
 	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
 	// Returns the Nav Ladder the bot is using if one.
 	inline const CNavLadder* GetNavLadder() const { return m_ladder; }	
+	// Returns the number of consecutive stuck events
 	inline int GetStuckCount() const { return m_stuck.counter; }
 	virtual bool IsUsingElevator() const;
 	/**

@@ -4,7 +4,7 @@
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
 #include <bot/tasks_shared/bot_shared_investigate_heard_entity.h>
-#include <bot/tasks_shared/bot_shared_investigate_known.h>
+#include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
 #include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
 #include "zpsbot_objective_zombie_task.h"
 
@@ -65,9 +65,9 @@ TaskResult<CZPSBot> CZPSBotObjectiveZombieTask::OnTaskUpdate(CZPSBot* bot)
 
 	CBaseEntity* target;
 	// Investigate if possible.
-	if (CBotSharedInvestigateKnownTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &target))
+	if (CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &target))
 	{
-		return PauseFor(new CBotSharedInvestigateKnownTask<CZPSBot, CZPSBotPathCost>(target), "Investigating known enemy position!");
+		return PauseFor(new CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>(target), "Investigating reported enemy position!");
 	}
 
 	// Objective maps are generally big and the bot may get "stuck" searching for survivors in an empty area.

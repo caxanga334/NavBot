@@ -270,9 +270,9 @@ protected:
 		return known->GetTimeSinceBecomeKnown() >= GetMinRecognitionTime();
 	}
 	/**
-	 * @brief Called to update the shared memory information.
+	 * @brief Called to report visible known entities to the shared memory interface.
 	 */
-	virtual void UpdateSharedKnowns();
+	virtual void ReportVisibleEntities();
 
 	void UpdateStatistics();
 	// Gets the known entity instance of the primary theat override. NULL if none.
@@ -283,7 +283,7 @@ private:
 	std::unique_ptr<CKnownEntity> m_primarythreatoverride;
 	CountdownTimer m_updateNonPlayerTimer;
 	CountdownTimer m_updateStatisticsTimer;
-	CountdownTimer m_shareKnownsTimer; // timer for sharing and updating the known list
+	CountdownTimer m_reportKnownsTimer; // timer for sharing and updating the known list
 	float m_cachedNPCupdaterate;
 	float m_fieldofview;
 	float m_coshalfFOV;

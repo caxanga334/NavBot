@@ -1310,7 +1310,7 @@ public:
 	template<typename F>
 	T* GetRandomCollectedArea(const F& functor) const;
 	// Gets the NavSearchNode for the given area. NULL if not found.
-	const INavSearchNode<T>* GetNodeForArea(T* area) const;
+	const INavSearchNode<T>* GetNodeForArea(const T* area) const;
 	// Forces the search to end early
 	void EndSearch() { m_endSearch = true; }
 	/**
@@ -1555,7 +1555,7 @@ inline void INavAreaCollector<T>::Reset()
 }
 
 template<typename T>
-inline const INavSearchNode<T>* INavAreaCollector<T>::GetNodeForArea(T* area) const
+inline const INavSearchNode<T>* INavAreaCollector<T>::GetNodeForArea(const T* area) const
 {
 	auto it = m_nodes.find(area->GetID());
 

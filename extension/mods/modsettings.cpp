@@ -101,6 +101,11 @@ void CModSettings::PostParse()
 		unstuck_teleport_threshold = -1;
 	}
 
+	if (stuck_giveup_threshold <= 0)
+	{
+		stuck_giveup_threshold = 10;
+	}
+
 	if (class_change_chance <= 0)
 	{
 		allow_class_changes = false;
@@ -294,6 +299,12 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			float v = atof(value);
 			v = std::clamp(v, 30.0f, 600.0f);
 			SetMaxAreaClearedTime(v);
+		}
+		else if (std::strcmp(key, "stuck_giveup_threshold") == 0)
+		{
+			int v = atoi(value);
+			v = std::clamp(v, 5, 60);
+			SetStuckGiveUpThreshold(v);
 		}
 		else
 		{

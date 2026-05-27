@@ -57,45 +57,37 @@ void CBlackMesaBotSensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 	VPROF_BUDGET("CBlackMesaBotSensor::CollectPlayers", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
+	const int myindex = GetBot<CBaseBot>()->GetIndex();
+
 	for (int i = 1; i <= gpGlobals->maxClients; i++)
 	{
-		edict_t* edict = gamehelpers->EdictOfIndex(i);
-
-		if (!UtilHelpers::IsValidEdict(edict))
+		// skip self
+		if (i == myindex)
 		{
 			continue;
 		}
 
-		CBaseExtPlayer* player = extmanager->GetPlayerOfEdict(edict);
+		CBaseEntity* entity = gamehelpers->ReferenceToEntity(i);
 
-		if (!player) { continue; }
-
-		if (i == GetBot()->GetIndex())
-			continue; // skip self
-
-		if (!ISensor::IsInPVS(player->GetAbsOrigin()))
+		if (!entity || modhelpers->IsDead(entity))
+		{
+			continue;
+		}
+		
+		// BM uses TEAM_UNASSIGNED for free for all deathmatch.
+		if (modhelpers->GetEntityTeamNumber(entity) == TEAM_SPECTATOR)
 		{
 			continue;
 		}
 
-		if (player->GetCurrentTeamIndex() == TEAM_SPECTATOR)
+		if (!ISensor::IsInPVS(UtilHelpers::getEntityOrigin(entity)))
 		{
 			continue;
 		}
 
-		if (!player->IsAlive())
+		if (IsAbleToSee(entity))
 		{
-			continue;
-		}
-
-		if (IsIgnored(player->GetEntity()))
-		{
-			continue; // Ignored player
-		}
-
-		if (IsAbleToSee(player))
-		{
-			visibleVec.push_back(edict);
+			visibleVec.push_back(UtilHelpers::BaseEntityToEdict(entity));
 		}
 	}
 }
@@ -104,4 +96,13 @@ void CBlackMesaBotSensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibl
 {
 	// empty for now
 	return;
+}
+
+void CBlackMesaBotSensor::ReportVisibleEntities()
+{
+	if (CBlackMesaDeathmatchMod::GetBMMod()->IsTeamPlay())
+	{
+		// only update the shared memory if teamplay is active
+		ISensor::ReportVisibleEntities();
+	}
 }

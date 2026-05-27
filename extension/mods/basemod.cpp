@@ -301,6 +301,22 @@ bool CBaseMod::IsEntityBreakable(CBaseEntity* entity) const
 	return false;
 }
 
+bool CBaseMod::IsBreakableBroken(CBaseEntity* entity) const
+{
+	// breakable surfaces entities aren't deleted when broken.
+	if (UtilHelpers::FClassnameIs(entity, "func_breakable_surf"))
+	{
+		bool* bBroken = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bIsBroken");
+
+		if (bBroken != nullptr)
+		{
+			return *bBroken;
+		}
+	}
+
+	return false;
+}
+
 IModHelpers* CBaseMod::AllocModHelpers() const
 {
 	return new IModHelpers;

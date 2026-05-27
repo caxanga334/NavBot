@@ -13,7 +13,7 @@
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tasks_shared/bot_shared_seek_and_destroy_entity.h>
 #include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
-#include <bot/tasks_shared/bot_shared_investigate_known.h>
+#include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
 #include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "tf2bot_zombie_infection_tasks.h"
 
@@ -217,9 +217,9 @@ TaskResult<CTF2Bot> CTF2BotZIZombieBehaviorTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			CBaseEntity* target;
 
-			if (CBotSharedInvestigateKnownTask<CTF2Bot, CTF2BotPathCost>::IsPossible(bot, &target))
+			if (CBotSharedClearReportedEnemyTask<CTF2Bot, CTF2BotPathCost>::IsPossible(bot, &target))
 			{
-				return PauseFor(new CBotSharedInvestigateKnownTask<CTF2Bot, CTF2BotPathCost>(target), "Investigating last known enemy position!");
+				return PauseFor(new CBotSharedClearReportedEnemyTask<CTF2Bot, CTF2BotPathCost>(target), "Investigating reported enemy position!");
 			}
 		}
 

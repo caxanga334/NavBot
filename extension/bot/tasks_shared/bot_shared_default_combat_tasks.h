@@ -275,7 +275,7 @@ public:
 		}
 
 		// if the enemy is currently outside our firing range OR the line of fire is obstructed
-		if (!cd.in_range || cd.IsVisibleButNoClearLOF())
+		if (cd.ShouldPathToEnemy())
 		{
 			CT cost(bot);
 			cost.SetRouteType(RouteType::FASTEST_ROUTE);

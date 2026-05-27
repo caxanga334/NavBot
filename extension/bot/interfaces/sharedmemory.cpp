@@ -9,7 +9,7 @@
 #include <navmesh/nav_area.h>
 #include "sharedmemory.h"
 
-ISharedBotMemory::EntityInfo::EntityInfo(CBaseEntity* pEntity) :
+ISharedBotMemory::ReportedEntityData::ReportedEntityData(CBaseEntity* pEntity) :
 	m_handle(pEntity)
 {
 	m_lastknownposition = UtilHelpers::getEntityOrigin(pEntity);
@@ -17,42 +17,44 @@ ISharedBotMemory::EntityInfo::EntityInfo(CBaseEntity* pEntity) :
 	m_timecreated = gpGlobals->curtime;
 	m_timeupdated = gpGlobals->curtime;
 	m_classname.assign(gamehelpers->GetEntityClassname(pEntity));
+	m_cleared = false;
 }
 
-bool ISharedBotMemory::EntityInfo::operator==(const ISharedBotMemory::EntityInfo& other) const
+bool ISharedBotMemory::ReportedEntityData::operator==(const ISharedBotMemory::ReportedEntityData& other) const
 {
 	return this->m_handle == other.m_handle;
 }
 
-bool ISharedBotMemory::EntityInfo::operator!=(const ISharedBotMemory::EntityInfo& other) const
+bool ISharedBotMemory::ReportedEntityData::operator!=(const ISharedBotMemory::ReportedEntityData& other) const
 {
 	return this->m_handle != other.m_handle;
 }
 
-bool ISharedBotMemory::EntityInfo::IsObsolete() const
+bool ISharedBotMemory::ReportedEntityData::IsObsolete() const
 {
-	return m_handle.Get() == nullptr || GetTimeSinceLastUpdated() >= ISharedBotMemory::ENTITY_INFO_EXPIRE_TIME;
+	return m_handle.Get() == nullptr || GetTimeSinceLastUpdated() >= ISharedBotMemory::REPORTED_ENTITY_BECOME_OBSOLETE_AFTER;
 }
 
-void ISharedBotMemory::EntityInfo::Update()
+void ISharedBotMemory::ReportedEntityData::Update()
 {
 	CBaseEntity* pEntity = m_handle.Get();
 	m_lastknownposition = UtilHelpers::getEntityOrigin(pEntity);
 	m_lastknownarea = TheNavMesh->GetNearestNavArea(m_lastknownposition, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 2.5f, true);
 	m_timeupdated = gpGlobals->curtime;
+	m_cleared = false;
 }
 
-float ISharedBotMemory::EntityInfo::GetTimeSinceCreation() const
+float ISharedBotMemory::ReportedEntityData::GetTimeSinceCreation() const
 {
 	return gpGlobals->curtime - m_timecreated;
 }
 
-float ISharedBotMemory::EntityInfo::GetTimeSinceLastUpdated() const
+float ISharedBotMemory::ReportedEntityData::GetTimeSinceLastUpdated() const
 {
 	return gpGlobals->curtime - m_timeupdated;
 }
 
-bool ISharedBotMemory::EntityInfo::ClassnameMatches(const char* pattern) const
+bool ISharedBotMemory::ReportedEntityData::ClassnameMatches(const char* pattern) const
 {
 	return UtilHelpers::StringMatchesPattern(m_classname.c_str(), pattern, 0);
 }
@@ -60,6 +62,7 @@ bool ISharedBotMemory::EntityInfo::ClassnameMatches(const char* pattern) const
 ISharedBotMemory::ISharedBotMemory()
 {
 	m_defenders = 0;
+	m_reportedentitiesvec.reserve(32);
 }
 
 ISharedBotMemory::~ISharedBotMemory()
@@ -69,65 +72,14 @@ ISharedBotMemory::~ISharedBotMemory()
 void ISharedBotMemory::Reset()
 {
 	m_defenders = 0;
+	m_reportedentitiesvec.clear();
 }
 
 void ISharedBotMemory::Update()
 {
-	PurgeInvalidEntityInfos();
+	UpdateReportedEntities();
 }
 
 void ISharedBotMemory::Frame()
 {
-}
-
-void ISharedBotMemory::OnRoundRestart()
-{
-	Reset();
-}
-
-const ISharedBotMemory::EntityInfo* ISharedBotMemory::AddEntityInfo(CBaseEntity* entity)
-{
-	for (ISharedBotMemory::EntityInfo& info : m_ents)
-	{
-		if (info.GetEntity() == entity)
-		{
-			info.Update();
-			return &info;
-		}
-	}
-
-	ISharedBotMemory::EntityInfo* info = &m_ents.emplace_back(entity);
-	return info;
-}
-
-const ISharedBotMemory::EntityInfo* ISharedBotMemory::GetEntityInfo(CBaseEntity* entity) const
-{
-	ISharedBotMemory::EntityInfo other{ entity };
-
-	auto it = std::find(m_ents.cbegin(), m_ents.cend(), other);
-
-	if (it != m_ents.cend())
-	{
-		return &(*it);
-	}
-
-	return nullptr;
-}
-
-void ISharedBotMemory::ForgetEntity(CBaseEntity* entity)
-{
-	const ISharedBotMemory::EntityInfo other(entity);
-
-	m_ents.erase(std::remove_if(m_ents.begin(), m_ents.end(), [&other](const ISharedBotMemory::EntityInfo& obj) {
-		return obj == other;
-	}), m_ents.end());
-}
-
-void ISharedBotMemory::PurgeInvalidEntityInfos()
-{
-	if (m_ents.empty()) { return; }
-
-	m_ents.erase(std::remove_if(m_ents.begin(), m_ents.end(), [](ISharedBotMemory::EntityInfo& info) {
-		return info.IsObsolete();
-	}), m_ents.end());
 }

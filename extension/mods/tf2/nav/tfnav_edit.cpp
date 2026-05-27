@@ -170,7 +170,7 @@ static void sm_tf_nav_toggle_path_attrib(const CConCommandArgs& args)
 		return;
 	}
 
-	for (int i = 1; i < args.ArgC(); i++)
+	for (std::size_t i = 1; i < args.ArgC(); i++)
 	{
 		auto attrib = NameToTFNavPathAttribute(args[i]);
 
@@ -206,7 +206,7 @@ static void sm_tf_nav_toggle_attrib(const CConCommandArgs& args)
 		return;
 	}
 
-	for (int i = 1; i < args.ArgC(); i++)
+	for (std::size_t i = 1; i < args.ArgC(); i++)
 	{
 		auto attrib = NameToTFNavAttributes(args[i]);
 
@@ -253,7 +253,7 @@ static void sm_tf_nav_toggle_mvm_attrib(const CConCommandArgs& args)
 		return;
 	}
 
-	for (int i = 1; i < args.ArgC(); i++)
+	for (std::size_t i = 1; i < args.ArgC(); i++)
 	{
 		auto attrib = NameToMvMAttributes(args[i]);
 

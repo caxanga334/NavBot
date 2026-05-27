@@ -16,20 +16,24 @@ public:
 	ISharedBotMemory();
 	virtual ~ISharedBotMemory();
 
-	static constexpr auto ENTITY_INFO_EXPIRE_TIME = 60.0f; // Any entity information older than this is 'expired'.
+	static constexpr auto REPORTED_ENTITY_BECOME_OBSOLETE_AFTER = 90.0f; // Any entity information older than this is 'expired'.
 
-	class EntityInfo
+	/**
+	 * @brief Represents the data of an entity reported by a bot.
+	 */
+	class ReportedEntityData
 	{
 	public:
-		EntityInfo(CBaseEntity* pEntity);
+		ReportedEntityData(CBaseEntity* pEntity);
 
-		bool operator==(const EntityInfo& other) const;
-		bool operator!=(const EntityInfo& other) const;
+		bool operator==(const ReportedEntityData& other) const;
+		bool operator!=(const ReportedEntityData& other) const;
 		explicit operator bool() const { return IsValid(); }
 		// Returns true if the entity handle dereferences into a valid entity.
 		bool IsValid() const { return GetEntity() != nullptr; }
-		// Returns true if this entity info instance is still valid.
+		// Returns true if this reported entity instance is obsolete.
 		bool IsObsolete() const;
+		// Gets the stored entity. Will return NULL if the entity no longer exists.
 		CBaseEntity* GetEntity() const { return m_handle.Get(); }
 		void Update();
 		// Entity's last known position
@@ -40,8 +44,27 @@ public:
 		float GetTimeSinceCreation() const;
 		// Time in seconds since this entity info instance was last updated.
 		float GetTimeSinceLastUpdated() const;
+		/**
+		 * @brief Returns true if this reported entity instance was recently updated within the given time.
+		 * @param time Time limit to consider recently updated.
+		 * @return True if the given time is equal or less to the time since last updated, false otherwise.
+		 */
+		bool WasRecentlyUpdatedWithin(float time) const { return GetTimeSinceLastUpdated() <= time; }
+		// Returns the entity's classname.
 		const std::string& GetClassname() const { return m_classname; }
+		/**
+		 * @brief Checks if this reported entity classname matches the given pattern.
+		 * @param pattern Entity classname pattern.
+		 * @return True if the pattern matches, false otherwise.
+		 */
 		bool ClassnameMatches(const char* pattern) const;
+		/**
+		 * @brief Sets the entity's cleared status.
+		 * @param state State to set.
+		 */
+		void SetClearedStatus(bool state) { m_cleared = state; }
+		// Returns true if this entity
+		bool IsCleared() const { return m_cleared; }
 
 	private:
 		CHandle<CBaseEntity> m_handle;
@@ -49,54 +72,116 @@ public:
 		CNavArea* m_lastknownarea;
 		float m_timecreated; // time stamp when this entity info was created
 		float m_timeupdated; // time stamp when this entity info was last updated
-		std::string m_classname;
+		std::string m_classname; // entity classname
+		bool m_cleared; // remembers if this entity was cleared in a combat search
 	};
 
+	// Called to reset the shared memory interface.
 	virtual void Reset();
+	// Called at intervals, prefer using this for expensive calls.
 	virtual void Update();
+	// Called every server frame, avoid doing expensive calls here.
 	virtual void Frame();
-	virtual void OnRoundRestart();
+	// Called when the round is restarted.
+	virtual void OnRoundRestart() { Reset(); }
 
 	/**
-	 * @brief Registers or updates an entity info.
-	 * @param entity Entity to be stored.
-	 * @return Pointer to entity info.
+	 * @brief Reports an entity is currently visible. This will create or update an instance.
+	 * @param entity Entity being reported.
+	 * @return Pointer to the reported entity instance.
 	 */
-	const EntityInfo* AddEntityInfo(CBaseEntity* entity);
-	/**
-	 * @brief Gets an entity info instance.
-	 * @param entity Entity to get the entity info of.
-	 * @return Entity info instance or NULL if not registered.
-	 */
-	const EntityInfo* GetEntityInfo(CBaseEntity* entity) const;
-	/**
-	 * @brief Removes an entity info entry of the given entity.
-	 * @param entity Entity to remove info of.
-	 */
-	void ForgetEntity(CBaseEntity* entity);
-	/**
-	 * @brief Collects entity infos into a vector. Obsolete infos are excluded.
-	 * @param out Vector to store the entity infos
-	 */
-	void CollectEntityInfos(std::vector<const EntityInfo*>& out)
+	ReportedEntityData* ReportEntityVisible(CBaseEntity* entity)
 	{
-		for (EntityInfo& info : m_ents)
+		for (auto& red : m_reportedentitiesvec)
 		{
-			if (!info.IsObsolete())
+			if (red.GetEntity() == entity)
 			{
-				out.push_back(&info);
+				red.Update();
+				return &red;
+			}
+		}
+
+		ReportedEntityData& red = m_reportedentitiesvec.emplace_back(entity);
+		return &red;
+	}
+	/**
+	 * @brief Searches for a reported entity instance of the given entity.
+	 * @param entity Entity to search the instance of.
+	 * @return Pointer to a reporte entity instance. NULL if none is found.
+	 */
+	const ReportedEntityData* GetReportedEntityInstance(CBaseEntity* entity) const
+	{
+		for (auto& red : m_reportedentitiesvec)
+		{
+			if (red && red.GetEntity() == entity)
+			{
+				return &red;
+			}
+		}
+
+		return nullptr;
+	}
+	/**
+	 * @brief Updates the reported entity instance of the given entity as cleared.
+	 * @param entity Entity to update.
+	 */
+	void UpdateReportedEntityAsCleared(CBaseEntity* entity)
+	{
+		for (auto& red : m_reportedentitiesvec)
+		{
+			if (red && red.GetEntity() == entity)
+			{
+				red.SetClearedStatus(true);
+				return;
 			}
 		}
 	}
 	/**
+	 * @brief Removes an entity info entry of the given entity.
+	 * @param entity Entity to remove info of.
+	 */
+	void ForgetEntity(CBaseEntity* entity)
+	{
+		m_reportedentitiesvec.erase(std::remove_if(std::begin(m_reportedentitiesvec), std::end(m_reportedentitiesvec), [&entity](const ReportedEntityData& obj) {
+			if (obj)
+			{
+				return obj.GetEntity() == entity;
+			}
+
+			return false;
+		}), std::end(m_reportedentitiesvec));
+	}
+	/**
+	 * @brief Collects valid reported entity instances into a vector.
+	 * @param vec Vector to store the collected instances.
+	 * @return Number of instances collected
+	 */
+	std::size_t CollectReportedEntities(std::vector<const ISharedBotMemory::ReportedEntityData*>& vec) const
+	{
+		std::size_t c = 0;
+
+		for (const ReportedEntityData& info : m_reportedentitiesvec)
+		{
+			if (!info.IsObsolete())
+			{
+				vec.push_back(&info);
+				c++;
+			}
+		}
+
+		return c;
+	}
+	// Returns the number of reported entities stored.
+	std::size_t GetReportedEntitiesCount() const { return m_reportedentitiesvec.size(); }
+	/**
 	 * @brief Runs a function on every entity info stored.
-	 * @tparam F a lambda expression or class with void (const ISharedBotMemory::EntityInfo& entinfo) function.
+	 * @tparam F a lambda expression or class with void (const ISharedBotMemory::ReportedEntityData& entinfo) function.
 	 * @param func Function to run.
 	 */
 	template <typename F>
-	void ForEveryEntityInfo(const F& func) const
+	void ForEveryReportedEntity(const F& func) const
 	{
-		for (const EntityInfo& info : m_ents)
+		for (const ReportedEntityData& info : m_reportedentitiesvec)
 		{
 			if (!info.IsObsolete())
 			{
@@ -116,12 +201,18 @@ public:
 	int GetDefendersCount() const { return m_defenders; }
 
 protected:
-	std::vector<EntityInfo>* GetEntityInfoStorageVector() { return &m_ents; }
+	std::vector<ReportedEntityData>& GetEntityInfoStorageVector() { return m_reportedentitiesvec; }
 
-	void PurgeInvalidEntityInfos();
+	void UpdateReportedEntities()
+	{
+		// Remove obsolete instances.
+		m_reportedentitiesvec.erase(std::remove_if(std::begin(m_reportedentitiesvec), std::end(m_reportedentitiesvec), [](const ReportedEntityData& obj) {
+			return obj.IsObsolete();
+		}), std::end(m_reportedentitiesvec));
+	}
 
 private:
-	std::vector<EntityInfo> m_ents; // entity info stoarge
+	std::vector<ReportedEntityData> m_reportedentitiesvec; // Vector of entities reported by bots.
 	int m_defenders; // number of bots doing defensive tasks
 
 };
