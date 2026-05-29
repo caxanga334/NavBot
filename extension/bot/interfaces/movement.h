@@ -382,7 +382,7 @@ public:
 	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now = true, CBaseEntity** obstacle = nullptr);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float* fraction = nullptr);
-	virtual bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true);
+	virtual bool IsEntityTraversable(CBaseEntity* entity, const bool now = true) const;
 	// returns true if the bot is on ground
 	virtual bool IsOnGround();
 	// Returns true if the bot is fully crouched

@@ -29,7 +29,7 @@ public:
 protected:
 	bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const override;
 public:
-	bool IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now = true) override;
+	bool IsEntityTraversable(CBaseEntity* entity, const bool now = true) const override;
 	bool IsControllingMovements() const override;
 	bool IsPathingAllowed() const override;
 	bool NeedsWeaponControl() const override;

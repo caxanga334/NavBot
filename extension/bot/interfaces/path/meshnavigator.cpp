@@ -88,6 +88,7 @@ void CMeshNavigator::OnPathChanged(CBaseBot* bot, AIPath::ResultType result)
 	switch (result)
 	{
 	case AIPath::COMPLETE_PATH:
+		[[fallthrough]];
 	case AIPath::PARTIAL_PATH:
 		m_goal = GetFirstSegment();
 		/* Avoid backtracking by advancing the goal to the nearest segment, this occurs when the bot is performing air movements */
@@ -95,6 +96,7 @@ void CMeshNavigator::OnPathChanged(CBaseBot* bot, AIPath::ResultType result)
 		AdvanceGoalToNearest();
 		break;
 	case AIPath::NO_PATH:
+		[[fallthrough]];
 	default:
 		m_goal = nullptr;
 		break;
@@ -1285,7 +1287,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	constexpr auto avoidInterval = 0.5f;
 	m_avoidTimer.Start(avoidInterval);
 
-	auto mover = bot->GetMovementInterface();
+	IMovement* mover = bot->GetMovementInterface();
 
 	if (mover->IsClimbingOrJumping() || !mover->IsOnGround())
 	{
@@ -1361,6 +1363,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 		// track any doors we need to avoid
 		if (result.DidHitNonWorldEntity())
 		{
+			// TO-DO: might also be interesting to add func_door_rotating to here
 			if (UtilHelpers::FClassnameIs(result.m_pEnt, "prop_door*"))
 			{
 				door = result.m_pEnt;

@@ -8,7 +8,7 @@ class CCSSBotWeapon : public CBotWeapon
 public:
 	CCSSBotWeapon(CBaseEntity* entity);
 
-	bool IsDeployedOrScoped(const CBaseBot* owner) const override;
+	// bool IsDeployedOrScoped(const CBaseBot* owner) const override;
 };
 
 #endif // !__NAVBOT_CSS_BOT_WEAPON_H_

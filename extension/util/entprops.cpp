@@ -2559,3 +2559,19 @@ bool entityprops::IsEffectActiveOnEntity(CBaseEntity* entity, int effects)
 	entprops->GetEntProp(entity, Prop_Data, "m_fEffects", m_fEffects);
 	return ((m_fEffects & effects) != 0);
 }
+
+PropType entityprops::StringToPropType(const char* str)
+{
+	if (ke::StrCaseCmp(str, "Prop_Send") == 0)
+	{
+		return Prop_Send;
+	}
+
+	if (ke::StrCaseCmp(str, "Prop_Data") == 0)
+	{
+		return Prop_Data;
+	}
+
+	// there is no invalid prop type so always fallback to Prop_Data
+	return Prop_Data;
+}

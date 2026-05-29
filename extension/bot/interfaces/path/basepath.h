@@ -555,7 +555,7 @@ inline float CPath::GetCursorPosition(void) const
 
 inline const BotPathSegment* CPath::GetFirstSegment() const
 {
-	if (m_segments.size() == 0)
+	if (m_segments.empty())
 	{
 		return nullptr;
 	}
@@ -565,7 +565,7 @@ inline const BotPathSegment* CPath::GetFirstSegment() const
 
 inline const BotPathSegment* CPath::GetLastSegment() const
 {
-	if (m_segments.size() == 0)
+	if (m_segments.empty())
 	{
 		return nullptr;
 	}
@@ -576,7 +576,7 @@ inline const BotPathSegment* CPath::GetLastSegment() const
 
 inline const BotPathSegment* CPath::GetNextSegment(const BotPathSegment* current) const
 {
-	if (m_segments.size() == 0)
+	if (m_segments.empty())
 	{
 		return nullptr;
 	}
@@ -607,7 +607,7 @@ inline const BotPathSegment* CPath::GetNextSegment(const BotPathSegment* current
 
 inline const BotPathSegment* CPath::GetPriorSegment(const BotPathSegment* current) const
 {
-	if (m_segments.size() == 0)
+	if (m_segments.empty())
 	{
 		return nullptr;
 	}

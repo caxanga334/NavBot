@@ -118,6 +118,199 @@ public:
 
 	botweapons::AttackType GetLastUsedAttackType() const { return m_lastUsedAttackType; }
 
+	/**
+	 * @brief Unique IDs for each individual button.
+	 */
+	enum class ButtonID : std::uint8_t
+	{
+		BUTTON_INVALID = 0,
+		BUTTON_ATTACKPRIM,
+		BUTTON_ATTACKSEC,
+		BUTTON_ATTACKSPECIAL,
+		BUTTON_JUMP,
+		BUTTON_CROUCH,
+		BUTTON_FORWARDS,
+		BUTTON_BACKWARDS,
+		BUTTON_USE,
+		BUTTON_MOVELEFT,
+		BUTTON_MOVERIGHT,
+		BUTTON_MOVEUP,
+		BUTTON_MOVEDOWN,
+		BUTTON_RELOAD,
+		BUTTON_ALT1,
+		BUTTON_RUN,
+		BUTTON_SPEED,
+		BUTTON_WALK,
+		BUTTON_MODCUSTOM1,
+		BUTTON_MODCUSTOM2,
+		BUTTON_MODCUSTOM3,
+		BUTTON_MODCUSTOM4,
+
+		MAX_BUTTON_ID
+	};
+
+	constexpr static std::array<std::pair<std::string_view, ButtonID>, static_cast<std::size_t>(ButtonID::MAX_BUTTON_ID)> s_buttonNames = {{
+		{ "BUTTON_INVALID", ButtonID::BUTTON_INVALID },
+		{ "BUTTON_ATTACKPRIM", ButtonID::BUTTON_ATTACKPRIM },
+		{ "BUTTON_ATTACKSEC", ButtonID::BUTTON_ATTACKSEC },
+		{ "BUTTON_ATTACKSPECIAL", ButtonID::BUTTON_ATTACKSPECIAL },
+		{ "BUTTON_JUMP", ButtonID::BUTTON_JUMP },
+		{ "BUTTON_CROUCH", ButtonID::BUTTON_CROUCH },
+		{ "BUTTON_FORWARDS", ButtonID::BUTTON_FORWARDS },
+		{ "BUTTON_BACKWARDS", ButtonID::BUTTON_BACKWARDS },
+		{ "BUTTON_USE", ButtonID::BUTTON_USE },
+		{ "BUTTON_MOVELEFT", ButtonID::BUTTON_MOVELEFT },
+		{ "BUTTON_MOVERIGHT", ButtonID::BUTTON_MOVERIGHT },
+		{ "BUTTON_MOVEUP", ButtonID::BUTTON_MOVEUP },
+		{ "BUTTON_MOVEDOWN", ButtonID::BUTTON_MOVEDOWN },
+		{ "BUTTON_RELOAD", ButtonID::BUTTON_RELOAD },
+		{ "BUTTON_ALT1", ButtonID::BUTTON_ALT1 },
+		{ "BUTTON_RUN", ButtonID::BUTTON_RUN },
+		{ "BUTTON_SPEED", ButtonID::BUTTON_SPEED },
+		{ "BUTTON_WALK", ButtonID::BUTTON_WALK },
+		{ "BUTTON_MODCUSTOM1", ButtonID::BUTTON_MODCUSTOM1 },
+		{ "BUTTON_MODCUSTOM2", ButtonID::BUTTON_MODCUSTOM2 },
+		{ "BUTTON_MODCUSTOM3", ButtonID::BUTTON_MODCUSTOM3 },
+		{ "BUTTON_MODCUSTOM4", ButtonID::BUTTON_MODCUSTOM4 },
+	}};
+
+	/**
+	 * @brief Converts the given string to a button ID if it matches with the button's name.
+	 * @param str String to convert.
+	 * @return Button ID. ButtonID::BUTTON_INVALID is returned if the string could not be converted.
+	 */
+	static ButtonID GetButtonIDFromString(const std::string& str)
+	{
+		for (auto& pair : s_buttonNames)
+		{
+			if (ke::StrCaseCmp(pair.first.data(), str.c_str()) == 0)
+			{
+				return pair.second;
+			}
+		}
+
+		return ButtonID::BUTTON_INVALID;
+	}
+
+	/**
+	 * @brief Presses a button by their ID.
+	 * @param id ID of the button to press.
+	 * @parma duration How long to keep the button pressed in seconds.
+	 */
+	void PressButtonByID(const ButtonID id, const float duration = -1.0f)
+	{
+		switch (id)
+		{
+		case ButtonID::BUTTON_ATTACKPRIM:
+		{
+			PressAttackButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_ATTACKSEC:
+		{
+			PressSecondaryAttackButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_ATTACKSPECIAL:
+		{
+			PressSpecialAttackButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_JUMP:
+		{
+			PressJumpButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_CROUCH:
+		{
+			PressCrouchButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_FORWARDS:
+		{
+			PressForwardButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_BACKWARDS:
+		{
+			PressBackwardsButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_USE:
+		{
+			PressUseButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MOVELEFT:
+		{
+			PressMoveLeftButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MOVERIGHT:
+		{
+			PressMoveRightButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MOVEUP:
+		{
+			PressMoveUpButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MOVEDOWN:
+		{
+			PressMoveDownButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_RELOAD:
+		{
+			PressReloadButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_ALT1:
+		{
+			PressAlt1Button(duration);
+			break;
+		}
+		case ButtonID::BUTTON_RUN:
+		{
+			PressRunButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_SPEED:
+		{
+			PressSpeedButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_WALK:
+		{
+			PressWalkButton(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM1:
+		{
+			PressModCustom1Button(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM2:
+		{
+			PressModCustom2Button(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM3:
+		{
+			PressModCustom3Button(duration);
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM4:
+		{
+			PressModCustom4Button(duration);
+			break;
+		}
+		default:
+			return;
+		}
+	}
+
 protected:
 	int m_buttons; // Buttons to be sent in the next user command
 	int m_oldbuttons; // Buttons that were pressed in the last user command sent

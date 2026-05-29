@@ -149,7 +149,7 @@ bool CBotWeapon::IsOutOfAmmo(const CBaseBot* owner) const
 
 	if (info->HasCustomAmmoProperty())
 	{
-		if (GetCustomAmmo(owner) <= info->GetCustomAmmoOutOfAmmoThreshold())
+		if (!info->GetCustomAmmoProperty().TestCondition(owner->GetEntity(), GetEntity()))
 		{
 			return true;
 		}
@@ -391,10 +391,7 @@ bool CBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 
 	if (info->HasDeployedStateProperty())
 	{
-		int source = info->IsDeployedPropertyOnTheWeapon() ? this->GetIndex() : owner->GetIndex();
-		bool deployed = false;
-		entprops->GetEntPropBool(source, Prop_Send, info->GetDeployedPropertyName().c_str(), deployed);
-		return deployed;
+		return info->GetDeployedProperty().TestCondition(owner->GetEntity(), GetEntity());
 	}
 
 	return false;
@@ -405,25 +402,14 @@ bool CBotWeapon::CanUseSpecialFunction(const CBaseBot* owner, const float range)
 	const WeaponInfo* info = GetWeaponInfo();
 	const WeaponInfo::SpecialFunction& func = info->GetSpecialFunction();
 
-	if (!func.property_name.empty())
+	if (func.entprop.HasPropertyName())
 	{
 		if (range < func.min_range || range > func.max_range)
 		{
 			return false;
 		}
 
-		int entsource = func.property_on_weapon ? this->GetIndex() : owner->GetIndex();
-
-		if (func.property_is_float)
-		{
-			float value = 0.0f;
-			entprops->GetEntPropFloat(entsource, Prop_Send, func.property_name.c_str(), value);
-			return value >= func.available_threshold;
-		}
-
-		int value = 0;
-		entprops->GetEntProp(entsource, Prop_Send, func.property_name.c_str(), value);
-		return value >= static_cast<int>(func.available_threshold);
+		return func.entprop.TestCondition(owner->GetEntity(), GetEntity());
 	}
 
 	return false;
@@ -449,25 +435,14 @@ bool CBotWeapon::CanBeReloaded(const CBaseBot* owner) const
 
 float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const
 {
-	const WeaponInfo* info = GetWeaponInfo();
-	PropType type = info->IsCustomAmmoPropertyNetworked() ? Prop_Send : Prop_Data;
-	float result = 0.0f;
-	int entity = info->IsCustomAmmoPropertyOnWeapon() ? this->GetIndex() : owner->GetIndex();
+	const WeaponEntityProperty& prop = GetWeaponInfo()->GetCustomAmmoProperty();
 
-	if (info->IsCustomAmmoPropertyAFloat())
+	if (prop.GetValueType() == WeaponEntityProperty::ValueType::TYPE_FLOAT)
 	{
-		float value = 0.0f;
-		entprops->GetEntPropFloat(entity, type, info->GetCustomAmmoPropertyName().c_str(), value);
-		result = value;
-	}
-	else
-	{
-		int value = 0;
-		entprops->GetEntProp(entity, type, info->GetCustomAmmoPropertyName().c_str(), value);
-		result = static_cast<float>(value);
+		return prop.ReadPropFloat(owner->GetEntity(), GetEntity());
 	}
 
-	return result;
+	return static_cast<float>(prop.ReadPropInt(owner->GetEntity(), GetEntity()));
 }
 
 const char* CBotWeapon::GetDebugIdentifier() const

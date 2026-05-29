@@ -7,6 +7,7 @@ CCSSBotWeapon::CCSSBotWeapon(CBaseEntity* entity) :
 {
 }
 
+/* no longer used
 bool CCSSBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 {
 	int fov = 0;
@@ -20,3 +21,4 @@ bool CCSSBotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 
 	return false;
 }
+*/

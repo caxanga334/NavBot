@@ -14,6 +14,389 @@
 #undef max
 #undef clamp
 
+bool WeaponEntityProperty::SetupFromString(const char* str)
+{
+	if (ke::StrCaseCmp(str, "reset") == 0)
+	{
+		Reset();
+		return true;
+	}
+
+	std::size_t count = 0U;
+	std::string szValue(str);
+	std::stringstream stream(szValue);
+	std::string token;
+
+	// format: prop name, prop type, value type, compare type, on player, value 1, value 2 (optional)
+
+	while (std::getline(stream, token, ','))
+	{
+		switch (count)
+		{
+		case 0U:
+		{
+			m_propName = token;
+			// unlikely for a property name to be this small
+			if (m_propName.length() <= 2) { return false; }
+			break;
+		}
+		case 1U:
+		{
+			SetPropType(entityprops::StringToPropType(token.c_str()));
+			break;
+		}
+		case 2U:
+		{
+			SetValueType(GetValueFromString(token));
+			if (m_valueType == ValueType::TYPE_UNKNOWN) { return false; }
+			break;
+		}
+		case 3U:
+		{
+			SetCompareType(GetCompareTypeFromString(token));
+			if (m_compareType == CompareType::COMPARE_NONE) { return false; }
+			break;
+		}
+		case 4U:
+		{
+			SetOnPlayer(UtilHelpers::StringToBoolean(token.c_str()));
+			break;
+		}
+		case 5U:
+		{
+			if (!ReadValue1(token)) { return false; }
+			break;
+		}
+		case 6U:
+		{
+			if (!ReadValue2(token)) { return false; }
+			break;
+		}
+		default:
+			break;
+		}
+
+		count++;
+	}
+
+	if (!IsValid())
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool WeaponEntityProperty::TestCondition(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	if (!IsValid()) { return false; }
+
+	try
+	{
+		switch (m_valueType)
+		{
+		case ValueType::TYPE_BOOL:
+		{
+			return TestBoolean(player, weapon);
+		}
+		case ValueType::TYPE_INT:
+		{
+			return TestInt(player, weapon);
+		}
+		case ValueType::TYPE_FLOAT:
+		{
+			return TestFloat(player, weapon);
+		}
+		default:
+			return false;
+		}
+	}
+	catch (const std::bad_any_cast& ex)
+	{
+#ifdef EXT_DEBUG
+		META_CONPRINTF("[NavBot] WeaponEntityProperty::TestCondition C++ Exception! %s \n", ex.what());
+#endif // EXT_DEBUG
+		return false;
+	}
+}
+
+int WeaponEntityProperty::ReadPropBool(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	if (m_valueType != ValueType::TYPE_BOOL) { return false; }
+
+	bool value = 0;
+
+	if (!entprops->GetEntPropBool(IsOnPlayer() ? player : weapon, GetPropType(), GetPropertyName().c_str(), value))
+	{
+		return false;
+	}
+
+	return value;
+}
+
+int WeaponEntityProperty::ReadPropInt(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	if (m_valueType != ValueType::TYPE_INT) { return 0; }
+
+	int value = 0;
+
+	if (!entprops->GetEntProp(IsOnPlayer() ? player : weapon, GetPropType(), GetPropertyName().c_str(), value))
+	{
+		return 0;
+	}
+
+	return value;
+}
+
+float WeaponEntityProperty::ReadPropFloat(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	if (m_valueType != ValueType::TYPE_FLOAT) { return 0.0f; }
+
+	float value = 0;
+
+	if (!entprops->GetEntPropFloat(IsOnPlayer() ? player : weapon, GetPropType(), GetPropertyName().c_str(), value))
+	{
+		return 0.0f;
+	}
+
+	return value;
+}
+
+bool WeaponEntityProperty::ReadValue1(const std::string& str)
+{
+	try
+	{
+		switch (m_valueType)
+		{
+		case ValueType::TYPE_BOOL:
+		{
+			SetValue1(UtilHelpers::StringToBoolean(str.c_str()));
+			break;
+		}
+		case ValueType::TYPE_INT:
+		{
+			int value = std::stoi(str);
+			SetValue1(value);
+			break;
+		}
+		case ValueType::TYPE_FLOAT:
+		{
+			float value = std::stof(str);
+			SetValue1(value);
+			break;
+		}
+		default:
+			return false;
+		}
+	}
+	catch (const std::invalid_argument&)
+	{
+		return false;
+	}
+	catch (const std::out_of_range&)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool WeaponEntityProperty::ReadValue2(const std::string& str)
+{
+	try
+	{
+		switch (m_valueType)
+		{
+		case ValueType::TYPE_BOOL:
+		{
+			SetValue2(UtilHelpers::StringToBoolean(str.c_str()));
+			break;
+		}
+		case ValueType::TYPE_INT:
+		{
+			int value = std::stoi(str);
+			SetValue2(value);
+			break;
+		}
+		case ValueType::TYPE_FLOAT:
+		{
+			float value = std::stof(str);
+			SetValue2(value);
+			break;
+		}
+		default:
+			return false;
+		}
+	}
+	catch (const std::invalid_argument&)
+	{
+		return false;
+	}
+	catch (const std::out_of_range&)
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool WeaponEntityProperty::TestBoolean(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	bool value = false;
+	
+	if (!entprops->GetEntPropBool(IsOnPlayer() ? player : weapon, GetPropType(), GetPropertyName().c_str(), value))
+	{
+		// property doesn't exists in the entity
+		return false;
+	}
+
+	switch (m_compareType)
+	{
+	case CompareType::COMPARE_EQUALS:
+	{
+		return value == std::any_cast<bool>(m_value1);
+	}
+	case CompareType::COMPARE_NOTEQUALS:
+	{
+		return value != std::any_cast<bool>(m_value1);
+	}
+	default:
+		break;
+	}
+
+	return false;
+}
+
+bool WeaponEntityProperty::TestInt(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	int value = 0;
+
+	if (!entprops->GetEntProp(IsOnPlayer() ? player : weapon, GetPropType(), GetPropertyName().c_str(), value))
+	{
+		// property doesn't exists in the entity
+		return false;
+	}
+
+	switch (m_compareType)
+	{
+	case CompareType::COMPARE_EQUALS:
+	{
+		return value == std::any_cast<int>(m_value1);
+	}
+	case CompareType::COMPARE_NOTEQUALS:
+	{
+		return value != std::any_cast<int>(m_value1);
+	}
+	case CompareType::COMPARE_GREATER:
+	{
+		return value > std::any_cast<int>(m_value1);
+	}
+	case CompareType::COMPARE_LESS:
+	{
+		return value < std::any_cast<int>(m_value1);
+	}
+	case CompareType::COMPARE_BETWEEN:
+	{
+		return value > std::any_cast<int>(m_value1) && value < std::any_cast<int>(m_value2);
+	}
+	case CompareType::COMPARE_BIT_SET:
+	{
+		return (value & std::any_cast<int>(m_value1)) != 0;
+	}
+	default:
+		break;
+	}
+
+	return false;
+}
+
+bool WeaponEntityProperty::TestFloat(CBaseEntity* player, CBaseEntity* weapon) const
+{
+	float value = 0;
+
+	if (!entprops->GetEntPropFloat(IsOnPlayer() ? player : weapon, GetPropType(), GetPropertyName().c_str(), value))
+	{
+		// property doesn't exists in the entity
+		return false;
+	}
+
+	switch (m_compareType)
+	{
+	case CompareType::COMPARE_GREATER:
+	{
+		return value > std::any_cast<float>(m_value1);
+	}
+	case CompareType::COMPARE_LESS:
+	{
+		return value < std::any_cast<float>(m_value1);
+	}
+	case CompareType::COMPARE_BETWEEN:
+	{
+		return value > std::any_cast<float>(m_value1) && value < std::any_cast<float>(m_value2);
+	}
+	default:
+		break;
+	}
+
+	return false;
+}
+
+WeaponEntityProperty::ValueType WeaponEntityProperty::GetValueFromString(const std::string& str)
+{
+	if (str == "bool")
+	{
+		return ValueType::TYPE_BOOL;
+	}
+
+	if (str == "int")
+	{
+		return ValueType::TYPE_INT;
+	}
+
+	if (str == "float")
+	{
+		return ValueType::TYPE_FLOAT;
+	}
+
+	return ValueType::TYPE_UNKNOWN;
+}
+
+WeaponEntityProperty::CompareType WeaponEntityProperty::GetCompareTypeFromString(const std::string& str)
+{
+	if (str == "equals")
+	{
+		return CompareType::COMPARE_EQUALS;
+	}
+
+	if (str == "notequals")
+	{
+		return CompareType::COMPARE_NOTEQUALS;
+	}
+
+	if (str == "greater")
+	{
+		return CompareType::COMPARE_GREATER;
+	}
+
+	if (str == "less")
+	{
+		return CompareType::COMPARE_LESS;
+	}
+
+	if (str == "between")
+	{
+		return CompareType::COMPARE_BETWEEN;
+	}
+
+	if (str == "bitset")
+	{
+		return CompareType::COMPARE_BIT_SET;
+	}
+
+	return CompareType::COMPARE_NONE;
+}
+
+
 float WeaponAttackFunctionInfo::GetDistanceMappedAttackDelay(const float dist) const
 {
 	return RemapValClamped(dist, dmad.range_min, dmad.range_max, dmad.delay_min, dmad.delay_max);
@@ -380,43 +763,16 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	{
 		WeaponInfo::SpecialFunction* func = m_current->GetSpecialFunctionEx();
 
-		if (std::strcmp(key, "property_name") == 0)
+		if (std::strcmp(key, "setup_property") == 0)
 		{
-			func->property_name.assign(value);
-		}
-		else if (std::strcmp(key, "property_source") == 0)
-		{
-			if (std::strcmp(value, "player") == 0)
+			if (!func->entprop.SetupFromString(value))
 			{
-				func->property_on_weapon = false;
+				smutils->LogError(myself, "Failed to setup weapon special function entity prop! Line %u col %u", states->line, states->col);
 			}
-			else if (std::strcmp(value, "weapon") == 0)
-			{
-				func->property_on_weapon = true;
-			}
-		}
-		else if (std::strcmp(key, "property_is_float") == 0)
-		{
-			func->property_is_float = UtilHelpers::StringToBoolean(value);
-		}
-		else if (std::strcmp(key, "available_threshold") == 0)
-		{
-			func->available_threshold = atof(value);
 		}
 		else if (std::strcmp(key, "button_to_press") == 0)
 		{
-			if (std::strcmp(value, "secondary_attack") == 0)
-			{
-				func->button_to_press = INPUT_ATTACK2;
-			}
-			if (std::strcmp(value, "tertiary_attack") == 0)
-			{
-				func->button_to_press = INPUT_ATTACK3;
-			}
-			else if (std::strcmp(value, "reload") == 0)
-			{
-				func->button_to_press = INPUT_RELOAD;
-			}
+			func->button_to_press = IPlayerInput::GetButtonIDFromString(value);
 		}
 		else if (std::strcmp(key, "delay_between_uses") == 0)
 		{
@@ -599,61 +955,24 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		v = std::clamp(v, 0, 100);
 		m_current->SetChanceToUseSecondaryAttack(v);
 	}
-	else if (strncmp(key, "custom_ammo_property_name", 25) == 0)
+	else if (std::strcmp(key, "setup_custom_ammo_property") == 0)
 	{
-		m_current->SetCustomAmmoPropertyName(value);
-	}
-	else if (strncmp(key, "custom_ammo_property_source", 27) == 0)
-	{
-		if (strncmp(value, "player", 6) == 0)
+		if (!m_current->SetupCustomAmmoProperty(value))
 		{
-			m_current->SetCustomAmmoPropertySource(false);
-		}
-		else
-		{
-			m_current->SetCustomAmmoPropertySource(true);
+			smutils->LogError(myself, "Error while parsing \"setup_custom_ammo_property\" at line %u col %u!", states->line, states->col);
 		}
 	}
-	else if (strncmp(key, "custom_ammo_property_type", 27) == 0)
+	else if (std::strcmp(key, "is_deployed_property_setup") == 0)
 	{
-		if (strncmp(value, "networked", 9) == 0)
+		if (!m_current->ParseDeployedProperty(value))
 		{
-			m_current->SetCustomAmmoPropertyType(true);
+			smutils->LogError(myself, "Error while parsing \"is_deployed_property_setup\" at line %u col %u!", states->line, states->col);
 		}
-		else
-		{
-			m_current->SetCustomAmmoPropertyType(false);
-		}
-	}
-	else if (strncmp(key, "custom_ammo_property_out_of_ammo_threshold", 42) == 0)
-	{
-		float v = atof(value);
-		m_current->SetCustomAmmoOutOfAmmoThreshold(v);
-	}
-	else if (strncmp(key, "custom_ammo_property_is_float", 29) == 0)
-	{
-		bool v = UtilHelpers::StringToBoolean(value);
-		m_current->SetCustomAmmoPropertyIsFloat(v);
-	}
-	else if (std::strcmp(key, "deployed_property_name") == 0)
-	{
-		m_current->SetDeployedPropertyName(value);
 	}
 	else if (std::strcmp(key, "needs_to_be_deployed_to_fire") == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetNeedsToBeDeployed(v);
-	}
-	else if (std::strcmp(key, "deployed_property_source") == 0)
-	{
-		if (std::strcmp(value, "player") == 0)
-		{
-			m_current->SetDeployedPropertySource(false);
-		}
-		else
-		{
-			m_current->SetDeployedPropertySource(true);
-		}
 	}
 	else if (std::strcmp(key, "disable_dodge") == 0)
 	{
@@ -886,9 +1205,9 @@ void WeaponInfo::PostLoad()
 		}
 	}
 
-	if (!special_function.property_name.empty())
+	if (!special_function.entprop.HasPropertyName())
 	{
-		if (special_function.button_to_press == 0)
+		if (special_function.button_to_press == IPlayerInput::ButtonID::BUTTON_INVALID)
 		{
 			smutils->LogError(myself, "Weapon Info for \"%s\" has special function declared with missing button to press.", this->configentry.c_str());
 		}

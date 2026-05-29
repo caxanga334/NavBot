@@ -35,13 +35,8 @@ This is a list of keys available for all mods.
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
 |spam_time|How long in seconds to continue firing the weapon at the enemy LKP.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
-|custom_ammo_property_name|Entity property the ammo for this weapon is stored at.|string|
-|custom_ammo_property_source|Where is the entity property located. Valid values are "player" and "weapon".|string|
-|custom_ammo_property_type|Custom ammo property type. "networked" for networked properties and "datamap" for datamaps.|string|
-|custom_ammo_property_out_of_ammo_threshold|If the property value is equal or less than this, the weapon is out of ammo.|float|
-|custom_ammo_property_is_float|Is the entity property used for custom ammo a float? If not, it's an integer.|boolean|
-|deployed_property_name|Name of a networked property used to check if the weapon is scoped in or deployed. Only supports booleans for now.|string|
-|deployed_property_source|Deployed status property source. "player" or "weapon".|string|
+|setup_custom_ammo_property|Custom ammo Entity Property Setup arguments. See doumentation below.|string|
+|is_deployed_property_setup|Is weapon deployed/scoped Entity Property Setup arguments. See doumentation below.|string|
 |needs_to_be_deployed_to_fire|If enabled, bots will deploy/scope-in before firing with this weapon.|boolean|
 |disable_dodge|If enabled, bots won't dodge enemy attacks while using this weapon.|boolean|
 |selection_max_range_override|If positive, overrides the maximum range value used in weapon selection.|float|
@@ -81,11 +76,8 @@ The following key value pairs should be on a `special_function` section on the w
 
 |Key Name|Description|Type|
 |:---:|:---:|:---:|
-|property_name|Name of the networked property to read.|string|
-|property_source|Where is the networked property located. "player" or "weapon".|string|
-|property_is_float|Is the networked property internally a float. Integer if set to false.|boolean|
-|available_threshold|The networked property value must be greater than this to be used.|float|
-|button_to_press|Which button the bot should press to activate the special functionl. Options: "secondary_attack", "tertiary_attack", "reload"|string|
+|setup_property|Entity Property Setup arguments. See doumentation below.|string|
+|button_to_press|Which button the bot should press to activate the special functionl. See the Button List below.|string|
 |delay_between_uses|Delay in seconds between uses of the special function. Negative values for no delay.|float|
 |hold_button_time|How long to press the special function button in seconds. Negative values for a single tap.|float|
 |min_range_to_activate|Bots won't use the special function is the distance to the current enemy is less than this value.|float|
@@ -181,6 +173,63 @@ The `preferred_aim_spot` is an optional property that allows overrinding the def
 For example, it's used in the TF2 soldier's rocket launcher to make the bots aim at the player's feet.    
 If no preferred aim spot is defined, the bot will aim at the first spot with a clear line of fire in the following order: Head (if allowed), center and origin.    
 To enable headshots, setting `can_headshot` to **true** is still required! `preferred_aim_spot` is not required for headshots.    
+
+## Button List
+
+Valid values for *button list* attributes.    
+
+|Name|Description|
+|:---:|:---:|
+| BUTTON_INVALID | Invalid/no button. |
+| BUTTON_ATTACKPRIM | Primary attack. |
+| BUTTON_ATTACKSEC | Secondary attack. |
+| BUTTON_ATTACKSPECIAL | Tertiary/Special attack. |
+| BUTTON_JUMP | Jump. |
+| BUTTON_CROUCH | Crouch. |
+| BUTTON_FORWARDS | Move forward. |
+| BUTTON_BACKWARDS | Move backwards. |
+| BUTTON_USE | Use. |
+| BUTTON_MOVELEFT | Strafe left. |
+| BUTTON_MOVERIGHT | Strafe right. |
+| BUTTON_MOVEUP | Move up. |
+| BUTTON_MOVEDOWN | Move down. |
+| BUTTON_RELOAD | Reload. |
+| BUTTON_ALT1 | Alt1 |
+| BUTTON_RUN | Run |
+| BUTTON_SPEED | Speed |
+| BUTTON_WALK | Walk |
+| BUTTON_MODCUSTOM1 | Custom mod button 1 |
+| BUTTON_MODCUSTOM2 | Custom mod button 2 |
+| BUTTON_MODCUSTOM3 | Custom mod button 3 |
+| BUTTON_MODCUSTOM4 | Custom mod button 4 |
+
+The button names comes from the Source SDK.    
+What each button does depends on the game and is common for the button's action to not match their name.    
+For example, in Insurgency, the run button is used to change the weapon's fire mode.    
+
+## Entity Property Setup
+
+For attributes that mention it's an entity property setup, you need to provide a few comma delimited arguments to it.    
+Format: `Property Name,Property Type,Value Type,Compare Type,Is On Player,value 1,value 2`.    
+
+* Property Name: Name of the entity property.
+* Property Type: Type of the property. Can be **Prop_Send** for networked properties or **Prop_Data** for datamaps.
+* Value Type: The property's value type: Can be **bool**, **int** or **float**.
+* Compare Type: How the value should be compared.
+* Is On Player: This is a boolean, true if the property is on the player's entity, false if it's on the weapon. Can be: true, false, yes, no
+* Value 1: The value the property will be compared to.
+* Value 2: The second value, this is only required if the comparison type requires it.
+
+### Compare Types
+
+|Name|Behavior|Notes| 
+|:---:|:---:|:---:|
+|equals|Checks if the property value is equal to value 1.|Cannot be used with floats.|
+|notequals|Checks if the property value is not equal to value 1.|Cannot be used with floats.|
+|greater|Checks if the property value is greater than value 1.|Cannot be used with booleans.|
+|less|Checks if the property value is less than value 1.|Cannot be used with booleans.|
+|between|Checks if the property value is greater than value 1 and less than value 2.|Cannot be used with booleans. Requires value 2 to be set.|
+|bitset|Performs a bitwise AND to determine if the value 1 bit is set on the property's value.|Can only be used with ints.|
 
 ## Console Commands
 

@@ -528,24 +528,7 @@ void ICombat::OpportunisticallyUseWeaponSpecialFunction(const CBaseBot* bot, con
 					bot->GetDebugIdentifier(), weapon->GetDebugIdentifier(), func.delay_between_uses);
 			}
 
-			switch (func.button_to_press)
-			{
-			case INPUT_ATTACK2:
-
-				input->PressSecondaryAttackButton(func.hold_button_time);
-				break;
-			case INPUT_ATTACK3:
-				input->PressSpecialAttackButton(func.hold_button_time);
-				break;
-			case INPUT_RELOAD:
-				input->PressReloadButton(func.hold_button_time);
-				break;
-			default:
-#ifdef EXT_DEBUG
-				META_CONPRINTF("Bot Weapon \"%s\" special function with invalid button to press! \n", weapon->GetWeaponInfo()->GetConfigEntryName());
-#endif // EXT_DEBUG
-				break;
-			}
+			input->PressButtonByID(func.button_to_press, func.hold_button_time);
 		}
 	}
 }

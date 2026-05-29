@@ -222,15 +222,15 @@ bool CTF2BotMovement::GapJumpRequiresDoubleJump(const Vector& landing, const Vec
 	return false;
 }
 
-bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)
+bool CTF2BotMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
 {
-	auto theirteam = tf2lib::GetEntityTFTeam(index);
+	auto theirteam = tf2lib::GetEntityTFTeam(entity);
 	auto myteam = GetBot<CTF2Bot>()->GetMyTFTeam();
 
 	if (myteam == theirteam)
 	{
 		/* TO-DO: check solid teammates cvar */
-		if (UtilHelpers::IsPlayerIndex(index))
+		if (modhelpers->IsPlayer(entity))
 		{
 			return true;
 		}
@@ -253,7 +253,7 @@ bool CTF2BotMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity
 		}
 	}
 
-	return IMovement::IsEntityTraversable(index, edict, entity, now);
+	return IMovement::IsEntityTraversable(entity, now);
 }
 
 bool CTF2BotMovement::IsControllingMovements() const

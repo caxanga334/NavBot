@@ -41,11 +41,7 @@ CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover
 
 bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
 {
-	edict_t* pEdict = nullptr;
-	CBaseEntity* pEntity = nullptr;
-	int index = INVALID_EHANDLE_INDEX;
-
-	trace::ExtractHandleEntity(pHandleEntity, &pEntity, &pEdict, index);
+	CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
 
 	if (pEntity == m_me->GetEntity())
 	{
@@ -59,7 +55,7 @@ bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int 
 			return true;
 		}
 
-		return !(m_mover->IsEntityTraversable(index, pEdict, pEntity, m_now));
+		return !(m_mover->IsEntityTraversable(pEntity, m_now));
 	}
 
 	return false;
@@ -1173,13 +1169,15 @@ bool IMovement::HasPotentialGap(const Vector& from, const Vector& to, float* fra
 	return false;
 }
 
-bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* entity, const bool now)
+bool IMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::IsEntityTraversable", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	if (index == 0) // index 0 is the world
+	const int index = UtilHelpers::IndexOfEntity(entity);
+
+	if (index == 0) // index 0 is the world, always solid
 	{
 		return false;
 	}
@@ -1189,12 +1187,29 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 		return true; // assume players are walkable since they will either move out of the way or get killed
 	}
 
-	if (UtilHelpers::FClassnameIs(entity, "func_door*"))
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+
+	if (std::strcmp(classname, "func_door_rotating") == 0)
+	{
+		int togglestate = static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM);
+		entprops->GetEntProp(entity, Prop_Data, "m_toggle_state", togglestate);
+
+		// Toggle state is at top when a func_door_rotating is open
+		if (togglestate == static_cast<int>(TOGGLE_STATE::TS_AT_TOP))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	// other brush doors, assume walkable.
+	if (UtilHelpers::StringMatchesPattern(classname, "func_door*", 0))
 	{
 		return true;
 	}
 
-	if (UtilHelpers::FClassnameIs(entity, "prop_door*"))
+	if (UtilHelpers::StringMatchesPattern(classname, "prop_door*", 0))
 	{
 		int doorstate = 0;
 		if (!entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate))
@@ -1208,7 +1223,7 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 		}
 	}
 
-	if (UtilHelpers::FClassnameIs(entity, "func_brush"))
+	if (std::strcmp(classname, "func_brush") == 0)
 	{
 		entities::HFuncBrush brush(gamehelpers->EdictOfIndex(index));
 		auto solidity = brush.GetSolidity();
@@ -1225,7 +1240,7 @@ bool IMovement::IsEntityTraversable(int index, edict_t* edict, CBaseEntity* enti
 		}
 	}
 
-	if (now == true)
+	if (now)
 	{
 		return false;
 	}
