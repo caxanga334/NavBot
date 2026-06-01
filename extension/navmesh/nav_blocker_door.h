@@ -43,6 +43,7 @@ protected:
 	CHandle<CBaseEntity> m_filter; // filter entity if any
 	bool m_blocked; // blocked status
 	bool m_teamOnly; // Is the door team specific (if true, is always blocked for teams that doesn't match the door's team)
+	bool m_negated; // Filter is using negated (inverted) logic.
 	int m_teamNum; // Team the door is assigned to
 
 	virtual void UpdateDoor();

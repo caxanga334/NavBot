@@ -90,9 +90,45 @@ public:
 	bool RemoveOnRecompute() override { return false; }
 	const char* GetName() override { return "CNavBlocker"; }
 	void PrintDebugInfo() override {}
+	bool IsAreaVectorEmpty() const { return m_areas.empty(); }
 
 protected:
 	std::vector<AreaType*> m_areas;
+
+	/**
+	 * @brief Add areas that overlaps an entity's extent to the areas vector.
+	 * @param entity Entity to get the extent of.
+	 * @param z_offset Offset to apply on the Z axis.
+	 * @param xy_offset Offset to apply on the X/Y axis.
+	 */
+	void AddAreasFromEntityExtent(CBaseEntity* entity, const float z_offset = 0.0f, const float xy_offset = 0.0f)
+	{
+		Extent entityExtent(entity);
+		entityExtent.lo.x -= xy_offset;
+		entityExtent.lo.y -= xy_offset;
+		entityExtent.lo.z -= z_offset;
+		entityExtent.hi.x += xy_offset;
+		entityExtent.hi.y += xy_offset;
+		entityExtent.hi.z += z_offset;
+		TheNavMesh->CollectAreasOverlappingExtent(entityExtent, m_areas);
+	}
+	/**
+	 * @brief Add areas that overlaps an entity's extent and intersects with the entity (determined via raycast) to the area vector.
+	 * @param entity Entity to get the extent of.
+	 * @param z_offset Offset to apply on the Z axis.
+	 * @param xy_offset Offset to apply on the X/Y axis.
+	 */
+	void AddAreasTouchingEntity(CBaseEntity* entity, const float z_offset = 0.0f, const float xy_offset = 0.0f)
+	{
+		Extent entityExtent(entity);
+		entityExtent.lo.x -= xy_offset;
+		entityExtent.lo.y -= xy_offset;
+		entityExtent.lo.z -= z_offset;
+		entityExtent.hi.x += xy_offset;
+		entityExtent.hi.y += xy_offset;
+		entityExtent.hi.z += z_offset;
+		TheNavMesh->CollectAreasTouchingEntity(entity, m_areas);
+	}
 };
 
 #endif

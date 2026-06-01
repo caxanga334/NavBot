@@ -9,6 +9,7 @@ CDoorNavBlocker::CDoorNavBlocker()
 	m_activatortype = ACTIVATOR_NONE;
 	m_blocked = false;
 	m_teamOnly = false;
+	m_negated = false;
 	m_teamNum = NAV_TEAM_ANY;
 }
 
@@ -66,12 +67,29 @@ bool CDoorNavBlocker::IsBlocked(int teamID)
 {
 	if (m_teamNum != NAV_TEAM_ANY)
 	{
-		if (m_teamNum == teamID)
+		// inverted filter logic
+		if (m_negated)
 		{
+			// assigned team is blocked if this is a team only door
+			if (m_teamNum == teamID)
+			{
+				return m_teamOnly;
+			}
+
+			// other teams can pass if the door is not blocked
 			return m_blocked;
 		}
+		else
+		{
+			// assigned team can pass if not blocked
+			if (m_teamNum == teamID)
+			{
+				return m_blocked;
+			}
 
-		return m_teamOnly;
+			// other teams can't pass if it's a team only door.
+			return m_teamOnly;
+		}
 	}
 
 	return m_blocked;
@@ -127,11 +145,11 @@ void CDoorNavBlocker::UpdateDoor()
 	};
 
 	UtilHelpers::ForEachEntityOfClassname("trigger_multiple", func);
+	CBaseEntity* trigger = nullptr; // selected trigger
+	CBaseEntity* filter = nullptr;
 
 	if (!triggers.empty())
 	{
-		CBaseEntity* trigger = nullptr; // selected trigger
-
 		// filter triggers
 		if (triggers.size() == 1)
 		{
@@ -168,7 +186,6 @@ void CDoorNavBlocker::UpdateDoor()
 		{
 			m_activatortype = ACTIVATOR_TRIGGER;
 			m_trigger = trigger;
-			CBaseEntity* filter = nullptr;
 			entprops->GetEntPropEnt(trigger, Prop_Data, "m_hFilter", nullptr, &filter);
 
 			if (filter)
@@ -180,6 +197,23 @@ void CDoorNavBlocker::UpdateDoor()
 
 	int team = modhelpers->GetEntityTeamNumber(door);
 	m_teamNum = team == TEAM_UNASSIGNED ? NAV_TEAM_ANY : team;
+
+	if (trigger && filter)
+	{
+		if (UtilHelpers::FClassnameIs(filter, "filter_activator_team"))
+		{
+			int teamNum = TEAM_UNASSIGNED;
+			entprops->GetEntProp(filter, Prop_Data, "m_iFilterTeam", teamNum);
+
+			if (teamNum > TEAM_UNASSIGNED)
+			{
+				entprops->GetEntPropBool(filter, Prop_Data, "m_bNegated", m_negated);
+
+				m_teamNum = teamNum;
+				m_teamOnly = true;
+			}
+		}
+	}
 
 	if (m_areas.empty())
 	{

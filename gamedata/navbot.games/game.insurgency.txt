@@ -60,6 +60,11 @@
 				"windows"	"167"
 				"linux"		"168"
 			}
+			"CBaseFilter::PassesFilterImpl"
+			{
+				"windows"	"158"
+				"linux"		"159"
+			}
 			/* Relative offset to m_iID member variable, starting from the offset of the networked property CINSSquad::m_iParentTeam */
 			"CINSSquad::m_iID"
 			{

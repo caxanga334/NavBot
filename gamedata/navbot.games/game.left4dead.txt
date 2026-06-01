@@ -32,6 +32,11 @@
 				"windows"	"196"
 				"linux"		"197"
 			}
+			"CBaseFilter::PassesFilterImpl"
+			{
+				"windows"	"185"
+				"linux"		"186"
+			}
 		}
 	}
 }

@@ -402,7 +402,7 @@ bool CBotWeapon::CanUseSpecialFunction(const CBaseBot* owner, const float range)
 	const WeaponInfo* info = GetWeaponInfo();
 	const WeaponInfo::SpecialFunction& func = info->GetSpecialFunction();
 
-	if (func.entprop.HasPropertyName())
+	if (func.IsEnabled())
 	{
 		if (range < func.min_range || range > func.max_range)
 		{

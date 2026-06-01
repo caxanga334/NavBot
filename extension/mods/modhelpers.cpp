@@ -16,19 +16,19 @@ void IModHelpers::SetInstance(IModHelpers* mh)
 	modhelpers.reset(mh);
 }
 
-int IModHelpers::GetEntityTeamNumber(CBaseEntity* entity)
+int IModHelpers::GetEntityTeamNumber(CBaseEntity* entity) const
 {
 	int iTeamNum = 0;
 	entprops->GetEntProp(entity, Prop_Data, "m_iTeamNum", iTeamNum);
 	return iTeamNum;
 }
 
-bool IModHelpers::IsPlayer(CBaseEntity* entity)
+bool IModHelpers::IsPlayer(CBaseEntity* entity) const
 {
 	return UtilHelpers::IsPlayerIndex(reinterpret_cast<IServerEntity*>(entity)->GetRefEHandle().GetEntryIndex());
 }
 
-bool IModHelpers::IsAlive(CBaseEntity* entity)
+bool IModHelpers::IsAlive(CBaseEntity* entity) const
 {
 	int lifestate = LIFE_ALIVE;
 	entprops->GetEntProp(entity, Prop_Data, "m_lifeState", lifestate);
@@ -47,13 +47,13 @@ bool IModHelpers::IsAlive(CBaseEntity* entity)
 	return lifestate == LIFE_ALIVE;
 }
 
-bool IModHelpers::IsCombatCharacter(CBaseEntity* entity)
+bool IModHelpers::IsCombatCharacter(CBaseEntity* entity) const
 {
 	// In most games, m_hActiveWeapon is a member of CBaseCombatCharacter
 	return entprops->HasEntProp(entity, Prop_Data, "m_hActiveWeapon");
 }
 
-int IModHelpers::GetEntityWaterLevel(CBaseEntity* entity)
+int IModHelpers::GetEntityWaterLevel(CBaseEntity* entity) const
 {
 #ifdef EXT_DEBUG
 	if (!entprops->HasEntProp(entity, Prop_Data, "m_nWaterLevel"))

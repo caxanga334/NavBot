@@ -35,6 +35,7 @@
 #include "nav_prereq.h"
 #include "nav_blocker.h"
 #include "nav_blocker_door.h"
+#include "nav_blocker_func_breakable.h"
 #include "nav_pathcost_mod.h"
 #include "nav_pathfind.h"
 #include <utlbuffer.h>
@@ -132,6 +133,7 @@ CNavMesh::CNavMesh( void )
 	m_gridCellSize = 300.0f;
 	m_editMode = NORMAL;
 	m_bQuitWhenFinished = false;
+	m_noAutoBreakables = false;
 	m_hostThreadModeRestoreValue = 0;
 	// m_placeCount = 0;
 	// m_placeName = NULL;
@@ -251,6 +253,10 @@ void CNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 	buffer = cfgnavbot->GetKeyValue("NavGen_HumanCrouchEyeHeight");
 
 	if (buffer) { navgenparams->human_crouch_eye_height = atof(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavMesh_NoBreakableAutoBlockers");
+
+	if (buffer) { m_noAutoBreakables = UtilHelpers::StringToBoolean(buffer); }
 }
 
 bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
@@ -3718,8 +3724,6 @@ void CNavMesh::StripNavigationAreas( void )
 //--------------------------------------------------------------------------------------------------------------
 
 HidingSpotVector TheHidingSpots;
-unsigned int HidingSpot::m_nextID = 1;
-unsigned int HidingSpot::m_masterMarker = 0;
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3763,6 +3767,7 @@ HidingSpot::HidingSpot( void )
 {
 	m_pos = Vector( 0, 0, 0 );
 	m_id = m_nextID++;
+	m_marker = 0;
 	m_flags = 0;
 	m_area = NULL;
 
@@ -3997,6 +4002,24 @@ void CNavMesh::ComputeDoorBlockers()
 	UtilHelpers::ForEachEntityOfClassname("prop_door_rotating", func);
 }
 
+void CNavMesh::ComputeBreakableBlockers()
+{
+	if (m_noAutoBreakables) { return; }
+
+	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			CFuncBreakableNavBlocker* blocker = this->CreateBreakableBlocker();
+			blocker->Init(entity);
+			blocker->Register();
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_breakable", func);
+}
+
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
 {
 	return std::make_shared<CWaypoint>();
@@ -4020,6 +4043,11 @@ std::shared_ptr<CNavPrerequisite> CNavMesh::CreatePrerequisite() const
 CDoorNavBlocker* CNavMesh::CreateDoorBlocker() const
 {
 	return new CDoorNavBlocker;
+}
+
+CFuncBreakableNavBlocker* CNavMesh::CreateBreakableBlocker() const
+{
+	return new CFuncBreakableNavBlocker;
 }
 
 void CNavMesh::RebuildWaypointMap()
@@ -4712,6 +4740,7 @@ void CNavMesh::ComputeInternalData()
 	});
 
 	ComputeDoorBlockers();
+	ComputeBreakableBlockers();
 }
 
 void NavNotifyClientsOfReload::operator()(CBaseExtPlayer* player)

@@ -159,6 +159,13 @@ public:
 	 */
 	virtual bool IsEntityDamageable(CBaseEntity* entity, const int maxhealth = 1000) const;
 	/**
+	 * @brief Called to check if the given entity can be damaged by the other entity.
+	 * @param entity Entity to check.
+	 * @param attacker Entity that wants to deal damage.
+	 * @return True if the given attacker can deal damage to the entity, false otherwise.
+	 */
+	virtual bool IsEntityDamageableBy(CBaseEntity* entity, CBaseEntity* attacker) const;
+	/**
 	 * @brief Called to check if the given entity is a breakable entity. Bots will attack these if they find one in their path.
 	 * @param entity Entity to check.
 	 * @return True if the given entity is a brakable entity, false if not.

@@ -168,8 +168,8 @@ private:
 
 	unsigned char m_flags;									// bit flags
 
-	static unsigned int m_nextID;							// used when allocating spot ID's
-	static unsigned int m_masterMarker;						// used to mark spots
+	static inline unsigned int m_nextID{ 1 };							// used when allocating spot ID's
+	static inline unsigned int m_masterMarker{ 1 };						// used to mark spots
 };
 typedef CUtlVector< HidingSpot * > HidingSpotVector;
 

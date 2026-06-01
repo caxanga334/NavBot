@@ -193,6 +193,14 @@ bool CSDKCaller::CBaseEntity_ShouldCollide(CBaseEntity* pThis, int collisiongrou
 	return retval;
 }
 
+bool CSDKCaller::CBaseFilter_PassesFilterImpl(CBaseEntity* pThis, CBaseEntity* pCaller, CBaseEntity* pEntity)
+{
+	ArgBuffer<void*, void*, void*> vstk(pThis, pCaller, pEntity);
+	bool retval = false;
+	m_call_cbf_passesfilterimpl.second->Execute(vstk, &retval);
+	return retval;
+}
+
 bool CSDKCaller::SetupCalls()
 {
 	SetupCBCWeaponSwitch();
@@ -203,6 +211,7 @@ bool CSDKCaller::SetupCalls()
 	SetupCBEAcceptInput();
 	SetupCBETeleport();
 	SetupCBEShouldCollide();
+	SetupCBFPassesFilterImpl();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
 		m_call_cbc_weaponslot == nullptr ||
@@ -219,6 +228,11 @@ bool CSDKCaller::SetupCalls()
 	}
 
 	if (m_offsetof_cba_getbonetransform > 0 && m_call_cba_getbonetransform == nullptr)
+	{
+		return false;
+	}
+
+	if (m_call_cbf_passesfilterimpl.first > 0 && m_call_cbf_passesfilterimpl.second == nullptr)
 	{
 		return false;
 	}
@@ -406,4 +420,25 @@ void CSDKCaller::SetupCBEShouldCollide()
 	params[1].type = PassType_Basic;
 
 	m_call_cbe_shouldcollide.second = g_pBinTools->CreateVCall(m_call_cbe_shouldcollide.first, 0, 0, &ret, params, 2);
+}
+
+void CSDKCaller::SetupCBFPassesFilterImpl()
+{
+	using namespace SourceMod;
+
+	if (m_call_cbf_passesfilterimpl.first <= 0) { return; }
+	
+	SourceMod::PassInfo ret;
+	ret.flags = PASSFLAG_BYVAL;
+	ret.size = sizeof(bool);
+	ret.type = PassType_Basic;
+	SourceMod::PassInfo params[2];
+	params[0].flags = PASSFLAG_BYVAL;
+	params[0].size = sizeof(void*);
+	params[0].type = PassType_Basic;
+	params[1].flags = PASSFLAG_BYVAL;
+	params[1].size = sizeof(void*);
+	params[1].type = PassType_Basic;
+
+	m_call_cbf_passesfilterimpl.second = g_pBinTools->CreateVCall(m_call_cbf_passesfilterimpl.first, 0, 0, &ret, params, 2);
 }

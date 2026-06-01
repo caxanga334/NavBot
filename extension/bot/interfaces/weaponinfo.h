@@ -303,6 +303,9 @@ public:
 			button_to_press = IPlayerInput::ButtonID::BUTTON_INVALID;
 		}
 
+		// Returns true if a special function is enabled
+		bool IsEnabled() const { return entprop.HasPropertyName() && button_to_press != IPlayerInput::ButtonID::BUTTON_INVALID; }
+
 		float hold_button_time;
 		float delay_between_uses;
 		float min_range;

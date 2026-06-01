@@ -316,7 +316,9 @@ bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
 {
 	CBaseMod* mod = extmanager->GetMod();
 
-	if (mod->IsEntityDamageable(entity, mod->GetModSettings()->GetBreakableMaxHealth()) && mod->IsEntityBreakable(entity))
+	if (mod->IsEntityDamageable(entity, mod->GetModSettings()->GetBreakableMaxHealth()) &&
+		mod->IsEntityDamageableBy(entity, GetEntity()) &&
+		mod->IsEntityBreakable(entity))
 	{
 		return true;
 	}

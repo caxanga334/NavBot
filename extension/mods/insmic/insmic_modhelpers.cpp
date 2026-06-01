@@ -1,7 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include "insmic_modhelpers.h"
 
-int CInsMICModHelpers::GetEntityTeamNumber(CBaseEntity* entity)
+int CInsMICModHelpers::GetEntityTeamNumber(CBaseEntity* entity) const
 {
 	/*
 	* Insurgency doesn't have m_iTeamNum.
@@ -23,7 +23,7 @@ int CInsMICModHelpers::GetEntityTeamNumber(CBaseEntity* entity)
 	return 0;
 }
 
-bool CInsMICModHelpers::IsCombatCharacter(CBaseEntity* entity)
+bool CInsMICModHelpers::IsCombatCharacter(CBaseEntity* entity) const
 {
 	// CBaseCombatCharacter doesn't exists in insurgency, check for the networked property instead of the datamap
 	return entprops->HasEntProp(entity, Prop_Send, "m_hActiveWeapon");

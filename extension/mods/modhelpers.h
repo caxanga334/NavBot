@@ -21,37 +21,37 @@ public:
 	 * @param entity Entity to get the team.
 	 * @return Team number of the given entity.
 	 */
-	virtual int GetEntityTeamNumber(CBaseEntity* entity);
+	virtual int GetEntityTeamNumber(CBaseEntity* entity) const;
 	/**
 	 * @brief Checks if the given entity is a player.
 	 * @param entity Entity to check.
 	 * @return True if the given entity is a player, false otherwise.
 	 */
-	virtual bool IsPlayer(CBaseEntity* entity);
+	virtual bool IsPlayer(CBaseEntity* entity) const;
 	/**
 	 * @brief Checks if the entity is alive.
 	 * @param entity Entity to check.
 	 * @return Returns true if the entity is alive, false otherwise.
 	 */
-	virtual bool IsAlive(CBaseEntity* entity);
+	virtual bool IsAlive(CBaseEntity* entity) const;
 	/**
 	 * @brief Checks if the entity is dead.
 	 * @param entity Entity to check.
 	 * @return Returns true if the entity is dead, false otherwise.
 	 */
-	bool IsDead(CBaseEntity* entity) { return !IsAlive(entity); }
+	bool IsDead(CBaseEntity* entity) const { return !IsAlive(entity); }
 	/**
 	 * @brief Checks if the given entity is a combat character (IE: players and npcs).
 	 * @param entity Entity to check.
 	 * @return True if given entity is a combat character, false otherwise.
 	 */
-	virtual bool IsCombatCharacter(CBaseEntity* entity);
+	virtual bool IsCombatCharacter(CBaseEntity* entity) const;
 	/**
 	 * @brief Gets the entity's current water level.
 	 * @param entity Entity to read the water level.
 	 * @return Entity's water level.
 	 */
-	virtual int GetEntityWaterLevel(CBaseEntity* entity);
+	virtual int GetEntityWaterLevel(CBaseEntity* entity) const;
 };
 
 // Global singleton to access the mod helpers interface

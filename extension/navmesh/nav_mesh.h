@@ -51,6 +51,7 @@ class CRCBot2WaypointLoader;
 class INavBlocker;
 class INavPathCostMod;
 class CDoorNavBlocker;
+class CFuncBreakableNavBlocker;
 class CBaseBot;
 class CBaseExtPlayer;
 
@@ -1289,6 +1290,7 @@ private:
 	int m_sampleTick;											// counter for displaying pseudo-progress while sampling walkable space
 	bool m_bQuitWhenFinished;
 	bool m_isInDangerousState;									// True if the nav mesh is in a dangerous state for bots (will crash if bots are present)
+	bool m_noAutoBreakables;
 	float m_generationStartTime;
 	Extent m_simplifyGenerationExtent;
 
@@ -1355,6 +1357,7 @@ private:
 	RecomputeInternalDataReason m_recomputeDataReason;
 
 	void ComputeDoorBlockers();
+	void ComputeBreakableBlockers();
 
 protected:
 	static constexpr float NAV_BLOCKERS_UPDATE_INTERVAL = 2.0f;
@@ -1369,6 +1372,8 @@ protected:
 	virtual std::shared_ptr<CNavPrerequisite> CreatePrerequisite() const;
 	// Allocates a new door blocker instance, override to use mod specific door blocker implementation
 	virtual CDoorNavBlocker* CreateDoorBlocker() const;
+	// Allocates a new breakable blocker instance, overrride to use mod specific implementation
+	virtual CFuncBreakableNavBlocker* CreateBreakableBlocker() const;
 
 	// Rebuilds the waypoint ID map
 	void RebuildWaypointMap();

@@ -49,6 +49,20 @@
 				"linux"			"107"
 				"linux64"		"107"
 			}
+			"CBaseAnimating::GetBoneTransform"
+			{
+				"windows"	"205"
+				"windows64"	"205"
+				"linux"		"206"
+				"linux64"	"206"
+			}
+			"CBaseFilter::PassesFilterImpl"
+			{
+				"windows"	"194"
+				"windows64"	"194"
+				"linux"		"195"
+				"linux64"	"195"
+			}
 		}
 	}
 }

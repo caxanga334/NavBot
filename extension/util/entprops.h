@@ -34,6 +34,9 @@
 #define INVALID_ENT_REFERENCE -1
 
 class CStudioHdr;
+class CBaseEntity;
+struct edict_t;
+class Vector;
 
 #include "entprops_consts.h"
 
@@ -364,6 +367,20 @@ namespace entityprops
 	const char* GetEntityTargetname(CBaseEntity* entity);
 	// Gets an entity velocity
 	void GetEntityAbsVelocity(CBaseEntity* entity, Vector& result);
+	// Gets an entity's spawnflags.
+	inline int GetEntitySpawnFlags(CBaseEntity* entity)
+	{
+		int sf = 0;
+		entprops->GetEntProp(entity, Prop_Data, "m_spawnflags", sf);
+		return sf;
+	}
+	// Gets an entity's damage filter.
+	inline CBaseEntity* GetEntityDamageFilter(CBaseEntity* entity)
+	{
+		CBaseEntity* ret = nullptr;
+		entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &ret);
+		return ret;
+	}
 	/**
 	 * @brief Returns an entity CStudioHdr pointer.
 	 * 

@@ -79,11 +79,21 @@ public:
 	 * @return Result of ShouldCollide.
 	 */
 	bool CBaseEntity_ShouldCollide(CBaseEntity* pThis, int collisiongroup, int contentsmask);
+	/**
+	 * @brief Calls CBaseFilter::PassesFilterImpl on the pThis entity. The entity must derive from CBaseFilter!
+	 * @param pThis Pointer to the filter entity.
+	 * @param pCaller Pointer to the caller, this can be NULL.
+	 * @param pEntity Pointer to the entity being tested.
+	 * @return True if the entity (pEntity) passes the filter, false otherwise.
+	 */
+	bool CBaseFilter_PassesFilterImpl(CBaseEntity* pThis, CBaseEntity* pCaller, CBaseEntity* pEntity);
 
 	bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
 	bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
 	bool IsAcceptInputAvailable() const { return m_call_cbe_acceptinput.first > 0; }
 	bool IsTeleportAvailable() const { return m_call_cbe_teleport.first > 0; }
+	// Returns true if the CBaseFilter::PassesFilterImpl sdk call is available to use.
+	bool IsPassesFilterImplAvailable() const { return m_call_cbf_passesfilterimpl.second != nullptr; }
 
 private:
 	static constexpr int invalid_offset() { return -1; }
@@ -115,6 +125,7 @@ private:
 	SDKVCallSetup m_call_cbe_acceptinput;
 	SDKVCallSetup m_call_cbe_teleport;
 	SDKVCallSetup m_call_cbe_shouldcollide;
+	SDKVCallSetup m_call_cbf_passesfilterimpl;
 
 	bool SetupCalls();
 	void SetupCBCWeaponSwitch();
@@ -125,6 +136,7 @@ private:
 	void SetupCBEAcceptInput();
 	void SetupCBETeleport();
 	void SetupCBEShouldCollide();
+	void SetupCBFPassesFilterImpl();
 };
 
 extern CSDKCaller* sdkcalls;

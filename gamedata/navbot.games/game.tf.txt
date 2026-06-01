@@ -72,6 +72,13 @@
 				"linux"		"211"
 				"linux64"	"211"
 			}
+			"CBaseFilter::PassesFilterImpl"
+			{
+				"windows"	"199"
+				"windows64"	"199"
+				"linux"		"200"
+				"linux64"	"200"
+			}
 
 			/**
 			 * offset of netprop m_flTimeToSetPoisonous + this to get to the offset of m_vecResetPos

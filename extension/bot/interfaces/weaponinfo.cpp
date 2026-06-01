@@ -1204,14 +1204,6 @@ void WeaponInfo::PostLoad()
 			selection_min_range = -1.0f;
 		}
 	}
-
-	if (!special_function.entprop.HasPropertyName())
-	{
-		if (special_function.button_to_press == IPlayerInput::ButtonID::BUTTON_INVALID)
-		{
-			smutils->LogError(myself, "Weapon Info for \"%s\" has special function declared with missing button to press.", this->configentry.c_str());
-		}
-	}
 }
 
 void WeaponInfo::DynamicPriority::Parse(const char* str)

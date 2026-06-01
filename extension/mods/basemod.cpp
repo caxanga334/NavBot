@@ -6,6 +6,7 @@
 #include <manager.h>
 #include <util/helpers.h>
 #include <util/prediction.h>
+#include <util/sdkcalls.h>
 #include <extplayer.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
@@ -261,13 +262,31 @@ bool CBaseMod::IsEntityDamageable(CBaseEntity* entity, const int maxhealth) cons
 		}
 	}
 
+	return true;
+}
+
+bool CBaseMod::IsEntityDamageableBy(CBaseEntity* entity, CBaseEntity* attacker) const
+{
 	CBaseEntity* damageFilter = nullptr;
 
 	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &damageFilter))
 	{
 		if (damageFilter)
 		{
-			return false; // entity has a damage filter assigned to it, assume these can't take damage for now
+			if (sdkcalls->IsPassesFilterImplAvailable())
+			{
+				if (!sdkcalls->CBaseFilter_PassesFilterImpl(entity, nullptr, attacker))
+				{
+					// The attacker does not passes the damage filter.
+					return false;
+				}
+			}
+			else
+			{
+				// The entity has a damage filter and the CBaseFilter::PassesFilterImpl SDKCall isn't available.
+				// Consider as not damageable.
+				return false;
+			}
 		}
 	}
 
@@ -506,6 +525,10 @@ CON_COMMAND(sm_navbot_mod_debug_breakable, "Reports an entity breakable state.")
 {
 	DECLARE_COMMAND_ARGS;
 
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
+
+	if (!host) { return; }
+
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_navbot_mod_debug_breakable <entindex>\n");
@@ -525,8 +548,10 @@ CON_COMMAND(sm_navbot_mod_debug_breakable, "Reports an entity breakable state.")
 
 	bool damageable = mod->IsEntityDamageable(pEnt, mod->GetModSettings()->GetBreakableMaxHealth());
 	bool breakable = mod->IsEntityBreakable(pEnt);
+	bool damageablebyyou = mod->IsEntityDamageableBy(pEnt, host->GetEntity());
 	int health = UtilHelpers::GetEntityHealth(index);
 
-	META_CONPRINTF("Damageable %i Breakable %i Health %i\n", static_cast<int>(damageable), static_cast<int>(breakable), health);
+	META_CONPRINTF("Damageable %i Damageable (by you) %i Breakable %i Health %i\n", 
+		static_cast<int>(damageable), static_cast<int>(damageablebyyou), static_cast<int>(breakable), health);
 }
 #endif // EXT_DEBUG

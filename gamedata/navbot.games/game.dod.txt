@@ -20,6 +20,8 @@
 			"NavGen_HumanCrouchHeight"		"55.0"
 			"NavGen_HumanEyeHeight"			"58.0"
 			"NavGen_HumanCrouchEyeHeight"	"34.0"
+			/* Auto blockers for func_breakable is disabled for DoD:S, at least until we handle breakables open by bombs. */
+			"NavMesh_NoBreakableAutoBlockers" "yes"
 
 			/* Comma delimited list of entities used as walkable seed position */
 			"NavGenerationWalkableEnts"			"info_player_allies,info_player_axis,dod_control_point,dod_bomb_target"
@@ -67,6 +69,13 @@
 				"windows64"	"205"
 				"linux"		"206"
 				"linux64"	"206"
+			}
+			"CBaseFilter::PassesFilterImpl"
+			{
+				"windows"	"194"
+				"windows64"	"194"
+				"linux"		"195"
+				"linux64"	"195"
 			}
 
 			/**
