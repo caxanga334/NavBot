@@ -33,6 +33,7 @@ CSDKCaller::CSDKCaller()
 	InitVCallSetup(m_call_cbe_acceptinput);
 	InitVCallSetup(m_call_cbe_teleport);
 	InitVCallSetup(m_call_cbe_shouldcollide);
+	InitVCallSetup(m_call_cbf_passesfilterimpl);
 }
 
 CSDKCaller::~CSDKCaller()
@@ -88,6 +89,11 @@ bool CSDKCaller::Init()
 	{
 		// don't fail, this is optional
 		m_offsetof_cba_getbonetransform = invalid_offset();
+	}
+
+	if (!cfg_navbot->GetOffset("CBaseFilter::PassesFilterImpl", &m_call_cbf_passesfilterimpl.first))
+	{
+		m_call_cbf_passesfilterimpl.first = invalid_offset();
 	}
 
 	// optionals
@@ -195,6 +201,16 @@ bool CSDKCaller::CBaseEntity_ShouldCollide(CBaseEntity* pThis, int collisiongrou
 
 bool CSDKCaller::CBaseFilter_PassesFilterImpl(CBaseEntity* pThis, CBaseEntity* pCaller, CBaseEntity* pEntity)
 {
+#ifdef EXT_DEBUG
+
+	if (!UtilHelpers::EntityDerivesFrom(pThis, "CBaseFilter"))
+	{
+		smutils->LogError(myself, "SDKCall CBaseFilter_PassesFilterImpl called on an entity that does not derives from CBaseFilter! %s", 
+			UtilHelpers::textformat::FormatEntity(pThis));
+	}
+
+#endif // EXT_DEBUG
+
 	ArgBuffer<void*, void*, void*> vstk(pThis, pCaller, pEntity);
 	bool retval = false;
 	m_call_cbf_passesfilterimpl.second->Execute(vstk, &retval);
