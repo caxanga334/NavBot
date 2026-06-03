@@ -35,9 +35,10 @@ TaskResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnTaskUpdate(CBlackMesaBot*
 		{
 			m_healthScanTimer.StartRandom(1.0f, 2.0f);
 
-			if (CBlackMesaBotFindHealthTask::IsPossible(bot))
+			CBaseEntity* item;
+			if (CBlackMesaBotFindHealthTask::IsPossible(bot, &item))
 			{
-				return PauseFor(new CBlackMesaBotFindHealthTask, "Searching for health!");
+				return PauseFor(new CBlackMesaBotFindHealthTask(item), "Searching for health!");
 			}
 		}
 	}

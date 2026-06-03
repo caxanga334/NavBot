@@ -18,6 +18,7 @@ public:
 
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override;
 
 	const char* GetName() const override { return "MainTask"; }
 private:

@@ -7,6 +7,7 @@
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/sdk_traces.h>
 #include <bot/interfaces/decisionquery.h>
+#include <mods/modhelpers.h>
 
 namespace botsharedutils
 {
@@ -242,24 +243,6 @@ namespace botsharedutils
 		CNavArea* m_retreatArea;
 	};
 
-	class CollectPatrolAreas : public INavAreaCollector<CNavArea>
-	{
-	public:
-		CollectPatrolAreas(CBaseBot* bot, const Vector& start, const float minDistanceFromStart, const float maxSearchDistance = 4096.0f);
-
-		bool ShouldSearch(CNavArea* area) override;
-		bool ShouldCollect(CNavArea* area) override;
-
-	private:
-		CBaseBot* m_bot;
-		Vector m_vStart;
-		Vector m_vViewOffset;
-		float m_minDistance;
-		std::vector<Vector> m_points;
-
-		static constexpr float MAX_RANGE_FOR_VIS_CHECKS = 1024.0f;
-	};
-
 	/**
 	 * @brief Utility nav area collector for seaching for reachable nav areas with hiding spots.
 	 */
@@ -419,7 +402,25 @@ namespace botsharedutils::search
 
 			return ret;
 		}
-		
+		// Returns the entity with the largest travel cost.
+		CBaseEntity* SelectFarthest() const
+		{
+			if (IsResultEmpty()) { return nullptr; }
+
+			CBaseEntity* ret = nullptr;
+			float cost = std::numeric_limits<float>::min();
+
+			for (auto& result : m_data)
+			{
+				if (result.second > cost)
+				{
+					cost = result.second;
+					ret = result.first;
+				}
+			}
+
+			return ret;
+		}
 		// sets if GetNearestNavArea should check for LOS
 		void SetCheckLOS(bool state) { m_checklos = state; }
 		// sets if GetNearestNavArea should check for ground
@@ -428,7 +429,7 @@ namespace botsharedutils::search
 		void SetCheckCanPickup(bool state) { m_checkcanpickup = state; }
 		// Returns true if the ShouldPickup query should be used.
 		bool GetCheckCanPickup() const { return m_checkcanpickup; }
-
+		// Call this to run the search
 		void DoSearch()
 		{
 			if (!m_collector)
@@ -485,6 +486,12 @@ namespace botsharedutils::search
 			{
 				return false;
 			}
+			
+			// ignore invisible entities, these generally cannot be picked up.
+			if (!modhelpers->IsEntityVisible(entity))
+			{
+				return false;
+			}
 
 			return true;
 		}
@@ -493,6 +500,12 @@ namespace botsharedutils::search
 		virtual bool IsPossible(CBaseEntity* entity, BotClass* bot, NavClass* area)
 		{
 			if (!bot->GetMovementInterface()->IsAreaTraversable(static_cast<CNavArea*>(area)))
+			{
+				return false;
+			}
+
+			// check game/mod specific pick up restrictions
+			if (!modhelpers->CanPlayerPickUpItem(entity, bot->GetEntity()))
 			{
 				return false;
 			}

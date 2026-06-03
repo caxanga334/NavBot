@@ -103,7 +103,7 @@ void CFuncBreakableNavBlocker::Init(CBaseEntity* breakable)
 
 	if (CheckFilter(filter))
 	{
-		m_type == BreakableType::TYPE_FILTER;
+		m_type = BreakableType::TYPE_FILTER;
 		return;
 	}
 

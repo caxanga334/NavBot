@@ -3,7 +3,7 @@
 #include <mods/tf2/teamfortress2mod.h>
 #include <bot/tf2/tf2bot.h>
 #include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
-#include <bot/tasks_shared/bot_shared_search_area.h>
+#include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
 #include <bot/tf2/tasks/demoman/tf2bot_demoman_lay_sticky_trap_task.h>
 #include "tf2bot_task_defend_payload.h"
 
@@ -33,11 +33,8 @@ TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 	}
 
 	const Vector center = UtilHelpers::getWorldSpaceCenter(payload);
-	CTraceFilterWorldAndPropsOnly filter;
-	trace_t tr;
-	trace::line(bot->GetEyeOrigin(), center, MASK_BLOCKLOS, tr);
 
-	if (bot->GetRangeToSqr(center) > DEFEND_PAYLOAD_RANGE || (!tr.startsolid && tr.fraction == 1.0f))
+	if (bot->GetRangeToSqr(center) > DEFEND_PAYLOAD_RANGE || !bot->GetSensorInterface()->IsLineOfSightClear(center))
 	{
 		if (m_nav.NeedsRepath())
 		{
@@ -58,7 +55,13 @@ TaskResult<CTF2Bot> CTF2BotDefendPayloadTask::OnTaskUpdate(CTF2Bot* bot)
 
 		if (!m_defendPayload)
 		{
-			return PauseFor(new CBotSharedSearchAreaTask<CTF2Bot, CTF2BotPathCost>(bot, bot->GetAbsOrigin(), 512.0f, 2048.0f, 32U), "Patrolling area near payload for enemies.");
+			CNavArea* area = nullptr;
+			if (CBotSharedPatrolUnclearedAreasTask<CTF2Bot, CTF2BotPathCost>::IsPossible(bot, &area))
+			{
+				return PauseFor(new CBotSharedPatrolUnclearedAreasTask<CTF2Bot, CTF2BotPathCost>(area), "Patrolling area near payload for enemies.");
+			}
+
+			return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 4096.0f, true, 2048.0f), "Roaming!");
 		}
 	}
 

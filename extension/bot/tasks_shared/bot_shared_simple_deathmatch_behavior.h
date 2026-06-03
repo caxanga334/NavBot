@@ -7,7 +7,6 @@
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include "bot_shared_default_combat_tasks.h"
-#include "bot_shared_search_area.h"
 #include "bot_shared_defend_spot.h"
 #include "bot_shared_roam.h"
 
@@ -36,9 +35,10 @@ inline TaskResult<BT> CBotSharedSimpleDMBehaviorTask<BT, CT>::OnTaskUpdate(BT* b
 		{
 			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible threat!");
 		}
-		else
+		
+		if (known->GetTimeSinceLastVisible() <= 1.0f)
 		{
-			return AITask<BT>::PauseFor(new CBotSharedSearchAreaTask<BT, CT>(bot, known->GetLastKnownPosition()), "Searching for enemy!");
+			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatSearchLKPTask<BT, CT>(known->GetEntity()), "Searching enemy last known positon!");
 		}
 	}
 

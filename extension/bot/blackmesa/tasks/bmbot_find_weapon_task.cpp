@@ -1,34 +1,45 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
-#include <util/librandom.h>
+#include <mods/blackmesa/blackmesadm_mod.h>
+#include <mods/blackmesa/nav/bm_nav_mesh.h>
 #include <bot/blackmesa/bmbot.h>
+#include <bot/bot_shared_utils.h>
 #include "bmbot_find_weapon_task.h"
 
-bool CBlackMesaBotFindWeaponTask::IsPossible(CBlackMesaBot* bot)
+bool CBlackMesaBotFindWeaponTask::IsPossible(CBlackMesaBot* bot, CBaseEntity** weapon)
 {
-	// bot doesn't own every weapon type
-	if (bot->GetInventoryInterface()->GetOwnedWeaponCount() < 14)
+	botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea> collector(bot);
+	collector.SetCheckCanPickup(true); // query the behavior to see if we should pick up items
+	collector.AddSearchPattern("item_weapon_*");
+	collector.DoSearch();
+	CBaseEntity* item = nullptr;
+
+	// randomize a bit
+	if (CBaseBot::s_botrng.GetRandomChance(33))
 	{
-		return true;
+		item = collector.SelectFarthest();
+	}
+	else
+	{
+		item = collector.SelectNearest();
 	}
 
-	return false;
+	if (!item)
+	{
+		return false;
+	}
+
+	*weapon = item;
+	return true;
 }
 
 TaskResult<CBlackMesaBot> CBlackMesaBotFindWeaponTask::OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask)
 {
-	CBaseEntity* weapon = nullptr;
-
-	if (!CBlackMesaBotFindWeaponTask::FindWeaponToPickup(bot, &weapon))
+	if (!IsWeaponValid())
 	{
-		return Done("No weapon to pick up!");
+		return Done("Weapon is no longer valid!");
 	}
 
-	m_weapon = weapon;
-	m_goal = UtilHelpers::getEntityOrigin(weapon);
-
+	m_goal = UtilHelpers::getEntityOrigin(m_weapon.Get());
 	return Continue();
 }
 
@@ -92,61 +103,5 @@ bool CBlackMesaBotFindWeaponTask::IsWeaponValid()
 		return false;
 	}
 
-	return true;
-}
-
-bool CBlackMesaBotFindWeaponTask::FindWeaponToPickup(CBlackMesaBot* bot, CBaseEntity** weapon, const float maxRange)
-{
-	Vector start = bot->GetAbsOrigin();
-	CBlackMesaBotInventory* inventory = bot->GetInventoryInterface();
-	std::vector<CBaseEntity*> nearbyweapons;
-
-	auto functor = [&nearbyweapons, &inventory](int index, edict_t* edict, CBaseEntity* entity) {
-		if (entity)
-		{
-			const char* classname = entityprops::GetEntityClassname(entity);
-
-			if (!classname)
-			{
-				return true; // keep loop
-			}
-
-			std::string clname{ classname };
-
-			if (clname.find("item_weapon") != std::string::npos)
-			{
-				int effects = 0;
-				entprops->GetEntProp(index, Prop_Send, "m_fEffects", effects);
-
-				if ((effects & EF_NODRAW) != 0)
-				{
-					return true; // keep loop
-				}
-
-
-				if (!inventory->OwnsThisWeapon(clname))
-				{
-					nearbyweapons.push_back(entity);
-				}
-			}
-		}
-
-		return true;
-	};
-
-	UtilHelpers::ForEachEntityInSphere(start, maxRange, functor);
-
-	if (nearbyweapons.empty())
-	{
-		return false;
-	}
-
-	if (nearbyweapons.size() == 1)
-	{
-		*weapon = nearbyweapons[0];
-		return true;
-	}
-
-	*weapon = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(nearbyweapons);
 	return true;
 }

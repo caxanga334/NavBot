@@ -1,31 +1,94 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
-#include <util/librandom.h>
+#include <mods/blackmesa/blackmesadm_mod.h>
+#include <mods/blackmesa/nav/bm_nav_mesh.h>
 #include <bot/blackmesa/bmbot.h>
+#include <bot/bot_shared_utils.h>
 #include "bmbot_find_armor_task.h"
 
-bool CBlackMesaBotFindArmorTask::IsPossible(CBlackMesaBot* bot)
+class CBlackMesaArmorCollector final : public botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea>
+{
+public:
+	CBlackMesaArmorCollector(CBlackMesaBot* bot) :
+		botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea>(bot, CBlackMesaDeathmatchMod::GetBMMod()->GetModSettings()->GetCollectItemMaxDistance())
+	{
+		SetCheckCanPickup(true); // query the behavior to see if we should pick up items
+		AddSearchPattern("item_battery");
+		AddSearchPattern("item_suitcharger");
+	}
+
+private:
+	bool IsEntityValid(CBaseEntity* entity, CNavArea* area) final
+	{
+		if (botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea>::IsEntityValid(entity, area))
+		{
+			if (UtilHelpers::FClassnameIs(entity, "item_suitcharger"))
+			{
+				bool chargerIsOn = false;
+				entprops->GetEntPropBool(entity, Prop_Send, "m_bOn", chargerIsOn);
+
+				// skip empty chargers
+				if (!chargerIsOn)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+};
+
+bool CBlackMesaBotFindArmorTask::IsPossible(CBlackMesaBot* bot, CBaseEntity** item)
 {
 	if (bot->GetArmorPercentage() < 0.99f)
 	{
 		return true;
 	}
 
-	return false;
+	CBlackMesaArmorCollector collector(bot);
+	collector.DoSearch();
+	CBaseEntity* entity = nullptr;
+
+	// randomize a bit
+	if (CBaseBot::s_botrng.GetRandomChance(33))
+	{
+		entity = collector.SelectFarthest();
+	}
+	else
+	{
+		entity = collector.SelectNearest();
+	}
+
+	if (!entity)
+	{
+		return false;
+	}
+
+	*item = entity;
+	return true;
 }
 
 TaskResult<CBlackMesaBot> CBlackMesaBotFindArmorTask::OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask)
 {
-	CBaseEntity* armorSource = nullptr;
+	CBaseEntity* armorSource = m_armorSource.Get();
 
-	if (!CBlackMesaBotFindArmorTask::FindArmorSource(bot, &armorSource))
+	if (!armorSource)
 	{
-		return Done("No armor source nearby!");
+		return Done("Armor source is NULL!");
 	}
 
-	SetArmorSource(armorSource, bot);
+	m_goal = UtilHelpers::getWorldSpaceCenter(armorSource);
+	float range = bot->GetRangeTo(m_goal);
+	float time = range / 90.0f;
+	m_isCharger = UtilHelpers::FClassnameIs(armorSource, "item_suitcharger");
+	m_timeout.Start(time + 10.0f);
+
+	if (!IsArmorSourceValid())
+	{
+		return Done("Armor source is invalid!");
+	}
 
 	return Continue();
 }
@@ -44,16 +107,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindArmorTask::OnTaskUpdate(CBlackMesaBot
 
 	if (!IsArmorSourceValid())
 	{
-		CBaseEntity* newSource = nullptr;
-
-		if (!CBlackMesaBotFindArmorTask::FindArmorSource(bot, &newSource, 1024.0f, true))
-		{
-			return Done("No more armor sources to use!");
-		}
-
-		SetArmorSource(newSource, bot);
-		m_nav.Invalidate();
-		m_nav.ForceRepath();
+		return Done("Armor source is invalid!");
 	}
 
 	float moveToRange = m_isCharger ? 70.0f : 24.0f;
@@ -93,16 +147,6 @@ TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotFindArmorTask::OnMoveToSucce
 	m_timeout.StartRandom(10.0f, 15.0f);
 
 	return TryContinue();
-}
-
-void CBlackMesaBotFindArmorTask::SetArmorSource(CBaseEntity* source, CBlackMesaBot* bot)
-{
-	m_armorSource = source;
-	m_goal = UtilHelpers::getWorldSpaceCenter(source);
-	float range = bot->GetRangeTo(m_goal);
-	float time = range / 90.0f;
-	m_isCharger = UtilHelpers::FClassnameIs(source, "item_suitcharger");
-	m_timeout.Start(time + 10.0f);
 }
 
 bool CBlackMesaBotFindArmorTask::IsArmorSourceValid()

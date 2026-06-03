@@ -67,3 +67,35 @@ int IModHelpers::GetEntityWaterLevel(CBaseEntity* entity) const
 	return level;
 }
 
+bool IModHelpers::IsEntityVisible(CBaseEntity* entity) const
+{
+	if (entityprops::IsEffectActiveOnEntity(entity, EF_NODRAW))
+	{
+		return false;
+	}
+
+	return true;
+}
+
+bool IModHelpers::CanPlayerPickUpItem(CBaseEntity* item, CBaseEntity* player) const
+{
+	// basic team check, should work for most team based games
+	int itemTeam = GetEntityTeamNumber(item);
+
+	if (itemTeam > TEAM_SPECTATOR)
+	{
+		return itemTeam == GetEntityTeamNumber(player);
+	}
+
+	// Generally items waiting for their respawn time have NODRAW set.
+	if (entityprops::IsEffectActiveOnEntity(item, EF_NODRAW))
+	{
+		return false;
+	}
+
+	// No weapon ownership check, leave that to game specific implementations
+	// The bot will generally ignore it anyways
+
+	return true;
+}
+

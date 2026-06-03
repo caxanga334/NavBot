@@ -575,62 +575,6 @@ void botsharedutils::SelectRetreatArea::OnDone()
 	}
 }
 
-botsharedutils::CollectPatrolAreas::CollectPatrolAreas(CBaseBot* bot, const Vector& start, float minDistanceFromStart, const float maxSearchDistance) :
-	INavAreaCollector<CNavArea>(nullptr, maxSearchDistance, true, true, false, false),
-	m_bot(bot), m_vStart(start), m_vViewOffset(0.0f, 0.0f, 48.0f), m_minDistance(minDistanceFromStart)
-{
-	CNavArea* startArea = TheNavMesh->GetNearestNavArea(start, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 4.0f, true, true, bot->GetCurrentTeamIndex());
-	SetStartArea(startArea);
-}
-
-bool botsharedutils::CollectPatrolAreas::ShouldSearch(CNavArea* area)
-{
-	return !area->IsBlocked(m_bot->GetCurrentTeamIndex());
-}
-
-bool botsharedutils::CollectPatrolAreas::ShouldCollect(CNavArea* area)
-{
-	const float range = (area->GetCenter() - m_vStart).Length();
-
-	if (range < m_minDistance)
-	{
-		return false;
-	}
-
-	Vector start = m_vStart + m_vViewOffset;
-	Vector end = area->GetCenter() + m_vViewOffset;
-
-	trace_t tr;
-	trace::line(start, end, MASK_BLOCKLOS, tr);
-
-	if (tr.fraction >= 1.0f)
-	{
-		return false; // visible from start pos
-	}
-
-
-
-	for (const auto& vec : m_points)
-	{
-		const float r2 = (end - vec).Length();
-
-		if (r2 > MAX_RANGE_FOR_VIS_CHECKS)
-		{
-			continue;
-		}
-
-		trace::line(vec, end, MASK_BLOCKLOS, tr);
-
-		if (tr.fraction >= 1.0f)
-		{
-			return false; // current area is visible from a collected patrol spot
-		}
-	}
-
-	m_points.push_back(std::move(end));
-	return true;
-}
-
 void botsharedutils::HidingSpotCollector::OnDone()
 {
 	if (GetCollectedAreasCount() == 0U) { return; }

@@ -52,6 +52,19 @@ public:
 	 * @return Entity's water level.
 	 */
 	virtual int GetEntityWaterLevel(CBaseEntity* entity) const;
+	/**
+	 * @brief Determines if the given entity is being rendered and is visible.
+	 * @param entity Entity to check.
+	 * @return True if the entity is visible, false otherwise.
+	 */
+	virtual bool IsEntityVisible(CBaseEntity* entity) const;
+	/**
+	 * @brief Determines if the given player can pick up the item.
+	 * @param item Item being checked.
+	 * @param player Player that wants to pick the item.
+	 * @return Returns true if the player can pick the item, false otherwise.
+	 */
+	virtual bool CanPlayerPickUpItem(CBaseEntity* item, CBaseEntity* player) const;
 };
 
 // Global singleton to access the mod helpers interface

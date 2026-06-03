@@ -11,25 +11,22 @@ class CBlackMesaBot;
 class CBlackMesaBotFindAmmoTask : public AITask<CBlackMesaBot>
 {
 public:
-	CBlackMesaBotFindAmmoTask(blackmesa::BMAmmoIndex ammoType);
+	CBlackMesaBotFindAmmoTask(CBaseEntity* ammo, blackmesa::BMAmmoIndex ammoIndex);
 
-	static bool IsPossible(CBlackMesaBot* bot, blackmesa::BMAmmoIndex& ammoInNeed);
+	static bool IsPossible(CBlackMesaBot* bot, CBaseEntity** ammo, blackmesa::BMAmmoIndex& ammoIndex);
 
 	TaskResult<CBlackMesaBot> OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask) override;
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
 
 	const char* GetName() const override { return "FindAmmo"; }
 private:
-	blackmesa::BMAmmoIndex m_ammoIndex;
 	int m_maxCarry;
-	std::string m_classname;
+	blackmesa::BMAmmoIndex m_ammoIndex;
 	CHandle<CBaseEntity> m_item;
 	CMeshNavigator m_nav;
 	Vector m_goal;
 
-	void SetGoalEntity(CBaseEntity* goalEnt);
 	static bool IsItemValid(CBaseEntity* item);
-	static bool FindAmmoToPickup(CBlackMesaBot* bot, CBaseEntity** ammo, const std::string& classname, const float maxRange = 2048.0f, const bool selectNearest = false);
 };
 
 #endif // !NAVBOT_BLACK_MESA_BOT_FIND_AMMO_TASK_H_

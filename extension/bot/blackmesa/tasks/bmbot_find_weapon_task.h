@@ -9,8 +9,18 @@ class CBlackMesaBot;
 class CBlackMesaBotFindWeaponTask : public AITask<CBlackMesaBot>
 {
 public:
+	/**
+	 * @brief Determines if the find weapon task can be done right now.
+	 * @param[in] bot Bot that will use this task.
+	 * @param[out] weapon Weapon the bot will pick up.
+	 * @return True if the task can be done, false otherwise.
+	 */
+	static bool IsPossible(CBlackMesaBot* bot, CBaseEntity** weapon);
 
-	static bool IsPossible(CBlackMesaBot* bot);
+	CBlackMesaBotFindWeaponTask(CBaseEntity* weapon) :
+		m_weapon(weapon), m_goal(0.0f, 0.0f, 0.0f)
+	{
+	}
 
 	TaskResult<CBlackMesaBot> OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask) override;
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
@@ -26,8 +36,6 @@ private:
 	Vector m_goal;
 
 	bool IsWeaponValid();
-
-	static bool FindWeaponToPickup(CBlackMesaBot* bot, CBaseEntity** weapon, const float maxRange = 4096.0f);
 };
 
 #endif // !NAVBOT_BLACK_MESA_BOT_FIND_WEAPON_TASK_H_

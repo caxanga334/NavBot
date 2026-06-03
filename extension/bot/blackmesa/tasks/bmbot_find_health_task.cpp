@@ -1,32 +1,77 @@
 #include NAVBOT_PCH_FILE
-#include <vector>
-#include <extension.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
-#include <util/librandom.h>
+#include <mods/blackmesa/blackmesadm_mod.h>
+#include <mods/blackmesa/nav/bm_nav_mesh.h>
 #include <bot/blackmesa/bmbot.h>
+#include <bot/bot_shared_utils.h>
 #include "bmbot_find_health_task.h"
 
-bool CBlackMesaBotFindHealthTask::IsPossible(CBlackMesaBot* bot)
+class CBlackMesaHealthCollector final : public botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea>
 {
-	if (bot->GetHealthPercentage() > 0.70f)
+public:
+	CBlackMesaHealthCollector(CBlackMesaBot* bot) :
+		botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea>(bot, CBlackMesaDeathmatchMod::GetBMMod()->GetModSettings()->GetCollectItemMaxDistance())
+	{
+		SetCheckCanPickup(true); // query the behavior to see if we should pick up items
+		AddSearchPattern("item_healthkit");
+		AddSearchPattern("item_healthcharger");
+	}
+
+private:
+	bool IsEntityValid(CBaseEntity* entity, CNavArea* area) final
+	{
+		if (botsharedutils::search::SearchReachableEntities<CBlackMesaBot, CNavArea>::IsEntityValid(entity, area))
+		{
+			if (UtilHelpers::FClassnameIs(entity, "item_healthcharger"))
+			{
+				bool chargerIsOn = false;
+				entprops->GetEntPropBool(entity, Prop_Send, "m_bOn", chargerIsOn);
+
+				// skip empty chargers
+				if (!chargerIsOn)
+				{
+					return false;
+				}
+			}
+
+			return true;
+		}
+
+		return false;
+	}
+};
+
+bool CBlackMesaBotFindHealthTask::IsPossible(CBlackMesaBot* bot, CBaseEntity** item)
+{
+	if (bot->GetHealthState() == CBaseBot::HealthState::HEALTH_OK)
+	{
+		return false;
+	}
+	CBlackMesaHealthCollector collector(bot);
+	collector.DoSearch();
+	CBaseEntity* entity = collector.SelectNearest(); // always use nearest for health
+
+	if (!entity)
 	{
 		return false;
 	}
 
+	*item = entity;
 	return true;
 }
 
 TaskResult<CBlackMesaBot> CBlackMesaBotFindHealthTask::OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask)
 {
-	CBaseEntity* healthSource = nullptr;
+	CBaseEntity* healthSource = m_healthSource.Get();
 
-	if (!CBlackMesaBotFindHealthTask::FindHealthSource(bot, &healthSource))
+	if (!healthSource)
 	{
-		return Done("No health source nearby!");
+		return Done("NULL entity!");
 	}
 
-	SetHealthSource(healthSource, bot);
+	if (!IsHealthSourceValid())
+	{
+		return Done("Health source is invalid!");
+	}
 
 	return Continue();
 }
@@ -45,16 +90,7 @@ TaskResult<CBlackMesaBot> CBlackMesaBotFindHealthTask::OnTaskUpdate(CBlackMesaBo
 
 	if (!IsHealthSourceValid())
 	{
-		CBaseEntity* newSource = nullptr;
-
-		if (!CBlackMesaBotFindHealthTask::FindHealthSource(bot, &newSource, 1024.0f, true))
-		{
-			return Done("No more health sources to use!");
-		}
-
-		SetHealthSource(newSource, bot);
-		m_nav.Invalidate();
-		m_nav.ForceRepath();
+		return Done("Health source entity is invalid!");
 	}
 
 	float moveToRange = m_isCharger ? 70.0f : 24.0f;
@@ -95,16 +131,6 @@ TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotFindHealthTask::OnMoveToSucc
 	return TryContinue();
 }
 
-void CBlackMesaBotFindHealthTask::SetHealthSource(CBaseEntity* source, CBlackMesaBot* bot)
-{
-	m_healthSource = source;
-	m_goal = UtilHelpers::getWorldSpaceCenter(source);
-	float range = bot->GetRangeTo(m_goal);
-	float time = range / 90.0f;
-	m_isCharger = UtilHelpers::FClassnameIs(source, "item_healthcharger");
-	m_timeout.Start(time + 10.0f);
-}
-
 bool CBlackMesaBotFindHealthTask::IsHealthSourceValid()
 {
 	CBaseEntity* source = m_healthSource.Get();
@@ -131,102 +157,6 @@ bool CBlackMesaBotFindHealthTask::IsHealthSourceValid()
 		{
 			return false;
 		}
-	}
-
-	return true;
-}
-
-bool CBlackMesaBotFindHealthTask::FindHealthSource(CBlackMesaBot* bot, CBaseEntity** healthSource, const float maxRange, const bool filterByDistance)
-{
-	// vector of health sources
-	std::vector<CBaseEntity*> sources;
-	Vector start = bot->GetAbsOrigin();
-
-	auto chargerfunc = [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
-		if (entity)
-		{
-			float charge = -1.0f;
-			entprops->GetEntPropFloat(index, Prop_Send, "m_flCharge", charge);
-
-			const Vector& end = UtilHelpers::getEntityOrigin(entity);
-			float range = (start - end).Length();
-
-			if (charge > 0.01f && range <= maxRange)
-			{
-				sources.push_back(entity);
-			}
-		}
-
-		return true;
-	};
-
-	UtilHelpers::ForEachEntityOfClassname("item_healthcharger", chargerfunc);
-
-	auto kitfunc = [&sources, &start, &maxRange](int index, edict_t* edict, CBaseEntity* entity) {
-		if (entity)
-		{
-			const Vector& end = UtilHelpers::getEntityOrigin(entity);
-			float range = (start - end).Length();
-			int effects = 0;
-			entprops->GetEntProp(index, Prop_Send, "m_fEffects", effects);
-
-			if ((effects & EF_NODRAW) != 0)
-			{
-				return true; // continue
-			}
-
-			if (range <= maxRange)
-			{
-				sources.push_back(entity);
-			}
-		}
-
-		return true;
-	};
-
-	UtilHelpers::ForEachEntityOfClassname("item_healthkit", kitfunc);
-
-	if (sources.empty())
-	{
-		return false;
-	}
-
-	if (sources.size() == 1)
-	{
-		*healthSource = sources[0];
-		return true;
-	}
-
-	// select the nearest health source
-	if (filterByDistance)
-	{
-		float best = maxRange;
-		CBaseEntity* out = nullptr;
-
-		for (CBaseEntity* entity : sources)
-		{
-			const Vector& end = UtilHelpers::getEntityOrigin(entity);
-			float range = (start - end).Length();
-
-			if (range < best)
-			{
-				best = range;
-				out = entity;
-			}
-		}
-
-		if (out == nullptr)
-		{
-			// this shouldn't happen
-			return false;
-		}
-
-		*healthSource = out;
-	}
-	else
-	{
-		// select a random health source
-		*healthSource = librandom::utils::GetRandomElementFromVector<CBaseEntity*>(sources);
 	}
 
 	return true;

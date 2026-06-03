@@ -67,7 +67,7 @@ class CTakeDamageInfo;
  * @brief Sample implementation of the SDK Extension.
  * Note: Uncomment one of the pre-defined virtual functions in order to use it.
  */
-class NavBotExt : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
+class NavBotExt final : public SDKExtension, public IConCommandBaseAccessor, public SourceMod::IClientListener
 {
 public:
 	NavBotExt();
@@ -80,18 +80,18 @@ public:
 	 * @param late		Whether or not the module was loaded after map load.
 	 * @return			True to succeed loading, false to fail.
 	 */
-	virtual bool SDK_OnLoad(char *error, size_t maxlen, bool late);
+	bool SDK_OnLoad(char *error, size_t maxlen, bool late) final;
 	
 	/**
 	 * @brief This is called right before the extension is unloaded.
 	 */
-	virtual void SDK_OnUnload();
+	void SDK_OnUnload() final;
 
 	/**
 	 * @brief This is called once all known extensions have been loaded.
 	 * Note: It is is a good idea to add natives here, if any are provided.
 	 */
-	virtual void SDK_OnAllLoaded();
+	void SDK_OnAllLoaded() final;
 
 	/**
 	 * @brief Called when the pause state is changed.
@@ -125,7 +125,7 @@ public:
 	 * @param late			Whether or not Metamod considers this a late load.
 	 * @return				True to succeed, false to fail.
 	 */
-	virtual bool SDK_OnMetamodLoad(ISmmAPI *ismm, char *error, size_t maxlen, bool late);
+	bool SDK_OnMetamodLoad(ISmmAPI *ismm, char *error, size_t maxlen, bool late) final;
 
 	/**
 	 * @brief Called when Metamod is detaching, after the extension version is called.
@@ -135,7 +135,7 @@ public:
 	 * @param maxlen		Maximum size of error buffer.
 	 * @return				True to succeed, false to fail.
 	 */
-	virtual bool SDK_OnMetamodUnload(char *error, size_t maxlen);
+	bool SDK_OnMetamodUnload(char *error, size_t maxlen) final;
 
 	/**
 	 * @brief Called when Metamod's pause state is changing.
@@ -157,15 +157,15 @@ public:
 	 * @param edictCount		Number of edicts in the list.
 	 * @param clientMax			Maximum number of clients allowed in the server.
 	 */
-	virtual void OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax);
+	void OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax) final;
 
 	/**
 	 * @brief Called on level shutdown
 	 *
 	 */
-	virtual void OnCoreMapEnd();
+	void OnCoreMapEnd() final;
 
-	virtual bool RegisterConCommandBase(ConCommandBase* pVar);
+	bool RegisterConCommandBase(ConCommandBase* pVar) final;
 
 	// IClientListener callbacks
 public:
@@ -177,7 +177,7 @@ public:
 	 * @param maxlength		Maximum length of error buffer.
 	 * @return				True to allow client, false to reject.
 	 */
-	virtual bool InterceptClientConnect(int client, char* error, size_t maxlength)
+	bool InterceptClientConnect(int client, char* error, size_t maxlength) final
 	{
 		return true;
 	}
@@ -187,7 +187,7 @@ public:
 	 *
 	 * @param client		Index of the client.
 	 */
-	virtual void OnClientConnected(int client)
+	void OnClientConnected(int client) final
 	{
 	}
 
@@ -196,21 +196,21 @@ public:
 	 *
 	 * @param client		Index of the client.
 	 */
-	virtual void OnClientPutInServer(int client);
+	void OnClientPutInServer(int client) final;
 
 	/**
 	 * @brief Called when a client is disconnecting (not fully disconnected yet).
 	 *
 	 * @param client		Index of the client.
 	 */
-	virtual void OnClientDisconnecting(int client);
+	void OnClientDisconnecting(int client) final;
 
 	/**
 	 * @brief Called when a client has fully disconnected.
 	 *
 	 * @param client		Index of the client.
 	 */
-	virtual void OnClientDisconnected(int client)
+	void OnClientDisconnected(int client) final
 	{
 	}
 
@@ -220,14 +220,14 @@ public:
 	 * @param client		Index of the client.
 	 * @param authstring	Client Steam2 id, if available, else engine auth id.
 	 */
-	virtual void OnClientAuthorized(int client, const char* authstring)
+	void OnClientAuthorized(int client, const char* authstring) final
 	{
 	}
 
 	/**
 	 * @brief Called when the server is activated.
 	 */
-	virtual void OnServerActivated(int max_clients)
+	void OnServerActivated(int max_clients) final
 	{
 	}
 
@@ -248,7 +248,7 @@ public:
 	 * @return				True to continue normally, false to override
 	 *						the authentication process.
 	 */
-	virtual bool OnClientPreAdminCheck(int client)
+	bool OnClientPreAdminCheck(int client) final
 	{
 		return true;
 	}
@@ -262,7 +262,7 @@ public:
 	 *
 	 * @param client		Client index.
 	 */
-	virtual void OnClientPostAdminCheck(int client)
+	void OnClientPostAdminCheck(int client) final
 	{
 	}
 
@@ -271,7 +271,7 @@ public:
 	*
 	* @param newvalue			New maxplayers value.
 	*/
-	virtual void OnMaxPlayersChanged(int newvalue)
+	void OnMaxPlayersChanged(int newvalue) final
 	{
 	}
 
@@ -280,7 +280,7 @@ public:
 	*
 	* @param client			Client index.
 	*/
-	virtual void OnClientSettingsChanged(int client)
+	void OnClientSettingsChanged(int client) final
 	{
 	}
 

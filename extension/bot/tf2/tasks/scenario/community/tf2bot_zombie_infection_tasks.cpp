@@ -7,7 +7,6 @@
 #include <bot/tf2/tasks/tf2bot_scenario_task.h>
 #include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
-#include <bot/tasks_shared/bot_shared_search_area.h>
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
@@ -222,9 +221,6 @@ TaskResult<CTF2Bot> CTF2BotZIZombieBehaviorTask::OnTaskUpdate(CTF2Bot* bot)
 				return PauseFor(new CBotSharedClearReportedEnemyTask<CTF2Bot, CTF2BotPathCost>(target), "Investigating reported enemy position!");
 			}
 		}
-
-		// to-do improve this
-		// return PauseFor(new CBotSharedSearchAreaTask<CTF2Bot, CTF2BotPathCost>(bot, threat->GetLastKnownPosition(), 128.0f, 8000.0f), "Searching for lost enemy!");
 	}
 
 	if (CBaseBot::s_botrng.GetRandomChance(90))

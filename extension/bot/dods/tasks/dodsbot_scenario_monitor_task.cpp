@@ -14,6 +14,8 @@
 #include "scenario/dodsbot_fetch_bomb_task.h"
 #include "machinegunner/dodsbot_deploy_mg_task.h"
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
+#include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
+#include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
 
 AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 {
@@ -50,6 +52,20 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 	if (CDoDSBotAttackControlPointTask::IsPossible(bot, &pointToAttack))
 	{
 		return new CDoDSBotAttackControlPointTask(pointToAttack);
+	}
+
+	CBaseEntity* target;
+
+	if (CBotSharedClearReportedEnemyTask<CDoDSBot, CDoDSBotPathCost>::IsPossible(bot, &target))
+	{
+		return new CBotSharedClearReportedEnemyTask<CDoDSBot, CDoDSBotPathCost>(target);
+	}
+
+	CNavArea* area;
+
+	if (CBaseBot::s_botrng.GetRandomChance(66) && CBotSharedPatrolUnclearedAreasTask<CDoDSBot, CDoDSBotPathCost>::IsPossible(bot, &area))
+	{
+		return new CBotSharedPatrolUnclearedAreasTask<CDoDSBot, CDoDSBotPathCost>(area);
 	}
 
 	return new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true);

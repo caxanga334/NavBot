@@ -7,7 +7,7 @@
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include "bot_shared_default_combat_tasks.h"
-#include "bot_shared_search_area.h"
+#include "bot_shared_clear_lkp.h"
 #include "bot_shared_roam.h"
 #include "bot_shared_escort_entity.h"
 
@@ -81,12 +81,10 @@ inline TaskResult<BT> CBotSharedRogueBehaviorTask<BT, CT>::OnTaskUpdate(BT* bot)
 		{
 			return AITask<BT>::PauseFor(new CBotSharedDefaultCombatBehaviorTask<BT, CT>(), "Attacking visible enemy!");
 		}
-		else
+
+		if (known->GetTimeSinceLastVisible() <= 1.0f)
 		{
-			const Vector& pos = known->GetLastKnownPosition();
-			float minDist = (bot->GetAbsOrigin() - pos).Length();
-			minDist = std::min(minDist, 750.0f);
-			return AITask<BT>::PauseFor(new CBotSharedSearchAreaTask<BT, CT>(bot, pos, minDist), "Patrolling last known enemy position!");
+			return AITask<BT>::PauseFor(new CBotSharedClearEnemyLKPTask<BT, CT>(bot, known->GetLastKnownPosition()), "Investigating enemy last known position!");
 		}
 	}
 

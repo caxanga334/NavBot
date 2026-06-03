@@ -10,7 +10,12 @@ class CBlackMesaBotFindHealthTask : public AITask<CBlackMesaBot>
 {
 public:
 
-	static bool IsPossible(CBlackMesaBot* bot);
+	static bool IsPossible(CBlackMesaBot* bot, CBaseEntity** item);
+
+	CBlackMesaBotFindHealthTask(CBaseEntity* item) :
+		m_healthSource(item), m_goal(0.0f, 0.0f, 0.0f), m_isCharger(false)
+	{
+	}
 
 	TaskResult<CBlackMesaBot> OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask) override;
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
@@ -25,10 +30,7 @@ private:
 	Vector m_goal;
 	bool m_isCharger;
 
-	void SetHealthSource(CBaseEntity* source, CBlackMesaBot* bot);
 	bool IsHealthSourceValid();
-
-	static bool FindHealthSource(CBlackMesaBot* bot, CBaseEntity** healthSource, const float maxRange = 2048.0f, const bool filterByDistance = false);
 };
 
 #endif // !NAVBOT_BLACK_MESA_BOT_FIND_HEALTH_TASK_H_

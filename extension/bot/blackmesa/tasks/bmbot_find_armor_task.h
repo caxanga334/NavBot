@@ -9,9 +9,11 @@ class CBlackMesaBot;
 class CBlackMesaBotFindArmorTask : public AITask<CBlackMesaBot>
 {
 public:
-
-	static bool IsPossible(CBlackMesaBot* bot);
-
+	static bool IsPossible(CBlackMesaBot* bot, CBaseEntity** item);
+	CBlackMesaBotFindArmorTask(CBaseEntity* item) :
+		m_armorSource(item), m_goal(0.0f, 0.0f, 0.0f), m_isCharger(false)
+	{
+	}
 	TaskResult<CBlackMesaBot> OnTaskStart(CBlackMesaBot* bot, AITask<CBlackMesaBot>* pastTask) override;
 	TaskResult<CBlackMesaBot> OnTaskUpdate(CBlackMesaBot* bot) override;
 
@@ -25,7 +27,6 @@ private:
 	Vector m_goal;
 	bool m_isCharger;
 
-	void SetArmorSource(CBaseEntity* source, CBlackMesaBot* bot);
 	bool IsArmorSourceValid();
 
 	static bool FindArmorSource(CBlackMesaBot* bot, CBaseEntity** armorSource, const float maxRange = 2048.0f, const bool filterByDistance = false);
