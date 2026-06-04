@@ -540,7 +540,16 @@ namespace botsharedutils::search
 	{
 	public:
 		MarkVisibleAreasAsCleared(CBaseBot* bot);
+		bool ShouldSearch(CNavArea* area) override;
 		void OnDone() override;
+
+		// for CNavArea::ForEachConnectedArea
+		void operator()(CNavArea* connectedArea);
+
+	private:
+		bool m_hasVisibleNeighbor;
+		std::unordered_set<unsigned int> m_visibleAreas;
+		ISensor* m_sensor;
 	};
 }
 

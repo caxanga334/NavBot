@@ -22,8 +22,7 @@ public:
 	static constexpr float POST_COMBAT_TIMER_DURATION = 5.0f;
 	static constexpr int DANGER_SCAN_IGNORE_FOV_SKILL = 90;
 	static constexpr float TOGGLE_SCOPE_COOLDOWN_TIME = 0.5f;
-	static constexpr float CLEAR_AREAS_TIMER_MIN = 1.0f;
-	static constexpr float CLEAR_AREAS_TIMER_MAX = 1.5f;
+	static constexpr float CLEAR_AREAS_TIMER_INTERVAL = 3.0f;
 
 	struct CombatData
 	{
@@ -186,7 +185,7 @@ public:
 	// Returns true if the combat interface is marking visible areas as cleared of enemies.
 	const bool IsMarkVisibleAreasAsClearedEnabled() const { return m_clearAreasTimer.HasStarted(); }
 	// Enables marking visible areas as cleared.
-	void StartMarkingVisibleAreasAsCleared() { m_clearAreasTimer.StartRandom(CLEAR_AREAS_TIMER_MIN, CLEAR_AREAS_TIMER_MAX); }
+	void StartMarkingVisibleAreasAsCleared() { m_clearAreasTimer.Start(-1.0f); /* Start with a negative time so it runs in the next update cycle. */ }
 	// Disables marking visible areas as cleared.
 	void StopMarkingVisibleAreasAsCleared() { m_clearAreasTimer.Invalidate(); }
 protected:

@@ -1307,6 +1307,10 @@ void IMovement::ClearStuckStatus(const char* reason)
 
 bool IMovement::IsAreaTraversable(const CNavArea* area) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::IsAreaTraversable", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	if (area->IsBlocked(bot->GetCurrentTeamIndex()))

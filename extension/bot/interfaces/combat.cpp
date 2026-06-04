@@ -809,6 +809,10 @@ const char* ICombat::GetEnemyName(const CKnownEntity* enemy) const
 
 void ICombat::UpdateLookingAround()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::UpdateLookingAround", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseBot* me = GetBot<CBaseBot>();
 	CNavArea* area = me->GetLastKnownNavArea();
 
@@ -989,6 +993,10 @@ IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheads
 
 void ICombat::CombatAim(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ICombat::CombatAim", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	using namespace std::literals::string_view_literals;
 
 	const CombatData& data = GetCachedCombatData();
@@ -1190,11 +1198,10 @@ void ICombat::UpdateMarkAreasAsCleared(const CKnownEntity* threat)
 
 		if (timer.IsElapsed())
 		{
-			timer.StartRandom(CLEAR_AREAS_TIMER_MIN, CLEAR_AREAS_TIMER_MAX);
+			timer.Start(CLEAR_AREAS_TIMER_INTERVAL);
+			botsharedutils::search::MarkVisibleAreasAsCleared functor(GetBot<CBaseBot>());
+			functor.Execute();
 		}
-
-		botsharedutils::search::MarkVisibleAreasAsCleared functor(GetBot<CBaseBot>());
-		functor.Execute();
 	}
 }
 
@@ -1210,70 +1217,63 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 #endif // EXT_VPROF_ENABLED
 
 	CBaseEntity* entity = threat->GetEntity();
+	Vector eyePos = bot->GetEyeOrigin();
 	this->enemy_center = UtilHelpers::getWorldSpaceCenter(entity);
 	this->in_combat = true;
 	this->is_visible = threat->IsVisibleNow();
+	this->enemy_range = (eyePos - this->enemy_center).Length();
 
 	if (this->is_visible)
 	{
+		const WeaponInfo* info = activeWeapon->GetWeaponInfo();
 		this->enemy_position = this->enemy_center;
+		this->range_to_pos = (eyePos - this->enemy_position).Length();
 		this->time_lost_los = gpGlobals->curtime;
 		this->ten_seconds_passed = false;
-	}
-	else
-	{
-		this->enemy_position = threat->GetLastKnownPosition();
-	}
 
-	this->enemy_range = bot->GetRangeTo(this->enemy_center);
-	this->range_to_pos = bot->GetRangeTo(this->enemy_position);
-	const WeaponInfo* info = activeWeapon->GetWeaponInfo();
+		bool primary = false;
+		bool secondary = false;
 
-	bool primary = false;
-	bool secondary = false;
+		if (activeWeapon->CanUsePrimaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, botweapons::AttackType::PRIMARY))
+		{
+			primary = true;
+		}
 
-	if (activeWeapon->CanUsePrimaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, botweapons::AttackType::PRIMARY))
-	{
-		primary = true;
-	}
+		if (activeWeapon->CanUseSecondaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, botweapons::AttackType::SECONDARY))
+		{
+			secondary = true;
+		}
 
-	if (activeWeapon->CanUseSecondaryAttack(bot) && activeWeapon->IsInAttackRange(this->range_to_pos, botweapons::AttackType::SECONDARY))
-	{
-		secondary = true;
-	}
+		this->in_range = (primary || secondary);
+		this->should_move = this->enemy_range >= info->GetAttackRange();
 
-	this->in_range = (primary || secondary);
-	this->should_move = this->enemy_range >= info->GetAttackRange();
+		if (primary && !secondary)
+		{
+			this->can_use_primary = true;
+			this->selected_attack_type = botweapons::AttackType::PRIMARY;
+		}
+		else if (secondary && !primary)
+		{
+			this->can_use_primary = false;
+			this->selected_attack_type = botweapons::AttackType::SECONDARY;
+		}
+		else if (primary && secondary)
+		{
+			this->can_use_primary = !CBaseBot::s_botrng.GetRandomChance(info->GetChanceToUseSecondaryAttack());
+			this->selected_attack_type = this->can_use_primary ? botweapons::AttackType::PRIMARY : botweapons::AttackType::SECONDARY;
+		}
 
-	if (primary && !secondary)
-	{
-		this->can_use_primary = true;
-		this->selected_attack_type = botweapons::AttackType::PRIMARY;
-	}
-	else if (secondary && !primary)
-	{
-		this->can_use_primary = false;
-		this->selected_attack_type = botweapons::AttackType::SECONDARY;
-	}
-	else if (primary && secondary)
-	{
-		this->can_use_primary = !CBaseBot::s_botrng.GetRandomChance(info->GetChanceToUseSecondaryAttack());
-		this->selected_attack_type = this->can_use_primary ? botweapons::AttackType::PRIMARY : botweapons::AttackType::SECONDARY;
-	}
+		if (this->can_use_primary)
+		{
+			float maxrange = info->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange() * info->GetHeadShotRangeMultiplier();
+			this->in_headshot_range = (this->enemy_range <= maxrange);
+		}
+		else
+		{
+			float maxrange = info->GetAttackInfo(botweapons::AttackType::SECONDARY).GetMaxRange() * info->GetHeadShotRangeMultiplier();
+			this->in_headshot_range = (this->enemy_range <= maxrange);
+		}
 
-	if (this->can_use_primary)
-	{
-		float maxrange = info->GetAttackInfo(botweapons::AttackType::PRIMARY).GetMaxRange() * info->GetHeadShotRangeMultiplier();
-		this->in_headshot_range = (this->enemy_range <= maxrange);
-	}
-	else
-	{
-		float maxrange = info->GetAttackInfo(botweapons::AttackType::SECONDARY).GetMaxRange() * info->GetHeadShotRangeMultiplier();
-		this->in_headshot_range = (this->enemy_range <= maxrange);
-	}
-
-	if (this->is_visible)
-	{
 		if (threat->IsPlayer())
 		{
 			const CBaseExtPlayer* player = threat->GetPlayerInstance();
@@ -1284,8 +1284,7 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 		}
 		else
 		{
-			const entities::HBaseEntity& be = threat->GetBaseEntityHelper();
-			Vector maxs = be.WorldAlignMaxs();
+			const Vector& maxs = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable()->OBBMaxs();
 			const Vector& origin = UtilHelpers::getEntityOrigin(entity);
 			Vector head = origin;
 			head.z += maxs.z;
@@ -1294,15 +1293,24 @@ void ICombat::CombatData::Update(const CBaseBot* bot, const CKnownEntity* threat
 			this->is_center_clear = bot->IsLineOfFireClear(this->enemy_center);
 			this->is_origin_clear = bot->IsLineOfFireClear(origin);
 		}
+
+		this->can_fire = (this->is_head_clear || this->is_center_clear || this->is_origin_clear);
 	}
 	else
 	{
+		/* threat is not visible */
+		this->enemy_position = threat->GetLastKnownPosition();
+		this->range_to_pos = (eyePos - this->enemy_position).Length();
+		/* skip these
+		this->in_headshot_range = false;
 		this->is_head_clear = false;
 		this->is_center_clear = false;
-		this->is_origin_clear = bot->IsLineOfFireClear(this->enemy_position);
+		this->is_origin_clear = false;
+		*/
+		this->can_fire = false;
+		this->in_range = false;
+		this->should_move = true;
 	}
-
-	this->can_fire = (this->is_head_clear || this->is_center_clear || this->is_origin_clear);
 }
 
 combatutils::GetRandomNeighorAreaOutsideFOVFunctor::GetRandomNeighorAreaOutsideFOVFunctor(const CBaseBot* bot)

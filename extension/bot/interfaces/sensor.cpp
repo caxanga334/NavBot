@@ -153,6 +153,10 @@ void ISensor::Reset()
 
 void ISensor::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	UpdateKnownEntities();
 
 	if (m_reportKnownsTimer.IsElapsed())

@@ -9,6 +9,10 @@
 #include <navmesh/nav_area.h>
 #include "sharedmemory.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 ISharedBotMemory::ReportedEntityData::ReportedEntityData(CBaseEntity* pEntity) :
 	m_handle(pEntity)
 {
@@ -77,6 +81,10 @@ void ISharedBotMemory::Reset()
 
 void ISharedBotMemory::Update()
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISharedBotMemory::Update", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	UpdateReportedEntities();
 }
 

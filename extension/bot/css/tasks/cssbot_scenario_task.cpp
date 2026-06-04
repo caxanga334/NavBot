@@ -21,7 +21,7 @@
 #include <bot/interfaces/behavior_utils.h>
 #include "cssbot_scenario_task.h"
 
-class CCSSBotRoamTask : public CBotSharedRoamTask<CCSSBot, CCSSBotPathCost>
+class CCSSBotRoamTask final : public CBotSharedRoamTask<CCSSBot, CCSSBotPathCost>
 {
 public:
 	CCSSBotRoamTask(CCSSBot* bot) :
@@ -29,7 +29,7 @@ public:
 	{
 	}
 
-	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override
+	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) final
 	{
 		CCounterStrikeSourceMod* csmod = CCounterStrikeSourceMod::GetCSSMod();
 
@@ -42,7 +42,7 @@ public:
 	}
 };
 
-class CCSSBotFollowBombCarrierTask : public CBotSharedEscortEntityTask<CCSSBot, CCSSBotPathCost>
+class CCSSBotFollowBombCarrierTask final : public CBotSharedEscortEntityTask<CCSSBot, CCSSBotPathCost>
 {
 public:
 	CCSSBotFollowBombCarrierTask(CCSSBot* bot, CBaseEntity* c4carrier) :
@@ -50,7 +50,7 @@ public:
 	{
 	}
 
-	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) override
+	TaskResult<CCSSBot> OnTaskUpdate(CCSSBot* bot) final
 	{
 		CCounterStrikeSourceMod* csmod = CCounterStrikeSourceMod::GetCSSMod();
 
@@ -62,7 +62,7 @@ public:
 		return CBotSharedEscortEntityTask<CCSSBot, CCSSBotPathCost>::OnTaskUpdate(bot);
 	}
 
-	const char* GetName() const override { return "FollowBombCarrier"; }
+	const char* GetName() const final { return "FollowBombCarrier"; }
 };
 
 CCSSBotScenarioTask::CCSSBotScenarioTask()

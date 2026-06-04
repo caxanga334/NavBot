@@ -12,6 +12,10 @@
 #include "interfaces/path/meshnavigator.h"
 #include "bot_shared_utils.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 botsharedutils::AimSpotCollector::AimSpotCollector(CBaseBot* bot) :
 	INavAreaCollector(bot->GetLastKnownNavArea(), bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false, true), 
 	m_vecOffset1(0.0f, 0.0f, 32.0f), m_vecOffset2(0.0f, 0.0f, 60.0f)
@@ -784,6 +788,40 @@ bool botsharedutils::threat::IsImmediateThreat(CBaseBot* bot, const CKnownEntity
 botsharedutils::search::MarkVisibleAreasAsCleared::MarkVisibleAreasAsCleared(CBaseBot* bot) :
 	IsReachableAreas(bot, bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false)
 {
+	m_hasVisibleNeighbor = false;
+	m_sensor = bot->GetSensorInterface();
+}
+
+bool botsharedutils::search::MarkVisibleAreasAsCleared::ShouldSearch(CNavArea* area)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("botsharedutils::search::MarkVisibleAreasAsCleared::ShouldSearch", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (area == GetStartArea())
+	{
+		m_visibleAreas.emplace(area->GetID());
+		return true;
+	}
+
+	if (IsReachableAreas::ShouldSearch(area))
+	{
+		m_hasVisibleNeighbor = false;
+		area->ForEachConnectedArea(*this);
+
+		// perf: only do vis checks if this area is neighboring another visible area.
+		if (m_hasVisibleNeighbor)
+		{
+			// corner check disabled, trading accuracy for perf (less raycast traces done)
+			if (m_sensor->IsAbleToSee(area, true, false))
+			{
+				m_visibleAreas.emplace(area->GetID());
+				return true;
+			}
+		}
+	}
+
+	return false;
 }
 
 void botsharedutils::search::MarkVisibleAreasAsCleared::OnDone()
@@ -794,22 +832,26 @@ void botsharedutils::search::MarkVisibleAreasAsCleared::OnDone()
 	}
 
 	const CBaseBot* bot = GetBot();
-	const ISensor* sensor = bot->GetSensorInterface();
-	const Vector eyePos = bot->GetEyeOrigin();
 	const int teamIndex = bot->GetCurrentTeamIndex();
 
-	auto func = [&eyePos, &sensor, &teamIndex](CNavArea* area) -> bool {
-
-		// skip corner check for nav areas smaller than a player's hull width
-		if (sensor->IsAbleToSee(area, true, area->GetGeometricArea() >= (navgenparams->half_human_width * 2.0f)))
-		{
-			area->MarkAsCleared(teamIndex);
-		}
-
+	auto func = [&teamIndex](CNavArea* area) -> bool {
+		// vis check moved to ShouldSearch
+		area->MarkAsCleared(teamIndex);
 		return true;
 	};
 
 	ForEachCollectedNavArea(func);
+}
+
+void botsharedutils::search::MarkVisibleAreasAsCleared::operator()(CNavArea* connectedArea)
+{
+	// already found one, skip
+	if (m_hasVisibleNeighbor) { return; }
+
+	if (m_visibleAreas.find(connectedArea->GetID()) != m_visibleAreas.end())
+	{
+		m_hasVisibleNeighbor = true;
+	}
 }
 
 botsharedutils::SelectReachableUnclearedArea::SelectReachableUnclearedArea(CBaseBot* bot) :
