@@ -25,6 +25,12 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 		return new CDoDSBotDeployMachineGunTask;
 	}
 
+	// Check if the bot should attack visible enemies
+	if (CBotSharedDefaultCombatBehaviorTask<CDoDSBot, CDoDSBotPathCost>::IsPossible(bot))
+	{
+		return new CBotSharedDefaultCombatBehaviorTask<CDoDSBot, CDoDSBotPathCost>;
+	}
+
 	CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();
 	const int defrate = mod->GetModSettings()->GetDefendRate();
 

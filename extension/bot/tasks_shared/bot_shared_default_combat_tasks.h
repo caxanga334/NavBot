@@ -328,6 +328,22 @@ template <typename BT, typename CT>
 class CBotSharedDefaultCombatBehaviorTask : public AITask<BT>
 {
 public:
+	static bool IsPossible(BT* bot)
+	{
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+		if (!threat)
+		{
+			return false;
+		}
+
+		if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) == QueryAnswerType::ANSWER_NO)
+		{
+			return false;
+		}
+
+		return true;
+	}
 
 	AITask<BT>* InitialNextTask(BT* bot) override
 	{

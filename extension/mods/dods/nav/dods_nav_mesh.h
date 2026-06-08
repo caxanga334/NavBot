@@ -28,10 +28,12 @@ public:
 	void OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, const CRCBot2WaypointLoader& loader) override;
 protected:
 	std::shared_ptr<CWaypoint> CreateWaypoint() const override;
+	void ComputeInternalData() override;
 
 private:
 
 	void RegisterEditCommands();
+	void ComputeTeamWallBlockers() const;
 };
 
 #endif // !__NAVBOT_DODS_NAV_MESH_H_

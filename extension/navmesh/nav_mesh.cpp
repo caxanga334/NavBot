@@ -36,6 +36,7 @@
 #include "nav_blocker.h"
 #include "nav_blocker_door.h"
 #include "nav_blocker_func_breakable.h"
+#include "nav_blocker_func_brush.h"
 #include "nav_pathcost_mod.h"
 #include "nav_pathfind.h"
 #include <utlbuffer.h>
@@ -4020,6 +4021,22 @@ void CNavMesh::ComputeBreakableBlockers()
 	UtilHelpers::ForEachEntityOfClassname("func_breakable", func);
 }
 
+void CNavMesh::ComputeFuncBrushBlockers()
+{
+	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			CFuncBrushNavBlocker* blocker = this->CreateBrushBlocker();
+			blocker->Init(entity);
+			blocker->Register();
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_brush", func);
+}
+
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
 {
 	return std::make_shared<CWaypoint>();
@@ -4048,6 +4065,11 @@ CDoorNavBlocker* CNavMesh::CreateDoorBlocker() const
 CFuncBreakableNavBlocker* CNavMesh::CreateBreakableBlocker() const
 {
 	return new CFuncBreakableNavBlocker;
+}
+
+CFuncBrushNavBlocker* CNavMesh::CreateBrushBlocker() const
+{
+	return new CFuncBrushNavBlocker;
 }
 
 void CNavMesh::RebuildWaypointMap()
@@ -4741,6 +4763,7 @@ void CNavMesh::ComputeInternalData()
 
 	ComputeDoorBlockers();
 	ComputeBreakableBlockers();
+	ComputeFuncBrushBlockers();
 }
 
 void NavNotifyClientsOfReload::operator()(CBaseExtPlayer* player)

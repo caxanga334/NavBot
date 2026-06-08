@@ -5,6 +5,7 @@
 #include "dods_nav_area.h"
 #include "dods_nav_mesh.h"
 #include "dods_nav_waypoint.h"
+#include "dods_nav_team_wall_blocker.h"
 
 CDoDSNavMesh::CDoDSNavMesh() :
 	CNavMesh()
@@ -112,4 +113,26 @@ void CDoDSNavMesh::OnRCBot2WaypointImported(const CRCBot2Waypoint& waypoint, con
 std::shared_ptr<CWaypoint> CDoDSNavMesh::CreateWaypoint() const
 {
 	return std::make_shared<CDoDSWaypoint>();
+}
+
+void CDoDSNavMesh::ComputeInternalData()
+{
+	CNavMesh::ComputeInternalData();
+	ComputeTeamWallBlockers();
+}
+
+void CDoDSNavMesh::ComputeTeamWallBlockers() const
+{
+	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			CDoDSNavTeamWallBlocker* blocker = new CDoDSNavTeamWallBlocker(entity);
+			blocker->Register();
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_team_wall", func);
+	UtilHelpers::ForEachEntityOfClassname("func_teamblocker", func);
 }

@@ -13,7 +13,7 @@ CDoorNavBlocker::CDoorNavBlocker()
 	m_teamNum = NAV_TEAM_ANY;
 }
 
-bool CDoorNavBlocker::IsValid()
+bool CDoorNavBlocker::IsValid() const
 {
 	return m_door.Get() != nullptr;
 }
@@ -63,7 +63,7 @@ void CDoorNavBlocker::Update()
 	}
 }
 
-bool CDoorNavBlocker::IsBlocked(int teamID)
+bool CDoorNavBlocker::IsBlocked(int teamID) const
 {
 	if (m_teamNum != NAV_TEAM_ANY)
 	{
@@ -95,7 +95,7 @@ bool CDoorNavBlocker::IsBlocked(int teamID)
 	return m_blocked;
 }
 
-void CDoorNavBlocker::PrintDebugInfo()
+void CDoorNavBlocker::PrintDebugInfo() const
 {
 	META_CONPRINTF("Door: %s\n", UtilHelpers::textformat::FormatEntity(m_door.Get()));
 	META_CONPRINTF("Trigger: %s\n", UtilHelpers::textformat::FormatEntity(m_trigger.Get()));

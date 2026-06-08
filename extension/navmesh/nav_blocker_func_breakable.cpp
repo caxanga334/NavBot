@@ -4,7 +4,7 @@
 #include "nav_mesh.h"
 #include "nav_blocker_func_breakable.h"
 
-bool CFuncBreakableNavBlocker::IsValid()
+bool CFuncBreakableNavBlocker::IsValid() const
 {
 	if (m_type == BreakableType::TYPE_NONE) { return false; }
 
@@ -36,7 +36,7 @@ void CFuncBreakableNavBlocker::Update()
 	}
 }
 
-bool CFuncBreakableNavBlocker::IsBlocked(int teamID)
+bool CFuncBreakableNavBlocker::IsBlocked(int teamID) const
 {
 	if (m_teamNum != NAV_TEAM_ANY)
 	{
@@ -64,7 +64,7 @@ bool CFuncBreakableNavBlocker::IsBlocked(int teamID)
 	return m_blocked;
 }
 
-void CFuncBreakableNavBlocker::PrintDebugInfo()
+void CFuncBreakableNavBlocker::PrintDebugInfo() const
 {
 	CBaseEntity* breakable = m_breakable.Get();
 	META_CONPRINTF("Breakable: %s \n", UtilHelpers::textformat::FormatEntity(breakable));

@@ -25,12 +25,12 @@ public:
 		TYPE_BIGHEALTH, // health is over the break limit
 	};
 
-	bool IsValid() override;
+	bool IsValid() const override;
 	void Update() override;
-	bool IsBlocked(int teamID) override;
-	bool RemoveOnRecompute() override { return true; }
-	const char* GetName() override { return "CFuncBreakableNavBlocker"; }
-	void PrintDebugInfo() override;
+	bool IsBlocked(int teamID) const override;
+	bool RemoveOnRecompute() const override { return true; }
+	const char* GetName() const override { return "Breakable Blocker"; }
+	void PrintDebugInfo() const override;
 
 	virtual void Init(CBaseEntity* breakable);
 

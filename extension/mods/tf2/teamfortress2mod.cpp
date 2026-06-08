@@ -1307,6 +1307,7 @@ void CTeamFortress2Mod::FindMvMBombHatchPosition()
 	if (capzone == INVALID_EHANDLE_INDEX)
 	{
 		rootconsole->ConsolePrint("[NavBot] Mann vs Machine: Failed to find the bomb hatch position! (func_capturezone)");
+		return;
 	}
 
 	CBaseEntity* entity = gamehelpers->ReferenceToEntity(capzone);

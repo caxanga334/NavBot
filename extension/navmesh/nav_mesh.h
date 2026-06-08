@@ -52,6 +52,7 @@ class INavBlocker;
 class INavPathCostMod;
 class CDoorNavBlocker;
 class CFuncBreakableNavBlocker;
+class CFuncBrushNavBlocker;
 class CBaseBot;
 class CBaseExtPlayer;
 
@@ -1358,6 +1359,7 @@ private:
 
 	void ComputeDoorBlockers();
 	void ComputeBreakableBlockers();
+	void ComputeFuncBrushBlockers();
 
 protected:
 	static constexpr float NAV_BLOCKERS_UPDATE_INTERVAL = 2.0f;
@@ -1374,6 +1376,8 @@ protected:
 	virtual CDoorNavBlocker* CreateDoorBlocker() const;
 	// Allocates a new breakable blocker instance, overrride to use mod specific implementation
 	virtual CFuncBreakableNavBlocker* CreateBreakableBlocker() const;
+	// Allocatesa new func_brush blocker instance, override to use mod specific implementation
+	virtual CFuncBrushNavBlocker* CreateBrushBlocker() const;
 
 	// Rebuilds the waypoint ID map
 	void RebuildWaypointMap();

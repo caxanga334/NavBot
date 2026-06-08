@@ -40,21 +40,21 @@ public:
 	// Called by the nav mesh after the blocker is registered to it.
 	virtual void PostRegister() = 0;
 	// Called to determine if this nav blocker instance is valid. If this return false, the nav mesh will destroy this instance.
-	virtual bool IsValid() = 0;
+	virtual bool IsValid() const = 0;
 	// Called to update the state of this nav blocker
 	virtual void Update() = 0;
 	// Called when the round has restarted
 	virtual void OnRoundRestart() = 0;
 	// Called to get the blocked/unblocked state
-	virtual bool IsBlocked(int teamID) = 0;
+	virtual bool IsBlocked(int teamID) const = 0;
 	// Called when the nav mesh is recomputing internal data
 	virtual void OnRecomputeInternalData() = 0;
 	// Return true if this blocker should be deleted when the nav mesh internal data is recomputed
-	virtual bool RemoveOnRecompute() = 0;
+	virtual bool RemoveOnRecompute() const = 0;
 	// The name of this blocker, for debugging purposes
-	virtual const char* GetName() = 0;
+	virtual const char* GetName() const = 0;
 	// Prints debug information to the console.
-	virtual void PrintDebugInfo() = 0;
+	virtual void PrintDebugInfo() const = 0;
 };
 
 /**
@@ -82,15 +82,15 @@ public:
 			area->RegisterNavBlocker(this);
 		}
 	}
-	bool IsValid() override { return true; }
+	bool IsValid() const override { return true; }
 	void Update() override {}
 	void OnRoundRestart() override {}
-	bool IsBlocked(int teamID) { return true; }
+	bool IsBlocked(int teamID) const { return true; }
 	void OnRecomputeInternalData() override {}
-	bool RemoveOnRecompute() override { return false; }
-	const char* GetName() override { return "CNavBlocker"; }
-	void PrintDebugInfo() override {}
-	bool IsAreaVectorEmpty() const { return m_areas.empty(); }
+	bool RemoveOnRecompute() const override { return false; }
+	const char* GetName() const override { return "CNavBlocker"; }
+	void PrintDebugInfo() const override {}
+	bool IsAreaVectorEmpty() const noexcept { return m_areas.empty(); }
 
 protected:
 	std::vector<AreaType*> m_areas;
