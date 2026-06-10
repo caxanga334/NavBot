@@ -6,11 +6,11 @@
 
 static cell_t Native_NavAreaGetID(IPluginContext* context, const cell_t* params)
 {
-	CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+	CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
 
 	if (!area)
 	{
-		context->ReportError("NULL nav area of address %x", params[2]);
+		context->ReportError("NULL nav area of address %x", params[1]);
 		return 0;
 	}
 
@@ -19,11 +19,11 @@ static cell_t Native_NavAreaGetID(IPluginContext* context, const cell_t* params)
 
 static cell_t Native_NavAreaGetCenter(IPluginContext* context, const cell_t* params)
 {
-	CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+	CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
 
 	if (!area)
 	{
-		context->ReportError("NULL nav area of address %x", params[2]);
+		context->ReportError("NULL nav area of address %x", params[1]);
 		return 0;
 	}
 

@@ -5,6 +5,7 @@
 #include <IExtensionSys.h>
 #include <ISourceMod.h>
 
+#include "natives/baseplayer.h"
 #include "natives/bots.h"
 #include "natives/mods.h"
 #include "natives/navmesh.h"
