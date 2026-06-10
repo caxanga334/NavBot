@@ -7,9 +7,10 @@
 #endif
 #define _navbot_included
 
-#include <core>
+#include <sourcemod>
 
 #include "navbot/nav_mesh.inc"
+#include "navbot/baseplayer.inc"
 #include "navbot/bots.inc"
 #include "navbot/mod.inc"
 
@@ -54,6 +55,11 @@ forward Action OnPreNavBotAdd();
  * @param bot Client index of the bot that was just added.
  */
 forward void OnNavBotAdded(int bot);
+
+/**
+ * Called when running the bot's update cycle.
+ */
+forward void OnPreNavBotUpdate(NavBot bot);
 
 /**
  * Builds a path from the start position to the end position.
@@ -103,9 +109,17 @@ methodmap NavBotManager
 	 */
 	public static native NavBot GetNavBotByIndex(int client);
 	/**
+	 * Gets a BasePlayer instance by client index.
+	 * @parma client		Index of the client to get the base player instance of.
+	 * @return				BasePlayer instance. Use BasePlayer.IsNull to check if it's valid.
+	 */
+	public static native NavBotBasePlayer GetBasePlayer(int client);
+	/**
 	 * Returns true if the extension's bot feature is supported.
 	 */
 	public static native bool AreBotsSupported();
+	// Runs the round restart routines.
+	public static native void NotifyRoundRestart();
 }
 
 /**
@@ -143,7 +157,17 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotManager.IsNavBot");
 	MarkNativeAsOptional("NavBotManager.GetNavBotCount");
 	MarkNativeAsOptional("NavBotManager.GetNavBotByIndex");
+	MarkNativeAsOptional("NavBotManager.GetBasePlayer");
 	MarkNativeAsOptional("NavBotManager.AreBotsSupported");
+	MarkNativeAsOptional("NavBotManager.NotifyRoundRestart");
+
+	/* Base Player */
+	MarkNativeAsOptional("NavBotBasePlayer.IsNavBot.get");
+	MarkNativeAsOptional("NavBotBasePlayer.GetLastKnownNavArea");
+	MarkNativeAsOptional("NavBotBasePlayer.ForceUpdateLastKnownNavArea");
+	MarkNativeAsOptional("NavBotBasePlayer.GetLocalEyeAngles");
+	MarkNativeAsOptional("NavBotBasePlayer.WorldSpaceCenter");
+	MarkNativeAsOptional("NavBotBasePlayer.SnapEyeAngles");
 
 	/* Nav Area */
 	MarkNativeAsOptional("NavBotNavArea.GetID");
@@ -161,6 +185,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotModInterface.GetModName");
 	MarkNativeAsOptional("NavBotModInterface.ParseModSettingsFile");
 	MarkNativeAsOptional("NavBotModInterface.ParseDifficultyProfileFile");
+	MarkNativeAsOptional("NavBotModInterface.ParseWeaponConfigFile");
 
 	/* Navigator */
 	MarkNativeAsOptional("MeshNavigator.MeshNavigator");
@@ -175,15 +200,29 @@ public __ext_navbot_SetNTVOptional()
 	/* Bots */
 	MarkNativeAsOptional("NavBot.NavBot");
 	MarkNativeAsOptional("NavBot.SetSkillLevel");
+	MarkNativeAsOptional("NavBot.Reset");
 	MarkNativeAsOptional("NavBot.DelayedFakeClientCommand");
 	MarkNativeAsOptional("NavBot.GetInventoryInterface");
+	MarkNativeAsOptional("NavBot.GetMovementInterface");
+	MarkNativeAsOptional("NavBot.IsLineOfFireClear");
+	MarkNativeAsOptional("NavBot.SendImpulse");
 
 	/* Base Interface */
 	MarkNativeAsOptional("NavBotBotInterface.Reset");
+
+	/* Shared Bot Memory Interface  */
+	MarkNativeAsOptional("NavBotSharedBotMemory.ReportEntity");
+	MarkNativeAsOptional("NavBotSharedBotMemory.ForgetEntity");
 
 	/* Inventory Interface */
 	MarkNativeAsOptional("NavBotInventoryInterface.EquipWeapon");
 	MarkNativeAsOptional("NavBotInventoryInterface.RegisterWeapon");
 	MarkNativeAsOptional("NavBotInventoryInterface.RequestUpdate");
+
+	/* Movement interface */
+	MarkNativeAsOptional("NavBotMovementInterface.IsPotentiallyTraversable");
+	MarkNativeAsOptional("NavBotMovementInterface.IsStuck");
+	MarkNativeAsOptional("NavBotMovementInterface.GetStuckDuration");
 }
+
 #endif

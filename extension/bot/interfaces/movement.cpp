@@ -1048,16 +1048,6 @@ bool IMovement::IsGap(const Vector& pos, const Vector& forward)
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-/**
- * @brief Checks if the bot is able to move between 'from' and 'to'
- * @param from Start position
- * @param to End position
- * @param fraction trace result fraction
- * @param now When true, check if the bot is able to move right now. Otherwise check if the bot is able to move in the future 
- * (ie: blocked by an entity that can be destroyed)
- * @param obstacle The obstacle entity will be stored here.
- * @return true if the bot can walk, false otherwise
-*/
 bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now, CBaseEntity** obstacle)
 {
 #ifdef EXT_VPROF_ENABLED

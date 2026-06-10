@@ -715,6 +715,8 @@ protected:
 public:
 
 	bool LoadConfigFile();
+	// Parses a custom weapon config file. Used by the SourcePawn API.
+	bool ParseCustomFile(const std::string& file);
 
 protected:
 	std::vector<std::unique_ptr<WeaponInfo>> m_weapons; // main storage
@@ -810,6 +812,20 @@ private:
 
 	void ReadDynamicPrioritySection(const SourceMod::SMCStates* states, const char* key, const char* value);
 	void ReadAttackInfoSection(botweapons::AttackType type, const SourceMod::SMCStates* states, const char* key, const char* value);
+	void ClearData()
+	{
+		m_index_lookup.clear();
+		m_classname_lookup.clear();
+		m_weapons.clear();
+	}
+	void RemoveTemplateEntries()
+	{
+		// purge templates before inserting into the look up database
+		m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [](const std::unique_ptr<WeaponInfo>& obj) {
+			return obj->IsTemplateEntry();
+		}), m_weapons.end());
+	}
+	void BuildLookupMaps();
 };
 
 #endif // !NAVBOT_WEAPON_INFO_H_

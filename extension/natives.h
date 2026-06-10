@@ -20,6 +20,8 @@ namespace natives
 	cell_t BuildPathSimple(IPluginContext* context, const cell_t* params);
 	cell_t GetPathSegment(IPluginContext* context, const cell_t* params);
 	cell_t GetPathSegmentCount(IPluginContext* context, const cell_t* params);
+	cell_t NotifyRoundRestart(IPluginContext* context, const cell_t* params);
+	cell_t GetBasePlayerByIndex(IPluginContext* context, const cell_t* params);
 }
 
 #endif // !__NAVBOT_NATIVES_H_

@@ -1,7 +1,6 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
 #include "manager.h"
-#include <util/helpers.h>
+#include "mods/basemod.h"
 #include <util/pawnutils.h>
 #include <bot/basebot.h>
 #include <navmesh/nav_mesh.h>
@@ -133,6 +132,7 @@ namespace natives
 			{"FireNavBotSoundEvent", FireNavBotSoundEvent},
 			{"NavBotManager.GetNavBotCount", GetNavBotCount},
 			{"NavBotManager.AreBotsSupported", Native_AreBotsSupported},
+			{"NavBotManager.GetBasePlayer", GetBasePlayerByIndex},
 			{"BuildPathSimple", BuildPathSimple},
 			{"GetPathSegment", GetPathSegment},
 			{"GetPathSegmentCount", GetPathSegmentCount},
@@ -315,5 +315,32 @@ namespace natives
 	cell_t GetPathSegmentCount(IPluginContext* context, const cell_t* params)
 	{
 		return static_cast<cell_t>(s_pawnPath.size());
+	}
+
+	cell_t NotifyRoundRestart(IPluginContext* context, const cell_t* params)
+	{
+		extmanager->GetMod()->OnRoundStart();
+		TheNavMesh->NotifyRoundRestart();
+		return 0;
+	}
+
+	cell_t GetBasePlayerByIndex(IPluginContext* context, const cell_t* params)
+	{
+		int client = static_cast<int>(params[1]);
+
+		if (!pawnutils::IsValidClientIndex(context, client) || !pawnutils::IsClientInGame(context, client))
+		{
+			return 0;
+		}
+
+		CBaseExtPlayer* player = extmanager->GetPlayerByIndex(client);
+
+		if (!player)
+		{
+			context->ReportError("NULL BasePlayer of index %i!", client);
+			return 0;
+		}
+
+		return client;
 	}
 }

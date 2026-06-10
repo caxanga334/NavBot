@@ -5,12 +5,14 @@
 
 #include "interfaces/base_interface.inc"
 #include "interfaces/inventory.inc"
+#include "interfaces/movement.inc"
+#include "interfaces/sharedbotmemory.inc"
 
 // Pass this to SetSkillLevel to generate a random difficulty profile for the bot.
 #define NAVBOT_SKILL_RANDOM -1
 
 // A NavBot bot instance
-methodmap NavBot
+methodmap NavBot < NavBotBasePlayer
 {
 	/**
 	 * Adds a NavBot to the game. Methodmap version of AddNavBot.
@@ -36,22 +38,30 @@ methodmap NavBot
 	 * @error			Invalid bot instance or NULL string passed.
 	 */
 	public native void DelayedFakeClientCommand(const char[] cmd);
+	// Resets the bot
+	public native void Reset();
 	/**
 	 * Returns a memory address to the bot's inventory interface.
 	 * 
 	 * @return			Memory address of the bot's inventory interface.
 	 */
-	public native NavBotInventoryInterface GetInventoryInterface();
-
-	property int Index
-	{
-		public get() { return view_as<int>(this); }
-	}
-
-	property bool IsNull
-	{
-		public get() { return this.Index == 0; }
-	}
+	public native Address GetInventoryInterface();
+	/**
+	 * Returns a memory address to the bot's movement interface.
+	 * 
+	 * @return			Memory address of the bot's movement interface.
+	 */
+	public native Address GetMovementInterface();
+	/**
+	 * Tests if the bot's line of fire is clear to the given position.
+	 * 
+	 * @param vTo		Position to test if LOF is clear to.
+	 * @return			True if clear, false if obstructed.
+	 * @error			Invalid NavBot instance.
+	 */
+	public native bool IsLineOfFireClear(const float vTo[3]);
+	// Makes the bot send the given impulse in their next UserCmd
+	public native void SendImpulse(int impulse);
 }
 
 /**

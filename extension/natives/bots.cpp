@@ -13,11 +13,11 @@ namespace baseinterface
 {
 	static cell_t Native_Reset(IPluginContext* context, const cell_t* params)
 	{
-		IBotInterface* interface = pawnutils::PawnAddressToPointer<IBotInterface>(context, params[1]);
+		IBotInterface* interface = pawnutils::UnsafeCastPawnAddressToObject<IBotInterface>(context, params, 1);
 
 		if (!interface)
 		{
-			context->ReportError("NULL bot interface!");
+			context->ReportError("Got NULL pointer from address %i!", params[1]);
 			return 0;
 		}
 
@@ -30,7 +30,7 @@ namespace inventory
 {
 	static cell_t Native_EquipWeapon(IPluginContext* context, const cell_t* params)
 	{
-		IInventory* iface = pawnutils::PawnAddressToPointer<IInventory>(context, params[1]);
+		IInventory* iface = pawnutils::UnsafeCastPawnAddressToObject<IInventory>(context, params, 1);
 
 		if (!iface)
 		{
@@ -46,28 +46,28 @@ namespace inventory
 			return 0;
 		}
 
-		CBaseBot* bot = iface->GetBot<CBaseBot>();
+		const CBotWeapon* botweapon = iface->GetWeaponOfEntity(weapon);
 
-		CBaseEntity* owner = nullptr;
-
-		if (!entprops->GetEntPropEnt(weapon, Prop_Send, "m_hOwner", nullptr, &owner))
+		if (!botweapon)
 		{
-			context->ReportError("Entity %s is not a CBaseCombatWeapon!", UtilHelpers::textformat::FormatEntity(weapon));
+			context->ReportError("Weapon %s is not registered in the bot's inventory!", UtilHelpers::textformat::FormatEntity(weapon));
 			return 0;
 		}
 
-		if (owner != bot->GetEntity())
+		CBaseBot* bot = iface->GetBot<CBaseBot>();
+
+		if (!botweapon->IsOwnedByBot(bot))
 		{
 			context->ReportError("Entity %s is not owned by the bot!", UtilHelpers::textformat::FormatEntity(weapon));
 			return 0;
 		}
 
-		return iface->EquipWeapon(weapon) ? 1 : 0;
+		return iface->EquipWeapon(botweapon) ? 1 : 0;
 	}
 
 	static cell_t Native_RegisterWeapon(IPluginContext* context, const cell_t* params)
 	{
-		IInventory* iface = pawnutils::PawnAddressToPointer<IInventory>(context, params[1]);
+		IInventory* iface = pawnutils::UnsafeCastPawnAddressToObject<IInventory>(context, params, 1);
 
 		if (!iface)
 		{
@@ -105,7 +105,7 @@ namespace inventory
 
 	static cell_t Native_RequestUpdate(IPluginContext* context, const cell_t* params)
 	{
-		IInventory* iface = pawnutils::PawnAddressToPointer<IInventory>(context, params[1]);
+		IInventory* iface = pawnutils::UnsafeCastPawnAddressToObject<IInventory>(context, params, 1);
 
 		if (!iface)
 		{
@@ -118,9 +118,102 @@ namespace inventory
 	}
 }
 
+namespace movement
+{
+	static cell_t Native_IsPotentiallyTraversable(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		cell_t* fromArr = nullptr;
+		context->LocalToPhysAddr(params[2], &fromArr);
+		Vector vecFrom = pawnutils::PawnFloatArrayToVector(fromArr);
+		cell_t* toArr = nullptr;
+		context->LocalToPhysAddr(params[3], &toArr);
+		Vector vecTo = pawnutils::PawnFloatArrayToVector(toArr);
+		float fraction = 0.0f;
+		bool now = params[5] != 0;
+		CBaseEntity* pEntity = nullptr;
+		bool result = iface->IsPotentiallyTraversable(vecFrom, vecTo, &fraction, now, &pEntity);
+
+		cell_t* flAddr;
+		context->LocalToPhysAddr(params[4], &flAddr);
+		*flAddr = sp_ftoc(fraction);
+
+		cell_t* entAddr;
+		context->LocalToPhysAddr(params[6], &entAddr);
+		
+		if (!pEntity)
+		{
+			*entAddr = -1;
+		}
+		else
+		{
+			*entAddr = gamehelpers->EntityToBCompatRef(pEntity);
+		}
+
+		return pawnutils::ReturnBool(result);
+	}
+	static cell_t Native_IsStuck(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(iface->IsStuck());
+	}
+	static cell_t Native_GetStuckDuration(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		return sp_ftoc(iface->GetStuckDuration());
+	}
+}
+
 namespace basebot
 {
 	static cell_t Native_GetInventoryInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetInventoryInterface());
+	}
+	static cell_t Native_GetMovementInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetMovementInterface());
+	}
+	static cell_t Native_Reset(IPluginContext* context, const cell_t* params)
 	{
 		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
 
@@ -130,7 +223,38 @@ namespace basebot
 			return 0;
 		}
 
-		return pawnutils::PointerToPawnAddress(context, bot->GetInventoryInterface());
+		bot->Reset();
+		return 0;
+	}
+
+	static cell_t Native_IsLineOfFireClear(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		cell_t* arr = nullptr;
+		context->LocalToPhysAddr(params[2], &arr);
+		Vector vTo = pawnutils::PawnFloatArrayToVector(arr);
+		return pawnutils::ReturnBool(bot->IsLineOfFireClear(vTo));
+	}
+
+	static cell_t Native_SendImpulse(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		bot->SetImpulseCommand(static_cast<int>(params[2]));
+		return 0;
 	}
 }
 
@@ -139,6 +263,11 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 	sp_nativeinfo_t list[] = {
 		{"NavBot.NavBot", AddNavBotMM},
 		{"NavBot.SetSkillLevel", SetSkillLevel},
+		{"NavBot.GetInventoryInterface", basebot::Native_GetInventoryInterface},
+		{"NavBot.GetMovementInterface", basebot::Native_GetMovementInterface},
+		{"NavBot.Reset", basebot::Native_Reset},
+		{"NavBot.IsLineOfFireClear", basebot::Native_IsLineOfFireClear},
+		{"NavBot.SendImpulse", basebot::Native_SendImpulse},
 		/* this should be moved */
 		{"NavBotManager.GetNavBotByIndex", GetNavBotByIndex},
 		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},
@@ -148,6 +277,10 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotInventoryInterface.EquipWeapon", inventory::Native_EquipWeapon},
 		{"NavBotInventoryInterface.RegisterWeapon", inventory::Native_RegisterWeapon},
 		{"NavBotInventoryInterface.RequestUpdate", inventory::Native_RequestUpdate},
+		/* IMovement */
+		{"NavBotMovementInterface.IsPotentiallyTraversable", movement::Native_IsPotentiallyTraversable},
+		{"NavBotMovementInterface.IsStuck", movement::Native_IsStuck},
+		{"NavBotMovementInterface.GetStuckDuration", movement::Native_IsStuck},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));

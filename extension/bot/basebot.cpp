@@ -215,6 +215,10 @@ void CBaseBot::Update()
 
 	m_lastUpdateDelta = curtime - m_lastUpdateTime;
 
+#ifndef NO_SOURCEPAWN_API
+	extmanager->SPAPI_CallPreBotUpdate(GetIndex());
+#endif // !NO_SOURCEPAWN_API
+
 	if (m_clearLastPrerequisiteTimer.HasStarted() && m_clearLastPrerequisiteTimer.IsElapsed())
 	{
 		m_clearLastPrerequisiteTimer.Invalidate();

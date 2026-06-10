@@ -9,7 +9,7 @@ on:
 
 jobs:
   build_ext:
-    name: Build for ${{ matrix.identifier }}
+    name: Build for ${{ matrix.os }} SM ${{ matrix.sm }}
     runs-on: ${{ matrix.os_version }}
     container:
       image: ${{ matrix.container_image }}
@@ -17,35 +17,35 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        buildjobs:
-          - windows-latest
-          - linux-stable
+        os: [windows, linux]
+        sm: [stable, dev]
 
         include:
           - meta_branch: "1.12-dev"
-            sm_branch: "1.12-dev"
             sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm episode1 l4d l4d2 csgo swarm'
           
-          - buildjobs: windows-latest
+          - os: windows
             os_version: windows-latest
-            identifier: 'Windows'
             ambuild_target: 'x86,x86_64'
-            package_name: 'windows'
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo,swarm'
             os_ambuild_params: '--breakpad-upload'
 
-          - buildjobs: linux-stable
+          - os: linux
             os_version: ubuntu-latest
-            identifier: 'Linux'
             ambuild_target: 'x86,x86_64'
-            package_name: 'linux'
             libsym_ext: 'so'
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo'
             os_ambuild_params: ''
             container_image: ghcr.io/alliedmodders/build-containers/debian11-clang22:latest
+
+          - sm: stable
+            sm_branch: "1.12-dev"
+
+          - sm: dev
+            sm_branch: "master"
     env:
       BREAKPAD_SYMBOL_SERVER: "http://crash.limetech.org/symbols/submit"
 
@@ -141,17 +141,24 @@ jobs:
         uses: benjlevesque/short-sha@v4.0
         id: short-sha
 
+      - name: Name Package
+        id: pkgname
+        shell: bash
+        run: |
+          echo "name=navbot-${{ matrix.os }}-sm-${{ matrix.sm }}-${{ steps.short-sha.outputs.sha }}" >> $GITHUB_OUTPUT
+          echo "symbols=navbot-symbols-${{ matrix.os }}-sm-${{ matrix.sm }}-${{ steps.short-sha.outputs.sha }}" >> $GITHUB_OUTPUT
+
       - name: Upload Extension as Artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: navbot-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
+          name: ${{ steps.pkgname.outputs.name }}
           path: |
               navbot/build/package/*
 
       - name: Upload Debugging Symbols Artifact
         uses: actions/upload-artifact@v7.0.1
         with:
-          name: navbot-dbgsym-${{ matrix.package_name }}-${{ steps.short-sha.outputs.sha }}
+          name: ${{ steps.pkgname.outputs.symbols }}
           path: |
               navbot/build/**/*.${{ matrix.dbgsym_ext }}
             
@@ -239,6 +246,7 @@ jobs:
           path: |
             build/package/*
 
+  # TO-DO: Update this
   do_release:
     name: Create GH Release
     runs-on: ubuntu-latest

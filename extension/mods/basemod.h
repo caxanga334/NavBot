@@ -113,6 +113,8 @@ public:
 	const CModSettings* GetModSettings() const { return m_modsettings.get(); }
 	// SourcePawn API: Parses a custom mod settings file.
 	SourceMod::SMCError ParseCustomModSettingsFile(const char* file) { return m_modsettings->ParseCustomFile(file); }
+	// SOurcePawn API: Parses a custom weapon config file.
+	bool ParseCustomWeaponConfigFile(const char* file) { return m_weaponinfomanager->ParseCustomFile(file); }
 	// Reparses the mod settings file.
 	void ReloadModSettingsFile();
 	// Reloads the weapon info config file

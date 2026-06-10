@@ -37,14 +37,6 @@ float CSourcePawnPathCost::operator()(CNavArea* toArea, CNavArea* fromArea, cons
 
 static cell_t Native_NewNavigator(IPluginContext* context, const cell_t* params)
 {
-#if defined(KE_ARCH_X64)
-	if (context->GetRuntime()->FindPubvarByName("__Virtual_Address__", nullptr) != SP_ERROR_NONE)
-	{
-		context->ReportError("Virtual address is required to use the navigator on x64!");
-		return 0;
-	}
-#endif
-
 	SourceMod::Handle_t handle = BAD_HANDLE;
 	CMeshNavigator* nav = new CMeshNavigator();
 
@@ -63,7 +55,7 @@ static cell_t Native_StartRepathTimer(IPluginContext* context, const cell_t* par
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}
@@ -80,7 +72,7 @@ static cell_t Native_NeedsRepath(IPluginContext* context, const cell_t* params)
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}
@@ -94,7 +86,7 @@ static cell_t Native_Invalidate(IPluginContext* context, const cell_t* params)
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}
@@ -125,7 +117,7 @@ cell_t natives::bots::interfaces::path::UpdateNavigator(IPluginContext* context,
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 	
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}
@@ -149,7 +141,7 @@ cell_t natives::bots::interfaces::path::IsValid(IPluginContext* context, const c
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}
@@ -163,7 +155,7 @@ cell_t natives::bots::interfaces::path::ComputeToPos(IPluginContext* context, co
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}
@@ -192,7 +184,7 @@ cell_t natives::bots::interfaces::path::GetMoveGoal(IPluginContext* context, con
 	SourceMod::HandleSecurity security{ context->GetIdentity(), myself->GetIdentity() };
 	CMeshNavigator* nav = nullptr;
 
-	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, nav))
+	if (!pawnutils::ReadHandle("CMeshNavigator", context, spmanager->GetMeshNavigatorHandleType(), handle, &security, &nav))
 	{
 		return 0;
 	}

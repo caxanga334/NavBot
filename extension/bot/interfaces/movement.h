@@ -379,6 +379,16 @@ public:
 	virtual bool IsAscendingOrDescendingLadder();
 	virtual bool IsOnLadder(); // true if the bot is on a ladder right now
 	virtual bool IsGap(const Vector& pos, const Vector& forward);
+	/**
+	 * @brief Checks if the bot is able to move between 'from' and 'to'
+	 * @param from Start position
+	 * @param to End position
+	 * @param fraction trace result fraction
+	 * @param now When true, check if the bot is able to move right now. Otherwise check if the bot is able to move in the future
+	 * (ie: blocked by an entity that can be destroyed)
+	 * @param obstacle The obstacle entity will be stored here.
+	 * @return true if the bot can walk, false otherwise
+	*/
 	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now = true, CBaseEntity** obstacle = nullptr);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float* fraction = nullptr);
@@ -391,6 +401,7 @@ public:
 	virtual bool IsInCrouchTransition() const;
 	virtual bool IsAttemptingToMove(const float time = 0.25f) const;
 	virtual bool IsStuck() const { return m_stuck.isstuck; }
+	const StuckStatus& GetStuckStatus() const { return m_stuck; }
 	virtual float GetStuckDuration() const;
 	virtual void ClearStuckStatus(const char* reason = nullptr);
 	virtual float GetSpeed() const { return m_speed; }

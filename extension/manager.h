@@ -198,6 +198,10 @@ public:
 	static void SetShouldPreferUniqueMapNames(bool state) { s_preferuniquemapnames = state; }
 	static bool ParseGamedata(SourceMod::IGameConfig* gamedata);
 
+#ifndef NO_SOURCEPAWN_API
+	void SPAPI_CallPreBotUpdate(int bot);
+#endif // !NO_SOURCEPAWN_API
+
 private:
 	std::vector<std::unique_ptr<CBaseBot>> m_bots; // Vector of bots
 	std::vector<std::unique_ptr<CBaseExtPlayer>> m_players; // Vector of non NavBot players
@@ -208,6 +212,7 @@ private:
 	SourceMod::IForward* m_postbotaddforward; // SM Forward, post bot add (normal bots)
 	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
 	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
+	SourceMod::IForward* m_prebotupdateforward;
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use

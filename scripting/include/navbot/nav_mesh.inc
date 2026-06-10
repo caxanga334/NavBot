@@ -6,17 +6,18 @@
 // In the nav mesh code, this value is used to signal 'ANY' team.
 #define NAV_TEAM_ANY -2
 
+// Nav area functions.
 methodmap NavBotNavArea
 {
-	// Returns the nav area ID
-	public native int GetID();
+	/**
+	 * Returns the nav area's ID.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				Nav area's ID.
+	 */
+	public static native int GetID(Address ptr);
 	// Retrieves the nav area center world position
-	public native void GetCenter(float center[3]);
-	// Is this nav area NULL?
-	property bool IsNull
-	{
-		public get() { return view_as<Address>(this) == Address_Null; }
-	}
+	public static native void GetCenter(Address ptr, float center[3]);
 }
 
 methodmap NavBotNavMesh
@@ -33,14 +34,14 @@ methodmap NavBotNavMesh
 	 * @param team			Optional team filter when searching for areas.
 	 * @return				Nav area instance if found or NULL if not found.
 	 */
-	public static native NavBotNavArea GetNearestNavArea(const float pos[3], float maxDist, bool checkLOS, bool checkGround, int team = NAV_TEAM_ANY);
+	public static native Address GetNearestNavArea(const float pos[3], float maxDist, bool checkLOS, bool checkGround, int team = NAV_TEAM_ANY);
 	/**
 	 * Retrives a nav area instance of the given ID.
 	 * 
 	 * @param id			Nav area ID to search for.
 	 * @return				Nav area instance if found or NULL if not found.
 	 */
-	public static native NavBotNavArea GetNavAreaByID(const int id);
+	public static native Address GetNavAreaByID(const int id);
 	/**
 	 * Gets the name and Steam ID (in SteamID64 format) of the nav mesh author.
 	 * The author is the person who made the nav mesh.
@@ -71,5 +72,3 @@ methodmap NavBotNavMesh
 	 */
 	public static native void GetEditor(int index, char[] name, int namesize, char[] steamid, int steamidsize);
 }
-
-const NavBotNavArea NULL_NAVBOTNAVAREA = view_as<NavBotNavArea>(Address_Null);

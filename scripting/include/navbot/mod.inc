@@ -30,4 +30,19 @@ methodmap NavBotModInterface
 	 * @error				File doesn't exists.
 	 */
 	public static native bool ParseDifficultyProfileFile(const char[] file, const bool replace, const bool refresh);
+	/**
+	 * Parses a custom weapon config file. This will remove all existing entries.
+	 * 
+	 * @param file			Absolute path to the file to be parsed.
+	 * @return				True if the file was parsed without errors, false otherwise.
+	 * @error				File doesn't exists.
+	 */
+	public static native bool ParseWeaponConfigFile(const char[] file);
+	/**
+	 * Gets a pointer to the shared memory interface of the given team.
+	 * 
+	 * @param teamIndex		Index of the team to retrieve the interface of.
+	 * @return				Address of the interface.
+	 */
+	public static native Address GetSharedMemoryInterface(int teamIndex);
 }

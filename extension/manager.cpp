@@ -1,11 +1,6 @@
 #include NAVBOT_PCH_FILE
 
-#include "extension.h"
-#include <engine/ivdebugoverlay.h>
 #include <mods/basemod.h>
-#include <extplayer.h>
-#include <util/helpers.h>
-#include <util/librandom.h>
 #include "manager.h"
 #include "mod_loader.h"
 
@@ -51,6 +46,7 @@ CExtManager::CExtManager()
 	m_postbotaddforward = nullptr;
 	m_prepluginbotaddforward = nullptr;
 	m_postpluginbotaddforward = nullptr;
+	m_prebotupdateforward = nullptr;
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -63,6 +59,7 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_postbotaddforward);
 	forwards->ReleaseForward(m_prepluginbotaddforward);
 	forwards->ReleaseForward(m_postpluginbotaddforward);
+	forwards->ReleaseForward(m_prebotupdateforward);
 #endif // !NO_SOURCEPAWN_API
 
 	// assign NULL to the smart ptr to detele the existing instance
@@ -76,6 +73,7 @@ void CExtManager::OnAllLoaded()
 	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_prebotaddforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 #endif // !NO_SOURCEPAWN_API
 
 	AllocateMod();
@@ -796,6 +794,14 @@ bool CExtManager::ParseGamedata(SourceMod::IGameConfig* gamedata)
 	CExtManager::SetModUsesWorkshopMaps(UtilHelpers::StringToBoolean(value));
 	return true;
 }
+
+#ifndef NO_SOURCEPAWN_API
+void CExtManager::SPAPI_CallPreBotUpdate(int bot)
+{
+	m_prebotupdateforward->PushCell(static_cast<cell_t>(bot));
+	m_prebotupdateforward->Execute();
+}
+#endif // !NO_SOURCEPAWN_API
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {

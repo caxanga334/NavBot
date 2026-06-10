@@ -11,13 +11,14 @@ static cell_t Native_IsNavMeshLoaded(IPluginContext* context, const cell_t* para
 
 static cell_t Native_NavMeshGetNearestNavArea(IPluginContext* context, const cell_t* params)
 {
+	std::size_t firstparam = pawnutils::GetIndexOfParam(context, 1);
 	cell_t* arr = nullptr;
-	context->LocalToPhysAddr(params[1], &arr);
+	context->LocalToPhysAddr(params[firstparam], &arr);
 	Vector pos = pawnutils::PawnFloatArrayToVector(arr);
-	float maxdist = sp_ctof(params[2]);
-	bool checkLos = params[3] != 0;
-	bool checkGround = params[4] != 0;
-	int team = static_cast<int>(params[5]);
+	float maxdist = sp_ctof(params[firstparam + 1]);
+	bool checkLos = params[firstparam + 2] != 0;
+	bool checkGround = params[firstparam + 3] != 0;
+	int team = static_cast<int>(params[firstparam + 4]);
 
 	if (maxdist < 1.0f)
 	{
@@ -32,7 +33,7 @@ static cell_t Native_NavMeshGetNearestNavArea(IPluginContext* context, const cel
 		return 0;
 	}
 
-	return pawnutils::PointerToPawnAddress(context, area);
+	return pawnutils::ReturnPointerToPawn(context, params, area);
 }
 
 static cell_t Native_NavMeshGetAuthor(IPluginContext* context, const cell_t* params)
@@ -87,7 +88,7 @@ static cell_t Native_NavMeshGetEditor(IPluginContext* context, const cell_t* par
 
 static cell_t Native_NavMeshGetNavAreaByID(IPluginContext* context, const cell_t* params)
 {
-	unsigned int id = static_cast<unsigned int>(params[1]);
+	unsigned int id = static_cast<unsigned int>(params[pawnutils::GetIndexOfParam(context, 1)]);
 	CNavArea* area = TheNavMesh->GetNavAreaByID(id);
 
 	if (!area)
@@ -95,7 +96,7 @@ static cell_t Native_NavMeshGetNavAreaByID(IPluginContext* context, const cell_t
 		return 0;
 	}
 
-	return pawnutils::PointerToPawnAddress(context, area);
+	return pawnutils::ReturnPointerToPawn(context, params, area);
 }
 
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)

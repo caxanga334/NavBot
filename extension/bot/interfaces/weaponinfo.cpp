@@ -434,11 +434,8 @@ bool CWeaponInfoManager::LoadConfigFile()
 		smutils->LogError(myself, "Failed to load Weapon Info configuration file. File does not exists!");
 		return false;
 	}
-
-	m_index_lookup.clear();
-	m_classname_lookup.clear();
-	m_weapons.clear();
-
+	
+	ClearData();
 	InitParserData();
 	SourceMod::SMCStates state;
 	auto errorcode = textparsers->ParseFile_SMC(spath.c_str(), this, &state);
@@ -452,36 +449,8 @@ bool CWeaponInfoManager::LoadConfigFile()
 	}
 
 	PostParseAnalysis();
-
-	// purge templates before inserting into the look up database
-	m_weapons.erase(std::remove_if(m_weapons.begin(), m_weapons.end(), [](const std::unique_ptr<WeaponInfo>& obj) {
-		return obj->IsTemplateEntry();
-	}), m_weapons.end());
-
-	for (auto& info : m_weapons)
-	{
-		info->PostLoad();
-
-		// Item index is set, add to the item index look up map
-		if (info->GetItemDefIndex() >= 0)
-		{
-			auto insert_result = m_index_lookup.insert({ info->GetItemDefIndex(), info.get() });
-			
-			if (!insert_result.second)
-			{
-				smutils->LogError(myself, "WeaponInfo: Failed to insert item index %i to look up map! Entry: %s", info->GetItemDefIndex(), info->GetConfigEntryName());
-			}
-		}
-		else
-		{
-			auto insert_result = m_classname_lookup.insert({ std::string{ info->GetClassname() }, info.get()});
-
-			if (!insert_result.second)
-			{
-				smutils->LogError(myself, "WeaponInfo: Failed to insert classname %s to look up map! Entry: %s", info->GetClassname(), info->GetConfigEntryName());
-			}
-		}
-	}
+	RemoveTemplateEntries();
+	BuildLookupMaps();
 
 	auto functor = [](CBaseBot* bot) {
 		bot->GetInventoryInterface()->OnWeaponInfoConfigReloaded();
@@ -493,6 +462,38 @@ bool CWeaponInfoManager::LoadConfigFile()
 	META_CONPRINTF("[NavBot] Parsed weapon config file: %s \n", spath.c_str());
 #endif // EXT_DEBUG
 
+	return true;
+}
+
+bool CWeaponInfoManager::ParseCustomFile(const std::string& file)
+{
+	if (!std::filesystem::exists(file))
+	{
+		return false;
+	}
+
+	ClearData();
+	InitParserData();
+	SourceMod::SMCStates state;
+	auto errorcode = textparsers->ParseFile_SMC(file.c_str(), this, &state);
+
+	if (errorcode != SourceMod::SMCError::SMCError_Okay)
+	{
+		smutils->LogError(myself, "Failed to parse Weapon Info configuration file \"%s\". Parser received error %i (%s)",
+			file.c_str(), static_cast<int>(errorcode), textparsers->GetSMCErrorString(errorcode));
+
+		return false;
+	}
+
+	PostParseAnalysis();
+	RemoveTemplateEntries();
+	BuildLookupMaps();
+
+	auto functor = [](CBaseBot* bot) {
+		bot->GetInventoryInterface()->OnWeaponInfoConfigReloaded();
+	};
+
+	extmanager->ForEachBot(functor);
 	return true;
 }
 
@@ -659,6 +660,34 @@ void CWeaponInfoManager::ReadAttackInfoSection(botweapons::AttackType type, cons
 	{
 		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair (Attack Info %i) <%s - %s> at line %i col %i",
 			static_cast<int>(type), key, value, states->line, states->col);
+	}
+}
+
+void CWeaponInfoManager::BuildLookupMaps()
+{
+	for (auto& info : m_weapons)
+	{
+		info->PostLoad();
+
+		// Item index is set, add to the item index look up map
+		if (info->GetItemDefIndex() >= 0)
+		{
+			auto insert_result = m_index_lookup.insert({ info->GetItemDefIndex(), info.get() });
+
+			if (!insert_result.second)
+			{
+				smutils->LogError(myself, "WeaponInfo: Failed to insert item index %i to look up map! Entry: %s", info->GetItemDefIndex(), info->GetConfigEntryName());
+			}
+		}
+		else
+		{
+			auto insert_result = m_classname_lookup.insert({ std::string{ info->GetClassname() }, info.get() });
+
+			if (!insert_result.second)
+			{
+				smutils->LogError(myself, "WeaponInfo: Failed to insert classname %s to look up map! Entry: %s", info->GetClassname(), info->GetConfigEntryName());
+			}
+		}
 	}
 }
 

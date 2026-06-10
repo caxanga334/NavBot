@@ -8,10 +8,5 @@ methodmap NavBotBotInterface
 	/**
 	 * Resets the interface to it's initial state.
 	 */
-	public native void Reset();
-
-	property bool IsNull
-	{
-		public get() { return view_as<Address>(this) == Address_Null; }
-	}
+	public static native void Reset(Address ptr);
 }
