@@ -204,8 +204,11 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBot.DelayedFakeClientCommand");
 	MarkNativeAsOptional("NavBot.GetInventoryInterface");
 	MarkNativeAsOptional("NavBot.GetMovementInterface");
+	MarkNativeAsOptional("NavBot.GetSensorInterface");
+	MarkNativeAsOptional("NavBot.GetPlayerControllerInterface");
 	MarkNativeAsOptional("NavBot.IsLineOfFireClear");
 	MarkNativeAsOptional("NavBot.SendImpulse");
+	MarkNativeAsOptional("NavBot.GetDebugIdentifier");
 
 	/* Base Interface */
 	MarkNativeAsOptional("NavBotBotInterface.Reset");
@@ -218,11 +221,31 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotInventoryInterface.EquipWeapon");
 	MarkNativeAsOptional("NavBotInventoryInterface.RegisterWeapon");
 	MarkNativeAsOptional("NavBotInventoryInterface.RequestUpdate");
+	MarkNativeAsOptional("NavBotInventoryInterface.SelectFirstWeaponWithTag");
+	MarkNativeAsOptional("NavBotInventoryInterface.SelectBestWeapon");
 
-	/* Movement interface */
+	/* Movement Interface */
 	MarkNativeAsOptional("NavBotMovementInterface.IsPotentiallyTraversable");
 	MarkNativeAsOptional("NavBotMovementInterface.IsStuck");
 	MarkNativeAsOptional("NavBotMovementInterface.GetStuckDuration");
+
+	/* Sensor Interface */
+	MarkNativeAsOptional("NavBotSensorInterface.IsIgnored");
+	MarkNativeAsOptional("NavBotSensorInterface.IsFriendly");
+	MarkNativeAsOptional("NavBotSensorInterface.IsEnemy");
+	MarkNativeAsOptional("NavBotSensorInterface.IsAbleToSeePos");
+	MarkNativeAsOptional("NavBotSensorInterface.IsAbleToSeeEntity");
+	MarkNativeAsOptional("NavBotSensorInterface.IsLineOfSightClearPos");
+	MarkNativeAsOptional("NavBotSensorInterface.IsLineOfSightClearEntity");
+	MarkNativeAsOptional("NavBotSensorInterface.IsInFieldOfView");
+	MarkNativeAsOptional("NavBotSensorInterface.SetPrimaryThreatOverride");
+	MarkNativeAsOptional("NavBotSensorInterface.GetPrimaryKnownThreatIndex");
+
+	/* Player Controller Interface */
+	MarkNativeAsOptional("NavBotPlayerControllerInterface.AimAtEntity");
+	MarkNativeAsOptional("NavBotPlayerControllerInterface.AimAtPos");
+	MarkNativeAsOptional("NavBotPlayerControllerInterface.IsAimOnTarget");
+
 }
 
 #endif

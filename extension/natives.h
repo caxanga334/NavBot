@@ -11,6 +11,8 @@
 #include "natives/navmesh.h"
 #include "natives/navarea.h"
 #include "natives/interfaces/path.h"
+#include "natives/interfaces/sensor.h"
+#include "natives/interfaces/playercontroller.h"
 
 namespace natives
 {

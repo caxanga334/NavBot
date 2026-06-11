@@ -71,6 +71,7 @@ CopyFiles('scripting/include', 'addons/sourcemod/scripting/include',
 
 CopyFiles('scripting/include/navbot', 'addons/sourcemod/scripting/include/navbot',
   [ 
+    'baseplayer.inc',
     'bots.inc',
     'mod.inc',
     'nav_mesh.inc',
@@ -82,6 +83,10 @@ CopyFiles('scripting/include/navbot/interfaces', 'addons/sourcemod/scripting/inc
     'base_interface.inc',
     'inventory.inc',
     'path.inc',
+    'sensor.inc',
+    'playercontroller.inc',
+    'movement.inc',
+    'sharedbotmemory.inc',
   ]
 )
 

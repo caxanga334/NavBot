@@ -6,6 +6,8 @@
 #include "interfaces/base_interface.inc"
 #include "interfaces/inventory.inc"
 #include "interfaces/movement.inc"
+#include "interfaces/sensor.inc"
+#include "interfaces/playercontroller.inc"
 #include "interfaces/sharedbotmemory.inc"
 
 // Pass this to SetSkillLevel to generate a random difficulty profile for the bot.
@@ -53,6 +55,18 @@ methodmap NavBot < NavBotBasePlayer
 	 */
 	public native Address GetMovementInterface();
 	/**
+	 * Returns a memory address to the bot's movement interface.
+	 * 
+	 * @return			Memory address of the bot's movement interface.
+	 */
+	public native Address GetSensorInterface();
+	/**
+	 * Returns a memory address to the bot's movement interface.
+	 * 
+	 * @return			Memory address of the bot's movement interface.
+	 */
+	public native Address GetPlayerControllerInterface();
+	/**
 	 * Tests if the bot's line of fire is clear to the given position.
 	 * 
 	 * @param vTo		Position to test if LOF is clear to.
@@ -62,6 +76,13 @@ methodmap NavBot < NavBotBasePlayer
 	public native bool IsLineOfFireClear(const float vTo[3]);
 	// Makes the bot send the given impulse in their next UserCmd
 	public native void SendImpulse(int impulse);
+	/**
+	 * Gets the bot debug identifier (useful when printing/logging debug messages specific to this bot instance)
+	 * 
+	 * @param buffer	Char array to store the identifier string (at least 128 recommended).
+	 * @param size		Size of the buffer array.
+	 */
+	public native void GetDebugIdentifier(char[] buffer, int size);
 }
 
 /**

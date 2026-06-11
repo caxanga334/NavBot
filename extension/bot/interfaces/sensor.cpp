@@ -596,7 +596,7 @@ const CKnownEntity* ISensor::GetKnown(edict_t* entity) const
 	return nullptr;
 }
 
-void ISensor::UpdateKnownEntity(edict_t* entity)
+void ISensor::UpdateKnownEntity(CBaseEntity* entity)
 {
 	auto known = AddKnownEntity(entity);
 

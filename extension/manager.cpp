@@ -73,7 +73,7 @@ void CExtManager::OnAllLoaded()
 	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_prebotaddforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_prebotupdateforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 #endif // !NO_SOURCEPAWN_API
 
 	AllocateMod();

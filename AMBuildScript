@@ -143,6 +143,12 @@ class ExtensionConfig(object):
       raise Exception('Could not find a source copy of SourceMod')
     self.sm_root = Normalize(self.sm_root)
 
+  # Apply early configuration to compilers so any libs that clone these compilers will also have them
+  def preconfigure_compilers(self):
+    for cxx in self.all_targets:
+      self.configure_optimization(cxx)
+      self.configure_arch(cxx)
+
   def configure(self):
     
     allowed_archs = ['x86','x86_64']
@@ -169,10 +175,9 @@ class ExtensionConfig(object):
     elif cxx.family == 'msvc':
       self.configure_msvc(cxx)
 
-    # Optimization
-    if builder.options.opt == '1':
-      cxx.defines += ['NDEBUG']
-    else:
+    self.configure_linktimeopt(cxx)
+
+    if builder.options.opt != '1':
       # --enable-debug fails to compile so we consider non-optimized builds as debug
       cxx.defines += ['EXT_DEBUG']
 
@@ -270,19 +275,6 @@ class ExtensionConfig(object):
       cxx.cflags += ['-mfpmath=sse']
       cxx.cflags += ['-Wno-maybe-uninitialized']
 
-    if builder.options.opt == '1':
-      cxx.cflags += ['-O3']
-      if builder.options.lto == '1':
-        cxx.cflags += ['-flto']
-        cxx.linkflags += ['-flto']
-
-    if builder.options.archoptions == 1:
-      cxx.cflags += ['-msse4.2']
-    elif builder.options.archoptions == 2:
-      cxx.cflags += ['-mavx2']
-    elif builder.options.archoptions == 3:
-      cxx.cflags += ['-march=native']
-
     # Don't omit the frame pointer.
     cxx.cflags += ['-fno-omit-frame-pointer']
 
@@ -323,24 +315,11 @@ class ExtensionConfig(object):
       'odbccp32.lib',
     ]
 
-    if builder.options.opt == '1':
-      # /Ob3 needs to be after /Ox, enables aggressive function inling
-      cxx.cflags += ['/Ox', '/Zo', '/Ob3', '/GF']
-      cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
-      if builder.options.lto == '1':
-        cxx.cflags += ['/GL', '/Gy']
-        cxx.linkflags += ['/LTCG']
-
     if builder.options.debug == '1':
       cxx.cflags += ['/Od', '/RTC1']
 
     if builder.options.asan == '1':
       cxx.cflags += ['/fsanitize=address']
-
-    if builder.options.archoptions == 1:
-      cxx.cflags += ['/arch:SSE4.2']
-    elif builder.options.archoptions == 2:
-      cxx.cflags += ['/arch:AVX2']
 
     # This needs to be after our optimization flags which could otherwise disable it.
     # Don't omit the frame pointer.
@@ -367,6 +346,50 @@ class ExtensionConfig(object):
 
   def configure_windows(self, cxx):
     cxx.defines += ['WIN32', '_WINDOWS']
+
+  # Adds optimization flags to the compilers
+  def configure_optimization(self, cxx):
+    if builder.options.opt != '1':
+      return # optimizations are disabled
+
+    cxx.defines += ['NDEBUG']
+
+    if cxx.like('msvc'):
+      # /Ob3 needs to be after /O2, enables aggressive function inling
+      cxx.cflags += ['/O2', '/Zo', '/Ob3']
+      cxx.linkflags += ['/OPT:ICF', '/OPT:REF']
+    elif cxx.like('gcc'):
+      cxx.cflags += ['-O3']
+
+  # Adds link time optimization to compilers
+  def configure_linktimeopt(self, cxx):
+    if builder.options.opt != '1':
+      return # optimizations are disabled
+  
+    if builder.options.lto != '1':
+      return # LTO is disabled
+    
+    if cxx.like('msvc'):
+      cxx.cflags += ['/GL']
+      cxx.linkflags += ['/LTCG']
+    elif cxx.like('gcc'):
+      cxx.cflags += ['-flto']
+      cxx.linkflags += ['-flto']
+
+  # Adds arch flags to the compilers
+  def configure_arch(self, cxx):
+    if cxx.like('msvc'):
+      if builder.options.archoptions == 1:
+        cxx.cflags += ['/arch:SSE4.2']
+      elif builder.options.archoptions == 2:
+        cxx.cflags += ['/arch:AVX2']
+    if cxx.like('gcc'):
+      if builder.options.archoptions == 1:
+        cxx.cflags += ['-msse4.2']
+      elif builder.options.archoptions == 2:
+        cxx.cflags += ['-mavx2']
+      elif builder.options.archoptions == 3:
+        cxx.cflags += ['-march=native']
     
   def LibraryBuilder(self, compiler, name):
     binary = compiler.Library(name)
@@ -443,6 +466,7 @@ if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.
   raise Exception("--breakpad-upload passed to configure.py but environment variable 'BREAKPAD_SYMBOL_SERVER' isn't set!")
 
 Extension = ExtensionConfig()
+Extension.preconfigure_compilers()
 Extension.detectSDKs()
 Extension.configure()
 

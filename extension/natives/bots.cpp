@@ -116,6 +116,43 @@ namespace inventory
 		iface->RequestRefresh();
 		return 0;
 	}
+
+	static cell_t Native_SelectFirstWeaponWithTag(IPluginContext* context, const cell_t* params)
+	{
+		IInventory* iface = pawnutils::UnsafeCastPawnAddressToObject<IInventory>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		char* tag;
+		context->LocalToString(params[2], &tag);
+
+		const CBotWeapon* weapon = iface->FindWeaponByTag(tag);
+
+		if (!weapon)
+		{
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(iface->EquipWeapon(weapon));
+	}
+
+	static cell_t Native_SelectBestWeapon(IPluginContext* context, const cell_t* params)
+	{
+		IInventory* iface = pawnutils::UnsafeCastPawnAddressToObject<IInventory>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		iface->SelectBestWeapon();
+		return 0;
+	}
 }
 
 namespace movement
@@ -213,6 +250,32 @@ namespace basebot
 
 		return pawnutils::ReturnPointerToPawn(context, params, bot->GetMovementInterface());
 	}
+	static cell_t Native_GetSensorInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetSensorInterface());
+	}
+	static cell_t Native_GetPlayerControllerInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetControlInterface());
+	}
 	static cell_t Native_Reset(IPluginContext* context, const cell_t* params)
 	{
 		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
@@ -256,6 +319,23 @@ namespace basebot
 		bot->SetImpulseCommand(static_cast<int>(params[2]));
 		return 0;
 	}
+
+	static cell_t Native_GetDebugIdentifier(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		char buffer[512];
+		std::memset(buffer, 0, sizeof(buffer));
+		ke::SafeSprintf(buffer, sizeof(buffer), "%s", bot->GetDebugIdentifier());
+		context->StringToLocal(params[2], params[3], buffer);
+		return 0;
+	}
 }
 
 void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
@@ -265,9 +345,12 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBot.SetSkillLevel", SetSkillLevel},
 		{"NavBot.GetInventoryInterface", basebot::Native_GetInventoryInterface},
 		{"NavBot.GetMovementInterface", basebot::Native_GetMovementInterface},
+		{"NavBot.GetSensorInterface", basebot::Native_GetSensorInterface},
+		{"NavBot.GetPlayerControllerInterface", basebot::Native_GetPlayerControllerInterface},
 		{"NavBot.Reset", basebot::Native_Reset},
 		{"NavBot.IsLineOfFireClear", basebot::Native_IsLineOfFireClear},
 		{"NavBot.SendImpulse", basebot::Native_SendImpulse},
+		{"NavBot.GetDebugIdentifier", basebot::Native_GetDebugIdentifier},
 		/* this should be moved */
 		{"NavBotManager.GetNavBotByIndex", GetNavBotByIndex},
 		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},
@@ -277,10 +360,12 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotInventoryInterface.EquipWeapon", inventory::Native_EquipWeapon},
 		{"NavBotInventoryInterface.RegisterWeapon", inventory::Native_RegisterWeapon},
 		{"NavBotInventoryInterface.RequestUpdate", inventory::Native_RequestUpdate},
+		{"NavBotInventoryInterface.SelectFirstWeaponWithTag", inventory::Native_SelectFirstWeaponWithTag},
+		{"NavBotInventoryInterface.SelectBestWeapon", inventory::Native_SelectBestWeapon},
 		/* IMovement */
 		{"NavBotMovementInterface.IsPotentiallyTraversable", movement::Native_IsPotentiallyTraversable},
 		{"NavBotMovementInterface.IsStuck", movement::Native_IsStuck},
-		{"NavBotMovementInterface.GetStuckDuration", movement::Native_IsStuck},
+		{"NavBotMovementInterface.GetStuckDuration", movement::Native_GetStuckDuration},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));

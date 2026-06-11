@@ -46,6 +46,10 @@ public:
 	};
 
 	static const char* GetLookPriorityName(IPlayerController::LookPriority priority);
+	static bool SMAPI_IsPriorityValid(cell_t value) 
+	{
+		return value >= static_cast<cell_t>(LookPriority::LOOK_IDLE) && value < static_cast<cell_t>(LookPriority::MAX_LOOK_PRIORITY);
+	}
 
 	void OnDifficultyProfileChanged() override;
 

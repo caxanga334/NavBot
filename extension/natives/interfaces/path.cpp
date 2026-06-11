@@ -1,5 +1,4 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
 #include <sourcepawn/spmanager.h>
 #include <util/pawnutils.h>
 #include <bot/basebot.h>

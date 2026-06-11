@@ -29,4 +29,14 @@ methodmap NavBotInventoryInterface < NavBotBotInterface
 	 * @param ptr			Pointer to the inventory interface (that you get via NavBot.GetInventoryInterface())
 	 */
 	public static native void RequestUpdate(Address ptr);
+	/**
+	 * Makes the bot equip the first weapon that contains the given tag.
+	 * 
+	 * @param ptr			Pointer to the inventory interface (that you get via NavBot.GetInventoryInterface())
+	 * @param tag			Tag the weapon must have. (Tags are defined in the weapon config file)
+	 * @return				True if the weapon was equipped, false otherwise.
+	 */
+	public static native bool SelectFirstWeaponWithTag(Address ptr, const char[] tag);
+	// Selects the best weapon the bot owns.
+	public static native void SelectBestWeapon(Address ptr);
 }

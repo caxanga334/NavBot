@@ -83,7 +83,7 @@ public:
 	const CKnownEntity* GetKnown(CBaseEntity* entity) const;
 	const CKnownEntity* GetKnown(edict_t* edict) const;
 	// Updates the position of a known entity or adds it to the list if not known
-	virtual void UpdateKnownEntity(edict_t* entity);
+	void UpdateKnownEntity(CBaseEntity* entity);
 	/**
 	 * @brief Marks the last known position of an entity as investigated (seen).
 	 * @param entity Entity to update the status of.

@@ -32,3 +32,15 @@ bool pawnutils::IsClientInGame(IPluginContext* context, int index)
 
 	return true;
 }
+
+CBaseEntity* pawnutils::ReadEntity(IPluginContext* context, const cell_t* params, std::size_t index)
+{
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(params[index]);
+
+	if (!pEntity)
+	{
+		context->ReportError("NULL entity (%i)!", params[index]);
+	}
+
+	return pEntity;
+}

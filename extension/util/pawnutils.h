@@ -122,6 +122,19 @@ namespace pawnutils
 	bool IsClientInGame(IPluginContext* context, int index);
 	// explicit bool to cell_t conversion
 	inline cell_t ReturnBool(const bool value) { return value ? static_cast<cell_t>(1) : static_cast<cell_t>(0); }
+	// Read a parameter into a CBaseEntity pointer.
+	CBaseEntity* ReadEntity(IPluginContext* context, const cell_t* params, std::size_t index);
+	// Reads a parameter into a Vector
+	inline Vector ReadVector(IPluginContext* context, const cell_t* params, const std::size_t index)
+	{
+		cell_t* arr;
+		context->LocalToPhysAddr(params[index], &arr);
+		return pawnutils::PawnFloatArrayToVector(arr);
+	}
+	// Reads a float parameter
+	inline float ReadFloat(const cell_t* params, const std::size_t index) { return sp_ctof(params[index]); }
+	// Reads a boolean parameter
+	inline bool ReadBool(const cell_t* params, const std::size_t index) { return params[index] != 0; }
 }
 
 
