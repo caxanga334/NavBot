@@ -3,7 +3,7 @@
 #include <mods/basemod.h>
 #include "manager.h"
 #include "mod_loader.h"
-
+#include <bot/interfaces/weapons/dynamic_priority_manager.h>
 #include <navmesh/nav_mesh.h>
 
 #ifdef EXT_DEBUG
@@ -76,6 +76,7 @@ void CExtManager::OnAllLoaded()
 	m_prebotupdateforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 #endif // !NO_SOURCEPAWN_API
 
+	CDynamicPriorityManager::CreateStandardFactories();
 	AllocateMod();
 	LoadBotNames();
 
@@ -281,6 +282,7 @@ void CExtManager::AllocateMod()
 	m_mod->InvokePostInit();
 	m_mod->PostCreation();
 	IModHelpers::SetInstance(m_mod->AllocModHelpers());
+	m_mod->RegisterDynamicWeaponConfigFactories();
 }
 
 CBaseMod* CExtManager::GetMod()
@@ -459,14 +461,17 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 		return;
 	}
 
-	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
-
 #ifndef NO_SOURCEPAWN_API
-	m_prebotaddforward->Execute(&result);
-
-	if (result > static_cast<cell_t>(SourceMod::ResultType::Pl_Continue))
+	if (m_prebotaddforward->GetFunctionCount() > 0)
 	{
-		return;
+		cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
+
+		m_prebotaddforward->Execute(&result);
+
+		if (result > static_cast<cell_t>(SourceMod::ResultType::Pl_Continue))
+		{
+			return;
+		}
 	}
 #endif // !NO_SOURCEPAWN_API
 
@@ -586,8 +591,11 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	}
 
 #ifndef NO_SOURCEPAWN_API
-	m_postbotaddforward->PushCell(gamehelpers->IndexOfEdict(edict));
-	m_postbotaddforward->Execute();
+	if (m_postbotaddforward->GetFunctionCount() > 0)
+	{
+		m_postbotaddforward->PushCell(gamehelpers->IndexOfEdict(edict));
+		m_postbotaddforward->Execute();
+	}
 #endif // !NO_SOURCEPAWN_API
 
 	smutils->LogMessage(myself, "NavBot added to the game.");
@@ -798,8 +806,11 @@ bool CExtManager::ParseGamedata(SourceMod::IGameConfig* gamedata)
 #ifndef NO_SOURCEPAWN_API
 void CExtManager::SPAPI_CallPreBotUpdate(int bot)
 {
-	m_prebotupdateforward->PushCell(static_cast<cell_t>(bot));
-	m_prebotupdateforward->Execute();
+	if (m_prebotupdateforward->GetFunctionCount() > 0)
+	{
+		m_prebotupdateforward->PushCell(static_cast<cell_t>(bot));
+		m_prebotupdateforward->Execute();
+	}
 }
 #endif // !NO_SOURCEPAWN_API
 

@@ -97,6 +97,20 @@ namespace pawnutils
 		
 		return handle != BAD_HANDLE;
 	}
+	// Creates an internal (the extension is the owner) handle, returns true on success
+	template <typename T>
+	inline bool CreateInternalHandle(std::string_view name, SourceMod::HandleType_t type, T* object, SourceMod::Handle_t& handle)
+	{
+		SourceMod::HandleError error = SourceMod::HandleError::HandleError_None;
+		handle = handlesys->CreateHandle(type, reinterpret_cast<void*>(object), myself->GetIdentity(), myself->GetIdentity(), &error);
+
+		if (handle == BAD_HANDLE)
+		{
+			return false;
+		}
+
+		return true;
+	}
 	// Reads a handle, returns true on success
 	template <typename T>
 	inline bool ReadHandle(std::string_view name, IPluginContext* context, SourceMod::HandleType_t type, SourceMod::Handle_t handle, SourceMod::HandleSecurity* security, T** object)
@@ -105,12 +119,16 @@ namespace pawnutils
 		
 		if (error != SourceMod::HandleError::HandleError_None)
 		{
-			context->ReportError("Invalid handle %x of type \"%s\" (error %i)", name.data(), handle, static_cast<int>(error));
+			context->ReportError("Invalid handle %x of type \"%s\" (error %i)", handle, name.data(), static_cast<int>(error));
 		}
 
 		return error == SourceMod::HandleError::HandleError_None;
 	}
-
+	inline void FreeInternalHandle(SourceMod::Handle_t handle)
+	{
+		SourceMod::HandleSecurity sec(myself->GetIdentity(), myself->GetIdentity());
+		handlesys->FreeHandle(handle, &sec);
+	}
 	template <typename T>
 	T* GetBotOfIndex(cell_t index)
 	{

@@ -103,3 +103,4 @@ forward void OnPluginBotAdded(int entity);
 const NavBot NULL_NAVBOT = view_as<NavBot>(0);
 
 #include "interfaces/path.inc"
+#include "interfaces/dynamic_priority.inc"

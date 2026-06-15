@@ -1,13 +1,7 @@
 #include NAVBOT_PCH_FILE
-#include <filesystem>
-#include <unordered_set>
-#include <algorithm>
-#include <cstring>
-
-#include <extension.h>
-#include <manager.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
+#include "weapons/dynamic_priority_manager.h"
 #include "weaponinfo.h"
 
 #undef min
@@ -551,26 +545,13 @@ void CWeaponInfoManager::PostParseAnalysis()
 
 void CWeaponInfoManager::ReadDynamicPrioritySection(const SourceMod::SMCStates* states, const char* key, const char* value)
 {
-	if (std::strcmp(key, "health") == 0)
+	if (ke::StrCaseCmp(key, "erase") == 0)
 	{
-		m_current->EditDynamicPriorityHealth()->Parse(value);
+		m_current->EraseDynamicPrioritiesCfgEntry();
+		return;
 	}
-	else if (std::strcmp(key, "range") == 0)
-	{
-		m_current->EditDynamicPriorityRange()->Parse(value);
-	}
-	else if (std::strcmp(key, "secondary_ammo") == 0)
-	{
-		m_current->EditDynamicPrioritySecAmmo()->Parse(value);
-	}
-	else if (std::strcmp(key, "aggression") == 0)
-	{
-		m_current->EditDynamicPriorityAggression()->Parse(value);
-	}
-	else
-	{
-		smutils->LogError(myself, "Unknown KV pair in Dynamic Priority section! %s %s col %u line %u", key, value, states->col, states->line);
-	}
+
+	m_current->AddDynamicPriorityCfgEntry(key, value);
 }
 
 void CWeaponInfoManager::ReadAttackInfoSection(botweapons::AttackType type, const SourceMod::SMCStates* states, const char* key, const char* value)
@@ -1189,6 +1170,22 @@ WeaponInfo::WeaponType WeaponInfo::GetWeaponTypeFromString(const char* str)
 	return WeaponInfo::WeaponType::MAX_WEAPON_TYPES;
 }
 
+void WeaponInfo::AddDynamicPriorityCfgEntry(const char* name, const char* args)
+{
+	auto& entry = parsed_dynamic_prio_configs.emplace_back();
+	entry.name.assign(name);
+
+	std::size_t count = 0U;
+	std::string szValue(args);
+	std::stringstream stream(szValue);
+	std::string token;
+
+	while (std::getline(stream, token, ','))
+	{
+		entry.args.emplace_back(token);
+	}
+}
+
 void WeaponInfo::PostLoad()
 {
 	// If not set by the config file, use the largest distance between all available attacks.
@@ -1233,75 +1230,37 @@ void WeaponInfo::PostLoad()
 			selection_min_range = -1.0f;
 		}
 	}
-}
 
-void WeaponInfo::DynamicPriority::Parse(const char* str)
-{
-	try
+	// setup dynamic priorities
+	CDynamicPriorityManager& manager = CDynamicPriorityManager::GetManager();
+
+
+	for (const DynamicPrioCfg& entry : parsed_dynamic_prio_configs)
 	{
-		std::string szValue(str);
-		std::stringstream stream(szValue);
-		std::string token;
-		std::uint8_t i = 0U;
+		const CDynamicPriorityManager::Factory* factory = manager.FindFactory(entry.name);
 
-		while (std::getline(stream, token, ','))
+		if (!factory)
 		{
-			if (i == 0)
-			{
-				if (std::strcmp(token.c_str(), "remove") == 0)
-				{
-					this->is_used = false;
-					this->is_greater = false;
-					this->value_to_compare = 0.0f;
-					this->priority_value = 0;
-					return;
-				}
-
-				if (std::strcmp(token.c_str(), "empty") == 0)
-				{
-					i++;
-					continue;
-				}
-
-				if (std::strcmp(token.c_str(), "greater") == 0)
-				{
-					this->is_greater = true;
-				}
-				else
-				{
-					this->is_greater = false;
-				}
-			}
-			else if (i == 1)
-			{
-				if (std::strcmp(token.c_str(), "empty") == 0)
-				{
-					i++;
-					continue;
-				}
-
-				this->value_to_compare = std::stof(token, nullptr);
-			}
-			else if (i == 2)
-			{
-				this->priority_value = std::stoi(token, nullptr);
-			}
-
-			if (++i >= 3)
-			{
-				break;
-			}
+			smutils->LogError(myself, "WeaponInfo entry \"%s\", NULL dynamic priority factory for \"%s\"!", configentry.c_str(), entry.name.c_str());
+			continue;
 		}
 
-		this->is_used = true;
-	}
-	catch (std::exception& ex)
-	{
-		smutils->LogError(myself, "C++ Exception throw while parsing weapon dynamic priority value \"%s\" : %s", str, ex.what());
-		this->is_used = false;
-	}
-}
+		IDynamicWeaponPriority* priority = factory->Create();
+		
+		if (!priority->Configure(entry.args))
+		{
+			delete priority;
+			smutils->LogError(myself, "WeaponInfo entry \"%s\", configuration of dynamic priority factory \"%s\" failed!", configentry.c_str(), entry.name.c_str());
+			continue;
+		}
 
+		dynamic_priorities.emplace_back(priority);
+	}
+
+	// don't need this anymore
+	parsed_dynamic_prio_configs.clear();
+	parsed_dynamic_prio_configs.shrink_to_fit();
+}
 
 CON_COMMAND(sm_navbot_reload_weaponinfo_config, "Reloads the weapon info configuration file.")
 {

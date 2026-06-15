@@ -84,11 +84,10 @@ public:
 	/**
 	 * @brief Gets the dynamic weapon selection priority for this weapon.
 	 * @param owner Bot who owns this weapon.
-	 * @param range Optional: Range to threat
 	 * @param threat Optional: Current threat
 	 * @return Weapon selection priority
 	 */
-	const int GetPriority(const CBaseBot* owner, const float* range = nullptr, const CKnownEntity* threat = nullptr) const;
+	const int GetPriority(const CBaseBot* owner, const CKnownEntity* threat = nullptr) const;
 	// returns true if the weapon is deployed/scoped.
 	virtual bool IsDeployedOrScoped(const CBaseBot* owner) const;
 	// returns true if the weapon's special function can be used.

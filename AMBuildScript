@@ -380,15 +380,21 @@ class ExtensionConfig(object):
   def configure_arch(self, cxx):
     if cxx.like('msvc'):
       if builder.options.archoptions == 1:
-        cxx.cflags += ['/arch:SSE4.2']
+        if cxx.target.arch == 'x86_64':
+          # /arch:SSE4.2 is only available on x64 for some reason, MSVC things
+          cxx.cflags += ['/arch:SSE4.2']
       elif builder.options.archoptions == 2:
+        cxx.cflags += ['/arch:AVX']
+      elif builder.options.archoptions == 3:
         cxx.cflags += ['/arch:AVX2']
     if cxx.like('gcc'):
       if builder.options.archoptions == 1:
         cxx.cflags += ['-msse4.2']
       elif builder.options.archoptions == 2:
-        cxx.cflags += ['-mavx2']
+        cxx.cflags += ['-mavx']
       elif builder.options.archoptions == 3:
+        cxx.cflags += ['-mavx2']
+      elif builder.options.archoptions == 4:
         cxx.cflags += ['-march=native']
     
   def LibraryBuilder(self, compiler, name):

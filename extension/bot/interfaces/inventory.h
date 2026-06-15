@@ -349,12 +349,11 @@ protected:
 	 * @brief Invoked to filter the best weapon to be used against the given threat.
 	 * @param me The bot itself.
 	 * @param threat The threat.
-	 * @param rangeToThreat Distance between the bot and the threat.
 	 * @param first The first weapon.
 	 * @param second The second weapon.
 	 * @return The weapon the bot should use. NULL for none and end the loop.
 	 */
-	virtual const CBotWeapon* FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* first, const CBotWeapon* second) const;
+	virtual const CBotWeapon* FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const CBotWeapon* first, const CBotWeapon* second) const;
 	// Returns true if the weapon can be used agains the given threat
 	bool IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info, const bool underwater) const;
 	// Selects the weapon with the highest static priority (no dynamic priority support)

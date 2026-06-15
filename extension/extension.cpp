@@ -45,6 +45,7 @@
 #include <sdkports/sdk_takedamageinfo.h>
 #include "sourcepawn/misc.h"
 #include "sourcepawn/spmanager.h"
+#include "bot/interfaces/weapons/dynamic_priority_manager.h"
 #include "util/gamedata_const.h"
 #include "navmesh/nav_mesh.h"
 #include "mod_loader.h"
@@ -334,6 +335,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 void NavBotExt::SDK_OnUnload()
 {
+	CDynamicPriorityManager::GetManager().OnShutdown();
 	spmisc::UnregisterNavBotMultiTargetFilter();
 	gameconfs->CloseGameConfigFile(m_cfg_navbot);
 	gameconfs->CloseGameConfigFile(m_cfg_sdktools);
@@ -419,6 +421,7 @@ void NavBotExt::SDK_OnAllLoaded()
 	natives::bots::interfaces::path::setup(m_natives);
 	natives::bots::interfaces::sensor::setup(m_natives);
 	natives::bots::interfaces::playercontroller::setup(m_natives);
+	natives::bots::interfaces::dynamicpriority::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });
 	sharesys->AddNatives(myself, m_natives.data());
 	smutils->LogMessage(myself, "Registered %i natives.", m_natives.size() - 1);
@@ -535,7 +538,7 @@ bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMax)
 {
 #ifdef EXT_DEBUG
-	META_CONPRINTF("[NavBot] OnCoreMapStart\n");
+	META_CONPRINTF("[NavBot] OnCoreMapStart: %s\n", STRING(gpGlobals->mapname));
 #endif // EXT_DEBUG
 
 	librandom::ReSeedGlobalGenerators();
@@ -546,7 +549,7 @@ void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMa
 void NavBotExt::OnCoreMapEnd()
 {
 #ifdef EXT_DEBUG
-	META_CONPRINTF("[NavBot] OnCoreMapEnd\n");
+	META_CONPRINT("[NavBot] OnCoreMapEnd\n");
 #endif // EXT_DEBUG
 
 	extmanager->OnMapEnd();

@@ -87,6 +87,7 @@ CopyFiles('scripting/include/navbot/interfaces', 'addons/sourcemod/scripting/inc
     'playercontroller.inc',
     'movement.inc',
     'sharedbotmemory.inc',
+    'dynamic_priority.inc',
   ]
 )
 

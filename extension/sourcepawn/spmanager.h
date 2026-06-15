@@ -28,9 +28,12 @@ public:
 	void SetupHandles();
 
 	SourceMod::HandleType_t GetMeshNavigatorHandleType() const { return m_meshnavigator_type; }
-
+	SourceMod::HandleType_t GetWeaponPriorityFactoryHandleType() const { return m_weaponpriofactory_type; }
+	SourceMod::HandleType_t GetWeaponPriorityInstanceHandleType() const { return m_weaponprioinstance_type; }
 private:
 	SourceMod::HandleType_t m_meshnavigator_type; // handle type for CMeshNavigator
+	SourceMod::HandleType_t m_weaponpriofactory_type;
+	SourceMod::HandleType_t m_weaponprioinstance_type;
 };
 
 

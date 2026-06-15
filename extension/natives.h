@@ -13,6 +13,7 @@
 #include "natives/interfaces/path.h"
 #include "natives/interfaces/sensor.h"
 #include "natives/interfaces/playercontroller.h"
+#include "natives/interfaces/dynamic_priority.h"
 
 namespace natives
 {

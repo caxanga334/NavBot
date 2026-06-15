@@ -12,6 +12,7 @@
 #include <cmath>
 #include <any>
 
+#include "weapons/dynamic_priorities.h"
 #include <ITextParsers.h>
 #include <util/entprops_consts.h>
 #include <bot/interfaces/decisionquery.h>
@@ -314,24 +315,6 @@ public:
 		WeaponEntityProperty entprop;
 	};
 
-	struct DynamicPriority
-	{
-		DynamicPriority()
-		{
-			is_used = false;
-			is_greater = false;
-			value_to_compare = 0.0f;
-			priority_value = 0;
-		}
-
-		void Parse(const char* str);
-
-		bool is_used;
-		bool is_greater; // if true, compare is greater, otherwise less
-		float value_to_compare;
-		int priority_value;
-	};
-
 	WeaponInfo() :
 		headshot_aim_offset(0.0f, 0.0f, 0.0f)
 	{
@@ -364,6 +347,7 @@ public:
 		min_required_skill = 0;
 		preferred_aim_spot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 		ammo_source_classname.reserve(32);
+		parsed_dynamic_prio_configs.reserve(32);
 	}
 
 	virtual ~WeaponInfo() {}
@@ -402,13 +386,10 @@ public:
 		this->selection_min_range = other->selection_min_range;
 		this->special_function = other->special_function;
 		this->tags = other->tags;
-		this->dynprio_health = other->dynprio_health;
-		this->dynprio_range = other->dynprio_range;
-		this->dynprio_sec_ammo = other->dynprio_sec_ammo;
-		this->dynprio_aggression = other->dynprio_aggression;
 		this->min_required_skill = other->min_required_skill;
 		this->preferred_aim_spot = other->preferred_aim_spot;
 		this->ammo_source_classname = other->ammo_source_classname;
+		this->parsed_dynamic_prio_configs = other->parsed_dynamic_prio_configs;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](botweapons::AttackType type) const
@@ -483,10 +464,6 @@ public:
 	void RemoveTag(const std::string& tag) { tags.erase(tag); }
 	void SetIsTemplateEntry(const bool v) { is_template = v; }
 	void SetWeaponType(WeaponInfo::WeaponType type) { weapon_type = type; }
-	DynamicPriority* EditDynamicPriorityHealth() { return &dynprio_health; }
-	DynamicPriority* EditDynamicPriorityRange() { return &dynprio_range; }
-	DynamicPriority* EditDynamicPrioritySecAmmo() { return &dynprio_sec_ammo; }
-	DynamicPriority* EditDynamicPriorityAggression() { return &dynprio_aggression; }
 	void SetMinRequiredSkill(const int skill) { min_required_skill = skill; }
 	void SetSpamTime(const float t) { spam_time = t; }
 	void SetMinimumRangeToUseScope(const float range) { scopein_min_range = range; }
@@ -558,10 +535,6 @@ public:
 	const SpecialFunction& GetSpecialFunction() const { return special_function; }
 	// for writing
 	SpecialFunction* GetSpecialFunctionEx() { return &special_function; }
-	const DynamicPriority& GetDynamicPriorityHealth() const { return dynprio_health; }
-	const DynamicPriority& GetDynamicPriorityRange() const { return dynprio_range; }
-	const DynamicPriority& GetDynamicPrioritySecAmmo() const { return dynprio_sec_ammo; }
-	const DynamicPriority& GetDynamicPriorityAggression() const { return dynprio_aggression; }
 	const int GetMinRequiredSkill() const { return min_required_skill; }
 	const float GetSpamTime() const { return spam_time; }
 	const bool CanBeSpammed() const { return spam_time > 0.0f; }
@@ -581,6 +554,9 @@ public:
 	const bool HasAmmoSourceEntityClassname() const { return !ammo_source_classname.empty(); }
 	const std::string& GetAmmoSourceEntityClassname() const { return ammo_source_classname; }
 	const bool CanBeFiredUnderwater() const { return can_fire_underwater; }
+	void AddDynamicPriorityCfgEntry(const char* name, const char* args);
+	void EraseDynamicPrioritiesCfgEntry() { parsed_dynamic_prio_configs.clear(); }
+	const std::vector<std::unique_ptr<IDynamicWeaponPriority>>& GetDynamicPriotities() const { return dynamic_priorities; }
 
 	virtual void PostLoad();
 
@@ -618,12 +594,17 @@ private:
 	int min_required_skill;
 	SpecialFunction special_function;
 	std::unordered_set<std::string> tags;
-	DynamicPriority dynprio_health;
-	DynamicPriority dynprio_range;
-	DynamicPriority dynprio_sec_ammo;
-	DynamicPriority dynprio_aggression;
 	IDecisionQuery::DesiredAimSpot preferred_aim_spot;
 	std::string ammo_source_classname;
+
+	struct DynamicPrioCfg
+	{
+		std::string name; // name of the dynamic priority
+		std::vector<std::string> args;
+	};
+
+	std::vector<DynamicPrioCfg> parsed_dynamic_prio_configs;
+	std::vector<std::unique_ptr<IDynamicWeaponPriority>> dynamic_priorities;
 };
 
 class CWeaponInfoManager : public SourceMod::ITextListener_SMC

@@ -310,76 +310,17 @@ float CBotWeapon::GetCurrentMaximumAttackRange(CBaseBot* owner) const
 	return std::numeric_limits<float>::max();
 }
 
-const int CBotWeapon::GetPriority(const CBaseBot* owner, const float* range, const CKnownEntity* threat) const
+const int CBotWeapon::GetPriority(const CBaseBot* owner, const CKnownEntity* threat) const
 {
 	const WeaponInfo* info = GetWeaponInfo();
 	int priority = info->GetPriority();
+	auto& dynprios = info->GetDynamicPriotities();
 
-	if (info->GetDynamicPrioritySecAmmo().is_used && hasSecondaryAmmo(owner))
+	if (dynprios.empty()) { return priority; }
+	
+	for (const std::unique_ptr<IDynamicWeaponPriority>& dynprio : dynprios)
 	{
-		priority += info->GetDynamicPrioritySecAmmo().priority_value;
-	}
-
-	const WeaponInfo::DynamicPriority& healthprio = info->GetDynamicPriorityHealth();
-
-	if (healthprio.is_used)
-	{
-		if (healthprio.is_greater)
-		{
-			if (owner->GetHealthPercentage() > healthprio.value_to_compare)
-			{
-				priority += healthprio.priority_value;
-			}
-		}
-		else
-		{
-			if (owner->GetHealthPercentage() < healthprio.value_to_compare)
-			{
-				priority += healthprio.priority_value;
-			}
-		}
-	}
-
-	const WeaponInfo::DynamicPriority& rangeprio = info->GetDynamicPriorityRange();
-
-	if (range && rangeprio.is_used)
-	{
-		if (rangeprio.is_greater)
-		{
-			if (rangeprio.value_to_compare > *range)
-			{
-				priority += rangeprio.priority_value;
-			}
-		}
-		else
-		{
-			if (rangeprio.value_to_compare < *range)
-			{
-				priority += rangeprio.priority_value;
-			}
-		}
-	}
-
-	const WeaponInfo::DynamicPriority& aggressionprio = info->GetDynamicPriorityAggression();
-
-	if (aggressionprio.is_used)
-	{
-		int value = static_cast<int>(std::round(aggressionprio.value_to_compare));
-
-		if (aggressionprio.is_greater)
-		{
-			if (owner->GetDifficultyProfile()->GetAggressiveness() > value)
-			{
-				priority += aggressionprio.priority_value;
-			}
-		}
-		else
-		{
-			if (owner->GetDifficultyProfile()->GetAggressiveness() < value)
-			{
-				priority += aggressionprio.priority_value;
-			}
-		}
+		priority += dynprio->GetPriorityValue(owner, this, threat);
 	}
 
 	return priority;

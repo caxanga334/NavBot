@@ -62,14 +62,7 @@ std::string CBaseMod::GetCurrentMapName(Mods::MapNameType type) const
 void CBaseMod::PostCreation()
 {
 	m_weaponinfomanager.reset(CreateWeaponInfoManager());
-	
-	if (!m_weaponinfomanager->LoadConfigFile())
-	{
-		Warning("Weapon info manager failed to load config file!\n");
-	}
-
 	m_profilemanager.reset(CreateBotDifficultyProfileManager());
-
 	m_profilemanager->LoadProfiles();
 }
 
@@ -105,6 +98,13 @@ void CBaseMod::Update()
 
 void CBaseMod::OnMapStart()
 {
+	// Weapon info is now parsed OnMapStart because it needs to be parsed after SM plugins are loaded.
+	// As a bonus, the file is now reloaded on map change.
+	if (!m_weaponinfomanager->LoadConfigFile())
+	{
+		META_CONPRINT("Weapon info manager failed to load config file!\n");
+	}
+
 	InternalFindPlayerResourceEntity();
 
 	m_modsettings.reset(CreateModSettings());
@@ -160,11 +160,11 @@ void CBaseMod::ReloadWeaponInfoConfigFile()
 {
 	if (!m_weaponinfomanager->LoadConfigFile())
 	{
-		Warning("Weapon info config reloaded with errors!\n");
+		META_CONPRINT("[Warning]: Weapon info config reloaded with errors!\n");
 	}
 	else
 	{
-		Msg("Weapon info config reloaded without errors.\n");
+		META_CONPRINT("Weapon info config reloaded without errors.\n");
 	}
 }
 

@@ -330,7 +330,7 @@ bool IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat, WeaponInf
 		// sanity check
 		if (best == weapon) { continue; }
 
-		const CBotWeapon* result = FilterBestWeaponForThreat(bot, threat, rangeToThreat, best, weapon);
+		const CBotWeapon* result = FilterBestWeaponForThreat(bot, threat, best, weapon);
 
 		if (!result) { return false; }
 
@@ -775,9 +775,9 @@ void IInventory::RemoveInvalidWeapons()
 	}), m_weapons.end());
 }
 
-const CBotWeapon* IInventory::FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* first, const CBotWeapon* second) const
+const CBotWeapon* IInventory::FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const CBotWeapon* first, const CBotWeapon* second) const
 {
-	if (first->GetPriority(me, &rangeToThreat, threat) > second->GetPriority(me, &rangeToThreat, threat))
+	if (first->GetPriority(me, threat) > second->GetPriority(me, threat))
 	{
 		return first;
 	}

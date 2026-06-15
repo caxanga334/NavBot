@@ -203,6 +203,8 @@ public:
 	 * @return True if the bot will get hit by the projectile, false otherwise.
 	 */
 	virtual bool IsInProjectilesPath(CBaseBot* bot, CBaseEntity* projectile, Vector& hitPos) const;
+	// Called once to register mod specific weapon config factories.
+	virtual void RegisterDynamicWeaponConfigFactories() const {}
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;

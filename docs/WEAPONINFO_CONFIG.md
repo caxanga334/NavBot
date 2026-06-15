@@ -140,31 +140,30 @@ Template entries ignores some error checks and also won't be used by the bots.
 
 Weapons supports condition based dynamic priorities.    
 The dynamic priority values are added to the weapon's base priority.    
-Dynamic priorities should be added to a `dynamic_priorities` section of the weapon.
+Dynamic priorities should be added to a `dynamic_priorities` section of the weapon.    
 
-|Priority Key Name|Description|Priority Only|
+|Priority Key Name|Description|Arguments|
 |:---:|:---:|:---:|
-|health|Changes the weapon's priority based on the bot's health.|No.|
-|range|Changes the weapon's priority based on the distance between the bot and the current enemy.|No.|
-|secondary_ammo|Changes the weapon's priority if secondary ammo is available for this weapon.|Yes.|
-|aggression|Changes the weapon's priority based on the bot's difficulty profile aggression value.|No.|
+|health|Changes the weapon's priority based on the bot's health.|priority value (int), threshold value (float), greater than (boolean)|
+|range|Changes the weapon's priority based on the distance between the bot and the current enemy.|priority value (int), threshold value (float), greater than (boolean)|
+|secondary_ammo|Changes the weapon's priority if secondary ammo is available for this weapon.|priority value (int),|
+|aggression|Changes the weapon's priority based on the bot's difficulty profile aggression value.|priority value (int), threshold value (int), greater than (boolean)|
+|erase|Special keyworld that instructs the config parser to remove all dynamic priorities from the weapon|None|
 
 ### Dynamic Priority Key Format
 
-Dynamic priorities values are parsed from a single string with each data delimited by comma in the following format:    
-`compare type,value to compare,priority value`    
-If **Priority Only** is **yes** on the table above, `compare type` and `value to compare` are not used and should be set to `empty`.    
-Examples:
+Dynamic priorities are uses the following format: `"type name" "arguments"`.    
+**Arguments** are delimited by comma.
 
 ```
 // Add 30 weapon priority when secondary ammo is available
-"secondary_ammo" "empty,empty,30"
+"secondary_ammo" "30"
 // Add -10 weapon priority when the range to the current enemy is greater than 1000 units.
-"range" "greater,1000.0,-10"
+"range" "-10,1000.0,true"
 // Add 50 weapon priority when the bot's health percentage is less than 0.5
-"health" "less,0.5,50"
-// Remove the health priority if the current weapon is a variant of another weapon that has a dynamic health priority
-"health" "remove"
+"health" "50,0.5,false"
+// Removes all dynamic priority entries from this weapon.
+"erase" ""
 ```
 
 ## Aim Spots
