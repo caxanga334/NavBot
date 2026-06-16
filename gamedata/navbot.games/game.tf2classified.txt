@@ -30,6 +30,7 @@
 			"BotAim_HeadBoneName"			"bip_head"
 			/* Workshop not a thing in TF2C yet */
 			"UsesWorkshopMaps"				"false"
+			"ISensor_NPCList" "obj_sentrygun,obj_dispenser,obj_teleporter,tank_boss,tf_merasmus_trick_or_treat_prop,merasmus,eyeball_boss,tf_zombie,headless_hatman,tf_robot_destruction_robot,base_boss"
 		}
 		"Offsets"
 		{

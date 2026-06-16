@@ -73,7 +73,7 @@ namespace tfentities
 		float GetPercentageConstructed() const;
 		TeamFortress2::TFObjectType GetType() const;
 		TeamFortress2::TFObjectMode GetMode() const;
-		edict_t* GetBuilder() const;
+		CBaseEntity* GetBuilder() const;
 		int GetBuilderIndex() const;
 		int GetLevel() const;
 		int GetMaxLevel() const;

@@ -708,7 +708,7 @@ TaskResult<CTF2Bot> CTF2BotSpySapObjectTask::OnTaskUpdate(CTF2Bot* bot)
 	{
 		if (m_isSentryGun)
 		{
-			auto engineer = bo.GetBuilder();
+			CBaseEntity* engineer = bo.GetBuilder();
 
 			if (engineer)
 			{

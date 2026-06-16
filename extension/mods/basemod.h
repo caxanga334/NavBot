@@ -210,6 +210,8 @@ protected:
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;
 	std::unique_ptr<CDifficultyManager> m_profilemanager;
 
+	CountdownTimer& GetNPCUpdateTimer() { return m_sensorNPCUpdateTimer; }
+
 private:
 	friend class ExtModLoader;
 
@@ -219,8 +221,19 @@ private:
 	std::string m_modName;
 	std::string m_modFolder; // mod folder name
 	std::string m_modFallbackFolder; // optional fallback mod folder name
+	CountdownTimer m_sensorNPCUpdateTimer;
+	std::list<std::string> m_NPCClassnameList;
 
 	void InternalFindPlayerResourceEntity();
+
+	void UpdateNPCs();
+	void ReadNPCListFromGamedata();
+
+	class NPCCollector
+	{
+	public:
+		bool operator()(int index, edict_t* edict, CBaseEntity* entity) const;
+	};
 };
 
 #endif // !EXT_BASE_MOD_H_

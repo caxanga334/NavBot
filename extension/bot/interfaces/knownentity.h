@@ -60,7 +60,7 @@ public:
 	// Bot heard this entity
 	void UpdateHeard();
 	// Marks this entity as fully visible
-	void MarkAsFullyVisible();
+	void UpdateVisibilityStatus(bool visible);
 	// true if the given entity is stored on this handle
 	bool IsEntity(edict_t* entity) const;
 	// true if the given entity is stored on this handle
@@ -71,7 +71,6 @@ public:
 	inline bool WasLastKnownPositionSeen() const { return m_lkpwasseen; }
 	inline void MarkLastKnownPositionAsSeen() { m_lkpwasseen = true; }
 	inline bool IsVisibleNow() const { return m_visible; }
-	inline void MarkAsNotVisible() { m_visible = false; }
 	// Returns true if the entity was visible recently
 	inline bool WasRecentlyVisible(const float recenttime = 3.0f) const
 	{

@@ -34,6 +34,7 @@
 			"BotAim_HeadBoneName"			"bip_head"
 			"UsesWorkshopMaps"				"true"
 			"ICombat_DangerEnts" "tf_projectile_arrow,tf_projectile_flare,tf_projectile_pipe,tf_projectile_rocket,tf_projectile_jar,tf_projectile_jar_gas,tf_projectile_jar_milk"
+			"ISensor_NPCList" "obj_sentrygun,obj_dispenser,obj_teleporter,tank_boss,tf_merasmus_trick_or_treat_prop,merasmus,eyeball_boss,tf_zombie,headless_hatman,tf_robot_destruction_robot,base_boss"
 		}
 		"Offsets"
 		{

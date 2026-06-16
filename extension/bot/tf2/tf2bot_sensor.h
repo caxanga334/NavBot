@@ -21,17 +21,9 @@ public:
 	static void RegisterTF2ConVars();
 
 private:
-	std::unordered_set<std::string> m_classname_filter;
-
 	bool IsPlayerIgnoredInternal(CBaseEntity* entity) const;
 	bool IgnoredConditionsInternal(CBaseEntity* player) const;
 
-	inline void AddClassnametoFilter(const char* classname)
-	{
-		m_classname_filter.emplace(classname);
-	}
-
-	bool IsClassnameIgnored(const char* classname) const;
 };
 
 #endif // !NAVBOT_TF2_SENSOR_INTERFACE_H_

@@ -55,6 +55,7 @@ namespace dodslib
 	 * @return True if the team can capture, false otherwise.
 	 */
 	bool IsTeamAllowedToCapture(CBaseEntity* captureArea, dayofdefeatsource::DoDTeam team);
+	dayofdefeatsource::DoDClassType GetClassTypeFromName(const char* name);
 }
 
 

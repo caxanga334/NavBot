@@ -173,7 +173,7 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 		else if (strncasecmp(key, "vision_npc_update_rate", 22) == 0)
 		{
 			float v = atof(value);
-			v = std::clamp(v, 0.0f, 2.0f);
+			v = std::clamp(v, 0.0f, 10.0f);
 			SetVisionNPCUpdateRate(v);
 		}
 		else if (strncasecmp(key, "inventory_update_rate", 21) == 0)

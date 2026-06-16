@@ -21,6 +21,7 @@ public:
 	bool IsTeamPlay() const { return m_isTeamPlay; }
 	int GetMaxCarryForAmmoType(blackmesa::BMAmmoIndex index) const { return m_maxCarry[static_cast<int>(index)]; }
 	const std::pair<std::string, int>* GetRandomPlayerModel() const;
+	IModHelpers* AllocModHelpers() const override;
 
 private:
 	bool m_isTeamPlay;

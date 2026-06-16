@@ -148,6 +148,7 @@ Dynamic priorities should be added to a `dynamic_priorities` section of the weap
 |range|Changes the weapon's priority based on the distance between the bot and the current enemy.|priority value (int), threshold value (float), greater than (boolean)|
 |secondary_ammo|Changes the weapon's priority if secondary ammo is available for this weapon.|priority value (int),|
 |aggression|Changes the weapon's priority based on the bot's difficulty profile aggression value.|priority value (int), threshold value (int), greater than (boolean)|
+|classname|Changes the weapon's priority when attacking a specific entity classname. Supports patterns.|priority value (int), classname (string)|
 |erase|Special keyworld that instructs the config parser to remove all dynamic priorities from the weapon|None|
 
 ### Dynamic Priority Key Format

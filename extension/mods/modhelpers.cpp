@@ -99,3 +99,16 @@ bool IModHelpers::CanPlayerPickUpItem(CBaseEntity* item, CBaseEntity* player) co
 	return true;
 }
 
+bool IModHelpers::IsPlayableTeam(int teamNum) const
+{
+	switch (teamNum)
+	{
+	case TEAM_UNASSIGNED:
+		[[fallthrough]];
+	case TEAM_SPECTATOR:
+		return false;
+	default:
+		return true;
+	}
+}
+

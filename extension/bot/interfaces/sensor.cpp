@@ -12,6 +12,7 @@
 #include <util/entprops.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/debugoverlay_shared.h>
+#include <sdkports/sdk_takedamageinfo.h>
 #include "sensor.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -71,7 +72,6 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 	m_minrecognitiontime = profile->GetMinRecognitionTime();
 	m_lastupdatetime = 0.0f;
 	m_primarythreatcache = nullptr;
-	m_updateNonPlayerTimer.Invalidate();
 	m_cachedNPCupdaterate = extmanager->GetMod()->GetModSettings()->GetVisionNPCUpdateRate();
 	m_updateStatisticsTimer.Start(extmanager->GetMod()->GetModSettings()->GetVisionStatisticsUpdateRate());
 	m_statsvisibleallies = 0;
@@ -81,6 +81,26 @@ ISensor::ISensor(CBaseBot* bot) : IBotInterface(bot)
 
 ISensor::~ISensor()
 {
+}
+
+void ISensor::OnInjured(const CTakeDamageInfo& info)
+{
+	CBaseEntity* subject = info.GetInflictor();
+
+	if (subject && !IsIgnored(subject))
+	{
+		// Become aware of anyone who attacks me
+		AddKnownEntity(subject);
+	}
+	else
+	{
+		subject = info.GetAttacker();
+
+		if (subject && !IsIgnored(subject))
+		{
+			AddKnownEntity(subject);
+		}
+	}
 }
 
 void ISensor::SetupPVS(CBaseBot* bot)
@@ -140,8 +160,6 @@ void ISensor::Reset()
 {
 	m_knownlist.clear();
 	m_lastupdatetime = 0.0f;
-	m_threatvisibletimer.Invalidate();
-	m_updateNonPlayerTimer.Invalidate();
 	m_reportKnownsTimer.Start(ISensor::UPDATE_SHARED_MEMORY_FREQ);
 	m_updateStatisticsTimer.Reset();
 	m_primarythreatoverride.reset(nullptr);
@@ -149,6 +167,8 @@ void ISensor::Reset()
 	m_statsvisibleallies = 0;
 	m_statsvisibleenemies = 0;
 	m_statsknownallies = 0;
+
+	std::for_each(m_notVisibleTimer.begin(), m_notVisibleTimer.end(), [](IntervalTimer& timer) { timer.Invalidate(); });
 }
 
 void ISensor::Update()
@@ -185,11 +205,6 @@ void ISensor::ShowDebugInformation() const
 
 		known.DebugDraw(10.0f);
 	}
-}
-
-bool ISensor::IsAbleToSee(edict_t* entity, const bool checkFOV) const
-{
-	return IsAbleToSee(entity->GetIServerEntity()->GetBaseEntity(), checkFOV);
 }
 
 /**
@@ -345,11 +360,10 @@ bool ISensor::IsAbleToSee(const CNavArea* area, const bool checkFOV, const bool 
 	return true;
 }
 
-bool ISensor::IsAbleToHear(edict_t* entity) const
+bool ISensor::IsAbleToHear(CBaseEntity* entity) const
 {
-	// Bots only hear other players by default
-	const auto index = gamehelpers->IndexOfEdict(entity);
-	return UtilHelpers::IsPlayerIndex(index);
+	// only player and combat chars (NPCs) are interesting for bots
+	return modhelpers->IsCombatCharacter(entity);
 }
 
 bool ISensor::IsLineOfSightClear(const Vector& pos) const
@@ -393,32 +407,6 @@ bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player) const
 	return result.fraction >= 1.0f && !result.startsolid;
 }
 
-bool ISensor::IsLineOfSightClear(edict_t* entity) const
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("ISensor::IsLineOfSightClear( edict_t )", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	auto start = GetBot()->GetEyeOrigin();
-	entities::HBaseEntity baseent(entity);
-	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
-	trace_t result;
-
-	trace::line(start, baseent.EyePosition(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
-
-	if (result.DidHit())
-	{
-		trace::line(start, UtilHelpers::getWorldSpaceCenter(entity), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
-
-		if (result.DidHit())
-		{
-			trace::line(start, baseent.GetAbsOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
-		}
-	}
-
-	return result.fraction >= 1.0f && !result.startsolid;
-}
-
 bool ISensor::IsLineOfSightClear(CBaseEntity* entity) const
 {
 #ifdef EXT_VPROF_ENABLED
@@ -456,40 +444,6 @@ bool ISensor::IsInFieldOfView(const Vector& pos) const
 	return UtilHelpers::PointWithinViewAngle(GetBot()->GetEyeOrigin(), pos, forward, m_coshalfFOV);
 }
 
-bool ISensor::IsEntityHidden(edict_t* entity) const
-{
-	return IsEntityHidden(entity->GetIServerEntity()->GetBaseEntity());
-}
-
-/**
- * @brief Adds the given entity to the known entity list
- * @param entity Entity to be added to the list
- * @return true if the entity was added or already exists, false if it was not possible to add
-*/
-CKnownEntity* ISensor::AddKnownEntity(edict_t* entity)
-{
-	auto index = gamehelpers->IndexOfEdict(entity);
-
-	if (index <= 0) // filter invalid edicts and worldspawn entity.
-	{
-		return nullptr;
-	}
-
-	CKnownEntity other(entity);
-
-	for (auto& known : m_knownlist)
-	{
-		if (known == other)
-		{
-			return &known;
-		}
-	}
-
-	auto& known = m_knownlist.emplace_back(entity);
-
-	return &known;
-}
-
 CKnownEntity* ISensor::AddKnownEntity(CBaseEntity* entity)
 {
 	CKnownEntity other(entity);
@@ -505,18 +459,6 @@ CKnownEntity* ISensor::AddKnownEntity(CBaseEntity* entity)
 	auto& known = m_knownlist.emplace_back(entity);
 
 	return &known;
-}
-
-// Removes a entity from the known list
-void ISensor::ForgetKnownEntity(edict_t* entity)
-{
-	const CKnownEntity other(entity);
-
-	m_knownlist.erase(std::remove_if(m_knownlist.begin(), m_knownlist.end(), [&other](const CKnownEntity& obj) {
-		return obj == other;
-	}), m_knownlist.end());
-
-	m_primarythreatcache = nullptr;
 }
 
 void ISensor::ForgetKnownEntity(CBaseEntity* entity)
@@ -536,13 +478,13 @@ void ISensor::ForgetAllKnownEntities()
 	m_primarythreatcache = nullptr;
 }
 
-bool ISensor::IsKnown(edict_t* entity)
+bool ISensor::IsKnown(CBaseEntity* entity)
 {
-	CKnownEntity other(entity);
+	if (!entity) { return false; }
 
 	for (auto& known : m_knownlist)
 	{
-		if (known == other)
+		if (known.GetEntity() == entity)
 		{
 			return true;
 		}
@@ -552,31 +494,6 @@ bool ISensor::IsKnown(edict_t* entity)
 }
 
 const CKnownEntity* ISensor::GetKnown(CBaseEntity* entity) const
-{
-	if (entity == nullptr)
-	{
-		return nullptr;
-	}
-
-	CKnownEntity other(entity);
-
-	for (auto& known : m_knownlist)
-	{
-		if (known == other)
-		{
-			return &known;
-		}
-	}
-
-	return nullptr;
-}
-
-/**
- * @brief Given an entity, gets a knownentity of it
- * @param entity Entity to search
- * @return Pointer to a Knownentity of the given entity or NULL if the bot doesn't known this entity
-*/
-const CKnownEntity* ISensor::GetKnown(edict_t* entity) const
 {
 	if (entity == nullptr)
 	{
@@ -610,11 +527,6 @@ void ISensor::SetFieldOfView(const float fov)
 {
 	m_fieldofview = fov;
 	m_coshalfFOV = cosf(0.5f * fov * M_PI / 180.0f);
-}
-
-const float ISensor::GetTimeSinceVisibleThreat() const
-{
-	return m_threatvisibletimer.GetElapsedTime();
 }
 
 const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
@@ -863,30 +775,16 @@ void ISensor::UpdateKnownEntities()
 	VPROF_BUDGET("ISensor::UpdateKnownEntities", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	std::vector<edict_t*> visibleVec;
-	visibleVec.reserve(1024);
-	bool includeNPCs = false;
+	std::vector<CBaseEntity*> potentiallyVisible;
+	potentiallyVisible.reserve(1024);
 
 	if (cvar_navbot_notarget.GetInt() == 0)
 	{
-		ISensor::SetupPVS(GetBot<CBaseBot>());
-
-		// Vision Update - Phase 1 - Collect entities
-		CollectPlayers(visibleVec);
-
-		if (m_updateNonPlayerTimer.IsElapsed())
-		{
-			m_updateNonPlayerTimer.Start(m_cachedNPCupdaterate);
-			CollectNonPlayerEntities(visibleVec);
-			includeNPCs = true;
-		}
+		CollectPlayers(potentiallyVisible);
+		CollectNonPlayerEntities(potentiallyVisible);
 	}
 
-	// Vision Update - Phase 2 - Clean current database of known entities
-	CleanKnownEntities();
-
-	// Vision Update - Phase 3 - Update database
-	UpdateVisibleEntities(visibleVec, includeNPCs);
+	UpdateVisibleEntities(potentiallyVisible);
 
 	if (m_updateStatisticsTimer.IsElapsed())
 	{
@@ -902,19 +800,19 @@ void ISensor::UpdateKnownEntities()
 		if (IsAbleToSee(primaryoverride->GetEntity()))
 		{
 			primaryoverride->UpdatePosition();
-			primaryoverride->MarkAsFullyVisible();
+			primaryoverride->UpdateVisibilityStatus(true);
 			primaryoverride->MarkLastKnownPositionAsSeen();
 		}
 		else
 		{
-			primaryoverride->MarkAsNotVisible();
+			primaryoverride->UpdateVisibilityStatus(false);
 		}
 	}
 
 	m_lastupdatetime = gpGlobals->curtime;
 }
 
-void ISensor::UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, const bool includeNPCs)
+void ISensor::UpdateVisibleEntities(const std::vector<CBaseEntity*>& potentiallyVisible)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::UpdateVisibleEntities", "NavBot");
@@ -922,89 +820,92 @@ void ISensor::UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, con
 
 	CBaseBot* me = GetBot<CBaseBot>();
 
-	for (edict_t* edict : visibleVec)
+	// Determine which entities are visible right now.
+	CollectVisible visibleNow(this);
+	std::unordered_set<CBaseEntity*> knownEntities;
+	knownEntities.reserve(512);
+	
+	for (CBaseEntity* entity : potentiallyVisible)
 	{
-#ifdef EXT_VPROF_ENABLED
-		VPROF_BUDGET("ISensor::UpdateVisibleEntities( collect visible )", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-		// all entities inside visibleVec are visible to the bot RIGHT NOW!
-		CKnownEntity* known = FindKnownEntity(edict);
-
-		if (!known) // first time seening this entity
-		{
-			CKnownEntity& entry = m_knownlist.emplace_back(edict);
-			entry.MarkAsFullyVisible();
-			continue;
-		}
-
-		known->UpdatePosition(); // we can see it, so update it's position
-
-		if (!known->IsVisibleNow())
-		{
-			known->MarkAsFullyVisible();
-		}
+		visibleNow(entity);
 	}
 
-	for (CKnownEntity& known : m_knownlist)
+	for (auto it = m_knownlist.begin(); it != m_knownlist.end();)
 	{
-#ifdef EXT_VPROF_ENABLED
-		VPROF_BUDGET("ISensor::UpdateVisibleEntities( update status )", "NavBot");
-#endif // EXT_VPROF_ENABLED
+		CKnownEntity& known = *it;
 
-		// Updating players only, NPCs keep their status
-		if (!known.IsPlayer() && !includeNPCs)
+		// remove obsolete instances
+		if (known.IsObsolete())
 		{
+			it = m_knownlist.erase(it);
 			continue;
 		}
 
 		CBaseEntity* pEntity = known.GetEntity();
-		/* This should never happen */
-		EXT_ASSERT(pEntity != nullptr, "NULL entity in ISensor::UpdateVisibleEntities!");
 
-		if (known.GetTimeSinceLastInfo() < 0.2f)
+		if (visibleNow.Contains(pEntity))
 		{
+			// entity is visible right now
+			known.UpdatePosition();
+			known.UpdateVisibilityStatus(true);
+			knownEntities.insert(pEntity); // remember that this entity is already known by the bot
+
 			// reaction time check
 			if (known.GetTimeSinceBecameVisible() >= GetMinRecognitionTime() && m_lastupdatetime - known.GetTimeWhenBecameVisible() < GetMinRecognitionTime())
 			{
 				me->OnSight(pEntity);
-				m_threatvisibletimer.Start();
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
 				{
-					me->DebugPrintToConsole(0, 128, 0, "%s CAUGHT LINE OF SIGHT WITH %s\n", 
+					me->DebugPrintToConsole(0, 128, 0, "%s CAUGHT LINE OF SIGHT WITH %s\n",
 						me->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(pEntity));
 
 					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 0, 255, 0, 255, false, 5.0f);
 				}
 			}
 
-			continue; // this known entity was updated recently
+			UpdateSinceVisibleTime(modhelpers->GetEntityTeamNumber(pEntity));
 		}
-
-		if (IsAbleToSee(known.GetLastKnownPosition()))
+		else
 		{
-			known.MarkLastKnownPositionAsSeen();
-		}
-
-		// this entity was visible, mark as not visible and notify the bot lost sight of it
-		if (known.IsVisibleNow())
-		{
-			known.MarkAsNotVisible();
-			me->OnLostSight(pEntity);
-
-			if (me->IsDebugging(BOTDEBUG_SENSOR))
+			// entity is not visible
+			if (known.IsVisibleNow())
 			{
-				me->DebugPrintToConsole(255, 0, 0, "%s LOST LINE OF SIGHT WITH ENTITY %s \n",
-					me->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(pEntity));
+				known.UpdateVisibilityStatus(false);
+				me->OnLostSight(pEntity);
 
-				NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
+				if (me->IsDebugging(BOTDEBUG_SENSOR))
+				{
+					me->DebugPrintToConsole(255, 0, 0, "%s LOST LINE OF SIGHT WITH ENTITY %s \n",
+						me->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(pEntity));
+
+					NDebugOverlay::HorzArrow(me->GetEyeOrigin(), UtilHelpers::getWorldSpaceCenter(pEntity), 2.0f, 255, 0, 0, 255, false, 5.0f);
+				}
+
+				if (IsAbleToSee(known.GetLastKnownPosition()))
+				{
+					known.MarkLastKnownPositionAsSeen();
+				}
 			}
 		}
+
+		it++;
 	}
+
+	// update entities the bot doesn't known about but are visible now
+	visibleNow.ForEachVisible([&knownEntities, this](CBaseEntity* entity) {
+		if (knownEntities.find(entity) == knownEntities.end())
+		{
+			// first time seeing this entity
+			CKnownEntity* known = this->AddKnownEntity(entity);
+			known->UpdatePosition();
+			known->UpdateVisibilityStatus(true);
+			// OnSight is called after reaction time has passed
+		}
+	});
 }
 
-void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
+void ISensor::CollectPlayers(std::vector<CBaseEntity*>& visibleVec)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::CollectPlayers", "NavBot");
@@ -1022,97 +923,31 @@ void ISensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
 
 		CBaseEntity* entity = gamehelpers->ReferenceToEntity(i);
 
-		if (!entity || modhelpers->GetEntityTeamNumber(entity) <= TEAM_SPECTATOR || modhelpers->IsDead(entity))
-		{
-			continue;
-		}
+		if (!entity) { continue; }
 
-		if (!ISensor::IsInPVS(UtilHelpers::getEntityOrigin(entity)))
-		{
-			continue;
-		}
+		if (!modhelpers->IsPlayableTeam(modhelpers->GetEntityTeamNumber(entity))) { continue; }
 
-		if (IsAbleToSee(entity))
-		{
-			visibleVec.push_back(UtilHelpers::BaseEntityToEdict(entity));
-		}
+		if (IsIgnored(entity)) { continue; }
+
+		visibleVec.push_back(entity);
 	}
 }
 
-void ISensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
+void ISensor::CollectNonPlayerEntities(std::vector<CBaseEntity*>& visibleVec)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("ISensor::CollectNonPlayerEntities", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	for (int i = gpGlobals->maxClients + 1; i < gpGlobals->maxEntities; i++)
+	for (auto& handle : ISensor::s_npcentities)
 	{
-		auto edict = gamehelpers->EdictOfIndex(i);
+		CBaseEntity* pEntity = handle.Get();
 
-		if (!UtilHelpers::IsValidEdict(edict))
+		if (pEntity)
 		{
-			continue;
-		}
-
-		CBaseEntity* entity = edict->GetIServerEntity()->GetBaseEntity();
-
-		if (IsIgnored(entity)) 
-		{
-			continue;
-		}
-
-		// Use world space center here since the bot may be testing against a brush entity
-		if (!ISensor::IsInPVS(UtilHelpers::getWorldSpaceCenter(edict)))
-		{
-			continue;
-		}
-
-		if (IsAbleToSee(entity))
-		{
-			visibleVec.push_back(edict);
+			visibleVec.push_back(pEntity);
 		}
 	}
-}
-
-// Removes obsolete known entities from the list
-void ISensor::CleanKnownEntities()
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("ISensor::CleanKnownEntities", "NavBot");
-#endif // EXT_VPROF_ENABLED
-	// Removes all obsoletes known entities
-	auto iter = std::remove_if(m_knownlist.begin(), m_knownlist.end(),
-		[](CKnownEntity& known) { return known.IsObsolete(); });
-
-	m_knownlist.erase(iter, m_knownlist.end());
-}
-
-CKnownEntity* ISensor::FindKnownEntity(edict_t* edict)
-{
-	int index = gamehelpers->IndexOfEdict(edict);
-
-	for (auto& known : m_knownlist)
-	{
-		if (gamehelpers->IndexOfEdict(known.GetEdict()) == index)
-		{
-			return &known;
-		}
-	}
-
-	return nullptr;
-}
-
-CKnownEntity* ISensor::FindKnownEntity(CBaseEntity* entity)
-{
-	for (auto& known : m_knownlist)
-	{
-		if (known.GetEntity() == entity)
-		{
-			return &known;
-		}
-	}
-
-	return nullptr;
 }
 
 void ISensor::ReportVisibleEntities()
@@ -1172,3 +1007,20 @@ void ISensor::UpdateStatistics()
 	}
 }
 
+void ISensor::CollectVisible::operator()(CBaseEntity* entity)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::CollectVisible::operator()", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!ISensor::IsInPVS(UtilHelpers::getWorldSpaceCenter(entity))) { return; }
+
+	if (modhelpers->IsDead(entity)) { return; }
+
+	if (m_sensor->IsIgnored(entity)) { return; }
+
+	if (m_sensor->IsAbleToSee(entity))
+	{
+		m_visibleset.insert(entity);
+	}
+}

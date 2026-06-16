@@ -85,6 +85,24 @@ AITask<CDoDSBot>* CDoDSBotAttackControlPointTask::InitialNextTask(CDoDSBot* bot)
 
 TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask)
 {
+	if (bot->IsDebugging(BOTDEBUG_TASKS))
+	{
+		CBaseEntity* controlpoint = m_controlpoint->point.Get();
+
+		if (controlpoint)
+		{
+			char name[256]{ 0 };
+			std::size_t strlen = 0;
+			entprops->GetEntPropString(controlpoint, Prop_Data, "m_iszPrintName", name, sizeof(name), strlen);
+
+			if (strlen > 0)
+			{
+				bot->DebugPrintToConsole(255, 255, 0, "%s ATTACKING CONTROL POINT: %s - %s \n", 
+					bot->GetDebugIdentifier(), name, UtilHelpers::textformat::FormatEntity(controlpoint));
+			}
+		}
+	}
+
 	const CDODObjectiveResource* objres = CDayOfDefeatSourceMod::GetDODMod()->GetDODObjectiveResource();
 	CBaseEntity* pTrigger = m_controlpoint->capture_trigger.Get();
 
@@ -148,19 +166,17 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 				const Vector& pos = UtilHelpers::getEntityOrigin(target);
 				return SwitchTo(new CBotSharedDefendSpotTask<CDoDSBot, CDoDSBotPathCost>(bot, pos, 15.0f, true), "Defending armed bomb!");
 			}
-			else
+
+			// No bomb target found
+
+			if (pTrigger && dodslib::IsTeamAllowedToCapture(pTrigger, bot->GetMyDoDTeam()))
 			{
-				// No bomb target found
-
-				if (pTrigger && dodslib::IsTeamAllowedToCapture(pTrigger, bot->GetMyDoDTeam()))
-				{
-					// if a capture trigger exists, go cap it
-					return Continue();
-				}
-
-				// No point to attack, no bomb to plant or defend
-				return SwitchTo(new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
+				// if a capture trigger exists, go cap it
+				return Continue();
 			}
+
+			// No point to attack, no bomb to plant or defend
+			return SwitchTo(new CBotSharedRoamTask<CDoDSBot, CDoDSBotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
 		}
 
 		if (bot->GetInventoryInterface()->HasBomb())

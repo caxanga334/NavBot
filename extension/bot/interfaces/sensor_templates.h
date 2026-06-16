@@ -55,45 +55,10 @@ public:
 	}
 
 protected:
-	void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec) override {} /* Don't scan NPCs in PvP mods. */
+	void CollectNonPlayerEntities(std::vector<CBaseEntity*>& visibleVec) override {} /* Don't scan NPCs in PvP mods. */
 
 private:
 
-};
-
-/**
- * @brief Simple sensor implementation with a entity classname filter.
- * @tparam Bot Bot class.
- */
-template <typename Bot>
-class CSimpleSensorFilter : public CSimpleSensor<Bot>
-{
-public:
-	CSimpleSensorFilter(Bot* bot) :
-		CSimpleSensor<Bot>(bot)
-	{
-	}
-
-	bool IsIgnored(CBaseEntity* entity) const override
-	{
-		const char* classname = gamehelpers->GetEntityClassname(entity);
-
-		if (!classname) { return true; }
-
-		std::string strclassname{ classname };
-
-		// ignored if not in the filter
-		return m_classname_filter.find(strclassname) == m_classname_filter.end();
-	}
-
-protected:
-	inline void AddEntityClassnameToFilter(const char* classname)
-	{
-		m_classname_filter.emplace(classname);
-	}
-
-private:
-	std::unordered_set<std::string> m_classname_filter;
 };
 
 #endif // !__NAVBOT_SENSOR_INTERFACE_TEMPLATES_H_

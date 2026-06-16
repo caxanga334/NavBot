@@ -18,7 +18,6 @@ public:
 	bool IsEnemy(CBaseEntity* entity) const override { return true; }
 
 protected:
-	void CollectPlayers(std::vector<edict_t*>& visibleVec) override;
 	// no-op on HL1:DMS since it's deathmatch only
 	void ReportVisibleEntities() override {}
 

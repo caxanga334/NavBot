@@ -11,6 +11,7 @@
 #include <bspfile.h>
 
 class CNavArea;
+class CTakeDamageInfo;
 
 // Sensor interface manages the bot perception (vision and hearing)
 class ISensor : public IBotInterface
@@ -19,8 +20,11 @@ public:
 	ISensor(CBaseBot* bot);
 	~ISensor() override;
 
+	void OnInjured(const CTakeDamageInfo& info) override;
+
 	static inline std::array<byte, MAX_MAP_CLUSTERS / 8> s_pvs{};
 	static constexpr float UPDATE_SHARED_MEMORY_FREQ = 2.0f; // frequency of shared memory updates
+	static inline std::vector<CHandle<CBaseEntity>> s_npcentities{}; // vector of NPC entities the bot should care about
 
 	// Setups PVS for a given bot.
 	static void SetupPVS(CBaseBot* bot);
@@ -42,8 +46,8 @@ public:
 	virtual bool IsIgnored(CBaseEntity* entity) const { return false; }
 	virtual bool IsFriendly(CBaseEntity* entity) const { return false; }
 	virtual bool IsEnemy(CBaseEntity* entity) const { return false; }
-	// Expensive function that checks if the bot is able to see a given entity, testing for vision blockers, conditions, smokes, etc
-	bool IsAbleToSee(edict_t* entity, const bool checkFOV = true) const;
+	static constexpr bool USE_FOV = true;
+	static constexpr bool DONT_USE_FOV = false;
 	bool IsAbleToSee(const CBaseExtPlayer* player, const bool checkFOV = true) const;
 	virtual bool IsAbleToSee(CBaseEntity* entity, const bool checkFOV = true) const;
 	virtual bool IsAbleToSee(const Vector& pos, const bool checkFOV = true) const;
@@ -56,32 +60,25 @@ public:
 	 */
 	bool IsAbleToSee(const CNavArea* area, const bool checkFOV = true, const bool checkCorners = true) const;
 	// Is the bot able to hear this entity
-	virtual bool IsAbleToHear(edict_t* entity) const;
+	virtual bool IsAbleToHear(CBaseEntity* entity) const;
 	// Checks if there are obstructions between the bot and the given position
 	virtual bool IsLineOfSightClear(const Vector& pos) const;
 	bool IsLineOfSightClear(CBaseExtPlayer& player) const;
-	bool IsLineOfSightClear(edict_t* entity) const;
 	virtual bool IsLineOfSightClear(CBaseEntity* entity) const;
 	virtual bool IsInFieldOfView(const Vector& pos) const;
-	// Is the entity hidden by fog, smoke, etc?
-	bool IsEntityHidden(edict_t* entity) const;
 	virtual bool IsEntityHidden(CBaseEntity* entity) const { return false; }
 	// Is the given position obscured by fog, smoke, etc?
 	virtual bool IsPositionObscured(const Vector& pos) const { return false; }
 	// Adds a known entity to the list
-	CKnownEntity* AddKnownEntity(edict_t* entity);
 	CKnownEntity* AddKnownEntity(CBaseEntity* entity);
-	// Removes a specific entity from the known entity list
-	void ForgetKnownEntity(edict_t* entity);
 	// Removes a specific entity from the known entity list
 	void ForgetKnownEntity(CBaseEntity* entity);
 	// Removes all known entities from the list
 	virtual void ForgetAllKnownEntities();
 	// Returns true if the given entity is already known by the bot
-	bool IsKnown(edict_t* entity);
+	bool IsKnown(CBaseEntity* entity);
 	// Gets the Known entity of the given entity or NULL if not known by the bot
 	const CKnownEntity* GetKnown(CBaseEntity* entity) const;
-	const CKnownEntity* GetKnown(edict_t* edict) const;
 	// Updates the position of a known entity or adds it to the list if not known
 	void UpdateKnownEntity(CBaseEntity* entity);
 	/**
@@ -109,8 +106,23 @@ public:
 	const float GetMaxHearingRange() const { return m_maxhearingrange; }
 	// Time it takes for the bot to become aware of an entity
 	const float GetMinRecognitionTime() const { return m_minrecognitiontime; }
-	// Time since a threat was visible
-	const float GetTimeSinceVisibleThreat() const;
+	/**
+	 * @brief Gets the time in seconds since the bot last saw an entity from the given team.
+	 * @param teamNum Team number.
+	 * @return Time in seconds since the bot last saw an entity from the given team.
+	 */
+	float GetTimeSinceVisible(int teamNum) const
+	{
+		if (teamNum >= 0 && teamNum < static_cast<int>(m_notVisibleTimer.size()))
+		{
+			return m_notVisibleTimer[teamNum].GetElapsedTime();
+		}
+
+		// any team, return the smallest time value
+		float time = std::numeric_limits<float>::max();
+		std::for_each(m_notVisibleTimer.begin(), m_notVisibleTimer.end(), [&time](const IntervalTimer& timer) { time = std::min(time, timer.GetElapsedTime()); });
+		return time;
+	}
 	static constexpr bool ONLY_VISIBLE_THREATS = true; // For GetPrimaryKnownThreat, only get visible threats
 	static constexpr bool ANY_THREATS = false; // For GetPrimaryKnownThreat, get any threat
 	// Gets the primary known threat to the bot or NULL if none
@@ -230,7 +242,7 @@ public:
 
 		if (IsAbleToSee(threat))
 		{
-			m_primarythreatoverride->MarkAsFullyVisible();
+			m_primarythreatoverride->UpdateVisibilityStatus(true);
 			m_primarythreatoverride->MarkLastKnownPositionAsSeen();
 		}
 	}
@@ -242,27 +254,31 @@ protected:
 	/**
 	 * @brief Update the visible status of all known entities.
 	 * @param visibleVec Vector of entities that are visible to the bot right now.
-	 * @param includeNPCs If true, NPCs/non player entities are also being updated, if false, only player entities are being updated.
 	 */
-	virtual void UpdateVisibleEntities(const std::vector<edict_t*>& visibleVec, const bool includeNPCs);
+	virtual void UpdateVisibleEntities(const std::vector<CBaseEntity*>& potentiallyVisible);
 	/**
 	 * @brief Collects player entities to test for visibility.
 	 * @param visibleVec Vector to store the player entities.
 	 */
-	virtual void CollectPlayers(std::vector<edict_t*>& visibleVec);
+	virtual void CollectPlayers(std::vector<CBaseEntity*>& visibleVec);
 	/**
 	 * @brief Collects non-player entities.
 	 * @param visibleVec Vector to store the non-player entities to test for visibility.
 	 */
-	virtual void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec);
-	/**
-	 * @brief Removes obsolete known entity instances from the list of known entities.
-	 */
-	virtual void CleanKnownEntities();
+	virtual void CollectNonPlayerEntities(std::vector<CBaseEntity*>& visibleVec);
 	// Same as GetKnown but it's not const, use this internally when updating known entities
-	CKnownEntity* FindKnownEntity(edict_t* edict);
-	// Same as GetKnown but it's not const, use this internally when updating known entities
-	CKnownEntity* FindKnownEntity(CBaseEntity* entity);
+	CKnownEntity* FindKnownEntity(CBaseEntity* entity)
+	{
+		for (auto& known : m_knownlist)
+		{
+			if (known.GetEntity() == entity)
+			{
+				return &known;
+			}
+		}
+
+		return nullptr;
+	}
 	inline std::vector<CKnownEntity>& GetKnownEntityList() { return m_knownlist; }
 
 	inline bool IsAwareOf(const CKnownEntity* known) const
@@ -277,13 +293,55 @@ protected:
 	void UpdateStatistics();
 	// Gets the known entity instance of the primary theat override. NULL if none.
 	CKnownEntity* GetPrimaryThreatOverride() const { return m_primarythreatoverride.get(); }
+
+	// Collect visible entities
+	class CollectVisible
+	{
+	public:
+		CollectVisible(const ISensor* sensor)
+		{
+			m_sensor = sensor;
+			m_visibleset.reserve(512);
+			ISensor::SetupPVS(sensor->GetBot<CBaseBot>());
+		}
+
+		void operator()(CBaseEntity* entity);
+
+		bool Contains(CBaseEntity* entity) const
+		{
+			return m_visibleset.find(entity) != m_visibleset.cend();
+		}
+
+		template <typename F>
+		void ForEachVisible(F func)
+		{
+			for (CBaseEntity* entity : m_visibleset)
+			{
+				func(entity);
+			}
+		}
+
+	private:
+		const ISensor* m_sensor;
+		std::unordered_set<CBaseEntity*> m_visibleset;
+	};
+
+	// Updates the since visible timer with bound checks
+	void UpdateSinceVisibleTime(int teamNum)
+	{
+		if (teamNum >= 0 && teamNum < static_cast<int>(m_notVisibleTimer.size()))
+		{
+			m_notVisibleTimer[teamNum].Start();
+		}
+	}
+
 private:
 	std::vector<CKnownEntity> m_knownlist;
 	const CKnownEntity* m_primarythreatcache;
 	std::unique_ptr<CKnownEntity> m_primarythreatoverride;
-	CountdownTimer m_updateNonPlayerTimer;
 	CountdownTimer m_updateStatisticsTimer;
 	CountdownTimer m_reportKnownsTimer; // timer for sharing and updating the known list
+	std::array<IntervalTimer, 8> m_notVisibleTimer; // tracks the last time the bot saw someone from a specific team
 	float m_cachedNPCupdaterate;
 	float m_fieldofview;
 	float m_coshalfFOV;
@@ -291,7 +349,6 @@ private:
 	float m_maxhearingrange;
 	float m_minrecognitiontime;
 	float m_lastupdatetime;
-	IntervalTimer m_threatvisibletimer;
 	int m_statsvisibleallies;
 	int m_statsvisibleenemies;
 	int m_statsknownallies; // total number of known allies (visible or not)

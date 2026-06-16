@@ -46,7 +46,7 @@ bool CDoDSBotSensor::IsPositionObscured(const Vector& pos) const
 	return false;
 }
 
-void CDoDSBotSensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
+void CDoDSBotSensor::CollectNonPlayerEntities(std::vector<CBaseEntity*>& visibleVec)
 {
 	// DoD bots don't need to care about non players, saves perf
 }

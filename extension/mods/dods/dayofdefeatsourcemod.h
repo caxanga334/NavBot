@@ -13,6 +13,7 @@
 class CDoDSBot;
 class CDoDSNavArea;
 class CDoDSWaypoint;
+class ConVar;
 
 class CDoDModSettings : public CModSettings
 {
@@ -187,6 +188,7 @@ private:
 	CDODObjectiveResource m_objectiveres;
 	CHandle<CBaseEntity> m_objectiveentity;
 	std::array<DoDControlPoint, MAX_CONTROL_POINTS> m_controlpoints;
+	ConVar* m_cvar_force_class;
 	bool m_mapUsesBombs;
 
 	void FindObjectiveResourceEntity();

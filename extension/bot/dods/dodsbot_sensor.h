@@ -17,7 +17,7 @@ public:
 	bool IsPositionObscured(const Vector& pos) const override;
 
 private:
-	void CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec) override;
+	void CollectNonPlayerEntities(std::vector<CBaseEntity*>& visibleVec) override;
 };
 
 #endif // !__NAVBOT_DODSBOT_SENSOR_INTERFACE_H_

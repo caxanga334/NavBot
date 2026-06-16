@@ -174,4 +174,13 @@ public:
 	int GetPriorityValue(const CBaseBot* bot, const CBotWeapon* weapon, const CKnownEntity* threat) const final;
 };
 
+class CDynamicPriotityEnemyClassnameMatches final : public CBaseDynamicPriority
+{
+public:
+	bool Configure(const std::vector<std::string>& args) final;
+	int GetPriorityValue(const CBaseBot* bot, const CBotWeapon* weapon, const CKnownEntity* threat) const final;
+private:
+	std::string m_classnamepattern;
+};
+
 #endif // !__NAVBOT_INTERFACE_WEAPONS_DYNAMIC_PRIORITIES_H_

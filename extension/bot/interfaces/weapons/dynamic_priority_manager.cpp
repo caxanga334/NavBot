@@ -78,6 +78,15 @@ class CBotAggressionFactory : public CDynamicPriorityManager::Factory
 	}
 };
 
+class CEnemyClassnameMatchesFactory : public CDynamicPriorityManager::Factory
+{
+	// Inherited via Factory
+	IDynamicWeaponPriority* Create() const override
+	{
+		return new CDynamicPriotityEnemyClassnameMatches;
+	}
+};
+
 void CDynamicPriorityManager::CreateStandardFactories()
 {
 	CDynamicPriorityManager& manager = CDynamicPriorityManager::GetManager();
@@ -85,4 +94,5 @@ void CDynamicPriorityManager::CreateStandardFactories()
 	manager.RegisterFactory("range", new CEnemyRangeFactory);
 	manager.RegisterFactory("secondary_ammo", new CHasSecondaryAmmoFactory);
 	manager.RegisterFactory("aggression", new CBotAggressionFactory);
+	manager.RegisterFactory("classname", new CEnemyClassnameMatchesFactory);
 }

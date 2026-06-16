@@ -186,3 +186,27 @@ bool dodslib::IsTeamAllowedToCapture(CBaseEntity* captureArea, dayofdefeatsource
 
 	return false;
 }
+
+dayofdefeatsource::DoDClassType dodslib::GetClassTypeFromName(const char* name)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array<std::pair<std::string_view, dayofdefeatsource::DoDClassType>, 6> names = {{
+		{"rifleman"sv, dayofdefeatsource::DoDClassType::DODCLASS_RIFLEMAN},
+		{"assault"sv, dayofdefeatsource::DoDClassType::DODCLASS_ASSAULT},
+		{"support"sv, dayofdefeatsource::DoDClassType::DODCLASS_SUPPORT},
+		{"sniper"sv, dayofdefeatsource::DoDClassType::DODCLASS_SNIPER},
+		{"machinegunner"sv, dayofdefeatsource::DoDClassType::DODCLASS_MACHINEGUNNER},
+		{"rocket"sv, dayofdefeatsource::DoDClassType::DODCLASS_ROCKET},
+	}};
+
+	for (auto& pair : names)
+	{
+		if (ke::StrCaseCmp(pair.first.data(), name) == 0)
+		{
+			return pair.second;
+		}
+	}
+
+	return dayofdefeatsource::DoDClassType::DODCLASS_INVALID;
+}

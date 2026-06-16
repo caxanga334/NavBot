@@ -19,3 +19,17 @@ CBaseBot* CHL1MPMod::AllocateBot(edict_t* edict)
 {
 	return new CHL1MPBot(edict);
 }
+
+class CHL1MPModHelpers : public IModHelpers
+{
+public:
+	bool IsPlayableTeam(int teamNum) const override
+	{
+		return true;
+	}
+};
+
+IModHelpers* CHL1MPMod::AllocModHelpers() const
+{
+	return new CHL1MPModHelpers;
+}

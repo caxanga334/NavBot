@@ -75,13 +75,13 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else
 		{
-			if (bot->GetSensorInterface()->GetTimeSinceVisibleThreat() <= 1.0f)
+			if (bot->GetSensorInterface()->GetTimeSinceVisible(static_cast<int>(tf2lib::GetEnemyTFTeam(bot->GetMyTFTeam()))) <= 1.0f)
 			{
 				bot->GetControlInterface()->AimAt(threat->GetLastKnownPosition(), IPlayerController::LOOK_ALERT, 1.0f, "Looking at threat LKP!");
 			}
 		}
 
-		if (threat->IsVisibleNow() || bot->GetSensorInterface()->GetTimeSinceVisibleThreat() <= SCOPE_IN_TIME)
+		if (threat->IsVisibleNow() || bot->GetSensorInterface()->GetTimeSinceVisible(static_cast<int>(tf2lib::GetEnemyTFTeam(bot->GetMyTFTeam()))) <= SCOPE_IN_TIME)
 		{
 			// scope
 			if (!bot->IsUsingSniperScope())

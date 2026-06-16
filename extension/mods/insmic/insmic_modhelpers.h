@@ -9,6 +9,7 @@ public:
 
 	int GetEntityTeamNumber(CBaseEntity* entity) const override;
 	bool IsCombatCharacter(CBaseEntity* entity) const override;
+	bool IsPlayableTeam(int teamNum) const override;
 };
 
 #endif // !__NAVBOT_INSMIC_MODHELPERS_H_

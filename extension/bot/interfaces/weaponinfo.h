@@ -519,15 +519,7 @@ public:
 	const WeaponEntityProperty& GetDeployedProperty() const { return is_deployed_prop; }
 	bool NeedsToBeDeployedToFire() const { return needs_to_be_deployed; }
 	bool IsAllowedToDodge() const { return !disable_dodge; }
-	bool IsInSelectionRange(const float range) const
-	{
-		if (range >= selection_min_range && range <= selection_max_range)
-		{
-			return true;
-		}
-
-		return false;
-	}
+	bool IsInSelectionRange(const float range) const { return range >= selection_min_range && range <= selection_max_range; }
 	bool HasTag(const std::string& tag) const { return tags.find(tag) != tags.end(); }
 	bool IsTemplateEntry() const { return is_template; }
 	WeaponInfo::WeaponType GetWeaponType() const { return weapon_type; }

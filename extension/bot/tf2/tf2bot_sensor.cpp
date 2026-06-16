@@ -19,23 +19,6 @@ static ConVar* s_cvar_teammates_are_enemies = nullptr;
 
 CTF2BotSensor::CTF2BotSensor(CBaseBot* bot) : ISensor(bot)
 {
-	m_classname_filter.reserve(12);
-
-	// Build the list of entities classname that the sensor system should care about
-	// Entities listed here will be checked and tracked
-	// Note that this is used for tracking entities that are enemies to the bot. There is no need to add health/ammo packs to this list for example
-	AddClassnametoFilter("player");
-	AddClassnametoFilter("obj_dispenser");
-	AddClassnametoFilter("obj_sentrygun");
-	AddClassnametoFilter("obj_teleporter");
-	AddClassnametoFilter("tank_boss");
-	AddClassnametoFilter("tf_merasmus_trick_or_treat_prop");
-	AddClassnametoFilter("merasmus");
-	AddClassnametoFilter("eyeball_boss");
-	AddClassnametoFilter("tf_zombie");
-	AddClassnametoFilter("headless_hatman");
-	AddClassnametoFilter("tf_robot_destruction_robot");
-	AddClassnametoFilter("base_boss");
 }
 
 CTF2BotSensor::~CTF2BotSensor()
@@ -54,19 +37,21 @@ bool CTF2BotSensor::IsIgnored(CBaseEntity* entity) const
 	if (classname == nullptr)
 		return true;
 
+	if (entityprops::IsEffectActiveOnEntity(entity, EF_NODRAW))
+	{
+		return true;
+	}
+
 	if (UtilHelpers::IsPlayerIndex(index))
 	{
 		return IsPlayerIgnoredInternal(entity);
 	}
 
-	if (IsClassnameIgnored(classname))
-		return true;
-
 	if (strncasecmp(classname, "obj_", 4) == 0)
 	{
 		tfentities::HBaseObject baseobject(entity);
 
-		if (baseobject.IsPlacing()) // ignore objects that haven't been built yet
+		if (baseobject.IsPlacing() || baseobject.IsBeingCarried()) // ignore objects that haven't been built yet
 			return true;
 	}
 
@@ -206,20 +191,6 @@ bool CTF2BotSensor::IgnoredConditionsInternal(CBaseEntity* player) const
 	}
 
 	return false;
-}
-
-bool CTF2BotSensor::IsClassnameIgnored(const char* classname) const
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CTF2BotSensor::IsClassnameIgnored", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	static std::string key;
-
-	key.assign(classname);
-
-	// classname filter contains a list of classnames the bot cares about, if not found on the list, ignore it
-	return m_classname_filter.find(key) == m_classname_filter.end();
 }
 
 void CTF2BotSensor::RegisterTF2ConVars()

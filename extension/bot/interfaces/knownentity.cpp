@@ -130,12 +130,6 @@ void CKnownEntity::UpdatePosition()
 		{
 			m_lastknownarea = newArea;
 		}
-
-
-		if (m_visible)
-		{
-			m_timevisible = gpGlobals->curtime;
-		}
 	}
 }
 
@@ -145,12 +139,21 @@ void CKnownEntity::UpdateHeard()
 	m_timesincelastnoise = gpGlobals->curtime;
 }
 
-void CKnownEntity::MarkAsFullyVisible()
+void CKnownEntity::UpdateVisibilityStatus(bool visible)
 {
-	m_timelastvisible = gpGlobals->curtime;
-	m_timevisible = gpGlobals->curtime;
-	m_visible = true;
+	if (visible)
+	{
+		if (!m_visible)
+		{
+			m_timelastvisible = gpGlobals->curtime;
+		}
+
+		m_timevisible = gpGlobals->curtime;
+	}
+
+	m_visible = visible;
 }
+
 
 bool CKnownEntity::IsEntity(edict_t* entity) const
 {

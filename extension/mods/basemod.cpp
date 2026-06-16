@@ -32,6 +32,7 @@ CBaseMod::CBaseMod() :
 	m_playerresourceentity.Term();
 	m_modID = Mods::ModType::MOD_BASE;
 	m_modFolder.assign(smutils->GetGameFolderName());
+	ISensor::s_npcentities.reserve(MAX_EDICTS);
 
 	for (std::size_t i = 0; i < m_teamsharedmemory.max_size(); i++)
 	{
@@ -45,6 +46,7 @@ CBaseMod::~CBaseMod()
 
 void CBaseMod::InvokePostInit()
 {
+	ReadNPCListFromGamedata();
 	OnPostInit(); // propagate to derived classes
 }
 
@@ -94,6 +96,8 @@ void CBaseMod::Update()
 			sbm->Update();
 		}
 	}
+
+	UpdateNPCs();
 }
 
 void CBaseMod::OnMapStart()
@@ -141,6 +145,8 @@ std::optional<int> CBaseMod::GetPlayerResourceEntity()
 
 void CBaseMod::OnRoundStart()
 {
+	ISensor::s_npcentities.clear();
+
 	for (auto& sbm : m_teamsharedmemory)
 	{
 		if (sbm)
@@ -508,6 +514,64 @@ void CBaseMod::InternalFindPlayerResourceEntity()
 
 	gameconfs->CloseGameConfigFile(gamedata);
 }
+
+void CBaseMod::UpdateNPCs()
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CBaseMod::UpdateNPCs", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (m_sensorNPCUpdateTimer.IsElapsed())
+	{
+		m_sensorNPCUpdateTimer.Start(GetModSettings()->GetVisionNPCUpdateRate());
+		ISensor::s_npcentities.clear();
+		NPCCollector functor;
+
+		for (const std::string& classname : m_NPCClassnameList)
+		{
+			UtilHelpers::ForEachEntityOfClassname(classname.c_str(), functor);
+		}
+	}
+}
+
+void CBaseMod::ReadNPCListFromGamedata()
+{
+	SourceMod::IGameConfig* cfg = extension->GetExtensionGameData();
+
+	const char* value = cfg->GetKeyValue("ISensor_NPCList");
+
+	if (value && std::strlen(value) > 3)
+	{
+		std::string strvalue(value);
+		std::stringstream stream(strvalue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			m_NPCClassnameList.emplace_back(token);
+		}
+	}
+
+#ifdef EXT_DEBUG
+	META_CONPRINTF("[CBaseMod]: NPC list contains %zu NPCs classnames. \n", m_NPCClassnameList.size());
+
+	for (const std::string& classname : m_NPCClassnameList)
+	{
+		META_CONPRINTF("- %s\n", classname.c_str());
+	}
+#endif // EXT_DEBUG
+}
+
+bool CBaseMod::NPCCollector::operator()(int index, edict_t* edict, CBaseEntity* entity) const
+{
+	if (entity)
+	{
+		ISensor::s_npcentities.emplace_back(entity);
+	}
+
+	return true;
+}
+
 
 CON_COMMAND(sm_navbot_reload_difficulty_profiles, "Reloads the bot difficulty profile config file.")
 {

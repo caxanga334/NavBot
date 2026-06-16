@@ -65,6 +65,12 @@ public:
 	 * @return Returns true if the player can pick the item, false otherwise.
 	 */
 	virtual bool CanPlayerPickUpItem(CBaseEntity* item, CBaseEntity* player) const;
+	/**
+	 * @brief Check if this is a playable team.
+	 * @param teamNum Team number to check.
+	 * @return True if yes, false otherwise.
+	 */
+	virtual bool IsPlayableTeam(int teamNum) const;
 };
 
 // Global singleton to access the mod helpers interface

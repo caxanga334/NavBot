@@ -285,3 +285,18 @@ bool BMPlayerModelsFileParser::ReadINI_KeyValue(const char* key, const char* val
 
 	return true;
 }
+
+class CBlackMesaModHelpers : public IModHelpers
+{
+public:
+	bool IsPlayableTeam(int teamNum) const override
+	{
+		// BM uses TEAM_UNASSIGNED for FFA DM
+		return teamNum != TEAM_SPECTATOR;
+	}
+};
+
+IModHelpers* CBlackMesaDeathmatchMod::AllocModHelpers() const
+{
+	return new CBlackMesaModHelpers;
+}

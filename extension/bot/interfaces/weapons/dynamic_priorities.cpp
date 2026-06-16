@@ -46,3 +46,29 @@ int CDynamicPriotityBotAggression::GetPriorityValue(const CBaseBot* bot, const C
 {
 	return CalculatePriority(bot->GetDifficultyProfile()->GetAggressiveness());
 }
+
+bool CDynamicPriotityEnemyClassnameMatches::Configure(const std::vector<std::string>& args)
+{
+	if (!CBaseDynamicPriority::Configure(args)) { return false; }
+
+	if (args.size() < 2) { return false; }
+
+	const std::string& arg2 = args[1];
+
+	if (arg2.empty()) { return false; }
+
+	m_classnamepattern = arg2;
+	return true;
+}
+
+int CDynamicPriotityEnemyClassnameMatches::GetPriorityValue(const CBaseBot* bot, const CBotWeapon* weapon, const CKnownEntity* threat) const
+{
+	if (m_classnamepattern.empty()) { return 0; }
+
+	if (threat->IsEntityOfClassname(m_classnamepattern.c_str()))
+	{
+		return GetPriority();
+	}
+
+	return 0;
+}

@@ -259,7 +259,7 @@ bool CBotWeapon::CanUseSecondaryAttack(const CBaseBot* owner) const
 		return false;
 	}
 
-	if (info->GetAttackInfo(botweapons::AttackType::PRIMARY).IsMelee())
+	if (info->GetAttackInfo(botweapons::AttackType::SECONDARY).IsMelee())
 	{
 		return true;
 	}

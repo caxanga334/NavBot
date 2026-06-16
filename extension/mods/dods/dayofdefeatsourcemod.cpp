@@ -35,7 +35,7 @@ void CDODObjectiveResource::Init(CBaseEntity* entity)
 }
 
 CDayOfDefeatSourceMod::CDayOfDefeatSourceMod() :
-	CBaseMod(), m_objectiveres(), m_mapUsesBombs(false), m_random_class_allowed(true)
+	CBaseMod(), m_objectiveres(), m_cvar_force_class(nullptr), m_mapUsesBombs(false), m_random_class_allowed(true)
 {
 	ListenForGameEvent("dod_round_start");
 	ListenForGameEvent("dod_bomb_planted");
@@ -331,6 +331,18 @@ void CDayOfDefeatSourceMod::CollectControlPointsToDefend(dayofdefeatsource::DoDT
 
 dayofdefeatsource::DoDClassType CDayOfDefeatSourceMod::SelectClassForBot(CDoDSBot* bot) const
 {
+	const char* forcedclass = m_cvar_force_class->GetString();
+
+	if (forcedclass && forcedclass[0] != '\0')
+	{
+		dayofdefeatsource::DoDClassType clss = dodslib::GetClassTypeFromName(forcedclass);
+
+		if (clss != dayofdefeatsource::DoDClassType::DODCLASS_INVALID)
+		{
+			return clss;
+		}
+	}
+
 	// TO-DO: add chance config
 	if (m_random_class_allowed && CBaseBot::s_botrng.GetRandomChance(20))
 	{
@@ -776,6 +788,8 @@ void CDayOfDefeatSourceMod::RegisterModCommands()
 		FCVAR_GAMEDLL | FCVAR_CHEAT, dbg_control_point_cmd);
 	manager.RegisterConCommand("sm_dod_navbot_debug_attackdefend_points", "List which control point your current team can attack and defend",
 		FCVAR_GAMEDLL | FCVAR_CHEAT, dbg_attackdefend_points, CServerCommandManager::COMMAND_ONLY_ON_LISTEN_SERVERS);
+
+	m_cvar_force_class = manager.RegisterConVar("sm_dod_navbot_force_class", "Forces bots to always select this class.", "", FCVAR_GAMEDLL);
 }
 
 SourceMod::SMCResult CDoDModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)

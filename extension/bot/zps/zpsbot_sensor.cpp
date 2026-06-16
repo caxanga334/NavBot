@@ -43,7 +43,7 @@ bool CZPSBotSensor::IsEnemy(CBaseEntity* entity) const
 	return me->GetMyZPSTeam() != zpslib::GetEntityZPSTeam(entity);
 }
 
-void CZPSBotSensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
+void CZPSBotSensor::CollectNonPlayerEntities(std::vector<CBaseEntity*>& visibleVec)
 {
 	// no-op for now
 }

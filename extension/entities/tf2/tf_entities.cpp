@@ -182,11 +182,11 @@ TeamFortress2::TFObjectMode tfentities::HBaseObject::GetMode() const
 	return static_cast<TeamFortress2::TFObjectMode>(value);
 }
 
-edict_t* tfentities::HBaseObject::GetBuilder() const
+CBaseEntity* tfentities::HBaseObject::GetBuilder() const
 {
-	int entity = INVALID_EHANDLE_INDEX;
-	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", &entity);
-	return gamehelpers->EdictOfIndex(entity);
+	CBaseEntity* pEntity = nullptr;
+	entprops->GetEntPropEnt(GetIndex(), Prop_Send, "m_hBuilder", nullptr, &pEntity);
+	return pEntity;
 }
 
 int tfentities::HBaseObject::GetBuilderIndex() const

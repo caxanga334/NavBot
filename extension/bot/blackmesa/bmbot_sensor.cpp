@@ -51,53 +51,6 @@ bool CBlackMesaBotSensor::IsEnemy(CBaseEntity* entity) const
 	return true;
 }
 
-void CBlackMesaBotSensor::CollectPlayers(std::vector<edict_t*>& visibleVec)
-{
-#ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("CBlackMesaBotSensor::CollectPlayers", "NavBot");
-#endif // EXT_VPROF_ENABLED
-
-	const int myindex = GetBot<CBaseBot>()->GetIndex();
-
-	for (int i = 1; i <= gpGlobals->maxClients; i++)
-	{
-		// skip self
-		if (i == myindex)
-		{
-			continue;
-		}
-
-		CBaseEntity* entity = gamehelpers->ReferenceToEntity(i);
-
-		if (!entity || modhelpers->IsDead(entity))
-		{
-			continue;
-		}
-		
-		// BM uses TEAM_UNASSIGNED for free for all deathmatch.
-		if (modhelpers->GetEntityTeamNumber(entity) == TEAM_SPECTATOR)
-		{
-			continue;
-		}
-
-		if (!ISensor::IsInPVS(UtilHelpers::getEntityOrigin(entity)))
-		{
-			continue;
-		}
-
-		if (IsAbleToSee(entity))
-		{
-			visibleVec.push_back(UtilHelpers::BaseEntityToEdict(entity));
-		}
-	}
-}
-
-void CBlackMesaBotSensor::CollectNonPlayerEntities(std::vector<edict_t*>& visibleVec)
-{
-	// empty for now
-	return;
-}
-
 void CBlackMesaBotSensor::ReportVisibleEntities()
 {
 	if (CBlackMesaDeathmatchMod::GetBMMod()->IsTeamPlay())
