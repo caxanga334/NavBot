@@ -819,7 +819,7 @@ const CBotWeapon* IInventory::FindBestWeaponAgainstThreat(const CKnownEntity* th
 
 		const CBotWeapon* result = FilterBestWeaponForThreat(bot, threat, best, weapon);
 
-		if (!result) { return false; }
+		if (!result) { return nullptr; }
 
 		best = result;
 	}
