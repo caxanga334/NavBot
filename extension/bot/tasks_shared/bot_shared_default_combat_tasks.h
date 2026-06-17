@@ -382,6 +382,116 @@ public:
 	const char* GetName() const override { return "Combat"; }
 };
 
+// This task is similar to the default combat behavior but focuses on self defense instead of seeking and destroying an enemy
+template <typename BT, typename CT>
+class CBotSharedSelfDefenseTask : public AITask<BT>
+{
+public:
+	static bool IsPossible(BT* bot)
+	{
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+		if (!threat)
+		{
+			return false;
+		}
+
+		if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) == QueryAnswerType::ANSWER_NO)
+		{
+			return false;
+		}
+
+		// too far, don't care.
+		if (bot->GetRangeTo(threat->GetLastKnownPosition()) > bot->GetDifficultyProfile()->GetEnemyFarRange())
+		{
+			return false;
+		}
+
+		if (!bot->GetInventoryInterface()->HasUseableWeaponAgainstThreat(threat))
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	// For stealth behavior, only consider attacking if the threat is looking at the bot's general direction.
+	static bool IsPossibleStealth(BT* bot)
+	{
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+		if (!threat)
+		{
+			return false;
+		}
+
+		if (bot->GetBehaviorInterface()->ShouldSeekAndDestroy(bot, threat) == QueryAnswerType::ANSWER_NO)
+		{
+			return false;
+		}
+
+		// too far, don't care.
+		if (bot->GetRangeTo(threat->GetLastKnownPosition()) > bot->GetDifficultyProfile()->GetEnemyFarRange())
+		{
+			return false;
+		}
+
+		if (!bot->GetInventoryInterface()->HasUseableWeaponAgainstThreat(threat))
+		{
+			return false;
+		}
+
+		if (threat->IsPlayer())
+		{
+			const CBaseExtPlayer* player = threat->GetPlayerInstance();
+
+			// about 84 degrees
+			if (!player->IsLookingTowards(bot->GetEntity(), 0.1f))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	AITask<BT>* InitialNextTask(BT* bot) override
+	{
+		// don't move towards the threat
+		return nullptr;
+	}
+
+	TaskResult<BT> OnTaskUpdate(BT* bot) override
+	{
+		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
+
+		if (!threat)
+		{
+			return AITask<BT>::Done("No threat!");
+		}
+
+		if (!threat->IsVisibleNow())
+		{
+			return AITask<BT>::Done("Threat is no longer visible!");
+		}
+
+		if (bot->GetRangeTo(threat->GetLastKnownPosition()) > bot->GetDifficultyProfile()->GetEnemyFarRange())
+		{
+			return AITask<BT>::Done("Threat is no longer nearby!");
+		}
+
+		return AITask<BT>::Continue();
+	}
+
+	// always attack enemies in this behavior
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	// No, we are already in combat.
+	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	// Always allow weapon selection in this behavior
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
+
+	const char* GetName() const override { return "SelfDefense"; }
+};
 
 
 #endif // !__NAVBOT_BOT_SHARED_DEFAULT_COMBAT_TASKS_H_

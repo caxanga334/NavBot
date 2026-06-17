@@ -72,7 +72,7 @@ void ICombat::Update()
 
 	if (!bot->IsAlive()) { return; }
 
-	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat();
+	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 
 	if (threat)
 	{

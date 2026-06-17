@@ -87,20 +87,46 @@ void ISensor::OnInjured(const CTakeDamageInfo& info)
 {
 	CBaseEntity* subject = info.GetInflictor();
 
-	if (subject && !IsIgnored(subject))
+	// in some games, inflictor might be a combat char (IE: TF2 sentry guns)
+	if (subject && modhelpers->IsCombatCharacter(subject))
 	{
-		// Become aware of anyone who attacks me
-		AddKnownEntity(subject);
+		UpdateKnownEntity(subject);
 	}
-	else
-	{
-		subject = info.GetAttacker();
 
-		if (subject && !IsIgnored(subject))
-		{
-			AddKnownEntity(subject);
-		}
+	subject = info.GetAttacker();
+
+	if (subject && modhelpers->IsCombatCharacter(subject))
+	{
+		UpdateKnownEntity(subject);
 	}
+}
+
+void ISensor::OnSound(CBaseEntity* source, const Vector& position, IEventListener::SoundType type, const float maxRadius)
+{
+	namespace tf = UtilHelpers::textformat;
+
+	CBaseBot* me = GetBot<CBaseBot>();
+
+	// low skill bots are deaf
+	if (me->GetDifficultyProfile()->GetGameAwareness() <= 5) { return; }
+	// can't hear this entity
+	if (!IsAbleToHear(source)) { return; }
+
+	Vector earPos = me->GetEarOrigin();
+	const float range = (earPos - position).Length();
+
+	// can't hear it, outside max range
+	if (range > maxRadius) { return; }
+	if (range > GetMaxHearingRange()) { return; }
+
+	if (me->IsDebugging(BOTDEBUG_SENSOR))
+	{
+		me->DebugPrintToConsole(255, 165, 0, "%s HEARD ENTITY %s <%s> DISTANCE: %g MAX RADIUS: %g \n", 
+			tf::FormatEntity(source), tf::FormatVector(position), range, maxRadius);
+	}
+
+	CKnownEntity* known = AddKnownEntity(source);
+	known->UpdateHeard();
 }
 
 void ISensor::SetupPVS(CBaseBot* bot)
@@ -280,20 +306,20 @@ bool ISensor::IsAbleToSee(const Vector& pos, const bool checkFOV) const
 		return false;
 	}
 
-	if (checkFOV == true)
+	if (checkFOV)
 	{
-		if (IsInFieldOfView(pos) == false)
+		if (!IsInFieldOfView(pos))
 		{
 			return false;
 		}
 	}
 
-	if (IsLineOfSightClear(pos) == false)
+	if (!IsLineOfSightClear(pos))
 	{
 		return false;
 	}
 
-	if (IsPositionObscured(pos) == true)
+	if (IsPositionObscured(pos))
 	{
 		return false;
 	}
@@ -513,16 +539,6 @@ const CKnownEntity* ISensor::GetKnown(CBaseEntity* entity) const
 	return nullptr;
 }
 
-void ISensor::UpdateKnownEntity(CBaseEntity* entity)
-{
-	auto known = AddKnownEntity(entity);
-
-	if (known != nullptr)
-	{
-		known->UpdatePosition();
-	}
-}
-
 void ISensor::SetFieldOfView(const float fov)
 {
 	m_fieldofview = fov;
@@ -729,6 +745,36 @@ const CKnownEntity* ISensor::GetNearestHeardKnown(int teamIndex) const
 	return nearest;
 }
 
+const CKnownEntity* ISensor::GetNearestHeardEnemy() const
+{
+	const CKnownEntity* nearest = nullptr;
+	float smallest = std::numeric_limits<float>::max();
+	Vector origin = GetBot()->GetEarOrigin();
+
+	for (const CKnownEntity& known : m_knownlist)
+	{
+		if (known.IsObsolete()) { continue; }
+
+		if (!IsAwareOf(&known)) { continue; }
+
+		if (!known.WasEverHeard() || known.WasEverFullyVisible()) { continue; }
+
+		CBaseEntity* entity = known.GetEntity();
+
+		if (IsIgnored(entity) || !IsEnemy(entity)) { continue; }
+
+		float dist = (origin - known.GetLastKnownPosition()).LengthSqr();
+
+		if (dist < smallest)
+		{
+			nearest = &known;
+			smallest = dist;
+		}
+	}
+
+	return nearest;
+}
+
 const CKnownEntity* ISensor::GetNearestUnseenKnownEntity() const
 {
 	const CKnownEntity* selected = nullptr;
@@ -897,7 +943,7 @@ void ISensor::UpdateVisibleEntities(const std::vector<CBaseEntity*>& potentially
 		if (knownEntities.find(entity) == knownEntities.end())
 		{
 			// first time seeing this entity
-			CKnownEntity* known = this->AddKnownEntity(entity);
+			CKnownEntity* known = this->FastAddKnownEntity(entity);
 			known->UpdatePosition();
 			known->UpdateVisibilityStatus(true);
 			// OnSight is called after reaction time has passed

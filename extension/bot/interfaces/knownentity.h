@@ -12,8 +12,6 @@ class CBaseExtPlayer;
 class CKnownEntity
 {
 public:
-	CKnownEntity(edict_t* entity);
-	CKnownEntity(int entity);
 	CKnownEntity(CBaseEntity* entity);
 
 	~CKnownEntity();
@@ -61,10 +59,6 @@ public:
 	void UpdateHeard();
 	// Marks this entity as fully visible
 	void UpdateVisibilityStatus(bool visible);
-	// true if the given entity is stored on this handle
-	bool IsEntity(edict_t* entity) const;
-	// true if the given entity is stored on this handle
-	bool IsEntity(const int entity) const;
 	// true if the given entity is stored on this handle
 	bool IsEntity(CBaseEntity* entity) const { return m_handle.Get() == entity; }
 

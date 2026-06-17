@@ -17,6 +17,10 @@
 #include "tf2bot_medic_crossbow_heal_task.h"
 #include "tf2bot_medic_heal_task.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef max
 #undef min
 #undef clamp
@@ -55,6 +59,10 @@ TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2B
 
 TaskResult<CTF2Bot> CTF2BotMedicHealTask::OnTaskUpdate(CTF2Bot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotMedicHealTask::OnTaskUpdate", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	UpdateFollowTarget(bot);
 	UpdateHealTarget(bot);
 
@@ -326,6 +334,10 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMedicHealTask::OnVoiceCommand(CTF2Bot* b
 
 void CTF2BotMedicHealTask::UpdateFollowTarget(CTF2Bot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotMedicHealTask::UpdateFollowTarget", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* follow = m_followTarget.Get();
 
 	if (follow != nullptr)
@@ -385,6 +397,10 @@ void CTF2BotMedicHealTask::UpdateFollowTarget(CTF2Bot* bot)
 
 void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotMedicHealTask::UpdateHealTarget", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* heal = m_healTarget.Get();
 
 	if (heal && UtilHelpers::IsEntityAlive(heal))
@@ -423,6 +439,10 @@ void CTF2BotMedicHealTask::UpdateHealTarget(CTF2Bot* bot)
 
 void CTF2BotMedicHealTask::UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotMedicHealTask::UpdateMovePosition", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CBaseEntity* pPatient = m_healTarget.Get();
 	tfentities::HTFBaseEntity patient(pPatient);
 	const CTF2BotWeapon* myweapon = bot->GetInventoryInterface()->GetActiveTFWeapon();
@@ -509,6 +529,10 @@ bool CTF2BotMedicHealTask::ScanForReviveMarkers(const Vector& center, CBaseEntit
 
 bool CTF2BotMedicHealTask::IsPatientStable(CTF2Bot* bot, CBaseEntity* patient)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotMedicHealTask::IsPatientStable", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_Ubercharged) || tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_Kritzkrieged) ||
 		tf2lib::IsPlayerInCondition(bot->GetEntity(), TeamFortress2::TFCond_MegaHeal))
 	{

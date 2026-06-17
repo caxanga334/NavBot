@@ -21,6 +21,7 @@ public:
 	~ISensor() override;
 
 	void OnInjured(const CTakeDamageInfo& info) override;
+	void OnSound(CBaseEntity* source, const Vector& position, IEventListener::SoundType type, const float maxRadius) override;
 
 	static inline std::array<byte, MAX_MAP_CLUSTERS / 8> s_pvs{};
 	static constexpr float UPDATE_SHARED_MEMORY_FREQ = 2.0f; // frequency of shared memory updates
@@ -80,7 +81,22 @@ public:
 	// Gets the Known entity of the given entity or NULL if not known by the bot
 	const CKnownEntity* GetKnown(CBaseEntity* entity) const;
 	// Updates the position of a known entity or adds it to the list if not known
-	void UpdateKnownEntity(CBaseEntity* entity);
+	void UpdateKnownEntity(CBaseEntity* entity)
+	{
+		if (!entity) { return; }
+
+		for (CKnownEntity& known : m_knownlist)
+		{
+			if (known.IsEntity(entity))
+			{
+				known.UpdatePosition();
+				return;
+			}
+		}
+
+		m_knownlist.emplace_back(entity);
+		// no need to call UpdatePosition, it's done in the constructor
+	}
 	/**
 	 * @brief Marks the last known position of an entity as investigated (seen).
 	 * @param entity Entity to update the status of.
@@ -137,6 +153,8 @@ public:
 	int GetKnownCount(const int teamindex = -1, const bool onlyvisible = false, const float rangelimit = -1.0f);
 	const CKnownEntity* GetNearestKnown(const int teamindex);
 	const CKnownEntity* GetNearestHeardKnown(int teamIndex) const;
+	// Returns a known entity of an enemy the bot heard but never saw
+	const CKnownEntity* GetNearestHeardEnemy() const;
 	/**
 	 * @brief Gets the nearest (via euclidean distance) known entity instance that the bot hasn't seen.
 	 * This could be an instance heard or shared to the bot.
@@ -333,6 +351,13 @@ protected:
 		{
 			m_notVisibleTimer[teamNum].Start();
 		}
+	}
+
+	// Faster version of AddKnownEntity. (Does not check for duplicates).
+	CKnownEntity* FastAddKnownEntity(CBaseEntity* entity)
+	{
+		CKnownEntity& known = m_knownlist.emplace_back(entity);
+		return &known;
 	}
 
 private:

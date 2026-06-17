@@ -14,27 +14,9 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
-CKnownEntity::CKnownEntity(edict_t* entity) :
-	m_baseent(entity)
-{
-	gamehelpers->SetHandleEntity(m_handle, entity);
-	Init();
-	UpdatePosition();
-}
-
-CKnownEntity::CKnownEntity(int entity) :
-	m_baseent(gamehelpers->EdictOfIndex(entity))
-{
-	auto edict = gamehelpers->EdictOfIndex(entity);
-	gamehelpers->SetHandleEntity(m_handle, edict);
-	Init();
-	UpdatePosition();
-}
-
 CKnownEntity::CKnownEntity(CBaseEntity* entity) :
-	m_baseent(entity)
+	m_baseent(entity), m_handle(entity)
 {
-	m_handle.Set(entity);
 	Init();
 	UpdatePosition();
 }
@@ -111,10 +93,9 @@ void CKnownEntity::UpdatePosition()
 
 	if (pEntity != nullptr)
 	{
-		entities::HBaseEntity be(pEntity);
 		m_timelastinfo = gpGlobals->curtime;
 		m_lastknownposition = UtilHelpers::getEntityOrigin(pEntity);
-		m_lastknownvelocity = be.GetAbsVelocity();
+		entityprops::GetEntityAbsVelocity(pEntity, m_lastknownvelocity);
 		CNavArea* newArea = nullptr;
 
 		if (m_player)
@@ -152,18 +133,6 @@ void CKnownEntity::UpdateVisibilityStatus(bool visible)
 	}
 
 	m_visible = visible;
-}
-
-
-bool CKnownEntity::IsEntity(edict_t* entity) const
-{
-	edict_t* me = UtilHelpers::GetEdictFromCBaseHandle(m_handle);
-	return me == entity;
-}
-
-bool CKnownEntity::IsEntity(const int entity) const
-{
-	return entity == m_handle.GetEntryIndex();
 }
 
 void CKnownEntity::DebugDraw(const float duration) const

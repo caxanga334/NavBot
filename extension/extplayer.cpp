@@ -165,6 +165,13 @@ const Vector CBaseExtPlayer::GetEyeOrigin() const
 	return ear;
 }
 
+const Vector CBaseExtPlayer::GetEarOrigin() const
+{
+	Vector ear;
+	gameclients->ClientEarPosition(m_edict, &ear);
+	return ear;
+}
+
 const QAngle& CBaseExtPlayer::GetEyeAngles() const
 {
 	// NOTE: Viewangles are measured *relative* to the parent's coordinate system

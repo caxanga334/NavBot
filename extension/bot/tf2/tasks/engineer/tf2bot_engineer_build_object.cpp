@@ -12,6 +12,10 @@
 #include "tf2bot_engineer_speedup_object.h"
 #include "tf2bot_engineer_build_object.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CTF2BotEngineerBuildObjectTask::CTF2BotEngineerBuildObjectTask(eObjectType type, const CTFWaypoint* waypoint)
 {
 	m_type = type;
@@ -122,18 +126,23 @@ TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskStart(CTF2Bot* bot, AI
 
 TaskResult<CTF2Bot> CTF2BotEngineerBuildObjectTask::OnTaskUpdate(CTF2Bot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotEngineerBuildObjectTask::OnTaskUpdate", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
 
 	if (threat)
 	{
-		// random chance to attack the enemy based on aggression level
-		if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
+		if (CBotSharedSelfDefenseTask<CTF2Bot, CTF2BotPathCost>::IsPossibleStealth(bot))
 		{
-			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible threat!");
+			return PauseFor(new CBotSharedSelfDefenseTask<CTF2Bot, CTF2BotPathCost>(), "Defending myself from visible threat!");
 		}
 
+#if 0
 		// else retreat
 		return PauseFor(new CBotSharedTakeCoverFromSpotTask<CTF2Bot, CTF2BotPathCost>(bot, threat->GetLastKnownPosition(), 1024.0f, true, true, 8192.0f), "Taking cover from threat!");
+#endif // 0
 	}
 
 	switch (m_type)

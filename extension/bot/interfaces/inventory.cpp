@@ -281,67 +281,14 @@ bool IInventory::SelectBestWeaponForThreat(const CKnownEntity* threat, WeaponInf
 
 	m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
 
-	CBaseBot* bot = GetBot();
-	const float rangeToThreat = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity()));
-	const CBotWeapon* best = nullptr;
-	const DifficultyProfile* profile = bot->GetDifficultyProfile();
-	const bool isunderwater = bot->IsUnderWater();
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const CBotWeapon* weapon = FindBestWeaponAgainstThreat(threat, typeOnly);
 
-	for (auto& weaponptr : m_weapons)
+	if (weapon != nullptr)
 	{
-		const CBotWeapon* weapon = weaponptr.get();
-		const WeaponInfo* info = weaponptr->GetWeaponInfo();
-
-		if (!IsWeaponUseableForThreat(bot, threat, rangeToThreat, weapon, info, isunderwater))
+		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, weapon) != ANSWER_NO)
 		{
-			continue;
-		}
-
-		// Using type filter
-		if (typeOnly != WeaponInfo::WeaponType::MAX_WEAPON_TYPES)
-		{
-			if (info->GetWeaponType() != typeOnly)
-			{
-				continue;
-			}
-		}
-		else
-		{
-			// Default filter
-			if (!info->IsCombatWeapon())
-			{
-				continue;
-			}
-		}
-
-		// Too stupid to use it
-		if (info->GetMinRequiredSkill() > profile->GetWeaponSkill())
-		{
-			continue;
-		}
-
-		// assign the first weapon
-		if (best == nullptr)
-		{
-			best = weapon;
-			continue;
-		}
-
-		// sanity check
-		if (best == weapon) { continue; }
-
-		const CBotWeapon* result = FilterBestWeaponForThreat(bot, threat, best, weapon);
-
-		if (!result) { return false; }
-
-		best = result;
-	}
-
-	if (best != nullptr)
-	{
-		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
-		{
-			return EquipWeapon(best);
+			return EquipWeapon(weapon);
 		}
 	}
 
@@ -813,6 +760,71 @@ const CBotWeapon* IInventory::FilterSelectWeaponWithHighestStaticPriority(const 
 	}
 
 	return second;
+}
+
+const CBotWeapon* IInventory::FindBestWeaponAgainstThreat(const CKnownEntity* threat, WeaponInfo::WeaponType typeOnly) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IInventory::FindBestWeaponAgainstThreat", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CBaseBot* bot = GetBot();
+	const float rangeToThreat = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity()));
+	const CBotWeapon* best = nullptr;
+	const DifficultyProfile* profile = bot->GetDifficultyProfile();
+	const bool isunderwater = bot->IsUnderWater();
+
+	for (auto& weaponptr : m_weapons)
+	{
+		const CBotWeapon* weapon = weaponptr.get();
+		const WeaponInfo* info = weaponptr->GetWeaponInfo();
+
+		if (!IsWeaponUseableForThreat(bot, threat, rangeToThreat, weapon, info, isunderwater))
+		{
+			continue;
+		}
+
+		// Using type filter
+		if (typeOnly != WeaponInfo::WeaponType::MAX_WEAPON_TYPES)
+		{
+			if (info->GetWeaponType() != typeOnly)
+			{
+				continue;
+			}
+		}
+		else
+		{
+			// Default filter
+			if (!info->IsCombatWeapon())
+			{
+				continue;
+			}
+		}
+
+		// Too stupid to use it
+		if (info->GetMinRequiredSkill() > profile->GetWeaponSkill())
+		{
+			continue;
+		}
+
+		// assign the first weapon
+		if (best == nullptr)
+		{
+			best = weapon;
+			continue;
+		}
+
+		// sanity check
+		if (best == weapon) { continue; }
+
+		const CBotWeapon* result = FilterBestWeaponForThreat(bot, threat, best, weapon);
+
+		if (!result) { return false; }
+
+		best = result;
+	}
+
+	return best;
 }
 
 void IInventory::RefreshInventory::operator()(CBaseBot* bot)

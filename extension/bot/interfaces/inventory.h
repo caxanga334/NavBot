@@ -339,6 +339,11 @@ public:
 	 */
 	const CBotWeapon* GetBestLowAmmoWeapon() const;
 
+	bool HasUseableWeaponAgainstThreat(const CKnownEntity* threat) const
+	{
+		return FindBestWeaponAgainstThreat(threat, WeaponInfo::WeaponType::MAX_WEAPON_TYPES) != nullptr;
+	}
+
 protected:
 	// deletes invalid weapons from the weapon storage vector
 	void RemoveInvalidWeapons();
@@ -363,6 +368,8 @@ protected:
 	 * @param weapon Weapon the bot just selected.
 	 */
 	virtual void OnBotWeaponEquipped(const CBotWeapon* weapon) const {}
+
+	const CBotWeapon* FindBestWeaponAgainstThreat(const CKnownEntity* threat, WeaponInfo::WeaponType typeOnly) const;
 private:
 	std::vector<std::unique_ptr<CBotWeapon>> m_weapons;
 	mutable CBotWeapon* m_cachedActiveWeapon;

@@ -57,6 +57,7 @@ public:
 	const Vector GetAbsOrigin() const;
 	const QAngle GetAbsAngles() const;
 	const Vector GetEyeOrigin() const;
+	const Vector GetEarOrigin() const;
 	const QAngle& GetEyeAngles() const;
 	const QAngle& GetLocalEyeAngles() const;
 	const Vector GetMins() const;

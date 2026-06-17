@@ -18,6 +18,10 @@
 #include "tf2bot_engineer_nest.h"
 #include "tf2bot_engineer_main.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #undef clamp
 #undef max
 #undef min
@@ -33,6 +37,10 @@ AITask<CTF2Bot>* CTF2BotEngineerMainTask::InitialNextTask(CTF2Bot* bot)
 
 TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotEngineerMainTask::OnTaskUpdate", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	if (m_checkFlagTimer.IsElapsed())
 	{
 		m_checkFlagTimer.Start(2.0f);
@@ -46,11 +54,13 @@ TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 			{
 				return PauseFor(new CTF2BotCTFDeliverFlagTask, "Delivering the flag!");
 			}
-			else if (gm == TeamFortress2::GameModeType::GM_SD)
+
+			if (gm == TeamFortress2::GameModeType::GM_SD)
 			{
 				return PauseFor(new CTF2BotSDDeliverFlag, "Delivering the australium!");
 			}
-			else if (gm == TeamFortress2::GameModeType::GM_PD)
+
+			if (gm == TeamFortress2::GameModeType::GM_PD)
 			{
 				CBaseEntity* capzone = nullptr;
 
@@ -88,17 +98,13 @@ TaskResult<CTF2Bot> CTF2BotEngineerMainTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			return PauseFor(new CTF2BotEngineerSentryCombatTask(), "Combat with visible enemy!");
 		}
-		else
+
+		if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
 		{
-			if (CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
-			{
-				return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible threat!");
-			}
-			else
-			{
-				return PauseFor(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference::FURTHEST, 3.0f, 90.0f, 512.0f, 4096.0f), "Retreating from visible threat!");
-			}
+			return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CTF2Bot, CTF2BotPathCost>(), "Attacking visible threat!");
 		}
+			
+		return PauseFor(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, botsharedutils::SelectRetreatArea::RetreatAreaPreference::FURTHEST, 3.0f, 90.0f, 512.0f, 4096.0f), "Retreating from visible threat!");
 	}
 
 	if (m_repairCheckTimer.IsElapsed())

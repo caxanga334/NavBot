@@ -101,10 +101,13 @@ void CFuncBreakableNavBlocker::Init(CBaseEntity* breakable)
 
 	CBaseEntity* filter = entityprops::GetEntityDamageFilter(breakable);
 
-	if (CheckFilter(filter))
+	if (filter)
 	{
-		m_type = BreakableType::TYPE_FILTER;
-		return;
+		if (CheckFilter(filter))
+		{
+			m_type = BreakableType::TYPE_FILTER;
+			return;
+		}
 	}
 
 	if (!mod->IsEntityDamageable(breakable, mod->GetModSettings()->GetBreakableMaxHealth()))
