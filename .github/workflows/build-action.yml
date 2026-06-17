@@ -30,7 +30,7 @@ jobs:
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo,swarm'
-            os_ambuild_params: '--breakpad-upload'
+            os_ambuild_params: ''
 
           - os: linux
             os_version: ubuntu-latest
