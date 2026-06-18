@@ -55,13 +55,6 @@ def CopyFilesGlob(src, dest, pattern):
   for f in files:
     builder.AddCopy(str(f), dest_entry)
 
-# plugin sources
-CopyFiles('scripting', 'addons/sourcemod/scripting',
-  [ 
-    'navbot_admin.sp',
-  ]
-)
-
 # Include files 
 CopyFiles('scripting/include', 'addons/sourcemod/scripting/include',
   [ 
