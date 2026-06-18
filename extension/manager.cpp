@@ -47,6 +47,8 @@ CExtManager::CExtManager()
 	m_prepluginbotaddforward = nullptr;
 	m_postpluginbotaddforward = nullptr;
 	m_prebotupdateforward = nullptr;
+	m_onnavmeshloadedforward = nullptr;
+	m_onnavmeshdestroyedforward = nullptr;
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -60,6 +62,8 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_prepluginbotaddforward);
 	forwards->ReleaseForward(m_postpluginbotaddforward);
 	forwards->ReleaseForward(m_prebotupdateforward);
+	forwards->ReleaseForward(m_onnavmeshloadedforward);
+	forwards->ReleaseForward(m_onnavmeshdestroyedforward);
 #endif // !NO_SOURCEPAWN_API
 
 	// assign NULL to the smart ptr to detele the existing instance
@@ -74,6 +78,8 @@ void CExtManager::OnAllLoaded()
 	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prebotupdateforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_onnavmeshloadedforward = forwards->CreateForward("OnNavBotNavMeshLoaded", ET_Ignore, 0, nullptr);
+	m_onnavmeshdestroyedforward = forwards->CreateForward("OnNavBotNavMeshDestroyed", ET_Ignore, 0, nullptr);
 #endif // !NO_SOURCEPAWN_API
 
 	CDynamicPriorityManager::CreateStandardFactories();

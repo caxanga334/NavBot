@@ -125,22 +125,6 @@ static cell_t Native_AreBotsSupported(IPluginContext* context, const cell_t* par
 
 namespace natives
 {
-	void setup(std::vector<sp_nativeinfo_t>& nv)
-	{
-		sp_nativeinfo_t list[] = {
-			{"NavBotManager.IsNavBot", IsNavBot},
-			{"FireNavBotSoundEvent", FireNavBotSoundEvent},
-			{"NavBotManager.GetNavBotCount", GetNavBotCount},
-			{"NavBotManager.AreBotsSupported", Native_AreBotsSupported},
-			{"NavBotManager.GetBasePlayer", GetBasePlayerByIndex},
-			{"BuildPathSimple", BuildPathSimple},
-			{"GetPathSegment", GetPathSegment},
-			{"GetPathSegmentCount", GetPathSegmentCount},
-		};
-
-		nv.insert(nv.end(), std::begin(list), std::end(list));
-	}
-
 	cell_t IsNavBot(IPluginContext* context, const cell_t* params)
 	{
 		int client = params[1];
@@ -342,5 +326,28 @@ namespace natives
 		}
 
 		return client;
+	}
+
+	static cell_t Native_ModUsesWorkshopMaps(IPluginContext* context, const cell_t* params)
+	{
+		return pawnutils::ReturnBool(CExtManager::ModUsesWorkshopMaps());
+	}
+
+	void setup(std::vector<sp_nativeinfo_t>& nv)
+	{
+		sp_nativeinfo_t list[] = {
+			{"NavBotManager.IsNavBot", IsNavBot},
+			{"FireNavBotSoundEvent", FireNavBotSoundEvent},
+			{"NavBotManager.GetNavBotCount", GetNavBotCount},
+			{"NavBotManager.AreBotsSupported", Native_AreBotsSupported},
+			{"NavBotManager.GetBasePlayer", GetBasePlayerByIndex},
+			{"NavBotManager.NotifyRoundRestart", NotifyRoundRestart},
+			{"NavBotManager.ModUsesWorkshopMaps", Native_ModUsesWorkshopMaps},
+			{"BuildPathSimple", BuildPathSimple},
+			{"GetPathSegment", GetPathSegment},
+			{"GetPathSegmentCount", GetPathSegmentCount},
+		};
+
+		nv.insert(nv.end(), std::begin(list), std::end(list));
 	}
 }

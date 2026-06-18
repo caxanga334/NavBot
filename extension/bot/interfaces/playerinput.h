@@ -192,6 +192,8 @@ public:
 		return ButtonID::BUTTON_INVALID;
 	}
 
+	static bool IsValidButtonID(int id) { return id > static_cast<int>(ButtonID::BUTTON_INVALID) && id < static_cast<int>(ButtonID::MAX_BUTTON_ID); }
+
 	/**
 	 * @brief Presses a button by their ID.
 	 * @param id ID of the button to press.
@@ -304,6 +306,124 @@ public:
 		case ButtonID::BUTTON_MODCUSTOM4:
 		{
 			PressModCustom4Button(duration);
+			break;
+		}
+		default:
+			return;
+		}
+	}
+
+	/**
+	 * @brief Releases a button by their ID.
+	 * @param id Button ID to release.
+	 */
+	void ReleaseButtonByID(const ButtonID id)
+	{
+		switch (id)
+		{
+		case ButtonID::BUTTON_ATTACKPRIM:
+		{
+			ReleaseAttackButton();
+			break;
+		}
+		case ButtonID::BUTTON_ATTACKSEC:
+		{
+			ReleaseSecondaryAttackButton();
+			break;
+		}
+		case ButtonID::BUTTON_ATTACKSPECIAL:
+		{
+			ReleaseSpecialAttackButton();
+			break;
+		}
+		case ButtonID::BUTTON_JUMP:
+		{
+			ReleaseJumpButton();
+			break;
+		}
+		case ButtonID::BUTTON_CROUCH:
+		{
+			ReleaseCrouchButton();
+			break;
+		}
+		case ButtonID::BUTTON_FORWARDS:
+		{
+			ReleaseForwardButton();
+			break;
+		}
+		case ButtonID::BUTTON_BACKWARDS:
+		{
+			ReleaseBackwardsButton();
+			break;
+		}
+		case ButtonID::BUTTON_USE:
+		{
+			ReleaseUseButton();
+			break;
+		}
+		case ButtonID::BUTTON_MOVELEFT:
+		{
+			ReleaseMoveLeftButton();
+			break;
+		}
+		case ButtonID::BUTTON_MOVERIGHT:
+		{
+			ReleaseMoveRightButton();
+			break;
+		}
+		case ButtonID::BUTTON_MOVEUP:
+		{
+			ReleaseMoveUpButton();
+			break;
+		}
+		case ButtonID::BUTTON_MOVEDOWN:
+		{
+			ReleaseMoveDownButton();
+			break;
+		}
+		case ButtonID::BUTTON_RELOAD:
+		{
+			ReleaseReloadButton();
+			break;
+		}
+		case ButtonID::BUTTON_ALT1:
+		{
+			ReleaseAlt1Button();
+			break;
+		}
+		case ButtonID::BUTTON_RUN:
+		{
+			ReleaseRunButton();
+			break;
+		}
+		case ButtonID::BUTTON_SPEED:
+		{
+			ReleaseSpeedButton();
+			break;
+		}
+		case ButtonID::BUTTON_WALK:
+		{
+			ReleaseWalkButton();
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM1:
+		{
+			ReleaseModCustom1Button();
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM2:
+		{
+			ReleaseModCustom2Button();
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM3:
+		{
+			ReleaseModCustom3Button();
+			break;
+		}
+		case ButtonID::BUTTON_MODCUSTOM4:
+		{
+			ReleaseModCustom4Button();
 			break;
 		}
 		default:

@@ -55,7 +55,8 @@ ConVar sm_nav_generate_fencetops( "sm_nav_generate_fencetops", "1", FCVAR_CHEAT,
 ConVar sm_nav_generate_fixup_jump_areas( "sm_nav_generate_fixup_jump_areas", "1", FCVAR_CHEAT, "Convert obsolete jump areas into 2-way connections" );
 ConVar sm_nav_generate_incremental_range( "sm_nav_generate_incremental_range", "2000", FCVAR_CHEAT );
 ConVar sm_nav_generate_incremental_tolerance( "sm_nav_generate_incremental_tolerance", "0", FCVAR_CHEAT, "Z tolerance for adding new nav areas." );
-ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "50", FCVAR_CHEAT, "Max area size created in nav generation" );
+// Original valve nav mesh uses 50. TF2C reduced to 10. Never asked why but it does look better with 10.
+ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "10", FCVAR_CHEAT, "Max area size created in nav generation" );
 static ConVar sm_nav_prefer_reload("sm_nav_prefer_reload", "1", FCVAR_GAMEDLL, "(Experimental) If enabled, reloads the navigation mesh instead of reloading the entire map.");
 
 // Common bounding box for traces

@@ -99,6 +99,45 @@ static cell_t Native_NavMeshGetNavAreaByID(IPluginContext* context, const cell_t
 	return pawnutils::ReturnPointerToPawn(context, params, area);
 }
 
+static cell_t Native_NavMeshGetLastLoadResult(IPluginContext* context, const cell_t* params)
+{
+	return static_cast<cell_t>(TheNavMesh->GetLastLoadAttemptResult());
+}
+
+static void FrameAction_NavMeshGenerate(void* data)
+{
+	TheNavMesh->BeginGeneration(false);
+}
+
+static cell_t Native_NavMeshGenerate(IPluginContext* context, const cell_t* params)
+{
+	if (!TheNavMesh->IsLoaded())
+	{
+		// Avoid potential issues with SlowScriptTimeout
+		smutils->AddFrameAction(FrameAction_NavMeshGenerate, nullptr);
+	}
+
+	return 0;
+}
+
+static cell_t Native_NavMeshLoad(IPluginContext* context, const cell_t* params)
+{
+	if (!TheNavMesh->IsLoaded())
+	{
+		TheNavMesh->DoLoad();
+	}
+
+	return 0;
+}
+
+static cell_t Native_NavMeshGetFullPathToNavMeshFile(IPluginContext* context, const cell_t* params)
+{
+	auto path = TheNavMesh->GetFullPathToNavMeshFile(pawnutils::ReadBool(params, 1));
+	auto str = path.string();
+	context->StringToLocal(params[2], static_cast<size_t>(params[3]), str.c_str());
+	return 0;
+}
+
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
@@ -108,6 +147,10 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.GetAuthor", Native_NavMeshGetAuthor},
 		{"NavBotNavMesh.GetEditorCount", Native_NavMeshGetEditorCount},
 		{"NavBotNavMesh.GetEditor", Native_NavMeshGetEditor},
+		{"NavBotNavMesh.GetLastLoadResult", Native_NavMeshGetLastLoadResult},
+		{"NavBotNavMesh.Generate", Native_NavMeshGenerate},
+		{"NavBotNavMesh.Load", Native_NavMeshLoad},
+		{"NavBotNavMesh.GetFullPathToNavMeshFile", Native_NavMeshGetFullPathToNavMeshFile},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));

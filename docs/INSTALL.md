@@ -81,3 +81,6 @@ More notes:
 - Exact file location may change depending if the game/mod has x64 support or not.
 - On x64, Metamod: Source 2.0.x build 1375 or greater is required for correct engine detection.
 
+# Additional Plugins
+
+NavBot can be extended by plugins. See the [official addon plugins](https://github.com/caxanga334/navbot-plugins).    

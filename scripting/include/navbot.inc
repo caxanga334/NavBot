@@ -62,6 +62,16 @@ forward void OnNavBotAdded(int bot);
 forward void OnPreNavBotUpdate(NavBot bot);
 
 /**
+ * Called when NavBot's navigation mesh is loaded.
+ */
+forward void OnNavBotNavMeshLoaded();
+
+/**
+ * Called when NavBot's navigation mesh is destroyed (unloaded).
+ */
+forward void OnNavBotNavMeshDestroyed();
+
+/**
  * Builds a path from the start position to the end position.
  * 
  * @param vStart				Path start position.
@@ -120,6 +130,8 @@ methodmap NavBotManager
 	public static native bool AreBotsSupported();
 	// Runs the round restart routines.
 	public static native void NotifyRoundRestart();
+	// Returns true if the current mod uses workshop maps.
+	public static native bool ModUsesWorkshopMaps();
 }
 
 /**
@@ -160,6 +172,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotManager.GetBasePlayer");
 	MarkNativeAsOptional("NavBotManager.AreBotsSupported");
 	MarkNativeAsOptional("NavBotManager.NotifyRoundRestart");
+	MarkNativeAsOptional("NavBotManager.ModUsesWorkshopMaps");
 
 	/* Base Player */
 	MarkNativeAsOptional("NavBotBasePlayer.IsNavBot.get");
@@ -180,12 +193,19 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavMesh.GetAuthor");
 	MarkNativeAsOptional("NavBotNavMesh.GetEditorCount");
 	MarkNativeAsOptional("NavBotNavMesh.GetEditor");
+	MarkNativeAsOptional("NavBotNavMesh.GetLastLoadResult");
+	MarkNativeAsOptional("NavBotNavMesh.Generate");
+	MarkNativeAsOptional("NavBotNavMesh.Load");
+	MarkNativeAsOptional("NavBotNavMesh.GetFullPathToNavMeshFile");
 
 	/* Mod Interface */
 	MarkNativeAsOptional("NavBotModInterface.GetModName");
 	MarkNativeAsOptional("NavBotModInterface.ParseModSettingsFile");
 	MarkNativeAsOptional("NavBotModInterface.ParseDifficultyProfileFile");
 	MarkNativeAsOptional("NavBotModInterface.ParseWeaponConfigFile");
+	MarkNativeAsOptional("NavBotModInterface.GetCurrentMapName");
+	MarkNativeAsOptional("NavBotModInterface.GetModFolder");
+	MarkNativeAsOptional("NavBotModInterface.GetFallbackModFolder");
 
 	/* Navigator */
 	MarkNativeAsOptional("MeshNavigator.MeshNavigator");
@@ -245,7 +265,8 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.AimAtEntity");
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.AimAtPos");
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.IsAimOnTarget");
-
+	MarkNativeAsOptional("NavBotPlayerControllerInterface.PressButtonByID");
+	MarkNativeAsOptional("NavBotPlayerControllerInterface.ReleaseButtonByID");
 }
 
 #endif

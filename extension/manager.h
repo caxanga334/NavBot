@@ -200,6 +200,8 @@ public:
 
 #ifndef NO_SOURCEPAWN_API
 	void SPAPI_CallPreBotUpdate(int bot);
+	void SMAPI_OnNavMeshLoaded() { m_onnavmeshloadedforward->Execute(nullptr); }
+	void SMAPI_OnNavMeshDestroyed() { m_onnavmeshdestroyedforward->Execute(nullptr); }
 #endif // !NO_SOURCEPAWN_API
 
 private:
@@ -213,6 +215,8 @@ private:
 	SourceMod::IForward* m_prepluginbotaddforward; // SM Forward, on pre plugin bot add
 	SourceMod::IForward* m_postpluginbotaddforward; // SM Forward, post bot add (plugin bots)
 	SourceMod::IForward* m_prebotupdateforward;
+	SourceMod::IForward* m_onnavmeshloadedforward;
+	SourceMod::IForward* m_onnavmeshdestroyedforward;
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use

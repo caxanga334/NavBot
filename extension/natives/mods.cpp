@@ -61,6 +61,45 @@ static cell_t Native_ParseWeaponConfigFile(IPluginContext* context, const cell_t
 	return error == SourceMod::SMCError::SMCError_Okay ? 1 : 0;
 }
 
+static cell_t Native_GetCurrentMapName(IPluginContext* context, const cell_t* params)
+{
+	if (params[1] < static_cast<cell_t>(Mods::MapNameType::MAPNAME_RAW) || params[1] > static_cast<cell_t>(Mods::MapNameType::MAPNAME_UNIQUE))
+	{
+		context->ReportError("Invalid map name type!");
+		return 0;
+	}
+
+	Mods::MapNameType type = static_cast<Mods::MapNameType>(params[1]);
+	std::string mapname = extmanager->GetMod()->GetCurrentMapName(type);
+	context->StringToLocal(params[2], static_cast<size_t>(params[3]), mapname.c_str());
+	return 0;
+}
+
+static cell_t Native_GetModFolder(IPluginContext* context, const cell_t* params)
+{
+	const std::string& folder = extmanager->GetMod()->GetModFolder();
+	context->StringToLocal(params[1], static_cast<size_t>(params[2]), folder.c_str());
+	return 0;
+}
+
+static cell_t Native_GetFallbackModFolder(IPluginContext* context, const cell_t* params)
+{
+	const std::string& folder = extmanager->GetMod()->GetModFallbackFolder();
+	
+	if (folder.empty())
+	{
+		char buffer[32];
+		ke::SafeSprintf(buffer, sizeof(buffer), "STOP_IGNORING_RETVALS");
+		context->StringToLocal(params[1], static_cast<size_t>(params[2]), buffer);
+	}
+	else
+	{
+		context->StringToLocal(params[1], static_cast<size_t>(params[2]), folder.c_str());
+	}
+
+	return pawnutils::ReturnBool((!folder.empty()));
+}
+
 namespace sbm
 {
 	static inline bool IsValidTeamIndex(IPluginContext* context, int teamIndex)
@@ -129,6 +168,9 @@ void natives::mods::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotModInterface.ParseModSettingsFile", Native_ParseModSettingsFile},
 		{"NavBotModInterface.ParseDifficultyProfileFile", Native_ParseDifficultyProfileFile},
 		{"NavBotModInterface.ParseWeaponConfigFile", Native_ParseWeaponConfigFile},
+		{"NavBotModInterface.GetCurrentMapName", Native_GetCurrentMapName},
+		{"NavBotModInterface.GetModFolder", Native_GetModFolder},
+		{"NavBotModInterface.GetFallbackModFolder", Native_GetFallbackModFolder},
 
 		/* ISharedBotMemory */
 		{"NavBotSharedBotMemory.ReportEntity", sbm::Native_ReportEntity},

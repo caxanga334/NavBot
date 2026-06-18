@@ -6,6 +6,20 @@
 // In the nav mesh code, this value is used to signal 'ANY' team.
 #define NAV_TEAM_ANY -2
 
+// Codes for load results
+enum NavBotNavErrorType
+{
+	NAVBOT_NAV_OK,
+	NAVBOT_NAV_CANT_ACCESS_FILE,
+	NAVBOT_NAV_INVALID_FILE,
+	NAVBOT_NAV_BAD_FILE_VERSION,
+	NAVBOT_NAV_FILE_OUT_OF_DATE,
+	NAVBOT_NAV_CORRUPT_DATA,
+	NAVBOT_NAV_OUT_OF_MEMORY,
+
+	NAVBOT_MAX_NAV_ERROR_TYPES
+};
+
 // Nav area functions.
 methodmap NavBotNavArea
 {
@@ -71,4 +85,23 @@ methodmap NavBotNavMesh
 	 * @error				Invalid editor index used.
 	 */
 	public static native void GetEditor(int index, char[] name, int namesize, char[] steamid, int steamidsize);
+	// Gets the result code of the last load attempt.
+	public static native NavBotNavErrorType GetLastLoadResult();
+	/**
+	 * Generates a nav mesh if the current map doesn't have one.
+	 * Generation is delayed by one frame.
+	 * If you want to check the result, use a timer.
+	 */
+	public static native void Generate();
+	// Loads a navigation mesh from a file (does nothing if it's already loaded).
+	public static native void Load();
+	/**
+	 * Gets the full path to the nav mesh file for the current map.
+	 * 
+	 * @param isLoad		True if you want to get the file for loading (only makes a difference for games with workshop map support).
+	 * @param path			Buffer to store the path.
+	 * @param size			Size of the path buffer.
+	 */
+	public static native void GetFullPathToNavMeshFile(bool isLoad, char[] path, int size);
 }
+

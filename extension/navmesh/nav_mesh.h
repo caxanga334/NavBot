@@ -430,6 +430,7 @@ public:
 	virtual CNavLadder* CreateLadder() const;							// Allocates a new Ladder
 	virtual void Reset( void );											// destroy Navigation Mesh data and revert to initial state
 	virtual void Update( void );										// invoked on each game frame
+	void DoLoad();														// Try to load a navigation mesh file.
 	virtual NavErrorType Load( void );									// load navigation data from a file
 	virtual NavErrorType PostLoad( uint32_t version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 	inline bool IsLoaded( void ) const		{ return m_isLoaded; }				// return true if a Navigation Mesh has been loaded
@@ -542,7 +543,7 @@ public:
 	//-------------------------------------------------------------------------------------
 	// Auto-generation
 	//
-	#define INCREMENTAL_GENERATION true
+	static constexpr bool INCREMENTAL_GENERATION = true;
 	void BeginGeneration( bool incremental = false );					// initiate the generation process
 	void BeginAnalysis( bool quitWhenFinished = false );						// re-analyze an existing Mesh.  Determine Hiding Spots, Encounter Spots, etc.
 
@@ -1356,6 +1357,7 @@ private:
 	CountdownTimer m_updateNavPathCostModsTimer;
 	CountdownTimer m_recomputeInternalDataTimer;
 	RecomputeInternalDataReason m_recomputeDataReason;
+	NavErrorType m_lastLoadResult;
 
 	void ComputeDoorBlockers();
 	void ComputeBreakableBlockers();
@@ -1622,6 +1624,8 @@ public:
 
 		return it != m_forcedSolidEntities.cend();
 	}
+
+	NavErrorType GetLastLoadAttemptResult() const { return m_lastLoadResult; }
 };
 
 // the global singleton interface

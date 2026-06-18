@@ -1757,6 +1757,10 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	ShiftAllIDsToTop();
 	extmanager->GetMod()->OnNavMeshLoaded();
 
+#ifndef NO_SOURCEPAWN_API
+	extmanager->SMAPI_OnNavMeshLoaded();
+#endif // !NO_SOURCEPAWN_API
+
 	return NAV_OK;
 }
 

@@ -153,6 +153,7 @@ CNavMesh::CNavMesh( void )
 	m_selectedVolume = nullptr;
 	m_selectedElevator = nullptr;
 	m_selectedPrerequisite = nullptr;
+	m_lastLoadResult = NavErrorType::MAX_NAV_ERROR_TYPES;
 		
 	Reset();
 
@@ -384,12 +385,12 @@ void CNavMesh::Precache()
 {
 }
 
-void CNavMesh::OnMapStart()
+void CNavMesh::DoLoad()
 {
 	LoadPlaceDatabase();
 
 	NavErrorType error = NAV_CORRUPT_DATA;
-	
+
 	try
 	{
 		error = Load();
@@ -422,6 +423,8 @@ void CNavMesh::OnMapStart()
 
 			if (IsLoaded()) // successful import
 			{
+				error = NAV_OK;
+
 				if (sm_nav_auto_import.GetInt() > 1)
 				{
 					smutils->LogMessage(myself, "Nav Mesh imported. Running waypoint import.");
@@ -457,6 +460,13 @@ void CNavMesh::OnMapStart()
 	default:
 		break;
 	}
+
+	m_lastLoadResult = error;
+}
+
+void CNavMesh::OnMapStart()
+{
+	DoLoad();
 
 	// Sourcemod's OnMapStart is called on a ServerActivate hook
 	OnServerActivate(); // this isn't called anywhere else so just call it here
@@ -627,6 +637,10 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 	m_selectedLadder = NULL;
 
 	extmanager->GetMod()->OnNavMeshDestroyed();
+
+#ifndef NO_SOURCEPAWN_API
+	extmanager->SMAPI_OnNavMeshDestroyed();
+#endif // !NO_SOURCEPAWN_API
 }
 
 
@@ -3273,7 +3287,7 @@ CON_COMMAND_F(sm_nav_corner_place_on_ground_custom, "Places the selected corner 
 }
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavWarpToMark( void )
+static void CommandNavWarpToMark( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3284,7 +3298,7 @@ static ConCommand sm_nav_warp_to_mark( "sm_nav_warp_to_mark", CommandNavWarpToMa
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavLadderFlip( void )
+static void CommandNavLadderFlip( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3295,7 +3309,7 @@ static ConCommand sm_nav_ladder_flip( "sm_nav_ladder_flip", CommandNavLadderFlip
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavGenerate( void )
+static void CommandNavGenerate( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
@@ -3306,18 +3320,18 @@ static ConCommand sm_nav_generate( "sm_nav_generate", CommandNavGenerate, "Gener
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavGenerateIncremental( void )
+static void CommandNavGenerateIncremental( void )
 {
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
 
-	TheNavMesh->BeginGeneration( INCREMENTAL_GENERATION );
+	TheNavMesh->BeginGeneration( CNavMesh::INCREMENTAL_GENERATION );
 }
 static ConCommand sm_nav_generate_incremental( "sm_nav_generate_incremental", CommandNavGenerateIncremental, "Generate a Navigation Mesh for the current map and save it to disk.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavAnalyze( void )
+static void CommandNavAnalyze( void )
 {
 	if ( UTIL_IsCommandIssuedByServerAdmin() && sm_nav_edit.GetBool() )
 	{
@@ -3329,7 +3343,7 @@ static ConCommand sm_nav_analyze( "sm_nav_analyze", CommandNavAnalyze, "Re-analy
 
 //--------------------------------------------------------------------------------------------------------------
 #if SOURCE_ENGINE >= SE_ORANGEBOX
-void CommandNavAnalyzeScripted(const CCommand& args)
+static void CommandNavAnalyzeScripted(const CCommand& args)
 {
 	if (!UTIL_IsCommandIssuedByServerAdmin())
 		return;

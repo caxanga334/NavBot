@@ -162,96 +162,13 @@ jobs:
           path: |
               navbot/build/**/*.${{ matrix.dbgsym_ext }}
             
-  compile_plugins:
-    name: Compile Plugins
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        sm_version: [ '1.12.x' ]
-    env:
-      SOURCEFILES_PATH: ${{ github.workspace }}/sourcefiles
-      TPINCLUDES_PATH: ${{ github.workspace }}/thirdparty/includes
-      NAVBOTINC_PATH: ${{ github.workspace }}/navbot/scripting/include
-      BUILD_PATH: ${{ github.workspace }}/navbot/scripting
-      PACKAGE_PATH: ${{ github.workspace }}/build/package
-      CONFIGS_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/configs
-      SMDATA_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/data
-      GAMEDATA_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/gamedata
-      BINARY_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/plugins
-      LOC_PATH: ${{ github.workspace }}/build/package/addons/sourcemod/translations
-      RELEASE_PLUGINS: 'navbot_admin.sp'
-
-    steps:
-      - name: Fetch Extension
-        uses: actions/checkout@v6.0.2
-        with:
-          path: navbot
-          submodules: recursive
-
-      - name: Get short SHA
-        uses: benjlevesque/short-sha@v4.0
-        id: short-sha
-      
-      - name: Setup SourcePawn Compiler ${{ matrix.sm_version }}
-        id: setup_sp
-        uses: rumblefrog/setup-sp@master
-        with:
-          version: ${{ matrix.sm_version }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Create Folders
-        run: |
-          echo "Creating folders..."
-          mkdir -p ${{ env.TPINCLUDES_PATH }}
-          mkdir -p ${{ env.BUILD_PATH }}
-          mkdir -p ${{ env.CONFIGS_PATH }}
-          mkdir -p ${{ env.SMDATA_PATH }}
-          mkdir -p ${{ env.GAMEDATA_PATH }}
-          mkdir -p ${{ env.BINARY_PATH }}
-          mkdir -p ${{ env.LOC_PATH }}
-
-      - name: Compile Plugins
-        if: startsWith(github.ref, 'refs/tags/') == false
-        working-directory: ${{ env.BUILD_PATH }}
-        run: |
-          for file in *.sp; do
-            echo -e "\nCompiling $file..."
-            spcomp -O2 -v2 -i ${{ env.TPINCLUDES_PATH }}/ -i ${{ env.NAVBOTINC_PATH }}/ $file
-          done
-          echo "===OUT FILES==="
-          ls -lah *.smx
-
-      - name: Compile Plugins (Release)
-        if: startsWith(github.ref, 'refs/tags/') == true
-        working-directory: ${{ env.BUILD_PATH }}
-        run: |
-          plugins=(${{ env.RELEASE_PLUGINS }})
-          for file in "${plugins[@]}"
-          do
-            echo -e "\nCompiling $file..."
-            spcomp -O2 -v2 -i ${{ env.TPINCLUDES_PATH }}/ -i ${{ env.NAVBOTINC_PATH }}/ $file
-          done
-          echo "===OUT FILES==="
-          ls -lah *.smx
-
-      - name: Move Compiled Plugins to Package Directory
-        run: |
-          rsync -rv ${{ env.BUILD_PATH }}/*.smx ${{ env.BINARY_PATH }}/
-
-      - name: Upload Compiled Plugins Artifact
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: navbot-sm-plugins-${{ steps.short-sha.outputs.sha }}
-          path: |
-            build/package/*
 
   # TO-DO: Update this
   do_release:
     name: Create GH Release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
-    needs: [ build_ext, compile_plugins ]
+    needs: [ build_ext ]
 
     steps:
       - name: Create Folders
@@ -259,35 +176,27 @@ jobs:
           mkdir -p ${{ github.workspace }}/upload/
           mkdir -p ${{ github.workspace }}/download/windows/
           mkdir -p ${{ github.workspace }}/download/linux/
-          mkdir -p ${{ github.workspace }}/download/shared/
           mkdir -p ${{ github.workspace }}/download/symbols/files/
 
       - name: Download Artifacts (Windows)
         uses: actions/download-artifact@v8.0.1
         with:
           pattern: 'navbot-windows*'
-          merge-multiple: true
+          merge-multiple: false
           path: ${{ github.workspace }}/download/windows/
 
       - name: Download Artifacts (Linux)
         uses: actions/download-artifact@v8.0.1
         with:
           pattern: 'navbot-linux*'
-          merge-multiple: true
+          merge-multiple: false
           path: ${{ github.workspace }}/download/linux/
-  
-      - name: Download Artifacts (Shared)
-        uses: actions/download-artifact@v8.0.1
-        with:
-          pattern: '*sm-plugins*'
-          merge-multiple: true
-          path: ${{ github.workspace }}/download/shared/
 
       - name: Download Debugging Symbols
         uses: actions/download-artifact@v8.0.1
         with:
           pattern: '*dbgsym*'
-          merge-multiple: true
+          merge-multiple: false
           path: ${{ github.workspace }}/download/symbols/files/
 
       - name: Create Package

@@ -3,6 +3,13 @@
 #endif
 #define _navbot_mod_interface_included
 
+enum NavBotMapNameType
+{
+	MAPNAME_RAW = 0, // Raw map name without any modifications.
+	MAPNAME_CLEAN, // Clean map name without workshop stuff
+	MAPNAME_UNIQUE, // Clean and unique map name with a workshop ID
+};
+
 methodmap NavBotModInterface
 {
 	/**
@@ -39,10 +46,27 @@ methodmap NavBotModInterface
 	 */
 	public static native bool ParseWeaponConfigFile(const char[] file);
 	/**
-	 * Gets a pointer to the shared memory interface of the given team.
+	 * Gets the current map name used by NavBot.
 	 * 
-	 * @param teamIndex		Index of the team to retrieve the interface of.
-	 * @return				Address of the interface.
+	 * @param type			Map name type to get.
+	 * @param buffer		Buffer to store the map name.
+	 * @param size			Size of the buffer.
+	 * @error				Invalid map type passed.
 	 */
-	public static native Address GetSharedMemoryInterface(int teamIndex);
+	public static native void GetCurrentMapName(NavBotMapNameType type, char[] buffer, int size);
+	/**
+	 * The name of the mod folder. This is the folder NavBot uses to load files from.
+	 * 
+	 * @param buffer		Buffer to store the mod folder.
+	 * @param size			Size of the buffer.
+	 */
+	public static native void GetModFolder(char[] buffer, int size);
+	/**
+	 * The name of the fallback mod folder. This is a fallback folder in case a file doesn't exists in the main mod folder.
+	 * 
+	 * @param buffer		Buffer to store the mod folder.
+	 * @param size			Size of the buffer.
+	 * @return				True if a fallback folder is set. False if the current mod doesn't have a fallback folder.
+	 */
+	public static native bool GetFallbackModFolder(char[] buffer, int size);
 }

@@ -57,6 +57,37 @@ namespace natives::bots::interfaces::playercontroller
 
 		return pawnutils::ReturnBool(iface->IsAimOnTarget());
 	}
+	static cell_t Native_PressButtonByID(IPluginContext* context, const cell_t* params)
+	{
+		IPlayerController* iface = pawnutils::UnsafeCastPawnAddressToObject<IPlayerController>(context, params, 1);
+
+		if (!iface) { context->ReportError("NULL interface ptr!"); return 0; }
+
+		if (!IPlayerInput::IsValidButtonID(static_cast<int>(params[2])))
+		{
+			context->ReportError("Button ID %i is invalid!", params[2]);
+			return 0;
+		}
+
+		float duration = pawnutils::ReadFloat(params, 3);
+		iface->PressButtonByID(static_cast<IPlayerInput::ButtonID>(params[2]), duration);
+		return 0;
+	}
+	static cell_t Native_ReleaseButtonByID(IPluginContext* context, const cell_t* params)
+	{
+		IPlayerController* iface = pawnutils::UnsafeCastPawnAddressToObject<IPlayerController>(context, params, 1);
+
+		if (!iface) { context->ReportError("NULL interface ptr!"); return 0; }
+
+		if (!IPlayerInput::IsValidButtonID(static_cast<int>(params[2])))
+		{
+			context->ReportError("Button ID %i is invalid!", params[2]);
+			return 0;
+		}
+
+		iface->ReleaseButtonByID(static_cast<IPlayerInput::ButtonID>(params[2]));
+		return 0;
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -64,6 +95,8 @@ namespace natives::bots::interfaces::playercontroller
 			{"NavBotPlayerControllerInterface.AimAtEntity", Native_AimAtEntity},
 			{"NavBotPlayerControllerInterface.AimAtPos", Native_AimAtPosition},
 			{"NavBotPlayerControllerInterface.IsAimOnTarget", Native_IsAimOnTarget},
+			{"NavBotPlayerControllerInterface.PressButtonByID", Native_PressButtonByID},
+			{"NavBotPlayerControllerInterface.ReleaseButtonByID", Native_ReleaseButtonByID},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));
