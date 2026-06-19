@@ -84,6 +84,9 @@ protected:
 	void SetAvoidingEntity(CBaseEntity* entity) { m_avoidingEntity = entity; }
 	bool IsUseEntityInCooldown() const { return !m_useEntityCooldown.IsElapsed(); }
 	void SetMoveToPos(const Vector& pos) { m_moveToPos = pos; }
+	void SetLastPathObstacle(CBaseEntity* pEnt) { m_pLastObstacle = pEnt; }
+	// This entity pointer may be dangling, use it only for comparing with another pointer.
+	CBaseEntity* GetLastPathObstacle() const { return m_pLastObstacle; }
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator
@@ -93,11 +96,13 @@ private:
 	CountdownTimer m_useableTimer; // timer for checking for useable obstacles on the path
 	CountdownTimer m_obstructedTimer; // timer for checking how long the path has been obstructed
 	CountdownTimer m_obstacleScanTimer; // timer for checking for obstacles
+	IntervalTimer m_sameObstacleTimer;
 	CHandle<CBaseEntity> m_blocker; // Entity blocking my path
 	CHandle<CBaseEntity> m_avoidLeftEntity;
 	CHandle<CBaseEntity> m_avoidRightEntity;
 	CHandle<CBaseEntity> m_avoidObstacle; // Entity nearest blocking our path
 	CHandle<CBaseEntity> m_avoidingEntity;
+	CBaseEntity* m_pLastObstacle; // last obstacle on the bot's path
 	bool m_didAvoidCheck;
 	bool m_avoidIsLeftClear;
 	bool m_avoidIsRightClear;

@@ -185,6 +185,11 @@ public __ext_navbot_SetNTVOptional()
 	/* Nav Area */
 	MarkNativeAsOptional("NavBotNavArea.GetID");
 	MarkNativeAsOptional("NavBotNavArea.GetCenter");
+	MarkNativeAsOptional("NavBotNavArea.GetCorner");
+	MarkNativeAsOptional("NavBotNavArea.GetExtent");
+	MarkNativeAsOptional("NavBotNavArea.IsVisible");
+	MarkNativeAsOptional("NavBotNavArea.IsBlocked");
+	MarkNativeAsOptional("NavBotNavArea.GetClosestPointOnArea");
 
 	/* Nav Mesh */
 	MarkNativeAsOptional("NavBotNavMesh.IsLoaded");

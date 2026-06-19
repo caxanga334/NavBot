@@ -36,6 +36,7 @@ public:
 		def_blast_radius = 600.0f;
 		area_cleared_time = 120.0f;
 		stuck_giveup_threshold = 10;
+		path_break_obstacle_time = 1.5f;
 	}
 
 	virtual ~CModSettings() = default;
@@ -95,6 +96,7 @@ public:
 	void SetDefaultBlastRadius(float radius) { def_blast_radius = radius; }
 	void SetMaxAreaClearedTime(float time) { area_cleared_time = time; }
 	void SetStuckGiveUpThreshold(int c) { stuck_giveup_threshold = c; }
+	void SetPathBreakObstacleTime(float time) { path_break_obstacle_time = time; }
 
 	const int GetDefendRate() const { return defendrate; }
 	// Rolls a random chance to defend
@@ -126,6 +128,7 @@ public:
 	const float GetDefaultBlastRadius() const { return def_blast_radius; }
 	const float GetMaxAreaClearedTime() const { return area_cleared_time; }
 	const int GetStuckGiveUpThreshold() const { return stuck_giveup_threshold; }
+	const float GetPathBreakObstacleTime() const { return path_break_obstacle_time; }
 
 protected:
 	int defendrate; // percentage of bots that will do defensive tasks
@@ -156,6 +159,18 @@ protected:
 	float def_blast_radius; // Default blast radius used for projectiles.
 	float area_cleared_time; // Maximum time in seconds for a nav area to be considered as cleared.
 	int stuck_giveup_threshold; // Threshold for giving up doing something if the bot gets this many stuck events.
+	float path_break_obstacle_time; // Minimum time an obstacle must block the bot's path for the bot to consider breaking it
+
+	/**
+	 * @brief Tries to convert a string to a float value.
+	 * @param value String to convert.
+	 * @param min Minimum value.
+	 * @param max Maximum value.
+	 * @param defaultValue Default value if conversion failed.
+	 * @param states SMCStates struct to log line position.
+	 * @return Float value.
+	 */
+	float ReadFloatClamped(const char* value, float min, float max, float defaultValue, const SourceMod::SMCStates* states);
 };
 
 

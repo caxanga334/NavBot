@@ -63,6 +63,7 @@ These settings are used by all mods.
 | default_blast_radius | Default grenade/explosives blast radius. | 1 - 1024 | 600 |
 | area_cleared_time | Maximum time in seconds a nav area is considered cleared of enemies. | 30 - 600 | 120 |
 | stuck_giveup_threshold | General purpose threshold for giving up doing something if the bot gets this many consecutive stuck events | 5 - 60 | 10 |
+| path_break_obstacle_time | Minimum time in seconds a bot will wait before trying to break an obstacle on their path. | 0.1 - 15.0 | 1.5 |
 
 ### Macro Values
 

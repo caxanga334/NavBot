@@ -153,6 +153,19 @@ namespace pawnutils
 	inline float ReadFloat(const cell_t* params, const std::size_t index) { return sp_ctof(params[index]); }
 	// Reads a boolean parameter
 	inline bool ReadBool(const cell_t* params, const std::size_t index) { return params[index] != 0; }
+	// Writes a vector back to SP.
+	inline void WriteVector(IPluginContext* context, const cell_t* params, const std::size_t index, const Vector& vec)
+	{
+		cell_t* arr = nullptr;
+		context->LocalToPhysAddr(params[index], &arr);
+		VectorToPawnFloatArray(arr, vec);
+	}
+	inline bool IsNULLVector(IPluginContext* context, const cell_t* params, const std::size_t index)
+	{
+		cell_t* addr = nullptr;
+		context->LocalToPhysAddr(params[index], &addr);
+		return addr == context->GetNullRef(SourcePawn::SP_NULL_VECTOR);
+	}
 }
 
 

@@ -3,36 +3,8 @@
 #endif
 #define _navbot_navmesh_included
 
-// In the nav mesh code, this value is used to signal 'ANY' team.
-#define NAV_TEAM_ANY -2
-
-// Codes for load results
-enum NavBotNavErrorType
-{
-	NAVBOT_NAV_OK,
-	NAVBOT_NAV_CANT_ACCESS_FILE,
-	NAVBOT_NAV_INVALID_FILE,
-	NAVBOT_NAV_BAD_FILE_VERSION,
-	NAVBOT_NAV_FILE_OUT_OF_DATE,
-	NAVBOT_NAV_CORRUPT_DATA,
-	NAVBOT_NAV_OUT_OF_MEMORY,
-
-	NAVBOT_MAX_NAV_ERROR_TYPES
-};
-
-// Nav area functions.
-methodmap NavBotNavArea
-{
-	/**
-	 * Returns the nav area's ID.
-	 * 
-	 * @param ptr			Address of a nav area.
-	 * @return				Nav area's ID.
-	 */
-	public static native int GetID(Address ptr);
-	// Retrieves the nav area center world position
-	public static native void GetCenter(Address ptr, float center[3]);
-}
+#include "nav.inc"
+#include "nav_area.inc"
 
 methodmap NavBotNavMesh
 {
@@ -48,7 +20,7 @@ methodmap NavBotNavMesh
 	 * @param team			Optional team filter when searching for areas.
 	 * @return				Nav area instance if found or NULL if not found.
 	 */
-	public static native Address GetNearestNavArea(const float pos[3], float maxDist, bool checkLOS, bool checkGround, int team = NAV_TEAM_ANY);
+	public static native Address GetNearestNavArea(const float pos[3], float maxDist, bool checkLOS, bool checkGround, int team = NAVBOT_NAV_TEAM_ANY);
 	/**
 	 * Retrives a nav area instance of the given ID.
 	 * 

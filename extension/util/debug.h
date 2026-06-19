@@ -14,7 +14,7 @@
 #define EXT_ASSERT(_exp, _msg)																		\
 	if (!(_exp))																					\
 	{																								\
-		smutils->LogMessage(myself, "Assertion failed <%s:%d>: %s", __FILE__, __LINE__, _msg);		\
+		smutils->LogError(myself, "Assertion failed <%s:%d>: %s", __FILE__, __LINE__, _msg);		\
 		EXT_DBGBREAK();																				\
 	}																								\
 																									\

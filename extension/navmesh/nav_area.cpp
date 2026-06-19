@@ -402,15 +402,15 @@ void CNavArea::GetExtent( Extent *extent ) const
 	extent->lo = m_nwCorner;
 	extent->hi = m_seCorner;
 
-	extent->lo.z = MIN( extent->lo.z, m_nwCorner.z );
-	extent->lo.z = MIN( extent->lo.z, m_seCorner.z );
-	extent->lo.z = MIN( extent->lo.z, m_neZ );
-	extent->lo.z = MIN( extent->lo.z, m_swZ );
+	extent->lo.z = std::min( extent->lo.z, m_nwCorner.z );
+	extent->lo.z = std::min( extent->lo.z, m_seCorner.z );
+	extent->lo.z = std::min( extent->lo.z, m_neZ );
+	extent->lo.z = std::min( extent->lo.z, m_swZ );
 
-	extent->hi.z = MAX( extent->hi.z, m_nwCorner.z );
-	extent->hi.z = MAX( extent->hi.z, m_seCorner.z );
-	extent->hi.z = MAX( extent->hi.z, m_neZ );
-	extent->hi.z = MAX( extent->hi.z, m_swZ );
+	extent->hi.z = std::max( extent->hi.z, m_nwCorner.z );
+	extent->hi.z = std::max( extent->hi.z, m_seCorner.z );
+	extent->hi.z = std::max( extent->hi.z, m_neZ );
+	extent->hi.z = std::max( extent->hi.z, m_swZ );
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -2618,7 +2618,7 @@ NavDirType CNavArea::ComputeDirection( Vector *point ) const
 	// find closest direction
 	Vector to = *point - m_center;
 
-	if (fabs(to.x) > fabs(to.y))
+	if (std::abs(to.x) > std::abs(to.y))
 	{
 		if (to.x > 0.0f)
 			return EAST;

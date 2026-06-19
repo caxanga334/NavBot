@@ -1,15 +1,6 @@
 #include NAVBOT_PCH_FILE
-#include <algorithm>
-#include <cmath>
-
-#include <extension.h>
-#include <sdkports/debugoverlay_shared.h>
-#include <sdkports/sdk_traces.h>
-#include <util/entprops.h>
-#include <util/helpers.h>
-#include <util/librandom.h>
+#include <mods/basemod.h>
 #include <entities/baseentity.h>
-#include <manager.h>
 #include "meshnavigator.h"
 
 #ifdef EXT_VPROF_ENABLED
@@ -23,7 +14,6 @@
 static ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs automatic object climbing");
 static ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_DONTRECORD, "Default navigator goal tolerance");
 static ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
-static ConVar sm_navbot_path_useable_scan("sm_navbot_path_useable_scan", "1.0", FCVAR_DONTRECORD, "How frequently the navigation will scan for useable entities on the bot's path.");
 static ConVar sm_navbot_path_obstacle_scan("sm_navbot_path_obstacle_scan", "0.5", FCVAR_DONTRECORD, "How frequently the navigation will scan for obstacles on the bot's path.");
 
 #ifdef EXT_DEBUG
@@ -52,6 +42,7 @@ CMeshNavigator::CMeshNavigator() : CPath()
 	m_avoidIsLeftClear = true;
 	m_avoidIsRightClear = true;
 	m_moveToPos.Init(0.0f, 0.0f, 0.0f);
+	m_pLastObstacle = nullptr;
 }
 
 CMeshNavigator::~CMeshNavigator()
@@ -74,12 +65,14 @@ void CMeshNavigator::Invalidate()
 	m_useEntityAimAt = vec3_origin;
 	m_useEntityCooldown.Invalidate();
 	m_obstacleScanTimer.Invalidate();
+	m_sameObstacleTimer.Invalidate();
 	m_avoidIsLeftClear = true;
 	m_avoidIsRightClear = true;
 	m_avoidLeftEntity = nullptr;
 	m_avoidRightEntity = nullptr;
 	m_avoidingEntity = nullptr;
 	m_moveToPos = vec3_origin;
+	m_pLastObstacle = nullptr;
 	CPath::Invalidate();
 }
 
@@ -668,6 +661,29 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 			// can we break it?
 			if (bot->IsAbleToBreak(obstacle))
 			{
+				CBaseEntity* last = GetLastPathObstacle();
+
+				if (last != obstacle)
+				{
+					SetLastPathObstacle(obstacle);
+					SetAvoidingEntity(obstacle); // try to walk around it
+					m_sameObstacleTimer.Start(); // restart the timer
+
+					if (isDebugging)
+					{
+						bot->DebugPrintToConsole(255, 255, 0, "%s BREAKABLE OBSTACLE ON PATH! %s \n", 
+							bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
+					}
+
+					return false;
+				}
+
+				// wait a bit before breaking stuff
+				if (m_sameObstacleTimer.IsLessThen(extmanager->GetMod()->GetModSettings()->GetPathBreakObstacleTime()))
+				{
+					return false;
+				}
+
 				mover->BreakObstacle(obstacle);
 				return true;
 			}

@@ -67,6 +67,8 @@ CopyFiles('scripting/include/navbot', 'addons/sourcemod/scripting/include/navbot
     'baseplayer.inc',
     'bots.inc',
     'mod.inc',
+    'nav.inc',
+    'nav_area.inc',
     'nav_mesh.inc',
   ]
 )

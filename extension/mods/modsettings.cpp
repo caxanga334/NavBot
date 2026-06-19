@@ -306,6 +306,10 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 			v = std::clamp(v, 5, 60);
 			SetStuckGiveUpThreshold(v);
 		}
+		else if (std::strcmp(key, "path_break_obstacle_time") == 0)
+		{
+			SetPathBreakObstacleTime(ReadFloatClamped(value, 0.1f, 15.0f, 1.5f, states));
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);
@@ -347,4 +351,23 @@ bool CModSettings::RollDefendChance() const
 	}
 
 	return false;
+}
+
+float CModSettings::ReadFloatClamped(const char* value, float min, float max, float defaultValue, const SourceMod::SMCStates* states)
+{
+	try
+	{
+		float result = std::stof(value);
+		return std::clamp(result, min, max);
+	}
+	catch (const std::invalid_argument& ex)
+	{
+		smutils->LogError(myself, "[Mod Settings] Error reading value at line %u col %u: %s", states->line, states->col, ex.what());
+		return defaultValue;
+	}
+	catch (const std::out_of_range& ex)
+	{
+		smutils->LogError(myself, "[Mod Settings] Error reading value at line %u col %u: %s", states->line, states->col, ex.what());
+		return defaultValue;
+	}
 }
