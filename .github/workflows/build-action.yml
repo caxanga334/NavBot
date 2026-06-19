@@ -174,23 +174,39 @@ jobs:
       - name: Create Folders
         run: |
           mkdir -p ${{ github.workspace }}/upload/
-          mkdir -p ${{ github.workspace }}/download/windows/
-          mkdir -p ${{ github.workspace }}/download/linux/
+          mkdir -p ${{ github.workspace }}/download/windows/stable/
+          mkdir -p ${{ github.workspace }}/download/windows/dev/
+          mkdir -p ${{ github.workspace }}/download/linux/stable/
+          mkdir -p ${{ github.workspace }}/download/linux/dev/
           mkdir -p ${{ github.workspace }}/download/symbols/files/
 
-      - name: Download Artifacts (Windows)
+      - name: Download Artifacts (Windows - Stable)
         uses: actions/download-artifact@v8.0.1
         with:
-          pattern: 'navbot-windows*'
-          merge-multiple: false
-          path: ${{ github.workspace }}/download/windows/
+          pattern: 'navbot-windows-sm-stable*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/windows/stable
 
-      - name: Download Artifacts (Linux)
+      - name: Download Artifacts (Windows - Dev)
         uses: actions/download-artifact@v8.0.1
         with:
-          pattern: 'navbot-linux*'
-          merge-multiple: false
-          path: ${{ github.workspace }}/download/linux/
+          pattern: 'navbot-windows-sm-dev*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/windows/dev
+
+      - name: Download Artifacts (Linux - Stable)
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: 'navbot-symbols-linux-sm-stable*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/linux/stable
+
+      - name: Download Artifacts (Linux - Dev)
+        uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: 'navbot-symbols-linux-sm-dev*'
+          merge-multiple: true
+          path: ${{ github.workspace }}/download/linux/dev
 
       - name: Download Debugging Symbols
         uses: actions/download-artifact@v8.0.1
@@ -201,20 +217,19 @@ jobs:
 
       - name: Create Package
         run: |
-          cd ${{ github.workspace }}/download/windows/
-          rsync -rv ${{ github.workspace }}/download/shared/* ${{ github.workspace }}/download/windows/
-          7z a -r "navbot-windows-${{ github.ref_name }}.7z" addons
-          ls -lah
+          cd ${{ github.workspace }}/download/windows/stable/
+          7z a -r "navbot-windows-sm-stable-${{ github.ref_name }}.7z" addons
+          cd ${{ github.workspace }}/download/windows/dev/
+          7z a -r "navbot-windows-sm-dev-${{ github.ref_name }}.7z" addons
           mv *.7z ${{ github.workspace }}/upload/
-          cd ${{ github.workspace }}/download/linux/
-          rsync -rv ${{ github.workspace }}/download/shared/* ${{ github.workspace }}/download/linux/
-          tar -czf "navbot-linux-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
-          ls -lah
+          cd ${{ github.workspace }}/download/linux/stable/
+          tar -czf "navbot-linux-sm-stable-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
+          cd ${{ github.workspace }}/download/linux/dev/
+          tar -czf "navbot-linux-sm-dev-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
           mv *.tar.gz ${{ github.workspace }}/upload/
           cd ${{ github.workspace }}/download/symbols/
-          tar -czf "navbot-debug-symbols-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 files
-          ls -lah
-          mv *.tar.gz ${{ github.workspace }}/upload/
+          7z a -r "navbot-debug-symbols-${{ github.ref_name }}.7z" files
+          mv *.7z ${{ github.workspace }}/upload/
           cd ${{ github.workspace }}/upload/
           ls -lah
 
