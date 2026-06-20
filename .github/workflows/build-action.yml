@@ -211,7 +211,7 @@ jobs:
       - name: Download Debugging Symbols
         uses: actions/download-artifact@v8.0.1
         with:
-          pattern: '*dbgsym*'
+          pattern: 'navbot-symbols*'
           merge-multiple: false
           path: ${{ github.workspace }}/download/symbols/files/
 
@@ -219,11 +219,13 @@ jobs:
         run: |
           cd ${{ github.workspace }}/download/windows/stable/
           7z a -r "navbot-windows-sm-stable-${{ github.ref_name }}.7z" addons
+          mv *.7z ${{ github.workspace }}/upload/
           cd ${{ github.workspace }}/download/windows/dev/
           7z a -r "navbot-windows-sm-dev-${{ github.ref_name }}.7z" addons
           mv *.7z ${{ github.workspace }}/upload/
           cd ${{ github.workspace }}/download/linux/stable/
           tar -czf "navbot-linux-sm-stable-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
+          mv *.tar.gz ${{ github.workspace }}/upload/
           cd ${{ github.workspace }}/download/linux/dev/
           tar -czf "navbot-linux-sm-dev-${{ github.ref_name }}.tar.gz" --owner=0 --group=0 addons
           mv *.tar.gz ${{ github.workspace }}/upload/
