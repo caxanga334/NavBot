@@ -197,14 +197,14 @@ jobs:
       - name: Download Artifacts (Linux - Stable)
         uses: actions/download-artifact@v8.0.1
         with:
-          pattern: 'navbot-symbols-linux-sm-stable*'
+          pattern: 'navbot-linux-sm-stable*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/linux/stable
 
       - name: Download Artifacts (Linux - Dev)
         uses: actions/download-artifact@v8.0.1
         with:
-          pattern: 'navbot-symbols-linux-sm-dev*'
+          pattern: 'navbot-linux-sm-dev*'
           merge-multiple: true
           path: ${{ github.workspace }}/download/linux/dev
 
