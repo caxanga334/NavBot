@@ -29,12 +29,6 @@ static cell_t Native_NavMeshGetNearestNavArea(IPluginContext* context, const cel
 	}
 
 	CNavArea* area = TheNavMesh->GetNearestNavArea(pos, maxdist, checkLos, checkGround, team);
-
-	if (!area)
-	{
-		return 0;
-	}
-
 	return pawnutils::ReturnPointerToPawn(context, params, area);
 }
 
@@ -92,12 +86,6 @@ static cell_t Native_NavMeshGetNavAreaByID(IPluginContext* context, const cell_t
 {
 	unsigned int id = static_cast<unsigned int>(params[pawnutils::GetIndexOfParam(context, 1)]);
 	CNavArea* area = TheNavMesh->GetNavAreaByID(id);
-
-	if (!area)
-	{
-		return 0;
-	}
-
 	return pawnutils::ReturnPointerToPawn(context, params, area);
 }
 
