@@ -9,6 +9,18 @@ public:
 	SourcePawnManager();
 	virtual ~SourcePawnManager();
 
+	enum HandleTypes
+	{
+		HANDLE_NAVIGATOR = 0,
+		HANDLE_WEAPONPRIOFACTORY,
+		HANDLE_WEAPONPRIOINSTANCE,
+		HANDLE_NAVCOLLECTOR,
+		HANDLE_NAVAREAVECTOR,
+		HANDLE_NAVBLOCKER,
+
+		MAX_HANDLE_TYPES
+	};
+
 	static void Init();
 
 	// Inherited via IHandleTypeDispatch
@@ -27,13 +39,21 @@ public:
 
 	void SetupHandles();
 
-	SourceMod::HandleType_t GetMeshNavigatorHandleType() const { return m_meshnavigator_type; }
-	SourceMod::HandleType_t GetWeaponPriorityFactoryHandleType() const { return m_weaponpriofactory_type; }
-	SourceMod::HandleType_t GetWeaponPriorityInstanceHandleType() const { return m_weaponprioinstance_type; }
+	SourceMod::HandleType_t GetMeshNavigatorHandleType() const { return m_handletypes[HANDLE_NAVIGATOR]; }
+	SourceMod::HandleType_t GetWeaponPriorityFactoryHandleType() const { return m_handletypes[HANDLE_WEAPONPRIOFACTORY]; }
+	SourceMod::HandleType_t GetWeaponPriorityInstanceHandleType() const { return m_handletypes[HANDLE_WEAPONPRIOINSTANCE]; }
+	SourceMod::HandleType_t GetNavCollectorHandleType() const { return m_handletypes[HANDLE_NAVCOLLECTOR]; }
+	SourceMod::HandleType_t GetNavAreaVectorHandleType() const { return m_handletypes[HANDLE_NAVAREAVECTOR]; }
+	SourceMod::HandleType_t GetNavBlockerHandleType() const { return m_handletypes[HANDLE_NAVBLOCKER]; }
 private:
-	SourceMod::HandleType_t m_meshnavigator_type; // handle type for CMeshNavigator
-	SourceMod::HandleType_t m_weaponpriofactory_type;
-	SourceMod::HandleType_t m_weaponprioinstance_type;
+	std::array<SourceMod::HandleType_t, static_cast<std::size_t>(MAX_HANDLE_TYPES)> m_handletypes;
+
+	void SetupNavigatorHandle();
+	void SetupWeaponDynPrioFactoryHandle();
+	void SetupWeaponDynPrioInstanceHandle();
+	void SetupNavCollectorHandle();
+	void SetupNavAreaVectorHandle();
+	void SetupNavBlockerHandle();
 };
 
 

@@ -60,6 +60,7 @@ class ExtensionConfig(object):
     self.sm_root = None
     self.all_targets = []
     self.target_archs = set()
+    self.sm_version = None
 
     if builder.options.targets:
       target_archs = builder.options.targets.split(',')
@@ -396,6 +397,11 @@ class ExtensionConfig(object):
         cxx.cflags += ['-mavx2']
       elif builder.options.archoptions == 4:
         cxx.cflags += ['-march=native']
+
+  def add_sm_version(self, binary):
+    cxx = binary.compiler
+    cxx.defines += ['SM_GENERATED_BUILD', 'SM_VERSION_1_13=13', 'SM_VERSION_1_12=12']
+    cxx.sourcedeps += self.sm_version
     
   def LibraryBuilder(self, compiler, name):
     binary = compiler.Library(name)
@@ -466,6 +472,7 @@ class ExtensionConfig(object):
     self.AddCxxCompat(binary)
     self.ConfigureForHL2(context, binary, sdk)
     self.ConfigureForExtension(context, binary.compiler)
+    self.add_sm_version(binary)
     return binary
 
 if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.environ:
@@ -475,6 +482,10 @@ Extension = ExtensionConfig()
 Extension.preconfigure_compilers()
 Extension.detectSDKs()
 Extension.configure()
+Extension.sm_version = builder.Build(
+    'tools/SMVersioning',
+    { 'Extension': Extension }
+  )
 
 # This will clone the list and each cxx object as we recurse, preventing child
 # scripts from messing up global state.

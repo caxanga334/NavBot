@@ -20,6 +20,7 @@
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
 #include <bot/pluginbot/pluginbot.h>
+#include <sourcemod_version.h>
 
 #ifdef EXT_VPROF_ENABLED
 #include <tier0/vprof.h>
@@ -814,8 +815,14 @@ void CExtManager::SPAPI_CallPreBotUpdate(int bot)
 {
 	if (m_prebotupdateforward->GetFunctionCount() > 0)
 	{
+#if SM_BUILD_MINOR_INT >= SM_VERSION_1_13
+		sp::CallArgs args;
+		args.PushCell(static_cast<cell_t>(bot));
+		m_prebotupdateforward->Execute(args);
+#else
 		m_prebotupdateforward->PushCell(static_cast<cell_t>(bot));
 		m_prebotupdateforward->Execute();
+#endif // SM_BUILD_IS_DEV_BRANCH
 	}
 }
 #endif // !NO_SOURCEPAWN_API

@@ -2,6 +2,8 @@
 #include <extension.h>
 #include <util/pawnutils.h>
 #include <navmesh/nav_mesh.h>
+#include "navareavector.h"
+#include "navblocker.h"
 #include "navmesh.h"
 
 static cell_t Native_IsNavMeshLoaded(IPluginContext* context, const cell_t* params)
@@ -138,6 +140,78 @@ static cell_t Native_NavMeshGetFullPathToNavMeshFile(IPluginContext* context, co
 	return 0;
 }
 
+static cell_t Native_NavMeshCollectAreasOverlappingExtent(IPluginContext* context, const cell_t* params)
+{
+	Extent extent;
+	extent.lo = pawnutils::ReadVector(context, params, 1);
+	extent.hi = pawnutils::ReadVector(context, params, 2);
+	
+	std::vector<CNavArea*>* vec = nullptr;
+	auto handle = natives::navmesh::navareavector::createhandle(context, &vec);
+
+	if (handle == BAD_HANDLE)
+	{
+		return BAD_HANDLE;
+	}
+
+	TheNavMesh->CollectAreasOverlappingExtent(extent, *vec);
+	return handle;
+}
+
+static cell_t Native_NavMeshCollectAreasOverlappingExtentEntity(IPluginContext* context, const cell_t* params)
+{
+	CBaseEntity* pEntity = pawnutils::ReadEntity(context, params, 1);
+
+	if (!pEntity)
+	{
+		return BAD_HANDLE;
+	}
+
+	Extent extent(pEntity);
+
+	float xy_offset = pawnutils::ReadFloat(params, 2);
+	float z_offset = pawnutils::ReadFloat(params, 3);
+
+	extent.lo.x -= xy_offset;
+	extent.lo.y -= xy_offset;
+	extent.lo.z -= z_offset;
+	extent.hi.x += xy_offset;
+	extent.hi.y += xy_offset;
+	extent.hi.z += z_offset;
+
+	std::vector<CNavArea*>* vec = nullptr;
+	auto handle = natives::navmesh::navareavector::createhandle(context, &vec);
+
+	if (handle == BAD_HANDLE)
+	{
+		return BAD_HANDLE;
+	}
+
+	TheNavMesh->CollectAreasOverlappingExtent(extent, *vec);
+	return handle;
+}
+
+static cell_t Native_NavMeshCollectAreasTouchingEntity(IPluginContext* context, const cell_t* params)
+{
+	CBaseEntity* pEntity = pawnutils::ReadEntity(context, params, 1);
+
+	if (!pEntity)
+	{
+		return BAD_HANDLE;
+	}
+
+	std::vector<CNavArea*>* vec = nullptr;
+	auto handle = natives::navmesh::navareavector::createhandle(context, &vec);
+
+	if (handle == BAD_HANDLE)
+	{
+		return BAD_HANDLE;
+	}
+
+	TheNavMesh->CollectAreasTouchingEntity(pEntity, *vec);
+	return handle;
+}
+
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
@@ -151,7 +225,13 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.Generate", Native_NavMeshGenerate},
 		{"NavBotNavMesh.Load", Native_NavMeshLoad},
 		{"NavBotNavMesh.GetFullPathToNavMeshFile", Native_NavMeshGetFullPathToNavMeshFile},
+		{"NavBotNavMesh.CollectAreasOverlappingExtent", Native_NavMeshCollectAreasOverlappingExtent},
+		{"NavBotNavMesh.CollectAreasOverlappingExtentEx", Native_NavMeshCollectAreasOverlappingExtentEntity},
+		{"NavBotNavMesh.CollectAreasTouchingEntity", Native_NavMeshCollectAreasTouchingEntity},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
+
+	natives::navmesh::navareavector::setup(nv);
+	natives::navmesh::navblocker::setup(nv);
 }

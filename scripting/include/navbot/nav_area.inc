@@ -54,3 +54,34 @@ methodmap NavBotNavArea
 	 */
 	public static native void GetClosestPointOnArea(Address ptr, const float pos[3], float close[3]);
 }
+
+methodmap NavBotNavAreaVector < Handle
+{
+	// Constructs a new empty area vector. Must be deleted.
+	public native NavBotNavAreaVector();
+	// Adds a nav area to the vector. This does not checks for duplicates
+	public native void Push(Address area);
+	// Returns true if the given area is in the vector.
+	public native bool Contains(Address area);
+	// Removes a nav area from the vector.
+	public native void Erase(Address area);
+	// Removes all nav areas from the vector.
+	public native void Clear();
+	/**
+	 * Access a nav area at the given index.
+	 * 
+	 * @param index			Index to access. Range: 0 to (Size - 1)
+	 * @return				Pointer to a NavBotNavArea.
+	 * @error				Invalid handle. Out of bounds index.
+	 */
+	public native Address At(int index);
+	// The number of nav areas in the vector.
+	property int Size {
+		public native get();
+	}
+	// Returns true if the vector is empty.
+	public bool IsEmpty()
+	{
+		return this.Size == 0;
+	}
+}

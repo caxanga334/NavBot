@@ -205,6 +205,15 @@ public:
 	virtual bool IsInProjectilesPath(CBaseBot* bot, CBaseEntity* projectile, Vector& hitPos) const;
 	// Called once to register mod specific weapon config factories.
 	virtual void RegisterDynamicWeaponConfigFactories() const {}
+	// Adds a NPC classname to the scan list
+	void AddNPCClassnameToList(const char* classname);
+	// Removes a NPC classname from the scan list
+	void RemoveNPCClassnameFromList(const char* classname);
+
+#ifdef EXT_DEBUG
+	void Debug_PrintNPCClassnameList();
+#endif // EXT_DEBUG
+
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;
 	std::unique_ptr<CWeaponInfoManager> m_weaponinfomanager;

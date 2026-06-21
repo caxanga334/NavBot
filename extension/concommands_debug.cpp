@@ -29,35 +29,38 @@
 #include "generated_version.h"
 #endif // AUTO_GENERATED_VERSION
 
-
 CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 {
-	Msg("--- BEGIN NavBot Info ---\n");
+	META_CONPRINT("--- BEGIN NavBot Info ---\n");
 
 #if defined(KE_ARCH_X64)
-	Msg("Arch: x86-64\n");
+	META_CONPRINT("Arch: x86-64\n");
 #elif defined(KE_ARCH_X86)
-	Msg("Arch: x86\n");
+	META_CONPRINT("Arch: x86\n");
 #endif // KE_ARCH_X64
 
-	Msg("Extension Version: %s\n", extension->GetExtensionVerString());
+	META_CONPRINTF("Extension Version: %s\n", extension->GetExtensionVerString());
 
 #ifdef AUTO_GENERATED_VERSION
-	Msg("Git Commit: %s\n", GIT_COMMIT_HASH);
-	Msg("Git URL: %s\n", GIT_URL);
+	META_CONPRINTF("Git Commit: %s\n", GIT_COMMIT_HASH);
+	META_CONPRINTF("Git URL: %s\n", GIT_URL);
 #endif // AUTO_GENERATED_VERSION
 
-	Msg("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
-	Msg("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");
+	META_CONPRINTF("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
+	META_CONPRINTF("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");
 	CBaseMod* mod = extmanager->GetMod();
-	Msg("Game Folder: %s\n", smutils->GetGameFolderName() != nullptr ? smutils->GetGameFolderName() : "");
-	Msg("Mod Folder: %s\n", mod->GetModFolder().c_str());
-	Msg("Current Mod (Extension): \"%s\". ID: %i\n", mod->GetModName(), static_cast<int>(mod->GetModType()));
-	Msg("Current Map: %s\n", STRING(gpGlobals->mapname));
-	Msg("Nav Mesh:\n    Status: %s\n    Version: %i\n    Subversion: %i\n", TheNavMesh->IsLoaded() ? "Loaded" : "NOT Loaded", CNavMesh::NavMeshVersion, TheNavMesh->GetSubVersionNumber());
-	Msg("Update Rate: %3.5f\n", mod->GetModSettings()->GetUpdateRate());
-	Msg("Tick Rate: %3.2f\n", (1.0f / gpGlobals->interval_per_tick));
-	Msg("--- END NavBot Info ---\n");
+	META_CONPRINTF("Game Folder: %s\n", smutils->GetGameFolderName() != nullptr ? smutils->GetGameFolderName() : "");
+	META_CONPRINTF("Mod Folder: %s\n", mod->GetModFolder().c_str());
+	META_CONPRINTF("Current Mod (Extension): \"%s\". ID: %i\n", mod->GetModName(), static_cast<int>(mod->GetModType()));
+	META_CONPRINTF("Current Map: %s\n", STRING(gpGlobals->mapname));
+	META_CONPRINTF("Nav Mesh:\n    Status: %s\n    Version: %i\n    Subversion: %i\n", TheNavMesh->IsLoaded() ? "Loaded" : "NOT Loaded", CNavMesh::NavMeshVersion, TheNavMesh->GetSubVersionNumber());
+	META_CONPRINTF("Update Rate: %3.5f\n", mod->GetModSettings()->GetUpdateRate());
+	META_CONPRINTF("Tick Rate: %3.2f\n", (1.0f / gpGlobals->interval_per_tick));
+#ifdef NO_SOURCEPAWN_API
+	META_CONPRINT("Compiled without SourcePawn API. \n");
+#endif // NO_SOURCEPAWN_API
+
+	META_CONPRINTF("--- END NavBot Info ---\n");
 }
 
 CON_COMMAND_F_COMPLETION(sm_navbot_debug_bot_sensor_memory, "Debugs the bot Sensor interface's entity memory.", FCVAR_CHEAT | FCVAR_GAMEDLL, CExtManager::AutoComplete_BotNames)

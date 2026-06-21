@@ -415,6 +415,7 @@ void NavBotExt::SDK_OnAllLoaded()
 	natives::setup(m_natives);
 	natives::navmesh::setup(m_natives);
 	natives::navarea::setup(m_natives);
+	natives::navmesh::collector::setup(m_natives);
 	natives::mods::setup(m_natives);
 	natives::baseplayer::setup(m_natives);
 	natives::bots::setup(m_natives);

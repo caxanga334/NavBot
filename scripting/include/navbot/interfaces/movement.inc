@@ -23,4 +23,13 @@ methodmap NavBotMovementInterface < NavBotBotInterface
 	public static native bool IsStuck(Address ptr);
 	// Returns how long the bot has been stuck in seconds.
 	public static native float GetStuckDuration(Address ptr);
+	/**
+	 * Checks if the bot can traverse the given area.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param area			Pointer to the nav area.
+	 * @return				True if the bot can traverse the given area, false otherwise.
+	 * @error				Bad interface pointer. Bad nav area pointer.
+	 */
+	public static native bool IsAreaTraversable(Address ptr, Address area);
 }

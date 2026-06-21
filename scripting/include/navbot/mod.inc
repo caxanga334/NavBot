@@ -69,4 +69,13 @@ methodmap NavBotModInterface
 	 * @return				True if a fallback folder is set. False if the current mod doesn't have a fallback folder.
 	 */
 	public static native bool GetFallbackModFolder(char[] buffer, int size);
+	/**
+	 * Adds a classname to the list of classnames the sensor interface will scan.
+	 * Bots will test these entities for visibility and attack them if they're considered an enemy.
+	 * 
+	 * @param classname		Entity classname to add to the scan list.
+	 */
+	public static native void AddClassnameToNPCScanList(const char[] classname);
+	// Removes an entity classname from the NPC scan list.
+	public static native void RemoveClassnameFromNPCScanList(const char[] classname)
 }

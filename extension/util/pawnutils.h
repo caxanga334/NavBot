@@ -2,7 +2,9 @@
 #define __NAVBOT_PAWN_UTILS_H_
 
 #include <ISourceMod.h>
+#include <IForwardSys.h>
 #include <amtl/am-platform.h>
+#include <sourcemod_version.h>
 
 /* SourceMod Utility functions */
 
@@ -31,7 +33,10 @@ namespace pawnutils
 
 		return index;
 	}
-
+	inline bool IsInt64Available(SourcePawn::IPluginContext* context)
+	{
+		return context->GetRuntime()->FindPubvarByName("__Int64_Address__", nullptr) == SP_ERROR_NONE;
+	}
 	// Returns a pointer (Address) to sourcepawn functions.
 	template <typename PointerType>
 	inline cell_t ReturnPointerToPawn(IPluginContext* context, const cell_t* params, PointerType obj)
@@ -140,6 +145,8 @@ namespace pawnutils
 	bool IsClientInGame(IPluginContext* context, int index);
 	// explicit bool to cell_t conversion
 	inline cell_t ReturnBool(const bool value) { return value ? static_cast<cell_t>(1) : static_cast<cell_t>(0); }
+	// Returns a float value to plugins.
+	inline cell_t ReturnFloat(const float value) { return sp_ftoc(value); }
 	// Read a parameter into a CBaseEntity pointer.
 	CBaseEntity* ReadEntity(IPluginContext* context, const cell_t* params, std::size_t index);
 	// Reads a parameter into a Vector
@@ -165,6 +172,43 @@ namespace pawnutils
 		cell_t* addr = nullptr;
 		context->LocalToPhysAddr(params[index], &addr);
 		return addr == context->GetNullRef(SourcePawn::SP_NULL_VECTOR);
+	}
+#if SM_BUILD_MINOR_INT >= SM_VERSION_1_13
+	template <typename T>
+	inline void PushObjectPtr(sp::CallArgs args, T* object)
+	{
+		args.PushInt64(static_cast<int64_t>(reinterpret_cast<std::uintptr_t>(object)));
+	}
+#endif // SM_BUILD_MINOR_INT >= SM_VERSION_1_13
+	template <typename T>
+	inline void PushObjectPtr(SourceMod::IForward* forward, T* object)
+	{
+#ifdef KE_ARCH_X64
+		// object ptr not supported on x64
+		forward->PushCell(0);
+		return;
+#else
+		forward->PushCell(reinterpret_cast<std::uintptr_t>(object));
+#endif // KE_ARCH_X64
+	}
+
+	inline bool ReadFunctionByID(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index, SourcePawn::IPluginFunction** func)
+	{
+		*func = context->GetFunctionById(static_cast<funcid_t>(params[index]));
+
+		if (*func == nullptr)
+		{
+			context->ReportError("NULL function! Param %i", params[index]);
+		}
+
+		return *func != nullptr;
+	}
+	// Reads a string parameter with NULL_STRING support.
+	inline char* ReadStringNULL(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index)
+	{
+		char* str = nullptr;
+		context->LocalToStringNULL(params[index], &str);
+		return str;
 	}
 }
 

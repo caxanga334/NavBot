@@ -75,5 +75,31 @@ methodmap NavBotNavMesh
 	 * @param size			Size of the path buffer.
 	 */
 	public static native void GetFullPathToNavMeshFile(bool isLoad, char[] path, int size);
+	/**
+	 * Collects nav areas overlapping the given extent.
+	 * 
+	 * @param mins			Extent lower bounds.
+	 * @param maxs			Extent upper bounds.
+	 * @return				Handle to a nav area vector. Needs to be deleted.
+	 */
+	public static native NavBotNavAreaVector CollectAreasOverlappingExtent(const float mins[3], const float maxs[3]);
+	/**
+	 * Collects nav areas overlapping the given extent. The extent bounds are calculated from the given entity.
+	 * 
+	 * @param entity		Entity to calculate the extent of.
+	 * @param xy_offset		Offset to apply to the extent on the X and Y axis.
+	 * @param z_offset		Offset to apply to the extent on the Z axis.
+	 * @return				Handle to a nav area vector. Needs to be deleted.
+	 */
+	public static native NavBotNavAreaVector CollectAreasOverlappingExtentEx(int entity, const float xy_offset = 0.0, const float z_offset = 0.0);
+	/**
+	 * Collects nav areas overlapping the given entity bounds and collides with the entity via raycast traces.
+	 * 
+	 * @param entity		Entity to calculate the extent of.
+	 * @return				Handle to a nav area vector. Needs to be deleted.
+	 */
+	public static native NavBotNavAreaVector CollectAreasTouchingEntity(int entity);
 }
 
+#include "nav_collector.inc"
+#include "nav_blocker.inc"

@@ -203,6 +203,45 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavMesh.Load");
 	MarkNativeAsOptional("NavBotNavMesh.GetFullPathToNavMeshFile");
 
+	/* Nav Area Vector */
+	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");
+	MarkNativeAsOptional("NavBotNavAreaVector.Push");
+	MarkNativeAsOptional("NavBotNavAreaVector.Contains");
+	MarkNativeAsOptional("NavBotNavAreaVector.Erase");
+	MarkNativeAsOptional("NavBotNavAreaVector.Clear");
+	MarkNativeAsOptional("NavBotNavAreaVector.At");
+	MarkNativeAsOptional("NavBotNavAreaVector.Size.get");
+
+	/* Nav Area Collector */
+	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");
+	MarkNativeAsOptional("NavBotNavAreaVector.SetSearchStartArea");
+	MarkNativeAsOptional("NavBotNavAreaVector.ShouldSearch.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.ShouldCollect.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.TravelLimit.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.TravelLimit.get");
+	MarkNativeAsOptional("NavBotNavAreaVector.SearchLadder.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.SearchOffMeshLinks.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.SearchElevators.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.SearchIncoming.set");
+	MarkNativeAsOptional("NavBotNavAreaVector.Execute");
+	MarkNativeAsOptional("NavBotNavAreaVector.Reset");
+	MarkNativeAsOptional("NavBotNavAreaVector.EndSearch");
+	MarkNativeAsOptional("NavBotNavAreaVector.GetSearchNodeForArea");
+	MarkNativeAsOptional("NavBotNavAreaVector.CollectedAreaSize.get");
+	MarkNativeAsOptional("NavBotNavAreaVector.GetRandomCollectedArea");
+	MarkNativeAsOptional("NavBotNavAreaVector.GetFarthestCollectedArea");
+	MarkNativeAsOptional("NavBotNavAreaVector.GetNearestCollectedArea");
+	MarkNativeAsOptional("NavBotNavAreaVector.GetCollectedAreas");
+
+	/* Nav Blocker */
+	MarkNativeAsOptional("NavBotNavBlocker.NavBotNavBlocker");
+	MarkNativeAsOptional("NavBotNavBlocker.AddAreas");
+	MarkNativeAsOptional("NavBotNavBlocker.UpdateBlockedStatus");
+	MarkNativeAsOptional("NavBotNavBlocker.OnRoundRestart.set");
+	MarkNativeAsOptional("NavBotNavBlocker.OnRecomputeInternalData.set");
+	MarkNativeAsOptional("NavBotNavBlocker.Entity.set");
+	MarkNativeAsOptional("NavBotNavBlocker.Entity.get");
+
 	/* Mod Interface */
 	MarkNativeAsOptional("NavBotModInterface.GetModName");
 	MarkNativeAsOptional("NavBotModInterface.ParseModSettingsFile");
@@ -211,6 +250,8 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotModInterface.GetCurrentMapName");
 	MarkNativeAsOptional("NavBotModInterface.GetModFolder");
 	MarkNativeAsOptional("NavBotModInterface.GetFallbackModFolder");
+	MarkNativeAsOptional("NavBotModInterface.AddClassnameToNPCScanList");
+	MarkNativeAsOptional("NavBotModInterface.RemoveClassnameFromNPCScanList");
 
 	/* Navigator */
 	MarkNativeAsOptional("MeshNavigator.MeshNavigator");
@@ -253,6 +294,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotMovementInterface.IsPotentiallyTraversable");
 	MarkNativeAsOptional("NavBotMovementInterface.IsStuck");
 	MarkNativeAsOptional("NavBotMovementInterface.GetStuckDuration");
+	MarkNativeAsOptional("NavBotMovementInterface.IsAreaTraversable");
 
 	/* Sensor Interface */
 	MarkNativeAsOptional("NavBotSensorInterface.IsIgnored");

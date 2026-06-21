@@ -100,6 +100,22 @@ static cell_t Native_GetFallbackModFolder(IPluginContext* context, const cell_t*
 	return pawnutils::ReturnBool((!folder.empty()));
 }
 
+static cell_t Native_AddClassnameToNPCScanList(IPluginContext* context, const cell_t* params)
+{
+	char* str = nullptr;
+	context->LocalToString(params[1], &str);
+	extmanager->GetMod()->AddNPCClassnameToList(str);
+	return 0;
+}
+
+static cell_t Native_RemoveClassnameFromNPCScanList(IPluginContext* context, const cell_t* params)
+{
+	char* str = nullptr;
+	context->LocalToString(params[1], &str);
+	extmanager->GetMod()->RemoveNPCClassnameFromList(str);
+	return 0;
+}
+
 namespace sbm
 {
 	static inline bool IsValidTeamIndex(IPluginContext* context, int teamIndex)
@@ -171,6 +187,8 @@ void natives::mods::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotModInterface.GetCurrentMapName", Native_GetCurrentMapName},
 		{"NavBotModInterface.GetModFolder", Native_GetModFolder},
 		{"NavBotModInterface.GetFallbackModFolder", Native_GetFallbackModFolder},
+		{"NavBotModInterface.AddClassnameToNPCScanList", Native_AddClassnameToNPCScanList},
+		{"NavBotModInterface.RemoveClassnameFromNPCScanList", Native_RemoveClassnameFromNPCScanList},
 
 		/* ISharedBotMemory */
 		{"NavBotSharedBotMemory.ReportEntity", sbm::Native_ReportEntity},

@@ -37,7 +37,9 @@ else:
 project.sources += sourceFiles
 
 pch_sources_shared = [
+  'any',
   'array',
+  'bitset',
   'vector',
   'map',
   'set',

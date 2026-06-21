@@ -444,6 +444,45 @@ bool CBaseMod::IsInProjectilesPath(CBaseBot* bot, CBaseEntity* projectile, Vecto
 	return false;
 }
 
+void CBaseMod::AddNPCClassnameToList(const char* classname)
+{
+	for (auto& name : m_NPCClassnameList)
+	{
+		if (ke::StrCaseCmp(name.c_str(), classname) == 0)
+		{
+			return;
+		}
+	}
+
+	m_NPCClassnameList.emplace_back(classname);
+}
+
+void CBaseMod::RemoveNPCClassnameFromList(const char* classname)
+{
+	for (auto it = m_NPCClassnameList.begin(); it != m_NPCClassnameList.end(); it++)
+	{
+		if (ke::StrCaseCmp(it->c_str(), classname) == 0)
+		{
+			m_NPCClassnameList.erase(it);
+			return;
+		}
+	}
+}
+
+#ifdef EXT_DEBUG
+
+void CBaseMod::Debug_PrintNPCClassnameList()
+{
+	META_CONPRINT("NPC Scan Classname List: \n");
+
+	for (auto& name : m_NPCClassnameList)
+	{
+		META_CONPRINTF("- %s \n", name.c_str());
+	}
+}
+
+#endif // EXT_DEBUG
+
 void CBaseMod::InternalFindPlayerResourceEntity()
 {
 	SourceMod::IGameConfig* gamedata = nullptr;
@@ -618,4 +657,10 @@ CON_COMMAND(sm_navbot_mod_debug_breakable, "Reports an entity breakable state.")
 	META_CONPRINTF("Damageable %i Damageable (by you) %i Breakable %i Health %i\n", 
 		static_cast<int>(damageable), static_cast<int>(damageablebyyou), static_cast<int>(breakable), health);
 }
+
+CON_COMMAND(sm_navbot_mod_debug_npc_list, "Dumps the NPC classname list to console.")
+{
+	extmanager->GetMod()->Debug_PrintNPCClassnameList();
+}
+
 #endif // EXT_DEBUG
