@@ -50,6 +50,11 @@
 #include "navmesh/nav_mesh.h"
 #include "mod_loader.h"
 
+#ifdef EXT_GENERATED_BUILD
+#include <navbot_version_auto.h>
+#endif // EXT_GENERATED_BUILD
+
+
 #if defined(EXT_DEBUG)
 #include "util/prediction.h"
 #include <tier1/KeyValues.h>
@@ -101,7 +106,14 @@ CExtManager* extmanager = nullptr;
 NavBotExt g_NavBotExt;		/**< Global singleton for extension's main interface */
 
 
-ConVar smnav_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
+#ifdef EXT_GENERATED_BUILD
+static ConVar navbot_version("sm_navbot_version", NAVBOT_BUILD_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
+static ConVar navbot_commit("sm_navbot_commit", NAVBOT_BUILD_LONG_HASH, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
+#else
+static ConVar navbot_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
+#endif // EXT_GENERATED_BUILD
+
+
 
 #if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 static ConVar cvar_dump_kv_cmds("sm_navbot_debug_dump_kv_commands", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, prints keyvalue commands sent by clients into the console.");

@@ -35,6 +35,11 @@
 #include "smsdk_ext.h"
 #include "am-string.h"
 
+#ifdef EXT_GENERATED_BUILD
+#include <navbot_version_auto.h>
+#endif // EXT_GENERATED_BUILD
+
+
 /**
  * @file smsdk_ext.cpp
  * @brief Contains wrappers for making Extensions easier to write.
@@ -257,7 +262,11 @@ const char *SDKExtension::GetExtensionDescription()
 
 const char *SDKExtension::GetExtensionVerString()
 {
+#ifdef EXT_GENERATED_BUILD
+	return NAVBOT_BUILD_FULL_VERSION;
+#else
 	return SMEXT_CONF_VERSION;
+#endif // EXT_GENERATED_BUILD
 }
 
 const char *SDKExtension::GetExtensionName()

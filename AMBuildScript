@@ -61,6 +61,7 @@ class ExtensionConfig(object):
     self.all_targets = []
     self.target_archs = set()
     self.sm_version = None
+    self.ext_version = None
 
     if builder.options.targets:
       target_archs = builder.options.targets.split(',')
@@ -402,6 +403,11 @@ class ExtensionConfig(object):
     cxx = binary.compiler
     cxx.defines += ['SM_GENERATED_BUILD', 'SM_VERSION_1_13=13', 'SM_VERSION_1_12=12']
     cxx.sourcedeps += self.sm_version
+
+  def add_ext_version(self, binary):
+    cxx = binary.compiler
+    cxx.defines += ['EXT_GENERATED_BUILD']
+    cxx.sourcedeps += self.ext_version
     
   def LibraryBuilder(self, compiler, name):
     binary = compiler.Library(name)
@@ -473,6 +479,7 @@ class ExtensionConfig(object):
     self.ConfigureForHL2(context, binary, sdk)
     self.ConfigureForExtension(context, binary.compiler)
     self.add_sm_version(binary)
+    self.add_ext_version(binary)
     return binary
 
 if builder.options.breakpadupload == '1' and not 'BREAKPAD_SYMBOL_SERVER' in os.environ:
@@ -484,6 +491,10 @@ Extension.detectSDKs()
 Extension.configure()
 Extension.sm_version = builder.Build(
     'tools/SMVersioning',
+    { 'Extension': Extension }
+  )
+Extension.ext_version = builder.Build(
+    'tools/NavBotVersioning',
     { 'Extension': Extension }
   )
 

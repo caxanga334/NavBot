@@ -25,9 +25,14 @@
 #include <sdkports/sdk_convarref_ep1.h>
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-#ifdef AUTO_GENERATED_VERSION
-#include "generated_version.h"
-#endif // AUTO_GENERATED_VERSION
+#ifdef SM_GENERATED_BUILD
+#include <sourcemod_version_auto.h>
+#endif // SM_GENERATED_BUILD
+
+#ifdef EXT_GENERATED_BUILD
+#include <navbot_version_auto.h>
+#endif // EXT_GENERATED_BUILD
+
 
 CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 {
@@ -41,10 +46,14 @@ CON_COMMAND(sm_navbot_info, "Prints information about the extension.")
 
 	META_CONPRINTF("Extension Version: %s\n", extension->GetExtensionVerString());
 
-#ifdef AUTO_GENERATED_VERSION
-	META_CONPRINTF("Git Commit: %s\n", GIT_COMMIT_HASH);
-	META_CONPRINTF("Git URL: %s\n", GIT_URL);
-#endif // AUTO_GENERATED_VERSION
+#ifdef EXT_GENERATED_BUILD
+	META_CONPRINTF("Git Commit: %s \n", NAVBOT_BUILD_LONG_HASH);
+	META_CONPRINTF("Git Remote URL: %s \n", NAVBOT_BUILD_GIT_REMOTE_URL);
+#endif // EXT_GENERATED_BUILD
+
+#ifdef SM_GENERATED_BUILD
+	META_CONPRINTF("Compiled against SourceMod %s.%s \n", SM_BUILD_MAJOR, SM_BUILD_MINOR);
+#endif // SM_GENERATED_BUILD
 
 	META_CONPRINTF("Source Engine Branch: %i\n", g_SMAPI->GetSourceEngineBuild());
 	META_CONPRINTF("Server Type: %s\n", engine->IsDedicatedServer() ? "Dedicated" : "Listen");

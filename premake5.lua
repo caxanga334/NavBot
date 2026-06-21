@@ -115,7 +115,7 @@ workspace "navbot"
 
     -- Common non SDK Stuff
     filter {}
-        defines { "SM_GENERATED_BUILD", "SM_VERSION_1_13=13", "SM_VERSION_1_12=12" }
+        defines { "EXT_GENERATED_BUILD", "SM_GENERATED_BUILD", "SM_VERSION_1_13=13", "SM_VERSION_1_12=12" }
 
     filter { "options:instructions-set=avx2" }
         vectorextensions "AVX2"
