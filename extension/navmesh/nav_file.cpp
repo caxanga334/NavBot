@@ -909,6 +909,7 @@ static void WarnIfMeshNeedsAnalysis( int version )
 bool CNavMesh::Save(void)
 {
 	BuildAuthorInfo();
+	// m_authorinfo.ClearAndShrink();
 	WarnIfMeshNeedsAnalysis(CNavMesh::NavMeshVersion);
 
 	auto path = GetFullPathToNavMeshFile(false);
@@ -1067,60 +1068,7 @@ void CNavMesh::ReloadNavigationMesh()
 		return;
 	}
 
-	LoadPlaceDatabase();
-
-	NavErrorType error = NAV_CORRUPT_DATA;
-
-	try
-	{
-		error = Load();
-	}
-	catch (const std::ios_base::failure& ex)
-	{
-		smutils->LogError(myself, "Exception throw while reading navigation mesh file: %s", ex.what());
-		Reset();
-		error = NAV_CORRUPT_DATA;
-	}
-	catch (const std::exception& ex)
-	{
-		smutils->LogError(myself, "Failed to load navigation mesh: %s", ex.what());
-		Reset();
-		error = NAV_CORRUPT_DATA;
-	}
-
-	NavNotifyClientsOfReload func;
-	extmanager->ForEachClient(func);
-
-	switch (error)
-	{
-	case NAV_OK:
-		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
-		break;
-	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
-		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
-		break;
-	case NAV_INVALID_FILE:
-		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
-		break;
-	case NAV_BAD_FILE_VERSION:
-		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
-		break;
-	case NAV_FILE_OUT_OF_DATE:
-		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
-		break;
-	case NAV_CORRUPT_DATA:
-		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
-		break;
-	case NAV_OUT_OF_MEMORY:
-		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
-		break;
-	default:
-		break;
-	}
-
-	OnReloaded();
-	// Simulate a round restart to relink the nav mesh with entities.
-	CNavMesh::NotifyRoundRestart();
+	DoLoad(true);
 }
 
 void CNavMesh::FrameAction_ReloadNavMesh(void* data)
@@ -1223,6 +1171,104 @@ void CommandNavCheckFileConsistency( void )
 	filesystem->FindClose( findHandle );
 }
 static ConCommand sm_nav_check_file_consistency( "sm_nav_check_file_consistency", CommandNavCheckFileConsistency, "Scans the maps directory and reports any missing/out-of-date navigation files.", FCVAR_GAMEDLL | FCVAR_CHEAT );
+
+static ConVar sm_nav_auto_import("sm_nav_auto_import", "0", FCVAR_GAMEDLL, "If enabled, automatically imports an official nav mesh if a navbot nav mesh is missing.");
+ConVar sm_nav_quicksave("sm_nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing.");	// TERROR: defaulting to 1, since we don't need the other data
+
+void CNavMesh::DoLoad(bool isReload)
+{
+	LoadPlaceDatabase();
+
+	NavErrorType error = NAV_CORRUPT_DATA;
+
+	try
+	{
+		error = Load();
+	}
+	catch (const std::ios_base::failure& ex)
+	{
+		smutils->LogError(myself, "Exception throw while reading navigation mesh file: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "Failed to load navigation mesh: %s", ex.what());
+		Reset();
+		error = NAV_CORRUPT_DATA;
+	}
+
+	if (isReload)
+	{
+		NavNotifyClientsOfReload func;
+		extmanager->ForEachClient(func);
+	}
+
+	switch (error)
+	{
+	case NAV_OK:
+		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
+		break;
+	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
+	{
+		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
+
+		if (!isReload)
+		{
+			if (sm_nav_auto_import.GetInt() > 0)
+			{
+				ImportFromGame();
+
+				if (IsLoaded()) // successful import
+				{
+					error = NAV_OK;
+
+					if (sm_nav_auto_import.GetInt() > 1)
+					{
+						smutils->LogMessage(myself, "Nav Mesh imported. Running waypoint import.");
+						ImportWaypointsFromRCBot2();
+					}
+
+					smutils->LogMessage(myself, "Auto import successful! Running analysis.");
+					sm_nav_quicksave.SetValue(0);
+
+					TheNavMesh->CompressAllIDs();
+
+					TheNavMesh->BeginAnalysis(false);
+				}
+			}
+		}
+
+		break;
+	}
+	case NAV_INVALID_FILE:
+		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
+		break;
+	case NAV_BAD_FILE_VERSION:
+		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
+		break;
+	case NAV_FILE_OUT_OF_DATE:
+		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
+		break;
+	case NAV_CORRUPT_DATA:
+		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
+		break;
+	case NAV_OUT_OF_MEMORY:
+		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
+		break;
+	default:
+		break;
+	}
+
+	m_lastLoadResult = error;
+
+	if (isReload)
+	{
+		OnReloaded();
+		// Simulate a round restart to relink the nav mesh with entities.
+		CNavMesh::NotifyRoundRestart();
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1799,6 +1845,8 @@ std::filesystem::path CNavMesh::GetFullPathToNavMeshFile(const bool isLoad) cons
 
 void CNavMesh::BuildAuthorInfo()
 {
+	// this shouldn't be needed
+	// m_authorinfo.PurgeDuplicates();
 	auto host = playerhelpers->GetGamePlayer(1); // gets the listen server host
 
 	if (!host->IsAuthorized())

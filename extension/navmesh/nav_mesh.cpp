@@ -56,7 +56,6 @@
 extern CNavMesh *TheNavMesh;
 
 ConVar sm_nav_edit( "sm_nav_edit", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to interactively edit the Navigation Mesh. Set to zero to leave edit mode." );
-ConVar sm_nav_quicksave( "sm_nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing." );	// TERROR: defaulting to 1, since we don't need the other data
 // ConVar sm_nav_show_approach_points( "sm_nav_show_approach_points", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show Approach Points in the Navigation Mesh." );
 ConVar sm_nav_show_danger( "sm_nav_show_danger", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "Show current 'danger' levels." );
 #ifdef NAVMESH_REMOVED_FEATURES
@@ -67,7 +66,6 @@ ConVar sm_nav_show_func_nav_prerequisite("sm_nav_show_func_nav_prerequisite", "0
 ConVar sm_nav_max_vis_delta_list_length("sm_nav_max_vis_delta_list_length", "64", FCVAR_CHEAT);
 #endif // NAVMESH_REMOVED_FEATURES
 ConVar sm_nav_solid_func_brush("sm_nav_solid_func_brush", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, func_brush entities are always considered solid for nav mesh generation/editing.");
-ConVar sm_nav_auto_import("sm_nav_auto_import", "0", FCVAR_GAMEDLL, "If enabled, automatically imports an official nav mesh if a navbot nav mesh is missing.");
 
 
 // extern ConVar sm_nav_show_potentially_visible;
@@ -385,85 +383,6 @@ void CNavMesh::Precache()
 {
 }
 
-void CNavMesh::DoLoad()
-{
-	LoadPlaceDatabase();
-
-	NavErrorType error = NAV_CORRUPT_DATA;
-
-	try
-	{
-		error = Load();
-	}
-	catch (const std::ios_base::failure& ex)
-	{
-		smutils->LogError(myself, "Exception throw while reading navigation mesh file: %s", ex.what());
-		Reset();
-		error = NAV_CORRUPT_DATA;
-	}
-	catch (const std::exception& ex)
-	{
-		smutils->LogError(myself, "Failed to load navigation mesh: %s", ex.what());
-		Reset();
-		error = NAV_CORRUPT_DATA;
-	}
-
-	switch (error)
-	{
-	case NAV_OK:
-		rootconsole->ConsolePrint("[NavBot] Nav mesh loaded successfully.");
-		break;
-	case NAV_CANT_ACCESS_FILE: // don't log this as error, just warn on the console
-	{
-		rootconsole->ConsolePrint("[Navbot] Failed to load nav mesh: File not found.");
-
-		if (sm_nav_auto_import.GetInt() > 0)
-		{
-			ImportFromGame();
-
-			if (IsLoaded()) // successful import
-			{
-				error = NAV_OK;
-
-				if (sm_nav_auto_import.GetInt() > 1)
-				{
-					smutils->LogMessage(myself, "Nav Mesh imported. Running waypoint import.");
-					ImportWaypointsFromRCBot2();
-				}
-
-				smutils->LogMessage(myself, "Auto import successful! Running analysis.");
-				sm_nav_quicksave.SetValue(0);
-
-				TheNavMesh->CompressAllIDs();
-
-				TheNavMesh->BeginAnalysis(false);
-			}
-		}
-
-		break;
-	}
-	case NAV_INVALID_FILE:
-		smutils->LogError(myself, "Failed to load nav mesh: File is invalid.");
-		break;
-	case NAV_BAD_FILE_VERSION:
-		smutils->LogError(myself, "Failed to load nav mesh: Invalid file version.");
-		break;
-	case NAV_FILE_OUT_OF_DATE:
-		smutils->LogError(myself, "Failed to load nav mesh: Nav mesh is out of date.");
-		break;
-	case NAV_CORRUPT_DATA:
-		smutils->LogError(myself, "Failed to load nav mesh: File is corrupt.");
-		break;
-	case NAV_OUT_OF_MEMORY:
-		smutils->LogError(myself, "Failed to load nav mesh: Out of memory.");
-		break;
-	default:
-		break;
-	}
-
-	m_lastLoadResult = error;
-}
-
 void CNavMesh::OnMapStart()
 {
 	DoLoad();
@@ -514,6 +433,7 @@ void CNavMesh::Reset( void )
 	m_updateBlockedAreasTimer.Invalidate();
 
 	m_walkableSeeds.RemoveAll();
+	m_authorinfo.ClearAndShrink();
 	RemoveAllEntitiesFromForcedSolidList();
 }
 

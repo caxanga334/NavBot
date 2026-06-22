@@ -75,7 +75,7 @@ static void sm_zps_nav_set_attribute(const CConCommandArgs& args)
 		return;
 	}
 
-	for (int i = 1; i < args.ArgC(); i++)
+	for (std::size_t i = 1; i < args.ArgC(); i++)
 	{
 		auto attrib = CZPSNavArea::GetZPSAttributeFromName(args[i]);
 

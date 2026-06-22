@@ -352,7 +352,7 @@ public:
 		AuthorInfo()
 		{
 			creator.second = 0;
-			editors.reserve(16);
+			editors.reserve(EDITORS_RESERVE_SIZE);
 		}
 
 		inline bool HasCreatorBeenSet() const { return creator.second != 0; }
@@ -383,9 +383,41 @@ public:
 			return false;
 		}
 
+		inline void PurgeDuplicates()
+		{
+			std::unordered_set<std::uint64_t> sids;
+			sids.reserve(editors.size());
+
+			for (auto it = editors.begin(); it != editors.end();)
+			{
+				auto& editor = *it;
+
+				if (sids.find(editor.second) == sids.end())
+				{
+					sids.insert(editor.second);
+					it++;
+					continue;
+				}
+
+				it = editors.erase(it);
+			}
+		}
+
+		inline void ClearAndShrink()
+		{
+			creator.first.clear();
+			creator.first.shrink_to_fit();
+			creator.second = 0;
+			editors.clear();
+			editors.shrink_to_fit();
+			editors.reserve(EDITORS_RESERVE_SIZE);
+		}
+
 	private:
 		NavEditor creator; // original navmesh author
 		std::vector<NavEditor> editors; // list of other editors
+
+		static constexpr std::size_t EDITORS_RESERVE_SIZE = 32U;
 	};
 
 	// CEventListenerHelper
@@ -430,7 +462,7 @@ public:
 	virtual CNavLadder* CreateLadder() const;							// Allocates a new Ladder
 	virtual void Reset( void );											// destroy Navigation Mesh data and revert to initial state
 	virtual void Update( void );										// invoked on each game frame
-	void DoLoad();														// Try to load a navigation mesh file.
+	void DoLoad(bool isReload = false);														// Try to load a navigation mesh file.
 	virtual NavErrorType Load( void );									// load navigation data from a file
 	virtual NavErrorType PostLoad( uint32_t version );				// (EXTEND) invoked after all areas have been loaded - for pointer binding, etc
 	inline bool IsLoaded( void ) const		{ return m_isLoaded; }				// return true if a Navigation Mesh has been loaded
