@@ -86,6 +86,12 @@ Use `sm_nav_trace_clear_solid_entity_list` to clear the forced solid entity list
 **func_brush** entities must be in their solid state otherwise the engine sees it as non-solid and traces won't collide with them. You can use the `ent_fire` command to change their solid state.    
 `sm_nav_solid_props` includes prop_physics entities, you may want to generate the initial mesh with it turned off and enable when needed.    
 
+# Generating Mesh On Dynamic Props
+
+Some maps may have large prop_dynamic entities and these aren't solid to nav mesh generation by default.    
+To make these props solid for nav generation, you need to set `sm_nav_solid_props` to 1 and change the nav mesh generation trace mask to a mask that collides with props.    
+Use the command `sm_nav_change_generation_trace_mask ` to change the nav mesh generation mask. Using `MASK_PLAYERSOLID` is recommended for props.    
+
 # Bypassing Auto Blockers
 
 In some games, the nav mesh may automatically mark areas as blocked.    
@@ -95,6 +101,10 @@ If the auto blocker is incorrectly marking an area as blocked, they can be bypas
 # Drawing Incoming One-ways
 
 The drawing of incoming one-way connections to nav areas can be enabled using the `sm_nav_show_incoming` ConVar.    
+
+# Selecting Areas Touching an Entity
+
+The command `sm_nav_select_areas_touching_entity <ent index>` will add all areas that overlaps the given entity AABB and also collides against the entity to the selected set.    
 
 <!-- LINKS -->
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md

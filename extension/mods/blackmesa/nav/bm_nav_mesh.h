@@ -9,7 +9,6 @@ public:
 	CBlackMesaNavMesh();
 	~CBlackMesaNavMesh() override;
 
-	unsigned int GetGenerationTraceMask(void) const override;
 };
 
 #endif // !NAVBOT_BLACK_MESA_NAV_MESH_H_

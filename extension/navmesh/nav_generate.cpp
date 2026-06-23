@@ -59,15 +59,16 @@ ConVar sm_nav_generate_incremental_tolerance( "sm_nav_generate_incremental_toler
 ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "10", FCVAR_CHEAT, "Max area size created in nav generation" );
 static ConVar sm_nav_prefer_reload("sm_nav_prefer_reload", "1", FCVAR_GAMEDLL, "(Experimental) If enabled, reloads the navigation mesh instead of reloading the entire map.");
 
-// Common bounding box for traces
-Vector NavTraceMins( -0.45, -0.45, 0 );
-Vector NavTraceMaxs( 0.45, 0.45, 64.0f /* navgenparams->human_crouch_height */);
-
 constexpr float MaxTraversableHeight = 18.0f;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 constexpr float MinObstacleAreaWidth = 10.0f;		// min width of a nav area we will generate on top of an obstacle
 
 extern CNavMesh* TheNavMesh;
 extern NavAreaVector TheNavAreas;
+
+void CNavMesh::SetupGenerationHullSize()
+{
+	s_NavTraceMaxs.z = navgenparams->human_crouch_height;
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -124,7 +125,7 @@ static CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType dir, f
 
 		// make sure we dont look thru the wall
 		trace_t result;
-		trace::hull(*start, pos, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), pIgnore, COLLISION_GROUP_NONE, result);
+		trace::hull(*start, pos, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), pIgnore, COLLISION_GROUP_NONE, result);
 
 		if (result.fraction < 1.0f)
 			break;
@@ -1609,7 +1610,7 @@ static bool testStitchConnection( CNavArea *source, CNavArea *target, const Vect
 			Vector end( pos );
 			start.z += height;
 			end.z += height;
-			trace::hull(start, end, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
+			trace::hull(start, end, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
 
 			if ( !tr.startsolid && tr.fraction == 1.0f )
 			{
@@ -1623,7 +1624,7 @@ static bool testStitchConnection( CNavArea *source, CNavArea *target, const Vect
 
 				start = end = from;
 				end.z += height;
-				trace::hull(start, end, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
+				trace::hull(start, end, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
 
 				if ( tr.fraction < 1.0f )
 				{
@@ -1732,14 +1733,14 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 		from = *fromPos;
 		to.Init( fromPos->x, fromPos->y, fromPos->z + up );
 
-		trace::hull(from, to, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
+		trace::hull(from, to, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 		if (result.fraction <= 0.0f || result.startsolid)
 			continue;
 
 		from.Init( fromPos->x, fromPos->y, result.endpos.z - 0.5f );
 		to.Init( toPos->x, toPos->y, from.z );
 
-		trace::hull(from, to, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
+		trace::hull(from, to, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 		if (result.fraction != 1.0f || result.startsolid)
 			continue;
 
@@ -1753,7 +1754,7 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 	// We've made it up and out, so see if we can drop down
 	from = to;
 	to.z = toPos->z + 2.0f;
-	trace::hull(from, to, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
+	trace::hull(from, to, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 	return result.fraction > 0.0f && !result.startsolid
 	// Allow a little fudge so we can drop down onto stairs
 			&& result.endpos.z <= to.z + navgenparams->step_height;
@@ -4031,7 +4032,7 @@ inline CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
 		const float fudge = 4.0f;
 		trace_t result;
 
-		trace::hull(center + Vector(0, 0, fudge), tryPos + Vector(0, 0, fudge), NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
+		trace::hull(center + Vector(0, 0, fudge), tryPos + Vector(0, 0, fudge), CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 
 		if (result.fraction != 1.0f || result.startsolid)
 			continue;
@@ -4056,7 +4057,7 @@ bool CNavMesh::FindGroundForNode( Vector *pos, Vector *normal ) const
 
 	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_PLAYER_MOVEMENT, WALK_THRU_EVERYTHING);
 
-	trace::hull(Vector(pos->x, pos->y, pos->z + navgenparams->human_height - 0.1f), end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
+	trace::hull(Vector(pos->x, pos->y, pos->z + navgenparams->human_height - 0.1f), end, s_NavTraceMins, s_NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 
 	*pos = tr.endpos;
 	*normal = tr.plane.normal;
@@ -4071,11 +4072,11 @@ static void DrawTrace( const trace_t *trace )
 	/*
 	if ( trace->fraction > 0.0f && !trace->startsolid )
 	{
-		NDebugOverlay::SweptBox( trace->startpos, trace->endpos, NavTraceMins, NavTraceMaxs, vec3_angle, 0, 255, 0, 45, 100 );
+		NDebugOverlay::SweptBox( trace->startpos, trace->endpos, s_NavTraceMins, s_NavTraceMaxs, vec3_angle, 0, 255, 0, 45, 100 );
 	}
 	else
 	{
-		NDebugOverlay::SweptBox( trace->startpos, trace->endpos, NavTraceMins, NavTraceMaxs, vec3_angle, 255, 0, 0, 45, 100 );
+		NDebugOverlay::SweptBox( trace->startpos, trace->endpos, s_NavTraceMins, s_NavTraceMaxs, vec3_angle, 255, 0, 0, 45, 100 );
 	}
 	*/
 }
@@ -4088,7 +4089,7 @@ bool StayOnFloor( trace_t *trace, float zLimit /* = DeathDrop */ )
 	end.z -= zLimit;
 
 	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
-	trace::hull(trace->endpos, end, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
+	trace::hull(trace->endpos, end, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
 
 	DrawTrace( trace );
 	return !trace->startsolid && trace->fraction < 1.0f
@@ -4102,7 +4103,7 @@ bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace
 	const float MinDistance = 1.0f;	// if we can't move at least this far, don't bother stepping up.
 
 	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
-	trace::hull(start, end, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
+	trace::hull(start, end, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
 	DrawTrace( trace );
 
 	// If we started in the ground for some reason, bail
@@ -4126,7 +4127,7 @@ bool TraceAdjacentNode( int depth, const Vector& start, const Vector& end, trace
 	// Try to go up as if we stepped up, forward, and down.
 	Vector testEnd( trace->endpos );
 	testEnd.z += navgenparams->step_height;
-	trace::hull(trace->endpos, testEnd, NavTraceMins, NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
+	trace::hull(trace->endpos, testEnd, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, *trace);
 	DrawTrace( trace );
 
 	Vector forwardTestEnd = end;
@@ -4300,7 +4301,7 @@ bool CNavMesh::SampleStep( void )
 						Vector end( pos );
 						start.z += height;
 						end.z += height;
-						trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
+						trace::hull(start, end, s_NavTraceMins, s_NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 						if ( !tr.startsolid && tr.fraction == 1.0f )
 						{
 							if ( !StayOnFloor( &tr ) )
@@ -4313,7 +4314,7 @@ bool CNavMesh::SampleStep( void )
 
 							start = end = from;
 							end.z += height;
-							trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
+							trace::hull(start, end, s_NavTraceMins, s_NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 							if ( tr.fraction < 1.0f )
 							{
 								break;
@@ -4332,7 +4333,7 @@ bool CNavMesh::SampleStep( void )
 
 							if ( vecToObstacleStart.LengthSqr() <= Square( navgenparams->generation_step_size ) )
 							{
-								trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
+								trace::hull(start, end, s_NavTraceMins, s_NavTraceMaxs, GetGenerationTraceMask(), &filter, tr);
 								if ( !tr.startsolid && tr.fraction < 1.0 )
 								{
 									// We hit something going the other direction.  There is some obstacle between the two nodes.
@@ -4419,13 +4420,13 @@ bool CNavMesh::SampleStep( void )
 					// is not 'solid'.
 					Vector start = to + Vector(0.0f, 0.0f, 0.0f);
 					Vector end = start + Vector(0.0f, 0.0f, sm_nav_displacement_test.GetInt());
-					trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
+					trace::hull(start, end, s_NavTraceMins, s_NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
 
 					if (result.fraction > 0)
 					{
 						end = start;
 						start = result.endpos;
-						trace::hull(start, end, NavTraceMins, NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
+						trace::hull(start, end, s_NavTraceMins, s_NavTraceMaxs, GetGenerationTraceMask(), &filter, result);
 						if (result.fraction < 1)
 						{
 							// if we made it down to within StepHeight, maybe we're on a static prop
@@ -4715,5 +4716,49 @@ void CNavMesh::ValidateNavAreaConnections( void )
 				}
 			}
 		}
+	}
+}
+
+void CNavMesh::CycleChangeGenerationTraceMask(unsigned int mask)
+{
+	if (mask != 0)
+	{
+		m_generationTraceMask = mask;
+		META_CONPRINTF("Generation trace mask is now set to: %u\n", mask);
+		return;
+	}
+
+	unsigned int current = m_generationTraceMask;
+
+	switch (current)
+	{
+	case MASK_PLAYERSOLID_BRUSHONLY:
+	{
+		m_generationTraceMask = MASK_PLAYERSOLID;
+		META_CONPRINT("Generation trace mask is now set to: MASK_PLAYERSOLID\n");
+		return;
+	}
+	case MASK_PLAYERSOLID:
+	{
+		m_generationTraceMask = MASK_NPCSOLID_BRUSHONLY;
+		META_CONPRINT("Generation trace mask is now set to: MASK_NPCSOLID_BRUSHONLY\n");
+		return;
+	}
+	case MASK_NPCSOLID_BRUSHONLY:
+	{
+		m_generationTraceMask = MASK_NPCSOLID;
+		META_CONPRINT("Generation trace mask is now set to: MASK_NPCSOLID\n");
+		return;
+	}
+	case MASK_NPCSOLID:
+	{
+		m_generationTraceMask = MASK_SOLID;
+		META_CONPRINT("Generation trace mask is now set to: MASK_SOLID\n");
+		return;
+	}
+	default:
+		m_generationTraceMask = MASK_PLAYERSOLID_BRUSHONLY;
+		META_CONPRINT("Generation trace mask is now set to: MASK_PLAYERSOLID_BRUSHONLY\n");
+		return;
 	}
 }

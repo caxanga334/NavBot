@@ -20,7 +20,6 @@ public:
 	uint32_t GetSubVersionNumber(void) const override;
 	// Use nav mesh for climbing, players are limited when it comes to climbing
 	bool IsAuthoritative(void) const override { return true; }
-	unsigned int GetGenerationTraceMask(void) const override;
 	void OnNavMeshImportedPreSave() override;
 
 	void Update() override;

@@ -133,11 +133,6 @@ CNavArea* CTFNavMesh::CreateArea(void) const
 	return new CTFNavArea(GetNavPlace());
 }
 
-unsigned int CTFNavMesh::GetGenerationTraceMask(void) const
-{
-	return MASK_PLAYERSOLID_BRUSHONLY;
-}
-
 void CTFNavMesh::OnNavMeshImportedPreSave()
 {
 	CNavMesh::OnNavMeshImportedPreSave();

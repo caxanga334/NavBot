@@ -6,6 +6,12 @@
 class CModSettings : public SourceMod::ITextListener_SMC
 {
 public:
+#ifdef EXT_DEBUG
+	static constexpr bool DEFAULT_ENABLED_ON_DEBUG = true;
+#else
+	static constexpr bool DEFAULT_ENABLED_ON_DEBUG = false;
+#endif // EXT_DEBUG
+
 	CModSettings()
 	{
 		cfg_parser_depth = 0;
@@ -21,8 +27,8 @@ public:
 		rogue_chance = 8;
 		rogue_max_time = 300.0f;
 		rogue_min_time = 120.0f;
-		movement_break_assist = true;
-		unstuck_cheats = true;
+		movement_break_assist = DEFAULT_ENABLED_ON_DEBUG;
+		unstuck_cheats = DEFAULT_ENABLED_ON_DEBUG;
 		movement_jump_assist = true;
 		allow_class_changes = true;
 		unstuck_teleport_threshold = 12;

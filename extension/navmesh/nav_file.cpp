@@ -1398,6 +1398,13 @@ NavErrorType CNavMesh::Load( void )
 			std::string ename(editornamebuffer.get());
 			m_authorinfo.AddEditor(ename, steamid);
 		}
+
+		// this version of the nav mesh had a bug where editor data wasn't cleared before loading, causing editors to be duplicated
+		constexpr uint32_t EDITOR_DUPLICATION_BUG_VERSION = 1U;
+		if (header.version <= EDITOR_DUPLICATION_BUG_VERSION)
+		{
+			m_authorinfo.PurgeDuplicates();
+		}
 	}
 
 	{
@@ -1845,8 +1852,6 @@ std::filesystem::path CNavMesh::GetFullPathToNavMeshFile(const bool isLoad) cons
 
 void CNavMesh::BuildAuthorInfo()
 {
-	// this shouldn't be needed
-	// m_authorinfo.PurgeDuplicates();
 	auto host = playerhelpers->GetGamePlayer(1); // gets the listen server host
 
 	if (!host->IsAuthorized())

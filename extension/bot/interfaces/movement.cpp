@@ -29,6 +29,7 @@ static ConVar sm_navbot_movement_jump_cooldown("sm_navbot_movement_jump_cooldown
 static ConVar sm_navbot_movement_catapult_speed("sm_navbot_movement_catapult_speed", "550.0", FCVAR_GAMEDLL, "Speed to use in catapult velocity correction.");
 static ConVar sm_navbot_movement_strafejump_max_angle("sm_navbot_movement_strafe_jump_max_angle", "75.0", FCVAR_GAMEDLL, "Maximum strafe angle for strafe jumps.");
 static ConVar sm_navbot_movement_strafejump_look_angle_offset("sm_navbot_movement_strafe_look_angle_offset", "15.0", FCVAR_GAMEDLL, "Angle offset for strafe jump look.");
+static ConVar sm_navbot_movement_stuck_log("sm_navbot_movement_stuck_log", "0", FCVAR_GAMEDLL, "Log every bot stuck event to SourceMod's log file.");
 
 CMovementTraverseFilter::CMovementTraverseFilter(CBaseBot* bot, IMovement* mover, const bool now) :
 	trace::CTraceFilterSimple(bot->GetEntity(), mover->GetMovementCollisionGroup())
@@ -1801,6 +1802,30 @@ void IMovement::GetCostMod(const CNavArea* area, float& cost) const
 	}
 }
 
+static void LogStuck(const CBaseBot* bot, const int count)
+{
+	if (!sm_navbot_movement_stuck_log.GetBool()) { return; }
+
+	namespace tf = UtilHelpers::textformat;
+	char strArea[32];
+	std::memset(strArea, 0, sizeof(strArea));
+
+	CNavArea* area = bot->GetLastKnownNavArea();
+
+	if (area)
+	{
+		ke::SafeSprintf(strArea, sizeof(strArea), "Area #%u", area->GetID());
+	}
+	else
+	{
+		ke::SafeStrcpy(strArea, sizeof(strArea), "NULL LAST KNOWN NAV AREA");
+	}
+
+	Vector pos = bot->GetAbsOrigin();
+	smutils->LogError(myself, "Bot \"%s\" got stuck at <%s>. Consecutive stuck events: %i, %s", 
+		bot->GetClientName(), tf::FormatVector(pos), count, strArea);
+}
+
 void IMovement::StuckMonitor()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -1862,6 +1887,7 @@ void IMovement::StuckMonitor()
 				bot->OnStuck();
 				TryToUnstuck();
 				m_stuck.counter++; // still stuck, increase counter
+				LogStuck(bot, m_stuck.counter);
 
 				if (m_stuck.counter > extmanager->GetMod()->GetModSettings()->GetStuckSuicideThreshold())
 				{
@@ -1896,6 +1922,7 @@ void IMovement::StuckMonitor()
 				m_stuck.Stuck(bot);
 				bot->OnStuck();
 				TryToUnstuck();
+				LogStuck(bot, m_stuck.counter);
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{
@@ -2366,9 +2393,11 @@ IMovement::LadderState IMovement::UseLadderUp()
 		return NOT_USING_LADDER;
 	}
 
-	auto input = GetBot()->GetControlInterface();
-	auto origin = GetBot()->GetAbsOrigin();
+	auto bot = GetBot<CBaseBot>();
+	auto input = bot->GetControlInterface();
+	auto origin = bot->GetAbsOrigin();
 	const float z = origin.z;
+	const float z_dist = std::abs(m_ladderGoalZ - z);
 
 	if (!IsOnLadder())
 	{
@@ -2382,14 +2411,22 @@ IMovement::LadderState IMovement::UseLadderUp()
 		return NOT_USING_LADDER;
 	}
 
+	// crouch if the exit tells me to crouch
+	if (m_ladderExit->HasAttributes(NavAttributeType::NAV_MESH_CROUCH))
+	{
+		if (z_dist <= (GetStandingHullHeight() * 1.5f))
+		{
+			input->PressCrouchButton(0.2f);
+		}
+	}
 
 	// Bot is not at the top of the ladder but is above the landing nav area height plus some offset distance
 	if (z >= m_ladderGoalZ)
 	{
 
-		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
-			GetBot()->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladderGoalZ)\n", GetBot()->GetDebugIdentifier());
+			bot->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladderGoalZ)\n", GetBot()->GetDebugIdentifier());
 		}
 
 		return EXITING_LADDER_UP;
@@ -2399,9 +2436,9 @@ IMovement::LadderState IMovement::UseLadderUp()
 	{
 		// reached ladder top
 
-		if (GetBot()->IsDebugging(BOTDEBUG_MOVEMENT))
+		if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
-			GetBot()->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladder->m_top.z)\n", GetBot()->GetDebugIdentifier());
+			bot->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladder->m_top.z)\n", GetBot()->GetDebugIdentifier());
 		}
 
 		return EXITING_LADDER_UP;

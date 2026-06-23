@@ -21,7 +21,6 @@ public:
 	static constexpr uint32_t DoDNavSubVersion = 3U; // current dod nav mesh sub version
 
 	void RegisterModCommands() override;
-	unsigned int GetGenerationTraceMask(void) const override;
 	CNavArea* CreateArea(void) const override;
 	uint32_t GetSubVersionNumber(void) const override { return DoDNavSubVersion; }
 	void OnPreRCBot2WaypointImport(const CRCBot2WaypointLoader& loader) override;

@@ -152,6 +152,7 @@ CNavMesh::CNavMesh( void )
 	m_selectedElevator = nullptr;
 	m_selectedPrerequisite = nullptr;
 	m_lastLoadResult = NavErrorType::MAX_NAV_ERROR_TYPES;
+	m_generationTraceMask = MASK_PLAYERSOLID_BRUSHONLY;
 		
 	Reset();
 
@@ -161,6 +162,8 @@ CNavMesh::CNavMesh( void )
 	AddWalkableEntity("info_player_start");
 	AddWalkableEntity("info_player_teamspawn");
 	AddWalkableEntity("info_player_deathmatch");
+
+	CNavMesh::SetupGenerationHullSize();
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -385,6 +388,8 @@ void CNavMesh::Precache()
 
 void CNavMesh::OnMapStart()
 {
+	// reset mask to default on map load
+	m_generationTraceMask = MASK_PLAYERSOLID_BRUSHONLY;
 	DoLoad();
 
 	// Sourcemod's OnMapStart is called on a ServerActivate hook
@@ -3896,13 +3901,6 @@ void CNavMesh::EndVisibilityComputations( void )
 {
 }
 
-
-//--------------------------------------------------------------------------------------------------------------
-unsigned int CNavMesh::GetGenerationTraceMask( void ) const
-{
-	return MASK_PLAYERSOLID_BRUSHONLY;
-}
-
 //--------------------------------------------------------------------------------------------------------------
 CNavArea *CNavMesh::CreateArea( void ) const
 {
@@ -4628,7 +4626,6 @@ void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, std::vector<CNavA
 {
 	std::vector<CNavArea*> areas;
 	Extent extent{ entity };
-	ICollideable* collider = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable();
 
 	extent.lo.z -= navgenparams->half_human_height;
 	extent.hi.z += navgenparams->half_human_height;
@@ -4643,19 +4640,9 @@ void CNavMesh::CollectAreasTouchingEntity(CBaseEntity* entity, std::vector<CNavA
 
 	for (CNavArea* area : areas)
 	{
-		p1 = area->GetCorner(NavCornerType::NORTH_WEST);
-		p2 = area->GetCorner(NavCornerType::SOUTH_EAST);
-
-		p1.z += navgenparams->human_crouch_height;
-		p2.z += navgenparams->human_crouch_height;
-
-		ray.Init(p1, p2);
-		enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
-
-		if (tr.startsolid || tr.fraction < 1.0f)
+		if (area->IsCollidingWith(entity, navgenparams->human_crouch_height, false))
 		{
 			output.push_back(area);
-			continue;
 		}
 	}
 }

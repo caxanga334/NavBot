@@ -24,3 +24,8 @@ The following options are available:
 
 Having too many debug overlays being rendered at once will crash the game, if you need to debug with multiple bots present, you can specify which bot you want to debug with the `sm_navbot_debug_filter` ConVar.    
 Set the ConVar value the entity index of the bot you want to debug.    
+
+## Stuck Log
+
+Set the ConVar `sm_navbot_movement_stuck_log` to 1 to enable stuck logging for bots.    
+Every time a bot gets stuck, their position will be logged to SourceMod's log files.

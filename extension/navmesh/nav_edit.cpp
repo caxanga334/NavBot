@@ -10,16 +10,10 @@
 // Author: Michael Booth, 2003-2004
 
 #include NAVBOT_PCH_FILE
-#include <string_view>
-#include <cinttypes>
-#include <cmath>
 
-#include <extension.h>
-#include <manager.h>
 #include <mods/basemod.h>
 #include <mods/modhelpers.h>
 #include <entities/baseentity.h>
-#include <extplayer.h>
 #include "nav_trace.h"
 #include "nav_mesh.h"
 #include "nav_waypoint.h"
@@ -65,11 +59,8 @@ ConVar sm_nav_create_area_at_feet( "sm_nav_create_area_at_feet", "0", FCVAR_CHEA
 ConVar sm_nav_drag_selection_volume_zmax_offset( "sm_nav_drag_selection_volume_zmax_offset", "32", FCVAR_CHEAT, "The offset of the nav drag volume top from center" );
 ConVar sm_nav_drag_selection_volume_zmin_offset( "sm_nav_drag_selection_volume_zmin_offset", "32", FCVAR_CHEAT, "The offset of the nav drag volume bottom from center" );
 ConVar sm_nav_show_blocked_filter("sm_nav_show_blocked_filter", "0", FCVAR_CHEAT | FCVAR_GAMEDLL, "If enabled, only show areas as blocked if they are blocked for your current team");
-extern IPlayerInfoManager* playerinfomanager;
-extern IServerGameClients* gameclients;
-extern IVEngineServer *engine;
+
 extern NavAreaVector TheNavAreas;
-extern IPhysicsSurfaceProps *physprops;
 
 Color s_dragSelectionSetAddColor( 100, 255, 100, 96 );
 Color s_dragSelectionSetDeleteColor( 255, 100, 100, 96 );
@@ -500,7 +491,7 @@ static bool CheckForClimbableSurface( const Vector &start, const Vector &end )
 {
 	trace_t result;
 
-	trace::line(start, end, MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+	trace::line(start, end, TheNavMesh->GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 
 	return result.DidHit()
 			&& (physprops->GetSurfaceData(result.surface.surfaceProps)->game.climbable != 0
@@ -5583,6 +5574,62 @@ CON_COMMAND_F(sm_nav_draw_cleared_time, "Draws the nav area's cleared time.", FC
 	};
 
 	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
+}
+
+CON_COMMAND_F(sm_nav_change_generation_trace_mask, "Changes the generation trace mask used by the nav mesh.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	unsigned int mask = 0;
+
+	if (args.ArgC() >= 2)
+	{
+		try
+		{
+			mask = static_cast<unsigned int>(std::stoul(args[1]));
+		}
+		catch (const std::exception& ex)
+		{
+			mask = 0;
+			META_CONPRINTF("Error: %s \n", ex.what());
+		}
+	}
+
+	TheNavMesh->CycleChangeGenerationTraceMask(mask);
+}
+
+CON_COMMAND_F(sm_nav_select_areas_touching_entity, "Selects nav areas that touches the given entity (Raycast)", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_select_areas_touching_entity <ent index>\n");
+		return;
+	}
+
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!pEntity)
+	{
+		META_CONPRINTF("NULL entity of index \"%s\"! \n", args[1]);
+		return;
+	}
+
+	TheNavMesh->ClearSelectedSet();
+	TheNavMesh->SetMarkedArea(nullptr);
+	std::vector<CNavArea*> areas;
+	TheNavMesh->CollectAreasTouchingEntity(pEntity, areas);
+
+	if (areas.empty()) { return; }
+	
+	for (CNavArea* area : areas)
+	{
+		TheNavMesh->AddToSelectedSet(area);
+	}
+
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+	META_CONPRINTF("Selected %zu areas! \n", areas.size());
 }
 
 void CNavMesh::RegisterCommands()

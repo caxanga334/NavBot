@@ -337,12 +337,16 @@ extern PlaceDirectory placeDirectory;
 class CNavMesh : public CEventListenerHelper
 {
 public:
-	CNavMesh( void );
+	CNavMesh(void);
 	virtual ~CNavMesh();
 
 	static constexpr uint32_t NavMeshVersion = 1;
 	static constexpr uint32_t NavMagicNumber = 0x20110FC0;
 	static bool IsEditing();
+	static void SetupGenerationHullSize();
+	// Common bounding box for traces
+	static inline Vector s_NavTraceMins{ -0.45f, -0.45f, 0.0f };
+	static inline Vector s_NavTraceMaxs{ 0.45f, 0.45f, 55.0f };
 
 	typedef std::pair<std::string, std::uint64_t> NavEditor; // name & steamid pair
 
@@ -591,7 +595,12 @@ public:
 	void ClearWalkableSeeds( void )		{ m_walkableSeeds.RemoveAll(); }	// erase all walkable seed positions
 	void MarkStairAreas( void );
 
-	virtual unsigned int GetGenerationTraceMask( void ) const;			// return the mask used by traces when generating the mesh
+	/* virtual */ unsigned int GetGenerationTraceMask(void) const
+	{
+		// return the mask used by traces when generating the mesh
+		// return MASK_PLAYERSOLID_BRUSHONLY;
+		return m_generationTraceMask;
+	}
 
 
 	//-------------------------------------------------------------------------------------
@@ -1390,6 +1399,7 @@ private:
 	CountdownTimer m_recomputeInternalDataTimer;
 	RecomputeInternalDataReason m_recomputeDataReason;
 	NavErrorType m_lastLoadResult;
+	unsigned int m_generationTraceMask;
 
 	void ComputeDoorBlockers();
 	void ComputeBreakableBlockers();
@@ -1419,6 +1429,7 @@ protected:
 	void RebuildElevatorMap();
 	void RebuildPrerequisiteMap();
 public:
+	void CycleChangeGenerationTraceMask(unsigned int mask = 0);
 	// Compresses all ids
 	void CompressAllIDs();
 	// Moves all ids to the highest value

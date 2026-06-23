@@ -10,7 +10,6 @@
 // Author: Michael S. Booth (mike@turtlerockstudios.com), January 2003
 
 #include NAVBOT_PCH_FILE
-#include <extension.h>
 #include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
@@ -30,9 +29,7 @@ CNavNode *CNavNode::m_list = NULL;
 unsigned int CNavNode::m_listLength = 0;
 unsigned int CNavNode::m_nextID = 1;
 
-extern Vector NavTraceMins;
-extern Vector NavTraceMaxs;
-extern IVDebugOverlay* debugoverlay;
+
 
 //--------------------------------------------------------------------------------------------------------------
 // Node hash
@@ -287,7 +284,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 	Vector start( m_pos );
 	Vector end( start );
 	end.z += navgenparams->jump_crouch_height;
-	trace::hull(start, end, NavTraceMins, NavTraceMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
+	trace::hull(start, end, CNavMesh::s_NavTraceMins, CNavMesh::s_NavTraceMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
 
 	float maxHeight = tr.endpos.z - start.z;
 
@@ -300,7 +297,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 
 		realMaxs.z = navgenparams->human_crouch_height;
 
-		trace::hull(start, start, mins, realMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
+		trace::hull(start, start, mins, realMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
 
 		if ( !tr.startsolid )
 		{
@@ -309,7 +306,7 @@ bool CNavNode::TestForCrouchArea( NavCornerType cornerNum, const Vector& mins, c
 			// We found a crouch-sized space.  See if we can stand up.
 			realMaxs.z = navgenparams->human_height;
 
-			trace::hull(start, start, mins, realMaxs, MASK_PLAYERSOLID_BRUSHONLY, &filter, tr);
+			trace::hull(start, start, mins, realMaxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
 
 			if ( !tr.startsolid )
 			{

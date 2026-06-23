@@ -11,8 +11,3 @@ CBlackMesaNavMesh::CBlackMesaNavMesh() :
 CBlackMesaNavMesh::~CBlackMesaNavMesh()
 {
 }
-
-unsigned int CBlackMesaNavMesh::GetGenerationTraceMask(void) const
-{
-	return MASK_PLAYERSOLID_BRUSHONLY;
-}

@@ -22,11 +22,6 @@ void CDoDSNavMesh::RegisterModCommands()
 	CDoDSWaypoint::RegisterCommands();
 }
 
-unsigned int CDoDSNavMesh::GetGenerationTraceMask(void) const
-{
-	return MASK_PLAYERSOLID_BRUSHONLY;
-}
-
 CNavArea* CDoDSNavMesh::CreateArea(void) const
 {
 	return new CDoDSNavArea(GetNavPlace());

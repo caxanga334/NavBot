@@ -491,6 +491,14 @@ public:
 	 * @return True if the area is completely visible from the given position.
 	 */
 	bool IsCompletelyVisible(const Vector& eyePos, const bool checkPVS = false, const bool smallOpt = true) const;
+	/**
+	 * @brief Checks if this nav area is collides with the given entity via Raycast.
+	 * @param pEntity Entity to test for collision against.
+	 * @param heightOffset Offet applied to the test position Z axis.
+	 * @param fastCheck If true, skips some checks. False for a more accurate detection.
+	 * @return True if the entity collides, false otherwise.
+	 */
+	bool IsCollidingWith(CBaseEntity* pEntity, const float heightOffset = 0.0f, const bool fastCheck = true) const;
 
 	int GetAdjacentCount( NavDirType dir ) const	{ return m_connect[ dir ].Count(); }	// return number of connected areas in given direction
 	CNavArea *GetAdjacentArea( NavDirType dir, int i ) const;	// return the i'th adjacent area in the given direction

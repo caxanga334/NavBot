@@ -3730,6 +3730,98 @@ bool CNavArea::IsCompletelyVisible(const Vector& eyePos, const bool checkPVS, co
 	return true;
 }
 
+bool CNavArea::IsCollidingWith(CBaseEntity* pEntity, const float heightOffset, const bool fastCheck) const
+{
+	ICollideable* collider = reinterpret_cast<IServerUnknown*>(pEntity)->GetCollideable();
+	Ray_t ray;
+	trace_t tr;
+	Vector p1, p2;
+
+	p1 = GetCorner(NavCornerType::NORTH_WEST);
+	p2 = GetCorner(NavCornerType::SOUTH_EAST);
+
+	p1.z += heightOffset;
+	p2.z += heightOffset;
+
+	ray.Init(p1, p2);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		return true;
+	}
+
+	p1 = GetCorner(NavCornerType::NORTH_EAST);
+	p2 = GetCorner(NavCornerType::SOUTH_WEST);
+
+	p1.z += heightOffset;
+	p2.z += heightOffset;
+
+	ray.Init(p1, p2);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		return true;
+	}
+
+	if (fastCheck) { return false; }
+
+	p1 = GetCorner(NavCornerType::NORTH_WEST);
+	p2 = GetCorner(NavCornerType::NORTH_EAST);
+
+	p1.z += heightOffset;
+	p2.z += heightOffset;
+
+	ray.Init(p1, p2);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		return true;
+	}
+
+	p2 = GetCorner(NavCornerType::SOUTH_WEST);
+
+	p2.z += heightOffset;
+
+	ray.Init(p1, p2);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		return true;
+	}
+
+	p1 = GetCorner(NavCornerType::SOUTH_EAST);
+	p2 = GetCorner(NavCornerType::NORTH_EAST);
+
+	p1.z += heightOffset;
+	p2.z += heightOffset;
+
+	ray.Init(p1, p2);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		return true;
+	}
+
+	p2 = GetCorner(NavCornerType::SOUTH_WEST);
+
+	p2.z += heightOffset;
+
+	ray.Init(p1, p2);
+	enginetrace->ClipRayToCollideable(ray, MASK_ALL, collider, &tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		return true;
+	}
+
+	return false;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Clears the open and closed lists for a new search
@@ -3739,8 +3831,8 @@ void CNavArea::ClearSearchLists( void )
 	// effectively clears all open list pointers and closed flags
 	CNavArea::MakeNewMarker();
 
-	m_openList = NULL;
-	m_openListTail = NULL;
+	m_openList = nullptr;
+	m_openListTail = nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------------------
