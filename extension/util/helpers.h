@@ -855,6 +855,8 @@ namespace UtilHelpers::parsers
 	 * @return True if parsed successfully, false on error.
 	 */
 	bool ParseRandomInt(const char* str, int& out, const int min, const int max);
+
+	void ParseDelimitedStrings(const std::string& source, char delimiter, std::vector<std::string>& out);
 }
 
 namespace UtilHelpers::textformat

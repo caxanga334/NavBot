@@ -55,6 +55,14 @@ public:
 	 * @param force
 	 */
 	static void OnMapStart(SourceMod::IGameConfig* gamedata, const bool force = false);
+
+	static bool ShouldAlwaysBreak(CBaseEntity* pEntity);
+
+private:
+	static void ParseAggressiveBreakList(SourceMod::IGameConfig* gamedata);
+
+	static inline std::vector<std::string> s_aggressiveBreakList{};
+	static inline int s_alwaysBreakHealth{ 150 };
 };
 
 #endif // !__NAVBOT_UTIL_GAMEDATA_CONSTS_H_

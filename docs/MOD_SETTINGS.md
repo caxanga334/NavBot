@@ -48,7 +48,7 @@ These settings are used by all mods.
 | rogue_chance | Chance for a bot to use the rogue behavior. Rogue bots ignore map objectives and will roam randomly looking for enemies. | 0 - 100 | 8 |
 | rogue_max_time | Maximum time to stay in the rogue behavior. | 90 - 1200 | 300 |
 | rogue_min_time | Minimum time to stay in the rogue behavior. | 30 - 600 | 120 |
-| movement_break_assist | If enabled, assist the bot with breaking obstacles in their path. | true or false | false |
+| movement_break_assist | If enabled, assist the bot with breaking obstacles in their path. | true or false | true |
 | movement_jump_assist | If enabled, assist the bot with jumping over obstacles. | true or false | true |
 | unstuck_cheats | If enabled, allow bots to cheat to get unstuck. | true or false | false |
 | allow_class_changes | If enabled, allow bots to change classes on class based games. | true or false | true |

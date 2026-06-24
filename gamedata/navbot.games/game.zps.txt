@@ -13,6 +13,8 @@
 			/* ZPS already calls PlayerRunCommands on bots we create, just hook the function */
 			"HookPlayerRunCMD"				"1"
 			"UsesWorkshopMaps"				"true"
+			/* Comma delimited list of entity classnames the bot should always break when one is blocking their path. */
+			"BotBreakAggressiveList" "func_breakable,func_breakable_surf,prop_door_rotating,prop_barricade,func_physbox"
 		}
 		"Offsets"
 		{

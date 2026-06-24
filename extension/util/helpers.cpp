@@ -1854,6 +1854,17 @@ bool UtilHelpers::parsers::ParseRandomInt(const char* str, int& out, const int m
 	}
 }
 
+void UtilHelpers::parsers::ParseDelimitedStrings(const std::string& source, char delimiter, std::vector<std::string>& out)
+{
+	std::stringstream stream(source);
+	std::string token;
+
+	while (std::getline(stream, token, delimiter))
+	{
+		out.emplace_back(token);
+	}
+}
+
 CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool alive, const bool onlyhumans)
 {
 	std::vector<CBaseEntity*> candidates;

@@ -86,6 +86,10 @@
 			"ICombat_DangerEnts" "" // comma delimited list of entity classname that are considered a danger source. Default is empty.
 
 			"ISensor_NPCList" "" // comma delimited list of entity classnames that should be included in the sensor interface vision scan.
+			/* Comma delimited list of entity classnames the bot should always break when one is blocking their path. */
+			"BotBreakAggressiveList" "func_breakable,func_breakable_surf"
+			/* If a breakable has this or less health, the bot will always break it when it's blocking their path. */
+			"BotBreakAggressiveHealth" "150"
 		}
 		"Offsets"
 		{

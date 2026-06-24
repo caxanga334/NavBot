@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include <util/gamedata_const.h>
 #include <mods/basemod.h>
 #include <entities/baseentity.h>
 #include "meshnavigator.h"
@@ -661,27 +662,30 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 			// can we break it?
 			if (bot->IsAbleToBreak(obstacle))
 			{
-				CBaseEntity* last = GetLastPathObstacle();
-
-				if (last != obstacle)
+				if (!GamedataConstants::ShouldAlwaysBreak(obstacle))
 				{
-					SetLastPathObstacle(obstacle);
-					SetAvoidingEntity(obstacle); // try to walk around it
-					m_sameObstacleTimer.Start(); // restart the timer
+					CBaseEntity* last = GetLastPathObstacle();
 
-					if (isDebugging)
+					if (last != obstacle)
 					{
-						bot->DebugPrintToConsole(255, 255, 0, "%s BREAKABLE OBSTACLE ON PATH! %s \n", 
-							bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
+						SetLastPathObstacle(obstacle);
+						SetAvoidingEntity(obstacle); // try to walk around it
+						m_sameObstacleTimer.Start(); // restart the timer
+
+						if (isDebugging)
+						{
+							bot->DebugPrintToConsole(255, 255, 0, "%s BREAKABLE OBSTACLE ON PATH! %s \n",
+								bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
+						}
+
+						return false;
 					}
 
-					return false;
-				}
-
-				// wait a bit before breaking stuff
-				if (m_sameObstacleTimer.IsLessThen(extmanager->GetMod()->GetModSettings()->GetPathBreakObstacleTime()))
-				{
-					return false;
+					// wait a bit before breaking stuff
+					if (m_sameObstacleTimer.IsLessThen(extmanager->GetMod()->GetModSettings()->GetPathBreakObstacleTime()))
+					{
+						return false;
+					}
 				}
 
 				mover->BreakObstacle(obstacle);

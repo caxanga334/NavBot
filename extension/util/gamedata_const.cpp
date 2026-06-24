@@ -3,6 +3,10 @@
 #include "gamedata_const.h"
 #include <in_buttons.h>
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 #define INIT_BUTTON(VAR, VALUE)		\
 	if (this->VAR < 0)				\
 	{								\
@@ -111,6 +115,8 @@ bool GamedataConstants::Initialize(SourceMod::IGameConfig* gamedata)
 	s_user_buttons.InitFromGamedata(gamedata);
 	s_user_buttons.InitFromSDK();
 
+	ParseAggressiveBreakList(gamedata);
+
 	return true;
 }
 
@@ -166,5 +172,50 @@ void GamedataConstants::OnMapStart(SourceMod::IGameConfig* gamedata, const bool 
 		}
 
 		init = true;
+	}
+}
+
+bool GamedataConstants::ShouldAlwaysBreak(CBaseEntity* pEntity)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("GamedataConstants::ShouldAlwaysBreak", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (entityprops::GetEntityHealth(pEntity) <= s_alwaysBreakHealth)
+	{
+		return true;
+	}
+
+	for (auto& str : s_aggressiveBreakList)
+	{
+		if (UtilHelpers::FClassnameIs(pEntity, str.c_str()))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void GamedataConstants::ParseAggressiveBreakList(SourceMod::IGameConfig* gamedata)
+{
+	const char* value = gamedata->GetKeyValue("BotBreakAggressiveList");
+
+	if (value)
+	{
+		UtilHelpers::parsers::ParseDelimitedStrings(value, ',', GamedataConstants::s_aggressiveBreakList);
+	}
+
+	value = gamedata->GetKeyValue("BotBreakAggressiveHealth");
+
+	try
+	{
+		s_alwaysBreakHealth = std::stoi(value);
+		s_alwaysBreakHealth = std::max(s_alwaysBreakHealth, 50);
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "Error while parsing gamedata \"BotBreakAggressiveHealth\" value! %s", ex.what());
+		s_alwaysBreakHealth = 150;
 	}
 }
