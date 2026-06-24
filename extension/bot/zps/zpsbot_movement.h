@@ -14,6 +14,7 @@ public:
 	bool IsUseableObstacle(CBaseEntity* entity) override;
 	int GetMovementCollisionGroup() const override;
 	bool IsAreaTraversable(const CNavArea* area) const override;
+	float GetMaxDropHeight() const override;
 
 	/* GameMovement limits the speed for us, always use max */
 	virtual float GetWalkSpeed() const override { return GetMaxSpeed(); }

@@ -50,6 +50,18 @@ bool CZPSBotMovement::IsAreaTraversable(const CNavArea* area) const
 	return base;
 }
 
+float CZPSBotMovement::GetMaxDropHeight() const
+{
+	switch (GetBot<CZPSBot>()->GetMyZPSTeam())
+	{
+	case zps::ZPSTeam::ZPS_TEAM_ZOMBIES:
+		// zombies can tank fall damage
+		return IMovement::GetMaxDropHeight() * 2.0f;
+	default:
+		return IMovement::GetMaxDropHeight();
+	}
+}
+
 void CZPSBotMovement::UpdateMovementButtons()
 {
 	if (IsWalking())

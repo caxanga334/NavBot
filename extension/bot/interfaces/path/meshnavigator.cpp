@@ -252,7 +252,7 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	left.z = 0.0f;
 
 	constexpr auto nearLedgeRange = 50.0f;
-	if (rangeToGoal > nearLedgeRange || (m_goal && m_goal->type != AIPath::SegmentType::SEGMENT_CLIMB_UP))
+	if (rangeToGoal > nearLedgeRange || (m_goal && m_goal->type != AIPath::SegmentType::SEGMENT_CLIMB_UP && m_goal->type != AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP))
 	{
 		auto next = GetNextSegment(m_goal);
 		bool shouldavoid = true;
@@ -630,13 +630,12 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	Vector forward = (goal->goal - origin);
 	const bool isDebugging = bot->IsDebugging(BOTDEBUG_PATH);
 	const float rangeToGoal = forward.NormalizeInPlace();
-	const float halfhull = mover->GetHullWidth() * 0.5f;
-	const float crouchheight = mover->GetCrouchedHullHeight();
-	const float eyeheight = navgenparams->human_eye_height;
+	const float xysize = mover->GetHullWidth() * 0.5f;
+	const float crouchheight = std::ceil(mover->GetCrouchedHullHeight() * 0.6f);
 	trace_t tr;
 	CMovementTraverseFilter filter{ bot, mover };
-	Vector mins{ -halfhull, -halfhull, 0.0f };
-	Vector maxs{ halfhull, halfhull, crouchheight - 1.0f };
+	Vector mins{ -xysize, -xysize, std::floor(mover->GetStepHeight() * 0.7f) };
+	Vector maxs{ xysize, xysize, crouchheight };
 	origin.z += mover->GetStepHeight(); // ignore obstacles we can step over
 	Vector end = origin + (forward * (mover->GetHullWidth() * 1.5f));
 	const unsigned int mask = mover->GetMovementTraceMask();
@@ -650,11 +649,24 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	if (tr.fraction < 1.0f)
 	{
 		CBaseEntity* obstacle = tr.m_pEnt;
-		const bool isWorld = tr.DidHitWorld();
 
 		if (!obstacle)
 		{
 			return false;
+		}
+
+		if (isDebugging)
+		{
+			NDebugOverlay::SweptBox(origin, end, mins, maxs, vec3_angle, 255, 0, 0, 127, sm_navbot_path_obstacle_scan.GetFloat());
+		}
+
+		const bool isWorld = tr.DidHitWorld();
+
+		if (isDebugging && !isWorld)
+		{
+			NDebugOverlay::Line(origin, tr.endpos, 255, 0, 0, true, sm_navbot_path_obstacle_scan.GetFloat());
+			NDebugOverlay::Text(tr.endpos, "PATH OBSTACLE", true, sm_navbot_path_obstacle_scan.GetFloat());
+			NDebugOverlay::EntityBounds(obstacle, 255, 255, 0, 75, sm_navbot_path_obstacle_scan.GetFloat());
 		}
 
 		if (!isWorld)

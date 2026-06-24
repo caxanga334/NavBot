@@ -89,7 +89,7 @@
 			/* Comma delimited list of entity classnames the bot should always break when one is blocking their path. */
 			"BotBreakAggressiveList" "func_breakable,func_breakable_surf"
 			/* If a breakable has this or less health, the bot will always break it when it's blocking their path. */
-			"BotBreakAggressiveHealth" "150"
+			"BotBreakAggressiveHealth" "100"
 		}
 		"Offsets"
 		{

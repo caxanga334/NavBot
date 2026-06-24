@@ -187,30 +187,10 @@ void IMovement::Update()
 		m_groundMotionVector.y = velocity.y / m_speed;
 	}
 
-	const float curTime = gpGlobals->curtime;
-
-	for (auto it = m_deadAreas.begin(); it != m_deadAreas.end();)
 	{
-		if (it->second <= curTime)
-		{
-			it = m_deadAreas.erase(it);
-		}
-		else
-		{
-			it++;
-		}
-	}
-
-	for (auto it = m_costModAreas.begin(); it != m_costModAreas.end();)
-	{
-		if (it->second.second <= curTime)
-		{
-			it = m_costModAreas.erase(it);
-		}
-		else
-		{
-			it++;
-		}
+		const float curTime = gpGlobals->curtime;
+		UpdateDeadAreas(curTime);
+		UpdateCostModAreas(curTime);
 	}
 
 	// do this after the speeds calculations
@@ -237,72 +217,7 @@ void IMovement::Update()
 		}
 	}
 
-	if (m_isUsingCatapult)
-	{
-		if (!m_isAirborne)
-		{
-			// These require a precise aligment and movement (depends on the map).
-			// To make things easier for bots and for nav mesh editing, we cheat a bit by correcting the bot's velocity mid flight.
-			m_catapultCorrectVelocityTimer.Start(0.75f);
-
-			if (!IsOnGround())
-			{
-				m_isAirborne = true;
-
-				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
-				{
-					me->DebugPrintToConsole(135, 206, 250, "%s CATAPULT AIRBORNE! \n", me->GetDebugIdentifier());
-					const ICollideable* collider = me->GetCollideable();
-					debugoverlay->AddBoxOverlay(collider->GetCollisionOrigin(), collider->OBBMins(), collider->OBBMaxs(), collider->GetCollisionAngles(), 135, 206, 250, 180, 15.0f);
-					debugoverlay->AddLineOverlay(collider->GetCollisionOrigin(), m_landingGoal, 135, 206, 250, true, 15.0f);
-				}
-
-				return;
-			}
-
-			// move towards the start position
-			MoveTowards(m_catapultStartPosition, MOVEWEIGHT_CRITICAL);
-		}
-		else
-		{
-			if (IsOnGround())
-			{
-				// Landed, assume the destination was reached.
-				m_isUsingCatapult = false;
-				m_isAirborne = false;
-
-				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
-				{
-					me->DebugPrintToConsole(135, 206, 250, "%s CATAPULT COMPLETE! DISTANCE FROM LANDING GOAL: %g \n", me->GetDebugIdentifier(), me->GetRangeTo(m_landingGoal));
-				}
-
-				// force an update
-				me->UpdateLastKnownNavArea(true);
-				CMeshNavigator* nav = me->GetActiveNavigator();
-
-				if (nav)
-				{
-					// Refresh the goal position so the bot doesn't try to walk back to the jump start
-					nav->AdvanceGoalToNearest();
-				}
-			}
-			else
-			{
-				if (m_catapultCorrectVelocityTimer.HasStarted() && m_catapultCorrectVelocityTimer.IsElapsed())
-				{
-					m_catapultCorrectVelocityTimer.Invalidate();
-					Vector velocity = me->CalculateLaunchVector(m_landingGoal, sm_navbot_movement_catapult_speed.GetFloat());
-					me->SetAbsVelocity(velocity);
-				}
-
-				// air strafe towards it
-				MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
-				me->GetControlInterface()->AimAt(m_landingGoal, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at catapult landing position!");
-			}
-		}
-
-		return; // block everything below
-	}
+	if (UpdateCatapultLogic()) { return; }
 
 	if (m_doJumpAssist)
 	{
@@ -1256,14 +1171,14 @@ bool IMovement::IsCompletelyCrouched() const
 
 	bool result = false;
 	entprops->GetEntPropBool(GetBot<CBaseBot>()->GetEntity(), Prop_Send, "m_bDucked", result);
-	return false;
+	return result;
 }
 
 bool IMovement::IsInCrouchTransition() const
 {
 	bool result = false;
 	entprops->GetEntPropBool(GetBot<CBaseBot>()->GetEntity(), Prop_Send, "m_bDucking", result);
-	return false;
+	return result;
 }
 
 /**
@@ -1419,7 +1334,7 @@ void IMovement::TryToUnstuck()
 	VPROF_BUDGET("IMovement::TryToUnstuck", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	auto bot = GetBot();
+	CBaseBot* bot = GetBot<CBaseBot>();
 
 	if (bot->IsOnLadder())
 	{
@@ -1526,6 +1441,14 @@ void IMovement::TryToUnstuck()
 		}
 
 		CrouchJump();
+		return;
+	}
+
+	// Sometimes the bot gets stuck while going up a ladder that requires crouching to exit. Jumping generally unstucks the bot.
+	if (IsCompletelyCrouched())
+	{
+		Jump();
+		return;
 	}
 }
 
@@ -2226,6 +2149,12 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	const Vector origin = bot->GetAbsOrigin();
 	const bool debugging = bot->IsDebugging(BOTDEBUG_MOVEMENT);
 
+	// above the ladder
+	if (origin.z >= m_ladder->m_top.z)
+	{
+		return NOT_USING_LADDER;
+	}
+
 	if (IsOnLadder())
 	{
 		bot->GetControlInterface()->ReleaseMovementButtons();
@@ -2243,6 +2172,12 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 	}
 	else
 	{
+		if (origin.z < m_ladderMoveGoal.z - GetStepHeight())
+		{
+			// bot fell or something
+			return NOT_USING_LADDER;
+		}
+
 		Vector to = UtilHelpers::math::BuildDirectionVector(origin, m_ladderMoveGoal);
 		const float dot = DotProduct(to, m_ladder->GetNormal());
 
@@ -3214,4 +3149,76 @@ void IMovement::_Reset()
 	m_costModAreas.clear();
 }
 
+bool IMovement::UpdateCatapultLogic()
+{
+	CBaseBot* me = GetBot<CBaseBot>();
 
+	if (m_isUsingCatapult)
+	{
+		if (!m_isAirborne)
+		{
+			// These require a precise aligment and movement (depends on the map).
+			// To make things easier for bots and for nav mesh editing, we cheat a bit by correcting the bot's velocity mid flight.
+			m_catapultCorrectVelocityTimer.Start(0.75f);
+
+			if (!IsOnGround())
+			{
+				m_isAirborne = true;
+
+				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					me->DebugPrintToConsole(135, 206, 250, "%s CATAPULT AIRBORNE! \n", me->GetDebugIdentifier());
+					const ICollideable* collider = me->GetCollideable();
+					debugoverlay->AddBoxOverlay(collider->GetCollisionOrigin(), collider->OBBMins(), collider->OBBMaxs(), collider->GetCollisionAngles(), 135, 206, 250, 180, 15.0f);
+					debugoverlay->AddLineOverlay(collider->GetCollisionOrigin(), m_landingGoal, 135, 206, 250, true, 15.0f);
+				}
+
+				return true;
+			}
+
+			// move towards the start position
+			MoveTowards(m_catapultStartPosition, MOVEWEIGHT_CRITICAL);
+		}
+		else
+		{
+			if (IsOnGround())
+			{
+				// Landed, assume the destination was reached.
+				m_isUsingCatapult = false;
+				m_isAirborne = false;
+
+				if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					me->DebugPrintToConsole(135, 206, 250, "%s CATAPULT COMPLETE! DISTANCE FROM LANDING GOAL: %g \n", me->GetDebugIdentifier(), me->GetRangeTo(m_landingGoal));
+				}
+
+				// force an update
+				me->UpdateLastKnownNavArea(true);
+				CMeshNavigator* nav = me->GetActiveNavigator();
+
+				if (nav)
+				{
+					// Refresh the goal position so the bot doesn't try to walk back to the jump start
+					nav->AdvanceGoalToNearest();
+				}
+			}
+			else
+			{
+				if (m_catapultCorrectVelocityTimer.HasStarted() && m_catapultCorrectVelocityTimer.IsElapsed())
+				{
+					m_catapultCorrectVelocityTimer.Invalidate();
+					Vector velocity = me->CalculateLaunchVector(m_landingGoal, sm_navbot_movement_catapult_speed.GetFloat());
+					me->SetAbsVelocity(velocity);
+				}
+
+				// air strafe towards it
+				MoveTowards(m_landingGoal, MOVEWEIGHT_CRITICAL);
+				me->GetControlInterface()->AimAt(m_landingGoal, IPlayerController::LOOK_MOVEMENT, 0.2f, "Looking at catapult landing position!");
+			}
+		}
+
+		return true; // block everything below
+	}
+
+	return false;
+}

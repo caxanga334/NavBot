@@ -678,6 +678,38 @@ private:
 	static constexpr float ELEV_MOVESPEED_SCALE = 0.7f; // move at 70% of run speed
 
 	void _Reset();
+
+	void UpdateDeadAreas(const float timestamp)
+	{
+		for (auto it = m_deadAreas.begin(); it != m_deadAreas.end();)
+		{
+			if (it->second <= timestamp)
+			{
+				it = m_deadAreas.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+	}
+
+	void UpdateCostModAreas(const float timestamp)
+	{
+		for (auto it = m_costModAreas.begin(); it != m_costModAreas.end();)
+		{
+			if (it->second.second <= timestamp)
+			{
+				it = m_costModAreas.erase(it);
+			}
+			else
+			{
+				it++;
+			}
+		}
+	}
+
+	bool UpdateCatapultLogic();
 };
 
 inline bool IMovement::IsControllingMovements() const

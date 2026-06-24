@@ -211,11 +211,11 @@ void GamedataConstants::ParseAggressiveBreakList(SourceMod::IGameConfig* gamedat
 	try
 	{
 		s_alwaysBreakHealth = std::stoi(value);
-		s_alwaysBreakHealth = std::max(s_alwaysBreakHealth, 50);
+		s_alwaysBreakHealth = std::max(s_alwaysBreakHealth, 25);
 	}
 	catch (const std::exception& ex)
 	{
 		smutils->LogError(myself, "Error while parsing gamedata \"BotBreakAggressiveHealth\" value! %s", ex.what());
-		s_alwaysBreakHealth = 150;
+		s_alwaysBreakHealth = 100;
 	}
 }
