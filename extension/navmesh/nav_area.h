@@ -1161,6 +1161,10 @@ public:
 	 * @return Time in seconds since this area was last cleared. Returns NAV_AREA_NEVER_CLEARED_STATUS_VALUE if not cleared.
 	 */
 	float GetTimeSinceLastCleared(const int team) const;
+
+protected:
+	// Timer used to throttle the blocked status update
+	CountdownTimer& GetBlockedUpdateTimer() { return m_blockedTimer; }
 };
 
 typedef CUtlVector< CNavArea * > NavAreaVector;

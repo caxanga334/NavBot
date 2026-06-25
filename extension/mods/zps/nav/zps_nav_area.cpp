@@ -59,12 +59,15 @@ bool CZPSNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 
 void CZPSNavArea::UpdateBlocked(bool force, int teamID)
 {
-	if (HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_PHYSPROPS) || HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_SURVIVORSONLY))
+	if (force || GetBlockedUpdateTimer().IsElapsed())
 	{
-		m_blockedByPhysProps = UpdateZPSPhysPropsTransientStatus();
+		if (HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_PHYSPROPS) || HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_SURVIVORSONLY))
+		{
+			m_blockedByPhysProps = UpdateZPSPhysPropsTransientStatus();
+		}
 	}
 
-	return CNavArea::UpdateBlocked(force, teamID);
+	CNavArea::UpdateBlocked(force, teamID);
 }
 
 void CZPSNavArea::ShowAreaInfo() const

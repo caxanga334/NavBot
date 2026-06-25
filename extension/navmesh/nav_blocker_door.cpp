@@ -119,10 +119,22 @@ void CDoorNavBlocker::PrintDebugInfo() const
 void CDoorNavBlocker::UpdateDoor()
 {
 	CBaseEntity* door = m_door.Get();
+	AddDoorAreas(door);
+
+	if (m_areas.empty())
+	{
+		m_door.Term(); // invalidate the ehandle to trigger a destruction of this instance
+		return;
+	}
+	
+	DetectDoorType(door);
 	UpdateDoorTargetname(door);
 
 	if (m_targetname.empty())
 	{
+		// Sounds good on paper but most of the times it's just a perma locked side door and ends up blocking areas that shouldn't be blocked.
+		// If there is an actual room behind the locked door, leave to the nav mesh editor to deal with it.
+#ifdef PROBLEMATIC
 		bool locked = false;
 		entprops->GetEntPropBool(door, Prop_Data, "m_bLocked", locked);
 
@@ -131,23 +143,8 @@ void CDoorNavBlocker::UpdateDoor()
 			m_teamNum = NAV_TEAM_ANY;
 			return;
 		}
+#endif // PROBLEMATIC
 
-		m_door.Term(); // invalidate the ehandle to trigger a destruction of this instance
-		return;
-	}
-
-	if (UtilHelpers::FClassnameIs(door, "prop_door*"))
-	{
-		m_doortype = DOORTYPE_PROP; // brush is default, no need to set again
-	}
-
-	Extent doorExtent{ door };
-	doorExtent.lo.z -= navgenparams->step_height;
-	doorExtent.hi.z += navgenparams->step_height;
-	TheNavMesh->CollectAreasOverlappingExtent(doorExtent, m_areas);
-
-	if (m_areas.empty())
-	{
 		m_door.Term(); // invalidate the ehandle to trigger a destruction of this instance
 		return;
 	}
@@ -326,5 +323,21 @@ void CDoorNavBlocker::CheckButtons(const std::vector<CBaseEntity*>& buttons)
 	{
 		m_activatortype = ACTIVATOR_BUTTON;
 		m_button.Set(button);
+	}
+}
+
+void CDoorNavBlocker::AddDoorAreas(CBaseEntity* door)
+{
+	Extent doorExtent{ door };
+	doorExtent.lo.z -= navgenparams->step_height;
+	doorExtent.hi.z += navgenparams->step_height;
+	TheNavMesh->CollectAreasOverlappingExtent(doorExtent, m_areas);
+}
+
+void CDoorNavBlocker::DetectDoorType(CBaseEntity* door)
+{
+	if (UtilHelpers::FClassnameIs(door, "prop_door*"))
+	{
+		m_doortype = DOORTYPE_PROP; // brush is default, no need to set again
 	}
 }

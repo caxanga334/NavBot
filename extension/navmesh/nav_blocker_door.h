@@ -53,6 +53,8 @@ protected:
 	void CheckTriggers(const std::vector<CBaseEntity*>& triggers);
 	std::vector<CBaseEntity*> CollectConnectedButtons(const char* targetname);
 	void CheckButtons(const std::vector<CBaseEntity*>& buttons);
+	void AddDoorAreas(CBaseEntity* door);
+	void DetectDoorType(CBaseEntity* door);
 };
 
 

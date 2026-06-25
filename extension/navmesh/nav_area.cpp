@@ -4904,6 +4904,7 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		return;
 	}
 
+#if 0
 	constexpr auto MaxBlockedCheckInterval = 5.0f;
 	float interval = m_blockedTimer.GetCountdownDuration() + 1;
 	if ( interval > MaxBlockedCheckInterval )
@@ -4911,6 +4912,8 @@ void CNavArea::UpdateBlocked( bool force, int teamID )
 		interval = MaxBlockedCheckInterval;
 	}
 	m_blockedTimer.Start( interval );
+#endif // 0
+	m_blockedTimer.Start(3.0f);
 
 	if ( ( m_attributeFlags & NAV_MESH_NAV_BLOCKER ) )
 	{
