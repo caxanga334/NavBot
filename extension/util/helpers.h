@@ -1001,6 +1001,13 @@ namespace UtilHelpers::io
 	 * @return True if the entity targets the given targetname, false otherwise.
 	 */
 	bool IsConnectedTo(CBaseEntity* entity, const char* targetname, std::string* inputName = nullptr);
+	/**
+	 * @brief Collects all entities of the given classname that is connected to the given targetname via IO.
+	 * @param classname Classname of the entity to search.
+	 * @param targetname Targetname to check if the entities are connected.
+	 * @param out Vector to store connected entities.
+	 */
+	void CollectedConnectedEntities(const char* classname, const char* targetname, std::vector<CBaseEntity*>& out);
 }
 
 /**

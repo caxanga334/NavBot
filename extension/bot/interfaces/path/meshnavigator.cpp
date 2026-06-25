@@ -633,7 +633,7 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	const float xysize = mover->GetHullWidth() * 0.5f;
 	const float crouchheight = std::ceil(mover->GetCrouchedHullHeight() * 0.6f);
 	trace_t tr;
-	CMovementTraverseFilter filter{ bot, mover };
+	CMovementObstacleFilter filter{ bot };
 	Vector mins{ -xysize, -xysize, std::floor(mover->GetStepHeight() * 0.7f) };
 	Vector maxs{ xysize, xysize, crouchheight };
 	origin.z += mover->GetStepHeight(); // ignore obstacles we can step over
@@ -690,12 +690,15 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 								bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
 						}
 
+						// tell mover about it, maybe we can jump over it
+						mover->ObstacleOnPath(obstacle, goal->goal);
 						return false;
 					}
 
 					// wait a bit before breaking stuff
 					if (m_sameObstacleTimer.IsLessThen(extmanager->GetMod()->GetModSettings()->GetPathBreakObstacleTime()))
 					{
+						mover->ObstacleOnPath(obstacle, goal->goal);
 						return false;
 					}
 				}
@@ -704,16 +707,23 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 				return true;
 			}
 
-			if (!IsUseEntityInCooldown() && !IsUsingEntity() && mover->IsUseableObstacle(obstacle))
+			if (!IsUseEntityInCooldown() && !IsUsingEntity())
 			{
-				if (isDebugging)
-				{
-					bot->DebugPrintToConsole(62, 255, 62, "%s USEABLE OBSTACLE ON PATH! %s\n",
-						bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
-				}
+				CBaseEntity* useTarget = nullptr;
 
-				UseEntity(bot, obstacle);
-				return false;
+				if (mover->IsUseableObstacle(obstacle, &useTarget))
+				{
+					if (!useTarget) { useTarget = obstacle; }
+
+					if (isDebugging)
+					{
+						bot->DebugPrintToConsole(62, 255, 62, "%s USEABLE OBSTACLE ON PATH! %s\n",
+							bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle));
+					}
+
+					UseEntity(bot, useTarget);
+					return false;
+				}
 			}
 		}
 	}
@@ -1504,7 +1514,7 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	// If the bot did not hit a door and the blocking entity is the same for both left and right, notify movement
 	if (door == nullptr && !m_avoidIsLeftClear && !m_avoidIsRightClear && leftEnt == rightEnt)
 	{
-		mover->ObstacleOnPath(leftEnt, goalPos, forward, left);
+		mover->ObstacleOnPath(leftEnt, goalPos);
 	}
 
 	if (bot->IsDebugging(BOTDEBUG_PATH))

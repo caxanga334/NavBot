@@ -269,10 +269,12 @@ namespace botsharedutils
 	public:
 		SelectReachableUnclearedArea(CBaseBot* bot);
 
+		bool ShouldSearch(CNavArea* area) override;
 		bool ShouldCollect(CNavArea* area) override;
 
 	private:
 		int m_teamIndex;
+		int m_enemyTeamIndex;
 		float m_timeLimit;
 	};
 }

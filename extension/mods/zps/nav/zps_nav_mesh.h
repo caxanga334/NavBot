@@ -12,6 +12,7 @@ public:
 
 protected:
 	void RegisterModCommands() override;
+	CDoorNavBlocker* CreateDoorBlocker() const override;
 
 private:
 

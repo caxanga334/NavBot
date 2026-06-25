@@ -27,6 +27,8 @@ void SourcePawnManager::Init()
 
 void SourcePawnManager::OnHandleDestroy(SourceMod::HandleType_t type, void* object)
 {
+#ifndef NO_SOURCEPAWN_API
+
 	if (type == m_handletypes[HANDLE_NAVIGATOR])
 	{
 		CMeshNavigator* nav = reinterpret_cast<CMeshNavigator*>(object);
@@ -60,10 +62,12 @@ void SourcePawnManager::OnHandleDestroy(SourceMod::HandleType_t type, void* obje
 		natives::navmesh::navblocker::onhandledeleted(object);
 		return;
 	}
+#endif // !NO_SOURCEPAWN_API
 }
 
 bool SourcePawnManager::GetHandleApproxSize(SourceMod::HandleType_t type, void* object, unsigned int* pSize)
 {
+#ifndef NO_SOURCEPAWN_API
 	if (type == m_handletypes[HANDLE_NAVIGATOR])
 	{
 		*pSize = static_cast<unsigned int>(sizeof(CMeshNavigator)) + static_cast<unsigned int>(sizeof(BotPathSegment) * 128);
@@ -94,17 +98,21 @@ bool SourcePawnManager::GetHandleApproxSize(SourceMod::HandleType_t type, void* 
 		*pSize = static_cast<unsigned int>(sizeof(std::vector<CNavArea>)) + static_cast<unsigned int>(sizeof(CNavArea) * 512);
 		return true;
 	}
+#endif // !NO_SOURCEPAWN_API
 
 	return false;
 }
 
 void SourcePawnManager::SetupHandles()
 {
+#ifndef NO_SOURCEPAWN_API
 	SetupNavigatorHandle();
 	SetupWeaponDynPrioFactoryHandle();
 	SetupWeaponDynPrioInstanceHandle();
 	SetupNavCollectorHandle();
 	SetupNavAreaVectorHandle();
+	SetupNavBlockerHandle();
+#endif // !NO_SOURCEPAWN_API
 }
 
 void SourcePawnManager::SetupNavigatorHandle()

@@ -33,6 +33,21 @@ private:
 	CBaseEntity* m_avoidEnt; // additional entity to avoid (always solid)
 };
 
+/**
+ * @brief Filter to determine which entities can be an obstacle on a bot's path.
+ */
+class CMovementObstacleFilter : public trace::CTraceFilterSimple
+{
+public:
+	CMovementObstacleFilter(CBaseBot* bot);
+
+	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
+
+private:
+	CBaseBot* m_me;
+	IMovement* m_mover;
+};
+
 class CTraceFilterOnlyActors : public trace::CTraceFilterSimple
 {
 public:
@@ -393,6 +408,12 @@ public:
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float* fraction = nullptr);
 	virtual bool IsEntityTraversable(CBaseEntity* entity, const bool now = true) const;
+	/**
+	 * @brief Used by the CMovementObstacleFilter trace filter.
+	 * @param entity Entity being checked.
+	 * @return True if the filter should hit the entity, false otherwise.
+	 */
+	virtual bool IsEntityAnObstacle(CBaseEntity* entity) const;
 	// returns true if the bot is on ground
 	virtual bool IsOnGround();
 	// Returns true if the bot is fully crouched
@@ -416,7 +437,7 @@ public:
 	// Called when the bot is determined to be stuck, try to unstuck it (IE: jumping)
 	virtual void TryToUnstuck();
 	// Called when there is an obstacle on the bot's path.
-	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left);
+	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos);
 	// Returns the Nav Ladder the bot is using if one.
 	inline const CNavLadder* GetNavLadder() const { return m_ladder; }	
 	// Returns the number of consecutive stuck events
@@ -438,9 +459,10 @@ public:
 	 * 
 	 * Example: Closed doors that can be open with the USE key.
 	 * @param entity Entity blocking the bot's path.
+	 * @param useTarget Entity the bot should press USE. If NULL, the obstacle entity will be used.
 	 * @return true if this entity is useable.
 	 */
-	virtual bool IsUseableObstacle(CBaseEntity* entity);
+	virtual bool IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget);
 	/**
 	 * @brief Tell the movement interface to perform a counter-strafe. (Move in the opposite direction of motion).
 	 * @param time How long to keep counter-strafing. Disabled automatically once the bot reaches near zero speed.
@@ -710,6 +732,8 @@ private:
 	}
 
 	bool UpdateCatapultLogic();
+
+	CBaseEntity* CheckIfDoorIsOpenByButtons(CBaseEntity* door) const;
 };
 
 inline bool IMovement::IsControllingMovements() const

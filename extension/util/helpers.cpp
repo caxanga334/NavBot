@@ -2311,6 +2311,27 @@ bool UtilHelpers::io::IsConnectedTo(CBaseEntity* entity, const char* targetname,
 	return false;
 }
 
+void UtilHelpers::io::CollectedConnectedEntities(const char* classname, const char* targetname, std::vector<CBaseEntity*>& out)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("UtilHelpers::io::CollectedConnectedEntities", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	auto func = [&classname, &targetname, &out](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (UtilHelpers::io::IsConnectedTo(entity, targetname, nullptr))
+			{
+				out.push_back(entity);
+			}
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname(classname, func);
+}
+
 unsigned int UtilHelpers::sendprop::FindOffsetNoInheritance(const char* svclassname, const char* propertyname)
 {
 	ServerClass* svclass = gamehelpers->FindServerClass(svclassname);

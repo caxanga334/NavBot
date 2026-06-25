@@ -61,6 +61,19 @@ void CDoorNavBlocker::Update()
 			return;
 		}
 	}
+
+	if (m_activatortype == ACTIVATOR_BUTTON)
+	{
+		CBaseEntity* button = m_button.Get();
+
+		if (button)
+		{
+			// if the button is locked, block areas
+			bool locked = false;
+			entprops->GetEntPropBool(button, Prop_Data, "m_bLocked", locked);
+			m_blocked = locked;
+		}
+	}
 }
 
 bool CDoorNavBlocker::IsBlocked(int teamID) const
@@ -106,16 +119,19 @@ void CDoorNavBlocker::PrintDebugInfo() const
 void CDoorNavBlocker::UpdateDoor()
 {
 	CBaseEntity* door = m_door.Get();
+	UpdateDoorTargetname(door);
 
-	char targetname[128];
-	targetname[0] = 0;
-	size_t length = 0;
-
-	entprops->GetEntPropString(door, Prop_Data, "m_iName", targetname, sizeof(targetname), length);
-
-	// unnamed door, assume never blocks
-	if (targetname[0] == '\0' || length == 0U)
+	if (m_targetname.empty())
 	{
+		bool locked = false;
+		entprops->GetEntPropBool(door, Prop_Data, "m_bLocked", locked);
+
+		if (locked) // if the door is initially locked, block areas
+		{
+			m_teamNum = NAV_TEAM_ANY;
+			return;
+		}
+
 		m_door.Term(); // invalidate the ehandle to trigger a destruction of this instance
 		return;
 	}
@@ -130,6 +146,42 @@ void CDoorNavBlocker::UpdateDoor()
 	doorExtent.hi.z += navgenparams->step_height;
 	TheNavMesh->CollectAreasOverlappingExtent(doorExtent, m_areas);
 
+	if (m_areas.empty())
+	{
+		m_door.Term(); // invalidate the ehandle to trigger a destruction of this instance
+		return;
+	}
+
+	int team = modhelpers->GetEntityTeamNumber(door);
+	m_teamNum = team == TEAM_UNASSIGNED ? NAV_TEAM_ANY : team;
+
+	std::vector<CBaseEntity*> triggers = CollectConnectedTriggers(m_targetname.c_str());
+	CheckTriggers(triggers);
+
+	if (triggers.empty())
+	{
+		std::vector<CBaseEntity*> buttons = CollectConnectedButtons(m_targetname.c_str());
+		CheckButtons(buttons);
+	}
+}
+
+void CDoorNavBlocker::UpdateDoorTargetname(CBaseEntity* door)
+{
+	m_targetname.clear();
+	char targetname[128];
+	targetname[0] = 0;
+	size_t length = 0;
+
+	entprops->GetEntPropString(door, Prop_Data, "m_iName", targetname, sizeof(targetname), length);
+
+	if (length > 0)
+	{
+		m_targetname.assign(targetname);
+	}
+}
+
+std::vector<CBaseEntity*> CDoorNavBlocker::CollectConnectedTriggers(const char* targetname)
+{
 	// collect triggers connected to this door
 	std::vector<CBaseEntity*> triggers;
 	auto func = [&targetname, &triggers](int index, edict_t* edict, CBaseEntity* entity) {
@@ -145,6 +197,11 @@ void CDoorNavBlocker::UpdateDoor()
 	};
 
 	UtilHelpers::ForEachEntityOfClassname("trigger_multiple", func);
+	return triggers;
+}
+
+void CDoorNavBlocker::CheckTriggers(const std::vector<CBaseEntity*>& triggers)
+{
 	CBaseEntity* trigger = nullptr; // selected trigger
 	CBaseEntity* filter = nullptr;
 
@@ -195,9 +252,6 @@ void CDoorNavBlocker::UpdateDoor()
 		}
 	}
 
-	int team = modhelpers->GetEntityTeamNumber(door);
-	m_teamNum = team == TEAM_UNASSIGNED ? NAV_TEAM_ANY : team;
-
 	if (trigger && filter)
 	{
 		if (UtilHelpers::FClassnameIs(filter, "filter_activator_team"))
@@ -214,10 +268,63 @@ void CDoorNavBlocker::UpdateDoor()
 			}
 		}
 	}
+}
 
-	if (m_areas.empty())
+std::vector<CBaseEntity*> CDoorNavBlocker::CollectConnectedButtons(const char* targetname)
+{
+	// collect triggers connected to this door
+	std::vector<CBaseEntity*> ents;
+	auto func = [&targetname, &ents](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			if (UtilHelpers::io::IsConnectedTo(entity, targetname))
+			{
+				ents.push_back(entity);
+			}
+		}
+
+		return true;
+		};
+
+	UtilHelpers::ForEachEntityOfClassname("func_button", func);
+	return ents;
+}
+
+void CDoorNavBlocker::CheckButtons(const std::vector<CBaseEntity*>& buttons)
+{
+	CBaseEntity* button = nullptr; // selected button
+
+	if (!buttons.empty())
 	{
-		m_door.Term(); // invalidate the ehandle to trigger a destruction of this instance
-		return;
+		if (buttons.size() == 1)
+		{
+			button = buttons[0];
+		}
+		else
+		{
+			for (CBaseEntity* ent : buttons)
+			{
+				bool locked = false;
+				entprops->GetEntPropBool(ent, Prop_Data, "m_bLocked", locked);
+
+				// ignore locked buttons
+				if (locked) { continue; }
+
+				button = ent;
+				break;
+			}
+
+			// all buttons didn't pass the filter, take the first one
+			if (!button)
+			{
+				button = buttons[0];
+			}
+		}
+	}
+
+	if (button)
+	{
+		m_activatortype = ACTIVATOR_BUTTON;
+		m_button.Set(button);
 	}
 }

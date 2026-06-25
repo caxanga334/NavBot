@@ -71,6 +71,13 @@ public:
 	 * @return True if yes, false otherwise.
 	 */
 	virtual bool IsPlayableTeam(int teamNum) const;
+	static constexpr int NO_OPPOSING_TEAM = -1;
+	/**
+	 * @brief Given a team index, returns the team index of the opposing team.
+	 * @param teamNum Team to get the opposing team of.
+	 * @return Opposing team index or NO_OPPOSING_TEAM if an opposing team cannot be determined.
+	 */
+	virtual int GetOpposingTeamIndex(int teamNum) const;
 };
 
 // Global singleton to access the mod helpers interface

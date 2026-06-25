@@ -11,7 +11,7 @@ public:
 	CZPSBotMovement(CZPSBot* bot);
 
 	float GetAvoidDistance() const override { return 32.0f; }
-	bool IsUseableObstacle(CBaseEntity* entity) override;
+	bool IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget) override;
 	int GetMovementCollisionGroup() const override;
 	bool IsAreaTraversable(const CNavArea* area) const override;
 	float GetMaxDropHeight() const override;

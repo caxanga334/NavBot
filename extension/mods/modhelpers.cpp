@@ -112,3 +112,17 @@ bool IModHelpers::IsPlayableTeam(int teamNum) const
 	}
 }
 
+int IModHelpers::GetOpposingTeamIndex(int teamNum) const
+{
+	// Generally, mods uses 2 as team one and 3 as team two
+	switch (teamNum)
+	{
+	case 3:
+		return 2;
+	case 2:
+		return 3;
+	default:
+		return NO_OPPOSING_TEAM;
+	}
+}
+

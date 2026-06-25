@@ -42,3 +42,16 @@ bool CInsMICModHelpers::IsPlayableTeam(int teamNum) const
 		return true;
 	}
 }
+
+int CInsMICModHelpers::GetOpposingTeamIndex(int teamNum) const
+{
+	switch (teamNum)
+	{
+	case static_cast<int>(insmic::InsMICTeam::INSMICTEAM_USMC):
+		return static_cast<int>(insmic::InsMICTeam::INSMICTEAM_INSURGENTS);
+	case static_cast<int>(insmic::InsMICTeam::INSMICTEAM_INSURGENTS):
+		return static_cast<int>(insmic::InsMICTeam::INSMICTEAM_USMC);
+	default:
+		return NO_OPPOSING_TEAM;
+	}
+}

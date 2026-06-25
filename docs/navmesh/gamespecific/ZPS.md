@@ -5,7 +5,7 @@
 * `nozombies`: Bots on the zombie team cannot traverse this area.
 * `nohumans`: Bots on the human team cannot traverse this area.
 * `transient_humans`: Enables the phys prop transient check. If the area is obstructed by phys props, the area is blocked for humans only.
-* `transient_physprops`: Same as above but applies to zombies team.
+* `transient_physprops`: Same as above but applies to both humans and zombie teams.
 
 ## Commands
 

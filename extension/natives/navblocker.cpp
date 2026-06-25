@@ -23,6 +23,13 @@ public:
 
 	~CSourcePawnNavBlocker() final
 	{
+		if (m_handle != BAD_HANDLE)
+		{
+			// this is for when the blocker gets deleted by the nav mesh
+			pawnutils::FreeInternalHandle(m_handle);
+			m_handle = BAD_HANDLE;
+		}
+
 		forwards->ReleaseForward(m_initcallback);
 		forwards->ReleaseForward(m_onupdatecallback);
 		forwards->ReleaseForward(m_onroundrestartcallback);

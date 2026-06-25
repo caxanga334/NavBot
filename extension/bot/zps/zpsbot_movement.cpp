@@ -9,17 +9,20 @@ CZPSBotMovement::CZPSBotMovement(CZPSBot* bot) :
 {
 }
 
-bool CZPSBotMovement::IsUseableObstacle(CBaseEntity* entity)
+bool CZPSBotMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 {
 	CZPSBot* bot = GetBot<CZPSBot>();
 
-	// Zombies can't use open doors
 	if (bot->GetMyZPSTeam() == zps::ZPSTeam::ZPS_TEAM_ZOMBIES)
 	{
-		return false;
+		// Zombies can't use open prop doors
+		if (UtilHelpers::FClassnameIs(entity, "prop_door*"))
+		{
+			return false;
+		}
 	}
 
-	return IMovement::IsUseableObstacle(entity);
+	return IMovement::IsUseableObstacle(entity, useTarget);
 }
 
 int CZPSBotMovement::GetMovementCollisionGroup() const

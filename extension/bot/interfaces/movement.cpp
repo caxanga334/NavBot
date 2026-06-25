@@ -62,6 +62,27 @@ bool CMovementTraverseFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int 
 	return false;
 }
 
+CMovementObstacleFilter::CMovementObstacleFilter(CBaseBot* bot) :
+	trace::CTraceFilterSimple(bot->GetEntity(), bot->GetMovementInterface()->GetMovementCollisionGroup())
+{
+	m_me = bot;
+	m_mover = bot->GetMovementInterface();
+}
+
+bool CMovementObstacleFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask)
+{
+	if (trace::CTraceFilterSimple::ShouldHitEntity(pHandleEntity, contentsMask))
+	{
+		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
+
+		if (!pEntity) { return true; }
+
+		return m_mover->IsEntityAnObstacle(pEntity);
+	}
+
+	return false;
+}
+
 CTraceFilterOnlyActors::CTraceFilterOnlyActors(CBaseEntity* pPassEnt, int collisionGroup) :
 	trace::CTraceFilterSimple(pPassEnt, collisionGroup)
 {
@@ -1154,6 +1175,74 @@ bool IMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
 	return GetBot()->IsAbleToBreak(entity);
 }
 
+bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::IsEntityAnObstacle", "NavBot");
+#endif // EXT_VPROF_ENABLED
+	/*
+	* Used by the navigator to determine if the given entity is an obstacle.
+	* If this returns true, the navigator will check if the entity can be used or broken by the bot.
+	*/
+
+	int index = UtilHelpers::IndexOfEntity(entity);
+
+	if (index == 0)
+	{
+		return true; // always collide with the world
+	}
+
+	if (modhelpers->IsPlayer(entity))
+	{
+		return false; // assume players aren't obstacles, bots will most likely attack them anyway if they're enemies
+	}
+
+	if (modhelpers->IsCombatCharacter(entity))
+	{
+		return false; // don't consider NPCs as obstacles
+	}
+
+	const char* classname = gamehelpers->GetEntityClassname(entity);
+
+	if (std::strcmp(classname, "func_door_rotating") == 0)
+	{
+		int togglestate = static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM);
+		entprops->GetEntProp(entity, Prop_Data, "m_toggle_state", togglestate);
+
+		// Toggle state is at top when a func_door_rotating is open
+		if (togglestate == static_cast<int>(TOGGLE_STATE::TS_AT_TOP))
+		{
+			return false;
+		}
+	}
+
+	if (UtilHelpers::StringMatchesPattern(classname, "func_door*", 0))
+	{
+		int togglestate = static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM);
+		entprops->GetEntProp(entity, Prop_Data, "m_toggle_state", togglestate);
+
+		if (togglestate == static_cast<int>(TOGGLE_STATE::TS_AT_TOP) || togglestate == static_cast<int>(TOGGLE_STATE::TS_GOING_UP))
+		{
+			// don't try to open doors that are already open
+			return false;
+		}
+	}
+
+	if (UtilHelpers::StringMatchesPattern(classname, "prop_door*", 0))
+	{
+		int doorstate = 0;
+		entprops->GetEntProp(entity, Prop_Data, "m_eDoorState", doorstate);
+
+		if (doorstate != static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_CLOSED))
+		{
+			// don't try to open doors that aren't closed
+			return false;
+		}
+	}
+
+	return true;
+}
+
 bool IMovement::IsOnGround()
 {
 	// ground ent was not being realiable for some reason.
@@ -1452,7 +1541,7 @@ void IMovement::TryToUnstuck()
 	}
 }
 
-void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos, const Vector& forward, const Vector& left)
+void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::ObstacleOnPath", "NavBot");
@@ -1550,7 +1639,7 @@ bool IMovement::BreakObstacle(CBaseEntity* obstacle)
 	return true;
 }
 
-bool IMovement::IsUseableObstacle(CBaseEntity* entity)
+bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::IsUseableObstacle", "NavBot");
@@ -1567,6 +1656,14 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity)
 
 		if ((spawnflags & SF_USEOPENS) != 0)
 		{
+			return true;
+		}
+
+		CBaseEntity* button = CheckIfDoorIsOpenByButtons(entity);
+
+		if (button)
+		{
+			*useTarget = button;
 			return true;
 		}
 
@@ -3221,4 +3318,42 @@ bool IMovement::UpdateCatapultLogic()
 	}
 
 	return false;
+}
+
+CBaseEntity* IMovement::CheckIfDoorIsOpenByButtons(CBaseEntity* door) const
+{
+	const char* targetname = entityprops::GetEntityTargetname(door);
+
+	if (!targetname || targetname[0] == '\0') { return nullptr; }
+
+	std::vector<CBaseEntity*> entities;
+	UtilHelpers::io::CollectedConnectedEntities("func_button", targetname, entities);
+
+	if (entities.empty()) { return nullptr; }
+	if (entities.size() == 1) { return entities[0]; }
+
+	Vector p1 = GetBot<CBaseBot>()->GetEyeOrigin();
+	CBaseEntity* selected = nullptr;
+	float best = std::numeric_limits<float>::max();
+	CTraceFilterWorldAndPropsOnly filter;
+
+	for (CBaseEntity* button : entities)
+	{
+		Vector p2 = UtilHelpers::getWorldSpaceCenter(button);
+		float dist = (p1 - p2).LengthSqr();
+
+		if (dist < best)
+		{
+			trace_t tr;
+			trace::line(p1, p2, MASK_SOLID, &filter, tr);
+
+			// depending on the map setup, the nearest button might be behind a wall
+			if (tr.DidHit()) { continue; }
+
+			best = dist;
+			selected = button;
+		}
+	}
+
+	return selected;
 }

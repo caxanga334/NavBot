@@ -858,7 +858,24 @@ botsharedutils::SelectReachableUnclearedArea::SelectReachableUnclearedArea(CBase
 	IsReachableAreas(bot, 8192.0f)
 {
 	m_teamIndex = bot->GetCurrentTeamIndex();
+	m_enemyTeamIndex = modhelpers->GetOpposingTeamIndex(m_teamIndex);
 	m_timeLimit = extmanager->GetMod()->GetModSettings()->GetMaxAreaClearedTime();
+}
+
+bool botsharedutils::SelectReachableUnclearedArea::ShouldSearch(CNavArea* area)
+{
+	if (IsReachableAreas::ShouldSearch(area))
+	{
+		// if we have a valid enemy team index, don't search areas that are blocked for that team, they can't reach it
+		if (m_enemyTeamIndex != IModHelpers::NO_OPPOSING_TEAM)
+		{
+			return !area->IsBlocked(m_enemyTeamIndex);
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 bool botsharedutils::SelectReachableUnclearedArea::ShouldCollect(CNavArea* area)
