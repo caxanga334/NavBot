@@ -3,6 +3,7 @@
 
 #include <navmesh/nav_mesh.h>
 #include "zps_nav_area.h"
+#include "zps_nav_door_blocker.h"
 
 class CZPSNavMesh : public CNavMesh
 {
@@ -12,7 +13,7 @@ public:
 
 protected:
 	void RegisterModCommands() override;
-	CDoorNavBlocker* CreateDoorBlocker() const override;
+	CDoorNavBlocker* CreateDoorBlocker() const override { return new CZPSDoorBlocker; }
 
 private:
 
