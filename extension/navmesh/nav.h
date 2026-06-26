@@ -171,6 +171,20 @@ struct Extent
 	void Init( edict_t *entity );
 	void Init(CBaseEntity* pEntity);
 
+	void AddXYOffset(const float offset)
+	{
+		lo.x -= offset;
+		lo.y -= offset;
+		hi.x += offset;
+		hi.y += offset;
+	}
+
+	void AddZOffset(const float offset)
+	{
+		lo.z -= offset;
+		hi.z += offset;
+	}
+
 	float SizeX( void ) const	{ return hi.x - lo.x; }
 	float SizeY( void ) const	{ return hi.y - lo.y; }
 	float SizeZ( void ) const	{ return hi.z - lo.z; }

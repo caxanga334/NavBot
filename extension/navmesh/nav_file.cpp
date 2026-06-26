@@ -1798,16 +1798,19 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 
 	ValidateNavAreaConnections();
 
+#if 0
 	// TERROR: loading into a map directly creates entities before the mesh is loaded.  Tell the preexisting
 	// entities now that the mesh is loaded so they can update areas.
 	for ( int i=0; i<m_avoidanceObstacles.Count(); ++i )
 	{
 		m_avoidanceObstacles[i]->OnNavMeshLoaded();
 	}
+#endif // 0
 
 	// the Navigation Mesh has been successfully loaded
 	m_isLoaded = true;
 	ShiftAllIDsToTop();
+	RestartUpdateTimers();
 	extmanager->GetMod()->OnNavMeshLoaded();
 
 #ifndef NO_SOURCEPAWN_API

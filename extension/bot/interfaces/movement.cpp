@@ -1233,10 +1233,15 @@ bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
 		int doorstate = 0;
 		entprops->GetEntProp(entity, Prop_Data, "m_eDoorState", doorstate);
 
-		if (doorstate != static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_CLOSED))
+		// open doors aren't an obstacle, they aren't considered traversable so the bot navigator will try to walk around them
+		switch (static_cast<sdkdefs::DoorState_t>(doorstate))
 		{
-			// don't try to open doors that aren't closed
+		case sdkdefs::DoorState_t::DOOR_STATE_OPEN:
+			[[fallthrough]];
+		case sdkdefs::DoorState_t::DOOR_STATE_OPENING:
 			return false;
+		default:
+			break;
 		}
 	}
 
@@ -1674,12 +1679,16 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 		int state = 0;
 		entprops->GetEntProp(entity, Prop_Data, "m_eDoorState", state);
 
-		if (state != static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_CLOSED))
+		// closed and ajar doors should be open
+		switch (static_cast<sdkdefs::DoorState_t>(state))
 		{
-			return false; // only closed doors can be used
+		case sdkdefs::DoorState_t::DOOR_STATE_CLOSED:
+			[[fallthrough]];
+		case sdkdefs::DoorState_t::DOOR_STATE_AJAR:
+			return true;
+		default:
+			return false;
 		}
-
-		return true;
 	}
 
 	return false;

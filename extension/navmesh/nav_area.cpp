@@ -30,6 +30,7 @@
 #include "nav_colors.h"
 #include "nav_blocker.h"
 #include "nav_pathcost_mod.h"
+#include "nav_avoidance_obstacle.h"
 #include <Color.h>
 #include <sdkports/sdk_collisionutils.h>
 #include <tier1/checksum_crc.h>
@@ -3066,7 +3067,7 @@ void CNavArea::Draw( void ) const
 		NavDrawTriangle( m_center + Vector( 0, -bottomHeight, 0 ), m_center + Vector( -bottomWidth, -bottomHeight*2, 0 ), m_center + Vector( bottomWidth, -bottomHeight*2, 0 ), color );
 	}
 
-	if ( IsBlocked( NAV_TEAM_ANY ) || HasAvoidanceObstacle() || IsDamaging() )
+	if ( IsBlocked( NAV_TEAM_ANY ) || IsDamaging() )
 	{
 		NavEditColor color = (IsBlocked( NAV_TEAM_ANY ) && ( m_attributeFlags & NAV_MESH_NAV_BLOCKER ) ) ? NavBlockedByFuncNavBlockerColor : NavBlockedByDoorColor;
 		const float blockedInset = 4.0f;
@@ -3082,6 +3083,22 @@ void CNavArea::Draw( void ) const
 		NavDrawLine( ne, se, color );
 		NavDrawLine( se, sw, color );
 		NavDrawLine( sw, nw, color );
+	}
+	else if (HasAvoidanceObstacle(navgenparams->step_height))
+	{
+		const float blockedInset = 4.0f;
+		nw.x += blockedInset;
+		nw.y += blockedInset;
+		ne.x -= blockedInset;
+		ne.y += blockedInset;
+		sw.x += blockedInset;
+		sw.y -= blockedInset;
+		se.x -= blockedInset;
+		se.y -= blockedInset;
+		NavDrawLine(nw, ne, NavEditColor::NavHasObstructionColor);
+		NavDrawLine(ne, se, NavEditColor::NavHasObstructionColor);
+		NavDrawLine(se, sw, NavEditColor::NavHasObstructionColor);
+		NavDrawLine(sw, nw, NavEditColor::NavHasObstructionColor);
 	}
 }
 
@@ -5106,13 +5123,8 @@ void CNavArea::UpdateAvoidanceObstacles( void )
 		return;
 	}
 
-	const float MaxBlockedCheckInterval = 5;
-	float interval = m_blockedTimer.GetCountdownDuration() + 1;
-	if ( interval > MaxBlockedCheckInterval )
-	{
-		interval = MaxBlockedCheckInterval;
-	}
-	m_avoidanceObstacleTimer.Start( interval );
+	constexpr auto UPDATE_INTERVAL = 5.0f;
+	m_avoidanceObstacleTimer.Start(UPDATE_INTERVAL);
 
 	Vector mins = m_nwCorner;
 	Vector maxs = m_seCorner;
@@ -5121,30 +5133,22 @@ void CNavArea::UpdateAvoidanceObstacles( void )
 	maxs.z = MAX( m_nwCorner.z, m_seCorner.z ) + navgenparams->human_crouch_height;
 
 	float obstructionHeight = 0.0f;
-	for ( int i=0; i<TheNavMesh->GetObstructions().Count(); ++i )
-	{
-		INavAvoidanceObstacle *obstruction = TheNavMesh->GetObstructions()[i];
-		edict_t *obstructingEntity = obstruction->GetObstructingEntity();
-		if ( !obstructingEntity )
-			continue;
 
-		// check if the aabb intersects the search aabb.
-		Vector vecSurroundMins, vecSurroundMaxs;
-		obstructingEntity->GetCollideable()->WorldSpaceSurroundingBounds(
-				&vecSurroundMins, &vecSurroundMaxs);
-		if ( !IsBoxIntersectingBox( mins, maxs, vecSurroundMins, vecSurroundMaxs )
-				|| !obstruction->CanObstructNavAreas() )
-			continue;
+	auto func = [this, &obstructionHeight](const INavAvoidanceObstacle* obstruction) {
+		if (obstruction->IsObstructing(this))
+		{
+			obstructionHeight = std::max(obstructionHeight, obstruction->GetObstructionHeight());
+		}
 
-		float propHeight = obstruction->GetNavObstructionHeight();
+		return true;
+	};
 
-		obstructionHeight = MAX( obstructionHeight, propHeight );
-	}
-
+	TheNavMesh->ForEveryAvoidanceObstacles(func);
 	m_avoidanceObstacleHeight = obstructionHeight;
 
-	if ( m_avoidanceObstacleHeight == 0.0f )
+	if ( m_avoidanceObstacleHeight <= 0.5f )
 	{
+		m_avoidanceObstacleHeight = -1.0f;
 		TheNavMesh->OnAvoidanceObstacleLeftArea( this );
 	}
 }

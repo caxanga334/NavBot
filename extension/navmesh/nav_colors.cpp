@@ -37,6 +37,7 @@ Color NavColors[] = {
 		Color(0, 0, 255),			// NavCornerColor
 		Color(0, 0, 255),			// NavBlockedByDoorColor
 		Color(0, 255, 255),		// NavBlockedByFuncNavBlockerColor
+		Color(255, 255, 0),		// NavHasObstructionColor
 
 		// Hiding spot colors
 		Color(255, 0, 0),			// NavIdealSniperColor

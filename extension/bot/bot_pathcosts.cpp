@@ -130,6 +130,11 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		}
 	}
 
+	if (toArea->HasAvoidanceObstacle(m_movecaps.m_stepheight))
+	{
+		cost *= OBSTRUCTED_COST_MULTIPLIER;
+	}
+
 	// Crouching slows us down, avoid it when looking for fast routes
 	if (type == FASTEST_ROUTE && toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
 	{

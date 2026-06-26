@@ -31,6 +31,7 @@ enum NavEditColor
 	NavCornerColor,
 	NavBlockedByDoorColor,
 	NavBlockedByFuncNavBlockerColor,
+	NavHasObstructionColor,
 
 	// Hiding spot colors
 	NavIdealSniperColor,

@@ -48,7 +48,10 @@
 #include <tier0/vprof.h>
 #endif // EXT_VPROF_ENABLED
 
-#define DrawLine( from, to, duration, red, green, blue )		debugoverlay->AddLineOverlay( from, to, red, green, blue, true, NDEBUG_PERSIST_FOR_ONE_TICK )
+static inline void DrawLine(const Vector& from, const Vector& to, const float duration, const int red, const int green, const int blue)
+{
+	debugoverlay->AddLineOverlay(from, to, red, green, blue, true, NDEBUG_PERSIST_FOR_ONE_TICK);
+}
 
 /**
  * The singleton for accessing the navigation mesh
@@ -136,11 +139,7 @@ CNavMesh::CNavMesh( void )
 	m_hostThreadModeRestoreValue = 0;
 	// m_placeCount = 0;
 	// m_placeName = NULL;
-	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
-	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
-	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
-	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
-	m_invokePrereqUpdateTimer.Start(CNavPrerequisite::UPDATE_INTERVAL);
+	RestartUpdateTimers();
 	m_linkorigin = vec3_origin;
 	m_placeMap.reserve(512);
 	m_waypoints.reserve(128);
@@ -169,6 +168,9 @@ CNavMesh::CNavMesh( void )
 //--------------------------------------------------------------------------------------------------------------
 CNavMesh::~CNavMesh()
 {
+	m_entityAvoidanceObstacles.clear();
+	m_avoidanceObstacleAreas.clear();
+	m_avoidanceObstacles.clear();
 }
 
 bool CNavMesh::IsEditing()
@@ -480,10 +482,12 @@ void CNavMesh::DestroyNavigationMesh( bool incremental )
 		m_prerequisites.clear();
 		DestroyAllNavBlockers();
 		m_navcostmods.clear();
+		m_entityAvoidanceObstacles.clear();
+		m_avoidanceObstacles.clear();
 	}
 
 	m_blockedAreas.RemoveAll();
-	m_avoidanceObstacleAreas.RemoveAll();
+	m_avoidanceObstacleAreas.clear();
 	m_transientAreas.clear();
 	m_recomputeDataReason = RecomputeInternalDataReason::RECOMPUTEREASON_RESET;
 	m_recomputeInternalDataTimer.Invalidate();
@@ -593,6 +597,7 @@ void CNavMesh::Update( void )
 	}
 
 	UpdateBlockedAreas();
+	UpdateAvoidanceObstacles();
 	UpdateAvoidanceObstacleAreas();
 	UpdateNavBlockers();
 	UpdateNavPathCostModifiers();
@@ -933,7 +938,7 @@ void CNavMesh::RemoveNavArea( CNavArea *area )
 		BuildTransientAreaList();
 	}
 
-	m_avoidanceObstacleAreas.FindAndRemove( area );
+	OnAvoidanceObstacleLeftArea(area);
 	m_blockedAreas.FindAndRemove( area );
 
 	--m_areaCount;
@@ -994,6 +999,17 @@ void CNavMesh::TestAllAreasForBlockedStatus( void )
 	}
 }
 
+void CNavMesh::RestartUpdateTimers()
+{
+	m_updateBlockedAreasTimer.Start(1.0f);
+	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
+	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
+	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
+	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
+	m_updateNavBlockersTimer.Start(NAV_BLOCKERS_UPDATE_INTERVAL);
+	m_updateAvoidanceObstaclesTimer.Start(UPDATE_AVOIDANCE_OBSTACLES_INTERVAL);
+}
+
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Invoked when a game round restarts
@@ -1004,12 +1020,7 @@ void CNavMesh::OnRoundRestart( void )
 	Msg("CNavMesh::OnRoundRestart\n");
 #endif // EXT_DEBUG
 
-	m_updateBlockedAreasTimer.Start( 1.0f );
-	m_invokeAreaUpdateTimer.Start(NAV_AREA_UPDATE_INTERVAL);
-	m_invokeWaypointUpdateTimer.Start(CWaypoint::UPDATE_INTERVAL);
-	m_invokeVolumeUpdateTimer.Start(CNavVolume::UPDATE_INTERVAL);
-	m_invokeElevatorUpdateTimer.Start(CNavElevator::UPDATE_INTERVAL);
-	m_updateNavBlockersTimer.Start(NAV_BLOCKERS_UPDATE_INTERVAL);
+	RestartUpdateTimers();
 	RemoveAllEntitiesFromForcedSolidList(); // entities are deleted and re-created between rounds, clear the list
 	ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_RESET);
 
@@ -1097,8 +1108,32 @@ void CNavMesh::BuildTransientAreaList( void )
 	}
 }
 
+void CNavMesh::UpdateAvoidanceObstacles(void)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CNavMesh::UpdateAvoidanceObstacles", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!m_updateAvoidanceObstaclesTimer.IsElapsed()) { return; }
+	m_updateAvoidanceObstaclesTimer.Start(UPDATE_AVOIDANCE_OBSTACLES_INTERVAL);
+
+	for (auto it = m_avoidanceObstacles.begin(); it != m_avoidanceObstacles.end();)
+	{
+		INavAvoidanceObstacle* obstacle = it->get();
+
+		if (!obstacle->IsValid())
+		{
+			it = m_avoidanceObstacles.erase(it);
+			continue;
+		}
+
+		obstacle->Update();
+		it++;
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------
-inline void CNavMesh::GridToWorld( int gridX, int gridY, Vector *pos ) const
+void CNavMesh::GridToWorld( int gridX, int gridY, Vector *pos ) const
 {
 	gridX = clamp( gridX, 0, m_gridSizeX-1 );
 	gridY = clamp( gridY, 0, m_gridSizeY-1 );
@@ -3846,44 +3881,52 @@ void CNavMesh::UpdateNavPathCostModifiers()
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::RegisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction )
 {
-	m_avoidanceObstacles.FindAndRemove( obstruction );
-	m_avoidanceObstacles.AddToTail( obstruction );
+	auto it = std::find_if(m_avoidanceObstacles.begin(), m_avoidanceObstacles.end(), [&obstruction](const std::unique_ptr<INavAvoidanceObstacle>& object) {
+		return object.get() == obstruction;
+	});
+
+	if (it == m_avoidanceObstacles.end())
+	{
+		m_avoidanceObstacles.emplace_back(obstruction);
+	}
 }
 
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::UnregisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction )
 {
-	m_avoidanceObstacles.FindAndRemove( obstruction );
-}
+	auto it = std::remove_if(m_avoidanceObstacles.begin(), m_avoidanceObstacles.end(), [&obstruction](const std::unique_ptr<INavAvoidanceObstacle>& object) {
+		return object.get() == obstruction;
+	});
 
+	m_avoidanceObstacles.erase(it, m_avoidanceObstacles.end());
+}
 
 //--------------------------------------------------------------------------------------------------------
 // invoked when the area becomes blocked
 void CNavMesh::OnAvoidanceObstacleEnteredArea( CNavArea *area )
 {
-	if ( !m_avoidanceObstacleAreas.HasElement( area ) )
+	if (m_avoidanceObstacleAreas.find(area->GetID()) == m_avoidanceObstacleAreas.end())
 	{
-		m_avoidanceObstacleAreas.AddToTail( area );
+		m_avoidanceObstacleAreas.emplace(area->GetID(), area);
 	}
-}
 
+}
 
 //--------------------------------------------------------------------------------------------------------
 // invoked when the area becomes un-blocked
 void CNavMesh::OnAvoidanceObstacleLeftArea( CNavArea *area )
 {
-	m_avoidanceObstacleAreas.FindAndRemove( area );
+	m_avoidanceObstacleAreas.erase(area->GetID());
 }
 
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 {
-	for ( int i=0; i<m_avoidanceObstacleAreas.Count(); ++i )
+	for (auto& pair : m_avoidanceObstacleAreas)
 	{
-		CNavArea *area = m_avoidanceObstacleAreas[i];
-		area->UpdateAvoidanceObstacles();
+		pair.second->UpdateAvoidanceObstacles();
 	}
 }
 
@@ -3967,6 +4010,20 @@ void CNavMesh::ComputeFuncBrushBlockers()
 	};
 
 	UtilHelpers::ForEachEntityOfClassname("func_brush", func);
+}
+
+void CNavMesh::ComputePhysPropsAvoidanceObstacles()
+{
+	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			this->CreateEntityAvoidanceObstacle(entity);
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("prop_phys*", func);
 }
 
 std::shared_ptr<CWaypoint> CNavMesh::CreateWaypoint() const
@@ -4668,6 +4725,20 @@ void CNavMesh::DestroyAllNavBlockers()
 	m_navblockers.clear();
 }
 
+INavEntityAvoidanceObstacle* CNavMesh::CreateEntityAvoidanceObstacle(CBaseEntity* entity)
+{
+	std::uintptr_t key = reinterpret_cast<std::uintptr_t>(entity);
+	if (m_entityAvoidanceObstacles.find(key) != m_entityAvoidanceObstacles.end())
+	{
+		return nullptr;
+	}
+
+	CNavEntityAvoidanceObstacle* obstruction = new CNavEntityAvoidanceObstacle(entity);
+	RegisterEntityAvoidanceObstacle(key, obstruction);
+	RegisterAvoidanceObstacle(obstruction);
+	return obstruction;
+}
+
 void CNavMesh::ComputeInternalData()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -4685,6 +4756,7 @@ void CNavMesh::ComputeInternalData()
 	ComputeDoorBlockers();
 	ComputeBreakableBlockers();
 	ComputeFuncBrushBlockers();
+	ComputePhysPropsAvoidanceObstacles();
 }
 
 void NavNotifyClientsOfReload::operator()(CBaseExtPlayer* player)

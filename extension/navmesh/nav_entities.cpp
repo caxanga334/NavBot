@@ -536,6 +536,7 @@ bool CFuncNavBlocker::CalculateBlocked( bool *pResultByTeam, const Vector &vecMi
 	return bBlocked;
 }
 
+#if 0
 //-----------------------------------------------------------------------------------------------------
 int CFuncNavObstruction::DrawDebugTextOverlays( void )
 {
@@ -611,6 +612,6 @@ bool CFuncNavObstruction::operator()( CNavArea *area )
 	area->MarkObstacleToAvoid( GetNavObstructionHeight() );
 	return true;
 }
-
+#endif // 0
 
 //--------------------------------------------------------------------------------------------------------------

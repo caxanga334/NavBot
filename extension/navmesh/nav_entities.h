@@ -148,6 +148,7 @@ private:
 
 };
 
+#if 0
 //-----------------------------------------------------------------------------------------------------
 /**
   * An entity that can obstruct nav areas.  This is meant for semi-transient areas that obstruct
@@ -189,6 +190,6 @@ private:
 	void ObstructNavAreas(void);
 	bool m_bDisabled;
 };
-
+#endif // 0
 
 #endif // NAV_ENTITIES_H
