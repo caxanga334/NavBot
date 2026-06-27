@@ -22,6 +22,10 @@ public:
 	virtual bool IsValid() const = 0;
 	// Called to update this instance state.
 	virtual void Update() = 0;
+	// Called when the round restarts
+	virtual void OnRoundRestart() = 0;
+	// Called when the nav mesh's internal data is recomputed
+	virtual void OnRecomputeInternalData() = 0;
 	/**
 	 * @brief Called to determine if the given area is getting obstructed by this obstacle.
 	 * @param area Area being tested.
@@ -51,10 +55,15 @@ public:
 	bool IsEnabled() const override;
 	bool IsValid() const override;
 	void Update() override;
+	void OnRoundRestart() override;
+	virtual void OnRecomputeInternalData() override;
 	bool IsObstructing(const CNavArea* area) const override;
 	float GetObstructionHeight() const override;
 	const Extent& GetObstructionExtent() const override;
 	CBaseEntity* GetLinkedEntity() const override;
+
+protected:
+	void UpdateAreas() const;
 
 private:
 	Extent m_bounds;

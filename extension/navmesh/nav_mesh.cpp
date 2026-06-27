@@ -1017,12 +1017,13 @@ void CNavMesh::RestartUpdateTimers()
 void CNavMesh::OnRoundRestart( void )
 {
 #ifdef EXT_DEBUG
-	Msg("CNavMesh::OnRoundRestart\n");
+	META_CONPRINT("CNavMesh::OnRoundRestart\n");
 #endif // EXT_DEBUG
 
 	RestartUpdateTimers();
 	RemoveAllEntitiesFromForcedSolidList(); // entities are deleted and re-created between rounds, clear the list
 	ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_RESET);
+	OnRoundRestart_AvoidanceObstacles();
 
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
@@ -3914,11 +3915,12 @@ void CNavMesh::UnregisterAvoidanceObstacle( INavAvoidanceObstacle *obstruction )
 // invoked when the area becomes blocked
 void CNavMesh::OnAvoidanceObstacleEnteredArea( CNavArea *area )
 {
+	EXT_ASSERT(area != nullptr, "OnAvoidanceObstacleEnteredArea called with NULL area!");
+
 	if (m_avoidanceObstacleAreas.find(area->GetID()) == m_avoidanceObstacleAreas.end())
 	{
-		m_avoidanceObstacleAreas.emplace(area->GetID(), area);
+		m_avoidanceObstacleAreas.try_emplace(area->GetID(), area);
 	}
-
 }
 
 //--------------------------------------------------------------------------------------------------------
@@ -3932,12 +3934,45 @@ void CNavMesh::OnAvoidanceObstacleLeftArea( CNavArea *area )
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::UpdateAvoidanceObstacleAreas( void )
 {
-	for (auto& pair : m_avoidanceObstacleAreas)
+	std::vector<unsigned int> to_remove;
+
+	for (const auto& [id, area] : m_avoidanceObstacleAreas)
 	{
-		pair.second->UpdateAvoidanceObstacles();
+		if (!area->UpdateAvoidanceObstacles())
+		{
+			to_remove.push_back(id);
+		}
+	}
+
+	for (const unsigned int& id : to_remove)
+	{
+		m_avoidanceObstacleAreas.erase(id);
 	}
 }
 
+void CNavMesh::OnRoundRestart_AvoidanceObstacles(void)
+{
+	m_avoidanceObstacleAreas.clear();
+
+	for (auto& ptr : m_avoidanceObstacles)
+	{
+		if (ptr->IsValid())
+		{
+			ptr->OnRoundRestart();
+		}
+	}
+}
+
+void CNavMesh::OnRecomputeInternalData_AvoidanceObstacles(void)
+{
+	for (auto& ptr : m_avoidanceObstacles)
+	{
+		if (ptr->IsValid())
+		{
+			ptr->OnRecomputeInternalData();
+		}
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------
 void CNavMesh::BeginVisibilityComputations( void )
@@ -4761,6 +4796,7 @@ void CNavMesh::ComputeInternalData()
 		blocker->OnRecomputeInternalData();
 	});
 
+	OnRecomputeInternalData_AvoidanceObstacles();
 	ComputeDoorBlockers();
 	ComputeBreakableBlockers();
 	ComputeFuncBrushBlockers();

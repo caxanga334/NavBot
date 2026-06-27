@@ -1711,6 +1711,8 @@ private:
 
 	void UpdateAvoidanceObstacles(void);
 	void UpdateAvoidanceObstacleAreas( void );
+	void OnRoundRestart_AvoidanceObstacles(void);
+	void OnRecomputeInternalData_AvoidanceObstacles(void);
 	static constexpr float UPDATE_AVOIDANCE_OBSTACLES_INTERVAL = 5.0f;
 	CountdownTimer m_updateAvoidanceObstaclesTimer;
 	std::unordered_map<unsigned int, CNavArea*> m_avoidanceObstacleAreas;

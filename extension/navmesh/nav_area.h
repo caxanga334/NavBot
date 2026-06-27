@@ -414,7 +414,11 @@ public:
 	bool HasSolidObstruction() const;
 
 	void MarkObstacleToAvoid( float obstructionHeight );
-	void UpdateAvoidanceObstacles( void );
+	/**
+	 * @brief Called to update the area's avoidance obstacle status.
+	 * @return True if the area is still obstructed, false otherwise. Returning false removes the area from the avoidance obstacle area list.
+	 */
+	bool UpdateAvoidanceObstacles( void );
 	bool HasAvoidanceObstacle( float maxObstructionHeight = 18.0f /* navgenparams->step_height */) const; // is there a large, immobile object obstructing this area
 	float GetAvoidanceObstacleHeight( void ) const; // returns the maximum height of the obstruction above the ground
 

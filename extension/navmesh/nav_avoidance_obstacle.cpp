@@ -17,14 +17,7 @@ CNavEntityAvoidanceObstacle::CNavEntityAvoidanceObstacle(CBaseEntity* entity)
 	}
 
 	m_oldPos = UtilHelpers::getWorldSpaceCenter(entity);
-
-	std::vector<CNavArea*> areas;
-	TheNavMesh->CollectAreasOverlappingExtent(m_bounds, areas);
-
-	for (CNavArea* area : areas)
-	{
-		TheNavMesh->OnAvoidanceObstacleEnteredArea(area);
-	}
+	UpdateAreas();
 }
 
 CNavEntityAvoidanceObstacle::~CNavEntityAvoidanceObstacle()
@@ -53,13 +46,29 @@ void CNavEntityAvoidanceObstacle::Update()
 		m_oldPos = newPos;
 		
 		// entity moved, update nav areas
-		std::vector<CNavArea*> areas;
-		TheNavMesh->CollectAreasOverlappingExtent(m_bounds, areas);
+		UpdateAreas();
+	}
+}
 
-		for (CNavArea* area : areas)
-		{
-			TheNavMesh->OnAvoidanceObstacleEnteredArea(area);
-		}
+void CNavEntityAvoidanceObstacle::OnRoundRestart()
+{
+	CBaseEntity* entity = m_entity.Get();
+
+	if (entity)
+	{
+		UpdateEntityData(entity);
+		UpdateAreas();
+	}
+}
+
+void CNavEntityAvoidanceObstacle::OnRecomputeInternalData()
+{
+	CBaseEntity* entity = m_entity.Get();
+
+	if (entity)
+	{
+		UpdateEntityData(entity);
+		UpdateAreas();
 	}
 }
 
@@ -83,6 +92,17 @@ const Extent& CNavEntityAvoidanceObstacle::GetObstructionExtent() const
 CBaseEntity* CNavEntityAvoidanceObstacle::GetLinkedEntity() const
 {
 	return m_entity.Get();
+}
+
+void CNavEntityAvoidanceObstacle::UpdateAreas() const
+{
+	std::vector<CNavArea*> areas;
+	TheNavMesh->CollectAreasOverlappingExtent(m_bounds, areas);
+
+	for (CNavArea* area : areas)
+	{
+		TheNavMesh->OnAvoidanceObstacleEnteredArea(area);
+	}
 }
 
 void CNavEntityAvoidanceObstacle::UpdateEntityData(CBaseEntity* entity)

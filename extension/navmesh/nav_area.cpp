@@ -5116,11 +5116,11 @@ void CNavArea::MarkObstacleToAvoid( float obstructionHeight )
 /**
  * Updates the (un)obstructed status of the nav area
  */
-void CNavArea::UpdateAvoidanceObstacles( void )
+bool CNavArea::UpdateAvoidanceObstacles( void )
 {
 	if ( !m_avoidanceObstacleTimer.IsElapsed() )
 	{
-		return;
+		return true;
 	}
 
 	constexpr auto UPDATE_INTERVAL = 5.0f;
@@ -5149,8 +5149,12 @@ void CNavArea::UpdateAvoidanceObstacles( void )
 	if ( m_avoidanceObstacleHeight <= 0.5f )
 	{
 		m_avoidanceObstacleHeight = -1.0f;
-		TheNavMesh->OnAvoidanceObstacleLeftArea( this );
+		// do not call TheNavMesh->OnAvoidanceObstacleLeftArea( this ); here
+		// this function is called while the nav mesh is iterating the avoidance areas and directly removing the area invalidates the iterator and crashes
+		return false;
 	}
+
+	return true;
 }
 
 
