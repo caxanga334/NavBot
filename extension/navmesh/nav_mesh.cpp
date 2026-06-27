@@ -1117,19 +1117,27 @@ void CNavMesh::UpdateAvoidanceObstacles(void)
 	if (!m_updateAvoidanceObstaclesTimer.IsElapsed()) { return; }
 	m_updateAvoidanceObstaclesTimer.Start(UPDATE_AVOIDANCE_OBSTACLES_INTERVAL);
 
-	for (auto it = m_avoidanceObstacles.begin(); it != m_avoidanceObstacles.end();)
+#ifdef EXT_DEBUG
+	for (auto& ptr : m_avoidanceObstacles)
 	{
-		INavAvoidanceObstacle* obstacle = it->get();
-
-		if (!obstacle->IsValid())
+		if (!static_cast<bool>(ptr))
 		{
-			it = m_avoidanceObstacles.erase(it);
-			continue;
+			smutils->LogError(myself, "NULL avoidance obstacle instance!");
 		}
-
-		obstacle->Update();
-		it++;
 	}
+#endif // EXT_DEBUG
+
+	// remove invalid instances
+	{
+		auto it = std::remove_if(std::begin(m_avoidanceObstacles), std::end(m_avoidanceObstacles), [](const std::unique_ptr<INavAvoidanceObstacle>& obj) {
+			return !obj->IsValid();
+		});
+		m_avoidanceObstacles.erase(it, m_avoidanceObstacles.end());
+	}
+
+	std::for_each(std::begin(m_avoidanceObstacles), std::end(m_avoidanceObstacles), [](const std::unique_ptr<INavAvoidanceObstacle>& obj) {
+		obj->Update();
+	});
 }
 
 //--------------------------------------------------------------------------------------------------------------
