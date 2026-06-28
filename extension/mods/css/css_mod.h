@@ -49,6 +49,7 @@ public:
 	void OnRoundStart() override;
 	void OnRoundEnd() override;
 	CNavMesh* NavMeshFactory() override;
+	bool IsTeamBasedGame() const override { return true; }
 	const CCSSModSettings* GetCSSModSettings() const { return static_cast<const CCSSModSettings*>(GetModSettings()); }
 	const counterstrikesource::BuyManager& GetBuyManager() const { return m_buymanager; }
 	/**

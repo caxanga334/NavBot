@@ -16,6 +16,7 @@ public:
 	void FireGameEvent(IGameEvent* event) override;
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	IModHelpers* AllocModHelpers() const override;
+	bool IsTeamBasedGame() const override { return true; }
 	/**
 	 * @brief Selects a team and squad for a bot.
 	 * @param[out] teamid Team ID to join.

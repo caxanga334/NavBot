@@ -87,8 +87,7 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 			// jump type is resolved by the navigator
 
 			// add jump penalty
-			constexpr auto jumpPenalty = 2.0f;
-			dist *= jumpPenalty;
+			dist *= JUMP_COST_MULTIPLIER;
 		}
 		else if (deltaZ < -m_movecaps.m_maxdropheight)
 		{
@@ -135,11 +134,15 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		cost *= OBSTRUCTED_COST_MULTIPLIER;
 	}
 
+	if (toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_AVOID)))
+	{
+		cost *= NAV_AVOID_ATTRIB_MULTI;
+	}
+
 	// Crouching slows us down, avoid it when looking for fast routes
 	if (type == FASTEST_ROUTE && toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
 	{
-		constexpr float crouchmult = 1.9f;
-		cost *= crouchmult;
+		cost *= FASTEST_ROUTE_CROUCH_MULT;
 	}
 
 	return cost;

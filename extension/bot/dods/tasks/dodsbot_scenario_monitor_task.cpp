@@ -1,6 +1,5 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
-#include <util/entprops.h>
+#include <sdkports/sdk_convarref_ep1.h>
 #include <bot/dods/dodsbot.h>
 #include <mods/dods/dayofdefeatsourcemod.h>
 #include <mods/dods/nav/dods_nav_mesh.h>
@@ -16,6 +15,7 @@
 #include <bot/tasks_shared/bot_shared_defend_spot.h>
 #include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
 #include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
+#include <bot/tasks_shared/bot_shared_team_deathmatch_behavior.h>
 
 AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 {
@@ -29,6 +29,15 @@ AITask<CDoDSBot>* CDoDSBotScenarioMonitorTask::InitialNextTask(CDoDSBot* bot)
 	if (CBotSharedDefaultCombatBehaviorTask<CDoDSBot, CDoDSBotPathCost>::IsPossible(bot))
 	{
 		return new CBotSharedDefaultCombatBehaviorTask<CDoDSBot, CDoDSBotPathCost>;
+	}
+
+	{
+		ConVarRef sm_dod_navbot_force_tdm("sm_dod_navbot_force_tdm");
+
+		if (sm_dod_navbot_force_tdm.IsValid() && sm_dod_navbot_force_tdm.GetBool())
+		{
+			return new CBotSharedTeamDeathmatchBehaviorTask<CDoDSBot, CDoDSBotPathCost>;
+		}
 	}
 
 	CDayOfDefeatSourceMod* mod = CDayOfDefeatSourceMod::GetDODMod();

@@ -420,6 +420,9 @@ botsharedutils::IsReachableAreas::IsReachableAreas(CBaseBot* bot, const float li
 
 bool botsharedutils::IsReachableAreas::ShouldSearch(CNavArea* area)
 {
+	// always search the start area
+	if (IsStartArea(area)) { return true; }
+
 	return m_bot->GetMovementInterface()->IsAreaTraversable(area);
 }
 
@@ -864,24 +867,39 @@ botsharedutils::SelectReachableUnclearedArea::SelectReachableUnclearedArea(CBase
 
 bool botsharedutils::SelectReachableUnclearedArea::ShouldSearch(CNavArea* area)
 {
+#ifdef EXT_DEBUG
+	// always search the start area
+	if (IsStartArea(area)) { return true; }
+
+	// debug only for now, may cause bots to get stuck patrolling their spawnroom
+	// they should move once the entire spawnroom is patrolled however
 	if (IsReachableAreas::ShouldSearch(area))
 	{
-		// if we have a valid enemy team index, don't search areas that are blocked for that team, they can't reach it
-		if (m_enemyTeamIndex != IModHelpers::NO_OPPOSING_TEAM)
+		if (m_enemyTeamIndex != IModHelpers::NO_OPPOSING_TEAM && area->IsBlocked(m_enemyTeamIndex))
 		{
-			return !area->IsBlocked(m_enemyTeamIndex);
+			// ignore this area, it's blocked for the enemy team
+			return false;
 		}
 
 		return true;
 	}
 
 	return false;
+#else
+	return IsReachableAreas::ShouldSearch(area);
+#endif // EXT_DEBUG
 }
 
 bool botsharedutils::SelectReachableUnclearedArea::ShouldCollect(CNavArea* area)
 {
 	if (IsReachableAreas::ShouldCollect(area))
 	{
+		if (m_enemyTeamIndex != IModHelpers::NO_OPPOSING_TEAM && area->IsBlocked(m_enemyTeamIndex))
+		{
+			// ignore this area, it's blocked for the enemy team
+			return false;
+		}
+
 		// only collect uncleared areas
 		return !area->WasClearedWithinTime(m_teamIndex, m_timeLimit);
 	}

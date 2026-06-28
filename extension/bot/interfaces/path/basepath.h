@@ -45,7 +45,10 @@ public:
 	static constexpr float SOFTBLOCK_COST = 1e16f; // return this to 'soft' block the area.
 	static constexpr float DEADEND_COST = -1.0f; // return this to mark the area as dead end. (hard block)
 	static constexpr float NO_TRAVERSE_COST = 0.0f; // return this to mark the area as no cost
-	static constexpr float OBSTRUCTED_COST_MULTIPLIER = 5.0f; // obstructed areas have their cost multiplied by this
+	static constexpr float OBSTRUCTED_COST_MULTIPLIER = 3.0f; // obstructed areas have their cost multiplied by this
+	static constexpr float FASTEST_ROUTE_CROUCH_MULT = 1.5f; // cost multiplier for areas with crouch attribute when searching for the fastest route
+	static constexpr float NAV_AVOID_ATTRIB_MULTI = 12.0f; // cost multiplier for areas with the NAV_MESH_AVOID attribute.
+	static constexpr float JUMP_COST_MULTIPLIER = 2.0f; // cost multiplier for areas that requires jumping
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments

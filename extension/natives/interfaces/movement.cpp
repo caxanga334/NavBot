@@ -88,6 +88,21 @@ namespace natives::bots::interfaces::movement
 
 		return pawnutils::ReturnBool(iface->IsAreaTraversable(area));
 	}
+	static cell_t ClearStuckStatus(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		char* reason = nullptr;
+		context->LocalToStringNULL(params[2], &reason);
+		iface->ClearStuckStatus(reason);
+		return 0;
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -97,6 +112,7 @@ namespace natives::bots::interfaces::movement
 			{ "NavBotMovementInterface.IsStuck", IsStuck},
 			{ "NavBotMovementInterface.GetStuckDuration", GetStuckDuration},
 			{ "NavBotMovementInterface.IsAreaTraversable", IsAreaTraversable},
+			{ "NavBotMovementInterface.ClearStuckStatus", ClearStuckStatus},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

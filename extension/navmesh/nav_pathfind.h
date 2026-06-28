@@ -1224,6 +1224,7 @@ public:
 	bool CanSearchLinks() const { return m_searchLinks; }
 	bool CanSearchElevators() const { return m_searchElevators; }
 	bool CanSearchIncomingConnections() const { return m_searchIncoming; }
+	bool IsStartArea(const T* other) { return other == m_startArea; }
 
 	// Execute the search
 	void Execute();

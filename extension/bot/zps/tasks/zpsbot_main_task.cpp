@@ -19,6 +19,11 @@ AITask<CZPSBot>* CZPSBotMainTask::InitialNextTask(CZPSBot* bot)
 
 TaskResult<CZPSBot> CZPSBotMainTask::OnTaskUpdate(CZPSBot* bot)
 {
+	if (!CZombiePanicSourceMod::GetZPSMod()->IsRoundActive())
+	{
+		bot->GetMovementInterface()->ClearStuckStatus("ROUND NOT ACTIVE!");
+	}
+
 	return Continue();
 }
 

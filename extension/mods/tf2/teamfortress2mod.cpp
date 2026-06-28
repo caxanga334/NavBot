@@ -23,33 +23,6 @@
 #undef max
 #undef clamp
 
-static const char* s_tf2gamemodenames[] = {
-	"NONE/DEFAULT",
-	"CAPTURE THE FLAG",
-	"CONTROL POINT",
-	"ATTACK/DEFENCE",
-	"KING OF THE HILL",
-	"MANN VS MACHINE",
-	"PAYLOAD",
-	"PAYLOAD RACE",
-	"PLAYER DESTRUCTION",
-	"ROBOT DESTRUCTION",
-	"SPECIAL DELIVERY",
-	"TERRITORIAL CONTROL",
-	"ARENA",
-	"PASS TIME",
-	"VERSUS SAXTON HALE (VSCRIPT)",
-	"ZOMBIE INFECTION",
-	"GUN GAME",
-	"DEATHMATCH",
-	"SLENDER FORTRESS",
-	"FREE FOR ALL DEATHMATCH (VSCRIPT)",
-	"TUG OF WAR"
-};
-
-static_assert((sizeof(s_tf2gamemodenames) / sizeof(char*)) == static_cast<int>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES), 
-	"You added or removed a TF2 game mode and forgot to update the game mode name array!");
-
 SourceMod::SMCResult CTF2ModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)
 {
 	if (cfg_parser_depth == 1)
@@ -526,7 +499,36 @@ void CTeamFortress2Mod::OnNavMeshDestroyed()
 
 const char* CTeamFortress2Mod::GetCurrentGameModeName() const
 {
-	return s_tf2gamemodenames[static_cast<int>(m_gamemode)];
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"NONE/DEFAULT"sv,
+		"CAPTURE THE FLAG"sv,
+		"CONTROL POINT"sv,
+		"ATTACK/DEFENCE"sv,
+		"KING OF THE HILL"sv,
+		"MANN VS MACHINE"sv,
+		"PAYLOAD"sv,
+		"PAYLOAD RACE"sv,
+		"PLAYER DESTRUCTION"sv,
+		"ROBOT DESTRUCTION"sv,
+		"SPECIAL DELIVERY"sv,
+		"TERRITORIAL CONTROL"sv,
+		"ARENA"sv,
+		"PASS TIME"sv,
+		"VERSUS SAXTON HALE (VSCRIPT)"sv,
+		"ZOMBIE INFECTION"sv,
+		"GUN GAME"sv,
+		"DEATHMATCH"sv,
+		"SLENDER FORTRESS"sv,
+		"FREE FOR ALL DEATHMATCH (VSCRIPT)"sv,
+		"TUG OF WAR"sv
+	};
+
+	static_assert(names.size() == static_cast<std::size_t>(TeamFortress2::GameModeType::GM_MAX_GAMEMODE_TYPES), 
+		"You added or removed a TF2 game mode and forgot to update the game mode name array!");
+
+	return names[static_cast<std::size_t>(m_gamemode)].data();
 }
 
 void CTeamFortress2Mod::DetectCurrentGameMode()

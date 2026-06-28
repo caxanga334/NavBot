@@ -16,6 +16,7 @@ static ConVar sm_navbot_path_debug_climbing("sm_navbot_path_debug_climbing", "0"
 static ConVar sm_navbot_path_goal_tolerance("sm_navbot_path_goal_tolerance", "32", FCVAR_DONTRECORD, "Default navigator goal tolerance");
 static ConVar sm_navbot_path_skip_ahead_distance("sm_navbot_path_skip_ahead_distance", "350", FCVAR_DONTRECORD, "Default navigator skip ahead distance");
 static ConVar sm_navbot_path_obstacle_scan("sm_navbot_path_obstacle_scan", "0.5", FCVAR_DONTRECORD, "How frequently the navigation will scan for obstacles on the bot's path.");
+static ConVar sm_navbot_path_break_enemy_visible("sm_navbot_path_break_enemy_visible", "1", FCVAR_DONTRECORD, "If enabled (default), bots will break obstacles while enemies are visible.");
 
 #ifdef EXT_DEBUG
 static ConVar sm_navbot_path_debug_goal("sm_navbot_path_debug_goal", "0", FCVAR_CHEAT | FCVAR_DONTRECORD, "Debugs navigator path goal.");
@@ -557,6 +558,11 @@ const BotPathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const BotPath
 					break; // don't skip precise areas
 				}
 
+				if (!from->area->HasAttributes(NAV_MESH_CROUCH) && next->area->HasAttributes(NAV_MESH_CROUCH))
+				{
+					break; // don't skip wehn going from non-crouch to crouch areas
+				}
+
 				if (!mover->NavigatorAllowSkip(next->area))
 				{
 					break; // movement interface disallows skipping the next segment area
@@ -661,7 +667,7 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 		}
 
 		const bool isWorld = tr.DidHitWorld();
-
+		
 		if (isDebugging && !isWorld)
 		{
 			NDebugOverlay::Line(origin, tr.endpos, 255, 0, 0, true, sm_navbot_path_obstacle_scan.GetFloat());
@@ -672,7 +678,7 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 		if (!isWorld)
 		{
 			// can we break it?
-			if (bot->IsAbleToBreak(obstacle))
+			if (bot->IsAbleToBreak(obstacle) && ShouldBreakObstacles(bot))
 			{
 				if (!GamedataConstants::ShouldAlwaysBreak(obstacle))
 				{
@@ -763,6 +769,18 @@ void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
 			StartUseEntityCooldown(1.0f);
 		}
 	}
+}
+
+bool CMeshNavigator::ShouldBreakObstacles(CBaseBot* bot)
+{
+	if (!sm_navbot_path_break_enemy_visible.GetBool())
+	{
+		const ICombat::CombatData& cd = bot->GetCombatInterface()->GetCachedCombatData();
+		// only break obstacles if there is no visible enemy, or the enemy LOF is obstructed
+		return !cd.is_visible || !cd.can_fire;
+	}
+
+	return true;
 }
 
 bool CMeshNavigator::Climbing(CBaseBot* bot, const BotPathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)

@@ -213,6 +213,11 @@ public:
 #ifdef EXT_DEBUG
 	void Debug_PrintNPCClassnameList();
 #endif // EXT_DEBUG
+	/**
+	 * @brief Queries if the current game/gamemode is team based.
+	 * @return True if team based, false if free for all/deathmatch.
+	 */
+	virtual bool IsTeamBasedGame() const { return false; }
 
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;

@@ -114,6 +114,8 @@ private:
 	Vector m_useEntityMoveTo;
 	Vector m_useEntityAimAt;
 	Vector m_moveToPos; // The position the bot is trying to move to since the last Update call
+
+	bool ShouldBreakObstacles(CBaseBot* bot);
 };
 
 /**

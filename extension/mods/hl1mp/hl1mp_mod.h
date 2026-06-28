@@ -11,6 +11,7 @@ public:
 	static CHL1MPMod* GetHL1MPMod();
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	IModHelpers* AllocModHelpers() const override;
+	bool IsTeamBasedGame() const override { return false; } /* supposedly it does HL1DMS does have teamplay but it appears to be broken */
 
 private:
 

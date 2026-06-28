@@ -790,6 +790,7 @@ void CDayOfDefeatSourceMod::RegisterModCommands()
 		FCVAR_GAMEDLL | FCVAR_CHEAT, dbg_attackdefend_points, CServerCommandManager::COMMAND_ONLY_ON_LISTEN_SERVERS);
 
 	m_cvar_force_class = manager.RegisterConVar("sm_dod_navbot_force_class", "Forces bots to always select this class.", "", FCVAR_GAMEDLL);
+	manager.RegisterConVar("sm_dod_navbot_force_tdm", "Forces bots to use team deathmatch behavior and ignore the map objectives.", "0", FCVAR_GAMEDLL);
 }
 
 SourceMod::SMCResult CDoDModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* states, const char* key, const char* value)

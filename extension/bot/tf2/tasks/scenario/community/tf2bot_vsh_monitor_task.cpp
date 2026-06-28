@@ -3,12 +3,12 @@
 #include <mods/tf2/tf2lib.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <bot/tf2/tf2bot.h>
-#include <bot/tasks_shared/bot_shared_simple_deathmatch_behavior.h>
+#include <bot/tasks_shared/bot_shared_team_deathmatch_behavior.h>
 #include "tf2bot_vsh_monitor_task.h"
 
 AITask<CTF2Bot>* CTF2BotVSHMonitorTask::InitialNextTask(CTF2Bot* bot)
 {
-	return new CBotSharedSimpleDMBehaviorTask<CTF2Bot, CTF2BotPathCost>();
+	return new CBotSharedTeamDeathmatchBehaviorTask<CTF2Bot, CTF2BotPathCost>;
 }
 
 TaskResult<CTF2Bot> CTF2BotVSHMonitorTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask)

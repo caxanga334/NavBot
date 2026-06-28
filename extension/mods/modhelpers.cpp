@@ -126,3 +126,33 @@ int IModHelpers::GetOpposingTeamIndex(int teamNum) const
 	}
 }
 
+bool IModHelpers::PassesFilterImpl(CBaseEntity* filter, CBaseEntity* caller, CBaseEntity* activator) const
+{
+#ifdef EXT_DEBUG
+	if (!sdkcalls->IsPassesFilterImplAvailable())
+	{
+		smutils->LogError(myself, "IModHelpers::PassesFilterImpl called but SDKCall isn't available!", UtilHelpers::textformat::FormatEntity(filter));
+	}
+#endif // EXT_DEBUG
+
+	bool negated = false;
+	
+	if (!entprops->GetEntPropBool(filter, Prop_Data, "m_bNegated", negated))
+	{
+		/* 
+		* Some level designed assigns a non filter entity as a damage filter.
+		* The game doesn't crash because it performs a dynamic_cast to CBaseFilter.
+		* NavBot however can't do dynamic_cast for game classes so we have to check using other methods.
+		* m_bNegated is a member of CBaseFilter, if the entity doesn't have it, good chance it's not a CBaseFilter entity.
+		*/
+
+#ifdef EXT_DEBUG
+		smutils->LogError(myself, "IModHelpers::PassesFilterImpl entity %s doesn't have m_bNegated datamap!", UtilHelpers::textformat::FormatEntity(filter));
+#endif // EXT_DEBUG
+		return true;
+	}
+
+	bool base = sdkcalls->CBaseFilter_PassesFilterImpl(filter, caller, activator);
+	return negated ? !base : base;
+}
+

@@ -281,7 +281,7 @@ bool CBaseMod::IsEntityDamageableBy(CBaseEntity* entity, CBaseEntity* attacker) 
 		{
 			if (sdkcalls->IsPassesFilterImplAvailable())
 			{
-				if (!sdkcalls->CBaseFilter_PassesFilterImpl(damageFilter, nullptr, attacker))
+				if (!modhelpers->PassesFilterImpl(damageFilter, nullptr, attacker))
 				{
 					// The attacker does not passes the damage filter.
 					return false;

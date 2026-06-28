@@ -22,6 +22,7 @@ public:
 	int GetMaxCarryForAmmoType(blackmesa::BMAmmoIndex index) const { return m_maxCarry[static_cast<int>(index)]; }
 	const std::pair<std::string, int>* GetRandomPlayerModel() const;
 	IModHelpers* AllocModHelpers() const override;
+	bool IsTeamBasedGame() const override { return IsTeamPlay(); }
 
 private:
 	bool m_isTeamPlay;

@@ -2524,7 +2524,7 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 			return GetOffMeshConnectionToArea(destinationArea)->GetConnectionLength();
 		}
 
-		return FLT_MAX;
+		return std::numeric_limits<float>::max();
 	}
 
 	Vector myEdge;

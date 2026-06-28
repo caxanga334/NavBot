@@ -114,6 +114,12 @@ namespace natives::bots::interfaces::sensor
 			return 0;
 		}
 
+		if (pEntity == iface->GetBot()->GetEntity())
+		{
+			context->ReportError("Cannot force bots to attack themselves!");
+			return 0;
+		}
+
 		iface->SetPrimaryThreatOverride(pEntity);
 		return 0;
 	}

@@ -19,7 +19,6 @@
 #include <bot/tf2/tasks/engineer/tf2bot_engineer_main.h>
 #include <bot/tf2/tasks/sniper/tf2bot_task_sniper_main.h>
 #include <bot/tf2/tasks/spy/tf2bot_spy_main_task.h>
-#include <bot/tf2/tasks/scenario/deathmatch/tf2bot_deathmatch.h>
 #include "scenario/controlpoints/tf2bot_controlpoints_monitor.h"
 #include "scenario/payload/tf2bot_task_defend_payload.h"
 #include "scenario/payload/tf2bot_task_push_payload.h"
@@ -34,6 +33,7 @@
 #include <bot/tasks_shared/bot_shared_rogue_behavior.h>
 #include <bot/tasks_shared/bot_shared_squad_member_monitor.h>
 #include <bot/tasks_shared/bot_shared_collect_items.h>
+#include <bot/tasks_shared/bot_shared_team_deathmatch_behavior.h>
 #include <bot/tf2/tasks/scenario/tf2bot_destroy_halloween_boss_task.h>
 #include "scenario/passtime/tf2bot_passtime_monitor_task.h"
 #include "scenario/rd/tf2bot_rd_monitor_task.h"
@@ -170,7 +170,7 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 	// Current gamemode is deathmatch, no class specific behavior is used
 	if (tf2mod->UseDeathmatchBehaviorOnly())
 	{
-		return new CTF2BotDeathmatchScenarioTask;
+		return new CBotSharedTeamDeathmatchBehaviorTask<CTF2Bot, CTF2BotPathCost>;
 	}
 
 	if (gm == TeamFortress2::GameModeType::GM_MVM)
@@ -255,7 +255,7 @@ AITask<CTF2Bot>* CTF2BotScenarioTask::SelectScenarioTask(CTF2Bot* me, const bool
 		break;
 	}
 
-	return new CTF2BotDeathmatchScenarioTask;
+	return new CBotSharedTeamDeathmatchBehaviorTask<CTF2Bot, CTF2BotPathCost>;
 }
 
 AITask<CTF2Bot>* CTF2BotScenarioTask::SelectClassTask(CTF2Bot* me)

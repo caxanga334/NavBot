@@ -124,6 +124,7 @@ public:
 	CNavMesh* NavMeshFactory() override;
 	void OnMapStart() override;
 	void OnRoundStart() override;
+	bool IsTeamBasedGame() const override { return true; }
 	// NULL if the objective resource entity is invalid
 	const CDODObjectiveResource* GetDODObjectiveResource() const;
 	/**

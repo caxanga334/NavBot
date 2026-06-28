@@ -78,6 +78,14 @@ public:
 	 * @return Opposing team index or NO_OPPOSING_TEAM if an opposing team cannot be determined.
 	 */
 	virtual int GetOpposingTeamIndex(int teamNum) const;
+	/**
+	 * @brief Tests if the given entities passed the filter.
+	 * @param filter Filter entity.
+	 * @param caller Caller (can be NULL).
+	 * @param activator Activator.
+	 * @return True if the activator passes the filter, false otherwise.
+	 */
+	virtual bool PassesFilterImpl(CBaseEntity* filter, CBaseEntity* caller, CBaseEntity* activator) const;
 };
 
 // Global singleton to access the mod helpers interface

@@ -94,7 +94,7 @@ public:
 
 	void PrintDebugInfo() const final
 	{
-		META_CONPRINTF("Name: %s - Handle: %X \n", m_name.c_str(), m_handle);
+		META_CONPRINTF("Handle: %X \n", m_handle);
 	}
 
 	void OnHandleDeleted() { m_handledeleted = true; SetHandle(BAD_HANDLE); }

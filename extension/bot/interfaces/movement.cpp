@@ -1560,7 +1560,8 @@ void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos)
 
 	Vector mins(-8, -8, -8);
 	Vector maxs(8, 8, 4);
-	Vector start = GetBot()->GetEyeOrigin();
+	CBaseBot* me = GetBot();
+	Vector start = me->GetAbsOrigin();
 	Vector end = goalPos;
 	end.z = start.z;
 
@@ -1570,6 +1571,18 @@ void IMovement::ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos)
 
 	if (!tr.startsolid && tr.fraction >= 0.9999f)
 	{
+		if (extmanager->GetMod()->GetModSettings()->AllowUnstuckCheats())
+		{
+			// Cheat: Align the bot velocity to help them clear the jump
+			Vector forward = (goalPos - start);
+			forward.z = 0.0f;
+			forward.NormalizeInPlace();
+			Vector velocity = me->GetAbsVelocity();
+			velocity.x = GetRunSpeed() * forward.x;
+			velocity.y = GetRunSpeed() * forward.y;
+			me->SetAbsVelocity(velocity);
+		}
+
 		// Nothing ahead around eye level, JUMP!
 		CrouchJump();
 
@@ -1740,6 +1753,12 @@ void IMovement::OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimed
 {
 	CBaseBot* me = GetBot<CBaseBot>();
 
+	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
+	{
+		me->DebugPrintToConsole(255, 255, 0, "%s DONE BREAKING OBSTACLE %s. IS TIME OUT: %s \n",
+			me->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstacle), istimedout ? "YES" : "NO");
+	}
+
 	if (extmanager->GetMod()->GetModSettings()->ShouldUseMovementBreakAssist())
 	{
 		if (istimedout && obstacle)
@@ -1751,10 +1770,10 @@ void IMovement::OnDoneBreakingObstacle(CBaseEntity* obstacle, const bool istimed
 		}
 	}
 
-	if (me->IsDebugging(BOTDEBUG_MOVEMENT))
-	{
-		me->DebugPrintToConsole(255, 255, 0, "%s DONE BREAKING OBSTACLE %p. IS TIME OUT: %s \n", me->GetDebugIdentifier(), obstacle, istimedout ? "YES" : "NO");
-	}
+	m_obstacleBreakTimeout.Invalidate();
+	m_isBreakingObstacle = false;
+	m_obstacleEntity = nullptr;
+	me->GetControlInterface()->ReleaseAllAttackButtons();
 }
 
 bool IMovement::RequestMovementTypeChange(MovementType type, MovementRequestPriority priority, float duration, const char* reason)
@@ -2065,20 +2084,12 @@ void IMovement::ObstacleBreakUpdate()
 	if (m_obstacleBreakTimeout.IsElapsed() || obstacle == nullptr)
 	{
 		OnDoneBreakingObstacle(obstacle, m_obstacleBreakTimeout.IsElapsed());
-		m_obstacleBreakTimeout.Invalidate();
-		m_isBreakingObstacle = false;
-		m_obstacleEntity = nullptr;
-		GetBot()->GetControlInterface()->ReleaseAllAttackButtons();
 		return;
 	}
 
 	if (extmanager->GetMod()->IsBreakableBroken(obstacle))
 	{
 		OnDoneBreakingObstacle(obstacle, false);
-		m_obstacleBreakTimeout.Invalidate();
-		m_isBreakingObstacle = false;
-		m_obstacleEntity = nullptr;
-		GetBot()->GetControlInterface()->ReleaseAllAttackButtons();
 		return;
 	}
 

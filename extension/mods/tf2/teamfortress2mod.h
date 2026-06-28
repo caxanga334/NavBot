@@ -200,6 +200,17 @@ public:
 	bool IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEntity* passEnt = nullptr) const override;
 	CBaseEntity* GetTugOfWarGoal() const { return m_towGoalEntity.Get(); }
 
+	bool IsTeamBasedGame() const override
+	{
+		switch (m_gamemode)
+		{
+		case TeamFortress2::GameModeType::GM_VSFFA:
+			return false;
+		default:
+			return true;
+		}
+	}
+
 private:
 	TeamFortress2::GameModeType m_gamemode; // Current detected game mode for the map
 	std::unordered_map<std::string, int> m_weaponidmap;

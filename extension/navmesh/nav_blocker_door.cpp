@@ -329,7 +329,8 @@ void CDoorNavBlocker::CheckButtons(const std::vector<CBaseEntity*>& buttons)
 void CDoorNavBlocker::AddDoorAreas(CBaseEntity* door)
 {
 	Extent doorExtent{ door };
-	doorExtent.lo.z -= navgenparams->step_height;
+	// some doors are hanging and don't touch the ground, expand the lower bounds up to crouch height
+	doorExtent.lo.z -= navgenparams->human_crouch_height + 1.0f;
 	doorExtent.hi.z += navgenparams->step_height;
 	TheNavMesh->CollectAreasOverlappingExtent(doorExtent, m_areas);
 }

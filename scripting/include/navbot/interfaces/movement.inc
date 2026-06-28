@@ -32,4 +32,11 @@ methodmap NavBotMovementInterface < NavBotBotInterface
 	 * @error				Bad interface pointer. Bad nav area pointer.
 	 */
 	public static native bool IsAreaTraversable(Address ptr, Address area);
+	/**
+	 * Clears the bot stuck status. Useful to prevent the bots from thinking they're stuck because they can't move.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param reason		Optional reason of why the stuck status was cleared (for debugging).
+	 */
+	public static native void ClearStuckStatus(Address ptr, const char[] reason = NULL_STRING);
 }

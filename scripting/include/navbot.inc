@@ -295,6 +295,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotMovementInterface.IsStuck");
 	MarkNativeAsOptional("NavBotMovementInterface.GetStuckDuration");
 	MarkNativeAsOptional("NavBotMovementInterface.IsAreaTraversable");
+	MarkNativeAsOptional("NavBotMovementInterface.ClearStuckStatus");
 
 	/* Sensor Interface */
 	MarkNativeAsOptional("NavBotSensorInterface.IsIgnored");

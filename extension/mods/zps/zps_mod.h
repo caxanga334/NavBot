@@ -20,6 +20,7 @@ public:
 	void OnMapStart() override;
 	void OnRoundStart() override;
 	void OnRoundEnd() override;
+	bool IsTeamBasedGame() const override { return true; }
 
 	bool IsEntityDamageable(CBaseEntity* entity, const int maxhealth = 1000) const override;
 	bool IsEntityBreakable(CBaseEntity* entity) const override;

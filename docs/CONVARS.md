@@ -15,47 +15,17 @@ List of console variables for NavBot.
 |sm_navbot_path_max_segments|Maximum number of path segments a path can have.|Integer|Improves CPU performance by limiting the number of segments processed on long paths.|
 |sm_navbot_path_goal_tolerance|Default distance tolerance to determine if the bot reached the current path goal.|Float|Default value used when a hard coded value isn't set.|
 |sm_navbot_path_skip_ahead_distance|Default distance to look ahead on the path and skip ground segments that can be reached directly.|Float|Default value used when a hard coded value isn't set.|
-|sm_navbot_path_useable_scan|How frequently bots scans for useable obstacles on the path. (IE: Doors)|Float|Lower values improves the bot reaction time to obstacles, higher values improves performance.|
+|sm_navbot_path_obstacle_scan|How frequently to scan for obstacle on the bot's path. Increase to improve CPU performance. Decrease to improve the bot's responsiveness to obstacles.|Float|N/A|
+|sm_navbot_path_break_enemy_visible|If enabled, bots will break obstacles on their path while enemies are visible.|Integer|N/A|
 |sm_navbot_aim_stability_max_rate|Maximum angle change rate to consider the bot aim to be stable.|Float|N/A|
 |sm_navbot_bot_name_prefix|Prefix to add to bot names.|String|N/A|
 
-## Team Fortress 2 Bot specific ConVars
 
-|ConVar Name|Description|Type|Additional Information|
-|:---:|:---:|:---:|:---:|
-|sm_navbot_tf_teammates_are_enemies|If enabled, bots will attack teammates.|Boolean|Useful on deathmatch game modes.|
-|sm_navbot_tf_force_class|Forces bots to select this class.|String|Must be a valid class name: scout, soldier, pyro, demoman, heavyweapons, engineer, medic, sniper, spies.|
-|sm_navbot_tf_force_gamemode|Force a specific game mode.|Integer|Set to a negative value to use the automatic game mode detection.|
-|sm_navbot_tf_mvm_collect_currency|If enabled, bots will collect currency in MvM.|Boolean|A third-party plugin is required to patch the game in order to allow RED bots to collect currency.|
-|sm_navbot_tf_debug_bot_upgrades|If enabled, prints MvM upgrades debug messages.|Boolean|Cheat protected.|
-|sm_navbot_tf_mod_debug|If enabled, prints some TF2 related debug messages.|Boolean|Cheat protected.|
+# Game Specific ConVars
 
-Values for `sm_navbot_tf_force_gamemode`.
+- [Team Fortress 2]
+- [Day of Defeat: Source]
 
-* 0: None
-* 1: Capture The Flag
-* 2: Control Points
-* 3: Attack/Defense Control Points
-* 4: King of The Hill
-* 5: Mann vs Machine
-* 6: Payload
-* 7: Payload Race
-* 8: Player Destruction
-* 9: Robot Destruction
-* 10: Special Delivery
-* 11: Territorial Control
-* 12: Arena
-* 13: Passtime
-* 14: Versus Saxton Hale (Vscript)
-* 15: Zombie Infection (Vscript)
-* 16: Gun Game
-* 17: Deathmatch
-* 18: Slender Fortress
-* 19: Lizard Of Oz's FFA Deathmatch (Vscript)
-* 20: Tug of War
-
-### Notes For TF2 Game Modes
-
-`None` is deathmatch with class behaviors. (IE: medics will heal players, engineers will build.)    
-`Deathmatch` is deathmatch without class behaviors. Engineers, medics, snipers and spies won't use their class behavior.    
-The following game modes don't have behavior yet: Slender Fortress.    
+<!-- Links -->
+[Team Fortress 2]: game_docs/TF2_CONVARS.md
+[Day of Defeat: Source]: game_docs/DODS_CONVARS.md
