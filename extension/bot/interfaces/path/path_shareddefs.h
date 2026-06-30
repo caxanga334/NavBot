@@ -22,6 +22,9 @@ namespace AIPath
 		SEGMENT_CATAPULT, // Use a catapult
 		SEGMENT_GROUND_NOSKIP, // Same as ground but disallows being skipped
 		SEGMENT_STRAFE_JUMP, // Jump/Climb while strafing
+		SEGMENT_WATER_LOWER, // Underwater navigation: Decrease height (move down)
+		SEGMENT_WATER_RAISE, // Underwater navigation: Increase height (move up)
+		SEGMENT_WATER_EXIT, // Transition between water and ground
 
 		MAX_SEGMENT_TYPES
 	};
@@ -32,6 +35,21 @@ namespace AIPath
 		PARTIAL_PATH, // Partial path, doesn't reach the end goal
 		NO_PATH // No path at all
 	};
+
+	inline bool IsWaterSegment(SegmentType type)
+	{
+		switch (type)
+		{
+		case SEGMENT_WATER_LOWER:
+			[[fallthrough]];
+		case SEGMENT_WATER_RAISE:
+			[[fallthrough]];
+		case SEGMENT_WATER_EXIT:
+			return true;
+		default:
+			return false;
+		}
+	}
 
 	inline const char* SegmentTypeToString(SegmentType type)
 	{
@@ -51,6 +69,9 @@ namespace AIPath
 			"CATAPULT"sv,
 			"GROUND_NOSKIP"sv,
 			"STRAFE_JUMP"sv,
+			"WATER_LOWER"sv,
+			"WATER_RAISE"sv,
+			"WATER_EXIT"sv,
 		};
 
 		static_assert(names.size() == static_cast<size_t>(SegmentType::MAX_SEGMENT_TYPES), "name array and SegmentType enum mismatch!");

@@ -62,7 +62,7 @@ protected:
 	// Waiting for obstacles
 	bool IsWaitingForSomething() { return !m_waitTimer.IsElapsed(); }
 
-	Vector AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const BotPathSegment* seg);
+	bool HandleWaterMove(CBaseBot* bot, Vector& goalPos, const BotPathSegment* seg);
 	/**
 	 * @brief Scans the path for obstacles.
 	 * @param bot Bot currently using this navigator.

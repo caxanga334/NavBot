@@ -38,6 +38,7 @@ public:
 	bool GetHandleApproxSize(SourceMod::HandleType_t type, void* object, unsigned int* pSize) override;
 
 	void SetupHandles();
+	void OnUnload();
 
 	SourceMod::HandleType_t GetMeshNavigatorHandleType() const { return m_handletypes[HANDLE_NAVIGATOR]; }
 	SourceMod::HandleType_t GetWeaponPriorityFactoryHandleType() const { return m_handletypes[HANDLE_WEAPONPRIOFACTORY]; }

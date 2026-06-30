@@ -66,41 +66,52 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 	// only check gap and height on common connections
 	if (link == nullptr && elevator == nullptr && ladder == nullptr)
 	{
-		float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(toArea);
-
-		if (deltaZ >= m_movecaps.m_stepheight)
+		while (true)
 		{
-			if (m_movecaps.m_candoublejump)
+			if (fromArea->IsUnderwater() && toArea->IsUnderwater())
 			{
-				if (deltaZ > m_movecaps.m_maxdjheight)
+				dist *= UNDERWATER_COST_MULTIPLIER;
+				break; // skip other checks, when both are underwater, assume the bot can freely change heights using move up/move down
+			}
+
+			float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(toArea);
+
+			if (deltaZ >= m_movecaps.m_stepheight)
+			{
+				if (m_movecaps.m_candoublejump)
+				{
+					if (deltaZ > m_movecaps.m_maxdjheight)
+					{
+						// too high to reach by jumping
+						return DEADEND_COST;
+					}
+				}
+				else if (deltaZ > m_movecaps.m_maxjumpheight)
 				{
 					// too high to reach by jumping
 					return DEADEND_COST;
 				}
+
+				// jump type is resolved by the navigator
+
+				// add jump penalty
+				dist *= JUMP_COST_MULTIPLIER;
 			}
-			else if (deltaZ > m_movecaps.m_maxjumpheight)
+			else if (deltaZ < -m_movecaps.m_maxdropheight)
 			{
-				// too high to reach by jumping
+				// too far to drop
+				// TO-DO: Handle areas that breaks fall damage.
 				return DEADEND_COST;
 			}
 
-			// jump type is resolved by the navigator
+			float gap = fromArea->ComputeAdjacentConnectionGapDistance(toArea);
 
-			// add jump penalty
-			dist *= JUMP_COST_MULTIPLIER;
-		}
-		else if (deltaZ < -m_movecaps.m_maxdropheight)
-		{
-			// too far to drop
-			// TO-DO: Handle areas that breaks fall damage.
-			return DEADEND_COST;
-		}
+			if (gap >= m_movecaps.m_maxgapjumpdistance)
+			{
+				return DEADEND_COST; // can't jump over this gap
+			}
 
-		float gap = fromArea->ComputeAdjacentConnectionGapDistance(toArea);
-
-		if (gap >= m_movecaps.m_maxgapjumpdistance)
-		{
-			return DEADEND_COST; // can't jump over this gap
+			break;
 		}
 	}
 	else if (link != nullptr)

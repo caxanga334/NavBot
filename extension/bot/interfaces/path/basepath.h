@@ -49,6 +49,7 @@ public:
 	static constexpr float FASTEST_ROUTE_CROUCH_MULT = 1.5f; // cost multiplier for areas with crouch attribute when searching for the fastest route
 	static constexpr float NAV_AVOID_ATTRIB_MULTI = 12.0f; // cost multiplier for areas with the NAV_MESH_AVOID attribute.
 	static constexpr float JUMP_COST_MULTIPLIER = 2.0f; // cost multiplier for areas that requires jumping
+	static constexpr float UNDERWATER_COST_MULTIPLIER = 1.4f; // cost amultiplier for underwater areas
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments
@@ -467,6 +468,7 @@ public:
 protected:
 	bool ProcessCurrentPath(CBaseBot* bot, const Vector& start);
 	bool ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& start, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
+	bool ProcessWaterPath(CBaseBot* bot, const size_t index, const Vector& start, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	bool ProcessLaddersInPath(CBaseBot* bot, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	bool ProcessElevatorsInPath(CBaseBot* bot, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);
 	bool ProcessPathJumps(CBaseBot* bot, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert);

@@ -275,24 +275,21 @@ void CMeshNavigator::Update(CBaseBot* bot)
 		}
 	}
 
-	if (m_goal->area->IsUnderwater() || bot->GetWaterLevel() >= static_cast<int>(entityprops::WaterLevel::WL_Waist))
+	if (!HandleWaterMove(bot, goalPos, m_goal))
 	{
-		goalPos = AdjustGoalForUnderWater(bot, goalPos, m_goal);
-		/* LOOK_MOVEMENT here causes bots to not be able to attack enemies underwater */
-		input->AimAt(goalPos, IPlayerController::LOOK_PATH, 0.1f, "Looking at move goal (Underwater).");
-	}
-	else if (mover->IsOnGround())
-	{
-		auto eyes = bot->GetEyeOrigin();
-		Vector lookat(goalPos.x, goalPos.y, eyes.z);
+		if (mover->IsOnGround())
+		{
+			auto eyes = bot->GetEyeOrigin();
+			Vector lookat(goalPos.x, goalPos.y, eyes.z);
 
-		// low priority look towards movement goal so the bot doesn't walk with a fixed look
-		input->AimAt(lookat, IPlayerController::LOOK_PATH, 0.1f, "Looking at move goal (Ground).");
-	}
+			// low priority look towards movement goal so the bot doesn't walk with a fixed look
+			input->AimAt(lookat, IPlayerController::LOOK_PATH, 0.1f, "Looking at move goal (Ground).");
+		}
 
-	// move bot along path
-	mover->MoveTowards(goalPos, IMovement::MOVEWEIGHT_NAVIGATOR);
-	SetMoveToPos(goalPos);
+		// move bot along path
+		mover->MoveTowards(goalPos, IMovement::MOVEWEIGHT_NAVIGATOR);
+		SetMoveToPos(goalPos);
+	}
 
 #ifdef EXT_DEBUG
 	if (sm_navbot_path_debug_goal.GetInt() > 1 && m_goal)
@@ -398,6 +395,27 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 	{
 		// experiental
 		return bot->GetMovementInterface()->IsOnLadder();
+	}
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_WATER_RAISE)
+	{
+		const BotPathSegment* next = GetNextSegment(m_goal);
+
+		if (next && next->type == AIPath::SegmentType::SEGMENT_WATER_EXIT)
+		{
+			if (bot->GetWaterLevel() <= static_cast<int>(entityprops::WaterLevel::WL_Waist))
+			{
+				return true;
+			}
+		}
+	}
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_WATER_EXIT)
+	{
+		if (bot->GetMovementInterface()->IsOnGround() && bot->GetWaterLevel() <= static_cast<int>(entityprops::WaterLevel::WL_Feet))
+		{
+			return true;
+		}
+
+		return false;
 	}
 	else
 	{
@@ -560,7 +578,12 @@ const BotPathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const BotPath
 
 				if (!from->area->HasAttributes(NAV_MESH_CROUCH) && next->area->HasAttributes(NAV_MESH_CROUCH))
 				{
-					break; // don't skip wehn going from non-crouch to crouch areas
+					break; // don't skip when entering crouch areas
+				}
+
+				if (from->area->HasAttributes(NAV_MESH_CROUCH) && !next->area->HasAttributes(NAV_MESH_CROUCH))
+				{
+					break; // and when exiting crouch areas
 				}
 
 				if (!mover->NavigatorAllowSkip(next->area))
@@ -603,27 +626,17 @@ const BotPathSegment* CMeshNavigator::CheckSkipPath(CBaseBot* bot, const BotPath
 	return skip;
 }
 
-Vector CMeshNavigator::AdjustGoalForUnderWater(CBaseBot* bot, const Vector& goalPos, const BotPathSegment* seg)
+bool CMeshNavigator::HandleWaterMove(CBaseBot* bot, Vector& goalPos, const BotPathSegment* seg)
 {
-	Vector origin = bot->GetAbsOrigin();
-
-	// If climbing, don't touch Z
-	if (goalPos.z >= origin.z)
+	if (AIPath::IsWaterSegment(seg->type))
 	{
-		return goalPos;
+		bot->GetMovementInterface()->DoWaterMove(goalPos,
+			seg->type == AIPath::SegmentType::SEGMENT_WATER_RAISE, seg->type == AIPath::SegmentType::SEGMENT_WATER_EXIT, IMovement::MOVEWEIGHT_NAVIGATOR);
+
+		return true;
 	}
 
-	Vector adjusted = goalPos;
-	adjusted.z = origin.z;
-	adjusted.z += navgenparams->human_crouch_height;
-
-	// Try to maintain the current height unless there's something blocking it
-	if (bot->GetMovementInterface()->IsPotentiallyTraversable(origin, adjusted, nullptr, true, nullptr))
-	{
-		return adjusted;
-	}
-
-	return goalPos;
+	return false;
 }
 
 bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal)
@@ -638,9 +651,10 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	const float rangeToGoal = forward.NormalizeInPlace();
 	const float xysize = mover->GetHullWidth() * 0.5f;
 	const float crouchheight = std::ceil(mover->GetCrouchedHullHeight() * 0.6f);
+	const float minszsize = std::floor(mover->GetStepHeight() * mover->IsCompletelyCrouched() ? 0.3f : 0.7f);
 	trace_t tr;
 	CMovementObstacleFilter filter{ bot };
-	Vector mins{ -xysize, -xysize, std::floor(mover->GetStepHeight() * 0.7f) };
+	Vector mins{ -xysize, -xysize, minszsize };
 	Vector maxs{ xysize, xysize, crouchheight };
 	origin.z += mover->GetStepHeight(); // ignore obstacles we can step over
 	Vector end = origin + (forward * (mover->GetHullWidth() * 1.5f));
@@ -1388,11 +1402,12 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	movementfilter.SetAvoidEntity(GetAvoidingEntity());
 	unsigned int mask = mover->GetMovementTraceMask();
 	const float size = mover->GetHullWidth() / 4.0f;
+	const float stepHeight = mover->IsCompletelyCrouched() ? mover->GetStepHeight() : (mover->GetStepHeight() * 0.5f);
 	const float offset = size + 2.0f;
 	float range = mover->GetAvoidDistance();
 	range *= bot->GetModelScale();
 
-	Vector hullMin = Vector(-size, -size, mover->GetStepHeight() + 0.1f);
+	Vector hullMin = Vector(-size, -size, stepHeight + 0.1f);
 	Vector hullMax = Vector(size, size, mover->GetCrouchedHullHeight());
 	CBaseEntity* door = nullptr;
 	CBaseEntity* leftEnt = nullptr;

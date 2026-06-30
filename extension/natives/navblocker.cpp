@@ -44,6 +44,8 @@ public:
 
 	bool IsValid() const final
 	{
+		if (IsAreaVectorEmpty()) { return false; }
+
 		if (m_handledeleted) { return false; }
 
 		return true;
@@ -61,7 +63,7 @@ public:
 
 	bool IsBlocked(int teamID) const final
 	{
-		if (teamID < 0 && teamID >= static_cast<int>(m_blocked.size()))
+		if (teamID < 0 || teamID >= static_cast<int>(m_blocked.size()))
 		{
 			for (auto& blocked : m_blocked)
 			{
@@ -127,7 +129,7 @@ public:
 
 	void SetBlockedStatus(int teamID, bool status)
 	{
-		if (teamID < 0 && teamID >= static_cast<int>(m_blocked.size()))
+		if (teamID < 0 || teamID >= static_cast<int>(m_blocked.size()))
 		{
 			std::fill(std::begin(m_blocked), std::end(m_blocked), status);
 			return;
@@ -160,7 +162,7 @@ private:
 	{
 		if (cb->GetFunctionCount() > 0)
 		{
-			cb->PushCell(static_cast<cell_t>(m_handle));
+			cb->PushCell(m_handle);
 			cb->Execute(nullptr);
 		}
 	}

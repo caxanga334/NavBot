@@ -301,6 +301,8 @@ public:
 	 * @param weight Move call weight. If another call was made with a higher weight than the current call, then the current is ignored.
 	 */
 	virtual void MoveTowards(const Vector& pos, const int weight = MOVEWEIGHT_DEFAULT);
+	// Handles water movement.
+	void DoWaterMove(const Vector& pos, const bool raiseHeight, const bool exitingwater = false, const int weight = MOVEWEIGHT_DEFAULT);
 	/**
 	 * @brief Moves the bot by setting their velocity
 	 * @param pos Position to move towards.

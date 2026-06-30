@@ -98,9 +98,10 @@ namespace pawnutils
 		if (handle == BAD_HANDLE)
 		{
 			context->ReportError("Failed to create handle of type \"%s\", error (%i).", name.data(), static_cast<int>(error));
+			return false;
 		}
 		
-		return handle != BAD_HANDLE;
+		return true;
 	}
 	// Creates an internal (the extension is the owner) handle, returns true on success
 	template <typename T>

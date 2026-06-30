@@ -441,6 +441,7 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 		input->ReleaseMoveDownButton();
 	}
 
+#if 0
 	if (me->IsUnderWater())
 	{
 		// While underwater, use move up/down to adjust the bot's height
@@ -460,6 +461,7 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 			}
 		}
 	}
+#endif // 0
 
 	// handle ladder movement
 	if (IsOnLadder() && IsUsingLadder() && (m_ladderState == USING_LADDER_UP || m_ladderState == USING_LADDER_DOWN))
@@ -516,6 +518,45 @@ void IMovement::MoveTowards(const Vector& pos, const int weight)
 			input->PressMoveRightButton();
 		}
 	}
+}
+
+void IMovement::DoWaterMove(const Vector& pos, const bool raiseHeight, const bool exitingwater, const int weight)
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	Vector origin = bot->GetAbsOrigin();
+	const float heightDifference = std::abs(origin.z - pos.z);
+	const float distance2D = (origin - pos).AsVector2D().Length();
+	const float heightTolerance = exitingwater ? GetCrouchedHullHeight() : GetStepHeight();
+	IPlayerController* input = bot->GetControlInterface();
+
+	// look at the water exit position
+	if (exitingwater)
+	{
+		FaceTowards(pos + Vector(0.0f, 0.0f, navgenparams->human_crouch_eye_height), true);
+	}
+
+	// need to move up or down?
+	if (heightDifference >= heightTolerance)
+	{
+		if (raiseHeight || exitingwater)
+		{
+			input->PressMoveUpButton();
+		}
+		else
+		{
+			input->PressMoveDownButton();
+		}
+
+		// when adjusting heights, only move towards the goal if the bot is far, prevents overshooting the goal while changing heights
+		if (distance2D >= (GetHullWidth() * 2.0f))
+		{
+			MoveTowards(pos, weight);
+		}
+
+		return;
+	}
+
+	MoveTowards(pos, weight);
 }
 
 void IMovement::AccelerateTowards(const Vector& pos, const float* speed, const float* delta, const int weight)

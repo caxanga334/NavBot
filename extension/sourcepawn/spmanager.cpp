@@ -13,7 +13,7 @@ std::unique_ptr<SourcePawnManager> spmanager;
 
 SourcePawnManager::SourcePawnManager()
 {
-	std::fill(std::begin(m_handletypes), std::end(m_handletypes), BAD_HANDLE);
+	std::fill(std::begin(m_handletypes), std::end(m_handletypes), 0);
 }
 
 SourcePawnManager::~SourcePawnManager()
@@ -112,6 +112,18 @@ void SourcePawnManager::SetupHandles()
 	SetupNavCollectorHandle();
 	SetupNavAreaVectorHandle();
 	SetupNavBlockerHandle();
+#endif // !NO_SOURCEPAWN_API
+}
+
+void SourcePawnManager::OnUnload()
+{
+#ifndef NO_SOURCEPAWN_API
+	for (auto& type : m_handletypes)
+	{
+		handlesys->RemoveType(type, myself->GetIdentity());
+	}
+
+	std::fill(std::begin(m_handletypes), std::end(m_handletypes), 0);
 #endif // !NO_SOURCEPAWN_API
 }
 

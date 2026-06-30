@@ -362,6 +362,7 @@ void NavBotExt::SDK_OnUnload()
 	delete extmanager;
 	extmanager = nullptr;
 
+	spmanager->OnUnload();
 #if SOURCE_ENGINE >= SE_ORANGEBOX
 	ConVar_Unregister();
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX

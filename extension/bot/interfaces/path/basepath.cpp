@@ -524,6 +524,12 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 	// Keep a reachable height
 	to->goal.z = from->area->GetZ(to->goal);
 
+	if (ProcessWaterPath(bot, index, start, from, to, pathinsert))
+	{
+		// no need to do anything here
+		return true;
+	}
+
 	Vector fromPos = from->goal;
 	fromPos.z = from->area->GetZ(fromPos);
 	Vector toPos = to->goal;
@@ -532,18 +538,6 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 	from->area->ComputeNormal(&groundNormal);
 	Vector alongPath = toPos - fromPos;
 	const float expectedHeightDrop = -DotProduct(alongPath, groundNormal);
-
-	// When going from land to underwater, the bot enters a loop of going back to land and entering water
-	if (index <= 1 && to->area->IsUnderwater())
-	{
-		if (bot->IsUnderWater())
-		{
-			from->goal = bot->GetAbsOrigin();
-			to->goal = bot->GetAbsOrigin();
-
-			return true;
-		}
-	}
 
 	if (expectedHeightDrop > mover->GetStepHeight())
 	{
@@ -600,6 +594,69 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 	}
 
 	return true;
+}
+
+bool CPath::ProcessWaterPath(CBaseBot* bot, const size_t index, const Vector& start, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CPath::ProcessWaterPath", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	// When going from land to underwater, the bot enters a loop of going back to land and entering water
+	if (index <= 1 && to->area->IsUnderwater())
+	{
+		if (bot->IsUnderWater())
+		{
+			from->goal = bot->GetAbsOrigin();
+			to->goal = bot->GetAbsOrigin();
+
+			return true;
+		}
+	}
+
+	const bool fromUnderwater = from->area->IsUnderwater();
+
+	if (!fromUnderwater)
+	{
+		return false;
+	}
+
+	const bool toUnderWater = to->area->IsUnderwater();
+
+	Vector fromPos = from->goal;
+	fromPos.z = from->area->GetZ(fromPos);
+	Vector toPos = to->goal;
+	toPos.z = to->area->GetZ(toPos);
+	float heightDiff = std::abs(fromPos.z - toPos.z);
+
+	if (heightDiff > bot->GetMovementInterface()->GetStepHeight())
+	{
+		// going out of the water
+		if (!toUnderWater)
+		{
+			to->type = AIPath::SegmentType::SEGMENT_WATER_EXIT;
+			to->goal = to->area->GetCenter();
+			from->type = AIPath::SegmentType::SEGMENT_WATER_RAISE;
+			// experimental
+			from->goal = trace::getwatersurface(from->goal);
+			return true;
+		}
+
+		// needs to go up
+		if (toPos.z > fromPos.z)
+		{
+			to->type = AIPath::SegmentType::SEGMENT_WATER_RAISE;
+		}
+		else
+		{
+			to->type = AIPath::SegmentType::SEGMENT_WATER_LOWER;
+		}
+
+		return true;
+	}
+
+	// height difference not big enough, maybe there is a ramp, let standard ground movement handle this
+	return false;
 }
 
 bool CPath::ProcessLaddersInPath(CBaseBot* bot, BotPathSegment* from, BotPathSegment* to, std::stack<PathInsertSegmentInfo>& pathinsert)
@@ -1193,6 +1250,21 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_CATAPULT:
 	{
 		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 2, 71, 254, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_WATER_LOWER:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 65, 253, 254, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_WATER_RAISE:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 65, 253, 254, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_WATER_EXIT:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 65, 253, 254, 255, true, duration);
 		break;
 	}
 	default:

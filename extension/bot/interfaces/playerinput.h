@@ -73,10 +73,10 @@ public:
 	void ReleaseMoveLeftButton();
 	void PressMoveRightButton(const float duration = -1.0f);
 	void ReleaseMoveRightButton();
-	void PressMoveUpButton(const float duration = -1.0f);
+	void PressMoveUpButton(const float duration = 0.2f);
 	void ReleaseMoveUpButton();
 	bool IsPressingMoveUpButton();
-	void PressMoveDownButton(const float duration = -1.0f);
+	void PressMoveDownButton(const float duration = 0.2f);
 	void ReleaseMoveDownButton();
 	bool IsPressingMoveDownButton();
 	void PressReloadButton(const float duration = -1.0f);
