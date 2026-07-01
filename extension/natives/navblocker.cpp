@@ -9,9 +9,9 @@ class CSourcePawnNavBlocker final : public CNavBlocker<CNavArea>
 {
 public:
 	CSourcePawnNavBlocker() :
-		m_name("CSourcePawnNavBlocker"), m_entity(nullptr)
+		m_name("CSourcePawnNavBlocker"), m_ownerplugin("Unknown"), m_entity(nullptr)
 	{
-		m_handledeleted = false;
+		m_markedForRemoval = false;
 		m_init = false;
 		m_handle = BAD_HANDLE;
 		std::fill(std::begin(m_blocked), std::end(m_blocked), false);
@@ -25,7 +25,6 @@ public:
 	{
 		if (m_handle != BAD_HANDLE)
 		{
-			// this is for when the blocker gets deleted by the nav mesh
 			pawnutils::FreeInternalHandle(m_handle);
 			m_handle = BAD_HANDLE;
 		}
@@ -46,7 +45,7 @@ public:
 	{
 		if (IsAreaVectorEmpty()) { return false; }
 
-		if (m_handledeleted) { return false; }
+		if (m_markedForRemoval) { return false; }
 
 		return true;
 	}
@@ -96,10 +95,10 @@ public:
 
 	void PrintDebugInfo() const final
 	{
-		META_CONPRINTF("Handle: %X \n", m_handle);
+		META_CONPRINTF("Handle: %X Owner: %s\n", m_handle, m_ownerplugin.c_str());
 	}
 
-	void OnHandleDeleted() { m_handledeleted = true; SetHandle(BAD_HANDLE); }
+	void MarkForRemoval() { m_markedForRemoval = true; }
 	void SetHandle(SourceMod::Handle_t hdl) { m_handle = hdl; }
 
 	void Init()
@@ -146,10 +145,13 @@ public:
 	void SetEntity(CBaseEntity* entity) { m_entity.Set(entity); }
 	CBaseEntity* GetEntity() const { return m_entity.Get(); }
 
+	void SetOwnerPluginInfo(const std::string& info) { m_ownerplugin = info; }
+
 private:
 	std::string m_name;
+	std::string m_ownerplugin;
 	CHandle<CBaseEntity> m_entity;
-	bool m_handledeleted;
+	bool m_markedForRemoval;
 	bool m_init;
 	SourceMod::Handle_t m_handle; // my handle value
 	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_blocked;
@@ -158,12 +160,20 @@ private:
 	SourceMod::IChangeableForward* m_onroundrestartcallback;
 	SourceMod::IChangeableForward* m_onrecomputeinternaldatacallback;
 
-	void ExecuteCallback(SourceMod::IChangeableForward* cb) const
+	void ExecuteCallback(SourceMod::IChangeableForward* cb)
 	{
+		if (m_markedForRemoval) { return; }
+
 		if (cb->GetFunctionCount() > 0)
 		{
+			cell_t result = 0;
 			cb->PushCell(m_handle);
-			cb->Execute(nullptr);
+			cb->Execute(&result);
+
+			if (result == 0)
+			{
+				MarkForRemoval();
+			}
 		}
 	}
 };
@@ -182,7 +192,7 @@ namespace natives::navmesh::navblocker
 		CSourcePawnNavBlocker* blocker = new CSourcePawnNavBlocker;
 		SourceMod::Handle_t handle = BAD_HANDLE;
 
-		if (!pawnutils::CreateHandle("CSourcePawnNavBlocker", spmanager->GetNavBlockerHandleType(), blocker, context, handle))
+		if (!pawnutils::CreateInternalHandle("CSourcePawnNavBlocker", spmanager->GetNavBlockerHandleType(), blocker, handle))
 		{
 			delete blocker;
 			return BAD_HANDLE;
@@ -202,6 +212,13 @@ namespace natives::navmesh::navblocker
 			return BAD_HANDLE;
 		}
 
+		const char* filename = context->GetRuntime()->GetFilename();
+
+		if (filename)
+		{
+			blocker->SetOwnerPluginInfo(filename);
+		}
+		
 		char* name = pawnutils::ReadStringNULL(context, params, 3);
 		blocker->SetName(name);
 		blocker->SetHandle(handle);
@@ -338,10 +355,5 @@ namespace natives::navmesh::navblocker
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));
-	}
-
-	void onhandledeleted(void* object)
-	{
-		reinterpret_cast<CSourcePawnNavBlocker*>(object)->OnHandleDeleted();
 	}
 }

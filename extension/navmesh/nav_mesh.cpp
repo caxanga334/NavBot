@@ -4060,6 +4060,14 @@ void CNavMesh::ComputePhysPropsAvoidanceObstacles()
 	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
 		if (entity)
 		{
+			int collisiongroup = reinterpret_cast<IServerEntity*>(entity)->GetCollideable()->GetCollisionGroup();
+
+			// skip props with COLLISION_GROUP_DEBRIS collision group
+			if (collisiongroup == static_cast<int>(Collision_Group_t::COLLISION_GROUP_DEBRIS))
+			{
+				return true;
+			}
+
 			this->CreateEntityAvoidanceObstacle(entity);
 		}
 

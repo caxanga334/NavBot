@@ -6,9 +6,10 @@
 /**
  * General callback for nav blockers. Used by multiple callbacks.
  * 
- * @param blocker           Handle of a NavBotNavBlocker being initialized.
+ * @param blocker           Handle of the current blocker instance.
+ * @return					Returing false marks the blocker as invalid. Invalid blockers are removed by the nav mesh.
  */
-typedef NavBotNavBlockerCB = function void (NavBotNavBlocker blocker);
+typedef NavBotNavBlockerCB = function bool (NavBotNavBlocker blocker);
 
 methodmap NavBotNavBlocker < Handle
 {

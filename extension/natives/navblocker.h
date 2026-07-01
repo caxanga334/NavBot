@@ -4,7 +4,6 @@
 namespace natives::navmesh::navblocker
 {
 	void setup(std::vector<sp_nativeinfo_t>& nv);
-	void onhandledeleted(void* object);
 }
 
 

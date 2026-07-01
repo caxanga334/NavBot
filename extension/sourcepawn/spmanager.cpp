@@ -56,12 +56,6 @@ void SourcePawnManager::OnHandleDestroy(SourceMod::HandleType_t type, void* obje
 		delete vec;
 		return;
 	}
-
-	if (type == m_handletypes[HANDLE_NAVBLOCKER])
-	{
-		natives::navmesh::navblocker::onhandledeleted(object);
-		return;
-	}
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -247,7 +241,8 @@ void SourcePawnManager::SetupNavBlockerHandle()
 	trules.access[HTypeAccess_Inherit] = true;
 	trules.ident = myself->GetIdentity();
 	hrules.access[HandleAccess_Read] = 0;
-	hrules.access[HandleAccess_Clone] = HANDLE_RESTRICT_OWNER;
+	hrules.access[HandleAccess_Delete] = HANDLE_RESTRICT_IDENTITY | HANDLE_RESTRICT_OWNER;
+	hrules.access[HandleAccess_Clone] = HANDLE_RESTRICT_IDENTITY | HANDLE_RESTRICT_OWNER;
 
 	m_handletypes[HANDLE_NAVBLOCKER] = handlesys->CreateType("CSourcePawnNavBlocker", this, NO_HANDLE_TYPE, &trules, &hrules, myself->GetIdentity(), nullptr);
 
