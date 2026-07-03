@@ -34,6 +34,9 @@
 			"UserCmdButton_speed"		"32768"
 			/* Replaced with fire mode select */
 			"UserCmdButton_run"			"4096"
+
+			"IMovement_StandingJumpBoost" "350.0"
+			"IMovement_CrouchedJumpBoost" "450.0"
 		}
 		"Offsets"
 		{

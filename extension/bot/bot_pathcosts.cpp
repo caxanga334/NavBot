@@ -70,7 +70,6 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		{
 			if (fromArea->IsUnderwater() && toArea->IsUnderwater())
 			{
-				dist *= UNDERWATER_COST_MULTIPLIER;
 				break; // skip other checks, when both are underwater, assume the bot can freely change heights using move up/move down
 			}
 
@@ -123,9 +122,25 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		}
 	}
 
-	float cost = dist + fromArea->GetCostSoFar();
-
 	RouteType type = GetRouteType();
+
+	if (toArea->HasAvoidanceObstacle(m_movecaps.m_stepheight))
+	{
+		dist *= OBSTRUCTED_COST_MULTIPLIER;
+	}
+
+	if (toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_AVOID)))
+	{
+		dist *= NAV_AVOID_ATTRIB_MULTI;
+	}
+
+	// Crouching slows us down, avoid it when looking for fast routes
+	if (type == FASTEST_ROUTE && toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
+	{
+		dist *= FASTEST_ROUTE_CROUCH_MULT;
+	}
+
+	float cost = dist + fromArea->GetCostSoFar();
 
 	if (!IsIngoringDanger())
 	{
@@ -138,22 +153,6 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 			
 			cost += (danger * dangermult);
 		}
-	}
-
-	if (toArea->HasAvoidanceObstacle(m_movecaps.m_stepheight))
-	{
-		cost *= OBSTRUCTED_COST_MULTIPLIER;
-	}
-
-	if (toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_AVOID)))
-	{
-		cost *= NAV_AVOID_ATTRIB_MULTI;
-	}
-
-	// Crouching slows us down, avoid it when looking for fast routes
-	if (type == FASTEST_ROUTE && toArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
-	{
-		cost *= FASTEST_ROUTE_CROUCH_MULT;
 	}
 
 	return cost;

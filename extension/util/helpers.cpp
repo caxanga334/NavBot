@@ -1865,6 +1865,19 @@ void UtilHelpers::parsers::ParseDelimitedStrings(const std::string& source, char
 	}
 }
 
+float UtilHelpers::parsers::ParseFloatClamped(const char* str, const float min, const float max, const float defaultValue)
+{
+	try
+	{
+		float value = std::stof(str);
+		return std::clamp(value, min, max);
+	}
+	catch ([[maybe_unused]] const std::exception&)
+	{
+		return defaultValue;
+	}
+}
+
 CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool alive, const bool onlyhumans)
 {
 	std::vector<CBaseEntity*> candidates;

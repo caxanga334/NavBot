@@ -382,6 +382,15 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 			// bot can step to goal, reached
 			return true;
 		}
+
+		if (!m_goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
+		{
+			// don't try to climb while crouched
+			if (mover->IsInCrouchTransition() || mover->IsCompletelyCrouched())
+			{
+				return false;
+			}
+		}
 	}
 	else if (m_goal->type == AIPath::SegmentType::SEGMENT_CATAPULT)
 	{
@@ -1746,6 +1755,11 @@ void CMeshNavigator::AdvanceGoalToNearest()
 		return;
 	}
 
+	if (start->type == AIPath::SegmentType::SEGMENT_GROUND_NOSKIP)
+	{
+		return;
+	}
+
 	const BotPathSegment* nearest = nullptr;
 	float best_distance = me->GetRangeTo(start->goal);
 	unsigned char max_i = 0U;
@@ -1755,6 +1769,7 @@ void CMeshNavigator::AdvanceGoalToNearest()
 
 	while (next != nullptr)
 	{
+		if (next->type == AIPath::SegmentType::SEGMENT_GROUND_NOSKIP) { break; }
 		float dist = me->GetRangeTo(next->goal);
 
 		if (dist < best_distance)

@@ -15,8 +15,6 @@ public:
 	float GetCrouchedHullHeight() const override;
 	float GetProneHullHeight() const override;
 
-protected:
-	void DoJumpAssist() override;
 
 private:
 

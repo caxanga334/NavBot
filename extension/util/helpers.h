@@ -857,6 +857,8 @@ namespace UtilHelpers::parsers
 	bool ParseRandomInt(const char* str, int& out, const int min, const int max);
 
 	void ParseDelimitedStrings(const std::string& source, char delimiter, std::vector<std::string>& out);
+
+	float ParseFloatClamped(const char* str, const float min, const float max, const float defaultValue = 0.0f);
 }
 
 namespace UtilHelpers::textformat

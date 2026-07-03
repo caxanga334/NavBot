@@ -72,6 +72,14 @@ forward void OnNavBotNavMeshLoaded();
 forward void OnNavBotNavMeshDestroyed();
 
 /**
+ * Called when a bot is stuck.
+ * 
+ * @param bot		NavBot instance that got stuck.
+ * @param count		Count of consecutive stuck events.
+ */
+forward void OnNavBotStuck(NavBot bot, int count);
+
+/**
  * Builds a path from the start position to the end position.
  * 
  * @param vStart				Path start position.

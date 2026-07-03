@@ -159,6 +159,14 @@ bool IMovement::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 	value = cfgnavbot->GetKeyValue("PlayerHull_Width");
 	if (value) { IMovement::s_playerhull.width = atof(value); }
 
+	value = cfgnavbot->GetKeyValue("IMovement_StandingJumpBoost");
+	if (value == nullptr) { return false; }
+	IMovement::s_standingJumpBoost = UtilHelpers::parsers::ParseFloatClamped(value, 10.0f, 600.0f, 30.0f);
+
+	value = cfgnavbot->GetKeyValue("IMovement_CrouchedJumpBoost");
+	if (value == nullptr) { return false; }
+	IMovement::s_crouchedJumpBoost = UtilHelpers::parsers::ParseFloatClamped(value, 30.0f, 900.0f, 120.0f);
+
 	return true;
 }
 
@@ -526,7 +534,7 @@ void IMovement::DoWaterMove(const Vector& pos, const bool raiseHeight, const boo
 	Vector origin = bot->GetAbsOrigin();
 	const float heightDifference = std::abs(origin.z - pos.z);
 	const float distance2D = (origin - pos).AsVector2D().Length();
-	const float heightTolerance = exitingwater ? GetCrouchedHullHeight() : GetStepHeight();
+	const float heightTolerance = GetStepHeight();
 	IPlayerController* input = bot->GetControlInterface();
 
 	// look at the water exit position
@@ -548,7 +556,7 @@ void IMovement::DoWaterMove(const Vector& pos, const bool raiseHeight, const boo
 		}
 
 		// when adjusting heights, only move towards the goal if the bot is far, prevents overshooting the goal while changing heights
-		if (distance2D >= (GetHullWidth() * 2.0f))
+		if (exitingwater || (distance2D >= (GetHullWidth() * 2.0f) && heightDifference <= (GetStandingHullHeight() * 0.8f)))
 		{
 			MoveTowards(pos, weight);
 		}
@@ -640,19 +648,26 @@ void IMovement::DetermineIdealPostureForPath(const CMeshNavigator* path)
 #endif // EXT_VPROF_ENABLED
 
 	CBaseBot* bot = GetBot<CBaseBot>();
+	const BotPathSegment* goal = path->GetGoalSegment();
 
+	if (goal)
+	{
+		if (AIPath::IsJumpSegment(goal->type))
+		{
+			// never crouch if the bot is going to jump
+			return;
+		}
+
+		if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
+		{
+			bot->GetControlInterface()->PressCrouchButton(0.25f);
+			return;
+		}
+	}
+	
 	CNavArea* lastarea = bot->GetLastKnownNavArea();
 
 	if (lastarea && lastarea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)))
-	{
-		bot->GetControlInterface()->PressCrouchButton(0.25f);
-		return;
-	}
-
-	constexpr auto GOAL_CROUCH_RANGE = 50.0f * 50.0f;
-	const BotPathSegment* goal = path->GetGoalSegment();
-
-	if (goal->area->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_CROUCH)) /* && GetBot<CBaseBot>()->GetRangeToSqr(goal->goal) <= GOAL_CROUCH_RANGE */)
 	{
 		bot->GetControlInterface()->PressCrouchButton(0.25f);
 		return;
@@ -1977,6 +1992,9 @@ void IMovement::StuckMonitor()
 				TryToUnstuck();
 				m_stuck.counter++; // still stuck, increase counter
 				LogStuck(bot, m_stuck.counter);
+#ifndef NO_SOURCEPAWN_API
+				extmanager->SMAPI_OnBotStuck(bot->GetIndex(), m_stuck.counter);
+#endif // !NO_SOURCEPAWN_API
 
 				if (m_stuck.counter > extmanager->GetMod()->GetModSettings()->GetStuckSuicideThreshold())
 				{
@@ -2012,6 +2030,9 @@ void IMovement::StuckMonitor()
 				bot->OnStuck();
 				TryToUnstuck();
 				LogStuck(bot, m_stuck.counter);
+#ifndef NO_SOURCEPAWN_API
+				extmanager->SMAPI_OnBotStuck(bot->GetIndex(), m_stuck.counter);
+#endif // !NO_SOURCEPAWN_API
 
 				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 				{
@@ -2284,7 +2305,8 @@ void IMovement::DoJumpAssist()
 	{
 		CBaseBot* bot = GetBot<CBaseBot>();
 		Vector velocity = bot->GetAbsVelocity();
-		velocity.z += 30.0f;
+		const float boost = IsCompletelyCrouched() ? IMovement::s_crouchedJumpBoost : IMovement::s_standingJumpBoost;
+		velocity.z += boost;
 
 		sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), nullptr, nullptr, &velocity);
 	}
@@ -2313,7 +2335,18 @@ IMovement::LadderState IMovement::ApproachUpLadder()
 		return NOT_USING_LADDER;
 	}
 
-	if (IsOnLadder())
+	const bool isOnLadder = IsOnLadder();
+
+	if (m_ladderTimer.IsElapsed())
+	{
+		if (!isOnLadder)
+		{
+			// failed to grab ladder
+			return NOT_USING_LADDER;
+		}
+	}
+
+	if (isOnLadder)
 	{
 		bot->GetControlInterface()->ReleaseMovementButtons();
 
@@ -2630,11 +2663,32 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	const Vector& dismountGoal = m_ladderExit->GetCenter();
 	const bool isOnLadder = IsOnLadder();
 	const bool isOnGround = IsOnGround();
+	const float stepHeight = GetStepHeight();
+
+	if (m_ladderTimer.IsElapsed())
+	{
+		if (!isOnLadder)
+		{
+			return NOT_USING_LADDER;
+		}
+
+		// if below the dismount position Z, try climbing again
+		if (origin.z < dismountGoal.z)
+		{
+			if (origin.z >= (dismountGoal.z - stepHeight))
+			{
+				Vector launch = me->CalculateLaunchVector(dismountGoal, 200.0f);
+				me->SetAbsVelocity(launch);
+			}
+
+			return USING_LADDER_UP;
+		}
+	}
 
 	input->AimAt(dismountGoal + Vector(0.0f, 0.0f, GetCrouchedHullHeight()), IPlayerController::LOOK_MOVEMENT, 0.5f, "Looking at ladder top dismount goal!");
 
 	// on ground and above the ladder exit point, dismount
-	if (isOnGround && origin.z >= (dismountGoal.z - GetStepHeight()))
+	if (isOnGround && origin.z >= (dismountGoal.z - stepHeight))
 	{
 		if (isOnLadder)
 		{
@@ -2645,7 +2699,7 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	}
 
 	// not on a ladder, not on the ground and above the dismount goal Z, probably overshot the ladder and airborne
-	if (!isOnLadder && !isOnGround && origin.z >= (dismountGoal.z - GetStepHeight()))
+	if (!isOnLadder && !isOnGround && origin.z >= (dismountGoal.z - stepHeight))
 	{
 		// Fake jump off the ladder
 		Vector launch = me->CalculateLaunchVector(dismountGoal, GetWalkSpeed());

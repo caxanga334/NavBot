@@ -582,6 +582,11 @@ void botsharedutils::SelectRetreatArea::OnDone()
 	}
 }
 
+bool botsharedutils::HidingSpotCollector::ShouldSearch(CNavArea* area)
+{
+	return IsReachableAreas::ShouldSearch(area);
+}
+
 void botsharedutils::HidingSpotCollector::OnDone()
 {
 	if (GetCollectedAreasCount() == 0U) { return; }

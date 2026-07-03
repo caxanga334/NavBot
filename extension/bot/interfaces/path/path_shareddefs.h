@@ -51,6 +51,19 @@ namespace AIPath
 		}
 	}
 
+	inline bool IsJumpSegment(SegmentType type)
+	{
+		switch (type)
+		{
+		case SEGMENT_CLIMB_UP:
+			[[fallthrough]];
+		case SEGMENT_CLIMB_DOUBLE_JUMP:
+			return true;
+		default:
+			return false;
+		}
+	}
+
 	inline const char* SegmentTypeToString(SegmentType type)
 	{
 		using namespace std::literals::string_view_literals;

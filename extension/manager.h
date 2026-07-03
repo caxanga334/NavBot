@@ -200,8 +200,29 @@ public:
 
 #ifndef NO_SOURCEPAWN_API
 	void SPAPI_CallPreBotUpdate(int bot);
-	void SMAPI_OnNavMeshLoaded() { m_onnavmeshloadedforward->Execute(nullptr); }
-	void SMAPI_OnNavMeshDestroyed() { m_onnavmeshdestroyedforward->Execute(nullptr); }
+	void SMAPI_OnNavMeshLoaded()
+	{
+		if (m_onnavmeshloadedforward->GetFunctionCount() > 0)
+		{
+			m_onnavmeshloadedforward->Execute(nullptr);
+		}
+	}
+	void SMAPI_OnNavMeshDestroyed()
+	{
+		if (m_onnavmeshdestroyedforward->GetFunctionCount() > 0)
+		{
+			m_onnavmeshdestroyedforward->Execute(nullptr);
+		}
+	}
+	void SMAPI_OnBotStuck(int bot, int count)
+	{
+		if (m_onbotstuckforward->GetFunctionCount() > 0)
+		{
+			m_onbotstuckforward->PushCell(bot);
+			m_onbotstuckforward->PushCell(count);
+			m_onbotstuckforward->Execute(nullptr);
+		}
+	}
 #endif // !NO_SOURCEPAWN_API
 
 private:
@@ -217,6 +238,7 @@ private:
 	SourceMod::IForward* m_prebotupdateforward;
 	SourceMod::IForward* m_onnavmeshloadedforward;
 	SourceMod::IForward* m_onnavmeshdestroyedforward;
+	SourceMod::IForward* m_onbotstuckforward;
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use

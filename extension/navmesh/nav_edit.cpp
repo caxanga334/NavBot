@@ -5291,6 +5291,21 @@ CON_COMMAND_F(sm_nav_select_areas_touching_entity, "Selects nav areas that touch
 	META_CONPRINTF("Selected %zu areas! \n", areas.size());
 }
 
+CON_COMMAND_F(sm_nav_area_print_positions, "Prints the coordinates of nav areas.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	auto func = [](CNavArea* area) {
+		META_CONPRINTF("Area #%u\n Center: <%s> \n", area->GetID(), UtilHelpers::textformat::FormatVector(area->GetCenter()));
+
+		for (int corner = 0; corner < static_cast<int>(NavCornerType::NUM_CORNERS); corner++)
+		{
+			Vector pos = area->GetCorner(static_cast<NavCornerType>(corner));
+			META_CONPRINTF(" Corner #%i Pos: <%s> \n", corner, UtilHelpers::textformat::FormatVector(pos));
+		}
+	};
+
+	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
+}
+
 void CNavMesh::RegisterCommands()
 {
 	// Call the virtual one for derived classes

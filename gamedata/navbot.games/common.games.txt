@@ -90,6 +90,10 @@
 			"BotBreakAggressiveList" "func_breakable,func_breakable_surf"
 			/* If a breakable has this or less health, the bot will always break it when it's blocking their path. */
 			"BotBreakAggressiveHealth" "100"
+
+			/* Amount of Z velocity boost added to help bots clear jumps */
+			"IMovement_StandingJumpBoost" "30.0"
+			"IMovement_CrouchedJumpBoost" "120.0"
 		}
 		"Offsets"
 		{

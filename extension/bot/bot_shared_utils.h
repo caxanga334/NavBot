@@ -254,6 +254,8 @@ namespace botsharedutils
 		{
 		}
 
+		bool ShouldSearch(CNavArea* area) override;
+
 		void OnDone() override;
 		CNavArea* GetRandomHidingArea() const;
 

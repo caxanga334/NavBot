@@ -641,7 +641,7 @@ protected:
 	/**
 	 * @brief Invoked when the bot is jumping to assist the bot with the jump.
 	 */
-	virtual void DoJumpAssist();
+	void DoJumpAssist();
 
 	void ClearDeadAreas() { m_deadAreas.clear(); }
 	void ClearCostModAreas() { m_costModAreas.clear(); }
@@ -665,6 +665,9 @@ private:
 	bool m_sjIsToTheLeft;
 	std::unordered_map<unsigned int, float> m_deadAreas; // nav areas marked as Dead
 	std::unordered_map<unsigned int, std::pair<float, float>> m_costModAreas; // nav areas marked with modified travel costs, first is cost multiplier, second is max time
+
+	inline static float s_standingJumpBoost{ 30.0f };
+	inline static float s_crouchedJumpBoost{ 120.0f };
 
 	LadderState ApproachUpLadder();
 	LadderState ApproachDownLadder();

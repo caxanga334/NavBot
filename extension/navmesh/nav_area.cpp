@@ -5237,7 +5237,6 @@ void CNavArea::CheckWaterLevel( void )
 	}
 
 	pos.z += 1;
-	extern IEngineTrace *enginetrace;
 	m_isUnderwater = (enginetrace->GetPointContents( pos ) & MASK_WATER ) != 0;
 }
 
@@ -5245,18 +5244,19 @@ void CNavArea::CheckWaterLevel( void )
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavCheckFloor( void )
 {
+	namespace tf = UtilHelpers::textformat;
+
 	if ( !UTIL_IsCommandIssuedByServerAdmin() )
 		return;
+
 	if ( TheNavMesh->GetMarkedArea() )
 	{
 		CNavArea *area = TheNavMesh->GetMarkedArea();
 		area->CheckFloor( NULL );
-#if SOURCE_ENGINE == SE_SDK2013
 		if ( area->IsBlocked( NAV_TEAM_ANY ) )
 		{
-			DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, navgenparams->human_height ) ) );
+			META_CONPRINTF( "Area #%d %s is blocked\n", area->GetID(), tf::FormatVector( area->GetCenter() + Vector( 0, 0, navgenparams->human_height ) ) );
 		}
-#endif
 	}
 	else
 	{
@@ -5265,17 +5265,15 @@ static void CommandNavCheckFloor( void )
 		{
 			CNavArea *area = TheNavAreas[ nit ];
 			area->CheckFloor( NULL );
-#if SOURCE_ENGINE == SE_SDK2013
 			if ( area->IsBlocked( NAV_TEAM_ANY ) )
 			{
-				DevMsg( "Area #%d %s is blocked\n", area->GetID(), VecToString( area->GetCenter() + Vector( 0, 0, navgenparams->human_height ) ) );
+				META_CONPRINTF( "Area #%d %s is blocked\n", area->GetID(), tf::FormatVector( area->GetCenter() + Vector( 0, 0, navgenparams->human_height ) ) );
 			}
-#endif
 		}
 
 		float end = Plat_FloatTime();
 		float time = (end - start) * 1000.0f;
-		DevMsg( "nav_check_floor took %2.2f ms\n", time );
+		META_CONPRINTF( "nav_check_floor took %2.2f ms\n", time );
 	}
 }
 static ConCommand sm_nav_check_floor( "sm_nav_check_floor", CommandNavCheckFloor, "Updates the blocked/unblocked status for every nav area.", FCVAR_GAMEDLL );

@@ -47,9 +47,8 @@ public:
 	static constexpr float NO_TRAVERSE_COST = 0.0f; // return this to mark the area as no cost
 	static constexpr float OBSTRUCTED_COST_MULTIPLIER = 3.0f; // obstructed areas have their cost multiplied by this
 	static constexpr float FASTEST_ROUTE_CROUCH_MULT = 1.5f; // cost multiplier for areas with crouch attribute when searching for the fastest route
-	static constexpr float NAV_AVOID_ATTRIB_MULTI = 12.0f; // cost multiplier for areas with the NAV_MESH_AVOID attribute.
+	static constexpr float NAV_AVOID_ATTRIB_MULTI = 15.0f; // cost multiplier for areas with the NAV_MESH_AVOID attribute.
 	static constexpr float JUMP_COST_MULTIPLIER = 2.0f; // cost multiplier for areas that requires jumping
-	static constexpr float UNDERWATER_COST_MULTIPLIER = 1.4f; // cost amultiplier for underwater areas
 };
 
 // A path segment is a single 'node' that the bot uses to move. The path is a list of segments and the bot follows these segments

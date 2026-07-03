@@ -1904,7 +1904,7 @@ public:
 
 bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal )
 {
-	const float flMaxOffset = 100.0f;
+	constexpr auto flMaxOffset = 100.0f;
 
 	CTraceFilterGroundEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 
@@ -1922,7 +1922,7 @@ bool CNavMesh::GetGroundHeight( const Vector &pos, float *height, Vector *normal
 
 			if (normal)
 			{
-				*normal = !result.plane.normal.IsZero() ? result.plane.normal : Vector(0, 0, 1);
+				*normal = !result.plane.normal.IsZero() ? result.plane.normal : Vector(0.0f, 0.0f, 1.0f);
 			}
 
 			return true;
