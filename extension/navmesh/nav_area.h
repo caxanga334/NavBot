@@ -246,6 +246,8 @@ private:
 		"GRAPPLING_HOOK",
 		"CATAPULT",
 		"STRAFE_JUMP",
+		"PUSH_LADDER",
+		"CHEAT_TELEPORT",
 	};
 
 public:

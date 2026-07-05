@@ -647,6 +647,9 @@ NavErrorType CNavArea::PostLoad( void )
 			link->m_link.length = length;
 			break;
 		}
+		case OffMeshConnectionType::OFFMESH_CHEAT_TELEPORT:
+			link->m_link.length = 0.1f;
+			break;
 		default:
 			link->m_link.length = (area->GetCenter() - GetCenter()).Length();
 			break;

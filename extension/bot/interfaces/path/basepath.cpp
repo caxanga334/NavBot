@@ -1074,8 +1074,56 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, B
 		pathinsert.emplace(to, std::move(gapseg), false);
 		break;
 	}
+	case OffMeshConnectionType::OFFMESH_PUSH_LADDER:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		BotPathSegment seg1;
+
+		seg1.CopySegment(from);
+		seg1.goal = link->GetStart();
+		seg1.how = GO_OFF_MESH_CONNECTION;
+		seg1.type = AIPath::SEGMENT_GROUND_NOSKIP;
+
+		BotPathSegment seg2;
+		seg2.CopySegment(from);
+		seg2.area = to->area;
+		seg2.goal = link->GetEnd();
+		seg2.how = GO_OFF_MESH_CONNECTION;
+		seg2.type = AIPath::SEGMENT_PUSH_LADDER;
+
+		pathinsert.emplace(from, std::move(seg1), true);
+		pathinsert.emplace(to, std::move(seg2), false);
+		break;
+	}
+	case OffMeshConnectionType::OFFMESH_CHEAT_TELEPORT:
+	{
+		// link ends at the destination area's center.
+		to->goal = to->area->GetCenter();
+		to->type = AIPath::SEGMENT_GROUND;
+
+		BotPathSegment seg1;
+
+		seg1.CopySegment(from);
+		seg1.goal = link->GetStart();
+		seg1.how = GO_OFF_MESH_CONNECTION;
+		seg1.type = AIPath::SEGMENT_GROUND_NOSKIP;
+
+		BotPathSegment seg2;
+		seg2.CopySegment(from);
+		seg2.area = to->area;
+		seg2.goal = link->GetEnd();
+		seg2.how = GO_OFF_MESH_CONNECTION;
+		seg2.type = AIPath::SEGMENT_CHEAT_TELEPORT;
+
+		pathinsert.emplace(from, std::move(seg1), true);
+		pathinsert.emplace(to, std::move(seg2), false);
+		break;
+	}
 	default:
-		Warning("CPath::ProcessOffMeshConnectionsInPath unhandled link type! \n");
+		smutils->LogError(myself, "CPath::ProcessOffMeshConnectionsInPath unhandled link type!");
 		return false;
 	}
 
@@ -1265,6 +1313,16 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_WATER_EXIT:
 	{
 		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 65, 253, 254, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_PUSH_LADDER:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 128, 0, 128, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_CHEAT_TELEPORT:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 70, 162, 255, true, duration);
 		break;
 	}
 	default:

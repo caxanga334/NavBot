@@ -20,6 +20,8 @@ enum class OffMeshConnectionType : std::uint32_t
 	OFFMESH_GRAPPLING_HOOK, // Grappling hook
 	OFFMESH_CATAPULT, // Catapult/push
 	OFFMESH_STRAFE_JUMP, // A jump that requires strafing over an obstacle
+	OFFMESH_PUSH_LADDER, // Ladder made using trigger_push/other push entities. (Common in TF2)
+	OFFMESH_CHEAT_TELEPORT, // Cheat: Teleport the bot to the end position.
 
 	MAX_OFFMESH_CONNECTION_TYPES // max known link types
 };

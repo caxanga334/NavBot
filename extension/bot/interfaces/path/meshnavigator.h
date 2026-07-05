@@ -87,6 +87,25 @@ protected:
 	void SetLastPathObstacle(CBaseEntity* pEnt) { m_pLastObstacle = pEnt; }
 	// This entity pointer may be dangling, use it only for comparing with another pointer.
 	CBaseEntity* GetLastPathObstacle() const { return m_pLastObstacle; }
+	// Sets the goal segment (the segment the navigator will move the bot to).
+	void SetGoalSegment(const BotPathSegment* goal)
+	{
+		OnGoalSegmentReached(m_goal, goal);
+		m_goal = goal;
+	}
+	/**
+	 * @brief Queries if it' possible to teleport the bot to the given segment.
+	 * @param bot Bot to teleport.
+	 * @param segment Segment to teleport to.
+	 * @return True if possible, false otherwise.
+	 */
+	bool IsTeleportPossible(CBaseBot* bot, const BotPathSegment* segment) const;
+	/**
+	 * @brief Teleports the bot to the given segment.
+	 * @param bot Bot to teleport.
+	 * @param segment Segment to teleport to.
+	 */
+	void TeleportToSegment(CBaseBot* bot, const BotPathSegment* segment) const;
 
 private:
 	CBaseBot* m_me; // bot that is using this navigator

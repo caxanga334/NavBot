@@ -392,7 +392,7 @@ public:
 	virtual bool NeedsWeaponControl() const { return m_isBreakingObstacle; }
 	virtual float GetMinimumMovementSpeed() { return m_maxspeed * 0.4f; }
 	virtual bool IsClimbingOrJumping();
-	inline virtual bool IsUsingLadder() { return m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
+	inline virtual bool IsUsingLadder() { return m_ladderFSM.m_ladderState != NOT_USING_LADDER; } // true if the bot is using a ladder
 	virtual bool IsAscendingOrDescendingLadder();
 	virtual bool IsOnLadder(); // true if the bot is on a ladder right now
 	virtual bool IsGap(const Vector& pos, const Vector& forward);
@@ -427,10 +427,10 @@ public:
 	const StuckStatus& GetStuckStatus() const { return m_stuck; }
 	virtual float GetStuckDuration() const;
 	virtual void ClearStuckStatus(const char* reason = nullptr);
-	virtual float GetSpeed() const { return m_speed; }
-	virtual float GetGroundSpeed() const { return m_groundspeed; }
-	virtual const Vector& GetMotionVector() { return m_motionVector; }
-	virtual const Vector2D& GetGroundMotionVector() { return m_groundMotionVector; }
+	float GetSpeed() const { return m_speed; }
+	float GetGroundSpeed() const { return m_groundspeed; }
+	const Vector& GetMotionVector() { return m_motionVector; }
+	const Vector2D& GetGroundMotionVector() { return m_groundMotionVector; }
 
 	virtual bool IsAreaTraversable(const CNavArea* area) const;
 	virtual bool NavigatorAllowSkip(const CNavArea* area) const { return true; }
@@ -441,7 +441,7 @@ public:
 	// Called when there is an obstacle on the bot's path.
 	virtual void ObstacleOnPath(CBaseEntity* obstacle, const Vector& goalPos);
 	// Returns the Nav Ladder the bot is using if one.
-	inline const CNavLadder* GetNavLadder() const { return m_ladder; }	
+	inline const CNavLadder* GetNavLadder() const { return m_ladderFSM.m_ladder; }
 	// Returns the number of consecutive stuck events
 	inline int GetStuckCount() const { return m_stuck.counter; }
 	virtual bool IsUsingElevator() const;
@@ -547,20 +547,95 @@ public:
 	bool IsDeadArea(const CNavArea* area) const;
 	// Applies a cost multiplier to the given area.
 	void GetCostMod(const CNavArea* area, float& cost) const;
+	/**
+	 * @brief Starts using a push ladder. (Ladder made using push entities, generally trigger_push, 
+	 * @param goingup 
+	 * @param destination 
+	 */
+	virtual void UsePushLadder(const bool goingup, const Vector& destination);
+	// Returns true if using a push ladder
+	bool IsUsingPushLadder() const { return m_pushLadderData.IsActive(); }
+	// Gets the push ladder exit position.
+	const Vector& GetPushLadderExit() const { return m_pushLadderData.GetExitPosition(); }
 protected:
-	const CNavLadder* m_ladder; // Ladder the bot is trying to climb
-	CNavArea* m_ladderExit; // Nav area after the ladder
-	CountdownTimer m_ladderTimer; // Max time to use a ladder
-	CountdownTimer m_useLadderTimer; // Timer for pressing the use key to climb a ladder.
-	Vector m_landingGoal; // jump landing goal position
-	LadderState m_ladderState; // ladder operation state
-	CountdownTimer m_ladderWait; // ladder wait timer
-	Vector m_ladderMoveGoal; // ladder move to goal vector
-	float m_ladderGoalZ; // ladder exit Z coordinate
-	bool m_ladderIsAligned;
+	class LadderFSM
+	{
+	public:
+		LadderFSM()
+		{
+			Reset();
+		}
+
+		void Reset()
+		{
+			m_ladder = nullptr;
+			m_ladderExit = nullptr;
+			m_ladderTimer.Invalidate();
+			m_useLadderTimer.Invalidate();
+			m_ladderState = LadderState::NOT_USING_LADDER;
+			m_ladderWait.Invalidate();
+			m_ladderMoveGoal.Init(0.0f, 0.0f, 0.0f);
+			m_ladderGoalZ = 0.0f;
+			m_ladderIsAligned = false;
+		}
+
+		LadderState GetState() const { return m_ladderState; }
+		bool IsGoingUpOrDown() const { return m_ladderState == LadderState::USING_LADDER_UP || m_ladderState == LadderState::USING_LADDER_DOWN; }
+		bool IsWaiting() const { return m_ladderWait.HasStarted() && !m_ladderWait.IsElapsed(); }
+		bool HasLadder() const { return m_ladder != nullptr; }
+
+		const CNavLadder* m_ladder; // Ladder the bot is trying to climb
+		CNavArea* m_ladderExit; // Nav area after the ladder
+		CountdownTimer m_ladderTimer; // Max time to use a ladder
+		CountdownTimer m_useLadderTimer; // Timer for pressing the use key to climb a ladder.
+		LadderState m_ladderState; // ladder operation state
+		CountdownTimer m_ladderWait; // ladder wait timer
+		Vector m_ladderMoveGoal; // ladder move to goal vector
+		float m_ladderGoalZ; // ladder exit Z coordinate
+		bool m_ladderIsAligned;
+	};
+
+	class PushLadderData
+	{
+	public:
+		PushLadderData()
+		{
+			Reset();
+		}
+
+		void Reset()
+		{
+			m_active = false;
+			m_isUp = false;
+			m_vecExit.Init(0.0f, 0.0f, 0.0f);
+			m_timer.Invalidate();
+		}
+
+		void Start(const bool up, const Vector& exit)
+		{
+			m_active = true;
+			m_isUp = up;
+			m_vecExit = exit;
+		}
+
+		void StartTimer(const float duration) { m_timer.Start(duration); }
+		bool IsActive() const { return m_active; }
+		bool IsGoingUp() const { return m_isUp; }
+		const Vector& GetExitPosition() const { return m_vecExit; }
+		const CountdownTimer& GetTimer() const { return m_timer; }
+
+	private:
+		bool m_active;
+		bool m_isUp; // if true, we are going up else going down
+		Vector m_vecExit; // exit position
+		CountdownTimer m_timer;
+	};
+
+	LadderFSM m_ladderFSM; // ladder finite state machine
 	CountdownTimer m_jumpCooldown;
 	CountdownTimer m_jumpTimer;
 	CountdownTimer m_doMidAirCJ; // do a mid air crouch jump (for double jumps)
+	Vector m_landingGoal; // jump landing goal position
 	Vector m_catapultStartPosition;
 	bool m_isJumping;
 	bool m_isJumpingAcrossGap;
@@ -580,6 +655,7 @@ protected:
 	CHandle<CBaseEntity> m_obstacleEntity;
 	CountdownTimer m_obstacleBreakTimeout;
 	CountdownTimer m_counterStrafeTimer;
+	PushLadderData m_pushLadderData;
 
 	// stuck monitoring
 	StuckStatus m_stuck;
@@ -678,8 +754,8 @@ private:
 
 	void ChangeLadderState(LadderState newState)
 	{
-		OnLadderStateChanged(m_ladderState, newState);
-		m_ladderState = newState;
+		OnLadderStateChanged(m_ladderFSM.m_ladderState, newState);
+		m_ladderFSM.m_ladderState = newState;
 	}
 
 	void OnLadderStateChanged(LadderState oldState, LadderState newState);
@@ -737,13 +813,14 @@ private:
 	}
 
 	bool UpdateCatapultLogic();
+	bool UpdatePushLadderLogic();
 
 	CBaseEntity* CheckIfDoorIsOpenByButtons(CBaseEntity* door) const;
 };
 
 inline bool IMovement::IsControllingMovements() const
 {
-	if (m_ladderState != NOT_USING_LADDER)
+	if (m_ladderFSM.m_ladderState != NOT_USING_LADDER)
 	{
 		return true; // take full control when doing ladder operations
 	}
@@ -767,6 +844,10 @@ inline bool IMovement::IsControllingMovements() const
 	{
 		return true;
 	}
+	else if (m_pushLadderData.IsActive())
+	{
+		return true;
+	}
 
 	return false;
 }
@@ -774,7 +855,7 @@ inline bool IMovement::IsControllingMovements() const
 inline bool IMovement::IsPathingAllowed() const
 {
 	// Don't allow navigators to compute a path in these states
-	if (m_ladderState != NOT_USING_LADDER || m_elevatorState != NOT_USING_ELEVATOR || m_isUsingCatapult)
+	if (m_ladderFSM.m_ladderState != NOT_USING_LADDER || m_elevatorState != NOT_USING_ELEVATOR || m_isUsingCatapult || m_pushLadderData.IsActive())
 	{
 		return false;
 	}

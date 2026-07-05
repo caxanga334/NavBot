@@ -25,6 +25,8 @@ namespace AIPath
 		SEGMENT_WATER_LOWER, // Underwater navigation: Decrease height (move down)
 		SEGMENT_WATER_RAISE, // Underwater navigation: Increase height (move up)
 		SEGMENT_WATER_EXIT, // Transition between water and ground
+		SEGMENT_PUSH_LADDER, // Climb a push ladder
+		SEGMENT_CHEAT_TELEPORT, // Teleport cheat
 
 		MAX_SEGMENT_TYPES
 	};
@@ -85,6 +87,8 @@ namespace AIPath
 			"WATER_LOWER"sv,
 			"WATER_RAISE"sv,
 			"WATER_EXIT"sv,
+			"PUSH_LADDER"sv,
+			"CHEAT_TELEPORT"sv,
 		};
 
 		static_assert(names.size() == static_cast<size_t>(SegmentType::MAX_SEGMENT_TYPES), "name array and SegmentType enum mismatch!");

@@ -426,6 +426,13 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 
 		return false;
 	}
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_PUSH_LADDER)
+	{
+		if (mover->IsUsingPushLadder())
+		{
+			return true;
+		}
+	}
 	else
 	{
 		auto next = GetNextSegment(m_goal);
@@ -792,6 +799,50 @@ void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
 			StartUseEntityCooldown(1.0f);
 		}
 	}
+}
+
+bool CMeshNavigator::IsTeleportPossible(CBaseBot* bot, const BotPathSegment* segment) const
+{
+	if (!sdkcalls->IsTeleportAvailable())
+	{
+		return false;
+	}
+
+	const Vector& mins = bot->GetCollideable()->OBBMins();
+	const Vector& maxs = bot->GetCollideable()->OBBMaxs();
+	Vector pos = segment->goal;
+	pos.z += std::ceil(bot->GetMovementInterface()->GetStepHeight() * 0.25f);
+
+	trace::CTraceFilterNoNPCsOrPlayers filter( bot->GetEntity(), COLLISION_GROUP_PLAYER );
+	trace_t tr;
+	trace::hull(pos, pos, mins, maxs, MASK_PLAYERSOLID, &filter, tr);
+
+	if (tr.startsolid || tr.fraction < 1.0f)
+	{
+		if (bot->IsDebugging(BOTDEBUG_PATH))
+		{
+			bot->DebugPrintToConsole(255, 0, 0, "%s NAVIGATOR FAILED TO TELEPORT BOT: DESTINATION IS OBSTRUCTED! %s \n",
+				bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(tr.m_pEnt));
+			NDebugOverlay::SweptBox(pos, pos, mins, maxs, vec3_angle, 255, 0, 0, 127, 5.0f);
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+void CMeshNavigator::TeleportToSegment(CBaseBot* bot, const BotPathSegment* segment) const
+{
+	Vector pos = segment->goal;
+	pos.z += std::ceil(bot->GetMovementInterface()->GetStepHeight() * 0.25f);
+
+	Vector to = UtilHelpers::math::BuildDirectionVector(bot->GetEyeOrigin(), segment->goal);
+	QAngle angles;
+	VectorAngles(to, angles);
+	Vector zero(0.0f, 0.0f, 0.0f);
+
+	sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), &pos, &angles, &zero);
 }
 
 bool CMeshNavigator::ShouldBreakObstacles(CBaseBot* bot)
@@ -1658,6 +1709,35 @@ bool CMeshNavigator::OffMeshLinksUpdate(CBaseBot* bot)
 		{
 			if (bot->GetMovementInterface()->UseCatapult(m_goal->goal, next->goal))
 			{
+				return true;
+			}
+		}
+
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_PUSH_LADDER:
+	{
+		const BotPathSegment* next = GetNextSegment(m_goal);
+
+		if (next)
+		{
+			Vector origin = bot->GetAbsOrigin();
+
+			bot->GetMovementInterface()->UsePushLadder(origin.z < m_goal->goal.z, m_goal->goal);
+		}
+
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_CHEAT_TELEPORT:
+	{
+		const BotPathSegment* next = GetNextSegment(m_goal);
+
+		if (next)
+		{
+			if (IsTeleportPossible(bot, m_goal))
+			{
+				TeleportToSegment(bot, m_goal);
+				SetGoalSegment(next);
 				return true;
 			}
 		}

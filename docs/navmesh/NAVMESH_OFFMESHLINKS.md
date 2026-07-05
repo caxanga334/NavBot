@@ -42,6 +42,8 @@ Note: `sm_nav_offmesh_list_all` will always list all available link types.
 | Grappling Hook | 8 | Bots can use a grappling hook here. |
 | Catapult | 9 | Bots can get launched here. |
 | Strafe Jump | 10 | Bots can perform a strafe jump here. |
+| Push Ladder | 11 | Ladder made using trigger_push or other push entities. Common in games like Team Fortress 2. |
+| Cheat Teleport | 12 | Teleports the bots to the link end position. Does nothing if teleport is not supported in the current game. |
 
 ## Link Placement Tips
 
