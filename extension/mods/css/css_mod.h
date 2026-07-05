@@ -69,6 +69,7 @@ public:
 	CBaseEntity* GetActiveBombEntity() const { return m_c4.Get(); }
 	// CSS mod access
 	static CCounterStrikeSourceMod* GetCSSMod();
+	IModHelpers* AllocModHelpers() const override;
 
 protected:
 	void RegisterModCommands() override;

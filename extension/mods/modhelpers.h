@@ -86,6 +86,14 @@ public:
 	 * @return True if the activator passes the filter, false otherwise.
 	 */
 	virtual bool PassesFilterImpl(CBaseEntity* filter, CBaseEntity* caller, CBaseEntity* activator) const;
+	/**
+	 * @brief Determines if there is an obstruction that blocks +USE for the given entity.
+	 * @param player Player using the entity.
+	 * @param entity Entity being used.
+	 * @param obstruction Optional. The entity blocking +USE.
+	 * @return true if an obstructed is found, false otherwise.
+	 */
+	virtual bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction = nullptr) const;
 };
 
 // Global singleton to access the mod helpers interface

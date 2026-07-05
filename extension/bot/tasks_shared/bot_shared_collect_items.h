@@ -1,18 +1,8 @@
 #ifndef __NAVBOT_BOT_SHARED_COLLECT_ITEMS_TASK_H_
 #define __NAVBOT_BOT_SHARED_COLLECT_ITEMS_TASK_H_
 
-#include <vector>
-#include <string>
-#include <functional>
-#include <iterator>
-#include <limits>
-#include <extension.h>
-#include <manager.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
 #include <mods/basemod.h>
-#include <sdkports/sdk_timers.h>
-#include <sdkports/sdk_ehandle.h>
+#include <mods/modhelpers.h>
 #include <bot/basebot.h>
 #include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
@@ -263,6 +253,14 @@ public:
 
 	TaskResult<BT> OnTaskUpdate(BT* bot)
 	{
+		IMovement* mover = bot->GetMovementInterface();
+
+		// wait until the bot is done breaking something that's between the item and the bot
+		if (mover->IsBreakingObstacle())
+		{
+			return AITask<BT>::Continue();
+		}
+
 		if (!m_letgoofbuttonstimer.IsElapsed())
 		{
 			return AITask<BT>::Continue();
@@ -291,7 +289,6 @@ public:
 
 		if (m_nav.NeedsRepath())
 		{
-			
 			m_nav.StartRepathTimer();
 
 			if (!m_nav.ComputePathToPosition(bot, pos, m_pathcost, 0.0f, true))
@@ -343,8 +340,35 @@ public:
 
 				if (bot->GetControlInterface()->IsAimOnTarget())
 				{
+					float letgotime = 0.5f;
+					CBaseEntity* obstruction = nullptr;
+					if (modhelpers->IsUseObstructed(bot->GetEntity(), item, &obstruction))
+					{
+						if (bot->IsDebugging(BOTDEBUG_TASKS))
+						{
+							bot->DebugPrintToConsole(255, 255, 0, "%s COLLECT ITEM, +USE IS OBSTRUCTED BY \"%s\"!\n", 
+								bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstruction));
+						}
+
+						if (bot->IsAbleToBreak(obstruction))
+						{
+							mover->BreakObstacle(obstruction);
+							return AITask<BT>::Continue();
+						}
+
+						CBaseEntity* useTarget = nullptr;
+						if (mover->IsUseableObstacle(obstruction, &useTarget))
+						{
+							letgotime = 3.0f; // the code below already calls +USE
+						}
+						else
+						{
+							m_nav.Update(bot); // keep moving, maybe the bot just needs to get a little closer
+						}
+					}
+
 					bot->GetControlInterface()->PressUseButton();
-					m_letgoofbuttonstimer.Start(0.5f);
+					m_letgoofbuttonstimer.Start(letgotime);
 				}
 			}
 			else
