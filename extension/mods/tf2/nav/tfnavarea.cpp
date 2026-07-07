@@ -1,12 +1,7 @@
 #include NAVBOT_PCH_FILE
-#include <limits>
-
-#include <extension.h>
 #include <utlbuffer.h>
 #include <filesystem.h>
-#include <util/helpers.h>
-#include <util/entprops.h>
-#include <sdkports/debugoverlay_shared.h>
+#include <mods/modhelpers.h>
 #include "tfnavmesh.h"
 #include "tfnavarea.h"
 
@@ -83,37 +78,31 @@ void CTFNavArea::UpdateDynamicSpawnRoom()
 		return;
 	}
 
-	int spawnroom = 0;
-	const Vector& center = GetCenter();
-	int nearest_team = 0; // store the team of the nearest func_respawnroom entity
-	float smallest_dist = std::numeric_limits<float>::max();
+	// default to Unassigned if none is found
+	m_spawnroomteam = static_cast<int>(TeamFortress2::TFTeam::TFTeam_Unassigned);
 
-	while ((spawnroom = UtilHelpers::FindEntityByClassname(spawnroom, "func_respawnroom")) != INVALID_EHANDLE_INDEX)
-	{
-		edict_t* edict = nullptr;
-		
-		if (!UtilHelpers::IndexToAThings(spawnroom, nullptr, &edict))
+	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
 		{
-			continue;
-		}
+			bool disabled = false;
+			entprops->GetEntPropBool(entity, Prop_Data, "m_bDisabled", disabled);
 
-		auto spawnroompos = UtilHelpers::getWorldSpaceCenter(edict);
-
-		float current = center.DistTo(spawnroompos);
-
-		if (current < smallest_dist)
-		{
-			smallest_dist = current;
-
-			int lookup = 0;
-			if (entprops->GetEntProp(spawnroom, Prop_Data, "m_iTeamNum", lookup))
+			if (disabled)
 			{
-				nearest_team = lookup;
+				return true; // ignore disabled spawnroom entities.
+			}
+
+			if (this->IsCollidingWith(entity, navgenparams->human_crouch_height, false))
+			{
+				m_spawnroomteam = modhelpers->GetEntityTeamNumber(entity);
+				return false; // stop search on the first found
 			}
 		}
-	}
 
-	m_spawnroomteam = nearest_team;
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("func_respawnroom", func);
 }
 
 void CTFNavArea::Debug_ShowTFPathAttributes() const

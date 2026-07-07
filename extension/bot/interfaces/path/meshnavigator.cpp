@@ -667,7 +667,7 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	const float rangeToGoal = forward.NormalizeInPlace();
 	const float xysize = mover->GetHullWidth() * 0.5f;
 	const float crouchheight = std::ceil(mover->GetCrouchedHullHeight() * 0.6f);
-	const float minszsize = std::floor(mover->GetStepHeight() * (mover->IsCompletelyCrouched() ? 0.3f : 0.7f));
+	const float minszsize = std::floor(mover->GetStepHeight() * (mover->IsCompletelyCrouched() ? 0.15f : 0.7f));
 	trace_t tr;
 	CMovementObstacleFilter filter{ bot };
 	Vector mins{ -xysize, -xysize, minszsize };

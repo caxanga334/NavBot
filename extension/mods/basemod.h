@@ -218,6 +218,13 @@ public:
 	 * @return True if team based, false if free for all/deathmatch.
 	 */
 	virtual bool IsTeamBasedGame() const { return false; }
+	/**
+	 * @brief Queries if the given nav area should be patrolled by bots.
+	 * @param area Nav area to patrol.
+	 * @param teamIndex Index of the patrolling team.
+	 * @return True if yes, false if no.
+	 */
+	virtual bool ShouldPatrolArea(const CNavArea* area, int teamIndex) const { return true; }
 
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;

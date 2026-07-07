@@ -649,6 +649,15 @@ void IMovement::DetermineIdealPostureForPath(const CMeshNavigator* path)
 #endif // EXT_VPROF_ENABLED
 
 	CBaseBot* bot = GetBot<CBaseBot>();
+	const float watchForClimbRange = GetHullWidth() * 2.0f;
+
+	// if the bot is going to jump, don't crouch.
+	if (path->IsDiscontinuityAhead(bot, AIPath::SegmentType::SEGMENT_CLIMB_UP, watchForClimbRange) ||
+		path->IsDiscontinuityAhead(bot, AIPath::SegmentType::SEGMENT_CLIMB_DOUBLE_JUMP, watchForClimbRange))
+	{
+		return;
+	}
+
 	const BotPathSegment* goal = path->GetGoalSegment();
 
 	if (goal)

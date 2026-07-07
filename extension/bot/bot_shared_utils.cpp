@@ -872,7 +872,6 @@ botsharedutils::SelectReachableUnclearedArea::SelectReachableUnclearedArea(CBase
 
 bool botsharedutils::SelectReachableUnclearedArea::ShouldSearch(CNavArea* area)
 {
-#ifdef EXT_DEBUG
 	// always search the start area
 	if (IsStartArea(area)) { return true; }
 
@@ -890,15 +889,18 @@ bool botsharedutils::SelectReachableUnclearedArea::ShouldSearch(CNavArea* area)
 	}
 
 	return false;
-#else
-	return IsReachableAreas::ShouldSearch(area);
-#endif // EXT_DEBUG
 }
 
 bool botsharedutils::SelectReachableUnclearedArea::ShouldCollect(CNavArea* area)
 {
 	if (IsReachableAreas::ShouldCollect(area))
 	{
+		// Check mod interface for game specific conditions
+		if (!extmanager->GetMod()->ShouldPatrolArea(area, m_teamIndex))
+		{
+			return false;
+		}
+
 		if (m_enemyTeamIndex != IModHelpers::NO_OPPOSING_TEAM && area->IsBlocked(m_enemyTeamIndex))
 		{
 			// ignore this area, it's blocked for the enemy team

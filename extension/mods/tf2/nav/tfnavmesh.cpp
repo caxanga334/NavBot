@@ -362,26 +362,24 @@ CTFNavArea* CTFNavMesh::GetRandomSpawnRoomExitArea(int team) const
 
 void CTFNavMesh::AutoAddSpawnroomAttribute() const
 {
-	int areas = 0;
+	std::size_t areas = 0;
 
 	auto functor = [&areas](CNavArea* baseArea) {
 		CTFNavArea* area = static_cast<CTFNavArea*>(baseArea);
-		Vector center = area->GetCenter();
-		center.z += 24.0f;
 		bool inside = false;
 
-		auto functor2 = [&inside, &center](int index, edict_t* edict, CBaseEntity* entity) {
-			if (edict != nullptr && edict->GetCollideable() != nullptr)
+		auto functor2 = [&inside, area](int index, edict_t* edict, CBaseEntity* entity) {
+			if (entity)
 			{
-				if (trace::pointwithin(edict->GetCollideable(), center))
+				if (area->IsCollidingWith(entity, navgenparams->human_crouch_height, false))
 				{
 					inside = true;
-					return false; // exit search
+					return false; // stop loop
 				}
 			}
 
 			return true; // keep searching for entities
-			};
+		};
 
 		UtilHelpers::ForEachEntityOfClassname("func_respawnroom", functor2);
 
@@ -396,7 +394,7 @@ void CTFNavMesh::AutoAddSpawnroomAttribute() const
 
 	CNavMesh::ForAllAreas(functor);
 
-	Msg("Added spawn room attribute to %i nav areas!\n", areas);
+	META_CONPRINTF("Added spawn room attribute to %zu nav areas!\n", areas);
 }
 
 void CTFNavMesh::PostCustomAnalysis(void)
