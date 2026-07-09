@@ -80,3 +80,40 @@ CBaseEntity* zpslib::GetRandomLivingSurvivor(const bool nobots)
 
 	return librandom::utils::GetRandomElementFromVector(candidates);
 }
+
+bool zpslib::IsUseableTriggerDisabled(CBaseEntity* entity)
+{
+	static int offset = 0;
+
+	if (offset == 0)
+	{
+		// needs to be a CTriggerUseable to get the offset
+		if (!UtilHelpers::datamap::IsEntityOfClass(entity, "CTriggerUseable"))
+		{
+			return false;
+		}
+
+		// trigger_useable (CTriggerUseable) contains two properties named m_bDisabled.
+		// we need to read the one that is a member of CTriggerUseable
+
+		datamap_t* map = gamehelpers->GetDataMap(entity);
+		int offs = UtilHelpers::datamap::FindOffsetNoInheritance(map, "m_bDisabled");
+
+		if (offs <= 0)
+		{
+			return false;
+		}
+
+		offset = offs;
+	}
+
+	bool* disabled = entprops->GetPointerToEntData<bool>(entity, static_cast<unsigned int>(offset));
+	return *disabled;
+}
+
+zps::ItemDeliverStates zpslib::GetItemDeliverState(CBaseEntity* entity)
+{
+	int state = 0;
+	entprops->GetEntProp(entity, Prop_Send, "m_iItemState", state);
+	return static_cast<zps::ItemDeliverStates>(state);
+}

@@ -7,17 +7,18 @@
 #include <bot/tasks_shared/bot_shared_drop_weapon.h>
 #include "zpsbot_find_weapon_task.h"
 
-class ZPSWeaponSearch : public botsharedutils::search::SearchReachableEntities<CZPSBot, CZPSNavArea>
+class ZPSWeaponSearch final : public botsharedutils::search::SearchReachableEntities<CZPSBot, CZPSNavArea>
 {
 public:
 	ZPSWeaponSearch(CZPSBot* bot) :
 		botsharedutils::search::SearchReachableEntities<CZPSBot, CZPSNavArea>(bot)
 	{
 		this->AddSearchPattern("weapon_*");
+		m_inventorySize = bot->GetInventoryInterface()->GetInventorySize();
 	}
 
 private:
-	bool IsEntityValid(CBaseEntity* entity, CZPSNavArea* area) override
+	bool IsEntityValid(CBaseEntity* entity, CZPSNavArea* area) final
 	{
 		// must be in-mesh
 		if (area)
@@ -37,7 +38,7 @@ private:
 		return false;
 	}
 
-	bool IsPossible(CBaseEntity* entity, CZPSBot* bot, CZPSNavArea* area) override
+	bool IsPossible(CBaseEntity* entity, CZPSBot* bot, CZPSNavArea* area) final
 	{
 		if (!bot->GetMovementInterface()->IsAreaTraversable(area))
 		{
@@ -48,15 +49,20 @@ private:
 
 		if (classname)
 		{
-			std::string name{ classname };
-			const WeaponInfo* info = extmanager->GetMod()->GetWeaponInfoManager()->GetClassnameInfo(name);
+			const ZPSWeaponInfo* info = static_cast<const ZPSWeaponInfo*>(extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(entity));
 
-			if (!info)
+			if (!info || info->IsDefault())
 			{
 				return false;
 			}
 
 			if (!info->IsCombatWeapon())
+			{
+				return false;
+			}
+
+			// bot doesn't have enough space in their inventory to pick this weapon
+			if (info->GetInventorySize() + m_inventorySize > CZPSBotInventory::MAX_INVENTORY_SIZE)
 			{
 				return false;
 			}
@@ -82,6 +88,7 @@ private:
 		return true;
 	}
 
+	int m_inventorySize;
 };
 
 bool CZPSBotFindWeaponTask::IsPossible(CZPSBot* bot, CBaseEntity** outweapon)

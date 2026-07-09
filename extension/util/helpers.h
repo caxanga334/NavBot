@@ -969,8 +969,15 @@ namespace UtilHelpers::datamap
 	 * @return Entity output or NULL if not found.
 	 */
 	CBaseEntityOutput* GetEntityOutput(CBaseEntity* entity, const char* outputName);
-
+	int FindOffsetNoInheritance(const datamap_t* map, const char* name);
 	void DumpEntityDatamap(CBaseEntity* entity);
+	/**
+	 * @brief Checks if the given entity is of the given class via datamaps.
+	 * @param entity Entity to test.
+	 * @param classname Class to check. This is a datamap class. (IE: CBasePlayer)
+	 * @return True if yes, false if no.
+	 */
+	bool IsEntityOfClass(CBaseEntity* entity, const char* classname);
 }
 
 /**

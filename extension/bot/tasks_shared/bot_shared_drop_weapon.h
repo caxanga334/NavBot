@@ -56,7 +56,7 @@ public:
 
 		if (!bw)
 		{
-			return AITask<BT>::Done("Weapon is NULL!");
+			return AITask<BT>::Done("Weapon no longer in inventory!");
 		}
 
 		if (inv->GetActiveBotWeapon() != bw)

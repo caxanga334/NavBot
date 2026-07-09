@@ -694,6 +694,14 @@ const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(const std::string& classname
 	return m_default.get();
 }
 
+const WeaponInfo* CWeaponInfoManager::GetWeaponInfo(CBaseEntity* weapon) const
+{
+	const char* classname = gamehelpers->GetEntityClassname(weapon);
+	int econindex = modhelpers->GetItemEconomyIndex(weapon);
+
+	return GetWeaponInfo(classname, econindex);
+}
+
 SourceMod::SMCResult CWeaponInfoManager::ReadSMC_NewSection(const SourceMod::SMCStates* states, const char* name)
 {
 	/*
@@ -1137,6 +1145,20 @@ SourceMod::SMCResult CWeaponInfoManager::ReadSMC_LeavingSection(const SourceMod:
 
 	m_parser_depth--;
 	return SourceMod::SMCResult_Continue;
+}
+
+int CWeaponInfoManager::ParseInt(const SourceMod::SMCStates* states, const char* str, const int defaultValue) const
+{
+	try
+	{
+		int value = std::stoi(str);
+		return value;
+	}
+	catch (const std::exception& ex)
+	{
+		smutils->LogError(myself, "Parse error on line %u col %u: %s!", states->line, states->col, ex.what());
+		return defaultValue;
+	}
 }
 
 WeaponInfo::WeaponType WeaponInfo::GetWeaponTypeFromString(const char* str)

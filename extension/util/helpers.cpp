@@ -2144,6 +2144,28 @@ CBaseEntityOutput* UtilHelpers::datamap::GetEntityOutput(CBaseEntity* entity, co
 	return nullptr;
 }
 
+int UtilHelpers::datamap::FindOffsetNoInheritance(const datamap_t* map, const char* name)
+{
+	const int fields = map->dataNumFields;
+
+	for (int i = 0; i < fields; i++)
+	{
+		typedescription_t* dataDesc = &map->dataDesc[i];
+
+		if (dataDesc->fieldName == nullptr)
+		{
+			continue;
+		}
+
+		if (ke::StrCaseCmp(dataDesc->fieldName, name) == 0)
+		{
+			return UtilHelpers::sdkcompat::GetTypeDescOffset(dataDesc);
+		}
+	}
+
+	return 0;
+}
+
 // inline utils
 namespace inutils
 {
@@ -2214,6 +2236,23 @@ void UtilHelpers::datamap::DumpEntityDatamap(CBaseEntity* entity)
 
 	file.close();
 	META_CONPRINTF("Datamap dump written to %s\n", path);
+}
+
+bool UtilHelpers::datamap::IsEntityOfClass(CBaseEntity* entity, const char* classname)
+{
+	datamap_t* map = gamehelpers->GetDataMap(entity);
+
+	if (!map)
+	{
+		return false;
+	}
+
+	if (map->dataClassName == nullptr || map->dataClassName[0] == '\0')
+	{
+		return false;
+	}
+
+	return ke::StrCaseCmp(map->dataClassName, classname) == 0;
 }
 
 void UtilHelpers::io::RemoveEntity(CBaseEntity* entity)

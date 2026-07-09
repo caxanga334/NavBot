@@ -444,10 +444,6 @@ CNavMesh* CTeamFortress2Mod::NavMeshFactory()
 	return new CTFNavMesh;
 }
 
-int CTeamFortress2Mod::GetWeaponEconIndex(edict_t* weapon) const
-{
-	return tf2lib::GetWeaponItemDefinitionIndex(weapon);
-}
 
 void CTeamFortress2Mod::OnNavMeshLoaded()
 {
@@ -495,6 +491,22 @@ void CTeamFortress2Mod::OnNavMeshDestroyed()
 	m_dispenserWaypoints.clear();
 	m_teleentranceWaypoints.clear();
 	m_teleexitWaypoints.clear();
+}
+
+class CTeamFortress2ModHelpers : public IModHelpers
+{
+public:
+	int GetItemEconomyIndex(CBaseEntity* item) const override
+	{
+		int index = -1;
+		entprops->GetEntProp(item, Prop_Send, "m_iItemDefinitionIndex", index);
+		return index;
+	}
+};
+
+IModHelpers* CTeamFortress2Mod::AllocModHelpers() const
+{
+	return new CTeamFortress2ModHelpers;
 }
 
 const char* CTeamFortress2Mod::GetCurrentGameModeName() const

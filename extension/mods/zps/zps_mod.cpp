@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include "nav/zps_nav_mesh.h"
 #include <bot/zps/zpsbot.h>
+#include <bot/zps/zpsbot_weaponinfo.h>
 #include <navmesh/nav_mesh.h>
 #include "zps_mod.h"
 
@@ -77,6 +78,12 @@ void CZombiePanicSourceMod::OnMapStart()
 	DetectGameMode();
 }
 
+void CZombiePanicSourceMod::OnMapEnd()
+{
+	CBaseMod::OnMapEnd();
+	m_objectiveManager.Reset();
+}
+
 void CZombiePanicSourceMod::OnRoundStart()
 {
 #ifdef EXT_DEBUG
@@ -145,6 +152,11 @@ bool CZombiePanicSourceMod::IsEntityBreakable(CBaseEntity* entity) const
 	}
 
 	return CBaseMod::IsEntityBreakable(entity);
+}
+
+CWeaponInfoManager* CZombiePanicSourceMod::CreateWeaponInfoManager() const
+{
+	return new CZPSWeaponInfoManager;
 }
 
 void CZombiePanicSourceMod::DetectGameMode()

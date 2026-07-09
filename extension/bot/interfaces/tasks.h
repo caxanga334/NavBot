@@ -667,6 +667,7 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnBombPlanted(BotClass* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnBombDefused(BotClass* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1239,6 +1240,11 @@ private:
 	void OnDangerousEntityChanged(CBaseEntity* newent, CBaseEntity* oldent) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnDangerousEntityChanged, newent, oldent);
+	}
+
+	void OnCustomModEvent(const int id, const std::any& data) final
+	{
+		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnCustomModEvent, id, data);
 	}
 };
 

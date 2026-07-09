@@ -154,6 +154,10 @@ void CBaseMod::OnRoundStart()
 			sbm->OnRoundRestart();
 		}
 	}
+
+#ifndef NO_SOURCEPAWN_API
+	extmanager->SMAPI_OnRoundRestart();
+#endif // !NO_SOURCEPAWN_API
 }
 
 void CBaseMod::ReloadModSettingsFile()

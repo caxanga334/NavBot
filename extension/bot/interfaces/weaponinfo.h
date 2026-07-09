@@ -643,6 +643,12 @@ public:
 	 * @return A weaponinfo is always returned, if not found, a default is returned.
 	 */
 	virtual const WeaponInfo* GetWeaponInfo(const std::string& classname, const int index) const;
+	/**
+	 * @brief Look ups weapon info for the given weapon.
+	 * @param weapon Weapon to get weapon info of.
+	 * @return Pointer to weaponinfo.
+	 */
+	const WeaponInfo* GetWeaponInfo(CBaseEntity* weapon) const;
 
 	/**
 	 * @brief Gets a weapon info via classname.
@@ -684,6 +690,8 @@ protected:
 	 * @return				SMCResult directive.
 	 */
 	SourceMod::SMCResult ReadSMC_LeavingSection(const SourceMod::SMCStates* states) override;
+
+	int ParseInt(const SourceMod::SMCStates* states, const char* str, const int defaultValue = 0) const;
 
 public:
 

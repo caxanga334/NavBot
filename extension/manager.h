@@ -6,6 +6,7 @@
 #include <bot/bot_debug_shared.h>
 #include <bot/interfaces/profile.h>
 #include <bot/basebot.h>
+#include <mods/gamemods_shared.h>
 #include <sdkports/sdk_timers.h>
 #include <IForwardSys.h>
 #include <IGameConfigs.h>
@@ -55,7 +56,7 @@ public:
 	// Called to allocate the mod interface, this is also where the mod detection code is.
 	void AllocateMod();
 	// Returns a pointer to the mod interface.
-	CBaseMod* GetMod();
+	CBaseMod* GetMod() const { return m_mod.get(); }
 	/**
 	 * @brief Gets a bot pointer by client/entity index.
 	 * @param index Client/Entity index to search.
@@ -223,6 +224,13 @@ public:
 			m_onbotstuckforward->Execute(nullptr);
 		}
 	}
+	void SMAPI_OnRoundRestart()
+	{
+		if (m_onmodroundrestart->GetFunctionCount() > 0)
+		{
+			m_onmodroundrestart->Execute(nullptr);
+		}
+	}
 #endif // !NO_SOURCEPAWN_API
 
 private:
@@ -239,6 +247,7 @@ private:
 	SourceMod::IForward* m_onnavmeshloadedforward;
 	SourceMod::IForward* m_onnavmeshdestroyedforward;
 	SourceMod::IForward* m_onbotstuckforward;
+	SourceMod::IForward* m_onmodroundrestart;
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use

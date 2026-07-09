@@ -79,3 +79,5 @@ methodmap NavBotModInterface
 	// Removes an entity classname from the NPC scan list.
 	public static native void RemoveClassnameFromNPCScanList(const char[] classname)
 }
+
+#include "mods/zps.inc"

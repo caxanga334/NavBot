@@ -106,5 +106,19 @@ The drawing of incoming one-way connections to nav areas can be enabled using th
 
 The command `sm_nav_select_areas_touching_entity <ent index>` will add all areas that overlaps the given entity AABB and also collides against the entity to the selected set.    
 
+# Underwater Navigation 
+
+If the height difference between two nav areas is greater than the bot's step height, the bot will send move up/move down buttons to change height.    
+
+# Water Exits
+
+It's recommended to create a dedicated water exit nav area on the water's surface.    
+`Underwater nav area -> nav area on water surface -> nav area outside water.`
+To create a nav area on the surface, create a nav area on the ground, mark with `sm_nav_mark` (you can pass the created area ID as the first parameter) and run `sm_nav_corner_place_on_water_surface`.    
+
+# Force Ladders
+
+If the nav mesh fails to recognize a surface as climbable, you can set the `sm_nav_force_climbable` to **1** to force every surface to be climbable and create the ladder manually.    
+
 <!-- LINKS -->
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md

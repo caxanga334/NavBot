@@ -51,6 +51,7 @@ CExtManager::CExtManager()
 	m_onnavmeshloadedforward = nullptr;
 	m_onnavmeshdestroyedforward = nullptr;
 	m_onbotstuckforward = nullptr;
+	m_onmodroundrestart = nullptr;
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -67,6 +68,7 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_onnavmeshloadedforward);
 	forwards->ReleaseForward(m_onnavmeshdestroyedforward);
 	forwards->ReleaseForward(m_onbotstuckforward);
+	forwards->ReleaseForward(m_onmodroundrestart);
 #endif // !NO_SOURCEPAWN_API
 
 	// assign NULL to the smart ptr to detele the existing instance
@@ -84,6 +86,7 @@ void CExtManager::OnAllLoaded()
 	m_onnavmeshloadedforward = forwards->CreateForward("OnNavBotNavMeshLoaded", ET_Ignore, 0, nullptr);
 	m_onnavmeshdestroyedforward = forwards->CreateForward("OnNavBotNavMeshDestroyed", ET_Ignore, 0, nullptr);
 	m_onbotstuckforward = forwards->CreateForward("OnNavBotStuck", ET_Ignore, 2, nullptr, SourceMod::ParamType::Param_Cell, SourceMod::ParamType::Param_Cell);
+	m_onmodroundrestart = forwards->CreateForward("OnNavBotModRoundRestart", ET_Ignore, 0, nullptr);
 #endif // !NO_SOURCEPAWN_API
 
 	CDynamicPriorityManager::CreateStandardFactories();
@@ -293,11 +296,6 @@ void CExtManager::AllocateMod()
 	m_mod->PostCreation();
 	IModHelpers::SetInstance(m_mod->AllocModHelpers());
 	m_mod->RegisterDynamicWeaponConfigFactories();
-}
-
-CBaseMod* CExtManager::GetMod()
-{
-	return m_mod.get();
 }
 
 CBaseBot* CExtManager::GetBotByIndex(int index) const

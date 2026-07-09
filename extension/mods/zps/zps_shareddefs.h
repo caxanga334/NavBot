@@ -21,6 +21,18 @@ namespace zps
 
 		MAX_ZPS_GAMEMODE_TYPES
 	};
+
+	/**
+	 * @brief Values for item_deliver's m_iItemState member
+	 */
+	enum ItemDeliverStates
+	{
+		DELIVER_ITEM = 0,
+		USEABLE_ITEM,
+		FOOD_ITEM,
+
+		MAX_ITEM_DELIVER_STATES
+	};
 }
 
 

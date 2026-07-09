@@ -16,6 +16,10 @@ namespace zpslib
 	 * @return Random survivor. NULL if none matches.
 	 */
 	CBaseEntity* GetRandomLivingSurvivor(const bool nobots);
+	// Checks if a trigger_useable is disabled
+	bool IsUseableTriggerDisabled(CBaseEntity* entity);
+	// Gets the item state of a item_deliver
+	zps::ItemDeliverStates GetItemDeliverState(CBaseEntity* entity);
 }
 
 

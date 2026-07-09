@@ -12,6 +12,7 @@ folder_list = [
   'addons/sourcemod/scripting/include',
   'addons/sourcemod/scripting/include/navbot',
   'addons/sourcemod/scripting/include/navbot/interfaces',
+  'addons/sourcemod/scripting/include/navbot/mods',
   'addons/sourcemod/gamedata/navbot.games',
   'addons/sourcemod/configs/navbot',
   'addons/sourcemod/configs/navbot/tf',
@@ -85,6 +86,12 @@ CopyFiles('scripting/include/navbot/interfaces', 'addons/sourcemod/scripting/inc
     'movement.inc',
     'sharedbotmemory.inc',
     'dynamic_priority.inc',
+  ]
+)
+
+CopyFiles('scripting/include/navbot/mods', 'addons/sourcemod/scripting/include/navbot/mods',
+  [ 
+    'zps.inc',
   ]
 )
 

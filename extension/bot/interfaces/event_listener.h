@@ -88,6 +88,7 @@ public:
 	virtual void OnBombPlanted(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent); // Called when a bomb has been planted, data passed depends on the current mod
 	virtual void OnBombDefused(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent); // Called when a bomb has been defused, data passed depends on the current mod
 	virtual void OnDangerousEntityChanged(CBaseEntity* newent, CBaseEntity* oldent); // Called when the most dangereous entity determined by the combat interface changes.
+	virtual void OnCustomModEvent(const int id, const std::any& data); // General purpose event for game/mod specific events.
 };
 
 inline void IEventListener::OnDebugMoveToCommand(const Vector& moveTo)
@@ -476,6 +477,19 @@ inline void IEventListener::OnDangerousEntityChanged(CBaseEntity* newent, CBaseE
 		for (auto listener : *vec)
 		{
 			listener->OnDangerousEntityChanged(newent, oldent);
+		}
+	}
+}
+
+inline void IEventListener::OnCustomModEvent(const int id, const std::any& data)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnCustomModEvent(id, data);
 		}
 	}
 }

@@ -80,6 +80,11 @@ forward void OnNavBotNavMeshDestroyed();
 forward void OnNavBotStuck(NavBot bot, int count);
 
 /**
+ * Called when the mod interface detects a round restart.
+ */
+forward void OnNavBotModRoundRestart();
+
+/**
  * Builds a path from the start position to the end position.
  * 
  * @param vStart				Path start position.
@@ -260,6 +265,15 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotModInterface.GetFallbackModFolder");
 	MarkNativeAsOptional("NavBotModInterface.AddClassnameToNPCScanList");
 	MarkNativeAsOptional("NavBotModInterface.RemoveClassnameFromNPCScanList");
+
+	/* ZPS Mod Interface */
+	MarkNativeAsOptional("NavBotZPSModInterface.SetCurrentObjective");
+	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveMoveGoal");
+	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveUseButton");
+	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveItemSearchID");
+	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveItemUseTarget");
+	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveDetectionRadius");
+	MarkNativeAsOptional("NavBotZPSModInterface.ResetObjective");
 
 	/* Navigator */
 	MarkNativeAsOptional("MeshNavigator.MeshNavigator");

@@ -1506,7 +1506,7 @@ protected:
 	 * @param tr Trace result that hit the surface
 	 * @return true if climbable, false otherwise.
 	 */
-	virtual bool IsClimbableSurface(const trace_t& tr);
+	bool IsClimbableSurface(const trace_t& tr);
 	/**
 	 * @brief Invoked to compute the nav mesh internal data.
 	 */

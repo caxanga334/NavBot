@@ -116,9 +116,9 @@ public:
 	void OnMapEnd() override;
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
-	int GetWeaponEconIndex(edict_t* weapon) const override;
 	void OnNavMeshLoaded() override;
 	void OnNavMeshDestroyed() override;
+	IModHelpers* AllocModHelpers() const override;
 	inline TeamFortress2::GameModeType GetCurrentGameMode() const { return m_gamemode; }
 	const char* GetCurrentGameModeName() const;
 	// This function checks if class changes are allowed (IE: MvM after wave start)

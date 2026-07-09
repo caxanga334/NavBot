@@ -47,8 +47,6 @@ public:
 		const IGameEvent* event;
 	};
 
-	static constexpr auto NO_ECON_INDEX = -1;
-
 protected:
 
 	// Called when a game event is fired
@@ -99,8 +97,6 @@ public:
 	virtual CNavMesh* NavMeshFactory();
 	// Returns the entity index of the player resource/manager entity.
 	virtual std::optional<int> GetPlayerResourceEntity();
-	// Returns the economy item index for the given weapon if the mod uses it (IE: TF2)
-	virtual int GetWeaponEconIndex(edict_t* weapon) const { return NO_ECON_INDEX; }
 	// A round has started
 	virtual void OnRoundStart();
 	// A round has ended

@@ -94,6 +94,13 @@ public:
 	 * @return true if an obstructed is found, false otherwise.
 	 */
 	virtual bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction = nullptr) const;
+	static constexpr int NO_ECON_INDEX = -1; // constant to represent an invalid/no econ index
+	/**
+	 * @brief Given an item, gets the economy index if it has one.
+	 * @param item Item to get the economy index of.
+	 * @return Item index or NO_ECON_INDEX if not available.
+	 */
+	virtual int GetItemEconomyIndex(CBaseEntity* item) const { return NO_ECON_INDEX; }
 };
 
 // Global singleton to access the mod helpers interface

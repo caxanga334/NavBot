@@ -4635,13 +4635,16 @@ void CNavMesh::CompressPrerequisiteIDs()
 	RebuildPrerequisiteMap();
 }
 
+static ConVar sm_nav_force_climbable("sm_nav_force_climbable", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, forces the current surface to be climbable.");
+
 bool CNavMesh::IsClimbableSurface(const trace_t& tr)
 {
 	/*
 	* This function is called by CNavMesh::FindActiveNavArea to set the value of CNavMesh::m_climbableSurface
 	* Ladders are an example of a climable surface
-	* Override per mod needs
 	*/
+
+	if (sm_nav_force_climbable.GetBool()) { return true; }
 
 	bool climbable = false;
 

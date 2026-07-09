@@ -3,6 +3,7 @@
 
 #include <mods/basemod.h>
 #include "zps_lib.h"
+#include "zps_objective_manager.h"
 
 class CZombiePanicSourceMod : public CBaseMod
 {
@@ -18,6 +19,7 @@ public:
 	CBaseBot* AllocateBot(edict_t* edict) override;
 	CNavMesh* NavMeshFactory() override;
 	void OnMapStart() override;
+	void OnMapEnd() override;
 	void OnRoundStart() override;
 	void OnRoundEnd() override;
 	bool IsTeamBasedGame() const override { return true; }
@@ -28,11 +30,26 @@ public:
 	inline bool IsGameMode(zps::ZPSGamemodes mode) const { return m_gamemode == mode; }
 	inline zps::ZPSGamemodes GetGameMode() const { return m_gamemode; }
 	inline bool IsRoundActive() const { return m_roundactive; }
+	inline const CZPSObjectiveManager& GetObjectiveManager() const { return m_objectiveManager; }
+
+#ifndef NO_SOURCEPAWN_API
+	void SMAPI_SetCurrentObjective(CZPSObjectiveManager::ObjectiveTypes type) { m_objectiveManager.SetCurrentObjective(type); }
+	void SMAPI_SetObjectiveMoveGoal(const Vector& goal) { m_objectiveManager.SetMoveGoal(goal); }
+	void SMAPI_SetObjectiveUseButton(CBaseEntity* entity) { m_objectiveManager.SetUseButton(entity); }
+	void SMAPI_SetObjectiveItemSearchID(const char* str) { m_objectiveManager.SetItemSearchID(str); }
+	void SMAPI_SetObjectiveItemUseTarget(CBaseEntity* entity) { m_objectiveManager.SetUseItemTarget(entity); }
+	void SMAPI_SetObjectiveDetectionRadius(float radius) { m_objectiveManager.SetDetectionRadius(radius); }
+	void SMAPI_ResetObjective() { m_objectiveManager.Reset(); }
+#endif // !NO_SOURCEPAWN_API
+
+protected:
+	CWeaponInfoManager* CreateWeaponInfoManager() const override;
 
 private:
 	CountdownTimer m_roundstarttimer;
 	zps::ZPSGamemodes m_gamemode;
 	bool m_roundactive;
+	CZPSObjectiveManager m_objectiveManager;
 
 	void DetectGameMode();
 };

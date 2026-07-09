@@ -3,6 +3,7 @@
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
+#include <navmesh/nav_trace.h>
 #include <mods/basemod.h>
 #include <entities/basecombatweapon.h>
 #include <sdkports/debugoverlay_shared.h>
@@ -650,7 +651,7 @@ CON_COMMAND_F(sm_navbot_tool_weapon_report, "Reports some information about your
 
 	int entindex = UtilHelpers::IndexOfEntity(weapon);
 	const char* classname = gamehelpers->GetEntityClassname(weapon);
-	int itemindex = extmanager->GetMod()->GetWeaponEconIndex(UtilHelpers::BaseEntityToEdict(weapon));
+	int itemindex = modhelpers->GetItemEconomyIndex(weapon);
 
 	META_CONPRINTF("Weapon: \n  Item Item: %i\n  Entity Classname: %s\n  Entity Index: %i\n", itemindex, classname, entindex);
 
@@ -874,4 +875,273 @@ CON_COMMAND_F(sm_navbot_tool_dump_entity_datamaps, "Dumps the datamap of a speci
 	}
 
 	UtilHelpers::datamap::DumpEntityDatamap(pEntity);
+}
+
+CON_COMMAND_F(sm_navbot_tool_trace_line, "Trace line debug", FCVAR_GAMEDLL)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 4)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_trace_line <mask option> <collision group> <filter option>\n");
+		META_CONPRINT("  <mask option> : playersolid playersolidbrushonly npcsolid npcsolidbrushonly water opaque solid blocklos visible shot all team1 team2\n");
+		META_CONPRINT("  <collision group> : none player plmove npc\n");
+		META_CONPRINT("  <filter option> : simple navtransient navwalkable worldproponly hitall\n");
+		return;
+	}
+
+	unsigned int mask = 0;
+	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
+	ITraceFilter* filter;
+	trace_t tr;
+
+	Vector start = host.GetEyeOrigin();
+	QAngle eyeAngles = host.GetEyeAngles();
+	Vector forward;
+	AngleVectors(eyeAngles, &forward);
+	forward.NormalizeInPlace();
+	Vector end = start + (forward * 4096.0f);
+
+	const char* arg1 = args[1];
+
+	if (std::strcmp(arg1, "playersolid") == 0)
+	{
+		mask = MASK_PLAYERSOLID;
+	}
+	else if (std::strcmp(arg1, "playersolidbrushonly") == 0)
+	{
+		mask = MASK_PLAYERSOLID_BRUSHONLY;
+	}
+	else if (std::strcmp(arg1, "npcsolid") == 0)
+	{
+		mask = MASK_NPCSOLID;
+	}
+	else if (std::strcmp(arg1, "npcsolidbrushonly") == 0)
+	{
+		mask = MASK_NPCSOLID_BRUSHONLY;
+	}
+	else if (std::strcmp(arg1, "water") == 0)
+	{
+		mask = MASK_WATER;
+	}
+	else if (std::strcmp(arg1, "opaque") == 0)
+	{
+		mask = MASK_OPAQUE;
+	}
+	else if (std::strcmp(arg1, "solid") == 0)
+	{
+		mask = MASK_SOLID;
+	}
+	else if (std::strcmp(arg1, "blocklos") == 0)
+	{
+		mask = MASK_BLOCKLOS;
+	}
+	else if (strcasecmp(arg1, "visible") == 0)
+	{
+		mask = MASK_VISIBLE;
+	}
+	else if (strcasecmp(arg1, "shot") == 0)
+	{
+		mask = MASK_SHOT;
+	}
+	else if (strcasecmp(arg1, "all") == 0)
+	{
+		mask = MASK_ALL;
+	}
+	else if (strcasecmp(arg1, "team1") == 0)
+	{
+		mask = CONTENTS_TEAM1 | MASK_PLAYERSOLID;
+	}
+	else if (strcasecmp(arg1, "team2") == 0)
+	{
+		mask = CONTENTS_TEAM2 | MASK_PLAYERSOLID;
+	}
+	else
+	{
+		META_CONPRINTF("Unknown mask option %s! \n", arg1);
+		return;
+	}
+
+	int colgroup = 0;
+
+	const char* arg2 = args[2];
+
+	if (std::strcmp(arg2, "none") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_NONE);
+	}
+	else if (std::strcmp(arg2, "player") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_PLAYER);
+	}
+	else if (std::strcmp(arg2, "plmove") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_PLAYER_MOVEMENT);
+	}
+	else if (std::strcmp(arg2, "npc") == 0)
+	{
+		colgroup = static_cast<int>(COLLISION_GROUP_NPC);
+	}
+
+	const char* arg3 = args[3];
+
+	trace::CTraceFilterSimple simplefilter(host.GetEntity(), colgroup);
+	CTraceFilterTransientAreas navfilter(host.GetEntity(), colgroup);
+	CTraceFilterWalkableEntities navwalkablefilter(host.GetEntity(), colgroup, WALK_THRU_EVERYTHING);
+	CTraceFilterWorldAndPropsOnly wponlyfilter;
+	CTraceFilterHitAll hitallfilter;
+
+	if (strcasecmp(arg3, "simple") == 0)
+	{
+		filter = &simplefilter;
+	}
+	else if (strcasecmp(arg3, "navtransient") == 0)
+	{
+		filter = &navfilter;
+	}
+	else if (strcasecmp(arg3, "navwalkable") == 0)
+	{
+		filter = &navwalkablefilter;
+	}
+	else if (strcasecmp(arg3, "worldproponly") == 0)
+	{
+		filter = &wponlyfilter;
+	}
+	else if (strcasecmp(arg3, "hitall") == 0)
+	{
+		filter = &hitallfilter;
+	}
+	else
+	{
+		META_CONPRINTF("Unknown filter option %s! \n", arg1);
+		return;
+	}
+
+	trace::line(start, end, mask, filter, tr);
+	NDebugOverlay::Line(start, tr.endpos, 0, 127, 0, true, 20.0f);
+
+	if (!tr.DidHit())
+	{
+		META_CONPRINTF("TRACE DID NOT HIT ANYTHING! \n");
+		return;
+	}
+
+	META_CONPRINTF("HIT! \n Fraction: %g Pos: %s \n", tr.fraction, UtilHelpers::textformat::FormatVector(tr.endpos));
+	NDebugOverlay::Sphere(tr.endpos, 8.0f, 255, 0, 0, true, 20.0f);
+	META_CONPRINTF("Entity: %s\n", UtilHelpers::textformat::FormatEntity(tr.m_pEnt));
+	META_CONPRINTF("Normal: %s \n", UtilHelpers::textformat::FormatVector(tr.plane.normal));
+	META_CONPRINTF("Surface Name: %s \n", tr.surface.name != nullptr ? tr.surface.name : "NULL Surface Name!");
+	META_CONPRINTF("Surface flags: %i Surface props: %i \n", static_cast<int>(tr.surface.flags), static_cast<int>(tr.surface.surfaceProps));
+	META_CONPRINTF("Contents Mask: %i \n", tr.contents);
+
+	{
+		char contents[256];
+		std::memset(contents, 0, sizeof(contents));
+
+		if ((tr.contents & CONTENTS_SOLID) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_SOLID ");
+		}
+
+		if ((tr.contents & CONTENTS_PLAYERCLIP) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_PLAYERCLIP ");
+		}
+
+		if ((tr.contents & CONTENTS_MONSTER) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_MONSTER ");
+		}
+
+		if ((tr.contents & CONTENTS_MONSTERCLIP) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_MONSTERCLIP ");
+		}
+
+		if ((tr.contents & CONTENTS_LADDER) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_LADDER ");
+		}
+
+		if ((tr.contents & CONTENTS_WATER) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_WATER ");
+		}
+
+#if SOURCE_ENGINE > SE_DARKMESSIAH
+		if ((tr.contents & CONTENTS_BLOCKLOS) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_BLOCKLOS ");
+		}
+#endif // SOURCE_ENGINE > SE_DARKMESSIAH
+
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+		if ((tr.contents & CONTENTS_MIST) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_MIST ");
+		}
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
+
+
+		if ((tr.contents & CONTENTS_HITBOX) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_HITBOX ");
+		}
+
+		if ((tr.contents & CONTENTS_GRATE) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_GRATE ");
+		}
+
+		if ((tr.contents & CONTENTS_MOVEABLE) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_MOVEABLE ");
+		}
+
+		if ((tr.contents & CONTENTS_WINDOW) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_WINDOW ");
+		}
+
+		if ((tr.contents & CONTENTS_OPAQUE) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_OPAQUE ");
+		}
+
+		if ((tr.contents & CONTENTS_TRANSLUCENT) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_TRANSLUCENT ");
+		}
+
+		if ((tr.contents & CONTENTS_TEAM1) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_TEAM1 ");
+		}
+
+		if ((tr.contents & CONTENTS_TEAM2) != 0)
+		{
+			ke::SafeStrcat(contents, sizeof(contents), "CONTENTS_TEAM2 ");
+		}
+
+		META_CONPRINTF("Contents: %s \n", contents);
+	}
+
+	{
+		surfacedata_t* surfacedata = physprops->GetSurfaceData(tr.surface.surfaceProps);
+
+		if (surfacedata)
+		{
+			META_CONPRINT("---- PHYSICS ---- \n");
+			META_CONPRINTF("Dampening: %g - Density: %g - Elasticity: %g - Friction: %g - Thickness: %g \n", 
+				surfacedata->physics.dampening, surfacedata->physics.density, surfacedata->physics.elasticity, surfacedata->physics.friction, surfacedata->physics.thickness);
+			
+			META_CONPRINT("---- GAME ---- \n");
+			META_CONPRINTF("Max Speed Factor: %g - Jump Factor: %g - Material: %u - Climbable: %i \n", 
+				surfacedata->game.maxSpeedFactor, surfacedata->game.jumpFactor, surfacedata->game.material, static_cast<int>(surfacedata->game.climbable));
+		}
+		else
+		{
+			META_CONPRINT("NULL Surface Data! \n");
+		}
+	}
 }

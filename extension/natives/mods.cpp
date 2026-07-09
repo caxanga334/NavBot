@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <util/pawnutils.h>
 #include <mods/basemod.h>
+#include "mods/zps.h"
 #include "mods.h"
 
 static cell_t Native_GetModName(IPluginContext* context, const cell_t* params)
@@ -196,4 +197,6 @@ void natives::mods::setup(std::vector<sp_nativeinfo_t>& nv)
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
+
+	natives::mods::zps::setup(nv);
 }

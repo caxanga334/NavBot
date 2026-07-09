@@ -5,6 +5,8 @@
 #include <IForwardSys.h>
 #include <amtl/am-platform.h>
 #include <sourcemod_version.h>
+#include <mods/basemod.h>
+#include <manager.h>
 
 /* SourceMod Utility functions */
 
@@ -210,6 +212,19 @@ namespace pawnutils
 		char* str = nullptr;
 		context->LocalToStringNULL(params[index], &str);
 		return str;
+	}
+	// Gets the mod interface pointer, returns NULL if the type doesn't match.
+	template <typename T>
+	T* GetModInterfacePointerOfType(Mods::ModType type)
+	{
+		CBaseMod* mod = extmanager->GetMod();
+
+		if (mod->GetModType() != type)
+		{
+			return nullptr;
+		}
+
+		return static_cast<T*>(mod);
 	}
 }
 

@@ -846,102 +846,6 @@ CON_COMMAND_F(sm_get_entity_size, "Returns the entity size", FCVAR_CHEAT)
 
 #endif // SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_BMS
 
-CON_COMMAND_F(sm_navbot_debug_surf_props, "Shows surface properties.", FCVAR_CHEAT)
-{
-	CBaseExtPlayer host{ gamehelpers->EdictOfIndex(1) };
-	trace_t tr;
-	CTraceFilterWorldAndPropsOnly filter;
-
-	Vector start = host.GetEyeOrigin();
-	QAngle eyeAngles = host.GetEyeAngles();
-	Vector forward;
-	AngleVectors(eyeAngles, &forward);
-	forward.NormalizeInPlace();
-	Vector end = start + (forward * 4096.0f);
-
-	trace::line(start, end, MASK_SOLID, &filter, tr);
-
-	if (tr.fraction < 1.0f)
-	{
-		NDebugOverlay::Line(start, tr.endpos, 0, 255, 0, true, 20.0f);
-		NDebugOverlay::Cross3D(tr.endpos, 12.0f, 0, 255, 0, true, 20.0f);
-
-		const char* name = tr.surface.name;
-
-		if (name != nullptr)
-		{
-			Msg("Surface name: %s\n", name);
-		}
-
-		{
-			Vector normal = tr.plane.normal;
-
-			Msg("Surface Normal: %3.4f, %3.4f, %3.4f\n", normal.x, normal.y, normal.z);
-		}
-
-		if ((tr.contents & CONTENTS_LADDER) != 0)
-		{
-			Msg("Hit Ladder!\n");
-		}
-
-		if ((tr.contents & CONTENTS_PLAYERCLIP) != 0)
-		{
-			Msg("Hit Player Clip!\n");
-		}
-
-		if ((tr.contents & CONTENTS_WATER) != 0)
-		{
-			Msg("Hit Water!\n");
-		}
-
-		if ((tr.contents & CONTENTS_SOLID) != 0)
-		{
-			Msg("Hit Solid!\n");
-		}
-
-#if SOURCE_ENGINE <= SE_DARKMESSIAH
-		if ((tr.contents & CONTENTS_MIST) != 0)
-		{
-			Msg("Hit Mist!\n");
-		}
-#else
-		if ((tr.contents & CONTENTS_BLOCKLOS) != 0)
-		{
-			Msg("Hit Block LOS!\n");
-		}
-#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
-
-		surfacedata_t* surfacedata = physprops->GetSurfaceData(tr.surface.surfaceProps);
-
-		if (surfacedata != nullptr)
-		{
-			Msg("---- PHYSICS ----\n");
-			Msg("Friction: %3.4f\nElasticity: %3.4f\nDensity: %3.4f\nThickness: %3.4f\nDampening: %3.4f\n",
-				surfacedata->physics.friction,
-				surfacedata->physics.elasticity,
-				surfacedata->physics.density,
-				surfacedata->physics.thickness,
-				surfacedata->physics.dampening);
-
-			Msg("---- GAME ----\n");
-			Msg("Max Speed Factor: %3.4f\nJump Factor: %3.2f\nMaterial: <%i>\nClimbable: %i\n", 
-				surfacedata->game.maxSpeedFactor,
-				surfacedata->game.jumpFactor,
-				surfacedata->game.material,
-				static_cast<int>(surfacedata->game.climbable));
-		}
-		else
-		{
-			Msg("Got NULL surfacedata_t!\n");
-		}
-	}
-	else
-	{
-		Msg("Trace did not hit anything!\n");
-	}
-
-}
-
 // SDKs that may have func_useableladder entities
 #if SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_ORANGEBOX
 
@@ -1240,185 +1144,6 @@ CON_COMMAND(sm_navbot_debug_find_cover, "Debugs the find cover utility")
 
 	NDebugOverlay::Line(origin, coverArea->GetCenter(), 0, 255, 0, true, 20.0f);
 	Msg("Found cover area! %i\n", coverArea->GetID());
-}
-
-CON_COMMAND_F(sm_debug_trace_line, "Trace line debug", FCVAR_GAMEDLL)
-{
-	DECLARE_COMMAND_ARGS;
-
-	if (args.ArgC() < 4)
-	{
-		META_CONPRINT("[SM] Usage: sm_debug_trace_line <mask option> <collision group> <filter option>\n");
-		META_CONPRINT("  <mask option> : playersolid playersolidbrushonly npcsolid npcsolidbrushonly water opaque solid blocklos visible shot all team1 team2\n");
-		META_CONPRINT("  <collision group> : none player plmove npc\n");
-		META_CONPRINT("  <filter option> : simple navtransient navwalkable worldproponly hitall\n");
-		return;
-	}
-
-	unsigned int mask = 0;
-	CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
-	ITraceFilter* filter;
-	trace_t tr;
-
-	Vector start = host.GetEyeOrigin();
-	QAngle eyeAngles = host.GetEyeAngles();
-	Vector forward;
-	AngleVectors(eyeAngles, &forward);
-	forward.NormalizeInPlace();
-	Vector end = start + (forward * 4096.0f);
-
-	const char* arg1 = args[1];
-
-	if (std::strcmp(arg1, "playersolid") == 0)
-	{
-		mask = MASK_PLAYERSOLID;
-	}
-	else if (std::strcmp(arg1, "playersolidbrushonly") == 0)
-	{
-		mask = MASK_PLAYERSOLID_BRUSHONLY;
-	}
-	else if (std::strcmp(arg1, "npcsolid") == 0)
-	{
-		mask = MASK_NPCSOLID;
-	}
-	else if (std::strcmp(arg1, "npcsolidbrushonly") == 0)
-	{
-		mask = MASK_NPCSOLID_BRUSHONLY;
-	}
-	else if (std::strcmp(arg1, "water") == 0)
-	{
-		mask = MASK_WATER;
-	}
-	else if (std::strcmp(arg1, "opaque") == 0)
-	{
-		mask = MASK_OPAQUE;
-	}
-	else if (std::strcmp(arg1, "solid") == 0)
-	{
-		mask = MASK_SOLID;
-	}
-	else if (std::strcmp(arg1, "blocklos") == 0)
-	{
-		mask = MASK_BLOCKLOS;
-	}
-	else if (strcasecmp(arg1, "visible") == 0)
-	{
-		mask = MASK_VISIBLE;
-	}
-	else if (strcasecmp(arg1, "shot") == 0)
-	{
-		mask = MASK_SHOT;
-	}
-	else if (strcasecmp(arg1, "all") == 0)
-	{
-		mask = MASK_ALL;
-	}
-	else if (strcasecmp(arg1, "team1") == 0)
-	{
-		mask = CONTENTS_TEAM1 | MASK_PLAYERSOLID;
-	}
-	else if (strcasecmp(arg1, "team2") == 0)
-	{
-		mask = CONTENTS_TEAM2 | MASK_PLAYERSOLID;
-	}
-	else
-	{
-		META_CONPRINTF("Unknown mask option %s! \n", arg1);
-		return;
-	}
-
-	int colgroup = 0;
-
-	const char* arg2 = args[2];
-
-	if (std::strcmp(arg2, "none") == 0)
-	{
-		colgroup = static_cast<int>(COLLISION_GROUP_NONE);
-	}
-	else if (std::strcmp(arg2, "player") == 0)
-	{
-		colgroup = static_cast<int>(COLLISION_GROUP_PLAYER);
-	}
-	else if (std::strcmp(arg2, "plmove") == 0)
-	{
-		colgroup = static_cast<int>(COLLISION_GROUP_PLAYER_MOVEMENT);
-	}
-	else if (std::strcmp(arg2, "npc") == 0)
-	{
-		colgroup = static_cast<int>(COLLISION_GROUP_NPC);
-	}
-
-	const char* arg3 = args[3];
-
-	trace::CTraceFilterSimple simplefilter(host.GetEntity(), colgroup);
-	CTraceFilterTransientAreas navfilter(host.GetEntity(), colgroup);
-	CTraceFilterWalkableEntities navwalkablefilter(host.GetEntity(), colgroup, WALK_THRU_EVERYTHING);
-	CTraceFilterWorldAndPropsOnly wponlyfilter;
-	CTraceFilterHitAll hitallfilter;
-
-	if (strcasecmp(arg3, "simple") == 0)
-	{
-		filter = &simplefilter;
-	}
-	else if (strcasecmp(arg3, "navtransient") == 0)
-	{
-		filter = &navfilter;
-	}
-	else if (strcasecmp(arg3, "navwalkable") == 0)
-	{
-		filter = &navwalkablefilter;
-	}
-	else if (strcasecmp(arg3, "worldproponly") == 0)
-	{
-		filter = &wponlyfilter;
-	}
-	else if (strcasecmp(arg3, "hitall") == 0)
-	{
-		filter = &hitallfilter;
-	}
-	else
-	{
-		META_CONPRINTF("Unknown filter option %s! \n", arg1);
-		return;
-	}
-
-	trace::line(start, end, mask, filter, tr);
-
-	if (tr.DidHit())
-	{
-		META_CONPRINTF("HIT! \n    fraction: %3.4f \n", tr.fraction);
-
-		NDebugOverlay::Sphere(tr.endpos, 8.0f, 255, 0, 0, true, 20.0f);
-
-		CBaseEntity* pEntity = tr.m_pEnt;
-
-		if (pEntity)
-		{
-			const char* classname = gamehelpers->GetEntityClassname(pEntity);
-			int index = reinterpret_cast<IHandleEntity*>(pEntity)->GetRefEHandle().GetEntryIndex();
-
-			META_CONPRINTF("    #%i<%s>", index, classname);
-
-			datamap_t* map = gamehelpers->GetDataMap(pEntity);
-
-			if (map)
-			{
-				META_CONPRINTF(" [%s] \n", map->dataClassName);
-			}
-			else
-			{
-				META_CONPRINTF(" \n");
-			}
-		}
-		else
-		{
-			META_CONPRINT("HIT BUT ENTITY IS NULL! \n");
-		}
-	}
-	else
-	{
-		META_CONPRINTF("NO ENTITY HIT \n");
-	}
 }
 
 CON_COMMAND(sm_navbot_debug_vis, "Visibility debug")
@@ -2212,6 +1937,46 @@ CON_COMMAND_F(sm_navbot_debug_find_offs, "Debug find offset without inheritance.
 	else
 	{
 		META_CONPRINTF("%s is not a member of %s!\n", prop, name);
+	}
+}
+
+CON_COMMAND_F(sm_navbot_debug_find_datamap_offs, "Debug find offset without inheritance.", FCVAR_CHEAT | FCVAR_GAMEDLL)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINTF("[SM] Usage: sm_navbot_debug_find_datamap_offs <entity index> <prop name>\n");
+		return;
+	}
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!entity)
+	{
+		META_CONPRINT("NULL entity! \n");
+		return;
+	}
+
+	datamap_t* map = gamehelpers->GetDataMap(entity);
+
+	if (!map)
+	{
+		META_CONPRINT("NULL datamap_t! \n");
+		return;
+	}
+
+	const char* prop = args[2];
+
+	int offs = UtilHelpers::datamap::FindOffsetNoInheritance(map, prop);
+
+	if (offs > 0)
+	{
+		META_CONPRINTF("Offset for %s::%s is %u\n", map->dataClassName, prop, offs);
+	}
+	else
+	{
+		META_CONPRINTF("%s is not a member of %s!\n", prop, map->dataClassName);
 	}
 }
 
