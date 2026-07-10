@@ -25,7 +25,7 @@ void CZPSBot::FirstSpawn()
 	engine->SetFakeClientConVarValue(GetEdict(), "cl_togglewalk", "1");
 }
 
-bool CZPSBot::IsAbleToBreak(CBaseEntity* entity)
+bool CZPSBot::IsAbleToBreak(CBaseEntity* entity, const int flags)
 {
 	bool result = CBaseBot::IsAbleToBreak(entity);
 

@@ -107,51 +107,61 @@ void CZombiePanicSourceMod::OnRoundEnd()
 	CBaseMod::OnRoundEnd();
 }
 
-bool CZombiePanicSourceMod::IsEntityDamageable(CBaseEntity* entity, const int maxhealth) const
+
+class CZombiePanicSourceModHelpers : public IModHelpers
 {
-	bool base = CBaseMod::IsEntityDamageable(entity, maxhealth);
-
-	if (base)
+public:
+	bool IsEntityDamageable(CBaseEntity* entity, const int maxhealth) const override
 	{
-		// prop_* entities have these
-		bool* unbreakable = entprops->GetPointerToEntData<bool>(entity, Prop_Data, "m_bUnbreakable");
+		bool base = IModHelpers::IsEntityDamageable(entity, maxhealth);
 
-		if (unbreakable != nullptr && *unbreakable == true)
+		if (base)
 		{
-			return false;
+			// prop_* entities have these
+			bool* unbreakable = entprops->GetPointerToEntData<bool>(entity, Prop_Data, "m_bUnbreakable");
+
+			if (unbreakable != nullptr && *unbreakable == true)
+			{
+				return false;
+			}
 		}
+
+		const char* classname = gamehelpers->GetEntityClassname(entity);
+
+		// ZPS: doors uses DAMAGE_EVENTS_ONLY but they still take damage from attacks
+		if (std::strcmp(classname, "prop_door_rotating") == 0)
+		{
+			int takedamage = DAMAGE_NO;
+
+			if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage) && takedamage != DAMAGE_NO)
+			{
+				return true;
+			}
+		}
+
+		return base;
 	}
 
-	const char* classname = gamehelpers->GetEntityClassname(entity);
-
-	// ZPS: doors uses DAMAGE_EVENTS_ONLY but they still take damage from attacks
-	if (std::strcmp(classname, "prop_door_rotating") == 0)
+	bool IsEntityBreakable(CBaseEntity* entity) const override
 	{
-		int takedamage = DAMAGE_NO;
+		const char* classname = gamehelpers->GetEntityClassname(entity);
 
-		if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage) && takedamage != DAMAGE_NO)
+		if (std::strcmp(classname, "prop_door_rotating") == 0)
 		{
 			return true;
 		}
+		if (std::strcmp(classname, "prop_barricade") == 0)
+		{
+			return true;
+		}
+
+		return IModHelpers::IsEntityBreakable(entity);
 	}
+};
 
-	return base;
-}
-
-bool CZombiePanicSourceMod::IsEntityBreakable(CBaseEntity* entity) const
+IModHelpers* CZombiePanicSourceMod::AllocModHelpers() const
 {
-	const char* classname = gamehelpers->GetEntityClassname(entity);
-
-	if (std::strcmp(classname, "prop_door_rotating") == 0)
-	{
-		return true;
-	}
-	if (std::strcmp(classname, "prop_barricade") == 0)
-	{
-		return true;
-	}
-
-	return CBaseMod::IsEntityBreakable(entity);
+	return new CZombiePanicSourceModHelpers;
 }
 
 CWeaponInfoManager* CZombiePanicSourceMod::CreateWeaponInfoManager() const

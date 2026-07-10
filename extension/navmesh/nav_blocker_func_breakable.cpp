@@ -28,7 +28,7 @@ void CFuncBreakableNavBlocker::Update()
 	}
 	case BreakableType::TYPE_BIGHEALTH:
 	{
-		m_blocked = extmanager->GetMod()->IsEntityDamageable(m_breakable.Get(), extmanager->GetMod()->GetModSettings()->GetBreakableMaxHealth());
+		m_blocked = modhelpers->IsEntityDamageable(m_breakable.Get(), extmanager->GetMod()->GetModSettings()->GetBreakableMaxHealth());
 		return;
 	}
 	default:
@@ -110,7 +110,7 @@ void CFuncBreakableNavBlocker::Init(CBaseEntity* breakable)
 		}
 	}
 
-	if (!mod->IsEntityDamageable(breakable, mod->GetModSettings()->GetBreakableMaxHealth()))
+	if (!modhelpers->IsEntityDamageable(breakable, mod->GetModSettings()->GetBreakableMaxHealth()))
 	{
 		m_type = BreakableType::TYPE_BIGHEALTH;
 		return;

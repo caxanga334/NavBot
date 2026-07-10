@@ -28,7 +28,7 @@ public:
 
 	void FirstSpawn() override;
 
-	bool IsAbleToBreak(CBaseEntity* entity) override;
+	bool IsAbleToBreak(CBaseEntity* entity, const int flags = 0) override;
 
 	zps::ZPSTeam GetMyZPSTeam() const;
 	bool IsCarrier() const;

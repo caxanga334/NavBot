@@ -23,9 +23,7 @@ public:
 	void OnRoundStart() override;
 	void OnRoundEnd() override;
 	bool IsTeamBasedGame() const override { return true; }
-
-	bool IsEntityDamageable(CBaseEntity* entity, const int maxhealth = 1000) const override;
-	bool IsEntityBreakable(CBaseEntity* entity) const override;
+	IModHelpers* AllocModHelpers() const override;
 
 	inline bool IsGameMode(zps::ZPSGamemodes mode) const { return m_gamemode == mode; }
 	inline zps::ZPSGamemodes GetGameMode() const { return m_gamemode; }

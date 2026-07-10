@@ -243,109 +243,6 @@ bool CBaseMod::IsLineOfFireClear(const Vector& from, const Vector& to, CBaseEnti
 	return !result.DidHit();
 }
 
-bool CBaseMod::IsEntityDamageable(CBaseEntity* entity, const int maxhealth) const
-{
-	int takedamage = 0;
-
-	if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage))
-	{
-		switch (takedamage)
-		{
-		case DAMAGE_NO:
-			[[fallthrough]];
-		case DAMAGE_EVENTS_ONLY:
-		{
-			return false; // entity doesn't take damage
-		}
-		default:
-			break;
-		}
-	}
-
-	int health = 0;
-
-	if (entprops->GetEntProp(entity, Prop_Data, "m_iHealth", health))
-	{
-		if (health > maxhealth)
-		{
-			return false; // too much health
-		}
-	}
-
-	return true;
-}
-
-bool CBaseMod::IsEntityDamageableBy(CBaseEntity* entity, CBaseEntity* attacker) const
-{
-	CBaseEntity* damageFilter = nullptr;
-
-	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &damageFilter))
-	{
-		if (damageFilter)
-		{
-			if (sdkcalls->IsPassesFilterImplAvailable())
-			{
-				if (!modhelpers->PassesFilterImpl(damageFilter, nullptr, attacker))
-				{
-					// The attacker does not passes the damage filter.
-					return false;
-				}
-			}
-			else
-			{
-				// The entity has a damage filter and the CBaseFilter::PassesFilterImpl SDKCall isn't available.
-				// Consider as not damageable.
-				return false;
-			}
-		}
-	}
-
-	return true;
-}
-
-bool CBaseMod::IsEntityBreakable(CBaseEntity* entity) const
-{
-	auto classname = gamehelpers->GetEntityClassname(entity);
-
-	if (strncmp(classname, "func_breakable", 14) == 0)
-	{
-		return true;
-	}
-
-	if (strncmp(classname, "func_breakable_surf", 19) == 0)
-	{
-		return true;
-	}
-
-	if (strncmp(classname, "func_physbox", 12) == 0)
-	{
-		return true;
-	}
-
-	if (UtilHelpers::StringMatchesPattern(classname, "prop_phys*", 0))
-	{
-		return true;
-	}
-
-	return false;
-}
-
-bool CBaseMod::IsBreakableBroken(CBaseEntity* entity) const
-{
-	// breakable surfaces entities aren't deleted when broken.
-	if (UtilHelpers::FClassnameIs(entity, "func_breakable_surf"))
-	{
-		bool* bBroken = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bIsBroken");
-
-		if (bBroken != nullptr)
-		{
-			return *bBroken;
-		}
-	}
-
-	return false;
-}
-
 IModHelpers* CBaseMod::AllocModHelpers() const
 {
 	return new IModHelpers;
@@ -653,9 +550,9 @@ CON_COMMAND(sm_navbot_mod_debug_breakable, "Reports an entity breakable state.")
 
 	CBaseMod* mod = extmanager->GetMod();
 
-	bool damageable = mod->IsEntityDamageable(pEnt, mod->GetModSettings()->GetBreakableMaxHealth());
-	bool breakable = mod->IsEntityBreakable(pEnt);
-	bool damageablebyyou = mod->IsEntityDamageableBy(pEnt, host->GetEntity());
+	bool damageable = modhelpers->IsEntityDamageable(pEnt, mod->GetModSettings()->GetBreakableMaxHealth());
+	bool breakable = modhelpers->IsEntityBreakable(pEnt);
+	bool damageablebyyou = modhelpers->IsEntityDamageableBy(pEnt, host->GetEntity());
 	int health = UtilHelpers::GetEntityHealth(index);
 
 	META_CONPRINTF("Damageable %i Damageable (by you) %i Breakable %i Health %i\n", 

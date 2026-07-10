@@ -311,18 +311,21 @@ bool CBaseBot::IsRangeLessThan(CBaseEntity* entity, const float range) const
 	return to.Length() < range;
 }
 
-/**
- * @brief Checks if the bot is able to break the given entity
- * @param entity Entity the bot needs to break
- * @return true if the bot can break this entity
-*/
-bool CBaseBot::IsAbleToBreak(CBaseEntity* entity)
+bool CBaseBot::IsAbleToBreak(CBaseEntity* entity, const int flags)
 {
 	CBaseMod* mod = extmanager->GetMod();
 
-	if (mod->IsEntityDamageable(entity, mod->GetModSettings()->GetBreakableMaxHealth()) &&
-		mod->IsEntityDamageableBy(entity, GetEntity()) &&
-		mod->IsEntityBreakable(entity))
+	if ((flags & BREAKQUERYFLAG_NOEXPLOSIVES) != 0)
+	{
+		if (modhelpers->IsBreakableExplosive(entity))
+		{
+			return false;
+		}
+	}
+
+	if (modhelpers->IsEntityDamageable(entity, mod->GetModSettings()->GetBreakableMaxHealth()) &&
+		modhelpers->IsEntityDamageableBy(entity, GetEntity()) &&
+		modhelpers->IsEntityBreakable(entity))
 	{
 		return true;
 	}

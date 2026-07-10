@@ -101,6 +101,39 @@ public:
 	 * @return Item index or NO_ECON_INDEX if not available.
 	 */
 	virtual int GetItemEconomyIndex(CBaseEntity* item) const { return NO_ECON_INDEX; }
+	/**
+	 * @brief Called to check if the given entity can take damage. This function checks for common things like the takedamage property.
+	 * @param entity Entity to check.
+	 * @param maxhealth If the entity's health is greater than this, consider as not damagable.
+	 * @return True if the given entity can take damage, false if not.
+	 */
+	virtual bool IsEntityDamageable(CBaseEntity* entity, const int maxhealth = 1000) const;
+	/**
+	 * @brief Called to check if the given entity can be damaged by the other entity.
+	 * @param entity Entity to check.
+	 * @param attacker Entity that wants to deal damage.
+	 * @return True if the given attacker can deal damage to the entity, false otherwise.
+	 */
+	virtual bool IsEntityDamageableBy(CBaseEntity* entity, CBaseEntity* attacker) const;
+	/**
+	 * @brief Called to check if the given entity is a breakable entity. Bots will attack these if they find one in their path.
+	 * @param entity Entity to check.
+	 * @return True if the given entity is a brakable entity, false if not.
+	 */
+	virtual bool IsEntityBreakable(CBaseEntity* entity) const;
+	/**
+	 * @brief Called to check if the given breakable entity is already broken.
+	 * Some entities break but aren't deleted. This should return true when the entity is broken and no longer solid for players.
+	 * @param entity Entity being checked.
+	 * @return True if the entity is broken and passable, false otherwise.
+	 */
+	virtual bool IsBreakableBroken(CBaseEntity* entity) const;
+	/**
+	 * @brief Queries if the given entity explodes when damaged/broken.
+	 * @param entity Entity being queried.
+	 * @return True if explosive, false if not.
+	 */
+	virtual bool IsBreakableExplosive(CBaseEntity* entity) const;
 };
 
 // Global singleton to access the mod helpers interface

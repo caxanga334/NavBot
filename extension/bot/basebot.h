@@ -128,12 +128,15 @@ public:
 	bool IsRangeLessThan(const Vector& pos, const float range) const;
 	bool IsRangeLessThan(edict_t* edict, const float range) const;
 	bool IsRangeLessThan(CBaseEntity* entity, const float range) const;
+
+	static constexpr int BREAKQUERYFLAG_NOEXPLOSIVES = 0x1; // if set, ignores explosives
 	/**
-	 * @brief Called to determine if the bot can break the given entity.
+	 * @brief Queries if the given entity can be broken by the bot.
 	 * @param entity Entity the bot may break.
+	 * @parma flags Optional query behavior flags. See BREAKQUERYFLAG_ constants
 	 * @return True if breakable, false if not.
 	 */
-	virtual bool IsAbleToBreak(CBaseEntity* entity);
+	virtual bool IsAbleToBreak(CBaseEntity* entity, const int flags = 0);
 
 	IBotController* GetController() const { return m_controller; }
 

@@ -409,7 +409,19 @@ public:
 	virtual bool IsPotentiallyTraversable(const Vector& from, const Vector& to, float* fraction, const bool now = true, CBaseEntity** obstacle = nullptr);
 	// Checks if there is a possible gap/hole on the ground between 'from' and 'to' vectors
 	virtual bool HasPotentialGap(const Vector& from, const Vector& to, float* fraction = nullptr);
+	/**
+	 * @brief Queries if the given entity is traversable (non-solid) to the bot.
+	 * @param entity Entity being queried.
+	 * @param now If true, queries if the entity is traversable RIGHT NOW. Otherwise also include entities that may become traversable in the future.
+	 * @return true if the entity is traversable, false otherwise.
+	 */
 	virtual bool IsEntityTraversable(CBaseEntity* entity, const bool now = true) const;
+	/**
+	 * @brief Queries if the given entity never is traversable.
+	 * @param entity Entity being queried.
+	 * @return True if yes, false if no.
+	 */
+	virtual bool IsEntityNeverTraversable(CBaseEntity* entity) const;
 	/**
 	 * @brief Used by the CMovementObstacleFilter trace filter.
 	 * @param entity Entity being checked.

@@ -189,3 +189,121 @@ bool IModHelpers::IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBas
 	return false;
 }
 
+bool IModHelpers::IsEntityDamageable(CBaseEntity* entity, const int maxhealth) const
+{
+	int takedamage = 0;
+
+	if (entprops->GetEntProp(entity, Prop_Data, "m_takedamage", takedamage))
+	{
+		switch (takedamage)
+		{
+		case DAMAGE_NO:
+			[[fallthrough]];
+		case DAMAGE_EVENTS_ONLY:
+		{
+			return false; // entity doesn't take damage
+		}
+		default:
+			break;
+		}
+	}
+
+	int health = 0;
+
+	if (entprops->GetEntProp(entity, Prop_Data, "m_iHealth", health))
+	{
+		if (health > maxhealth)
+		{
+			return false; // too much health
+		}
+	}
+
+	return true;
+}
+
+bool IModHelpers::IsEntityDamageableBy(CBaseEntity* entity, CBaseEntity* attacker) const
+{
+	CBaseEntity* damageFilter = nullptr;
+
+	if (entprops->GetEntPropEnt(entity, Prop_Data, "m_hDamageFilter", nullptr, &damageFilter))
+	{
+		if (damageFilter)
+		{
+			if (sdkcalls->IsPassesFilterImplAvailable())
+			{
+				if (!modhelpers->PassesFilterImpl(damageFilter, nullptr, attacker))
+				{
+					// The attacker does not passes the damage filter.
+					return false;
+				}
+			}
+			else
+			{
+				// The entity has a damage filter and the CBaseFilter::PassesFilterImpl SDKCall isn't available.
+				// Consider as not damageable.
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool IModHelpers::IsEntityBreakable(CBaseEntity* entity) const
+{
+	auto classname = gamehelpers->GetEntityClassname(entity);
+
+	if (strncmp(classname, "func_breakable", 14) == 0)
+	{
+		return true;
+	}
+
+	if (strncmp(classname, "func_breakable_surf", 19) == 0)
+	{
+		return true;
+	}
+
+	if (strncmp(classname, "func_physbox", 12) == 0)
+	{
+		return true;
+	}
+
+	if (UtilHelpers::StringMatchesPattern(classname, "prop_phys*", 0))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+bool IModHelpers::IsBreakableBroken(CBaseEntity* entity) const
+{
+	// breakable surfaces entities aren't deleted when broken.
+	if (UtilHelpers::FClassnameIs(entity, "func_breakable_surf"))
+	{
+		bool* bBroken = entprops->GetPointerToEntData<bool>(entity, Prop_Send, "m_bIsBroken");
+
+		if (bBroken != nullptr)
+		{
+			return *bBroken;
+		}
+	}
+
+	return false;
+}
+
+bool IModHelpers::IsBreakableExplosive(CBaseEntity* entity) const
+{
+	if (UtilHelpers::FClassnameIs(entity, "prop_phys*"))
+	{
+		float dmg = -1.0f;
+		entprops->GetEntPropFloat(entity, Prop_Data, "m_explodeDamage", dmg);
+		
+		if (dmg >= 0.1f)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}

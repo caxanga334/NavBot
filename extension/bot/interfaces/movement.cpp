@@ -1180,6 +1180,12 @@ bool IMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
 		return true; // assume players are walkable since they will either move out of the way or get killed
 	}
 
+	// Check special rules
+	if (IsEntityNeverTraversable(entity))
+	{
+		return false;
+	}
+
 	const char* classname = gamehelpers->GetEntityClassname(entity);
 
 	if (std::strcmp(classname, "func_door_rotating") == 0)
@@ -1238,7 +1244,20 @@ bool IMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
 		return false;
 	}
 
-	return GetBot()->IsAbleToBreak(entity);
+	constexpr int queryflags = CBaseBot::BREAKQUERYFLAG_NOEXPLOSIVES;
+
+	return GetBot()->IsAbleToBreak(entity, queryflags);
+}
+
+bool IMovement::IsEntityNeverTraversable(CBaseEntity* entity) const
+{
+	// while they're breakable most of the time, the bot should always try to avoid them while pathing
+	if (UtilHelpers::FClassnameIs(entity, "prop_phys*"))
+	{
+		return true;
+	}
+
+	return false;
 }
 
 bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
@@ -1266,6 +1285,11 @@ bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
 	if (modhelpers->IsCombatCharacter(entity))
 	{
 		return false; // don't consider NPCs as obstacles
+	}
+
+	if (modhelpers->IsBreakableExplosive(entity))
+	{
+		return false; // don't break explosives near the bot
 	}
 
 	const char* classname = gamehelpers->GetEntityClassname(entity);
@@ -2179,7 +2203,7 @@ void IMovement::ObstacleBreakUpdate()
 		return;
 	}
 
-	if (extmanager->GetMod()->IsBreakableBroken(obstacle))
+	if (modhelpers->IsBreakableBroken(obstacle))
 	{
 		OnDoneBreakingObstacle(obstacle, false);
 		return;
