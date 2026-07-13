@@ -1,8 +1,9 @@
-#ifndef SMNAV_BOT_EVENT_LISTENER_H_
-#define SMNAV_BOT_EVENT_LISTENER_H_
+#ifndef __NAVBOT_BOT_EVENT_LISTENER_INTERFACE_H_
+#define __NAVBOT_BOT_EVENT_LISTENER_INTERFACE_H_
 #pragma once
 
 #include <vector>
+#include <sp_vm_api.h>
 
 class IGameEvent;
 class CBaseBot;
@@ -55,6 +56,38 @@ public:
 		MAX_SQUAD_EVENT_TYPES
 	};
 
+	enum PluginCommandTypes
+	{
+		PLUGINCMD_SCRIPTED = 0, // Scripted behavior, uses callbacks.
+		PLUGINCMD_ATTACK_MOVE, // Moves to a position, stops to attack enemies.
+		PLUGINCMD_MOVE_TO, // Moves to a position, attack enemies but don't stop.
+		PLUGINCMD_SEEK_AND_DESTROY, // Chase an entity until it's dead.
+		PLUGINCMD_USE_ENTITY, // Move to an entity and press the use button on it.
+		PLUGINCMD_WAIT, // Stops moving and waits for N seconds.
+		PLUGINCMD_PATROL, // Patrols the areas near the bot.
+		PLUGINCMD_ROAM, // Moves to a random destination.
+
+		MAX_PLUGIN_COMMAND_TYPES
+	};
+
+	class PluginCommandData
+	{
+	public:
+		PluginCommandData() :
+			movegoal(0.0f, 0.0f, 0.0f), idata(0), fldata(0.0f)
+		{
+			sb_update_callback = nullptr;
+		}
+
+		Vector movegoal;
+		int idata;
+		float fldata;
+		CHandle<CBaseEntity> entdata;
+
+		// callbacks for scripted behavior
+		SourcePawn::IPluginFunction* sb_update_callback; // update
+	};
+
 	// Gets a vector containing all event listeners
 	virtual std::vector<IEventListener*>* GetListenerVector() { return nullptr; }
 
@@ -89,6 +122,7 @@ public:
 	virtual void OnBombDefused(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent); // Called when a bomb has been defused, data passed depends on the current mod
 	virtual void OnDangerousEntityChanged(CBaseEntity* newent, CBaseEntity* oldent); // Called when the most dangereous entity determined by the combat interface changes.
 	virtual void OnCustomModEvent(const int id, const std::any& data); // General purpose event for game/mod specific events.
+	virtual void OnPluginCommand(PluginCommandTypes type, const PluginCommandData& data);
 };
 
 inline void IEventListener::OnDebugMoveToCommand(const Vector& moveTo)
@@ -494,5 +528,18 @@ inline void IEventListener::OnCustomModEvent(const int id, const std::any& data)
 	}
 }
 
-#endif // !SMNAV_BOT_EVENT_LISTENER_H_
+inline void IEventListener::OnPluginCommand(PluginCommandTypes type, const PluginCommandData& data)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnPluginCommand(type, data);
+		}
+	}
+}
+
+#endif // !__NAVBOT_BOT_EVENT_LISTENER_INTERFACE_H_
 

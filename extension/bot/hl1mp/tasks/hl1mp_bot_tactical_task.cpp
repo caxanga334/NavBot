@@ -10,6 +10,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include "hl1mp_bot_use_charger_task.h"
 #include "hl1mp_bot_scenario_task.h"
@@ -108,6 +109,11 @@ TaskEventResponseResult<CHL1MPBot> CHL1MPBotTacticalTask::OnNavAreaChanged(CHL1M
 	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CHL1MPBot, CHL1MPBotPathCost);
 
 	return TryContinue(PRIORITY_LOW);
+}
+
+TaskEventResponseResult<CHL1MPBot> CHL1MPBotTacticalTask::OnPluginCommand(CHL1MPBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CHL1MPBotTacticalTask, CHL1MPBot, CHL1MPBotPathCost>(this, bot, type, data);
 }
 
 QueryAnswerType CHL1MPBotTacticalTask::ShouldRetreat(CBaseBot* me)

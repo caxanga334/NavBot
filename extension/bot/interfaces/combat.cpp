@@ -30,6 +30,15 @@ ICombat::~ICombat()
 {
 }
 
+void ICombat::OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea)
+{
+	// Don't look around when navigating precise areas
+	if (newArea->HasAttributes(static_cast<int>(NavAttributeType::NAV_MESH_PRECISE)))
+	{
+		StopLookingAround(5.0f);
+	}
+}
+
 void ICombat::Reset()
 {
 	m_lastWeaponPtr = nullptr;

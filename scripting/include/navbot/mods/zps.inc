@@ -10,6 +10,7 @@ enum NavBotZPSObjectiveTypes
 	NAVBOT_ZPS_OBJECTIVE_USE_BUTTON, // press a button
 	NAVBOT_ZPS_OBJECTIVE_FIND_ITEM, // find item_generic
 	NAVBOT_ZPS_OBJECTIVE_USE_ITEM, // use item_generic
+	NAVBOT_ZPS_OBJECTIVE_DROP_ITEM, // drop item_generic at another entity
 
 	NAVBOT_ZPS_MAX_OBJECTIVE_TYPES
 };

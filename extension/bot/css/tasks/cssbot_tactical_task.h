@@ -10,6 +10,7 @@ public:
 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
 	TaskEventResponseResult<CCSSBot> OnNavAreaChanged(CCSSBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
 	TaskEventResponseResult<CCSSBot> OnDangerousEntityChanged(CCSSBot* bot, CBaseEntity* newent, CBaseEntity* oldent) override;
+	TaskEventResponseResult<CCSSBot> OnPluginCommand(CCSSBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override;
 	QueryAnswerType ShouldHurry(CBaseBot* me) override;
 
 	const char* GetName() const override { return "Tactical"; }

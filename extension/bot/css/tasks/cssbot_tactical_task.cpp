@@ -8,6 +8,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include "cssbot_buy_weapons_task.h"
 #include "cssbot_scenario_task.h"
@@ -76,6 +77,11 @@ TaskEventResponseResult<CCSSBot> CCSSBotTacticalTask::OnDangerousEntityChanged(C
 	}
 
 	return TryContinue(PRIORITY_LOW);
+}
+
+TaskEventResponseResult<CCSSBot> CCSSBotTacticalTask::OnPluginCommand(CCSSBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CCSSBotTacticalTask, CCSSBot, CCSSBotPathCost>(this, bot, type, data);
 }
 
 QueryAnswerType CCSSBotTacticalTask::ShouldHurry(CBaseBot* me)

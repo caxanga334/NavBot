@@ -13,6 +13,20 @@
 // Pass this to SetSkillLevel to generate a random difficulty profile for the bot.
 #define NAVBOT_SKILL_RANDOM -1
 
+enum NavBotPluginCommandTypes
+{
+	NAVBOT_PLUGINCMD_SCRIPTED = 0, // Scripted behavior, uses callbacks.
+	NAVBOT_PLUGINCMD_ATTACK_MOVE, // Moves to a position, stops to attack enemies.
+	NAVBOT_PLUGINCMD_MOVE_TO, // Moves to a position, attack enemies but don't stop.
+	NAVBOT_PLUGINCMD_SEEK_AND_DESTROY, // Chase an entity until it's dead.
+	NAVBOT_PLUGINCMD_USE_ENTITY, // Move to an entity and press the use button on it.
+	NAVBOT_PLUGINCMD_WAIT, // Stops moving and waits for N seconds.
+	NAVBOT_PLUGINCMD_PATROL, // Patrols the areas near the bot.
+	NAVBOT_PLUGINCMD_ROAM, // Moves to a random destination.
+
+	MAX_PLUGIN_COMMAND_TYPES
+};
+
 // A NavBot bot instance
 methodmap NavBot < NavBotBasePlayer
 {
@@ -83,7 +97,46 @@ methodmap NavBot < NavBotBasePlayer
 	 * @param size		Size of the buffer array.
 	 */
 	public native void GetDebugIdentifier(char[] buffer, int size);
+	/**
+	 * Sends a plugin command/order to the bot.
+	 * 
+	 * These commands won't work if gamemode behavior is disabled (sm_navbot_debug_disable_gamemode_ai 1).
+	 * 
+	 * @param type		Command/order type to send.
+	 * @parma ...		Command parameters, depends on the command type.
+	 * @error			Invalid bot, invalid command type, invalid or bad command arguments.
+	 */
+	public native void SendPluginCommand(NavBotPluginCommandTypes type, any ...);
+	/**
+	 * Sends a NAVBOT_PLUGINCMD_SCRIPTED plugin command/order to the bot.
+	 * 
+	 * @param update	Behavior update callback.
+	 */
+	public native void SendScriptedPluginCommand(NavBotScriptedBehaviorCB update);
+
+	/**
+	 * Expected arguments for each command type.
+	 * 
+	 * NAVBOT_PLUGINCMD_ATTACK_MOVE and NAVBOT_PLUGINCMD_MOVE_TO: One world position vector (float pos[3])
+	 * NAVBOT_PLUGINCMD_SEEK_AND_DESTROY and NAVBOT_PLUGINCMD_USE_ENTITY: One entity index/reference to the target entity.
+	 * NAVBOT_PLUGINCMD_WAIT: One float, the time in seconds the bot should wait
+	 * NAVBOT_PLUGINCMD_PATROL: No additional parameters needed.
+	 * NAVBOT_PLUGINCMD_ROAM: One float, the maximum search distance for a random destination.
+	 */
 }
+
+typeset NavBotScriptedBehaviorCB
+{
+	/**
+	 * Main callback for NAVBOT_PLUGINCMD_SCRIPTED.
+	 * 
+	 * @param bot			Bot running the scripted behavior.
+	 * @param moveGoal		World position the bot will path to if the result is different from Plugin_Continue.
+	 * @param routeType		Which route type the navigator should use when computing a path.
+	 * @return				Return Plugin_Stop top end the behavior. Everything else keeps the behavior running.
+	 */
+	function Action (NavBot bot, float moveGoal[3], NavBotRouteType routeType);
+};
 
 /**
  * Called when a new NavBot Plugin Bot instance is about to be attached to an entity

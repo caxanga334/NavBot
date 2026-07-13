@@ -14,6 +14,7 @@ public:
 		OBJECTIVE_USE_BUTTON, // press a button
 		OBJECTIVE_FIND_ITEM, // find item_generic
 		OBJECTIVE_USE_ITEM, // use item_generic
+		OBJECTIVE_DROP_ITEM, // drop item_generic at another entity
 
 		MAX_OBJECTIVE_TYPES
 	};

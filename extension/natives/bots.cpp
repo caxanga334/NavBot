@@ -270,6 +270,138 @@ namespace basebot
 		context->StringToLocal(params[2], params[3], buffer);
 		return 0;
 	}
+
+	static cell_t Native_SendBehaviorPluginCommand(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		if (params[2] < 0 || params[2] >= static_cast<cell_t>(IEventListener::PluginCommandTypes::MAX_PLUGIN_COMMAND_TYPES))
+		{
+			context->ReportError("%i is not a valid plugin command!", params[2]);
+			return 0;
+		}
+
+		IEventListener::PluginCommandTypes cmd = static_cast<IEventListener::PluginCommandTypes>(params[2]);
+		IEventListener::PluginCommandData data;
+		constexpr std::size_t startparam = 3;
+		std::size_t numparams = static_cast<std::size_t>(params[0]);
+
+		switch (cmd)
+		{
+		case IEventListener::PluginCommandTypes::PLUGINCMD_SCRIPTED:
+		{
+			context->ReportError("Use SendScriptedPluginCommand!");
+			return 0;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_ATTACK_MOVE:
+			[[fallthrough]];
+		case IEventListener::PluginCommandTypes::PLUGINCMD_MOVE_TO:
+		{
+			if (startparam > numparams)
+			{
+				context->ReportError("This command requires a vector (float[3]) to be passed!");
+				return 0;
+			}
+
+			data.movegoal = pawnutils::ReadVector(context, params, startparam);
+			break;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_SEEK_AND_DESTROY:
+			[[fallthrough]];
+		case IEventListener::PluginCommandTypes::PLUGINCMD_USE_ENTITY:
+		{
+			if (startparam > numparams)
+			{
+				context->ReportError("This command requires an entity to be passed!");
+				return 0;
+			}
+
+			CBaseEntity* entity = pawnutils::ReadEntity(context, params, startparam);
+
+			if (!entity)
+			{
+				return 0;
+			}
+
+			data.entdata = entity;
+
+			break;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_WAIT:
+		{
+			if (startparam > numparams)
+			{
+				context->ReportError("This command requires a float to be passed!");
+				return 0;
+			}
+
+			data.fldata = pawnutils::ReadFloat(params, startparam);
+
+			if (data.fldata < 0.0f)
+			{
+				context->ReportError("Wait time cannot be negative!");
+				return 0;
+			}
+
+			break;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_PATROL:
+		{
+			break;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_ROAM:
+		{
+			if (startparam > numparams)
+			{
+				context->ReportError("This command requires a float to be passed!");
+				return 0;
+			}
+
+			data.fldata = pawnutils::ReadFloat(params, startparam);
+
+			if (data.fldata < 256.0f)
+			{
+				context->ReportError("Roam search distance cannot be smaller than 256 (got %g)!", data.fldata);
+				return 0;
+			}
+
+			break;
+		}
+		default:
+			return 0;
+		}
+
+		bot->OnPluginCommand(cmd, data);
+		return 0;
+	}
+
+	static cell_t Native_SendScriptedBehaviorPluginCommand(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		constexpr auto cmd = IEventListener::PluginCommandTypes::PLUGINCMD_SCRIPTED;
+		IEventListener::PluginCommandData data;
+
+		if (!pawnutils::ReadFunctionByID(context, params, 2, &data.sb_update_callback))
+		{
+			return 0;
+		}
+
+		bot->OnPluginCommand(cmd, data);
+		return 0;
+	}
 }
 
 void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
@@ -288,6 +420,8 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		/* this should be moved */
 		{"NavBotManager.GetNavBotByIndex", GetNavBotByIndex},
 		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},
+		{"NavBot.SendPluginCommand", basebot::Native_SendBehaviorPluginCommand},
+		{"NavBot.SendScriptedPluginCommand", basebot::Native_SendScriptedBehaviorPluginCommand},
 		/* base interface */
 		{"NavBotBotInterface.Reset", baseinterface::Native_Reset},
 		/* inventory interface */

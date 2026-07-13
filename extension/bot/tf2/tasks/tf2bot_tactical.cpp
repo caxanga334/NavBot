@@ -19,6 +19,7 @@
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include "tf2bot_scenario_task.h"
 
 #undef max
@@ -214,5 +215,10 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnDangerousEntityChanged(C
 	BOTVEHAVIOR_IMPLEMENT_SIMPLE_DANGER_COVER(CTF2Bot, CTF2BotPathCost);
 
 	return TryContinue(PRIORITY_DONT_CARE);
+}
+
+TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnPluginCommand(CTF2Bot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CTF2BotTacticalTask, CTF2Bot, CTF2BotPathCost>(this, bot, type, data);
 }
 

@@ -11,6 +11,7 @@ public:
 	TaskResult<CHL1MPBot> OnTaskResume(CHL1MPBot* bot, AITask<CHL1MPBot>* pastTask) override;
 
 	TaskEventResponseResult<CHL1MPBot> OnNavAreaChanged(CHL1MPBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
+	TaskEventResponseResult<CHL1MPBot> OnPluginCommand(CHL1MPBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override;
 
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override;
 

@@ -2,7 +2,6 @@
 #include <extension.h>
 #include <bot/blackmesa/bmbot.h>
 #include <sdkports/sdk_takedamageinfo.h>
-#include "bmbot_tactical_task.h"
 #include "scenario/bmbot_scenario_deathmatch_task.h"
 #include "bmbot_deploy_tripmines.h"
 #include "bmbot_find_health_task.h"
@@ -10,8 +9,10 @@
 #include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
+#include "bmbot_tactical_task.h"
 
 AITask<CBlackMesaBot>* CBlackMesaBotTacticalTask::InitialNextTask(CBlackMesaBot* bot)
 {
@@ -89,4 +90,9 @@ TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnNavAreaChang
 	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CBlackMesaBot, CBlackMesaBotPathCost);
 
 	return TryContinue();
+}
+
+TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnPluginCommand(CBlackMesaBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CBlackMesaBotTacticalTask, CBlackMesaBot, CBlackMesaBotPathCost>(this, bot, type, data);
 }

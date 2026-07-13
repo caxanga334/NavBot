@@ -17,6 +17,7 @@ public:
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
 
 	TaskEventResponseResult<CBlackMesaBot> OnNavAreaChanged(CBlackMesaBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
+	TaskEventResponseResult<CBlackMesaBot> OnPluginCommand(CBlackMesaBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override;
 
 	const char* GetName() const override { return "TacticalMonitor"; }
 private:

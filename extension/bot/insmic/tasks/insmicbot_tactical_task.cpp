@@ -4,6 +4,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
 #include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include <bot/insmic/insmicbot.h>
 #include "insmicbot_scenario_task.h"
@@ -28,4 +29,9 @@ TaskEventResponseResult<CInsMICBot> CInsMICBotTacticalTask::OnNavAreaChanged(CIn
 	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CInsMICBot, CInsMICBotPathCost);
 
 	return TryContinue();
+}
+
+TaskEventResponseResult<CInsMICBot> CInsMICBotTacticalTask::OnPluginCommand(CInsMICBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CInsMICBotTacticalTask, CInsMICBot, CInsMICBotPathCost>(this, bot, type, data);
 }

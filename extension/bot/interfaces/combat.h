@@ -75,6 +75,7 @@ public:
 		void Update(const CBaseBot* bot, const CKnownEntity* threat, const CBotWeapon* activeWeapon);
 	};
 
+	void OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea) override;
 	void Reset() override;
 	void Update() override;
 	void Frame() override;

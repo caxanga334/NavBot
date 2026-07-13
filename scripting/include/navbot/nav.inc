@@ -61,3 +61,10 @@ enum NavBotNavErrorType
 
 	NAVBOT_MAX_NAV_ERROR_TYPES
 };
+
+enum NavBotRouteType
+{
+	NAVBOT_DEFAULT_ROUTE = 0, // Default route type
+	NAVBOT_FASTEST_ROUTE, // Fastest route to the destination, may avoid areas that slow down the bots, doesn't care about danger.
+	NAVBOT_SAFEST_ROUTE, // Safest route, will try to avoid dangerous areas
+};

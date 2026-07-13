@@ -24,6 +24,7 @@ public:
 	TaskEventResponseResult<CTF2Bot> OnVoiceCommand(CTF2Bot* bot, CBaseEntity* subject, int command) override;
 	TaskEventResponseResult<CTF2Bot> OnObjectSapped(CTF2Bot* bot, CBaseEntity* owner, CBaseEntity* saboteur) override;
 	TaskEventResponseResult<CTF2Bot> OnDangerousEntityChanged(CTF2Bot* bot, CBaseEntity* newent, CBaseEntity* oldent) override;
+	TaskEventResponseResult<CTF2Bot> OnPluginCommand(CTF2Bot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override;
 
 private:
 	CountdownTimer m_ammochecktimer;

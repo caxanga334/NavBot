@@ -252,6 +252,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavBlocker.UpdateBlockedStatus");
 	MarkNativeAsOptional("NavBotNavBlocker.OnRoundRestart.set");
 	MarkNativeAsOptional("NavBotNavBlocker.OnRecomputeInternalData.set");
+	MarkNativeAsOptional("NavBotNavBlocker.OnDestroyed.set");
 	MarkNativeAsOptional("NavBotNavBlocker.Entity.set");
 	MarkNativeAsOptional("NavBotNavBlocker.Entity.get");
 
@@ -297,6 +298,8 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBot.IsLineOfFireClear");
 	MarkNativeAsOptional("NavBot.SendImpulse");
 	MarkNativeAsOptional("NavBot.GetDebugIdentifier");
+	MarkNativeAsOptional("NavBot.SendPluginCommand");
+	MarkNativeAsOptional("NavBot.SendScriptedPluginCommand");
 
 	/* Base Interface */
 	MarkNativeAsOptional("NavBotBotInterface.Reset");

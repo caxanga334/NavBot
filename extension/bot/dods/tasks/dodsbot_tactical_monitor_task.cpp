@@ -8,6 +8,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include "dodsbot_scenario_monitor_task.h"
 #include "dodsbot_tactical_monitor_task.h"
@@ -56,4 +57,9 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotTacticalMonitorTask::OnDangerousEntity
 	BOTVEHAVIOR_IMPLEMENT_SIMPLE_DANGER_COVER(CDoDSBot, CDoDSBotPathCost);
 
 	return TryContinue(PRIORITY_DONT_CARE);
+}
+
+TaskEventResponseResult<CDoDSBot> CDoDSBotTacticalMonitorTask::OnPluginCommand(CDoDSBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CDoDSBotTacticalMonitorTask, CDoDSBot, CDoDSBotPathCost>(this, bot, type, data);
 }

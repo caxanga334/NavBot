@@ -6,6 +6,7 @@
 #include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
 #include <bot/tasks_shared/bot_shared_prereq_wait.h>
 #include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
+#include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include "zpsbot_scenario_task.h"
 #include "zpsbot_tactical_task.h"
@@ -56,4 +57,9 @@ TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnSound(CZPSBot* bot, CBas
 	}
 
 	return TryContinue();
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnPluginCommand(CZPSBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
+{
+	return plugincommandtask::ImplementPluginCommandTasks<CZPSBotTacticalTask, CZPSBot, CZPSBotPathCost>(this, bot, type, data);
 }

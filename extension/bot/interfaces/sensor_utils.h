@@ -34,6 +34,8 @@ namespace sensorutils
 			}
 		}
 
+		bool IsSet() const { return m_sensor != nullptr; }
+
 		/**
 		 * @brief Assigns a primary threat override.
 		 * @param bot Bot to override the primary treat.

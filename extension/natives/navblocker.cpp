@@ -15,24 +15,34 @@ public:
 		m_init = false;
 		m_handle = BAD_HANDLE;
 		std::fill(std::begin(m_blocked), std::end(m_blocked), false);
-		m_initcallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-		m_onupdatecallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-		m_onroundrestartcallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-		m_onrecomputeinternaldatacallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+		m_initcallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
+		m_onupdatecallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
+		m_onroundrestartcallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
+		m_onrecomputeinternaldatacallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
+		m_ondestroyedcallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	}
 
 	~CSourcePawnNavBlocker() final
 	{
+		SourceMod::Handle_t handle = m_handle;
+
 		if (m_handle != BAD_HANDLE)
 		{
 			pawnutils::FreeInternalHandle(m_handle);
 			m_handle = BAD_HANDLE;
 		}
 
+		if (m_ondestroyedcallback->GetFunctionCount() > 0)
+		{
+			m_ondestroyedcallback->PushCell(static_cast<cell_t>(handle));
+			m_ondestroyedcallback->Execute(nullptr);
+		}
+
 		forwards->ReleaseForward(m_initcallback);
 		forwards->ReleaseForward(m_onupdatecallback);
 		forwards->ReleaseForward(m_onroundrestartcallback);
 		forwards->ReleaseForward(m_onrecomputeinternaldatacallback);
+		forwards->ReleaseForward(m_ondestroyedcallback);
 	}
 
 	// Inherited via INavBlocker
@@ -141,6 +151,7 @@ public:
 	void AddUpdateCallback(SourcePawn::IPluginFunction* func) { m_onupdatecallback->AddFunction(func); }
 	void AddOnRoundRestartCallback(SourcePawn::IPluginFunction* func) { m_onroundrestartcallback->AddFunction(func); }
 	void AddOnRecomputeInternalDataCallback(SourcePawn::IPluginFunction* func) { m_onrecomputeinternaldatacallback->AddFunction(func); }
+	void AddOnDestroyedCallback(SourcePawn::IPluginFunction* func) { m_ondestroyedcallback->AddFunction(func); }
 
 	void SetEntity(CBaseEntity* entity) { m_entity.Set(entity); }
 	CBaseEntity* GetEntity() const { return m_entity.Get(); }
@@ -159,6 +170,7 @@ private:
 	SourceMod::IChangeableForward* m_onupdatecallback;
 	SourceMod::IChangeableForward* m_onroundrestartcallback;
 	SourceMod::IChangeableForward* m_onrecomputeinternaldatacallback;
+	SourceMod::IChangeableForward* m_ondestroyedcallback;
 
 	void ExecuteCallback(SourceMod::IChangeableForward* cb)
 	{
@@ -312,6 +324,26 @@ namespace natives::navmesh::navblocker
 		blocker->AddOnRecomputeInternalDataCallback(callback);
 		return 0;
 	}
+	static cell_t SetOnDestroyedCallback(IPluginContext* context, const cell_t* params)
+	{
+		CSourcePawnNavBlocker* blocker = nullptr;
+		SourceMod::Handle_t handle = params[1];
+		SourceMod::HandleSecurity sec(context->GetIdentity(), myself->GetIdentity());
+
+		if (!pawnutils::ReadHandle("CSourcePawnNavBlocker", context, spmanager->GetNavBlockerHandleType(), handle, &sec, &blocker))
+		{
+			return 0;
+		}
+
+		SourcePawn::IPluginFunction* callback;
+		if (!pawnutils::ReadFunctionByID(context, params, 2, &callback))
+		{
+			return 0;
+		}
+
+		blocker->AddOnDestroyedCallback(callback);
+		return 0;
+	}
 	static cell_t SetEntity(IPluginContext* context, const cell_t* params)
 	{
 		CSourcePawnNavBlocker* blocker = nullptr;
@@ -350,6 +382,7 @@ namespace natives::navmesh::navblocker
 			{"NavBotNavBlocker.UpdateBlockedStatus", UpdateBlockedStatus},
 			{"NavBotNavBlocker.OnRoundRestart.set", SetRoundRestartCallback},
 			{"NavBotNavBlocker.OnRecomputeInternalData.set", SetRecomputeInternalDataCallback},
+			{"NavBotNavBlocker.OnDestroyed.set", SetOnDestroyedCallback},
 			{"NavBotNavBlocker.Entity.set", SetEntity},
 			{"NavBotNavBlocker.Entity.get", GetEntity},
 		};

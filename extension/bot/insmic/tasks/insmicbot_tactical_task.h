@@ -10,6 +10,7 @@ public:
 	TaskResult<CInsMICBot> OnTaskUpdate(CInsMICBot* bot) override;
 
 	TaskEventResponseResult<CInsMICBot> OnNavAreaChanged(CInsMICBot* bot, CNavArea* oldArea, CNavArea* newArea) override;
+	TaskEventResponseResult<CInsMICBot> OnPluginCommand(CInsMICBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override;
 
 	const char* GetName() const override { return "Tactical"; }
 

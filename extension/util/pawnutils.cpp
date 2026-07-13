@@ -11,7 +11,7 @@ bool pawnutils::IsValidClientIndex(IPluginContext* context, int index)
 		return false;
 	}
 
-    return true;
+	return true;
 }
 
 bool pawnutils::IsClientInGame(IPluginContext* context, int index)
