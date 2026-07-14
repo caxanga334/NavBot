@@ -295,14 +295,19 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBot.GetMovementInterface");
 	MarkNativeAsOptional("NavBot.GetSensorInterface");
 	MarkNativeAsOptional("NavBot.GetPlayerControllerInterface");
+	MarkNativeAsOptional("NavBot.GetBehaviorInterface");
+	MarkNativeAsOptional("NavBot.GetCombatInterface");
+	MarkNativeAsOptional("NavBot.GetSquadInterface");
 	MarkNativeAsOptional("NavBot.IsLineOfFireClear");
 	MarkNativeAsOptional("NavBot.SendImpulse");
 	MarkNativeAsOptional("NavBot.GetDebugIdentifier");
 	MarkNativeAsOptional("NavBot.SendPluginCommand");
 	MarkNativeAsOptional("NavBot.SendScriptedPluginCommand");
+	MarkNativeAsOptional("NavBot.GetHealthState");
 
 	/* Base Interface */
 	MarkNativeAsOptional("NavBotBotInterface.Reset");
+	MarkNativeAsOptional("NavBotBotInterface.GetBot");
 
 	/* Shared Bot Memory Interface  */
 	MarkNativeAsOptional("NavBotSharedBotMemory.ReportEntity");
@@ -314,6 +319,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotInventoryInterface.RequestUpdate");
 	MarkNativeAsOptional("NavBotInventoryInterface.SelectFirstWeaponWithTag");
 	MarkNativeAsOptional("NavBotInventoryInterface.SelectBestWeapon");
+	MarkNativeAsOptional("NavBotInventoryInterface.GetBestLowAmmoWeapon");
 
 	/* Movement Interface */
 	MarkNativeAsOptional("NavBotMovementInterface.IsPotentiallyTraversable");
@@ -321,6 +327,13 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotMovementInterface.GetStuckDuration");
 	MarkNativeAsOptional("NavBotMovementInterface.IsAreaTraversable");
 	MarkNativeAsOptional("NavBotMovementInterface.ClearStuckStatus");
+	MarkNativeAsOptional("NavBotMovementInterface.ClimbUpToLedge");
+	MarkNativeAsOptional("NavBotMovementInterface.DoubleJumpToLedge");
+	MarkNativeAsOptional("NavBotMovementInterface.JumpAcrossGap");
+	MarkNativeAsOptional("NavBotMovementInterface.BlastJumpTo");
+	MarkNativeAsOptional("NavBotMovementInterface.BreakObstacle");
+	MarkNativeAsOptional("NavBotMovementInterface.AddDeadArea");
+	MarkNativeAsOptional("NavBotMovementInterface.AddCostModArea");
 
 	/* Sensor Interface */
 	MarkNativeAsOptional("NavBotSensorInterface.IsIgnored");
@@ -340,6 +353,37 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.IsAimOnTarget");
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.PressButtonByID");
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.ReleaseButtonByID");
+
+	/* Behavior Interface */
+	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldAttack");
+	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldHurry");
+	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldRetreat");
+	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldAssistTeammate");
+	MarkNativeAsOptional("NavBotBehaviorInterface.IsRunningPluginCommand");
+
+	/* Combat Interface */
+	MarkNativeAsOptional("NavBotCombatInterface.Disable");
+	MarkNativeAsOptional("NavBotCombatInterface.Enable");
+	MarkNativeAsOptional("NavBotCombatInterface.FireWeaponAt");
+
+	/* Squad Interface */
+	MarkNativeAsOptional("NavBotSquadInterface.IsInASquad");
+	MarkNativeAsOptional("NavBotSquadInterface.CanJoinSquads");
+	MarkNativeAsOptional("NavBotSquadInterface.CanLeadSquads");
+	MarkNativeAsOptional("NavBotSquadInterface.IsSquadLeader");
+	MarkNativeAsOptional("NavBotSquadInterface.IsHumanLedSquad");
+	MarkNativeAsOptional("NavBotSquadInterface.GetSquadLeader");
+	MarkNativeAsOptional("NavBotSquadInterface.GetBotSquadLeader");
+	MarkNativeAsOptional("NavBotSquadInterface.GetSquadMemberCount");
+	MarkNativeAsOptional("NavBotSquadInterface.GetSquadMemberEntity");
+	MarkNativeAsOptional("NavBotSquadInterface.CreateSquad");
+	MarkNativeAsOptional("NavBotSquadInterface.DestroySquad");
+	MarkNativeAsOptional("NavBotSquadInterface.AddMemberToSquad");
+	MarkNativeAsOptional("NavBotSquadInterface.RemoveMemberFromSquad");
+	MarkNativeAsOptional("NavBotSquadInterface.GetHumanPlayerSquad");
+
+	/* Util functions */
+	MarkNativeAsOptional("NavBotUtils.GetEntityWorldSpaceCenter");
 }
 
 #endif

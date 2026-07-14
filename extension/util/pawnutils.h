@@ -49,7 +49,7 @@ namespace pawnutils
 
 			if (context->LocalToPhysAddr(params[1], &sp_addr) != SP_ERROR_NONE)
 			{
-				context->ReportError("Could not get return adress for int64!");
+				context->ReportError("Could not get return address for int64!");
 				return 0;
 			}
 

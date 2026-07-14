@@ -121,11 +121,7 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChang
 
 		if (bombTarget)
 		{
-			// don't start multiple deploy bomb tasks
-			if (!bot->GetBehaviorInterface()->IsBehaviorRunning(CDoDSBotDeployBombTask::IDENTIFIER, 0, true))
-			{
-				return TryPauseFor(new CDoDSBotDeployBombTask(bombTarget, false), PRIORITY_HIGH, "Bombing obstacle on my path!");
-			}
+			return TryPauseFor(new CDoDSBotDeployBombTask(bombTarget, false), PRIORITY_HIGH, "Bombing obstacle on my path!");
 		}
 	}
 
@@ -134,12 +130,6 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChang
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnBombPlanted(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)
 {
-	if (bot->GetBehaviorInterface()->IsBehaviorRunning(CDoDSBotDefuseBombTask::IDENTIFIER, 0, true))
-	{
-		// already defusing a bomb, don't try to defuse another
-		return TryContinue(PRIORITY_LOW);
-	}
-
 	// bomb was planted on my team's control point
 	if (ent && teamIndex == static_cast<int>(bot->GetMyDoDTeam()))
 	{

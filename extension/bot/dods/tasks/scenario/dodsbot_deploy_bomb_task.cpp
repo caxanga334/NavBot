@@ -164,18 +164,3 @@ void CDoDSBotDeployBombTask::OnTaskEnd(CDoDSBot* bot, AITask<CDoDSBot>* nextTask
 		bot->GetPathProcessorInterface()->ClearBombArea(); // area was bombed
 	}
 }
-
-bool CDoDSBotDeployBombTask::IsBehaviorRunning(int id, int flags, bool ismod)
-{
-	if (ismod && id == IDENTIFIER)
-	{
-		if ((flags & FLAG_IS_OBJECTIVE) != 0)
-		{
-			return m_isObjective;
-		}
-
-		return !m_isObjective;
-	}
-
-	return false;
-}

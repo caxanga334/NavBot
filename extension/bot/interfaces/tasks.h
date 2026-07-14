@@ -397,7 +397,7 @@ public:
 		PROPAGATE_DECISION_WITH_2ARGS(ShouldSwitchToWeapon, me, weapon);
 	}
 
-	bool IsBehaviorRunning(int id, int flags, bool ismod) override
+	bool IsRunningPluginCommand() override
 	{
 		bool result = false;
 
@@ -411,7 +411,7 @@ public:
 				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
 				while (respondingTask != nullptr && !result)
 				{
-					result = respondingTask->IsBehaviorRunning(id, flags, ismod);
+					result = respondingTask->IsRunningPluginCommand();
 					respondingTask = respondingTask->GetTaskBelowMe();
 				}
 

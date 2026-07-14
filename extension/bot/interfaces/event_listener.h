@@ -66,6 +66,7 @@ public:
 		PLUGINCMD_WAIT, // Stops moving and waits for N seconds.
 		PLUGINCMD_PATROL, // Patrols the areas near the bot.
 		PLUGINCMD_ROAM, // Moves to a random destination.
+		PLUGINCMD_FOLLOW_ENTITY, // Follows an entity
 
 		MAX_PLUGIN_COMMAND_TYPES
 	};

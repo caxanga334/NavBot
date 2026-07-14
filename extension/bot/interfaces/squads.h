@@ -171,6 +171,13 @@ public:
 		}
 		// Returns the number of members in the squad. (May count invalid members).
 		std::size_t GetMemberCount() const { return m_members.size(); }
+		// Gets a squad member pointer of the given index. NULL if out of bounds.
+		const ISquad::Member* GetMemberOfIndex(const std::size_t index) const
+		{
+			if (index >= m_members.size()) { return nullptr; }
+
+			return &m_members[index];
+		}
 		// Returns true if this squad is led by a human player (or a non NavBot bot).
 		bool IsHumanLedSquad() const { return m_humanleader != nullptr; }
 		// Returns true if the squad is valid, false if invalid.
@@ -285,13 +292,13 @@ public:
 	/**
 	 * @brief Adds a NavBot to this squad.
 	 * @param bot NavBot to be added.
-	 * @return True if added to the squad. Falseotherwise
+	 * @return True if added to the squad. False otherwise
 	 */
 	virtual bool AddMemberToSquad(CBaseBot* bot);
 	/**
 	 * @brief Adds a human to this squad.
 	 * @param player Human to be added.
-	 * @return True if added to the squad. Falseotherwise
+	 * @return True if added to the squad. False otherwise
 	 */
 	virtual bool AddMemberToSquad(CBaseEntity* player);
 	/**

@@ -7,6 +7,7 @@
 #include "bot_shared_wait.h"
 #include "bot_shared_roam.h"
 #include "bot_shared_patrol_uncleared_areas.h"
+#include "bot_shared_escort_entity.h"
 
 template <typename BotClass, typename PathCostClass, typename BaseTaskClass>
 class CBotSharedPluginWrapperTask : public BaseTaskClass
@@ -22,11 +23,23 @@ public:
 		m_name.insert(0, "Plugin");
 	}
 
+	TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
+	TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
+
+	bool IsRunningPluginCommand() override { return true; }
 
 	const char* GetName() const override { return m_name.c_str(); }
 
@@ -46,7 +59,7 @@ public:
 			SourceMod::ParamType::Param_CellByRef
 		};
 
-		m_updatecallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Event, static_cast<int>(params.size()), params.data());
+		m_updatecallback = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Hook, static_cast<int>(params.size()), params.data());
 		m_updatecallback->AddFunction(data.sb_update_callback);
 	}
 
@@ -99,6 +112,16 @@ public:
 		return AITask<BotClass>::Continue();
 	}
 
+	TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
+	TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
 		// ignore other plugin commands while this is running
@@ -109,6 +132,7 @@ public:
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	bool IsRunningPluginCommand() override { return true; }
 
 	const char* GetName() const override { return "ScriptedBehavior"; }
 private:
@@ -191,6 +215,16 @@ public:
 		return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Goal reached!");
 	}
 
+	TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
+	TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
 		// ignore other plugin commands while this is running
@@ -200,6 +234,7 @@ public:
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	bool IsRunningPluginCommand() override { return true; }
 
 	const char* GetName() const override { return "PluginAttackMove"; }
 
@@ -278,6 +313,16 @@ public:
 		return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Goal reached!");
 	}
 
+	TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
+	TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
 		// ignore other plugin commands while this is running
@@ -288,6 +333,7 @@ public:
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	bool IsRunningPluginCommand() override { return true; }
 
 	const char* GetName() const override { return "PluginMoveToPosition"; }
 
@@ -368,6 +414,16 @@ public:
 		return AITask<BotClass>::TryToMaintain();
 	}
 
+	TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
+	TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
 		// ignore other plugin commands while this is running
@@ -378,6 +434,7 @@ public:
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	bool IsRunningPluginCommand() override { return true; }
 
 	const char* GetName() const override { return "PluginSeekAndDestroy"; }
 
@@ -478,6 +535,16 @@ public:
 		return AITask<BotClass>::TryToMaintain();
 	}
 
+	TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
+	TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) override
+	{
+		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
+	}
+
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
 		// ignore other plugin commands while this is running
@@ -506,6 +573,7 @@ public:
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
+	bool IsRunningPluginCommand() override { return true; }
 
 	const char* GetName() const override { return "PluginUseEntity"; }
 
@@ -569,6 +637,12 @@ namespace plugincommandtask
 		{
 			using ROAMTASK = CBotSharedRoamTask<BotClass, PathCostClass>;
 			return task->TryPauseFor(new CBotSharedPluginWrapperTask<BotClass, PathCostClass, ROAMTASK>(bot, data.fldata), PRIORITY, REASON.data());
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FOLLOW_ENTITY:
+		{
+			using FOLLOWTASK = CBotSharedEscortEntityTask<BotClass, PathCostClass>;
+			return task->TryPauseFor(new CBotSharedPluginWrapperTask<BotClass, PathCostClass, FOLLOWTASK>(bot, data.entdata.Get(), data.fldata, data.movegoal.x),
+				PRIORITY, REASON.data());
 		}
 		default:
 			return task->TryContinue();

@@ -8,6 +8,9 @@
 #include <bot/pluginbot/pluginbot.h>
 #include <mods/basemod.h>
 #include "interfaces/movement.h"
+#include "interfaces/behavior.h"
+#include "interfaces/combat.h"
+#include "interfaces/squad.h"
 #include "bots.h"
 
 namespace baseinterface
@@ -24,6 +27,18 @@ namespace baseinterface
 
 		interface->Reset();
 		return 0;
+	}
+	static cell_t Native_GetBot(IPluginContext* context, const cell_t* params)
+	{
+		IBotInterface* interface = pawnutils::UnsafeCastPawnAddressToObject<IBotInterface>(context, params, 1);
+
+		if (!interface)
+		{
+			context->ReportError("Got NULL pointer from address %i!", params[1]);
+			return 0;
+		}
+
+		return static_cast<cell_t>(interface->GetBot<CBaseBot>()->GetIndex());
 	}
 }
 
@@ -154,6 +169,25 @@ namespace inventory
 		iface->SelectBestWeapon();
 		return 0;
 	}
+	static cell_t Native_GetBestLowAmmoWeapon(IPluginContext* context, const cell_t* params)
+	{
+		IInventory* iface = pawnutils::UnsafeCastPawnAddressToObject<IInventory>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		const CBotWeapon* weapon = iface->GetBestLowAmmoWeapon();
+
+		if (!weapon)
+		{
+			return gamehelpers->EntityToBCompatRef(nullptr);
+		}
+
+		return static_cast<cell_t>(weapon->GetIndex());
+	}
 }
 
 namespace basebot
@@ -209,6 +243,45 @@ namespace basebot
 		}
 
 		return pawnutils::ReturnPointerToPawn(context, params, bot->GetControlInterface());
+	}
+	static cell_t Native_GetBehaviorInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetBehaviorInterface());
+	}
+	static cell_t Native_GetCombatInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetCombatInterface());
+	}
+	static cell_t Native_GetSquadInterface(IPluginContext* context, const cell_t* params)
+	{
+		std::size_t index = pawnutils::GetIndexOfParam(context, 1);
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[index]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[index]);
+			return 0;
+		}
+
+		return pawnutils::ReturnPointerToPawn(context, params, bot->GetSquadInterface());
 	}
 	static cell_t Native_Reset(IPluginContext* context, const cell_t* params)
 	{
@@ -329,6 +402,12 @@ namespace basebot
 				return 0;
 			}
 
+			if (entity == bot->GetEntity())
+			{
+				context->ReportError("Given entity cannot be the bot!");
+				return 0;
+			}
+
 			data.entdata = entity;
 
 			break;
@@ -373,6 +452,33 @@ namespace basebot
 
 			break;
 		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FOLLOW_ENTITY:
+		{
+			if (startparam + 2U > numparams)
+			{
+				context->ReportError("This command requires a float to be passed!");
+				return 0;
+			}
+
+			CBaseEntity* entity = pawnutils::ReadEntity(context, params, startparam);
+
+			if (!entity)
+			{
+				return 0;
+			}
+
+			if (entity == bot->GetEntity())
+			{
+				context->ReportError("Given entity cannot be the bot!");
+				return 0;
+			}
+
+			data.entdata.Set(entity);
+			data.fldata = pawnutils::ReadFloat(params, startparam + 1U);
+			data.movegoal.x = pawnutils::ReadFloat(params, startparam + 2U);
+
+			break;
+		}
 		default:
 			return 0;
 		}
@@ -402,6 +508,18 @@ namespace basebot
 		bot->OnPluginCommand(cmd, data);
 		return 0;
 	}
+	static cell_t Native_GetHealthState(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		return static_cast<cell_t>(bot->GetHealthState());
+	}
 }
 
 void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
@@ -413,10 +531,14 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBot.GetMovementInterface", basebot::Native_GetMovementInterface},
 		{"NavBot.GetSensorInterface", basebot::Native_GetSensorInterface},
 		{"NavBot.GetPlayerControllerInterface", basebot::Native_GetPlayerControllerInterface},
+		{"NavBot.GetBehaviorInterface", basebot::Native_GetBehaviorInterface},
+		{"NavBot.GetCombatInterface", basebot::Native_GetCombatInterface},
+		{"NavBot.GetSquadInterface", basebot::Native_GetSquadInterface},
 		{"NavBot.Reset", basebot::Native_Reset},
 		{"NavBot.IsLineOfFireClear", basebot::Native_IsLineOfFireClear},
 		{"NavBot.SendImpulse", basebot::Native_SendImpulse},
 		{"NavBot.GetDebugIdentifier", basebot::Native_GetDebugIdentifier},
+		{"NavBot.GetHealthState", basebot::Native_GetHealthState},
 		/* this should be moved */
 		{"NavBotManager.GetNavBotByIndex", GetNavBotByIndex},
 		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},
@@ -424,17 +546,22 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBot.SendScriptedPluginCommand", basebot::Native_SendScriptedBehaviorPluginCommand},
 		/* base interface */
 		{"NavBotBotInterface.Reset", baseinterface::Native_Reset},
+		{"NavBotBotInterface.GetBot", baseinterface::Native_GetBot},
 		/* inventory interface */
 		{"NavBotInventoryInterface.EquipWeapon", inventory::Native_EquipWeapon},
 		{"NavBotInventoryInterface.RegisterWeapon", inventory::Native_RegisterWeapon},
 		{"NavBotInventoryInterface.RequestUpdate", inventory::Native_RequestUpdate},
 		{"NavBotInventoryInterface.SelectFirstWeaponWithTag", inventory::Native_SelectFirstWeaponWithTag},
 		{"NavBotInventoryInterface.SelectBestWeapon", inventory::Native_SelectBestWeapon},
+		{"NavBotInventoryInterface.GetBestLowAmmoWeapon", inventory::Native_GetBestLowAmmoWeapon},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
 
 	natives::bots::interfaces::movement::setup(nv);
+	natives::bots::interfaces::behavior::setup(nv);
+	natives::bots::interfaces::combat::setup(nv);
+	natives::bots::interfaces::squad::setup(nv);
 }
 
 cell_t natives::bots::AddNavBotMM(IPluginContext* context, const cell_t* params)

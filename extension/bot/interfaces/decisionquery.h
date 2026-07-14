@@ -83,14 +83,8 @@ public:
 	virtual QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate);
 	// Should the bot switch to this weapon?
 	virtual QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon);
-	/**
-	 * @brief Queries if a specific AI behavior is running.
-	 * @param id Behavior ID.
-	 * @param flags Behavior flags (optional).
-	 * @param ismod If true, this is a game/mod specific behavior.
-	 * @return True if the behavior is running, false otherwise.
-	 */
-	virtual bool IsBehaviorRunning(int id, int flags, bool ismod);
+	// Queries if the bot is running a plugin command behavior.
+	virtual bool IsRunningPluginCommand() { return false; }
 private:
 
 };
@@ -153,11 +147,6 @@ inline QueryAnswerType IDecisionQuery::ShouldAssistTeammate(CBaseBot* me, CBaseE
 inline QueryAnswerType IDecisionQuery::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon)
 {
 	return ANSWER_UNDEFINED;
-}
-
-inline bool IDecisionQuery::IsBehaviorRunning(int id, int flags, bool ismod)
-{
-	return false;
 }
 
 #endif // !SMNAV_BOT_DECISION_QUERY_H_

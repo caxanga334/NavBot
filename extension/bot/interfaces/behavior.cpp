@@ -81,8 +81,3 @@ QueryAnswerType IBehavior::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* 
 {
 	return GetDecisionQueryResponder()->ShouldSwitchToWeapon(me, weapon);
 }
-
-bool IBehavior::IsBehaviorRunning(int id, int flags, bool ismod)
-{
-	return GetDecisionQueryResponder()->IsBehaviorRunning(id, flags, ismod);
-}

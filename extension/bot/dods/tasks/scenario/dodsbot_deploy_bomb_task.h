@@ -6,13 +6,20 @@ class CDoDSBotDeployBombTask : public AITask<CDoDSBot>
 public:
 	CDoDSBotDeployBombTask(CBaseEntity* target, const bool isObjective = true);
 
-	static constexpr int IDENTIFIER = 0xD0DB; // task identifier
-	static constexpr int FLAG_IS_OBJECTIVE = 0x8;
-
 	TaskResult<CDoDSBot> OnTaskStart(CDoDSBot* bot, AITask<CDoDSBot>* pastTask) override;
 	TaskResult<CDoDSBot> OnTaskUpdate(CDoDSBot* bot) override;
 	void OnTaskEnd(CDoDSBot* bot, AITask<CDoDSBot>* nextTask) override;
-	bool IsBehaviorRunning(int id, int flags, bool ismod) override;
+
+	// Eat these events
+	TaskEventResponseResult<CDoDSBot> OnBombPlanted(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) override
+	{
+		return TryToMaintain(PRIORITY_LOW);
+	}
+	TaskEventResponseResult<CDoDSBot> OnBombDefused(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) override
+	{
+		return TryToMaintain(PRIORITY_LOW);
+	}
+	TaskEventResponseResult<CDoDSBot> OnPathStatusChanged(CDoDSBot* bot) override { return TryToMaintain(PRIORITY_LOW); }
 
 	const char* GetName() const override { return "DeployBomb"; }
 private:

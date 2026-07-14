@@ -4,9 +4,12 @@
 #define _navbot_bots_included
 
 #include "interfaces/base_interface.inc"
+#include "interfaces/behavior.inc"
+#include "interfaces/combat.inc"
 #include "interfaces/inventory.inc"
 #include "interfaces/movement.inc"
 #include "interfaces/sensor.inc"
+#include "interfaces/squad.inc"
 #include "interfaces/playercontroller.inc"
 #include "interfaces/sharedbotmemory.inc"
 
@@ -23,8 +26,16 @@ enum NavBotPluginCommandTypes
 	NAVBOT_PLUGINCMD_WAIT, // Stops moving and waits for N seconds.
 	NAVBOT_PLUGINCMD_PATROL, // Patrols the areas near the bot.
 	NAVBOT_PLUGINCMD_ROAM, // Moves to a random destination.
+	NAVBOT_PLUGINCMD_FOLLOW_ENTITY, // Follows an entity
 
 	MAX_PLUGIN_COMMAND_TYPES
+};
+
+enum NavBotHealthState 
+{
+	NAVBOT_HEALTH_OK = 0,		// Bot health is ok.
+	NAVBOT_HEALTH_LOW,			// Bot is low on health
+	NAVBOT_HEALTH_CRITICAL,		// Bot is critically low on health
 };
 
 // A NavBot bot instance
@@ -69,17 +80,35 @@ methodmap NavBot < NavBotBasePlayer
 	 */
 	public native Address GetMovementInterface();
 	/**
-	 * Returns a memory address to the bot's movement interface.
+	 * Returns a memory address to the bot's sensor interface.
 	 * 
-	 * @return			Memory address of the bot's movement interface.
+	 * @return			Memory address of the bot's sensor interface.
 	 */
 	public native Address GetSensorInterface();
 	/**
-	 * Returns a memory address to the bot's movement interface.
+	 * Returns a memory address to the bot's control interface.
 	 * 
-	 * @return			Memory address of the bot's movement interface.
+	 * @return			Memory address of the bot's control interface.
 	 */
 	public native Address GetPlayerControllerInterface();
+	/**
+	 * Returns a memory address to the bot's behavior interface.
+	 * 
+	 * @return			Memory address of the bot's behavior interface.
+	 */
+	public native Address GetBehaviorInterface();
+	/**
+	 * Returns a memory address to the bot's combat interface.
+	 * 
+	 * @return			Memory address of the bot's combat interface.
+	 */
+	public native Address GetCombatInterface();
+	/**
+	 * Returns a memory address to the bot's squad interface.
+	 * 
+	 * @return			Memory address of the bot's squad interface.
+	 */
+	public native Address GetSquadInterface();
 	/**
 	 * Tests if the bot's line of fire is clear to the given position.
 	 * 
@@ -122,7 +151,18 @@ methodmap NavBot < NavBotBasePlayer
 	 * NAVBOT_PLUGINCMD_WAIT: One float, the time in seconds the bot should wait
 	 * NAVBOT_PLUGINCMD_PATROL: No additional parameters needed.
 	 * NAVBOT_PLUGINCMD_ROAM: One float, the maximum search distance for a random destination.
+	 * NAVBOT_PLUGINCMD_FOLLOW_ENTITY: 3 Arguments in the following order: entity index to follow, max follow time (seconds, float), minimum distance between the bot and target entity (float)
+	 * 
+	 * To check if a plugin command task is active, use the IsRunningPluginCommand behavior query. (See interfaces/behavior.inc)
 	 */
+
+	/**
+	 * Gets the bot's health state.
+	 * 
+	 * @return			The bot's health state, based on the bot's difficulty profile thresholds.
+	 * @error			Invalid bot instance.
+	 */
+	public native NavBotHealthState GetHealthState();
 }
 
 typeset NavBotScriptedBehaviorCB

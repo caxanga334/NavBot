@@ -39,4 +39,65 @@ methodmap NavBotMovementInterface < NavBotBotInterface
 	 * @param reason		Optional reason of why the stuck status was cleared (for debugging).
 	 */
 	public static native void ClearStuckStatus(Address ptr, const char[] reason = NULL_STRING);
+	/**
+	 * Instructs the movement interface to climb up a ledge.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param landingGoal	World positon the bot will land after climbing.
+	 * @return				Returns false if the bot can't climb, true otherwise.
+	 */
+	public static native bool ClimbUpToLedge(Address ptr, const float landingGoal[3]);
+	/**
+	 * Instructs the movement interface to climb up a ledge using double jumps.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param landingGoal	World positon the bot will land after climbing.
+	 * @return				Returns false if the bot can't climb, true otherwise.
+	 */
+	public static native bool DoubleJumpToLedge(Address ptr, const float landingGoal[3]);
+	/**
+	 * Instructs the movement interface to jump across a gap.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param landingGoal	World positon the bot will land after jumping.
+	 */
+	public static native void JumpAcrossGap(Address ptr, const float landingGoal[3]);
+	/**
+	 * Instructs the movement interface to blast jump.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param landingGoal	World positon the bot will land after blast jumping.
+	 */
+	public static native void BlastJumpTo(Address ptr, const float landingGoal[3]);
+	/**
+	 * Instructs the movement interface to break an obstacle.
+	 * The bot will walk in a straight line to the obstacle, make sure it's reachable before calling this.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param entity		Entity the bot will break.
+	 * @error				Bad ptr, invalid entity passed.
+	 */
+	public static native void BreakObstacle(Address ptr, const int entity);
+	/**
+	 * Adds a 'dead' area. Dead areas are considered blocked for pathing.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param area			Pointer of the nav area to be added to the dead area list.
+	 * @param duration		How long in seconds to consider this area dead, negative for infinite.
+	 */
+	public static native void AddDeadArea(Address ptr, Address area, const float duration);
+	/**
+	 * Adds a cost multiplier to a specific nav area, exclusive to this bot only.
+	 * The goal of the pathfinding algorithm is to find the shortest path, which is the path with the smallest cost.
+	 * Areas are given a cost based on the distance the bot has to travel.
+	 * This function allows you to add weights to a specific area.
+	 * If the cost multiplier is less than 1, the algorithm will prefer this area.
+	 * If the cost is higher than 1, the algorithm will avoid this area.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param area			Pointer of the nav area to be added to the dead area list.
+	 * @param costmult		Area traverse cost multiplier. Cannot be zero or negative.
+	 * @param duration		How long in seconds to consider this area dead, negative for infinite.
+	 */
+	public static native void AddCostModArea(Address ptr, Address area, const float costmult, const float duration);
 }

@@ -436,6 +436,7 @@ void NavBotExt::SDK_OnAllLoaded()
 	natives::bots::interfaces::sensor::setup(m_natives);
 	natives::bots::interfaces::playercontroller::setup(m_natives);
 	natives::bots::interfaces::dynamicpriority::setup(m_natives);
+	natives::utils::setup(m_natives);
 	m_natives.push_back({ nullptr, nullptr });
 	sharesys->AddNatives(myself, m_natives.data());
 	smutils->LogMessage(myself, "Registered %i natives.", m_natives.size() - 1);

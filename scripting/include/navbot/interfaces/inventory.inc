@@ -39,4 +39,12 @@ methodmap NavBotInventoryInterface < NavBotBotInterface
 	public static native bool SelectFirstWeaponWithTag(Address ptr, const char[] tag);
 	// Selects the best weapon the bot owns.
 	public static native void SelectBestWeapon(Address ptr);
+	/**
+	 * Gets the entity index of the best (highest priority) low ammo weapon the bot currently owns.
+	 * Can be used to check if the bot has any weapons in need of ammo. Thresholds for low ammo is set in the weapon info config file.
+	 * 
+	 * @param ptr			Pointer to the inventory interface (that you get via NavBot.GetInventoryInterface())
+	 * @return				Entity index.
+	 */
+	public static native int GetBestLowAmmoWeapon(Address ptr);
 }

@@ -88,13 +88,3 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotDefuseBombTask::OnBombDefused(CDoDSBot
 	// TO-DO
 	return TryContinue(PRIORITY_LOW);
 }
-
-bool CDoDSBotDefuseBombTask::IsBehaviorRunning(int id, int flags, bool ismod)
-{
-	if (ismod && id == IDENTIFIER)
-	{
-		return true;
-	}
-
-	return false;
-}

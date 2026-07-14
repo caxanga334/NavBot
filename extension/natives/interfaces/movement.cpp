@@ -103,6 +103,164 @@ namespace natives::bots::interfaces::movement
 		iface->ClearStuckStatus(reason);
 		return 0;
 	}
+	static cell_t ClimbUpToLedge(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		Vector landing = pawnutils::ReadVector(context, params, 2);
+		CBaseBot* bot = iface->GetBot<CBaseBot>();
+		Vector origin = bot->GetAbsOrigin();
+		Vector dir = landing - origin;
+		dir.z = 0.0f;
+		dir.NormalizeInPlace();
+		return pawnutils::ReturnBool(iface->ClimbUpToLedge(landing, dir, nullptr));
+	}
+	static cell_t DoubleJumpToLedge(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		Vector landing = pawnutils::ReadVector(context, params, 2);
+		CBaseBot* bot = iface->GetBot<CBaseBot>();
+		Vector origin = bot->GetAbsOrigin();
+		Vector dir = landing - origin;
+		dir.z = 0.0f;
+		dir.NormalizeInPlace();
+		return pawnutils::ReturnBool(iface->DoubleJumpToLedge(landing, dir, nullptr));
+	}
+	static cell_t JumpAcrossGap(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		Vector landing = pawnutils::ReadVector(context, params, 2);
+		CBaseBot* bot = iface->GetBot<CBaseBot>();
+		Vector origin = bot->GetAbsOrigin();
+		Vector dir = landing - origin;
+		dir.z = 0.0f;
+		dir.NormalizeInPlace();
+		iface->JumpAcrossGap(landing, dir);
+		return 0;
+	}
+	static cell_t BlastJumpTo(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		Vector landing = pawnutils::ReadVector(context, params, 2);
+		CBaseBot* bot = iface->GetBot<CBaseBot>();
+		Vector origin = bot->GetAbsOrigin();
+		Vector dir = landing - origin;
+		dir.z = 0.0f;
+		dir.NormalizeInPlace();
+		iface->BlastJumpTo(origin, landing, dir);
+		return 0;
+	}
+	static cell_t BreakObstacle(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		CBaseEntity* entity = pawnutils::ReadEntity(context, params, 2);
+
+		if (!entity)
+		{
+			return 0;
+		}
+
+		if (params[2] == 0)
+		{
+			context->ReportError("worldspawn is not allowed!");
+			return 0;
+		}
+
+		if (params[2] > 0 && params[2] <= gpGlobals->maxClients)
+		{
+			context->ReportError("Entity cannot be a player!");
+			return 0;
+		}
+
+		iface->BreakObstacle(entity);
+		return 0;
+	}
+	static cell_t AddDeadArea(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		float duration = pawnutils::ReadFloat(params, 3);
+		iface->AddDeadArea(area, duration);
+		return 0;
+	}
+	static cell_t AddCostModArea(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		float costmult = pawnutils::ReadFloat(params, 3);
+
+		if (costmult <= 0.0f)
+		{
+			context->ReportError("Cost multiplier cannot be zero or negative! Got %g", costmult);
+			return 0;
+		}
+
+		float duration = pawnutils::ReadFloat(params, 4);
+		iface->AddCostModArea(area, costmult, duration);
+		return 0;
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -113,6 +271,13 @@ namespace natives::bots::interfaces::movement
 			{ "NavBotMovementInterface.GetStuckDuration", GetStuckDuration},
 			{ "NavBotMovementInterface.IsAreaTraversable", IsAreaTraversable},
 			{ "NavBotMovementInterface.ClearStuckStatus", ClearStuckStatus},
+			{ "NavBotMovementInterface.ClimbUpToLedge", ClimbUpToLedge},
+			{ "NavBotMovementInterface.DoubleJumpToLedge", DoubleJumpToLedge},
+			{ "NavBotMovementInterface.JumpAcrossGap", JumpAcrossGap},
+			{ "NavBotMovementInterface.BlastJumpTo", BlastJumpTo},
+			{ "NavBotMovementInterface.BreakObstacle", BreakObstacle},
+			{ "NavBotMovementInterface.AddDeadArea", AddDeadArea},
+			{ "NavBotMovementInterface.AddCostModArea", AddCostModArea},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));
