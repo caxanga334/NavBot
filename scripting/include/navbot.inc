@@ -147,6 +147,8 @@ methodmap NavBotManager
 	public static native bool ModUsesWorkshopMaps();
 }
 
+#include "navbot/utils.inc"
+
 /**
  * Do not edit below this line!
  */
