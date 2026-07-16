@@ -664,14 +664,15 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	Vector origin = bot->GetAbsOrigin();
 	Vector forward = (goal->goal - origin);
 	const bool isDebugging = bot->IsDebugging(BOTDEBUG_PATH);
+	const bool isCrouched = mover->IsCompletelyCrouched();
 	const float rangeToGoal = forward.NormalizeInPlace();
 	const float xysize = mover->GetHullWidth() * 0.5f;
-	const float crouchheight = std::ceil(mover->GetCrouchedHullHeight() * 0.6f);
-	const float minszsize = std::floor(mover->GetStepHeight() * (mover->IsCompletelyCrouched() ? 0.15f : 0.7f));
+	const float maxszsize = isCrouched ? (std::ceil(mover->GetCrouchedHullHeight() * 0.6f)) : std::ceil(mover->GetStandingHullHeight() * 0.85f);
+	const float minszsize = std::floor(mover->GetStepHeight() * (isCrouched ? 0.15f : 0.7f));
 	trace_t tr;
 	CMovementObstacleFilter filter{ bot };
 	Vector mins{ -xysize, -xysize, minszsize };
-	Vector maxs{ xysize, xysize, crouchheight };
+	Vector maxs{ xysize, xysize, maxszsize };
 	origin.z += mover->GetStepHeight(); // ignore obstacles we can step over
 	Vector end = origin + (forward * (mover->GetHullWidth() * 1.5f));
 	const unsigned int mask = mover->GetMovementTraceMask();
@@ -2105,4 +2106,10 @@ bool CMeshNavigatorAutoRepath::IsRepathNeeded(const Vector& goal)
 	float tolerance = GetGoalTolerance() * GetGoalTolerance();
 
 	return (goal - m_lastGoal).LengthSqr() > tolerance;
+}
+
+CPathFailCounter::CPathFailCounter()
+{
+	m_count = 0;
+	m_limit = extmanager->GetMod()->GetModSettings()->GetStuckGiveUpThreshold();
 }

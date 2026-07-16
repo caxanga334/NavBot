@@ -190,3 +190,17 @@ void CZombiePanicSourceMod::DetectGameMode()
 		m_gamemode = zps::ZPSGamemodes::GAMEMODE_SURVIVAL;
 	}
 }
+
+void CZombiePanicSourceMod::OnCurrentObjectiveChanged()
+{
+	std::any empty;
+
+	auto func = [&empty](CBaseBot* bot) {
+		if (bot->IsAlive())
+		{
+			bot->OnCustomModEvent(CZombiePanicSourceMod::MODEVENT_ZPS_NEW_OBJECTIVE, empty);
+		}
+	};
+
+	extmanager->ForEachBot(func);
+}

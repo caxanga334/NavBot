@@ -187,4 +187,16 @@ namespace natives::navmesh::navareavector
 		*object = vec;
 		return handle;
 	}
+	std::vector<CNavArea*>* readhandle(SourcePawn::IPluginContext* context, SourceMod::Handle_t handle)
+	{
+		std::vector<CNavArea*>* vec = nullptr;
+		SourceMod::HandleSecurity security(context->GetIdentity(), myself->GetIdentity());
+
+		if (!pawnutils::ReadHandle("std::vector<CNavArea*>", context, spmanager->GetNavAreaVectorHandleType(), handle, &security, &vec))
+		{
+			return nullptr;
+		}
+
+		return vec;
+	}
 }

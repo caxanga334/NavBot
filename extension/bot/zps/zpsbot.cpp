@@ -78,6 +78,11 @@ bool CZPSBot::IsWalking() const
 	return zpslib::IsPlayerWalking(this->GetEntity());
 }
 
+float CZPSBot::GetWeight() const
+{
+	return zpslib::GetPlayerWeight(this->GetEntity());
+}
+
 CZPSBotPathCost::CZPSBotPathCost(CZPSBot* bot, RouteType type) :
 	m_routetype(type), IGroundPathCost(bot)
 {

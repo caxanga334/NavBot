@@ -1,12 +1,4 @@
 #include NAVBOT_PCH_FILE
-#include <array>
-#include <string_view>
-#include <memory>
-#include <cinttypes>
-#include <algorithm>
-#include <extension.h>
-#include <util/entprops.h>
-#include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_traces.h>
 #include <mods/modhelpers.h>
 #include "nav.h"

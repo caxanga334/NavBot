@@ -117,3 +117,10 @@ zps::ItemDeliverStates zpslib::GetItemDeliverState(CBaseEntity* entity)
 	entprops->GetEntProp(entity, Prop_Send, "m_iItemState", state);
 	return static_cast<zps::ItemDeliverStates>(state);
 }
+
+float zpslib::GetPlayerWeight(CBaseEntity* player)
+{
+	float value = 0.0f;
+	entprops->GetEntPropFloat(player, Prop_Send, "m_flPlayerWeight", value);
+	return value;
+}

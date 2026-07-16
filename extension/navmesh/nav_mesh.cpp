@@ -4019,6 +4019,13 @@ void CNavMesh::ComputeDoorBlockers()
 
 	UtilHelpers::ForEachEntityOfClassname("func_door*", func);
 	UtilHelpers::ForEachEntityOfClassname("prop_door_rotating", func);
+
+	auto& extradoors = GetMapSettings()->GetAdditionalDoorClassnames();
+
+	for (auto& classname : extradoors)
+	{
+		UtilHelpers::ForEachEntityOfClassname(classname.c_str(), func);
+	}
 }
 
 void CNavMesh::ComputeBreakableBlockers()

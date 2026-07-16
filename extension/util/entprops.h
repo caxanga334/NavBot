@@ -103,6 +103,7 @@ public:
 	bool GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
 	bool GetEntPropString(edict_t* entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
 	bool GetEntPropString(CBaseEntity* entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
+	std::string GetEntPropString(CBaseEntity* entity, PropType proptype, const char* prop, int element = 0);
 	bool SetEntPropString(int entity, PropType proptype, const char *prop, char *value, int element = 0);
 	bool GetEntData(int entity, int offset, int &result, int size = 4);
 	bool SetEntData(int entity, int offset, int value, int size = 4, bool changeState = false);

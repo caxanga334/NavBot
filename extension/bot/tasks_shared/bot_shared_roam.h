@@ -65,6 +65,7 @@ public:
 		m_attackEnemies = attackvisiblenemies;
 		m_moveFailures = 0;
 		m_interrupt = interruptTask;
+		m_travelLimit = 4096.0f;
 	}
 	/**
 	 * @brief Makes the bot roams to a specific waypoint.
@@ -228,9 +229,7 @@ inline void CBotSharedRoamTask<BT, CT>::FindRandomDestination(BT* bot)
 
 	if (!m_goalSet)
 	{
-		INavAreaCollector<CNavArea> collector;
-		collector.SetStartArea(bot->GetLastKnownNavArea());
-		collector.SetTravelLimit(m_travelLimit);
+		botsharedutils::RandomDestinationCollector collector(bot->GetLastKnownNavArea(), m_travelLimit);
 		collector.SetSearchLinks(true);
 		collector.SetSearchLadders(true);
 		collector.SetSearchElevators(true);
@@ -241,7 +240,17 @@ inline void CBotSharedRoamTask<BT, CT>::FindRandomDestination(BT* bot)
 			return;
 		}
 
-		CNavArea* goal = collector.GetRandomCollectedArea();
+		CNavArea* goal = nullptr;
+
+		// random chance based on aggressiveness, capped at 50%, to go to the farthest area found.
+		if (CBaseBot::s_botrng.GetRandomChance(std::min(bot->GetDifficultyProfile()->GetAggressiveness(), 50)))
+		{
+			goal = collector.GetFarthestCollectedArea();
+		}
+		else
+		{
+			goal = collector.GetRandomCollectedArea();
+		}
 
 		m_goal = goal->GetRandomPoint();
 		m_goalSet = true;

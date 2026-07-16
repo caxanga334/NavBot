@@ -240,4 +240,27 @@ inline void CMeshNavigatorAutoRepath::RefreshPath(CBaseBot* bot, const Vector& g
 	}
 }
 
+/**
+ * @brief Simple counter for path failures/stuck events
+ */
+class CPathFailCounter
+{
+public:
+	CPathFailCounter();
+
+	// Increases the counter, retursn true if above the limit
+	bool Increase()
+	{
+		return (++m_count) > m_limit;
+	}
+	int GetCounter() const { return m_count; }
+	void Reset() { m_count = 0; }
+	void SetLimit(int v) { m_limit = v; }
+	int GetLimit() const { return m_limit; }
+
+private:
+	int m_count;
+	int m_limit;
+};
+
 #endif // !SMNAV_BOT_NAV_MESH_NAVIGATOR_H_

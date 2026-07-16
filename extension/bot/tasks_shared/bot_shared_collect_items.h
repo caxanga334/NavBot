@@ -121,6 +121,28 @@ namespace NBotSharedCollectItemTask
 
 		return true;
 	}
+	// Generic validator function for weapons, should work for most standard source engine games.
+	// Checks if the weapon if visible and if it doesn't have a owner.
+	template <typename BotClass>
+	inline bool CommonWeaponValidator(BotClass* bot, CBaseEntity* entity)
+	{
+		if (!ValidatorIsVisible<BotClass>(bot, entity))
+		{
+			return false;
+		}
+
+		CBaseEntity* owner = nullptr;
+		
+		if (entprops->GetEntPropEnt(entity, Prop_Send, "m_hOwner", nullptr, &owner))
+		{
+			if (owner != nullptr)
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
 }
 
 template <typename BT, typename CT>
@@ -388,6 +410,7 @@ public:
 	{
 		bot->GetControlInterface()->ReleaseUseButton();
 		bot->GetControlInterface()->ReleaseCrouchButton();
+		bot->GetInventoryInterface()->RequestRefresh();
 	}
 
 	TaskEventResponseResult<BT> OnStuck(BT* bot) override

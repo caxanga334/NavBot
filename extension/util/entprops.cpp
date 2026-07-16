@@ -1552,6 +1552,21 @@ bool CEntPropUtils::GetEntPropString(CBaseEntity* pEntity, PropType proptype, co
 	return true;
 }
 
+std::string CEntPropUtils::GetEntPropString(CBaseEntity* entity, PropType proptype, const char* prop, int element)
+{
+	std::string result;
+	char buffer[1024];
+	std::size_t length = 0U;
+
+	if (GetEntPropString(entity, proptype, prop, buffer, sizeof(buffer), length, element))
+	{
+		result.assign(buffer);
+		return result;
+	}
+
+	return result;
+}
+
 
 /// @brief Sets a network property as a string.
 /// @warning This is not implemented yet!

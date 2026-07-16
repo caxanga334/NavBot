@@ -34,6 +34,9 @@ public:
 		return size;
 	}
 
+	// finds an item_generic with the given id
+	const CZPSBotWeapon* FindItemDeliver(const std::string& id);
+
 protected:
 	// Creates a new bot weapon object, override to use mod specific class
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) { return new CZPSBotWeapon(weapon); }

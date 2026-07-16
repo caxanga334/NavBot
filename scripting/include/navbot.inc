@@ -205,6 +205,21 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.IsVisible");
 	MarkNativeAsOptional("NavBotNavArea.IsBlocked");
 	MarkNativeAsOptional("NavBotNavArea.GetClosestPointOnArea");
+	MarkNativeAsOptional("NavBotNavArea.IsConnectedToAny");
+	MarkNativeAsOptional("NavBotNavArea.IsConnectedToDir");
+	MarkNativeAsOptional("NavBotNavArea.IsConnectedToOffMesh");
+	MarkNativeAsOptional("NavBotNavArea.GetOffMeshConnectionCount");
+	MarkNativeAsOptional("NavBotNavArea.GetOffMeshConnection");
+	MarkNativeAsOptional("NavBotNavArea.CollectConnectedAreas");
+	MarkNativeAsOptional("NavBotNavArea.ComputeAdjacentConnectionHeightChange");
+	MarkNativeAsOptional("NavBotNavArea.ComputeAdjacentConnectionGapDistance");
+
+	/* Off-Mesh Connection */
+	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetType");
+	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetStartPosition");
+	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetEndPosition");
+	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetConnectedArea");
+	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetConnectionLength");
 
 	/* Nav Mesh */
 	MarkNativeAsOptional("NavBotNavMesh.IsLoaded");

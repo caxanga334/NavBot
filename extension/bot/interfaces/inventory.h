@@ -212,6 +212,53 @@ public:
 	}
 
 	/**
+	 * @brief Finds a weapon for the bot to drop.
+	 * @return Pointer to a weapon to drop. NULL if none is found.
+	 */
+	const CBotWeapon* FindWeaponToDrop() const
+	{
+		int bestprio = std::numeric_limits<int>::max();
+		const CBotWeapon* weapon = nullptr;
+		const CBaseBot* bot = GetBot<CBaseBot>();
+		bool foundempty = false;
+
+		for (auto& weaponptr : m_weapons)
+		{
+			if (!weaponptr->IsValid() || !weaponptr->IsOwnedByBot(bot))
+			{
+				continue;
+			}
+
+			const WeaponInfo* info = weaponptr->GetWeaponInfo();
+
+			if (!info->CanBeDropped()) { continue; }
+
+			if (weaponptr->IsOutOfAmmo(bot))
+			{
+				// only set it as the best if we never found an empty weapon or if it has a lower priority.
+				if (info->GetPriority() < bestprio || !foundempty)
+				{
+					bestprio = info->GetPriority();
+					weapon = weaponptr.get();
+					foundempty = true;
+					continue;
+				}
+			}
+
+			// if we found a weapon out of ammo, priorize it.
+			if (foundempty) { continue; }
+
+			if (info->GetPriority() < bestprio)
+			{
+				bestprio = info->GetPriority();
+				weapon = weaponptr.get();
+			}
+		}
+
+		return weapon;
+	}
+
+	/**
 	 * @brief Tells the inventory interface to equip this weapon.
 	 * @param weapon Weapon to equip.
 	 * @return Returns true if the weapon was equipped.

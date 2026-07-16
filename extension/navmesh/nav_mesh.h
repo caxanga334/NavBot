@@ -43,6 +43,7 @@
 #include "nav_area.h"
 #include "nav_colors.h"
 #include "nav_avoidance_obstacle.h"
+#include "nav_settings.h"
 
 class HidingSpot;
 class CUtlBuffer;
@@ -1425,6 +1426,7 @@ public:
 	 * @return Absolute path to the nav mesh file.
 	 */
 	std::filesystem::path GetFullPathToNavMeshFile(const bool isLoad) const;
+	std::filesystem::path GetFullPathToNavMeshMapSettingsFile() const;
 	const AuthorInfo& GetAuthorInfo() const { return m_authorinfo; }
 
 	void LoadEditSounds(SourceMod::IGameConfig* gamedata);
@@ -2033,6 +2035,18 @@ public:
 	}
 
 	NavErrorType GetLastLoadAttemptResult() const { return m_lastLoadResult; }
+
+private:
+	std::unique_ptr<CNavMapSettings> m_mapsettings;
+
+	void LoadMapSettings();
+
+protected:
+	// Allocs a new nav mesh settings instance
+	CNavMapSettings* CreateMapSettings() const { return new CNavMapSettings; }
+
+public:
+	const CNavMapSettings* GetMapSettings() const { return m_mapsettings.get(); }
 };
 
 // the global singleton interface

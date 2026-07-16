@@ -54,7 +54,7 @@ protected:
 	std::vector<CBaseEntity*> CollectConnectedButtons(const char* targetname);
 	void CheckButtons(const std::vector<CBaseEntity*>& buttons);
 	void AddDoorAreas(CBaseEntity* door);
-	void DetectDoorType(CBaseEntity* door);
+	virtual void DetectDoorType(CBaseEntity* door);
 };
 
 

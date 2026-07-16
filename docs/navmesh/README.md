@@ -19,6 +19,7 @@
 - [Nav Mesh Volumes]
 - [Nav Mesh Places]
 - [Nav Mesh Scripting]
+- [Nav Mesh Map Settings]
 
 ## Extras
 
@@ -39,5 +40,6 @@
 [Nav Mesh Prerequisites]: NAVMESH_PREREQUISITES.md
 [Nav Mesh Scripting]: NAVMESH_SCRIPTING.md
 [Nav Mesh Authors and Editors]: NAVMESH_AUTHOR_INFO.md
+[Nav Mesh Map Settings]: NAVMESH_MAP_SETTINGS.md
 [Game Specific Nav Mesh Editing]: gamespecific/README.md
 [Importing From The Game]: IMPORTING.md

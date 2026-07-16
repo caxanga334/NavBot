@@ -10,6 +10,8 @@ class CZombiePanicSourceMod : public CBaseMod
 public:
 	CZombiePanicSourceMod();
 
+	static constexpr int MODEVENT_ZPS_NEW_OBJECTIVE = 1;
+
 	static CZombiePanicSourceMod* GetZPSMod();
 
 	void FireGameEvent(IGameEvent* event) override;
@@ -31,7 +33,16 @@ public:
 	inline const CZPSObjectiveManager& GetObjectiveManager() const { return m_objectiveManager; }
 
 #ifndef NO_SOURCEPAWN_API
-	void SMAPI_SetCurrentObjective(CZPSObjectiveManager::ObjectiveTypes type) { m_objectiveManager.SetCurrentObjective(type); }
+	void SMAPI_SetCurrentObjective(CZPSObjectiveManager::ObjectiveTypes type)
+	{
+		CZPSObjectiveManager::ObjectiveTypes old = m_objectiveManager.GetCurrentObjective();
+		m_objectiveManager.SetCurrentObjective(type);
+
+		if (old != type)
+		{
+			OnCurrentObjectiveChanged();
+		}
+	}
 	void SMAPI_SetObjectiveMoveGoal(const Vector& goal) { m_objectiveManager.SetMoveGoal(goal); }
 	void SMAPI_SetObjectiveUseButton(CBaseEntity* entity) { m_objectiveManager.SetUseButton(entity); }
 	void SMAPI_SetObjectiveItemSearchID(const char* str) { m_objectiveManager.SetItemSearchID(str); }
@@ -50,6 +61,7 @@ private:
 	CZPSObjectiveManager m_objectiveManager;
 
 	void DetectGameMode();
+	void OnCurrentObjectiveChanged();
 };
 
 

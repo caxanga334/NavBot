@@ -21,14 +21,14 @@ public:
 		if (m_shouldsearchcallback->GetFunctionCount() > 0)
 		{
 			cell_t res = 1;
-#if SM_BUILD_MINOR_INT >= SM_VERSION_1_13			
+#if SMINTERFACE_EXTENSIONAPI_VERSION >= 9
 			sp::CallArgs args;
 			pawnutils::PushObjectPtr(args, area);		
 			m_shouldsearchcallback->Execute(args, &res);
 #else
 			pawnutils::PushObjectPtr(m_shouldsearchcallback, area);
 			m_shouldsearchcallback->Execute(&res);
-#endif // SM_BUILD_MINOR_INT >= SM_VERSION_1_13
+#endif // SMINTERFACE_EXTENSIONAPI_VERSION >= 9	
 			return res != 0;
 		}
 
@@ -40,14 +40,14 @@ public:
 		if (m_shouldcollectcallback->GetFunctionCount() > 0)
 		{
 			cell_t res = 1;
-#if SM_BUILD_MINOR_INT >= SM_VERSION_1_13			
+#if SMINTERFACE_EXTENSIONAPI_VERSION >= 9
 			sp::CallArgs args;
 			pawnutils::PushObjectPtr(args, area);
 			m_shouldcollectcallback->Execute(args, &res);
 #else
 			pawnutils::PushObjectPtr(m_shouldcollectcallback, area);
 			m_shouldcollectcallback->Execute(&res);
-#endif // SM_BUILD_MINOR_INT >= SM_VERSION_1_13
+#endif // SMINTERFACE_EXTENSIONAPI_VERSION >= 9
 			return res != 0;
 		}
 

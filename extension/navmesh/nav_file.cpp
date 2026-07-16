@@ -1810,6 +1810,8 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 	}
 #endif // 0
 
+	LoadMapSettings();
+
 	// the Navigation Mesh has been successfully loaded
 	m_isLoaded = true;
 	ShiftAllIDsToTop();
@@ -1821,6 +1823,27 @@ NavErrorType CNavMesh::PostLoad( uint32_t version )
 #endif // !NO_SOURCEPAWN_API
 
 	return NAV_OK;
+}
+
+void CNavMesh::LoadMapSettings()
+{
+	m_mapsettings.reset(CreateMapSettings());
+	std::filesystem::path file = GetFullPathToNavMeshMapSettingsFile();
+
+	if (!std::filesystem::exists(file))
+	{
+#ifdef EXT_DEBUG
+		META_CONPRINTF("Nav mesh map settings file not found, not parsing! \n");
+#endif // EXT_DEBUG
+
+		// this is an optional file so don't log errors
+		return;
+	}
+	
+	if (!m_mapsettings->LoadFile(file))
+	{
+		smutils->LogError(myself, "Error while parsing nav mesh map settings!");
+	}
 }
 
 std::filesystem::path CNavMesh::GetFullPathToNavMeshFile(const bool isLoad) const
@@ -1853,6 +1876,39 @@ std::filesystem::path CNavMesh::GetFullPathToNavMeshFile(const bool isLoad) cons
 	// workshop is not supported by this mod, always use clean map names
 	std::string map = extmanager->GetMod()->GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN);
 	smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s.smnav", mod.c_str(), map.c_str());
+	return std::filesystem::path(fullpath);
+}
+
+std::filesystem::path CNavMesh::GetFullPathToNavMeshMapSettingsFile() const
+{
+	char fullpath[PLATFORM_MAX_PATH];
+	const std::string& mod = extmanager->GetMod()->GetModFolder();
+
+	// workshop is supported
+	if (CExtManager::ModUsesWorkshopMaps())
+	{
+		Mods::MapNameType type = CExtManager::ShouldPreferUniqueMapNames() ? Mods::MapNameType::MAPNAME_UNIQUE : Mods::MapNameType::MAPNAME_CLEAN;
+
+		std::string map = extmanager->GetMod()->GetCurrentMapName(type);
+		smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s_settings.cfg", mod.c_str(), map.c_str());
+
+		// if a file exists, use it
+		if (std::filesystem::exists(fullpath))
+		{
+			return std::filesystem::path(fullpath);
+		}
+
+		// invert type, unique goes to clean, clean goes to unique
+		type = Mods::InvertMapNameType(type);
+
+		map = extmanager->GetMod()->GetCurrentMapName(type);
+		smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s_settings.cfg", mod.c_str(), map.c_str());
+		return std::filesystem::path(fullpath);
+	}
+
+	// workshop is not supported by this mod, always use clean map names
+	std::string map = extmanager->GetMod()->GetCurrentMapName(Mods::MapNameType::MAPNAME_CLEAN);
+	smutils->BuildPath(SourceMod::PathType::Path_SM, fullpath, sizeof(fullpath), "data/navbot/%s/%s_settings.cfg", mod.c_str(), map.c_str());
 	return std::filesystem::path(fullpath);
 }
 

@@ -20,6 +20,7 @@ namespace zpslib
 	bool IsUseableTriggerDisabled(CBaseEntity* entity);
 	// Gets the item state of a item_deliver
 	zps::ItemDeliverStates GetItemDeliverState(CBaseEntity* entity);
+	float GetPlayerWeight(CBaseEntity* player);
 }
 
 

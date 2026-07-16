@@ -23,6 +23,7 @@ This is a list of keys available for all mods.
 |headshot_range_multiplier|Headshot range multiplier.|float|
 |headshot_aim_offset|Offset to apply when aiming at the head with this weapon.|Vector|
 |infinite_reserve_ammo|This weapon has infinite reserve ammo.|boolean|
+|cannot_be_dropped|This weapon can't be dropped.|boolean|
 |primary_no_clip|This weapon doesn't uses clips for primary attack.|boolean|
 |secondary_no_clip|This weapon doesn't uses clips for secondary attack.|boolean|
 |secondary_uses_primary_ammo_type|The secondary attack uses primary ammo type.|boolean|

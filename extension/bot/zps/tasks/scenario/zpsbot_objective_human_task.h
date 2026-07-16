@@ -9,11 +9,12 @@ public:
 	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
 
 	TaskEventResponseResult<CZPSBot> OnSquadEvent(CZPSBot* bot, SquadEventType evtype) override;
+	TaskEventResponseResult<CZPSBot> OnCustomModEvent(CZPSBot* bot, const int id, const std::any& data) override;
 
 	const char* GetName() const override { return "ObjectiveHuman"; }
 
 private:
-
+	TaskResult<CZPSBot> GetObjectiveTask(CZPSBot* bot) const;
 };
 
 

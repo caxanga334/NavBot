@@ -2524,6 +2524,11 @@ float CNavArea::ComputeAdjacentConnectionHeightChange( const CNavArea *destinati
 			return GetOffMeshConnectionToArea(destinationArea)->GetConnectionLength();
 		}
 
+		if (m_elevator != nullptr)
+		{
+			return m_elevator->GetLengthBetweenFloors(this, destinationArea);
+		}
+
 		return std::numeric_limits<float>::max();
 	}
 

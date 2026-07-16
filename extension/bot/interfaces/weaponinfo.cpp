@@ -879,15 +879,20 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetCanBeFiredUnderwater(v);
 	}
-	else if (strncmp(key, "can_headshot", 12) == 0)
+	else if (std::strcmp(key, "can_headshot") == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetCanHeadShot(v);
 	}
-	else if (strncmp(key, "infinite_reserve_ammo", 13) == 0)
+	else if (std::strcmp(key, "infinite_reserve_ammo") == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetInfiniteReserveAmmo(v);
+	}
+	else if (std::strcmp(key, "cannot_be_dropped") == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetCannotBeDropped(v);
 	}
 	else if (std::strcmp(key, "initial_attack_delay") == 0)
 	{

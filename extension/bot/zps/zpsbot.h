@@ -34,6 +34,8 @@ public:
 	bool IsCarrier() const;
 	bool IsInfected() const;
 	bool IsWalking() const;
+	// ZPS inventory weight
+	float GetWeight() const;
 
 private:
 	std::unique_ptr<CZPSBotBehavior> m_zpsbehavior;

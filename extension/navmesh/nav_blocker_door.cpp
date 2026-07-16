@@ -341,4 +341,11 @@ void CDoorNavBlocker::DetectDoorType(CBaseEntity* door)
 	{
 		m_doortype = DOORTYPE_PROP; // brush is default, no need to set again
 	}
+
+	// Some level designers uses "AddOutput classname" to change the classname of the door, this causes the first check above to fail
+	// On an unmodified SDK 2013 mod, m_eDoorState is exclusive to the prop_door_rotating entity.
+	if (m_doortype != DOORTYPE_PROP && entprops->HasEntProp(door, Prop_Data, "m_eDoorState"))
+	{
+		m_doortype = DOORTYPE_PROP;
+	}
 }

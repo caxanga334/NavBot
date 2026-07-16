@@ -326,6 +326,7 @@ public:
 		disable_dodge = false;
 		can_headshot = false;
 		infinite_reserve_ammo = false;
+		cannot_be_dropped = false;
 		initial_attack_delay = -1.0f;
 		scopein_attack_delay = -1.0f;
 		headshot_range_mult = 1.0f;
@@ -364,6 +365,7 @@ public:
 		this->disable_dodge = other->disable_dodge;
 		this->can_headshot = other->can_headshot;
 		this->infinite_reserve_ammo = other->infinite_reserve_ammo;
+		this->cannot_be_dropped = other->cannot_be_dropped;
 		this->custom_ammo_prop = other->custom_ammo_prop;
 		this->initial_attack_delay = other->initial_attack_delay;
 		this->scopein_attack_delay = other->scopein_attack_delay;
@@ -421,6 +423,7 @@ public:
 
 	void SetCanHeadShot(bool v) { can_headshot = v; }
 	void SetInfiniteReserveAmmo(bool v) { infinite_reserve_ammo = v; }
+	void SetCannotBeDropped(bool v) { cannot_be_dropped = v; }
 	void SetHeadShotRangeMultiplier(float v) { headshot_range_mult = v; }
 	void SetHeadShotAimOffset(const Vector& offset) { headshot_aim_offset = offset; }
 
@@ -438,6 +441,7 @@ public:
 	bool IsDefault() const { return configentry.size() == 0; }
 	bool CanHeadShot() const { return can_headshot; }
 	bool HasInfiniteReserveAmmo() const { return infinite_reserve_ammo; }
+	bool CanBeDropped() const { return cannot_be_dropped == false; }
 	float GetHeadShotRangeMultiplier() const { return headshot_range_mult; }
 	float GetMaxPrimaryHeadShotRange() const { return attacksinfo[static_cast<int>(botweapons::AttackType::PRIMARY)].GetMaxRange() * headshot_range_mult; }
 	const Vector& GetHeadShotAimOffset() const { return headshot_aim_offset; }
@@ -563,6 +567,7 @@ private:
 	bool disable_dodge; // if true, the bot won't try to dodge enemy attacks while using this weapon
 	bool can_headshot;
 	bool infinite_reserve_ammo; // weapon has infinite reserve ammo (no need to collect ammo for it)
+	bool cannot_be_dropped; // this weapon can't be dropped
 	WeaponEntityProperty custom_ammo_prop; // custom ammo property.
 	float initial_attack_delay; // delay before the bot should start attacking after entering combat.
 	float scopein_attack_delay; // delay before the bot should atart attacking after scoping in with the weapon.

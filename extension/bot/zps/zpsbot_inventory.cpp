@@ -87,3 +87,27 @@ const CBotWeapon* CZPSBotInventory::GetWeaponWithLowAmmo()
 	m_lastammosearchweapon = nullptr;
 	return nullptr;
 }
+
+const CZPSBotWeapon* CZPSBotInventory::FindItemDeliver(const std::string& id)
+{
+	const CZPSBotWeapon* result = nullptr;
+
+	auto func = [&result, &id](const CBotWeapon* base) {
+		if (result) { return; }
+
+		const CZPSBotWeapon* weapon = static_cast<const CZPSBotWeapon*>(base);
+		
+		if (weapon->ClassnameMatchesPattern("item_deliver"))
+		{
+			std::string itemid = entprops->GetEntPropString(weapon->GetEntity(), Prop_Data, "m_strItemID");
+
+			if (ke::StrCaseCmp(itemid.c_str(), id.c_str()) == 0)
+			{
+				result = weapon;
+			}
+		}
+	};
+
+	ForEveryWeapon(func);
+	return result;
+}

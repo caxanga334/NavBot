@@ -93,18 +93,23 @@ TaskResult<CZPSBot> CZPSBotScenarioTask::OnTaskUpdate(CZPSBot* bot)
 			{
 				m_ammoSearchTimer.StartRandom(7.0f, 15.0f);
 
-				const CBotWeapon* low = bot->GetInventoryInterface()->GetWeaponWithLowAmmo();
-
-				if (low && low->GetWeaponInfo()->HasAmmoSourceEntityClassname())
+				// Prevent bots from picking up ammo if they don't have enough weight to carry them.
+				// Problem: this also includes the weapon's weight so the bot might still have room.
+				if (bot->GetWeight() < 30.0f)
 				{
-					NBotSharedCollectItemTask::ItemCollectFilter<CZPSBot, CZPSNavArea> filter{ bot };
-					const char* pattern = low->GetWeaponInfo()->GetAmmoSourceEntityClassname().c_str();
-					CBaseEntity* item = nullptr;
+					const CBotWeapon* low = bot->GetInventoryInterface()->GetWeaponWithLowAmmo();
 
-					if (CBotSharedCollectItemsTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &filter, pattern, &item))
+					if (low && low->GetWeaponInfo()->HasAmmoSourceEntityClassname())
 					{
-						auto task = new CBotSharedCollectItemsTask<CZPSBot, CZPSBotPathCost>(bot, item, NBotSharedCollectItemTask::COLLECT_PRESS_USE);
-						return PauseFor(task, "Going for ammo!");
+						NBotSharedCollectItemTask::ItemCollectFilter<CZPSBot, CZPSNavArea> filter{ bot };
+						const char* pattern = low->GetWeaponInfo()->GetAmmoSourceEntityClassname().c_str();
+						CBaseEntity* item = nullptr;
+
+						if (CBotSharedCollectItemsTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &filter, pattern, &item))
+						{
+							auto task = new CBotSharedCollectItemsTask<CZPSBot, CZPSBotPathCost>(bot, item, NBotSharedCollectItemTask::COLLECT_PRESS_USE);
+							return PauseFor(task, "Going for ammo!");
+						}
 					}
 				}
 			}
