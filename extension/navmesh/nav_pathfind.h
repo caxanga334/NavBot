@@ -1247,13 +1247,20 @@ public:
 	size_t GetCollectedAreasCount() const { return m_collected.size(); }
 	// Returns a random collected area. No filtering.
 	// This should only be called if IsCollectedAreasEmpty() returns false!
-	T* GetRandomCollectedArea() const { return m_collected[randomgen->GetRandomInt<size_t>(0, m_collected.size() - 1)]; }
+	T* GetRandomCollectedArea() const
+	{
+		if (m_collected.size() == 1) { return m_collected[0]; }
+
+		return m_collected[randomgen->GetRandomInt<size_t>(0, m_collected.size() - 1)];
+	}
 	/**
 	 * @brief Gets the collected nav area with the highest travel cost.
 	 * @return Nav area with the highest travel cost, NULL if the collected areas vector is empty.
 	 */
 	T* GetFarthestCollectedArea() const
 	{
+		if (m_collected.size() == 1) { return m_collected[0]; }
+
 		T* selected = nullptr;
 		float best = std::numeric_limits<float>::min();
 
@@ -1281,6 +1288,8 @@ public:
 	 */
 	T* GetNearestCollectedArea() const
 	{
+		if (m_collected.size() == 1) { return m_collected[0]; }
+
 		T* selected = nullptr;
 		float best = std::numeric_limits<float>::max();
 

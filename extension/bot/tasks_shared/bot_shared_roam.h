@@ -229,7 +229,7 @@ inline void CBotSharedRoamTask<BT, CT>::FindRandomDestination(BT* bot)
 
 	if (!m_goalSet)
 	{
-		botsharedutils::RandomDestinationCollector collector(bot->GetLastKnownNavArea(), m_travelLimit);
+		botsharedutils::RandomDestinationCollector collector(bot, m_travelLimit);
 		collector.SetSearchLinks(true);
 		collector.SetSearchLadders(true);
 		collector.SetSearchElevators(true);
