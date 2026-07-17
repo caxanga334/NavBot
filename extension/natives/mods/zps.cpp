@@ -110,6 +110,19 @@ namespace natives::mods::zps
 		mod->SMAPI_SetObjectiveDetectionRadius(radius);
 		return 0;
 	}
+	static cell_t SetObjectiveGenericTargetEntity(IPluginContext* context, const cell_t* params)
+	{
+		CZombiePanicSourceMod* mod = GetZPSMod(context);
+
+		if (!mod)
+		{
+			return 0;
+		}
+
+		CBaseEntity* entity = gamehelpers->ReferenceToEntity(params[1]);
+		mod->SMAPI_SetObjectiveGenericTargetEntity(entity);
+		return 0;
+	}
 	static cell_t ResetObjective(IPluginContext* context, const cell_t* params)
 	{
 		CZombiePanicSourceMod* mod = GetZPSMod(context);
@@ -136,6 +149,7 @@ namespace natives::mods::zps
 			{"NavBotZPSModInterface.SetObjectiveItemSearchID", SetObjectiveItemSearchID},
 			{"NavBotZPSModInterface.SetObjectiveItemUseTarget", SetObjectiveItemUseTarget},
 			{"NavBotZPSModInterface.SetObjectiveDetectionRadius", SetObjectiveDetectionRadius},
+			{"NavBotZPSModInterface.SetObjectiveGenericTargetEntity", SetObjectiveGenericTargetEntity},
 			{"NavBotZPSModInterface.ResetObjective", ResetObjective},
 
 		};

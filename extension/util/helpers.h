@@ -394,6 +394,31 @@ namespace UtilHelpers
 	}
 
 	/**
+	 * @brief Runs a function on each named entity of the given classname.
+	 * @tparam T bool (int index, CBaseEntity* entity). entity is never NULL!
+	 * @param classname Classname to search.
+	 * @param targetname Targetname to search, supports pattern, see the documenation for UtilHelpers::FindNamedEntityByClassname.
+	 * @param func Function to run.
+	 */
+	template <typename T>
+	inline void ForEachNamedEntityOfClassname(const char* classname, const char* targetname, T& func)
+	{
+		int entity = INVALID_EHANDLE_INDEX;
+
+		while ((entity = UtilHelpers::FindNamedEntityByClassname(entity, targetname, classname)) != INVALID_EHANDLE_INDEX)
+		{
+			CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+
+			if (!pEntity) { continue; }
+
+			if (func(entity, pEntity) == false)
+			{
+				return;
+			}
+		}
+	}
+
+	/**
 	 * @brief Runs a function on each entity inside the sphere's radius.
 	 * @tparam T A class with bool operator() overload with 3 parameter (int index, edict_t* edict, CBaseEntity* entity), Edict may be null if the entity is not networked. Return false to exit early.
 	 * @param center Search center point.

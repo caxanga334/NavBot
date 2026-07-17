@@ -622,6 +622,20 @@ void CBaseBot::FakeClientCommand(const char* command) const
 	serverpluginhelpers->ClientCommand(GetEdict(), command);
 }
 
+CBaseEntity* CBaseBot::SelectNearestEntity(CBaseEntity* first, CBaseEntity* second) const
+{
+	Vector origin = GetEyeOrigin();
+	Vector p1 = UtilHelpers::getWorldSpaceCenter(first);
+	Vector p2 = UtilHelpers::getWorldSpaceCenter(second);
+
+	if ((p1 - origin).LengthSqr() <= (p2 - origin).Length2DSqr())
+	{
+		return first;
+	}
+
+	return second;
+}
+
 void CBaseBot::ExecuteQueuedCommands()
 {
 	if (m_cmdqueue.empty())

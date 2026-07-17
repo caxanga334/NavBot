@@ -124,20 +124,33 @@ void navscripting::EntityLink::FindLinkedEntity()
 
 	if (!m_targetname.empty())
 	{
-		int index = UtilHelpers::FindEntityByTargetname(-1, m_targetname.c_str());
+		CBaseEntity* best = nullptr;
+		float nearest = std::numeric_limits<float>::max();
+		const Vector& start = m_position;
 
-		if (index != INVALID_EHANDLE_INDEX)
-		{
-			CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(index);
+		// maps may have multiple entities with the same targetname, filter by distance
+		auto func = [&best, &start, &nearest](int index, CBaseEntity* entity) {
+			Vector pos = UtilHelpers::getWorldSpaceCenter(entity);
+			float distance = (pos - start).Length();
 
-			if (pEntity)
+			if (distance < nearest)
 			{
-				SetActiveEntity(pEntity);
+				nearest = distance;
+				best = entity;
 			}
+
+			return true;
+		};
+
+		UtilHelpers::ForEachNamedEntityOfClassname(m_classname.c_str(), m_targetname.c_str(), func);
+
+		if (best)
+		{
+			SetActiveEntity(best);
 		}
 		else
 		{
-			smutils->LogError(myself, "FindLinkedEntity: No entity of targetname \"%s\"!", m_targetname.c_str());
+			smutils->LogError(myself, "Nav Mesh: Could not find named entity! (classname: %s - targetname: %s)", m_classname.c_str(), m_targetname.c_str());
 		}
 	}
 
@@ -145,7 +158,7 @@ void navscripting::EntityLink::FindLinkedEntity()
 	if (!m_hEntity.IsValid())
 	{
 		CBaseEntity* best = nullptr;
-		float nearest = 99999999.0f;
+		float nearest = std::numeric_limits<float>::max();
 		const Vector& start = m_position;
 		auto functor = [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
 			if (entity)
@@ -156,7 +169,7 @@ void navscripting::EntityLink::FindLinkedEntity()
 				if (distance < nearest)
 				{
 					best = entity;
-					distance = nearest;
+					nearest = distance;
 				}
 			}
 

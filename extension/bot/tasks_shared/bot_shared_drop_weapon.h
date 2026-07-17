@@ -50,6 +50,7 @@ public:
 			return AITask<BT>::Done("Weapon is NULL!");
 		}
 
+		bot->GetCombatInterface()->DisableCombat(0.5f);
 		IInventory* inv = bot->GetInventoryInterface();
 		
 		const CBotWeapon* bw = inv->GetWeaponOfEntity(weapon);
@@ -77,6 +78,11 @@ public:
 	{
 		bot->GetInventoryInterface()->RequestRefresh();
 	}
+
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override { return ANSWER_NO; }
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_NO; }
+	QueryAnswerType ShouldHurry(CBaseBot* me) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_NO; }
 
 	const char* GetName() const override { return "DropWeapon"; }
 private:

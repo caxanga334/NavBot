@@ -22,4 +22,5 @@ void CZPSObjectiveManager::Reset()
 	m_itemID.clear();
 	m_itemUseTarget.Term();
 	m_detectionRadius = 512.0f;
+	m_genericTarget.Term();
 }

@@ -291,6 +291,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveItemSearchID");
 	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveItemUseTarget");
 	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveDetectionRadius");
+	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveGenericTargetEntity");
 	MarkNativeAsOptional("NavBotZPSModInterface.ResetObjective");
 
 	/* Navigator */

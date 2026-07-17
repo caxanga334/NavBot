@@ -27,7 +27,7 @@ public:
 	TaskResult<CZPSBot> OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask) override;
 	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
 
-	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_NO; }
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override;
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_NO; }
 	QueryAnswerType ShouldHurry(CBaseBot* me) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_YES; }
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_NO; }

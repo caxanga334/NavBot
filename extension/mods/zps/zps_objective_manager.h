@@ -15,6 +15,7 @@ public:
 		OBJECTIVE_FIND_ITEM, // find item_generic
 		OBJECTIVE_USE_ITEM, // use item_generic
 		OBJECTIVE_DROP_ITEM, // drop item_generic at another entity
+		OBJECTIVE_DESTROY_ENTITY, // destroy an entity
 
 		MAX_OBJECTIVE_TYPES
 	};
@@ -34,6 +35,8 @@ public:
 	void SetUseItemTarget(CBaseEntity* entity) { m_itemUseTarget = entity; }
 	float GetDetectionRadius() const { return m_detectionRadius; }
 	void SetDetectionRadius(float v) { m_detectionRadius = v; }
+	CBaseEntity* GetGenericTargetEntity() const { return m_genericTarget.Get(); }
+	void SetGenericTargetEntity(CBaseEntity* entity) { m_genericTarget = entity; }
 
 private:
 	ObjectiveTypes m_currentObjective;
@@ -41,6 +44,7 @@ private:
 	CHandle<CBaseEntity> m_useButton;
 	std::string m_itemID; // id of the item_generic to find
 	CHandle<CBaseEntity> m_itemUseTarget; // entity to use the item_generic at
+	CHandle<CBaseEntity> m_genericTarget; // general purpose generic target entity
 	float m_detectionRadius;
 };
 

@@ -7,6 +7,7 @@
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_use_entity.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
+#include <bot/tasks_shared/bot_shared_break_entity.h>
 #include "objective/zpsbot_human_objectives_task.h"
 #include "zpsbot_objective_human_task.h"
 
@@ -104,6 +105,19 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 
 		// go find one
 		return PauseFor(new CZPSBotObjectiveFindItemTask, "Finding an item!");
+	}
+	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_DROP_ITEM:
+	{
+		break;
+	}
+	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_DESTROY_ENTITY:
+	{
+		if (mgr.GetGenericTargetEntity() != nullptr)
+		{
+			return PauseFor(new CBotSharedBreakEntityTask<CZPSBot, CZPSBotPathCost>(mgr.GetGenericTargetEntity()), "Breaking target entity!");
+		}
+
+		break;
 	}
 	default:
 		break;

@@ -1099,12 +1099,11 @@ bool IMovement::IsPotentiallyTraversable(const Vector& from, const Vector& to, f
 
 			if (index != -1)
 			{
-				auto classname = gamehelpers->GetEntityClassname(result.m_pEnt);
 				char message[256];
-				ke::SafeSprintf(message, sizeof(message), "Hit Entity %s#%i", classname, index);
+				ke::SafeSprintf(message, sizeof(message), "Hit Entity %s", UtilHelpers::textformat::FormatEntity(result.m_pEnt));
 
 				NDebugOverlay::Text(result.endpos, message, false, 0.5f);
-				DevMsg("%s IMovement::IsPotentiallyTraversable \n  %s \n", GetBot()->GetDebugIdentifier(), message);
+				META_CONPRINTF("%s IMovement::IsPotentiallyTraversable \n  %s \n", GetBot()->GetDebugIdentifier(), message);
 			}
 		}
 	}

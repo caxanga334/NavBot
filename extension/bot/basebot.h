@@ -299,6 +299,13 @@ public:
 	float GetLastUpdateTimestamp() const { return m_lastUpdateTime; }
 	// returns the time difference between the current update and the last update
 	float GetLastUpdateTimeDelta() const { return m_lastUpdateDelta; }
+	/**
+	 * @brief Utility function to select the nearest entity to the bot.
+	 * @param first First entity.
+	 * @param second Second entity.
+	 * @return Nearest entity between the two.
+	 */
+	CBaseEntity* SelectNearestEntity(CBaseEntity* first, CBaseEntity* second) const;
 protected:
 	bool m_isfirstspawn;
 

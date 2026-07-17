@@ -799,7 +799,7 @@ int UtilHelpers::FindEntityByTargetname(int start, const char* targetname)
 /**
  * @brief Searches for an entity by classname and targetname.
  * @param start Search start entity.
- * @param targetname Targetname to search for.
+ * @param targetname Targetname to search for. Supports patterns, IE: door_* will match door_1 door_2 door_foorbar
  * @param classname Limit search to this classname.
  * @return Entity index if found or INVALID_EHANDLE_INDEX if not found.
 */
@@ -814,7 +814,7 @@ int UtilHelpers::FindNamedEntityByClassname(int start, const char* targetname, c
 		
 		if (entprops->GetEntPropString(i, Prop_Data, "m_iName", name, 64, length))
 		{
-			if (strcasecmp(name, targetname) == 0)
+			if (UtilHelpers::StringMatchesPattern(name, targetname, 0))
 			{
 				return i;
 			}

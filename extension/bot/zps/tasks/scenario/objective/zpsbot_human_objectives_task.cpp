@@ -146,7 +146,7 @@ bool CZPSBotObjectiveUseItemTask::IsPossible(CZPSBot* bot)
 {
 	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
 	const std::string& name = mgr.GetItemSearchID();
-	CBaseEntity* specificitem = mgr.GetUseButton(); // hack, to avoid having to add another variable + native, use the usebutton
+	CBaseEntity* specificitem = mgr.GetGenericTargetEntity();
 
 	// target not set
 	if (mgr.GetUseItemTarget() == nullptr)
@@ -229,10 +229,35 @@ TaskResult<CZPSBot> CZPSBotObjectiveUseItemTask::OnTaskUpdate(CZPSBot* bot)
 	return Continue();
 }
 
+QueryAnswerType CZPSBotObjectiveUseItemTask::ShouldPickup(CBaseBot* me, CBaseEntity* item)
+{
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+	CBaseEntity* entity = mgr.GetUseItemTarget();
+
+	if (!entity)
+	{
+		return ANSWER_UNDEFINED;
+	}
+
+	Vector eyePos = me->GetEyeOrigin();
+	Vector p1 = UtilHelpers::getWorldSpaceCenter(entity);
+	Vector p2 = UtilHelpers::getWorldSpaceCenter(item);
+	float d1 = (eyePos - p1).LengthSqr();
+	float d2 = (eyePos - p2).LengthSqr();
+
+	// do not pick up items if the use target is closer than the item
+	if (d1 <= d2)
+	{
+		return ANSWER_NO;
+	}
+
+	return m_usingItem ? ANSWER_UNDEFINED : ANSWER_NO;
+}
+
 bool CZPSBotObjectiveUseItemTask::IsItemEquipped(CZPSBot* bot) const
 {
 	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
-	CBaseEntity* specificitem = mgr.GetUseButton();
+	CBaseEntity* specificitem = mgr.GetGenericTargetEntity();
 	const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
 	if (!activeWeapon)
@@ -258,7 +283,7 @@ bool CZPSBotObjectiveUseItemTask::IsItemEquipped(CZPSBot* bot) const
 void CZPSBotObjectiveUseItemTask::EquipRequiredItem(CZPSBot* bot)
 {
 	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
-	CBaseEntity* specificitem = mgr.GetUseButton();
+	CBaseEntity* specificitem = mgr.GetGenericTargetEntity();
 
 	const CBotWeapon* weapon = bot->GetInventoryInterface()->GetWeaponOfEntity(specificitem);
 

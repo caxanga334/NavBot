@@ -131,6 +131,44 @@ public:
 		return AITask<BotClass>::TryToMaintain(PRIORITY_MEDIUM);
 	}
 
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
+	{
+		if (m_rangeToEntity <= 256.0f)
+		{
+			return ANSWER_NO;
+		}
+
+		return ANSWER_UNDEFINED;
+	}
+
+	QueryAnswerType ShouldHurry(CBaseBot* me) override
+	{
+		if (m_rangeToEntity <= 256.0f)
+		{
+			return ANSWER_YES;
+		}
+
+		return ANSWER_UNDEFINED;
+	}
+
+	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override
+	{
+		CBaseEntity* entity = m_entity.Get();
+
+		if (entity)
+		{
+			CBaseEntity* nearest = me->SelectNearestEntity(entity, item);
+
+			if (nearest == entity)
+			{
+				// bot is closer to the use target, don't pick up items for now
+				return ANSWER_NO;
+			}
+		}
+		
+		return ANSWER_UNDEFINED;
+	}
+
 	const char* GetName() const override { return "UseEntity"; }
 
 private:

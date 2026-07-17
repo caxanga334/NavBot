@@ -1145,3 +1145,10 @@ CON_COMMAND_F(sm_navbot_tool_trace_line, "Trace line debug", FCVAR_GAMEDLL)
 		}
 	}
 }
+
+CON_COMMAND_F(sm_navbot_tool_force_round_restart, "Forces NavBot to run the round restart routines.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	extmanager->GetMod()->OnRoundStart();
+	CNavMesh::NotifyRoundRestart();
+	META_CONPRINTF("Round restart forced! \n");
+}

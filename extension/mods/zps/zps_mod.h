@@ -48,6 +48,7 @@ public:
 	void SMAPI_SetObjectiveItemSearchID(const char* str) { m_objectiveManager.SetItemSearchID(str); }
 	void SMAPI_SetObjectiveItemUseTarget(CBaseEntity* entity) { m_objectiveManager.SetUseItemTarget(entity); }
 	void SMAPI_SetObjectiveDetectionRadius(float radius) { m_objectiveManager.SetDetectionRadius(radius); }
+	void SMAPI_SetObjectiveGenericTargetEntity(CBaseEntity* entity) { m_objectiveManager.SetGenericTargetEntity(entity); }
 	void SMAPI_ResetObjective() { m_objectiveManager.Reset(); }
 #endif // !NO_SOURCEPAWN_API
 
