@@ -395,10 +395,11 @@ namespace basebot
 				return 0;
 			}
 
-			CBaseEntity* entity = pawnutils::ReadEntity(context, params, startparam);
+			CBaseEntity* entity = gamehelpers->ReferenceToEntity(pawnutils::ReadIntByRef(context, params, startparam));
 
 			if (!entity)
 			{
+				context->ReportError("NULL entity!");
 				return 0;
 			}
 
@@ -420,7 +421,7 @@ namespace basebot
 				return 0;
 			}
 
-			data.fldata = pawnutils::ReadFloat(params, startparam);
+			data.fldata = pawnutils::ReadFloatByRef(context, params, startparam);
 
 			if (data.fldata < 0.0f)
 			{
@@ -442,7 +443,7 @@ namespace basebot
 				return 0;
 			}
 
-			data.fldata = pawnutils::ReadFloat(params, startparam);
+			data.fldata = pawnutils::ReadFloatByRef(context, params, startparam);
 
 			if (data.fldata < 256.0f)
 			{
@@ -456,14 +457,15 @@ namespace basebot
 		{
 			if (startparam + 2U > numparams)
 			{
-				context->ReportError("This command requires a float to be passed!");
+				context->ReportError("This command requires three arguments to be passed!");
 				return 0;
 			}
 
-			CBaseEntity* entity = pawnutils::ReadEntity(context, params, startparam);
+			CBaseEntity* entity = gamehelpers->ReferenceToEntity(pawnutils::ReadIntByRef(context, params, startparam));
 
 			if (!entity)
 			{
+				context->ReportError("NULL entity!");
 				return 0;
 			}
 
@@ -474,8 +476,8 @@ namespace basebot
 			}
 
 			data.entdata.Set(entity);
-			data.fldata = pawnutils::ReadFloat(params, startparam + 1U);
-			data.movegoal.x = pawnutils::ReadFloat(params, startparam + 2U);
+			data.fldata = pawnutils::ReadFloatByRef(context, params, startparam + 1U);
+			data.movegoal.x = pawnutils::ReadFloatByRef(context, params, startparam + 2U);
 
 			break;
 		}

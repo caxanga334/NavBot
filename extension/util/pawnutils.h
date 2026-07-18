@@ -215,7 +215,7 @@ namespace pawnutils
 	}
 	// Gets the mod interface pointer, returns NULL if the type doesn't match.
 	template <typename T>
-	T* GetModInterfacePointerOfType(Mods::ModType type)
+	inline T* GetModInterfacePointerOfType(Mods::ModType type)
 	{
 		CBaseMod* mod = extmanager->GetMod();
 
@@ -225,6 +225,41 @@ namespace pawnutils
 		}
 
 		return static_cast<T*>(mod);
+	}
+	inline cell_t ReadIntByRef(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index)
+	{
+		cell_t* addr;
+		context->LocalToPhysAddr(params[index], &addr);
+		return *addr;
+	}
+	inline float ReadFloatByRef(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index)
+	{
+		cell_t* addr;
+		context->LocalToPhysAddr(params[index], &addr);
+		return sp_ctof(*addr);
+	}
+	template <typename T>
+	inline void WriteIntByRef(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index, T value)
+	{
+		static_assert(std::is_integral_v<T>);
+		cell_t* addr;
+		context->LocalToPhysAddr(params[index], &addr);
+		*addr = static_cast<cell_t>(value);
+	}
+	template <typename T>
+	inline void WriteFloatByRef(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index, T value)
+	{
+		static_assert(std::is_floating_point_v<T>);
+		cell_t* addr;
+		context->LocalToPhysAddr(params[index], &addr);
+
+		if constexpr (std::is_same_v<T, float>)
+		{
+			*addr = sp_ftoc(value);
+			return;
+		}
+
+		*addr = sp_ftoc(static_cast<float>(value));
 	}
 }
 
