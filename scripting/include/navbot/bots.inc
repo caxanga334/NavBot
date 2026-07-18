@@ -171,11 +171,11 @@ typeset NavBotScriptedBehaviorCB
 	 * Main callback for NAVBOT_PLUGINCMD_SCRIPTED.
 	 * 
 	 * @param bot			Bot running the scripted behavior.
-	 * @param moveGoal		World position the bot will path to if the result is different from Plugin_Continue.
+	 * @param moveGoal		World position the bot will path to.
 	 * @param routeType		Which route type the navigator should use when computing a path.
-	 * @return				Return Plugin_Stop top end the behavior. Everything else keeps the behavior running.
+	 * @return				Returning Plugin_Stop ends the behavior. Return Plugin_Changed or higher to move the bot. Returning Plugin_Continue keeps the behavior running but doesn't path to moveGoal.
 	 */
-	function Action (NavBot bot, float moveGoal[3], NavBotRouteType routeType);
+	function Action (NavBot bot, float moveGoal[3], NavBotRouteType& routeType);
 };
 
 /**
