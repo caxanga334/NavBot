@@ -322,6 +322,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBot.SendPluginCommand");
 	MarkNativeAsOptional("NavBot.SendScriptedPluginCommand");
 	MarkNativeAsOptional("NavBot.GetHealthState");
+	MarkNativeAsOptional("NavBot.GetCurrentPath");
 
 	/* Base Interface */
 	MarkNativeAsOptional("NavBotBotInterface.Reset");
@@ -373,6 +374,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotPlayerControllerInterface.ReleaseButtonByID");
 
 	/* Behavior Interface */
+	MarkNativeAsOptional("NavBotBehaviorInterface.GetTaskDebugString");
 	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldAttack");
 	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldHurry");
 	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldRetreat");

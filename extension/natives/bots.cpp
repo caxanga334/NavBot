@@ -7,6 +7,7 @@
 #include <bot/interfaces/knownentity.h>
 #include <bot/pluginbot/pluginbot.h>
 #include <mods/basemod.h>
+#include <bot/interfaces/path/meshnavigator.h>
 #include "interfaces/movement.h"
 #include "interfaces/behavior.h"
 #include "interfaces/combat.h"
@@ -522,6 +523,78 @@ namespace basebot
 
 		return static_cast<cell_t>(bot->GetHealthState());
 	}
+	static cell_t Native_GetCurrentPath(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		CMeshNavigator* nav = bot->GetActiveNavigator();
+
+		if (!nav)
+		{
+			return 0;
+		}
+
+		const BotPathSegment* goal = nav->GetGoalSegment();
+		
+		if (!goal)
+		{
+			return 0;
+		}
+
+		const BotPathSegment* prev = nav->GetPriorSegment(goal);
+
+		if (!prev)
+		{
+			return 0;
+		}
+
+		cell_t n = 2; // starts at 2 since goal and prev is written.
+		cell_t* x;
+		cell_t* y;
+		cell_t* z;
+
+		context->LocalToPhysAddr(params[2], &x);
+		context->LocalToPhysAddr(params[3], &y);
+		context->LocalToPhysAddr(params[4], &z);
+		cell_t maxsize = params[5];
+
+		if (maxsize < 3)
+		{
+			context->ReportError("Output array is too small!");
+			return 0;
+		}
+
+		x[0] = sp_ftoc(prev->goal.x);
+		y[0] = sp_ftoc(prev->goal.y);
+		z[0] = sp_ftoc(prev->goal.z);
+		x[1] = sp_ftoc(goal->goal.x);
+		y[1] = sp_ftoc(goal->goal.y);
+		z[1] = sp_ftoc(goal->goal.z);
+
+		const BotPathSegment* next = nav->GetNextSegment(goal);
+
+		while (next != nullptr)
+		{
+			x[n] = sp_ftoc(next->goal.x);
+			y[n] = sp_ftoc(next->goal.y);
+			z[n] = sp_ftoc(next->goal.z);
+
+			if (++n >= maxsize)
+			{
+				break;
+			}
+
+			next = nav->GetNextSegment(next);
+		}
+
+		return n;
+	}
 }
 
 void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
@@ -541,6 +614,7 @@ void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBot.SendImpulse", basebot::Native_SendImpulse},
 		{"NavBot.GetDebugIdentifier", basebot::Native_GetDebugIdentifier},
 		{"NavBot.GetHealthState", basebot::Native_GetHealthState},
+		{"NavBot.GetCurrentPath", basebot::Native_GetCurrentPath},
 		/* this should be moved */
 		{"NavBotManager.GetNavBotByIndex", GetNavBotByIndex},
 		{"NavBot.DelayedFakeClientCommand", DelayedFakeClientCommand},

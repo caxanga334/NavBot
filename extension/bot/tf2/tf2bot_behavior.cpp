@@ -55,3 +55,8 @@ IDecisionQuery* CTF2BotBehavior::GetDecisionQueryResponder()
 {
 	return m_manager;
 }
+
+const char* CTF2BotBehavior::GetTaskDebugString() const
+{
+	return m_manager->GetTaskDebugString();
+}

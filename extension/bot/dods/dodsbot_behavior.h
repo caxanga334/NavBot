@@ -16,6 +16,7 @@ public:
 
 	std::vector<IEventListener*>* GetListenerVector() override;
 	IDecisionQuery* GetDecisionQueryResponder() override;
+	const char* GetTaskDebugString() const override;
 private:
 	AITaskManager<CDoDSBot>* m_manager;
 	std::vector<IEventListener*> m_listeners;

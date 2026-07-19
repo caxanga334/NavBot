@@ -163,6 +163,21 @@ methodmap NavBot < NavBotBasePlayer
 	 * @error			Invalid bot instance.
 	 */
 	public native NavBotHealthState GetHealthState();
+	/**
+	 * Gets the current bot's path as a list of world positions the bot will follow.
+	 * Index 0 is the bot's previous goal.
+	 * Index 1 is the bot's current move goal.
+	 * Note: Currently natives cannot write to a multi-dimension arrays, each coordinate is written to a separate array.
+	 * Recommended array size: at least 128
+	 * 
+	 * @param x			Float array to write the X coordinates.
+	 * @param y			Float array to write the Y coordinates.
+	 * @param z			Float array to write the Z coordinates.
+	 * @param size		Size of the float arrays. Bad things will happen if they don't have the same size.
+	 * 
+	 * @return			Number of path segments written to the array. The last valid index is the return value minus one.
+	 */
+	public native int GetCurrentPath(float[] x, float[] y, float[] z, const int size);
 }
 
 typeset NavBotScriptedBehaviorCB

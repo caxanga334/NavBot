@@ -797,7 +797,7 @@ void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
 		{
 			input->PressUseButton();
 			StopUsingEntity();
-			StartUseEntityCooldown(1.0f);
+			StartUseEntityCooldown(2.0f);
 		}
 	}
 }

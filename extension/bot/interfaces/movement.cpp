@@ -1207,13 +1207,10 @@ bool IMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
 		return true;
 	}
 
-	if (UtilHelpers::StringMatchesPattern(classname, "prop_door*", 0))
+	if (entprops->HasEntProp(entity, Prop_Data, "m_eDoorState"))
 	{
 		int doorstate = 0;
-		if (!entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate))
-		{
-			return true; // lookup failed, assume it's walkable
-		}
+		entprops->GetEntProp(index, Prop_Data, "m_eDoorState", doorstate);
 
 		if (doorstate == static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_OPEN))
 		{
@@ -1293,6 +1290,7 @@ bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
 
 	const char* classname = gamehelpers->GetEntityClassname(entity);
 
+#if 0 // disabled, should be the same as func_door
 	if (std::strcmp(classname, "func_door_rotating") == 0)
 	{
 		int togglestate = static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM);
@@ -1304,8 +1302,10 @@ bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
 			return false;
 		}
 	}
+#endif // 0
 
-	if (UtilHelpers::StringMatchesPattern(classname, "func_door*", 0))
+	// Experimental detection via datamap class names since level designers can change entity classnames via AddOutput
+	if (UtilHelpers::datamap::IsEntityOfClass(entity, "CBaseDoor"))
 	{
 		int togglestate = static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM);
 		entprops->GetEntProp(entity, Prop_Data, "m_toggle_state", togglestate);
@@ -1317,7 +1317,8 @@ bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
 		}
 	}
 
-	if (UtilHelpers::StringMatchesPattern(classname, "prop_door*", 0))
+	// Detect prop_door_rotating via it's unique m_eDoorState datamap property.
+	if (entprops->HasEntProp(entity, Prop_Data, "m_eDoorState"))
 	{
 		int doorstate = 0;
 		entprops->GetEntProp(entity, Prop_Data, "m_eDoorState", doorstate);
@@ -1754,7 +1755,7 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 
 	const char* classname = gamehelpers->GetEntityClassname(entity);
 
-	if (std::strcmp(classname, "func_door") == 0 || std::strcmp(classname, "func_door_rotating") == 0)
+	if (UtilHelpers::datamap::IsEntityOfClass(entity, "CBaseDoor"))
 	{
 		constexpr int SF_USEOPENS = 256; // spawn flag to allow +USE on brush doors. See: https://developer.valvesoftware.com/wiki/Func_door
 
@@ -1776,7 +1777,8 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 
 		return false;
 	}
-	if (std::strcmp(classname, "prop_door_rotating") == 0)
+	
+	if (entprops->HasEntProp(entity, Prop_Data, "m_eDoorState"))
 	{
 		int state = 0;
 		entprops->GetEntProp(entity, Prop_Data, "m_eDoorState", state);

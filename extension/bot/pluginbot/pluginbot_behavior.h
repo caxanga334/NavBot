@@ -19,6 +19,7 @@ public:
 
 	std::vector<IEventListener*>* GetListenerVector() override;
 	IDecisionQuery* GetDecisionQueryResponder() override;
+	const char* GetTaskDebugString() const override { return m_manager->GetTaskDebugString(); }
 
 private:
 	std::unique_ptr<AITaskManager<CPluginBot>> m_manager;

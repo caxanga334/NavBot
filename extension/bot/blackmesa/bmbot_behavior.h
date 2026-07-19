@@ -20,6 +20,7 @@ public:
 
 	std::vector<IEventListener*>* GetListenerVector() override;
 	IDecisionQuery* GetDecisionQueryResponder() override;
+	const char* GetTaskDebugString() const override;
 private:
 	std::unique_ptr<AITaskManager<CBlackMesaBot>> m_manager;
 	std::vector<IEventListener*> m_listeners;

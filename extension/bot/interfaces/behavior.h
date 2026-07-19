@@ -24,6 +24,8 @@ public:
 	// Returns who will answer to decision queries
 	virtual IDecisionQuery* GetDecisionQueryResponder() = 0;
 
+	virtual const char* GetTaskDebugString() const = 0;
+
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override;
 	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override;
@@ -66,6 +68,8 @@ public:
 	}
 
 	IDecisionQuery* GetDecisionQueryResponder() override { return m_manager.get(); }
+
+	const char* GetTaskDebugString() const override { return m_manager->GetTaskDebugString(); }
 
 	std::vector<IEventListener*>* GetListenerVector() override
 	{

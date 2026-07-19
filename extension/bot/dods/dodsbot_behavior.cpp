@@ -47,3 +47,8 @@ IDecisionQuery* CDoDSBotBehavior::GetDecisionQueryResponder()
 {
 	return m_manager;
 }
+
+const char* CDoDSBotBehavior::GetTaskDebugString() const
+{
+	return m_manager->GetTaskDebugString();
+}

@@ -16,6 +16,7 @@ public:
 	void Update() override;
 
 	IDecisionQuery* GetDecisionQueryResponder() override { return m_manager.get(); }
+	const char* GetTaskDebugString() const override { return m_manager->GetTaskDebugString(); }
 	std::vector<IEventListener*>* GetListenerVector() override;
 
 private:

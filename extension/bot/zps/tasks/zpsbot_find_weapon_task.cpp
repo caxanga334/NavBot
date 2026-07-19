@@ -96,20 +96,12 @@ bool CZPSBotFindWeaponTask::IsPossible(CZPSBot* bot, CBaseEntity** outweapon)
 	ZPSWeaponSearch search{ bot };
 	search.DoSearch();
 
-	auto& result = search.GetSearchResult();
-
-	if (result.empty())
+	if (search.IsResultEmpty())
 	{
 		return false;
 	}
 
-	if (result.size() == 1U)
-	{
-		*outweapon = result[0].first;
-		return true;
-	}
-
-	*outweapon = result[CBaseBot::s_botrng.GetRandomInt<std::size_t>(0U, result.size() - 1U)].first;
+	*outweapon = search.SelectRandomResult();
 	return true;
 }
 

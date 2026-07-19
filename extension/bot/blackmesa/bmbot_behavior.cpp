@@ -43,3 +43,8 @@ IDecisionQuery* CBlackMesaBotBehavior::GetDecisionQueryResponder()
 {
 	return m_manager.get();
 }
+
+const char* CBlackMesaBotBehavior::GetTaskDebugString() const
+{
+	return m_manager->GetTaskDebugString();
+}

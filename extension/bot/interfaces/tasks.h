@@ -191,10 +191,13 @@ public:
 
 	virtual std::vector<IEventListener*>* GetListenerVector();
 
-	bool IsRunningTasks() { return m_task != nullptr; }
+	bool IsRunningTasks() const { return m_task != nullptr; }
 
 	void Reset(AITask<BotClass>* task);
 	void Update(BotClass* bot);
+
+	// Gets the task debug string. Returns NULL if not running a task.
+	const char* GetTaskDebugString() const;
 
 	// Notify that a task has ended, add it to the list of tasks for deallocation
 	void NotifyTaskEnd(AITask<BotClass>* task) { m_taskbin.push_back(task); }
@@ -507,6 +510,17 @@ inline void AITaskManager<BotClass>::Update(BotClass* bot)
 	m_task = m_task->RunTask(bot, this, m_task->ProcessTaskUpdate(bot, this));
 
 	CleanUpDeadTasks();
+}
+
+template<typename BotClass>
+inline const char* AITaskManager<BotClass>::GetTaskDebugString() const
+{
+	if (!IsRunningTasks())
+	{
+		return "";
+	}
+
+	return m_task->DebugString();
 }
 
 template<typename BotClass>

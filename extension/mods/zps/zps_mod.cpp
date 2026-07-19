@@ -129,7 +129,7 @@ public:
 		const char* classname = gamehelpers->GetEntityClassname(entity);
 
 		// ZPS: doors uses DAMAGE_EVENTS_ONLY but they still take damage from attacks
-		if (std::strcmp(classname, "prop_door_rotating") == 0)
+		if (UtilHelpers::datamap::IsEntityOfClass(entity, "CBasePropDoor"))
 		{
 			int takedamage = DAMAGE_NO;
 
@@ -146,7 +146,7 @@ public:
 	{
 		const char* classname = gamehelpers->GetEntityClassname(entity);
 
-		if (std::strcmp(classname, "prop_door_rotating") == 0)
+		if (UtilHelpers::datamap::IsEntityOfClass(entity, "CBasePropDoor"))
 		{
 			return true;
 		}

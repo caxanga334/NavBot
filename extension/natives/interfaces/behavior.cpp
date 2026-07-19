@@ -8,6 +8,20 @@ namespace natives::bots::interfaces::behavior
 	// Value for when a valid answer cannot be obtained for a query.
 	constexpr cell_t BEHAVIOR_DECISION_QUERY_INVALID_ANSWER = -1;
 
+	static cell_t GetTaskDebugString(IPluginContext* context, const cell_t* params)
+	{
+		IBehavior* iface = pawnutils::UnsafeCastPawnAddressToObject<IBehavior>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		const char* debugstr = iface->GetTaskDebugString();
+		context->StringToLocal(params[2], static_cast<size_t>(params[3]), debugstr);
+		return 0;
+	}
 	static cell_t ShouldAttack(IPluginContext* context, const cell_t* params)
 	{
 		IBehavior* iface = pawnutils::UnsafeCastPawnAddressToObject<IBehavior>(context, params, 1);
@@ -104,6 +118,7 @@ namespace natives::bots::interfaces::behavior
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
 		sp_nativeinfo_t list[] = {
+			{"NavBotBehaviorInterface.GetTaskDebugString", GetTaskDebugString},
 			{"NavBotBehaviorInterface.ShouldAttack", ShouldAttack},
 			{"NavBotBehaviorInterface.ShouldHurry", ShouldHurry},
 			{"NavBotBehaviorInterface.ShouldRetreat", ShouldRetreat},

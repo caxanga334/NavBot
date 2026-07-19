@@ -19,6 +19,15 @@ enum NavBotQueryAnswerType
 methodmap NavBotBehaviorInterface < NavBotBotInterface
 {
 	/**
+	 * Gets the bot's task debug string.
+	 * This is a string containg what tasks the bot behavior is running.
+	 * 
+	 * @param ptr			Address to the bot behavior interface.
+	 * @param buffer		Char array buffer to write to. Recommended at least 512 in size.
+	 * @parma size			Size of the buffer array.
+	 */
+	public static native void GetTaskDebugString(Address ptr, char[] buffer, const int size);
+	/**
 	 * Queries the bot behavior to see if they should attack the given entity.
 	 * 
 	 * @param ptr			Address to the bot behavior interface.

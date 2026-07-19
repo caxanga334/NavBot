@@ -387,6 +387,16 @@ namespace botsharedutils::search
 		const SearchData& GetSearchResult() const { return m_data; }
 		// True if the result vector is empty
 		bool IsResultEmpty() const { return m_data.empty(); }
+		// Returns a random entity.
+		CBaseEntity* SelectRandomResult() const
+		{
+			if (IsResultEmpty()) { return nullptr; }
+
+			if (m_data.size() == 1U) { return m_data[0].first; }
+
+			const std::size_t index = randomgen->GetRandomInt<std::size_t>(0U, m_data.size() - 1U);
+			return m_data[index].first;
+		}
 		// Returns the entity with the smallest travel cost.
 		CBaseEntity* SelectNearest() const
 		{
@@ -473,7 +483,7 @@ namespace botsharedutils::search
 		virtual bool IsSelected(CBaseEntity* entity)
 		{
 			m_position = GetEntityPosition(entity);
-			m_area = static_cast<NavClass*>(TheNavMesh->GetNearestNavArea(m_position, 600.0f, m_checklos, m_checkground, m_bot->GetCurrentTeamIndex()));
+			m_area = static_cast<NavClass*>(TheNavMesh->GetNearestNavArea(m_position, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 1.5f, m_checklos, m_checkground, m_bot->GetCurrentTeamIndex()));
 
 			if (IsEntityValid(entity, m_area) && IsPossible(entity, m_bot, m_area))
 			{
