@@ -7,6 +7,7 @@
 #include <navmesh/nav_pathfind.h>
 #include <sdkports/sdk_traces.h>
 #include <bot/interfaces/decisionquery.h>
+#include <bot/interfaces/path/basepath.h>
 #include <mods/modhelpers.h>
 
 namespace botsharedutils
