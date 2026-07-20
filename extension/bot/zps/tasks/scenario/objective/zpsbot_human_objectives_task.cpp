@@ -5,6 +5,7 @@
 #include <bot/tasks_shared/bot_shared_roam.h>
 #include <bot/tasks_shared/bot_shared_drop_weapon.h>
 #include <bot/tasks_shared/bot_shared_collect_items.h>
+#include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include "zpsbot_human_objectives_task.h"
 
 AITask<CZPSBot>* CZPSBotObjectiveFindItemTask::InitialNextTask(CZPSBot* bot)
@@ -301,4 +302,82 @@ void CZPSBotObjectiveUseItemTask::EquipRequiredItem(CZPSBot* bot)
 		m_switchDelay.Start(3.0f);
 		bot->GetInventoryInterface()->EquipWeapon(weapon);
 	}
+}
+
+bool CZPSBotObjectiveFollowItemCarrierTask::IsPossible(CZPSBot* bot, CBaseEntity** carrier)
+{
+	CBaseEntity* pPlayer = nullptr;
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+
+	auto func = [&pPlayer, &mgr](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+
+		if (pEntity)
+		{
+			if (modhelpers->GetEntityTeamNumber(pEntity) != static_cast<int>(zps::ZPSTeam::ZPS_TEAM_SURVIVORS))
+			{
+				return;
+			}
+
+			if (modhelpers->IsDead(pEntity))
+			{
+				return;
+			}
+
+			if (zpslib::PlayerHasNamedItem(pEntity, mgr.GetItemSearchID().c_str()))
+			{
+				pPlayer = pEntity;
+				return;
+			}
+		}
+	};
+
+	UtilHelpers::ForEachPlayer(func);
+
+	if (pPlayer)
+	{
+		if (pPlayer == bot->GetEntity())
+		{
+			return false;
+		}
+
+		*carrier = pPlayer;
+		return true;
+	}
+
+	return false;
+}
+
+AITask<CZPSBot>* CZPSBotObjectiveFollowItemCarrierTask::InitialNextTask(CZPSBot* bot)
+{
+	CBaseEntity* carrier = m_carrier.Get();
+
+	if (carrier)
+	{
+		return new CBotSharedEscortEntityTask<CZPSBot, CZPSBotPathCost>(bot, carrier, 1e10f, 450.0f);
+	}
+
+	return nullptr;
+}
+
+TaskResult<CZPSBot> CZPSBotObjectiveFollowItemCarrierTask::OnTaskUpdate(CZPSBot* bot)
+{
+	CBaseEntity* carrier = m_carrier.Get();
+
+	if (!carrier)
+	{
+		return Done("Item carrier disconnected!");
+	}
+
+	if (GetNextTask() == nullptr)
+	{
+		return Done("No longer following the item carrier!");
+	}
+
+	if (m_checkInventory.IsElapsed())
+	{
+		m_checkInventory.Start(5.0f);
+	}
+
+	return Continue();
 }

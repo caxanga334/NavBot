@@ -43,8 +43,11 @@ CMeshNavigator::CMeshNavigator() : CPath()
 	m_useEntityAimAt.Init(0.0f, 0.0f, 0.0f);
 	m_avoidIsLeftClear = true;
 	m_avoidIsRightClear = true;
+	m_isDodging = false;
+	m_isUsingADoor = false;
 	m_moveToPos.Init(0.0f, 0.0f, 0.0f);
 	m_pLastObstacle = nullptr;
+	m_dodgeGoal.Init(0.0f, 0.0f, 0.0f);
 }
 
 CMeshNavigator::~CMeshNavigator()
@@ -137,6 +140,11 @@ void CMeshNavigator::Update(CBaseBot* bot)
 	{
 		// bot movements are under control of the movement interface, likely performing an advanced movement that requires multiple steps such as a rocket jump.
 		// Wait until it's done to continue moving the bot.
+		return;
+	}
+
+	if (UpdateDodging(bot))
+	{
 		return;
 	}
 
@@ -779,6 +787,7 @@ void CMeshNavigator::UseEntity(CBaseBot* bot, CBaseEntity* entity, const float t
 	UtilHelpers::math::CalcClosestPointOfEntity(entity, origin, m_useEntityMoveTo);
 	// experimental
 	UtilHelpers::math::CalcClosestPointOfEntity(entity, eyepos, m_useEntityAimAt);
+	ClassifyUseEntity(entity);
 }
 
 void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
@@ -798,6 +807,22 @@ void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)
 			input->PressUseButton();
 			StopUsingEntity();
 			StartUseEntityCooldown(2.0f);
+
+			if (IsUseEntityADoor())
+			{
+				constexpr float DOOR_BACKOFF_DIST = 96.0f;
+				constexpr float DOOR_DODGE_TIME = 0.9f;
+				Vector origin = bot->GetAbsOrigin();
+				Vector to = UtilHelpers::math::BuildDirectionVectorIgnoreZ(origin, m_useEntityMoveTo);
+				Vector pos = (m_useEntityMoveTo - (to * DOOR_BACKOFF_DIST));
+				Vector ground = trace::getground(pos);
+				
+				if (std::abs(origin.z - ground.z) < mover->GetMaxJumpHeight())
+				{
+					// The door might open towards the bot, dodge it.
+					DodgeTo(ground, DOOR_DODGE_TIME);
+				}
+			}
 		}
 	}
 }
@@ -856,6 +881,34 @@ bool CMeshNavigator::ShouldBreakObstacles(CBaseBot* bot)
 	}
 
 	return true;
+}
+
+bool CMeshNavigator::UpdateDodging(CBaseBot* bot)
+{
+	if (m_isDodging)
+	{
+		if (m_dodgeTimer.IsElapsed())
+		{
+			m_isDodging = false;
+			return false;
+		}
+
+		bot->GetMovementInterface()->MoveTowards(m_dodgeGoal, IMovement::MOVEWEIGHT_NAVIGATOR * 2);
+		return true;
+	}
+
+	return false;
+}
+
+void CMeshNavigator::ClassifyUseEntity(CBaseEntity* entity)
+{
+	// reset vars first
+	m_isUsingADoor = false;
+
+	if (entprops->HasEntProp(entity, Prop_Data, "m_bDoorGroup") || entprops->HasEntProp(entity, Prop_Data, "m_eDoorState"))
+	{
+		m_isUsingADoor = true;
+	}
 }
 
 bool CMeshNavigator::Climbing(CBaseBot* bot, const BotPathSegment* segment, const Vector& forward, const Vector& right, const float goalRange)

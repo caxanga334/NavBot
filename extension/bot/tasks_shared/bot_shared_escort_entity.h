@@ -62,11 +62,14 @@ public:
 	// Already busy escorting something, don't help teammates.
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
 
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
+
 	const char* GetName() const override { return "EscortEntity"; }
 
 private:
 	CT m_pathCost;
 	CMeshNavigator m_nav;
+	CPathFailCounter m_counter;
 	CountdownTimer m_timeoutTimer;
 	float m_escortDistance;
 	float m_timeoutDuration;
@@ -130,13 +133,31 @@ inline TaskResult<BT> CBotSharedEscortEntityTask<BT, CT>::OnTaskUpdate(BT* bot)
 		if (m_nav.NeedsRepath())
 		{
 			m_nav.StartRepathTimer(1.0f);
-			m_nav.ComputePathToPosition(bot, pos, m_pathCost);
+			
+			if (!m_nav.ComputePathToPosition(bot, pos, m_pathCost))
+			{
+				if (m_counter.Increase())
+				{
+					return AITask<BT>::Done("Too many path failures!");
+				}
+			}
 		}
 
 		m_nav.Update(bot);
 	}
 
 	return AITask<BT>::Continue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedEscortEntityTask<BT, CT>::OnStuck(BT* bot)
+{
+	if (m_counter.Increase())
+	{
+		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
+	}
+
+	return AITask<BT>::TryToMaintain();
 }
 
 #endif // !NAVBOT_BOT_SHARED_ESCORT_ENTITY_TASK_H_

@@ -859,6 +859,22 @@ namespace UtilHelpers::math
 	}
 
 	/**
+	 * @brief Builds a normalized direction vector that points towards the 'to' vector. Ignores the Z axis.
+	 *
+	 * Addition moves closer to 'to', subtraction moves away from 'to'.
+	 * @param from From position
+	 * @param to To position
+	 * @return Normalized direction vector.
+	 */
+	inline Vector BuildDirectionVectorIgnoreZ(const Vector& from, const Vector& to)
+	{
+		Vector dir = (to - from);
+		dir.z = 0.0f;
+		dir.NormalizeInPlace();
+		return dir;
+	}
+
+	/**
 	 * @brief Given an entity, calculates the nearest point to the entity's AABB
 	 * @param entity Entity to get the nearest point to.
 	 * @param vecWorldPt World position to search the nearest point from.

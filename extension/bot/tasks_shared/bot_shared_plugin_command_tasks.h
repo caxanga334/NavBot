@@ -35,6 +35,11 @@ public:
 
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
+		if (type == IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD)
+		{
+			return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Stop command received!");
+		}
+
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
@@ -124,6 +129,11 @@ public:
 
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
+		if (type == IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD)
+		{
+			return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Stop command received!");
+		}
+
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
@@ -227,6 +237,11 @@ public:
 
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
+		if (type == IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD)
+		{
+			return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Stop command received!");
+		}
+
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
@@ -325,6 +340,11 @@ public:
 
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
+		if (type == IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD)
+		{
+			return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Stop command received!");
+		}
+
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
@@ -426,6 +446,11 @@ public:
 
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
+		if (type == IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD)
+		{
+			return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Stop command received!");
+		}
+
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
@@ -547,6 +572,11 @@ public:
 
 	TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data) override
 	{
+		if (type == IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD)
+		{
+			return AITask<BotClass>::TryDone(PRIORITY_CRITICAL, "Stop command received!");
+		}
+
 		// ignore other plugin commands while this is running
 		return AITask<BotClass>::TryToMaintain(PRIORITY_CRITICAL);
 	}
@@ -643,6 +673,10 @@ namespace plugincommandtask
 			using FOLLOWTASK = CBotSharedEscortEntityTask<BotClass, PathCostClass>;
 			return task->TryPauseFor(new CBotSharedPluginWrapperTask<BotClass, PathCostClass, FOLLOWTASK>(bot, data.entdata.Get(), data.fldata, data.movegoal.x),
 				PRIORITY, REASON.data());
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD:
+		{
+			return task->TryContinue();
 		}
 		default:
 			return task->TryContinue();

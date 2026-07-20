@@ -2062,13 +2062,12 @@ bool CEntPropUtils::SetEntDataString(int entity, int offset, char *value, int ma
 
 std::size_t CEntPropUtils::GetEntPropArraySize(int entity, PropType proptype, const char* prop)
 {
-	CBaseEntity* pEntity = nullptr;
+	CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(entity);
+	return GetEntPropArraySize(pEntity, proptype, prop);
+}
 
-	if (!IndexToAThings(entity, &pEntity, nullptr))
-	{
-		return 0;
-	}
-
+std::size_t CEntPropUtils::GetEntPropArraySize(CBaseEntity* entity, PropType proptype, const char* prop)
+{
 	switch (proptype)
 	{
 	case Prop_Data:
@@ -2076,7 +2075,7 @@ std::size_t CEntPropUtils::GetEntPropArraySize(int entity, PropType proptype, co
 		typedescription_t* td = nullptr;
 		SourceMod::sm_datatable_info_t dinfo;
 
-		if (!FindDataMap(pEntity, dinfo, prop))
+		if (!FindDataMap(entity, dinfo, prop))
 		{
 			return 0;
 		}
@@ -2089,7 +2088,7 @@ std::size_t CEntPropUtils::GetEntPropArraySize(int entity, PropType proptype, co
 	{
 		SourceMod::sm_sendprop_info_t info;
 
-		if (!FindSendProp(&info, pEntity, prop))
+		if (!FindSendProp(&info, entity, prop))
 		{
 			return 0;
 		}

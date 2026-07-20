@@ -1152,3 +1152,36 @@ CON_COMMAND_F(sm_navbot_tool_force_round_restart, "Forces NavBot to run the roun
 	CNavMesh::NotifyRoundRestart();
 	META_CONPRINTF("Round restart forced! \n");
 }
+
+CON_COMMAND_F(sm_navbot_tool_entinfo, "Shows information about a specific entity.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_tool_entinfo <ent index> \n");
+		return;
+	}
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	META_CONPRINTF("%s \n", UtilHelpers::textformat::FormatEntity(entity));
+
+	if (!entity)
+	{
+		return;
+	}
+
+	ServerClass* svclass = gamehelpers->FindEntityServerClass(entity);
+
+	if (svclass && svclass->GetName())
+	{
+		META_CONPRINTF("Server Class name: %s \n", svclass->GetName());
+	}
+
+	ICollideable* collider = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable();
+
+	META_CONPRINTF("Collision Origin: %s Collision Angles: %s\n", 
+		UtilHelpers::textformat::FormatVector(collider->GetCollisionOrigin()), UtilHelpers::textformat::FormatAngles(collider->GetCollisionAngles()));
+	META_CONPRINTF("World Space Center: %s \n", UtilHelpers::textformat::FormatVector(UtilHelpers::getWorldSpaceCenter(entity)));
+}

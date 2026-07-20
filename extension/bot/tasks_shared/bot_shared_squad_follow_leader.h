@@ -27,11 +27,15 @@ public:
 
 	TaskEventResponseResult<BT> OnSight(BT* bot, CBaseEntity* subject) override;
 
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
+	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
+
 	const char* GetName() const override { return "FollowSquadLeader"; }
 private:
 	CT m_pathcost;
 	float m_followrange;
 	CMeshNavigatorAutoRepath m_nav;
+	CPathFailCounter m_counter;
 };
 
 template<typename BT, typename CT>
@@ -75,6 +79,32 @@ template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnSight(BT* bot, CBaseEntity* subject)
 {
 	return AITask<BT>::TryContinue();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnStuck(BT* bot)
+{
+	if (m_counter.Increase())
+	{
+		bot->GetSquadInterface()->DestroySquad();
+		m_counter.Reset();
+	}
+
+	return AITask<BT>::TryToMaintain();
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedSquadFollowLeaderTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	// OnMoveToFailure is fired when the bot cannot find a complete path to the squad leader.
+	// If there are too many failures, give up and leave the squad.
+	if (m_counter.Increase())
+	{
+		bot->GetSquadInterface()->DestroySquad();
+		m_counter.Reset();
+	}
+
+	return AITask<BT>::TryToMaintain();
 }
 
 #endif // !__NAVBOT_BOT_SHARED_SQUAD_FOLLOW_LEADER_TASK_H_

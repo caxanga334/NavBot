@@ -20,7 +20,10 @@ namespace zpslib
 	bool IsUseableTriggerDisabled(CBaseEntity* entity);
 	// Gets the item state of a item_deliver
 	zps::ItemDeliverStates GetItemDeliverState(CBaseEntity* entity);
+	std::string GetItemDeliverIDName(CBaseEntity* entity);
 	float GetPlayerWeight(CBaseEntity* player);
+	// Checks if the given player owns an item_deliver with the given ID name
+	bool PlayerHasNamedItem(CBaseEntity* player, const char* id);
 }
 
 

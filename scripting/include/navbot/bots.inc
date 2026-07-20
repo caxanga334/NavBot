@@ -27,6 +27,7 @@ enum NavBotPluginCommandTypes
 	NAVBOT_PLUGINCMD_PATROL, // Patrols the areas near the bot.
 	NAVBOT_PLUGINCMD_ROAM, // Moves to a random destination.
 	NAVBOT_PLUGINCMD_FOLLOW_ENTITY, // Follows an entity
+	NAVBOT_PLUGINCMD_STOPCMD, // Stops an active scripted plugin command. Does nothing if not running one.
 
 	MAX_PLUGIN_COMMAND_TYPES
 };

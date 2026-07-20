@@ -22,9 +22,16 @@ void CDoorNavBlocker::Update()
 {
 	// Update is only called if IsValid returns true, which checks if the door is non-NULL.
 	CBaseEntity* door = m_door.Get();
-	bool locked = false;
+	
 	m_blocked = false;
 
+	// Assume open doors never blocks
+	if (IsDoorOpen(door))
+	{
+		return;
+	}
+
+	bool locked = false;
 	entprops->GetEntPropBool(door, Prop_Data, "m_bLocked", locked);
 
 	if (locked)
@@ -32,19 +39,6 @@ void CDoorNavBlocker::Update()
 		// door is locked, mark as blocked
 		m_blocked = true;
 		return;
-	}
-
-	if (m_doortype == DOORTYPE_BRUSH)
-	{
-		int togglestate = static_cast<int>(TS_AT_TOP);
-		entprops->GetEntProp(door, Prop_Data, "m_toggle_state", togglestate);
-
-		// door is currently open, assume not blocked
-		if (togglestate == static_cast<int>(TS_AT_TOP) || togglestate == static_cast<int>(TS_GOING_UP))
-		{
-			m_blocked = false;
-			return;
-		}
 	}
 
 	CBaseEntity* trigger = m_trigger.Get();
@@ -348,4 +342,31 @@ void CDoorNavBlocker::DetectDoorType(CBaseEntity* door)
 	{
 		m_doortype = DOORTYPE_PROP;
 	}
+}
+
+bool CDoorNavBlocker::IsDoorOpen(CBaseEntity* door) const
+{
+	if (m_doortype == DoorType::DOORTYPE_PROP)
+	{
+		int doorstate = 0;
+		entprops->GetEntProp(door, Prop_Data, "m_eDoorState", doorstate);
+
+		if (doorstate == static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_OPEN) || doorstate == static_cast<int>(sdkdefs::DoorState_t::DOOR_STATE_OPENING))
+		{
+			return true;
+		}
+
+		return false;
+	}
+
+	// brush doors
+	int toggle_state = -1;
+	entprops->GetEntProp(door, Prop_Data, "m_toggle_state", toggle_state);
+
+	if (toggle_state == static_cast<int>(TOGGLE_STATE::TS_AT_TOP) || toggle_state == static_cast<int>(TOGGLE_STATE::TS_GOING_UP))
+	{
+		return true;
+	}
+
+	return false;
 }

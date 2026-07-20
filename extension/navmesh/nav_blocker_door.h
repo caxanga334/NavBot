@@ -55,6 +55,7 @@ protected:
 	void CheckButtons(const std::vector<CBaseEntity*>& buttons);
 	void AddDoorAreas(CBaseEntity* door);
 	virtual void DetectDoorType(CBaseEntity* door);
+	bool IsDoorOpen(CBaseEntity* door) const;
 };
 
 

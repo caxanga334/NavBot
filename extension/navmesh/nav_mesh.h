@@ -589,8 +589,8 @@ public:
 	 */
 	std::optional<std::string> GetPlaceDisplayName(Place place) const;
 
-	static bool GetGroundHeight( const Vector &pos, float *height, Vector *normal = NULL );		// get the Z coordinate of the topmost ground level below the given point
-	bool GetSimpleGroundHeight( const Vector &pos, float *height, Vector *normal = NULL ) const;// get the Z coordinate of the ground level directly below the given point
+	static bool GetGroundHeight( const Vector &pos, float *height, Vector *normal = nullptr );		// get the Z coordinate of the topmost ground level below the given point
+	bool GetSimpleGroundHeight( const Vector &pos, float *height, Vector *normal = nullptr ) const;// get the Z coordinate of the ground level directly below the given point
 
 
 	/// increase "danger" weights in the given nav area and nearby ones

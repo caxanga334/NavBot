@@ -118,9 +118,38 @@ zps::ItemDeliverStates zpslib::GetItemDeliverState(CBaseEntity* entity)
 	return static_cast<zps::ItemDeliverStates>(state);
 }
 
+std::string zpslib::GetItemDeliverIDName(CBaseEntity* entity)
+{
+	return entprops->GetEntPropString(entity, Prop_Data, "m_strItemID");
+}
+
 float zpslib::GetPlayerWeight(CBaseEntity* player)
 {
 	float value = 0.0f;
 	entprops->GetEntPropFloat(player, Prop_Send, "m_flPlayerWeight", value);
 	return value;
+}
+
+bool zpslib::PlayerHasNamedItem(CBaseEntity* player, const char* id)
+{
+	CHandle<CBaseEntity>* myweapons = entprops->GetCachedDataPtr<CHandle<CBaseEntity>>(player, CEntPropUtils::CacheIndex::CBASECOMBATCHARACTER_MYWEAPONS);
+	std::size_t size = entprops->GetEntPropArraySize(player, Prop_Send, "m_hMyWeapons");
+
+	for (std::size_t i = 0; i < size; i++)
+	{
+		CBaseEntity* entity = myweapons[i].Get();
+
+		if (!entity) { continue; }
+
+		if (!UtilHelpers::FClassnameIs(entity, "item_deliver")) { continue; }
+
+		std::string otherid = GetItemDeliverIDName(entity);
+
+		if (ke::StrCaseCmp(otherid.c_str(), id) == 0)
+		{
+			return true;
+		}
+	}
+
+	return false;
 }

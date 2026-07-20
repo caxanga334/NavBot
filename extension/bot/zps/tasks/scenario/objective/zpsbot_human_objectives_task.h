@@ -43,5 +43,29 @@ private:
 	void EquipRequiredItem(CZPSBot* bot);
 };
 
+class CZPSBotObjectiveFollowItemCarrierTask : public AITask<CZPSBot>
+{
+public:
+	static bool IsPossible(CZPSBot* bot, CBaseEntity** carrier);
+
+	CZPSBotObjectiveFollowItemCarrierTask(CBaseEntity* carrier) :
+		m_carrier(carrier)
+	{
+	}
+
+	AITask<CZPSBot>* InitialNextTask(CZPSBot* bot) override;
+
+	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
+
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
+
+	const char* GetName() const override { return "ObjectiveFollowItemCarrier"; }
+
+private:
+	CHandle<CBaseEntity> m_carrier;
+	CountdownTimer m_checkInventory;
+};
+
 
 #endif // !__NAVBOT_ZPSBOT_TASKS_SCENARIO_HUMAN_OBJECTIVES_H_

@@ -103,6 +103,12 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 			return PauseFor(new CZPSBotObjectiveUseItemTask, "Using an item!");
 		}
 
+		CBaseEntity* carrier = nullptr;
+		if (CZPSBotObjectiveFollowItemCarrierTask::IsPossible(bot, &carrier))
+		{
+			return PauseFor(new CZPSBotObjectiveFollowItemCarrierTask(carrier), "Following teammate carrying the needed item!");
+		}
+
 		// go find one
 		return PauseFor(new CZPSBotObjectiveFindItemTask, "Finding an item!");
 	}

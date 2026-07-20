@@ -1304,8 +1304,8 @@ bool IMovement::IsEntityAnObstacle(CBaseEntity* entity) const
 	}
 #endif // 0
 
-	// Experimental detection via datamap class names since level designers can change entity classnames via AddOutput
-	if (UtilHelpers::datamap::IsEntityOfClass(entity, "CBaseDoor"))
+	// m_bDoorGroup is exclusive to the brush based doors (and func_water).
+	if (entprops->HasEntProp(entity, Prop_Data, "m_bDoorGroup"))
 	{
 		int togglestate = static_cast<int>(TOGGLE_STATE::TS_AT_BOTTOM);
 		entprops->GetEntProp(entity, Prop_Data, "m_toggle_state", togglestate);
@@ -1755,7 +1755,7 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 
 	const char* classname = gamehelpers->GetEntityClassname(entity);
 
-	if (UtilHelpers::datamap::IsEntityOfClass(entity, "CBaseDoor"))
+	if (entprops->HasEntProp(entity, Prop_Data, "m_bDoorGroup"))
 	{
 		constexpr int SF_USEOPENS = 256; // spawn flag to allow +USE on brush doors. See: https://developer.valvesoftware.com/wiki/Func_door
 

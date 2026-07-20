@@ -5146,12 +5146,12 @@ bool CNavArea::UpdateAvoidanceObstacles( void )
 		}
 
 		return true;
-	};
+		};
 
 	TheNavMesh->ForEveryAvoidanceObstacles(func);
 	m_avoidanceObstacleHeight = obstructionHeight;
 
-	if ( m_avoidanceObstacleHeight <= 0.5f )
+	if (m_avoidanceObstacleHeight <= 0.5f)
 	{
 		m_avoidanceObstacleHeight = -1.0f;
 		// do not call TheNavMesh->OnAvoidanceObstacleLeftArea( this ); here
@@ -5165,33 +5165,33 @@ bool CNavArea::UpdateAvoidanceObstacles( void )
 
 //--------------------------------------------------------------------------------------------------------------
 // Clear set of func_nav_cost entities that affect this area
-void CNavArea::ClearAllNavCostEntities( void )
+void CNavArea::ClearAllNavCostEntities(void)
 {
-	RemoveAttributes( NAV_MESH_FUNC_COST );
+	RemoveAttributes(NAV_MESH_FUNC_COST);
 	m_funcNavCostVector.RemoveAll();
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
 // Add the given func_nav_cost entity to the cost of this area
-void CNavArea::AddFuncNavCostEntity( CFuncNavCost *cost )
+void CNavArea::AddFuncNavCostEntity(CFuncNavCost* cost)
 {
-	SetAttributes( NAV_MESH_FUNC_COST );
-	m_funcNavCostVector.AddToTail( cost );
+	SetAttributes(NAV_MESH_FUNC_COST);
+	m_funcNavCostVector.AddToTail(cost);
 }
 
 
 //--------------------------------------------------------------------------------------------------------------
 // Return the cost multiplier of this area's func_nav_cost entities for the given actor
-float CNavArea::ComputeFuncNavCost( edict_t *who ) const
+float CNavArea::ComputeFuncNavCost(edict_t* who) const
 {
 	float funcCost = 1.0f;
 
-	for( int i=0; i<m_funcNavCostVector.Count(); ++i )
+	for (int i = 0; i < m_funcNavCostVector.Count(); ++i)
 	{
-		if ( m_funcNavCostVector[i] != NULL )
+		if (m_funcNavCostVector[i] != NULL)
 		{
-			funcCost *= m_funcNavCostVector[i]->GetCostMultiplier( who );
+			funcCost *= m_funcNavCostVector[i]->GetCostMultiplier(who);
 		}
 	}
 
@@ -5200,12 +5200,12 @@ float CNavArea::ComputeFuncNavCost( edict_t *who ) const
 
 
 //--------------------------------------------------------------------------------------------------------------
-bool CNavArea::HasFuncNavAvoid( void ) const
+bool CNavArea::HasFuncNavAvoid(void) const
 {
-	for( int i=0; i<m_funcNavCostVector.Count(); ++i )
+	for (int i = 0; i < m_funcNavCostVector.Count(); ++i)
 	{
-		CFuncNavAvoid *avoid = dynamic_cast< CFuncNavAvoid * >( m_funcNavCostVector[i].Get() );
-		if ( avoid )
+		CFuncNavAvoid* avoid = dynamic_cast<CFuncNavAvoid*>(m_funcNavCostVector[i].Get());
+		if (avoid)
 		{
 			return true;
 		}
@@ -5216,12 +5216,12 @@ bool CNavArea::HasFuncNavAvoid( void ) const
 
 
 //--------------------------------------------------------------------------------------------------------------
-bool CNavArea::HasFuncNavPrefer( void ) const
+bool CNavArea::HasFuncNavPrefer(void) const
 {
-	for( int i=0; i<m_funcNavCostVector.Count(); ++i )
+	for (int i = 0; i < m_funcNavCostVector.Count(); ++i)
 	{
-		CFuncNavPrefer *prefer = dynamic_cast< CFuncNavPrefer * >( m_funcNavCostVector[i].Get() );
-		if ( prefer )
+		CFuncNavPrefer* prefer = dynamic_cast<CFuncNavPrefer*>(m_funcNavCostVector[i].Get());
+		if (prefer)
 		{
 			return true;
 		}
@@ -5232,16 +5232,37 @@ bool CNavArea::HasFuncNavPrefer( void ) const
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CNavArea::CheckWaterLevel( void )
+void CNavArea::CheckWaterLevel(void)
 {
-	Vector pos( GetCenter() );
-	if ( !TheNavMesh->GetGroundHeight( pos, &pos.z ) )
+	m_isUnderwater = false;
+	const Vector& center = GetCenter();
+	Vector pos(center);
+	pos.z += navgenparams->human_crouch_height;
+
+	// if the center + crouch is underwater, then the nav area is underwater.
+	if (((enginetrace->GetPointContents(pos) & MASK_WATER) != 0))
+	{
+		m_isUnderwater = true;
+		return;
+	}
+
+	pos.z = center.z;
+	if ( !CNavMesh::GetGroundHeight( pos, &pos.z ) )
 	{
 		m_isUnderwater = false;
 		return;
 	}
 
 	pos.z += 1;
+
+	// nav areas placed on the surface needs to be detected as underwater
+	// if the height difference is less than half of step height, assume this nav area is not floating
+	// in this case, mark it as not underwater.
+	if (std::abs(center.z - pos.z) < (navgenparams->step_height * 0.5f))
+	{
+		return;
+	}
+
 	m_isUnderwater = (enginetrace->GetPointContents( pos ) & MASK_WATER ) != 0;
 }
 

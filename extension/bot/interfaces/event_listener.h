@@ -67,6 +67,7 @@ public:
 		PLUGINCMD_PATROL, // Patrols the areas near the bot.
 		PLUGINCMD_ROAM, // Moves to a random destination.
 		PLUGINCMD_FOLLOW_ENTITY, // Follows an entity
+		PLUGINCMD_STOPCMD, // Stops an active scripted plugin command. Does nothing if not running one.
 
 		MAX_PLUGIN_COMMAND_TYPES
 	};

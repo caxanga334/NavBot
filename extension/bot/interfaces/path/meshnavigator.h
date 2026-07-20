@@ -39,6 +39,8 @@ public:
 	CBaseEntity* ObstacleAvoidanceGetNearestObstacle() const { return m_avoidObstacle.Get(); }
 	CBaseEntity* GetAvoidingEntity() const { return m_avoidingEntity.Get(); }
 	const Vector& GetMoveToPos() const { return m_moveToPos; }
+	const Vector& GetDodgePos() const { return m_dodgeGoal; }
+	bool IsDodging() const { return m_isDodging; }
 
 protected:
 	// true while the bot is using ladders
@@ -83,6 +85,7 @@ protected:
 	void StartUseEntityCooldown(float time) { m_useEntityCooldown.Start(time); }
 	void SetAvoidingEntity(CBaseEntity* entity) { m_avoidingEntity = entity; }
 	bool IsUseEntityInCooldown() const { return !m_useEntityCooldown.IsElapsed(); }
+	bool IsUseEntityADoor() const { return m_isUsingADoor; }
 	void SetMoveToPos(const Vector& pos) { m_moveToPos = pos; }
 	void SetLastPathObstacle(CBaseEntity* pEnt) { m_pLastObstacle = pEnt; }
 	// This entity pointer may be dangling, use it only for comparing with another pointer.
@@ -107,6 +110,15 @@ protected:
 	 */
 	void TeleportToSegment(CBaseBot* bot, const BotPathSegment* segment) const;
 
+	CountdownTimer& GetDodgeTimer() { return m_dodgeTimer; }
+
+	void DodgeTo(const Vector& goal, const float duration)
+	{
+		m_isDodging = true;
+		m_dodgeGoal = goal;
+		m_dodgeTimer.Start(duration);
+	}
+
 private:
 	CBaseBot* m_me; // bot that is using this navigator
 	const BotPathSegment* m_goal; // the segment the bot is currently trying to reach
@@ -115,6 +127,7 @@ private:
 	CountdownTimer m_useableTimer; // timer for checking for useable obstacles on the path
 	CountdownTimer m_obstructedTimer; // timer for checking how long the path has been obstructed
 	CountdownTimer m_obstacleScanTimer; // timer for checking for obstacles
+	CountdownTimer m_dodgeTimer; // timer for dodging path obstacles
 	IntervalTimer m_sameObstacleTimer;
 	CHandle<CBaseEntity> m_blocker; // Entity blocking my path
 	CHandle<CBaseEntity> m_avoidLeftEntity;
@@ -125,6 +138,8 @@ private:
 	bool m_didAvoidCheck;
 	bool m_avoidIsLeftClear;
 	bool m_avoidIsRightClear;
+	bool m_isDodging;
+	bool m_isUsingADoor;
 	float m_goalTolerance;
 	float m_skipAheadDistance;
 	CountdownTimer m_useEntityTimer;
@@ -133,8 +148,11 @@ private:
 	Vector m_useEntityMoveTo;
 	Vector m_useEntityAimAt;
 	Vector m_moveToPos; // The position the bot is trying to move to since the last Update call
+	Vector m_dodgeGoal;
 
 	bool ShouldBreakObstacles(CBaseBot* bot);
+	bool UpdateDodging(CBaseBot* bot);
+	void ClassifyUseEntity(CBaseEntity* entity);
 };
 
 /**

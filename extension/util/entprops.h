@@ -123,6 +123,14 @@ public:
 	 * @return Array size or 0 if not an array or if the look up failed.
 	 */
 	std::size_t GetEntPropArraySize(int entity, PropType proptype, const char* prop);
+	/**
+	 * @brief Look ups the array size of an entity property.
+	 * @param entity Entity pointer.
+	 * @param proptype Property type.
+	 * @param prop Property name.
+	 * @return Array size or 0 if not an array or if the look up failed.
+	 */
+	std::size_t GetEntPropArraySize(CBaseEntity* entity, PropType proptype, const char* prop);
 	bool GameRules_GetProp(const char *prop, int &result, int size = 4, int element = 0);
 	bool GameRules_GetPropBool(const char* prop, bool& result, int element = 0);
 	bool GameRules_GetPropFloat(const char *prop, float &result, int element = 0);
