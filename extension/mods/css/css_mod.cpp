@@ -321,7 +321,7 @@ CCounterStrikeSourceMod* CCounterStrikeSourceMod::GetCSSMod()
 class CCounterStrikeSourceModHelpers : public IModHelpers
 {
 public:
-	bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction) const override
+	bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction, const Vector* entPos) const override
 	{
 		// see CBasePlayer::FindUseEntity()
 		// https://github.com/ValveSoftware/source-sdk-2013/blob/88fa198fba3fb85d46d4c95018254693fdc3af0a/src/game/shared/baseplayer_shared.cpp#L1067
@@ -332,7 +332,16 @@ public:
 		trace_t tr;
 		Vector eyePos;
 		gameclients->ClientEarPosition(UtilHelpers::BaseEntityToEdict(player), &eyePos);
-		Vector end = UtilHelpers::getWorldSpaceCenter(entity);
+		Vector end;
+
+		if (entPos)
+		{
+			end = *entPos;
+		}
+		else
+		{
+			end = UtilHelpers::getWorldSpaceCenter(entity);
+		}
 
 		trace::line(eyePos, end, useableContents, &filter, tr);
 

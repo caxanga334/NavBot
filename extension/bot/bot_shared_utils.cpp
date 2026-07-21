@@ -412,6 +412,16 @@ bool botsharedutils::RandomDestinationCollector::ShouldSearch(CNavArea* area)
 	return !area->IsBlocked(NAV_TEAM_ANY);
 }
 
+bool botsharedutils::RandomDestinationCollector::ShouldCollect(CNavArea* area)
+{
+	if (m_bot)
+	{
+		return m_bot->GetMovementInterface()->IsAreaTraversable(area);
+	}
+
+	return !area->IsBlocked(NAV_TEAM_ANY);
+}
+
 botsharedutils::IsReachableAreas::IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators) :
 	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), limit, searchLadders, searchLinks, searchElevators, false)
 {
@@ -423,6 +433,11 @@ bool botsharedutils::IsReachableAreas::ShouldSearch(CNavArea* area)
 	// always search the start area
 	if (IsStartArea(area)) { return true; }
 
+	return m_bot->GetMovementInterface()->IsAreaTraversable(area);
+}
+
+bool botsharedutils::IsReachableAreas::ShouldCollect(CNavArea* area)
+{
 	return m_bot->GetMovementInterface()->IsAreaTraversable(area);
 }
 
@@ -914,3 +929,7 @@ bool botsharedutils::SelectReachableUnclearedArea::ShouldCollect(CNavArea* area)
 	return false;
 }
 
+float botsharedutils::search::GetDefaultMaxItemSearchDistance()
+{
+	return extmanager->GetMod()->GetModSettings()->GetCollectItemMaxDistance();
+}

@@ -91,9 +91,10 @@ public:
 	 * @param player Player using the entity.
 	 * @param entity Entity being used.
 	 * @param obstruction Optional. The entity blocking +USE.
+	 * @parma entPos Optional entity position. Defaults to world space center if not specified.
 	 * @return true if an obstructed is found, false otherwise.
 	 */
-	virtual bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction = nullptr) const;
+	virtual bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction = nullptr, const Vector* entPos = nullptr) const;
 	static constexpr int NO_ECON_INDEX = -1; // constant to represent an invalid/no econ index
 	/**
 	 * @brief Given an item, gets the economy index if it has one.

@@ -16,7 +16,7 @@ bool CZPSBotMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTa
 	if (bot->GetMyZPSTeam() == zps::ZPSTeam::ZPS_TEAM_ZOMBIES)
 	{
 		// Zombies can't use open prop doors
-		if (UtilHelpers::FClassnameIs(entity, "prop_door*"))
+		if (entprops->HasEntProp(entity, Prop_Data, "m_eDoorState"))
 		{
 			return false;
 		}

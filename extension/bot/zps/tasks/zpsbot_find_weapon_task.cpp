@@ -11,7 +11,7 @@ class ZPSWeaponSearch final : public botsharedutils::search::SearchReachableEnti
 {
 public:
 	ZPSWeaponSearch(CZPSBot* bot) :
-		botsharedutils::search::SearchReachableEntities<CZPSBot, CZPSNavArea>(bot)
+		botsharedutils::search::SearchReachableEntities<CZPSBot, CZPSNavArea>(bot, extmanager->GetMod()->GetModSettings()->GetCollectItemMaxDistance())
 	{
 		this->AddSearchPattern("weapon_*");
 		m_inventorySize = bot->GetInventoryInterface()->GetInventorySize();

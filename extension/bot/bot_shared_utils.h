@@ -147,6 +147,7 @@ namespace botsharedutils
 		RandomDestinationCollector(CNavArea* start, const float travellimit = 4096.0f);
 
 		bool ShouldSearch(CNavArea* area) override;
+		bool ShouldCollect(CNavArea* area) override;
 
 	private:
 		CBaseBot* m_bot;
@@ -169,6 +170,7 @@ namespace botsharedutils
 		IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders = true, const bool searchLinks = true, const bool searchElevators = true);
 
 		bool ShouldSearch(CNavArea* area) override;
+		bool ShouldCollect(CNavArea* area) override;
 
 		// returns true if this area can be reached.
 		const bool IsReachable(CNavArea* area, float* cost = nullptr) const;
@@ -341,6 +343,8 @@ namespace botsharedutils::threat
 
 namespace botsharedutils::search
 {
+	float GetDefaultMaxItemSearchDistance();
+
 	// Entity pointer, path finding cost
 	using EntitySearchData = std::pair<CBaseEntity*, float>;
 	using SearchData = std::vector<EntitySearchData>;
@@ -360,19 +364,35 @@ namespace botsharedutils::search
 		using Collector = botsharedutils::IsReachableAreas;
 
 		SearchReachableEntities(BotClass* bot, const float maxdist = -1.0f) :
-			m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(false)
+			m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(true)
 		{
 			m_bot = bot;
-			m_maxdist = maxdist;
 			m_area = nullptr;
+
+			if (maxdist <= 0.0f)
+			{
+				m_maxdist = GetDefaultMaxItemSearchDistance();
+			}
+			else
+			{
+				m_maxdist = maxdist;
+			}
 		}
 
 		SearchReachableEntities(BotClass* bot, SearchPatterns&& patterns, const float maxdist = -1.0f) :
-			m_patterns(patterns), m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(false)
+			m_patterns(patterns), m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(true)
 		{
 			m_bot = bot;
-			m_maxdist = maxdist;
 			m_area = nullptr;
+
+			if (maxdist <= 0.0f)
+			{
+				m_maxdist = GetDefaultMaxItemSearchDistance();
+			}
+			else
+			{
+				m_maxdist = maxdist;
+			}
 		}
 
 		virtual ~SearchReachableEntities() = default;
@@ -525,9 +545,12 @@ namespace botsharedutils::search
 				return false;
 			}
 
-			if (bot->GetBehaviorInterface()->ShouldPickup(static_cast<CBaseBot*>(bot), entity) == ANSWER_NO)
+			if (GetCheckCanPickup())
 			{
-				return false;
+				if (bot->GetBehaviorInterface()->ShouldPickup(static_cast<CBaseBot*>(bot), entity) == ANSWER_NO)
+				{
+					return false;
+				}
 			}
 
 			return true;

@@ -2049,4 +2049,53 @@ CON_COMMAND_F(sm_navbot_debug_engine_pred, "Predicts entity movement using QPHYS
 		UtilHelpers::textformat::FormatEntity(pEntity), UtilHelpers::textformat::FormatVector(enginepred.GetPredictionData().pos));
 }
 
+CON_COMMAND_F(sm_navbot_debug_bot_highlight_reachable_areas, "Highlights areas currently reachable to the given bot.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINTF("[SM] Usage: sm_navbot_debug_bot_highlight_reachable_areas <bot index>\n");
+		return;
+	}
+
+	CBaseBot* bot = extmanager->GetBotByIndex(atoi(args[1]));
+
+	if (!bot)
+	{
+		META_CONPRINTF("NULL bot of index %s! \n", args[1]);
+		return;
+	}
+
+	botsharedutils::IsReachableAreas collector(bot, 1e10f);
+	collector.Execute();
+	auto& vec = collector.GetCollectedAreas();
+
+	for (auto area : vec)
+	{
+		area->DrawFilled(255, 255, 0, 127, 30.0);
+	}
+}
+
+CON_COMMAND_F(sm_navbot_debug_draw_line_to, "Draws a line to the given position from your eye origin.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 4)
+	{
+		META_CONPRINTF("[SM] Usage: sm_navbot_debug_draw_line_to <x> <y> <z>\n");
+		return;
+	}
+
+	Vector pos;
+	pos.x = atof(args[1]);
+	pos.y = atof(args[2]);
+	pos.z = atof(args[3]);
+
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
+	Vector eyePos = host->GetEyeOrigin();
+
+	NDebugOverlay::Line(eyePos, pos, 255, 255, 0, true, 30.0f);
+}
+
 #endif // EXT_DEBUG

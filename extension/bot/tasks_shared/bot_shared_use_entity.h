@@ -66,6 +66,9 @@ public:
 
 		if (m_rangeToEntity <= CBaseExtPlayer::PLAYER_USE_RADIUS)
 		{
+			Vector usePos;
+			UtilHelpers::math::CalcClosestPointOfEntity(entity, eyePos, usePos);
+
 			IPlayerController* input = bot->GetControlInterface();
 			input->AimAt(entityPos, IPlayerController::LOOK_PRIORITY, 0.5f, "Looking at USE entity!");
 			CBaseEntity* obstruction = nullptr;
@@ -75,7 +78,7 @@ public:
 				m_timeout.Start(5.0f);
 			}
 
-			if (input->IsAimOnTarget() && !modhelpers->IsUseObstructed(bot->GetEntity(), entity, &obstruction))
+			if (input->IsAimOnTarget() && !modhelpers->IsUseObstructed(bot->GetEntity(), entity, &obstruction, &usePos))
 			{
 				input->PressUseButton();
 				return AITask<BotClass>::Done("Use button pressed!");
@@ -83,6 +86,12 @@ public:
 
 			if (obstruction)
 			{
+				if (bot->IsDebugging(BOTDEBUG_TASKS))
+				{
+					bot->DebugPrintToConsole(255, 255, 0, "%s USE ENTITY TASK: +USE IS OBSTRUCTED BY \"%s\"! \n", 
+						bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(obstruction));
+				}
+
 				if (bot->IsAbleToBreak(obstruction))
 				{
 					m_timeout.Invalidate();
