@@ -204,6 +204,10 @@ class ExtensionConfig(object):
 
   def configure_gcc(self, cxx):
     cxx.defines += [
+      'stricmp=strcasecmp',
+      '_stricmp=strcasecmp',
+      '_snprintf=snprintf',
+      '_vsnprintf=vsnprintf',
       'HAVE_STDINT_H',
       'GNUC',
     ]
