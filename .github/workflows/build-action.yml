@@ -62,7 +62,7 @@ jobs:
 
       - name: Setup Python
         if: runner.os == 'Windows'
-        uses: actions/setup-python@v6.2.0
+        uses: actions/setup-python@v7.0.0
         with:
           python-version: '3.12'
   
@@ -87,7 +87,7 @@ jobs:
           echo "${{ steps.path_helper.outputs.userbins }}" >> "$GITHUB_PATH"
 
       - name: Fetch Metamod:Source ${{ matrix.meta_branch }}
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
         with:
           repository: alliedmodders/metamod-source
           ref: ${{ matrix.meta_branch }}
@@ -95,7 +95,7 @@ jobs:
           submodules: recursive
     
       - name: Fetch SourceMod ${{ matrix.sm_branch }}
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
         with:
           repository: alliedmodders/sourcemod
           ref: ${{ matrix.sm_branch }}
@@ -116,7 +116,7 @@ jobs:
           ls -lah
 
       - name: Fetch Extension
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@v7.0.1
         with:
           path: navbot
           submodules: recursive
