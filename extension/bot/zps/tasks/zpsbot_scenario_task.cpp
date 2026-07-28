@@ -13,10 +13,10 @@
 CZPSBotScenarioTask::CZPSBotScenarioTask()
 {
 	m_roundisactive = CZombiePanicSourceMod::GetZPSMod()->IsRoundActive();
-	m_ammoSearchTimer.StartRandom(5.0f, 25.0f);
-	m_weaponSearchTimer.StartRandom(5.0f, 12.0f);
-	m_healthSearchTimer.StartRandom(10.0f, 20.0f);
-	m_armorSearchTimer.StartRandom(10.0f, 20.0f);
+	m_ammoSearchTimer.Start(3.0f);
+	m_weaponSearchTimer.Start(4.0f);
+	m_healthSearchTimer.Start(10.0f);
+	m_armorSearchTimer.Start(10.0f);
 }
 
 AITask<CZPSBot>* CZPSBotScenarioTask::SelectScenarioTask(CZPSBot* bot)

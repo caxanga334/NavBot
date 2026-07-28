@@ -22,8 +22,7 @@ CSDKCaller::CSDKCaller()
 	m_init = false;
 	m_offsetof_cbc_weaponswitch = invalid_offset();
 	m_call_cbc_weaponswitch = nullptr;
-	m_offsetof_cbc_weaponslot = invalid_offset();
-	m_call_cbc_weaponslot = nullptr;
+	InitVCallSetup(m_call_cbc_weapon_getslot);
 	m_offsetof_cgr_shouldcollide = invalid_offset();
 	m_call_cgr_shouldcollide = nullptr;
 	m_offsetof_cbp_processusercmds = invalid_offset();
@@ -71,7 +70,9 @@ bool CSDKCaller::Init()
 	}
 
 	if (!UtilHelpers::gamedata::GetOffset(cfg_sdkhooks, cfg_navbot, m_offsetof_cbc_weaponswitch, "Weapon_Switch")) { fail = true; }
-	if (!UtilHelpers::gamedata::GetOffset(cfg_sdktools, cfg_navbot, m_offsetof_cbc_weaponslot, "Weapon_GetSlot")) { fail = true; }
+	
+	// Weapon_GetSlot doesn't exists in all games, it's also only used in game specific code.
+	UtilHelpers::gamedata::GetOffset(cfg_sdktools, cfg_navbot, m_call_cbc_weapon_getslot.first, "Weapon_GetSlot");
 
 	if (!cfg_navbot->GetOffset("CGameRules::ShouldCollide", &m_offsetof_cgr_shouldcollide))
 	{
@@ -132,7 +133,7 @@ CBaseEntity* CSDKCaller::CBaseCombatCharacter_Weapon_GetSlot(CBaseEntity* pBCC, 
 {
 	ArgBuffer<void*, int> vstk(pBCC, slot);
 	CBaseEntity* result = nullptr;
-	m_call_cbc_weaponslot->Execute(vstk, &result);
+	m_call_cbc_weapon_getslot.second->Execute(vstk, &result);
 	return result;
 }
 
@@ -230,7 +231,6 @@ bool CSDKCaller::SetupCalls()
 	SetupCBFPassesFilterImpl();
 
 	if (m_call_cbc_weaponswitch == nullptr ||
-		m_call_cbc_weaponslot == nullptr ||
 		m_call_cgr_shouldcollide == nullptr || 
 		m_call_cbe_shouldcollide.second == nullptr)
 	{
@@ -286,7 +286,7 @@ void CSDKCaller::SetupCBCWeaponSlot()
 {
 	using namespace SourceMod;
 
-	if (m_offsetof_cbc_weaponslot <= 0) { return; }
+	if (m_call_cbc_weapon_getslot.first <= 0) { return; }
 
 	/* CBaseCombatWeapon *CBaseCombatCharacter::Weapon_GetSlot( int slot ) */
 
@@ -300,7 +300,7 @@ void CSDKCaller::SetupCBCWeaponSlot()
 	params[0].size = sizeof(int);
 	params[0].type = PassType_Basic;
 
-	m_call_cbc_weaponslot = g_pBinTools->CreateVCall(m_offsetof_cbc_weaponslot, 0, 0, &ret, params, 1);
+	m_call_cbc_weapon_getslot.second = g_pBinTools->CreateVCall(m_call_cbc_weapon_getslot.first, 0, 0, &ret, params, 1);
 }
 
 void CSDKCaller::SetupCGRShouldCollide()

@@ -271,6 +271,12 @@ public:
 	{
 		return (++m_count) > m_limit;
 	}
+	void Decrease(const int amount = 1)
+	{
+		m_count -= amount;
+
+		if (m_count < 0) { m_count = 0; }
+	}
 	int GetCounter() const { return m_count; }
 	void Reset() { m_count = 0; }
 	void SetLimit(int v) { m_limit = v; }

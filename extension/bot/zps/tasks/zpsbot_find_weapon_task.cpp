@@ -178,7 +178,15 @@ TaskResult<CZPSBot> CZPSBotFindWeaponTask::OnTaskUpdate(CZPSBot* bot)
 	if (m_nav.NeedsRepath())
 	{
 		CZPSBotPathCost cost{ bot };
-		m_nav.ComputePathToPosition(bot, pos, cost, 0.0f, true);
+		
+		if (!m_nav.ComputePathToPosition(bot, pos, cost, 0.0f, true))
+		{
+			if (m_counter.Increase())
+			{
+				return Done("Cannot build a complete path to the weapon!");
+			}
+		}
+
 		m_nav.StartRepathTimer();
 	}
 
@@ -226,6 +234,32 @@ TaskResult<CZPSBot> CZPSBotFindWeaponTask::OnTaskUpdate(CZPSBot* bot)
 
 	m_nav.Update(bot);
 	return Continue();
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotFindWeaponTask::OnStuck(CZPSBot* bot)
+{
+	if (m_counter.Increase())
+	{
+		return TryDone(PRIORITY_HIGH, "Too many path failures!");
+	}
+
+	return TryToMaintain();
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotFindWeaponTask::OnUnstuck(CZPSBot* bot)
+{
+	m_counter.Decrease();
+	return TryToMaintain();
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotFindWeaponTask::OnMoveToFailure(CZPSBot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	if (m_counter.Increase())
+	{
+		return TryDone(PRIORITY_HIGH, "Too many path failures!");
+	}
+
+	return TryToMaintain();
 }
 
 bool CZPSBotFindWeaponTask::IsValidWeapon(CBaseEntity* weapon)

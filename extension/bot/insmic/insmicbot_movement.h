@@ -14,7 +14,8 @@ public:
 	float GetStandingHullHeight() const override;
 	float GetCrouchedHullHeight() const override;
 	float GetProneHullHeight() const override;
-
+	bool IsCompletelyCrouched() const override;
+	bool IsInCrouchTransition() const override { return false; /* not a thing in insurgency. */ }
 
 private:
 

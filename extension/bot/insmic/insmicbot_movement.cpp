@@ -27,3 +27,8 @@ float CInsMICBotMovement::GetProneHullHeight() const
 	return s_playerhull.prone_height;
 }
 
+bool CInsMICBotMovement::IsCompletelyCrouched() const
+{
+	return GetBot<CInsMICBot>()->GetStance() == insmic::Stance_t::STANCE_CROUCH;
+}
+

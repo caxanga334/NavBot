@@ -11,10 +11,15 @@ public:
 	TaskResult<CZPSBot> OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask) override;
 	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
 
+	TaskEventResponseResult<CZPSBot> OnStuck(CZPSBot* bot) override;
+	TaskEventResponseResult<CZPSBot> OnUnstuck(CZPSBot* bot) override;
+	TaskEventResponseResult<CZPSBot> OnMoveToFailure(CZPSBot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
+
 	const char* GetName() const override { return "FindWeapon"; }
 private:
 	CHandle<CBaseEntity> m_weapon;
 	CMeshNavigator m_nav;
+	CPathFailCounter m_counter;
 	CountdownTimer m_waitTimer;
 	CountdownTimer m_timeout;
 	bool m_needsDrop;

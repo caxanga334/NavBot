@@ -96,6 +96,11 @@ void CZombiePanicSourceMod::OnRoundStart()
 	// ZPS gives weapons when the bots joins a team, force a refresh
 	IInventory::RefreshInventory func{ 1.0f };
 	extmanager->ForEachBot(func);
+
+	auto fireevent = [](CBaseBot* bot) {
+		bot->OnRoundStateChanged();
+	};
+	extmanager->ForEachBot(fireevent);
 }
 
 void CZombiePanicSourceMod::OnRoundEnd()

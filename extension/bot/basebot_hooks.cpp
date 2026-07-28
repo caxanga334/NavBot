@@ -57,7 +57,8 @@ bool CBaseBot::InitHooks(SourceMod::IGameConfig* gd_navbot, SourceMod::IGameConf
 
 	if (szValue && szValue[0] != '\0')
 	{
-		CBaseBot::s_hookBCC = UtilHelpers::StringToBoolean(szValue);
+		// if NoBaseCombatCharacter is true, then we don't hook CBaseCombatCharacters functions.
+		CBaseBot::s_hookBCC = !UtilHelpers::StringToBoolean(szValue);
 	}
 
 	if (!UtilHelpers::gamedata::GetOffset(gd_sdkhooks, gd_navbot, offset, "Spawn")) { return false; }

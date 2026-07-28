@@ -88,6 +88,7 @@ public:
 	 */
 	bool CBaseFilter_PassesFilterImpl(CBaseEntity* pThis, CBaseEntity* pCaller, CBaseEntity* pEntity);
 
+	bool IsCBCWeapon_GetSlotAvailable() const { return m_call_cbc_weapon_getslot.second != nullptr; }
 	bool IsProcessUsercmdsAvailable() const { return m_offsetof_cbp_processusercmds > 0; }
 	bool IsGetBoneTransformAvailable() const { return m_offsetof_cba_getbonetransform > 0; }
 	bool IsAcceptInputAvailable() const { return m_call_cbe_acceptinput.first > 0; }
@@ -105,8 +106,7 @@ private:
 	SourceMod::ICallWrapper* m_call_cbc_weaponswitch;
 
 	//  CBaseCombatCharacter::Weapon_GetSlot
-	int m_offsetof_cbc_weaponslot;
-	SourceMod::ICallWrapper* m_call_cbc_weaponslot;
+	SDKVCallSetup m_call_cbc_weapon_getslot;
 
 	//  CGameRules::ShouldCollide(int, int)
 	int m_offsetof_cgr_shouldcollide;

@@ -34,6 +34,7 @@ public:
 	CBaseEntity* GetActiveWeapon() const override;
 	bool HasJoinedGame() override;
 	void TryJoinGame() override;
+	insmic::Stance_t GetStance() const;
 
 private:
 	std::unique_ptr<CInsMICBotSensor> m_insmicsensor;

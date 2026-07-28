@@ -59,6 +59,13 @@ TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnSound(CZPSBot* bot, CBas
 	return TryContinue();
 }
 
+TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnRoundStateChanged(CZPSBot* bot)
+{
+	// Nav mesh auto blockers are updated on round restart. Because the round restart signal is delayed on ZPS, bots may try to pick unreachable items.
+	// Restart the bot behavior to clear any attempts to pick unreachable items.
+	return TrySwitchTo(new CZPSBotTacticalTask, PRIORITY_CRITICAL, "Round state changed, restarting behavior!");
+}
+
 TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnPluginCommand(CZPSBot* bot, IEventListener::PluginCommandTypes type, const IEventListener::PluginCommandData& data)
 {
 	return plugincommandtask::ImplementPluginCommandTasks<CZPSBotTacticalTask, CZPSBot, CZPSBotPathCost>(this, bot, type, data);

@@ -59,6 +59,13 @@ void CInsMICBot::TryJoinGame()
 	DelayedFakeClientCommand("pteamsetup 2");
 }
 
+insmic::Stance_t CInsMICBot::GetStance() const
+{
+	int stance = static_cast<int>(insmic::Stance_t::STANCE_INVALID);
+	entprops->GetEntProp(GetEntity(), Prop_Send, "m_iCurrentStance", stance);
+	return static_cast<insmic::Stance_t>(stance);
+}
+
 CInsMICBotPathCost::CInsMICBotPathCost(CInsMICBot* bot, RouteType type) :
 	IGroundPathCost(bot), m_me(bot), m_routetype(type)
 {
