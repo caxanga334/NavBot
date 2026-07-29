@@ -19,6 +19,7 @@ public:
 
 	void Save(std::fstream& filestream, uint32_t version) override;
 	NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion) override;
+	void ImportLoadGameSpecific(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion) override;
 	void UpdateBlocked(bool force = false, int teamID = NAV_TEAM_ANY) override;
 	bool IsBlocked(int teamID, bool ignoreNavBlockers = false) const override;
 	inline TeamFortress2::TFTeam GetSpawnRoomTeam() const { return static_cast<TeamFortress2::TFTeam>(m_spawnroomteam); }

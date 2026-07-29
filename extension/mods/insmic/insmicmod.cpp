@@ -322,6 +322,28 @@ static void InsMICCommand_DebugWeaponAmmo(const CConCommandArgs& args)
 	META_CONPRINTF("Reserve ammo for %s is %i. \n", UtilHelpers::textformat::FormatEntity(weapon), ammo);
 }
 
+static void InsMICCommand_Objectives(const CConCommandArgs& args)
+{
+	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
+
+		int mapid = 0;
+		entprops->GetEntProp(entity, Prop_Data, "m_iID", mapid);
+		int capturedTeam = 0;
+		entprops->GetEntProp(entity, Prop_Send, "m_iCapturedTeam", capturedTeam);
+		int captureTeam = 0;
+		entprops->GetEntProp(entity, Prop_Send, "m_iCaptureTeam", captureTeam);
+		bool hidden = false;
+		entprops->GetEntPropBool(entity, Prop_Send, "m_bHidden", hidden);
+
+		META_CONPRINTF("%s MapID %i Captured Team %i Capture Team %i Hidden %s \n", 
+			UtilHelpers::textformat::FormatEntity(entity), mapid, capturedTeam, captureTeam, UtilHelpers::textformat::FormatBool(hidden));
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("ins_objective", func);
+}
+
 void CInsMICMod::RegisterModCommands()
 {
 	CServerCommandManager& manager = extmanager->GetServerCommandManager();
@@ -330,4 +352,6 @@ void CInsMICMod::RegisterModCommands()
 		"Prints the squad manager entity's Squad IDs to the console.", FCVAR_GAMEDLL | FCVAR_CHEAT, InsMICCommand_DebugSquadIDs);
 	manager.RegisterConCommand("sm_navbot_insmic_debug_weapon_ammo",
 		"Prints your current weapon reserve ammo.", FCVAR_GAMEDLL | FCVAR_CHEAT, InsMICCommand_DebugWeaponAmmo, CServerCommandManager::COMMAND_ONLY_ON_LISTEN_SERVERS);
+	manager.RegisterConCommand("sm_navbot_insmic_debug_objectives",
+		"Prints the squad manager entity's Squad IDs to the console.", FCVAR_GAMEDLL | FCVAR_CHEAT, InsMICCommand_Objectives);
 }

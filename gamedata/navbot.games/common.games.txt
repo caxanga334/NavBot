@@ -67,6 +67,8 @@
 			"NavGen_HumanEyeHeight"			"62.0"
 			"NavGen_HumanCrouchEyeHeight"	"37.0"
 
+			"NavImport_Supported" "false"
+
 			/* NavBot IMovement bot interface parameters
 			 * Default values based from the default view vectors: 
 			 * https://github.com/ValveSoftware/source-sdk-2013/blob/68c8b82fdcb41b8ad5abde9fe1f0654254217b8e/src/game/shared/gamerules.cpp#L47-L61 

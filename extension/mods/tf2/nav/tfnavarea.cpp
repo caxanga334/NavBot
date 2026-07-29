@@ -42,6 +42,24 @@ NavErrorType CTFNavArea::Load(std::fstream& filestream, uint32_t version, uint32
 	return NAV_OK;
 }
 
+void CTFNavArea::ImportLoadGameSpecific(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion)
+{
+	if (CTFNavMesh::s_isTF2C)
+	{
+		// ignore subversion here
+		std::uint64_t buffer;
+		// eat an int64
+		filebuffer.Get(reinterpret_cast<void*>(&buffer), sizeof(std::uint64_t));
+		return;
+	}
+
+	// TF nav mesh current subversion is 2.
+	if (subVersion != 0 && subVersion == 2)
+	{
+		filebuffer.GetUnsignedInt(); // eat tf attributes
+	}
+}
+
 void CTFNavArea::UpdateBlocked(bool force, int teamID)
 {
 	CNavArea::UpdateBlocked(force, teamID);

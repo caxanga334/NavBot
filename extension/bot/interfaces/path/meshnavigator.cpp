@@ -869,6 +869,11 @@ void CMeshNavigator::TeleportToSegment(CBaseBot* bot, const BotPathSegment* segm
 	Vector zero(0.0f, 0.0f, 0.0f);
 
 	sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), &pos, &angles, &zero);
+
+	if (bot->IsDebugging(BOTDEBUG_PATH))
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s TELEPORTED TO SEGMENT AT <%s> \n", bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatVector(pos));
+	}
 }
 
 bool CMeshNavigator::ShouldBreakObstacles(CBaseBot* bot)

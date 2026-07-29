@@ -483,7 +483,7 @@ public:
 
 	void ImportFromGame(); // load a nav mesh file from the game, import to navbot's format
 	bool ImportOpenNavFileForReading(CUtlBuffer& outBuffer);
-	void ImportLoad(CUtlBuffer& fileBuffer);
+	virtual void ImportLoad(CUtlBuffer& fileBuffer);
 	void ImportPost();
 	void ImportWaypointsFromRCBot2();
 

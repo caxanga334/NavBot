@@ -4,6 +4,10 @@
 	{
 		"Keys"
 		{
+			"NavImportSubVersion"		"257"
+			"NavImport_Supported" 		"false"
+			"TFNavImport_IsTF2C"		"true"
+
 			/* Enable the CBaseMultiplayerPlayer::CanBeAutobalanced hook */
 			"HookCanBeAutobalanced"		"true"
 

@@ -13,10 +13,13 @@
 CZPSBotScenarioTask::CZPSBotScenarioTask()
 {
 	m_roundisactive = CZombiePanicSourceMod::GetZPSMod()->IsRoundActive();
-	m_ammoSearchTimer.Start(3.0f);
-	m_weaponSearchTimer.Start(4.0f);
-	m_healthSearchTimer.Start(10.0f);
-	m_armorSearchTimer.Start(10.0f);
+
+	// it appears that players can body block each other from picking up ammo
+	// randomize the search timer to try to avoid having bots pick the same item
+	m_ammoSearchTimer.StartRandom(1.0f, 15.0f);
+	m_weaponSearchTimer.StartRandom(3.0f, 15.0f);
+	m_healthSearchTimer.StartRandom(10.0f, 20.0f);
+	m_armorSearchTimer.StartRandom(10.0f, 30.0f);
 }
 
 AITask<CZPSBot>* CZPSBotScenarioTask::SelectScenarioTask(CZPSBot* bot)

@@ -2350,8 +2350,11 @@ void IMovement::UnstuckTeleport(CBaseBot* bot, CMeshNavigator* navigator, const 
 
 	if (!ground) { return; }
 
+	Vector old = bot->GetAbsOrigin();
 	sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), &ground->goal);
 	ClearStuckStatus("Teleported!");
+	smutils->LogMessage(myself, "NavBot \"%s\" was unstuck teleported from \"setpos %g %g %g\" to \"setpos %g %g %g\" Area [%u]!", 
+		bot->GetClientName(), old.x, old.y, old.z, ground->goal.x, ground->goal.y, ground->goal.z, goal->area->GetID());
 }
 
 void IMovement::DoJumpAssist()

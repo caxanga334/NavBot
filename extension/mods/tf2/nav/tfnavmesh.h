@@ -34,6 +34,9 @@ public:
 	// Returns a random spawn room exit area of a given team
 	CTFNavArea* GetRandomSpawnRoomExitArea(int team) const;
 	void AutoAddSpawnroomAttribute() const;
+
+	static inline bool s_isTF2C{ false };
+
 protected:
 	void PostCustomAnalysis(void) override;
 
@@ -50,6 +53,7 @@ private:
 
 	void RegisterEditCommands();
 	void RegisterWaypointEditCommands();
+	void LoadGamedata();
 };
 
 inline uint32_t CTFNavMesh::GetSubVersionNumber(void) const

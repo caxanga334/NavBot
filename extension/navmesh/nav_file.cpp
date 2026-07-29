@@ -2035,6 +2035,21 @@ bool CNavMesh::ImportOpenNavFileForReading(CUtlBuffer& outBuffer)
 
 void CNavMesh::ImportLoad(CUtlBuffer& filebuffer)
 {
+	SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
+
+	{
+		const char* value = gamedata->GetKeyValue("NavImport_Supported");
+
+		if (value)
+		{
+			if (!UtilHelpers::StringToBoolean(value))
+			{
+				META_CONPRINT("Import failed: Not supported for the current game! \n");
+				return;
+			}
+		}
+	}
+
 	unsigned int magic = filebuffer.GetUnsignedInt();
 	if (!filebuffer.IsValid() || magic != NAV_ORIGINAL_MAGIC_NUMBER)
 	{
@@ -2061,8 +2076,6 @@ void CNavMesh::ImportLoad(CUtlBuffer& filebuffer)
 		return;
 	}
 
-	SourceMod::IGameConfig* gamedata = extension->GetExtensionGameData();
-
 	unsigned int requiredSubVersion = 0;
 
 	const char* gdKeyValue = gamedata->GetKeyValue("NavImportSubVersion");
@@ -2083,6 +2096,7 @@ void CNavMesh::ImportLoad(CUtlBuffer& filebuffer)
 	if (subVersion != 0 && subVersion != requiredSubVersion)
 	{
 		META_CONPRINT("Import failed: nav mesh sub version not supported! \n");
+		META_CONPRINTF("Got %u! Expected: 0 or %u. \n", subVersion, requiredSubVersion);
 		return;
 	}
 
@@ -2309,45 +2323,9 @@ void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned
 	// eat game specific data
 	ImportLoadGameSpecific(filebuffer, version, subVersion);
 
-	/*
-	if (extmanager->GetMod()->GetModType() == Mods::ModType::MOD_TF2)
-	{
-		// TF nav mesh current subversion is 2. TO-DO: move this to gamedata or virtualize the import functions
-		if (subVersion != 0 && subVersion == 2)
-		{
-			filebuffer.GetUnsignedInt(); // eat tf attributes
-		}
-	}
-	*/
-
 	if (!filebuffer.IsValid())
 	{
 		DevWarning("NavBot Import NavArea: file buffer is invalid! \n");
-	}
-}
-
-void CNavArea::ImportLoadGameSpecific(CUtlBuffer& filebuffer, unsigned int version, unsigned int subVersion)
-{
-	const char* szvalue = extension->GetExtensionGameData()->GetKeyValue("NavImport_AreaBytesToDiscard");
-
-	if (!szvalue)
-	{
-		return;
-	}
-
-	try
-	{
-		int bytesToDiscard = std::stoi(szvalue);
-		std::unique_ptr<char[]> buffer = std::make_unique<char[]>(static_cast<std::size_t>(bytesToDiscard + 4));
-		filebuffer.Get(reinterpret_cast<void*>(buffer.get()), bytesToDiscard);
-	}
-	catch (std::invalid_argument const& ex)
-	{
-		smutils->LogError(myself, "%s", ex.what());
-	}
-	catch (std::out_of_range const& ex)
-	{
-		smutils->LogError(myself, "%s", ex.what());
 	}
 }
 

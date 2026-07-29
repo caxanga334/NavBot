@@ -1177,6 +1177,16 @@ CON_COMMAND_F(sm_navbot_tool_entinfo, "Shows information about a specific entity
 	if (svclass && svclass->GetName())
 	{
 		META_CONPRINTF("Server Class name: %s \n", svclass->GetName());
+		
+		if (svclass->m_pNetworkName)
+		{
+			META_CONPRINTF("Network name: %s \n", svclass->m_pNetworkName);
+		}
+
+		if (svclass->m_pTable)
+		{
+			META_CONPRINTF("Table name: %s \n", svclass->m_pTable->GetName());
+		}
 	}
 
 	ICollideable* collider = reinterpret_cast<IServerUnknown*>(entity)->GetCollideable();
