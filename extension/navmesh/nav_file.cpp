@@ -2297,7 +2297,7 @@ void CNavArea::ImportLoad(CUtlBuffer& filebuffer, unsigned int version, unsigned
 	}
 
 	// load earliest occupy times
-	for (int i = 0; i < MAX_NAV_TEAMS; ++i)
+	for (int i = 0; i < CNavMesh::s_NavImportMaxTeams; ++i)
 	{
 		// no spot in the map should take longer than this to reach
 		filebuffer.GetFloat();

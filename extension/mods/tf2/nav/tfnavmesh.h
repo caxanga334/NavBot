@@ -21,6 +21,7 @@ public:
 	// Use nav mesh for climbing, players are limited when it comes to climbing
 	bool IsAuthoritative(void) const override { return true; }
 	void OnNavMeshImportedPreSave() override;
+	void InitializeGameData(SourceMod::IGameConfig* cfgnavbot) override;
 
 	void Update() override;
 
@@ -53,7 +54,6 @@ private:
 
 	void RegisterEditCommands();
 	void RegisterWaypointEditCommands();
-	void LoadGamedata();
 };
 
 inline uint32_t CTFNavMesh::GetSubVersionNumber(void) const

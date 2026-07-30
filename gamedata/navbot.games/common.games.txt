@@ -68,6 +68,8 @@
 			"NavGen_HumanCrouchEyeHeight"	"37.0"
 
 			"NavImport_Supported" "false"
+			/* Value of the MAX_NAV_TEAMS constant */
+			"NavImport_MaxTeamsConst" "2"
 
 			/* NavBot IMovement bot interface parameters
 			 * Default values based from the default view vectors: 

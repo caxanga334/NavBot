@@ -262,6 +262,10 @@ void CNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 	buffer = cfgnavbot->GetKeyValue("NavMesh_NoBreakableAutoBlockers");
 
 	if (buffer) { m_noAutoBreakables = UtilHelpers::StringToBoolean(buffer); }
+
+	buffer = cfgnavbot->GetKeyValue("NavImport_MaxTeamsConst");
+
+	if (buffer) { CNavMesh::s_NavImportMaxTeams = std::stoi(buffer); }
 }
 
 bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)

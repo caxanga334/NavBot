@@ -89,8 +89,6 @@ CTFNavMesh::CTFNavMesh() : CNavMesh()
 	ListenForGameEvent("mvm_wave_complete");
 	ListenForGameEvent("teamplay_round_start");
 	ListenForGameEvent("arena_round_start");
-
-	LoadGamedata();
 }
 
 CTFNavMesh::~CTFNavMesh()
@@ -140,6 +138,18 @@ void CTFNavMesh::OnNavMeshImportedPreSave()
 	CNavMesh::OnNavMeshImportedPreSave();
 
 	AutoAddSpawnroomAttribute();
+}
+
+void CTFNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
+{
+	CNavMesh::InitializeGameData(cfgnavbot);
+
+	const char* value = cfgnavbot->GetKeyValue("TFNavImport_IsTF2C");
+
+	if (value)
+	{
+		CTFNavMesh::s_isTF2C = UtilHelpers::StringToBoolean(value);
+	}
 }
 
 void CTFNavMesh::Update()
@@ -462,15 +472,4 @@ void CTFNavMesh::UpdateDebugDraw()
 		}
 	}
 #endif // SOURCE_ENGINE == SE_TF2
-}
-
-void CTFNavMesh::LoadGamedata()
-{
-	SourceMod::IGameConfig* cfg = extension->GetExtensionGameData();
-	const char* value = cfg->GetKeyValue("TFNavImport_IsTF2C");
-
-	if (value)
-	{
-		CTFNavMesh::s_isTF2C = UtilHelpers::StringToBoolean(value);
-	}
 }

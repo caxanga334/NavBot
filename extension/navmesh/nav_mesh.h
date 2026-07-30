@@ -338,6 +338,7 @@ public:
 	// Common bounding box for traces
 	static inline Vector s_NavTraceMins{ -0.45f, -0.45f, 0.0f };
 	static inline Vector s_NavTraceMaxs{ 0.45f, 0.45f, 55.0f };
+	static inline int s_NavImportMaxTeams{ MAX_NAV_TEAMS };
 
 	typedef std::pair<std::string, std::uint64_t> NavEditor; // name & steamid pair
 

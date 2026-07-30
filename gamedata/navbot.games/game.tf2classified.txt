@@ -5,7 +5,8 @@
 		"Keys"
 		{
 			"NavImportSubVersion"		"257"
-			"NavImport_Supported" 		"false"
+			"NavImport_Supported" 		"true"
+			"NavImport_MaxTeamsConst"	"4"
 			"TFNavImport_IsTF2C"		"true"
 
 			/* Enable the CBaseMultiplayerPlayer::CanBeAutobalanced hook */
