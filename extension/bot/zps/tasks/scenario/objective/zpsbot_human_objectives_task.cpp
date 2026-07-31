@@ -381,3 +381,144 @@ TaskResult<CZPSBot> CZPSBotObjectiveFollowItemCarrierTask::OnTaskUpdate(CZPSBot*
 
 	return Continue();
 }
+
+bool CZPSBotObjectiveDropItemTask::IsPossible(CZPSBot* bot)
+{
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+
+	CBaseEntity* target = mgr.GetUseItemTarget();
+
+	if (!target)
+	{
+		return false;
+	}
+
+	CZPSBotInventory* inventory = bot->GetInventoryInterface();
+	CBaseEntity* item = mgr.GetGenericTargetEntity();
+
+	if (item != nullptr)
+	{
+		if (inventory->HasWeapon(item))
+		{
+			return true;
+		}
+	}
+
+	return inventory->FindItemDeliver(mgr.GetItemSearchID()) != nullptr;
+}
+
+TaskResult<CZPSBot> CZPSBotObjectiveDropItemTask::OnTaskUpdate(CZPSBot* bot)
+{
+	if (!m_switchCooldown.IsElapsed())
+	{
+		return Continue();
+	}
+
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+
+	if (!OwnsRequiredItem(bot))
+	{
+		return Done("Bot doesn't own the required item!");
+	}
+
+	CBaseEntity* target = mgr.GetUseItemTarget();
+
+	if (!target)
+	{
+		return Done("Drop target is NULL!");
+	}
+
+	Vector vTarget = UtilHelpers::getWorldSpaceCenter(target);
+	Vector eyePos = bot->GetEyeOrigin();
+
+	if ((eyePos - vTarget).IsLengthLessThan(mgr.GetDetectionRadius()))
+	{
+		bot->GetCombatInterface()->DisableCombat(0.5f);
+
+		if (!IsItemEquipped(bot))
+		{
+			EquipRequiredItem(bot);
+			return Continue();
+		}
+
+		bot->GetControlInterface()->AimAt(vTarget, IPlayerController::LOOK_CRITICAL, 1.0f, "Looking at drop target entity!");
+
+		if (bot->GetControlInterface()->IsAimOnTarget())
+		{
+			bot->GetInventoryInterface()->DropHeldWeapon();
+		}
+	}
+
+	if (m_nav.NeedsRepath())
+	{
+		CZPSBotPathCost cost(bot);
+		m_nav.ComputePathToPosition(bot, vTarget, cost);
+		m_nav.StartRepathTimer();
+	}
+
+	m_nav.Update(bot);
+	return Continue();
+}
+
+bool CZPSBotObjectiveDropItemTask::OwnsRequiredItem(CZPSBot* bot) const
+{
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+	CZPSBotInventory* inventory = bot->GetInventoryInterface();
+	CBaseEntity* item = mgr.GetGenericTargetEntity();
+
+	if (item != nullptr)
+	{
+		if (inventory->HasWeapon(item))
+		{
+			return true;
+		}
+	}
+
+	return inventory->FindItemDeliver(mgr.GetItemSearchID()) != nullptr;
+}
+
+bool CZPSBotObjectiveDropItemTask::IsItemEquipped(CZPSBot* bot) const
+{
+	CZPSBotInventory* inventory = bot->GetInventoryInterface();
+	auto weapon = inventory->GetActiveZPSWeapon();
+
+	if (!weapon)
+	{
+		return false;
+	}
+
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+	
+	CBaseEntity* item = mgr.GetGenericTargetEntity();
+
+	if (weapon->GetEntity() == item)
+	{
+		return true;
+	}
+
+	return weapon->IsItemGenericOfID(mgr.GetItemSearchID());
+}
+
+void CZPSBotObjectiveDropItemTask::EquipRequiredItem(CZPSBot* bot)
+{
+	CZPSBotInventory* inventory = bot->GetInventoryInterface();
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+
+	CBaseEntity* item = mgr.GetGenericTargetEntity();
+	auto weapon = inventory->GetWeaponOfEntity(item);
+
+	if (weapon)
+	{
+		inventory->EquipWeapon(weapon);
+		m_switchCooldown.Start(2.0f);
+		return;
+	}
+
+	auto itemdeliver = inventory->FindItemDeliver(mgr.GetItemSearchID());
+
+	if (itemdeliver)
+	{
+		inventory->EquipWeapon(itemdeliver);
+		m_switchCooldown.Start(2.0f);
+	}
+}

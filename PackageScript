@@ -95,6 +95,7 @@ CopyFiles('scripting/include/navbot/interfaces', 'addons/sourcemod/scripting/inc
 
 CopyFiles('scripting/include/navbot/mods', 'addons/sourcemod/scripting/include/navbot/mods',
   [ 
+    'modhelpers.inc',
     'zps.inc',
   ]
 )

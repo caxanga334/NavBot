@@ -8,10 +8,11 @@ enum NavBotZPSObjectiveTypes
 	NAVBOT_ZPS_OBJECTIVE_NONE = 0,
 	NAVBOT_ZPS_OBJECTIVE_MOVETO, // move to a position
 	NAVBOT_ZPS_OBJECTIVE_USE_BUTTON, // press a button
-	NAVBOT_ZPS_OBJECTIVE_FIND_ITEM, // find item_generic
-	NAVBOT_ZPS_OBJECTIVE_USE_ITEM, // use item_generic
-	NAVBOT_ZPS_OBJECTIVE_DROP_ITEM, // drop item_generic at another entity
+	NAVBOT_ZPS_OBJECTIVE_FIND_ITEM, // find item_deliver
+	NAVBOT_ZPS_OBJECTIVE_USE_ITEM, // use item_deliver
+	NAVBOT_ZPS_OBJECTIVE_DROP_ITEM, // drop item_deliver at another entity
 	NAVBOT_ZPS_OBJECTIVE_DESTROY_ENTITY, // destroy an entity
+	NAVBOT_ZPS_OBJECTIVE_DISCARD_ITEM, // discard an item_deliver from their inventory.
 
 	NAVBOT_ZPS_MAX_OBJECTIVE_TYPES
 };
@@ -34,14 +35,15 @@ methodmap NavBotZPSModInterface < NavBotModInterface
 	 */
 	public static native void SetObjectiveUseButton(int entity);
 	/**
-	 * Sets the item id to search. The ID must match the ID of an item_generic entity.
-	 * Used by NAVBOT_ZPS_OBJECTIVE_FIND_ITEM, NAVBOT_ZPS_OBJECTIVE_USE_ITEM, NAVBOT_ZPS_OBJECTIVE_DROP_ITEM
+	 * Sets the item id to search. The ID must match the ID of an item_deliver entity.
+	 * Used by NAVBOT_ZPS_OBJECTIVE_FIND_ITEM, NAVBOT_ZPS_OBJECTIVE_USE_ITEM, NAVBOT_ZPS_OBJECTIVE_DROP_ITEM, NAVBOT_ZPS_OBJECTIVE_DISCARD_ITEM
 	 * 
 	 * @param id			ID to search.
 	 */
 	public static native void SetObjectiveItemSearchID(const char[] itemID);
 	/**
 	 * Sets the trigger_useable target for NAVBOT_ZPS_OBJECTIVE_USE_ITEM.
+	 * Sets the entity to drop an item_deliver at for NAVBOT_ZPS_OBJECTIVE_DROP_ITEM.
 	 * 
 	 * @param entity		Target trigger_useable entity.
 	 */
@@ -49,14 +51,16 @@ methodmap NavBotZPSModInterface < NavBotModInterface
 	/**
 	 * Generic detection radius. Depends on the current objective.
 	 * 
-	 * NAVBOT_ZPS_OBJECTIVE_FIND_ITEM: Sets the minimum distance for the bots to detect an item_generic.
+	 * NAVBOT_ZPS_OBJECTIVE_FIND_ITEM: Sets the minimum distance for the bots to detect an item_deliver.
+	 * NAVBOT_ZPS_OBJECTIVE_DROP_ITEM: Sets the minimum distance from the target entity to drop.
 	 */
 	public static native void SetObjectiveDetectionRadius(const float radius);
 	/**
 	 * Generic target entity, multi purpose, depends on the objective.
 	 * 
-	 * NAVBOT_ZPS_OBJECTIVE_USE_ITEM: Tell bots to use this specific item_generic.
+	 * NAVBOT_ZPS_OBJECTIVE_USE_ITEM: Tell bots to use this specific item_deliver.
 	 * NAVBOT_ZPS_OBJECTIVE_DESTROY_ENTITY: The entity the bots should destroy.
+	 * NAVBOT_ZPS_OBJECTIVE_DISCARD_ITEM: The specific entity the bots should drop from their inventory.
 	 */
 	public static native void SetObjectiveGenericTargetEntity(int entity);
 	// Reset all objective variables and set the current objective to none.

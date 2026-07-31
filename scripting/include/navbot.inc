@@ -230,8 +230,14 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavMesh.GetEditor");
 	MarkNativeAsOptional("NavBotNavMesh.GetLastLoadResult");
 	MarkNativeAsOptional("NavBotNavMesh.Generate");
+	MarkNativeAsOptional("NavBotNavMesh.GenerateIncremental");
 	MarkNativeAsOptional("NavBotNavMesh.Load");
 	MarkNativeAsOptional("NavBotNavMesh.GetFullPathToNavMeshFile");
+	MarkNativeAsOptional("NavBotNavMesh.CollectAreasOverlappingExtent");
+	MarkNativeAsOptional("NavBotNavMesh.CollectAreasOverlappingExtentEx");
+	MarkNativeAsOptional("NavBotNavMesh.CollectAreasTouchingEntity");
+	MarkNativeAsOptional("NavBotNavMesh.AddWalkableSeed");
+	MarkNativeAsOptional("NavBotNavMesh.FindActiveNavAreaForPlayer");
 
 	/* Nav Area Vector */
 	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");
@@ -293,6 +299,11 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveDetectionRadius");
 	MarkNativeAsOptional("NavBotZPSModInterface.SetObjectiveGenericTargetEntity");
 	MarkNativeAsOptional("NavBotZPSModInterface.ResetObjective");
+
+	/* Mod Helpers */
+	MarkNativeAsOptional("NavBotModHelpers.IsEntityBreakable");
+	MarkNativeAsOptional("NavBotModHelpers.IsEntityDamageable");
+	MarkNativeAsOptional("NavBotModHelpers.IsEntityDamageableBy");
 
 	/* Navigator */
 	MarkNativeAsOptional("MeshNavigator.MeshNavigator");

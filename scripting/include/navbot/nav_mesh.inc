@@ -65,6 +65,8 @@ methodmap NavBotNavMesh
 	 * If you want to check the result, use a timer.
 	 */
 	public static native void Generate();
+	// Runs an Incremental generation
+	public static native void GenerateIncremental();
 	// Loads a navigation mesh from a file (does nothing if it's already loaded).
 	public static native void Load();
 	/**
@@ -99,6 +101,21 @@ methodmap NavBotNavMesh
 	 * @return				Handle to a nav area vector. Needs to be deleted.
 	 */
 	public static native NavBotNavAreaVector CollectAreasTouchingEntity(int entity);
+	/**
+	 * Adds a walkable seed for incremental generation at the given position.
+	 * Ground normal is calculated automatically.
+	 * 
+	 * @param pos			Position to add a walkable seed at.
+	 * @return				True if the walkable seed was added, false otherwise.
+	 */
+	public static native bool AddWalkableSeed(const float pos[3]);
+	/**
+	 * Searches for a nav area the given player is currently aiming at.
+	 * 
+	 * @param client		Player entity index.
+	 * @return				Address of a nav area or Address_Null if none is found.
+	 */
+	public static native Address FindActiveNavAreaForPlayer(int client);
 }
 
 #include "nav_collector.inc"

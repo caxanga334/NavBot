@@ -184,7 +184,7 @@ void CNavMesh::SetEditMode( EditModeType mode )
 
 
 //--------------------------------------------------------------------------------------------------------------
-bool CNavMesh::FindNavAreaOrLadderAlongRay(const Vector& start, const Vector& end, CNavArea** bestArea, CNavLadder** bestLadder, CNavArea* ignore)
+bool CNavMesh::FindNavAreaOrLadderAlongRay(const Vector& start, const Vector& end, CNavArea** bestArea, CNavLadder** bestLadder, CNavArea* ignore) const
 {
 	if (!m_grid.Count())
 		return false;
@@ -280,6 +280,58 @@ bool CNavMesh::FindNavAreaOrLadderAlongRay(const Vector& start, const Vector& en
 
 	return bestDist < 1.0f;
 }
+
+CNavArea* CNavMesh::FindActiveNavAreaForPlayer(CBaseEntity* player) const
+{
+	CBaseExtPlayer* extpl = extmanager->GetPlayerOfEntity(player);
+
+	if (!extpl)
+	{
+		return nullptr;
+	}
+
+	Vector from = extpl->GetEyeOrigin();
+	Vector dir;
+	Vector surfaceNormal(0.0f, 0.0f, 0.0f);
+	Vector cursorPos(0.0f, 0.0f, 0.0f);
+	CNavArea* area = nullptr;
+	CNavLadder* ladder = nullptr;
+	bool climbable = false;
+	extpl->EyeVectors(&dir);
+	float maxRange = 2000.0f;
+	Vector to = from + maxRange * dir;
+	trace_t result;
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
+	trace::line(from, to, GetGenerationTraceMask(), &filter, result);
+
+	if (result.fraction != 1.0f)
+	{
+		surfaceNormal = result.plane.normal;
+		climbable = IsClimbableSurface(result);
+		cursorPos = result.endpos;
+
+		// find the area the player is pointing at
+		if (!climbable)
+		{
+			// Try to clip our trace to nav areas
+			FindNavAreaOrLadderAlongRay(result.startpos, result.endpos + 100.0f * dir, &area, &ladder); // extend a few units into the ground
+
+			// Failing that, get the closest area to the endpoint
+			if (!area && !ladder)
+			{
+				area = TheNavMesh->GetNearestNavArea(result.endpos, 500.0f);
+			}
+		}
+
+		return area;
+	}
+
+	// We started solid.  Look for areas in front of us.
+	FindNavAreaOrLadderAlongRay(from, to, &area, &ladder);
+
+	return area;
+}
+
 
 //--------------------------------------------------------------------------------------------------------------
 /**

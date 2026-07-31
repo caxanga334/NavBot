@@ -80,4 +80,5 @@ methodmap NavBotModInterface
 	public static native void RemoveClassnameFromNPCScanList(const char[] classname)
 }
 
+#include "mods/modhelpers.inc"
 #include "mods/zps.inc"

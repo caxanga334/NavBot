@@ -39,7 +39,7 @@ CBaseEntity* pawnutils::ReadEntity(IPluginContext* context, const cell_t* params
 
 	if (!pEntity)
 	{
-		context->ReportError("NULL entity (%i)!", params[index]);
+		context->ReportError("NULL entity (%i) passed at param %zu!", params[index], index);
 	}
 
 	return pEntity;

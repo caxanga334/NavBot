@@ -119,7 +119,7 @@ public:
 	/**
 	 * @brief Called to check if the given entity is a breakable entity. Bots will attack these if they find one in their path.
 	 * @param entity Entity to check.
-	 * @return True if the given entity is a brakable entity, false if not.
+	 * @return True if the given entity is a breakable entity, false if not.
 	 */
 	virtual bool IsEntityBreakable(CBaseEntity* entity) const;
 	/**

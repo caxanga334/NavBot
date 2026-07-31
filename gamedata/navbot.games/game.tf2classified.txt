@@ -41,9 +41,7 @@
 		{
 			"CGameRules::ShouldCollide"
 			{
-				"windows"	"30"
 				"windows64" "30"
-				"linux"		"31"
 				"linux64"	"31"
 			}
 			"Event_Killed"
@@ -63,8 +61,8 @@
 			}
 			"CBasePlayer::ProcessUsercmds"
 			{
-				"windows64" "472"
-				"linux64"	"473"
+				"windows64" "476"
+				"linux64"	"477"
 			}
 			"CBaseAnimating::GetBoneTransform"
 			{
@@ -73,8 +71,8 @@
 			}
 			"CBaseFilter::PassesFilterImpl"
 			{
-				"windows64"	"224"
-				"linux64"	"225"
+				"windows64"	"225"
+				"linux64"	"226"
 			}
 
 			/**

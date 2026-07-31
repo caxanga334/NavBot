@@ -28,6 +28,7 @@ public:
 			return AITask<BotClass>::Done("NULL target entity!");
 		}
 
+#if 0
 		constexpr auto maxhealth = std::numeric_limits<int>::max() - 1;
 
 		if (!modhelpers->IsEntityDamageable(entity, maxhealth))
@@ -39,6 +40,7 @@ public:
 		{
 			return AITask<BotClass>::Done("Bot can't damage the target entity!");
 		}
+#endif // 0
 
 		Vector center = UtilHelpers::getWorldSpaceCenter(entity);
 		Vector pos = trace::getground(center);

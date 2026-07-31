@@ -8,6 +8,7 @@
 #include <bot/tasks_shared/bot_shared_use_entity.h>
 #include <bot/tasks_shared/bot_shared_go_to_position.h>
 #include <bot/tasks_shared/bot_shared_break_entity.h>
+#include <bot/tasks_shared/bot_shared_drop_weapon.h>
 #include "objective/zpsbot_human_objectives_task.h"
 #include "zpsbot_objective_human_task.h"
 
@@ -114,6 +115,17 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 	}
 	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_DROP_ITEM:
 	{
+		if (CZPSBotObjectiveDropItemTask::IsPossible(bot))
+		{
+			return PauseFor(new CZPSBotObjectiveDropItemTask, "Dropping item!");
+		}
+
+		CBaseEntity* carrier = nullptr;
+		if (CZPSBotObjectiveFollowItemCarrierTask::IsPossible(bot, &carrier))
+		{
+			return PauseFor(new CZPSBotObjectiveFollowItemCarrierTask(carrier), "Following teammate carrying the needed item!");
+		}
+
 		break;
 	}
 	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_DESTROY_ENTITY:
@@ -125,10 +137,30 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 
 		break;
 	}
+	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_DISCARD_ITEM:
+	{
+		CBaseEntity* item = mgr.GetGenericTargetEntity();
+
+		if (item)
+		{
+			if (bot->GetInventoryInterface()->HasWeapon(item))
+			{
+				return PauseFor(new CBotSharedDropWeaponTask<CZPSBot>(item, 2.0f), "Discarding item!");
+			}
+		}
+
+		auto weapon = bot->GetInventoryInterface()->FindItemDeliver(mgr.GetItemSearchID());
+
+		if (weapon)
+		{
+			return PauseFor(new CBotSharedDropWeaponTask<CZPSBot>(weapon, 2.0f), "Discarding item!");
+		}
+
+		break;
+	}
 	default:
 		break;
 	}
-
 
 	return Continue();
 }

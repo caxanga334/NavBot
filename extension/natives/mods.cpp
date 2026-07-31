@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <util/pawnutils.h>
 #include <mods/basemod.h>
+#include "modhelpers.h"
 #include "mods/zps.h"
 #include "mods.h"
 
@@ -198,5 +199,6 @@ void natives::mods::setup(std::vector<sp_nativeinfo_t>& nv)
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
 
+	natives::imodhelpers::setup(nv);
 	natives::mods::zps::setup(nv);
 }

@@ -110,6 +110,22 @@ static cell_t Native_NavMeshGenerate(IPluginContext* context, const cell_t* para
 	return 0;
 }
 
+static void FrameAction_NavMeshGenerateIncremental(void* data)
+{
+	TheNavMesh->BeginGeneration(CNavMesh::INCREMENTAL_GENERATION);
+}
+
+static cell_t Native_NavMeshGenerateIncremental(IPluginContext* context, const cell_t* params)
+{
+	if (!TheNavMesh->IsLoaded())
+	{
+		// Avoid potential issues with SlowScriptTimeout
+		smutils->AddFrameAction(FrameAction_NavMeshGenerateIncremental, nullptr);
+	}
+
+	return 0;
+}
+
 static cell_t Native_NavMeshLoad(IPluginContext* context, const cell_t* params)
 {
 	if (!TheNavMesh->IsLoaded())
@@ -200,6 +216,35 @@ static cell_t Native_NavMeshCollectAreasTouchingEntity(IPluginContext* context, 
 	return handle;
 }
 
+static cell_t Native_NavMeshAddWalkableSeed(IPluginContext* context, const cell_t* params)
+{
+	Vector pos = pawnutils::ReadVector(context, params, 1);
+	return pawnutils::ReturnBool(TheNavMesh->AddWalkableSeed(pos));
+}
+
+static cell_t Native_FindActiveNavAreaForPlayer(IPluginContext* context, const cell_t* params)
+{
+	if (!pawnutils::IsValidClientIndex(context, params[1]))
+	{
+		return pawnutils::ReturnPointerToPawn<CNavArea*>(context, params, nullptr);
+	}
+
+	if (!pawnutils::IsClientInGame(context, params[1]))
+	{
+		return pawnutils::ReturnPointerToPawn<CNavArea*>(context, params, nullptr);
+	}
+
+	CBaseEntity* player = pawnutils::ReadEntity(context, params, 1);
+
+	if (!player)
+	{
+		return pawnutils::ReturnPointerToPawn<CNavArea*>(context, params, nullptr);
+	}
+
+	CNavArea* area = TheNavMesh->FindActiveNavAreaForPlayer(player);
+	return pawnutils::ReturnPointerToPawn(context, params, area);
+}
+
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
@@ -211,11 +256,14 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.GetEditor", Native_NavMeshGetEditor},
 		{"NavBotNavMesh.GetLastLoadResult", Native_NavMeshGetLastLoadResult},
 		{"NavBotNavMesh.Generate", Native_NavMeshGenerate},
+		{"NavBotNavMesh.GenerateIncremental", Native_NavMeshGenerateIncremental},
 		{"NavBotNavMesh.Load", Native_NavMeshLoad},
 		{"NavBotNavMesh.GetFullPathToNavMeshFile", Native_NavMeshGetFullPathToNavMeshFile},
 		{"NavBotNavMesh.CollectAreasOverlappingExtent", Native_NavMeshCollectAreasOverlappingExtent},
 		{"NavBotNavMesh.CollectAreasOverlappingExtentEx", Native_NavMeshCollectAreasOverlappingExtentEntity},
 		{"NavBotNavMesh.CollectAreasTouchingEntity", Native_NavMeshCollectAreasTouchingEntity},
+		{"NavBotNavMesh.AddWalkableSeed", Native_NavMeshAddWalkableSeed},
+		{"NavBotNavMesh.FindActiveNavAreaForPlayer", Native_FindActiveNavAreaForPlayer},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));

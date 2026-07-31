@@ -34,7 +34,7 @@ public:
 		return size;
 	}
 
-	// finds an item_generic with the given id
+	// finds an item_deliver with the given id
 	const CZPSBotWeapon* FindItemDeliver(const std::string& id);
 
 protected:

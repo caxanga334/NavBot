@@ -3358,17 +3358,17 @@ void CNavMesh::BeginGeneration( bool incremental )
 	m_currentNode = NULL;
 
 	// if there are no seed points, we can't generate
-	if (m_walkableSeeds.Count() == 0)
+	if (m_walkableSeeds.empty())
 	{
 		m_generationMode = GENERATE_NONE;
-		Msg( "No valid walkable seed positions.  Cannot generate Navigation Mesh.\n" );
+		META_CONPRINT( "No valid walkable seed positions.  Cannot generate Navigation Mesh.\n" );
 		return;
 	}
 
 	// initialize seed list index
 	m_seedIdx = 0;
 
-	Msg( "Generating Navigation Mesh...\n" );
+	META_CONPRINT( "Generating Navigation Mesh...\n" );
 	m_generationStartTime = Plat_FloatTime();
 }
 
@@ -4255,19 +4255,20 @@ bool CNavMesh::SampleStep( void )
 
 				// sanity check to not generate across the world for incremental generation
 				const float incrementalRange = sm_nav_generate_incremental_range.GetFloat();
-				if ( m_generationMode == GENERATE_INCREMENTAL && incrementalRange > 0 )
+				if (m_generationMode == GENERATE_INCREMENTAL && incrementalRange > 0)
 				{
 					bool inRange = false;
-					for ( int i=0; i<m_walkableSeeds.Count(); ++i )
+
+					for (const WalkableSeedSpot& spot : m_walkableSeeds)
 					{
-						if ( (m_walkableSeeds[i].pos - pos).IsLengthLessThan( incrementalRange ) )
+						if ((spot.pos - pos).IsLengthLessThan(incrementalRange))
 						{
 							inRange = true;
 							break;
 						}
 					}
 
-					if ( !inRange )
+					if (!inRange)
 					{
 						return true;
 					}
@@ -4393,20 +4394,20 @@ bool CNavMesh::SampleStep( void )
 				{
 					bool bValid = false;
 					int zPos = to.z;
-					for ( int i=0; i<m_walkableSeeds.Count(); ++i )
+					for (const WalkableSeedSpot& spot : m_walkableSeeds)
 					{
-						const Vector &seedPos = m_walkableSeeds[i].pos;
+						const Vector &seedPos = spot.pos;
 						int zMin = seedPos.z - nTolerance;
 						int zMax = seedPos.z + nTolerance;
 
-						if ( zPos >= zMin && zPos <= zMax )
+						if (zPos >= zMin && zPos <= zMax)
 						{
 							bValid = true;
 							break;
 						}
 					}
 
-					if ( !bValid )
+					if (!bValid)
 						return true;
 				}
 
@@ -4462,6 +4463,19 @@ bool CNavMesh::SampleStep( void )
 	}
 }
 
+bool CNavMesh::AddWalkableSeed(const Vector& pos)
+{
+	Vector groundpos = pos;
+	Vector normal;
+
+	if (FindGroundForNode(&groundpos, &normal))
+	{
+		AddWalkableSeed(groundpos, normal);
+		return true;
+	}
+
+	return false;
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -4476,19 +4490,19 @@ void CNavMesh::AddWalkableSeed( const Vector &pos, const Vector &normal )
 	seed.pos.z = pos.z;
 	seed.normal = normal;
 
-	m_walkableSeeds.AddToTail( seed );
+	m_walkableSeeds.push_back(std::move(seed));
 }
 
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Return the next walkable seed as a node
  */
-CNavNode* CNavMesh::GetNextWalkableSeedNode(void) 
+CNavNode* CNavMesh::GetNextWalkableSeedNode(void)
 {
-	if (m_seedIdx >= m_walkableSeeds.Count())
+	if (m_seedIdx >= m_walkableSeeds.size())
 		return nullptr;
 
-	WalkableSeedSpot spot = m_walkableSeeds[m_seedIdx];
+	const WalkableSeedSpot& spot = m_walkableSeeds[m_seedIdx];
 	++m_seedIdx;
 
 	// check if a node exists at this location

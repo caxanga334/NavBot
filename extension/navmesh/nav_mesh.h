@@ -617,9 +617,10 @@ public:
 	 * @param useCenter if true, use the entity WorldSpaceCenter instead of AbsOrigin for the walkable spot. 
 	 */
 	void AddWalkableEntity(const char* name, bool useCenter = false) { m_walkableEntities.emplace(name, useCenter); }
+	bool AddWalkableSeed(const Vector& pos);
 	void AddWalkableSeed( const Vector &pos, const Vector &normal );	// add given walkable position to list of seed positions for map sampling
 	virtual void AddWalkableSeeds( void );								// adds walkable positions for any/all positions a mod specifies
-	void ClearWalkableSeeds( void )		{ m_walkableSeeds.RemoveAll(); }	// erase all walkable seed positions
+	void ClearWalkableSeeds(void) { m_walkableSeeds.clear(); }	// erase all walkable seed positions
 	void MarkStairAreas( void );
 
 	/* virtual */ unsigned int GetGenerationTraceMask(void) const
@@ -1419,7 +1420,7 @@ public:
 	EditModeType GetEditMode( void ) const;						// return the current edit mode
 	void SetEditMode( EditModeType mode );						// change the edit mode
 	bool IsEditMode( EditModeType mode ) const;					// return true if current mode matches given mode
-	bool FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &end, CNavArea **area, CNavLadder **ladder, CNavArea *ignore = NULL );
+	bool FindNavAreaOrLadderAlongRay( const Vector &start, const Vector &end, CNavArea **area, CNavLadder **ladder, CNavArea *ignore = nullptr ) const;
 	void SimplifySelectedAreas( void );	// Simplifies the selected set by reducing to 1x1 areas and re-merging them up with loosened tolerances
 	/**
 	 * @brief Gets the full path to the nav mesh file.
@@ -1495,6 +1496,8 @@ public:
 
 	INavEntityAvoidanceObstacle* CreateEntityAvoidanceObstacle(CBaseEntity* entity);
 
+	CNavArea* FindActiveNavAreaForPlayer(CBaseEntity* player) const;
+
 protected:
 	virtual void PostCustomAnalysis( void ) { }					// invoked when custom analysis step is complete
 	bool FindActiveNavArea( void );								// Finds the area or ladder the local player is currently pointing at.  Returns true if a surface was hit by the traceline.
@@ -1509,7 +1512,7 @@ protected:
 	 * @param tr Trace result that hit the surface
 	 * @return true if climbable, false otherwise.
 	 */
-	bool IsClimbableSurface(const trace_t& tr);
+	bool IsClimbableSurface(const trace_t& tr) const;
 	/**
 	 * @brief Invoked to compute the nav mesh internal data.
 	 */
@@ -1703,10 +1706,10 @@ private:
 		Vector pos;
 		Vector normal;
 	};
-	CUtlVector< WalkableSeedSpot > m_walkableSeeds;				// list of walkable seed spots for sampling
+	std::vector< WalkableSeedSpot > m_walkableSeeds;				// list of walkable seed spots for sampling
 
 	CNavNode *GetNextWalkableSeedNode( void );					// return the next walkable seed as a node
-	int m_seedIdx;
+	std::size_t m_seedIdx;
 	int m_hostThreadModeRestoreValue;							// stores the value of host_threadmode before we changed it
 
 	void BuildTransientAreaList( void );

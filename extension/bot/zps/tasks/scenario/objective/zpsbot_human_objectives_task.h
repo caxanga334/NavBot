@@ -22,6 +22,11 @@ private:
 class CZPSBotObjectiveUseItemTask : public AITask<CZPSBot>
 {
 public:
+	CZPSBotObjectiveUseItemTask()
+	{
+		m_usingItem = false;
+	}
+
 	static bool IsPossible(CZPSBot* bot);
 
 	TaskResult<CZPSBot> OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask) override;
@@ -67,5 +72,22 @@ private:
 	CountdownTimer m_checkInventory;
 };
 
+class CZPSBotObjectiveDropItemTask : public AITask<CZPSBot>
+{
+public:
+	static bool IsPossible(CZPSBot* bot);
+
+	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
+
+	const char* GetName() const override { return "ObjectiveDropItem"; }
+
+private:
+	CMeshNavigator m_nav;
+	CountdownTimer m_switchCooldown;
+
+	bool OwnsRequiredItem(CZPSBot* bot) const;
+	bool IsItemEquipped(CZPSBot* bot) const;
+	void EquipRequiredItem(CZPSBot* bot);
+};
 
 #endif // !__NAVBOT_ZPSBOT_TASKS_SCENARIO_HUMAN_OBJECTIVES_H_

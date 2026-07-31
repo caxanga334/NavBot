@@ -12,10 +12,11 @@ public:
 		OBJECTIVE_NONE = 0,
 		OBJECTIVE_MOVETO, // move to a position
 		OBJECTIVE_USE_BUTTON, // press a button
-		OBJECTIVE_FIND_ITEM, // find item_generic
-		OBJECTIVE_USE_ITEM, // use item_generic
-		OBJECTIVE_DROP_ITEM, // drop item_generic at another entity
+		OBJECTIVE_FIND_ITEM, // find item_deliver
+		OBJECTIVE_USE_ITEM, // use item_deliver
+		OBJECTIVE_DROP_ITEM, // drop item_deliver at another entity
 		OBJECTIVE_DESTROY_ENTITY, // destroy an entity
+		OBJECTIVE_DISCARD_ITEM, // discard an item_deliver from their inventory.
 
 		MAX_OBJECTIVE_TYPES
 	};
@@ -42,8 +43,8 @@ private:
 	ObjectiveTypes m_currentObjective;
 	Vector m_moveTo;
 	CHandle<CBaseEntity> m_useButton;
-	std::string m_itemID; // id of the item_generic to find
-	CHandle<CBaseEntity> m_itemUseTarget; // entity to use the item_generic at
+	std::string m_itemID; // id of the item_deliver to find
+	CHandle<CBaseEntity> m_itemUseTarget; // entity to use the item_deliver at
 	CHandle<CBaseEntity> m_genericTarget; // general purpose generic target entity
 	float m_detectionRadius;
 };

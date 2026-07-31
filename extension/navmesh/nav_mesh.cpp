@@ -146,6 +146,8 @@ CNavMesh::CNavMesh( void )
 	m_volumes.reserve(8);
 	m_elevators.reserve(8);
 	m_prerequisites.reserve(8);
+	m_walkableSeeds.reserve(256);
+	m_seedIdx = 0U;
 	m_selectedWaypoint = nullptr;
 	m_selectedVolume = nullptr;
 	m_selectedElevator = nullptr;
@@ -443,7 +445,7 @@ void CNavMesh::Reset( void )
 
 	m_updateBlockedAreasTimer.Invalidate();
 
-	m_walkableSeeds.RemoveAll();
+	ClearWalkableSeeds();
 	m_authorinfo.ClearAndShrink();
 	RemoveAllEntitiesFromForcedSolidList();
 }
@@ -729,10 +731,8 @@ void CNavMesh::Update( void )
 	}
 
 	// draw any walkable seeds that have been marked
-	for ( int it=0; it < m_walkableSeeds.Count(); ++it )
+	for (const WalkableSeedSpot& spot : m_walkableSeeds)
 	{
-		WalkableSeedSpot spot = m_walkableSeeds[ it ];
-
 		const float height = 50.0f;
 		const float width = 25.0f;
 		DrawLine( spot.pos, spot.pos + height * spot.normal, 3, 255, 0, 255 ); 
@@ -4648,7 +4648,7 @@ void CNavMesh::CompressPrerequisiteIDs()
 
 static ConVar sm_nav_force_climbable("sm_nav_force_climbable", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, forces the current surface to be climbable.");
 
-bool CNavMesh::IsClimbableSurface(const trace_t& tr)
+bool CNavMesh::IsClimbableSurface(const trace_t& tr) const
 {
 	/*
 	* This function is called by CNavMesh::FindActiveNavArea to set the value of CNavMesh::m_climbableSurface
