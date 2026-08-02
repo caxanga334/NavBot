@@ -66,8 +66,8 @@
 			}
 			"CBaseAnimating::GetBoneTransform"
 			{
-				"windows64"	"232"
-				"linux64"	"233"
+				"windows64"	"233"
+				"linux64"	"234"
 			}
 			"CBaseFilter::PassesFilterImpl"
 			{
