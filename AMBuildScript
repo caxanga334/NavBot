@@ -150,6 +150,7 @@ class ExtensionConfig(object):
     for cxx in self.all_targets:
       self.configure_optimization(cxx)
       self.configure_arch(cxx)
+      self.configure_common(cxx)
 
   def configure(self):
     
@@ -224,9 +225,6 @@ class ExtensionConfig(object):
       '-fvisibility=hidden',
     ]
 
-    if cxx.target.arch in ['x86', 'x86_64']:
-      cxx.cflags += ['-msse']
-
     cxx.cxxflags += [
       '-fno-threadsafe-statics',
       '-Wno-non-virtual-dtor',
@@ -274,7 +272,8 @@ class ExtensionConfig(object):
       ]
 
     if have_gcc:
-      cxx.cflags += ['-mfpmath=sse']
+      # No longer set here, these are defined in the HL2SDK manifests when needed
+      # cxx.cflags += ['-mfpmath=sse']
       cxx.cflags += ['-Wno-maybe-uninitialized']
 
     # Don't omit the frame pointer.
@@ -398,6 +397,16 @@ class ExtensionConfig(object):
         cxx.cflags += ['-mavx2']
       elif builder.options.archoptions == 4:
         cxx.cflags += ['-march=native']
+      else:
+        # Use SSE2 by default
+        cxx.cflags += ['-msse2']
+
+  # Adds common compiler configuration (These are passed to the SDK libs)
+  def configure_common(self, cxx):
+    if cxx.like('gcc'):
+      if cxx.target.platform == 'linux' and cxx.target.arch == 'x86':
+        cxx.cflags += ['-mstackrealign']
+
 
   def add_sm_version(self, binary):
     cxx = binary.compiler
