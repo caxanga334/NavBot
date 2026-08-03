@@ -86,7 +86,6 @@ public:
 	virtual void Update();
 	virtual void OnRoundRestart()
 	{
-		m_scanTimer.Start(1.0f);
 		m_toggle_condition.OnRoundRestart();
 	}
 	virtual void Save(std::fstream& filestream, uint32_t version);
@@ -132,7 +131,6 @@ private:
 	int m_teamIndex; // team index
 	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_blockedCache;
 	navscripting::ToggleCondition m_toggle_condition;
-	CountdownTimer m_scanTimer;
 
 	class FindAreasInVolume
 	{

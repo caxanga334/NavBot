@@ -3,6 +3,11 @@
 #endif
 #define _navbot_interfaces_movement_included
 
+// Recommended weight for MoveTowards calls if you want to override basic navigation but not everything else
+#define NAVBOT_MOVEWEIGHT_NORMAL 1500
+// Recommended weight for MoveTowards calls if you want to be priorized
+#define NAVBOT_MOVEWEIGHT_PRIORITY 1250000
+
 // Interface that handles how the bot moves.
 methodmap NavBotMovementInterface < NavBotBotInterface
 {
@@ -100,4 +105,21 @@ methodmap NavBotMovementInterface < NavBotBotInterface
 	 * @param duration		How long in seconds to consider this area dead, negative for infinite.
 	 */
 	public static native void AddCostModArea(Address ptr, Address area, const float costmult, const float duration);
+	/**
+	 * Moves the bot towards the given position.
+	 * This function does not have pathfinding! It just makes the bot press the necessary buttons for it to move.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param position		World position the bot will move to.
+	 * @param weight		MoveTowards call weight, if another call was made with a larger weight, this call is ignored.
+	 * @error				Negative weight value given.
+	 */
+	public static native void MoveTowards(Address ptr, const float position[3], const int weight);
+	/**
+	 * Sets the speed the bot will move at.
+	 * 
+	 * @param ptr			Pointer to the movement interface.
+	 * @param speed			Speed the bot will move at.
+	 */
+	public static native void SetDesiredSpeed(Address ptr, const float speed);
 }

@@ -1,4 +1,5 @@
 #include NAVBOT_PCH_FILE
+#include <mods/modhelpers.h>
 #include "insmicbot.h"
 #include "insmicbot_movement.h"
 
@@ -49,5 +50,16 @@ void CInsMICBotMovement::DetermineIdealPostureForPath(const CMeshNavigator* path
 	{
 		bot->GetControlInterface()->PressAlt1Button();
 	}
+}
+
+bool CInsMICBotMovement::IsEntityTraversable(CBaseEntity* entity, const bool now) const
+{
+	// Teammates are solid to each other in Insurgency
+	if (modhelpers->IsPlayer(entity))
+	{
+		return false;
+	}
+
+	return IMovement::IsEntityTraversable(entity, now);
 }
 

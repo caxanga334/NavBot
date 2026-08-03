@@ -19,6 +19,7 @@ public:
 	float GetWalkSpeed() const override { return GetMaxSpeed() * 0.70f; }
 	void AdjustSpeedForPath(CMeshNavigator* path) override;
 	void DetermineIdealPostureForPath(const CMeshNavigator* path) override;
+	bool IsEntityTraversable(CBaseEntity* entity, const bool now = true) const override;
 
 private:
 

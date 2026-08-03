@@ -35,6 +35,7 @@ public:
 	bool HasJoinedGame() override;
 	void TryJoinGame() override;
 	insmic::Stance_t GetStance() const;
+	bool IsLineOfFireClear(const Vector& to) const override;
 
 private:
 	std::unique_ptr<CInsMICBotSensor> m_insmicsensor;

@@ -27,6 +27,7 @@ public:
 	CCSSBotInventory* GetInventoryInterface() const override { return m_cssinventory.get(); }
 	CCSSBotMovement* GetMovementInterface() const override { return m_cssmovement.get(); }
 	CCSSBotSensor* GetSensorInterface() const override { return m_csssensor.get(); }
+	bool IsLineOfFireClear(const Vector& to) const override;
 	void SetBuyProfile(const counterstrikesource::BuyProfile* profile) { m_buyprofile = profile; }
 	const counterstrikesource::BuyProfile* GetBuyProfile() const { return m_buyprofile; }
 	/**

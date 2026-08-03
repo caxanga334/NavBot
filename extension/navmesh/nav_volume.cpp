@@ -77,17 +77,6 @@ void CNavVolume::Update()
 		return;
 	}
 
-	if (m_scanTimer.HasStarted())
-	{
-		if (m_scanTimer.IsElapsed())
-		{
-			m_scanTimer.Invalidate();
-			SearchTargetEntity();
-		}
-
-		return;
-	}
-
 	if (m_toggle_condition.HasTargetEntityBeenSet())
 	{
 		CBaseEntity* pEntity = m_toggle_condition.GetTargetEntity();
@@ -95,7 +84,6 @@ void CNavVolume::Update()
 		if (pEntity == nullptr)
 		{
 			UpdateBlockedStatus(NAV_TEAM_ANY, false);
-			m_scanTimer.StartRandom(5.0f, 10.0f);
 			return;
 		}
 	}

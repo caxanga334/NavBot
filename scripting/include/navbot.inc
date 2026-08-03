@@ -364,6 +364,8 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotMovementInterface.BreakObstacle");
 	MarkNativeAsOptional("NavBotMovementInterface.AddDeadArea");
 	MarkNativeAsOptional("NavBotMovementInterface.AddCostModArea");
+	MarkNativeAsOptional("NavBotMovementInterface.MoveTowards");
+	MarkNativeAsOptional("NavBotMovementInterface.SetDesiredSpeed");
 
 	/* Sensor Interface */
 	MarkNativeAsOptional("NavBotSensorInterface.IsIgnored");

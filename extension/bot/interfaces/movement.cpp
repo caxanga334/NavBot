@@ -1961,6 +1961,54 @@ void IMovement::UsePushLadder(const bool goingup, const Vector& destination)
 	}
 }
 
+void IMovement::DoSimpleUseableScan(const float scanRange, const Vector* dir)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("IMovement::DoSimpleUseableScan", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!m_simpleUseCooldown.IsElapsed())
+	{
+		return;
+	}
+
+	constexpr auto size = 4.0f;
+	Vector traceMins(-size, -size, -size);
+	Vector traceMaxs(size, size, size);
+	CBaseBot* bot = GetBot<CBaseBot>();
+	Vector eyePos = bot->GetEyeOrigin();
+	Vector endPos;
+
+	if (dir != nullptr)
+	{
+		endPos = eyePos + ((*dir) * scanRange);
+	}
+	else
+	{
+		Vector forward;
+		bot->EyeVectors(&forward);
+		endPos = eyePos + (forward * scanRange);
+	}
+
+	trace::CTraceFilterSimple filter(bot->GetEntity(), COLLISION_GROUP_NONE);
+	trace_t tr;
+	trace::hull(eyePos, endPos, traceMins, traceMaxs, MASK_SOLID, &filter, tr);
+
+	if (tr.DidHit() && tr.m_pEnt != nullptr && tr.DidHitNonWorldEntity())
+	{
+		CBaseEntity* dummy = nullptr;
+
+		if (IsUseableObstacle(tr.m_pEnt, &dummy))
+		{
+			bot->GetControlInterface()->PressUseButton();
+			m_simpleUseCooldown.Start(3.0f);
+			return;
+		}
+	}
+
+	m_simpleUseCooldown.Start(0.5f);
+}
+
 static void LogStuck(const CBaseBot* bot, const int count)
 {
 	if (!sm_navbot_movement_stuck_log.GetBool()) { return; }
@@ -2582,6 +2630,7 @@ IMovement::LadderState IMovement::UseLadderUp()
 	auto origin = bot->GetAbsOrigin();
 	const float z = origin.z;
 	const float z_dist = std::abs(m_ladderFSM.m_ladderGoalZ - z);
+	DoSimpleUseableScan(CBaseExtPlayer::PLAYER_USE_RADIUS); // open any doors that may be in the ladder's path
 
 	if (!IsOnLadder())
 	{
@@ -2658,6 +2707,7 @@ IMovement::LadderState IMovement::UseLadderDown()
 	const float z = origin.z;
 	const bool isOnLadder = IsOnLadder();
 	const bool isDebugging = me->IsDebugging(BOTDEBUG_MOVEMENT);
+	DoSimpleUseableScan(CBaseExtPlayer::PLAYER_USE_RADIUS); // open any doors that may be in the ladder's path
 
 	// Fell off the ladder
 	if (!isOnLadder)
@@ -3407,6 +3457,7 @@ void IMovement::_Reset()
 	m_deadAreas.clear();
 	m_costModAreas.clear();
 	m_pushLadderData.Reset();
+	m_simpleUseCooldown.Invalidate();
 }
 
 bool IMovement::UpdateCatapultLogic()

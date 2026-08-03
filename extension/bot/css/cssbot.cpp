@@ -23,6 +23,19 @@ CCSSBot::~CCSSBot()
 	m_buyprofile = nullptr;
 }
 
+bool CCSSBot::IsLineOfFireClear(const Vector& to) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CCSSBot::IsLineOfFireClear", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CBaseBotTraceFilterLineOfFire filter{ this, false };
+	trace_t result;
+	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
+
+	return !result.DidHit();
+}
+
 void CCSSBot::SendBuyCommand(const char* item)
 {
 	char fmt[256];

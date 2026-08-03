@@ -261,6 +261,49 @@ namespace natives::bots::interfaces::movement
 		iface->AddCostModArea(area, costmult, duration);
 		return 0;
 	}
+	static cell_t MoveTowards(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		Vector goal = pawnutils::ReadVector(context, params, 2);
+		int weight = static_cast<int>(params[3]);
+
+		if (weight < 0)
+		{
+			context->ReportError("Weight cannot be negative!");
+			return 0;
+		}
+
+		iface->MoveTowards(goal, weight);
+		return 0;
+	}
+	static cell_t SetDesiredSpeed(IPluginContext* context, const cell_t* params)
+	{
+		IMovement* iface = pawnutils::UnsafeCastPawnAddressToObject<IMovement>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		float speed = pawnutils::ReadFloat(params, 2);
+
+		if (speed <= 1.0f)
+		{
+			context->ReportError("Invalid speed value!");
+			return 0;
+		}
+
+		iface->SetDesiredSpeed(speed);
+		return 0;
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -278,6 +321,8 @@ namespace natives::bots::interfaces::movement
 			{ "NavBotMovementInterface.BreakObstacle", BreakObstacle},
 			{ "NavBotMovementInterface.AddDeadArea", AddDeadArea},
 			{ "NavBotMovementInterface.AddCostModArea", AddCostModArea},
+			{ "NavBotMovementInterface.MoveTowards", MoveTowards},
+			{ "NavBotMovementInterface.SetDesiredSpeed", SetDesiredSpeed},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

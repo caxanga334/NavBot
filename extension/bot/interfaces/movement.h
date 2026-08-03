@@ -569,6 +569,12 @@ public:
 	bool IsUsingPushLadder() const { return m_pushLadderData.IsActive(); }
 	// Gets the push ladder exit position.
 	const Vector& GetPushLadderExit() const { return m_pushLadderData.GetExitPosition(); }
+	/**
+	 * @brief Does a simple scan for entities the bot can +USE.
+	 * @param scanRange Raycast max range.
+	 * @param dir Optional direction to scan. If NULL, uses the forward component of the bot's eye angles.
+	 */
+	void DoSimpleUseableScan(const float scanRange, const Vector* dir = nullptr);
 protected:
 	class LadderFSM
 	{
@@ -753,6 +759,7 @@ private:
 	bool m_sjIsToTheLeft;
 	std::unordered_map<unsigned int, float> m_deadAreas; // nav areas marked as Dead
 	std::unordered_map<unsigned int, std::pair<float, float>> m_costModAreas; // nav areas marked with modified travel costs, first is cost multiplier, second is max time
+	CountdownTimer m_simpleUseCooldown; // cooldown to avoid +USE spam
 
 	inline static float s_standingJumpBoost{ 30.0f };
 	inline static float s_crouchedJumpBoost{ 120.0f };

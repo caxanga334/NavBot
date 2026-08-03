@@ -2,6 +2,10 @@
 #include <mods/insmic/insmicmod.h>
 #include "insmicbot.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CInsMICBot::CInsMICBot(edict_t* edict) :
 	CBaseBot(edict)
 {
@@ -64,6 +68,19 @@ insmic::Stance_t CInsMICBot::GetStance() const
 	int stance = static_cast<int>(insmic::Stance_t::STANCE_INVALID);
 	entprops->GetEntProp(GetEntity(), Prop_Send, "m_iCurrentStance", stance);
 	return static_cast<insmic::Stance_t>(stance);
+}
+
+bool CInsMICBot::IsLineOfFireClear(const Vector& to) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CInsMICBot::IsLineOfFireClear", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	CBaseBotTraceFilterLineOfFire filter{ this, false };
+	trace_t result;
+	trace::line(GetEyeOrigin(), to, MASK_SHOT, &filter, result);
+
+	return !result.DidHit();
 }
 
 CInsMICBotPathCost::CInsMICBotPathCost(CInsMICBot* bot, RouteType type) :
