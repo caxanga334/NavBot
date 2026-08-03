@@ -5,12 +5,8 @@
 #include "scenario/bmbot_scenario_deathmatch_task.h"
 #include "bmbot_deploy_tripmines.h"
 #include "bmbot_find_health_task.h"
-#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
-#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_prereq_tasks.h>
 #include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
-#include <bot/interfaces/behavior_utils.h>
 #include <bot/tasks_shared/bot_shared_default_combat_tasks.h>
 #include "bmbot_tactical_task.h"
 
@@ -87,7 +83,12 @@ QueryAnswerType CBlackMesaBotTacticalTask::ShouldSeekAndDestroy(CBaseBot* baseBo
 
 TaskEventResponseResult<CBlackMesaBot> CBlackMesaBotTacticalTask::OnNavAreaChanged(CBlackMesaBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CBlackMesaBot, CBlackMesaBotPathCost);
+	TaskEventResponseResult<CBlackMesaBot> result = botprereqtasks::ImplementPrereqCheck<CBlackMesaBot, CBlackMesaBotTacticalTask, CNavArea, CBlackMesaBotPathCost>(this, bot, newArea);
+
+	if (result.IsRequestingChange())
+	{
+		return result;
+	}
 
 	return TryContinue();
 }

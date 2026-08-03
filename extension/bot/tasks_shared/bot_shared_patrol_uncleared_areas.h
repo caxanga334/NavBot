@@ -141,6 +141,11 @@ public:
 		return true;
 	}
 
+	void OnTaskEnd(BT* bot, AITask<BT>* nextTask) override
+	{
+		m_tac.Disable();
+	}
+
 	TaskResult<BT> OnTaskResume(BT* bot, AITask<BT>* pastTask) override
 	{
 		if (m_goalArea->WasClearedWithinTime(bot->GetCurrentTeamIndex(), m_clearTimeLimit))

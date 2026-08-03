@@ -3,10 +3,7 @@
 #include <bot/dods/dodsbot.h>
 #include <mods/dods/dayofdefeatsourcemod.h>
 #include <sdkports/sdk_takedamageinfo.h>
-#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
-#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_prereq_tasks.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
 #include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
@@ -25,7 +22,12 @@ TaskResult<CDoDSBot> CDoDSBotTacticalMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotTacticalMonitorTask::OnNavAreaChanged(CDoDSBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CDoDSBot, CDoDSBotPathCost);
+	TaskEventResponseResult<CDoDSBot> result = botprereqtasks::ImplementPrereqCheck<CDoDSBot, CDoDSBotTacticalMonitorTask, CNavArea, CDoDSBotPathCost>(this, bot, newArea);
+
+	if (result.IsRequestingChange())
+	{
+		return result;
+	}
 
 	return TryContinue(PRIORITY_LOW);
 }

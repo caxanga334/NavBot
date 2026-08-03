@@ -119,6 +119,11 @@ TaskResult<CTF2Bot> CTF2BotSpyCheckTask::OnTaskUpdate(CTF2Bot* bot)
 	return Continue();
 }
 
+void CTF2BotSpyCheckTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
+{
+	m_pto.Clear();
+}
+
 TaskEventResponseResult<CTF2Bot> CTF2BotSpyCheckTask::OnSight(CTF2Bot* bot, CBaseEntity* subject)
 {
 	return TryToMaintain(PRIORITY_MEDIUM);

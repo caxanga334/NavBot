@@ -243,6 +243,10 @@ class ExtensionConfig(object):
     have_gcc = cxx.family == 'gcc'
     have_clang = cxx.family == 'clang'
 
+    if builder.options.asan == '1' and have_clang:
+      cxx.cflags += ['-O1', '-fsanitize=address']
+      cxx.postlink += ['-fsanitize=address']
+
     # Work around errors from smsdk_ext.cpp and HL2 SDK
     if have_clang:
       cxx.cxxflags += [

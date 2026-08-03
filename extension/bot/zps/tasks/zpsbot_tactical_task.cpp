@@ -1,13 +1,9 @@
 #include NAVBOT_PCH_FILE
 #include <bot/zps/zpsbot.h>
 #include <sdkports/sdk_takedamageinfo.h>
-#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
-#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_prereq_tasks.h>
 #include <bot/tasks_shared/bot_shared_pursue_and_destroy.h>
 #include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
-#include <bot/interfaces/behavior_utils.h>
 #include "zpsbot_scenario_task.h"
 #include "zpsbot_tactical_task.h"
 
@@ -36,7 +32,12 @@ TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnInjured(CZPSBot* bot, co
 
 TaskEventResponseResult<CZPSBot> CZPSBotTacticalTask::OnNavAreaChanged(CZPSBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CZPSBot, CZPSBotPathCost);
+	TaskEventResponseResult<CZPSBot> result = botprereqtasks::ImplementPrereqCheck<CZPSBot, CZPSBotTacticalTask, CNavArea, CZPSBotPathCost>(this, bot, newArea);
+
+	if (result.IsRequestingChange())
+	{
+		return result;
+	}
 
 	return TryContinue();
 }

@@ -41,33 +41,6 @@ if (bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO)														\
 																														\
 
 
-#define BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(BOTCLASS, PATHCOST)			\
-if (newArea && newArea->HasPrerequisite())										\
-{																				\
-	const CNavPrerequisite* prereq = newArea->GetPrerequisite();				\
-																				\
-	if (prereq->IsEnabled() && prereq != bot->GetLastUsedPrerequisite())		\
-	{																			\
-		CNavPrerequisite::PrerequisiteTask task = prereq->GetTask();			\
-																				\
-		switch (task)															\
-		{																		\
-		case CNavPrerequisite::TASK_WAIT:										\
-			return TryPauseFor(new CBotSharedPrereqWaitTask<BOTCLASS>(prereq->GetFloatData()), PRIORITY_HIGH, "Prerequisite tells me to wait!");	\
-		case CNavPrerequisite::TASK_MOVE_TO_POS:								\
-			return TryPauseFor(new CBotSharedPrereqMoveToPositionTask<BOTCLASS, PATHCOST>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to move to a position!");	\
-		case CNavPrerequisite::TASK_DESTROY_ENT:								\
-			return TryPauseFor(new CBotSharedPrereqDestroyEntityTask<BOTCLASS, PATHCOST>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to destroy an entity!");	\
-		case CNavPrerequisite::TASK_USE_ENT:									\
-			return TryPauseFor(new CBotSharedPrereqUseEntityTask<BOTCLASS, PATHCOST>(bot, prereq), PRIORITY_HIGH, "Prerequisite tells me to use an entity!");			\
-		default:																\
-			break;																\
-		}																		\
-	}																			\
-}																				\
-																				\
-
-
 namespace behaviorutils
 {
 	template <typename BotClass, typename PathCost, typename SquadTask, typename ExitTask, typename... TArgs>

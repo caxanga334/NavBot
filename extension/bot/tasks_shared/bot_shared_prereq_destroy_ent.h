@@ -1,13 +1,9 @@
 #ifndef NAVBOT_BOT_SHARED_PREREQ_DESTROY_ENT_TASK_H_
 #define NAVBOT_BOT_SHARED_PREREQ_DESTROY_ENT_TASK_H_
 
-#include <extension.h>
-#include <util/helpers.h>
-#include <bot/basebot.h>
-#include <bot/basebot_pathcost.h>
 #include <bot/interfaces/path/meshnavigator.h>
-#include <sdkports/sdk_timers.h>
-#include <sdkports/sdk_traces.h>
+#include <bot/interfaces/sensor_utils.h>
+#include <mods/modhelpers.h>
 #include <navmesh/nav_prereq.h>
 
 /**
@@ -23,27 +19,42 @@ public:
 		AITask<BT>(), m_pathCost(bot)
 	{
 		m_prereq = prereq;
-		m_failCount = 0;
-		m_inRange = false;
+		m_useMelee = prereq->GetFloatData() >= 0.5f;
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
+
+	void OnTaskEnd(BT* bot, AITask<BT>* nextTask) override
+	{
+		m_pto.Clear();
+	}
+
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override
+	{
+		if (m_counter.Increase())
+		{
+			return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
+		}
+
+		return AITask<BT>::TryToMaintain(PRIORITY_LOW);
+	}
 
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override;
 
-	const char* GetName() const override { return "UseEntity"; }
+	const char* GetName() const override { return "DestroyEntity"; }
 
 private:
 	CT m_pathCost;
 	CMeshNavigator m_nav;
+	CPathFailCounter m_counter;
 	Vector m_goal;
-	int m_failCount;
 	const CNavPrerequisite* m_prereq;
-	bool m_inRange;
+	sensorutils::PrimaryThreatOverride<BT> m_pto;
+	bool m_useMelee;
 };
 
 template<typename BT, typename CT>
@@ -57,12 +68,6 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskStart(BT*
 	}
 
 	m_goal = UtilHelpers::getWorldSpaceCenter(targetEnt);
-	CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(targetEnt);
-
-	if (known)
-	{
-		known->UpdatePosition();
-	}
 
 	return AITask<BT>::Continue();
 }
@@ -78,10 +83,18 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 		return AITask<BT>::Done("Target entity is NULL!");
 	}
 
-	if (!UtilHelpers::IsEntityAlive(targetEnt))
+	if (modhelpers->IsDead(targetEnt))
 	{
 		return AITask<BT>::Done("Target entity is dead!");
 	}
+
+	if (bot->GetMovementInterface()->IsBreakingObstacle())
+	{
+		return AITask<BT>::Continue();
+	}
+
+	// update in case it's a moving entity
+	m_goal = UtilHelpers::getWorldSpaceCenter(targetEnt);
 
 	if (m_nav.NeedsRepath())
 	{
@@ -89,58 +102,37 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 
 		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathCost))
 		{
-			return AITask<BT>::Done("No path to goal!");
+			if (m_counter.Increase())
+			{
+				return AITask<BT>::Done("No path to goal!");
+			}
 		}
 	}
 
-	CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(targetEnt);
-
-	if (known)
+	if (!m_useMelee && !m_pto.IsSet())
 	{
-		known->UpdatePosition();
-	}
-	else
-	{
-		return AITask<BT>::Done("NULL known entity of target!");
+		m_pto.Set(bot, targetEnt);
 	}
 
-	bot->GetInventoryInterface()->SelectBestWeaponForThreat(known);
-	Vector eyePos = bot->GetEyeOrigin();
-	Vector entPos = UtilHelpers::getWorldSpaceCenter(targetEnt);
-	const float range = (eyePos - entPos).Length();
-	m_inRange = (m_prereq->GetFloatData() < 0.5f || range <= m_prereq->GetFloatData());
+	const float range = bot->GetRangeTo(m_goal);
 
-	auto passFunc = [targetEnt](IHandleEntity* pHandleEntity, int contentsMask) -> bool {
-		CBaseEntity* pEntity = trace::EntityFromEntityHandle(pHandleEntity);
-
-		if (pEntity == targetEnt)
-		{
-			return false;
-		}
-
-		return true;
-	};
-
-	trace::CTraceFilterSimple filter(bot->GetEntity(), COLLISION_GROUP_NONE);
-	trace_t tr;
-	trace::line(eyePos, entPos, MASK_SHOT, &filter, tr);
-
-	if (m_inRange && tr.fraction == 1.0f)
-	{
-		bot->GetCombatInterface()->FireWeaponAt(targetEnt, true);
-	}
-	else
+	if (m_useMelee || !bot->GetSensorInterface()->IsAbleToSee(targetEnt) || range >= 256.0f)
 	{
 		m_nav.Update(bot);
 	}
 
+	if (m_useMelee && range <= 128.0f)
+	{
+		bot->GetMovementInterface()->BreakObstacle(targetEnt);
+	}
+	
 	return AITask<BT>::Continue();
 }
 
 template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	if (++m_failCount > 20)
+	if (m_counter.Increase())
 	{
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
 	}

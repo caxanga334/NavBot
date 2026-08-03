@@ -1,6 +1,5 @@
 #include NAVBOT_PCH_FILE
 
-#include <extension.h>
 #include <mods/tf2/teamfortress2mod.h>
 #include <entities/tf2/tf_entities.h>
 #include <sdkports/sdk_takedamageinfo.h>
@@ -12,10 +11,7 @@
 #include "tf2bot_find_ammo_task.h"
 #include "tf2bot_find_health_task.h"
 #include "tf2bot_use_teleporter.h"
-#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
-#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_prereq_tasks.h>
 #include <bot/tasks_shared/bot_shared_retreat_from_threat.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
@@ -145,7 +141,12 @@ QueryAnswerType CTF2BotTacticalTask::ShouldRetreat(CBaseBot* base)
 
 TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnNavAreaChanged(CTF2Bot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CTF2Bot, CTF2BotPathCost);
+	TaskEventResponseResult<CTF2Bot> result = botprereqtasks::ImplementPrereqCheck<CTF2Bot, CTF2BotTacticalTask, CNavArea, CTF2BotPathCost>(this, bot, newArea);
+
+	if (result.IsRequestingChange())
+	{
+		return result;
+	}
 
 	return TryContinue();
 }

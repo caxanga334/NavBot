@@ -1,11 +1,8 @@
 #include NAVBOT_PCH_FILE
-#include <array>
-#include <string_view>
-#include <extension.h>
-#include <sdkports/debugoverlay_shared.h>
 #include "nav_mesh.h"
 #include "nav_area.h"
 #include "nav_prereq.h"
+#include <bot/basebot.h>
 
 ConVar sm_nav_prerequisite_edit("sm_nav_prerequisite_edit", "0", FCVAR_GAMEDLL, "Controls the Nav Prerequisite edit mode.");
 
@@ -138,7 +135,7 @@ void CNavPrerequisite::Draw() const
 {
 	if (TheNavMesh->GetSelectedPrerequisite().get() == this)
 	{
-		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 255, 215, 0, 100, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 255, 215, 0, 64, NDEBUG_PERSIST_FOR_ONE_TICK);
 		NDebugOverlay::Text(m_origin, false, NDEBUG_PERSIST_FOR_ONE_TICK, "MARKED Nav Prerequisite #%i", m_id);
 		NDebugOverlay::Cross3D(m_goalPosition, 16.0f, 255, 0, 0, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 
@@ -161,15 +158,15 @@ void CNavPrerequisite::Draw() const
 	}
 	else
 	{
-		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 135, 206, 250, 100, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 135, 206, 250, 64, NDEBUG_PERSIST_FOR_ONE_TICK);
 		NDebugOverlay::Text(m_origin, false, NDEBUG_PERSIST_FOR_ONE_TICK, "Nav Prerequisite #%i", m_id);
 	}
 }
 
 void CNavPrerequisite::ScreenText() const
 {
-	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Selected Prerequisite #%i Team %i %s %s", 
-		m_id, m_teamIndex, TaskIDtoString(m_task), IsEnabled() ? "ENABLED" : "DISABLED");
+	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Selected Prerequisite #%i Team %i %s %s DATA: %g", 
+		m_id, m_teamIndex, TaskIDtoString(m_task), IsEnabled() ? "ENABLED" : "DISABLED", m_flData);
 
 	NDebugOverlay::ScreenText(BASE_SCREENX, BASE_SCREENY + 0.04f, 255, 255, 0, 255, NDEBUG_PERSIST_FOR_ONE_TICK, "Task Goal Entity %s", UtilHelpers::textformat::FormatEntity(m_goalEntity.GetEntity()));
 
@@ -208,4 +205,24 @@ void CNavPrerequisite::SearchForNavAreas()
 	};
 
 	CNavMesh::ForAllAreas<decltype(findareas)>(findareas);
+}
+
+bool CNavPrerequisite::CanBeUsedByBot(CBaseBot* bot) const
+{
+	if (!IsEnabled())
+	{
+		return false;
+	}
+
+	if (!CanBeUsedByTeam(bot->GetCurrentTeamIndex()))
+	{
+		return false;
+	}
+
+	if (bot->GetLastUsedPrerequisite() == this)
+	{
+		return false;
+	}
+
+	return true;
 }

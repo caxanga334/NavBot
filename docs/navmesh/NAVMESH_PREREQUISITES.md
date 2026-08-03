@@ -94,7 +94,8 @@ The bot will move to the prerequisite task goal position.
 
 ## TASK_DESTROY_ENT
 
-The bot will move to and attack the prerequisite task goal entity.
+The bot will move to and attack the prerequisite task goal entity.    
+If the goal data is 1 (set by `sm_nav_prereq_set_goal_data`), the bot will prefer using melee to destroy the entity. Otherwise it will use any weapons, including ranged.    
 
 ## TASK_USE_ENT
 

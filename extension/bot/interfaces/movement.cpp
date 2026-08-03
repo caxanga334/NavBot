@@ -1961,16 +1961,18 @@ void IMovement::UsePushLadder(const bool goingup, const Vector& destination)
 	}
 }
 
-void IMovement::DoSimpleUseableScan(const float scanRange, const Vector* dir)
+void IMovement::DoSimpleObstacleScan(const float scanRange, const Vector* dir)
 {
 #ifdef EXT_VPROF_ENABLED
-	VPROF_BUDGET("IMovement::DoSimpleUseableScan", "NavBot");
+	VPROF_BUDGET("IMovement::DoSimpleObstacleScan", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	if (!m_simpleUseCooldown.IsElapsed())
+	if (!m_simpleObstacleScanCooldown.IsElapsed())
 	{
 		return;
 	}
+
+	if (IsBreakingObstacle()) { return; }
 
 	constexpr auto size = 4.0f;
 	Vector traceMins(-size, -size, -size);
@@ -2001,12 +2003,19 @@ void IMovement::DoSimpleUseableScan(const float scanRange, const Vector* dir)
 		if (IsUseableObstacle(tr.m_pEnt, &dummy))
 		{
 			bot->GetControlInterface()->PressUseButton();
-			m_simpleUseCooldown.Start(3.0f);
+			m_simpleObstacleScanCooldown.Start(3.0f);
+			return;
+		}
+
+		if (bot->IsAbleToBreak(tr.m_pEnt))
+		{
+			BreakObstacle(tr.m_pEnt);
+			m_simpleObstacleScanCooldown.Start(3.0f);
 			return;
 		}
 	}
 
-	m_simpleUseCooldown.Start(0.5f);
+	m_simpleObstacleScanCooldown.Start(0.5f);
 }
 
 static void LogStuck(const CBaseBot* bot, const int count)
@@ -2630,7 +2639,7 @@ IMovement::LadderState IMovement::UseLadderUp()
 	auto origin = bot->GetAbsOrigin();
 	const float z = origin.z;
 	const float z_dist = std::abs(m_ladderFSM.m_ladderGoalZ - z);
-	DoSimpleUseableScan(CBaseExtPlayer::PLAYER_USE_RADIUS); // open any doors that may be in the ladder's path
+	DoSimpleObstacleScan(CBaseExtPlayer::PLAYER_USE_RADIUS); // open any doors that may be in the ladder's path
 
 	if (!IsOnLadder())
 	{
@@ -2707,7 +2716,7 @@ IMovement::LadderState IMovement::UseLadderDown()
 	const float z = origin.z;
 	const bool isOnLadder = IsOnLadder();
 	const bool isDebugging = me->IsDebugging(BOTDEBUG_MOVEMENT);
-	DoSimpleUseableScan(CBaseExtPlayer::PLAYER_USE_RADIUS); // open any doors that may be in the ladder's path
+	DoSimpleObstacleScan(CBaseExtPlayer::PLAYER_USE_RADIUS); // open any doors that may be in the ladder's path
 
 	// Fell off the ladder
 	if (!isOnLadder)
@@ -3457,7 +3466,7 @@ void IMovement::_Reset()
 	m_deadAreas.clear();
 	m_costModAreas.clear();
 	m_pushLadderData.Reset();
-	m_simpleUseCooldown.Invalidate();
+	m_simpleObstacleScanCooldown.Invalidate();
 }
 
 bool IMovement::UpdateCatapultLogic()

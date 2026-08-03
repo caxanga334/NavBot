@@ -3,10 +3,7 @@
 #include <mods/css/css_mod.h>
 #include <bot/css/cssbot.h>
 #include <bot/bot_shared_utils.h>
-#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
-#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_prereq_tasks.h>
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
 #include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
@@ -59,7 +56,12 @@ TaskEventResponseResult<CCSSBot> CCSSBotTacticalTask::OnKilled(CCSSBot* bot, con
 
 TaskEventResponseResult<CCSSBot> CCSSBotTacticalTask::OnNavAreaChanged(CCSSBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CCSSBot, CCSSBotPathCost);
+	TaskEventResponseResult<CCSSBot> result = botprereqtasks::ImplementPrereqCheck<CCSSBot, CCSSBotTacticalTask, CNavArea, CCSSBotPathCost>(this, bot, newArea);
+
+	if (result.IsRequestingChange())
+	{
+		return result;
+	}
 
 	return TryContinue(PRIORITY_LOW);
 }

@@ -87,6 +87,11 @@ public:
 		return AITask<BT>::Continue();
 	}
 
+	void OnTaskEnd(BT* bot, AITask<BT>* nextTask) override
+	{
+		m_tac.Disable();
+	}
+
 	TaskEventResponseResult<BT> OnNavAreaChanged(BT* bot, CNavArea* oldArea, CNavArea* newArea) override
 	{
 		// as we search for an enemy, mark areas we walk into as cleared for the patrol behavior

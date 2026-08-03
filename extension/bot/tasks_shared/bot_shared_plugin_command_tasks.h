@@ -422,6 +422,11 @@ public:
 		return true;
 	}
 
+	void OnTaskEnd(BotClass* bot, AITask<BotClass>* nextTask) override
+	{
+		m_pto.Clear();
+	}
+
 	TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) override
 	{
 		m_nav.Invalidate();

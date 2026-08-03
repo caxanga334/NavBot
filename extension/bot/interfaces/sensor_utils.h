@@ -28,10 +28,8 @@ namespace sensorutils
 
 		~PrimaryThreatOverride()
 		{
-			if (m_me && m_sensor)
-			{
-				m_sensor->SetPrimaryThreatOverride(nullptr);
-			}
+			m_me = nullptr;
+			m_sensor = nullptr;
 		}
 
 		bool IsSet() const { return m_sensor != nullptr; }

@@ -484,11 +484,8 @@ namespace combatutils
 
 		~ToggleAreaClearing()
 		{
-			if (m_combat)
-			{
-				m_combat->StopMarkingVisibleAreasAsCleared();
-				m_combat = nullptr;
-			}
+			// (ASAN) Do not access the combat interface here, you may get heap-use-after-free bugs
+			m_combat = nullptr;
 		}
 
 		void Enable(ICombat* combat)

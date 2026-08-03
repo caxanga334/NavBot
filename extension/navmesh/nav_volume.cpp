@@ -134,20 +134,20 @@ void CNavVolume::Draw() const
 {
 	if (TheNavMesh->GetSelectedVolume().get() == this)
 	{
-		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 255, 255, 255, 100, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 255, 255, 255, 64, NDEBUG_PERSIST_FOR_ONE_TICK);
 		NDebugOverlay::Sphere(m_origin, 16.0f, 255, 0, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
 
 		CBaseEntity* pTargetEnt = GetTargetEntity();
 
 		if (pTargetEnt)
 		{
-			NDebugOverlay::EntityBounds(pTargetEnt, 255, 255, 0, 160, NDEBUG_PERSIST_FOR_ONE_TICK);
+			NDebugOverlay::EntityBounds(pTargetEnt, 255, 255, 0, 48, NDEBUG_PERSIST_FOR_ONE_TICK);
 			NDebugOverlay::EntityText(gamehelpers->EntityToBCompatRef(pTargetEnt), 0, "Target Entity", NDEBUG_PERSIST_FOR_ONE_TICK);
 		}
 	}
 	else
 	{
-		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 135, 206, 250, 100, NDEBUG_PERSIST_FOR_ONE_TICK);
+		NDebugOverlay::Box(m_origin, m_mins, m_maxs, 135, 206, 250, 64, NDEBUG_PERSIST_FOR_ONE_TICK);
 		NDebugOverlay::Text(m_origin, false, NDEBUG_PERSIST_FOR_ONE_TICK, "Nav Volume #%i", m_id);
 	}
 }

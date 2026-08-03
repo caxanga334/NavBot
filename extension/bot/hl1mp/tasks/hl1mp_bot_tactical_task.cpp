@@ -6,10 +6,7 @@
 #include <bot/bot_shared_utils.h>
 #include <bot/tasks_shared/bot_shared_find_health.h>
 #include <bot/tasks_shared/bot_shared_find_armor.h>
-#include <bot/tasks_shared/bot_shared_prereq_destroy_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_move_to_pos.h>
-#include <bot/tasks_shared/bot_shared_prereq_use_ent.h>
-#include <bot/tasks_shared/bot_shared_prereq_wait.h>
+#include <bot/tasks_shared/bot_shared_prereq_tasks.h>
 #include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include <bot/interfaces/behavior_utils.h>
 #include "hl1mp_bot_use_charger_task.h"
@@ -106,7 +103,12 @@ TaskResult<CHL1MPBot> CHL1MPBotTacticalTask::OnTaskResume(CHL1MPBot* bot, AITask
 
 TaskEventResponseResult<CHL1MPBot> CHL1MPBotTacticalTask::OnNavAreaChanged(CHL1MPBot* bot, CNavArea* oldArea, CNavArea* newArea)
 {
-	BOTBEHAVIOR_IMPLEMENT_PREREQUISITE_CHECK(CHL1MPBot, CHL1MPBotPathCost);
+	TaskEventResponseResult<CHL1MPBot> result = botprereqtasks::ImplementPrereqCheck<CHL1MPBot, CHL1MPBotTacticalTask, CNavArea, CHL1MPBotPathCost>(this, bot, newArea);
+
+	if (result.IsRequestingChange())
+	{
+		return result;
+	}
 
 	return TryContinue(PRIORITY_LOW);
 }

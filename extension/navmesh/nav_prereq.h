@@ -4,6 +4,8 @@
 #include "nav.h"
 #include "nav_scripting.h"
 
+class CBaseBot;
+
 /**
  * @brief Prerequisite holds a task the bots needs to do when entering a nav area.
  * 
@@ -118,6 +120,8 @@ public:
 	void ClearToggleData() { m_toggle_condition.clear(); }
 
 	void SearchForNavAreas();
+
+	virtual bool CanBeUsedByBot(CBaseBot* bot) const;
 
 protected:
 	virtual void OnSizeChanged() {};

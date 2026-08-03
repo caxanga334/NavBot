@@ -1,11 +1,7 @@
 #ifndef NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_
 #define NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_
 
-#include <extension.h>
-#include <bot/basebot.h>
-#include <bot/basebot_pathcost.h>
-#include <bot/interfaces/path/meshnavigator.h>
-#include <sdkports/sdk_timers.h>
+#include "bot_shared_prereq_tasks.h"
 
 /**
  * @brief Shared bot debug task for moving to a specific coordinates.
@@ -24,6 +20,13 @@ public:
 	}
 
 	TaskResult<BT> OnTaskUpdate(BT* bot) override;
+
+	TaskEventResponseResult<BT> OnNavAreaChanged(BT* bot, CNavArea* oldArea, CNavArea* newArea) override
+	{
+		using THISTYPE = CBotSharedDebugMoveToOriginTask<BT, CT>;
+
+		return botprereqtasks::ImplementPrereqCheck<BT, THISTYPE, CNavArea, CT>(this, bot, newArea);
+	}
 
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
