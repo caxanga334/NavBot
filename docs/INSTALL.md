@@ -9,11 +9,13 @@
 
 The latest dev builds of NavBot are available as workflow artifacts. Check the [Actions] page.    
 Sometimes dev builds are pushed as pre-releases. Check the [Releases] page for the latest pre-release.
+Runs on SourceMod 1.13 ONLY.
 
 ## Stable Builds
 
 NavBot is currently in development and does not have stable releases.    
 They will be available on the [Releases] in the future.
+Runs on SourceMod 1.12 ONLY.
 
 # Installing
 
