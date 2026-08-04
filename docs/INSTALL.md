@@ -8,22 +8,23 @@
 ## Development Builds
 
 The latest dev builds of NavBot are available as workflow artifacts. Check the [Actions] page.    
-Sometimes dev builds are pushed as pre-releases. Check the [Releases] page for the latest pre-release.
+These will contain the latest features and bug fixes.    
 
 ## Stable Builds
 
-NavBot is currently in development and does not have stable releases.    
-They will be available on the [Releases] in the future.
+Stable builds are pushed to the [Releases] page.    
+
+## Choosing The Right Version.
+
+Currently, NavBot is compiled against both Stable and Dev SourceMod.    
+You need to download the version compiled against the SM version you're running on your server otherwise the extension won't load.    
+The naming convention for NavBot build is:    
+`navbot-[operating system]-[sourcemod branch]-[version]`    
 
 # Installing
 
 Copy the extension files (extension, plugins, gamedata, data, translations and config) files into your sourcemod install directory.    
 Generally it's `<game root>/addons/sourcemod/`.
-
-<!-- LINKS -->
-
-[Actions]: https://github.com/caxanga334/NavBot/actions
-[Releases]: https://github.com/caxanga334/NavBot/releases
 
 # Setting Up A Listen Server
 
@@ -84,3 +85,8 @@ More notes:
 # Additional Plugins
 
 NavBot can be extended by plugins. See the [official addon plugins](https://github.com/caxanga334/navbot-plugins).    
+
+<!-- LINKS -->
+
+[Actions]: https://github.com/caxanga334/NavBot/actions
+[Releases]: https://github.com/caxanga334/NavBot/releases
