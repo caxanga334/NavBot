@@ -29,7 +29,8 @@ ConVar cvar_navbot_skip_pvs("sm_navbot_vision_skip_pvs", "0", FCVAR_GAMEDLL, "Wh
 class BotSensorTraceFilter : public trace::CTraceFilterSimple
 {
 public:
-	BotSensorTraceFilter(int collisionGroup) : trace::CTraceFilterSimple(collisionGroup, nullptr) {}
+	BotSensorTraceFilter(int collisionGroup) : trace::CTraceFilterSimple(nullptr, collisionGroup) {}
+	BotSensorTraceFilter(CBaseEntity* entity, int collisionGroup) : trace::CTraceFilterSimple(entity, collisionGroup) {}
 
 	bool ShouldHitEntity(IHandleEntity* pHandleEntity, int contentsMask) override;
 };
@@ -49,9 +50,15 @@ bool BotSensorTraceFilter::ShouldHitEntity(IHandleEntity* pHandleEntity, int con
 			return true;
 		}
 
-		if (UtilHelpers::IsPlayer(pEntity))
+		if (modhelpers->IsPlayer(pEntity))
 		{
 			return false; // don't hit players
+		}
+
+		// Don't hit NPCs
+		if (modhelpers->IsCombatCharacter(pEntity))
+		{
+			return false;
 		}
 
 		return true;
@@ -415,7 +422,7 @@ bool ISensor::IsLineOfSightClear(CBaseExtPlayer& player) const
 #endif // EXT_VPROF_ENABLED
 
 	auto start = GetBot()->GetEyeOrigin();
-	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
+	BotSensorTraceFilter filter(player.GetEntity(), COLLISION_GROUP_NONE);
 	trace_t result;
 
 	trace::line(start, player.GetEyeOrigin(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);
@@ -439,9 +446,9 @@ bool ISensor::IsLineOfSightClear(CBaseEntity* entity) const
 	VPROF_BUDGET("ISensor::IsLineOfSightClear( CBaseEntity )", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	auto start = GetBot()->GetEyeOrigin();
+	Vector start = GetBot()->GetEyeOrigin();
 	entities::HBaseEntity baseent(entity);
-	BotSensorTraceFilter filter(COLLISION_GROUP_NONE);
+	BotSensorTraceFilter filter(entity, COLLISION_GROUP_NONE);
 	trace_t result;
 
 	trace::line(start, baseent.EyePosition(), MASK_BLOCKLOS | CONTENTS_IGNORE_NODRAW_OPAQUE, &filter, result);

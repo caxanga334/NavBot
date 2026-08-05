@@ -88,6 +88,12 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 		return AITask<BT>::Done("Target entity is dead!");
 	}
 
+	// In case the two checks above isn't enough.
+	if (modhelpers->IsBreakableBroken(targetEnt))
+	{
+		return AITask<BT>::Done("Breakable entity is broken!");
+	}
+
 	if (bot->GetMovementInterface()->IsBreakingObstacle())
 	{
 		return AITask<BT>::Continue();
@@ -116,9 +122,18 @@ inline TaskResult<BT> CBotSharedPrereqDestroyEntityTask<BT, CT>::OnTaskUpdate(BT
 
 	const float range = bot->GetRangeTo(m_goal);
 
-	if (m_useMelee || !bot->GetSensorInterface()->IsAbleToSee(targetEnt) || range >= 256.0f)
+	if (m_useMelee || !bot->GetSensorInterface()->IsAbleToSee(targetEnt))
 	{
 		m_nav.Update(bot);
+	}
+	else if (!m_useMelee)
+	{
+		const ICombat::CombatData& cd = bot->GetCombatInterface()->GetCachedCombatData();
+
+		if (cd.should_move)
+		{
+			m_nav.Update(bot);
+		}
 	}
 
 	if (m_useMelee && range <= 128.0f)

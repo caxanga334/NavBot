@@ -924,6 +924,10 @@ namespace UtilHelpers::textformat
 	const char* FormatVarArgs(const char* fmt, ...);
 	// Formats the given entity into a string and returns the string. Accepts NULL entities.
 	const char* FormatEntity(CBaseEntity* entity);
+	// Formats a player.
+	const char* FormatPlayer(int index);
+	// Formats a player in the game log style.
+	const char* FormatLogPlayer(int index);
 }
 
 namespace UtilHelpers::players

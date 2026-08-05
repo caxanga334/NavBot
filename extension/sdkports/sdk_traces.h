@@ -417,6 +417,21 @@ namespace trace
 	 * @return Water surface position.
 	 */
 	Vector getwatersurface(const Vector& point);
+	/**
+	 * @brief Utility function that checks if a given trace result is clear (did not collide with anything) to a given entity.
+	 * @param entity Entity being tested, collisions with this entity are ignored.
+	 * @param tr Trace result.
+	 * @return true if the trace is clear, false otherwise.
+	 */
+	inline bool iscleartoentity(CBaseEntity* entity, const trace_t& tr)
+	{
+		if (!tr.DidHit() || tr.m_pEnt == entity)
+		{
+			return true;
+		}
+
+		return false;
+	}
 }
 
 #endif // !NAVBOT_SDKPORTS_TRACES_H_

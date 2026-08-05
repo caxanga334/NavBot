@@ -383,6 +383,38 @@ CON_COMMAND(sm_navbot_debug_bot_override_prim_threat, "Overrides the bot's prima
 	META_CONPRINTF("Primary threat override set to %s \n", UtilHelpers::textformat::FormatEntity(pEntity));
 }
 
+CON_COMMAND(sm_navbot_debug_bot_is_able_to_see, "Tests if the bots can see an entity.")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_bot_is_able_to_see <ent index> \n");
+		return;
+	}
+
+	CBaseEntity* entity = gamehelpers->ReferenceToEntity(atoi(args[1]));
+
+	if (!entity)
+	{
+		META_CONPRINT("NULL entity! \n");
+		return;
+	}
+
+	auto func = [entity](CBaseBot* bot) {
+		if (bot->GetSensorInterface()->IsAbleToSee(entity))
+		{
+			META_CONPRINTF("%s CAN SEE %s \n", UtilHelpers::textformat::FormatPlayer(bot->GetIndex()), UtilHelpers::textformat::FormatEntity(entity));
+		}
+		else
+		{
+			META_CONPRINTF("%s CANNOT SEE %s \n", UtilHelpers::textformat::FormatPlayer(bot->GetIndex()), UtilHelpers::textformat::FormatEntity(entity));
+		}
+	};
+
+	extmanager->ForEachBot(func);
+}
+
 CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path to the console.")
 {
 	CBaseBot* bot = nullptr;

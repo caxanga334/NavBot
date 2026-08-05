@@ -2072,6 +2072,50 @@ const char* UtilHelpers::textformat::FormatEntity(CBaseEntity* entity)
 	return buffer.data();
 }
 
+const char* UtilHelpers::textformat::FormatPlayer(int index)
+{
+	static std::array<char, 256> buffer;
+	std::fill(buffer.begin(), buffer.end(), 0);
+
+	SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(index);
+
+	if (!gp || !gp->IsInGame())
+	{
+		return buffer.data();
+	}
+
+	ke::SafeSprintf(buffer.data(), buffer.size(), "%s [%i:%i]", gp->GetName(), index, gp->GetUserId());
+	return buffer.data();
+}
+
+const char* UtilHelpers::textformat::FormatLogPlayer(int index)
+{
+	static std::array<char, 256> buffer;
+	std::fill(buffer.begin(), buffer.end(), 0);
+
+	SourceMod::IGamePlayer* gp = playerhelpers->GetGamePlayer(index);
+
+	if (!gp || !gp->IsInGame())
+	{
+		return buffer.data();
+	}
+
+	char authid[64];
+	const char* pszauthid = gp->GetAuthString();
+
+	if (!pszauthid)
+	{
+		std::memset(authid, 0, sizeof(authid));
+	}
+	else
+	{
+		ke::SafeStrcpy(authid, sizeof(authid), pszauthid);
+	}
+
+	ke::SafeSprintf(buffer.data(), buffer.size(), "%s<%i><%s><>", gp->GetName(), gp->GetUserId(), authid);
+	return buffer.data();
+}
+
 bool UtilHelpers::sdkcompat::SaveKeyValuesToFile(KeyValues* kvRoot, const char* filename, const char* pathid, const bool sortKeys, const bool allowEmptyString)
 {
 #if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_HL2DM || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_SDK2013
