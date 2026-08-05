@@ -568,15 +568,27 @@ const CKnownEntity* ISensor::GetPrimaryKnownThreat(const bool onlyvisible)
 	// cached threat from the last call
 	if (m_primarythreatcache)
 	{
-		// only visible and primary threat is visible right now.
-		if (onlyvisible && m_primarythreatcache->IsVisibleNow())
+		// check if the primary cache is still valid, this should be very rare since the cache is invalidate every frame and entities are generally deleted on the frame end.
+		if (m_primarythreatcache->IsValid())
 		{
-			return m_primarythreatcache;
-		}
+			// only visible and primary threat is visible right now.
+			if (onlyvisible && m_primarythreatcache->IsVisibleNow())
+			{
+				return m_primarythreatcache;
+			}
 
-		if (!onlyvisible) // allow non visible and we have a cached threat.
+			if (!onlyvisible) // allow non visible and we have a cached threat.
+			{
+				return m_primarythreatcache;
+			}
+		}
+		else
 		{
-			return m_primarythreatcache;
+#ifdef EXT_DEBUG
+			smutils->LogError(myself, "Cached primary threat was invalid!");
+#endif // EXT_DEBUG
+			// primary cached known entity is invalid
+			m_primarythreatcache = nullptr;
 		}
 
 		// if we want only visible threat and the cache is not visible, allow the code below to run and update the cache
