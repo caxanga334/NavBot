@@ -587,7 +587,8 @@ bool CPath::ProcessGroundPath(CBaseBot* bot, const size_t index, const Vector& s
 				newSegment.goal.y = endDrop.y;
 				newSegment.goal.z = ground;
 				newSegment.type = AIPath::SegmentType::SEGMENT_GROUND;
-
+				
+				CheckDropDownsForGapJumps(bot, from, to, &newSegment);
 				pathinsert.emplace(to, newSegment, true);
 			}
 		}
@@ -1344,6 +1345,29 @@ void CPath::Drawladder(const CNavLadder* ladder, AIPath::SegmentType type, const
 	else
 	{
 		NDebugOverlay::VertArrow(ladder->m_top, ladder->m_bottom, LADDER_WIDTH, 0, 100, 0, 255, true, duration);
+	}
+}
+
+void CPath::CheckDropDownsForGapJumps(const CBaseBot* bot, BotPathSegment* from, BotPathSegment* dropStart, BotPathSegment* dropEnd) const
+{
+	Vector p1;
+	Vector p2;
+	from->area->GetClosestPointOnArea(dropEnd->goal, &p1);
+	dropEnd->area->GetClosestPointOnArea(from->goal, &p2);
+	const float oldZ1 = p1.z; // may need to restore it later
+	const float oldZ2 = p2.z;
+	p1.z = 0.0f;
+	p2.z = 0.0f;
+
+	if ((p1 - p2).IsLengthGreaterThan(bot->GetMovementInterface()->GetHullWidth()))
+	{
+		// distance between the two nav areas is greater than the bot's hull width
+		p1.z = oldZ1;
+		dropStart->goal = p1;
+		// convert to a gap jump
+		dropStart->type = AIPath::SegmentType::SEGMENT_JUMP_OVER_GAP;
+		p2.z = oldZ2;
+		dropEnd->goal = p2;
 	}
 }
 

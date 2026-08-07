@@ -132,6 +132,49 @@ methodmap NavBotNavArea
 	 * @return				Gap distance between two areas. Returns a very large number if the gap distance cannot be calculated.
 	 */
 	public static native float ComputeAdjacentConnectionGapDistance(Address ptr, Address other);
+	/**
+	 * Gets the number of adjacent areas in the given direction.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param dir			Direction.
+	 * @return				Number of adjacent areas in the given direction.
+	 */
+	public static native int GetAdjacentAreaCount(Address ptr, NavBotNavDirType dir);
+	/**
+	 * Gets the address of an adjacent nav area.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param dir			Direction.
+	 * @param index			Adjacent area index. Starts at 0 and ends at GetAdjacentAreaCount - 1.
+	 */
+	public static native Address GetAdjacentArea(Address ptr, NavBotNavDirType dir, const int index);
+	/**
+	 * Adds an adjacent connection between two nav areas.
+	 * 
+	 * @param from			Address of the first nav area.
+	 * @parma to			Address of the second nav area.
+	 * @return				True if a connection was created. False otherwise.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native bool ConnectToAdjacent(Address from, Address to);
+	/**
+	 * Disconnects two nav areas.
+	 * 
+	 * @param from			Address of the first nav area.
+	 * @parma to			Address of the second nav area.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native void DisconnectFromAdjacent(Address from, Address to);
+	/**
+	 * Gets the Nav Area's place human readable name.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param buffer		Char buffer to write the name to.
+	 * @param size			Size of the char buffer.
+	 * @return				True if the nav area has a name and was written to the buffer. False otherwise.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native bool GetPlaceName(Address ptr, char[] buffer, int size);
 }
 
 methodmap NavBotNavOffMeshConnection

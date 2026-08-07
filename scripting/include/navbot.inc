@@ -213,6 +213,11 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.CollectConnectedAreas");
 	MarkNativeAsOptional("NavBotNavArea.ComputeAdjacentConnectionHeightChange");
 	MarkNativeAsOptional("NavBotNavArea.ComputeAdjacentConnectionGapDistance");
+	MarkNativeAsOptional("NavBotNavArea.GetAdjacentAreaCount");
+	MarkNativeAsOptional("NavBotNavArea.GetAdjacentArea");
+	MarkNativeAsOptional("NavBotNavArea.ConnectToAdjacent");
+	MarkNativeAsOptional("NavBotNavArea.DisconnectFromAdjacent");
+	MarkNativeAsOptional("NavBotNavArea.GetPlaceName");
 
 	/* Off-Mesh Connection */
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetType");
@@ -238,6 +243,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavMesh.CollectAreasTouchingEntity");
 	MarkNativeAsOptional("NavBotNavMesh.AddWalkableSeed");
 	MarkNativeAsOptional("NavBotNavMesh.FindActiveNavAreaForPlayer");
+	MarkNativeAsOptional("NavBotNavMesh.Analyze");
 
 	/* Nav Area Vector */
 	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");

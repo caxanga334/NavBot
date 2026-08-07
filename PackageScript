@@ -60,6 +60,7 @@ def CopyFilesGlob(src, dest, pattern):
 CopyFiles('scripting/include', 'addons/sourcemod/scripting/include',
   [ 
     'navbot.inc',
+    'navbot_stocks.inc',
   ]
 )
 

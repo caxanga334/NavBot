@@ -1268,7 +1268,7 @@ inline bool CNavArea::IsDegenerate( void ) const
 inline CNavArea *CNavArea::GetAdjacentArea( NavDirType dir, int i ) const
 {
 	if ( ( i < 0 ) || ( i >= m_connect[dir].Count() ) )
-		return NULL;
+		return nullptr;
 	return m_connect[dir][i].area;
 }
 

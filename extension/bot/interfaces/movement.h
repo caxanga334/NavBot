@@ -340,6 +340,8 @@ public:
 	// Makes the bot perform a double jump
 	virtual void DoubleJump();
 	virtual void JumpAcrossGap(const Vector& landing, const Vector& forward);
+	// Returns true if the bot is currently jumping across a gap.
+	bool IsJumpingAcrossGap() const { return m_isJumpingAcrossGap; }
 protected:
 	// If true, the bot will perform a double jump over a gap. Called by JumpAcrossGap.
 	virtual bool GapJumpRequiresDoubleJump(const Vector& landing, const Vector& forward) const { return false; }

@@ -390,6 +390,131 @@ namespace natives::navarea
 
 		return pawnutils::ReturnFloat(area->ComputeAdjacentConnectionGapDistance(other));
 	}
+	static cell_t GetAdjacentAreaCount(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		NavDirType dir = static_cast<NavDirType>(params[2]);
+
+		if (dir < NavDirType::NORTH || dir >= NavDirType::NUM_DIRECTIONS)
+		{
+			context->ReportError("%i is not a valid direction!", params[2]);
+			return 0;
+		}
+
+		return area->GetAdjacentCount(dir);
+	}
+	static cell_t GetAdjacentArea(IPluginContext* context, const cell_t* params)
+	{
+		const std::size_t start = pawnutils::GetIndexOfParam(context, 1);
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, start);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		NavDirType dir = static_cast<NavDirType>(params[start + 1]);
+
+		if (dir < NavDirType::NORTH || dir >= NavDirType::NUM_DIRECTIONS)
+		{
+			context->ReportError("%i is not a valid direction!", params[start + 1]);
+			return 0;
+		}
+
+		int index = static_cast<int>(params[start + 2]);
+		const int c = area->GetAdjacentCount(dir);
+
+		if (index < 0 || index >= c)
+		{
+			context->ReportError("Index %i is out of bounds! Must be between 0 and %i!", params[start + 2], c);
+			return 0;
+		}
+
+		CNavArea* adjacent = area->GetAdjacentArea(dir, index);
+		return pawnutils::ReturnPointerToPawn(context, params, adjacent);
+	}
+	static cell_t ConnectToAdjacent(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* from = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!from)
+		{
+			context->ReportError("NULL from nav area!");
+			return 0;
+		}
+
+		CNavArea* to = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!to)
+		{
+			context->ReportError("NULL to nav area!");
+			return 0;
+		}
+
+		Vector center;
+		float halfWidth;
+		NavDirType dir = from->ComputeLargestPortal(to, &center, &halfWidth);
+
+		if (dir == NavDirType::NUM_DIRECTIONS)
+		{
+			return pawnutils::ReturnBool(false);
+		}
+
+		TheNavMesh->NotifyDangerousEditCommandWasUsed(); // kick bots
+		from->ConnectTo(to, dir);
+		return pawnutils::ReturnBool(true);
+	}
+	static cell_t DisconnectFromAdjacent(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* from = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!from)
+		{
+			context->ReportError("NULL from nav area!");
+			return 0;
+		}
+
+		CNavArea* to = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!to)
+		{
+			context->ReportError("NULL to nav area!");
+			return 0;
+		}
+
+		TheNavMesh->NotifyDangerousEditCommandWasUsed(); // kick bots
+		from->Disconnect(to);
+		return 0;
+	}
+	static cell_t GetPlaceName(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Place place = area->GetPlace();
+		const std::string* name = TheNavMesh->GetPlaceName(place);
+
+		if (!name)
+		{
+			return pawnutils::ReturnBool(false);
+		}
+
+		context->StringToLocal(params[2], static_cast<std::size_t>(params[3]), name->c_str());
+		return pawnutils::ReturnBool(true);
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -409,6 +534,11 @@ namespace natives::navarea
 			{"NavBotNavArea.CollectConnectedAreas", CollectConnectedAreas},
 			{"NavBotNavArea.ComputeAdjacentConnectionHeightChange", ComputeAdjacentConnectionHeightChange},
 			{"NavBotNavArea.ComputeAdjacentConnectionGapDistance", ComputeAdjacentConnectionGapDistance},
+			{"NavBotNavArea.GetAdjacentAreaCount", GetAdjacentAreaCount},
+			{"NavBotNavArea.GetAdjacentArea", GetAdjacentArea},
+			{"NavBotNavArea.ConnectToAdjacent", ConnectToAdjacent},
+			{"NavBotNavArea.DisconnectFromAdjacent", DisconnectFromAdjacent},
+			{"NavBotNavArea.GetPlaceName", GetPlaceName},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

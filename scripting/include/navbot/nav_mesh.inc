@@ -116,6 +116,12 @@ methodmap NavBotNavMesh
 	 * @return				Address of a nav area or Address_Null if none is found.
 	 */
 	public static native Address FindActiveNavAreaForPlayer(int client);
+	/**
+	 * Analyzes and saves the nav mesh to disk.
+	 * 
+	 * @param quicksave		If true, enables quicksave. Recommended false for production nav meshes.
+	 */
+	public static native void Analyze(const bool quicksave = false);
 }
 
 #include "nav_collector.inc"

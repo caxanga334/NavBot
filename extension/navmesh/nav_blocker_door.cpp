@@ -3,6 +3,9 @@
 #include "nav_mesh.h"
 #include "nav_blocker_door.h"
 
+constexpr int FUNC_DOOR_SF_USE_OPENS = 256;
+constexpr int FUNC_DOOR_SF_TOUCH_OPENS = 1024;
+
 CDoorNavBlocker::CDoorNavBlocker()
 {
 	m_doortype = DOORTYPE_BRUSH;
@@ -66,6 +69,21 @@ void CDoorNavBlocker::Update()
 			bool locked = false;
 			entprops->GetEntPropBool(button, Prop_Data, "m_bLocked", locked);
 			m_blocked = locked;
+		}
+	}
+
+	if (m_activatortype == ACTIVATOR_NONE && m_doortype == DOORTYPE_BRUSH)
+	{
+		int spawnflags = 0;
+		entprops->GetEntProp(door, Prop_Data, "m_spawnflags", spawnflags);
+		constexpr int mask = FUNC_DOOR_SF_TOUCH_OPENS | FUNC_DOOR_SF_USE_OPENS;
+
+		
+		if ((spawnflags & mask) == 0)
+		{
+			// if neither +USE and touch opens the door, assume locked
+			m_blocked = true;
+			return;
 		}
 	}
 }

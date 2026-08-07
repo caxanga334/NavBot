@@ -1,5 +1,5 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
+#include <sdkports/sdk_convarref_ep1.h>
 #include <util/pawnutils.h>
 #include <navmesh/nav_mesh.h>
 #include "navareavector.h"
@@ -224,17 +224,19 @@ static cell_t Native_NavMeshAddWalkableSeed(IPluginContext* context, const cell_
 
 static cell_t Native_FindActiveNavAreaForPlayer(IPluginContext* context, const cell_t* params)
 {
-	if (!pawnutils::IsValidClientIndex(context, params[1]))
+	const std::size_t startparam = pawnutils::GetIndexOfParam(context, 1);
+
+	if (!pawnutils::IsValidClientIndex(context, params[startparam]))
 	{
 		return pawnutils::ReturnPointerToPawn<CNavArea*>(context, params, nullptr);
 	}
 
-	if (!pawnutils::IsClientInGame(context, params[1]))
+	if (!pawnutils::IsClientInGame(context, params[startparam]))
 	{
 		return pawnutils::ReturnPointerToPawn<CNavArea*>(context, params, nullptr);
 	}
 
-	CBaseEntity* player = pawnutils::ReadEntity(context, params, 1);
+	CBaseEntity* player = pawnutils::ReadEntity(context, params, startparam);
 
 	if (!player)
 	{
@@ -243,6 +245,24 @@ static cell_t Native_FindActiveNavAreaForPlayer(IPluginContext* context, const c
 
 	CNavArea* area = TheNavMesh->FindActiveNavAreaForPlayer(player);
 	return pawnutils::ReturnPointerToPawn(context, params, area);
+}
+
+static void Frame_Analyze(void* data)
+{
+	TheNavMesh->BeginAnalysis();
+}
+
+static cell_t Native_NavMeshAnalyze(IPluginContext* context, const cell_t* params)
+{
+	ConVarRef sm_nav_quicksave("sm_nav_quicksave");
+
+	if (sm_nav_quicksave.IsValid())
+	{
+		sm_nav_quicksave.SetValue(params[1] != 0);
+	}
+
+	smutils->AddFrameAction(Frame_Analyze, nullptr);
+	return 0;
 }
 
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
@@ -264,6 +284,7 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.CollectAreasTouchingEntity", Native_NavMeshCollectAreasTouchingEntity},
 		{"NavBotNavMesh.AddWalkableSeed", Native_NavMeshAddWalkableSeed},
 		{"NavBotNavMesh.FindActiveNavAreaForPlayer", Native_FindActiveNavAreaForPlayer},
+		{"NavBotNavMesh.Analyze", Native_NavMeshAnalyze},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));

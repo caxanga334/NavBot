@@ -2420,7 +2420,8 @@ void IMovement::DoJumpAssist()
 	{
 		CBaseBot* bot = GetBot<CBaseBot>();
 		Vector velocity = bot->GetAbsVelocity();
-		const float boost = IsCompletelyCrouched() ? IMovement::s_crouchedJumpBoost : IMovement::s_standingJumpBoost;
+		// bots do a crouch jump when doing a gap jump but we don't the crouched boost in this specific case
+		const float boost = (IsCompletelyCrouched() && !IsJumpingAcrossGap()) ? IMovement::s_crouchedJumpBoost : IMovement::s_standingJumpBoost;
 		velocity.z += boost;
 
 		sdkcalls->CBaseEntity_Teleport(bot->GetEntity(), nullptr, nullptr, &velocity);
