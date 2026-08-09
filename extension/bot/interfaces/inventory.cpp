@@ -93,6 +93,46 @@ const CBotWeapon* IInventory::FindWeaponByClassnamePattern(const char* pattern, 
 	return nullptr;
 }
 
+const CBotWeapon* IInventory::FindCombatGrenade(const Vector& target) const
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	WeaponSelectData_t data(bot, target);
+	const CBotWeapon* selected = nullptr;
+	int bestprio = std::numeric_limits<int>::min();
+	
+	for (auto& weaponptr : m_weapons)
+	{
+		if (!weaponptr->IsValid() || !weaponptr->IsOwnedByBot(bot))
+		{
+			continue;
+		}
+
+		data.AssignWeapon(weaponptr.get());
+
+		if (data.profile->GetWeaponSkill() < data.info->GetMinRequiredSkill() || data.info->GetWeaponType() != WeaponInfo::WeaponType::COMBAT_GRENADE)
+		{
+			continue;
+		}
+
+		if (!data.weapon->IsInAttackRange(data.range, botweapons::AttackType::PRIMARY))
+		{
+			continue;
+		}
+
+		int priority = data.info->GetPriority();
+
+		if (priority <= bestprio)
+		{
+			continue;
+		}
+
+		bestprio = priority;
+		selected = weaponptr.get();
+	}
+
+	return selected;
+}
+
 bool IInventory::EquipWeapon(const CBotWeapon* weapon) const
 {
 	const CBotWeapon* activeWeapon = GetActiveBotWeapon();
@@ -732,19 +772,19 @@ const CBotWeapon* IInventory::FilterBestWeaponForThreat(CBaseBot* me, const CKno
 	return second;
 }
 
-bool IInventory::IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info, const bool underwater) const
+bool IInventory::IsWeaponUseableForThreat(const WeaponSelectData_t& data) const
 {
-	if (!weapon->IsValid() || !weapon->IsOwnedByBot(me) || weapon->IsOutOfAmmo(me) || !info->IsInSelectionRange(rangeToThreat))
+	if (!data.weapon->IsValid() || !data.weapon->IsOwnedByBot(data.bot) || data.weapon->IsOutOfAmmo(data.bot) || !data.info->IsInSelectionRange(data.range))
 	{
 		return false;
 	}
 
-	if (underwater && !info->CanBeFiredUnderwater())
+	if (data.underwater && !data.info->CanBeFiredUnderwater())
 	{
 		return false;
 	}
 
-	if (!weapon->CanUsePrimaryAttack(me) && !weapon->CanUseSecondaryAttack(me))
+	if (!data.weapon->CanUsePrimaryAttack(data.bot) && !data.weapon->CanUseSecondaryAttack(data.bot))
 	{
 		return false;
 	}
@@ -769,17 +809,16 @@ const CBotWeapon* IInventory::FindBestWeaponAgainstThreat(const CKnownEntity* th
 #endif // EXT_VPROF_ENABLED
 
 	CBaseBot* bot = GetBot();
-	const float rangeToThreat = bot->GetRangeTo(UtilHelpers::getWorldSpaceCenter(threat->GetEntity()));
+	WeaponSelectData_t data(bot, threat);
 	const CBotWeapon* best = nullptr;
-	const DifficultyProfile* profile = bot->GetDifficultyProfile();
-	const bool isunderwater = bot->IsUnderWater();
 
 	for (auto& weaponptr : m_weapons)
 	{
 		const CBotWeapon* weapon = weaponptr.get();
 		const WeaponInfo* info = weaponptr->GetWeaponInfo();
+		data.AssignWeapon(weapon);
 
-		if (!IsWeaponUseableForThreat(bot, threat, rangeToThreat, weapon, info, isunderwater))
+		if (!IsWeaponUseableForThreat(data))
 		{
 			continue;
 		}
@@ -802,7 +841,7 @@ const CBotWeapon* IInventory::FindBestWeaponAgainstThreat(const CKnownEntity* th
 		}
 
 		// Too stupid to use it
-		if (info->GetMinRequiredSkill() > profile->GetWeaponSkill())
+		if (info->GetMinRequiredSkill() > data.profile->GetWeaponSkill())
 		{
 			continue;
 		}
@@ -830,4 +869,29 @@ const CBotWeapon* IInventory::FindBestWeaponAgainstThreat(const CKnownEntity* th
 void IInventory::RefreshInventory::operator()(CBaseBot* bot)
 {
 	bot->GetInventoryInterface()->StartInventoryUpdateTimer(m_delay);
+}
+
+void IInventory::WeaponSelectData_t::Init(const CBaseBot* bot_, const CKnownEntity* threat_)
+{
+	this->bot = bot_;
+	this->threat = threat_;
+	CBaseEntity* entity = threat_->GetEntity();
+	Vector eyePos = bot->GetEyeOrigin();
+	targetPos = UtilHelpers::getWorldSpaceCenter(entity);
+	dir = (targetPos - eyePos);
+	range = dir.NormalizeInPlace();
+	underwater = bot->IsUnderWater();
+	profile = bot->GetDifficultyProfile();
+}
+
+void IInventory::WeaponSelectData_t::Init(const CBaseBot* bot_, const Vector& pos)
+{
+	this->bot = bot_;
+	this->threat = nullptr;
+	Vector eyePos = bot->GetEyeOrigin();
+	targetPos = pos;
+	dir = (pos - eyePos);
+	range = dir.NormalizeInPlace();
+	underwater = bot->IsUnderWater();
+	profile = bot->GetDifficultyProfile();
 }

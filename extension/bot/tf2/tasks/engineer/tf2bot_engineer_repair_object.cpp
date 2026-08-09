@@ -103,7 +103,7 @@ TaskResult<CTF2Bot> CTF2BotEngineerRepairObjectTask::OnTaskUpdate(CTF2Bot* bot)
 
 				if (rescueranger)
 				{
-					bot->SelectWeapon(rescueranger->GetEntity());
+					bot->GetInventoryInterface()->EquipWeapon(rescueranger);
 				}
 				else
 				{

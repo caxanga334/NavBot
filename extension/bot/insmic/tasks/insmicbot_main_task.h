@@ -15,6 +15,7 @@ public:
 
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
+	Vector GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES) override;
 
 	TaskEventResponseResult<CInsMICBot> OnDebugMoveToCommand(CInsMICBot* bot, const Vector& moveTo) override;
 	TaskEventResponseResult<CInsMICBot> OnKilled(CInsMICBot* bot, const CTakeDamageInfo& info) override;

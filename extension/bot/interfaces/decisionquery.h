@@ -1,5 +1,5 @@
-#ifndef SMNAV_BOT_DECISION_QUERY_H_
-#define SMNAV_BOT_DECISION_QUERY_H_
+#ifndef __NAVBOT_BOT_INTERFACES_DECISION_QUERY_H_
+#define __NAVBOT_BOT_INTERFACES_DECISION_QUERY_H_
 
 struct edict_t;
 class CBaseBot;
@@ -9,7 +9,7 @@ class CBotWeapon;
 class CBaseEntity;
 
 #include "mathlib.h"
-#include <memory>
+#include "weapons_shared.h"
 
 #undef max
 #undef min
@@ -77,6 +77,14 @@ public:
 	 * @return Position the bot should aim at, return vec3_origin for no answer.
 	 */
 	virtual Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE);
+	/**
+	 * @brief Selects a position the bot should aim at for a given position.
+	 * @param me Bot.
+	 * @param pos Target position.
+	 * @param attacktype Optional attack type if using a specific attack type.
+	 * @return World position the bot should aim at, return vec3_origin for no answer.
+	 */
+	virtual Vector GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES);
 	// If a game mode has a toggle ready feature, this asks if the bot is ready
 	virtual QueryAnswerType IsReady(CBaseBot* me);
 	// Should the bot help a specific teammate?
@@ -134,6 +142,11 @@ inline Vector IDecisionQuery::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity,
 	return vec3_origin;
 }
 
+inline Vector IDecisionQuery::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return vec3_origin;
+}
+
 inline QueryAnswerType IDecisionQuery::IsReady(CBaseBot* me)
 {
 	return ANSWER_UNDEFINED;
@@ -149,5 +162,5 @@ inline QueryAnswerType IDecisionQuery::ShouldSwitchToWeapon(CBaseBot* me, const 
 	return ANSWER_UNDEFINED;
 }
 
-#endif // !SMNAV_BOT_DECISION_QUERY_H_
+#endif // !__NAVBOT_BOT_INTERFACES_DECISION_QUERY_H_
 

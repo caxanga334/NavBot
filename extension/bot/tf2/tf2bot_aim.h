@@ -9,6 +9,7 @@ class CTF2BotAimHelper : public IBotAimHelper<CTF2Bot>
 {
 public:
 	Vector SelectAimPosition(CTF2Bot* bot, CBaseEntity* entity, IDecisionQuery::DesiredAimSpot aimspot) override;
+	Vector SelectAimPosition(CTF2Bot* bot, const Vector& target, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES) override;
 
 };
 

@@ -37,6 +37,11 @@ Vector CZPSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desir
 	return m_aimhelper.SelectAimPosition(static_cast<CZPSBot*>(me), entity, desiredAim);
 }
 
+Vector CZPSBotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aimhelper.SelectAimPosition(static_cast<CZPSBot*>(me), pos, attacktype);
+}
+
 QueryAnswerType CZPSBotMainTask::ShouldPickup(CBaseBot* me, CBaseEntity* item)
 {
 	const char* classname = gamehelpers->GetEntityClassname(item);

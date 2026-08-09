@@ -65,3 +65,64 @@ Vector CTF2BotAimHelper::SelectAimPosition(CTF2Bot* bot, CBaseEntity* entity, ID
 	// hitscan weapons
 	return initialTargetPosition;
 }
+
+Vector CTF2BotAimHelper::SelectAimPosition(CTF2Bot* bot, const Vector& target, botweapons::AttackType attacktype)
+{
+	Initialize(bot, target);
+
+	const CTF2BotWeapon* weapon = GetModWeapon<const CTF2BotWeapon*>();
+
+	if (weapon == nullptr)
+	{
+		return target;
+	}
+
+	const bool canpredict = bot->GetDifficultyProfile()->ShouldPredictProjectiles();
+	botweapons::AttackType type;
+
+	if (botweapons::IsValidAttackType(attacktype))
+	{
+		type = attacktype;
+	}
+	else
+	{
+		type = botweapons::GetValidAttackType(bot->GetControlInterface()->GetLastUsedAttackType());
+	}
+
+	if (canpredict)
+	{
+		const int maxiterations = bot->GetDifficultyProfile()->GetMaxPredictionIterations();
+
+		if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsBallistic())
+		{
+			pred::ProjectileData_t data;
+			data.FillFromAttackInfo(&weapon->GetWeaponInfo()->GetAttackInfo(type));
+			// Use TF2 exclusive speed and gravity functions
+			data.speed = weapon->GetProjectileSpeed(type);
+			data.gravity = weapon->GetProjectileGravity(type);
+			Vector predicted = pred::IterativeBallisticLead(GetShooterPosition(), target, GetTargetVelocity(), data, maxiterations);
+
+			if (!bot->IsLineOfFireClear(predicted))
+			{
+				return target;
+			}
+
+			return predicted;
+		}
+
+		if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
+		{
+			const float projSpeed = weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed();
+			Vector predicted = pred::IterativeProjectileLead(GetShooterPosition(), target, GetTargetVelocity(), projSpeed, maxiterations);
+
+			if (!bot->IsLineOfFireClear(predicted))
+			{
+				return target;
+			}
+
+			return predicted;
+		}
+	}
+
+	return target;
+}

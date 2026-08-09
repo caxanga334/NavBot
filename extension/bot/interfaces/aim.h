@@ -22,6 +22,7 @@ public:
 		m_weapon = nullptr;
 		m_desiredSpot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 		m_targetPlayer = nullptr;
+		m_targetflags = 0;
 	}
 
 	virtual ~IBotAimHelper() = default;
@@ -87,6 +88,71 @@ public:
 		return initialTargetPosition;
 	}
 
+	/**
+	 * @brief Selects an aim position for a given target.
+	 * @param bot Bot
+	 * @param target Target position.
+	 * @param attacktype Optional attack type. If not set uses the last used attack.
+	 * @return 
+	 */
+	virtual Vector SelectAimPosition(BotClass* bot, const Vector& target, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES)
+	{
+		Initialize(bot, target);
+
+		const CBotWeapon* weapon = GetHeldWeapon();
+
+		if (weapon == nullptr)
+		{
+			return target;
+		}
+
+		const bool canpredict = bot->GetDifficultyProfile()->ShouldPredictProjectiles();
+		botweapons::AttackType type;
+
+		if (botweapons::IsValidAttackType(attacktype))
+		{
+			type = attacktype;
+		}
+		else
+		{
+			type = botweapons::GetValidAttackType(bot->GetControlInterface()->GetLastUsedAttackType());
+		}
+
+		if (canpredict)
+		{
+			const int maxiterations = bot->GetDifficultyProfile()->GetMaxPredictionIterations();
+
+			if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsBallistic())
+			{
+				pred::ProjectileData_t data;
+				data.FillFromAttackInfo(&weapon->GetWeaponInfo()->GetAttackInfo(type));
+				Vector predicted = pred::IterativeBallisticLead(GetShooterPosition(), target, GetTargetVelocity(), data, maxiterations);
+
+				if (!bot->IsLineOfFireClear(predicted))
+				{
+					return target;
+				}
+
+				return predicted;
+			}
+
+			if (weapon->GetWeaponInfo()->GetAttackInfo(type).IsProjectile())
+			{
+				const float projSpeed = weapon->GetWeaponInfo()->GetAttackInfo(type).GetProjectileSpeed();
+				Vector predicted = pred::IterativeProjectileLead(GetShooterPosition(), target, GetTargetVelocity(), projSpeed, maxiterations);
+
+				if (!bot->IsLineOfFireClear(predicted))
+				{
+					return target;
+				}
+
+				return predicted;
+			}
+		}
+
+		return target;
+	}
+
 protected:
 
 	CBaseEntity* GetAimTarget() const { return m_target; }
@@ -127,6 +193,17 @@ protected:
 		int flags = 0;
 		entprops->GetEntProp(entity, Prop_Data, "m_fFlags", flags);
 		SetTargetEntityFlags(flags);
+	}
+
+	// Called to initialize values for a new aim position calculation (Position target overload)
+	virtual void Initialize(BotClass* bot, const Vector& target)
+	{
+		SetHeldWeapon(bot->GetInventoryInterface()->GetActiveBotWeapon());
+		SetTargetPlayer(nullptr);
+		SetShooterPosition(bot->GetEyeOrigin());
+		Vector zero(0.0f, 0.0f, 0.0f);
+		SetTargetVelocity(zero);
+		SetTargetEntityFlags(0);
 	}
 
 	// Called to read the velocity of the target entity

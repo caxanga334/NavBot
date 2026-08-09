@@ -729,7 +729,7 @@ bool CBaseBotTraceFilterLineOfFire::ShouldHitEntity(IHandleEntity* pHandleEntity
 				return false;
 			}
 
-			if (!m_ignoreAllies && m_sensor->IsFriendly(pEntity))
+			if (m_ignoreAllies && m_sensor->IsFriendly(pEntity))
 			{
 				return false;
 			}

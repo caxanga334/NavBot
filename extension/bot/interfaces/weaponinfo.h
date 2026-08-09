@@ -489,7 +489,7 @@ public:
 		case WeaponType::COMBAT_WEAPON:
 			[[fallthrough]];
 		case WeaponType::COMBAT_GRENADE:
-			[[fallthrough]];
+			return false;
 		case WeaponType::BUFF_ITEM:
 			[[fallthrough]];
 		case WeaponType::DEFENSIVE_BUFF_ITEM:

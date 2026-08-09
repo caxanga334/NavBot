@@ -30,6 +30,11 @@ Vector CBlackMesaBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity,
 	return m_aimhelper.SelectAimPosition(static_cast<CBlackMesaBot*>(me), entity, desiredAim);
 }
 
+Vector CBlackMesaBotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aimhelper.SelectAimPosition(static_cast<CBlackMesaBot*>(me), pos, attacktype);
+}
+
 const CKnownEntity* CBlackMesaBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return botsharedutils::threat::DefaultThreatSelection(baseBot, threat1, threat2);

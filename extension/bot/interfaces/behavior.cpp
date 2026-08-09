@@ -67,6 +67,11 @@ Vector IBehavior::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimS
 	return GetDecisionQueryResponder()->GetTargetAimPos(me, entity, desiredAim);
 }
 
+Vector IBehavior::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return GetDecisionQueryResponder()->GetAimPosition(me, pos, attacktype);
+}
+
 QueryAnswerType IBehavior::IsReady(CBaseBot* me)
 {
 	return GetDecisionQueryResponder()->IsReady(me);

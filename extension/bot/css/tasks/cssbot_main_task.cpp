@@ -37,6 +37,11 @@ Vector CCSSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desir
 	return m_aim.SelectAimPosition(static_cast<CCSSBot*>(me), entity, desiredAim);
 }
 
+Vector CCSSBotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aim.SelectAimPosition(static_cast<CCSSBot*>(me), pos, attacktype);
+}
+
 const CKnownEntity* CCSSBotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return botsharedutils::threat::DefaultThreatSelection(me, threat1, threat2);

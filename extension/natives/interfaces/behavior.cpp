@@ -114,6 +114,43 @@ namespace natives::bots::interfaces::behavior
 
 		return static_cast<cell_t>(iface->ShouldAssistTeammate(bot, entity));
 	}
+	static cell_t GetTargetAimPos(IPluginContext* context, const cell_t* params)
+	{
+		IBehavior* iface = pawnutils::UnsafeCastPawnAddressToObject<IBehavior>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		CBaseEntity* entity = pawnutils::ReadEntity(context, params, 3);
+
+		if (!entity)
+		{
+			return 0;
+		}
+
+		Vector result = iface->GetTargetAimPos(iface->GetBot(), entity);
+		pawnutils::WriteVector(context, params, 2, result);
+		return 0;
+	}
+	static cell_t GetAimPosition(IPluginContext* context, const cell_t* params)
+	{
+		IBehavior* iface = pawnutils::UnsafeCastPawnAddressToObject<IBehavior>(context, params, 1);
+
+		if (!iface)
+		{
+			context->ReportError("NULL bot interface!");
+			return 0;
+		}
+
+		Vector target = pawnutils::ReadVector(context, params, 3);
+		botweapons::AttackType type = pawnutils::ReadBool(params, 4) ? botweapons::AttackType::PRIMARY : botweapons::AttackType::SECONDARY;
+		Vector result = iface->GetAimPosition(iface->GetBot(), target, type);
+		pawnutils::WriteVector(context, params, 2, result);
+		return 0;
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -124,6 +161,8 @@ namespace natives::bots::interfaces::behavior
 			{"NavBotBehaviorInterface.ShouldRetreat", ShouldRetreat},
 			{"NavBotBehaviorInterface.ShouldAssistTeammate", ShouldAssistTeammate},
 			{"NavBotBehaviorInterface.IsRunningPluginCommand", IsRunningPluginCommand},
+			{"NavBotBehaviorInterface.GetTargetAimPos", GetTargetAimPos},
+			{"NavBotBehaviorInterface.GetAimPosition", GetAimPosition},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

@@ -48,6 +48,11 @@ Vector CDoDSBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desi
 	return m_aimhelper.SelectAimPosition(static_cast<CDoDSBot*>(me), entity, desiredAim);
 }
 
+Vector CDoDSBotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aimhelper.SelectAimPosition(static_cast<CDoDSBot*>(me), pos, attacktype);
+}
+
 const CKnownEntity* CDoDSBotMainTask::SelectTargetThreat(CBaseBot* baseBot, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return botsharedutils::threat::DefaultThreatSelection(baseBot, threat1, threat2);

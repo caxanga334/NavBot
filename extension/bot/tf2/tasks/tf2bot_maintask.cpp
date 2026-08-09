@@ -88,6 +88,11 @@ Vector CTF2BotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Desir
 	return m_aimhelper.SelectAimPosition(static_cast<CTF2Bot*>(me), entity, desiredAim);
 }
 
+Vector CTF2BotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aimhelper.SelectAimPosition(static_cast<CTF2Bot*>(me), pos, attacktype);
+}
+
 TaskEventResponseResult<CTF2Bot> CTF2BotMainTask::OnKilled(CTF2Bot* bot, const CTakeDamageInfo& info)
 {
 	int teamID = static_cast<int>(bot->GetMyTFTeam());

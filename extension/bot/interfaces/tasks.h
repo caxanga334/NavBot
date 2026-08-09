@@ -385,6 +385,31 @@ public:
 		return result;
 	}
 
+	Vector GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES) override
+	{
+		Vector result = vec3_origin;
+
+		if (m_task)
+		{
+			AITask<BotClass>* respondingTask = nullptr;
+			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
+
+			while (respondingTask != nullptr && result == vec3_origin)
+			{
+				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
+				while (respondingTask != nullptr && result == vec3_origin)
+				{
+					result = respondingTask->GetAimPosition(me, pos, attacktype);
+					respondingTask = respondingTask->GetTaskBelowMe();
+				}
+
+				respondingTask = previousTask;
+			}
+		}
+
+		return result;
+	}
+
 	QueryAnswerType IsReady(CBaseBot* me) override
 	{
 		PROPAGATE_DECISION_WITH_1ARG(IsReady, me);

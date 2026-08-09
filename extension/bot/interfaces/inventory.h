@@ -259,6 +259,13 @@ public:
 	}
 
 	/**
+	 * @brief Finds a combat grenade to throw at the given target position.
+	 * @param target Target position.
+	 * @return Grenade weapon instance. NULL if none is found.
+	 */
+	const CBotWeapon* FindCombatGrenade(const Vector& target) const;
+
+	/**
 	 * @brief Tells the inventory interface to equip this weapon.
 	 * @param weapon Weapon to equip.
 	 * @return Returns true if the weapon was equipped.
@@ -391,6 +398,54 @@ public:
 		return FindBestWeaponAgainstThreat(threat, WeaponInfo::WeaponType::MAX_WEAPON_TYPES) != nullptr;
 	}
 
+	// holds data used when selecting weapons.
+	struct WeaponSelectData_t
+	{
+		WeaponSelectData_t()
+		{
+			bot = nullptr;
+			threat = nullptr;
+			range = 0.0f;
+			underwater = false;
+			targetPos.Init(0.0f, 0.0f, 0.0f);
+			dir.Init(0.0f, 0.0f, 0.0f);
+			profile = nullptr;
+			weapon = nullptr;
+			info = nullptr;
+		}
+
+		inline WeaponSelectData_t(const CBaseBot* bot_, const CKnownEntity* threat_) :
+			WeaponSelectData_t()
+		{
+			Init(bot_, threat_);
+		}
+
+		inline WeaponSelectData_t(const CBaseBot* bot_, const Vector& pos) :
+			WeaponSelectData_t()
+		{
+			Init(bot_, pos);
+		}
+
+		void Init(const CBaseBot* bot_, const CKnownEntity* threat_);
+		void Init(const CBaseBot* bot_, const Vector& pos);
+		inline void AssignWeapon(const CBotWeapon* weapon_)
+		{
+			this->weapon = weapon_;
+			this->info = weapon_->GetWeaponInfo();
+		}
+
+		const CBaseBot* bot;
+		const CKnownEntity* threat; // enemy, if any
+		float range; // distance from bot to target
+		bool underwater; // true if the bot is currently underwater
+		Vector targetPos; // target position
+		Vector dir; // direction towards the target position
+		const DifficultyProfile* profile; // bot difficulty profile
+		const CBotWeapon* weapon; // current weapon being tested
+		const WeaponInfo* info; // weapon info of the current weapon
+
+	};
+
 protected:
 	// deletes invalid weapons from the weapon storage vector
 	void RemoveInvalidWeapons();
@@ -407,7 +462,7 @@ protected:
 	 */
 	virtual const CBotWeapon* FilterBestWeaponForThreat(CBaseBot* me, const CKnownEntity* threat, const CBotWeapon* first, const CBotWeapon* second) const;
 	// Returns true if the weapon can be used agains the given threat
-	bool IsWeaponUseableForThreat(CBaseBot* me, const CKnownEntity* threat, const float rangeToThreat, const CBotWeapon* weapon, const WeaponInfo* info, const bool underwater) const;
+	bool IsWeaponUseableForThreat(const WeaponSelectData_t& data) const;
 	// Selects the weapon with the highest static priority (no dynamic priority support)
 	const CBotWeapon* FilterSelectWeaponWithHighestStaticPriority(const CBotWeapon* first, const CBotWeapon* second) const;
 	/**
@@ -417,6 +472,7 @@ protected:
 	virtual void OnBotWeaponEquipped(const CBotWeapon* weapon) const {}
 
 	const CBotWeapon* FindBestWeaponAgainstThreat(const CKnownEntity* threat, WeaponInfo::WeaponType typeOnly) const;
+
 private:
 	std::vector<std::unique_ptr<CBotWeapon>> m_weapons;
 	mutable CBotWeapon* m_cachedActiveWeapon;

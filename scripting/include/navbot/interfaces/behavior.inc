@@ -53,4 +53,25 @@ methodmap NavBotBehaviorInterface < NavBotBotInterface
 	 * @return				True if yes, false if no.
 	 */
 	public static native bool IsRunningPluginCommand(Address ptr);
+	/**
+	 * Gets the world position the bot should aim when targetting the given target.
+	 * Use this to get a predicted target position for projectile weapons.
+	 * 
+	 * @param ptr			Address to the bot behavior interface.
+	 * @parma out			Output position is written to this.
+	 * @param target		Target entity.
+	 * @return				Predicted target world position or zero vector if no answer was given to the query.
+	 */
+	public static native void GetTargetAimPos(Address ptr, float out[3], int target);
+	/**
+	 * Gets the world position the bot should aim when targetting the given position.
+	 * Use this to get a predicted target position for projectile weapons.
+	 * 
+	 * @param ptr			Address to the bot behavior interface.
+	 * @parma out			Output position is written to this.
+	 * @param target		Target position.
+	 * @param primary		If true, use primary attack else secondary attack.
+	 * @return				Predicted target world position or zero vector if no answer was given to the query.
+	 */
+	public static native void GetAimPosition(Address ptr, float out[3], const float target[3], bool primary = true);
 }

@@ -16,6 +16,7 @@ public:
 	TaskEventResponseResult<CCSSBot> OnKilled(CCSSBot* bot, const CTakeDamageInfo& info) override;
 
 	Vector GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, DesiredAimSpot desiredAim = AIMSPOT_NONE) override;
+	Vector GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype = botweapons::AttackType::MAX_ATTACK_TYPES) override;
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override;
 
 	const char* GetName() const override { return "MainTask"; }

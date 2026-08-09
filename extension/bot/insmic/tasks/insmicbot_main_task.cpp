@@ -31,6 +31,11 @@ Vector CInsMICBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, De
 	return m_aimhelper.SelectAimPosition(static_cast<CInsMICBot*>(me), entity, desiredAim);
 }
 
+Vector CInsMICBotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aimhelper.SelectAimPosition(static_cast<CInsMICBot*>(me), pos, attacktype);
+}
+
 TaskEventResponseResult<CInsMICBot> CInsMICBotMainTask::OnDebugMoveToCommand(CInsMICBot* bot, const Vector& moveTo)
 {
 	return TryPauseFor(new CBotSharedDebugMoveToOriginTask<CInsMICBot, CInsMICBotPathCost>(bot, moveTo), PRIORITY_CRITICAL, "Responding to debug command!");

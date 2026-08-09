@@ -399,6 +399,8 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldRetreat");
 	MarkNativeAsOptional("NavBotBehaviorInterface.ShouldAssistTeammate");
 	MarkNativeAsOptional("NavBotBehaviorInterface.IsRunningPluginCommand");
+	MarkNativeAsOptional("NavBotBehaviorInterface.GetTargetAimPos");
+	MarkNativeAsOptional("NavBotBehaviorInterface.GetAimPosition");
 
 	/* Combat Interface */
 	MarkNativeAsOptional("NavBotCombatInterface.Disable");

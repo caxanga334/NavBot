@@ -415,6 +415,35 @@ CON_COMMAND(sm_navbot_debug_bot_is_able_to_see, "Tests if the bots can see an en
 	extmanager->ForEachBot(func);
 }
 
+CON_COMMAND(sm_navbot_debug_bot_is_line_of_fire_clear, "Tests if the bots line of fire is clear.")
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 4)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_bot_is_line_of_fire_clear <x> <y> <z> \n");
+		return;
+	}
+
+	Vector pos;
+	pos.x = atof(args[1]);
+	pos.y = atof(args[2]);
+	pos.z = atof(args[3]);
+
+	auto func = [&pos](CBaseBot* bot) {
+		if (bot->IsLineOfFireClear(pos))
+		{
+			META_CONPRINTF("%s LINE OF FIRE TO %s IS CLEAR\n", UtilHelpers::textformat::FormatPlayer(bot->GetIndex()), UtilHelpers::textformat::FormatVector(pos));
+		}
+		else
+		{
+			META_CONPRINTF("%s LINE OF FIRE TO %s IS OBSTRUCTED\n", UtilHelpers::textformat::FormatPlayer(bot->GetIndex()), UtilHelpers::textformat::FormatVector(pos));
+		}
+	};
+
+	extmanager->ForEachBot(func);
+}
+
 CON_COMMAND(sm_navbot_debug_bot_dump_current_path, "Dumps the current bot path to the console.")
 {
 	CBaseBot* bot = nullptr;

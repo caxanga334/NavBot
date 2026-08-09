@@ -36,6 +36,11 @@ Vector CHL1MPBotMainTask::GetTargetAimPos(CBaseBot* me, CBaseEntity* entity, Des
 	return m_aimhelper.SelectAimPosition(static_cast<CHL1MPBot*>(me), entity, desiredAim);
 }
 
+Vector CHL1MPBotMainTask::GetAimPosition(CBaseBot* me, const Vector& pos, botweapons::AttackType attacktype)
+{
+	return m_aimhelper.SelectAimPosition(static_cast<CHL1MPBot*>(me), pos, attacktype);
+}
+
 const CKnownEntity* CHL1MPBotMainTask::SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2)
 {
 	return botsharedutils::threat::DefaultThreatSelection(me, threat1, threat2);
