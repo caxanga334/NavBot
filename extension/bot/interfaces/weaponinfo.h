@@ -487,7 +487,7 @@ public:
 		switch (weapon_type)
 		{
 		case WeaponType::COMBAT_WEAPON:
-			[[fallthrough]];
+			return true;
 		case WeaponType::COMBAT_GRENADE:
 			return false;
 		case WeaponType::BUFF_ITEM:

@@ -6,6 +6,8 @@
 #include <stdexcept>
 #include <memory>
 #include <string>
+#include <utility>
+#include <functional>
 
 #include <am-string.h>
 #include <tier1/strtools.h>
@@ -202,137 +204,65 @@ public:
 	// Notify that a task has ended, add it to the list of tasks for deallocation
 	void NotifyTaskEnd(AITask<BotClass>* task) { m_taskbin.push_back(task); }
 
-	// Macros for propagating decision queries between AI Tasks
+	template <typename Result, auto Func, typename ...Args>
+	inline Result PropagateDecisionQuery(const Result& defaultValue, Args&&... _args)
+	{
+		Result __result = defaultValue;
 
-#define PROPAGATE_DECISION_WITH_1ARG(DFUNC, ARG1)			\
-	QueryAnswerType __result = ANSWER_UNDEFINED;					\
-																\
-	if (m_task)													\
-	{															\
-		AITask<BotClass>* __respondingTask = nullptr; \
-		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
-																\
-		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
-			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-			{ \
-				__result = __respondingTask->DFUNC(ARG1); \
-				__respondingTask = __respondingTask->GetTaskBelowMe(); \
-			} \
-																 \
-			__respondingTask = __previousTask; \
-		} \
-	} \
-		\
-	return __result; \
-	\
+		if (m_task)
+		{
+			AITask<BotClass>* __respondingTask = nullptr;
+			for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {}
 
-#define PROPAGATE_DECISION_WITH_2ARGS(DFUNC, ARG1, ARG2)			\
-	QueryAnswerType __result = ANSWER_UNDEFINED;					\
-																\
-	if (m_task)													\
-	{															\
-		AITask<BotClass>* __respondingTask = nullptr; \
-		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
-																\
-		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
-			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-			{ \
-				__result = __respondingTask->DFUNC(ARG1, ARG2); \
-				__respondingTask = __respondingTask->GetTaskBelowMe(); \
-			} \
-																 \
-			__respondingTask = __previousTask; \
-		} \
-	} \
-		\
-	return __result; \
-	\
+			while (__respondingTask != nullptr && __result == defaultValue)
+			{
+				AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask();
+				while (__respondingTask != nullptr && __result == defaultValue)
+				{
+					__result = std::invoke(Func, __respondingTask, std::forward<Args>(_args)...);
+					__respondingTask = __respondingTask->GetTaskBelowMe();
+				}
 
-#define PROPAGATE_DECISION_WITH_3ARGS(DFUNC, ARG1, ARG2, ARG3)		\
-	QueryAnswerType __result = ANSWER_UNDEFINED;					\
-																\
-	if (m_task)													\
-	{															\
-		AITask<BotClass>* __respondingTask = nullptr; \
-		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
-																\
-		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
-			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-			{ \
-				__result = __respondingTask->DFUNC(ARG1, ARG2, ARG3); \
-				__respondingTask = __respondingTask->GetTaskBelowMe(); \
-			} \
-																 \
-			__respondingTask = __previousTask; \
-		} \
-	} \
-		\
-	return __result; \
-	\
+				__respondingTask = __previousTask;
+			}
+		}
 
-#define PROPAGATE_DECISION_WITH_4ARGS(DFUNC, ARG1, ARG2, ARG3, ARG4)		\
-	QueryAnswerType __result = ANSWER_UNDEFINED;					\
-																\
-	if (m_task)													\
-	{															\
-		AITask<BotClass>* __respondingTask = nullptr; \
-		for (__respondingTask = m_task; __respondingTask->GetNextTask() != nullptr; __respondingTask = __respondingTask->GetNextTask()) {} \
-																\
-		while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-		{ \
-			AITask<BotClass>* __previousTask = __respondingTask->GetPreviousTask(); \
-			while (__respondingTask != nullptr && __result == ANSWER_UNDEFINED) \
-			{ \
-				__result = __respondingTask->DFUNC(ARG1, ARG2, ARG3, ARG4); \
-				__respondingTask = __respondingTask->GetTaskBelowMe(); \
-			} \
-																 \
-			__respondingTask = __previousTask; \
-		} \
-	} \
-			\
-	return __result; \
-			\
+		return __result;
+	}
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldAttack, me, them);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldAttack>(QueryAnswerType::ANSWER_UNDEFINED, me, them);
 	}
 
 	QueryAnswerType ShouldSeekAndDestroy(CBaseBot* me, const CKnownEntity* them) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldSeekAndDestroy, me, them);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldSeekAndDestroy>(QueryAnswerType::ANSWER_UNDEFINED, me, them);
 	}
 
 	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldPickup, me, item);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldPickup>(QueryAnswerType::ANSWER_UNDEFINED, me, item);
 	}
 
 	QueryAnswerType ShouldHurry(CBaseBot* me) override
 	{
-		PROPAGATE_DECISION_WITH_1ARG(ShouldHurry, me);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldHurry>(QueryAnswerType::ANSWER_UNDEFINED, me);
 	}
 
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override
 	{
-		PROPAGATE_DECISION_WITH_1ARG(ShouldRetreat, me);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldRetreat>(QueryAnswerType::ANSWER_UNDEFINED, me);
 	}
 
 	QueryAnswerType IsIgnoringMapObjectives(CBaseBot* me) override
 	{
-		PROPAGATE_DECISION_WITH_1ARG(IsIgnoringMapObjectives, me);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::IsIgnoringMapObjectives>(QueryAnswerType::ANSWER_UNDEFINED, me);
 	}
 
 	QueryAnswerType IsBlocker(CBaseBot* me, CBaseEntity* blocker, const bool any = false) override
 	{
-		PROPAGATE_DECISION_WITH_3ARGS(IsBlocker, me, blocker, any);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::IsBlocker>(QueryAnswerType::ANSWER_UNDEFINED, me, blocker, any);
 	}
 
 	const CKnownEntity* SelectTargetThreat(CBaseBot* me, const CKnownEntity* threat1, const CKnownEntity* threat2) override
@@ -412,42 +342,22 @@ public:
 
 	QueryAnswerType IsReady(CBaseBot* me) override
 	{
-		PROPAGATE_DECISION_WITH_1ARG(IsReady, me);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::IsReady>(QueryAnswerType::ANSWER_UNDEFINED, me);
 	}
 
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldAssistTeammate, me, teammate);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldAssistTeammate>(QueryAnswerType::ANSWER_UNDEFINED, me, teammate);
 	}
 
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override
 	{
-		PROPAGATE_DECISION_WITH_2ARGS(ShouldSwitchToWeapon, me, weapon);
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldSwitchToWeapon>(QueryAnswerType::ANSWER_UNDEFINED, me, weapon);
 	}
 
 	bool IsRunningPluginCommand() override
 	{
-		bool result = false;
-
-		if (m_task)
-		{
-			AITask<BotClass>* respondingTask = nullptr;
-			for (respondingTask = m_task; respondingTask->GetNextTask() != nullptr; respondingTask = respondingTask->GetNextTask()) {}
-
-			while (respondingTask != nullptr && !result)
-			{
-				AITask<BotClass>* previousTask = respondingTask->GetPreviousTask();
-				while (respondingTask != nullptr && !result)
-				{
-					result = respondingTask->IsRunningPluginCommand();
-					respondingTask = respondingTask->GetTaskBelowMe();
-				}
-
-				respondingTask = previousTask;
-			}
-		}
-
-		return result;
+		return PropagateDecisionQuery<bool, &AITask<BotClass>::IsRunningPluginCommand>(false);
 	}
 
 private:

@@ -33,9 +33,10 @@ public:
 	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
 
 	QueryAnswerType ShouldPickup(CBaseBot* me, CBaseEntity* item) override;
-	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_NO; }
-	QueryAnswerType ShouldHurry(CBaseBot* me) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_YES; }
-	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return m_usingItem ? ANSWER_UNDEFINED : ANSWER_NO; }
+	// Don't attack enemies if we're using the item
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return m_usingItem ? ANSWER_NO : ANSWER_YES; }
+	QueryAnswerType ShouldHurry(CBaseBot* me) override { return m_usingItem ? ANSWER_YES : ANSWER_UNDEFINED; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return m_usingItem ? ANSWER_NO : ANSWER_UNDEFINED; }
 
 	const char* GetName() const override { return "ObjectiveUseItem"; }
 
