@@ -118,6 +118,8 @@ public:
 	bool IsToggleConditionInverted() const { return m_toggle_condition.IsTestConditionInverted(); }
 	void InvertToggleCondition() { m_toggle_condition.ToggleInvertedCondition(); }
 	void ClearToggleData() { m_toggle_condition.clear(); }
+	const navscripting::ToggleCondition& GetToggleConditon() const { return m_toggle_condition; }
+	const navscripting::EntityLink& GetLinkedEntity() const { return m_goalEntity; }
 
 	void SearchForNavAreas();
 
