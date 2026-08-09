@@ -2539,6 +2539,20 @@ void CNavMesh::CommandNavDumpToKeyValues()
 				}
 			}
 
+			{
+				KeyValues* connections = new KeyValues("Connections");
+
+				auto func = [&connections](CNavArea* connectedArea) {
+					KeyValues* areaconn = new KeyValues("Area");
+
+					areaconn->SetInt("ID", static_cast<int>(connectedArea->GetID()));
+					connections->AddSubKey(areaconn);
+				};
+
+				area->ForEachConnectedArea(func);
+				subKey->AddSubKey(connections);
+			}
+
 			sbAreas->AddSubKey(subKey);
 		}
 
@@ -2591,6 +2605,86 @@ void CNavMesh::CommandNavDumpToKeyValues()
 		}
 
 		kv->AddSubKey(sbWaypoints);
+	}
+
+	if (!m_volumes.empty())
+	{
+		KeyValues* sbVolumes = new KeyValues("BlockerVolumes");
+
+		for (const auto& [id, ptr] : m_volumes)
+		{
+			const CNavVolume* volume = ptr.get();
+			KeyValues* subkey = new KeyValues("Volume");
+
+			subkey->SetInt("ID", static_cast<int>(volume->GetID()));
+			subkey->SetInt("Team", volume->GetTeam());
+			Vector mins, maxs;
+			volume->GetBounds(mins, maxs);
+			subkey->SetString("Mins", UtilHelpers::textformat::FormatVector(mins));
+			subkey->SetString("Maxs", UtilHelpers::textformat::FormatVector(maxs));
+			subkey->SetString("Origin", UtilHelpers::textformat::FormatVector(volume->GetOrigin()));
+			auto& tc = volume->GetToggleConditon();
+			KeyValues* sub2 = new KeyValues("ToggleCondition");
+			sub2->SetString("Name", tc.GetConditionName());
+			sub2->SetInt("IntData", tc.GetIntegerData());
+			sub2->SetFloat("FloatData", tc.GetFloatData());
+			sub2->SetString("VectorData", UtilHelpers::textformat::FormatVector(tc.GetVectorData()));
+			sub2->SetString("SavedClassname", tc.GetEntityLink().GetSavedClassname().c_str());
+			sub2->SetString("SavedTargetname", tc.GetEntityLink().GetSavedTargetname().c_str());
+			sub2->SetString("SavedOrigin", UtilHelpers::textformat::FormatVector(tc.GetEntityLink().GetSavedEntityPosition()));
+			subkey->AddSubKey(sub2);
+			sbVolumes->AddSubKey(subkey);
+		}
+
+		kv->AddSubKey(sbVolumes);
+	}
+
+	if (!m_prerequisites.empty())
+	{
+		KeyValues* sbPrereq = new KeyValues("NavPrerequisites");
+
+		for (const auto& [id, ptr] : m_prerequisites)
+		{
+			const CNavPrerequisite* prereq = ptr.get();
+			KeyValues* subkey = new KeyValues("Prerequisite");
+
+			subkey->SetInt("ID", static_cast<int>(prereq->GetID()));
+			subkey->SetInt("Team", prereq->GetTeamIndex());
+			Vector mins, maxs;
+			prereq->GetBounds(mins, maxs);
+			subkey->SetString("Mins", UtilHelpers::textformat::FormatVector(mins));
+			subkey->SetString("Maxs", UtilHelpers::textformat::FormatVector(maxs));
+			subkey->SetString("Origin", UtilHelpers::textformat::FormatVector(prereq->GetOrigin()));
+			subkey->SetString("Task", CNavPrerequisite::TaskIDtoString(prereq->GetTask()));
+			subkey->SetInt("FloatData", prereq->GetFloatData());
+			subkey->SetString("VectorData", UtilHelpers::textformat::FormatVector(prereq->GetGoalPosition()));
+
+			{
+				auto& tc = prereq->GetToggleConditon();
+				KeyValues* sub2 = new KeyValues("ToggleCondition");
+				sub2->SetString("Name", tc.GetConditionName());
+				sub2->SetInt("IntData", tc.GetIntegerData());
+				sub2->SetFloat("FloatData", tc.GetFloatData());
+				sub2->SetString("VectorData", UtilHelpers::textformat::FormatVector(tc.GetVectorData()));
+				sub2->SetString("SavedClassname", tc.GetEntityLink().GetSavedClassname().c_str());
+				sub2->SetString("SavedTargetname", tc.GetEntityLink().GetSavedTargetname().c_str());
+				sub2->SetString("SavedOrigin", UtilHelpers::textformat::FormatVector(tc.GetEntityLink().GetSavedEntityPosition()));
+				subkey->AddSubKey(sub2);
+			}
+
+			{
+				auto& el = prereq->GetLinkedEntity();
+				KeyValues* sub2 = new KeyValues("GoalEntity");
+				sub2->SetString("SavedClassname", el.GetSavedClassname().c_str());
+				sub2->SetString("SavedTargetname", el.GetSavedTargetname().c_str());
+				sub2->SetString("SavedOrigin", UtilHelpers::textformat::FormatVector(el.GetSavedEntityPosition()));
+				subkey->AddSubKey(sub2);
+			}
+
+			sbPrereq->AddSubKey(subkey);
+		}
+
+		kv->AddSubKey(sbPrereq);
 	}
 
 	bool saved = UtilHelpers::sdkcompat::SaveKeyValuesToFile(kv, "navmeshdump.txt", "MOD");
