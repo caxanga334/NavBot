@@ -1079,6 +1079,12 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			smutils->LogError(myself, "[WEAPON INFO PARSER] Invalid value for \"preferred_aim_spot\" at line %u col %u: \"%s\"", states->line, states->col, value);
 		}
 	}
+	else if (std::strcmp(key, "explosive_blast_radius") == 0)
+	{
+		float v = atof(value);
+		v = std::clamp(v, 250.0f, 2000.0f);
+		m_current->SetExplosionBlastRadius(v);
+	}
 	else if (!IsParserInWeaponAttackSection())
 	{
 		smutils->LogError(myself, "[WEAPON INFO PARSER] Unknown key value pair <%s - %s> at line %u col %u", key, value, states->line, states->col);

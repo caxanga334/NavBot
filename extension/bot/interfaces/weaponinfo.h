@@ -349,6 +349,7 @@ public:
 		preferred_aim_spot = IDecisionQuery::DesiredAimSpot::AIMSPOT_NONE;
 		ammo_source_classname.reserve(32);
 		parsed_dynamic_prio_configs.reserve(32);
+		explosive_blast_radius = 400.0f;
 	}
 
 	virtual ~WeaponInfo() {}
@@ -392,6 +393,7 @@ public:
 		this->preferred_aim_spot = other->preferred_aim_spot;
 		this->ammo_source_classname = other->ammo_source_classname;
 		this->parsed_dynamic_prio_configs = other->parsed_dynamic_prio_configs;
+		this->explosive_blast_radius = other->explosive_blast_radius;
 	}
 
 	const WeaponAttackFunctionInfo& operator[](botweapons::AttackType type) const
@@ -474,6 +476,7 @@ public:
 	void SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot spot) { preferred_aim_spot = spot; }
 	void SetAmmoSourceEntityClassname(const char* classname) { ammo_source_classname.assign(classname); }
 	void SetCanBeFiredUnderwater(bool state) { can_fire_underwater = state; }
+	void SetExplosionBlastRadius(const float v) { explosive_blast_radius = v; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
 	bool IsEntry(std::string& entry) const { return configentry == entry; }
@@ -553,6 +556,7 @@ public:
 	void AddDynamicPriorityCfgEntry(const char* name, const char* args);
 	void EraseDynamicPrioritiesCfgEntry() { parsed_dynamic_prio_configs.clear(); }
 	const std::vector<std::unique_ptr<IDynamicWeaponPriority>>& GetDynamicPriotities() const { return dynamic_priorities; }
+	float GetExplosionBlastRadius() const { return explosive_blast_radius; }
 
 	virtual void PostLoad();
 
@@ -593,6 +597,7 @@ private:
 	std::unordered_set<std::string> tags;
 	IDecisionQuery::DesiredAimSpot preferred_aim_spot;
 	std::string ammo_source_classname;
+	float explosive_blast_radius;
 
 	struct DynamicPrioCfg
 	{

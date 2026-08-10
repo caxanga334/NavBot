@@ -323,6 +323,44 @@ bool ICombat::DangerScanParseGamedata()
 	return true;
 }
 
+bool ICombat::IsBlastTargetClearOfAllies(const Vector& target, const float radius) const
+{
+	bool result = false;
+	CBaseBot* me = GetBot();
+
+	auto func = [&me, &target, &radius, &result](int client, edict_t* entity, SourceMod::IGamePlayer* player) {
+		if (result) { return; }
+		
+		if (me->GetIndex() == client)
+		{
+			return;
+		}
+
+		CBaseEntity* pEntity = UtilHelpers::EdictToBaseEntity(entity);
+
+		if (modhelpers->IsDead(pEntity))
+		{
+			return;
+		}
+
+		if (!me->GetSensorInterface()->IsFriendly(pEntity))
+		{
+			return;
+		}
+
+		const Vector& origin = UtilHelpers::getEntityOrigin(entity);
+
+		if ((target - origin).IsLengthLessThan(radius))
+		{
+			result = true;
+		}
+	};
+
+	UtilHelpers::ForEachPlayer(func);
+
+	return result;
+}
+
 void ICombat::OnLastUsedWeaponChanged(CBaseEntity* newWeapon)
 {
 	m_attackTimer.Invalidate();

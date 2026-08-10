@@ -189,6 +189,13 @@ public:
 	void StartMarkingVisibleAreasAsCleared() { m_clearAreasTimer.Start(-1.0f); /* Start with a negative time so it runs in the next update cycle. */ }
 	// Disables marking visible areas as cleared.
 	void StopMarkingVisibleAreasAsCleared() { m_clearAreasTimer.Invalidate(); }
+	/**
+	 * @brief Checks if the given position is clear of allies.
+	 * @param target Position to check.
+	 * @param radius Explosion blast radius.
+	 * @return True if clear, false if friendly fire may happen.
+	 */
+	bool IsBlastTargetClearOfAllies(const Vector& target, const float radius) const;
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.

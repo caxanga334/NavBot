@@ -4,6 +4,7 @@
 #include <bot/bot_shared_utils.h>
 #include <bot/interfaces/path/chasenavigator.h>
 #include "bot_shared_retreat_from_threat.h"
+#include "bot_shared_throw_grenade.h"
 
 // Moves to a threat last known position and
 template <typename BT, typename CT>
@@ -233,7 +234,6 @@ public:
 	TaskResult<BT> OnTaskUpdate(BT* bot) override
 	{
 		const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
-		CBaseBot* __bot = bot;
 
 		if (!threat)
 		{
@@ -246,6 +246,12 @@ public:
 			botsharedutils::search::MarkVisibleAreasAsCleared functor(bot);
 			functor.Execute();
 
+			CBaseEntity* grenade = nullptr;
+			if (CBotSharedThrowGrenadeTask<BT, CT>::IsPossible(bot, threat, &grenade))
+			{
+				return AITask<BT>::SwitchTo(new CBotSharedThrowGrenadeTask<BT, CT>(grenade, threat->GetLastKnownPosition()), "Throwing grenade at my enemy's last known position.");
+			}
+
 			// too far to chase
 			if (bot->GetRangeTo(threat->GetLastKnownPosition()) >= bot->GetDifficultyProfile()->GetEnemyFarRange())
 			{
@@ -253,7 +259,7 @@ public:
 			}
 
 			// if healthy and a random chance based on aggression level, search for the enemy
-			if (__bot->GetHealthState() == CBaseBot::HealthState::HEALTH_OK && 
+			if (bot->GetHealthState() == CBaseBot::HealthState::HEALTH_OK && 
 				CBaseBot::s_botrng.GetRandomChance(bot->GetDifficultyProfile()->GetAggressiveness()))
 			{
 				return AITask<BT>::SwitchTo(new CBotSharedDefaultCombatSearchLKPTask<BT, CT>(threat->GetEntity()), "Enemy is occluded!");
