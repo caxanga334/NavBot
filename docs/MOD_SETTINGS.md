@@ -64,6 +64,9 @@ These settings are used by all mods.
 | area_cleared_time | Maximum time in seconds a nav area is considered cleared of enemies. | 30 - 600 | 120 |
 | stuck_giveup_threshold | General purpose threshold for giving up doing something if the bot gets this many consecutive stuck events | 5 - 60 | 10 |
 | path_break_obstacle_time | Minimum time in seconds a bot will wait before trying to break an obstacle on their path. | 0.1 - 15.0 | 1.5 |
+| callout_per_team_global_cooldown | Shared per team cooldown in seconds for enemy callouts. | 5 - 900 | 10 |
+| callout_per_bot_cooldown | Per bot enemy callout cooldown in seconds. | 10 - 3000 | 30 |
+| callout_per_enemy_cooldown | Per enemy callout cooldown in seconds. | 1 - 900 | 15 |
 
 ### Macro Values
 

@@ -310,6 +310,18 @@ SourceMod::SMCResult CModSettings::ReadSMC_KeyValue(const SourceMod::SMCStates* 
 		{
 			SetPathBreakObstacleTime(ReadFloatClamped(value, 0.1f, 15.0f, 1.5f, states));
 		}
+		else if (std::strcmp(key, "callout_per_team_global_cooldown") == 0)
+		{
+			SetCalloutPerTeamGlobalCooldown(ReadFloatClamped(value, 5.0f, 900.0f, 10.0f, states));
+		}
+		else if (std::strcmp(key, "callout_per_bot_cooldown") == 0)
+		{
+			SetCalloutPerBotCooldown(ReadFloatClamped(value, 10.0f, 3000.0f, 30.0f, states));
+		}
+		else if (std::strcmp(key, "callout_per_enemy_cooldown") == 0)
+		{
+			SetCalloutPerEnemyCooldown(ReadFloatClamped(value, 1.0f, 900.0f, 15.0f, states));
+		}
 		else
 		{
 			smutils->LogError(myself, "[MOD SETTINGS] Unknown Key Value pair (\"%s\"    \"%s\") at line %i col %i", key, value, states->line, states->col);

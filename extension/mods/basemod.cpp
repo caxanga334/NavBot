@@ -121,6 +121,8 @@ void CBaseMod::OnMapStart()
 			sbm->Reset();
 		}
 	}
+
+	ICombat::ResetSharedCalloutData();
 }
 
 CBaseBot* CBaseMod::AllocateBot(edict_t* edict)
@@ -146,6 +148,8 @@ std::optional<int> CBaseMod::GetPlayerResourceEntity()
 void CBaseMod::OnRoundStart()
 {
 	ISensor::s_npcentities.clear();
+	// wait a little after round restart to send callouts
+	ICombat::SetSharedCalloutCooldownTime(ICombat::POST_ROUND_RESTART_INITIAL_CALLOUT_COOLDOWN);
 
 	for (auto& sbm : m_teamsharedmemory)
 	{
@@ -380,6 +384,11 @@ void CBaseMod::Debug_PrintNPCClassnameList()
 	{
 		META_CONPRINTF("- %s \n", name.c_str());
 	}
+}
+
+void CBaseMod::GetEnemyHumanName(const CKnownEntity* enemy, std::string& friendlyName) const
+{
+	friendlyName = enemy->GetEntityClassname();
 }
 
 #endif // EXT_DEBUG

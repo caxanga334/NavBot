@@ -19,6 +19,7 @@ class CNavMesh;
 class CBaseBot;
 class ExtModLoader;
 class CConCommandArgs;
+class CKnownThreat;
 
 // Base game mod class
 class CBaseMod : public CEventListenerHelper
@@ -194,6 +195,13 @@ public:
 	 * @return True if yes, false if no.
 	 */
 	virtual bool ShouldPatrolArea(const CNavArea* area, int teamIndex) const { return true; }
+	/**
+	 * @brief Gets a human friendly name for an enemy entity. Used by bots when calling out enemy positions.
+	 * Giving an empty string aborts the callout.
+	 * @param[in] enemy Enemy to get the human friendly name of.
+	 * @param[out] friendlyName Human friendly name output. 
+	 */
+	virtual void GetEnemyHumanName(const CKnownEntity* enemy, std::string& friendlyName) const;
 
 protected:
 	std::unique_ptr<CModSettings> m_modsettings;

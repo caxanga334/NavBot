@@ -14,7 +14,8 @@ public:
 	ICombat(CBaseBot* bot);
 	~ICombat() override;
 
-	static constexpr float CALLOUT_COOLDOWN = 10.0f;
+	static constexpr float POST_ROUND_RESTART_INITIAL_CALLOUT_COOLDOWN = 15.0f;
+	static constexpr int CALLOUT_ENEMIES_MIN_TEAMWORK_SKILL = 25;
 	static constexpr float LOOK_AROUND_BASE_DURATION = 1.5f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MIN = 3.0f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MAX = 7.0f;
@@ -196,6 +197,21 @@ public:
 	 * @return True if clear, false if friendly fire may happen.
 	 */
 	bool IsBlastTargetClearOfAllies(const Vector& target, const float radius) const;
+	// Reset shared callout data
+	static void ResetSharedCalloutData()
+	{
+		for (auto& timer : ICombat::s_globalCalloutCooldownTimer)
+		{
+			timer.Invalidate();
+		}
+	}
+	static void SetSharedCalloutCooldownTime(const float time)
+	{
+		for (auto& timer : ICombat::s_globalCalloutCooldownTimer)
+		{
+			timer.Start(time);
+		}
+	}
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -353,14 +369,6 @@ protected:
 	virtual void SendCalloutOfTreat(const CKnownEntity* threat);
 	// gets the callout cooldown timer
 	CountdownTimer& GetCalloutTimer() { return m_calloutTimer; }
-	/**
-	 * @brief Returns the enemy name to be sent in chat for callouts.
-	 * 
-	 * This function must return a valid string. NULL is NOT allowed.
-	 * @param enemy Enemy to get the name from
-	 * @return Enemy name string.
-	 */
-	virtual const char* GetEnemyName(const CKnownEntity* enemy) const;
 	// Sets the last reported place name index.
 	void SetLastReportedPlace(unsigned int place) { m_lastPlace = place; }
 	// Timer for danger scans.
@@ -415,6 +423,18 @@ protected:
 	 * @brief Called after ~10 seconds have passed since the last threat was visible.
 	 */
 	virtual void OnTenSecondsSinceThreatVisible();
+	// Gets the per team callout cooldown timer
+	static CountdownTimer& GetTeamCalloutGlobalTimer(std::size_t teamIndex)
+	{
+		if (teamIndex >= s_globalCalloutCooldownTimer.size())
+		{
+			return s_globalCalloutCooldownTimer[0];
+		}
+
+		return s_globalCalloutCooldownTimer[teamIndex];
+	}
+	bool IsEnemyInCalloutCooldown(CBaseEntity* enemy) const;
+	void StartPerEnemyCalloutCooldown(CBaseEntity* enemy, const float time);
 private:
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;
@@ -444,6 +464,7 @@ private:
 	bool m_shouldReloadPostCombat;
 	unsigned int m_lastPlace;
 	CHandle<CBaseEntity> m_lastDangerEntity; // last selected danger entity.
+	std::unordered_map<CBaseEntity*, CountdownTimer> m_calloutperentitycooldown;
 
 	IDecisionQuery::DesiredAimSpot SelectClearAimSpot(const bool allowheadshots) const;
 
@@ -455,6 +476,9 @@ private:
 	void DangerScanUpdate(); // runs danger scan logic
 	void UpdateScopeState();
 	void UpdateMarkAreasAsCleared(const CKnownEntity* threat);
+
+	/* Callout shared */
+	static inline std::array<CountdownTimer, MAX_TEAMS> s_globalCalloutCooldownTimer{};
 };
 
 namespace combatutils

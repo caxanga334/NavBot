@@ -1,7 +1,5 @@
 #include NAVBOT_PCH_FILE
-#include <string_view>
-#include <extension.h>
-#include <mods/modhelpers.h>
+#include <mods/basemod.h>
 #include <navmesh/nav_mesh.h>
 #include <bot/basebot.h>
 #include <bot/bot_shared_utils.h>
@@ -24,6 +22,7 @@ ICombat::ICombat(CBaseBot* bot) :
 	m_shouldReloadPostCombat = false;
 	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_combatData.Clear();
+	m_calloutperentitycooldown.reserve(64);
 }
 
 ICombat::~ICombat()
@@ -67,6 +66,7 @@ void ICombat::Reset()
 	m_lookAroundTimer.Start(LOOK_AROUND_TIMER_BASE_MAX);
 	m_combatData.Clear();
 	m_lastDangerEntity.Term();
+	m_calloutperentitycooldown.clear();
 }
 
 void ICombat::Update()
@@ -778,6 +778,12 @@ bool ICombat::CanUseSecondaryAbilitities() const
 
 bool ICombat::CanCalloutThreat(const CKnownEntity* threat) const
 {
+	// Don't callout enemies on FFA
+	if (!extmanager->GetMod()->IsTeamBasedGame())
+	{
+		return false;
+	}
+
 	// Don't spam callouts
 	if (!m_calloutTimer.IsElapsed())
 	{
@@ -787,7 +793,21 @@ bool ICombat::CanCalloutThreat(const CKnownEntity* threat) const
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	// This one doesn't like working with their team
-	if (bot->GetDifficultyProfile()->GetTeamwork() < 25)
+	if (bot->GetDifficultyProfile()->GetTeamwork() < ICombat::CALLOUT_ENEMIES_MIN_TEAMWORK_SKILL)
+	{
+		return false;
+	}
+
+	CountdownTimer& teamTimer = ICombat::GetTeamCalloutGlobalTimer(static_cast<std::size_t>(bot->GetCurrentTeamIndex()));
+
+	// Check the per team global timer
+	if (!teamTimer.IsElapsed())
+	{
+		return false;
+	}
+
+	// This specific enemy was reported recently
+	if (IsEnemyInCalloutCooldown(threat->GetEntity()))
 	{
 		return false;
 	}
@@ -825,7 +845,8 @@ void ICombat::TryToCalloutThreat(const CKnownEntity* threat)
 
 void ICombat::SendCalloutOfTreat(const CKnownEntity* threat)
 {
-	m_calloutTimer.Start(CALLOUT_COOLDOWN);
+	const CModSettings* settings = extmanager->GetMod()->GetModSettings();
+	m_calloutTimer.Start(settings->GetCalloutPerBotCooldown());
 	// CanCalloutThreat already validates the current area (not NULL and has a name assigned to it)
 	const CNavArea* area = threat->GetLastKnownArea();
 	auto placename = TheNavMesh->GetPlaceDisplayName(area->GetPlace());
@@ -835,23 +856,25 @@ void ICombat::SendCalloutOfTreat(const CKnownEntity* threat)
 		SetLastReportedPlace(static_cast<unsigned int>(area->GetPlace()));
 		CBaseBot* bot = GetBot<CBaseBot>();
 		char message[256];
-		const char* name = GetEnemyName(threat);
+		std::string name;
+		extmanager->GetMod()->GetEnemyHumanName(threat, name);
 
-		ke::SafeSprintf(message, sizeof(message), "Enemy %s spotted at %s!", name, placename->c_str());
-		bot->SendTeamChatMessage(message);
-
-		if (bot->IsDebugging(BOTDEBUG_COMBAT))
+		if (!name.empty())
 		{
-			bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: SENDING CALLOUT OF THREAT %s! NAV AREA #%u (%s)\n",
-				bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), area->GetID(), placename->c_str());
+			CountdownTimer& teamTimer = ICombat::GetTeamCalloutGlobalTimer(static_cast<std::size_t>(GetBot()->GetCurrentTeamIndex()));
+			teamTimer.Start(settings->GetCalloutPerTeamGlobalCooldown());
+			StartPerEnemyCalloutCooldown(threat->GetEntity(), settings->GetCalloutPerEnemyCooldown());
+
+			ke::SafeSprintf(message, sizeof(message), "Enemy %s spotted at %s!", name.c_str(), placename->c_str());
+			bot->SendTeamChatMessage(message);
+
+			if (bot->IsDebugging(BOTDEBUG_COMBAT))
+			{
+				bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: SENDING CALLOUT OF THREAT %s! NAV AREA #%u (%s)\n",
+					bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), area->GetID(), placename->c_str());
+			}
 		}
 	}
-}
-
-const char* ICombat::GetEnemyName(const CKnownEntity* enemy) const
-{
-	// classname by default, convenient because the player's entity classname is "player", so it's becomes "Enemy player ..."
-	return enemy->GetEntityClassname().c_str();
 }
 
 void ICombat::UpdateLookingAround()
@@ -1008,6 +1031,38 @@ void ICombat::OnTenSecondsSinceThreatVisible()
 
 		SetShouldReloadPostCombat(false);
 	}
+}
+
+bool ICombat::IsEnemyInCalloutCooldown(CBaseEntity* enemy) const
+{
+	auto it = m_calloutperentitycooldown.find(enemy);
+
+	if (it != m_calloutperentitycooldown.end())
+	{
+		if (it->second.IsElapsed())
+		{
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+void ICombat::StartPerEnemyCalloutCooldown(CBaseEntity* enemy, const float time)
+{
+	auto it = m_calloutperentitycooldown.find(enemy);
+
+	if (it != m_calloutperentitycooldown.end())
+	{
+		it->second.Start(time);
+		return;
+	}
+
+	CountdownTimer timer;
+	timer.Start(time);
+	m_calloutperentitycooldown.try_emplace(enemy, timer);
 }
 
 IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheadshots) const
