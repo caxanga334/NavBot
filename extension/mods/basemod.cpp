@@ -374,6 +374,11 @@ void CBaseMod::RemoveNPCClassnameFromList(const char* classname)
 	}
 }
 
+void CBaseMod::GetEnemyHumanName(const CKnownEntity* enemy, std::string& friendlyName) const
+{
+	friendlyName = enemy->GetEntityClassname();
+}
+
 #ifdef EXT_DEBUG
 
 void CBaseMod::Debug_PrintNPCClassnameList()
@@ -384,11 +389,6 @@ void CBaseMod::Debug_PrintNPCClassnameList()
 	{
 		META_CONPRINTF("- %s \n", name.c_str());
 	}
-}
-
-void CBaseMod::GetEnemyHumanName(const CKnownEntity* enemy, std::string& friendlyName) const
-{
-	friendlyName = enemy->GetEntityClassname();
 }
 
 #endif // EXT_DEBUG
