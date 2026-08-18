@@ -1568,8 +1568,12 @@ private:
 	void ParseGlobalPlaceDatabase(NavPlaceDatabaseLoader& loader);
 	void ParseModPlaceDatabase(NavPlaceDatabaseLoader& loader);
 	void ParseMapPlaceDatabase(NavPlaceDatabaseLoader& loader);
+
+public:
 	size_t GetPlaceCount() const { return m_placeMap.size(); }
 	const std::unordered_map<Place, std::pair<std::string, std::string>>& GetPlaces() const { return m_placeMap; }
+
+private:
 
 	//----------------------------------------------------------------------------------
 	// Edit mode

@@ -122,6 +122,27 @@ methodmap NavBotNavMesh
 	 * @param quicksave		If true, enables quicksave. Recommended false for production nav meshes.
 	 */
 	public static native void Analyze(const bool quicksave = false);
+	/**
+	 * Gets the number of registered places in the nav mesh.
+	 * 
+	 * @return				Number of registered places.
+	 */
+	public static native int GetPlaceCount();
+	/**
+	 * Searches for a place index by name. (The internal name)
+	 * 
+	 * @param name			Place name to search.
+	 * @return				Place index, 0 if not found.
+	 */
+	public static native int FindPlaceIndexByName(const char[] name);
+	/**
+	 * Gets all places. The places are written to a KeyValues object.
+	 * A "NavPlaces" subkey is added to the KV and the places are written to this subkey.
+	 * The key name is the place internal name and the value is the human readable name.
+	 * 
+	 * @param kv			Handle to a KeyValues.
+	 */
+	public static native void GetPlaces(KeyValues kv);
 }
 
 #include "nav_collector.inc"

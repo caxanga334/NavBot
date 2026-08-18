@@ -244,6 +244,9 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavMesh.AddWalkableSeed");
 	MarkNativeAsOptional("NavBotNavMesh.FindActiveNavAreaForPlayer");
 	MarkNativeAsOptional("NavBotNavMesh.Analyze");
+	MarkNativeAsOptional("NavBotNavMesh.GetPlaceCount");
+	MarkNativeAsOptional("NavBotNavMesh.FindPlaceIndexByName");
+	MarkNativeAsOptional("NavBotNavMesh.GetPlaces");
 
 	/* Nav Area Vector */
 	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");

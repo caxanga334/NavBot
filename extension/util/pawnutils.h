@@ -213,6 +213,13 @@ namespace pawnutils
 		context->LocalToStringNULL(params[index], &str);
 		return str;
 	}
+	// Reads a string parameter. Cannot be NULL_STRING.
+	inline char* ReadString(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index)
+	{
+		char* str = nullptr;
+		context->LocalToString(params[index], &str);
+		return str;
+	}
 	// Gets the mod interface pointer, returns NULL if the type doesn't match.
 	template <typename T>
 	inline T* GetModInterfacePointerOfType(Mods::ModType type)

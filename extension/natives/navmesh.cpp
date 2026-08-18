@@ -265,6 +265,51 @@ static cell_t Native_NavMeshAnalyze(IPluginContext* context, const cell_t* param
 	return 0;
 }
 
+static cell_t Native_NavMeshGetPlaceCount(IPluginContext* context, const cell_t* params)
+{
+	std::size_t c = TheNavMesh->GetPlaceCount();
+	return static_cast<cell_t>(c);
+}
+
+static cell_t Native_NavMeshFindPlaceIndexByName(IPluginContext* context, const cell_t* params)
+{
+	char* name = pawnutils::ReadString(context, params, 1);
+
+	if (!name || name[0] == '\0')
+	{
+		context->ReportError("Bad string passed!");
+		return 0;
+	}
+
+	return static_cast<cell_t>(TheNavMesh->GetPlaceFromName(name));
+}
+
+static cell_t Native_NavMeshGetPlaces(IPluginContext* context, const cell_t* params)
+{
+	SourceMod::Handle_t hdl = static_cast<SourceMod::Handle_t>(params[1]);
+	SourceMod::HandleError err;
+	KeyValues* kv = smutils->ReadKeyValuesHandle(hdl, &err, false);
+
+	if (kv == nullptr)
+	{
+		context->ReportError("Invalid KeyValues handle %x (error: %d)", params[1], static_cast<int>(err));
+		return 0;
+	}
+
+	KeyValues* places = new KeyValues("NavPlaces");
+	auto& map = TheNavMesh->GetPlaces();
+
+	for (auto& [key, pair] : map)
+	{
+		auto& [internalname, humanname] = pair;
+
+		places->SetString(internalname.c_str(), humanname.c_str());
+	}
+
+	kv->AddSubKey(places);
+	return 0;
+}
+
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
@@ -285,6 +330,9 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.AddWalkableSeed", Native_NavMeshAddWalkableSeed},
 		{"NavBotNavMesh.FindActiveNavAreaForPlayer", Native_FindActiveNavAreaForPlayer},
 		{"NavBotNavMesh.Analyze", Native_NavMeshAnalyze},
+		{"NavBotNavMesh.GetPlaceCount", Native_NavMeshGetPlaceCount},
+		{"NavBotNavMesh.FindPlaceIndexByName", Native_NavMeshFindPlaceIndexByName},
+		{"NavBotNavMesh.GetPlaces", Native_NavMeshGetPlaces},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
