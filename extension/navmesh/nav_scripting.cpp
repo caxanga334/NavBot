@@ -100,7 +100,7 @@ void navscripting::EntityLink::LinkToEntity(CBaseEntity* entity)
 	else
 	{
 		int ref = gamehelpers->EntityToBCompatRef(entity);
-		Warning("[NAVBOT]: navscripting::EntityLink::LinkToEntity -- Failed to get classname for entity #%i\n", ref);
+		smutils->LogError(myself, "navscripting::EntityLink::LinkToEntity -- Failed to get classname for entity #%i\n", ref);
 	}
 
 	const char* targetname = entityprops::GetEntityTargetname(entity);
@@ -108,6 +108,10 @@ void navscripting::EntityLink::LinkToEntity(CBaseEntity* entity)
 	if (targetname && targetname[0] != '\0')
 	{
 		m_targetname.assign(targetname);
+	}
+	else
+	{
+		m_targetname.clear();
 	}
 
 	m_position = UtilHelpers::getWorldSpaceCenter(entity);
