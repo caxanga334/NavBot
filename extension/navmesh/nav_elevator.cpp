@@ -589,14 +589,37 @@ void CNavElevator::ElevatorEntity::SearchForEntity(const bool noerror)
 
 	if (!this->targetname.empty())
 	{
-		int ref = UtilHelpers::FindNamedEntityByClassname(INVALID_EHANDLE_INDEX, this->targetname.c_str(), this->classname.c_str());
-		CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(ref);
-		this->handle = pEntity;
+		const Vector& start = this->position;
+		CBaseEntity* nearest = nullptr;
+		float best = std::numeric_limits<float>::max();
+		auto func = [&nearest, &best, &start](int index, CBaseEntity* entity) {
+
+			if (entity)
+			{
+				Vector end = UtilHelpers::getWorldSpaceCenter(entity);
+				float distance = (end - start).Length();
+
+				if (distance < best)
+				{
+					best = distance;
+					nearest = entity;
+				}
+			}
+
+			return true;
+		};
+
+		UtilHelpers::ForEachNamedEntityOfClassname(this->classname.c_str(), this->targetname.c_str(), func);
+
+		if (nearest)
+		{
+			this->handle = nearest;
+		}
 	}
 	else
 	{
 		CBaseEntity* nearest = nullptr;
-		float best = FLT_MAX;
+		float best = std::numeric_limits<float>::max();
 		const Vector& start = this->position;
 		auto func = [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
 			if (entity != nullptr)

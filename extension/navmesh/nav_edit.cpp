@@ -5358,6 +5358,25 @@ CON_COMMAND_F(sm_nav_area_print_positions, "Prints the coordinates of nav areas.
 	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
 }
 
+CON_COMMAND_F(sm_nav_select_oob_areas, "Selects out of bounds nav areas.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	TheNavMesh->ClearSelectedSet();
+	TheNavMesh->SetMarkedArea(nullptr);
+
+	auto func = [](CNavArea* area) {
+
+		if (trace::pointoutisdeworld(area->GetCenter()))
+		{
+			TheNavMesh->AddToSelectedSet(area);
+		}
+
+		return true;
+	};
+
+	CNavMesh::ForAllAreas(func);
+	META_CONPRINTF("Selected %i out of bounds areas. \n", TheNavMesh->GetSelectedSet().Count());
+}
+
 void CNavMesh::RegisterCommands()
 {
 	// Call the virtual one for derived classes
