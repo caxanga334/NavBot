@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <memory>
 #include <string>
+#include <string_view>
 #include <utility>
 #include <functional>
 
@@ -189,9 +190,9 @@ class AITaskManager : public IEventListener, public IDecisionQuery
 {
 public:
 	AITaskManager(AITask<BotClass>* initialTask);
-	virtual ~AITaskManager();
+	~AITaskManager() override;
 
-	virtual std::vector<IEventListener*>* GetListenerVector();
+	std::vector<IEventListener*>* GetListenerVector() override;
 
 	bool IsRunningTasks() const { return m_task != nullptr; }
 
@@ -474,7 +475,7 @@ class AITask : public IEventListener, public IDecisionQuery
 {
 public:
 	AITask();
-	virtual ~AITask();
+	~AITask() override;
 
 	BotClass* GetBot() const { return m_bot; }
 
@@ -499,7 +500,7 @@ public:
 	 * @param bot Bot performing this task
 	 * @param nextTask Task that will replace this or NULL if none
 	*/
-	virtual void OnTaskEnd(BotClass* bot, AITask<BotClass>* nextTask) { return; }
+	virtual void OnTaskEnd(BotClass* bot, AITask<BotClass>* nextTask) {}
 	/**
 	 * @brief Called when pausing this task for another task
 	 * @param bot Bot performing this task
@@ -945,18 +946,43 @@ private:
 	{
 		if (m_nextTask == nullptr)
 		{
-			return nullptr;
+			m_listener.clear();
+
+			// See if any of the paused tasks on my stack has a next task set, if they do, pass that task to the loop
+			for (AITask<BotClass>* task = GetTaskBelowMe(); task != nullptr; task = task->GetTaskBelowMe())
+			{
+				if (task->GetNextTask() != nullptr)
+				{
+					m_listener.push_back(task->GetNextTask());
+				}
+			}
+
+			if (m_listener.empty())
+			{
+				return nullptr;
+			}
+
+			return &m_listener;
 		}
 
 		// Next task pointers might change so always refresh the list before sending
 		m_listener.clear();
 		m_listener.push_back(m_nextTask);
 
+		// Also send the event to any paused tasks on my stack
+		for (AITask<BotClass>* task = GetTaskBelowMe(); task != nullptr; task = task->GetTaskBelowMe())
+		{
+			if (task->GetNextTask() != nullptr)
+			{
+				m_listener.push_back(task->GetNextTask());
+			}
+		}
+
 		return &m_listener;
 	}
 
 	// If any task below me is done or switching to another task, then I am obsolete.
-	bool IsObsolete()
+	bool IsObsolete() const
 	{
 		for (AITask<BotClass>* task = GetTaskBelowMe(); task != nullptr; task = task->GetTaskBelowMe())
 		{
@@ -1016,7 +1042,7 @@ private:
 #ifdef EXT_DEBUG
 			if (m_pendingEventResult.GetPriority() == PRIORITY_MANDATORY)
 			{
-				DevWarning("[NAVBOT] %s::UpdatePendingEventResult PRIORITY_MANDATORY COLLISION! \n", GetName());
+				META_CONPRINTF("[NAVBOT] %s::UpdatePendingEventResult PRIORITY_MANDATORY COLLISION! \n", GetName());
 			}
 #endif // EXT_DEBUG
 
@@ -1244,17 +1270,11 @@ inline AITask<BotClass>::~AITask()
 		m_bottomTask->m_topTask = nullptr;
 	}
 
-	if (m_topTask)
-	{
-		// Any task above me is also going away
-		delete m_topTask;
-	}
+	// Any task above me is also going away
+	delete m_topTask;
 
 	// replacement task was not used, delete it
-	if (m_replacementNextTask)
-	{
-		delete m_replacementNextTask;
-	}
+	delete m_replacementNextTask;
 
 	m_pendingEventResult.DiscardResult();
 	m_listener.clear();
