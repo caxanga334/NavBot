@@ -30,6 +30,8 @@ public:
 
 	TaskEventResponseResult<BT> OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason) override;
 	TaskEventResponseResult<BT> OnMoveToSuccess(BT* bot, CPath* path) override;
+	TaskEventResponseResult<BT> OnStuck(BT* bot) override;
+	TaskEventResponseResult<BT> OnUnstuck(BT* bot) override;
 
 	const char* GetName() const override { return "DebugMoveToOrigin"; }
 
@@ -66,7 +68,7 @@ inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMo
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures!");
 	}
 
-	return AITask<BT>::TryContinue();
+	return AITask<BT>::TryToMaintain(PRIORITY_HIGH);
 }
 
 template<typename BT, typename CT>
@@ -74,6 +76,18 @@ inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnMo
 {
 	bot->GetMovementInterface()->DoCounterStrafe();
 	return AITask<BT>::TryDone(PRIORITY_HIGH, "Goal reached");
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnStuck(BT* bot)
+{
+	return AITask<BT>::TryToMaintain(PRIORITY_HIGH);
+}
+
+template<typename BT, typename CT>
+inline TaskEventResponseResult<BT> CBotSharedDebugMoveToOriginTask<BT, CT>::OnUnstuck(BT* bot)
+{
+	return AITask<BT>::TryToMaintain(PRIORITY_HIGH);
 }
 
 #endif // !NAVBOT_BOT_SHARED_DEBUG_MOVE_TO_ORIGIN_TASK_H_

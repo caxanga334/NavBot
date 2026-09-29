@@ -477,9 +477,14 @@ public:
 	AITask();
 	~AITask() override;
 
+	/**
+	 * @brief Gets the bot running this task. Will be NULL if called before the task has started.
+	 * @return Bot pointer.
+	 */
 	BotClass* GetBot() const { return m_bot; }
-
+	// Returns true if the task has started.
 	bool HasStarted() const { return m_hasStarted; }
+	// Returns true if the task is paused.
 	bool IsPaused() const { return m_isPaused; }
 
 	/**
@@ -587,6 +592,12 @@ public:
 	 */
 	[[nodiscard]] TaskEventResponseResult<BotClass> TryToMaintain(EventResultPriorityType priority = PRIORITY_DONT_CARE) const;
 
+	/*
+	* Event functions. Override these to respond to an event.
+	* Defaults to TryContinue which allows events to be passed to other tasks.
+	* Any other result will block the propagation.
+	*/
+
 	virtual TaskEventResponseResult<BotClass> OnDebugMoveToCommand(BotClass* bot, const Vector& moveTo) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnNavAreaChanged(BotClass* bot, CNavArea* oldArea, CNavArea* newArea) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) { return TryContinue(); }
@@ -626,9 +637,13 @@ public:
 	*/
 	virtual AITask<BotClass>* InitialNextTask(BotClass* bot) { return nullptr; }
 
+	// Gets the previous task in the list.
 	AITask<BotClass>* GetPreviousTask() const { return m_prevTask; }
+	// Gets the next task in the list.
 	AITask<BotClass>* GetNextTask() const { return m_nextTask; }
+	// Gets the task above me in the stack.
 	AITask<BotClass>* GetTaskAboveMe() const { return m_topTask; }
+	// Gets the task below me in the stack.
 	AITask<BotClass>* GetTaskBelowMe() const { return m_bottomTask; }
 
 protected:
@@ -661,6 +676,9 @@ protected:
 		delete newTask; // reject it
 	}
 
+	// Returns true if this task or another task from the stack gave an answer to an event.
+	bool HasAnsweredEvent() const { return m_hasAnsweredEvent; }
+
 private:
 	friend class AITaskManager<BotClass>;
 	AITaskManager<BotClass>* m_manager;
@@ -674,10 +692,14 @@ private:
 	mutable TaskEventResponseResult<BotClass> m_pendingEventResult;
 	bool m_hasStarted;
 	bool m_isPaused;
+	bool m_hasAnsweredEvent; // keeps track if this or any task from the stack has answered the current event.
 
 #ifdef EXT_DEBUG
 	std::string m_debugName;
 #endif
+
+	// Sets if this task or another from the stack has given an answer to the current event being propagated.
+	void SetEventAnswerState(bool state) { m_hasAnsweredEvent = state; }
 
 	// Macros to help with repetitive code for event propagation between tasks
 
@@ -689,6 +711,7 @@ private:
 																		\
 	AITask<BotClass>*__task = this;										\
 	TaskEventResponseResult<BotClass> __eventResult;					\
+	this->SetEventAnswerState(false);									\
 																		\
 	while (__task != nullptr)											\
 	{																	\
@@ -722,6 +745,7 @@ private:
 																		\
 																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
+		this->SetEventAnswerState(true);								\
 	}																	\
 																		\
 	IEventListener::EFUNC();											\
@@ -734,6 +758,7 @@ private:
 																		\
 	AITask<BotClass>*__task = this;										\
 	TaskEventResponseResult<BotClass> __eventResult;					\
+	this->SetEventAnswerState(false);									\
 																		\
 	while (__task != nullptr)											\
 	{																	\
@@ -765,6 +790,7 @@ private:
 		}																\
 																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
+		this->SetEventAnswerState(true);								\
 	}																	\
 																		\
 	IEventListener::EFUNC(ARG1);										\
@@ -777,6 +803,7 @@ private:
 																		\
 	AITask<BotClass>*__task = this;										\
 	TaskEventResponseResult<BotClass> __eventResult;					\
+	this->SetEventAnswerState(false);									\
 																		\
 	while (__task != nullptr)											\
 	{																	\
@@ -820,6 +847,7 @@ private:
 																		\
 	AITask<BotClass>*__task = this;										\
 	TaskEventResponseResult<BotClass> __eventResult;					\
+	this->SetEventAnswerState(false);									\
 																		\
 	while (__task != nullptr)											\
 	{																	\
@@ -851,6 +879,7 @@ private:
 		}																\
 																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
+		this->SetEventAnswerState(true);								\
 	}																	\
 																		\
 	IEventListener::EFUNC(ARG1, ARG2, ARG3);							\
@@ -863,6 +892,7 @@ private:
 																		\
 	AITask<BotClass>*__task = this;										\
 	TaskEventResponseResult<BotClass> __eventResult;					\
+	this->SetEventAnswerState(false);									\
 																		\
 	while (__task != nullptr)											\
 	{																	\
@@ -894,6 +924,7 @@ private:
 		}																\
 																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
+		this->SetEventAnswerState(true);								\
 	}																	\
 																		\
 	IEventListener::EFUNC(ARG1, ARG2, ARG3, ARG4);						\
@@ -906,6 +937,7 @@ private:
 																		\
 	AITask<BotClass>*__task = this;										\
 	TaskEventResponseResult<BotClass> __eventResult;					\
+	this->SetEventAnswerState(false);									\
 																		\
 	while (__task != nullptr)											\
 	{																	\
@@ -937,6 +969,7 @@ private:
 		}																\
 																		\
 		__task->UpdatePendingEventResult(__eventResult);				\
+		this->SetEventAnswerState(true);								\
 	}																	\
 																		\
 	IEventListener::EFUNC(ARG1, ARG2, ARG3, ARG4, ARG5);				\
@@ -946,6 +979,13 @@ private:
 	{
 		if (m_nextTask == nullptr)
 		{
+			// Either this or another task from the stack has given an answer to the current event.
+			// Stop the propagation to avoid tasks from other stack from giving a response.
+			if (HasAnsweredEvent())
+			{
+				return nullptr;
+			}
+
 			m_listener.clear();
 
 			// See if any of the paused tasks on my stack has a next task set, if they do, pass that task to the loop
@@ -969,12 +1009,16 @@ private:
 		m_listener.clear();
 		m_listener.push_back(m_nextTask);
 
-		// Also send the event to any paused tasks on my stack
-		for (AITask<BotClass>* task = GetTaskBelowMe(); task != nullptr; task = task->GetTaskBelowMe())
+		// If neither this or other tasks from the stack gave an answer, allow it to propgate to any linked tasks from the stack.
+		if (!HasAnsweredEvent())
 		{
-			if (task->GetNextTask() != nullptr)
+			// Also send the event to any paused tasks on my stack
+			for (AITask<BotClass>* task = GetTaskBelowMe(); task != nullptr; task = task->GetTaskBelowMe())
 			{
-				m_listener.push_back(task->GetNextTask());
+				if (task->GetNextTask() != nullptr)
+				{
+					m_listener.push_back(task->GetNextTask());
+				}
 			}
 		}
 
@@ -1241,6 +1285,7 @@ inline AITask<BotClass>::AITask() : m_pendingEventResult(PRIORITY_IGNORED, TASK_
 	m_bot = nullptr;
 	m_hasStarted = false;
 	m_isPaused = false;
+	m_hasAnsweredEvent = false;
 	m_listener.reserve(2);
 }
 
