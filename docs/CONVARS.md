@@ -25,7 +25,9 @@ List of console variables for NavBot.
 
 - [Team Fortress 2]
 - [Day of Defeat: Source]
+- [Zombie Panic! Source]
 
 <!-- Links -->
 [Team Fortress 2]: game_docs/TF2_CONVARS.md
 [Day of Defeat: Source]: game_docs/DODS_CONVARS.md
+[Zombie Panic! Source]: game_docs/ZPS_CONVARS.md

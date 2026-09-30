@@ -1,6 +1,9 @@
 #ifndef __NAVBOT_MOD_ZPS_OBJECTIVE_MANAGER_H_
 #define __NAVBOT_MOD_ZPS_OBJECTIVE_MANAGER_H_
 
+class ConVar;
+class CZombiePanicSourceMod;
+
 class CZPSObjectiveManager
 {
 public:
@@ -38,8 +41,11 @@ public:
 	void SetDetectionRadius(float v) { m_detectionRadius = v; }
 	CBaseEntity* GetGenericTargetEntity() const { return m_genericTarget.Get(); }
 	void SetGenericTargetEntity(CBaseEntity* entity) { m_genericTarget = entity; }
+	bool IsDebugging() const;
 
 private:
+	friend class CZombiePanicSourceMod;
+
 	ObjectiveTypes m_currentObjective;
 	Vector m_moveTo;
 	CHandle<CBaseEntity> m_useButton;
@@ -47,6 +53,9 @@ private:
 	CHandle<CBaseEntity> m_itemUseTarget; // entity to use the item_deliver at
 	CHandle<CBaseEntity> m_genericTarget; // general purpose generic target entity
 	float m_detectionRadius;
+	ConVar* m_cvarDebug;
+
+	void RegisterCommands();
 };
 
 

@@ -8,6 +8,7 @@
 #define _navbot_included
 
 #include <sourcemod>
+#include <sdktools>
 
 #include "navbot/nav_mesh.inc"
 #include "navbot/baseplayer.inc"
@@ -84,6 +85,24 @@ forward void OnNavBotStuck(NavBot bot, int count);
  * Called when the mod interface detects a round restart.
  */
 forward void OnNavBotModRoundRestart();
+
+enum NavBotComputePathFailureReason
+{
+	NAVBOT_COMPUTEPATH_FAILURE_NULL_START_AREA = 0, // Bot last known area is NULL
+	NAVBOT_COMPUTEPATH_FAILURE_INCOMPLETE_PATH, // Pathfinding algorithm could not build a complete path to the destination
+
+	MAX_NAVBOT_COMPUTEPATH_FAILURE_REASONS
+}
+
+/**
+ * Called when a bot's navigator cannot build a complete path to the destination.
+ * 
+ * @param bot			NavBot instance the path is being computed for.
+ * @param goal			World position the bot is trying to path to.
+ * @param adjustedZ		Adjusted Z coordinate of the goal position.
+ * @param reason		Path computation failure reason.
+ */
+forward void OnNavBotComputePathFailed(NavBot bot, const float goal[3], const float adjustedZ, NavBotComputePathFailureReason reason);
 
 /**
  * Called when the bot's navigator detects an obstacle on the bot's path.

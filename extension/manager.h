@@ -232,6 +232,7 @@ public:
 		}
 	}
 	bool SMAPI_OnNavBotObstacleOnPath(const CBaseBot* bot, CBaseEntity* obstacle, const bool hitWorld, const Vector& goal);
+	void SMAPI_OnNavBotComputePathFailed(const CBaseBot* bot, const Vector& goal, const float adjustedZ, bool nullstart);
 #endif // !NO_SOURCEPAWN_API
 
 private:
@@ -250,6 +251,7 @@ private:
 	SourceMod::IForward* m_onbotstuckforward;
 	SourceMod::IForward* m_onmodroundrestart;
 	SourceMod::IForward* m_onbotobstacleonpath;
+	SourceMod::IForward* m_onbotcomputepathfailed;
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use
@@ -265,6 +267,8 @@ private:
 	static inline bool s_fixupbotflags{ false };
 	static inline bool s_usesworkshop{ false };
 	static inline bool s_preferuniquemapnames{ false };
+
+	void SetupForwards();
 };
 
 extern CExtManager* extmanager;

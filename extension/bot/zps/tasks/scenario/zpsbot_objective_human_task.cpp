@@ -80,7 +80,17 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 	{
 	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_MOVETO:
 	{
-		return PauseFor(new CBotSharedGoToPositionTask<CZPSBot, CZPSBotPathCost>(bot, mgr.GetMoveGoal(), "ObjectiveMoveTo"), "Completing MoveTo objective!");
+		const Vector& goal = mgr.GetMoveGoal();
+	
+		if (mgr.IsDebugging() && !CBotSharedGoToPositionTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, goal))
+		{
+			const Vector& pos = bot->GetAbsOrigin();
+			
+			smutils->LogError(myself, "Objective \"MoveTo\" not possible for bot \"%s\" from <%g %g %g> to <%g %g %g>!", 
+				UtilHelpers::textformat::FormatLogPlayer(bot->GetIndex()), pos.x, pos.y, pos.z, goal.x, goal.y, goal.z);
+		}
+		
+		return PauseFor(new CBotSharedGoToPositionTask<CZPSBot, CZPSBotPathCost>(bot, goal, "ObjectiveMoveTo"), "Completing MoveTo objective!");
 	}
 	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_USE_BUTTON:
 	{
@@ -89,6 +99,11 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 		if (entity)
 		{
 			return PauseFor(new CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>(entity), "Completing UseButton objective!");
+		}
+
+		if (mgr.IsDebugging())
+		{
+			smutils->LogError(myself, "Objective \"UseButton\" not possible. NULL entity!");
 		}
 
 		break;
@@ -133,6 +148,11 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 		if (mgr.GetGenericTargetEntity() != nullptr)
 		{
 			return PauseFor(new CBotSharedBreakEntityTask<CZPSBot, CZPSBotPathCost>(mgr.GetGenericTargetEntity()), "Breaking target entity!");
+		}
+
+		if (mgr.IsDebugging())
+		{
+			smutils->LogError(myself, "Objective \"DestroyEntity\" not possible. NULL entity!");
 		}
 
 		break;

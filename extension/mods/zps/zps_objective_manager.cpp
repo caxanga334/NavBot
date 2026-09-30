@@ -24,3 +24,14 @@ void CZPSObjectiveManager::Reset()
 	m_detectionRadius = 512.0f;
 	m_genericTarget.Term();
 }
+
+bool CZPSObjectiveManager::IsDebugging() const
+{
+	return m_cvarDebug->GetBool();
+}
+
+void CZPSObjectiveManager::RegisterCommands()
+{
+	auto& mgr = extmanager->GetServerCommandManager();
+	m_cvarDebug = mgr.RegisterConVar("sm_navbot_zps_objective_debug", "Enables debug logging for objective support.", "0", FCVAR_GAMEDLL);
+}

@@ -266,7 +266,7 @@ class CPathFailCounter
 public:
 	CPathFailCounter();
 
-	// Increases the counter, retursn true if above the limit
+	// Increases the counter, returns true if above the limit
 	bool Increase()
 	{
 		return (++m_count) > m_limit;

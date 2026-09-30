@@ -54,6 +54,7 @@ CExtManager::CExtManager()
 	m_onbotstuckforward = nullptr;
 	m_onmodroundrestart = nullptr;
 	m_onbotobstacleonpath = nullptr;
+	m_onbotcomputepathfailed = nullptr;
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -72,6 +73,7 @@ CExtManager::~CExtManager()
 	forwards->ReleaseForward(m_onbotstuckforward);
 	forwards->ReleaseForward(m_onmodroundrestart);
 	forwards->ReleaseForward(m_onbotobstacleonpath);
+	forwards->ReleaseForward(m_onbotcomputepathfailed);
 #endif // !NO_SOURCEPAWN_API
 
 	// assign NULL to the smart ptr to detele the existing instance
@@ -81,24 +83,7 @@ CExtManager::~CExtManager()
 void CExtManager::OnAllLoaded()
 {
 #ifndef NO_SOURCEPAWN_API
-	m_prebotaddforward = forwards->CreateForward("OnPreNavBotAdd", ET_Event, 0, nullptr);
-	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_prebotupdateforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_onnavmeshloadedforward = forwards->CreateForward("OnNavBotNavMeshLoaded", ET_Ignore, 0, nullptr);
-	m_onnavmeshdestroyedforward = forwards->CreateForward("OnNavBotNavMeshDestroyed", ET_Ignore, 0, nullptr);
-	m_onbotstuckforward = forwards->CreateForward("OnNavBotStuck", ET_Ignore, 2, nullptr, SourceMod::ParamType::Param_Cell, SourceMod::ParamType::Param_Cell);
-	m_onmodroundrestart = forwards->CreateForward("OnNavBotModRoundRestart", ET_Ignore, 0, nullptr);
-
-	constexpr std::array obstacleonpathparams = {
-		SourceMod::ParamType::Param_Cell,
-		SourceMod::ParamType::Param_Cell,
-		SourceMod::ParamType::Param_Cell,
-		SourceMod::ParamType::Param_Array,
-	};
-
-	m_onbotobstacleonpath = forwards->CreateForward("OnNavBotObstacleOnPath", ET_Event, static_cast<unsigned int>(obstacleonpathparams.size()), obstacleonpathparams.data());
+	SetupForwards();
 #endif // !NO_SOURCEPAWN_API
 
 	CDynamicPriorityManager::CreateStandardFactories();
@@ -779,7 +764,7 @@ int CExtManager::AutoComplete_BotNames(const char* partial, char commands[COMMAN
 
 	// skip to start of argument
 	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
+	if (partialArg == nullptr)
 	{
 		return 0;
 	}
@@ -869,29 +854,107 @@ bool CExtManager::SMAPI_OnNavBotObstacleOnPath(const CBaseBot* bot, CBaseEntity*
 
 	return false;
 }
+
+void CExtManager::SMAPI_OnNavBotComputePathFailed(const CBaseBot* bot, const Vector& goal, const float adjustedZ, bool nullstart)
+{
+	if (m_onbotcomputepathfailed->GetFunctionCount() > 0)
+	{
+
+#if SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+		sp::CallArgs args;
+		args.PushCell(bot->GetIndex());
+		cell_t arr[3];
+		pawnutils::VectorToPawnFloatArray(arr, goal);
+		args.PushArray(arr, 3);
+		args.PushFloat(pawnutils::ReturnFloat(adjustedZ));
+
+		if (nullstart)
+		{
+			args.PushCell(0);
+		}
+		else
+		{
+			args.PushCell(1);
+		}
+		m_onbotcomputepathfailed->Execute(args);
+#else
+		m_onbotcomputepathfailed->PushCell(bot->GetIndex());
+		cell_t arr[3];
+		pawnutils::VectorToPawnFloatArray(arr, goal);
+		m_onbotcomputepathfailed->PushArray(arr, 3);
+		m_onbotcomputepathfailed->PushFloat(pawnutils::ReturnFloat(adjustedZ));
+
+		if (nullstart)
+		{
+			m_onbotcomputepathfailed->PushCell(0);
+		}
+		else
+		{
+			m_onbotcomputepathfailed->PushCell(1);
+		}
+		m_onbotcomputepathfailed->Execute();
+#endif // SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+	}
+}
 #endif // !NO_SOURCEPAWN_API
+
+void CExtManager::SetupForwards()
+{
+#ifndef NO_SOURCEPAWN_API
+	m_prebotaddforward = forwards->CreateForward("OnPreNavBotAdd", ET_Event, 0, nullptr);
+	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_prebotupdateforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
+	m_onnavmeshloadedforward = forwards->CreateForward("OnNavBotNavMeshLoaded", ET_Ignore, 0, nullptr);
+	m_onnavmeshdestroyedforward = forwards->CreateForward("OnNavBotNavMeshDestroyed", ET_Ignore, 0, nullptr);
+	m_onbotstuckforward = forwards->CreateForward("OnNavBotStuck", ET_Ignore, 2, nullptr, SourceMod::ParamType::Param_Cell, SourceMod::ParamType::Param_Cell);
+	m_onmodroundrestart = forwards->CreateForward("OnNavBotModRoundRestart", ET_Ignore, 0, nullptr);
+
+	constexpr std::array obstacleonpathparams = {
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Array,
+	};
+
+	m_onbotobstacleonpath = forwards->CreateForward("OnNavBotObstacleOnPath", ET_Event, static_cast<unsigned int>(obstacleonpathparams.size()), obstacleonpathparams.data());
+
+	constexpr std::array computepathfailedparams = {
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Array,
+		SourceMod::ParamType::Param_Float,
+		SourceMod::ParamType::Param_Cell,
+	};
+
+	m_onbotcomputepathfailed = forwards->CreateForward("OnNavBotComputePathFailed", ET_Ignore, static_cast<unsigned int>(computepathfailedparams.size()), computepathfailedparams.data());
+#endif // !NO_SOURCEPAWN_API
+}
 
 CON_COMMAND(sm_navbot_reload_name_list, "Reloads the bot name list")
 {
 	extmanager->LoadBotNames();
 }
 
-static std::string s_debugoptionsnames[] = {
-	{ "STOPALL" },
-	{ "SENSOR" },
-	{ "TASKS" },
-	{ "LOOK" },
-	{ "PATH" },
-	{ "EVENTS" },
-	{ "MOVEMENT" },
-	{ "ERRORS" },
-	{ "MISC" },
-	{ "SQUADS" },
-	{ "COMBAT" }
-};
-
 static int SMNavBotDebugCommand_AutoComplete(const char* partial, char commands[COMMAND_COMPLETION_MAXITEMS][COMMAND_COMPLETION_ITEM_LENGTH])
 {
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array debugoptions = {
+		"STOPALL"sv,
+		"SENSOR"sv,
+		"TASKS"sv,
+		"LOOK"sv,
+		"PATH"sv,
+		"EVENTS"sv,
+		"MOVEMENT"sv,
+		"ERRORS"sv,
+		"MISC"sv,
+		"SQUADS"sv,
+		"COMBAT"sv
+	};
+
+
 	if (V_strlen(partial) >= COMMAND_COMPLETION_ITEM_LENGTH)
 	{
 		return 0;
@@ -902,7 +965,7 @@ static int SMNavBotDebugCommand_AutoComplete(const char* partial, char commands[
 
 	// skip to start of argument
 	char* partialArg = V_strrchr(cmd, ' ');
-	if (partialArg == NULL)
+	if (partialArg == nullptr)
 	{
 		return 0;
 	}
@@ -915,16 +978,16 @@ static int SMNavBotDebugCommand_AutoComplete(const char* partial, char commands[
 
 	int count = 0;
 
-	for (auto& optionname : s_debugoptionsnames)
+	for (auto& option : debugoptions)
 	{
 		if (count >= COMMAND_COMPLETION_MAXITEMS)
 		{
 			break;
 		}
 
-		if (V_strnicmp(optionname.c_str(), partialArg, partialArgLength) == 0)
+		if (V_strnicmp(option.data(), partialArg, partialArgLength) == 0)
 		{
-			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, optionname.c_str());
+			V_snprintf(commands[count++], COMMAND_COMPLETION_ITEM_LENGTH, "%s %s", cmd, option.data());
 		}
 	}
 

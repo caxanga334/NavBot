@@ -14,6 +14,7 @@
 #include <navmesh/nav.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_pathfind.h>
+#include <sourcepawn/spapi_bridge.h>
 
 class CNavArea;
 class CNavLadder;
@@ -214,6 +215,10 @@ public:
 				bot->DebugPrintToConsole(255, 0, 0, "%s COMPUTE PATH ERROR: NULL START AREA! <%g %g %g>\n", bot->GetDebugIdentifier(), start.x, start.y, start.z);
 			}
 
+#ifndef NO_SOURCEPAWN_API
+			navbot::spapi::bridge::OnComputePathFailed(bot, goal, goal.z, true);
+#endif // !NO_SOURCEPAWN_API
+
 			return false;
 		}
 
@@ -245,10 +250,17 @@ public:
 			SetTravelDistance(closestArea->GetTotalCost());
 		}
 
-		if (isDebugging && !pathBuildResult)
+		if (!pathBuildResult)
 		{
-			bot->DebugPrintToConsole(255, 0, 0, "%s COMPUTE PATH: FAILED TO BUILD A FULL PATH TO GOAL FROM <%g %g %g> TO <%g %g %g> (%g) \n", 
-				bot->GetDebugIdentifier(), start.x, start.y, start.z, goal.x, goal.y, goal.z, endPos.z);
+#ifndef NO_SOURCEPAWN_API
+			navbot::spapi::bridge::OnComputePathFailed(bot, goal, endPos.z, false);
+#endif // !NO_SOURCEPAWN_API
+
+			if (isDebugging)
+			{
+				bot->DebugPrintToConsole(255, 0, 0, "%s COMPUTE PATH: FAILED TO BUILD A FULL PATH TO GOAL FROM <%g %g %g> TO <%g %g %g> (%g) \n",
+					bot->GetDebugIdentifier(), start.x, start.y, start.z, goal.x, goal.y, goal.z, endPos.z);
+			}
 		}
 
 		// count the number of areas in the path

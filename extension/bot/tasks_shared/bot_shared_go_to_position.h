@@ -25,6 +25,20 @@ class CBotSharedGoToPositionTask : public AITask<BT>
 {
 public:
 	/**
+	 * @brief Queries if the task is possible.
+	 * @param bot Bot that will run this task.
+	 * @param goal Position the bot will move to.
+	 * @return True if possible (a full path exists, false otherwise).
+	 */
+	static bool IsPossible(BT* bot, const Vector& goal)
+	{
+		CMeshNavigator nav;
+		CT cost(bot);
+
+		return nav.ComputePathToPosition(bot, goal, cost);
+	}
+
+	/**
 	 * @brief Constructor.
 	 * @param bot Bot that will use this task.
 	 * @param goal Position the bot will move to.
@@ -60,8 +74,6 @@ public:
 				m_pathcost.SetRouteType(SAFEST_ROUTE);
 			}
 		}
-
-		m_moveFailures = 0;
 	}
 
 	TaskResult<BT> OnTaskStart(BT* bot, AITask<BT>* pastTask) override;
@@ -87,17 +99,12 @@ private:
 	bool m_attackEnemies;
 	bool m_priority;
 	float m_reachDistance;
-	int m_moveFailures;
+	CPathFailCounter m_failCounter;
 };
 
 template<typename BT, typename CT>
 inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskStart(BT* bot, AITask<BT>* pastTask)
 {
-	if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathcost, 0.0f, true))
-	{
-		return AITask<BT>::Done("Failed to compute path to goal position!");
-	}
-
 	float speed = bot->GetMovementInterface()->GetWalkSpeed();
 	float time = m_nav.GetTravelDistance() / speed;
 
@@ -142,7 +149,14 @@ inline TaskResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnTaskUpdate(BT* bot)
 	if (m_nav.NeedsRepath())
 	{
 		m_nav.StartRepathTimer();
-		m_nav.ComputePathToPosition(bot, m_goal, m_pathcost, 0.0f, true);
+		
+		if (!m_nav.ComputePathToPosition(bot, m_goal, m_pathcost, 0.0f, true))
+		{
+			if (m_failCounter.Increase())
+			{
+				return AITask<BT>::Done("Failed to compute a path to the goal position!");
+			}
+		}
 	}
 
 	m_nav.Update(bot);
@@ -182,7 +196,7 @@ inline TaskEventResponseResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnStuck(B
 	m_nav.Invalidate();
 	m_nav.ForceRepath();
 
-	if (++m_moveFailures > 10)
+	if (m_failCounter.Increase())
 	{
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
 	}
@@ -193,7 +207,7 @@ inline TaskEventResponseResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnStuck(B
 template<typename BT, typename CT>
 inline TaskEventResponseResult<BT> CBotSharedGoToPositionTask<BT, CT>::OnMoveToFailure(BT* bot, CPath* path, IEventListener::MovementFailureType reason)
 {
-	if (++m_moveFailures > 10)
+	if (m_failCounter.Increase())
 	{
 		return AITask<BT>::TryDone(PRIORITY_HIGH, "Too many path failures! Giving up!");
 	}

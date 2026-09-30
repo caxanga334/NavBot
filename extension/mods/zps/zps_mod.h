@@ -54,6 +54,7 @@ public:
 
 protected:
 	CWeaponInfoManager* CreateWeaponInfoManager() const override;
+	void RegisterModCommands() override;
 
 private:
 	CountdownTimer m_roundstarttimer;

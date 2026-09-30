@@ -34,7 +34,8 @@ void CZombiePanicSourceMod::FireGameEvent(IGameEvent* event)
 			OnRoundEnd();
 			return;
 		}
-		else if (V_strcmp(name, "clientsound") == 0)
+
+		if (V_strcmp(name, "clientsound") == 0)
 		{
 			const char* sound = event->GetString("sound");
 
@@ -131,8 +132,6 @@ public:
 			}
 		}
 
-		const char* classname = gamehelpers->GetEntityClassname(entity);
-
 		// ZPS: doors uses DAMAGE_EVENTS_ONLY but they still take damage from attacks
 		if (entprops->HasEntProp(entity, Prop_Data, "m_eDoorState"))
 		{
@@ -172,6 +171,11 @@ IModHelpers* CZombiePanicSourceMod::AllocModHelpers() const
 CWeaponInfoManager* CZombiePanicSourceMod::CreateWeaponInfoManager() const
 {
 	return new CZPSWeaponInfoManager;
+}
+
+void CZombiePanicSourceMod::RegisterModCommands()
+{
+	m_objectiveManager.RegisterCommands();
 }
 
 void CZombiePanicSourceMod::DetectGameMode()

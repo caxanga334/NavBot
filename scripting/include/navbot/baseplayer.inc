@@ -26,6 +26,16 @@ methodmap NavBotBasePlayer
 	{
 		public native get();
 	}
+	// Gets/Sets the player's team.
+	property int TeamNum
+	{
+		public get() { return GetClientTeam(this.Index); }
+		public set(int Team) { ChangeClientTeam(this.Index, Team); }
+	}
+	property bool IsAlive
+	{
+		public get() { return IsPlayerAlive(this.Index); }
+	}
 	/**
 	 * Gets the player's last known nav area.
 	 * This returns an address to a nav area from NavBot's nav mesh.
@@ -54,4 +64,31 @@ methodmap NavBotBasePlayer
 	 * @error               Invalid BasePlayer instance.
 	 */
 	public native void SnapEyeAngles(const float angles[3]);
+	/**
+	 * Gets the player's absolute origin.
+	 * 
+	 * @param origin		Float array to write the player's absolute origin position.
+	 */
+	public void GetAbsOrigin(float origin[3])
+	{
+		GetClientAbsOrigin(this.Index, origin);
+	}
+	/**
+	 * Gets the player's eye angles.
+	 * 
+	 * @param angles		Float array to write the player's eye angles.
+	 */
+	public void GetEyeAngles(float angles[3])
+	{
+		GetClientEyeAngles(this.Index, angles);
+	}
+	/**
+	 * Gets the player's eye position.
+	 * 
+	 * @param eyepos		Float array to write the player's eye position.
+	 */
+	public void GetEyePosition(float eyepos[3])
+	{
+		GetClientEyePosition(this.Index, eyepos);
+	}
 }
