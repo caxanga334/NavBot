@@ -422,42 +422,6 @@ bool botsharedutils::RandomDestinationCollector::ShouldCollect(CNavArea* area)
 	return !area->IsBlocked(NAV_TEAM_ANY);
 }
 
-botsharedutils::IsReachableAreas::IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders, const bool searchLinks, const bool searchElevators) :
-	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), limit, searchLadders, searchLinks, searchElevators, false)
-{
-	m_bot = bot;
-}
-
-bool botsharedutils::IsReachableAreas::ShouldSearch(CNavArea* area)
-{
-	// always search the start area
-	if (IsStartArea(area)) { return true; }
-
-	return m_bot->GetMovementInterface()->IsAreaTraversable(area);
-}
-
-bool botsharedutils::IsReachableAreas::ShouldCollect(CNavArea* area)
-{
-	return m_bot->GetMovementInterface()->IsAreaTraversable(area);
-}
-
-const bool botsharedutils::IsReachableAreas::IsReachable(CNavArea* area, float* cost) const
-{
-	auto node = GetNodeForArea(area);
-
-	if (node)
-	{
-		if (cost)
-		{
-			*cost = node->GetTravelCostFromStart();
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
 botsharedutils::SpreadDangerToNearbyAreas::SpreadDangerToNearbyAreas(CNavArea* start, int teamid, const float travellimit, const float danger, const float maxdanger) :
 	INavAreaCollector<CNavArea>(start, travellimit)
 {
@@ -809,7 +773,7 @@ bool botsharedutils::threat::IsImmediateThreat(CBaseBot* bot, const CKnownEntity
 }
 
 botsharedutils::search::MarkVisibleAreasAsCleared::MarkVisibleAreasAsCleared(CBaseBot* bot) :
-	IsReachableAreas(bot, bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false)
+	IsReachableAreas<CNavArea, CBaseBot>(bot, bot->GetSensorInterface()->GetMaxVisionRange(), true, true, false)
 {
 	m_hasVisibleNeighbor = false;
 	m_sensor = bot->GetSensorInterface();
@@ -878,7 +842,7 @@ void botsharedutils::search::MarkVisibleAreasAsCleared::operator()(CNavArea* con
 }
 
 botsharedutils::SelectReachableUnclearedArea::SelectReachableUnclearedArea(CBaseBot* bot) :
-	IsReachableAreas(bot, 8192.0f)
+	IsReachableAreas<CNavArea, CBaseBot>(bot, 8192.0f)
 {
 	m_teamIndex = bot->GetCurrentTeamIndex();
 	m_enemyTeamIndex = modhelpers->GetOpposingTeamIndex(m_teamIndex);

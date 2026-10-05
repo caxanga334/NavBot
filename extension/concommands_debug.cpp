@@ -2128,7 +2128,7 @@ CON_COMMAND_F(sm_navbot_debug_bot_highlight_reachable_areas, "Highlights areas c
 		return;
 	}
 
-	botsharedutils::IsReachableAreas collector(bot, 1e10f);
+	botsharedutils::IsReachableAreas<CNavArea, CBaseBot> collector(bot, 1e10f);
 	collector.Execute();
 	auto& vec = collector.GetCollectedAreas();
 

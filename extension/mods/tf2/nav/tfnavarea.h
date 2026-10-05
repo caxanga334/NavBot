@@ -190,6 +190,31 @@ public:
 		return true;
 	}
 
+	void InheritAttributes(CNavArea* first, CNavArea* second = nullptr) override
+	{
+		CNavArea::InheritAttributes(first, second);
+
+		if (first && second)
+		{
+			CTFNavArea* tffirst = static_cast<CTFNavArea*>(first);
+			CTFNavArea* tfsecond = static_cast<CTFNavArea*>(second);
+
+			SetTFAttributes(static_cast<CTFNavArea::TFNavAttributes>(tffirst->m_tfattributes | tfsecond->m_tfattributes));
+			SetTFPathAttributes(static_cast<CTFNavArea::TFNavPathAttributes>(tffirst->m_tfpathattributes | tfsecond->m_tfpathattributes));
+			SetMVMAttributes(static_cast<CTFNavArea::MvMNavAttributes>(tffirst->m_mvmattributes | tfsecond->m_mvmattributes));
+			return;
+		}
+
+		if (first)
+		{
+			CTFNavArea* tffirst = static_cast<CTFNavArea*>(first);
+
+			SetTFAttributes(static_cast<CTFNavArea::TFNavAttributes>(tffirst->m_tfattributes));
+			SetTFPathAttributes(static_cast<CTFNavArea::TFNavPathAttributes>(tffirst->m_tfpathattributes));
+			SetMVMAttributes(static_cast<CTFNavArea::MvMNavAttributes>(tffirst->m_mvmattributes));
+		}
+	}
+
 private:
 	int m_tfpathattributes;
 	int m_tfattributes;

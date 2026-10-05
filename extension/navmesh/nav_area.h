@@ -476,6 +476,14 @@ public:
 
 	bool IsVisible( const Vector &eye, Vector *visSpot = NULL ) const;	// return true if area is visible from the given eyepoint, return visible spot
 	/**
+	 * @brief Uses raycast to determine if the area center can be seen from the given position.
+	 * @param eye Position to test visibility to.
+	 * @param zOffset If greater or equal to zero, offset to apply to the area center Z coordinate.
+	 * @param mask Optional trace mask. If zero uses MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE.
+	 * @return True if visible, false otherwise.
+	 */
+	bool IsCenterVisible(const Vector& eye, const float zOffset = -1.0f, unsigned int mask = 0) const;
+	/**
 	 * @brief Checks if another nav area is partially visible from this area.
 	 * @param other Other area to test.
 	 * @param checkPVS If true, a PVS check if performed and the expensive raycast is skipped if both areas are not in PVS.
@@ -762,7 +770,7 @@ public:
 	bool TestStairs( void );									// Test an area for being on stairs
 	virtual bool IsAbleToMergeWith( CNavArea *other ) const;
 
-	virtual void InheritAttributes( CNavArea *first, CNavArea *second = NULL );
+	virtual void InheritAttributes( CNavArea *first, CNavArea *second = nullptr );
 
 	inline bool IsConnectedToBySpecialLink(const CNavArea* other) const
 	{
@@ -1395,7 +1403,7 @@ inline Vector CNavArea::GetCorner( NavCornerType corner ) const
 	}
 }
 
-// Utility macro for implementing Set/Clear/Toggle/WipeAll/Has functions for nav area attributes.
+// Utility macro for implementing Set/Get/Clear/Toggle/WipeAll/Has functions for nav area attributes.
 // VARNAME: Name of the member varaible to read/write
 // ATTRIBTYPE: Attribute type
 // NAME: Function name. Example: FOO Becomes SetFOOAttributes
@@ -1403,6 +1411,10 @@ inline Vector CNavArea::GetCorner( NavCornerType corner ) const
 	inline void Set##NAME##Attributes(ATTRIBTYPE __val)						\
 	{																		\
 		VARNAME |= __val;													\
+	}																		\
+	inline ATTRIBTYPE Get##NAME##Attributes(void)							\
+	{																		\
+		return static_cast<ATTRIBTYPE>(VARNAME);							\
 	}																		\
 	inline void Clear##NAME##Attributes(ATTRIBTYPE __val)					\
 	{																		\

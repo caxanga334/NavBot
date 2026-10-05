@@ -448,6 +448,49 @@ namespace natives::navmesh::collector
 
 		return vechandle;
 	}
+	static cell_t MarkArea(IPluginContext* context, const cell_t* params)
+	{
+		SourceMod::Handle_t handle = params[1];
+		CSourcePawnAreaCollector* collector = nullptr;
+		SourceMod::HandleSecurity security(context->GetIdentity(), myself->GetIdentity());
+
+		if (!pawnutils::ReadHandle("CSourcePawnAreaCollector", context, spmanager->GetNavCollectorHandleType(), handle, &security, &collector))
+		{
+			return 0;
+		}
+
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		collector->MarkArea(area);
+		return 0;
+	}
+	static cell_t IsAreaMarked(IPluginContext* context, const cell_t* params)
+	{
+		SourceMod::Handle_t handle = params[1];
+		CSourcePawnAreaCollector* collector = nullptr;
+		SourceMod::HandleSecurity security(context->GetIdentity(), myself->GetIdentity());
+
+		if (!pawnutils::ReadHandle("CSourcePawnAreaCollector", context, spmanager->GetNavCollectorHandleType(), handle, &security, &collector))
+		{
+			return 0;
+		}
+
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(collector->IsMarked(area));
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -470,6 +513,8 @@ namespace natives::navmesh::collector
 			{"NavBotNavAreaCollector.GetFarthestCollectedArea", GetFarthestCollectedArea},
 			{"NavBotNavAreaCollector.GetNearestCollectedArea", GetNearestCollectedArea},
 			{"NavBotNavAreaCollector.GetCollectedAreas", GetCollectedAreas},
+			{"NavBotNavAreaCollector.MarkArea", MarkArea},
+			{"NavBotNavAreaCollector.IsAreaMarked", IsAreaMarked},
 
 			/* INavSearchNode */
 			{"NavBotNavAreaSearchNode.GetArea", natives::navmesh::searchnodes::GetMe},

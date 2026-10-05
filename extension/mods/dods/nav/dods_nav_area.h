@@ -69,6 +69,27 @@ public:
 
 	void ShowAreaInfo() const override;
 
+	void InheritAttributes(CNavArea* first, CNavArea* second = nullptr) override
+	{
+		CNavArea::InheritAttributes(first, second);
+
+		if (first && second)
+		{
+			CDoDSNavArea* dodfirst = static_cast<CDoDSNavArea*>(first);
+			CDoDSNavArea* dodsecond = static_cast<CDoDSNavArea*>(second);
+
+			SetDoDAttributes(static_cast<CDoDSNavArea::DoDNavAttributes>(dodfirst->m_dodAttributes | dodsecond->m_dodAttributes));
+			return;
+		}
+
+		if (first)
+		{
+			CDoDSNavArea* dodfirst = static_cast<CDoDSNavArea*>(first);
+
+			SetDoDAttributes(static_cast<CDoDSNavArea::DoDNavAttributes>(dodfirst->m_dodAttributes));
+		}
+	}
+
 private:
 	int m_dodAttributes;
 	CHandle<CBaseEntity> m_bombTarget; // bomb target nearest of this nav area

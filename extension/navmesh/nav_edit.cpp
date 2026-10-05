@@ -2784,7 +2784,7 @@ void CNavMesh::CommandNavBeginArea( void )
 		m_anchor = m_editCursorPos;
 	}
 
-	SetMarkedArea( NULL );			// unmark the mark area
+	SetMarkedArea(nullptr);			// unmark the mark area
 	m_markedCorner = NUM_CORNERS;	// clear the corner selection
 }
 
@@ -2793,7 +2793,8 @@ void CNavMesh::CommandNavBeginArea( void )
 void CNavMesh::CommandNavEndArea( void )
 {
 	edict_t* player = UTIL_GetListenServerEnt();
-	if (player == NULL)
+
+	if (!player)
 		return;
 
 	if ( !(IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) || IsEditMode( NORMAL )) )
@@ -2831,9 +2832,9 @@ void CNavMesh::CommandNavEndArea( void )
 		}
 
 		CNavArea *newArea = CreateArea();
-		if (newArea == NULL)
+		if (newArea == nullptr)
 		{
-			Warning( "NavEndArea: Out of memory\n" );
+			smutils->LogError(myself, "NavEndArea: FATAL! Failed to allocate nav area object, out of memory!");
 			PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 			return;
 		}

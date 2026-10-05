@@ -714,7 +714,7 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& boxMin, const Vector& boxMax,
 	Assert( boxMin[2] <= boxMax[2] );
 
 	// FIXME: Surely there's a faster way
-	float tmin = std::numeric_limits<float>::min();
+	float tmin = std::numeric_limits<float>::lowest();
 	float tmax = std::numeric_limits<float>::max();
 
 	for (int i = 0; i < 3; ++i)
@@ -839,7 +839,7 @@ bool FASTCALL IsBoxIntersectingRay( const Vector& boxMin, const Vector& boxMax,
 	Assert( boxMin[2] <= boxMax[2] );
 
 	// FIXME: Surely there's a faster way
-	float tmin = std::numeric_limits<float>::min();
+	float tmin = std::numeric_limits<float>::lowest();
 	float tmax = std::numeric_limits<float>::max();
 
 	for ( int i = 0; i < 3; ++i )

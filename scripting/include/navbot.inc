@@ -290,25 +290,27 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavAreaVector.Size.get");
 
 	/* Nav Area Collector */
-	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");
-	MarkNativeAsOptional("NavBotNavAreaVector.SetSearchStartArea");
-	MarkNativeAsOptional("NavBotNavAreaVector.ShouldSearch.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.ShouldCollect.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.TravelLimit.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.TravelLimit.get");
-	MarkNativeAsOptional("NavBotNavAreaVector.SearchLadder.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.SearchOffMeshLinks.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.SearchElevators.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.SearchIncoming.set");
-	MarkNativeAsOptional("NavBotNavAreaVector.Execute");
-	MarkNativeAsOptional("NavBotNavAreaVector.Reset");
-	MarkNativeAsOptional("NavBotNavAreaVector.EndSearch");
-	MarkNativeAsOptional("NavBotNavAreaVector.GetSearchNodeForArea");
-	MarkNativeAsOptional("NavBotNavAreaVector.CollectedAreaSize.get");
-	MarkNativeAsOptional("NavBotNavAreaVector.GetRandomCollectedArea");
-	MarkNativeAsOptional("NavBotNavAreaVector.GetFarthestCollectedArea");
-	MarkNativeAsOptional("NavBotNavAreaVector.GetNearestCollectedArea");
-	MarkNativeAsOptional("NavBotNavAreaVector.GetCollectedAreas");
+	MarkNativeAsOptional("NavBotNavAreaCollector.NavBotNavAreaCollector");
+	MarkNativeAsOptional("NavBotNavAreaCollector.SetSearchStartArea");
+	MarkNativeAsOptional("NavBotNavAreaCollector.ShouldSearch.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.ShouldCollect.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.TravelLimit.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.TravelLimit.get");
+	MarkNativeAsOptional("NavBotNavAreaCollector.SearchLadder.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.SearchOffMeshLinks.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.SearchElevators.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.SearchIncoming.set");
+	MarkNativeAsOptional("NavBotNavAreaCollector.Execute");
+	MarkNativeAsOptional("NavBotNavAreaCollector.Reset");
+	MarkNativeAsOptional("NavBotNavAreaCollector.EndSearch");
+	MarkNativeAsOptional("NavBotNavAreaCollector.GetSearchNodeForArea");
+	MarkNativeAsOptional("NavBotNavAreaCollector.CollectedAreaSize.get");
+	MarkNativeAsOptional("NavBotNavAreaCollector.GetRandomCollectedArea");
+	MarkNativeAsOptional("NavBotNavAreaCollector.GetFarthestCollectedArea");
+	MarkNativeAsOptional("NavBotNavAreaCollector.GetNearestCollectedArea");
+	MarkNativeAsOptional("NavBotNavAreaCollector.GetCollectedAreas");
+	MarkNativeAsOptional("NavBotNavAreaCollector.MarkArea");
+	MarkNativeAsOptional("NavBotNavAreaCollector.IsAreaMarked");
 
 	/* Nav Blocker */
 	MarkNativeAsOptional("NavBotNavBlocker.NavBotNavBlocker");

@@ -89,6 +89,11 @@ bool CWaypoint::CanBeUsedByBot(CBaseBot* bot) const
 	return !m_expireUserTimer.HasStarted();
 }
 
+bool CWaypoint::IsAvailableTo(CBaseBot* bot) const
+{
+	return IsEnabled() && IsAvailableToTeam(bot->GetCurrentTeamIndex()) && CanBeUsedByBot(bot);
+}
+
 void CWaypoint::Save(std::fstream& filestream, uint32_t version)
 {
 	filestream.write(reinterpret_cast<char*>(&m_ID), sizeof(WaypointID));

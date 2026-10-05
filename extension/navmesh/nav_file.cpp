@@ -2139,8 +2139,8 @@ void CNavMesh::ImportLoad(CUtlBuffer& filebuffer)
 	Extent extent;
 	extent.lo.x = std::numeric_limits<float>::max();
 	extent.lo.y = std::numeric_limits<float>::max();
-	extent.hi.x = std::numeric_limits<float>::min();
-	extent.hi.y = std::numeric_limits<float>::min();
+	extent.hi.x = std::numeric_limits<float>::lowest();
+	extent.hi.y = std::numeric_limits<float>::lowest();
 	Extent areaExtent;
 
 	int progress = 0;

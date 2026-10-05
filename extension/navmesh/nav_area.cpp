@@ -212,7 +212,7 @@ CNavArea::CNavArea(unsigned int place)
 	m_damagingTickCount = 0;
 	m_openMarker = 0;
 
-	m_parent = NULL;
+	m_parent = nullptr;
 	m_parentHow = GO_NORTH;
 	m_attributeFlags = 0;
 	m_place = place;
@@ -1031,8 +1031,8 @@ public:
  */
 bool CNavArea::SplitEdit( bool splitAlongX, float splitEdge, CNavArea **outAlpha, CNavArea **outBeta )
 {
-	CNavArea *alpha = NULL;
-	CNavArea *beta = NULL;
+	CNavArea* alpha = nullptr;
+	CNavArea* beta = nullptr;
 
 	if (splitAlongX)
 	{
@@ -3607,6 +3607,24 @@ bool CNavArea::IsVisible( const Vector &eye, Vector *visSpot ) const
 			}
 			return true;
 		}
+	}
+
+	return false;
+}
+
+bool CNavArea::IsCenterVisible(const Vector& eye, const float zOffset, unsigned int mask) const
+{
+	trace_t result;
+	trace::CTraceFilterNoNPCsOrPlayers tracefilter(nullptr, COLLISION_GROUP_NONE);
+	const float offset = zOffset >= 0.0f ? zOffset : (0.75f * navgenparams->human_height);
+	unsigned int _mask = mask != 0 ? mask : (MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE);
+
+	// check center first
+	trace::line(eye, GetCenter() + Vector(0.0f, 0.0f, offset), _mask, &tracefilter, result);
+
+	if (result.fraction == 1.0f)
+	{
+		return true;
 	}
 
 	return false;

@@ -72,6 +72,21 @@ methodmap NavBotNavAreaCollector < Handle
 	 * @error			Invalid collector handle.
 	 */
 	public native NavBotNavAreaVector GetCollectedAreas();
+	/**
+	 * Adds a nav area to the general purpose marked area list.
+	 * 
+	 * @param area		Address of the nav area to mark.
+	 * @error			Bad nav area address.
+	 */
+	public native void MarkArea(Address area);
+	/**
+	 * Checks if a nav area is marked.
+	 * 
+	 * @param area		Address of the nav area to check.
+	 * @return			True if the given area is marked, false otherwise.
+	 * @error			Bad nav area address.	
+	 */
+	public native bool IsAreaMarked(Address area);
 }
 
 methodmap NavBotNavAreaSearchNode

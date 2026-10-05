@@ -22,7 +22,7 @@ public:
 			return false;
 		}
 
-		botsharedutils::IsReachableAreas collector(bot, 8192.0f);
+		botsharedutils::IsReachableAreas<CNavArea, BT> collector(bot, 8192.0f);
 		collector.Execute();
 
 		if (collector.IsCollectedAreasEmpty())

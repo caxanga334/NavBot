@@ -130,6 +130,12 @@ public:
 	}
 	// Can this bot use this waypoint
 	virtual bool CanBeUsedByBot(CBaseBot* bot) const;
+	/**
+	 * @brief Utility function that checks the base conditions for a waypoint to be available for a bot.
+	 * @param bot Bot that wants to use this waypoint.
+	 * @return True if yes, false otherwise.
+	 */
+	bool IsAvailableTo(CBaseBot* bot) const;
 
 	virtual void Save(std::fstream& filestream, uint32_t version);
 	virtual NavErrorType Load(std::fstream& filestream, uint32_t version, uint32_t subVersion);

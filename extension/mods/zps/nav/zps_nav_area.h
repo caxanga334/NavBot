@@ -32,6 +32,27 @@ public:
 	void WipeZPSAttributes() { m_zpsattributes = 0; }
 	void ShowAreaInfo() const override;
 
+	void InheritAttributes(CNavArea* first, CNavArea* second = nullptr) override
+	{
+		CNavArea::InheritAttributes(first, second);
+
+		if (first && second)
+		{
+			CZPSNavArea* zpsfirst = static_cast<CZPSNavArea*>(first);
+			CZPSNavArea* zpssecond = static_cast<CZPSNavArea*>(second);
+
+			SetZPSAttributes(static_cast<ZPSAttributes>(zpsfirst->m_zpsattributes | zpssecond->m_zpsattributes));
+			return;
+		}
+
+		if (first)
+		{
+			CZPSNavArea* zpsfirst = static_cast<CZPSNavArea*>(first);
+
+			SetZPSAttributes(static_cast<ZPSAttributes>(zpsfirst->m_zpsattributes));
+		}
+	}
+
 private:
 	int m_zpsattributes;
 	bool m_blockedByPhysProps;

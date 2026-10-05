@@ -1176,6 +1176,7 @@ public:
 		m_travelLimit = 999999.0f;
 		m_nodes.reserve(4096);
 		m_collected.reserve(4096);
+		m_markedAreas.reserve(4096);
 		m_searchLadders = true;
 		m_searchLinks = true;
 		m_searchElevators = true;
@@ -1189,6 +1190,7 @@ public:
 		m_travelLimit = limit;
 		m_nodes.reserve(4096);
 		m_collected.reserve(4096);
+		m_markedAreas.reserve(4096);
 		m_searchLadders = true;
 		m_searchLinks = true;
 		m_searchElevators = true;
@@ -1202,6 +1204,7 @@ public:
 		m_travelLimit = limit;
 		m_nodes.reserve(4096);
 		m_collected.reserve(4096);
+		m_markedAreas.reserve(4096);
 		m_searchLadders = searchLadders;
 		m_searchLinks = searchLinks;
 		m_searchElevators = searchElevators;
@@ -1262,7 +1265,7 @@ public:
 		if (m_collected.size() == 1) { return m_collected[0]; }
 
 		T* selected = nullptr;
-		float best = std::numeric_limits<float>::min();
+		float best = std::numeric_limits<float>::lowest();
 
 		for (T* area : m_collected)
 		{
@@ -1312,6 +1315,32 @@ public:
 		return selected;
 	}
 	/**
+	 * @brief Gets the collected nav area nearest to the given point (euclidean distance).
+	 * @param point Point to get the nearest area to.
+	 * @return Area pointer.
+	 */
+	T* GetNearestAreaTo(const Vector& point) const
+	{
+		if (m_collected.size() == 1) { return m_collected[0]; }
+
+		T* selected = nullptr;
+		float best = std::numeric_limits<float>::max();
+
+		for (T* area : m_collected)
+		{
+			const Vector& center = area->GetCenter();
+			float distance = (center - point).Length();
+
+			if (distance < best)
+			{
+				best = distance;
+				selected = area;
+			}
+		}
+
+		return selected;
+	}
+	/**
 	 * @brief Gets a random collected area
 	 * @tparam F Filter function
 	 * @param functor Filter function, params: (T* area). Return true to add the area to the output vector, false to don't add it.
@@ -1340,6 +1369,18 @@ public:
 		}
 	}
 
+	/**
+	 * @brief Checks if the given nav area is marked.
+	 * @param area Area to check.
+	 * @return True if marked, false if not.
+	 */
+	bool IsMarked(T* area) const { return m_markedAreas.contains(area->GetID()); }
+	/**
+	 * @brief Adds an area to the general purpose marked area list.
+	 * @param area Area to mark.
+	 */
+	void MarkArea(T* area) { m_markedAreas.insert(area->GetID()); }
+
 protected:
 
 	// Adds an area to search list, pass the previous area
@@ -1353,6 +1394,7 @@ private:
 	std::priority_queue<T*, std::vector<T*>, NavSearchNodeSmallestCost<T>> m_searchlist;
 	std::unordered_map<unsigned int, INavSearchNode<T>> m_nodes;
 	std::vector<T*> m_collected;
+	std::unordered_set<unsigned int> m_markedAreas;
 	bool m_searchLadders;
 	bool m_searchLinks;
 	bool m_searchElevators;
@@ -1557,6 +1599,7 @@ inline void INavAreaCollector<T>::Reset()
 {
 	m_collected.clear();
 	m_nodes.clear();
+	m_markedAreas.clear();
 
 	while (!m_searchlist.empty())
 	{

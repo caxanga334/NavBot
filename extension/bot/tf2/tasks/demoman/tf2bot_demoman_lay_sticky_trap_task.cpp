@@ -252,7 +252,7 @@ Vector CTF2BotDemomanLayStickyTrapTask::SelectHidingSpot(CTF2Bot* bot) const
 {
 	const float maxvisionrange = bot->GetSensorInterface()->GetMaxVisionRange();
 
-	botsharedutils::IsReachableAreas collector{ bot, maxvisionrange + 300.0f };
+	botsharedutils::IsReachableAreas<CNavArea, CTF2Bot> collector{ bot, maxvisionrange + 300.0f };
 	CNavArea* start = TheNavMesh->GetNearestNavArea(m_trapLocation, CPath::PATH_GOAL_MAX_DISTANCE_TO_AREA * 4.0f);
 
 	if (!start)

@@ -118,7 +118,7 @@ bool CTF2BotFindAmmoTask::IsPossible(CTF2Bot* bot, CBaseEntity** source)
 
 	const float maxrange = CTeamFortress2Mod::GetTF2Mod()->GetModSettings()->GetCollectItemMaxDistance();
 	CTF2AmmoFilter filter(bot);
-	botsharedutils::IsReachableAreas collector(bot, maxrange);
+	botsharedutils::IsReachableAreas<CNavArea, CTF2Bot> collector(bot, maxrange);
 
 	CBaseEntity* best = nullptr;
 	float smallest_dist = std::numeric_limits<float>::max();

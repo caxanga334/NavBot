@@ -365,7 +365,7 @@ CTFWaypoint* tf2botutils::SelectWaypointForTeleEntrance(CTF2Bot* bot, const floa
 
 CTFNavArea* tf2botutils::FindTeleEntranceNavAreaFromSpawnRoom(CTF2Bot* bot, const Vector& spawnPointPos)
 {
-	botsharedutils::IsReachableAreas collector(bot, 5000.0f, false, true, false);
+	botsharedutils::IsReachableAreas<CTFNavArea, CTF2Bot> collector(bot, 5000.0f, false, true, false);
 	CTFNavArea* start = static_cast<CTFNavArea*>(TheNavMesh->GetNearestNavArea(spawnPointPos, 600.0f, false, true, bot->GetCurrentTeamIndex()));
 
 	if (start && start->HasTFPathAttributes(CTFNavArea::TFNavPathAttributes::TFNAV_PATH_DYNAMIC_SPAWNROOM))
@@ -380,13 +380,11 @@ CTFNavArea* tf2botutils::FindTeleEntranceNavAreaFromSpawnRoom(CTF2Bot* bot, cons
 			TeamFortress2::TFTeam myteam = bot->GetMyTFTeam();
 
 			// Search the collected areas, select the nearest non spawn room area
-			for (CNavArea* base : collector.GetCollectedAreas())
+			for (CTFNavArea* tfarea : collector.GetCollectedAreas())
 			{
-				CTFNavArea* tfarea = static_cast<CTFNavArea*>(base);
-
 				if (tfarea->IsBuildable(myteam)) // this already checks for the spawn room attribute
 				{
-					auto node = collector.GetNodeForArea(base);
+					auto node = collector.GetNodeForArea(tfarea);
 
 					if (node->GetTravelCostFromStart() < smallest_cost)
 					{
@@ -494,7 +492,8 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 
 		return true;
 	}
-	else if (gm == TeamFortress2::GameModeType::GM_CTF)
+
+	if (gm == TeamFortress2::GameModeType::GM_CTF)
 	{
 		edict_t* flag = bot->GetFlagToDefend();
 
@@ -507,7 +506,8 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 		spot = bot->GetAbsOrigin();
 		return true;
 	}
-	else if (gm == TeamFortress2::GameModeType::GM_ADCP || gm == TeamFortress2::GameModeType::GM_CP || gm == TeamFortress2::GameModeType::GM_PL ||
+
+	if (gm == TeamFortress2::GameModeType::GM_ADCP || gm == TeamFortress2::GameModeType::GM_CP || gm == TeamFortress2::GameModeType::GM_PL ||
 		gm == TeamFortress2::GameModeType::GM_PL_RACE || gm == TeamFortress2::GameModeType::GM_KOTH)
 	{
 		std::vector<CBaseEntity*> points;
@@ -539,7 +539,8 @@ bool tf2botutils::GetSentrySearchStartPosition(CTF2Bot* bot, Vector& spot)
 
 		return true;
 	}
-	else if (gm == TeamFortress2::GameModeType::GM_PD)
+
+	if (gm == TeamFortress2::GameModeType::GM_PD)
 	{
 		CBaseEntity* myleader = tf2lib::pd::GetTeamLeader(bot->GetMyTFTeam());
 

@@ -70,7 +70,7 @@ CDoDSBotFetchBombTask::~CDoDSBotFetchBombTask()
 
 bool CDoDSBotFetchBombTask::IsPossible(CDoDSBot* bot, CBaseEntity** dispenser)
 {
-	botsharedutils::IsReachableAreas collector{ bot, 12000.0f };
+	botsharedutils::IsReachableAreas<CDoDSNavArea, CDoDSBot> collector{ bot, 12000.0f };
 	collector.Execute();
 	CDoDSBombDispenserFilter filter{ bot };
 

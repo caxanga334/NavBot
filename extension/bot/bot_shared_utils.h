@@ -156,9 +156,16 @@ namespace botsharedutils
 	/**
 	 * @brief Utility class for collecting reachable areas around the bot.
 	 */
-	class IsReachableAreas : public INavAreaCollector<CNavArea>
+	template <typename AreaClass, typename BotClass>
+	class IsReachableAreas : public INavAreaCollector<AreaClass>
 	{
 	public:
+		// Alternative constructor for template argument deduction
+		IsReachableAreas(BotClass* bot, AreaClass* startArea, const float limit) :
+			INavAreaCollector<AreaClass>(startArea, limit), m_bot(bot)
+		{
+		}
+
 		/**
 		 * @brief Constructor.
 		 * @param bot Bot
@@ -167,18 +174,46 @@ namespace botsharedutils
 		 * @param searchLinks Allow searching off-mesh links?
 		 * @param searchElevators Allow searching elevators?
 		 */
-		IsReachableAreas(CBaseBot* bot, const float limit, const bool searchLadders = true, const bool searchLinks = true, const bool searchElevators = true);
+		IsReachableAreas(BotClass* bot, const float limit, const bool searchLadders = true, const bool searchLinks = true, const bool searchElevators = true) :
+			INavAreaCollector<AreaClass>(static_cast<AreaClass*>(bot->GetLastKnownNavArea()), limit, searchLadders, searchLinks, searchElevators, false), m_bot(bot)
+		{
+		}
 
-		bool ShouldSearch(CNavArea* area) override;
-		bool ShouldCollect(CNavArea* area) override;
+		bool ShouldSearch(AreaClass* area) override
+		{
+			// always search the start area
+			if (INavAreaCollector<AreaClass>::IsStartArea(area)) { return true; }
+
+			return m_bot->GetMovementInterface()->IsAreaTraversable(area);
+		}
+
+		bool ShouldCollect(AreaClass* area) override
+		{
+			return m_bot->GetMovementInterface()->IsAreaTraversable(area);
+		}
 
 		// returns true if this area can be reached.
-		const bool IsReachable(CNavArea* area, float* cost = nullptr) const;
+		const bool IsReachable(AreaClass* area, float* cost = nullptr) const
+		{
+			auto node = INavAreaCollector<AreaClass>::GetNodeForArea(area);
 
-		CBaseBot* GetBot() const { return m_bot; }
+			if (node)
+			{
+				if (cost)
+				{
+					*cost = node->GetTravelCostFromStart();
+				}
+
+				return true;
+			}
+
+			return false;
+		}
+
+		BotClass* GetBot() const { return m_bot; }
 
 	private:
-		CBaseBot* m_bot;
+		BotClass* m_bot;
 	};
 
 	/**
@@ -249,11 +284,11 @@ namespace botsharedutils
 	/**
 	 * @brief Utility nav area collector for seaching for reachable nav areas with hiding spots.
 	 */
-	class HidingSpotCollector : public IsReachableAreas
+	class HidingSpotCollector : public IsReachableAreas<CNavArea, CBaseBot>
 	{
 	public:
 		HidingSpotCollector(CBaseBot* bot, float maxDistance) :
-			IsReachableAreas(bot, maxDistance)
+			IsReachableAreas<CNavArea, CBaseBot>(bot, maxDistance)
 		{
 		}
 
@@ -269,7 +304,7 @@ namespace botsharedutils
 	/**
 	 * @brief Utility nav area collector for selecting a nav area that isn't cleared of enemies. Useful for patrolling.
 	 */
-	class SelectReachableUnclearedArea : public IsReachableAreas
+	class SelectReachableUnclearedArea : public IsReachableAreas<CNavArea, CBaseBot>
 	{
 	public:
 		SelectReachableUnclearedArea(CBaseBot* bot);
@@ -361,7 +396,7 @@ namespace botsharedutils::search
 	class SearchReachableEntities
 	{
 	public:
-		using Collector = botsharedutils::IsReachableAreas;
+		using Collector = botsharedutils::IsReachableAreas<NavClass, BotClass>;
 
 		SearchReachableEntities(BotClass* bot, const float maxdist = -1.0f) :
 			m_position(0.0f, 0.0f, 0.0f), m_checklos(false), m_checkground(true), m_checkcanpickup(true)
@@ -443,7 +478,7 @@ namespace botsharedutils::search
 			if (IsResultEmpty()) { return nullptr; }
 
 			CBaseEntity* ret = nullptr;
-			float cost = std::numeric_limits<float>::min();
+			float cost = std::numeric_limits<float>::lowest();
 
 			for (auto& result : m_data)
 			{
@@ -469,7 +504,7 @@ namespace botsharedutils::search
 		{
 			if (!m_collector)
 			{
-				m_collector = std::make_unique<Collector>(static_cast<CBaseBot*>(m_bot), GetMaximumSearchDistance());
+				m_collector = std::make_unique<Collector>(m_bot, GetMaximumSearchDistance());
 			}
 			
 			m_collector->Execute();
@@ -486,7 +521,7 @@ namespace botsharedutils::search
 			{
 				float cost = -1.0f;
 
-				if (m_collector->IsReachable(static_cast<CNavArea*>(GetEntityNavArea()), &cost))
+				if (m_collector->IsReachable(GetEntityNavArea(), &cost))
 				{
 					m_data.emplace_back(entity, cost);
 				}
@@ -574,7 +609,7 @@ namespace botsharedutils::search
 		bool m_checkcanpickup;
 	};
 
-	class MarkVisibleAreasAsCleared : public IsReachableAreas
+	class MarkVisibleAreasAsCleared : public IsReachableAreas<CNavArea, CBaseBot>
 	{
 	public:
 		MarkVisibleAreasAsCleared(CBaseBot* bot);

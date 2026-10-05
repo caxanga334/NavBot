@@ -26,6 +26,26 @@ public:
 
 	void DrawCSSAttributes() const;
 
+	void InheritAttributes(CNavArea* first, CNavArea* second = nullptr) override
+	{
+		CNavArea::InheritAttributes(first, second);
+
+		if (first && second)
+		{
+			CCSSNavArea* csfirst = static_cast<CCSSNavArea*>(first);
+			CCSSNavArea* cssecond = static_cast<CCSSNavArea*>(second);
+
+			SetCSAttributes(static_cast<CSSAttributes>(csfirst->GetCSAttributes() | cssecond->GetCSAttributes()));
+			return;
+		}
+
+		if (first)
+		{
+			CCSSNavArea* csfirst = static_cast<CCSSNavArea*>(first);
+			SetCSAttributes(csfirst->GetCSAttributes());
+		}
+	}
+
 private:
 	int m_cssattributes;
 };

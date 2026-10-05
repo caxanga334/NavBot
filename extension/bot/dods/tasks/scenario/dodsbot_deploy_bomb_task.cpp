@@ -47,7 +47,7 @@ TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskUpdate(CDoDSBot* bot)
 
 		if (bot_to_bomb <= 512.0f)
 		{
-			botsharedutils::IsReachableAreas collector{ bot, 3000.0f, true, true, false };
+			botsharedutils::IsReachableAreas<CNavArea, CDoDSBot> collector{ bot, 3000.0f, true, true, false };
 
 			collector.Execute();
 

@@ -173,7 +173,7 @@ public:
 	static bool IsPossible(BT* bot, FilterType* filter, const std::vector<std::string>& searchPatterns, std::vector<CBaseEntity*>& output, const float maxSearchDistOverride = -1.0f)
 	{
 		const float maxrange = maxSearchDistOverride >= 1.0f ? maxSearchDistOverride : extmanager->GetMod()->GetModSettings()->GetCollectItemMaxDistance();
-		botsharedutils::IsReachableAreas collector{ bot, maxrange };
+		botsharedutils::IsReachableAreas<CNavArea, BT> collector{ bot, maxrange };
 		collector.Execute();
 
 		auto functor = [&filter, &output, &collector](int index, edict_t* edict, CBaseEntity* entity) {
@@ -208,7 +208,7 @@ public:
 	static bool IsPossible(BT* bot, FilterType* filter, const char* searchPattern, CBaseEntity** output, const float maxSearchDistOverride = -1.0f)
 	{
 		const float maxrange = maxSearchDistOverride >= 1.0f ? maxSearchDistOverride : extmanager->GetMod()->GetModSettings()->GetCollectItemMaxDistance();
-		botsharedutils::IsReachableAreas collector{ bot, maxrange };
+		botsharedutils::IsReachableAreas<CNavArea, BT> collector{ bot, maxrange };
 		collector.Execute();
 		CBaseEntity* best = nullptr;
 		float smallest_dist = std::numeric_limits<float>::max();

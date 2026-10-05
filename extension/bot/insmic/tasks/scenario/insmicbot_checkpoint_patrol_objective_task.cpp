@@ -28,7 +28,7 @@ TaskResult<CInsMICBot> CInsMICBotCheckPointPatrolObjectiveTask::OnTaskStart(CIns
 		return Done("No nav areas inside objective entity bounds!");
 	}
 
-	botsharedutils::IsReachableAreas search{ bot, MAX_COORD_FLOAT };
+	botsharedutils::IsReachableAreas<CNavArea, CInsMICBot> search{ bot, MAX_COORD_FLOAT };
 	search.Execute();
 
 	if (search.IsCollectedAreasEmpty())
