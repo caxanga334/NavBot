@@ -216,7 +216,7 @@ CNavArea::CNavArea(unsigned int place)
 	m_parentHow = GO_NORTH;
 	m_attributeFlags = 0;
 	m_place = place;
-	m_isUnderwater = false;
+	m_waterLevel = NAVAREA_WATERLEVEL_NOT_IN_WATER;
 	m_avoidanceObstacleHeight = 0.0f;
 
 	m_totalCost = 0.0f;
@@ -5252,7 +5252,7 @@ bool CNavArea::HasFuncNavPrefer(void) const
 //--------------------------------------------------------------------------------------------------------------
 void CNavArea::CheckWaterLevel(void)
 {
-	m_isUnderwater = false;
+	m_waterLevel = NAVAREA_WATERLEVEL_NOT_IN_WATER;
 	const Vector& center = GetCenter();
 	Vector pos(center);
 	pos.z += navgenparams->human_crouch_height;
@@ -5260,14 +5260,14 @@ void CNavArea::CheckWaterLevel(void)
 	// if the center + crouch is underwater, then the nav area is underwater.
 	if (((enginetrace->GetPointContents(pos) & MASK_WATER) != 0))
 	{
-		m_isUnderwater = true;
+		m_waterLevel = NAVAREA_WATERLEVEL_UNDERWATER;
 		return;
 	}
 
 	pos.z = center.z;
 	if ( !CNavMesh::GetGroundHeight( pos, &pos.z ) )
 	{
-		m_isUnderwater = false;
+		m_waterLevel = NAVAREA_WATERLEVEL_NOT_IN_WATER;
 		return;
 	}
 
@@ -5278,10 +5278,22 @@ void CNavArea::CheckWaterLevel(void)
 	// in this case, mark it as not underwater.
 	if (std::abs(center.z - pos.z) < (navgenparams->step_height * 0.5f))
 	{
+		pos = center;
+		pos.z += 2.0f;
+
+		if ((enginetrace->GetPointContents(pos) & MASK_WATER) != 0)
+		{
+			m_waterLevel = NAVAREA_WATERLEVEL_SHALLOW_WATER;
+		}
+
 		return;
 	}
 
-	m_isUnderwater = (enginetrace->GetPointContents( pos ) & MASK_WATER ) != 0;
+	if ((enginetrace->GetPointContents(pos) & MASK_WATER) != 0)
+	{
+		m_waterLevel = NAVAREA_WATERLEVEL_UNDERWATER;
+		return;
+	}
 }
 
 

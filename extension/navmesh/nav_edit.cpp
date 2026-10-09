@@ -1004,6 +1004,7 @@ void CNavMesh::DrawEditMode( void )
 					if ( m_selectedArea->HasAvoidanceObstacle(navgenparams->step_height) )	Q_strncat( attrib, "OBSTRUCTED ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsDamaging() )		Q_strncat( attrib, "DAMAGING ", sizeof( attrib ), -1 );
 					if ( m_selectedArea->IsUnderwater() )	Q_strncat( attrib, "UNDERWATER ", sizeof( attrib ), -1 );
+					if (m_selectedArea->IsInShallowWater())	Q_strncat(attrib, "SHALLOWWATER ", sizeof(attrib), -1);
 					if ( m_selectedArea->HasPrerequisite() )	Q_strncat(attrib, "PREREQUISITE ", sizeof(attrib), -1);
 
 					if (m_selectedArea->HasNavBlockers()) { Q_strncat(attrib, "AUTOBLOCKER ", sizeof(attrib), -1); }

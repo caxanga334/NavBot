@@ -62,9 +62,9 @@ TaskEventResponseResult<CTF2Bot> CTF2BotMedicMainTask::OnFlagTaken(CTF2Bot* bot,
 QueryAnswerType CTF2BotMedicMainTask::IsReady(CBaseBot* me)
 {
 	CTF2Bot* tf2bot = static_cast<CTF2Bot*>(me);
-	CBaseEntity* medigun = tf2bot->GetWeaponOfSlot(static_cast<int>(TeamFortress2::TFWeaponSlot::TFWeaponSlot_Secondary));
+	const CTF2BotWeapon* medigun = tf2bot->GetInventoryInterface()->GetMedigun();
 
-	if (medigun && tf2lib::GetMedigunUberchargePercentage(gamehelpers->EntityToBCompatRef(medigun)) > 0.99f)
+	if (medigun && medigun->Medigun_CanDeployUber())
 	{
 		return ANSWER_YES;
 	}

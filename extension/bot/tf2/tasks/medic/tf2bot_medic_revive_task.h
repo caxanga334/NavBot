@@ -12,6 +12,8 @@ struct edict_t;
 class CTF2BotMedicReviveTask : public AITask<CTF2Bot>
 {
 public:
+	static bool IsPossible(CTF2Bot* bot, CBaseEntity** marker);
+
 	CTF2BotMedicReviveTask(CBaseEntity* marker);
 
 	TaskResult<CTF2Bot> OnTaskStart(CTF2Bot* bot, AITask<CTF2Bot>* pastTask) override;

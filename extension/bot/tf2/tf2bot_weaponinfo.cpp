@@ -21,7 +21,8 @@ SourceMod::SMCResult CTF2WeaponInfoManager::ReadSMC_NewSection(const SourceMod::
 			m_parser_depth++;
 			return SourceMod::SMCResult::SMCResult_Continue;
 		}
-		else if (strncasecmp(name, "tf_data", 7) == 0)
+
+		if (strncasecmp(name, "tf_data", 7) == 0)
 		{
 			m_section_tfdata = true;
 			m_parser_depth++;
@@ -68,7 +69,8 @@ SourceMod::SMCResult CTF2WeaponInfoManager::ReadSMC_KeyValue(const SourceMod::SM
 
 		return SourceMod::SMCResult_Continue;
 	}
-	else if (m_section_tfdata)
+
+	if (m_section_tfdata)
 	{
 		if (strncasecmp(key, "charge_netprop_name", 19) == 0)
 		{
@@ -155,7 +157,8 @@ float CTF2BotWeapon::GetChargePercentage() const
 	{
 		return 0.0f;
 	}
-	else if (*m_charge < 0.01f)
+
+	if (*m_charge < 0.01f)
 	{
 		return 0.0f; // not charging
 	}
@@ -202,4 +205,42 @@ float CTF2BotWeapon::GetProjectileGravity(botweapons::AttackType type) const
 bool CTF2BotWeapon::IsDeployedOrScoped(const CBaseBot* owner) const
 {
 	return static_cast<const CTF2Bot*>(owner)->IsUsingSniperScope();
+}
+
+bool CTF2BotWeapon::Medigun_IsUberActive() const
+{
+	bool state = false;
+	entprops->GetEntPropBool(GetEntity(), Prop_Send, "m_bChargeRelease", state);
+	return state;
+}
+
+float CTF2BotWeapon::Medigun_GetUberChargeAmount() const
+{
+	float value = 0.0f;
+	entprops->GetEntPropFloat(GetEntity(), Prop_Send, "m_flChargeLevel", value);
+	return value;
+}
+
+bool CTF2BotWeapon::Medigun_IsHealing() const
+{
+	bool state = false;
+	entprops->GetEntPropBool(GetEntity(), Prop_Send, "m_bHealing", state);
+	return state;
+}
+
+CBaseEntity* CTF2BotWeapon::Medigun_GetHealTarget() const
+{
+	return entprops->GetEntPropEnt(GetEntity(), Prop_Send, "m_hHealingTarget");
+}
+
+bool CTF2BotWeapon::Medigun_CanDeployUber() const
+{
+	UberType type = GetMedigunUberType();
+
+	if (type == UberType::UBER_DMGRES)
+	{
+		return Medigun_GetUberChargeAmount() >= 0.25f;
+	}
+
+	return Medigun_GetUberChargeAmount() >= 0.99f;
 }

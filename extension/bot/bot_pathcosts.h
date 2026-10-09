@@ -52,6 +52,7 @@ public:
 		m_moveiface = nullptr;
 		m_pathprocessor = nullptr;
 		m_ignoreDanger = false;
+		m_waterIsSafe = true; // true in most games
 		m_teamindex = NAV_TEAM_ANY;
 	}
 
@@ -70,12 +71,16 @@ public:
 	bool IsIngoringDanger() const { return m_ignoreDanger; }
 	void SetTeamIndex(int index) { m_teamindex = index; }
 	int GetTeamIndex() const { return m_teamindex; }
+	// Returns true if falling in water cancels fall damage.
+	bool IsWaterSafe() const { return m_waterIsSafe; }
+	void SetWaterSafe(bool state) { m_waterIsSafe = state; }
 
 protected:
 	HumanMovementCaps_t m_movecaps;
 	IMovement* m_moveiface;
 	IPathProcessor* m_pathprocessor;
 	bool m_ignoreDanger;
+	bool m_waterIsSafe;
 	int m_teamindex;
 
 	// Basic ground movement costs
@@ -107,6 +112,14 @@ protected:
 		m_moveiface->GetCostMod(area, cost);
 		return cost;
 	}
+
+private:
+	// returns true if the given Z detla is too large to safely drop.
+	bool CheckDrop(const CNavArea* toArea, const CNavArea* fromArea, const float deltaZ) const;
+	// Handles jumps and drops, returns false if an impossible path
+	bool HandleJumpsAndDrops(const CNavArea* toArea, const CNavArea* fromArea, float& dist) const;
+	// Calculates the distance between from and to. If this function returns a negative distance, this is an impossible path.
+	float ComputeDistance(const CNavArea* toArea, const CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const;
 };
 
 /**

@@ -1,6 +1,7 @@
 #include NAVBOT_PCH_FILE
 #include "zpsbot.h"
 #include <mods/zps/nav/zps_nav_mesh.h>
+#include <coordsize.h>
 #include "zpsbot_movement.h"
 
 
@@ -55,11 +56,18 @@ bool CZPSBotMovement::IsAreaTraversable(const CNavArea* area) const
 
 float CZPSBotMovement::GetMaxDropHeight() const
 {
-	switch (GetBot<CZPSBot>()->GetMyZPSTeam())
+	CZPSBot* bot = GetBot<CZPSBot>();
+
+	switch (bot->GetMyZPSTeam())
 	{
 	case zps::ZPSTeam::ZPS_TEAM_ZOMBIES:
-		// zombies can tank fall damage
-		return IMovement::GetMaxDropHeight() * 2.0f;
+		// zombies have a max fall damage cap which allows them to survive great falls
+		if (bot->GetHealth() > 50)
+		{
+			return MAX_COORD_FLOAT;
+		}
+
+		return IMovement::GetMaxDropHeight();
 	default:
 		return IMovement::GetMaxDropHeight();
 	}

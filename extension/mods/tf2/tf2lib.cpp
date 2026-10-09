@@ -376,13 +376,6 @@ edict_t* tf2lib::GetDisguiseTarget(int player)
 	return gamehelpers->EdictOfIndex(target);
 }
 
-float tf2lib::GetMedigunUberchargePercentage(int medigun)
-{
-	float ubercharge = 0.0f;
-	entprops->GetEntPropFloat(medigun, Prop_Send, "m_flChargeLevel", ubercharge);
-	return ubercharge;
-}
-
 bool tf2lib::MVM_ShouldBotsReadyUp()
 {
 	bool readyup = false; // true if the bots should ready up
@@ -662,6 +655,18 @@ bool tf2lib::IsPlayerCarryingAFlag(CBaseEntity* player)
 	}
 
 	return false;
+}
+
+bool tf2lib::IsPlayerUnderUbercharge(CBaseEntity* player)
+{
+	using namespace TeamFortress2;
+
+	return IsPlayerInCondition(player, TFCond::TFCond_Ubercharged) ||
+		IsPlayerInCondition(player, TFCond::TFCond_Kritzkrieged) ||
+		IsPlayerInCondition(player, TFCond::TFCond_MegaHeal) ||
+		IsPlayerInCondition(player, TFCond::TFCond_UberBulletResist) || 
+		IsPlayerInCondition(player, TFCond::TFCond_UberBlastResist) || 
+		IsPlayerInCondition(player, TFCond::TFCond_UberFireResist);
 }
 
 CBaseEntity* tf2lib::mvm::GetMostDangerousFlag(bool ignoreDropped)

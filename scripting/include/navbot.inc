@@ -250,6 +250,10 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.ConnectToAdjacent");
 	MarkNativeAsOptional("NavBotNavArea.DisconnectFromAdjacent");
 	MarkNativeAsOptional("NavBotNavArea.GetPlaceName");
+	MarkNativeAsOptional("NavBotNavArea.IsUnderwater");
+	MarkNativeAsOptional("NavBotNavArea.IsInShallowWater");
+	MarkNativeAsOptional("NavBotNavArea.IsInWater");
+	MarkNativeAsOptional("NavBotNavArea.IsOverlappingPos");
 
 	/* Off-Mesh Connection */
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetType");

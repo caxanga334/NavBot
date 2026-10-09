@@ -442,7 +442,12 @@ public:
 	bool HasFuncNavPrefer( void ) const;
 
 	void CheckWaterLevel( void );
-	bool IsUnderwater( void ) const		{ return m_isUnderwater; }
+	// Returns true if this nav area is underwater.
+	bool IsUnderwater( void ) const	{ return m_waterLevel == NAVAREA_WATERLEVEL_UNDERWATER; }
+	// Returns true if this nav area is in shallow water. Doesn't affect bot navigation but negates fall damage.
+	bool IsInShallowWater(void) const { return m_waterLevel == NAVAREA_WATERLEVEL_SHALLOW_WATER; }
+	// Returns true if this nav area is in any type of water.
+	bool IsInWater(void) const { return m_waterLevel != NAVAREA_WATERLEVEL_NOT_IN_WATER; }
 
 	bool IsOverlapping( const Vector &pos, float tolerance = 0.0f ) const;	// return true if 'pos' is within 2D extents of area.
 	bool IsOverlapping( const CNavArea *area ) const;			// return true if 'area' overlaps our 2D extents
@@ -1000,7 +1005,14 @@ private:
 	CountdownTimer m_blockedTimer;								// Throttle checks on our blocked state while blocked
 	void UpdateBlockedFromNavBlockers( void );					// checks if nav blockers are still blocking the area
 
-	bool m_isUnderwater;										// true if the center of the area is underwater
+	// Not in water
+	static constexpr std::int8_t NAVAREA_WATERLEVEL_NOT_IN_WATER = 0;
+	// Shallow water, cancels fall damage but no inpact in navigation
+	static constexpr std::int8_t NAVAREA_WATERLEVEL_SHALLOW_WATER = 1;
+	// Under water, area is fully submerged, inpacts bot navigation
+	static constexpr std::int8_t NAVAREA_WATERLEVEL_UNDERWATER = 2;
+
+	std::int8_t m_waterLevel;									// true if the center of the area is underwater
 
 	bool m_isBattlefront;
 

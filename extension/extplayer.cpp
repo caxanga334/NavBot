@@ -625,6 +625,11 @@ bool CBaseExtPlayer::IsTouching(CBaseEntity* other) const
 	return result;
 }
 
+float CBaseExtPlayer::GetEyeDistanceTo(const Vector& pos) const
+{
+	return GetEyeOrigin().DistTo(pos);
+}
+
 #ifdef EXT_DEBUG
 CON_COMMAND_F(sm_navbot_debug_boners, "Debugs the CBaseAnimating::LookupBone port of the extension.", FCVAR_CHEAT)
 {

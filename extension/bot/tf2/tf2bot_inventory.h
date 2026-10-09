@@ -33,6 +33,7 @@ public:
 	const CTF2BotWeapon* GetTheWrangler() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_laser_pointer")); }
 	const CTF2BotWeapon* GetTheCrusadersCrossbow() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_crossbow")); }
 	const CTF2BotWeapon* GetTheGrapplingHook() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_grapplinghook")); }
+	const CTF2BotWeapon* GetMedigun() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_medigun")); }
 
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override { return new CTF2BotWeapon(weapon); }

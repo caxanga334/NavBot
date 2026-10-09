@@ -188,6 +188,12 @@ public:
 	 * @return True if the player is touching the given entity, false otherwise.
 	 */
 	bool IsTouching(CBaseEntity* other) const;
+	/**
+	 * @brief Calculates the distance between the player's eye position and the given position.
+	 * @param pos Position to calculate the distance to.
+	 * @return Distance.
+	 */
+	float GetEyeDistanceTo(const Vector& pos) const;
 protected:
 
 private:

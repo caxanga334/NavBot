@@ -439,6 +439,9 @@ public:
 		return attacksinfo[static_cast<int>(type)];
 	}
 
+	const WeaponAttackFunctionInfo& GetPrimaryAttackInfo() const { return GetAttackInfo(botweapons::AttackType::PRIMARY); }
+	const WeaponAttackFunctionInfo& GetSecondaryAttackInfo() const { return GetAttackInfo(botweapons::AttackType::SECONDARY); }
+
 	// Returns true if this is the default weapon info profile
 	bool IsDefault() const { return configentry.size() == 0; }
 	bool CanHeadShot() const { return can_headshot; }

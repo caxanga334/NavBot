@@ -515,6 +515,57 @@ namespace natives::navarea
 		context->StringToLocal(params[2], static_cast<std::size_t>(params[3]), name->c_str());
 		return pawnutils::ReturnBool(true);
 	}
+	static cell_t IsUnderwater(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(area->IsUnderwater());
+	}
+	static cell_t IsInShallowWater(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(area->IsInShallowWater());
+	}
+	static cell_t IsInWater(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(area->IsInWater());
+	}
+	static cell_t IsOverlappingPos(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Vector pos = pawnutils::ReadVector(context, params, 2);
+		float tolerance = pawnutils::ReadFloat(params, 3);
+
+		return pawnutils::ReturnBool(area->IsOverlapping(pos, tolerance));
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -539,6 +590,10 @@ namespace natives::navarea
 			{"NavBotNavArea.ConnectToAdjacent", ConnectToAdjacent},
 			{"NavBotNavArea.DisconnectFromAdjacent", DisconnectFromAdjacent},
 			{"NavBotNavArea.GetPlaceName", GetPlaceName},
+			{"NavBotNavArea.IsUnderwater", IsUnderwater},
+			{"NavBotNavArea.IsInShallowWater", IsInShallowWater},
+			{"NavBotNavArea.IsInWater", IsInWater},
+			{"NavBotNavArea.IsOverlappingPos", IsOverlappingPos},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

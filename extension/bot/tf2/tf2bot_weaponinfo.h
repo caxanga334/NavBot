@@ -111,6 +111,13 @@ public:
 	bool IsDeployedOrScoped(const CBaseBot* owner) const override;
 
 	bool IsTheRescueRanger() const { return IsWeapon("tf_weapon_shotgun_building_rescue"); }
+	bool IsMedigun() const { return IsWeapon("tf_weapon_medigun"); }
+
+	bool Medigun_IsUberActive() const;
+	float Medigun_GetUberChargeAmount() const;
+	bool Medigun_IsHealing() const;
+	CBaseEntity* Medigun_GetHealTarget() const;
+	bool Medigun_CanDeployUber() const;
 
 private:
 	float* m_charge;

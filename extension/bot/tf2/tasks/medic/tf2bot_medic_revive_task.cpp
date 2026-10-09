@@ -34,6 +34,31 @@ static bool IsLineOfHealClearToMarker(const Vector& from, const Vector& to, CBas
 	return tr.startsolid || tr.fraction < 1.0f;
 }
 
+bool CTF2BotMedicReviveTask::IsPossible(CTF2Bot* bot, CBaseEntity** marker)
+{
+	Vector origin = bot->GetAbsOrigin();
+	float best = std::numeric_limits<float>::max();
+	auto functor = [&marker, &origin, &best](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity)
+		{
+			const Vector& origin = UtilHelpers::getEntityOrigin(entity);
+			float range = (origin - origin).LengthSqr();
+
+			if (range < best)
+			{
+				*marker = entity;
+				best = range;
+			}
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEachEntityOfClassname("entity_revive_marker", functor);
+
+	return *marker != nullptr;
+}
+
 CTF2BotMedicReviveTask::CTF2BotMedicReviveTask(CBaseEntity* marker) :
 	m_marker(marker), m_aimpos(0.0f, 0.0f, 0.0f), m_goal(0.0f, 0.0f, 0.0f)
 {

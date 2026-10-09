@@ -1,9 +1,5 @@
-#ifndef NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_
-#define NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_
-
-#include <sdkports/sdk_timers.h>
-#include <bot/interfaces/path/meshnavigator.h>
-#include <sdkports/sdk_ehandle.h>
+#ifndef __NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_
+#define __NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_
 
 class CTF2BotMedicHealTask : public AITask<CTF2Bot>
 {
@@ -25,26 +21,61 @@ public:
 	const char* GetName() const override { return "MedicHeal"; }
 private:
 	CMeshNavigatorAutoRepath m_nav;
-	CHandle<CBaseEntity> m_followTarget; // Player I want to follow
-	CHandle<CBaseEntity> m_healTarget; // Player I am healing
-	CountdownTimer m_patientScanTimer; // Time to scan for people to heal
-	CountdownTimer m_respondToCallsTimer;
-	CountdownTimer m_reviveMarkerScanTimer;
-	CountdownTimer m_crossbowHealTimer;
-	CountdownTimer m_letGoTimer; // timer for letting go of the attack button
+	CHandle<CBaseEntity> m_pocketTarget; // Player who the medic will pocket (main follow target).
+	CHandle<CBaseEntity> m_healTarget; // Player who the medic is currently trying to heal.
+	CountdownTimer m_changePatientTimer; // timer for expensive medic logic
+	CountdownTimer m_secondaryChecks;
+	CountdownTimer m_respondToVoiceTimer;
+	CountdownTimer m_reviveScanTimer;
 	Vector m_moveGoal;
+	Vector m_patientCenter;
+	bool m_clearLOH;
 	bool m_isMvM;
+	
+	class PatientScore
+	{
+	public:
+		PatientScore(CBaseEntity* patient, float score) :
+			m_patient(patient), m_score(score)
+		{
+		}
 
-	void UpdateFollowTarget(CTF2Bot* bot);
-	void UpdateHealTarget(CTF2Bot* bot);
-	void UpdateMovePosition(CTF2Bot* bot, const CKnownEntity* threat);
-	bool ScanForReviveMarkers(const Vector& center, CBaseEntity** marker);
-	bool IsPatientStable(CTF2Bot* bot, CBaseEntity* patient);
-	void EquipMedigun(CTF2Bot* me);
-	float GetUbercharge(CTF2Bot* me);
+		// used by std::less in the priority_queue
+		bool operator<(const PatientScore& other) const
+		{
+			return this->m_score < other.m_score;
+		}
 
-	static constexpr float MEDIGUN_LETGO_RANGE = 400.0f;
-	static constexpr float MEDIC_RESPOND_TO_CALL_RANGE = 600.0f;
+		CBaseEntity* m_patient;
+		float m_score;
+	};
+
+	bool IsPatientValid(CTF2Bot* me) const;
+	bool ShouldChangePatient(CTF2Bot* me);
+	void EquipMedigun(CTF2Bot* me) const;
+	void UpdateHealTarget(CTF2Bot* me)
+	{
+		if (ShouldChangePatient(me))
+		{
+			CBaseEntity* patient = SelectPatient(me);
+
+			if (patient != nullptr)
+			{
+				OnPatientChanged(patient);
+				SetHealTarget(patient);
+			}
+		}
+	}
+
+	CBaseEntity* GetHealTarget() const { return m_healTarget.Get(); }
+	void SetHealTarget(CBaseEntity* entity) { m_healTarget = entity; }
+	CBaseEntity* SelectPatient(CTF2Bot* me) const;
+	void HandleMedigun(CTF2Bot* me, const CTF2BotWeapon* medigun, CBaseEntity* patient, const CKnownEntity* threat);
+	bool ShouldDeployUbercharge(CTF2Bot* me, const CTF2BotWeapon* medigun, CBaseEntity* patient, const CKnownEntity* threat) const;
+	void DeployUbercharge(CTF2Bot* me) const;
+	bool IsLineOfHealClear(CTF2Bot* me, CBaseEntity* patient) const;
+	void HandleMovement(CTF2Bot* me, const CTF2BotWeapon* medigun, CBaseEntity* patient);
+	void OnPatientChanged(CBaseEntity* newPatient);
 };
 
-#endif // !NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_
+#endif // !__NAVBOT_TF2BOT_MEDIC_HEAL_TASK_H_

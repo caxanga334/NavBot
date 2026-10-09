@@ -39,7 +39,6 @@ namespace tf2lib
 	TeamFortress2::TFTeam GetDisguiseTeam(int player);
 	TeamFortress2::TFClassType GetDisguiseClass(int player);
 	edict_t* GetDisguiseTarget(int player);
-	float GetMedigunUberchargePercentage(int medigun);
 	bool MVM_ShouldBotsReadyUp();
 	// Given a building, checks if it needs to be repaired.
 	bool BuildingNeedsToBeRepaired(CBaseEntity* entity);
@@ -79,6 +78,12 @@ namespace tf2lib
 
 		void operator()(int client, edict_t* entity, SourceMod::IGamePlayer* player);
 	};
+	/**
+	 * @brief Checks if the given player is under the effects of an ubercharge (all types).
+	 * @param player Player to check.
+	 * @return True if yes, false otherwise.
+	 */
+	bool IsPlayerUnderUbercharge(CBaseEntity* player);
 }
 
 namespace tf2lib::mvm

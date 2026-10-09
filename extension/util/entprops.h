@@ -95,6 +95,12 @@ public:
 	bool GetEntPropEnt(int entity, PropType proptype, const char *prop, int* result, CBaseEntity** pOut = nullptr, int element = 0);
 	bool GetEntPropEnt(edict_t* entity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut = nullptr, int element = 0);
 	bool GetEntPropEnt(CBaseEntity* entity, PropType proptype, const char* prop, int* result, CBaseEntity** pOut = nullptr, int element = 0);
+	CBaseEntity* GetEntPropEnt(CBaseEntity* entity, PropType proptype, const char* prop, int element = 0)
+	{
+		CBaseEntity* pOut = nullptr;
+		GetEntPropEnt(entity, proptype, prop, nullptr, &pOut);
+		return pOut;
+	}
 	bool SetEntPropEnt(int entity, PropType proptype, const char *prop, int other, int element = 0);
 	bool GetEntPropVector(int entity, PropType proptype, const char *prop, Vector &result, int element = 0);
 	bool GetEntPropVector(edict_t* entity, PropType proptype, const char* prop, Vector& result, int element = 0);

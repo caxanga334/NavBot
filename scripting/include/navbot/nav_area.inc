@@ -175,6 +175,40 @@ methodmap NavBotNavArea
 	 * @error				Bad nav area pointer.
 	 */
 	public static native bool GetPlaceName(Address ptr, char[] buffer, int size);
+	/**
+	 * Gets if the nav area is underwater.
+	 * Note: This only returns true if the water depth is at player crouch height.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				True if underwater, false otherwise.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native bool IsUnderwater(Address ptr);
+	/**
+	 * Gets if the nav area is in shallow water.
+	 * Enough to stop fall damage in most games. Generally won't extinguish players on fire.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				True if yes, false otherwise.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native bool IsInShallowWater(Address ptr);
+	/**
+	 * Gets if the nav area is in any type of water.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				True if yes, false otherwise.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native bool IsInWater(Address ptr);
+	/**
+	 * Checks if the given position is overlapping the nav area's 2D extent.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param pos			World position to check.
+	 * @param tolerance		Check tolerance.
+	 */
+	public static native bool IsOverlappingPos(Address ptr, const float pos[3], const float tolerance = 0.0);
 }
 
 methodmap NavBotNavOffMeshConnection

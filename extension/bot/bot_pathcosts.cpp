@@ -33,84 +33,19 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 		return DEADEND_COST;
 	}
 
-	float dist = 0.0f;
+	float dist = ComputeDistance(toArea, fromArea, ladder, link, elevator, length);
 
-	if (link != nullptr)
+	if (dist < 0.0f)
 	{
-		dist = link->GetConnectionLength();
-	}
-	else if (ladder != nullptr) // experimental, very few maps have 'true' ladders
-	{
-		dist = ladder->m_length;
-	}
-	else if (elevator != nullptr)
-	{
-		const CNavElevator::ElevatorFloor* fromFloor = fromArea->GetMyElevatorFloor();
-
-		if (!fromFloor->HasCallButton() && !fromFloor->is_here)
-		{
-			return DEADEND_COST; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
-		}
-
-		dist = elevator->GetLengthBetweenFloors(fromArea, toArea);
-	}
-	else if (length > 0.0f)
-	{
-		dist = length;
-	}
-	else
-	{
-		dist = (toArea->GetCenter() + fromArea->GetCenter()).Length();
+		return DEADEND_COST;
 	}
 
 	// only check gap and height on common connections
 	if (link == nullptr && elevator == nullptr && ladder == nullptr)
 	{
-		while (true)
+		if (!HandleJumpsAndDrops(toArea, fromArea, dist))
 		{
-			if (fromArea->IsUnderwater() && toArea->IsUnderwater())
-			{
-				break; // skip other checks, when both are underwater, assume the bot can freely change heights using move up/move down
-			}
-
-			float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(toArea);
-
-			if (deltaZ >= m_movecaps.m_stepheight)
-			{
-				if (m_movecaps.m_candoublejump)
-				{
-					if (deltaZ > m_movecaps.m_maxdjheight)
-					{
-						// too high to reach by jumping
-						return DEADEND_COST;
-					}
-				}
-				else if (deltaZ > m_movecaps.m_maxjumpheight)
-				{
-					// too high to reach by jumping
-					return DEADEND_COST;
-				}
-
-				// jump type is resolved by the navigator
-
-				// add jump penalty
-				dist *= JUMP_COST_MULTIPLIER;
-			}
-			else if (deltaZ < -m_movecaps.m_maxdropheight)
-			{
-				// too far to drop
-				// TO-DO: Handle areas that breaks fall damage.
-				return DEADEND_COST;
-			}
-
-			float gap = fromArea->ComputeAdjacentConnectionGapDistance(toArea);
-
-			if (gap >= m_movecaps.m_maxgapjumpdistance)
-			{
-				return DEADEND_COST; // can't jump over this gap
-			}
-
-			break;
+			return DEADEND_COST;
 		}
 	}
 	else if (link != nullptr)
@@ -156,4 +91,101 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 	}
 
 	return cost;
+}
+
+bool IGroundPathCost::CheckDrop(const CNavArea* toArea, const CNavArea* fromArea, const float deltaZ) const
+{
+	if (IsWaterSafe() && toArea->IsInWater())
+	{
+		// safe drop: we are landing in an underwater area.
+		return false;
+	}
+
+	if (deltaZ < -m_movecaps.m_maxdropheight)
+	{
+		// unsafe drop: vertical distance is higher than the max safe drop height
+		// note that deltaZ is negative when we are going from up to down.
+		return true;
+	}
+
+	return false;
+}
+
+bool IGroundPathCost::HandleJumpsAndDrops(const CNavArea* toArea, const CNavArea* fromArea, float& dist) const
+{
+	if (fromArea->IsUnderwater() && toArea->IsUnderwater())
+	{
+		return true; // skip other checks, when both are underwater, assume the bot can freely change heights using move up/move down
+	}
+
+	float deltaZ = fromArea->ComputeAdjacentConnectionHeightChange(toArea);
+
+	if (deltaZ >= m_movecaps.m_stepheight)
+	{
+		if (m_movecaps.m_candoublejump)
+		{
+			if (deltaZ > m_movecaps.m_maxdjheight)
+			{
+				// too high to reach by jumping
+				return false;
+			}
+		}
+		else if (deltaZ > m_movecaps.m_maxjumpheight)
+		{
+			// too high to reach by jumping
+			return false;
+		}
+
+		// jump type is resolved by the navigator
+
+		// add jump penalty
+		dist *= JUMP_COST_MULTIPLIER;
+	}
+	else if (CheckDrop(toArea, fromArea, deltaZ))
+	{
+		// too far to drop
+		// TO-DO: Handle areas that breaks fall damage.
+		return false;
+	}
+
+	float gap = fromArea->ComputeAdjacentConnectionGapDistance(toArea);
+
+	if (gap >= m_movecaps.m_maxgapjumpdistance)
+	{
+		return false; // can't jump over this gap
+	}
+
+	return true;
+}
+
+float IGroundPathCost::ComputeDistance(const CNavArea* toArea, const CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) const
+{
+	if (link != nullptr)
+	{
+		return link->GetConnectionLength();
+	}
+
+	if (ladder != nullptr) // experimental, very few maps have 'true' ladders
+	{
+		return ladder->m_length;
+	}
+
+	if (elevator != nullptr)
+	{
+		const CNavElevator::ElevatorFloor* fromFloor = fromArea->GetMyElevatorFloor();
+
+		if (!fromFloor->HasCallButton() && !fromFloor->is_here)
+		{
+			return DEADEND_COST; // Unable to use this elevator, lacks a button to call it to this floor and is not on this floor
+		}
+
+		return elevator->GetLengthBetweenFloors(fromArea, toArea);
+	}
+
+	if (length > 0.0f)
+	{
+		return length;
+	}
+	
+	return (toArea->GetCenter() + fromArea->GetCenter()).Length();
 }

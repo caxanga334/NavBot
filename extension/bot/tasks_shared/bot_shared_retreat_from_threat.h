@@ -40,6 +40,9 @@ public:
 	QueryAnswerType ShouldRetreat(CBaseBot* me) override { return ANSWER_NO; }
 	// Not right now
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
+	// Allow bots to attack enemies when retreating (this task may be used in behaviors where they aren't allowed)
+	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override { return ANSWER_YES; }
+	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override { return ANSWER_YES; }
 
 	const char* GetName() const override { return "RetreatFromThreat"; }
 private:
