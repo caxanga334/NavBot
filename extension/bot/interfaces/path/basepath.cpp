@@ -857,7 +857,8 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, B
 		between.CopySegment(from);
 		between.goal = link->GetStart();
 		between.how = GO_OFF_MESH_CONNECTION;
-		between.type = AIPath::SEGMENT_GROUND_NOSKIP;
+		// Use AIPath::SEGMENT_TELEPORT_LINK if the off-mesh type is teleport
+		between.type = link->GetType() == OffMeshConnectionType::OFFMESH_TELEPORTER ? AIPath::SEGMENT_TELEPORT_LINK : AIPath::SEGMENT_GROUND_NOSKIP;
 		// add a segments between from and to.
 		// the bot will go to from, them move to between and then move to to.
 		// between goal is the special link position on the nav area.
@@ -870,8 +871,8 @@ bool CPath::ProcessOffMeshConnectionsInPath(CBaseBot* bot, const size_t index, B
 		post.area = to->area;
 		post.type = AIPath::SEGMENT_GROUND_NOSKIP;
 
-		pathinsert.emplace(to, std::move(post), false);
 		pathinsert.emplace(to, std::move(between), false); // insert before 'to'
+		pathinsert.emplace(to, std::move(post), false);
 		break;
 	}
 	case OffMeshConnectionType::OFFMESH_BLAST_JUMP:
@@ -1324,6 +1325,11 @@ void CPath::DrawSingleSegment(const Vector& v1, const Vector& v2, AIPath::Segmen
 	case AIPath::SegmentType::SEGMENT_CHEAT_TELEPORT:
 	{
 		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 255, 70, 162, 255, true, duration);
+		break;
+	}
+	case AIPath::SegmentType::SEGMENT_TELEPORT_LINK:
+	{
+		NDebugOverlay::VertArrow(v1, v2, ARROW_WIDTH, 50, 225, 192, 255, true, duration);
 		break;
 	}
 	default:

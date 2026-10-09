@@ -27,6 +27,7 @@ namespace AIPath
 		SEGMENT_WATER_EXIT, // Transition between water and ground
 		SEGMENT_PUSH_LADDER, // Climb a push ladder
 		SEGMENT_CHEAT_TELEPORT, // Teleport cheat
+		SEGMENT_TELEPORT_LINK, // Use a teleport entity (trigger_teleport, etc)
 
 		MAX_SEGMENT_TYPES
 	};
@@ -89,6 +90,7 @@ namespace AIPath
 			"WATER_EXIT"sv,
 			"PUSH_LADDER"sv,
 			"CHEAT_TELEPORT"sv,
+			"TELEPORT_LINK"sv,
 		};
 
 		static_assert(names.size() == static_cast<size_t>(SegmentType::MAX_SEGMENT_TYPES), "name array and SegmentType enum mismatch!");

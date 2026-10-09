@@ -267,6 +267,9 @@ void IPlayerController::RunLook()
 	finalAngles.y = ApproachAngle(desiredAngles.y, currentAngles.y, m_aimSpeed * deltaTime);
 
 	finalAngles.x = AngleNormalize(finalAngles.x);
+	// Matches the default limits for PITCH angles. See https://github.com/ValveSoftware/source-sdk-2013/blob/b8cfb12c0e083a2ef5b2f9f9b50f3902fa034474/src/game/client/in_main.cpp#L68-L69
+	// Should fix issues like out-of-range datatable warnings and prevent bots from having view angles outside the expected range (without cheats).
+	finalAngles.x = std::clamp(finalAngles.x, -89.0f, 89.0f);
 	finalAngles.y = AngleNormalize(finalAngles.y);
 
 	if (me->IsDebugging(BOTDEBUG_LOOK))
@@ -433,6 +436,8 @@ void IPlayerController::SnapAimAt(const QAngle& angles, const LookPriority prior
 
 	m_isSnapingViewAngles = true;
 	m_snapToAngles = angles; // runlook will send the angle for us
+	// See the comment in RunLook above the finalAngles.x clamp
+	m_snapToAngles.x = std::clamp(m_snapToAngles.x, -89.0f, 89.0f);
 }
 
 void IPlayerController::SnapAimAt(const Vector& pos, const LookPriority priority)

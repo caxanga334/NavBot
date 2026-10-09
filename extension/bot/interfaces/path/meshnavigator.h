@@ -119,6 +119,9 @@ protected:
 		m_dodgeTimer.Start(duration);
 	}
 
+	float GetDistanceToTeleportGoal() const { return m_distanceToTeleGoal; }
+	void SetDistanceToTeleportGoal(float dist) { m_distanceToTeleGoal = dist; }
+
 private:
 	CBaseBot* m_me; // bot that is using this navigator
 	const BotPathSegment* m_goal; // the segment the bot is currently trying to reach
@@ -149,6 +152,7 @@ private:
 	Vector m_useEntityAimAt;
 	Vector m_moveToPos; // The position the bot is trying to move to since the last Update call
 	Vector m_dodgeGoal;
+	float m_distanceToTeleGoal; // last calculated distance to a teleport goal
 
 	bool ShouldBreakObstacles(CBaseBot* bot);
 	bool UpdateDodging(CBaseBot* bot);

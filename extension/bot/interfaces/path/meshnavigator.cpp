@@ -48,6 +48,7 @@ CMeshNavigator::CMeshNavigator() : CPath()
 	m_moveToPos.Init(0.0f, 0.0f, 0.0f);
 	m_pLastObstacle = nullptr;
 	m_dodgeGoal.Init(0.0f, 0.0f, 0.0f);
+	m_distanceToTeleGoal = std::numeric_limits<float>::max();
 }
 
 CMeshNavigator::~CMeshNavigator()
@@ -78,6 +79,7 @@ void CMeshNavigator::Invalidate()
 	m_avoidingEntity = nullptr;
 	m_moveToPos = vec3_origin;
 	m_pLastObstacle = nullptr;
+	m_distanceToTeleGoal = std::numeric_limits<float>::max();
 	CPath::Invalidate();
 }
 
@@ -440,6 +442,22 @@ bool CMeshNavigator::IsAtGoal(CBaseBot* bot)
 		{
 			return true;
 		}
+	}
+	else if (m_goal->type == AIPath::SegmentType::SEGMENT_TELEPORT_LINK)
+	{
+		float distance = bot->GetRangeTo(m_goal->goal);
+
+		// if the current distance to the teleport goal is larger than the last computed distance, assume the bot was teleported
+		// Can't use the next segment since the nav mesh is static and teleporters are not.
+		if (distance > GetDistanceToTeleportGoal())
+		{
+			SetDistanceToTeleportGoal(std::numeric_limits<float>::max());
+			return true;
+		}
+
+		// Memorize this distance
+		SetDistanceToTeleportGoal(distance);
+		return false;
 	}
 	else
 	{
@@ -1548,6 +1566,13 @@ Vector CMeshNavigator::Avoid(CBaseBot* bot, const Vector& goalPos, const Vector&
 	m_avoidIsLeftClear = true;
 	m_avoidIsRightClear = true;
 	float leftAvoid = 0.0f;
+
+	// going up a stairs/hill
+	if (goalPos.z >= botorigin.z + mover->GetStepHeight() + 0.1f)
+	{
+		// adjust the lower trace bounds so it doesn't collide with the hill
+		hullMin.z = hullMax.z - 12.0f;
+	}
 
 	trace::hull(leftFrom, leftTo, hullMin, hullMax, mask, &movementfilter, result);
 
