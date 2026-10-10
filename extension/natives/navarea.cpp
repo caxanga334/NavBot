@@ -71,7 +71,7 @@ namespace natives::navarea::offmesh
 		return pawnutils::ReturnFloat(conn->GetConnectionLength());
 	}
 
-	void setup(std::vector<sp_nativeinfo_t>& nv)
+	static void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
 		sp_nativeinfo_t list[] = {
 			{"NavBotNavOffMeshConnection.GetType", GetType},
@@ -468,7 +468,6 @@ namespace natives::navarea
 			return pawnutils::ReturnBool(false);
 		}
 
-		TheNavMesh->NotifyDangerousEditCommandWasUsed(); // kick bots
 		from->ConnectTo(to, dir);
 		return pawnutils::ReturnBool(true);
 	}
@@ -490,7 +489,6 @@ namespace natives::navarea
 			return 0;
 		}
 
-		TheNavMesh->NotifyDangerousEditCommandWasUsed(); // kick bots
 		from->Disconnect(to);
 		return 0;
 	}
@@ -566,6 +564,144 @@ namespace natives::navarea
 
 		return pawnutils::ReturnBool(area->IsOverlapping(pos, tolerance));
 	}
+	static cell_t IsContiguous(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area (first)!");
+			return 0;
+		}
+
+		CNavArea* other = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (!other)
+		{
+			context->ReportError("NULL nav area (second)!");
+			return 0;
+		}
+
+		return pawnutils::ReturnBool(area->IsContiguous(other));
+	}
+	static cell_t GetDanger(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		int teamindex = static_cast<int>(params[2]);
+
+		// Throw an error if an invalid team is passed to alert plugin coders since they can't tell if the team is invalid just by the return value alone.
+		if (teamindex < 0 || teamindex >= static_cast<int>(NAV_TEAMS_ARRAY_SIZE))
+		{
+			context->ReportError("Team index %i is out of bounds! Should be between 0 and %u.", teamindex, NAV_TEAMS_ARRAY_SIZE - 1U);
+			return 0;
+		}
+
+		return pawnutils::ReturnFloat(area->GetDanger(teamindex));
+	}
+	static cell_t IncreaseDanger(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		int teamindex = static_cast<int>(params[2]);
+		float amount = pawnutils::ReadFloat(params, 3);
+		area->IncreaseDanger(teamindex, amount);
+		return 0;
+	}
+	static cell_t ClearDanger(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		int teamindex = static_cast<int>(params[2]);
+		area->ClearDanger(teamindex);
+		return 0;
+	}
+	static cell_t GetSizeX(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnFloat(area->GetSizeX());
+	}
+	static cell_t GetSizeY(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnFloat(area->GetSizeY());
+	}
+	static cell_t GetExtent(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Extent extent;
+		area->GetExtent(&extent);
+
+		pawnutils::WriteVector(context, params, 2, extent.lo);
+		pawnutils::WriteVector(context, params, 3, extent.hi);
+		return 0;
+	}
+	static cell_t GetRandomPoint(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Vector point = area->GetRandomPoint();
+		pawnutils::WriteVector(context, params, 2, point);
+		return 0;
+	}
+	static cell_t GetDistanceSquaredToPoint(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Vector point = pawnutils::ReadVector(context, params, 2);
+		return pawnutils::ReturnFloat(area->GetDistanceSquaredToPoint(point));
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -594,6 +730,15 @@ namespace natives::navarea
 			{"NavBotNavArea.IsInShallowWater", IsInShallowWater},
 			{"NavBotNavArea.IsInWater", IsInWater},
 			{"NavBotNavArea.IsOverlappingPos", IsOverlappingPos},
+			{"NavBotNavArea.IsContiguous", IsContiguous},
+			{"NavBotNavArea.GetDanger", GetDanger},
+			{"NavBotNavArea.IncreaseDanger", IncreaseDanger},
+			{"NavBotNavArea.ClearDanger", ClearDanger},
+			{"NavBotNavArea.GetSizeX", GetSizeX},
+			{"NavBotNavArea.GetSizeY", GetSizeY},
+			{"NavBotNavArea.GetExtent", GetExtent},
+			{"NavBotNavArea.GetRandomPoint", GetRandomPoint},
+			{"NavBotNavArea.GetDistanceSquaredToPoint", GetDistanceSquaredToPoint},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

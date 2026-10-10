@@ -572,9 +572,9 @@ void botsharedutils::HidingSpotCollector::OnDone()
 
 	for (CNavArea* area : GetCollectedAreas())
 	{
-		const HidingSpotVector* vec = area->GetHidingSpots();
+		const HidingSpotVector& vec = area->GetHidingSpots();
 
-		if (vec->Count() == 0) { continue; }
+		if (vec.empty()) { continue; }
 
 		m_hidingareas.push_back(area);
 	}

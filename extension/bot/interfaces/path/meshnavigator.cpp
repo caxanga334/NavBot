@@ -691,15 +691,14 @@ bool CMeshNavigator::CheckForObstacles(CBaseBot* bot, const BotPathSegment* goal
 	Vector forward = (goal->goal - origin);
 	const bool isDebugging = bot->IsDebugging(BOTDEBUG_PATH);
 	const bool isCrouched = mover->IsCompletelyCrouched();
-	const float rangeToGoal = forward.NormalizeInPlace();
+	forward.NormalizeInPlace();
 	const float xysize = mover->GetHullWidth() * 0.5f;
-	const float maxszsize = isCrouched ? (std::ceil(mover->GetCrouchedHullHeight() * 0.6f)) : std::ceil(mover->GetStandingHullHeight() * 0.85f);
-	const float minszsize = std::floor(mover->GetStepHeight() * (isCrouched ? 0.15f : 0.7f));
+	const float maxszsize = isCrouched ? mover->GetCrouchedHullHeight() - 2.0f : mover->GetStandingHullHeight() - 4.0f;
+	const float minszsize = mover->GetStepHeight() + 0.5f;
 	trace_t tr;
 	CMovementObstacleFilter filter{ bot };
 	Vector mins{ -xysize, -xysize, minszsize };
 	Vector maxs{ xysize, xysize, maxszsize };
-	origin.z += mover->GetStepHeight(); // ignore obstacles we can step over
 	Vector end = origin + (forward * (mover->GetHullWidth() * 1.5f));
 	const unsigned int mask = mover->GetMovementTraceMask();
 

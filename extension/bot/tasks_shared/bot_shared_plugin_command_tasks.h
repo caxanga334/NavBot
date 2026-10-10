@@ -76,6 +76,12 @@ public:
 
 	TaskResult<BotClass> OnTaskUpdate(BotClass* bot) override
 	{
+		// Don't get stuck on a loop here if the plugin is unloaded.
+		if (m_updatecallback->GetFunctionCount() < 1)
+		{
+			return AITask<BotClass>::Done("Empty callback!");
+		}
+
 		std::array<cell_t, 3> arrgoal;
 		std::fill(std::begin(arrgoal), std::end(arrgoal), sp_ftoc(0.0f));
 		cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);

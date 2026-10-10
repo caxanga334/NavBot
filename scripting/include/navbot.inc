@@ -254,6 +254,15 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.IsInShallowWater");
 	MarkNativeAsOptional("NavBotNavArea.IsInWater");
 	MarkNativeAsOptional("NavBotNavArea.IsOverlappingPos");
+	MarkNativeAsOptional("NavBotNavArea.IsContiguous");
+	MarkNativeAsOptional("NavBotNavArea.GetDanger");
+	MarkNativeAsOptional("NavBotNavArea.IncreaseDanger");
+	MarkNativeAsOptional("NavBotNavArea.ClearDanger");
+	MarkNativeAsOptional("NavBotNavArea.GetSizeX");
+	MarkNativeAsOptional("NavBotNavArea.GetSizeY");
+	MarkNativeAsOptional("NavBotNavArea.GetExtent");
+	MarkNativeAsOptional("NavBotNavArea.GetRandomPoint");
+	MarkNativeAsOptional("NavBotNavArea.GetDistanceSquaredToPoint");
 
 	/* Off-Mesh Connection */
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetType");
@@ -381,6 +390,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBot.SendScriptedPluginCommand");
 	MarkNativeAsOptional("NavBot.GetHealthState");
 	MarkNativeAsOptional("NavBot.GetCurrentPath");
+	MarkNativeAsOptional("NavBot.SendDebugMoveToEvent");
 
 	/* Base Interface */
 	MarkNativeAsOptional("NavBotBotInterface.Reset");

@@ -179,6 +179,15 @@ methodmap NavBot < NavBotBasePlayer
 	 * @return			Number of path segments written to the array. The last valid index is the return value minus one.
 	 */
 	public native int GetCurrentPath(float[] x, float[] y, float[] z, const int size);
+	/**
+	 * Sends the "debug move to" event to the bot.
+	 * This works even with sm_navbot_debug_disable_gamemode_ai 1 and is the same event used by the sm_navbot_tool_bots_go_to command.
+	 * This overrides all bot behavior and is inteded to be used for testing the nav mesh.
+	 * 
+	 * @param pos		World position the bot will move to.
+	 * @error			Invalid bot instance.
+	 */
+	public native void SendDebugMoveToEvent(const float pos[3]);
 }
 
 typeset NavBotScriptedBehaviorCB

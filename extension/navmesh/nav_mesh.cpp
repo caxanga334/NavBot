@@ -3745,18 +3745,17 @@ void CNavMesh::DestroyHidingSpots( void )
 	{
 		CNavArea *area = TheNavAreas[ it ];
 
-		area->m_hidingSpots.RemoveAll();
+		area->m_hidingSpots.clear();
 	}
 
 	HidingSpot::m_nextID = 0;
 
-	// free all the HidingSpots
-	FOR_EACH_VEC( TheHidingSpots, hit )
+	for (auto spot : TheHidingSpots)
 	{
-		delete TheHidingSpots[ hit ];
+		delete spot;
 	}
 
-	TheHidingSpots.RemoveAll();
+	TheHidingSpots.clear();
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3770,9 +3769,9 @@ HidingSpot::HidingSpot( void )
 	m_id = m_nextID++;
 	m_marker = 0;
 	m_flags = 0;
-	m_area = NULL;
+	m_area = nullptr;
 
-	TheHidingSpots.AddToTail( this );
+	TheHidingSpots.push_back(this);
 }
 
 
@@ -3822,15 +3821,15 @@ NavErrorType HidingSpot::PostLoad( void )
  */
 HidingSpot *GetHidingSpotByID( unsigned int id )
 {
-	FOR_EACH_VEC( TheHidingSpots, it )
+	for (auto spot : TheHidingSpots)
 	{
-		HidingSpot *spot = TheHidingSpots[ it ];
-
 		if (spot->GetID() == id)
+		{
 			return spot;
-	}	
+		}
+	}
 
-	return NULL;
+	return nullptr;
 }
 
 

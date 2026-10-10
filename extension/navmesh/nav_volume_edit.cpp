@@ -14,7 +14,6 @@ CON_COMMAND_F(sm_nav_volume_create, "Creates a new Nav Volume at your position",
 {
 	if (!CNavVolume::IsEditing()) { return; }
 
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 	edict_t* host = gamehelpers->EdictOfIndex(1);
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 
@@ -131,7 +130,6 @@ CON_COMMAND_F(sm_nav_volume_set_bounds, "Updates the selected nav volume bounds.
 	selectedVolume->SearchForNavAreas();
 	Msg("Updated volume #%i bounds to mins [%3.2f, %3.2f, %3.2f] maxs [%3.2f, %3.2f, %3.2f]\n", selectedVolume->GetID(), mins.x, mins.y, mins.z, maxs.x, maxs.y, maxs.z);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned team.", FCVAR_CHEAT)
@@ -169,7 +167,6 @@ CON_COMMAND_F(sm_nav_volume_set_team, "Updates the selected nav volume assigned 
 
 	selectedVolume->SetTeam(team);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_volume_set_toggle_condition, "Updates the selected nav prerequisite toggle condition", FCVAR_CHEAT)
@@ -185,7 +182,6 @@ CON_COMMAND_F(sm_nav_volume_set_toggle_condition, "Updates the selected nav prer
 		return;
 	}
 
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 	auto& selected = TheNavMesh->GetSelectedVolume();
 
 	if (!selected)

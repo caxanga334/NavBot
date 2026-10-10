@@ -171,7 +171,7 @@ private:
 	static inline unsigned int m_nextID{ 1 };							// used when allocating spot ID's
 	static inline unsigned int m_masterMarker{ 1 };						// used to mark spots
 };
-typedef CUtlVector< HidingSpot * > HidingSpotVector;
+typedef std::vector<HidingSpot*> HidingSpotVector;
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -605,7 +605,7 @@ public:
 	NavDirType ComputeDirection( Vector *point ) const;			// return direction from this area to the given point
 
 	//- hiding spots ------------------------------------------------------------------------------------
-	const HidingSpotVector *GetHidingSpots( void ) const	{ return &m_hidingSpots; }
+	const HidingSpotVector& GetHidingSpots( void ) const	{ return m_hidingSpots; }
 	const HidingSpot* GetRandomHidingSpot() const;
 
 	/* Danger */
@@ -621,10 +621,8 @@ public:
 		{
 			return 0.0f;
 		}
-		else
-		{
-			return m_danger[teamID];
-		}
+		
+		return m_danger[teamID];
 	}
 
 	/* Common danger amounts */
@@ -638,7 +636,6 @@ public:
 	/**
 	 * @brief Increases the danger amount for this area.
 	 * @param teamID Team to increase for. NAV_TEAM_ANY for all teams.
-	 * @param max Increase danger up to this to avoid excessive danger values.
 	 * @param amount Amount to increase.
 	 */
 	inline void IncreaseDanger(int teamID, const float amount)

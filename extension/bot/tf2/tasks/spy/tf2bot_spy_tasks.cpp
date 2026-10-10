@@ -63,7 +63,7 @@ bool TF2SpyLurkAreaCollector::ShouldCollect(CTFNavArea* area)
 		return false;
 	}
 
-	if (area->GetHidingSpots()->Count() < 1)
+	if (area->GetHidingSpots().empty())
 	{
 		// area doesn't have any hiding spots
 		return false;

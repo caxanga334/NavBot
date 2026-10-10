@@ -13,7 +13,6 @@ CON_COMMAND_F(sm_nav_prereq_create, "Creates a new prerequisite.", FCVAR_CHEAT)
 	if (!CNavPrerequisite::IsEditing())
 		return;
 
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 	edict_t* host = UtilHelpers::GetListenServerHost();
 	const Vector& origin = host->GetCollideable()->GetCollisionOrigin();
 	auto result = TheNavMesh->AddNavPrerequisite(&origin);
@@ -118,7 +117,6 @@ CON_COMMAND_F(sm_nav_prereq_set_origin, "Updates the selected nav prerequisite o
 	selected->SearchForNavAreas();
 	Msg("Updated prerequisite #%i origin to <%3.2f, %3.2f, %3.2f>\n", selected->GetID(), origin.x, origin.y, origin.z);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_prereq_set_bounds, "Updates the selected nav prerequisite bounds.", FCVAR_CHEAT)
@@ -157,7 +155,6 @@ CON_COMMAND_F(sm_nav_prereq_set_bounds, "Updates the selected nav prerequisite b
 	selected->SearchForNavAreas();
 	Msg("Updated prerequisite #%i bounds to mins [%3.2f, %3.2f, %3.2f] maxs [%3.2f, %3.2f, %3.2f]\n", selected->GetID(), mins.x, mins.y, mins.z, maxs.x, maxs.y, maxs.z);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_prereq_set_team, "Updates the selected nav prerequisite assigned team.", FCVAR_CHEAT)
@@ -186,7 +183,6 @@ CON_COMMAND_F(sm_nav_prereq_set_team, "Updates the selected nav prerequisite ass
 	int team = atoi(args[1]);
 	selected->SetTeamIndex(team);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_prereq_set_task, "Updates the selected nav prerequisite goal task.", FCVAR_CHEAT)
@@ -214,7 +210,6 @@ CON_COMMAND_F(sm_nav_prereq_set_task, "Updates the selected nav prerequisite goa
 	int task = atoi(args[1]);
 	selected->SetTask(task);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 }
 
 CON_COMMAND_F(sm_nav_prereq_list_available_tasks, "Lists all available task for nav prerequisites.", FCVAR_CHEAT)
@@ -330,7 +325,6 @@ CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prer
 	}
 
 	auto& selected = TheNavMesh->GetSelectedPrerequisite();
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 
 	if (!selected)
 	{

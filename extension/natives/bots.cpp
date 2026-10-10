@@ -595,6 +595,20 @@ namespace basebot
 
 		return n;
 	}
+	static cell_t Native_SendDebugMoveToEvent(IPluginContext* context, const cell_t* params)
+	{
+		CBaseBot* bot = pawnutils::GetBotOfIndex<CBaseBot>(params[1]);
+
+		if (!bot)
+		{
+			context->ReportError("Invalid bot of index %i!", params[1]);
+			return 0;
+		}
+
+		Vector pos = pawnutils::ReadVector(context, params, 2);
+		bot->OnDebugMoveToCommand(pos);
+		return 0;
+	}
 }
 
 void natives::bots::setup(std::vector<sp_nativeinfo_t>& nv)

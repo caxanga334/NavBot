@@ -209,6 +209,136 @@ methodmap NavBotNavArea
 	 * @param tolerance		Check tolerance.
 	 */
 	public static native bool IsOverlappingPos(Address ptr, const float pos[3], const float tolerance = 0.0);
+	/**
+	 * Checks if  given area (first) and 'other' (second) share a colinear edge (ie: no drop-down or step/jump/climb)
+	 * 
+	 * @param first			Address of the first nav area.
+	 * @param second		Address of the second nav area.
+	 * @return				True if yes, false otherwise.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native bool IsContiguous(Address first, Address second);
+	/**
+	 * Gets the nav area danger value for a given team.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param teamID		Index of the team to get the danger value of. This is required and NAVBOT_NAV_TEAM_ANY is NOT supported!
+	 * @return				Nav area danger value. Returns 0 if an invalid team index is passed.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native float GetDanger(Address ptr, int teamID);
+	/**
+	 * Increases this nav area danger value. Danger decays over time.
+	 * Bots will try to avoid these areas when pathfinding.
+	 * "FASTEST ROUTE" ignores danger and "SAFEST ROUTE" will priorize avoiding these areas.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param teamID		Index of the team to increase the danger value. Use NAVBOT_NAV_TEAM_ANY to apply to all teams.
+	 * @param amount		Amount of danger to add.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native void IncreaseDanger(Address ptr, int teamID, float amount);
+	/**
+	 * Clears the nav area danger value for a given team.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param teamID		Index of the team to get the danger value of. Use NAVBOT_NAV_TEAM_ANY to apply to all teams.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native void ClearDanger(Address ptr, int teamID);
+	/**
+	 * Gets the nav area size (X axis)
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				Nav area size (X)
+	 * @error				Bad nav area pointer.
+	 */
+	public static native float GetSizeX(Address ptr);
+	/**
+	 * Gets the nav area size (Y axis)
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				Nav area size (Y)
+	 * @error				Bad nav area pointer.
+	 */
+	public static native float GetSizeY(Address ptr);
+	/**
+	 * Checks if the given area is smaller than the given size on either X or Y axis.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param size			Size to check.
+	 * @return				True if the nav area is smaller than the given size.
+	 * @error				Bad nav area pointer.
+	 */
+	public static bool IsSmallerThan(Address ptr, float size)
+	{
+		float sx = NavBotNavArea.GetSizeX(ptr);
+		float sy = NavBotNavArea.GetSizeY(ptr);
+
+		if (sx < size || sy < size)
+		{
+			return true;
+		}
+
+		return false;
+	}
+	/**
+	 * Checks if the given area is larger than the given size on either X or Y axis.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param size			Size to check.
+	 * @return				True if the nav area is larger than the given size.
+	 * @error				Bad nav area pointer.
+	 */
+	public static bool IsLargerThan(Address ptr, float size)
+	{
+		float sx = NavBotNavArea.GetSizeX(ptr);
+		float sy = NavBotNavArea.GetSizeY(ptr);
+
+		if (sx > size || sy > size)
+		{
+			return true;
+		}
+
+		return false;
+	}
+	/**
+	 * Returns the nav area geometric area (2D)
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				Nav area geometric area (2D).
+	 * @error				Bad nav area pointer.
+	 */
+	public static float GetGeometricArea(Address ptr)
+	{
+		return NavBotNavArea.GetSizeX(ptr) * NavBotNavArea.GetSizeY(ptr);
+	}
+	/**
+	 * Gets the nav area extent (bounds).
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param lower			Nav area lower extent bounds.
+	 * @param upper			Nav area upper extent bounds.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native void GetExtent(Address ptr, float lower[3], float upper[3]);
+	/**
+	 * Gets a random position within the nav area bounds.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param pos			Float array to write the position to.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native void GetRandomPoint(Address ptr, float pos[3]);
+	/**
+	 * Gets the squared distance between the given area and position.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @param pos			Position to compute the squared distance to.
+	 * @return				Squared distance to the given point.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native float GetDistanceSquaredToPoint(Address ptr, const float point[3]);
 }
 
 methodmap NavBotNavOffMeshConnection

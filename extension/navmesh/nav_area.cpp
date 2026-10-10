@@ -2642,9 +2642,9 @@ NavDirType CNavArea::ComputeDirection( Vector *point ) const
 
 const HidingSpot* CNavArea::GetRandomHidingSpot() const
 {
-	if (m_hidingSpots.Count() == 0) { return nullptr; }
-	if (m_hidingSpots.Count() == 1) { return m_hidingSpots[0]; }
-	return m_hidingSpots[randomgen->GetRandomInt<int>(0, m_hidingSpots.Count() - 1)];
+	if (m_hidingSpots.empty()) { return nullptr; }
+	if (m_hidingSpots.size() == 1U) { return m_hidingSpots[0]; }
+	return librandom::utils::GetRandomElementFromVector(m_hidingSpots);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3194,12 +3194,9 @@ void CNavArea::DrawDragSelectionSet( Color &dragSelectionSetColor ) const
  */
 void CNavArea::DrawHidingSpots( void ) const
 {
-	const HidingSpotVector *hidingSpots = GetHidingSpots();
 
-	FOR_EACH_VEC( (*hidingSpots), it )
+	for (HidingSpot* spot : GetHidingSpots())
 	{
-		const HidingSpot *spot = (*hidingSpots)[ it ];
-
 		NavEditColor color;
 
 		if (spot->IsIdealSniperSpot())
@@ -3950,13 +3947,11 @@ void CNavArea::DecayDanger()
  */
 bool CNavArea::IsHidingSpotCollision( const Vector &pos ) const
 {
-	const float collisionRange = 30.0f;
+	constexpr float collisionRange = 30.0f;
 
-	FOR_EACH_VEC( m_hidingSpots, it )
+	for (HidingSpot* spot : m_hidingSpots)
 	{
-		const HidingSpot *spot = m_hidingSpots[ it ];
-
-		if ((spot->GetPosition() - pos).IsLengthLessThan( collisionRange ))
+		if ((spot->GetPosition() - pos).IsLengthLessThan(collisionRange))
 			return true;
 	}
 
@@ -3964,7 +3959,7 @@ bool CNavArea::IsHidingSpotCollision( const Vector &pos ) const
 }
 
 //--------------------------------------------------------------------------------------------------------------
-bool IsHidingSpotInCover( const Vector &spot )
+static bool IsHidingSpotInCover( const Vector &spot )
 {
 	int coverCount = 0;
 	trace_t result;
@@ -4074,8 +4069,12 @@ void CNavArea::ComputeHidingSpots( void )
 	}
 	extent;
 
-	m_hidingSpots.PurgeAndDeleteElements();
-
+	for (HidingSpot* spot : m_hidingSpots)
+	{
+		delete spot;
+	}
+	
+	m_hidingSpots.clear();
 
 	// "jump areas" cannot have hiding spots
 	if ( GetAttributes() & NAV_MESH_JUMP )
@@ -4177,7 +4176,7 @@ void CNavArea::ComputeHidingSpots( void )
 				HidingSpot *spot = TheNavMesh->CreateHidingSpot();
 				spot->SetPosition( pos );
 				spot->SetFlags( IsHidingSpotInCover( pos ) ? HidingSpot::IN_COVER : HidingSpot::EXPOSED );
-				m_hidingSpots.AddToTail( spot );
+				m_hidingSpots.emplace_back(spot);
 			}
 		}
 	}
@@ -4296,11 +4295,9 @@ void CNavArea::ComputeSniperSpots( void )
 	if (sm_nav_quicksave.GetBool())
 		return;
 
-	FOR_EACH_VEC( m_hidingSpots, it )
+	for (HidingSpot* spot : m_hidingSpots)
 	{
-		HidingSpot *spot = m_hidingSpots[ it ];
-
-		ClassifySniperSpot( spot );
+		ClassifySniperSpot(spot);
 	}
 }
 

@@ -569,8 +569,6 @@ void CNavMesh::CommandNavBuildLadder( void )
 		return;
 	}
 
-	NotifyDangerousEditCommandWasUsed();
-
 	// We've got a ladder at m_editCursorPos, with a normal of m_surfaceNormal
 	Vector right, up;
 	VectorVectors( -m_surfaceNormal, right, up );
@@ -2745,8 +2743,6 @@ void CNavMesh::CommandNavBeginArea( void )
 	if (player == NULL)
 		return;
 
-	NotifyDangerousEditCommandWasUsed();
-
 	if ( !(IsEditMode( CREATING_AREA ) || IsEditMode( CREATING_LADDER ) || IsEditMode( NORMAL )) )
 	{
 		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
@@ -2932,7 +2928,6 @@ void CNavMesh::CommandNavConnect( void )
 	if (player == NULL || !IsEditMode( NORMAL ) )
 		return;
 
-	NotifyDangerousEditCommandWasUsed();
 	FindActiveNavArea();
 
 	Vector center;
@@ -3049,7 +3044,6 @@ void CNavMesh::CommandNavDisconnect( void )
 	if (player == NULL || !IsEditMode( NORMAL ) )
 		return;
 
-	NotifyDangerousEditCommandWasUsed();
 	FindActiveNavArea();
 
 	if ( m_selectedSet.Count() > 1 )
@@ -3144,8 +3138,6 @@ void CNavMesh::CommandNavDisconnectOutgoingOneWays( void )
 	edict_t* player = UTIL_GetListenServerEnt();
 	if ( !player || !IsEditMode( NORMAL ) )
 		return;
-
-	NotifyDangerousEditCommandWasUsed();
 
 	if ( m_selectedSet.Count() == 0 )
 	{
@@ -3844,8 +3836,6 @@ void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 	if (ent == nullptr || !IsEditMode(NORMAL))
 		return;
 
-	NotifyDangerousEditCommandWasUsed();
-
 	/**
 	 * Creates a special link between two areas
 	 * 
@@ -3853,7 +3843,7 @@ void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 
 	if (m_markedArea == nullptr)
 	{
-		Msg("Mark a nav area first!");
+		META_CONPRINT("Mark a nav area first! \n");
 		PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 		return;
 	}
@@ -3863,7 +3853,7 @@ void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 
 	if (m_selectedArea == nullptr)
 	{
-		Msg("Aim at the destination area!");
+		META_CONPRINT("Aim at the destination area! \n");
 		PlayEditSound(EditSoundType::SOUND_CONNECT_FAIL);
 		return;
 	}
@@ -3874,12 +3864,12 @@ void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 
 	if (!endArea->Contains(linkEnd))
 	{
-		Warning("OffMesh destination outside destination nav area!\n");
+		META_CONPRINT("OffMesh destination outside destination nav area!\n");
 	}
 
 	if (startArea == endArea)
 	{
-		Warning("Start area and end area are the same! %p == %p \n", startArea, endArea);
+		META_CONPRINTF("Start area and end area are the same! %p == %p \n", startArea, endArea);
 		PlayEditSound(EditSoundType::SOUND_GENERIC_ERROR);
 		return;
 	}
@@ -3887,7 +3877,7 @@ void CNavMesh::CommandNavConnectViaOffMeshLink(std::uint32_t linktype)
 	startArea->ConnectTo(endArea, static_cast<OffMeshConnectionType>(linktype), m_linkorigin, linkEnd);
 	NDebugOverlay::SweptBox(linkEnd, linkEnd, player.GetMins(), player.GetMaxs(), vec3_angle, 0, 128, 0, 255, 10.0f);
 	NDebugOverlay::Line(m_linkorigin, linkEnd, 0, 0, 200, true, 10.0f);
-	Msg("Creating a new offmesh connection between area #%i and area #%i \n", startArea->GetID(), endArea->GetID());
+	META_CONPRINTF("Creating a new offmesh connection between area #%i and area #%i \n", startArea->GetID(), endArea->GetID());
 	PlayEditSound(EditSoundType::SOUND_GENERIC_SUCCESS);
 
 	SetMarkedArea(nullptr);			// unmark the mark area
@@ -3925,7 +3915,6 @@ void CNavMesh::CommandNavDisconnectOffMeshLink(uint32_t linktype)
 	if (player == NULL || !IsEditMode(NORMAL))
 		return;
 
-	NotifyDangerousEditCommandWasUsed();
 	FindActiveNavArea();
 
 	if (m_selectedSet.Count() > 1)
@@ -4672,7 +4661,6 @@ CON_COMMAND_F(sm_nav_select_potentially_obstructed_areas, "Selects nav areas tha
 
 void CNavMesh::CommandNavDisconnectDropDownAreas(const float minDrop)
 {
-	NotifyDangerousEditCommandWasUsed();
 	std::size_t count = 0U;
 
 	FOR_EACH_VEC(m_selectedSet, it)
@@ -4807,7 +4795,6 @@ CON_COMMAND_F(sm_nav_auto_create_teleports, "Automatically creates off-mesh conn
 	META_CONPRINTF("Created %i teleporter connections. \n", created);
 	TheNavMesh->ClearSelectedSet();
 	TheNavMesh->SetMarkedArea(nullptr);
-	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
 }
 
