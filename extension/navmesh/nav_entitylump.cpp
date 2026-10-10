@@ -45,8 +45,8 @@ namespace navmesh
 		while (std::getline(stream, line))
 		{
 			// Remove carriage return and new line from the string
-			line.erase(std::remove(line.begin(), line.end(), '\r'), line.cend());
-			line.erase(std::remove(line.begin(), line.end(), '\n'), line.cend());
+			line.erase(std::remove(line.begin(), line.end(), '\r'), line.end());
+			line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
 
 			for (auto& character : line)
 			{
