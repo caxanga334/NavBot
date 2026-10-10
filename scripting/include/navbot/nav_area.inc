@@ -314,15 +314,6 @@ methodmap NavBotNavArea
 		return NavBotNavArea.GetSizeX(ptr) * NavBotNavArea.GetSizeY(ptr);
 	}
 	/**
-	 * Gets the nav area extent (bounds).
-	 * 
-	 * @param ptr			Address of a nav area.
-	 * @param lower			Nav area lower extent bounds.
-	 * @param upper			Nav area upper extent bounds.
-	 * @error				Bad nav area pointer.
-	 */
-	public static native void GetExtent(Address ptr, float lower[3], float upper[3]);
-	/**
 	 * Gets a random position within the nav area bounds.
 	 * 
 	 * @param ptr			Address of a nav area.

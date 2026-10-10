@@ -260,7 +260,6 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.ClearDanger");
 	MarkNativeAsOptional("NavBotNavArea.GetSizeX");
 	MarkNativeAsOptional("NavBotNavArea.GetSizeY");
-	MarkNativeAsOptional("NavBotNavArea.GetExtent");
 	MarkNativeAsOptional("NavBotNavArea.GetRandomPoint");
 	MarkNativeAsOptional("NavBotNavArea.GetDistanceSquaredToPoint");
 

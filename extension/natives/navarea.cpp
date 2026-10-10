@@ -658,23 +658,6 @@ namespace natives::navarea
 
 		return pawnutils::ReturnFloat(area->GetSizeY());
 	}
-	static cell_t GetExtent(IPluginContext* context, const cell_t* params)
-	{
-		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
-
-		if (!area)
-		{
-			context->ReportError("NULL nav area!");
-			return 0;
-		}
-
-		Extent extent;
-		area->GetExtent(&extent);
-
-		pawnutils::WriteVector(context, params, 2, extent.lo);
-		pawnutils::WriteVector(context, params, 3, extent.hi);
-		return 0;
-	}
 	static cell_t GetRandomPoint(IPluginContext* context, const cell_t* params)
 	{
 		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
@@ -736,7 +719,6 @@ namespace natives::navarea
 			{"NavBotNavArea.ClearDanger", ClearDanger},
 			{"NavBotNavArea.GetSizeX", GetSizeX},
 			{"NavBotNavArea.GetSizeY", GetSizeY},
-			{"NavBotNavArea.GetExtent", GetExtent},
 			{"NavBotNavArea.GetRandomPoint", GetRandomPoint},
 			{"NavBotNavArea.GetDistanceSquaredToPoint", GetDistanceSquaredToPoint},
 		};
