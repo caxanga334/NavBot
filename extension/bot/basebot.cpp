@@ -74,7 +74,7 @@ void CBaseBot::PostAdd()
 		entprops->SetEntProp(GetIndex(), Prop_Send, "m_fFlags", FL_CLIENT | FL_FAKECLIENT); // set client and fakeclient flags
 	}
 
-	if (m_controller == nullptr)
+	if (m_controller == nullptr && botmanager != nullptr)
 	{
 		m_controller = botmanager->GetBotController(GetEdict());
 	}
@@ -425,6 +425,11 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 		smutils->LogError(myself, "%s Bogus CBotCmd::sidemove", GetClientName());
 	}
 
+	if (ucmd->viewangles.x < -89.0f || ucmd->viewangles.x > 89.0f)
+	{
+		smutils->LogError(myself, "%s Bogus CBotCmd::viewangles.x (PITCH)", GetClientName());
+	}
+
 #endif // EXT_DEBUG
 
 	if (!extension->ShouldCallRunPlayerCommand()) // this mod already calls runplayermove on bots, we send the bot actual cmd on the hook
@@ -439,6 +444,14 @@ void CBaseBot::RunUserCommand(CBotCmd* ucmd)
 	}
 	else
 	{
+#ifdef EXT_DEBUG
+		if (botmanager == nullptr && m_controller == nullptr)
+		{
+			smutils->LogError(myself, "FATAL: Current mod lacks the bot interface manager! This mod needs ProcessUsercmds!");
+			return;
+		}
+#endif // EXT_DEBUG
+
 		m_controller->RunPlayerMove(ucmd);
 	}
 }
@@ -581,28 +594,6 @@ void CBaseBot::TryJoinGame()
 		{
 			DelayedFakeClientCommand(token.c_str());
 		}
-	}
-}
-
-/**
- * @brief Selects weapon by using the IBotController::SetActiveWeapon function.
- * This will call BCC's Weapon_Create, make sure the bot actually owns the weapon you want or the bot will magically get one.
- * @param szclassname Weapon classname to select
-*/
-void CBaseBot::SelectWeaponByClassname(const char* szclassname)
-{
-	m_controller->SetActiveWeapon(szclassname);
-}
-
-/**
- * @brief Safe version of 'CBaseBot::SelectWeaponByClassname'. Adds an addition check to see if the bot actually owns the weapon
- * @param szclassname Weapon classname to select
-*/
-void CBaseBot::SafeWeaponSelectByClassname(const char* szclassname)
-{
-	if (Weapon_OwnsThisType(szclassname))
-	{
-		m_controller->SetActiveWeapon(szclassname);
 	}
 }
 

@@ -244,7 +244,7 @@ void CBaseBot::Hook_PhysicsSimulate()
 #endif // EXT_VPROF_ENABLED
 
 #ifdef EXT_DEBUG
-	if (m_controller == nullptr && !IsPluginBot())
+	if (m_controller == nullptr && !IsPluginBot() && botmanager != nullptr)
 	{
 		META_CONPRINTF("CBaseBot::Hook_PhysicsSimulate called with NULL m_controller <%p>\n", this);
 	}

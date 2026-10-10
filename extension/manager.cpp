@@ -115,6 +115,12 @@ void CExtManager::OnAllLoaded()
 			}
 		}
 
+		if (botmanager == nullptr)
+		{
+			// Force the engine function if the current game doesn't implement the bot manager interface.
+			CExtManager::s_botcreatemethod = BotCreateMethod::CREATEFAKECLIENT;
+		}
+
 		const char* value = gameconf->GetKeyValue("FixUpFlags");
 		
 		if (value)

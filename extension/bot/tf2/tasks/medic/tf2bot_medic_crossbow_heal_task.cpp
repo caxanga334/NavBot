@@ -7,6 +7,12 @@
 
 CBaseEntity* CTF2BotMedicCrossbowHealTask::IsPossible(CTF2Bot* me, const CBotWeapon* crossbow)
 {
+	// Must have a crossbow.
+	if (crossbow == nullptr)
+	{
+		return nullptr;
+	}
+
 	std::array<CBaseEntity*, ABSOLUTE_PLAYER_LIMIT> targets;
 	std::fill(targets.begin(), targets.end(), nullptr);
 	std::size_t target_count = 0U;
@@ -51,7 +57,8 @@ CBaseEntity* CTF2BotMedicCrossbowHealTask::IsPossible(CTF2Bot* me, const CBotWea
 	{
 		return nullptr;
 	}
-	else if (target_count == 1U)
+
+	if (target_count == 1U)
 	{
 		return targets[0];
 	}

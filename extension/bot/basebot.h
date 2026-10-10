@@ -190,8 +190,6 @@ public:
 	 * @param subtype Weapon subtype to select, game/mod dependant.
 	*/
 	void SelectWeaponByUserCmd(int weapon_entity, int subtype = 0) { m_weaponselect = weapon_entity; m_weaponsubtype = subtype; }
-	void SelectWeaponByClassname(const char* szclassname);
-	virtual void SafeWeaponSelectByClassname(const char* szclassname);
 	void SelectWeaponByCommand(const char* szclassname) const;
 
 	const DifficultyProfile* GetDifficultyProfile() const { return m_profile.get(); }

@@ -10,23 +10,13 @@
 // Author: Michael S. Booth (mike@turtlerockstudios.com), 2003
 
 #include NAVBOT_PCH_FILE
-#include <algorithm>
-#include <vector>
-#include <unordered_set>
-
-#include <extension.h>
-#include <manager.h>
-#include <sdkports/debugoverlay_shared.h>
-#include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_utils.h>
 #include <entities/baseentity.h>
 #include "nav_mesh.h"
 #include "nav_trace.h"
 #include "nav_node.h"
 #include "nav_pathfind.h"
-#include <viewport_panel_names.h>
-#include <eiface.h>
-#include <irecipientfilter.h>
+#include "nav_entitylump.h"
 #include <worldsize.h>
 
 //#include "terror/TerrorShared.h"
@@ -58,6 +48,7 @@ ConVar sm_nav_generate_incremental_tolerance( "sm_nav_generate_incremental_toler
 // Original valve nav mesh uses 50. TF2C reduced to 10. Never asked why but it does look better with 10.
 ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "10", FCVAR_CHEAT, "Max area size created in nav generation" );
 static ConVar sm_nav_prefer_reload("sm_nav_prefer_reload", "1", FCVAR_GAMEDLL, "(Experimental) If enabled, reloads the navigation mesh instead of reloading the entire map.");
+static ConVar sm_nav_generate_auto_ladder("sm_nav_generate_auto_ladder", "1", FCVAR_GAMEDLL, "Automatically generate ladders.");
 
 constexpr float MaxTraversableHeight = 18.0f;		// max internal obstacle height that can occur between nav nodes and safely disregarded
 constexpr float MinObstacleAreaWidth = 10.0f;		// min width of a nav area we will generate on top of an obstacle
@@ -156,6 +147,11 @@ void CNavMesh::BuildLadders(void)
 	// remove any left-over ladders
 	DestroyLadders();
 
+	if (!sm_nav_generate_auto_ladder.GetBool())
+	{
+		return;
+	}
+
 	// TO-DO: Add support for HL2 style ladders, will be used for Synergy and others HL2 based MP mods.
 
 	auto func = [this](int index, edict_t* edict, CBaseEntity* entity) {
@@ -167,6 +163,31 @@ void CNavMesh::BuildLadders(void)
 	};
 
 	UtilHelpers::ForEachEntityOfClassname("func_simpleladder", func);
+
+	// Generate ladders from the map's entity lump
+	std::vector<navmesh::LumpEntity> ents;
+	ents.reserve(8192);
+
+	if (navmesh::ParseMapLump(ents))
+	{
+		for (auto& entity : ents)
+		{
+			if (entity.ClassnameIs("info_ladder"))
+			{
+				Vector mins;
+				Vector maxs;
+				// Hopefully we never get an incomplete info_ladder since it will crash here if we get one
+				mins.x = atof(entity.GetValue("mins.x"));
+				mins.y = atof(entity.GetValue("mins.y"));
+				mins.z = atof(entity.GetValue("mins.z"));
+				maxs.x = atof(entity.GetValue("maxs.x"));
+				maxs.y = atof(entity.GetValue("maxs.y"));
+				maxs.z = atof(entity.GetValue("maxs.z"));
+
+				CreateLadder(mins, maxs, 0.0f);
+			}
+		}
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------

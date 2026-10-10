@@ -189,6 +189,23 @@ namespace Utils
 			}
 		}
 	}
+
+	template <typename T, typename F>
+	inline static T* GetOptionalInterface(ISmmAPI* ismm, F factory, std::string_view versionstr, int minver = -1)
+	{
+		void* ptr = ismm->VInterfaceMatch(factory, versionstr.data(), minver);
+
+		if (ptr == nullptr)
+		{
+#ifdef EXT_DEBUG
+			META_CONPRINTF("Could not get pointer to optional interface: %s \n", versionstr.data());
+#endif // EXT_DEBUG
+
+			return nullptr;
+		}
+
+		return reinterpret_cast<T*>(ptr);
+	}
 }
 
 NavBotExt::NavBotExt()
@@ -485,21 +502,10 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetEngineFactory, staticpropmgr, IStaticPropMgrServer, INTERFACEVERSION_STATICPROPMGR_SERVER);
 	GET_V_IFACE_CURRENT(GetEngineFactory, partition, ISpatialPartition, INTERFACEVERSION_SPATIALPARTITION);
 
-	debugoverlay = reinterpret_cast<IVDebugOverlay*>(ismm->VInterfaceMatch(ismm->GetEngineFactory(), VDEBUG_OVERLAY_INTERFACE_VERSION));
-
-	// Warn if debug overlay is not available on a Listen Server.
-	if (debugoverlay == nullptr && !engine->IsDedicatedServer())
-	{
-		ismm->LogMsg(this, "Warning: Could not get interface %s. Nav mesh drawing and editing will not be available.", VDEBUG_OVERLAY_INTERFACE_VERSION);
-	}
-#ifdef EXT_DEBUG
-	else
-	{
-		ismm->LogMsg(this, "Found debug overlay interface.");
-	}
-#endif // EXT_DEBUG
-
-	GET_V_IFACE_CURRENT(GetServerFactory, botmanager, IBotManager, INTERFACEVERSION_PLAYERBOTMANAGER);
+	// Debugoverlay isn't available on dedicated servers.
+	debugoverlay = Utils::GetOptionalInterface<IVDebugOverlay>(ismm, ismm->GetEngineFactory(), VDEBUG_OVERLAY_INTERFACE_VERSION);
+	// It's possible to get around the lack of this interface and since this is a gamedll interface, not every mod may have it.
+	botmanager = Utils::GetOptionalInterface<IBotManager>(ismm, ismm->GetServerFactory(), INTERFACEVERSION_PLAYERBOTMANAGER);
 
 	gpGlobals = ismm->GetCGlobals();
 
