@@ -330,6 +330,14 @@ methodmap NavBotNavArea
 	 * @error				Bad nav area pointer.
 	 */
 	public static native float GetDistanceSquaredToPoint(Address ptr, const float point[3]);
+	/**
+	 * Used by pathfinding, return value only has a meaning when called from a path cost callback.
+	 * 
+	 * @param ptr			Address of a nav area.
+	 * @return				Cost so far.
+	 * @error				Bad nav area pointer.
+	 */
+	public static native float GetCostSoFar(Address ptr);
 }
 
 methodmap NavBotNavOffMeshConnection

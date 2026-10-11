@@ -5,6 +5,19 @@
 
 #include "nav.inc"
 #include "nav_area.inc"
+#include "nav_ladder.inc"
+
+/**
+ * Callback for path cost.
+ * 
+ * @param toArea		Address of the nav area the search is going to.
+ * @param fromArea		Address of the nav area the search is incoming from.
+ * @param ladder		Ladder connecting the two areas. Address_Null if not connected by ladder.
+ * @param offmeshconn	Off-Mesh connection that connects the two areas. Address_Null if not connected by Off-Mesh connection.
+ * @param elevator		Elevator connecting the two areas. Address_Null if not connected by elevator.
+ * @param length		Path length so far.
+ */
+typedef NavBotNavPathCostFunc = function float (Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator, float length);
 
 methodmap NavBotNavMesh
 {
@@ -143,6 +156,17 @@ methodmap NavBotNavMesh
 	 * @param kv			Handle to a KeyValues.
 	 */
 	public static native void GetPlaces(KeyValues kv);
+	/**
+	 * Computes the travel distance between two nav areas.
+	 * 
+	 * @param start			Address of the start nav area.
+	 * @param end			Address of the end nav area.
+	 * @param costfunc		Path cost functor.
+	 * @param maxPathLength	Maximum path length, 0.0 for no limit.
+	 * @return				Travel cost between the two areas, returns -1.0 if no path can be found.
+	 * @error				Bad area address.
+	 */
+	public static native float ComputeTravelDistance(Address start, Address end, NavBotNavPathCostFunc costfunc, const float maxPathLength = 0.0);
 }
 
 #include "nav_collector.inc"

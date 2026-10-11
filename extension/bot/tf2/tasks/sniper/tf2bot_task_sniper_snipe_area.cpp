@@ -38,8 +38,8 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 
 	EquipAndScope(bot);
-	bot->GetCombatInterface()->ScopeInOrDeployWeapon();
 	bot->GetCombatInterface()->SetSelectWeaponState(false);
+	bot->GetCombatInterface()->SetCombatBehaviorFlags(ICombat::CombatBehavaiorFlags::CB_SNIPING);
 
 	if (m_waypoint && m_waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH))
 	{
@@ -113,12 +113,14 @@ void CTF2BotSniperSnipeAreaTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTa
 	}
 
 	bot->GetCombatInterface()->SetSelectWeaponState(true);
+	bot->GetCombatInterface()->ClearCombatBehaviorFlags(ICombat::CombatBehavaiorFlags::CB_SNIPING);
 }
 
 bool CTF2BotSniperSnipeAreaTask::OnTaskPause(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 {
 	// destroy on pause
 	bot->GetCombatInterface()->SetSelectWeaponState(true);
+	bot->GetCombatInterface()->ClearCombatBehaviorFlags(ICombat::CombatBehavaiorFlags::CB_SNIPING);
 	return false;
 }
 

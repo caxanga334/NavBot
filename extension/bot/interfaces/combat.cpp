@@ -12,6 +12,7 @@
 ICombat::ICombat(CBaseBot* bot) :
 	IBotInterface(bot)
 {
+	m_combatBehaviorFlags = 0;
 	m_lastWeaponPtr = nullptr;
 	m_lastThreatPtr = nullptr;
 	m_shouldAim = true;
@@ -40,6 +41,7 @@ void ICombat::OnNavAreaChanged(CNavArea* oldArea, CNavArea* newArea)
 
 void ICombat::Reset()
 {
+	m_combatBehaviorFlags = 0;
 	m_lastWeaponPtr = nullptr;
 	m_lastThreatPtr = nullptr;
 	m_shouldAim = true;
@@ -176,6 +178,12 @@ void ICombat::Update()
 			GetPostCombatChecksTimer().Invalidate();
 			OnPostCombat();
 		}
+	}
+
+	// Overrides
+	if (IsCombatBehaviorFlagsSet(CombatBehavaiorFlags::CB_SNIPING))
+	{
+		SetWantsToScopeState(true); // Sniping, scope-in
 	}
 
 	UpdateScopeState();

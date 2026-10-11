@@ -25,6 +25,12 @@ public:
 	static constexpr float TOGGLE_SCOPE_COOLDOWN_TIME = 0.5f;
 	static constexpr float CLEAR_AREAS_TIMER_INTERVAL = 3.0f;
 
+	// Flags for combat behavior
+	enum CombatBehavaiorFlags
+	{
+		CB_SNIPING = 0x1, // Bot is sniping, wants to stay scoped
+	};
+
 	struct CombatData
 	{
 		float enemy_range; // distance between the bot and the enemy's world space center
@@ -80,6 +86,22 @@ public:
 	void Reset() override;
 	void Update() override;
 	void Frame() override;
+
+	void SetCombatBehaviorFlags(CombatBehavaiorFlags flags) { m_combatBehaviorFlags |= flags; }
+	void ClearCombatBehaviorFlags(CombatBehavaiorFlags flags) { m_combatBehaviorFlags &= ~flags; }
+	void ResetCombatBehaviorFlags() { m_combatBehaviorFlags = 0; }
+	bool IsCombatBehaviorFlagsSet(CombatBehavaiorFlags flags) const { return (m_combatBehaviorFlags & flags) != 0; }
+	void ToggleCombatBehaviorFlags(CombatBehavaiorFlags flags)
+	{
+		if (IsCombatBehaviorFlagsSet(flags))
+		{
+			SetCombatBehaviorFlags(flags);
+		}
+		else
+		{
+			ClearCombatBehaviorFlags(flags);
+		}
+	}
 
 	/**
 	 * @brief Returns true if the given weapon is the last used weapon in combat.
@@ -436,6 +458,7 @@ protected:
 	bool IsEnemyInCalloutCooldown(CBaseEntity* enemy) const;
 	void StartPerEnemyCalloutCooldown(CBaseEntity* enemy, const float time);
 private:
+	int m_combatBehaviorFlags;
 	CBaseEntity* m_lastWeaponPtr;
 	const CKnownEntity* m_lastThreatPtr;
 	CountdownTimer m_dangerScanTimer;

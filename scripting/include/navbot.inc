@@ -262,6 +262,7 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.GetSizeY");
 	MarkNativeAsOptional("NavBotNavArea.GetRandomPoint");
 	MarkNativeAsOptional("NavBotNavArea.GetDistanceSquaredToPoint");
+	MarkNativeAsOptional("NavBotNavArea.GetCostSoFar");
 
 	/* Off-Mesh Connection */
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetType");
@@ -269,6 +270,9 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetEndPosition");
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetConnectedArea");
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetConnectionLength");
+
+	/* Nav Ladder */
+	MarkNativeAsOptional("NavBotNavLadder.GetLength");
 
 	/* Nav Mesh */
 	MarkNativeAsOptional("NavBotNavMesh.IsLoaded");

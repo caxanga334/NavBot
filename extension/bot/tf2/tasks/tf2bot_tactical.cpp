@@ -82,7 +82,7 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 		}
 		else
 		{
-			m_teleportertimer.StartRandom(2.0f, 10.0f);
+			m_teleportertimer.StartRandom(1.0f, 3.0f);
 		}
 
 		CBaseEntity* teleporter = nullptr;

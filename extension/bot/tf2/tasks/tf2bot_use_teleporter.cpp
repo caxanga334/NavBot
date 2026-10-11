@@ -9,6 +9,10 @@
 #include <bot/interfaces/path/meshnavigator.h>
 #include "tf2bot_use_teleporter.h"
 
+#ifdef EXT_VPROF_ENABLED
+#include <tier0/vprof.h>
+#endif // EXT_VPROF_ENABLED
+
 CTF2BotUseTeleporterTask::CTF2BotUseTeleporterTask(CBaseEntity* teleporter) :
 	m_teleporter(teleporter)
 {
@@ -16,21 +20,27 @@ CTF2BotUseTeleporterTask::CTF2BotUseTeleporterTask(CBaseEntity* teleporter) :
 
 bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter)
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CTF2BotUseTeleporterTask::IsPossible", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	CMeshNavigator* nav = bot->GetActiveNavigator();
 
 	if (!nav || !nav->IsValid()) { return false; }
 
+	// Don't use teleporters while carrying the flag
 	if (bot->GetItem() != nullptr) { return false; }
-
-	UtilHelpers::CEntityEnumerator enumerator;
 
 	CBaseEntity* entrance = nullptr;
 	CBaseEntity* exit = nullptr;
+	
 
 	auto func = [&entrance, &exit, &bot](int index, edict_t* edict, CBaseEntity* entity) {
 		tfentities::HObjectTeleporter tele(entity);
 
-		if (tele.IsSapped() || tele.GetPercentageConstructed() < 1.0f || tele.IsBeingCarried() || tele.IsPlacing() ||
+		// GetPercentageConstructed check was removed, on MvM or gamemodes with instant build, it's always 0.0 causing the teleporter to be skipped.
+		// The ready state check is more than enough to determine if the teleporter can be used
+		if (tele.IsSapped() || tele.IsBeingCarried() || tele.IsPlacing() ||
 			tele.GetMode() != TeamFortress2::TFObjectMode::TFObjectMode_Entrance ||
 			tele.GetState() != TeamFortress2::TeleporterState::TELEPORTER_STATE_READY ||
 			tele.GetTFTeam() != bot->GetMyTFTeam())
@@ -43,9 +53,19 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 		{
 			return true;
 		}
+
+		const Vector& entranceOrigin = UtilHelpers::getEntityOrigin(entity);
 		
 		// too far
-		if (bot->GetRangeTo(tele.WorldSpaceCenter()) > 1000.0f)
+		if (bot->GetRangeTo(entranceOrigin) > 1000.0f)
+		{
+			return true;
+		}
+
+		CNavArea* entranceArea = TheNavMesh->GetNearestNavArea(entranceOrigin, 256.0f, false, true, bot->GetCurrentTeamIndex());
+
+		// Teleporter is outside the nav mesh
+		if (entranceArea == nullptr)
 		{
 			return true;
 		}
@@ -57,18 +77,10 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 
 	UtilHelpers::ForEachEntityOfClassname("obj_teleporter", func);
 
-	Vector origin = bot->GetAbsOrigin();
-
 	if (!entrance || !exit) { return false; }
 
-	/*
-	* Simple distance check for speed reasons.
-	* The ideal solution would be comparing the path length between the bot and the teleporter exit.
-	*/
-
-	constexpr auto TELEPORTER_EXTRA_DIST = 300.0f; // artificial distance added to the teleporter distance to goal
+	Vector origin = bot->GetAbsOrigin();
 	const Vector& goal = nav->GetPathDestination();
-	const Vector& telepos = UtilHelpers::getEntityOrigin(exit);
 	float distBotToGoal = (origin - goal).Length();
 
 	if (distBotToGoal <= 512.0f)
@@ -76,10 +88,26 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 		return false; // already close to the goal
 	}
 
+	/*
+	* Simple distance check for speed reasons.
+	* The ideal solution would be comparing the path length between the bot and the teleporter exit.
+	*/
 
-	float distTPToGoal = (telepos - goal).Length() + TELEPORTER_EXTRA_DIST;
+	CNavArea* exitArea = TheNavMesh->GetNearestNavArea(UtilHelpers::getEntityOrigin(exit), 256.0f, false, true, bot->GetCurrentTeamIndex());
 
-	if (distTPToGoal < distBotToGoal)
+	// Exit must in in the nav mesh
+	if (exitArea == nullptr)
+	{
+		return false;
+	}
+
+	const float pathDistance = nav->GetTravelDistance();
+	CTF2BotPathCost cost(bot, RouteType::FASTEST_ROUTE);
+	float teleToGoal = NavAreaTravelDistance(exitArea, nav->GetLastSegment()->area, cost);
+	teleToGoal += (bot->GetRangeTo(entrance) * 0.5f); // add half the distance to the entrance
+
+	// if the travel distance from the tele exit to my goal is smaller than the current path distance, take the teleporter
+	if (teleToGoal < pathDistance)
 	{
 		*teleporter = entrance;
 		return true;
@@ -129,9 +157,34 @@ TaskResult<CTF2Bot> CTF2BotUseTeleporterTask::OnTaskUpdate(CTF2Bot* bot)
 
 	tfentities::HObjectTeleporter teleporter(pEntity);
 
-	if (teleporter.IsSapped() || teleporter.GetState() != TeamFortress2::TeleporterState::TELEPORTER_STATE_READY)
+	if (teleporter.IsSapped())
+	{
+		return Done("Teleporter is sapped!");
+	}
+
+	TeamFortress2::TeleporterState state = teleporter.GetState();
+
+	if (state == TeamFortress2::TeleporterState::TELEPORTER_STATE_BUILDING || state == TeamFortress2::TeleporterState::TELEPORTER_STATE_IDLE)
 	{
 		return Done("Teleporter is no longer available!");
+	}
+
+	if (state != TeamFortress2::TeleporterState::TELEPORTER_STATE_READY)
+	{
+		// true if the teleporter is sending a player
+		const bool isSending = state == TeamFortress2::TeleporterState::TELEPORTER_STATE_SENDING;
+
+		if (pGround == pEntity && isSending)
+		{
+			// The teleporter is teleporting me, wait for the teleport.
+			return Continue();
+		}
+
+		// For level 3 teleporters, bots wait for it to recharge, the timeout timer will prevent bots from getting perma stuck in this behavior.
+		if (teleporter.GetLevel() > 2)
+		{
+			return Continue();
+		}
 	}
 
 	if (pGround != pEntity)

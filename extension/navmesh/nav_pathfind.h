@@ -523,7 +523,7 @@ bool NavIsReachable(CNavArea* start, CNavArea* goal, CostFunctor& costFunc)
 template< typename CostFunctor >
 float NavAreaTravelDistance( CNavArea *startArea, CNavArea *endArea, CostFunctor &costFunc, float maxPathLength = 0.0f )
 {
-	if (startArea == NULL || endArea == NULL)
+	if (startArea == nullptr || endArea == nullptr)
 		return -1.0f;
 
 	if (startArea == endArea)
@@ -537,7 +537,19 @@ float NavAreaTravelDistance( CNavArea *startArea, CNavArea *endArea, CostFunctor
 	float distance = 0.0f;
 	for( CNavArea *area = endArea; area->GetParent(); area = area->GetParent() )
 	{
-		distance += (area->GetCenter() - area->GetParent()->GetCenter()).Length();
+		switch (area->GetParentHow())
+		{
+		case NavTraverseType::GO_OFF_MESH_CONNECTION:
+		{
+			const NavOffMeshConnection* conn = area->GetParent()->GetOffMeshConnectionToArea(area);
+			// for off-mesh links, use the precalculated distance
+			distance += conn->GetConnectionLength();
+			break;
+		}
+		default:
+			distance += (area->GetCenter() - area->GetParent()->GetCenter()).Length();
+			break;
+		}
 	}
 
 	return distance;

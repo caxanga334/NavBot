@@ -208,3 +208,71 @@ stock void NB_DrawClientActiveNavArea(int client, const int modelIndex, const in
 		}
 	}
 }
+
+// Simple path cost callback for NavBotNavPathCostFunc.
+stock float NB_SimplePathCost(Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator, float length)
+{
+	#pragma unused length
+
+	if (fromArea == Address_Null)
+	{
+		// First area in the path, no cost.
+		return 0.0;
+	}
+
+	float dist = 0.0;
+
+	if (offmeshconn != Address_Null)
+	{
+		dist = NavBotNavOffMeshConnection.GetConnectionLength(offmeshconn);
+	}
+	else
+	{
+		// for now just use distance between the areas
+		float v1[3];
+		float v2[3];
+		NavBotNavArea.GetCenter(toArea, v1);
+		NavBotNavArea.GetCenter(fromArea, v2);
+		dist = GetVectorDistance(v1, v2);
+	}
+
+	float costSoFar = NavBotNavArea.GetCostSoFar(fromArea);
+	float cost = dist + costSoFar;
+	return cost;
+}
+
+// Stock callback function for NavBotNavPathCostFunc. Only allow ground paths (no ladders and elevators)
+stock float NB_SimpleGroundOnlyPathCost(Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator, float length)
+{
+	#pragma unused length
+
+	if (fromArea == Address_Null)
+	{
+		// First area in the path, no cost.
+		return 0.0;
+	}
+
+	float dist = 0.0;
+
+	if (offmeshconn != Address_Null)
+	{
+		dist = NavBotNavOffMeshConnection.GetConnectionLength(offmeshconn);
+	}
+	else if (ladder != Address_Null || elevator != Address_Null)
+	{
+		return -1.0; // return -1 tells the path finder this is a dead end.
+	}
+	else
+	{
+		// for now just use distance between the areas
+		float v1[3];
+		float v2[3];
+		NavBotNavArea.GetCenter(toArea, v1);
+		NavBotNavArea.GetCenter(fromArea, v2);
+		dist = GetVectorDistance(v1, v2);
+	}
+
+	float costSoFar = NavBotNavArea.GetCostSoFar(fromArea);
+	float cost = dist + costSoFar;
+	return cost;
+}

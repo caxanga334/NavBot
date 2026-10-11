@@ -2,8 +2,10 @@
 #include <sdkports/sdk_convarref_ep1.h>
 #include <util/pawnutils.h>
 #include <navmesh/nav_mesh.h>
+#include <navmesh/nav_pathfind.h>
 #include "navareavector.h"
 #include "navblocker.h"
+#include "navladder.h"
 #include "navmesh.h"
 
 static cell_t Native_IsNavMeshLoaded(IPluginContext* context, const cell_t* params)
@@ -310,6 +312,81 @@ static cell_t Native_NavMeshGetPlaces(IPluginContext* context, const cell_t* par
 	return 0;
 }
 
+static cell_t Native_NavMeshTravelDistance(IPluginContext* context, const cell_t* params)
+{
+	CNavArea* start = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+	CNavArea* end = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+	if (start == nullptr || end == nullptr)
+	{
+		context->ReportError("NULL nav area! start: %p end: %p", start, end);
+		return 0;
+	}
+
+	SourcePawn::IPluginFunction* costfunc = nullptr;
+	if (!pawnutils::ReadFunctionByID(context, params, 3, &costfunc))
+	{
+		return 0;
+	}
+
+	float maxpathlength = pawnutils::ReadFloat(params, 4);
+
+	constexpr std::array spargs = {
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Cell,
+		SourceMod::ParamType::Param_Float
+	};
+
+	SourceMod::IChangeableForward* fwd = forwards->CreateForwardEx(nullptr, SourceMod::ExecType::ET_Single, static_cast<int>(spargs.size()), spargs.data());
+
+	if (fwd == nullptr)
+	{
+		context->ReportError("Failed to create path cost callback forward!");
+		return 0;
+	}
+
+	fwd->AddFunction(costfunc);
+
+	auto pathcost = [&fwd](CNavArea* area, CNavArea* fromArea, const CNavLadder* ladder, const NavOffMeshConnection* link, const CNavElevator* elevator, float length) {
+		float cost = -1.0f;
+
+#if SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+		sp::CallArgs args;
+		pawnutils::PushObjectPtr(args, area);
+		pawnutils::PushObjectPtr(args, fromArea);
+		pawnutils::PushObjectPtr(args, ladder);
+		pawnutils::PushObjectPtr(args, link);
+		pawnutils::PushObjectPtr(args, elevator);
+		args.PushFloat(length);
+		cell_t result = 0;
+		fwd->Execute(args, &result);
+		cost = sp_ctof(result);
+
+#else // SourceMod 1.12
+
+		pawnutils::PushObjectPtr(fwd, area);
+		pawnutils::PushObjectPtr(fwd, fromArea);
+		pawnutils::PushObjectPtr(fwd, ladder);
+		pawnutils::PushObjectPtr(fwd, link);
+		pawnutils::PushObjectPtr(fwd, elevator);
+		fwd->PushFloat(length);
+		cell_t result = 0;
+		fwd->Execute(&result);
+		cost = sp_ctof(result);
+
+#endif // SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+
+		return cost;
+	};
+
+	float distance = NavAreaTravelDistance(start, end, pathcost, maxpathlength);
+	forwards->ReleaseForward(fwd);
+	return pawnutils::ReturnFloat(distance);
+}
+
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
@@ -333,10 +410,12 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.GetPlaceCount", Native_NavMeshGetPlaceCount},
 		{"NavBotNavMesh.FindPlaceIndexByName", Native_NavMeshFindPlaceIndexByName},
 		{"NavBotNavMesh.GetPlaces", Native_NavMeshGetPlaces},
+		{"NavBotNavMesh.ComputeTravelDistance", Native_NavMeshTravelDistance},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
 
 	natives::navmesh::navareavector::setup(nv);
 	natives::navmesh::navblocker::setup(nv);
+	natives::navladder::setup(nv);
 }

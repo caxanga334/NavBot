@@ -1209,3 +1209,27 @@ CON_COMMAND_F(sm_navbot_tool_entinfo, "Shows information about a specific entity
 		UtilHelpers::textformat::FormatVector(collider->GetCollisionOrigin()), UtilHelpers::textformat::FormatAngles(collider->GetCollisionAngles()));
 	META_CONPRINTF("World Space Center: %s \n", UtilHelpers::textformat::FormatVector(UtilHelpers::getWorldSpaceCenter(entity)));
 }
+
+CON_COMMAND_F(sm_navbot_tool_compute_travel_distance, "Computes the travel distance between the marked area and crosshair area.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	CNavArea* start = TheNavMesh->GetMarkedArea();
+
+	if (start == nullptr)
+	{
+		META_CONPRINT("Mark the start area with sm_nav_mark first! \n");
+		return;
+	}
+
+	CNavArea* end = TheNavMesh->GetSelectedArea();
+
+	if (end == nullptr)
+	{
+		META_CONPRINT("No nav area found under your crosshair! \n");
+		return;
+	}
+
+	ShortestPathCost cost;
+	float distance = NavAreaTravelDistance(start, end, cost);
+
+	META_CONPRINTF("Computed travel distance between area %u and area %u is %g \n", start->GetID(), end->GetID(), distance);
+}

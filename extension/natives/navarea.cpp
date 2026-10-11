@@ -685,6 +685,18 @@ namespace natives::navarea
 		Vector point = pawnutils::ReadVector(context, params, 2);
 		return pawnutils::ReturnFloat(area->GetDistanceSquaredToPoint(point));
 	}
+	static cell_t GetCostSoFar(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (!area)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		return pawnutils::ReturnFloat(area->GetCostSoFar());
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -721,6 +733,7 @@ namespace natives::navarea
 			{"NavBotNavArea.GetSizeY", GetSizeY},
 			{"NavBotNavArea.GetRandomPoint", GetRandomPoint},
 			{"NavBotNavArea.GetDistanceSquaredToPoint", GetDistanceSquaredToPoint},
+			{"NavBotNavArea.GetCostSoFar", GetCostSoFar},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

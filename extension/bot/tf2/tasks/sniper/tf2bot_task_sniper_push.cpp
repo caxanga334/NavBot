@@ -24,6 +24,7 @@ TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2
 
 TaskResult<CTF2Bot> CTF2BotSniperPushTask::OnTaskUpdate(CTF2Bot* bot)
 {
+	bot->GetCombatInterface()->DisableCombat(0.2f); // this task handles the firing of weapons so this can be disabled
 	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 	bool move = true;
 	constexpr auto SCOPE_IN_TIME = 5.0f;
