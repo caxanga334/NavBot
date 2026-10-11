@@ -104,6 +104,13 @@ bool CTF2BotUseTeleporterTask::IsPossible(CTF2Bot* bot, CBaseEntity** teleporter
 	const float pathDistance = nav->GetTravelDistance();
 	CTF2BotPathCost cost(bot, RouteType::FASTEST_ROUTE);
 	float teleToGoal = NavAreaTravelDistance(exitArea, nav->GetLastSegment()->area, cost);
+	
+	// If the travel distance is negative, no path to the goal exists from the teleporter exit
+	if (teleToGoal < 0.0f)
+	{
+		return false;
+	}
+	
 	teleToGoal += (bot->GetRangeTo(entrance) * 0.5f); // add half the distance to the entrance
 
 	// if the travel distance from the tele exit to my goal is smaller than the current path distance, take the teleporter
