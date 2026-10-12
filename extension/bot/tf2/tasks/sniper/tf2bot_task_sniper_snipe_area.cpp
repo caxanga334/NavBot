@@ -38,8 +38,6 @@ TaskResult<CTF2Bot> CTF2BotSniperSnipeAreaTask::OnTaskUpdate(CTF2Bot* bot)
 	auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 
 	EquipAndScope(bot);
-	bot->GetCombatInterface()->SetSelectWeaponState(false);
-	bot->GetCombatInterface()->SetCombatBehaviorFlags(ICombat::CombatBehavaiorFlags::CB_SNIPING);
 
 	if (m_waypoint && m_waypoint->HasFlags(CWaypoint::BaseFlags::BASEFLAGS_CROUCH))
 	{
@@ -111,16 +109,11 @@ void CTF2BotSniperSnipeAreaTask::OnTaskEnd(CTF2Bot* bot, AITask<CTF2Bot>* nextTa
 	{
 		m_waypoint->StopUsing(bot);
 	}
-
-	bot->GetCombatInterface()->SetSelectWeaponState(true);
-	bot->GetCombatInterface()->ClearCombatBehaviorFlags(ICombat::CombatBehavaiorFlags::CB_SNIPING);
 }
 
 bool CTF2BotSniperSnipeAreaTask::OnTaskPause(CTF2Bot* bot, AITask<CTF2Bot>* nextTask)
 {
-	// destroy on pause
-	bot->GetCombatInterface()->SetSelectWeaponState(true);
-	bot->GetCombatInterface()->ClearCombatBehaviorFlags(ICombat::CombatBehavaiorFlags::CB_SNIPING);
+	// destroy the task on pause
 	return false;
 }
 
@@ -133,6 +126,12 @@ QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldRetreat(CBaseBot* me)
 	}
 
 	return ANSWER_UNDEFINED;
+}
+
+QueryAnswerType CTF2BotSniperSnipeAreaTask::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
+{
+	// We want to always be scoped
+	return ANSWER_YES;
 }
 
 void CTF2BotSniperSnipeAreaTask::BuildLookPoints(CTF2Bot* me)

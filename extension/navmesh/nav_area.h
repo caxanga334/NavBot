@@ -969,6 +969,104 @@ public:
 		}
 	}
 
+	/**
+	 * @brief Searches connected areas. This is similar to ForEachConnectedArea but includes the traverse method to reach the neighbor area.
+	 * @tparam T A functor with the following signature: bool (CNavArea* neighborArea, NavTraverseType how). Returning false stops the search and returns false.
+	 * @param func Functor to run.
+	 * @return Returns false if the functor returned false else returns true.
+	 */
+	template <typename T>
+	inline bool SearchConnectedAreas(T& func)
+	{
+		for (int dir = 0; dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			auto conn = GetAdjacentAreas(static_cast<NavDirType>(dir));
+
+			for (int i = 0; i < conn->Count(); i++)
+			{
+				CNavArea* connectedArea = conn->Element(i).area;
+				if (func(connectedArea, static_cast<NavTraverseType>(dir)) == false)
+				{
+					return false;
+				}
+			}
+		}
+
+		auto laddersup = GetLadders(CNavLadder::LADDER_UP);
+
+		if (laddersup)
+		{
+			for (int i = 0; i < laddersup->Count(); i++)
+			{
+				auto& conn = laddersup->Element(i);
+
+				for (auto& lc : conn.ladder->GetConnections())
+				{
+					if (lc.IsConnectedToLadderTop())
+					{
+						if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_UP) == false)
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+
+		auto laddersdown = GetLadders(CNavLadder::LADDER_DOWN);
+
+		if (laddersdown)
+		{
+			for (int i = 0; i < laddersdown->Count(); i++)
+			{
+				auto& conn = laddersdown->Element(i);
+
+				for (auto& lc : conn.ladder->GetConnections())
+				{
+					if (lc.IsConnectedToLadderBottom())
+					{
+						if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_DOWN) == false)
+						{
+							return false;
+						}
+					}
+				}
+			}
+		}
+
+		for (auto& link : m_offmeshconnections)
+		{
+			CNavArea* connectedArea = link.m_link.area;
+			
+			if (func(connectedArea, NavTraverseType::GO_OFF_MESH_CONNECTION) == false)
+			{
+				return false;
+			}
+		}
+
+		if (m_elevator != nullptr)
+		{
+			auto& floors = m_elevator->GetFloors();
+
+			for (auto& floor : floors)
+			{
+				CNavArea* connectedArea = floor.GetArea();
+
+				NavTraverseType how = (connectedArea->GetCenter().z > this->GetCenter().z) ? NavTraverseType::GO_ELEVATOR_UP : NavTraverseType::GO_ELEVATOR_DOWN;
+
+				if (connectedArea != this)
+				{
+					if (func(connectedArea, how) == false)
+					{
+						return false;
+					}
+				}
+			}
+		}
+
+		return true;
+	}
+
 protected:
 	inline static std::array<byte, MAX_MAP_CLUSTERS / 8> s_pvs{}; // static PVS array for PVS functions
 

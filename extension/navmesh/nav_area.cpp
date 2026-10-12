@@ -2365,8 +2365,8 @@ void CNavArea::ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, 
 			closePos->y = m_seCorner.y;
 		}
 
-		float left = MAX( m_nwCorner.x, to->m_nwCorner.x );
-		float right = MIN( m_seCorner.x, to->m_seCorner.x );
+		float left = std::max( m_nwCorner.x, to->m_nwCorner.x );
+		float right = std::min( m_seCorner.x, to->m_seCorner.x );
 
 		// clamp to our extent in case areas are disjoint
 		// no good - need to push into to area for margins
@@ -2421,8 +2421,8 @@ void CNavArea::ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, 
 			closePos->x = m_seCorner.x;
 		}
 
-		float top = MAX( m_nwCorner.y, to->m_nwCorner.y );
-		float bottom = MIN( m_seCorner.y, to->m_seCorner.y );
+		float top = std::max( m_nwCorner.y, to->m_nwCorner.y );
+		float bottom = std::min( m_seCorner.y, to->m_seCorner.y );
 
 		// clamp to our extent in case areas are disjoint
 		// no good - need to push into to area for margins

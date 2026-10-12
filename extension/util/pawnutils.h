@@ -202,7 +202,26 @@ namespace pawnutils
 		forward->PushCell(reinterpret_cast<std::uintptr_t>(object));
 #endif // KE_ARCH_X64
 	}
-
+	/**
+	 * @brief Pushes an object address to a SourcePawn function.
+	 * @tparam T Object type.
+	 * @param func SP function to push the object to.
+	 * @param object Object to be pushed.
+	 */
+	template <typename F, typename T>
+	inline void PushPtrToCall(F call, T* object)
+	{
+#if SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+		call->PushInt64(static_cast<int64_t>(reinterpret_cast<std::uintptr_t>(object)));
+#else // SM 1.12
+#ifdef KE_ARCH_X64
+		// SM 1.12 doesn't have int64, pointers are always NULL for plugins.
+		call->PushCell(0);
+#else // x86 SM 1.12
+		call->PushCell(static_cast<cell_t>(reinterpret_cast<std::uintptr_t>(object)));
+#endif // KE_ARCH_X64
+#endif // SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+	}
 	inline bool ReadFunctionByID(SourcePawn::IPluginContext* context, const cell_t* params, const std::size_t index, SourcePawn::IPluginFunction** func)
 	{
 		*func = context->GetFunctionById(static_cast<funcid_t>(params[index]));

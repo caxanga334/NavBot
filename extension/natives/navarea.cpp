@@ -697,6 +697,138 @@ namespace natives::navarea
 
 		return pawnutils::ReturnFloat(area->GetCostSoFar());
 	}
+	static cell_t ComputeLargestPortal(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* first = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+		CNavArea* second = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (first == nullptr || second == nullptr)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Vector center(0.0f, 0.0f, 0.0f);
+		float halfWidth = 0.0f;
+		NavDirType dir = first->ComputeLargestPortal(second, &center, &halfWidth);
+		pawnutils::WriteVector(context, params, 3, center);
+		pawnutils::WriteFloatByRef(context, params, 4, halfWidth);
+		return static_cast<cell_t>(dir);
+	}
+	static cell_t ComputePortal(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* first = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+		CNavArea* second = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (first == nullptr || second == nullptr)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		Vector center(0.0f, 0.0f, 0.0f);
+		float halfWidth = 0.0f;
+		NavDirType dir = static_cast<NavDirType>(params[3]);
+		first->ComputePortal(second, dir, &center, &halfWidth);
+		pawnutils::WriteVector(context, params, 4, center);
+		pawnutils::WriteFloatByRef(context, params, 5, halfWidth);
+		return 0;
+	}
+	static cell_t ComputeClosestPointInPortal(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* first = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+		CNavArea* second = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 2);
+
+		if (first == nullptr || second == nullptr)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		NavDirType dir = static_cast<NavDirType>(params[3]);
+		Vector fromPos = pawnutils::ReadVector(context, params, 4);
+		Vector close(0.0f, 0.0f, 0.0f);
+		first->ComputeClosestPointInPortal(second, dir, fromPos, &close);
+		pawnutils::WriteVector(context, params, 5, close);
+		return 0;
+	}
+	static cell_t IsEdge(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (area == nullptr)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		NavDirType dir = static_cast<NavDirType>(params[2]);
+		return pawnutils::ReturnBool(area->IsEdge(dir));
+	}
+	static cell_t ComputeNormal(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (area == nullptr)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		bool alternate = params[3] != 0;
+		Vector normal(0.0f, 0.0f, 0.0f);
+		area->ComputeNormal(&normal, alternate);
+		pawnutils::WriteVector(context, params, 2, normal);
+		return 0;
+	}
+	static cell_t SearchConnectedAreas(IPluginContext* context, const cell_t* params)
+	{
+		CNavArea* area = pawnutils::UnsafeCastPawnAddressToObject<CNavArea>(context, params, 1);
+
+		if (area == nullptr)
+		{
+			context->ReportError("NULL nav area!");
+			return 0;
+		}
+
+		SourcePawn::IPluginFunction* callback = nullptr;
+		if (!pawnutils::ReadFunctionByID(context, params, 2, &callback))
+		{
+			return 0;
+		}
+
+		cell_t data = params[3];
+		DetectExceptions eh(context);
+		
+		auto func = [&callback, &eh, &area, &data](CNavArea* neighborArea, NavTraverseType how) {
+			if (eh.HasException())
+			{
+				return false;
+			}
+
+			cell_t result = 0;
+
+#if SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+			sp::CallArgs args;
+			pawnutils::PushPtrToCall(&args, area);
+			pawnutils::PushPtrToCall(&args, neighborArea);
+			args.PushCell(static_cast<cell_t>(how));
+			args.PushCell(data);
+			callback->Invoke(args, &result);
+#else
+			pawnutils::PushPtrToCall(callback, area);
+			pawnutils::PushPtrToCall(callback, neighborArea);
+			callback->PushCell(static_cast<cell_t>(how));
+			callback->PushCell(data);
+			callback->Invoke(&result);
+#endif // SMINTERFACE_EXTENSIONAPI_VERSION >= 9
+
+			return result != 0;
+		};
+
+		bool result = area->SearchConnectedAreas(func);
+		return pawnutils::ReturnBool(result);
+	}
 
 	void setup(std::vector<sp_nativeinfo_t>& nv)
 	{
@@ -734,6 +866,12 @@ namespace natives::navarea
 			{"NavBotNavArea.GetRandomPoint", GetRandomPoint},
 			{"NavBotNavArea.GetDistanceSquaredToPoint", GetDistanceSquaredToPoint},
 			{"NavBotNavArea.GetCostSoFar", GetCostSoFar},
+			{"NavBotNavArea.ComputeLargestPortal", ComputeLargestPortal},
+			{"NavBotNavArea.ComputePortal", ComputePortal},
+			{"NavBotNavArea.ComputeClosestPointInPortal", ComputeClosestPointInPortal},
+			{"NavBotNavArea.IsEdge", IsEdge},
+			{"NavBotNavArea.ComputeNormal", ComputeNormal},
+			{"NavBotNavArea.SearchConnectedAreas", SearchConnectedAreas},
 		};
 
 		nv.insert(nv.end(), std::begin(list), std::end(list));

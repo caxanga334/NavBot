@@ -17,6 +17,7 @@ public:
 		HANDLE_NAVCOLLECTOR,
 		HANDLE_NAVAREAVECTOR,
 		HANDLE_NAVBLOCKER,
+		HANDLE_NAVASTARSEARCH,
 
 		MAX_HANDLE_TYPES
 	};
@@ -46,6 +47,7 @@ public:
 	SourceMod::HandleType_t GetNavCollectorHandleType() const { return m_handletypes[HANDLE_NAVCOLLECTOR]; }
 	SourceMod::HandleType_t GetNavAreaVectorHandleType() const { return m_handletypes[HANDLE_NAVAREAVECTOR]; }
 	SourceMod::HandleType_t GetNavBlockerHandleType() const { return m_handletypes[HANDLE_NAVBLOCKER]; }
+	SourceMod::HandleType_t GetNavAStarSearchHandleType() const { return m_handletypes[HANDLE_NAVASTARSEARCH]; }
 private:
 	std::array<SourceMod::HandleType_t, static_cast<std::size_t>(MAX_HANDLE_TYPES)> m_handletypes;
 
@@ -55,6 +57,7 @@ private:
 	void SetupNavCollectorHandle();
 	void SetupNavAreaVectorHandle();
 	void SetupNavBlockerHandle();
+	void SetupNavAStarHandle();
 };
 
 

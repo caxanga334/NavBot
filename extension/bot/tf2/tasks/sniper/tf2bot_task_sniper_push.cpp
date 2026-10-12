@@ -149,6 +149,11 @@ QueryAnswerType CTF2BotSniperPushTask::ShouldSwitchToWeapon(CBaseBot* me, const 
 	return ANSWER_NO;
 }
 
+QueryAnswerType CTF2BotSniperPushTask::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
+{
+	return ANSWER_UNDEFINED;
+}
+
 void CTF2BotSniperPushTask::SelectPushGoal(CTF2Bot* bot)
 {
 	CTeamFortress2Mod* tf2mod = CTeamFortress2Mod::GetTF2Mod();

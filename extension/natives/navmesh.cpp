@@ -6,6 +6,7 @@
 #include "navareavector.h"
 #include "navblocker.h"
 #include "navladder.h"
+#include "navastar.h"
 #include "navmesh.h"
 
 static cell_t Native_IsNavMeshLoaded(IPluginContext* context, const cell_t* params)
@@ -387,6 +388,27 @@ static cell_t Native_NavMeshTravelDistance(IPluginContext* context, const cell_t
 	return pawnutils::ReturnFloat(distance);
 }
 
+static cell_t Native_NavMeshGetAllNavAreas(IPluginContext* context, const cell_t* params)
+{
+	std::vector<CNavArea*>* vec = nullptr;
+	SourceMod::Handle_t handle = natives::navmesh::navareavector::createhandle(context, &vec);
+
+	if (handle == BAD_HANDLE)
+	{
+		return BAD_HANDLE;
+	}
+
+	vec->reserve(8192);
+	auto collect_func = [&vec](CNavArea* area) {
+		vec->push_back(area);
+		return true;
+	};
+
+	TheNavMesh->ForAllAreas(collect_func);
+	return handle;
+}
+
+
 void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 {
 	sp_nativeinfo_t list[] = {
@@ -411,6 +433,7 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 		{"NavBotNavMesh.FindPlaceIndexByName", Native_NavMeshFindPlaceIndexByName},
 		{"NavBotNavMesh.GetPlaces", Native_NavMeshGetPlaces},
 		{"NavBotNavMesh.ComputeTravelDistance", Native_NavMeshTravelDistance},
+		{"NavBotNavMesh.GetAllNavAreas", Native_NavMeshGetAllNavAreas},
 	};
 
 	nv.insert(nv.end(), std::begin(list), std::end(list));
@@ -418,4 +441,5 @@ void natives::navmesh::setup(std::vector<sp_nativeinfo_t>& nv)
 	natives::navmesh::navareavector::setup(nv);
 	natives::navmesh::navblocker::setup(nv);
 	natives::navladder::setup(nv);
+	natives::navmesh::navastar::setup(nv);
 }

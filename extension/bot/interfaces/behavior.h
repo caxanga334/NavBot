@@ -40,6 +40,7 @@ public:
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override;
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
 	bool IsRunningPluginCommand() override { return GetDecisionQueryResponder()->IsRunningPluginCommand(); }
+	QueryAnswerType ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped) override;
 
 };
 

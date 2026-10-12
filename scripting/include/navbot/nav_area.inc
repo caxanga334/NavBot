@@ -22,6 +22,17 @@ enum OffMeshConnectionType
 	MAX_OFFMESH_CONNECTION_TYPES // max known link types
 };
 
+/**
+ * Callback for SearchConnectedAreas.
+ * 
+ * @param area			The nav area the function was called on.
+ * @param neighbor		Nav area connected to the area from the first param.
+ * @param how			How the neighbor area can be reached.
+ * @param data			Additional plugin specific data passed to the callback.
+ * @return				Return false to stop the search, true to continue.
+ */
+typedef NavBotNavAreaSearchAdjCB = function bool (Address area, Address neighbor, NavBotNavTraverseType how, any data);
+
 // Nav area functions.
 methodmap NavBotNavArea
 {
@@ -338,6 +349,67 @@ methodmap NavBotNavArea
 	 * @error				Bad nav area pointer.
 	 */
 	public static native float GetCostSoFar(Address ptr);
+	/**
+	 * Compute largest portal to adjacent area, returning direction.
+	 * 
+	 * @param from			Address of the first nav area.
+	 * @param to			Address of the second nav area.
+	 * @param center		Float array to write the portal center to.
+	 * @param halfWidth		Portal half width value.
+	 * @return				Direction from the first area to the second area.
+	 * @error				Bad area address.
+	 */
+	public static native NavBotNavDirType ComputeLargestPortal(Address from, Address to, float center[3], float& halfWidth);
+	/**
+	 * Compute portal to adjacent area.
+	 * 
+	 * @param from			Address of the first area.
+	 * @param to			Address of the second area.
+	 * @param dir			Direction.
+	 * @param center		Float array to write the portal center to.
+	 * @param halfWidth		Portal half width value.
+	 * @error				Bad area address.
+	 */
+	public static native void ComputePortal(Address from, Address to, NavBotNavDirType dir, float center[3], float& halfWidth);
+	/**
+	 * Compute closest point within the "portal" between to adjacent areas.
+	 * 
+	 * @param from			Address of the first area.
+	 * @param to			Address of the second area.
+	 * @param dir			Direction.
+	 * @param fromPos		Position to compute the closest point to.
+	 * @param closePos		Computed closest position in portal.
+	 * @error				Bad area address.
+	 */
+	public static native void ComputeClosestPointInPortal(Address from, Address to, NavBotNavDirType dir, const float fromPos[3], float closePos[3]);
+	/**
+	 * Return true if there are no bi-directional links on the given side.
+	 * 
+	 * @param area			Address of a nav area.
+	 * @param dir			Direction to check.
+	 * @return 				True if there are no bi-directional links on the given side, false otherwise.
+	 * @error				Bad area address.
+	 */
+	public static native bool IsEdge(Address area, NavBotNavDirType dir);
+	/**
+	 * Computes the area's normal based on the north west corner position.
+	 * If 'alternate' is specified, the south east corner is used instead.
+	 * 
+	 * @param area			Address of a nav area.
+	 * @param normal		Float arrat to write the normal to.
+	 * @param alternate		If true, uses the south east corner position instead of north west.
+	 */
+	public static native void ComputeNormal(Address area, float normal[3], const bool alternate = false);
+	/**
+	 * Searches all areas the given area is connected to.
+	 * 
+	 * @param area			Address of a nav area.
+	 * @param callback		Callback function that will be called for each connected area.
+	 * @param data			Optional arbitrary data value to pass through to the callback function.
+	 * @return				Returns false if the callback returned false, else return true.
+	 * @error				Bad area address, invalid callback function.
+	 */
+	public static native bool SearchConnectedAreas(Address area, NavBotNavAreaSearchAdjCB callback, any data = 0);
 }
 
 methodmap NavBotNavOffMeshConnection

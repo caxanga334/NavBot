@@ -263,6 +263,12 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavArea.GetRandomPoint");
 	MarkNativeAsOptional("NavBotNavArea.GetDistanceSquaredToPoint");
 	MarkNativeAsOptional("NavBotNavArea.GetCostSoFar");
+	MarkNativeAsOptional("NavBotNavArea.ComputeLargestPortal");
+	MarkNativeAsOptional("NavBotNavArea.ComputePortal");
+	MarkNativeAsOptional("NavBotNavArea.ComputeClosestPointInPortal");
+	MarkNativeAsOptional("NavBotNavArea.IsEdge");
+	MarkNativeAsOptional("NavBotNavArea.ComputeNormal");
+	MarkNativeAsOptional("NavBotNavArea.SearchConnectedAreas");
 
 	/* Off-Mesh Connection */
 	MarkNativeAsOptional("NavBotNavOffMeshConnection.GetType");
@@ -295,6 +301,8 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavMesh.GetPlaceCount");
 	MarkNativeAsOptional("NavBotNavMesh.FindPlaceIndexByName");
 	MarkNativeAsOptional("NavBotNavMesh.GetPlaces");
+	MarkNativeAsOptional("NavBotNavMesh.ComputeTravelDistance");
+	MarkNativeAsOptional("NavBotNavMesh.GetAllNavAreas");
 
 	/* Nav Area Vector */
 	MarkNativeAsOptional("NavBotNavAreaVector.NavBotNavAreaVector");
@@ -337,6 +345,23 @@ public __ext_navbot_SetNTVOptional()
 	MarkNativeAsOptional("NavBotNavBlocker.OnDestroyed.set");
 	MarkNativeAsOptional("NavBotNavBlocker.Entity.set");
 	MarkNativeAsOptional("NavBotNavBlocker.Entity.get");
+
+	/* Nav A Star Search */
+	MarkNativeAsOptional("NavBotNavAStarSearch.NavBotNavAStarSearch");
+	MarkNativeAsOptional("NavBotNavAStarSearch.GCostCallback.set");
+	MarkNativeAsOptional("NavBotNavAStarSearch.HCostCallback.set");
+	MarkNativeAsOptional("NavBotNavAStarSearch.StartArea.set");
+	MarkNativeAsOptional("NavBotNavAStarSearch.SetGoalPosition");
+	MarkNativeAsOptional("NavBotNavAStarSearch.TotalCost.get");
+	MarkNativeAsOptional("NavBotNavAStarSearch.FoundPath.get");
+	MarkNativeAsOptional("NavBotNavAStarSearch.GetNodeForArea.get");
+	MarkNativeAsOptional("NavBotNavAStarSearch.GetPath");
+	MarkNativeAsOptional("NavBotNavAStarSearch.RunSearch");
+
+	/* Nav A Star Node */
+	MarkNativeAsOptional("NavBotNavAStarSearchNode.GetArea");
+	MarkNativeAsOptional("NavBotNavAStarSearchNode.GetParent");
+	MarkNativeAsOptional("NavBotNavAStarSearchNode.GetTraverseType");
 
 	/* Mod Interface */
 	MarkNativeAsOptional("NavBotModInterface.GetModName");

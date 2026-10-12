@@ -276,3 +276,73 @@ stock float NB_SimpleGroundOnlyPathCost(Address toArea, Address fromArea, Addres
 	float cost = dist + costSoFar;
 	return cost;
 }
+
+// Simple g cost function callback for NavBotNavMesh.DoAStarSearch
+stock float NB_SimpleGCost(Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator)
+{
+	if (fromArea == Address_Null)
+	{
+		// First area in the path, no cost.
+		return 0.0;
+	}
+
+	float dist = 0.0;
+
+	if (offmeshconn != Address_Null)
+	{
+		dist = NavBotNavOffMeshConnection.GetConnectionLength(offmeshconn);
+	}
+	else
+	{
+		// for now just use distance between the areas
+		float v1[3];
+		float v2[3];
+		NavBotNavArea.GetCenter(toArea, v1);
+		NavBotNavArea.GetCenter(fromArea, v2);
+		dist = GetVectorDistance(v1, v2);
+	}
+
+	float cost = dist;
+	return cost;
+}
+
+// Simple g cost function callback for NavBotNavMesh.DoAStarSearch. Only allows ground paths (no ladders and elevators)
+stock float NB_SimpleGroundOnlyGCost(Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator)
+{
+	if (fromArea == Address_Null)
+	{
+		// First area in the path, no cost.
+		return 0.0;
+	}
+
+	float dist = 0.0;
+
+	if (offmeshconn != Address_Null)
+	{
+		dist = NavBotNavOffMeshConnection.GetConnectionLength(offmeshconn);
+	}
+	else if (ladder != Address_Null || elevator != Address_Null)
+	{
+		return -1.0; // return -1 tells the path finder this is a dead end.
+	}
+	else
+	{
+		// for now just use distance between the areas
+		float v1[3];
+		float v2[3];
+		NavBotNavArea.GetCenter(toArea, v1);
+		NavBotNavArea.GetCenter(fromArea, v2);
+		dist = GetVectorDistance(v1, v2);
+	}
+
+	float cost = dist;
+	return cost;
+}
+
+// Simple h cost function callback for NavBotNavMesh.DoAStarSearch
+stock float NB_SimpleHCost(Address area, const float goal[3])
+{
+	float center[3];
+	NavBotNavArea.GetCenter(area, center);
+	return GetVectorDistance(center, goal);
+}

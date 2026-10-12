@@ -86,3 +86,8 @@ QueryAnswerType IBehavior::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* 
 {
 	return GetDecisionQueryResponder()->ShouldSwitchToWeapon(me, weapon);
 }
+
+QueryAnswerType IBehavior::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
+{
+	return GetDecisionQueryResponder()->ShouldScopeWithWeapon(me, activeWeapon, wantstoscope, isscoped);
+}

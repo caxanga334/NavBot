@@ -6,6 +6,7 @@
 #include <navmesh/nav_pathfind.h>
 #include <natives/navcollector.h>
 #include <natives/navblocker.h>
+#include <natives/navastar.h>
 #include "spmanager.h"
 
 
@@ -54,6 +55,12 @@ void SourcePawnManager::OnHandleDestroy(SourceMod::HandleType_t type, void* obje
 	{
 		std::vector<CNavArea*>* vec = reinterpret_cast<std::vector<CNavArea*>*>(object);
 		delete vec;
+		return;
+	}
+
+	if (type == m_handletypes[HANDLE_NAVASTARSEARCH])
+	{
+		natives::navmesh::navastar::destroy(object);
 		return;
 	}
 #endif // !NO_SOURCEPAWN_API
@@ -106,6 +113,7 @@ void SourcePawnManager::SetupHandles()
 	SetupNavCollectorHandle();
 	SetupNavAreaVectorHandle();
 	SetupNavBlockerHandle();
+	SetupNavAStarHandle();
 #endif // !NO_SOURCEPAWN_API
 }
 
@@ -249,6 +257,27 @@ void SourcePawnManager::SetupNavBlockerHandle()
 	if (m_handletypes[HANDLE_NAVBLOCKER] == NO_HANDLE_TYPE)
 	{
 		smutils->LogError(myself, "Failed to setup CSourcePawnNavBlocker handle!");
+	}
+}
+
+void SourcePawnManager::SetupNavAStarHandle()
+{
+	using namespace SourceMod;
+
+	TypeAccess trules;
+	HandleAccess hrules;
+	handlesys->InitAccessDefaults(&trules, &hrules);
+
+	trules.access[HTypeAccess_Create] = true;
+	trules.access[HTypeAccess_Inherit] = true;
+	trules.ident = myself->GetIdentity();
+	hrules.access[HandleAccess_Read] = 0;
+
+	m_handletypes[HANDLE_NAVASTARSEARCH] = handlesys->CreateType("CSourcePawnNavAStarSearch", this, NO_HANDLE_TYPE, &trules, &hrules, myself->GetIdentity(), nullptr);
+
+	if (m_handletypes[HANDLE_NAVASTARSEARCH] == NO_HANDLE_TYPE)
+	{
+		smutils->LogError(myself, "Failed to setup CSourcePawnNavAStarSearch handle!");
 	}
 }
 

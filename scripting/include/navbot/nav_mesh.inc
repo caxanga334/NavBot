@@ -16,6 +16,7 @@
  * @param offmeshconn	Off-Mesh connection that connects the two areas. Address_Null if not connected by Off-Mesh connection.
  * @param elevator		Elevator connecting the two areas. Address_Null if not connected by elevator.
  * @param length		Path length so far.
+ * @return				Cost to go from "fromArea" to "toArea". Return -1 for dead ends.
  */
 typedef NavBotNavPathCostFunc = function float (Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator, float length);
 
@@ -167,7 +168,14 @@ methodmap NavBotNavMesh
 	 * @error				Bad area address.
 	 */
 	public static native float ComputeTravelDistance(Address start, Address end, NavBotNavPathCostFunc costfunc, const float maxPathLength = 0.0);
+	/**
+	 * Gets a nav area vector with all nav areas.
+	 * 
+	 * @return				Handle to a nav area vector, must be deleted.
+	 */
+	public static native NavBotNavAreaVector GetAllNavAreas();
 }
 
 #include "nav_collector.inc"
 #include "nav_blocker.inc"
+#include "nav_astar_search.inc"

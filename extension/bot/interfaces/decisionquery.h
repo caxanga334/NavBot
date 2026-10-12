@@ -93,6 +93,15 @@ public:
 	virtual QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon);
 	// Queries if the bot is running a plugin command behavior.
 	virtual bool IsRunningPluginCommand() { return false; }
+	/**
+	 * @brief Queries if the bot should scope/unscope their weapon.
+	 * @param me Bot being queried.
+	 * @param activeWeapon Current weapon being used.
+	 * @param wantstoscope Current desire to scope from the combat logic.
+	 * @param isscoped Is the bot currently scoped in.
+	 * @return ANSWER_YES makes the bot scope, ANSWER_NO makes the bot unscope, ANSWER_UNDEFINED leaves the decision to the combat logic.
+	 */
+	virtual QueryAnswerType ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped);
 private:
 
 };
@@ -158,6 +167,11 @@ inline QueryAnswerType IDecisionQuery::ShouldAssistTeammate(CBaseBot* me, CBaseE
 }
 
 inline QueryAnswerType IDecisionQuery::ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon)
+{
+	return ANSWER_UNDEFINED;
+}
+
+inline QueryAnswerType IDecisionQuery::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
 {
 	return ANSWER_UNDEFINED;
 }

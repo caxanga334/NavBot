@@ -16,7 +16,6 @@ ICombat::ICombat(CBaseBot* bot) :
 	m_lastWeaponPtr = nullptr;
 	m_lastThreatPtr = nullptr;
 	m_shouldAim = true;
-	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
 	m_wantsToScope = false;
 	m_reAim = false;
@@ -45,7 +44,6 @@ void ICombat::Reset()
 	m_lastWeaponPtr = nullptr;
 	m_lastThreatPtr = nullptr;
 	m_shouldAim = true;
-	m_shouldSelectWeapons = true;
 	m_isScopedOrDeployed = false;
 	m_wantsToScope = false;
 	m_reAim = false;
@@ -85,16 +83,9 @@ void ICombat::Update()
 
 	const CKnownEntity* threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ANY_THREATS);
 
-	if (threat)
+	if (threat != nullptr)
 	{
-		if (ShouldSelectWeapons() && m_selectWeaponTimer.IsElapsed())
-		{
-			// call this before GetActiveBotWeapon
-			if (bot->GetInventoryInterface()->SelectBestWeaponForThreat(threat))
-			{
-				DisableFiringWeapons(0.2f, true); // just switched weapons, let go of buttons for a little
-			}
-		}
+		UpdateWeaponSelection(threat);
 
 		const CBotWeapon* activeWeapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
 
@@ -178,12 +169,6 @@ void ICombat::Update()
 			GetPostCombatChecksTimer().Invalidate();
 			OnPostCombat();
 		}
-	}
-
-	// Overrides
-	if (IsCombatBehaviorFlagsSet(CombatBehavaiorFlags::CB_SNIPING))
-	{
-		SetWantsToScopeState(true); // Sniping, scope-in
 	}
 
 	UpdateScopeState();
@@ -1269,8 +1254,23 @@ void ICombat::UpdateScopeState()
 		if (activeWeapon)
 		{
 			SetScopedOrDeployedStatus(activeWeapon->IsDeployedOrScoped(bot));
-			const bool wantstoscope = WantstoBeScoped();
+			bool wantstoscope = WantstoBeScoped();
 			const bool isscoped = IsScopedInOrDeployed();
+
+			// Query behavior
+			QueryAnswerType answer = bot->GetBehaviorInterface()->ShouldScopeWithWeapon(bot, activeWeapon, wantstoscope, isscoped);
+
+			switch (answer)
+			{
+			case QueryAnswerType::ANSWER_YES:
+				wantstoscope = true;
+				break;
+			case QueryAnswerType::ANSWER_NO:
+				wantstoscope = false;
+				break;
+			default:
+				break;
+			}
 
 			// if the scoped state is different from what the bot wants
 			if (wantstoscope != isscoped)
@@ -1318,6 +1318,23 @@ void ICombat::UpdateMarkAreasAsCleared(const CKnownEntity* threat)
 			botsharedutils::search::MarkVisibleAreasAsCleared functor(GetBot<CBaseBot>());
 			functor.Execute();
 		}
+	}
+}
+
+void ICombat::UpdateWeaponSelection(const CKnownEntity* threat)
+{
+	if (m_selectWeaponTimer.IsElapsed())
+	{
+		// call this before GetActiveBotWeapon
+		if (GetBot<CBaseBot>()->GetInventoryInterface()->SelectBestWeaponForThreat(threat))
+		{
+			DisableFiringWeapons(0.5f, true); // just switched weapons, let go of buttons for a little
+			m_selectWeaponTimer.Start(2.0f);
+			return;
+		}
+
+		// weapon selection failed, may have been blocked by a behavior query
+		m_selectWeaponTimer.Start(5.0f);
 	}
 }
 

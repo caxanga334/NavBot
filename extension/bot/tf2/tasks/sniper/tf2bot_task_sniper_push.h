@@ -19,6 +19,7 @@ public:
 	// I'm busy
 	QueryAnswerType ShouldAssistTeammate(CBaseBot* me, CBaseEntity* teammate) override { return ANSWER_NO; }
 	QueryAnswerType ShouldSwitchToWeapon(CBaseBot* me, const CBotWeapon* weapon) override;
+	QueryAnswerType ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped) override;
 
 	const char* GetName() const override { return "SniperPush"; }
 
