@@ -91,3 +91,8 @@ QueryAnswerType IBehavior::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon*
 {
 	return GetDecisionQueryResponder()->ShouldScopeWithWeapon(me, activeWeapon, wantstoscope, isscoped);
 }
+
+QueryAnswerType IBehavior::IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data)
+{
+	return GetDecisionQueryResponder()->IsCompletingObjective(me, objectiveID, data);
+}

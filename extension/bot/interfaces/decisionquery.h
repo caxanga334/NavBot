@@ -102,6 +102,14 @@ public:
 	 * @return ANSWER_YES makes the bot scope, ANSWER_NO makes the bot unscope, ANSWER_UNDEFINED leaves the decision to the combat logic.
 	 */
 	virtual QueryAnswerType ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped);
+	/**
+	 * @brief Queries if the bot is completing a specific objective.
+	 * @param me Bot being queried.
+	 * @param objectiveID Objective ID, each mod defines their own ID.
+	 * @param data Optional query data, may be empty.
+	 * @return Query answer.
+	 */
+	virtual QueryAnswerType IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data);
 private:
 
 };
@@ -172,6 +180,11 @@ inline QueryAnswerType IDecisionQuery::ShouldSwitchToWeapon(CBaseBot* me, const 
 }
 
 inline QueryAnswerType IDecisionQuery::ShouldScopeWithWeapon(CBaseBot* me, const CBotWeapon* activeWeapon, const bool wantstoscope, const bool isscoped)
+{
+	return ANSWER_UNDEFINED;
+}
+
+inline QueryAnswerType IDecisionQuery::IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data)
 {
 	return ANSWER_UNDEFINED;
 }

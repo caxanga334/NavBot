@@ -178,6 +178,20 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 
 		break;
 	}
+	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_MOVE_TO_ENTITY:
+	{
+		if (mgr.GetGenericTargetEntity() != nullptr)
+		{
+			return PauseFor(new CZPSBotObjectiveMoveToEntity, "Moving to entity!");
+		}
+
+		if (mgr.IsDebugging())
+		{
+			smutils->LogError(myself, "Objective \"MoveToEntity\" not possible. NULL entity!");
+		}
+
+		break;
+	}
 	default:
 		break;
 	}

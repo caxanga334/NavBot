@@ -20,6 +20,7 @@ public:
 		OBJECTIVE_DROP_ITEM, // drop item_deliver at another entity
 		OBJECTIVE_DESTROY_ENTITY, // destroy an entity
 		OBJECTIVE_DISCARD_ITEM, // discard an item_deliver from their inventory.
+		OBJECTIVE_MOVE_TO_ENTITY, // moves to a specific entity
 
 		MAX_OBJECTIVE_TYPES
 	};

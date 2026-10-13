@@ -91,4 +91,33 @@ private:
 	void EquipRequiredItem(CZPSBot* bot);
 };
 
+class CZPSBotObjectiveUseEntity : public CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>
+{
+public:
+	CZPSBotObjectiveUseEntity(CBaseEntity* entity);
+
+	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
+
+	QueryAnswerType IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data) override;
+
+private:
+	CountdownTimer m_antiBlockCheck;
+};
+
+class CZPSBotObjectiveMoveToEntity : public AITask<CZPSBot>
+{
+public:
+	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
+
+	TaskEventResponseResult<CZPSBot> OnStuck(CZPSBot* bot) override;
+	TaskEventResponseResult<CZPSBot> OnUnstuck(CZPSBot* bot) override;
+	TaskEventResponseResult<CZPSBot> OnMoveToFailure(CZPSBot* bot, CPath* path, IEventListener::MovementFailureType reason) override;
+	TaskEventResponseResult<CZPSBot> OnMoveToSuccess(CZPSBot* bot, CPath* path) override;
+
+	const char* GetName() const override { return "ObjectiveMoveToEntity"; }
+
+private:
+	CMeshNavigator m_nav;
+};
+
 #endif // !__NAVBOT_ZPSBOT_TASKS_SCENARIO_HUMAN_OBJECTIVES_H_

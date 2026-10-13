@@ -59,6 +59,7 @@ methodmap NavBotNavAStarSearch < Handle
     public native Address GetNodeForArea(Address area);
     /**
      * Gets a nav area vector containg the areas in the path.
+     * The vector starts from the end of the path.
      * Note: The vector is a copy and the search handle can be deleted without issues.
      * 
      * @return              Handle of a nav area vector. Must be deleted.

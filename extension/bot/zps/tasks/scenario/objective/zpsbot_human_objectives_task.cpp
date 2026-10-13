@@ -6,6 +6,7 @@
 #include <bot/tasks_shared/bot_shared_drop_weapon.h>
 #include <bot/tasks_shared/bot_shared_collect_items.h>
 #include <bot/tasks_shared/bot_shared_escort_entity.h>
+#include <bot/tasks_shared/bot_shared_use_entity.h>
 #include "zpsbot_human_objectives_task.h"
 
 AITask<CZPSBot>* CZPSBotObjectiveFindItemTask::InitialNextTask(CZPSBot* bot)
@@ -533,4 +534,99 @@ void CZPSBotObjectiveDropItemTask::EquipRequiredItem(CZPSBot* bot)
 		inventory->EquipWeapon(itemdeliver);
 		m_switchCooldown.Start(2.0f);
 	}
+}
+
+CZPSBotObjectiveUseEntity::CZPSBotObjectiveUseEntity(CBaseEntity* entity) :
+	CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>(entity)
+{
+}
+
+TaskResult<CZPSBot> CZPSBotObjectiveUseEntity::OnTaskUpdate(CZPSBot* bot)
+{
+	constexpr float max_dist = CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::CLOSE_DISTANCE * 2.5f;
+	const float distance = GetDistanceToTargetEntity();
+
+	// If a bot is already close, don't care and just let them continue.
+	if (distance > CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::CLOSE_DISTANCE)
+	{
+		// If the bot is close to the objective, check if another bot is already there.
+		if (distance <= max_dist && m_antiBlockCheck.IsElapsed())
+		{
+			m_antiBlockCheck.Start(0.5f);
+
+			int n = extmanager->QueryNumberOfBotsCompletingObjective(bot, zps::bots::OBJID_USE_ENTITY);
+
+			if (n > 0)
+			{
+				if (bot->IsDebugging(BOTDEBUG_TASKS))
+				{
+					bot->DebugPrintToConsole(56, 243, 171, "%s ZPO USE ENTITY: FOUND %i BOTS NEAR OBJECTIVE! MY DISTANCE TO IT: %g \n", 
+						bot->GetDebugIdentifier(), n, distance);
+				}
+
+				// another bot is already close to the button, roam nearby and provide cover. Limited distance, we don't bots going too far away.
+				return PauseFor(new CBotSharedRoamTask<CZPSBot, CZPSBotPathCost>(bot, 1024.0f, true, 1024.0f), "Another teammate is at the button, roaming!");
+			}
+		}
+	}
+
+	return CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::OnTaskUpdate(bot);
+}
+
+QueryAnswerType CZPSBotObjectiveUseEntity::IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data)
+{
+	if (objectiveID != zps::bots::OBJID_USE_ENTITY)
+	{
+		return ANSWER_UNDEFINED;
+	}
+
+	// Only if close enough
+	if (GetDistanceToTargetEntity() <= CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::CLOSE_DISTANCE)
+	{
+		return ANSWER_YES;
+	}
+
+	return ANSWER_UNDEFINED;
+}
+
+TaskResult<CZPSBot> CZPSBotObjectiveMoveToEntity::OnTaskUpdate(CZPSBot* bot)
+{
+	const CZPSObjectiveManager& mgr = CZombiePanicSourceMod::GetZPSMod()->GetObjectiveManager();
+
+	CBaseEntity* entity = mgr.GetGenericTargetEntity();
+
+	if (!entity)
+	{
+		return Done("NULL target entity!");
+	}
+
+	if (m_nav.NeedsRepath())
+	{
+		Vector center = UtilHelpers::getWorldSpaceCenter(entity);
+		CZPSBotPathCost cost(bot, RouteType::FASTEST_ROUTE);
+		m_nav.ComputePathToPosition(bot, center, cost);
+	}
+
+	m_nav.Update(bot);
+	return Continue();
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotObjectiveMoveToEntity::OnStuck(CZPSBot* bot)
+{
+	return TryToMaintain(PRIORITY_MEDIUM);
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotObjectiveMoveToEntity::OnUnstuck(CZPSBot* bot)
+{
+	return TryToMaintain(PRIORITY_MEDIUM);
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotObjectiveMoveToEntity::OnMoveToFailure(CZPSBot* bot, CPath* path, IEventListener::MovementFailureType reason)
+{
+	return TryToMaintain(PRIORITY_MEDIUM);
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotObjectiveMoveToEntity::OnMoveToSuccess(CZPSBot* bot, CPath* path)
+{
+	return TryToMaintain(PRIORITY_MEDIUM);
 }

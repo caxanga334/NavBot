@@ -366,6 +366,11 @@ public:
 		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::ShouldScopeWithWeapon>(QueryAnswerType::ANSWER_UNDEFINED, me, activeWeapon, wantstoscope, isscoped);
 	}
 
+	QueryAnswerType IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data) override
+	{
+		return PropagateDecisionQuery<QueryAnswerType, &AITask<BotClass>::IsCompletingObjective>(QueryAnswerType::ANSWER_UNDEFINED, me, objectiveID, data);
+	}
+
 private:
 	friend class AITask<BotClass>;
 

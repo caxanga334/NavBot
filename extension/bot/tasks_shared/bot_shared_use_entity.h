@@ -7,6 +7,9 @@ template <typename BotClass, typename PathCostClass>
 class CBotSharedUseEntityTask : public AITask<BotClass>
 {
 public:
+	// Min distance to consider the bot being close to the entity.
+	static constexpr float CLOSE_DISTANCE = 256.0f;
+
 	/**
 	 * @brief Constructor.
 	 * @param entity Entity the bot will use.
@@ -142,7 +145,7 @@ public:
 
 	QueryAnswerType ShouldAttack(CBaseBot* me, const CKnownEntity* them) override
 	{
-		if (m_rangeToEntity <= 256.0f)
+		if (m_rangeToEntity <= CLOSE_DISTANCE)
 		{
 			return ANSWER_NO;
 		}
@@ -152,7 +155,7 @@ public:
 
 	QueryAnswerType ShouldHurry(CBaseBot* me) override
 	{
-		if (m_rangeToEntity <= 256.0f)
+		if (m_rangeToEntity <= CLOSE_DISTANCE)
 		{
 			return ANSWER_YES;
 		}
@@ -179,6 +182,10 @@ public:
 	}
 
 	const char* GetName() const override { return "UseEntity"; }
+
+protected:
+	float GetDistanceToTargetEntity() const { return m_rangeToEntity; }
+	CBaseEntity* GetTargetEntity() const { return m_entity.Get(); }
 
 private:
 	CHandle<CBaseEntity> m_entity;

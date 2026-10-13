@@ -35,5 +35,15 @@ namespace zps
 	};
 }
 
+// NavBot specific stuff
+namespace zps::bots
+{
+	// Objective IDs for IsCompletingObjective queries
+	// These can be any number , just make sure to use unique numbers.
+
+	// Using a button (ZPO)
+	constexpr int OBJID_USE_ENTITY = 100;
+}
+
 
 #endif // !__NAVBOT_ZPS_SHAREDDEFS_H_
