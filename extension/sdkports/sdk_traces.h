@@ -399,7 +399,7 @@ namespace trace
 	inline void toground(const Vector& point, trace_t& tr)
 	{
 		Vector end(point);
-		end -= 16384.0f;
+		end.z -= 16384.0f;
 		CTraceFilterWorldAndPropsOnly filter;
 		Ray_t ray;
 		ray.Init(point, end);
@@ -415,7 +415,7 @@ namespace trace
 	inline void toground(const Vector& point, unsigned int mask, ITraceFilter* filter, trace_t& tr)
 	{
 		Vector end(point);
-		end -= 16384.0f;
+		end.z -= 16384.0f;
 		Ray_t ray;
 		ray.Init(point, end);
 		enginetrace->TraceRay(ray, mask, filter, &tr);
@@ -430,7 +430,7 @@ namespace trace
 	inline void toceiling(const Vector& point, unsigned int mask, ITraceFilter* filter, trace_t& tr)
 	{
 		Vector end(point);
-		end += 16384.0f;
+		end.z += 16384.0f;
 		Ray_t ray;
 		ray.Init(point, end);
 		enginetrace->TraceRay(ray, mask, filter, &tr);
