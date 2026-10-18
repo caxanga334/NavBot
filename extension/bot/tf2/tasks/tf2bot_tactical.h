@@ -31,6 +31,7 @@ private:
 	CountdownTimer m_healthchecktimer;
 	CountdownTimer m_teleportertimer;
 	CountdownTimer m_retreatCooldown;
+	CountdownTimer m_helpTeammatesTimer;
 };
 
 

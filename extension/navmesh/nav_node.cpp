@@ -25,7 +25,7 @@
 
 NavDirType Opposite[ NUM_DIRECTIONS ] = { SOUTH, WEST, NORTH, EAST };
 
-CNavNode *CNavNode::m_list = NULL;
+CNavNode *CNavNode::m_list = nullptr;
 unsigned int CNavNode::m_listLength = 0;
 unsigned int CNavNode::m_nextID = 1;
 
@@ -67,7 +67,7 @@ CNavNode::CNavNode( const Vector &pos, const Vector &normal, CNavNode *parent, b
 	int i;
 	for( i=0; i<NUM_DIRECTIONS; ++i )
 	{
-		m_to[ i ] = NULL;
+		m_to[ i ] = nullptr;
 		m_obstacleHeight[ i ] = 0;
 		m_obstacleStartDist[ i ] = 0;
 		m_obstacleEndDist[ i ] = 0;
@@ -77,6 +77,7 @@ CNavNode::CNavNode( const Vector &pos, const Vector &normal, CNavNode *parent, b
 	{
 		m_crouch[ i ] = false;
 		m_isBlocked[ i ] = false;
+		m_groundHeightAboveNode[i] = 0.0f;
 	}
 
 	m_visited = 0;

@@ -140,6 +140,8 @@ SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*, 
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommandKeyValues, SH_NOATTRIB, 0, edict_t*, KeyValues*);
 #endif // defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
 
+SH_DECL_HOOK1_void(IServerGameClients, SetCommandClient, SH_NOATTRIB, 0, int);
+
 // SDKs that requires a runplayercommand hook
 
 SMEXT_LINK(&g_NavBotExt);
@@ -212,6 +214,7 @@ NavBotExt::NavBotExt()
 {
 	m_hookruncmd = false;
 	m_botsAreSupported = true; // default to true, set to false on failures
+	m_commandClientIndex = 0;
 	m_cfg_navbot = nullptr;
 	m_cfg_sdktools = nullptr;
 	m_cfg_sdkhooks = nullptr;
@@ -530,6 +533,8 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 
 #endif // EXT_DEBUG
 
+	SH_ADD_HOOK(IServerGameClients, SetCommandClient, gameclients, SH_MEMBER(this, &NavBotExt::Hook_IServerGameClients_SetCommandClient), false);
+
 	return true;
 }
 
@@ -552,6 +557,8 @@ bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 #endif // SOURCE_ENGINE >= SE_EYE
 
 #endif // EXT_DEBUG
+
+	SH_REMOVE_HOOK(IServerGameClients, SetCommandClient, gameclients, SH_MEMBER(this, &NavBotExt::Hook_IServerGameClients_SetCommandClient), false);
 
 	return true;
 }
@@ -599,6 +606,12 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 
 	if (!simulating)
 	{
+		/* simulating will be false on empty dedicated servers. This allows the nav mesh generation to work. */
+		if (TheNavMesh != nullptr && TheNavMesh->IsGenerating())
+		{
+			TheNavMesh->Update();
+		}
+
 		RETURN_META(MRES_IGNORED);
 	}
 
@@ -704,3 +717,34 @@ void NavBotExt::Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyVal
 }
 #endif // EXT_DEBUG
 
+void NavBotExt::Hook_IServerGameClients_SetCommandClient(int index)
+{
+	m_commandClientIndex = index;
+	RETURN_META(MRES_IGNORED);
+}
+
+CBaseEntity* NavBotExt::GetCommandPlayer() const
+{
+	int idx = GetCommandClientIndex();
+
+	if (idx > 0)
+	{
+		return gamehelpers->ReferenceToEntity(idx);
+	}
+
+	return nullptr;
+}
+
+bool NavBotExt::IsCommandIssuedByServerAdmin() const
+{
+	int idx = GetCommandClientIndex();
+
+	// On dedicated server, must be console/RCON
+	if (engine->IsDedicatedServer() && idx > 0)
+	{
+		return false;
+	}
+
+	// Listen server
+	return idx <= 1;
+}

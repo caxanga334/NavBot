@@ -410,6 +410,85 @@ methodmap NavBotNavArea
 	 * @error				Bad area address, invalid callback function.
 	 */
 	public static native bool SearchConnectedAreas(Address area, NavBotNavAreaSearchAdjCB callback, any data = 0);
+	/**
+	 * Gets the address of an off-mesh connection connecting the "source area" to "destination area".
+	 * 
+	 * @param from			Address of the source area.
+	 * @param to			Address of the destination area.
+	 * @return				Address of the off-mesh connection. Address_Null if none.
+	 * @error				Bad area ptr.
+	 */
+	public static native Address GetOffMeshConnectionToArea(Address from, Address to);
+	/**
+	 * Gets the address of a ladder connecting the "source area" to "destination area".
+	 * 
+	 * @param from			Address of the source area.
+	 * @param to			Address of the destination area.
+	 * @return				Address of the ladder. Address_Null if none.
+	 * @error				Bad area ptr.
+	 */
+	public static native Address GetLadderConnectionToArea(Address from, Address to);
+	/**
+	 * Gets the address of a elevator connecting the "source area" to "destination area".
+	 * 
+	 * @param from			Address of the source area.
+	 * @param to			Address of the destination area.
+	 * @return				Address of the elevator. Address_Null if none.
+	 * @error				Bad area ptr.
+	 */
+	public static native Address GetElevatorConnectionToArea(Address from, Address to);
+	/**
+	 * Creates an off-mesh connection between the "from" area and the "to" area.
+	 * Notes: 
+	 *   Off-mesh connections are one-way!
+	 *   Bots don't use pathfinding and obstacle avoidance when using off-mesh connections. Make sure the start position is reachable from the "from" area directly.
+	 *   Off-mesh connections only works correctly after the nav mesh is analyzed.
+	 * 
+	 * @param from			Address of the source area.
+	 * @param to			Address of the destination area.
+	 * @param type			Off-mesh connection type.
+	 * @param start			Off-mesh connection start position.
+	 * @param end			Off-mesh connection end position.
+	 * @return				True if a connection was created, false otherwise.
+	 * @error				Bad area ptr, invalid off-mesh type passed.
+	 */
+	public static native bool ConnectToOffMesh(Address from, Address to, OffMeshConnectionType type, const float start[3], const float end[3]);
+	/**
+	 * Removes an off-mesh connection between the "from" area and the "to" area.
+	 * 
+	 * @param from			Address of the source area.
+	 * @param to			Address of the destination area.
+	 * @param type			Off-mesh connection type.
+	 * @error				Bad area ptr, invalid off-mesh type passed.
+	 */
+	public static native void DisconnectOffMesh(Address from, Address to, OffMeshConnectionType type);
+	/**
+	 * Gets the number of incoming one-ways to this nav area.
+	 * 
+	 * @param area			Address of a nav area.
+	 * @param dir			Direction to get the incoming one-ways count.
+	 * @return				Number of incoming one-ways in the specified direction.
+	 * @error				Bad area ptr, invalid direction.
+	 */
+	public static native int GetIncomingConnectionsCount(Address area, NavBotNavDirType dir);
+	/**
+	 * Gets a pointer to an incoming one-way nav area to the given area.
+	 * 
+	 * @param area			Address of a nav area.
+	 * @param dir			Direction to get the incoming one-ways.
+	 * @param index			Index of the incoming one-way vector to read. Values are between 0 and GetIncomingConnectionsCount() - 1.
+	 * @return				Address of a nav area with an one-way connection to the area passed in the first param.
+	 * @error				Bad area ptr, invalid direction, out of range index passed.
+	 */
+	public static native Address GetIncomingConnection(Address area, NavBotNavDirType dir, const int index);
+	/**
+	 * Compute change in actual ground height from the "from" area to the "to" area.
+	 * 
+	 * @param from			From area address.
+	 * @param to			To area address.
+	 * @return				Computed ground height change.
+	 */
+	public static native float ComputeGroundHeightChange(Address from, Address to);
 }
 
 methodmap NavBotNavOffMeshConnection

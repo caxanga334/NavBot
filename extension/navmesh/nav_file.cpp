@@ -1138,7 +1138,7 @@ static NavErrorType CheckNavFile( const char *bspFilename )
 	return NAV_OK;
 }
 
-
+#if 0
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavCheckFileConsistency( void )
 {
@@ -1173,6 +1173,7 @@ void CommandNavCheckFileConsistency( void )
 	filesystem->FindClose( findHandle );
 }
 static ConCommand sm_nav_check_file_consistency( "sm_nav_check_file_consistency", CommandNavCheckFileConsistency, "Scans the maps directory and reports any missing/out-of-date navigation files.", FCVAR_GAMEDLL | FCVAR_CHEAT );
+#endif // 0
 
 static ConVar sm_nav_auto_import("sm_nav_auto_import", "0", FCVAR_GAMEDLL, "If enabled, automatically imports an official nav mesh if a navbot nav mesh is missing.");
 ConVar sm_nav_quicksave("sm_nav_quicksave", "1", FCVAR_GAMEDLL | FCVAR_CHEAT, "Set to one to skip the time consuming phases of the analysis.  Useful for data collection and testing.");	// TERROR: defaulting to 1, since we don't need the other data

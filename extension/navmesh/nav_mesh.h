@@ -552,6 +552,14 @@ public:
 
 	// See GetNavAreaFlags_t for flags
 	CNavArea *GetNavArea( const Vector &pos, float beneathLimt = 120.0f ) const;	// given a position, return the nav area that IsOverlapping and is *immediately* beneath it
+	/**
+	 * @brief given a position, return the nav area that IsOverlapping and is *immediately* beneath it
+	 * @param pos Position to get.
+	 * @param ignore Nav area to ignore.
+	 * @param beneathLimit Maximum Z difference.
+	 * @return Nav area pointer. NULL if none.
+	 */
+	CNavArea* GetNavArea(const Vector& pos, const CNavArea* ignore, const float beneathLimit = 120.0f) const;
 	CNavArea *GetNavArea( edict_t *pEntity, int nGetNavAreaFlags, float flBeneathLimit = 120.0f ) const;
 	CNavArea *GetNavAreaByID( unsigned int id ) const;
 	/**
@@ -612,13 +620,25 @@ public:
 
 	bool IsGenerating( void ) const		{ return m_generationMode != GENERATE_NONE; }	// return true while a Navigation Mesh is being generated
 	/**
-	 * @brief Adds an entity classname to the list of entities to be used for generating walkable spots
+	 * @brief Adds an entity classname to the list of entities to be used for generating walkable spots.
 	 * @param name Entity classname
 	 * @param useCenter if true, use the entity WorldSpaceCenter instead of AbsOrigin for the walkable spot. 
 	 */
 	void AddWalkableEntity(const char* name, bool useCenter = false) { m_walkableEntities.emplace(name, useCenter); }
+	/**
+	 * @brief Adds an entity targetname to the list of entities to be used for generating walkable spots.
+	 * @param targetname Entity targetname to be searched.
+	 * @param useCenter If true, use the entity's world space center instead of abs origin.
+	 */
+	void AddWalkableNamedEntity(const char* targetname, bool useCenter = false) { m_walkableNamedEntities.emplace_back(targetname, useCenter); }
 	bool AddWalkableSeed(const Vector& pos);
 	void AddWalkableSeed( const Vector &pos, const Vector &normal );	// add given walkable position to list of seed positions for map sampling
+	/**
+	 * @brief Adds a walkable seed using the given entity position.
+	 * @param entity Entity to add a walkable seed at.
+	 * @param useWorldSpaceCenter If true, use world space center instead of abs origin.
+	 */
+	void AddWalkableSeed(CBaseEntity* entity, const bool useWorldSpaceCenter = false);
 	virtual void AddWalkableSeeds( void );								// adds walkable positions for any/all positions a mod specifies
 	void ClearWalkableSeeds(void) { m_walkableSeeds.clear(); }	// erase all walkable seed positions
 	void MarkStairAreas( void );
@@ -878,6 +898,62 @@ public:
 				}
 			}
 		}
+		return true;
+	}
+	/**
+	 * @brief Calls a function on every nav area along a line (using grids)
+	 * @tparam F Function to call. bool (CNavArea* area)
+	 * @param start Line start.
+	 * @param end Line End.
+	 * @param increment How much does each search moves.
+	 * @param func Function to call.
+	 * @return True if the search ended and function didn't return false, returns false otherwise.
+	 */
+	template <typename F>
+	bool ForEveryAreaAlongLine(const Vector& start, const Vector& end, const float increment, F& func)
+	{
+		if (m_grid.Count() <= 0)
+		{
+			return false;
+		}
+
+		std::unordered_set<int> looped_grids;
+		looped_grids.reserve(128);
+		Vector dir = (end - start);
+		dir.z = 0.0f;
+		const float range = dir.NormalizeInPlace();
+		Vector p(start);
+		int maxsteps = static_cast<int>(std::round(range / increment));
+		maxsteps = std::max(maxsteps, 1);
+
+		for (int i = 0; i < maxsteps; i++)
+		{
+			p = start + (dir * (increment * i));
+
+			// get list in cell that contains position
+			int x = WorldToGridX(p.x);
+			int y = WorldToGridY(p.y);
+			int idx = x + y * m_gridSizeX;
+
+			if (looped_grids.contains(idx))
+			{
+				continue;
+			}
+
+			NavAreaVector* areaVector = &m_grid[idx];
+			looped_grids.emplace(idx);
+
+			FOR_EACH_VEC((*areaVector), it)
+			{
+				CNavArea* area = (*areaVector)[it];
+
+				if (func(area) == false)
+				{
+					return false;
+				}
+			}
+		}
+
 		return true;
 	}
 
@@ -1636,7 +1712,7 @@ private:
 
 	CNavNode *m_currentNode;									// the current node we are sampling from
 	NavDirType m_generationDir;
-	CNavNode *AddNode( const Vector &destPos, const Vector &destNormal, NavDirType dir, CNavNode *source, bool isOnDisplacement, float obstacleHeight, float flObstacleStartDist, float flObstacleEndDist );		// add a nav node and connect it, update current node
+	CNavNode *AddNode( const Vector &destPos, const Vector &destNormal, NavDirType dir, CNavNode *source, bool isOnDisplacement, float obstacleHeight, float flObstacleStartDist, float flObstacleEndDist, const bool gapCross = false );		// add a nav node and connect it, update current node
 
 	NavLadderVector m_ladders;									// list of ladder navigation representations
 	void BuildLadders( void );
@@ -1674,6 +1750,7 @@ private:
 	{
 		SAMPLE_WALKABLE_SPACE,
 		CREATE_AREAS_FROM_SAMPLES,
+		POST_AREA_CREATION_ANALYSIS,
 		FIND_HIDING_SPOTS,
 		FIND_ENCOUNTER_SPOTS,
 		FIND_SNIPER_SPOTS,
@@ -1704,6 +1781,7 @@ private:
 	Extent m_simplifyGenerationExtent;
 
 	std::unordered_map<std::string, bool> m_walkableEntities;			// List of entities class names to generate walkable seeds
+	std::vector<std::pair<std::string, bool>> m_walkableNamedEntities; // List of named entities to generate walkable seeds
 
 	struct WalkableSeedSpot
 	{

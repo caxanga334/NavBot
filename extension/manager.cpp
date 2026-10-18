@@ -20,7 +20,6 @@
 #include <sdkports/sdk_convarref_ep1.h>
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-#include <bot/pluginbot/pluginbot.h>
 #include <sourcemod_version.h>
 
 #ifdef EXT_VPROF_ENABLED
@@ -46,11 +45,10 @@ CExtManager::CExtManager()
 #ifndef NO_SOURCEPAWN_API
 	m_prebotaddforward = nullptr;
 	m_postbotaddforward = nullptr;
-	m_prepluginbotaddforward = nullptr;
-	m_postpluginbotaddforward = nullptr;
 	m_prebotupdateforward = nullptr;
 	m_onnavmeshloadedforward = nullptr;
 	m_onnavmeshdestroyedforward = nullptr;
+	m_onnavmeshseedingforward = nullptr;
 	m_onbotstuckforward = nullptr;
 	m_onmodroundrestart = nullptr;
 	m_onbotobstacleonpath = nullptr;
@@ -65,11 +63,10 @@ CExtManager::~CExtManager()
 #ifndef NO_SOURCEPAWN_API
 	forwards->ReleaseForward(m_prebotaddforward);
 	forwards->ReleaseForward(m_postbotaddforward);
-	forwards->ReleaseForward(m_prepluginbotaddforward);
-	forwards->ReleaseForward(m_postpluginbotaddforward);
 	forwards->ReleaseForward(m_prebotupdateforward);
 	forwards->ReleaseForward(m_onnavmeshloadedforward);
 	forwards->ReleaseForward(m_onnavmeshdestroyedforward);
+	forwards->ReleaseForward(m_onnavmeshseedingforward);
 	forwards->ReleaseForward(m_onbotstuckforward);
 	forwards->ReleaseForward(m_onmodroundrestart);
 	forwards->ReleaseForward(m_onbotobstacleonpath);
@@ -612,37 +609,6 @@ void CExtManager::AddBot(std::string* newbotname, edict_t** newbotedict)
 	smutils->LogMessage(myself, "NavBot added to the game.");
 }
 
-CBaseBot* CExtManager::AttachBotInstanceToEntity(edict_t* entity)
-{
-#ifndef NO_SOURCEPAWN_API
-	if (!m_allowbots)
-	{
-		return nullptr;
-	}
-
-	cell_t result = static_cast<cell_t>(SourceMod::ResultType::Pl_Continue);
-
-	m_prepluginbotaddforward->PushCell(gamehelpers->IndexOfEdict(entity));
-	m_prepluginbotaddforward->Execute(&result);
-
-	if (result > static_cast<cell_t>(SourceMod::ResultType::Pl_Continue))
-	{
-		return nullptr;
-	}
-
-	CBaseBot* newBot = static_cast<CBaseBot*>(new CPluginBot(entity));
-	newBot->PostAdd();
-	m_bots.emplace_back(newBot);
-
-	m_postpluginbotaddforward->PushCell(gamehelpers->IndexOfEdict(entity));
-	m_postpluginbotaddforward->Execute();
-
-	return newBot;
-#else
-	return nullptr;
-#endif // !NO_SOURCEPAWN_API
-}
-
 void CExtManager::RemoveRandomBot(const char* message)
 {
 	if (m_bots.empty())
@@ -909,11 +875,10 @@ void CExtManager::SetupForwards()
 #ifndef NO_SOURCEPAWN_API
 	m_prebotaddforward = forwards->CreateForward("OnPreNavBotAdd", ET_Event, 0, nullptr);
 	m_postbotaddforward = forwards->CreateForward("OnNavBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_prepluginbotaddforward = forwards->CreateForward("OnPrePluginBotAdd", ET_Event, 1, nullptr, SourceMod::ParamType::Param_Cell);
-	m_postpluginbotaddforward = forwards->CreateForward("OnPluginBotAdded", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_prebotupdateforward = forwards->CreateForward("OnPreNavBotUpdate", ET_Ignore, 1, nullptr, SourceMod::ParamType::Param_Cell);
 	m_onnavmeshloadedforward = forwards->CreateForward("OnNavBotNavMeshLoaded", ET_Ignore, 0, nullptr);
 	m_onnavmeshdestroyedforward = forwards->CreateForward("OnNavBotNavMeshDestroyed", ET_Ignore, 0, nullptr);
+	m_onnavmeshseedingforward = forwards->CreateForward("OnNavBotNavMeshSeeding", ET_Ignore, 0, nullptr);
 	m_onbotstuckforward = forwards->CreateForward("OnNavBotStuck", ET_Ignore, 2, nullptr, SourceMod::ParamType::Param_Cell, SourceMod::ParamType::Param_Cell);
 	m_onmodroundrestart = forwards->CreateForward("OnNavBotModRoundRestart", ET_Ignore, 0, nullptr);
 

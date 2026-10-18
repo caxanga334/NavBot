@@ -92,7 +92,7 @@ static bool ReduceToComponentAreas( CNavArea *area, bool addToSelectedSet )
 //--------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_chop_selected, "Chops all selected areas into their component 1x1 areas", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
+	if ( !extension->IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;
 
 	TheNavMesh->StripNavigationAreas();
@@ -268,7 +268,7 @@ void CNavMesh::SimplifySelectedAreas( void )
 //--------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_simplify_selected, "Chops all selected areas into their component 1x1 areas and re-merges them together into larger areas", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
+	if ( !extension->IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;
 
 	int selectedSetSize = TheNavMesh->GetSelecteSetSize();

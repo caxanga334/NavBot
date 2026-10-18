@@ -57,8 +57,6 @@ template < typename Functor >
 bool ForEachActor( Functor &func );
 */
 
-bool UTIL_IsCommandIssuedByServerAdmin();
-
 const char *UTIL_VarArgs( const char *format, ... );
 
 //-------------------------------------------------------------------------------------------------------------------
@@ -362,7 +360,7 @@ public:
 
 	void ConnectTo( CNavArea *area, NavDirType dir );			// connect this area to given area in given direction
 	void Disconnect( CNavArea *area );							// disconnect this area from given area
-
+	void ConnectToBidirectional(CNavArea* area, NavDirType dir); // connect this area to the given area in the given direction, creates a bi-directional connection
 	void ConnectTo( CNavLadder *ladder );						// connect this area to given ladder
 	void Disconnect( CNavLadder *ladder );						// disconnect this area from given ladder
 
@@ -554,6 +552,33 @@ public:
 		if (IsConnectedToBySpecialLink(other))
 		{
 			return true;
+		}
+
+		if (GetLadderConnectionToArea(other) != nullptr)
+		{
+			return true;
+		}
+
+		if (GetElevatorConnectionToArea(other) != nullptr)
+		{
+			return true;
+		}
+
+		return false;
+	}
+	/**
+	 * @brief Checks if this area has any ground connections (no elevator, ladders or offmesh links).
+	 * @param other Area to check.
+	 * @return True if connected by ground, false otherwise.
+	 */
+	bool HasAnyGroundConnectionsTo(const CNavArea* other) const
+	{
+		for (int dir = static_cast<int>(NORTH); dir < static_cast<int>(NUM_DIRECTIONS); dir++)
+		{
+			if (IsConnected(other, static_cast<NavDirType>(dir)))
+			{
+				return true;
+			}
 		}
 
 		return false;
@@ -769,6 +794,8 @@ public:
 	virtual void ComputeEarliestOccupyTimes( void );
 	virtual void CustomAnalysis( bool isIncremental = false ) { }	// for game-specific analysis
 	virtual bool ComputeLighting( void );						// compute 0..1 light intensity at corners and center (requires client via listenserver)
+	// Analysis post area creation.
+	virtual void PostAreasCreationAnalysis(const bool isIncremental = false);
 	bool TestStairs( void );									// Test an area for being on stairs
 	virtual bool IsAbleToMergeWith( CNavArea *other ) const;
 
@@ -828,14 +855,12 @@ public:
 		{
 			return nullptr;
 		}
-		else
+
+		for (auto& floor : m_elevator->GetFloors())
 		{
-			for (auto& floor : m_elevator->GetFloors())
+			if (floor.GetArea() == other)
 			{
-				if (floor.GetArea() == other)
-				{
-					return m_elevator;
-				}
+				return m_elevator;
 			}
 		}
 

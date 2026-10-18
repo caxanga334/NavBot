@@ -34,6 +34,25 @@ public:
 	const CTF2BotWeapon* GetTheCrusadersCrossbow() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_crossbow")); }
 	const CTF2BotWeapon* GetTheGrapplingHook() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_grapplinghook")); }
 	const CTF2BotWeapon* GetMedigun() const { return static_cast<const CTF2BotWeapon*>(IInventory::FindWeaponByClassname("tf_weapon_medigun")); }
+	// Returns a weapon that can extinguish teammates.
+	const CTF2BotWeapon* GetExtinguishWeapon() const
+	{
+		const CBotWeapon* weapon = IInventory::FindWeaponByTag("can_airblast");
+
+		if (weapon == nullptr)
+		{
+			// jarate
+			weapon = IInventory::FindWeaponByClassname("tf_weapon_jar");
+
+			if (weapon == nullptr)
+			{
+				// madmilk
+				weapon = IInventory::FindWeaponByClassname("tf_weapon_jar_milk");
+			}
+		}
+
+		return static_cast<const CTF2BotWeapon*>(weapon);
+	}
 
 protected:
 	CBotWeapon* CreateBotWeapon(CBaseEntity* weapon) override { return new CTF2BotWeapon(weapon); }

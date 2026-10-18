@@ -10,6 +10,9 @@
 			/* Enable the CBaseMultiplayerPlayer::CanBeAutobalanced hook */
 			"HookCanBeAutobalanced"		"true"
 
+			/* Comma delimited list of entities targetnames (level designer set name) of entities to use for nav mesh walkable spots seeding. */
+			"NavGenerationWalkableNamedEnts" "spawn_boss_alt,spawn_purgatory,spawn_loot,spawn_loot_red,spawn_loot_blue"
+
 			/* Nav Mesh generation parameters */
 			"NavGen_StepSize"				"25.0"
 			"NavGen_JumpHeight"				"41.8"

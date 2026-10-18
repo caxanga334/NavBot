@@ -85,27 +85,6 @@ Color s_selectedSetColor( 255, 255, 200, 96 );
 Color s_selectedSetBorderColor( 100, 100, 0, 255 );
 Color s_dragSelectionSetBorderColor( 50, 50, 50, 255 );
 
-bool UTIL_IsCommandIssuedByServerAdmin() 
-{
-	if (engine->IsDedicatedServer()) 
-	{
-		return false;
-	}
-
-	for (int i = 2; i <= gpGlobals->maxClients; i++) 
-	{
-		edict_t* player = gamehelpers->EdictOfIndex(i);
-		IPlayerInfo* info = playerinfomanager->GetPlayerInfo(player);
-
-		if (player != nullptr && !player->IsFree() && player->GetNetworkable() != nullptr && info != nullptr && !info->IsFakeClient()) 
-		{
-			return false;
-		}
-	}
-
-	return true;
-}
-
 #if SOURCE_ENGINE <= SE_DARKMESSIAH
 static void SelectedSetColorChaged(ConVar* var, char const* pOldString)
 #else
@@ -705,6 +684,11 @@ void CNavArea::ConnectTo( CNavArea *area, NavDirType dir )
 	//CONSOLE_ECHO( "  Connected area #%d to #%d, %s\n", m_id, area->m_id, dirName[ dir ] );
 }
 
+void CNavArea::ConnectToBidirectional(CNavArea* area, NavDirType dir)
+{
+	ConnectTo(area, dir);
+	area->ConnectTo(this, OppositeDirection(dir));
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -735,7 +719,7 @@ bool CNavArea::ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const V
 
 	if (IsConnectedToBySpecialLink(area))
 	{
-		Warning("Only one off-mesh link per area connection! \n");
+		META_CONPRINT("Only one off-mesh link per area connection! \n");
 		return false;
 	}
 
@@ -743,7 +727,7 @@ bool CNavArea::ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const V
 
 	if (range >= 512.0f)
 	{
-		Warning("Distance between start area center and start position is %g! Is this correct? \n", range);
+		META_CONPRINTF("Distance between start area center and start position is %g! Is this correct? \n", range);
 	}
 
 	pos.x = start.x;
@@ -751,8 +735,13 @@ bool CNavArea::ConnectTo(CNavArea* area, OffMeshConnectionType linktype, const V
 	pos.z = start.z;
 
 	m_offmeshconnections.emplace_back(linktype, area, pos, end);
-	Msg("Added off-mesh connection between area #%i and #%i \n", GetID(), area->GetID());
-	NDebugOverlay::HorzArrow(pos + Vector(0.0f, 0.0f, 72.0f), pos, 4.0f, 0, 255, 255, 255, true, 10.0f);
+	META_CONPRINTF("Added off-mesh connection between area #%i and #%i \n", GetID(), area->GetID());
+	
+	// debugoverlay is NULL on a Linux dedicated server.
+	if (!engine->IsDedicatedServer())
+	{
+		NDebugOverlay::HorzArrow(pos + Vector(0.0f, 0.0f, 72.0f), pos, 4.0f, 0, 255, 255, 255, true, 10.0f);
+	}
 
 	return true;
 }
@@ -4681,7 +4670,7 @@ void CNavArea::Shift( const Vector &shift )
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavUpdateBlocked( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 	if ( TheNavMesh->GetMarkedArea() )
 	{
@@ -5299,7 +5288,7 @@ static void CommandNavCheckFloor( void )
 {
 	namespace tf = UtilHelpers::textformat;
 
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	if ( TheNavMesh->GetMarkedArea() )
@@ -5419,7 +5408,7 @@ bool CollectOverlappingAreas::operator()(CNavArea* area)
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavSelectOverlapping( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin())
 		return;
 	TheNavMesh->ClearSelectedSet();
 

@@ -212,6 +212,34 @@ void CNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 		}
 	}
 
+	buffer = cfgnavbot->GetKeyValue("NavGenerationWalkableNamedEnts");
+
+	if (buffer)
+	{
+		std::string szValue(buffer);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			AddWalkableNamedEntity(token.c_str(), false);
+		}
+	}
+
+	buffer = cfgnavbot->GetKeyValue("NavGenerationWalkableNamedEntsCenter");
+
+	if (buffer)
+	{
+		std::string szValue(buffer);
+		std::stringstream stream(szValue);
+		std::string token;
+
+		while (std::getline(stream, token, ','))
+		{
+			AddWalkableNamedEntity(token.c_str(), true);
+		}
+	}
+
 	buffer = cfgnavbot->GetKeyValue("NavGen_StepSize");
 
 	if (buffer) { navgenparams->generation_step_size = atof(buffer); }
@@ -1214,6 +1242,51 @@ CNavArea *CNavMesh::GetNavArea( const Vector &pos, float beneathLimit ) const
 	return use;
 }
 
+CNavArea* CNavMesh::GetNavArea(const Vector& pos, const CNavArea* ignore, const float beneathLimit) const
+{
+	if (m_grid.Count() <= 0)
+		return nullptr;
+
+	// get list in cell that contains position
+	int x = WorldToGridX(pos.x);
+	int y = WorldToGridY(pos.y);
+	NavAreaVector* areaVector = &m_grid[x + y * m_gridSizeX];
+
+	// search cell list to find correct area
+	CNavArea* use = nullptr;
+	float useZ = -99999999.9f;
+	Vector testPos = pos + Vector(0, 0, 5);
+
+	FOR_EACH_VEC((*areaVector), it)
+	{
+		CNavArea* area = (*areaVector)[it];
+
+		if (area == ignore)
+		{
+			continue;
+		}
+
+		// check if position is within 2D boundaries of this area
+		if (area->IsOverlapping(testPos))
+		{
+			// project position onto area to get Z
+			float z = area->GetZ(testPos);
+
+			// don't use area  above us
+			if (z <= testPos.z
+				// don't use area is too far below us
+				&& z >= pos.z - beneathLimit
+				// if area is higher than the one we have, use this instead
+				&& z > useZ)
+			{
+				use = area;
+				useZ = z;
+			}
+		}
+	}
+
+	return use;
+}
 
 //----------------------------------------------------------------------------
 // Given a position, return the nav area that IsOverlapping and is *immediately* beneath it
@@ -2184,7 +2257,7 @@ void CNavMesh::IncreaseDangerNearby( int teamID, float amount, CNavArea *startAr
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavRemoveJumpAreas( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavRemoveJumpAreas();
@@ -2195,7 +2268,7 @@ static ConCommand sm_nav_remove_jump_areas( "sm_nav_remove_jump_areas", CommandN
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavDelete( void )
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
+	if (!extension->IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavDelete();
@@ -2207,7 +2280,7 @@ static ConCommand sm_nav_delete( "sm_nav_delete", CommandNavDelete, "Deletes the
 //-------------------------------------------------------------------------------------------------------------- 
 static void CommandNavDeleteMarked( void ) 
 { 
-	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
+	if (!extension->IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavDeleteMarked(); 
@@ -2219,7 +2292,7 @@ static ConCommand sm_nav_delete_marked( "sm_nav_delete_marked", CommandNavDelete
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_flood_select, "Selects the current Area and all Areas connected to it, recursively. To clear a selection, use this command again.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -2231,7 +2304,7 @@ CON_COMMAND_F(sm_nav_flood_select, "Selects the current Area and all Areas conne
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavToggleSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleSelectedSet();
@@ -2242,7 +2315,7 @@ static ConCommand sm_nav_toggle_selected_set( "sm_nav_toggle_selected_set", Comm
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavStoreSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavStoreSelectedSet();
@@ -2253,7 +2326,7 @@ static ConCommand sm_nav_store_selected_set( "sm_nav_store_selected_set", Comman
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavRecallSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavRecallSelectedSet();
@@ -2264,7 +2337,7 @@ static ConCommand sm_nav_recall_selected_set( "sm_nav_recall_selected_set", Comm
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavAddToSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavAddToSelectedSet();
@@ -2275,7 +2348,7 @@ static ConCommand sm_nav_add_to_selected_set( "sm_nav_add_to_selected_set", Comm
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_add_to_selected_set_by_id, "Add specified area id to the selected set.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -2287,7 +2360,7 @@ CON_COMMAND_F(sm_nav_add_to_selected_set_by_id, "Add specified area id to the se
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavRemoveFromSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavRemoveFromSelectedSet();
@@ -2298,7 +2371,7 @@ static ConCommand sm_nav_remove_from_selected_set( "sm_nav_remove_from_selected_
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavToggleInSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleInSelectedSet();
@@ -2309,7 +2382,7 @@ static ConCommand sm_nav_toggle_in_selected_set( "sm_nav_toggle_in_selected_set"
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavClearSelectedSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavClearSelectedSet();
@@ -2322,7 +2395,7 @@ static ConCommand sm_nav_clear_selected_set( "sm_nav_clear_selected_set", Comman
 //----------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_dump_selected_set_positions, "Write the (x,y,z) coordinates of the centers of all selected nav areas to a file.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	const NavAreaVector &selectedSet = TheNavMesh->GetSelectedSet();
@@ -2358,7 +2431,7 @@ CON_COMMAND_F(sm_nav_dump_selected_set_positions, "Write the (x,y,z) coordinates
 //----------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_show_dumped_positions, "Show the (x,y,z) coordinate positions of the given dump file.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	CUtlBuffer fileBuffer( 4096, 1024*1024, CUtlBuffer::TEXT_BUFFER );
@@ -2396,7 +2469,7 @@ CON_COMMAND_F(sm_nav_show_dumped_positions, "Show the (x,y,z) coordinate positio
 //----------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_larger_than, "Select nav areas where both dimensions are larger than the given size.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -2426,7 +2499,7 @@ CON_COMMAND_F(sm_nav_select_larger_than, "Select nav areas where both dimensions
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavBeginSelecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavBeginSelecting();
@@ -2437,7 +2510,7 @@ static ConCommand sm_nav_begin_selecting( "sm_nav_begin_selecting", CommandNavBe
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavEndSelecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavEndSelecting();
@@ -2448,7 +2521,7 @@ static ConCommand sm_nav_end_selecting( "sm_nav_end_selecting", CommandNavEndSel
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavBeginDragSelecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavBeginDragSelecting();
@@ -2459,7 +2532,7 @@ static ConCommand sm_nav_begin_drag_selecting( "sm_nav_begin_drag_selecting", Co
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavEndDragSelecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavEndDragSelecting();
@@ -2470,7 +2543,7 @@ static ConCommand sm_nav_end_drag_selecting( "sm_nav_end_drag_selecting", Comman
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavBeginDragDeselecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavBeginDragDeselecting();
@@ -2481,7 +2554,7 @@ static ConCommand sm_nav_begin_drag_deselecting( "sm_nav_begin_drag_deselecting"
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavEndDragDeselecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavEndDragDeselecting();
@@ -2492,7 +2565,7 @@ static ConCommand sm_nav_end_drag_deselecting( "sm_nav_end_drag_deselecting", Co
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavRaiseDragVolumeMax( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavRaiseDragVolumeMax();
@@ -2503,7 +2576,7 @@ static ConCommand sm_nav_raise_drag_volume_max( "sm_nav_raise_drag_volume_max", 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavLowerDragVolumeMax( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavLowerDragVolumeMax();
@@ -2514,7 +2587,7 @@ static ConCommand sm_nav_lower_drag_volume_max( "sm_nav_lower_drag_volume_max", 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavRaiseDragVolumeMin( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavRaiseDragVolumeMin();
@@ -2525,7 +2598,7 @@ static ConCommand sm_nav_raise_drag_volume_min( "sm_nav_raise_drag_volume_min", 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavLowerDragVolumeMin( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavLowerDragVolumeMin();
@@ -2536,7 +2609,7 @@ static ConCommand sm_nav_lower_drag_volume_min( "sm_nav_lower_drag_volume_min", 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavToggleSelecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleSelecting();
@@ -2547,7 +2620,7 @@ static ConCommand sm_nav_toggle_selecting( "sm_nav_toggle_selecting", CommandNav
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavBeginDeselecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavBeginDeselecting();
@@ -2558,7 +2631,7 @@ static ConCommand sm_nav_begin_deselecting( "sm_nav_begin_deselecting", CommandN
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavEndDeselecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavEndDeselecting();
@@ -2569,7 +2642,7 @@ static ConCommand sm_nav_end_deselecting( "sm_nav_end_deselecting", CommandNavEn
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavToggleDeselecting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleDeselecting();
@@ -2580,7 +2653,7 @@ static ConCommand sm_nav_toggle_deselecting( "sm_nav_toggle_deselecting", Comman
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_half_space, "Selects any areas that intersect the given half-space.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -2592,7 +2665,7 @@ CON_COMMAND_F(sm_nav_select_half_space, "Selects any areas that intersect the gi
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavBeginShiftXY( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavBeginShiftXY();
@@ -2603,7 +2676,7 @@ static ConCommand sm_nav_begin_shift_xy( "sm_nav_begin_shift_xy", CommandNavBegi
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavEndShiftXY( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavEndShiftXY();
@@ -2614,7 +2687,7 @@ static ConCommand sm_nav_end_shift_xy( "sm_nav_end_shift_xy", CommandNavEndShift
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavSelectInvalidAreas( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSelectInvalidAreas();
@@ -2625,7 +2698,7 @@ static ConCommand sm_nav_select_invalid_areas( "sm_nav_select_invalid_areas", Co
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_blocked_areas, "Adds all blocked areas to the selected set", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSelectBlockedAreas();
@@ -2635,7 +2708,7 @@ CON_COMMAND_F(sm_nav_select_blocked_areas, "Adds all blocked areas to the select
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_obstructed_areas, "Adds all obstructed areas to the selected set", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSelectObstructedAreas();
@@ -2645,7 +2718,7 @@ CON_COMMAND_F(sm_nav_select_obstructed_areas, "Adds all obstructed areas to the 
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_damaging_areas, "Adds all damaging areas to the selected set", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSelectDamagingAreas();
@@ -2655,7 +2728,7 @@ CON_COMMAND_F(sm_nav_select_damaging_areas, "Adds all damaging areas to the sele
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_stairs, "Adds all stairway areas to the selected set", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSelectStairs();
@@ -2665,7 +2738,7 @@ CON_COMMAND_F(sm_nav_select_stairs, "Adds all stairway areas to the selected set
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_select_orphans, "Adds all orphan areas to the selected set (highlight a valid area first).", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSelectOrphans();
@@ -2675,7 +2748,7 @@ CON_COMMAND_F(sm_nav_select_orphans, "Adds all orphan areas to the selected set 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavSplit( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSplit();
@@ -2686,7 +2759,7 @@ static ConCommand sm_nav_split( "sm_nav_split", CommandNavSplit, "To split an Ar
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavMakeSniperSpots( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavMakeSniperSpots();
@@ -2697,7 +2770,7 @@ static ConCommand sm_nav_make_sniper_spots( "sm_nav_make_sniper_spots", CommandN
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavMerge( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavMerge();
@@ -2712,7 +2785,7 @@ static void CommandNavMark(const CCommand& args)
 static void CommandNavMark()
 #endif // SOURCE_ENGINE >= SE_ORANGEBOX
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -2725,7 +2798,7 @@ static ConCommand sm_nav_mark( "sm_nav_mark", CommandNavMark, "Marks the Area or
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavUnmark( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavUnmark();
@@ -2736,7 +2809,7 @@ static ConCommand sm_nav_unmark( "sm_nav_unmark", CommandNavUnmark, "Clears the 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavBeginArea( void )
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
+	if (!extension->IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavBeginArea();
@@ -2747,7 +2820,7 @@ static ConCommand sm_nav_begin_area( "sm_nav_begin_area", CommandNavBeginArea, "
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavEndArea( void )
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
+	if (!extension->IsCommandIssuedByServerAdmin() || !CNavMesh::IsEditing())
 		return;
 
 	TheNavMesh->CommandNavEndArea();
@@ -2758,7 +2831,7 @@ static ConCommand sm_nav_end_area( "sm_nav_end_area", CommandNavEndArea, "Define
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavConnect( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavConnect();
@@ -2769,7 +2842,7 @@ static ConCommand sm_nav_connect( "sm_nav_connect", CommandNavConnect, "To conne
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavDisconnect( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavDisconnect();
@@ -2780,7 +2853,7 @@ static ConCommand sm_nav_disconnect( "sm_nav_disconnect", CommandNavDisconnect, 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavDisconnectOutgoingOneWays( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavDisconnectOutgoingOneWays();
@@ -2791,7 +2864,7 @@ static ConCommand sm_nav_disconnect_outgoing_oneways( "sm_nav_disconnect_outgoin
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavSplice( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavSplice();
@@ -2802,7 +2875,7 @@ static ConCommand sm_nav_splice( "sm_nav_splice", CommandNavSplice, "To splice, 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavCrouch( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_CROUCH );
@@ -2813,7 +2886,7 @@ static ConCommand sm_nav_crouch( "sm_nav_crouch", CommandNavCrouch, "Toggles the
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavPrecise( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_PRECISE );
@@ -2824,7 +2897,7 @@ static ConCommand sm_nav_precise( "sm_nav_precise", CommandNavPrecise, "Toggles 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavJump( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_JUMP );
@@ -2835,7 +2908,7 @@ static ConCommand sm_nav_jump( "sm_nav_jump", CommandNavJump, "Toggles the 'trav
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavNoJump( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_NO_JUMP );
@@ -2846,7 +2919,7 @@ static ConCommand sm_nav_no_jump( "sm_nav_no_jump", CommandNavNoJump, "Toggles t
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavStop( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_STOP );
@@ -2857,7 +2930,7 @@ static ConCommand sm_nav_stop( "sm_nav_stop", CommandNavStop, "Toggles the 'must
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavWalk( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_WALK );
@@ -2868,7 +2941,7 @@ static ConCommand sm_nav_walk( "sm_nav_walk", CommandNavWalk, "Toggles the 'trav
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavRun( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_RUN );
@@ -2879,7 +2952,7 @@ static ConCommand sm_nav_run( "sm_nav_run", CommandNavRun, "Toggles the 'travers
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavAvoid( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_AVOID );
@@ -2890,7 +2963,7 @@ static ConCommand sm_nav_avoid( "sm_nav_avoid", CommandNavAvoid, "Toggles the 'a
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavTransient( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_TRANSIENT );
@@ -2901,7 +2974,7 @@ static ConCommand sm_nav_transient( "sm_nav_transient", CommandNavTransient, "To
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavDontHide( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_DONT_HIDE );
@@ -2912,7 +2985,7 @@ static ConCommand sm_nav_dont_hide( "sm_nav_dont_hide", CommandNavDontHide, "Tog
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavStand( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_STAND );
@@ -2923,7 +2996,7 @@ static ConCommand sm_nav_stand( "sm_nav_stand", CommandNavStand, "Toggles the 's
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavNoAutoBlockers( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_NO_AUTO_BLOCKERS );
@@ -2934,7 +3007,7 @@ static ConCommand sm_nav_no_auto_blockers( "sm_nav_no_auto_blockers", CommandNav
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavStrip( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->StripNavigationAreas();
@@ -2945,7 +3018,7 @@ static ConCommand sm_nav_strip( "sm_nav_strip", CommandNavStrip, "Strips all Hid
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavSave( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	if (TheNavMesh->Save())
@@ -2964,7 +3037,7 @@ static ConCommand sm_nav_save( "sm_nav_save", CommandNavSave, "Saves the current
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavLoad( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	if (TheNavMesh->Load() != NAV_OK)
@@ -2989,7 +3062,7 @@ static void CommandNavUsePlace( const CCommand &args )
 static void CommandNavUsePlace(void)
 #endif
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3025,7 +3098,7 @@ static void CommandNavPlaceReplace(const CCommand& args)
 static void CommandNavPlaceReplace(void)
 #endif
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3064,7 +3137,7 @@ static ConCommand sm_nav_place_replace( "sm_nav_place_replace", CommandNavPlaceR
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavPlaceList( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	std::unordered_set<Place> allplaces;
@@ -3093,7 +3166,7 @@ static ConCommand sm_nav_place_list( "sm_nav_place_list", CommandNavPlaceList, "
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavTogglePlaceMode( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavTogglePlaceMode();
@@ -3108,7 +3181,7 @@ static void CommandNavSetPlaceMode( const CCommand &args )
 static void CommandNavSetPlaceMode(void)
 #endif
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3130,7 +3203,7 @@ static ConCommand sm_nav_set_place_mode( "sm_nav_set_place_mode", CommandNavSetP
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavPlaceFloodFill( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavPlaceFloodFill();
@@ -3141,7 +3214,7 @@ static ConCommand sm_nav_place_floodfill( "sm_nav_place_floodfill", CommandNavPl
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavPlaceSet( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavPlaceSet();
@@ -3152,7 +3225,7 @@ static ConCommand sm_nav_place_set( "sm_nav_place_set", CommandNavPlaceSet, "Set
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavPlacePick( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavPlacePick();
@@ -3163,7 +3236,7 @@ static ConCommand sm_nav_place_pick( "sm_nav_place_pick", CommandNavPlacePick, "
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavTogglePlacePainting( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavTogglePlacePainting();
@@ -3174,7 +3247,7 @@ static ConCommand sm_nav_toggle_place_painting( "sm_nav_toggle_place_painting", 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavMarkUnnamed( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavMarkUnnamed();
@@ -3185,7 +3258,7 @@ static ConCommand sm_nav_mark_unnamed( "sm_nav_mark_unnamed", CommandNavMarkUnna
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavCornerSelect( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavCornerSelect();
@@ -3196,7 +3269,7 @@ static ConCommand sm_nav_corner_select( "sm_nav_corner_select", CommandNavCorner
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_corner_raise, "Raise the selected corner of the currently marked Area.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3208,7 +3281,7 @@ CON_COMMAND_F(sm_nav_corner_raise, "Raise the selected corner of the currently m
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_corner_lower, "Lower the selected corner of the currently marked Area.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3220,7 +3293,7 @@ CON_COMMAND_F(sm_nav_corner_lower, "Lower the selected corner of the currently m
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_corner_place_on_ground, "Places the selected corner of the currently marked Area on the ground.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3230,7 +3303,7 @@ CON_COMMAND_F(sm_nav_corner_place_on_ground, "Places the selected corner of the 
 
 CON_COMMAND_F(sm_nav_corner_place_at_feet, "Places the selected corner of the currently marked Area on the player's Z.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3240,7 +3313,7 @@ CON_COMMAND_F(sm_nav_corner_place_at_feet, "Places the selected corner of the cu
 
 CON_COMMAND_F(sm_nav_corner_place_on_ground_custom, "Places the selected corner of the currently marked Area on the ground.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	DECLARE_COMMAND_ARGS;
@@ -3275,7 +3348,7 @@ CON_COMMAND_F(sm_nav_corner_place_on_ground_custom, "Places the selected corner 
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavWarpToMark( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavWarpToMark();
@@ -3286,7 +3359,7 @@ static ConCommand sm_nav_warp_to_mark( "sm_nav_warp_to_mark", CommandNavWarpToMa
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavLadderFlip( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavLadderFlip();
@@ -3297,7 +3370,7 @@ static ConCommand sm_nav_ladder_flip( "sm_nav_ladder_flip", CommandNavLadderFlip
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavGenerate( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->BeginGeneration();
@@ -3308,7 +3381,7 @@ static ConCommand sm_nav_generate( "sm_nav_generate", CommandNavGenerate, "Gener
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavGenerateIncremental( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->BeginGeneration( CNavMesh::INCREMENTAL_GENERATION );
@@ -3319,7 +3392,7 @@ static ConCommand sm_nav_generate_incremental( "sm_nav_generate_incremental", Co
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavAnalyze( void )
 {
-	if ( UTIL_IsCommandIssuedByServerAdmin() && sm_nav_edit.GetBool() )
+	if ( extension->IsCommandIssuedByServerAdmin() && sm_nav_edit.GetBool() )
 	{
 		TheNavMesh->BeginAnalysis();
 	}
@@ -3331,7 +3404,7 @@ static ConCommand sm_nav_analyze( "sm_nav_analyze", CommandNavAnalyze, "Re-analy
 #if SOURCE_ENGINE >= SE_ORANGEBOX
 static void CommandNavAnalyzeScripted(const CCommand& args)
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	const char* pszCmd = NULL;
@@ -3360,7 +3433,7 @@ static ConCommand sm_nav_analyze_scripted("sm_nav_analyze_scripted", CommandNavA
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavMarkWalkable( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavMarkWalkable();
@@ -3372,7 +3445,7 @@ void CNavMesh::CommandNavMarkWalkable( void )
 {
 	Vector pos;
 
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	if (sm_nav_edit.GetBool())
@@ -3419,9 +3492,9 @@ void CNavMesh::CommandNavSeedWalkableSpots(void)
 static ConCommand sm_nav_seed_walkable_spots("sm_nav_seed_walkable_spots", CommandNavSeedWalkableSpots, "Automatically adds walkable positions.", FCVAR_GAMEDLL | FCVAR_CHEAT);
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavClearWalkableMarks( void )
+static void CommandNavClearWalkableMarks( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->ClearWalkableSeeds();
@@ -3430,9 +3503,9 @@ static ConCommand sm_nav_clear_walkable_marks( "sm_nav_clear_walkable_marks", Co
 
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavCompressID( void )
+static void CommandNavCompressID( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CompressAllIDs();
@@ -3444,7 +3517,7 @@ static ConCommand sm_nav_compress_id( "sm_nav_compress_id", CommandNavCompressID
 #ifdef TERROR
 void CommandNavShowLadderBounds( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	CFuncSimpleLadder *ladder = NULL;
@@ -3460,9 +3533,9 @@ static ConCommand nav_show_ladder_bounds( "nav_show_ladder_bounds", CommandNavSh
 #endif
 
 //--------------------------------------------------------------------------------------------------------------
-void CommandNavBuildLadder( void )
+static void CommandNavBuildLadder( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavBuildLadder();
@@ -3471,7 +3544,7 @@ static ConCommand sm_nav_build_ladder( "sm_nav_build_ladder", CommandNavBuildLad
 
 
 //--------------------------------------------------------------------------------------------------------
-void NavEditClearAllAttributes( void )
+static void NavEditClearAllAttributes( void )
 {
 	NavAttributeClearer clear( (NavAttributeType)0xFFFF );
 	TheNavMesh->ForAllSelectedAreas( clear );
@@ -3568,7 +3641,7 @@ static int NavAttributeAutocomplete( const char *input, char commands[ COMMAND_C
 
 
 //--------------------------------------------------------------------------------------------------------
-NavAttributeType NameToNavAttribute( const char *name )
+static NavAttributeType NameToNavAttribute( const char *name )
 {
 	for( unsigned int i=0; TheNavAttributeTable[i].name; ++i )
 	{
@@ -3646,7 +3719,7 @@ static ConCommand SMNavMarkAttribute( "sm_nav_mark_attribute", NavEditMarkAttrib
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavPickArea( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavPickArea();
@@ -3657,7 +3730,7 @@ static ConCommand nav_pick_area( "nav_pick_area", CommandNavPickArea, "Marks an 
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavResizeHorizontal( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavResizeHorizontal();
@@ -3668,7 +3741,7 @@ static ConCommand nav_resize_horizontal( "nav_resize_horizontal", CommandNavResi
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavResizeVertical( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavResizeVertical();
@@ -3679,7 +3752,7 @@ static ConCommand nav_resize_vertical( "nav_resize_vertical", CommandNavResizeVe
 //--------------------------------------------------------------------------------------------------------------
 void CommandNavResizeEnd( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	TheNavMesh->CommandNavResizeEnd();
@@ -3702,8 +3775,8 @@ void CNavMesh::DestroyLadders( void )
 
 	m_ladders.RemoveAll();
 
-	m_markedLadder = NULL;
-	m_selectedLadder = NULL;
+	m_markedLadder = nullptr;
+	m_selectedLadder = nullptr;
 }
 
 //--------------------------------------------------------------------------------------------------------------

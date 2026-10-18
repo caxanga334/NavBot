@@ -6,3 +6,4 @@
 |sm_nav_area_max_size|Maximum nav area size created during generation.|10|
 |sm_nav_generate_auto_ladder|When enabled, generate ladders automatically during generation (only for sm_nav_generate).|1|
 |sm_nav_generate_incremental_range|Maximum distance from walkable seeds to generate nav areas during incremental generation.|2000|
+|sm_nav_generate_connect_gaps|When enabled, automatically tests and connect nav areas for gap jumps.|1|

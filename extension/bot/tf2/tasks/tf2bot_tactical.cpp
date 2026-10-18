@@ -7,7 +7,8 @@
 #include <bot/tf2/tf2bot.h>
 #include <bot/bot_shared_convars.h>
 #include <bot/interfaces/behavior_utils.h>
-#include "tf2bot_tactical.h"
+#include <bot/interfaces/path/chasenavigator.h>
+#include "common/tf2bot_extinguish_teammate_task.h"
 #include "tf2bot_find_ammo_task.h"
 #include "tf2bot_find_health_task.h"
 #include "tf2bot_use_teleporter.h"
@@ -17,6 +18,7 @@
 #include <bot/tasks_shared/bot_shared_take_cover_from_danger.h>
 #include <bot/tasks_shared/bot_shared_plugin_command_tasks.h>
 #include "tf2bot_scenario_task.h"
+#include "tf2bot_tactical.h"
 
 #undef max
 #undef min
@@ -32,6 +34,7 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 	m_ammochecktimer.Start(5.0f);
 	m_healthchecktimer.Start(5.0f);
 	m_teleportertimer.Start(0.2f);
+	m_helpTeammatesTimer.Start(2.0f);
 
 	return Continue();
 }
@@ -39,9 +42,10 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskStart(CTF2Bot* bot, AITask<CTF2Bo
 TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 {
 	const bool shouldRetreat = bot->GetBehaviorInterface()->ShouldRetreat(bot) != ANSWER_NO;
+	const bool shouldHurry = bot->GetBehaviorInterface()->ShouldHurry(bot) == ANSWER_YES;
 
 	// low ammo and health check
-	if (shouldRetreat && bot->GetBehaviorInterface()->ShouldHurry(bot) != ANSWER_YES)
+	if (shouldRetreat && !shouldHurry)
 	{
 		if (m_healthchecktimer.IsElapsed())
 		{
@@ -103,6 +107,22 @@ TaskResult<CTF2Bot> CTF2BotTacticalTask::OnTaskUpdate(CTF2Bot* bot)
 		{
 			m_retreatCooldown.Start(120.0f); // cooldown to avoid constant retreats
 			return PauseFor(new CBotSharedRetreatFromThreatTask<CTF2Bot, CTF2BotPathCost>(bot, true), "Retreating due to numerical disadvantage!");
+		}
+	}
+
+	if (!shouldHurry)
+	{
+		if (m_helpTeammatesTimer.IsElapsed())
+		{
+			m_helpTeammatesTimer.StartRandom(2.0f, 4.0f);
+
+			CBaseEntity* teammate = nullptr;
+			CBaseEntity* weapon = nullptr;
+
+			if (CTF2BotExtinguishTeammateTask::IsPossible(bot, &teammate, &weapon))
+			{
+				return PauseFor(new CTF2BotExtinguishTeammateTask(teammate, weapon), "Teammate on fire!");
+			}
 		}
 	}
 

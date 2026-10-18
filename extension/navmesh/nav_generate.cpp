@@ -45,6 +45,7 @@ ConVar sm_nav_generate_fencetops( "sm_nav_generate_fencetops", "1", FCVAR_CHEAT,
 ConVar sm_nav_generate_fixup_jump_areas( "sm_nav_generate_fixup_jump_areas", "1", FCVAR_CHEAT, "Convert obsolete jump areas into 2-way connections" );
 ConVar sm_nav_generate_incremental_range( "sm_nav_generate_incremental_range", "2000", FCVAR_CHEAT );
 ConVar sm_nav_generate_incremental_tolerance( "sm_nav_generate_incremental_tolerance", "0", FCVAR_CHEAT, "Z tolerance for adding new nav areas." );
+ConVar sm_nav_generate_connect_gaps("sm_nav_generate_connect_gaps", "1", FCVAR_CHEAT, "If enabled, automatically connect potential gap jump areas.");
 // Original valve nav mesh uses 50. TF2C reduced to 10. Never asked why but it does look better with 10.
 ConVar sm_nav_area_max_size( "sm_nav_area_max_size", "10", FCVAR_CHEAT, "Max area size created in nav generation" );
 static ConVar sm_nav_prefer_reload("sm_nav_prefer_reload", "1", FCVAR_GAMEDLL, "(Experimental) If enabled, reloads the navigation mesh instead of reloading the entire map.");
@@ -1233,7 +1234,7 @@ void CNavMesh::RemoveOverlappingObstacleTopAreas()
 
 static void CommandNavCheckStairs( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	TheNavMesh->MarkStairAreas();
@@ -1373,6 +1374,130 @@ static StairTestType IsStairs( const Vector &start, const Vector &end, StairTest
 	return ret;
 }
 
+inline static void NavAreaConnectAcrossGap(CNavArea* area)
+{
+	Vector normal;
+	area->ComputeNormal(&normal);
+
+	// skip slopes
+	if (normal.z < 0.9f)
+	{
+		return;
+	}
+
+	for (int i = static_cast<int>(NavDirType::NORTH); i < static_cast<int>(NavDirType::NUM_DIRECTIONS); i++)
+	{
+		NavDirType dir = static_cast<NavDirType>(i);
+
+		// skip areas that already have a connection
+		if (!area->IsEdge(dir))
+		{
+			continue;
+		}
+
+		Vector start = area->GetCenter();
+		start.z += navgenparams->jump_height;
+		Vector end = start;
+		AddDirectionVector(&end, dir, 600.0f);
+
+		CNavArea* closest = nullptr;
+		float bestdist = std::numeric_limits<float>::max();
+
+		auto func = [area, dir, &closest, &bestdist](CNavArea* other) {
+			if (other == area)
+			{
+				return true;
+			}
+
+			float zdiff = std::abs(area->GetCenter().z - other->GetCenter().z);
+
+			// for simplicity, keep z difference limited to two times the step height.
+			// other this ends up creating climb connections
+			// this is going to miss jumps over gaps with drops. TO-DO FIX THIS
+			if (zdiff > navgenparams->step_height * 2.0f)
+			{
+				return true;
+			}
+
+			Vector point = other->GetCenter();
+
+			if (area->ComputeDirection(&point) != dir)
+			{
+				return true;
+			}
+
+			if (!other->IsEdge(OppositeDirection(dir)))
+			{
+				return true; // only connect to other edges
+			}
+
+			Vector center; // portal center
+			float halfwidth;
+			NavDirType dir = other->ComputeLargestPortal(area, &center, &halfwidth);
+
+			if (dir == NavDirType::NUM_DIRECTIONS)
+			{
+				// bad connection
+				return true;
+			}
+
+			CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, 0);
+			const float size = std::round(navgenparams->half_human_width);
+			Vector mins(-size, -size, 0.0f);
+			Vector maxs(size, size, navgenparams->human_height - navgenparams->step_height);
+			trace_t tr;
+			Vector offset(0.0f, 0.0f, navgenparams->step_height);
+			// Don't create connections blocked by walls
+			Vector traceEnd;
+			area->GetClosestPointOnArea(center, &traceEnd);
+			trace::hull(center + offset, traceEnd + offset, mins, maxs, TheNavMesh->GetGenerationTraceMask(), &filter, tr);
+
+			if (tr.startsolid || tr.fraction < 1.0f)
+			{
+				return false; // abort
+			}
+
+			float dist = (area->GetCenter() - other->GetCenter()).LengthSqr();
+			const float fullwidth = navgenparams->half_human_width * 2.0f;
+
+			if (dist <= (fullwidth * fullwidth))
+			{
+				return true; // too close
+			}
+
+			if (dist < bestdist)
+			{
+				bestdist = dist;
+				closest = other;
+			}
+
+			return true;
+		};
+
+		TheNavMesh->ForEveryAreaAlongLine(start, end, navgenparams->generation_step_size, func);
+
+		if (closest)
+		{
+			if (area->HasAnyGroundConnectionsTo(closest))
+			{
+				return;
+			}
+
+			area->ConnectToBidirectional(closest, dir);
+#ifdef EXT_DEBUG
+			META_CONPRINTF("NavAreaConnectAcrossGap: Added gap connection between area #%u to #%u! \n", area->GetID(), closest->GetID());
+#endif // EXT_DEBUG
+		}
+	}
+}
+
+void CNavArea::PostAreasCreationAnalysis(const bool isIncremental)
+{
+	if (sm_nav_generate_connect_gaps.GetBool())
+	{
+		NavAreaConnectAcrossGap(this);
+	}
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -1444,7 +1569,7 @@ bool CNavArea::TestStairs( void )
 //--------------------------------------------------------------------------------------------------------------
 CON_COMMAND_F(sm_nav_test_stairs, "Test the selected set for being on stairs", FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	int count = 0;
@@ -1879,7 +2004,7 @@ void CNavMesh::StitchAreaIntoMesh( CNavArea *area, NavDirType dir, Functor &func
  */
 void CNavMesh::ConnectGeneratedAreas( void )
 {
-	Msg( "Connecting navigation areas...\n" );
+	META_CONPRINT( "Connecting navigation areas...\n" );
 
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
@@ -2648,14 +2773,14 @@ bool IsHeightDifferenceValid( float test, float other1, float other2, float othe
 {
 	// Make sure the other nodes are level.
 	const float CloseDelta = navgenparams->step_height / 2;
-	return fabs( other1 - other2 ) > CloseDelta
-			|| fabs( other1 - other3 ) > CloseDelta
-			|| fabs( other2 - other3 ) > CloseDelta
+	return std::abs( other1 - other2 ) > CloseDelta
+			|| std::abs( other1 - other3 ) > CloseDelta
+			|| std::abs( other2 - other3 ) > CloseDelta
 			// Now make sure the test node is near the others.  If it is more than navgenparams->step_height away,
 			// it'll form a distorted jump area.
-			|| (fabs(test - other1) <= navgenparams->step_height
-					&& fabs(test - other2) <= navgenparams->step_height
-					&& fabs(test - other3) <= navgenparams->step_height);
+			|| (std::abs(test - other1) <= navgenparams->step_height
+					&& std::abs(test - other2) <= navgenparams->step_height
+					&& std::abs(test - other3) <= navgenparams->step_height);
 }
 
 
@@ -2665,7 +2790,7 @@ bool IsHeightDifferenceValid( float test, float other1, float other2, float othe
  * are flat, and the 4th is significantly higher or lower, it would form a jump area that bots
  * can't navigate over well.
  */
-bool TestForValidJumpArea( CNavNode *node )
+static bool TestForValidJumpArea( CNavNode *node )
 {
 	return true;
 
@@ -3274,10 +3399,25 @@ void CNavMesh::CreateNavAreasFromNodes( void )
 }
 
 
+void CNavMesh::AddWalkableSeed(CBaseEntity* entity, const bool useWorldSpaceCenter)
+{
+	Vector pos = useWorldSpaceCenter ? UtilHelpers::getWorldSpaceCenter(entity) : UtilHelpers::getEntityOrigin(entity);
+	pos.x = SnapToGrid(pos.x);
+	pos.y = SnapToGrid(pos.y);
+
+	if (!AddWalkableSeed(pos))
+	{
+		META_CONPRINTF("Failed to add walkable seed at <%s> for entity %s! \n",
+			UtilHelpers::textformat::FormatVector(pos), UtilHelpers::textformat::FormatEntity(entity));
+	}
+}
+
 //--------------------------------------------------------------------------------------------------------------
 // adds walkable positions for any/all positions a mod specifies
 void CNavMesh::AddWalkableSeeds( void )
 {
+	auto t1 = std::chrono::high_resolution_clock::now();
+
 	auto functor = [this](int index, edict_t* edict, CBaseEntity* entity) {
 		const char* classname = gamehelpers->GetEntityClassname(entity);
 
@@ -3287,33 +3427,46 @@ void CNavMesh::AddWalkableSeeds( void )
 
 			if (it != m_walkableEntities.end())
 			{
-				entities::HBaseEntity be(entity);
+				AddWalkableSeed(entity, it->second);
+				return;
+			}
+		}
 
-				Vector pos;
+		// targetnames
 
-				if (it->second)
+		const char* targetname = entityprops::GetEntityTargetname(entity);
+
+		if (targetname != nullptr && targetname[0] != '\0')
+		{
+			for (auto& [name, useCenter] : m_walkableNamedEntities)
+			{
+				// exact case insensitive match first
+				if (ke::StrCaseCmp(targetname, name.c_str()) == 0)
 				{
-					pos = be.WorldSpaceCenter();
+					AddWalkableSeed(entity, useCenter);
+					return;
 				}
-				else
+
+				// search with pattern support
+				if (UtilHelpers::StringMatchesPattern(targetname, name.c_str(), 0))
 				{
-					pos = be.GetAbsOrigin();
-				}
-
-				pos.x = SnapToGrid(pos.x);
-				pos.y = SnapToGrid(pos.y);
-
-				Vector normal;
-
-				if (FindGroundForNode(&pos, &normal))
-				{
-					AddWalkableSeed(pos, normal);
+					AddWalkableSeed(entity, useCenter);
+					return;
 				}
 			}
 		}
 	};
 
 	UtilHelpers::ForEveryEntity(functor);
+
+#ifndef NO_SOURCEPAWN_API
+	// Ask plugins for seeds
+	extmanager->SMAPI_OnNavMeshSeeding();
+#endif // !NO_SOURCEPAWN_API
+
+	auto t2 = std::chrono::high_resolution_clock::now();
+	const std::chrono::duration<double, std::milli> millis = (t2 - t1);
+	META_CONPRINTF("Nav mesh seeding took %g ms! \n", millis.count());
 }
 
 
@@ -3529,24 +3682,26 @@ static void AnalysisProgress( const char *msg, int ticks, int current, bool show
 	{
 		if ( showPercent && ticks )
 		{
-			Msg( "%s %.0f%%\n", msg, current*100.0f/ticks );
+			META_CONPRINTF( "%s %.0f%%\n", msg, current*100.0f/ticks );
 		}
 		else
 		{
-			Msg( "%s\n", msg );
+			META_CONPRINTF( "%s\n", msg );
 		}
 
 		lastMsgTime = now;
 	}
 
+	/*
 	KeyValues *data = new KeyValues("data");
 	data->SetString( "msg",	msg );
 	data->SetInt( "total", ticks );
 	data->SetInt( "current", current );
 
-	// ShowViewPortPanelToAll( PANEL_NAV_PROGRESS, true, data );
+	ShowViewPortPanelToAll( PANEL_NAV_PROGRESS, true, data );
 
 	data->deleteThis();
+	*/
 }
 
 
@@ -3599,7 +3754,7 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		//---------------------------------------------------------------------------
 		case CREATE_AREAS_FROM_SAMPLES:
 		{
-			Msg( "Creating navigation areas from sampled data...\n" );
+			META_CONPRINT( "Creating navigation areas from sampled data...\n" );
 
 			// Select all pre-existing areas
 			if ( m_generationMode == GENERATE_INCREMENTAL )
@@ -3638,6 +3793,27 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 				}
 			}
 
+			META_CONPRINT("Starting post area creation analysis... \n");
+			m_generationState = POST_AREA_CREATION_ANALYSIS;
+			m_generationIndex = 0;
+			return true;
+		}
+
+		case POST_AREA_CREATION_ANALYSIS:
+		{
+			while (m_generationIndex < TheNavAreas.Count())
+			{
+				TheNavAreas[m_generationIndex++]->PostAreasCreationAnalysis(m_generationMode == GENERATE_INCREMENTAL);
+
+				if (Plat_FloatTime() - startTime > maxTime)
+				{
+					AnalysisProgress("Post area creation analysis...", 100, 100 * m_generationIndex / TheNavAreas.Count());
+					return true;
+				}
+			}
+
+			META_CONPRINT("Post area creation analysis...DONE\n");
+			META_CONPRINT("Starting finding hiding spots... \n");
 			m_generationState = FIND_HIDING_SPOTS;
 			m_generationIndex = 0;
 			return true;
@@ -3979,35 +4155,41 @@ bool CNavMesh::UpdateGeneration( float maxTime )
  * Add a nav node and connect it.
  * Node Z positions are ground level.
  */
-CNavNode *CNavMesh::AddNode( const Vector &destPos, const Vector &normal, NavDirType dir, CNavNode *source, bool isOnDisplacement, 
-							float obstacleHeight, float obstacleStartDist, float obstacleEndDist )
+CNavNode *CNavMesh::AddNode(const Vector &destPos, const Vector &normal, NavDirType dir, CNavNode *source, bool isOnDisplacement, 
+							float obstacleHeight, float obstacleStartDist, float obstacleEndDist, const bool gapCross)
 {
 	// check if a node exists at this location
-	CNavNode *node = CNavNode::GetNode( destPos );
+	CNavNode* node = CNavNode::GetNode( destPos );
 	
 	// if no node exists, create one
 	bool useNew = false;
-	if (node == NULL)
+	if (node == nullptr)
 	{
 		node = new CNavNode( destPos, normal, source, isOnDisplacement );
 		OnNodeAdded( node );
 		useNew = true;
 	}
-	float deltaZ = source->GetPosition()->z - destPos.z;
-	// connect source node to new node
-	if (deltaZ < 50.0f) {
-		source->ConnectTo( node, dir, obstacleHeight, obstacleStartDist, obstacleEndDist );
-	}
-	// optimization: if deltaZ changes very little, assume connection is commutative
-	if (fabs( deltaZ ) < 50.0f)
+
+	// Only connect areas if they aren't crossing a gap, prevents creating nav areas over gaps making the gaps look like solid ground.
+	if (!gapCross)
 	{
-		if ( obstacleHeight > 0 )
+		float deltaZ = source->GetPosition()->z - destPos.z;
+		// connect source node to new node
+		if (deltaZ < 50.0f)
 		{
-			obstacleHeight = MAX( obstacleHeight + deltaZ, 0 );
-			Assert( obstacleHeight > 0 );
+			source->ConnectTo(node, dir, obstacleHeight, obstacleStartDist, obstacleEndDist);
 		}
-		node->ConnectTo( source, OppositeDirection( dir ), obstacleHeight, navgenparams->generation_step_size - obstacleEndDist, navgenparams->generation_step_size - obstacleStartDist );
-		node->MarkAsVisited( OppositeDirection( dir ) );
+		// optimization: if deltaZ changes very little, assume connection is commutative
+		if (std::abs(deltaZ) < 50.0f)
+		{
+			if (obstacleHeight > 0.0f)
+			{
+				obstacleHeight = std::max(obstacleHeight + deltaZ, 0.0f);
+				// Assert( obstacleHeight > 0 );
+			}
+			node->ConnectTo(source, OppositeDirection(dir), obstacleHeight, navgenparams->generation_step_size - obstacleEndDist, navgenparams->generation_step_size - obstacleStartDist);
+			node->MarkAsVisited(OppositeDirection(dir));
+		}
 	}
 
 	if (useNew)
@@ -4021,7 +4203,7 @@ CNavNode *CNavMesh::AddNode( const Vector &destPos, const Vector &normal, NavDir
 }
 
 //--------------------------------------------------------------------------------------------------------------
-inline CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
+inline static CNavNode *LadderEndSearch( const Vector *pos, NavDirType mountDir )
 {
 	Vector center = *pos;
 	AddDirectionVector( &center, mountDir, navgenparams->half_human_width );
@@ -4193,6 +4375,97 @@ static bool IsNodeOverlapped( const Vector& pos, const Vector& offset )
 	return overlap;
 }
 
+// We've determined the current node is blocked by a big drop, try to walk across it.
+// Returns true if we found solid ground again, false otherwise.
+static bool NodeTryWalkingAcrossGap(const Vector& from, const Vector& to, trace_t& result)
+{
+	// TO-DO: add these to navgenparams
+	constexpr float MAX_JUMP_OVER_GAP_DROP = 200.0f;
+	constexpr float MAX_CLIMB_UP_GAP = 100.0f;
+	constexpr float MAX_HORIZONTAL_GAP_JUMP = 450.0f;
+
+	Vector dir = UtilHelpers::math::BuildDirectionVectorIgnoreZ(from, to);
+	int maxsteps = static_cast<int>(std::round(MAX_HORIZONTAL_GAP_JUMP / navgenparams->generation_step_size));
+	maxsteps = std::max(maxsteps, 1);
+	Vector start(from);
+	start.z += navgenparams->step_height; // ignore anything we can step over
+	Vector end(0.0f, 0.0f, 0.0f);
+	Vector traceMins(-navgenparams->half_human_width, -navgenparams->half_human_width, 0.0f);
+	Vector traceMaxs(navgenparams->half_human_width, navgenparams->half_human_width, navgenparams->human_crouch_height);
+	CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
+	trace_t tr;
+	unsigned int mask = TheNavMesh->GetGenerationTraceMask();
+	const float minDistanceFromStart = (navgenparams->half_human_width * 2.0) + navgenparams->generation_step_size * 2.0f;
+
+	for (int i = 1; i <= maxsteps; i++)
+	{
+		end = from + (dir * (i * navgenparams->generation_step_size));
+		trace::hull(start, end, traceMins, traceMaxs, mask, &filter, tr);
+
+		if (tr.startsolid)
+		{
+			// hard blocked, bail
+			return false;
+		}
+
+		// 2d distance from the start to the endpos (pre drop)
+		const float dist2D = from.AsVector2D().DistTo(tr.endpos.AsVector2D());
+
+		if (tr.fraction < 1.0f)
+		{
+			// hit a wall, see if we walked enough to potentially have a gap
+			if (dist2D <= minDistanceFromStart)
+			{
+				// we don't, not enough space to drop
+				return false;
+			}
+		}
+
+		// make sure we walked enough from the start (don't hit ground near the start!)
+		if (dist2D <= minDistanceFromStart)
+		{
+			continue;
+		}
+
+		Vector down(end);
+		down.z -= MAX_JUMP_OVER_GAP_DROP;
+		trace::hull(end, down, traceMins, traceMaxs, mask, &filter, tr);
+
+		if (tr.startsolid)
+		{
+			// gap potentially reached higher ground
+			end.z += MAX_CLIMB_UP_GAP;
+			trace::hull(end, down, traceMins, traceMaxs, mask, &filter, tr);
+
+			if (tr.startsolid || tr.fraction == 1.0f)
+			{
+				continue;
+			}
+		}
+
+		// hit ground
+		if (tr.fraction < 1.0f)
+		{
+			// check if the on grid position is also on ground
+			Vector ongrid = tr.endpos;
+			ongrid.x = TheNavMesh->SnapToGrid(ongrid.x);
+			ongrid.y = TheNavMesh->SnapToGrid(ongrid.y);
+			trace_t groundtr;
+			trace::line(ongrid + Vector(0.0f, 0.0f, navgenparams->step_height), ongrid + Vector(0.0f, 0.0f, -16384.0f), mask, &filter, groundtr);
+
+			// found ground but the on grid position is floating, try further
+			if (std::abs(groundtr.endpos.z - tr.endpos.z) > navgenparams->step_height)
+			{
+				continue;
+			}
+
+			result = tr;
+			return true;
+		}
+	}
+
+	return false;
+}
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -4209,12 +4482,12 @@ bool CNavMesh::SampleStep( void )
 	// take a step
 	while( true )
 	{
-		if (m_currentNode == NULL)
+		if (m_currentNode == nullptr)
 		{
 			// sampling is complete from current seed, try next one
 			m_currentNode = GetNextWalkableSeedNode();
 
-			if (m_currentNode == NULL)
+			if (m_currentNode == nullptr)
 			{
 				if ( m_generationMode == GENERATE_INCREMENTAL || m_generationMode == GENERATE_SIMPLIFY )
 				{
@@ -4307,6 +4580,7 @@ bool CNavMesh::SampleStep( void )
 				CTraceFilterWalkableEntities filter(nullptr, COLLISION_GROUP_NONE, WALK_THRU_EVERYTHING);
 				Vector to, toNormal;
 				float obstacleHeight = 0, obstacleStartDist = 0, obstacleEndDist = navgenparams->generation_step_size;
+				bool isCrossingGap = false;
 				if ( TraceAdjacentNode( 0, from, pos, &result ) )
 				{
 					to = result.endpos;
@@ -4316,6 +4590,7 @@ bool CNavMesh::SampleStep( void )
 				{
 					// test going up ClimbUpHeight
 					bool success = false;
+					bool nofloor = false; // TraceAdjacentNode could fail because lack of a ground/floor
 					for ( float height = navgenparams->step_height; height <= navgenparams->climb_up_height; height += 1.0f )
 					{						
 						trace_t tr;
@@ -4328,6 +4603,7 @@ bool CNavMesh::SampleStep( void )
 						{
 							if ( !StayOnFloor( &tr ) )
 							{
+								nofloor = true;
 								break;
 							}
 
@@ -4376,6 +4652,23 @@ bool CNavMesh::SampleStep( void )
 									}								
 								}
 							}
+						}
+					}
+
+					// If the failure comes from a lack of a floor, try to walk the gap
+					if (success == false && nofloor == true)
+					{
+						trace_t tr;
+						if (NodeTryWalkingAcrossGap(from, pos, tr))
+						{
+							// final ground check, make sure that the on grid position isn't floating in the air
+							Vector endpos = tr.endpos;
+							endpos.x = SnapToGrid(endpos.x);
+							endpos.y = SnapToGrid(endpos.y);
+							result = tr;
+							to = endpos;
+							success = true;
+							isCrossingGap = true;
 						}
 					}
 
@@ -4473,8 +4766,7 @@ bool CNavMesh::SampleStep( void )
 
 				// we can move here
 				// create a new navigation node, and update current node pointer
-				AddNode(to, toNormal, m_generationDir, m_currentNode, isOnDisplacement, obstacleHeight, obstacleStartDist, obstacleEndDist);
-
+				AddNode(to, toNormal, m_generationDir, m_currentNode, isOnDisplacement, obstacleHeight, obstacleStartDist, obstacleEndDist, isCrossingGap);
 				return true;
 			}
 		}
@@ -4529,10 +4821,16 @@ CNavNode* CNavMesh::GetNextWalkableSeedNode(void)
 	// check if a node exists at this location
 	CNavNode* node = CNavNode::GetNode(spot.pos);
 
-	if (node)
-		return nullptr;
+	if (node != nullptr)
+	{
+		// return nullptr;
+		
+		// If this return nulls, it stops searching the walkable seeds and causes the generation to miss disconnected parts of the map.
+		// Try again until we get a position without a node or hit the max number of seeds.
+		return GetNextWalkableSeedNode();
+	}
 
-	return new CNavNode(spot.pos, spot.normal, NULL, false);
+	return new CNavNode(spot.pos, spot.normal, nullptr, false);
 }
 
 
@@ -4663,7 +4961,7 @@ void CNavMesh::CommandNavSubdivide( const CCommand &args )
 
 CON_COMMAND_F(sm_nav_subdivide, "Subdivides all selected areas.", FCVAR_GAMEDLL | FCVAR_CHEAT )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	DECLARE_COMMAND_ARGS;

@@ -299,6 +299,7 @@ public:
 	void Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues);
 #endif // EXT_DEBUG
 
+	void Hook_IServerGameClients_SetCommandClient(int index);
 
 	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
 	// True if we should SourceHook CBasePlayer::PlayerRunCommand
@@ -308,10 +309,24 @@ public:
 	SourceMod::IGameConfig* GetSDKToolsGameData() { return m_cfg_sdktools; }
 
 	std::vector<sp_nativeinfo_t>& GetNativesVector() { return m_natives; }
+	
+	/**
+	 * @brief Gets the entity index of the client who sent the last console command.
+	 * @return Client entity index. Returns 0 for console/RCON.
+	 */
+	int GetCommandClientIndex() const { return m_commandClientIndex + 1; /* Convert from engine client index to client entity index. */ }
+	/**
+	 * @brief Gets the entity of the player who sent the last console command.
+	 * @return Player entity. Returns NULL if the command was issued by the console/RCON.
+	 */
+	CBaseEntity* GetCommandPlayer() const;
+	// Returns true if the last console command was issued by the server admin.
+	bool IsCommandIssuedByServerAdmin() const;
 
 private:
 	bool m_hookruncmd;
 	bool m_botsAreSupported; // true if it's possible to add bots
+	int m_commandClientIndex;
 	SourceMod::IGameConfig* m_cfg_navbot;
 	SourceMod::IGameConfig* m_cfg_sdktools;
 	SourceMod::IGameConfig* m_cfg_sdkhooks;

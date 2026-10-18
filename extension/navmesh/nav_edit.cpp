@@ -133,7 +133,6 @@ Vector CNavMesh::SnapToGrid( const Vector& in, bool snapX, bool snapY, bool forc
 	return out;
 }
 
-
 //--------------------------------------------------------------------------------------------------------------
 float CNavMesh::SnapToGrid( float x, bool forceGrid ) const
 {
@@ -2186,7 +2185,7 @@ CON_COMMAND_F(sm_nav_shift, "Shifts the selected areas by the specified amount",
 {
 	DECLARE_COMMAND_ARGS;
 
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	edict_t* player = UTIL_GetListenServerEnt();
@@ -2224,7 +2223,7 @@ CON_COMMAND_F(sm_nav_shift, "Shifts the selected areas by the specified amount",
 //--------------------------------------------------------------------------------------------------------
 static void CommandNavCenterInWorld( void )
 {
-	if ( !UTIL_IsCommandIssuedByServerAdmin() )
+	if ( !extension->IsCommandIssuedByServerAdmin() )
 		return;
 
 	edict_t* player = UTIL_GetListenServerEnt();
@@ -4106,7 +4105,7 @@ CON_COMMAND_F(sm_nav_select_radius, "Adds all areas in a radius to the selection
 {
 	DECLARE_COMMAND_ARGS;
 
-	if ( !UTIL_IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
+	if ( !extension->IsCommandIssuedByServerAdmin() || engine->IsDedicatedServer() )
 		return;
 
 	if ( args.ArgC() < 2 )
@@ -4932,7 +4931,7 @@ void CNavMesh::CommandNavReloadMesh()
 
 CON_COMMAND_F(sm_nav_reload, "Reloads the navigation mesh.", FCVAR_CHEAT | FCVAR_GAMEDLL)
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	TheNavMesh->CommandNavReloadMesh();
@@ -4940,7 +4939,7 @@ CON_COMMAND_F(sm_nav_reload, "Reloads the navigation mesh.", FCVAR_CHEAT | FCVAR
 
 void CNavMesh::CommandNavMeasureDistance()
 {
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	CNavArea* first = GetMarkedArea();
@@ -5016,7 +5015,7 @@ CON_COMMAND_F(sm_nav_draw_blocked_status, "Draws the blocked/unblocked status fo
 {
 	DECLARE_COMMAND_ARGS;
 
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	if (args.ArgC() < 2)
@@ -5062,7 +5061,7 @@ CON_COMMAND_F(sm_nav_trace_make_entity_solid, "Adds the given entity to the list
 {
 	DECLARE_COMMAND_ARGS;
 
-	if (!UTIL_IsCommandIssuedByServerAdmin())
+	if (!extension->IsCommandIssuedByServerAdmin())
 		return;
 
 	CBaseEntity* entity = nullptr;

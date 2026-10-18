@@ -169,7 +169,7 @@ public:
 	 * @param functor Function to run on every known entity
 	 */
 	template <typename T>
-	inline void ForEveryKnownEntity(T& functor)
+	inline void ForEveryKnownEntity(T& functor) const
 	{
 		for (auto& i : m_knownlist)
 		{
@@ -184,7 +184,7 @@ public:
 	 * @param functor Function to run on every known entity
 	 */
 	template <typename T>
-	inline void ForEveryKnownEnemy(T& functor)
+	inline void ForEveryKnownEnemy(T& functor) const
 	{
 		for (auto& i : m_knownlist)
 		{
@@ -203,7 +203,7 @@ public:
 	 * @param functor Function to run on every known entity
 	 */
 	template <typename T>
-	inline void ForEveryKnownAlly(T& functor)
+	inline void ForEveryKnownAlly(T& functor) const
 	{
 		for (auto& i : m_knownlist)
 		{

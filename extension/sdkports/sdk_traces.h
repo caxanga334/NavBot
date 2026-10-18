@@ -391,6 +391,50 @@ namespace trace
 		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
 		return tr.endpos;
 	}
+	/**
+	 * @brief Given a point, trace downwards to find a solid ground (line).
+	 * @param point Trace start position.
+	 * @param tr Trace result.
+	 */
+	inline void toground(const Vector& point, trace_t& tr)
+	{
+		Vector end(point);
+		end -= 16384.0f;
+		CTraceFilterWorldAndPropsOnly filter;
+		Ray_t ray;
+		ray.Init(point, end);
+		enginetrace->TraceRay(ray, MASK_SOLID, &filter, &tr);
+	}
+	/**
+	 * @brief Given a point, trace downwards to find a solid ground (line)
+	 * @param point Trace start position.
+	 * @param mask Trace mask.
+	 * @param filter Trace filter.
+	 * @param tr Trace result.
+	 */
+	inline void toground(const Vector& point, unsigned int mask, ITraceFilter* filter, trace_t& tr)
+	{
+		Vector end(point);
+		end -= 16384.0f;
+		Ray_t ray;
+		ray.Init(point, end);
+		enginetrace->TraceRay(ray, mask, filter, &tr);
+	}
+	/**
+	 * @brief Given a point, trace upwards to find a solid ceiling (line)
+	 * @param point Trace start position.
+	 * @param mask Trace mask.
+	 * @param filter Trace filter.
+	 * @param tr Trace result.
+	 */
+	inline void toceiling(const Vector& point, unsigned int mask, ITraceFilter* filter, trace_t& tr)
+	{
+		Vector end(point);
+		end += 16384.0f;
+		Ray_t ray;
+		ray.Init(point, end);
+		enginetrace->TraceRay(ray, mask, filter, &tr);
+	}
 
 	/**
 	 * @brief Gets the ground surface normal.
