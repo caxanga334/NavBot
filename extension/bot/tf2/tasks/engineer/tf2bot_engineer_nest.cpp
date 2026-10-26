@@ -161,29 +161,27 @@ TaskResult<CTF2Bot> CTF2BotEngineerNestTask::OnTaskUpdate(CTF2Bot* bot)
 		// Nothing to do and without a sentry, probably out of metal and no ammo source nearby, just roam
 		return PauseFor(new CBotSharedRoamTask<CTF2Bot, CTF2BotPathCost>(bot, 4096.0f, true), "Nothing to do, roaming!");
 	}
-	else
+
+	if (m_scanForEnemiesTimer.IsElapsed())
 	{
-		if (m_scanForEnemiesTimer.IsElapsed())
+		m_scanForEnemiesTimer.Start(0.5f);
+
+		CBaseEntity* enemy = nullptr;
+		entprops->GetEntPropEnt(m_mysentry, Prop_Send, "m_hEnemy", nullptr, &enemy);
+
+		if (enemy)
 		{
-			m_scanForEnemiesTimer.Start(0.5f);
-
-			CBaseEntity* enemy = nullptr;
-			entprops->GetEntPropEnt(m_mysentry, Prop_Send, "m_hEnemy", nullptr, &enemy);
-
-			if (enemy)
-			{
-				CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(enemy);
-				known->UpdatePosition();
-				bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(enemy), IPlayerController::LOOK_ALERT, 1.0f, "Looking at my sentry current enemy!");
-			}
+			CKnownEntity* known = bot->GetSensorInterface()->AddKnownEntity(enemy);
+			known->UpdatePosition();
+			bot->GetControlInterface()->AimAt(UtilHelpers::getWorldSpaceCenter(enemy), IPlayerController::LOOK_ALERT, 1.0f, "Looking at my sentry current enemy!");
 		}
+	}
 
-		const Vector& pos = UtilHelpers::getEntityOrigin(m_mysentry);
+	const Vector& pos = UtilHelpers::getEntityOrigin(m_mysentry);
 
-		if (bot->GetRangeTo(pos) > 260.0f)
-		{
-			return PauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, pos, "GoBehindSentry", false, true, true, 200.0f), "Moving back to the nest!");
-		}
+	if (bot->GetRangeTo(pos) > 260.0f)
+	{
+		return PauseFor(new CBotSharedGoToPositionTask<CTF2Bot, CTF2BotPathCost>(bot, pos, "GoBehindSentry", false, true, true, 200.0f), "Moving back to the nest!");
 	}
 
 	// TODO: Do something other than idling near the sentry after everything has been setup
@@ -409,17 +407,15 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 		{
 			return new CTF2BotFindAmmoTask(ammoSource, MIN_METAL_TO_BUILD);
 		}
-		else
+
+		if (me->IsDebugging(BOTDEBUG_ERRORS))
 		{
-			if (me->IsDebugging(BOTDEBUG_ERRORS))
-			{
-				const Vector origin = me->GetAbsOrigin();
+			const Vector origin = me->GetAbsOrigin();
 
-				me->DebugPrintToConsole(255, 0, 0, "%s ERROR: CTF2BotEngineerNestTask::GetBuildTask bot needs more metal to build but CTF2BotFindAmmoTask::IsPossible returned false! Team: %i Position: %g %g %g", me->GetDebugIdentifier(), me->GetCurrentTeamIndex(), origin.x, origin.y, origin.z);
-			}
-
-			return nullptr; // need more metal but find ammo failed
+			me->DebugPrintToConsole(255, 0, 0, "%s ERROR: CTF2BotEngineerNestTask::GetBuildTask bot needs more metal to build but CTF2BotFindAmmoTask::IsPossible returned false! Team: %i Position: %g %g %g", me->GetDebugIdentifier(), me->GetCurrentTeamIndex(), origin.x, origin.y, origin.z);
 		}
+
+		return nullptr; // need more metal but find ammo failed
 	}
 
 	if (m_pointWasCapped)
@@ -460,10 +456,8 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 			{
 				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, buildwpt);
 			}
-			else
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, buildarea->GetRandomPoint());
-			}
+
+			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_ENTRANCE, buildarea->GetRandomPoint());
 		}
 	}
 	else
@@ -540,73 +534,58 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 					{
 						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildwpt);
 					}
-					else
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildarea->GetRandomPoint());
-					}
-				}
-				else // failed to find a spot to build a tele exit, just build the sentry
-				{
-					if (m_sentryWaypoint)
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryWaypoint);
-					}
-					else
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryBuildPos);
-					}
-				}
-			}
-			else
-			{
-				// Random chance to build the dispenser before the sentry gun
-				if (!m_mydispenser && CBaseBot::s_botrng.GetRandomChance(35) && tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
-				{
-					if (buildwpt)
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildwpt);
-					}
-					else
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildarea->GetRandomPoint());
-					}
+
+					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildarea->GetRandomPoint());
 				}
 
 				if (m_sentryWaypoint)
 				{
 					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryWaypoint);
 				}
-				else
-				{
-					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryBuildPos);
-				}
-			}
-		}
-		else
-		{
-			// sentry gun is built
 
-			// try dispenser
-			if (!m_mydispenser)
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryBuildPos);
+			}
+
+			// Random chance to build the dispenser before the sentry gun
+			if (!m_mydispenser && CBaseBot::s_botrng.GetRandomChance(35) && tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
 			{
-				if (tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+				if (buildwpt)
 				{
-					if (buildwpt)
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildwpt);
-					}
-					else
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildarea->GetRandomPoint());
-					}
+					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildwpt);
 				}
-				else if (m_mysentry)
+
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildarea->GetRandomPoint());
+			}
+
+			if (m_sentryWaypoint)
+			{
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryWaypoint);
+			}
+
+			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_SENTRYGUN, m_sentryBuildPos);
+		}
+
+		// sentry gun is built
+
+		// try dispenser
+		if (!m_mydispenser)
+		{
+			if (tf2botutils::FindSpotToBuildDispenser(me, &buildwpt, &buildarea, m_sentryWaypoint, &m_sentryBuildPos))
+			{
+				if (buildwpt)
 				{
-					Vector buildPos;
-					if (tf2botutils::FindSpotToBuildDispenserBehindSentry(me, buildPos))
-					{
-						return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildPos);
-					}
+					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildwpt);
+				}
+
+				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildarea->GetRandomPoint());
+			}
+
+			if (m_mysentry)
+			{
+				Vector buildPos;
+				if (tf2botutils::FindSpotToBuildDispenserBehindSentry(me, buildPos))
+				{
+					return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_DISPENSER, buildPos);
 				}
 			}
 		}
@@ -618,10 +597,8 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 			{
 				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildwpt);
 			}
-			else
-			{
-				return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildarea->GetRandomPoint());
-			}
+
+			return new CTF2BotEngineerBuildObjectTask(CTF2BotEngineerBuildObjectTask::OBJECT_TELEPORTER_EXIT, buildarea->GetRandomPoint());
 		}
 	}
 
@@ -659,10 +636,8 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetBuildTask(CTF2Bot* me)
 			{
 				return new CTF2BotEngineerUpgradeObjectTask(m_myentrance);
 			}
-			else
-			{
-				return new CTF2BotEngineerUpgradeObjectTask(m_myexit);
-			}
+
+			return new CTF2BotEngineerUpgradeObjectTask(m_myexit);
 		}
 	}
 
@@ -737,17 +712,15 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 						
 						return new CTF2BotEngineerMoveObjectTask(m_mysentry, buildwpt, true);
 					}
-					else
-					{
-						if (m_sentryWaypoint)
-						{
-							m_sentryWaypoint->StopUsing(me);
-							m_sentryWaypoint = nullptr;
-						}
 
-						m_sentryBuildPos = buildarea->GetRandomPoint();
-						return new CTF2BotEngineerMoveObjectTask(m_mysentry, m_sentryBuildPos, true);
+					if (m_sentryWaypoint)
+					{
+						m_sentryWaypoint->StopUsing(me);
+						m_sentryWaypoint = nullptr;
 					}
+
+					m_sentryBuildPos = buildarea->GetRandomPoint();
+					return new CTF2BotEngineerMoveObjectTask(m_mysentry, m_sentryBuildPos, true);
 				}
 			}
 			else
@@ -792,10 +765,8 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 					{
 						return new CTF2BotEngineerMoveObjectTask(m_mydispenser, buildwpt, true);
 					}
-					else
-					{
-						return new CTF2BotEngineerMoveObjectTask(m_mydispenser, buildarea->GetRandomPoint(), true);
-					}
+
+					return new CTF2BotEngineerMoveObjectTask(m_mydispenser, buildarea->GetRandomPoint(), true);
 				}
 				else
 				{
@@ -867,10 +838,8 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 						{
 							return new CTF2BotEngineerMoveObjectTask(m_myentrance, buildwpt, true);
 						}
-						else
-						{
-							return new CTF2BotEngineerMoveObjectTask(m_myentrance, buildarea->GetRandomPoint(), true);
-						}
+
+						return new CTF2BotEngineerMoveObjectTask(m_myentrance, buildarea->GetRandomPoint(), true);
 					}
 				}
 			}
@@ -897,10 +866,8 @@ AITask<CTF2Bot>* CTF2BotEngineerNestTask::GetMoveBuildingsTask(CTF2Bot* me)
 					{
 						return new CTF2BotEngineerMoveObjectTask(m_myexit, buildwpt, true);
 					}
-					else
-					{
-						return new CTF2BotEngineerMoveObjectTask(m_myexit, buildarea->GetRandomPoint(), true);
-					}
+
+					return new CTF2BotEngineerMoveObjectTask(m_myexit, buildarea->GetRandomPoint(), true);
 				}
 			}
 		}

@@ -41,6 +41,7 @@ public:
 	float human_eye_height; // player standing view height
 	float human_crouch_height; // player crouching hull height
 	float human_crouch_eye_height; // player crouching view height
+	float max_jump_over_gap; // Maximum distance between a gap a player is able to jump across
 };
 
 // Global singleton for accessing the Navigation Mesh Generator Parameters
@@ -106,6 +107,26 @@ enum NavDirType
 
 	NUM_DIRECTIONS,
 };
+
+/**
+ * @brief Given a nav direction, return it's name.
+ * @param dir Direction.
+ * @return Direction name string.
+ */
+inline const char* GetNavDirectionName(NavDirType dir)
+{
+	using namespace std::literals::string_view_literals;
+
+	constexpr std::array names = {
+		"NORTH"sv,
+		"EAST"sv,
+		"SOUTH"sv,
+		"WEST"sv,
+		"NUM_DIRECTIONS"sv,
+	};
+
+	return names[static_cast<std::size_t>(dir)].data();
+}
 
 /**
  * Defines possible ways to move from one area to another

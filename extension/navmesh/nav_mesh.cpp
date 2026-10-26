@@ -289,6 +289,10 @@ void CNavMesh::InitializeGameData(SourceMod::IGameConfig* cfgnavbot)
 
 	if (buffer) { navgenparams->human_crouch_eye_height = atof(buffer); }
 
+	buffer = cfgnavbot->GetKeyValue("NavGen_MaxJumpOverGapLength");
+
+	if (buffer) { navgenparams->max_jump_over_gap = atof(buffer); }
+
 	buffer = cfgnavbot->GetKeyValue("NavMesh_NoBreakableAutoBlockers");
 
 	if (buffer) { m_noAutoBreakables = UtilHelpers::StringToBoolean(buffer); }
@@ -1424,7 +1428,7 @@ CNavArea *CNavMesh::GetNearestNavArea( const Vector &pos, float maxDist, bool ch
 		}
 	}
 
-	source.z += navgenparams->human_height;
+	source.z += navgenparams->half_human_height;
 
 	// find closest nav area
 
@@ -2048,7 +2052,7 @@ bool CNavMesh::GetSimpleGroundHeight( const Vector &pos, float *height, Vector *
 
 	trace_t result;
 
-	trace::line(pos, to, MASK_PLAYERSOLID_BRUSHONLY, nullptr, COLLISION_GROUP_NONE, result);
+	trace::line(pos, to, GetGenerationTraceMask(), nullptr, COLLISION_GROUP_NONE, result);
 
 	if (result.startsolid)
 		return false;
@@ -2894,6 +2898,7 @@ static void CommandNavPrecise( void )
 static ConCommand sm_nav_precise( "sm_nav_precise", CommandNavPrecise, "Toggles the 'dont avoid obstacles' flag used by the AI system.", FCVAR_GAMEDLL | FCVAR_CHEAT );
 
 
+#if 0 /* Removed: The attribute is only used during nav mesh generation, setting this manually does nothing. */
 //--------------------------------------------------------------------------------------------------------------
 static void CommandNavJump( void )
 {
@@ -2903,6 +2908,7 @@ static void CommandNavJump( void )
 	TheNavMesh->CommandNavToggleAttribute( NAV_MESH_JUMP );
 }
 static ConCommand sm_nav_jump( "sm_nav_jump", CommandNavJump, "Toggles the 'traverse this area by jumping' flag used by the AI system.", FCVAR_GAMEDLL | FCVAR_CHEAT );
+#endif // 0
 
 
 //--------------------------------------------------------------------------------------------------------------
@@ -3877,7 +3883,7 @@ void HidingSpot::Load(std::fstream& filestream, uint32_t version)
 NavErrorType HidingSpot::PostLoad( void )
 {
 	// set our area
-	m_area = TheNavMesh->GetNavArea( m_pos + Vector( 0, 0, navgenparams->human_height ) );
+	m_area = TheNavMesh->GetNavArea( m_pos + Vector( 0, 0, navgenparams->half_human_height ) );
 
 	if ( !m_area )
 	{

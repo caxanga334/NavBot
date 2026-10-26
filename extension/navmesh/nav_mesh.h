@@ -1726,7 +1726,7 @@ private:
 	bool CheckObstacles( CNavNode *node, int width, int height, int x, int y );
 
 	void MarkPlayerClipAreas( void );
-	void MarkJumpAreas( void );
+	void MarkJumpAreas( void ) const;
 	void StichAndRemoveJumpAreas( void );
 	void RemoveJumpAreas( void );	
 	void SquareUpAreas( void );

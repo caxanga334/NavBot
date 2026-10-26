@@ -14,13 +14,13 @@ CON_COMMAND(sm_navbot_add, "Adds a Nav Bot to the game.")
 
 	if (!extmanager->AreBotsSupported())
 	{
-		Msg("Bot support is disabled! Check SourceMod logs for more information. \n");
+		META_CONPRINT("Bot support is disabled! Check SourceMod logs for more information. \n");
 		return;
 	}
 
 	if (!TheNavMesh->IsLoaded())
 	{
-		Warning("Nav Mesh not loaded, bots will not be able to move! \n");
+		META_CONPRINT("Nav Mesh not loaded, bots will not be able to move! \n");
 	}
 
 	bool printHelp = !!args.FindArg("-help");

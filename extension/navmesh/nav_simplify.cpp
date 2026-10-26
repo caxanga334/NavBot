@@ -147,16 +147,16 @@ void CNavMesh::SimplifySelectedAreas( void )
 	sm_nav_split_place_on_ground.SetValue( 1 );
 
 	float savedCoplanarSlopeDisplacementLimit = sm_nav_coplanar_slope_limit_displacement.GetFloat();
-	sm_nav_coplanar_slope_limit_displacement.SetValue( MIN( 0.5f, savedCoplanarSlopeDisplacementLimit ) );
+	sm_nav_coplanar_slope_limit_displacement.SetValue( std::min( 0.5f, savedCoplanarSlopeDisplacementLimit ) );
 
 	float savedCoplanarSlopeLimit = sm_nav_coplanar_slope_limit.GetFloat();
-	sm_nav_coplanar_slope_limit.SetValue( MIN( 0.5f, savedCoplanarSlopeLimit ) );
+	sm_nav_coplanar_slope_limit.SetValue( std::min( 0.5f, savedCoplanarSlopeLimit ) );
 
 	int savedGrid = sm_nav_snap_to_grid.GetInt();
 	sm_nav_snap_to_grid.SetValue( 1 );
 
 	StripNavigationAreas();
-	SetMarkedArea( NULL );
+	SetMarkedArea(nullptr);
 
 	NavAreaCollector collector;
 	ForAllSelectedAreas( collector );
@@ -172,8 +172,8 @@ void CNavMesh::SimplifySelectedAreas( void )
 		Extent areaExtent;
 		CNavArea *area = collector.m_area[i];
 		area->GetExtent( &areaExtent );
-		areaExtent.lo.z -= navgenparams->human_height;
-		areaExtent.hi.z += 2 * navgenparams->human_height;
+		areaExtent.lo.z -= navgenparams->half_human_height;
+		areaExtent.hi.z += 2.0f * navgenparams->human_height;
 		bounds.Encompass( areaExtent );
 
 		Vector center = area->GetCenter();

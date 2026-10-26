@@ -106,12 +106,14 @@ public:
 				cost += crouchPenalty * dist;
 			}
 
+#if 0 // only used during mesh generation
 			// if this is a "jump" area, add penalty
 			if ( area->GetAttributes() & NAV_MESH_JUMP )
 			{
 				const float jumpPenalty = 5.0f;
 				cost += jumpPenalty * dist;
 			}
+#endif // 0
 
 			return cost;
 		}

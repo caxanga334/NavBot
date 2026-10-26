@@ -20,6 +20,7 @@ CNavMeshGeneratorParameters::CNavMeshGeneratorParameters()
 	human_eye_height = 62.0f;
 	human_crouch_height = 55.0f;
 	human_crouch_eye_height = 37.0f;
+	max_jump_over_gap = 300.0f;
 }
 
 static CNavMeshGeneratorParameters s_navgenparams;

@@ -24,6 +24,7 @@ The following options are available:
 
 Having too many debug overlays being rendered at once will crash the game, if you need to debug with multiple bots present, you can specify which bot you want to debug with the `sm_navbot_debug_filter` ConVar.    
 Set the ConVar value the entity index of the bot you want to debug.    
+You can use the `sm_navbot_debug_set_target_bot` console command to set the convar debug filter by bot name.    
 
 ## Stuck Log
 

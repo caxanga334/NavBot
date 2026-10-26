@@ -16,8 +16,7 @@
 			/* Nav Mesh generation parameters */
 			"NavGen_StepSize"				"25.0"
 			"NavGen_JumpHeight"				"41.8"
-			/* 120 for scout's double jump */
-			"NavGen_JumpCrouchHeight"		"120.0"
+			"NavGen_JumpCrouchHeight"		"72.0"
 			"NavGen_StepHeight"				"18.0"
 			"NavGen_DeathDropHeight"		"400.0"
 			"NavGen_ClimbUpHeight"			"200.0"
@@ -26,6 +25,7 @@
 			"NavGen_HumanCrouchHeight"		"62.0"
 			"NavGen_HumanEyeHeight"			"75.0"
 			"NavGen_HumanCrouchEyeHeight"	"45.0"
+			"NavGen_MaxJumpOverGapLength"	"600.0"
 
 			/* NavBot IMovement bot interface parameters */
 			"PlayerHull_StandHeight"		"82.0"

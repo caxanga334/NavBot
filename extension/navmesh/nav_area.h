@@ -628,6 +628,43 @@ public:
 	NavDirType ComputeLargestPortal( const CNavArea *to, Vector *center, float *halfWidth ) const;		// compute largest portal to adjacent area, returning direction
 	void ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, const Vector &fromPos, Vector *closePos ) const; // compute closest point within the "portal" between to adjacent areas
 	NavDirType ComputeDirection( Vector *point ) const;			// return direction from this area to the given point
+	/**
+	 * @brief Given a direction, computes the area's edge position.
+	 * @param dir Direction to compute.
+	 * @param offset Offset from the edge. Positive moves it away from the area and negative moves it towards the center.
+	 * @return Computed edge position.
+	 */
+	Vector ComputeEdgePosition(NavDirType dir, const float offset = 0.0f) const
+	{
+		Vector pos;
+
+		switch (dir)
+		{
+		case NavDirType::NORTH:
+			pos.x = (m_nwCorner.x + m_seCorner.x) / 2.0f;  // Center X
+			pos.y = m_nwCorner.y - offset;                  // North edge
+			break;
+
+		case NavDirType::SOUTH:
+			pos.x = (m_nwCorner.x + m_seCorner.x) / 2.0f;  // Center X
+			pos.y = m_seCorner.y + offset;                  // South edge
+			break;
+
+		case NavDirType::EAST:
+			pos.x = m_seCorner.x + offset;                  // East edge
+			pos.y = (m_nwCorner.y + m_seCorner.y) / 2.0f;  // Center Y
+			break;
+
+		case NavDirType::WEST:
+			pos.x = m_nwCorner.x - offset;                  // West edge
+			pos.y = (m_nwCorner.y + m_seCorner.y) / 2.0f;  // Center Y
+			break;
+		}
+
+		pos.z = GetZ(pos);  // Get the Z height at this X,Y position
+
+		return pos;
+	}
 
 	//- hiding spots ------------------------------------------------------------------------------------
 	const HidingSpotVector& GetHidingSpots( void ) const	{ return m_hidingSpots; }
@@ -812,6 +849,16 @@ public:
 		}
 
 		return false;
+	}
+	/**
+	 * @brief Checks if both this and the other nav area are connected to each other (bi-direction connection).
+	 * @param other Other area to check.
+	 * @param dir Direction.
+	 * @return True if both are connected to each other, false otherwise.
+	 */
+	bool IsBothConnected(const CNavArea* other, NavDirType dir) const
+	{
+		return this->IsConnected(other, dir) && other->IsConnected(this, OppositeDirection(dir));
 	}
 
 	const NavOffMeshConnection* GetOffMeshConnectionToArea(const CNavArea* other) const

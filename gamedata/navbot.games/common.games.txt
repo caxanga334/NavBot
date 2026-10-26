@@ -66,6 +66,7 @@
 			"NavGen_HumanCrouchHeight"		"55.0"
 			"NavGen_HumanEyeHeight"			"62.0"
 			"NavGen_HumanCrouchEyeHeight"	"37.0"
+			"NavGen_MaxJumpOverGapLength"	"300.0"
 
 			"NavImport_Supported" "false"
 			/* Value of the MAX_NAV_TEAMS constant */

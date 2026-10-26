@@ -17,7 +17,7 @@ public:
 
 	const char* GetName() const override { return "SniperMain"; }
 private:
-
+	Vector GetRushGoal(CTF2Bot* bot) const;
 };
 
 

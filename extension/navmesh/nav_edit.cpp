@@ -1238,7 +1238,7 @@ void CNavMesh::DrawPrerequisites()
 void CNavMesh::SetMarkedLadder( CNavLadder *ladder )
 {
 	m_markedLadder = ladder;
-	m_markedArea = NULL;
+	m_markedArea = nullptr;
 	m_markedCorner = NUM_CORNERS;
 }
 
@@ -1246,7 +1246,7 @@ void CNavMesh::SetMarkedLadder( CNavLadder *ladder )
 //--------------------------------------------------------------------------------------------------------------
 void CNavMesh::SetMarkedArea( CNavArea *area )
 {
-	m_markedLadder = NULL;
+	m_markedLadder = nullptr;
 	m_markedArea = area;
 	m_markedCorner = NUM_CORNERS;
 }

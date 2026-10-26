@@ -2212,8 +2212,8 @@ void CNavArea::ComputePortal( const CNavArea *to, NavDirType dir, Vector *center
 			center->y = m_seCorner.y;
 		}
 
-		float left = MAX( m_nwCorner.x, to->m_nwCorner.x );
-		float right = MIN( m_seCorner.x, to->m_seCorner.x );
+		float left = std::max( m_nwCorner.x, to->m_nwCorner.x );
+		float right = std::min( m_seCorner.x, to->m_seCorner.x );
 
 		// clamp to our extent in case areas are disjoint
 		if ( left < m_nwCorner.x )
@@ -2248,8 +2248,8 @@ void CNavArea::ComputePortal( const CNavArea *to, NavDirType dir, Vector *center
 			center->x = m_seCorner.x;
 		}
 
-		float top = MAX( m_nwCorner.y, to->m_nwCorner.y );
-		float bottom = MIN( m_seCorner.y, to->m_seCorner.y );
+		float top = std::max( m_nwCorner.y, to->m_nwCorner.y );
+		float bottom = std::min( m_seCorner.y, to->m_seCorner.y );
 
 		// clamp to our extent in case areas are disjoint
 		if ( top < m_nwCorner.y )
@@ -2579,7 +2579,7 @@ bool CNavArea::IsEdge( NavDirType dir ) const
 {
 	FOR_EACH_VEC( m_connect[ dir ], it )
 	{
-		const NavConnect connect = m_connect[ dir ][ it ];
+		const NavConnect& connect = m_connect[ dir ][ it ];
 
 		if (connect.area->IsConnected( this, OppositeDirection( dir ) ))
 			return false;
@@ -2645,8 +2645,8 @@ bool CNavArea::GetCornerHotspot( NavCornerType corner, Vector hotspot[NUM_CORNER
 	Vector se = GetCorner( SOUTH_EAST );
 
 	float size = 9.0f;
-	size = MIN( size, GetSizeX()/3 );	// make sure the hotspot doesn't extend outside small areas
-	size = MIN( size, GetSizeY()/3 );
+	size = std::min( size, GetSizeX() / 3.0f );	// make sure the hotspot doesn't extend outside small areas
+	size = std::min( size, GetSizeY() / 3.0f );
 
 	switch ( corner )
 	{
@@ -3351,9 +3351,10 @@ void CNavArea::DrawConnectedAreas( CNavMesh* TheNavMesh ) const
 				const NavConnect& conn = vec->Element(i);
 				CNavArea* other = conn.area;
 				Vector from;
-				other->GetClosestPointOnArea(this->GetCenter(), &from);
+				float dummy;
+				other->ComputePortal(this, OppositeDirection(static_cast<NavDirType>(dir)), &from, &dummy);
 				Vector to;
-				this->GetClosestPointOnArea(other->GetCenter(), &to);
+				this->GetClosestPointOnArea(from, &to);
 				other->Draw();
 				NavDrawLine(from, to, NavConnectedIncomingOneWay);
 			}

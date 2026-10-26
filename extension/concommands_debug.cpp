@@ -15,6 +15,7 @@
 #include <sdkports/sdk_traces.h>
 #include <sdkports/sdk_game_util.h>
 #include <sdkports/sdk_entityoutput.h>
+#include <sdkports/sdk_convarref_ep1.h>
 #include <util/ehandle_edict.h>
 #include <util/prediction.h>
 #include <sm_argbuffer.h>
@@ -92,6 +93,35 @@ CON_COMMAND_F_COMPLETION(sm_navbot_debug_bot_sensor_memory, "Debugs the bot Sens
 
 	META_CONPRINTF("Showing ISensor debug information for %s \n", bot->GetClientName());
 	bot->GetSensorInterface()->ShowDebugInformation();
+}
+
+CON_COMMAND_F_COMPLETION(sm_navbot_debug_set_target_bot, "Sets the target bot to debug.", FCVAR_GAMEDLL | FCVAR_CHEAT, CExtManager::AutoComplete_BotNames)
+{
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_navbot_debug_set_target_bot <bot name> \n");
+		return;
+	}
+
+	CBaseBot* bot = extmanager->FindBotByName(args[1]);
+
+	if (!bot)
+	{
+		META_CONPRINTF("Error: bot of name \"%s\" not found!\n", args[1]);
+		return;
+	}
+
+	META_CONPRINTF("Adjusting \"sm_navbot_debug_filter\" cvar for bot \"%s\". \n", args[1]);
+	META_CONPRINT("Set \"sm_navbot_debug_filter\" to 0 to disable filtering. \n");
+	ConVarRef sm_navbot_debug_filter("sm_navbot_debug_filter");
+
+	// for sanity but should always be valid since this is a NavBot cvar
+	if (sm_navbot_debug_filter.IsValid())
+	{
+		sm_navbot_debug_filter.SetValue(bot->GetIndex());
+	}
 }
 
 CON_COMMAND_F(sm_navbot_debug_disable_bot_combat, "Disables the bot's combat interface.", FCVAR_GAMEDLL | FCVAR_CHEAT)
