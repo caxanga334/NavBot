@@ -186,6 +186,29 @@ public:
 
 		return nullptr;
 	}
+
+	/**
+	 * @brief First the first weapon of the given weapon type and class.
+	 * @param type Weapon type to search for.
+	 * @param clss Weapon class to search for.
+	 * @param validateOwnership If true, check if the weapon is still owned by the bot.
+	 * @return Bot Weapon interface pointer or NULL if not found.
+	 */
+	const CBotWeapon* FindWeaponByTypeAndClass(WeaponInfo::WeaponType type, WeaponInfo::WeaponClass clss, const bool validateOwnership = true) const
+	{
+		for (auto& weaponptr : m_weapons)
+		{
+			if (weaponptr->IsValid() && weaponptr->GetWeaponInfo()->IsWeaponOfType(type) && weaponptr->GetWeaponInfo()->IsWeaponOfClass(clss))
+			{
+				if (validateOwnership && !weaponptr->IsOwnedByBot(GetBot<CBaseBot>()))
+				{
+					continue;
+				}
+
+				return weaponptr.get();
+			}
+		}
+	}
 	
 	/**
 	 * @brief Finds the first weapon of the given slot. This uses the slot defined in the configuration file.
@@ -210,7 +233,6 @@ public:
 
 		return nullptr;
 	}
-
 	/**
 	 * @brief Finds a weapon for the bot to drop.
 	 * @return Pointer to a weapon to drop. NULL if none is found.
@@ -358,15 +380,18 @@ public:
 	 */
 	virtual void SelectBestWeapon();
 	/**
+	 * @brief Selects (equips) the best (with the highest priority) weapon of the given type and class.
+	 * @param type Weapon type to filter.
+	 * @param clss Weapon class to filter. This is optional, pass MAX_WEAPON_CLASSES to ignore and only select by type.
+	 * @param distance If positive and non zero, see if the weapon is within this range. Optional.
+	 * @return True if the weapon was selected, false otherwise.
+	 */
+	virtual bool SelectBestWeaponOfTypeAndClass(WeaponInfo::WeaponType type,
+		WeaponInfo::WeaponClass clss = WeaponInfo::WeaponClass::MAX_WEAPON_CLASSES, const float distance = -1.0f);
+	/**
 	 * @brief Selects the best weapon from the bot inventory to attack breakable entities (func_breakable, prop_physics, etc...)
 	 */
 	virtual void SelectBestWeaponForBreakables(const bool force = true);
-	/**
-	 * @brief Selects the weapon with the highest priority that matches the given type.
-	 * @param type Weapon Type to filter.
-	 * @param range Optional, if positive, also filter weapons by range.
-	 */
-	virtual void SelectBestWeaponOfType(WeaponInfo::WeaponType type, const float range = -1.0f);
 	/**
 	 * @brief Selects the best hitscan weapon from the bot inventory.
 	 * @param meleeIsHitscan If true, consider melee weapon as hitscan.
@@ -407,7 +432,7 @@ public:
 			m_delay = delay;
 		}
 
-		void operator()(CBaseBot* bot);
+		void operator()(CBaseBot* bot) const;
 
 	private:
 		float m_delay;

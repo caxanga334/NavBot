@@ -11,12 +11,17 @@ public:
 	~CDoDSBotInventory() override;
 
 	const CDoDSBotWeapon* GetActiveDoDWeapon() const { return static_cast<const CDoDSBotWeapon*>(GetActiveBotWeapon()); }
-	const CDoDSBotWeapon* GetMachineGun() const { return static_cast<const CDoDSBotWeapon*>(IInventory::FindWeaponByTag(TAG_MACHINEGUN.data())); }
+	const CDoDSBotWeapon* GetMachineGun() const { 
+		return static_cast<const CDoDSBotWeapon*>(IInventory::FindWeaponByTypeAndClass(WeaponInfo::WeaponType::COMBAT_WEAPON, WeaponInfo::WeaponClass::WEAPON_CLASS_MACHINEGUN)); 
+	}
+	const CDoDSBotWeapon* GetSniperRifle() const {
+		return static_cast<const CDoDSBotWeapon*>(IInventory::FindWeaponByTypeAndClass(WeaponInfo::WeaponType::COMBAT_WEAPON, WeaponInfo::WeaponClass::WEAPON_CLASS_SNIPERRIFLE));
+	}
 	const CDoDSBotWeapon* GetRifleGrenade() const { return static_cast<const CDoDSBotWeapon*>(IInventory::FindWeaponByTag(TAG_RIFLE_GRENADE.data())); }
 
 	bool HasBomb() const { return IInventory::FindWeaponByClassname(BOMB_CLASSNAME.data()) != nullptr; }
 	bool HasMachineGun() const { return GetMachineGun() != nullptr; }
-	bool HasSniperRifle() const { return IInventory::FindWeaponByTag(TAG_SNIPER_RIFLE.data()) != nullptr; }
+	bool HasSniperRifle() const { return GetSniperRifle() != nullptr; }
 	bool HasRifleGrenade() const { return GetRifleGrenade() != nullptr; }
 
 protected:
@@ -25,8 +30,6 @@ protected:
 private:
 	// weapon tags used for identifitication of some DoD:S weapons.
 	static constexpr std::string_view BOMB_CLASSNAME = "weapon_basebomb";
-	static constexpr std::string_view TAG_MACHINEGUN = "machinegun";
-	static constexpr std::string_view TAG_SNIPER_RIFLE = "sniperrifle";
 	static constexpr std::string_view TAG_RIFLE_GRENADE = "riflegrenade";
 };
 

@@ -12,7 +12,7 @@ public:
 	CCSSBotInventory(CCSSBot* bot);
 
 	// Returns true if the bot has a sniper rifle.
-	bool IsSniper() const { return IInventory::FindWeaponByTag("is_sniper") != nullptr; }
+	bool IsSniper() const { return IInventory::FindWeaponByTypeAndClass(WeaponInfo::WeaponType::COMBAT_WEAPON, WeaponInfo::WeaponClass::WEAPON_CLASS_SNIPERRIFLE) != nullptr; }
 	// Returns true if the bot is carrying a C4.
 	bool IsBombCarrier() const { return IInventory::FindWeaponByClassname("weapon_c4") != nullptr; }
 	// Returns true if the bot has the default pistol.

@@ -965,6 +965,27 @@ public:
 	}
 
 	/**
+	 * @brief Calls a function on each incoming one-way connection to this area.
+	 * @tparam T function to call: void (CNavArea* incomingArea, NavDirType direction)
+	 * @param func function to call
+	 */
+	template <typename T>
+	void ForEachIncomingArea(T& func)
+	{
+		for (int d = 0; d < static_cast<int>(NUM_DIRECTIONS); d++)
+		{
+			NavDirType dir = static_cast<NavDirType>(d);
+			auto conn = GetIncomingConnections(dir);
+
+			for (int i = 0; i < conn->Count(); i++)
+			{
+				CNavArea* incomingArea = conn->Element(i).area;
+				func(incomingArea, dir);
+			}
+		}
+	}
+
+	/**
 	 * @brief Runs a function on each nav area connected to this area
 	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)
 	 * @param functor function to run on each connected area to this area

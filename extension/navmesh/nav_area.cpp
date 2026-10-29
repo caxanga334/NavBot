@@ -1390,9 +1390,30 @@ void CNavArea::FinishSplitEdit( CNavArea *newArea, NavDirType ignoreEdge )
 					}
 					break;
 				}
-			}			
+			}
 		}
 	}
+
+	auto func = [newArea](CNavArea* incomingArea, NavDirType direction) {
+		Vector center;
+		float dummy;
+		NavDirType dir = incomingArea->ComputeLargestPortal(newArea, &center, &dummy);
+
+		if (dir != NavDirType::NUM_DIRECTIONS)
+		{
+			Vector close;
+			newArea->ComputeClosestPointInPortal(incomingArea, OppositeDirection(dir), center, &close);
+			float dist2D = (center.AsVector2D() - close.AsVector2D()).Length();
+
+			// don't connect if they're too far away
+			if (dist2D <= (navgenparams->generation_step_size * 2.0f))
+			{
+				incomingArea->ConnectTo(newArea, dir);
+			}
+		}
+	};
+
+	ForEachIncomingArea(func);
 
 	TheNavAreas.AddToTail( newArea );
 	TheNavMesh->AddNavArea( newArea );

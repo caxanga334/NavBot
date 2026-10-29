@@ -19,6 +19,7 @@ This is a list of keys available for all mods.
 |priority|Weapon selection priority for this weapon.|integer|
 |min_required_skill|Minimum weapon skill required to use this weapon.|integer|
 |weapon_type|Weapon type. See docs below.|string|
+|weapon_class|Weapon class. See docs below.|string|
 |can_headshot|Can this weapon headshot.|boolean|
 |headshot_range_multiplier|Headshot range multiplier.|float|
 |headshot_aim_offset|Offset to apply when aiming at the head with this weapon.|Vector|
@@ -123,6 +124,17 @@ List of valid weapon types:
 * mobility_tool : This weapon provides additional mobility to the user. (IE: TF2's grappling hook).
 * combat_grenade : A grenade used to deal damage to enemies.
 * support_grenade : An utility grenade (IE: smoke, flashbangs).
+
+## Weapon Classes
+
+Weapon classes provides a secondary form of weapon identification for bots.    
+List of currently available weapon types:
+
+|Name|Description|
+|:---:|:---:|
+|generic|Generic weapon class. Default type.|
+|machinegun|This is a machinegun.|
+|sniperrifle|This is a sniper rifle.|
 
 ## variantof
 

@@ -252,7 +252,7 @@ void IInventory::BuildInventory()
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IInventory::BuildInventory", "NavBot");
 #endif // EXT_VPROF_ENABLED
-	static int arraylength = 0;
+	static std::size_t arraylength = 0U;
 
 	RemoveInvalidWeapons();
 
@@ -279,13 +279,13 @@ void IInventory::BuildInventory()
 	}
 #endif // EXT_DEBUG
 
-	if (arraylength <= 0)
+	if (arraylength == 0)
 	{
 		// try to get the m_hMyWeapons array size at runtime
-		arraylength = static_cast<int>(entprops->GetEntPropArraySize(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_hMyWeapons"));
+		arraylength = entprops->GetEntPropArraySize(GetBot<CBaseBot>()->GetIndex(), Prop_Send, "m_hMyWeapons");
 
 		// if look up fails, use the SDK's MAX_WEAPONS macro
-		if (arraylength <= 0)
+		if (arraylength == 0)
 		{
 			arraylength = MAX_WEAPONS;
 #ifdef EXT_DEBUG
@@ -294,7 +294,7 @@ void IInventory::BuildInventory()
 		}
 	}
 
-	for (int i = 0; i < arraylength; i++)
+	for (std::size_t i = 0; i < arraylength; i++)
 	{
 		CBaseEntity* weapon = myweapons[i].Get();
 
@@ -405,6 +405,83 @@ void IInventory::SelectBestWeapon()
 	}
 }
 
+bool IInventory::SelectBestWeaponOfTypeAndClass(WeaponInfo::WeaponType type, WeaponInfo::WeaponClass clss, const float distance)
+{
+	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
+	{
+		return false;
+	}
+
+	CBaseBot* bot = GetBot<CBaseBot>();
+	const DifficultyProfile* profile = bot->GetDifficultyProfile();
+	const CBotWeapon* selected = nullptr;
+	const bool checkclass = clss != WeaponInfo::WeaponClass::MAX_WEAPON_CLASSES;
+
+	for (auto& ptr : m_weapons)
+	{
+		const CBotWeapon* weapon = ptr.get();
+
+		if (!weapon->IsValid() || !weapon->IsOwnedByBot(bot))
+		{
+			continue;
+		}
+
+		const WeaponInfo* info = weapon->GetWeaponInfo();
+
+		if (!info->IsWeaponOfType(type))
+		{
+			continue;
+		}
+
+		if (checkclass && !info->IsWeaponOfClass(clss))
+		{
+			continue;
+		}
+
+		if (profile->GetWeaponSkill() < info->GetMinRequiredSkill())
+		{
+			continue;
+		}
+
+		if (weapon->IsOutOfAmmo(bot))
+		{
+			continue;
+		}
+
+		if (distance > 0.1f)
+		{
+			if (!info->IsInSelectionRange(distance))
+			{
+				continue;
+			}
+		}
+
+		if (selected == nullptr)
+		{
+			selected = weapon;
+			continue;
+		}
+
+		selected = FilterSelectWeaponWithHighestStaticPriority(selected, weapon);
+	}
+
+	if (selected == nullptr)
+	{
+		return false;
+	}
+
+	if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, selected) != ANSWER_NO)
+	{
+		if (EquipWeapon(selected))
+		{
+			m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
+			return true;
+		}
+	}
+
+	return false;
+}
+
 void IInventory::SelectBestWeaponForBreakables(const bool force)
 {
 	if (force) { m_weaponSwitchCooldown.Invalidate(); }
@@ -479,69 +556,6 @@ void IInventory::SelectBestWeaponForBreakables(const bool force)
 
 	if (best != nullptr)
 	{
-		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
-		{
-			EquipWeapon(best);
-		}
-	}
-}
-
-void IInventory::SelectBestWeaponOfType(WeaponInfo::WeaponType type, const float range)
-{
-	if (m_weaponSwitchCooldown.HasStarted() && !m_weaponSwitchCooldown.IsElapsed())
-	{
-		return;
-	}
-
-	CBaseBot* bot = GetBot();
-	const CBotWeapon* best = nullptr;
-
-	for (auto& ptr : m_weapons)
-	{
-		const CBotWeapon* weapon = ptr.get();
-		const WeaponInfo* info = weapon->GetWeaponInfo();
-
-		if (!weapon->IsValid() || !weapon->IsOwnedByBot(bot))
-		{
-			continue;
-		}
-
-		if (info->GetWeaponType() != type)
-		{
-			continue;
-		}
-
-		if (weapon->IsOutOfAmmo(bot))
-		{
-			continue;
-		}
-
-		if (range > 0.0f)
-		{
-			if (!info->IsInSelectionRange(range))
-			{
-				continue;
-			}
-		}
-
-		if (best == nullptr)
-		{
-			best = weapon;
-			continue;
-		}
-
-		if (weapon == best)
-		{
-			continue;
-		}
-
-		best = FilterSelectWeaponWithHighestStaticPriority(best, weapon);
-	}
-
-	if (best != nullptr)
-	{
-		m_weaponSwitchCooldown.Start(base_weapon_switch_cooldown());
-
 		if (bot->GetBehaviorInterface()->ShouldSwitchToWeapon(bot, best) != ANSWER_NO)
 		{
 			EquipWeapon(best);
@@ -866,7 +880,7 @@ const CBotWeapon* IInventory::FindBestWeaponAgainstThreat(const CKnownEntity* th
 	return best;
 }
 
-void IInventory::RefreshInventory::operator()(CBaseBot* bot)
+void IInventory::RefreshInventory::operator()(CBaseBot* bot) const
 {
 	bot->GetInventoryInterface()->StartInventoryUpdateTimer(m_delay);
 }

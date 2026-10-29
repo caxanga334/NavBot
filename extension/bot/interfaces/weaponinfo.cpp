@@ -874,6 +874,19 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 			m_current->SetWeaponType(type);
 		}
 	}
+	else if (std::strcmp(key, "weapon_class") == 0)
+	{
+		WeaponInfo::WeaponClass clss = WeaponInfo::GetWeaponClassFromString(value);
+
+		if (clss == WeaponInfo::WeaponClass::MAX_WEAPON_CLASSES)
+		{
+			smutils->LogError(myself, "[WEAPON INFO PARSER] %s is not a valid weapon class! line %u col %u", value, states->line, states->col);
+		}
+		else
+		{
+			m_current->SetWeaponClass(clss);
+		}
+	}
 	else if (std::strcmp(key, "can_fire_underwater") == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);
@@ -1201,6 +1214,32 @@ WeaponInfo::WeaponType WeaponInfo::GetWeaponTypeFromString(const char* str)
 	}
 
 	return WeaponInfo::WeaponType::MAX_WEAPON_TYPES;
+}
+
+WeaponInfo::WeaponClass WeaponInfo::GetWeaponClassFromString(const char* str)
+{
+	using namespace std::literals::string_view_literals;
+
+	// order here must match the enum
+	constexpr std::array type_names = {
+		"generic"sv,
+		"machinegun"sv,
+		"sniperrifle"sv,
+	};
+
+	static_assert(type_names.size() == static_cast<std::size_t>(WeaponInfo::WeaponClass::MAX_WEAPON_CLASSES), "WeaponInfo::WeaponClass and type_names array size mismatch!");
+
+	for (int i = 0; i < static_cast<int>(WeaponInfo::WeaponType::MAX_WEAPON_TYPES); i++)
+	{
+		const std::string_view& name = type_names[i];
+
+		if (std::strcmp(str, name.data()) == 0)
+		{
+			return static_cast<WeaponInfo::WeaponClass>(i);
+		}
+	}
+
+	return WeaponInfo::WeaponClass::MAX_WEAPON_CLASSES;
 }
 
 void WeaponInfo::AddDynamicPriorityCfgEntry(const char* name, const char* args)

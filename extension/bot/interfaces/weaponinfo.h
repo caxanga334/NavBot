@@ -275,6 +275,7 @@ public:
 	// Random Number used to indicate an invalid weapon slot
 	static constexpr int INVALID_WEAPON_SLOT = -7912742;
 
+	// Primary weapon type
 	enum WeaponType
 	{
 		NOT_USEABLE_WEAPON, // Can't be used for anything
@@ -290,8 +291,20 @@ public:
 		MAX_WEAPON_TYPES
 	};
 
+	// Secondary weapon classification so bots can identify what kind of weapon this is, act as "sub type".
+	enum WeaponClass
+	{
+		WEAPON_CLASS_GENERIC = 0, // Generic weapon class. Default class given to weapons
+		WEAPON_CLASS_MACHINEGUN, // This is a machine gun
+		WEAPON_CLASS_SNIPERRIFLE, // This is a sniper rifle
+
+		MAX_WEAPON_CLASSES,
+	};
+
 	// Converts a string to a weapon type
 	static WeaponInfo::WeaponType GetWeaponTypeFromString(const char* str);
+	// Converts a string to a weapon class
+	static WeaponInfo::WeaponClass GetWeaponClassFromString(const char* str);
 
 	struct SpecialFunction
 	{
@@ -321,6 +334,7 @@ public:
 		classname.reserve(64);
 		configentry.reserve(64);
 		weapon_type = WeaponType::COMBAT_WEAPON;
+		weapon_class = WeaponClass::WEAPON_CLASS_GENERIC;
 		econindex = -1;
 		priority = 0;
 		disable_dodge = false;
@@ -360,6 +374,7 @@ public:
 		this->classname = other->classname;
 		this->attacksinfo = other->attacksinfo;
 		this->weapon_type = other->weapon_type;
+		this->weapon_class = other->weapon_class;
 		this->headshot_aim_offset = other->headshot_aim_offset;
 		this->econindex = other->econindex;
 		this->priority = other->priority;
@@ -473,6 +488,7 @@ public:
 	void RemoveTag(const std::string& tag) { tags.erase(tag); }
 	void SetIsTemplateEntry(const bool v) { is_template = v; }
 	void SetWeaponType(WeaponInfo::WeaponType type) { weapon_type = type; }
+	void SetWeaponClass(WeaponInfo::WeaponClass clss) { weapon_class = clss; }
 	void SetMinRequiredSkill(const int skill) { min_required_skill = skill; }
 	void SetSpamTime(const float t) { spam_time = t; }
 	void SetMinimumRangeToUseScope(const float range) { scopein_min_range = range; }
@@ -534,6 +550,8 @@ public:
 	bool IsTemplateEntry() const { return is_template; }
 	WeaponInfo::WeaponType GetWeaponType() const { return weapon_type; }
 	const bool IsWeaponOfType(const WeaponInfo::WeaponType type) const { return type == weapon_type; }
+	WeaponInfo::WeaponClass GetWeaponClass() const { return weapon_class; }
+	const bool IsWeaponOfClass(const WeaponInfo::WeaponClass clss) const { return clss == weapon_class; }
 	const SpecialFunction& GetSpecialFunction() const { return special_function; }
 	// for writing
 	SpecialFunction* GetSpecialFunctionEx() { return &special_function; }
@@ -568,6 +586,7 @@ private:
 	std::string configentry;
 	std::array<WeaponAttackFunctionInfo, static_cast<std::size_t>(botweapons::AttackType::MAX_ATTACK_TYPES)> attacksinfo;
 	WeaponType weapon_type;
+	WeaponClass weapon_class;
 	Vector headshot_aim_offset;
 	int econindex; // Economy item definition index
 	int priority; // Priority for weapon selection

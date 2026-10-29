@@ -168,7 +168,7 @@ void CBaseBot::Hook_Spawn_Post()
 #ifdef EXT_DEBUG
 	if (cvar_print_bot_hooks.GetBool())
 	{
-		META_CONPRINTF("CBaseBot::Hook_Spawn_Post <%p>\n", this);
+		META_CONPRINTF("CBaseBot::Hook_Spawn_Post <%p> %3.2f\n", this, gpGlobals->curtime);
 	}
 
 	const Vector& origin = UtilHelpers::getEntityOrigin(GetEntity());
