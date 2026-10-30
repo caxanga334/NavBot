@@ -120,5 +120,13 @@ To create a nav area on the surface, create a nav area on the ground, mark with 
 
 If the nav mesh fails to recognize a surface as climbable, you can set the `sm_nav_force_climbable` to **1** to force every surface to be climbable and create the ladder manually.    
 
+# Permanently Blocking Areas For a Specific Team
+
+The `sm_nav_area_set_team_can_use` command can be used to block areas to specific team. This is a permanent block, don't use it in areas that are temporarily blocked.    
+The command takes two parameters: `<team index> <yes/no>`.    
+Example 1: `sm_nav_area_set_team_can_use 2 no` - Marks a nav area as cannot be used by team 2.    
+Example 2: `sm_nav_area_set_team_can_use -2 yes` - Allows all teams to use this nav area.    
+By default, an area can be used by all teams.
+
 <!-- LINKS -->
 [Nav Mesh Volumes]: NAVMESH_VOLUMES.md

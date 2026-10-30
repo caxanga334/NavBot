@@ -221,8 +221,8 @@ CNavArea::CNavArea(unsigned int place)
 	m_id = m_nextID++;
 	m_debugid = 0;
 
-	m_prevHash = NULL;
-	m_nextHash = NULL;
+	m_prevHash = nullptr;
+	m_nextHash = nullptr;
 
 	m_isBattlefront = false;
 
@@ -255,6 +255,7 @@ CNavArea::CNavArea(unsigned int place)
 	m_volume = nullptr;
 	m_prerequisite = nullptr;
 	std::fill(m_clearedTimestamp.begin(), m_clearedTimestamp.end(), NAV_AREA_NEVER_CLEARED_STATUS_VALUE);
+	std::fill(m_teamCanUse.begin(), m_teamCanUse.end(), true);
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -4783,6 +4784,13 @@ bool CNavArea::IsBlocked( int teamID, bool ignoreNavBlockers ) const
 		{
 			return true; // we are blocked because my elevator is blocked
 		}
+	}
+
+	// check if this are is marked as permanently blocked for this team
+	// this always returns true for invalid team indexes and NAV_TEAM_ANY
+	if (!IsTeamAllowedToUseThisArea(teamID))
+	{
+		return true;
 	}
 
 	bool result = false;

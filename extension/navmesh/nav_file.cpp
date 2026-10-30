@@ -19,6 +19,7 @@
 
 #include "nav_mesh.h"
 #include "nav_area.h"
+#include "nav_ladder.h"
 #include "nav_waypoint.h"
 #include "nav_volume.h"
 #include "nav_prereq.h"
@@ -382,6 +383,16 @@ void CNavArea::Save(std::fstream& filestream, uint32_t version)
 		Vector end = link.m_end;
 		filestream.write(reinterpret_cast<char*>(&end), sizeof(Vector));
 	}
+
+	{
+		std::uint64_t size = static_cast<std::uint64_t>(m_teamCanUse.size());
+		filestream.write(reinterpret_cast<char*>(&size), sizeof(std::uint64_t));
+
+		for (auto& b : m_teamCanUse)
+		{
+			filestream.write(reinterpret_cast<char*>(&b), sizeof(bool));
+		}
+	}
 }
 
 
@@ -548,6 +559,26 @@ NavErrorType CNavArea::Load(std::fstream& filestream, uint32_t version, uint32_t
 		filestream.read(reinterpret_cast<char*>(&end), sizeof(Vector));
 
 		m_offmeshconnections.emplace_back(type, id, start, end);
+	}
+
+	if (version < 2)
+	{
+		return NAV_OK;
+	}
+
+	// load data added in version >= 2
+	
+	{
+		// load team can use 
+		std::uint64_t size = 0;
+		filestream.read(reinterpret_cast<char*>(&size), sizeof(std::uint64_t));
+
+		for (std::size_t i = 0; i < static_cast<std::size_t>(size); i++)
+		{
+			bool b = true;
+			filestream.read(reinterpret_cast<char*>(&b), sizeof(bool));
+			m_teamCanUse[i] = b;
+		}
 	}
 
 	return NAV_OK;
@@ -2698,6 +2729,277 @@ void CNavMesh::CommandNavDumpToKeyValues()
 	char path[PLATFORM_MAX_PATH];
 	smutils->BuildPath(Path_Game, path, sizeof(path), "navmeshdump.txt");
 	META_CONPRINTF("File saved to: %s \n", path);
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Save a navigation ladder to the opened binary stream
+ */
+void CNavLadder::Save(std::fstream& filestream, uint32_t version)
+{
+	// save ID
+	filestream.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+
+	// save extent of ladder
+	filestream.write(reinterpret_cast<char*>(&m_width), sizeof(float));
+
+	// save top endpoint of ladder
+	filestream.write(reinterpret_cast<char*>(&m_top), sizeof(Vector));
+
+	// save bottom endpoint of ladder
+	filestream.write(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
+
+	// save useable ladder entity origin
+	filestream.write(reinterpret_cast<char*>(&m_useableOrigin), sizeof(Vector));
+
+	// save ladder length
+	filestream.write(reinterpret_cast<char*>(&m_length), sizeof(float));
+
+	// save direction
+	filestream.write(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
+
+	// save ladder type
+	filestream.write(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
+
+	{
+		// save IDs of connecting areas
+		std::uint8_t count = 0;
+		std::size_t size = m_connections.size();
+
+		if (size >= 254U)
+		{
+			count = 254U; // only save up to 254 connections
+		}
+		else
+		{
+			count = static_cast<std::uint8_t>(size);
+		}
+
+		// save vector size
+		filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint8_t));
+	}
+
+	for (auto& connect : m_connections)
+	{
+		// area ID
+		unsigned int id = connect.GetConnectedArea()->GetID();
+		filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+
+		// data
+		filestream.write(reinterpret_cast<char*>(&connect.bottom), sizeof(bool));
+		filestream.write(reinterpret_cast<char*>(&connect.point), sizeof(Vector));
+	}
+
+	// save ladder attributes
+	filestream.write(reinterpret_cast<char*>(&m_attributes), sizeof(int));
+
+	{
+		// save ladder blocked status
+		// write the array size for backwards compatibility
+		std::uint64_t size = static_cast<std::uint64_t>(m_teamBlocked.size());
+		filestream.write(reinterpret_cast<char*>(&size), sizeof(std::uint64_t));
+
+		for (bool& blocked : m_teamBlocked)
+		{
+			filestream.write(reinterpret_cast<char*>(&blocked), sizeof(bool));
+		}
+	}
+
+	{
+		const CNavLadder* ladder = GetLinkedTopLadder();
+		bool hasLinkedTopLadder = ladder != nullptr;
+		filestream.write(reinterpret_cast<char*>(&hasLinkedTopLadder), sizeof(bool));
+
+		if (hasLinkedTopLadder)
+		{
+			unsigned int id = ladder->GetID();
+			filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+		}
+
+		ladder = GetLinkedBottomLadder();
+		bool hasLinkedBottomLadder = ladder != nullptr;
+		filestream.write(reinterpret_cast<char*>(&hasLinkedBottomLadder), sizeof(bool));
+
+		if (hasLinkedBottomLadder)
+		{
+			unsigned int id = ladder->GetID();
+			filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+		}
+	}
+}
+
+
+//--------------------------------------------------------------------------------------------------------------
+/**
+ * Load a navigation ladder from the opened binary stream
+ */
+void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version, uint32_t subversion)
+{
+	// load ID
+	filestream.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
+
+	// load extent of ladder
+	filestream.read(reinterpret_cast<char*>(&m_width), sizeof(float));
+
+	// load top endpoint of ladder
+	filestream.read(reinterpret_cast<char*>(&m_top), sizeof(Vector));
+
+	// load bottom endpoint of ladder
+	filestream.read(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
+
+	// save useable ladder entity origin
+	filestream.read(reinterpret_cast<char*>(&m_useableOrigin), sizeof(Vector));
+
+	// load ladder length
+	filestream.read(reinterpret_cast<char*>(&m_length), sizeof(float));
+
+	// load direction
+	filestream.read(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
+
+	// load ladder type
+	filestream.read(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
+
+	{
+		// load IDs of connecting areas
+
+		std::uint8_t count = 0;
+
+		// load vector size
+		filestream.read(reinterpret_cast<char*>(&count), sizeof(std::uint8_t));
+
+		for (std::uint8_t i = 0; i < count; i++)
+		{
+			auto& connect = m_connections.emplace_back();
+
+			// area ID
+			unsigned int id = 0;
+			filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			connect.connect = id;
+
+			// data
+			filestream.read(reinterpret_cast<char*>(&connect.bottom), sizeof(bool));
+			filestream.read(reinterpret_cast<char*>(&connect.point), sizeof(Vector));
+		}
+	}
+
+	if (version < 2)
+	{
+		return;
+	}
 	
-	return;
+	// Load ladder data added in version >= 2
+
+	// load ladder attributes
+	filestream.read(reinterpret_cast<char*>(&m_attributes), sizeof(int));
+
+	{
+		// save ladder blocked status
+		// write the array size for backwards compatibility
+		std::uint64_t size = 0;
+		filestream.read(reinterpret_cast<char*>(&size), sizeof(std::uint64_t));
+
+		for (std::size_t i = 0; i < static_cast<std::size_t>(size); i++)
+		{
+			bool blocked = false;
+			filestream.read(reinterpret_cast<char*>(&blocked), sizeof(bool));
+			m_teamBlocked[i] = blocked;
+		}
+	}
+
+	{
+		bool hasLinkedTopLadder = false;
+		filestream.read(reinterpret_cast<char*>(&hasLinkedTopLadder), sizeof(bool));
+
+		if (hasLinkedTopLadder)
+		{
+			unsigned int id = 0;
+			filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			m_linkedTopLadder = id;
+		}
+		else
+		{
+			SetLinkedTopLadder(nullptr);
+		}
+
+		bool hasLinkedBottomLadder = false;
+		filestream.read(reinterpret_cast<char*>(&hasLinkedBottomLadder), sizeof(bool));
+
+		if (hasLinkedBottomLadder)
+		{
+			unsigned int id = 0;
+			filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
+			m_linkedBottomLadder = id;
+		}
+		else
+		{
+			SetLinkedBottomLadder(nullptr);
+		}
+	}
+}
+
+void CNavLadder::PostLoad(CNavMesh* TheNavMesh, uint32_t version)
+{
+	m_topCount = 0;
+	m_bottomCount = 0;
+
+	for (auto& connect : m_connections)
+	{
+		connect.PostLoad(); // convert ID to pointers
+
+		if (connect.IsConnectedToLadderTop())
+		{
+			m_topCount++;
+		}
+		else
+		{
+			m_bottomCount++;
+		}
+	}
+
+	FindLadderEntity();
+
+	if (m_ladderType == USEABLE_LADDER)
+	{
+		m_normal.Init(0.0f, 0.0f, 0.0f);
+		AddDirectionVector(&m_normal, OppositeDirection(m_dir), 1.0f);
+	}
+	else
+	{
+		// regenerate the surface normal
+		this->SetDir(m_dir);
+	}
+
+	if (version < 2)
+	{
+		return;
+	}
+
+	if (HasTopLadderID())
+	{
+		CNavLadder* ladder = TheNavMesh->GetLadderByID(GetTopLadderID());
+
+		if (ladder == nullptr)
+		{
+			smutils->LogError(myself, "Ladder %u failed to link with top ladder!", GetID());
+		}
+		else
+		{
+			SetLinkedTopLadder(ladder);
+		}
+	}
+
+	if (HasBottomLadderID())
+	{
+		CNavLadder* ladder = TheNavMesh->GetLadderByID(GetBottomLadderID());
+
+		if (ladder == nullptr)
+		{
+			smutils->LogError(myself, "Ladder %u failed to link with bottom ladder!", GetID());
+		}
+		else
+		{
+			SetLinkedBottomLadder(ladder);
+		}
+	}
 }

@@ -5365,6 +5365,32 @@ CON_COMMAND_F(sm_nav_select_oob_areas, "Selects out of bounds nav areas.", FCVAR
 	META_CONPRINTF("Selected %i out of bounds areas. \n", TheNavMesh->GetSelectedSet().Count());
 }
 
+CON_COMMAND_F(sm_nav_area_set_team_can_use, "Sets the team can use status for areas.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (!extension->IsCommandIssuedByServerAdmin())
+	{
+		return;
+	}
+
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 3)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_area_set_team_can_use <team index> <yes/no>\n");
+		return;
+	}
+
+	int teamIndex = atoi(args[1]);
+	bool canuse = UtilHelpers::StringToBoolean(args[2]);
+	
+	auto func = [teamIndex, canuse](CNavArea* area) {
+		area->SetTeamCanUse(teamIndex, canuse);
+	};
+
+	TheNavMesh->ExecuteAreaEditCommand<CNavArea>(func);
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
+}
+
 void CNavMesh::RegisterCommands()
 {
 	// Call the virtual one for derived classes

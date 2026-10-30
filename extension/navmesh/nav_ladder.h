@@ -90,6 +90,10 @@ public:
 		m_ladderType = MAX_LADDER_TYPES;
 		m_bottomCount = 0;
 		m_topCount = 0;
+		m_attributes = 0;
+		std::fill(m_teamBlocked.begin(), m_teamBlocked.end(), false);
+		m_linkedTopLadder = static_cast<CNavLadder*>(nullptr);
+		m_linkedBottomLadder = static_cast<CNavLadder*>(nullptr);
 	}
 
 	virtual ~CNavLadder();
@@ -99,6 +103,12 @@ public:
 	virtual void Save(std::fstream& filestream, uint32_t version);
 	virtual void Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version, uint32_t subversion);
 	virtual void PostLoad(CNavMesh* TheNavMesh, uint32_t version);
+	/**
+	 * @brief Queries if this ladder is blocked for navigation.
+	 * @param teamID Team index.
+	 * @return True if blocked, false otherwise.
+	 */
+	virtual bool IsBlocked(int teamID) const;
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							///<re-orders ladder ID's so they are continuous
@@ -136,6 +146,7 @@ public:
 
 	void OnSplit( CNavArea *original, CNavArea *alpha, CNavArea *beta );	///< when original is split into alpha and beta, update our connections
 	void OnDestroyNotify( CNavArea *dead );			///< invoked when given area is going away
+	void OnDestroyNotify(CNavLadder* ladder); // invoked when a ladder is being removed
 
 	void DrawLadder(  bool isSelected,  bool isMarked, bool isEdit ) const;					///< Draws ladder and connections
 	void DrawConnectedAreas( bool isEdit );				///< Draws connected areas
@@ -175,7 +186,8 @@ public:
 		{
 			return m_top.z;
 		}
-		else if (z < m_bottom.z)
+
+		if (z < m_bottom.z)
 		{
 			return m_bottom.z;
 		}
@@ -184,6 +196,48 @@ public:
 	}
 
 	static void MergeLadders(CNavLadder* bottom, CNavLadder* top);
+
+	void SetLinkedTopLadder(CNavLadder* ladder) { m_linkedTopLadder = ladder; }
+	void SetLinkedBottomLadder(CNavLadder* ladder) { m_linkedBottomLadder = ladder; }
+	const CNavLadder* GetLinkedTopLadder() const { return std::get<CNavLadder*>(m_linkedTopLadder); }
+	const CNavLadder* GetLinkedBottomLadder() const { return std::get<CNavLadder*>(m_linkedBottomLadder); }
+	/**
+	 * @brief Updates the ladder blocked status for a given team.
+	 * Note: This is static and is saved to the nav mesh file.
+	 * @param teamID Team ID to update.
+	 * @param status True if blocked, false if unblocked.
+	 */
+	void SetBlockedForTeam(int teamID, bool status)
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(m_teamBlocked.size()))
+		{
+			std::fill(m_teamBlocked.begin(), m_teamBlocked.end(), status);
+			return;
+		}
+
+		m_teamBlocked[teamID] = status;
+	}
+
+	void PrintTeamBlockedStatus() const;
+
+protected:
+	bool IsBlockedForTeam(int teamID) const
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(m_teamBlocked.size()))
+		{
+			for (auto& blocked : m_teamBlocked)
+			{
+				if (blocked)
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		return m_teamBlocked[teamID];
+	}
 
 private:
 	friend class CNavMesh;
@@ -197,12 +251,21 @@ private:
 	NavDirType m_dir;								///< which way the ladder faces (ie: surface normal of climbable side)
 	Vector m_normal;								///< surface normal of the ladder surface (or Vector-ized m_dir, if the traceline fails)
 	Vector m_useableOrigin;							/// If this is a useable ladder, this is the origin of the func_useableladder entity
+	int m_attributes; // ladder attributes
+	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_teamBlocked; // per team ladder blocked status
+	std::variant<unsigned int, CNavLadder*> m_linkedTopLadder; // linked ladder above me
+	std::variant<unsigned int, CNavLadder*> m_linkedBottomLadder; // linked ladder bewow me
 
 	static unsigned int m_nextID;					///< used to allocate unique IDs
 	unsigned int m_id;								///< unique area ID
 	LadderType m_ladderType;
 	std::size_t m_bottomCount;						// Number of bottom connections, used in path finding
 	std::size_t m_topCount;							// Number of top connections, used in path finding
+
+	bool HasTopLadderID() const { return std::holds_alternative<unsigned int>(m_linkedTopLadder); }
+	bool HasBottomLadderID() const { return std::holds_alternative<unsigned int>(m_linkedBottomLadder); }
+	unsigned int GetTopLadderID() const { return std::get<unsigned int>(m_linkedTopLadder); }
+	unsigned int GetBottomLadderID() const { return std::get<unsigned int>(m_linkedBottomLadder); }
 };
 
 //--------------------------------------------------------------------------------------------------------------

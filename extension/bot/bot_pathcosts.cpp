@@ -56,6 +56,14 @@ float IGroundPathCost::GetGroundMovementCost(CNavArea* toArea, CNavArea* fromAre
 			return DEADEND_COST;
 		}
 	}
+	else if (ladder != nullptr)
+	{
+		// Check if my team is allowed to use this ladder
+		if (ladder->IsBlocked(GetTeamIndex()))
+		{
+			return DEADEND_COST;
+		}
+	}
 
 	RouteType type = GetRouteType();
 

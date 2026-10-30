@@ -918,7 +918,7 @@ void CNavMesh::AddNavArea( CNavArea *area )
 	if (m_hashTable[key])
 	{
 		// add to head of list in this slot
-		area->m_prevHash = NULL;
+		area->m_prevHash = nullptr;
 		area->m_nextHash = m_hashTable[key];
 		m_hashTable[key]->m_prevHash = area;
 		m_hashTable[key] = area;
@@ -927,8 +927,8 @@ void CNavMesh::AddNavArea( CNavArea *area )
 	{
 		// first entry in this slot
 		m_hashTable[key] = area;
-		area->m_nextHash = NULL;
-		area->m_prevHash = NULL;
+		area->m_nextHash = nullptr;
+		area->m_prevHash = nullptr;
 	}
 
 	if ( area->GetAttributes() & NAV_MESH_TRANSIENT )

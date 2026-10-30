@@ -35,7 +35,17 @@ void CNavLadder::Shift( const Vector &shift )
 	m_bottom += shift;
 }
 
- void CNavLadder::CompressIDs( CNavMesh* TheNaVmesh )
+bool CNavLadder::IsBlocked(int teamID) const
+{
+	if (IsBlockedForTeam(teamID))
+	{
+		return true;
+	}
+
+	return false;
+}
+
+void CNavLadder::CompressIDs( CNavMesh* TheNaVmesh )
 {
 	m_nextID = 1;
 
@@ -128,6 +138,23 @@ CNavLadder::~CNavLadder()
 	{
 		TheNavAreas[ it ]->OnDestroyNotify( this );
 	}
+
+	{
+		// Notify other ladders that we are going away so they can clear their top/bottom links
+
+		CNavLadder* dead = this;
+		auto func = [&dead](CNavLadder* other) {
+			if (other == dead)
+			{
+				return true;
+			}
+
+			other->OnDestroyNotify(dead);
+			return true;
+		};
+
+		TheNavMesh->ForAllLadders(func);
+	}
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -137,6 +164,19 @@ CNavLadder::~CNavLadder()
 void CNavLadder::OnDestroyNotify( CNavArea *dead )
 {
 	Disconnect( dead );
+}
+
+void CNavLadder::OnDestroyNotify(CNavLadder* ladder)
+{
+	if (GetLinkedTopLadder() == ladder)
+	{
+		SetLinkedTopLadder(nullptr);
+	}
+
+	if (GetLinkedBottomLadder() == ladder)
+	{
+		SetLinkedBottomLadder(nullptr);
+	}
 }
 
 
@@ -519,151 +559,6 @@ void CNavLadder::FindLadderEntity( void )
 	}
 }
 
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Save a navigation ladder to the opened binary stream
- */
-void CNavLadder::Save(std::fstream& filestream, uint32_t version)
-{
-	// save ID
-	filestream.write(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
-
-	// save extent of ladder
-	filestream.write(reinterpret_cast<char*>(&m_width), sizeof(float));
-
-	// save top endpoint of ladder
-	filestream.write(reinterpret_cast<char*>(&m_top), sizeof(Vector));
-
-	// save bottom endpoint of ladder
-	filestream.write(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
-
-	// save useable ladder entity origin
-	filestream.write(reinterpret_cast<char*>(&m_useableOrigin), sizeof(Vector));
-
-	// save ladder length
-	filestream.write(reinterpret_cast<char*>(&m_length), sizeof(float));
-
-	// save direction
-	filestream.write(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
-
-	// save ladder type
-	filestream.write(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
-
-	// save IDs of connecting areas
-	std::uint8_t count = 0;
-	std::size_t size = m_connections.size();
-
-	if (size >= 254U)
-	{
-		count = 254U; // only save up to 254 connections
-	}
-	else
-	{
-		count = static_cast<std::uint8_t>(size);
-	}
-
-	// save vector size
-	filestream.write(reinterpret_cast<char*>(&count), sizeof(std::uint8_t));
-
-	for (auto& connect : m_connections)
-	{
-		// area ID
-		unsigned int id = connect.GetConnectedArea()->GetID();
-		filestream.write(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-
-		// data
-		filestream.write(reinterpret_cast<char*>(&connect.bottom), sizeof(bool));
-		filestream.write(reinterpret_cast<char*>(&connect.point), sizeof(Vector));
-	}
-}
-
-
-//--------------------------------------------------------------------------------------------------------------
-/**
- * Load a navigation ladder from the opened binary stream
- */
-void CNavLadder::Load(CNavMesh* TheNavMesh, std::fstream& filestream, uint32_t version, uint32_t subversion)
-{
-	// load ID
-	filestream.read(reinterpret_cast<char*>(&m_id), sizeof(unsigned int));
-
-	// load extent of ladder
-	filestream.read(reinterpret_cast<char*>(&m_width), sizeof(float));
-
-	// load top endpoint of ladder
-	filestream.read(reinterpret_cast<char*>(&m_top), sizeof(Vector));
-
-	// load bottom endpoint of ladder
-	filestream.read(reinterpret_cast<char*>(&m_bottom), sizeof(Vector));
-
-	// save useable ladder entity origin
-	filestream.read(reinterpret_cast<char*>(&m_useableOrigin), sizeof(Vector));
-
-	// load ladder length
-	filestream.read(reinterpret_cast<char*>(&m_length), sizeof(float));
-
-	// load direction
-	filestream.read(reinterpret_cast<char*>(&m_dir), sizeof(NavDirType));
-
-	// load ladder type
-	filestream.read(reinterpret_cast<char*>(&m_ladderType), sizeof(LadderType));
-
-	// load IDs of connecting areas
-	
-	std::uint8_t count = 0;
-	
-	// load vector size
-	filestream.read(reinterpret_cast<char*>(&count), sizeof(std::uint8_t));
-
-	for (std::uint8_t i = 0; i < count; i++)
-	{
-		auto& connect = m_connections.emplace_back();
-
-		// area ID
-		unsigned int id = 0;
-		filestream.read(reinterpret_cast<char*>(&id), sizeof(unsigned int));
-		connect.connect = id;
-
-		// data
-		filestream.read(reinterpret_cast<char*>(&connect.bottom), sizeof(bool));
-		filestream.read(reinterpret_cast<char*>(&connect.point), sizeof(Vector));
-	}
-}
-
-void CNavLadder::PostLoad(CNavMesh* TheNavMesh, uint32_t version)
-{
-	m_topCount = 0;
-	m_bottomCount = 0;
-
-	for (auto& connect : m_connections)
-	{
-		connect.PostLoad(); // convert ID to pointers
-
-		if (connect.IsConnectedToLadderTop())
-		{
-			m_topCount++;
-		}
-		else
-		{
-			m_bottomCount++;
-		}
-	}
-
-	FindLadderEntity();
-
-	if (m_ladderType == USEABLE_LADDER)
-	{
-		m_normal.Init(0.0f, 0.0f, 0.0f);
-		AddDirectionVector(&m_normal, OppositeDirection(m_dir), 1.0f);
-	}
-	else
-	{
-		// regenerate the surface normal
-		this->SetDir(m_dir);
-	}
-}
-
 //--------------------------------------------------------------------------------------------------------------
 /**
  * Functor returns true if ladder is free, or false if someone is on the ladder
@@ -705,28 +600,6 @@ public:
 	const edict_t *m_ignore;
 };
 
-//--------------------------------------------------------------------------------------------------------------
-/**
- * DEPRECATED: Use CollectPlayers() instead.
- * Iterate over all active players in the game, invoking functor on each.
- * If functor returns false, stop iteration and return false.
- */
-template < typename Functor >
-bool ForEachPlayer( Functor &func )
-{
-	for( int i=1; i<=gpGlobals->maxClients; ++i )
-	{
-		edict_t* ent = gamehelpers->EdictOfIndex(i);
-		IPlayerInfo* player = playerinfomanager->GetPlayerInfo(ent);
-		if (player == NULL || (!player->IsPlayer() && !player->IsConnected()) )
-			continue;
-		if (!func( ent ))
-			return false;
-	}
-	return true;
-}
-
-
 
 //--------------------------------------------------------------------------------------------------------------
 /**
@@ -734,8 +607,10 @@ bool ForEachPlayer( Functor &func )
  */
 bool CNavLadder::IsInUse( const edict_t *ignore ) const
 {
-	IsLadderFreeFunctor	isLadderFree( this, ignore );
-	return !ForEachPlayer( isLadderFree );
+	// TO-DO
+	// /IsLadderFreeFunctor	isLadderFree( this, ignore );
+	// return !ForEachPlayer( isLadderFree );
+	return false;
 }
 
 //--------------------------------------------------------------------------------------------------------------
@@ -776,4 +651,12 @@ void CNavLadder::MergeLadders(CNavLadder* bottom, CNavLadder* top)
 	META_CONPRINTF("Mergin ladders %u and %u\n", bottom->m_id, top->m_id);
 	bottom->m_top = top->m_top;
 	bottom->m_length = std::abs(top->m_top.z - bottom->m_bottom.z);
+}
+
+void CNavLadder::PrintTeamBlockedStatus() const
+{
+	for (std::size_t i = 0; i < m_teamBlocked.size(); i++)
+	{
+		META_CONPRINTF("Ladder %u is %s for team %zu \n", GetID(), m_teamBlocked[i] ? "BLOCKED" : "UNBLOCKED", i);
+	}
 }

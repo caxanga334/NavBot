@@ -208,6 +208,8 @@ public:
 				return weaponptr.get();
 			}
 		}
+		
+		return nullptr;
 	}
 	
 	/**

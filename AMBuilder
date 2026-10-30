@@ -178,4 +178,11 @@ for sdk_name in Extension.sdks:
     binary.compiler.cxxincludes += [pch]
     binary.compiler.defines += [ 'NAVBOT_PCH_FILE=\"' + pch_name + '.h\"' ]
 
+    # Project specific flags, added after pre compiled headers to avoid issues with SDK headers
+    if binary.compiler.like('msvc'):
+      # Warnings that should always be errors
+      # 4715 - Not all not all control paths return a value
+      # 4834 - Discarding return value of function with 'nodiscard' attribute
+      binary.compiler.cflags += ['/we4715', '/we4834']
+
 Extension.extensions += builder.Add(project)

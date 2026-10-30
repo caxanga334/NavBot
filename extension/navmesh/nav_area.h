@@ -1269,6 +1269,7 @@ private:
 	std::vector<INavBlocker*> m_navblockers; // nav blockers that affects this area
 	std::vector<const INavPathCostMod*> m_navpathcostmods; // nav path cost mods that affects this area
 	std::array<float, MAX_TEAMS> m_clearedTimestamp; // timestamp of when this nav area was cleared (of enemies). Used when searching for enemies.
+	std::array<bool, NAV_TEAMS_ARRAY_SIZE> m_teamCanUse; // Can a team use this nav area? Unlike m_isBlocked, this is static and saved to file.
 
 public:
 	void SetNavVolume(const CNavVolume* volume) { m_volume = volume; }
@@ -1375,6 +1376,37 @@ public:
 	 * @return Time in seconds since this area was last cleared. Returns NAV_AREA_NEVER_CLEARED_STATUS_VALUE if not cleared.
 	 */
 	float GetTimeSinceLastCleared(const int team) const;
+
+	/**
+	 * @brief Sets if a team is allowed to use this nav area.
+	 * This is STATIC and SAVED to the nav mesh file.
+	 * @param teamID Team index. NAV_TEAM_ANY to update all teams.
+	 * @param canuse True if the team can use this area. False if the area should be blocked for that team.
+	 */
+	void SetTeamCanUse(int teamID, bool canuse)
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(m_teamCanUse.size()))
+		{
+			std::fill(m_teamCanUse.begin(), m_teamCanUse.end(), canuse);
+			return;
+		}
+
+		m_teamCanUse[teamID] = canuse;
+	}
+	/**
+	 * @brief Queries if a specific team is allowed to use this nav area.
+	 * @param teamID Team index.
+	 * @return True if the team can use this area, false otherwise. Always returns true if the passed team index is invalid.
+	 */
+	bool IsTeamAllowedToUseThisArea(int teamID) const
+	{
+		if (teamID < 0 || teamID >= static_cast<int>(m_teamCanUse.size()))
+		{
+			return true;
+		}
+
+		return m_teamCanUse[teamID];
+	}
 
 protected:
 	// Timer used to throttle the blocked status update

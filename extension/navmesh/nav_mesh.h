@@ -331,7 +331,7 @@ public:
 	CNavMesh(void);
 	virtual ~CNavMesh();
 
-	static constexpr uint32_t NavMeshVersion = 1;
+	static constexpr uint32_t NavMeshVersion = 2;
 	static constexpr uint32_t NavMagicNumber = 0x20110FC0;
 	static bool IsEditing();
 	static void SetupGenerationHullSize();
