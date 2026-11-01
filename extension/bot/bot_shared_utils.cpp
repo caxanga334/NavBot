@@ -34,7 +34,7 @@ bool botsharedutils::AimSpotCollector::ShouldCollect(CNavArea* area)
 	}
 
 	std::vector<unsigned int> neighborsIDs;
-	auto functor = [this, &visibleneighbors, &neighborsIDs](CNavArea* connectedArea) {
+	auto functor = [this, &visibleneighbors, &neighborsIDs](CNavArea* connectedArea, NavTraverseType how) {
 		neighborsIDs.push_back(connectedArea->GetID());
 
 		bool nolos = (this->BlocksLOS(connectedArea->GetCenter() + m_vecOffset1) && this->BlocksLOS(connectedArea->GetCenter() + m_vecOffset2));
@@ -830,7 +830,7 @@ void botsharedutils::search::MarkVisibleAreasAsCleared::OnDone()
 	ForEachCollectedNavArea(func);
 }
 
-void botsharedutils::search::MarkVisibleAreasAsCleared::operator()(CNavArea* connectedArea)
+void botsharedutils::search::MarkVisibleAreasAsCleared::operator()(CNavArea* connectedArea, NavTraverseType how)
 {
 	// already found one, skip
 	if (m_hasVisibleNeighbor) { return; }

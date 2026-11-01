@@ -54,3 +54,64 @@ CON_COMMAND_F(sm_nav_ladder_query_blocked, "Queries a ladder blocked/unblocked s
 	ladder->PrintTeamBlockedStatus();
 }
 
+CON_COMMAND_F(sm_nav_ladder_connect, "Connects a ladder to another ladder.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	CNavLadder* markedLadder = TheNavMesh->GetMarkedLadder();
+
+	if (markedLadder == nullptr)
+	{
+		META_CONPRINT("Mark a ladder with sm_nav_mark first! \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	CNavLadder* other = TheNavMesh->GetSelectedLadder();
+
+	if (other == nullptr)
+	{
+		META_CONPRINT("Aim at the second ladder to connect! \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	if (markedLadder == other)
+	{
+		META_CONPRINT("Can't connect a ladder to itself! \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	markedLadder->ConnectTo(other);
+	META_CONPRINTF("Ladders #%u and #%u are now connected! \n", markedLadder->GetID(), other->GetID());
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+}
+
+CON_COMMAND_F(sm_nav_ladder_disconnect, "Disconnects a ladder to another ladder.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	CNavLadder* markedLadder = TheNavMesh->GetMarkedLadder();
+
+	if (markedLadder == nullptr)
+	{
+		META_CONPRINT("Mark a ladder with sm_nav_mark first! \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	CNavLadder* other = TheNavMesh->GetSelectedLadder();
+
+	if (other == nullptr)
+	{
+		META_CONPRINT("Aim at the second ladder to connect! \n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	if (markedLadder == other)
+	{
+		return;
+	}
+
+	markedLadder->Disconnect(other);
+	META_CONPRINTF("Ladders #%u and #%u have been disconencted! \n", markedLadder->GetID(), other->GetID());
+	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
+}

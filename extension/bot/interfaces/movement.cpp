@@ -2824,6 +2824,24 @@ IMovement::LadderState IMovement::UseLadderUp()
 	{
 		// reached ladder top
 
+		if (z < m_ladderFSM.m_ladderGoalZ)
+		{
+			const CNavLadder* ladder = m_ladderFSM.m_ladder;
+			const CNavLadder* nextLadder = ladder->GetLinkedTopLadder();
+
+			if (nextLadder != nullptr)
+			{
+				if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
+				{
+					bot->DebugPrintToConsole(255, 255, 0, "%s: USE LADDER (UP) LADDER TOP, MOVING TO NEXT LINKED LADDER #%u -> #%u\n",
+						GetBot()->GetDebugIdentifier(), ladder->GetID(), nextLadder->GetID());
+				}
+
+				m_ladderFSM.m_ladder = nextLadder;
+				return USING_LADDER_UP;
+			}
+		}
+
 		if (bot->IsDebugging(BOTDEBUG_MOVEMENT))
 		{
 			bot->DebugPrintToConsole(0, 128, 0, "%s: USE LADDER (UP) REACHED Z GOAL (z >= m_ladder->m_top.z)\n", GetBot()->GetDebugIdentifier());
@@ -2896,6 +2914,22 @@ IMovement::LadderState IMovement::UseLadderDown()
 
 	if (z <= m_ladderFSM.m_ladder->m_bottom.z)
 	{
+		const CNavLadder* ladder = m_ladderFSM.m_ladder;
+		const CNavLadder* nextLadder = ladder->GetLinkedBottomLadder();
+
+		if (nextLadder != nullptr)
+		{
+			m_ladderFSM.m_ladder = nextLadder;
+
+			if (isDebugging)
+			{
+				me->DebugPrintToConsole(255, 255, 0, "%s REACHED LADDER BOTTOM, MOVING TO NEXT LINKED LADDER #%u -> #%u \n", 
+					me->GetDebugIdentifier(), ladder->GetID(), nextLadder->GetID());
+			}
+
+			return USING_LADDER_DOWN;
+		}
+
 		return EXITING_LADDER_DOWN;
 	}
 
@@ -3084,13 +3118,7 @@ void IMovement::OnLadderStateChanged(LadderState oldState, LadderState newState)
 		{
 			// for simple ladders, try to go a little above it
 			m_ladderFSM.m_ladderGoalZ = m_ladderFSM.m_ladder->GetConnectionToArea(m_ladderFSM.m_ladderExit)->GetConnectionPoint().z + GetCrouchedHullHeight();
-
-			if (m_ladderFSM.m_ladderGoalZ >= m_ladderFSM.m_ladder->m_top.z)
-			{
-				m_ladderFSM.m_ladderGoalZ = m_ladderFSM.m_ladder->m_top.z - (GetStepHeight() * 0.5f);
-			}
 		}
-
 		
 		float time = m_ladderFSM.m_ladder->m_length / LADDER_TIME_DIVIDER;
 		m_ladderFSM.m_ladderTimer.Start(time);

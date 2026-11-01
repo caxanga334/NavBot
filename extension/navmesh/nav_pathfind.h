@@ -230,6 +230,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 		bool ladderUp = true;
 		const NavLadderConnectVector *ladderList = nullptr;
 		std::size_t ladderConnIndex = 0;
+		const CNavLadder* linkedLadder = nullptr;
 		const std::vector<LadderToAreaConnection>* ladderAreaList = nullptr;
 		std::size_t elevFloorIndex = 0;
 		bool bHaveMaxPathLength = ( maxPathLength > 0.0f );
@@ -257,7 +258,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					{
 						// checked all directions on floor - check ladders next
 						searchWhere = SEARCH_LADDERS;
-
+						linkedLadder = nullptr;
 						ladderList = area->GetLadders( CNavLadder::LADDER_UP );
 						ladderConnIndex = 0;
 					}
@@ -284,7 +285,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					{
 						// checked both ladder directions - check elevators next
 						searchWhere = SEARCH_ELEVATORS;
-						ladder = NULL;
+						ladder = nullptr;
 					}
 					else
 					{
@@ -292,6 +293,7 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 						ladderUp = false;
 						ladderList = area->GetLadders( CNavLadder::LADDER_DOWN );
 						ladderConnIndex = 0;
+						linkedLadder = nullptr;
 					}
 					searchIndex = 0;
 					continue;
@@ -301,6 +303,11 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 				{
 					ladder = ladderList->Element( searchIndex ).ladder;
 
+					if (linkedLadder != nullptr)
+					{
+						ladder = linkedLadder; // search the linked ladder
+					}
+
 					// if index is 0, update the area vectors
 					if (ladderConnIndex == 0)
 					{
@@ -309,20 +316,32 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 					if (ladderConnIndex >= ladderAreaList->size())
 					{
+						// search linked ladders
+						if (ladder->GetLinkedTopLadder() != nullptr)
+						{
+							linkedLadder = ladder->GetLinkedTopLadder();
+							ladderConnIndex = 0; // get a new list of areas
+							continue;
+						}
+
+						linkedLadder = nullptr; // clear linked ladder
 						++searchIndex; // go to next ladder
 						ladderConnIndex = 0; // reset index
 						continue;
 					}
-					else
-					{
-						newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
-						ladderConnIndex++; // increment index
-					}
+
+					newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
+					ladderConnIndex++; // increment index
 				}
 				else
 				{
 					ladder = ladderList->Element(searchIndex).ladder;
 
+					if (linkedLadder != nullptr)
+					{
+						ladder = linkedLadder; // search the linked ladder
+					}
+
 					// if index is 0, update the area vectors
 					if (ladderConnIndex == 0)
 					{
@@ -331,22 +350,28 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 
 					if (ladderConnIndex >= ladderAreaList->size())
 					{
+						// search linked ladders
+						if (ladder->GetLinkedBottomLadder() != nullptr)
+						{
+							linkedLadder = ladder->GetLinkedBottomLadder();
+							ladderConnIndex = 0; // get a new list of areas
+							continue;
+						}
+
 						++searchIndex; // go to next ladder
 						ladderConnIndex = 0; // reset index
 						continue;
 					}
-					else
-					{
-						newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
-						ladderConnIndex++; // increment index
-					}
+
+					newArea = ladderAreaList->at(ladderConnIndex).GetConnectedArea();
+					ladderConnIndex++; // increment index
 				}
 
 				// Skip self
 				if (newArea == area)
 					continue;
 
-				if ( newArea == NULL )
+				if ( newArea == nullptr )
 					continue;
 
 				/* Because ladder connections can now be anywhere within the ladder, determine direction based on the Z axis */
@@ -395,20 +420,18 @@ bool NavAreaBuildPath( CNavArea *startArea, CNavArea *goalArea, const Vector *go
 					// no link to search, get out
 					break;
 				}
-				else
-				{
-					if (linkIndex >= maxlinks)
-					{
-						linkIndex = 0;
-						break; // ALL links searched, break
-					}
 
-					currentlink = &linklist[linkIndex];
-					newArea = currentlink->m_link.area;
-					length = currentlink->GetConnectionLength();
-					how = GO_OFF_MESH_CONNECTION;
-					linkIndex++;
+				if (linkIndex >= maxlinks)
+				{
+					linkIndex = 0;
+					break; // ALL links searched, break
 				}
+
+				currentlink = &linklist[linkIndex];
+				newArea = currentlink->m_link.area;
+				length = currentlink->GetConnectionLength();
+				how = GO_OFF_MESH_CONNECTION;
+				linkIndex++;
 			}
 
 			// don't backtrack
@@ -574,7 +597,7 @@ float NavAreaTravelDistance( CNavArea *startArea, CNavArea *endArea, CostFunctor
 // helper function
 inline void AddAreaToOpenList( CNavArea *area, CNavArea *parent, const Vector &startPos, float maxRange )
 {
-	if (area == NULL)
+	if (area == nullptr)
 		return;
 
 	if (!area->IsMarked())
@@ -1552,6 +1575,19 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 					IncludeInSearch(area, other);
 				}
 			}
+
+			const CNavLadder* linkedLadder = ladder->GetLinkedTopLadder();
+
+			while (linkedLadder != nullptr)
+			{
+				for (auto& ladderconn : linkedLadder->GetConnections())
+				{
+					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
+					IncludeInSearch(area, other);
+				}
+
+				linkedLadder = linkedLadder->GetLinkedTopLadder();
+			}
 		}
 
 		auto downconns = area->GetLadders(CNavLadder::LADDER_DOWN);
@@ -1568,6 +1604,19 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
 					IncludeInSearch(area, other);
 				}
+			}
+
+			const CNavLadder* linkedLadder = ladder->GetLinkedBottomLadder();
+
+			while (linkedLadder != nullptr)
+			{
+				for (auto& ladderconn : linkedLadder->GetConnections())
+				{
+					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
+					IncludeInSearch(area, other);
+				}
+
+				linkedLadder = linkedLadder->GetLinkedBottomLadder();
 			}
 		}
 	}

@@ -44,6 +44,16 @@ void CZPSNavArea::OnRoundRestart(void)
 
 bool CZPSNavArea::IsBlocked(int teamID, bool ignoreNavBlockers) const
 {
+	if (HasZPSAttributes(ZPS_ATTRIBUTE_NOHUMANS) && teamID == static_cast<int>(zps::ZPSTeam::ZPS_TEAM_SURVIVORS))
+	{
+		return true;
+	}
+
+	if (HasZPSAttributes(ZPS_ATTRIBUTE_NOZOMBIES) && teamID == static_cast<int>(zps::ZPSTeam::ZPS_TEAM_ZOMBIES))
+	{
+		return true;
+	}
+
 	if (HasZPSAttributes(ZPS_ATTRIBUTE_TRANSIENT_PHYSPROPS) && m_blockedByPhysProps)
 	{
 		return true;

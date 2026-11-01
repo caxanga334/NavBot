@@ -106,9 +106,10 @@ public:
 	/**
 	 * @brief Queries if this ladder is blocked for navigation.
 	 * @param teamID Team index.
+	 * @param queryLinkedLadders If true, also queries linked ladders
 	 * @return True if blocked, false otherwise.
 	 */
-	virtual bool IsBlocked(int teamID) const;
+	virtual bool IsBlocked(int teamID, const bool queryLinkedLadders = true) const;
 
 	unsigned int GetID( void ) const	{ return m_id; }		///< return this ladder's unique ID
 	static void CompressIDs( CNavMesh* TheNavMesh );							///<re-orders ladder ID's so they are continuous
@@ -137,18 +138,94 @@ public:
 	Vector GetPosAtHeight( float height ) const;	///< Compute x,y coordinate of the ladder at a given height
 
 	bool IsConnected( const CNavArea *area, LadderDirectionType dir ) const;	///< returns true if given area is connected in given direction
-	bool IsConnected(const CNavArea* area) const;
+	/**
+	 * @brief Queries this ladder connected to the given area.
+	 * @param area Nav area
+	 * @param searchLinkedLadders If true, also search linked ladders.
+	 * @return True if connected, false otherwise.
+	 */
+	bool IsConnected(const CNavArea* area, const bool searchLinkedLadders = true) const
+	{
+		for (auto& lc : m_connections)
+		{
+			CNavArea* other = lc.GetConnectedArea();
+
+			if (area == other)
+			{
+				return true;
+			}
+		}
+
+		if (searchLinkedLadders)
+		{
+			auto findarea = [&area](const CNavLadder* linked, const bool isTop) {
+				if (linked->IsConnected(area, false))
+				{
+					return false;
+				}
+
+				return true;
+			};
+
+			// the search returns false when an area is found, which makes ForEachLinkedLadder return false.
+			// if it returns true, no area was found
+			return !(ForEachLinkedLadder(findarea));
+		}
+
+
+		return false;
+	}
+	// Returns true if this ladder is connected to the given ladder.
+	bool IsConnected(const CNavLadder* ladder) const
+	{
+		if (GetLinkedTopLadder() == ladder || GetLinkedBottomLadder() == ladder)
+		{
+			return true;
+		}
+
+		return false;
+	}
 
 	void ConnectGeneratedLadder( float maxHeightAboveTopArea );		///< Connect a generated ladder to nav areas at the end of nav generation
 
 	void ConnectTo( CNavArea *area );				///< connect this ladder to given area
 	void Disconnect( CNavArea *area );				///< disconnect this ladder from given area
+	// Links this ladder to another ladder
+	void ConnectTo(CNavLadder* ladder)
+	{
+		if (ladder == this) { return; }
+
+		if (ladder->m_top.z >= this->m_top.z)
+		{
+			SetLinkedTopLadder(ladder);
+			ladder->SetLinkedBottomLadder(this);
+			return;
+		}
+
+		SetLinkedBottomLadder(ladder);
+		ladder->SetLinkedTopLadder(this);
+	}
+	// Disconnects this ladder of another ladder
+	void Disconnect(CNavLadder* ladder)
+	{
+		if (ladder == this) { return; }
+
+		if (GetLinkedTopLadder() == ladder)
+		{
+			SetLinkedTopLadder(nullptr);
+		}
+
+		if (GetLinkedBottomLadder() == ladder)
+		{
+			SetLinkedBottomLadder(nullptr);
+		}
+	}
 
 	void OnSplit( CNavArea *original, CNavArea *alpha, CNavArea *beta );	///< when original is split into alpha and beta, update our connections
 	void OnDestroyNotify( CNavArea *dead );			///< invoked when given area is going away
 	void OnDestroyNotify(CNavLadder* ladder); // invoked when a ladder is being removed
 
-	void DrawLadder(  bool isSelected,  bool isMarked, bool isEdit ) const;					///< Draws ladder and connections
+	void DrawLadder(bool isSelected, bool isMarked, bool isEdit, bool isLinkedLadder = false) const;					///< Draws ladder and connections
 	void DrawConnectedAreas( bool isEdit );				///< Draws connected areas
 
 	// void UpdateDangling( void );					///< Checks if the ladder is dangling (bots cannot go up)
@@ -173,7 +250,7 @@ public:
 	LadderType GetLadderType() const { return m_ladderType; }
 
 	const std::vector<LadderToAreaConnection>& GetConnections() const { return m_connections; }
-	const LadderToAreaConnection* GetConnectionToArea(const CNavArea* area) const;
+	const LadderToAreaConnection* GetConnectionToArea(const CNavArea* area, const bool searchLinked = true) const;
 	std::size_t GetConnectionsCount() const { return m_connections.size(); }
 	std::size_t GetTopConnectionCount() const { return m_topCount; }
 	std::size_t GetBottomConnectionCount() const { return m_bottomCount; }
@@ -197,8 +274,6 @@ public:
 
 	static void MergeLadders(CNavLadder* bottom, CNavLadder* top);
 
-	void SetLinkedTopLadder(CNavLadder* ladder) { m_linkedTopLadder = ladder; }
-	void SetLinkedBottomLadder(CNavLadder* ladder) { m_linkedBottomLadder = ladder; }
 	const CNavLadder* GetLinkedTopLadder() const { return std::get<CNavLadder*>(m_linkedTopLadder); }
 	const CNavLadder* GetLinkedBottomLadder() const { return std::get<CNavLadder*>(m_linkedBottomLadder); }
 	/**
@@ -220,6 +295,42 @@ public:
 
 	void PrintTeamBlockedStatus() const;
 
+	/**
+	 * @brief Invokes a function on every linked ladder.
+	 * @tparam F Function to invoke. bool (const CNavLadder* linked, const bool isTop). Return false to exit the function early.
+	 * @param func Function to invoke.
+	 * @return Returns false if the invoked function returned false, true otherwise.
+	 */
+	template <typename F>
+	bool ForEachLinkedLadder(F& func) const
+	{
+		const CNavLadder* ladder = GetLinkedTopLadder();
+
+		while (ladder != nullptr)
+		{
+			if (func(ladder, true) == false)
+			{
+				return false;
+			}
+
+			ladder = ladder->GetLinkedTopLadder();
+		}
+
+		ladder = GetLinkedBottomLadder();
+
+		while (ladder != nullptr)
+		{
+			if (func(ladder, false) == false)
+			{
+				return false;
+			}
+
+			ladder = ladder->GetLinkedBottomLadder();
+		}
+
+		return true;
+	}
+
 protected:
 	bool IsBlockedForTeam(int teamID) const
 	{
@@ -237,6 +348,43 @@ protected:
 		}
 
 		return m_teamBlocked[teamID];
+	}
+
+	void SetLinkedTopLadder(CNavLadder* ladder) { if (ladder != this) { m_linkedTopLadder = ladder; }  }
+	void SetLinkedBottomLadder(CNavLadder* ladder) { if (ladder != this) { m_linkedBottomLadder = ladder; } }
+
+	bool IsConnectedViaTopLadder(const CNavArea* area) const
+	{
+		const CNavLadder* next = GetLinkedTopLadder();
+
+		while (next != nullptr)
+		{
+			if (next->IsConnected(area, false))
+			{
+				return true;
+			}
+
+			next = GetLinkedTopLadder();
+		}
+
+		return false;
+	}
+
+	bool IsConnectedViaBottomLadder(const CNavArea* area) const
+	{
+		const CNavLadder* next = GetLinkedBottomLadder();
+
+		while (next != nullptr)
+		{
+			if (next->IsConnected(area, false))
+			{
+				return true;
+			}
+
+			next = GetLinkedBottomLadder();
+		}
+
+		return false;
 	}
 
 private:

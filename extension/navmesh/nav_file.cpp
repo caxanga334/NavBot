@@ -2572,7 +2572,7 @@ void CNavMesh::CommandNavDumpToKeyValues()
 			{
 				KeyValues* connections = new KeyValues("Connections");
 
-				auto func = [&connections](CNavArea* connectedArea) {
+				auto func = [&connections](CNavArea* connectedArea, NavTraverseType how) {
 					KeyValues* areaconn = new KeyValues("Area");
 
 					areaconn->SetInt("ID", static_cast<int>(connectedArea->GetID()));

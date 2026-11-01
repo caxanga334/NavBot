@@ -35,6 +35,16 @@ Examples:
 
 To check a ladder's team restrictions, mark a ladder and run the `sm_nav_ladder_query_blocked` command.    
 
+# Connecting Ladders
+
+NavBot allows ladders to be connected. This should be when when a single ladder is made out of multiple ladder brushes.    
+Connecting ladder is preferred over merging ladders.    
+To connect a ladder, mark the first ladder with `sm_nav_mark`, then place your cursor on the second ladder and run the `sm_nav_ladder_connect` command.    
+
+## Disconnecting Ladders
+
+To disconnect a ladder, mark the first ladder with `sm_nav_mark`, then place your cursor on the second ladder and run the `sm_nav_ladder_disconnect` command.    
+
 # Additional Information
 
 NavBot's nav mesh ladders supports multiple connections at different heights while the original Valve implementation doesn't.

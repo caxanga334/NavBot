@@ -335,7 +335,7 @@ namespace natives::navarea
 			return 0;
 		}
 
-		auto func = [&vec](CNavArea* connectedArea) {
+		auto func = [&vec](CNavArea* connectedArea, NavTraverseType how) {
 			for (CNavArea* area : *vec)
 			{
 				if (area == connectedArea)

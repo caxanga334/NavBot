@@ -35,11 +35,29 @@ void CNavLadder::Shift( const Vector &shift )
 	m_bottom += shift;
 }
 
-bool CNavLadder::IsBlocked(int teamID) const
+bool CNavLadder::IsBlocked(int teamID, const bool queryLinkedLadders) const
 {
 	if (IsBlockedForTeam(teamID))
 	{
 		return true;
+	}
+
+	if (queryLinkedLadders)
+	{
+		auto findblocked = [teamID](const CNavLadder* linked, const bool isTop) {
+			if (linked->IsBlocked(teamID, false))
+			{
+				return false;
+			}
+
+			return true;
+		};
+
+		// ForEachLinkedLadder will return false if a blocked area is found
+		if (ForEachLinkedLadder(findblocked) == false)
+		{
+			return true;
+		}
 	}
 
 	return false;
@@ -225,19 +243,6 @@ bool CNavLadder::IsConnected( const CNavArea *area, LadderDirectionType dir ) co
 	return false;
 }
 
-bool CNavLadder::IsConnected(const CNavArea* area) const
-{
-	for (auto& connect : m_connections)
-	{
-		if (connect.GetConnectedArea() == area)
-		{
-			return true;
-		}
-	}
-
-	return false;
-}
-
 //--------------------------------------------------------------------------------------------------------------
 void CNavLadder::SetDir( NavDirType dir )
 {
@@ -265,16 +270,16 @@ void CNavLadder::SetDir( NavDirType dir )
 	}
 }
 
-static void DrawAbsBoxOverlay(edict_t *edict)
+static void DrawAbsBoxOverlay(CBaseEntity* entity)
 {
 	int red = 0;
 	int green = 200;
 
-	if (edict)
+	if (entity)
 	{
 		// Surrounding boxes are axially aligned, so ignore angles
 		Vector vecSurroundMins, vecSurroundMaxs;
-		edict->GetCollideable()->WorldSpaceSurroundingBounds( &vecSurroundMins, &vecSurroundMaxs );
+		reinterpret_cast<IServerUnknown*>(entity)->GetCollideable()->WorldSpaceSurroundingBounds(&vecSurroundMins, &vecSurroundMaxs);
 		Vector center = 0.5f * (vecSurroundMins + vecSurroundMaxs);
 		Vector extents = vecSurroundMaxs - center;
 		debugoverlay->AddBoxOverlay(center, -extents, extents, QAngle(0,0,0), red, green, 0, 0 ,0);
@@ -282,16 +287,13 @@ static void DrawAbsBoxOverlay(edict_t *edict)
 }
 
 //--------------------------------------------------------------------------------------------------------------
-void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) const
+void CNavLadder::DrawLadder(bool isSelected, bool isMarked, bool isEdit, bool isLinkedLadder) const
 {
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
 
-	edict_t* ent = UTIL_GetListenServerEnt();
-	extern IServerGameClients* gameclients;
-	if (ent == NULL)
-		return;
+	if (host == nullptr) { return; }
 
-	Vector eye;
-	gameclients->ClientEarPosition(ent, &eye);
+	Vector eye = host->GetEyeOrigin();
 	Vector2D eyeDir( eye.x - m_bottom.x, eye.y - m_bottom.y );
 	eyeDir.NormalizeInPlace();
 	bool isFront = DotProduct2D( eyeDir, GetNormal().AsVector2D() ) > 0;
@@ -303,21 +305,25 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 	}
 
 	// Highlight ladder entity ------------------------------------------------
-	edict_t* ladderEntity = m_ladderEntity.ToEdict();
-	if (ladderEntity)
+	CBaseEntity* ladderEntity = m_ladderEntity.Get();
+	if (ladderEntity != nullptr)
 	{
 		DrawAbsBoxOverlay(ladderEntity);
 	}
 
 	// Draw 'ladder' lines ----------------------------------------------------
 	NavEditColor ladderColor = NavNormalColor;
-	if ( isFront )
+	if (isLinkedLadder)
 	{
-		if ( isMarked )
+		ladderColor = NavExposedColor;
+	}
+	else if (isFront)
+	{
+		if (isMarked)
 		{
 			ladderColor = NavMarkedColor;
 		}
-		else if ( isSelected )
+		else if (isSelected)
 		{
 			ladderColor = NavSelectedColor;
 		}
@@ -326,11 +332,11 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 			ladderColor = NavSamePlaceColor;
 		}
 	}
-	else if ( isMarked )
+	else if (isMarked)
 	{
 		ladderColor = NavMarkedColor;
 	}
-	else if ( isSelected )
+	else if (isSelected)
 	{
 		ladderColor = NavSelectedColor;
 	}
@@ -403,6 +409,23 @@ void CNavLadder::DrawLadder( bool isSelected,  bool isMarked, bool isEdit ) cons
 			else
 			{
 				NavDrawLine(connect.point, area->GetCenter(), area->IsConnected(this, LADDER_UP) ? NavConnectedTwoWaysColor : NavConnectedOneWayColor);
+			}
+		}
+
+		if (!isLinkedLadder)
+		{
+			const CNavLadder* topLadder = GetLinkedTopLadder();
+
+			if (topLadder != nullptr)
+			{
+				topLadder->DrawLadder(false, false, isEdit, true);
+			}
+
+			const CNavLadder* bottomLadder = GetLinkedBottomLadder();
+
+			if (bottomLadder != nullptr)
+			{
+				bottomLadder->DrawLadder(false, false, isEdit, true);
 			}
 		}
 	}
@@ -484,7 +507,7 @@ void CNavLadder::UpdateUseableLadderDir(NavDirType dir)
 	NDebugOverlay::HorzArrow(m_useableOrigin, m_useableOrigin + (m_normal * 256.0f), 6.0f, 255, 0, 0, 255, true, 20.0f);
 }
 
-const LadderToAreaConnection* CNavLadder::GetConnectionToArea(const CNavArea* area) const
+const LadderToAreaConnection* CNavLadder::GetConnectionToArea(const CNavArea* area, const bool searchLinked) const
 {
 	for (auto& connect : m_connections)
 	{
@@ -492,6 +515,25 @@ const LadderToAreaConnection* CNavLadder::GetConnectionToArea(const CNavArea* ar
 		{
 			return &connect;
 		}
+	}
+
+	if (searchLinked)
+	{
+		const LadderToAreaConnection* connect = nullptr;
+		
+		auto func = [area, &connect](const CNavLadder* linked, const bool isTop) {
+			connect = linked->GetConnectionToArea(area, false);
+			
+			if (connect != nullptr)
+			{
+				return false;
+			}
+
+			return true;
+		};
+
+		ForEachLinkedLadder(func);
+		return connect;
 	}
 
 	return nullptr;

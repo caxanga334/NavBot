@@ -987,7 +987,7 @@ public:
 
 	/**
 	 * @brief Runs a function on each nav area connected to this area
-	 * @tparam T A class with operator() overload with 1 parameter (CNavArea* connectedArea)
+	 * @tparam T A class with operator() overload with 2 parameters (CNavArea* connectedArea, NavTraverseType how)
 	 * @param functor function to run on each connected area to this area
 	 */
 	template <typename T>
@@ -1000,7 +1000,7 @@ public:
 			for (int i = 0; i < conn->Count(); i++)
 			{
 				CNavArea* connectedArea = conn->Element(i).area;
-				functor(connectedArea);
+				functor(connectedArea, static_cast<NavTraverseType>(dir));
 			}
 		}
 
@@ -1016,9 +1016,34 @@ public:
 				{
 					if (lc.IsConnectedToLadderTop())
 					{
-						functor(lc.GetConnectedArea());
+						CNavArea* area = lc.GetConnectedArea();
+
+						// Ladder connections might include this area, don't call the functor in this case
+						if (area != this)
+						{
+							functor(area, NavTraverseType::GO_LADDER_UP);
+						}
 					}
-				}				
+				}
+
+				// Search linked top ladders
+				const CNavLadder* linkedLadder = conn.ladder->GetLinkedTopLadder();
+
+				while (linkedLadder != nullptr)
+				{
+					for (auto& lc : linkedLadder->GetConnections())
+					{
+						// All areas connected to the top ladder are going to be up connections
+						CNavArea* area = lc.GetConnectedArea();
+
+						if (area != this)
+						{
+							functor(area, NavTraverseType::GO_LADDER_UP);
+						}
+					}
+
+					linkedLadder = linkedLadder->GetLinkedTopLadder();
+				}
 			}
 		}
 
@@ -1034,8 +1059,32 @@ public:
 				{
 					if (lc.IsConnectedToLadderBottom())
 					{
-						functor(lc.GetConnectedArea());
+						CNavArea* area = lc.GetConnectedArea();
+
+						if (area != this)
+						{
+							functor(area, NavTraverseType::GO_LADDER_DOWN);
+						}
 					}
+				}
+
+				// Search linked bottom ladders
+				const CNavLadder* linkedLadder = conn.ladder->GetLinkedBottomLadder();
+
+				while (linkedLadder != nullptr)
+				{
+					for (auto& lc : linkedLadder->GetConnections())
+					{
+						// All areas connected to the bottom ladder are going to be down connections
+						CNavArea* area = lc.GetConnectedArea();
+
+						if (area != this)
+						{
+							functor(area, NavTraverseType::GO_LADDER_DOWN);
+						}
+					}
+
+					linkedLadder = linkedLadder->GetLinkedBottomLadder();
 				}
 			}
 		}
@@ -1043,7 +1092,7 @@ public:
 		for (auto& link : m_offmeshconnections)
 		{
 			CNavArea* connectedArea = link.m_link.area;
-			functor(connectedArea);
+			functor(connectedArea, NavTraverseType::GO_OFF_MESH_CONNECTION);
 		}
 
 		if (m_elevator != nullptr)
@@ -1056,7 +1105,14 @@ public:
 
 				if (connectedArea != this)
 				{
-					functor(connectedArea);
+					if (connectedArea->GetCenter().z > this->GetCenter().z)
+					{
+						functor(connectedArea, NavTraverseType::GO_ELEVATOR_UP);
+					}
+					else
+					{
+						functor(connectedArea, NavTraverseType::GO_ELEVATOR_DOWN);
+					}
 				}
 			}
 		}
@@ -1097,11 +1153,38 @@ public:
 				{
 					if (lc.IsConnectedToLadderTop())
 					{
-						if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_UP) == false)
+						CNavArea* area = lc.GetConnectedArea();
+
+						if (area != this)
 						{
-							return false;
+							if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_UP) == false)
+							{
+								return false;
+							}
 						}
 					}
+				}
+
+				// Search linked top ladders
+				const CNavLadder* linkedLadder = conn.ladder->GetLinkedTopLadder();
+
+				while (linkedLadder != nullptr)
+				{
+					for (auto& lc : linkedLadder->GetConnections())
+					{
+						// All areas connected to the top ladder are going to be up connections
+						CNavArea* area = lc.GetConnectedArea();
+
+						if (area != this)
+						{
+							if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_UP) == false)
+							{
+								return false;
+							}
+						}
+					}
+
+					linkedLadder = linkedLadder->GetLinkedTopLadder();
 				}
 			}
 		}
@@ -1116,13 +1199,40 @@ public:
 
 				for (auto& lc : conn.ladder->GetConnections())
 				{
-					if (lc.IsConnectedToLadderBottom())
+					CNavArea* area = lc.GetConnectedArea();
+
+					if (area != this)
 					{
-						if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_DOWN) == false)
+						if (lc.IsConnectedToLadderBottom())
 						{
-							return false;
+							if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_DOWN) == false)
+							{
+								return false;
+							}
 						}
 					}
+				}
+
+				// Search linked bottom ladders
+				const CNavLadder* linkedLadder = conn.ladder->GetLinkedBottomLadder();
+
+				while (linkedLadder != nullptr)
+				{
+					for (auto& lc : linkedLadder->GetConnections())
+					{
+						// All areas connected to the bottom ladder are going to be down connections
+						CNavArea* area = lc.GetConnectedArea();
+
+						if (area != this)
+						{
+							if (func(lc.GetConnectedArea(), NavTraverseType::GO_LADDER_DOWN) == false)
+							{
+								return false;
+							}
+						}
+					}
+
+					linkedLadder = linkedLadder->GetLinkedBottomLadder();
 				}
 			}
 		}

@@ -617,7 +617,7 @@ namespace botsharedutils::search
 		void OnDone() override;
 
 		// for CNavArea::ForEachConnectedArea
-		void operator()(CNavArea* connectedArea);
+		void operator()(CNavArea* connectedArea, NavTraverseType how);
 
 	private:
 		bool m_hasVisibleNeighbor;
