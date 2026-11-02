@@ -213,6 +213,8 @@ stock void NB_DrawClientActiveNavArea(int client, const int modelIndex, const in
 stock float NB_SimplePathCost(Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator, float length)
 {
 	#pragma unused length
+	#pragma unused ladder
+	#pragma unused elevator
 
 	if (fromArea == Address_Null)
 	{
@@ -280,6 +282,9 @@ stock float NB_SimpleGroundOnlyPathCost(Address toArea, Address fromArea, Addres
 // Simple g cost function callback for NavBotNavMesh.DoAStarSearch
 stock float NB_SimpleGCost(Address toArea, Address fromArea, Address ladder, Address offmeshconn, Address elevator)
 {
+	#pragma unused ladder
+	#pragma unused elevator
+
 	if (fromArea == Address_Null)
 	{
 		// First area in the path, no cost.
@@ -345,4 +350,54 @@ stock float NB_SimpleHCost(Address area, const float goal[3])
 	float center[3];
 	NavBotNavArea.GetCenter(area, center);
 	return GetVectorDistance(center, goal);
+}
+
+/**
+ * @brief Collects navbots and writes their indexes into the given array.
+ * 
+ * @param arr			Array to write the navbots indexes.
+ * @param size			Size of the array passed in the first param.
+ * @param aliveOnly		If true, only collect alive bots.
+ * @param teamFilter	If >= 0, only collect bots from this team.
+ * @return 				Returns the number of bots written to the array.
+ */
+stock int CollectNavBots(int[] arr, const int size, bool aliveOnly = false, const int teamFilter = -1)
+{
+	int idx = 0;
+
+	for (int i = 1; i <= MaxClients; i++)
+	{
+		if (!IsClientInGame(i))
+		{
+			continue;
+		}
+
+		if (!IsFakeClient(i))
+		{
+			continue;
+		}
+
+		if (aliveOnly && !IsPlayerAlive(i))
+		{
+			continue;
+		}
+
+		if (teamFilter >= 0 && GetClientTeam(i) != teamFilter)
+		{
+			continue;
+		}
+
+		if (NavBotManager.IsNavBot(i))
+		{
+			arr[idx] = i;
+			idx++;
+
+			if (idx >= size)
+			{
+				return idx;
+			}
+		}
+	}
+
+	return idx;
 }
