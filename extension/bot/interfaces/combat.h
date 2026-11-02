@@ -14,8 +14,6 @@ public:
 	ICombat(CBaseBot* bot);
 	~ICombat() override;
 
-	static constexpr float POST_ROUND_RESTART_INITIAL_CALLOUT_COOLDOWN = 15.0f;
-	static constexpr int CALLOUT_ENEMIES_MIN_TEAMWORK_SKILL = 25;
 	static constexpr float LOOK_AROUND_BASE_DURATION = 1.5f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MIN = 3.0f;
 	static constexpr float LOOK_AROUND_TIMER_BASE_MAX = 7.0f;
@@ -140,8 +138,6 @@ public:
 	const float GetTimeSinceLOSWasLost() const { return m_combatData.GetTimeSinceLostLOS(); }
 	// Returns true if the bot is reaiming.
 	const bool IsReAiming() const { return m_reAim; }
-	// Returns the index of the last place reported by the bot in a callout
-	unsigned int GetLastReportedPlace() const { return m_lastPlace; }
 	/**
 	 * @brief Utility function for making the bot do a basic primary attack with the currently held weapon.
 	 */
@@ -190,21 +186,7 @@ public:
 	 * @return True if clear, false if friendly fire may happen.
 	 */
 	bool IsBlastTargetClearOfAllies(const Vector& target, const float radius) const;
-	// Reset shared callout data
-	static void ResetSharedCalloutData()
-	{
-		for (auto& timer : ICombat::s_globalCalloutCooldownTimer)
-		{
-			timer.Invalidate();
-		}
-	}
-	static void SetSharedCalloutCooldownTime(const float time)
-	{
-		for (auto& timer : ICombat::s_globalCalloutCooldownTimer)
-		{
-			timer.Start(time);
-		}
-	}
+
 protected:
 	/**
 	 * @brief Called when the last used weapon in combat has changed.
@@ -344,26 +326,6 @@ protected:
 	}
 	// Sets the ReAim variable
 	void SetReAim(bool status) { m_reAim = status; }
-	/**
-	 * @brief Checks if the bot can send a callout of a threat.
-	 * @param threat Current threat.
-	 * @return true if possible, false otherwise.
-	 */
-	virtual bool CanCalloutThreat(const CKnownEntity* threat) const;
-	/**
-	 * @brief Try to callout a threat.
-	 * @param threat Current threat.
-	 */
-	virtual void TryToCalloutThreat(const CKnownEntity* threat);
-	/**
-	 * @brief Formats and sends the actual callout.
-	 * @param threat Current threat.
-	 */
-	virtual void SendCalloutOfTreat(const CKnownEntity* threat);
-	// gets the callout cooldown timer
-	CountdownTimer& GetCalloutTimer() { return m_calloutTimer; }
-	// Sets the last reported place name index.
-	void SetLastReportedPlace(unsigned int place) { m_lastPlace = place; }
 	// Timer for danger scans.
 	CountdownTimer& GetDangerScanTimer() { return m_dangerScanTimer; }
 	// Timer for weapon reloads.
@@ -416,18 +378,6 @@ protected:
 	 * @brief Called after ~10 seconds have passed since the last threat was visible.
 	 */
 	virtual void OnTenSecondsSinceThreatVisible();
-	// Gets the per team callout cooldown timer
-	static CountdownTimer& GetTeamCalloutGlobalTimer(std::size_t teamIndex)
-	{
-		if (teamIndex >= s_globalCalloutCooldownTimer.size())
-		{
-			return s_globalCalloutCooldownTimer[0];
-		}
-
-		return s_globalCalloutCooldownTimer[teamIndex];
-	}
-	bool IsEnemyInCalloutCooldown(CBaseEntity* enemy) const;
-	void StartPerEnemyCalloutCooldown(CBaseEntity* enemy, const float time);
 private:
 	int m_combatBehaviorFlags;
 	CBaseEntity* m_lastWeaponPtr;
@@ -440,7 +390,6 @@ private:
 	CountdownTimer m_selectWeaponTimer; // cooldown for weapon selection
 	CountdownTimer m_secondaryAbilityTimer;
 	CountdownTimer m_scopeinDelayTimer;
-	CountdownTimer m_calloutTimer;
 	CountdownTimer m_reloadTimer;
 	CountdownTimer m_disableLookingAroundTimer;
 	CountdownTimer m_lookAroundTimer;
@@ -455,9 +404,7 @@ private:
 	bool m_wantsToScope; // true if the bot wants to use a scope, false otherwise
 	bool m_reAim;
 	bool m_shouldReloadPostCombat;
-	unsigned int m_lastPlace;
 	CHandle<CBaseEntity> m_lastDangerEntity; // last selected danger entity.
-	std::unordered_map<CBaseEntity*, CountdownTimer> m_calloutperentitycooldown;
 
 	IDecisionQuery::DesiredAimSpot SelectClearAimSpot(const bool allowheadshots) const;
 
@@ -471,8 +418,6 @@ private:
 	void UpdateMarkAreasAsCleared(const CKnownEntity* threat);
 	void UpdateWeaponSelection(const CKnownEntity* threat);
 
-	/* Callout shared */
-	static inline std::array<CountdownTimer, MAX_TEAMS> s_globalCalloutCooldownTimer{};
 };
 
 namespace combatutils

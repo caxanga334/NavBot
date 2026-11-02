@@ -3,7 +3,6 @@
 # Nav Places Names (Callouts)
 
 NavBot supports the [nav mesh place naming](https://developer.valvesoftware.com/wiki/Nav_Mesh_Editing#Place_names_(callouts)), with some new features added to it.    
-When place names are available, bots will use them to report an enemy position to humans players.    
 
 ## Place Name Databases
 

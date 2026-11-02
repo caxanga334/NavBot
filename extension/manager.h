@@ -313,6 +313,168 @@ public:
 		return n;
 	}
 
+	/**
+	 * @brief Notify other bots that a bot is going to the objective.
+	 * @tparam I Objecitve ID.
+	 * @tparam DT Objective data.
+	 * @tparam BT Bot class.
+	 * @param me Bot going to the objective.
+	 * @param id Objecitve ID.
+	 * @param data Objective data.
+	 */
+	template <typename I, typename DT, typename BT>
+	void NotifyBotsGoingToTheObjective(BT* me, I id, DT data)
+	{
+		static_assert(std::is_integral_v<I>);
+		static_assert(std::is_copy_constructible_v<DT>);
+		ISensor* sensor = me->GetSensorInterface();
+		std::any any = data;
+
+		for (auto& ptr : m_bots)
+		{
+			CBaseBot* bot = ptr.get();
+
+			if (bot == me)
+			{
+				continue;
+			}
+
+			// only notify alive teammates
+			if (!bot->IsAlive())
+			{
+				continue;
+			}
+
+			// only notify teammates
+			if (!sensor->IsFriendly(bot->GetEntity()))
+			{
+				continue;
+			}
+
+			bot->OnGoingToTheObjective(static_cast<CBaseBot*>(me), static_cast<int>(id), any);
+		}
+	}
+
+	/**
+	 * @brief Notify other bots that a bot is going to the objective.
+	 * @tparam I Objecitve ID.
+	 * @tparam BT Bot class.
+	 * @param me Bot going to the objective.
+	 * @param id Objecitve ID.
+	 */
+	template <typename I, typename BT>
+	void NotifyBotsGoingToTheObjective(BT* me, I id)
+	{
+		static_assert(std::is_integral_v<I>);
+		ISensor* sensor = me->GetSensorInterface();
+		std::any empty;
+
+		for (auto& ptr : m_bots)
+		{
+			CBaseBot* bot = ptr.get();
+
+			if (bot == me)
+			{
+				continue;
+			}
+
+			// only notify alive teammates
+			if (!bot->IsAlive())
+			{
+				continue;
+			}
+
+			// only notify teammates
+			if (!sensor->IsFriendly(bot->GetEntity()))
+			{
+				continue;
+			}
+
+			bot->OnGoingToTheObjective(static_cast<CBaseBot*>(me), static_cast<int>(id), empty);
+		}
+	}
+
+	/**
+	 * @brief Notify other bots that a bot has reached the objective.
+	 * @tparam I Objecitve ID.
+	 * @tparam DT Objective data.
+	 * @tparam BT Bot class.
+	 * @param me Bot going to the objective.
+	 * @param id Objecitve ID.
+	 * @param data Objective data.
+	 */
+	template <typename I, typename DT, typename BT>
+	void NotifyBotsReachedTheObjective(BT* me, I id, DT data)
+	{
+		static_assert(std::is_integral_v<I>);
+		static_assert(std::is_copy_constructible_v<DT>);
+		ISensor* sensor = me->GetSensorInterface();
+		std::any any = data;
+
+		for (auto& ptr : m_bots)
+		{
+			CBaseBot* bot = ptr.get();
+
+			if (bot == me)
+			{
+				continue;
+			}
+
+			// only notify alive teammates
+			if (!bot->IsAlive())
+			{
+				continue;
+			}
+
+			// only notify teammates
+			if (!sensor->IsFriendly(bot->GetEntity()))
+			{
+				continue;
+			}
+
+			bot->OnReachedObjective(static_cast<CBaseBot*>(me), static_cast<int>(id), any);
+		}
+	}
+
+	/**
+	 * @brief Notify other bots that a bot has reached the objective.
+	 * @tparam I Objecitve ID.
+	 * @tparam BT Bot class.
+	 * @param me Bot going to the objective.
+	 * @param id Objecitve ID.
+	 */
+	template <typename I, typename BT>
+	void NotifyBotsReachedTheObjective(BT* me, I id)
+	{
+		static_assert(std::is_integral_v<I>);
+		ISensor* sensor = me->GetSensorInterface();
+		std::any empty;
+
+		for (auto& ptr : m_bots)
+		{
+			CBaseBot* bot = ptr.get();
+
+			if (bot == me)
+			{
+				continue;
+			}
+
+			// only query alive teammates
+			if (!bot->IsAlive())
+			{
+				continue;
+			}
+
+			// only query teammates
+			if (!sensor->IsFriendly(bot->GetEntity()))
+			{
+				continue;
+			}
+
+			bot->OnReachedObjective(static_cast<CBaseBot*>(me), static_cast<int>(id), empty);
+		}
+	}
+
 	// Gets the value of sv_gravity cached at map start
 	static const float GetSvGravityValue() { return CExtManager::s_sv_gravity; }
 
@@ -384,6 +546,26 @@ public:
 	}
 	bool SMAPI_OnNavBotObstacleOnPath(const CBaseBot* bot, CBaseEntity* obstacle, const bool hitWorld, const Vector& goal);
 	void SMAPI_OnNavBotComputePathFailed(const CBaseBot* bot, const Vector& goal, const float adjustedZ, bool nullstart);
+	void SMAPI_OnNavBotEnterCombat(int bot, int enemy, int weapon)
+	{
+		if (m_onbotentercombat->GetFunctionCount() > 0)
+		{
+			m_onbotentercombat->PushCell(bot);
+			m_onbotentercombat->PushCell(enemy);
+			m_onbotentercombat->PushCell(weapon);
+			m_onbotentercombat->Execute(nullptr);
+		}
+	}
+	void SMAPI_OnNavBotThreatVisible(int bot, int enemy, int weapon)
+	{
+		if (m_onbotenemyvisible->GetFunctionCount() > 0)
+		{
+			m_onbotenemyvisible->PushCell(bot);
+			m_onbotenemyvisible->PushCell(enemy);
+			m_onbotenemyvisible->PushCell(weapon);
+			m_onbotenemyvisible->Execute(nullptr);
+		}
+	}
 #endif // !NO_SOURCEPAWN_API
 
 private:
@@ -402,6 +584,8 @@ private:
 	SourceMod::IForward* m_onmodroundrestart;
 	SourceMod::IForward* m_onbotobstacleonpath;
 	SourceMod::IForward* m_onbotcomputepathfailed;
+	SourceMod::IForward* m_onbotentercombat;
+	SourceMod::IForward* m_onbotenemyvisible;
 #endif // !NO_SOURCEPAWN_API
 
 	size_t m_nextbotname; // Index of the next bot name to use

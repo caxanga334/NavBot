@@ -297,6 +297,7 @@ public:
 		// wait until the bot is done breaking something that's between the item and the bot
 		if (mover->IsBreakingObstacle())
 		{
+			m_timeoutTimer.Invalidate(); // don't cancel this task just because there is a breakable between the bot and the item
 			return AITask<BT>::Continue();
 		}
 

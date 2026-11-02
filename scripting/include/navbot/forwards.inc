@@ -80,3 +80,21 @@ forward void OnNavBotComputePathFailed(NavBot bot, const float goal[3], const fl
  * @return			Returning Plugin_Continue let's the navigator decide what do to about the obstacle. Anything else blocks it.
  */
 forward Action OnNavBotObstacleOnPath(NavBot bot, int entity, bool hitWorld, const float goal[3]);
+
+/**
+ * Called when a bot enters combat. (First time seeing an enemy in a while)
+ * 
+ * @param bot			NavBot bot instance.
+ * @param threat		Currently visible enemy entity index.w
+ * @param activeWeapon	Entity index of the weapon the bot is currently holding.
+ */
+forward void OnNavBotEnterCombat(NavBot bot, int threat, int activeWeapon);
+
+/**
+ * Called when an enemy becomes visible to the bot.
+ * 
+ * @param bot			NavBot bot instance.
+ * @param threat		Currently visible enemy entity index.w
+ * @param activeWeapon	Entity index of the weapon the bot is currently holding.
+ */
+forward void OnNavBotThreatVisible(NavBot bot, int threat, int activeWeapon);

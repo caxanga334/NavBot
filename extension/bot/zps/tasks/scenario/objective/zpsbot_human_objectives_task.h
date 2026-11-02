@@ -96,12 +96,16 @@ class CZPSBotObjectiveUseEntity : public CBotSharedUseEntityTask<CZPSBot, CZPSBo
 public:
 	CZPSBotObjectiveUseEntity(CBaseEntity* entity);
 
+	TaskResult<CZPSBot> OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask) override;
 	TaskResult<CZPSBot> OnTaskUpdate(CZPSBot* bot) override;
+
+	TaskEventResponseResult<CZPSBot> OnReachedObjective(CZPSBot* bot, CBaseBot* other, int objectiveID, const std::any& data) override;
 
 	QueryAnswerType IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data) override;
 
 private:
 	CountdownTimer m_antiBlockCheck;
+	bool m_notifiedOthers;
 };
 
 class CZPSBotObjectiveMoveToEntity : public AITask<CZPSBot>

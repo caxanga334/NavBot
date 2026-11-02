@@ -20,9 +20,7 @@ ICombat::ICombat(CBaseBot* bot) :
 	m_wantsToScope = false;
 	m_reAim = false;
 	m_shouldReloadPostCombat = false;
-	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_combatData.Clear();
-	m_calloutperentitycooldown.reserve(64);
 }
 
 ICombat::~ICombat()
@@ -47,7 +45,6 @@ void ICombat::Reset()
 	m_isScopedOrDeployed = false;
 	m_wantsToScope = false;
 	m_reAim = false;
-	m_lastPlace = static_cast<unsigned int>(UNDEFINED_PLACE);
 	m_dangerScanTimer.Invalidate();
 	m_disableCombatTimer.Invalidate();
 	m_dontFireTimer.Invalidate();
@@ -56,7 +53,6 @@ void ICombat::Reset()
 	m_selectWeaponTimer.Invalidate();
 	m_secondaryAbilityTimer.Invalidate();
 	m_scopeinDelayTimer.Invalidate();
-	m_calloutTimer.Invalidate();
 	m_reloadTimer.Invalidate();
 	m_disableLookingAroundTimer.Invalidate();
 	m_disableDodgeTimer.Invalidate();
@@ -66,7 +62,6 @@ void ICombat::Reset()
 	m_lookAroundTimer.Start(LOOK_AROUND_TIMER_BASE_MAX);
 	m_combatData.Clear();
 	m_lastDangerEntity.Term();
-	m_calloutperentitycooldown.clear();
 }
 
 void ICombat::Update()
@@ -721,11 +716,6 @@ void ICombat::OnStartCombat(const CKnownEntity* threat, const CBotWeapon* active
 		DisableFiringWeapons(time, true);
 	}
 
-	m_reAim = true;
-	SetLastReportedPlace(static_cast<unsigned int>(UNDEFINED_PLACE));
-
-	TryToCalloutThreat(threat);
-
 	CBaseBot* bot = GetBot<CBaseBot>();
 
 	if (bot->IsDebugging(BOTDEBUG_COMBAT))
@@ -733,19 +723,25 @@ void ICombat::OnStartCombat(const CKnownEntity* threat, const CBotWeapon* active
 		bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: STARTING COMBAT AGAINST THREAT %s! CURRENT WEAPON: %s\n",
 			bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
 	}
+
+#ifndef NO_SOURCEPAWN_API
+	extmanager->SMAPI_OnNavBotEnterCombat(bot->GetIndex(), gamehelpers->EntityToBCompatRef(threat->GetEntity()), gamehelpers->EntityToBCompatRef(activeWeapon->GetEntity()));
+#endif // !NO_SOURCEPAWN_API
 }
 
 void ICombat::OnThreatBecameVisible(const CKnownEntity* threat, const CBotWeapon* activeWeapon)
 {
 	CBaseBot* bot = GetBot<CBaseBot>();
 
-	TryToCalloutThreat(threat);
-
 	if (bot->IsDebugging(BOTDEBUG_COMBAT))
 	{
 		bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: ON THREAT %s BECAME VISIBLE! CURRENT WEAPON: %s\n",
 			bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), activeWeapon->GetDebugIdentifier());
 	}
+
+#ifndef NO_SOURCEPAWN_API
+	extmanager->SMAPI_OnNavBotThreatVisible(bot->GetIndex(), gamehelpers->EntityToBCompatRef(threat->GetEntity()), gamehelpers->EntityToBCompatRef(activeWeapon->GetEntity()));
+#endif // !NO_SOURCEPAWN_API
 }
 
 void ICombat::OnSelectedAttackTypeChanged(const CKnownEntity* threat, const CBotWeapon* activeWeapon, botweapons::AttackType oldtype)
@@ -767,113 +763,6 @@ bool ICombat::CanUseSecondaryAbilitities() const
 	}
 
 	return true;
-}
-
-bool ICombat::CanCalloutThreat(const CKnownEntity* threat) const
-{
-	// Don't callout enemies on FFA
-	if (!extmanager->GetMod()->IsTeamBasedGame())
-	{
-		return false;
-	}
-
-	// Check if this specific enemy shouldn't be called out.
-	if (!extmanager->GetMod()->ShouldCalloutEnemy(GetBot(), threat))
-	{
-		return false;
-	}
-
-	// Don't spam callouts
-	if (!m_calloutTimer.IsElapsed())
-	{
-		return false;
-	}
-
-	CBaseBot* bot = GetBot<CBaseBot>();
-
-	// This one doesn't like working with their team
-	if (bot->GetDifficultyProfile()->GetTeamwork() < ICombat::CALLOUT_ENEMIES_MIN_TEAMWORK_SKILL)
-	{
-		return false;
-	}
-
-	CountdownTimer& teamTimer = ICombat::GetTeamCalloutGlobalTimer(static_cast<std::size_t>(bot->GetCurrentTeamIndex()));
-
-	// Check the per team global timer
-	if (!teamTimer.IsElapsed())
-	{
-		return false;
-	}
-
-	// This specific enemy was reported recently
-	if (IsEnemyInCalloutCooldown(threat->GetEntity()))
-	{
-		return false;
-	}
-
-	const CNavArea* area = threat->GetLastKnownArea();
-
-	// Unknown last area
-	if (!area)
-	{
-		return false;
-	}
-
-	// Area isn't named
-	if (!area->HasPlaceName())
-	{
-		return false;
-	}
-
-	// Don't callout unless the place name changes
-	if (static_cast<Place>(GetLastReportedPlace()) == area->GetPlace())
-	{
-		return false;
-	}
-
-	return true;
-}
-
-void ICombat::TryToCalloutThreat(const CKnownEntity* threat)
-{
-	if (CanCalloutThreat(threat))
-	{
-		SendCalloutOfTreat(threat);
-	}
-}
-
-void ICombat::SendCalloutOfTreat(const CKnownEntity* threat)
-{
-	const CModSettings* settings = extmanager->GetMod()->GetModSettings();
-	m_calloutTimer.Start(settings->GetCalloutPerBotCooldown());
-	// CanCalloutThreat already validates the current area (not NULL and has a name assigned to it)
-	const CNavArea* area = threat->GetLastKnownArea();
-	auto placename = TheNavMesh->GetPlaceDisplayName(area->GetPlace());
-
-	if (placename.has_value())
-	{
-		SetLastReportedPlace(static_cast<unsigned int>(area->GetPlace()));
-		CBaseBot* bot = GetBot<CBaseBot>();
-		char message[256];
-		std::string name;
-		extmanager->GetMod()->GetEnemyHumanName(threat, name);
-
-		if (!name.empty())
-		{
-			CountdownTimer& teamTimer = ICombat::GetTeamCalloutGlobalTimer(static_cast<std::size_t>(GetBot()->GetCurrentTeamIndex()));
-			teamTimer.Start(settings->GetCalloutPerTeamGlobalCooldown());
-			StartPerEnemyCalloutCooldown(threat->GetEntity(), settings->GetCalloutPerEnemyCooldown());
-
-			ke::SafeSprintf(message, sizeof(message), "Enemy %s spotted at %s!", name.c_str(), placename->c_str());
-			bot->SendTeamChatMessage(message);
-
-			if (bot->IsDebugging(BOTDEBUG_COMBAT))
-			{
-				bot->DebugPrintToConsole(255, 255, 0, "%s COMBAT: SENDING CALLOUT OF THREAT %s! NAV AREA #%u (%s)\n",
-					bot->GetDebugIdentifier(), threat->GetDebugIdentifier(), area->GetID(), placename->c_str());
-			}
-		}
-	}
 }
 
 void ICombat::UpdateLookingAround()
@@ -1030,38 +919,6 @@ void ICombat::OnTenSecondsSinceThreatVisible()
 
 		SetShouldReloadPostCombat(false);
 	}
-}
-
-bool ICombat::IsEnemyInCalloutCooldown(CBaseEntity* enemy) const
-{
-	auto it = m_calloutperentitycooldown.find(enemy);
-
-	if (it != m_calloutperentitycooldown.end())
-	{
-		if (it->second.IsElapsed())
-		{
-			return false;
-		}
-
-		return true;
-	}
-
-	return false;
-}
-
-void ICombat::StartPerEnemyCalloutCooldown(CBaseEntity* enemy, const float time)
-{
-	auto it = m_calloutperentitycooldown.find(enemy);
-
-	if (it != m_calloutperentitycooldown.end())
-	{
-		it->second.Start(time);
-		return;
-	}
-
-	CountdownTimer timer;
-	timer.Start(time);
-	m_calloutperentitycooldown.try_emplace(enemy, timer);
 }
 
 IDecisionQuery::DesiredAimSpot ICombat::SelectClearAimSpot(const bool allowheadshots) const

@@ -36,6 +36,8 @@ public:
 	bool IsWalking() const;
 	// ZPS inventory weight
 	float GetWeight() const;
+	// Sends the client command to drop unused ammo;
+	void DropUnusedAmmo() { DelayedFakeClientCommand("dropunusedammo"); }
 
 private:
 	std::unique_ptr<CZPSBotBehavior> m_zpsbehavior;

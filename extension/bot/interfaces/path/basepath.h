@@ -378,6 +378,24 @@ public:
 	virtual void DrawFullPath(const float duration = 0.1f);
 	virtual float GetPathLength() const;
 
+	float GetRemainingPathLength() const
+	{
+		auto goal = GetGoalSegment();
+
+		if (goal == nullptr)
+		{
+			return std::numeric_limits<float>::max();
+		}
+
+		auto prev = GetPriorSegment(goal);
+
+		if (prev == nullptr)
+		{
+			prev = goal;
+		}
+
+		return prev->distance;
+	}
 
 	// How many seconds since this path was built
 	virtual float GetAge() const { return m_ageTimer.GetElapsedTime(); }
@@ -413,6 +431,7 @@ public:
 	const BotPathSegment* GetFirstGroundSegment(const BotPathSegment* startSeg = nullptr) const;
 	// The segment the bot is trying to reach
 	virtual const BotPathSegment* GetGoalSegment() const { return nullptr; /* implemented by derived classes */ }
+	bool HasGoalSegment() const { return GetGoalSegment() != nullptr; }
 
 	enum SeekType
 	{

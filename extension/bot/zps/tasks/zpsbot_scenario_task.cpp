@@ -182,11 +182,13 @@ TaskResult<CZPSBot> CZPSBotScenarioTask::OnTaskUpdate(CZPSBot* bot)
 
 TaskResult<CZPSBot> CZPSBotScenarioTask::OnTaskResume(CZPSBot* bot, AITask<CZPSBot>* pastTask)
 {
-	if (m_ammoSearchTimer.IsElapsed()) { m_ammoSearchTimer.StartRandom(10.0f, 30.0f); }
-	if (m_weaponSearchTimer.IsElapsed()) { m_weaponSearchTimer.StartRandom(10.0f, 30.0f); }
-	if (m_healthSearchTimer.IsElapsed()) { m_healthSearchTimer.StartRandom(10.0f, 20.0f); }
-	if (m_armorSearchTimer.IsElapsed()) { m_armorSearchTimer.StartRandom(10.0f, 20.0f); }
+	if (m_ammoSearchTimer.IsElapsed()) { m_ammoSearchTimer.StartRandom(5.0f, 15.0f); }
+	if (m_weaponSearchTimer.IsElapsed()) { m_weaponSearchTimer.StartRandom(5.0f, 15.0f); }
+	if (m_healthSearchTimer.IsElapsed()) { m_healthSearchTimer.StartRandom(5.0f, 10.0f); }
+	if (m_armorSearchTimer.IsElapsed()) { m_armorSearchTimer.StartRandom(5.0f, 10.0f); }
 
+	// take the opportunity to discard any ammo the bot doesn't use/need
+	bot->DropUnusedAmmo();
 	return Continue();
 }
 

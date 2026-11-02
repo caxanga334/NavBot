@@ -539,6 +539,13 @@ void CZPSBotObjectiveDropItemTask::EquipRequiredItem(CZPSBot* bot)
 CZPSBotObjectiveUseEntity::CZPSBotObjectiveUseEntity(CBaseEntity* entity) :
 	CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>(entity)
 {
+	m_notifiedOthers = false;
+}
+
+TaskResult<CZPSBot> CZPSBotObjectiveUseEntity::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)
+{
+	extmanager->NotifyBotsGoingToTheObjective(bot, zps::bots::OBJID_USE_ENTITY);
+	return CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::OnTaskStart(bot, pastTask);
 }
 
 TaskResult<CZPSBot> CZPSBotObjectiveUseEntity::OnTaskUpdate(CZPSBot* bot)
@@ -549,6 +556,13 @@ TaskResult<CZPSBot> CZPSBotObjectiveUseEntity::OnTaskUpdate(CZPSBot* bot)
 	// If a bot is already close, don't care and just let them continue.
 	if (distance > CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::CLOSE_DISTANCE)
 	{
+		if (!m_notifiedOthers)
+		{
+			// tell others i am close to the objective
+			extmanager->NotifyBotsReachedTheObjective(bot, zps::bots::OBJID_USE_ENTITY);
+			m_notifiedOthers = true;
+		}
+
 		// If the bot is close to the objective, check if another bot is already there.
 		if (distance <= max_dist && m_antiBlockCheck.IsElapsed())
 		{
@@ -571,6 +585,19 @@ TaskResult<CZPSBot> CZPSBotObjectiveUseEntity::OnTaskUpdate(CZPSBot* bot)
 	}
 
 	return CBotSharedUseEntityTask<CZPSBot, CZPSBotPathCost>::OnTaskUpdate(bot);
+}
+
+TaskEventResponseResult<CZPSBot> CZPSBotObjectiveUseEntity::OnReachedObjective(CZPSBot* bot, CBaseBot* other, int objectiveID, const std::any& data)
+{
+	if (objectiveID == zps::bots::OBJID_USE_ENTITY)
+	{
+		// Another bot got there first, follow them
+
+		return TrySwitchTo(new CBotSharedEscortEntityTask<CZPSBot, CZPSBotPathCost>(bot, other->GetEntity(), 60.0f, 400.0f),
+			PRIORITY_HIGH, "Teammate got near the button first, escorting them!");
+	}
+
+	return TryContinue();
 }
 
 QueryAnswerType CZPSBotObjectiveUseEntity::IsCompletingObjective(CBaseBot* me, int objectiveID, const std::any& data)

@@ -640,6 +640,8 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnCustomModEvent(BotClass* bot, const int id, const std::any& data) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnPluginCommand(BotClass* bot, PluginCommandTypes type, const PluginCommandData& data) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnGoingToTheObjective(BotClass* bot, CBaseBot* other, int objectiveID, const std::any& data) { return TryContinue(); }
+	virtual TaskEventResponseResult<BotClass> OnReachedObjective(BotClass* bot, CBaseBot* other, int objectiveID, const std::any& data) { return TryContinue(); }
 
 	/**
 	 * @brief The task that comes after this
@@ -1280,6 +1282,16 @@ private:
 	void OnPluginCommand(PluginCommandTypes type, const PluginCommandData& data) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnPluginCommand, type, data);
+	}
+
+	void OnGoingToTheObjective(CBaseBot* other, int objectiveID, const std::any& data) final
+	{
+		PROPAGATE_TASK_EVENT_WITH_3_ARGS(OnGoingToTheObjective, other, objectiveID, data);
+	}
+
+	void OnReachedObjective(CBaseBot* other, int objectiveID, const std::any& data) final
+	{
+		PROPAGATE_TASK_EVENT_WITH_3_ARGS(OnReachedObjective, other, objectiveID, data);
 	}
 };
 

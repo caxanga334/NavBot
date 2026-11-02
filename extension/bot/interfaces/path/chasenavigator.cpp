@@ -34,10 +34,8 @@ void CChaseNavigator::Invalidate()
 
 Vector CChaseNavigator::PredictSubjectPosition(CBaseBot* bot, CBaseEntity* subject) const
 {
-	auto mover = bot->GetMovementInterface();
-	entities::HBaseEntity sbjEntity(subject);
-
-	const Vector subjectPos = sbjEntity.GetAbsOrigin();
+	IMovement* mover = bot->GetMovementInterface();
+	const Vector& subjectPos = UtilHelpers::getEntityOrigin(subject);
 
 	Vector to = (subjectPos - bot->GetAbsOrigin());
 	to.z = 0.0f;
@@ -57,7 +55,9 @@ Vector CChaseNavigator::PredictSubjectPosition(CBaseBot* bot, CBaseEntity* subje
 	float leadTime = 0.5f + (range / (mover->GetDesiredSpeed() + 0.0001f));
 
 	// estimate amount to lead the subject	
-	Vector lead = leadTime * sbjEntity.GetAbsVelocity();
+	Vector velocity;
+	entityprops::GetEntityAbsVelocity(subject, velocity);
+	Vector lead = leadTime * velocity;
 	lead.z = 0.0f;
 
 	if (DotProduct(to, lead) < 0.0f)

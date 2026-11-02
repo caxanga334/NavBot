@@ -125,6 +125,8 @@ public:
 	virtual void OnDangerousEntityChanged(CBaseEntity* newent, CBaseEntity* oldent); // Called when the most dangereous entity determined by the combat interface changes.
 	virtual void OnCustomModEvent(const int id, const std::any& data); // General purpose event for game/mod specific events.
 	virtual void OnPluginCommand(PluginCommandTypes type, const PluginCommandData& data);
+	virtual void OnGoingToTheObjective(CBaseBot* other, int objectiveID, const std::any& data); // Notify other bots that I'm going to the objective.
+	virtual void OnReachedObjective(CBaseBot* other, int objectiveID, const std::any& data); // Notify other bots that I'm at the objective.
 };
 
 inline void IEventListener::OnDebugMoveToCommand(const Vector& moveTo)
@@ -539,6 +541,32 @@ inline void IEventListener::OnPluginCommand(PluginCommandTypes type, const Plugi
 		for (auto listener : *vec)
 		{
 			listener->OnPluginCommand(type, data);
+		}
+	}
+}
+
+inline void IEventListener::OnGoingToTheObjective(CBaseBot* other, int objectiveID, const std::any& data)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnGoingToTheObjective(other, objectiveID, data);
+		}
+	}
+}
+
+inline void IEventListener::OnReachedObjective(CBaseBot * other, int objectiveID, const std::any & data)
+{
+	auto vec = GetListenerVector();
+
+	if (vec)
+	{
+		for (auto listener : *vec)
+		{
+			listener->OnReachedObjective(other, objectiveID, data);
 		}
 	}
 }
