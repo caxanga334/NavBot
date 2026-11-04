@@ -3786,7 +3786,7 @@ void CNavMesh::AddWalkableSeeds( void )
 			if (it != m_walkableEntities.end())
 			{
 				AddWalkableSeed(entity, it->second);
-				return;
+				return true;
 			}
 		}
 
@@ -3802,17 +3802,19 @@ void CNavMesh::AddWalkableSeeds( void )
 				if (ke::StrCaseCmp(targetname, name.c_str()) == 0)
 				{
 					AddWalkableSeed(entity, useCenter);
-					return;
+					return true;
 				}
 
 				// search with pattern support
 				if (UtilHelpers::StringMatchesPattern(targetname, name.c_str(), 0))
 				{
 					AddWalkableSeed(entity, useCenter);
-					return;
+					return true;
 				}
 			}
 		}
+
+		return true;
 	};
 
 	UtilHelpers::ForEveryEntity(functor);
@@ -4114,6 +4116,8 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 		{
 			META_CONPRINT( "Creating navigation areas from sampled data...\n" );
 
+			auto start_time = std::chrono::high_resolution_clock::now();
+
 			// Select all pre-existing areas
 			if ( m_generationMode == GENERATE_INCREMENTAL )
 			{
@@ -4150,6 +4154,10 @@ bool CNavMesh::UpdateGeneration( float maxTime )
 					TheNavAreas.AddToTail( tmpSet[it] );
 				}
 			}
+
+			auto end_time = std::chrono::high_resolution_clock::now();
+			const std::chrono::duration<double, std::milli> millis = (end_time - start_time);
+			META_CONPRINTF("Nav area creating took %g ms. \n", millis.count());
 
 			META_CONPRINT("Starting post area creation analysis... \n");
 			m_generationState = POST_AREA_CREATION_ANALYSIS;

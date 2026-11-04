@@ -51,10 +51,12 @@ public:
 
 	void Destroy(IServerNetworkable* pNetworkable)
 	{
+#if SOURCE_ENGINE != SE_OUTBREAK
 		if (pNetworkable)
 		{
 			pNetworkable->Release();
 		}
+#endif // SOURCE_ENGINE != SE_OUTBREAK
 	}
 
 	virtual size_t GetEntitySize()

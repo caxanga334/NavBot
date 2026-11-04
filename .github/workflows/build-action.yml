@@ -22,14 +22,14 @@ jobs:
 
         include:
           - meta_branch: "1.12-dev"
-            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm episode1 l4d l4d2 csgo swarm'
+            sdks_to_fetch: 'tf2 dods css bms sdk2013 orangebox hl2dm episode1 l4d l4d2 csgo swarm outbreak'
           
           - os: windows
             os_version: windows-latest
             ambuild_target: 'x86,x86_64'
             libsym_ext: 'dll'
             dbgsym_ext: 'pdb'
-            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo,swarm'
+            build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo,swarm,outbreak'
             os_ambuild_params: '--breakpad-upload'
 
           - os: linux

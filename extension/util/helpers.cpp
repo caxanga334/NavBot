@@ -24,7 +24,7 @@
 #undef clamp
 
 #if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || \
-SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013
+SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_OUTBREAK
 
 // Source SDKs which server tools V2 interface is available
 #define SDKIFACE_SERVERTOOLSV2_AVAILABLE
@@ -638,11 +638,10 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 			continue;
 		}
 
-		ServerClass* sClass = network->GetServerClass();
-		const char* name = sClass->GetName();
+		const ServerClass* sClass = network->GetServerClass(); // outbreak SDK makes this return a const
+		const char* name = sClass->m_pNetworkName; // GetName isn't const, it just returns m_pNetworkName so this is fine
 
-
-		if (strcmp(name, classname) == 0)
+		if (std::strcmp(name, classname) == 0)
 		{
 			return i;
 		}
@@ -1316,7 +1315,21 @@ CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)
 #ifdef SDKIFACE_SERVERTOOLSV2_AVAILABLE
 	return servertools->FindEntityByHammerID(iHammerID);
 #elif SOURCE_ENGINE <= SE_DARKMESSIAH
-	return nullptr;
+	CBaseEntity* ent = nullptr;
+
+	auto func = [iHammerID, &ent](int index, edict_t* edict, CBaseEntity* entity) {
+		int* hammerid = entprops->GetPointerToEntData<int>(entity, Prop_Data, "m_iHammerID");
+
+		if (hammerid && *hammerid == iHammerID)
+		{
+			return false;
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEveryEntity(func);
+	return ent;
 #else
 	CBaseEntity* entity = static_cast<CBaseEntity*>(servertools->FirstEntity());
 
@@ -1355,18 +1368,6 @@ void UtilHelpers::FakeClientCommandKeyValues(edict_t* client, KeyValues* kv)
 #else
 	throw std::runtime_error("This engine branch does not support FakeClientCommandKeyValues!");
 #endif
-}
-
-ServerClass* UtilHelpers::FindEntityServerClass(CBaseEntity* pEntity)
-{
-	IServerNetworkable* pNetwork = reinterpret_cast<IServerUnknown*>(pEntity)->GetNetworkable();
-
-	if (pNetwork == nullptr)
-	{
-		return nullptr;
-	}
-
-	return pNetwork->GetServerClass();
 }
 
 bool UtilHelpers::StringMatchesPattern(const char* source, const char* pattern, int nFlags)
@@ -1876,6 +1877,36 @@ float UtilHelpers::parsers::ParseFloatClamped(const char* str, const float min, 
 	{
 		return defaultValue;
 	}
+}
+
+bool UtilHelpers::parsers::ParseVector(const std::string& input, Vector& out)
+{
+	std::size_t pos = 0U;
+	std::array<float, 3> arr;
+
+	for (std::size_t i = 0; i < 3; i++)
+	{
+		pos = input.find_first_not_of(" ", pos);
+
+		if (pos == std::string::npos)
+		{
+			return false;
+		}
+
+		auto [ptr, ec] = std::from_chars(input.data() + pos, input.data() + input.size(), arr[i]);
+
+		if (ec == std::errc::invalid_argument || ec == std::errc::result_out_of_range)
+		{
+			return false;
+		}
+
+		pos = ptr - input.data();
+	}
+
+	out.x = arr[0];
+	out.y = arr[1];
+	out.z = arr[2];
+	return true;
 }
 
 CBaseEntity* UtilHelpers::players::GetRandomTeammate(CBaseEntity* me, const bool alive, const bool onlyhumans)

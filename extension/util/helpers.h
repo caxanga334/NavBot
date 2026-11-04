@@ -446,11 +446,12 @@ namespace UtilHelpers
 
 	/**
 	 * @brief Runs a function on every entity.
-	 * @tparam T A function with the following parameters: (int index, edict_t* edict, CBaseEntity* entity)
-	 * @param functor Function to call.
+	 * @tparam T A function with the following parameters: bool (int index, edict_t* edict, CBaseEntity* entity)
+	 * @param functor Function to call. If the functions returns false, the loop ends early.
+	 * @return Returns false if the "functor" function returned false, else retursn true.
 	 */
 	template <typename T>
-	inline void ForEveryEntity(T& functor)
+	inline bool ForEveryEntity(T& functor)
 	{
 		CBaseHandle next = g_EntList->FirstHandle();
 
@@ -460,12 +461,16 @@ namespace UtilHelpers
 			edict_t* pEdict = UtilHelpers::GetEdictFromCBaseHandle(next);
 			int index = next.GetEntryIndex();
 
-			functor(index, pEdict, pEntity);
+			if (functor(index, pEdict, pEntity) == false)
+			{
+				return false;
+			}
 
 			next = g_EntList->NextHandle(next);
 
 		} while (next.IsValid());
 
+		return true;
 	}
 
 	/**
@@ -532,15 +537,6 @@ namespace UtilHelpers
 	 * @param kv Keyvalue command.
 	 */
 	void FakeClientCommandKeyValues(edict_t* client, KeyValues* kv);
-
-	/**
-	 * @brief Finds a given entity's server class.
-	 *
-	 * @return				ServerClass pointer on success, nullptr on failure.
-	 * 
-	 * @note Ported from Sourcemod to here for compatibility reasons. Also available in gamehelpers but requires a very recent SM dev build
-	 */
-	ServerClass* FindEntityServerClass(CBaseEntity* pEntity);
 
 	constexpr int PATTERN_DIRECTORY = 0x00000001;
 
@@ -900,6 +896,8 @@ namespace UtilHelpers::parsers
 	void ParseDelimitedStrings(const std::string& source, char delimiter, std::vector<std::string>& out);
 
 	float ParseFloatClamped(const char* str, const float min, const float max, const float defaultValue = 0.0f);
+	// Parses a string as a Vector, returns false on error
+	bool ParseVector(const std::string& input, Vector& out);
 }
 
 namespace UtilHelpers::textformat

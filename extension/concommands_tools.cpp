@@ -1181,6 +1181,17 @@ CON_COMMAND_F(sm_navbot_tool_entinfo, "Shows information about a specific entity
 
 	META_CONPRINTF("%s \n", UtilHelpers::textformat::FormatEntity(entity));
 
+	const char* targetname = entityprops::GetEntityTargetname(entity);
+
+	if (targetname != nullptr && targetname[0] != '\0')
+	{
+		META_CONPRINTF("Targetname: %s \n", targetname);
+	}
+	else
+	{
+		META_CONPRINT("No targetname! \n");
+	}
+
 	if (!entity)
 	{
 		return;
@@ -1208,6 +1219,13 @@ CON_COMMAND_F(sm_navbot_tool_entinfo, "Shows information about a specific entity
 	META_CONPRINTF("Collision Origin: %s Collision Angles: %s\n", 
 		UtilHelpers::textformat::FormatVector(collider->GetCollisionOrigin()), UtilHelpers::textformat::FormatAngles(collider->GetCollisionAngles()));
 	META_CONPRINTF("World Space Center: %s \n", UtilHelpers::textformat::FormatVector(UtilHelpers::getWorldSpaceCenter(entity)));
+
+	int hid = entityprops::GetEntityHammerID(entity);
+
+	if (hid != 0)
+	{
+		META_CONPRINTF("Hammer ID: %i \n", hid);
+	}
 }
 
 CON_COMMAND_F(sm_navbot_tool_compute_travel_distance, "Computes the travel distance between the marked area and crosshair area.", FCVAR_GAMEDLL | FCVAR_CHEAT)

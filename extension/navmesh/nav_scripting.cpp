@@ -517,3 +517,107 @@ bool navscripting::ToggleCondition::TestCondition_BaseToggle_Position() const
 
 	return false;
 }
+
+namespace navscripting::concmd
+{
+	void PrintHelp()
+	{
+		META_CONPRINT("Available options:\n  -help -clear -setvectorme -setvectordata -setintdata -setfloatdata -setentity -toggleinverted -settoggletypebyid \n");
+	}
+
+	void ParseEditCommand(const CCommand& args, navscripting::ToggleCondition& tc)
+	{
+		CBaseExtPlayer* host = extmanager->GetListenServerHost();
+
+		if (host == nullptr) { return; }
+
+		if (args.FindArg("-help") != nullptr)
+		{
+			PrintHelp();
+			return;
+		}
+
+		if (args.FindArg("-clear") != nullptr)
+		{
+			META_CONPRINT("Toggle condition cleared! \n");
+			tc.clear();
+			return;
+		}
+
+		if (args.FindArg("-setvectorme") != nullptr)
+		{
+			tc.SetVectorData(host->GetAbsOrigin());
+			META_CONPRINTF("Vector data updated to <%s> \n", UtilHelpers::textformat::FormatVector(tc.GetVectorData()));
+		}
+
+		const char* szvecarg = args.FindArg("-setvectordata");
+
+		if (szvecarg != nullptr)
+		{
+			Vector vec{ 0.0f, 0.0f, 0.0f };
+
+			if (sscanf(szvecarg, "%f %f %f", &vec.x, &vec.y, &vec.z) == 3)
+			{
+				tc.SetVectorData(vec);
+				META_CONPRINTF("Vector data updated to <%s> \n", UtilHelpers::textformat::FormatVector(tc.GetVectorData()));
+			}
+			else
+			{
+				META_CONPRINTF("Error: Could not parse a vector from \"%s\"! \n", szvecarg);
+			}
+		}
+
+		int idata = args.FindArgInt("-setintdata", std::numeric_limits<int>::min());
+
+		if (idata != std::numeric_limits<int>::min())
+		{
+			tc.SetIntegerData(idata);
+			META_CONPRINTF("Integer data updated to %i \n", tc.GetIntegerData());
+		}
+
+		const char* szfloatarg = args.FindArg("-setfloatdata");
+
+		if (szfloatarg != nullptr)
+		{
+			float val = atof(szfloatarg);
+			tc.SetFloatData(val);
+			META_CONPRINTF("Float data updated to %g \n", val);
+		}
+
+		int iEntIndex = args.FindArgInt("-setentity", INVALID_EHANDLE_INDEX);
+
+		if (iEntIndex != INVALID_EHANDLE_INDEX)
+		{
+			CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(iEntIndex);
+
+			if (!pEntity)
+			{
+				META_CONPRINTF("Error: NULL entity of index \"%i\"! \n", iEntIndex);
+			}
+			else
+			{
+				tc.SetTargetEntity(pEntity);
+				META_CONPRINTF("Entity link updated to \"%s\" \n", UtilHelpers::textformat::FormatEntity(pEntity));
+			}
+		}
+
+		if (args.FindArg("-toggleinverted") != nullptr)
+		{
+			tc.ToggleInvertedCondition();
+			META_CONPRINTF("Toggle condition is now %s! \n", tc.IsTestConditionInverted() ? "INVERTED" : "NOT INVERTED");
+		}
+
+		int tctypeidx = args.FindArgInt("-settoggletypebyid", -1);
+
+		if (tctypeidx != -1)
+		{
+			navscripting::ToggleCondition::TCTypes type;
+
+			if (navscripting::ToggleCondition::IndexToTCType(tctypeidx, type))
+			{
+				tc.SetToggleConditionType(type);
+				META_CONPRINTF("Toggle condition type changed to \"%s\"! \n", navscripting::ToggleCondition::TCTypeToString(type));
+			}
+		}
+	}
+}

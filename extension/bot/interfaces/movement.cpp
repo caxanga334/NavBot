@@ -1569,34 +1569,6 @@ void IMovement::AdjustPathCrossingPoint(const CNavArea* fromArea, const CNavArea
 	}
 }
 
-class MovementFunctorMegaBreak
-{
-public:
-	MovementFunctorMegaBreak(CBaseBot* bot)
-	{
-		m_bot = bot;
-	}
-
-	bool operator()(CBaseEntity* entity) const
-	{
-		if (!UtilHelpers::IsPlayer(entity))
-		{
-			if (m_bot->IsAbleToBreak(entity))
-			{
-				if (entprops->HasEntProp(entity, Prop_Data, "InputBreak"))
-				{
-					UtilHelpers::io::FireInput(entity, "InputBreak", m_bot->GetEntity(), entity, m_emptyVariant);
-				}
-			}
-		}
-
-		return true;
-	}
-
-	variant_t m_emptyVariant;
-	CBaseBot* m_bot;
-};
-
 void IMovement::TryToUnstuck()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -1685,13 +1657,6 @@ void IMovement::TryToUnstuck()
 					return;
 				}
 			}
-
-			const Vector& origin = m_stuck.GetStuckPos();
-			Vector size = { GetHullWidth() * 2.0f, GetHullWidth() * 2.0f, GetStandingHullHeight() * 1.4f };
-			UtilHelpers::CEntityEnumerator enumerator;
-			UtilHelpers::EntitiesInBox(origin - size, origin + size, enumerator);
-			MovementFunctorMegaBreak functor{ bot };
-			enumerator.ForEach(functor);
 		}
 	}
 
@@ -1881,6 +1846,12 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 		default:
 			return false;
 		}
+	}
+
+	// Query map specific settings
+	if (TheNavMesh->GetMapSettings()->IsUseableObstacle(entity, useTarget))
+	{
+		return true;
 	}
 
 	return false;
@@ -3008,11 +2979,25 @@ IMovement::LadderState IMovement::DismountLadderTop()
 	{
 		MoveTowards(dismountGoal, MOVEWEIGHT_CRITICAL);
 
+		if (isOnLadder)
+		{
+			Vector to = UtilHelpers::math::BuildDirectionVectorIgnoreZ(origin, dismountGoal);
+			Vector normal = m_ladderFSM.m_ladder->GetNormal();
+			normal.z = 0.0f;
+			float dot = DotProduct(to, normal);
+
+			// If the bot to dismount point direction matches the ladder normal, jumping is required to get off the ladder
+			if (dot >= 0.9f)
+			{
+				input->PressJumpButton();
+			}
+		}
+
 		// Not on the ladder and is on solid ground
 		if (!isOnLadder && isOnGround)
 		{
 			// See if there are any gaps on the ground, if yes we simulate a fake jump
-			if (HasPotentialGap(me->GetAbsOrigin(), dismountGoal, nullptr))
+			if (HasPotentialGap(origin, dismountGoal, nullptr))
 			{
 				// Fake jump off the ladder
 				Vector launch = me->CalculateLaunchVector(dismountGoal, GetWalkSpeed());

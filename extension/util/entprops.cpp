@@ -387,7 +387,7 @@ bool CEntPropUtils::FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntit
 	VPROF_BUDGET("CEntPropUtils::FindSendProp", "NavBot");
 #endif // EXT_VPROF_ENABLED
 
-	ServerClass* pServerClass = FindEntityServerClass(pEntity);
+	ServerClass* pServerClass = gamehelpers->FindEntityServerClass(pEntity);
 
 	if (pServerClass == nullptr)
 	{
@@ -2588,4 +2588,42 @@ PropType entityprops::StringToPropType(const char* str)
 
 	// there is no invalid prop type so always fallback to Prop_Data
 	return Prop_Data;
+}
+
+int entityprops::GetEntityHammerID(CBaseEntity* entity)
+{
+	static unsigned int offset = 0U;
+
+
+	if (offset == 0U)
+	{
+		CBaseEntity* worldspawn = gamehelpers->ReferenceToEntity(0);
+
+		if (!worldspawn)
+		{
+			smutils->LogError(myself, "entityprops::GetEntityHammerID -- Failed to get a CBaseEntity ptr to worldspawn!");
+			worldspawn = entity; // use the given entity if it fails
+		}
+
+		// Use worldspawn for the look up
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(worldspawn), "m_iHammerID", &info))
+		{
+			offset = 1U; // the actual offset will never be 1, this is to prevent constant look up when the game doesn't support hammer ids
+			return 0;
+		}
+
+		offset = info.actual_offset;
+#ifdef EXT_DEBUG
+		smutils->LogMessage(myself, "Computed CBaseEntity::m_iHammerID offset: %u", offset);
+#endif // EXT_DEBUG
+	}
+
+	if (offset == 1U)
+	{
+		return 0;
+	}
+
+	int* hammerid = reinterpret_cast<int*>(reinterpret_cast<std::uint8_t*>(entity) + offset);
+	return *hammerid;
 }

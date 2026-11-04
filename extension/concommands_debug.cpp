@@ -905,7 +905,12 @@ CON_COMMAND_F(sm_snap_to_origin, "Snaps the player view angles to an origin", FC
 CON_COMMAND_F(sm_navbot_debug_entlist, "Debugs the entity list.", FCVAR_CHEAT)
 {
 	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
-		Msg("Entity #%i: %s (%p <%p>) [%i] \n", index, gamehelpers->GetEntityClassname(entity) ? gamehelpers->GetEntityClassname(entity) : "NULL CLASSNAME", entity, edict, reinterpret_cast<IServerUnknown*>(entity)->GetRefEHandle().GetEntryIndex());
+		META_CONPRINTF("Entity #%i: %s (%p <%p>) [%i] [Hammer ID: %i]\n", 
+			index, gamehelpers->GetEntityClassname(entity) ? gamehelpers->GetEntityClassname(entity) : "NULL CLASSNAME", 
+			entity, edict, 
+			reinterpret_cast<IServerUnknown*>(entity)->GetRefEHandle().GetEntryIndex(), entityprops::GetEntityHammerID(entity));
+
+		return true;
 	};
 	UtilHelpers::ForEveryEntity(func);
 }

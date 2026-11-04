@@ -435,7 +435,7 @@ void CBaseMod::InternalFindPlayerResourceEntity()
 				continue;
 			}
 
-			ServerClass* pClass = pEdict->GetNetworkable()->GetServerClass();
+			const ServerClass* pClass = pEdict->GetNetworkable()->GetServerClass();
 
 			if (UtilHelpers::FindNestedDataTable(pClass->m_pTable, "DT_PlayerResource"))
 			{

@@ -814,6 +814,13 @@ void CMeshNavigator::UseEntity(CBaseBot* bot, CBaseEntity* entity, const float t
 	// experimental
 	UtilHelpers::math::CalcClosestPointOfEntity(entity, eyepos, m_useEntityAimAt);
 	ClassifyUseEntity(entity);
+
+	if (bot->IsDebugging(BOTDEBUG_PATH))
+	{
+		bot->DebugPrintToConsole(255, 255, 0, "%s NAVIGATOR: USING ENTITY %s \n",
+			bot->GetDebugIdentifier(), UtilHelpers::textformat::FormatEntity(entity));
+		NDebugOverlay::EntityBounds(entity, 255, 255, 0, 64, 2.0f);
+	}
 }
 
 void CMeshNavigator::UpdateUseEntity(CBaseBot* bot, Vector& moveGoal)

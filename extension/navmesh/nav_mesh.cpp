@@ -1074,6 +1074,12 @@ void CNavMesh::OnRoundRestart( void )
 	ScheduleRecomputationOfInternalData(CNavMesh::RecomputeInternalDataReason::RECOMPUTEREASON_RESET);
 	OnRoundRestart_AvoidanceObstacles();
 
+	// map settings is NULL if no nav mesh is loaded
+	if (m_mapsettings)
+	{
+		m_mapsettings->OnRoundRestart();
+	}
+
 #ifdef NEXT_BOT
 	FOR_EACH_VEC( TheNavAreas, pit )
 	{

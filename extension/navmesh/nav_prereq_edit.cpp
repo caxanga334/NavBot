@@ -8,6 +8,11 @@
 #include "nav_area.h"
 #include "nav_prereq.h"
 
+void CNavPrerequisite::Edit_UpdateToggleCondition(const CCommand& args)
+{
+	navscripting::concmd::ParseEditCommand(args, m_toggle_condition);
+}
+
 CON_COMMAND_F(sm_nav_prereq_create, "Creates a new prerequisite.", FCVAR_CHEAT)
 {
 	if (!CNavPrerequisite::IsEditing())
@@ -320,7 +325,7 @@ CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prer
 	if (args.ArgC() < 2)
 	{
 		META_CONPRINT("[SM] Usage: sm_nav_prereq_set_toggle_condition <options ...> \n");
-		META_CONPRINT(" Valid Options: \n  -clear -setvectorme -setvectordata -setintdata -setfloatdata -setentity -toggleinverted -settoggletypebyid \n");
+		navscripting::concmd::PrintHelp();
 		return;
 	}
 
@@ -333,92 +338,6 @@ CON_COMMAND_F(sm_nav_prereq_set_toggle_condition, "Updates the selected nav prer
 		return;
 	}
 
-	if (args.FindArg("-clear") != nullptr)
-	{
-		META_CONPRINTF("Toggle condition data for prerequisite %u cleared! \n", selected->GetID());
-		selected->ClearToggleData();
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-		return;
-	}
-
-	if (args.FindArg("-setvectorme") != nullptr)
-	{
-		CBaseExtPlayer* host = extmanager->GetListenServerHost();
-		Vector pos = host->GetAbsOrigin();
-		selected->SetToggleData(pos);
-		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
-		META_CONPRINTF("Prerequisite %u vector data set to <%s> \n", selected->GetID(), UtilHelpers::textformat::FormatVector(pos));
-	}
-
-	const char* szvecarg = args.FindArg("-setvectordata");
-
-	if (szvecarg != nullptr)
-	{
-		Vector vec{ 0.0f, 0.0f, 0.0f };
-
-		if (sscanf(szvecarg, "%f %f %f", &vec.x, &vec.y, &vec.z) == 3)
-		{
-			selected->SetToggleData(vec);
-			META_CONPRINTF("Prerequisite %u vector data set to <%s> \n", selected->GetID(), UtilHelpers::textformat::FormatVector(vec));
-		}
-		else
-		{
-			META_CONPRINTF("Error: Could not parse a vector from \"%s\"! \n", szvecarg);
-		}
-	}
-
-	int idata = args.FindArgInt("-setintdata", std::numeric_limits<int>::min());
-
-	if (idata != std::numeric_limits<int>::min())
-	{
-		META_CONPRINTF("Prerequisite %u int data changed to \"%i\"! \n", selected->GetID(), idata);
-		selected->SetToggleData(idata);
-	}
-
-	const char* szfloatarg = args.FindArg("-setfloatdata");
-
-	if (szfloatarg != nullptr)
-	{
-		float val = atof(szfloatarg);
-		META_CONPRINTF("Prerequisite %u float data changed to \"%g\"! \n", selected->GetID(), val);
-		selected->SetToggleData(val);
-	}
-
-	int iEntIndex = args.FindArgInt("-setentity", INVALID_EHANDLE_INDEX);
-
-	if (iEntIndex != INVALID_EHANDLE_INDEX)
-	{
-		CBaseEntity* pEntity = gamehelpers->ReferenceToEntity(iEntIndex);
-
-		if (!pEntity)
-		{
-			META_CONPRINTF("Error: NULL entity of index \"%i\"! \n", iEntIndex);
-		}
-		else
-		{
-			selected->SetToggleData(pEntity);
-			META_CONPRINTF("Prerequisite %u toggle condition target entity set to %s!", selected->GetID(), UtilHelpers::textformat::FormatEntity(pEntity));
-		}
-	}
-
-	if (args.FindArg("-toggleinverted") != nullptr)
-	{
-		selected->InvertToggleCondition();
-		META_CONPRINTF("Prerequisite %u toggle condition is now %s! \n", selected->GetID(), selected->IsToggleConditionInverted() ? "INVERTED" : "NOT INVERTED");
-	}
-
-	int tctypeidx = args.FindArgInt("-settoggletypebyid", -1);
-
-	if (tctypeidx != -1)
-	{
-		navscripting::ToggleCondition::TCTypes type;
-
-		if (navscripting::ToggleCondition::IndexToTCType(tctypeidx, type))
-		{
-			selected->SetToggleData(type);
-			META_CONPRINTF("Prerequisite %u toggle condition type changed to \"%s\"! \n", selected->GetID(), navscripting::ToggleCondition::TCTypeToString(type));
-		}
-	}
-
+	selected->Edit_UpdateToggleCondition(args);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }

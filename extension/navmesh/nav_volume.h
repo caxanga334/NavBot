@@ -10,6 +10,8 @@
 #include "nav.h"
 #include "nav_scripting.h"
 
+class CCommand;
+
 class CNavVolume
 {
 public:
@@ -96,15 +98,9 @@ public:
 	virtual void ScreenText() const; // screen text for this volume, only called on the selected volume
 	virtual bool IsBlocked(int teamID) const;
 
-	void SetToggleData(float data) { m_toggle_condition.SetFloatData(data); }
-	void SetToggleData(int data) { m_toggle_condition.SetIntegerData(data); }
-	void SetToggleData(const Vector& data) { m_toggle_condition.SetVectorData(data); }
-	void SetToggleData(CBaseEntity* data) { m_toggle_condition.SetTargetEntity(data); }
-	void SetToggleData(navscripting::ToggleCondition::TCTypes data) { m_toggle_condition.SetToggleConditionType(data); }
-	bool IsToggleConditionInverted() const { return m_toggle_condition.IsTestConditionInverted(); }
-	void InvertToggleCondition() { m_toggle_condition.ToggleInvertedCondition(); }
-	void ClearToggleData() { m_toggle_condition.clear(); }
 	const navscripting::ToggleCondition& GetToggleConditon() const { return m_toggle_condition; }
+
+	void Edit_UpdateToggleCondition(const CCommand& args);
 
 protected:
 	void UpdateBlockedStatus(int teamID, bool blocked)

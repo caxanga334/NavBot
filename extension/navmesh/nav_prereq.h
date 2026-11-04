@@ -5,6 +5,7 @@
 #include "nav_scripting.h"
 
 class CBaseBot;
+class CCommand;
 
 /**
  * @brief Prerequisite holds a task the bots needs to do when entering a nav area.
@@ -110,20 +111,14 @@ public:
 	virtual void ScreenText() const;
 	void DrawAreas() const;
 
-	void SetToggleData(float data) { m_toggle_condition.SetFloatData(data); }
-	void SetToggleData(int data) { m_toggle_condition.SetIntegerData(data); }
-	void SetToggleData(const Vector& data) { m_toggle_condition.SetVectorData(data); }
-	void SetToggleData(CBaseEntity* data) { m_toggle_condition.SetTargetEntity(data); }
-	void SetToggleData(navscripting::ToggleCondition::TCTypes data) { m_toggle_condition.SetToggleConditionType(data); }
-	bool IsToggleConditionInverted() const { return m_toggle_condition.IsTestConditionInverted(); }
-	void InvertToggleCondition() { m_toggle_condition.ToggleInvertedCondition(); }
-	void ClearToggleData() { m_toggle_condition.clear(); }
 	const navscripting::ToggleCondition& GetToggleConditon() const { return m_toggle_condition; }
 	const navscripting::EntityLink& GetLinkedEntity() const { return m_goalEntity; }
 
 	void SearchForNavAreas();
 
 	virtual bool CanBeUsedByBot(CBaseBot* bot) const;
+
+	void Edit_UpdateToggleCondition(const CCommand& args);
 
 protected:
 	virtual void OnSizeChanged() {};

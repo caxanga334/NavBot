@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sdkports/sdk_ehandle.h>
 
+class CCommand;
+
 /**
  * @brief Namespace for navigation mesh scripting utils
  */
@@ -65,7 +67,7 @@ namespace navscripting
 		// Sets the current entity without linking
 		void SetActiveEntity(CBaseEntity* entity) { m_hEntity = entity; }
 	};
-	
+
 	/**
 	 * @brief Handles a toggle condition in scripting context.
 	 */
@@ -188,7 +190,18 @@ namespace navscripting
 		bool TestCondition_TraceHullSolidWorld() const;
 		bool TestCondition_BaseToggle_Position() const;
 	};
+}
 
+namespace navscripting::concmd
+{
+	// prints the help message
+	void PrintHelp();
+	/**
+	 * @brief Parses a console command and updates the given toggle condition.
+	 * @param args Command args.
+	 * @param tc Toggle condition to update.
+	 */
+	void ParseEditCommand(const CCommand& args, navscripting::ToggleCondition& tc);
 }
 
 #endif // !NAV_MESH_SCRIPTING_H_

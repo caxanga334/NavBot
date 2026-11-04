@@ -192,7 +192,6 @@ private:
 	bool FindSendProp(SourceMod::sm_sendprop_info_t *info, CBaseEntity *pEntity, const char *prop);
 	bool FindDataMap(CBaseEntity* pEntity, SourceMod::sm_datatable_info_t& dinfo, const char* prop);
 	int MatchTypeDescAsInteger(_fieldtypes type, int flags);
-	ServerClass* FindEntityServerClass(CBaseEntity* pEntity);
 	bool IndexToAThings(int num, CBaseEntity **pEntData, edict_t **pEdictData);
 	CBaseEntity *GetEntity(int entity);
 	CBaseEntity *GetGameRulesProxyEntity();
@@ -233,18 +232,6 @@ inline int CEntPropUtils::MatchTypeDescAsInteger(_fieldtypes type, int flags)
 	}
 
 	return 0;
-}
-
-inline ServerClass* CEntPropUtils::FindEntityServerClass(CBaseEntity* pEntity)
-{
-	IServerNetworkable* pNet = reinterpret_cast<IServerUnknown*>(pEntity)->GetNetworkable();
-
-	if (pNet == nullptr)
-	{
-		return nullptr;
-	}
-
-	return pNet->GetServerClass();
 }
 
 /// @brief Converts a CBaseEntity to an edict_t
@@ -409,6 +396,12 @@ namespace entityprops
 	bool IsEffectActiveOnEntity(CBaseEntity* entity, int effects);
 	// Converts a string to prop type, used when parsing config files.
 	PropType StringToPropType(const char* str);
+	/**
+	 * @brief Gets the entity hammer ID.
+	 * @param entity Entity to get the hammer ID of.
+	 * @return Hammer ID. Returns 0 if the current game doesn't support hammer ID.
+	 */
+	int GetEntityHammerID(CBaseEntity* entity);
 }
 
 #endif
