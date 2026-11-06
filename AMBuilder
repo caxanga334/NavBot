@@ -61,6 +61,7 @@ pch_sources_shared = [
   'cinttypes',
   'cstdarg',
   'cstring',
+  'charconv',
   'string',
   'string_view',
   'cmath',
