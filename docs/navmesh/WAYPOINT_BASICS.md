@@ -77,6 +77,11 @@ Radius is used to randomize the position the bot will go to when using a waypoin
 
 The default value is 0.
 
+## Enabled Condition
+
+Waypoints can be linked with a toggle condition to control their enabled/disable state.    
+The command is `sm_nav_waypoint_set_enabled_condition <options>`.    
+See [Toggle Condition Command Usage](NAVMESH_SCRIPTING.md) for more information.
 
 <!-- LINKS -->
 [RCBot2]: https://github.com/rcbotCheeseh/rcbot2

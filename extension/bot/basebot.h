@@ -23,7 +23,6 @@
 #include "interfaces/squads.h"
 #include "interfaces/sharedmemory.h"
 #include "interfaces/combat.h"
-#include "interfaces/pathprocessor.h"
 
 // Interval between calls to Update()
 constexpr auto BOT_UPDATE_INTERVAL = 0.07f;
@@ -154,7 +153,6 @@ public:
 	virtual ISquad* GetSquadInterface() const;
 	virtual ICombat* GetCombatInterface() const;
 	virtual ISharedBotMemory* GetSharedMemoryInterface() const;
-	virtual IPathProcessor* GetPathProcessorInterface() const;
 
 	const std::list<IBotInterface*>& GetRegisteredInterfaces() const { return m_interfaces; }
 
@@ -332,7 +330,6 @@ private:
 	mutable std::unique_ptr<IInventory> m_baseinventory; // Base inventory interface
 	mutable std::unique_ptr<ISquad> m_basesquad; // Base Squad interface
 	mutable std::unique_ptr<ICombat> m_basecombat; // Base Combat interface
-	mutable std::unique_ptr<IPathProcessor> m_basepathprocessor; // Base Path Processor interface
 	std::shared_ptr<DifficultyProfile> m_profile;
 	IntervalTimer m_cmdtimer; // Timer to prevent sending more than the string commands per second limit
 	std::queue<std::string> m_cmdqueue; // Queue of commands to send

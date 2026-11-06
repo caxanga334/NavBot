@@ -93,6 +93,18 @@ TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskStart(CDoDSBot* bot, AIT
 
 TaskResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnTaskUpdate(CDoDSBot* bot)
 {
+	// Bomb any areas in my path
+	if (bot->GetAreaToBomb() != nullptr)
+	{
+		CBaseEntity* bombTarget = bot->GetAreaToBomb()->GetAssignedBombTarget();
+		bot->SetAreaToBomb(nullptr);
+
+		if (bombTarget != nullptr)
+		{
+			return PauseFor(new CDoDSBotDeployBombTask(bombTarget, false), "Path blocked by bomb!");
+		}
+	}
+
 	if (GetNextTask() == nullptr)
 	{
 		return SwitchTo(new CDoDSBotScenarioMonitorTask, "Restarting Scenario Monitor!");
@@ -109,23 +121,6 @@ TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnNavAreaChanged(
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnRoundStateChanged(CDoDSBot* bot)
 {
 	return TrySwitchTo(new CDoDSBotScenarioMonitorTask, PRIORITY_CRITICAL, "Round state changed, restart ScenarioMonitor!");
-}
-
-TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnPathStatusChanged(CDoDSBot* bot)
-{
-	const CDoDSNavArea* area = static_cast<const CDoDSNavArea*>(bot->GetPathProcessorInterface()->GetBombArea());
-
-	if (area && area->CanPlantBomb())
-	{
-		CBaseEntity* bombTarget = area->GetAssignedBombTarget();
-
-		if (bombTarget)
-		{
-			return TryPauseFor(new CDoDSBotDeployBombTask(bombTarget, false), PRIORITY_HIGH, "Bombing obstacle on my path!");
-		}
-	}
-
-	return TryContinue(PRIORITY_LOW);
 }
 
 TaskEventResponseResult<CDoDSBot> CDoDSBotScenarioMonitorTask::OnBombPlanted(CDoDSBot* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent)

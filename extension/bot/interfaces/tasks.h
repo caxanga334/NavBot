@@ -634,7 +634,6 @@ public:
 	virtual TaskEventResponseResult<BotClass> OnSquadEvent(BotClass* bot, SquadEventType evtype) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnObjectSapped(BotClass* bot, CBaseEntity* owner, CBaseEntity* saboteur) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnGameEvent(BotClass* bot, const IGameEvent* event, void* moddata) { return TryContinue(); }
-	virtual TaskEventResponseResult<BotClass> OnPathStatusChanged(BotClass* bot) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnBombPlanted(BotClass* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnBombDefused(BotClass* bot, const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) { return TryContinue(); }
 	virtual TaskEventResponseResult<BotClass> OnDangerousEntityChanged(BotClass* bot, CBaseEntity* newent, CBaseEntity* oldent) { return TryContinue(); }
@@ -1252,11 +1251,6 @@ private:
 	void OnGameEvent(const IGameEvent* event, void* moddata) final
 	{
 		PROPAGATE_TASK_EVENT_WITH_2_ARGS(OnGameEvent, event, moddata);
-	}
-
-	void OnPathStatusChanged() final
-	{
-		PROPAGATE_TASK_EVENT_WITH_NO_ARGS(OnPathStatusChanged);
 	}
 
 	void OnBombPlanted(const Vector& position, const int teamIndex, CBaseEntity* player, CBaseEntity* ent) final

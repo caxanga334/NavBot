@@ -64,6 +64,7 @@ struct LadderToAreaConnection
 	bool IsConnectedToLadderBottom() const { return bottom; }
 	bool IsConnectedToLadderTop() const { return !bottom; }
 	const Vector& GetConnectionPoint() const { return point; }
+	void ComputeConnectionPoint(const Vector& top, const Vector& bottom);
 
 	std::variant<unsigned int, CNavArea*> connect;
 	Vector point; // connection point on the ladder

@@ -9,9 +9,10 @@
 #include "dodsbot_movement.h"
 #include "dodsbot_combat.h"
 #include "dodsbot_playercontrol.h"
-#include "dodsbot_pathprocessor.h"
 #include "dodsbot_sharedmemory.h"
 #include <mods/dods/dods_shareddefs.h>
+
+class CDoDSNavArea;
 
 class CDoDSBot : public CBaseBot
 {
@@ -25,7 +26,6 @@ public:
 	CDoDSBotMovement* GetMovementInterface() const override { return m_dodmovement.get(); }
 	CDoDSBotInventory* GetInventoryInterface() const override { return m_dodinventory.get(); }
 	CDoDSBotCombat* GetCombatInterface() const override { return m_dodcombat.get(); }
-	CDoDSBotPathProcessor* GetPathProcessorInterface() const override { return m_dodpathprocessor.get(); }
 	CDoDSSharedBotMemory* GetSharedMemoryInterface() const override;
 
 	void Reset() override;
@@ -45,6 +45,16 @@ public:
 	bool IsDefusingBomb() const;
 	bool CanDropAmmo() const { return !m_droppedAmmo; } // ammo can only be dropped once per life
 
+	void SetAreaToBomb(const CDoDSNavArea* area)
+	{
+		if (area == nullptr) { m_areaToBomb = nullptr; return; }
+
+		if (m_areaToBomb != nullptr) { return; }
+
+		m_areaToBomb = area;
+	}
+	const CDoDSNavArea* GetAreaToBomb() const { return m_areaToBomb; }
+
 private:
 	std::unique_ptr<CDoDSBotSensor> m_dodsensor;
 	std::unique_ptr<CDoDSBotBehavior> m_dodbehavior;
@@ -52,9 +62,9 @@ private:
 	std::unique_ptr<CDoDSBotInventory> m_dodinventory;
 	std::unique_ptr<CDoDSBotCombat> m_dodcombat;
 	std::unique_ptr<CDoDSBotPlayerController> m_dodcontrol;
-	std::unique_ptr<CDoDSBotPathProcessor> m_dodpathprocessor;
 	bool m_droppedAmmo; // has the bot dropped ammo?
 	CountdownTimer m_nextClassChangeTimer;
+	const CDoDSNavArea* m_areaToBomb;
 
 	void TryChangingClasses();
 };
@@ -70,7 +80,6 @@ public:
 	RouteType GetRouteType() const override { return m_routetype; }
 private:
 	CDoDSBot* m_me;
-	CDoDSBotPathProcessor* m_dodpathprocessor;
 	RouteType m_routetype;
 	bool m_hasbomb;
 };

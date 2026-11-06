@@ -9,7 +9,6 @@
 #include <navmesh/nav_consts.h>
 
 class IMovement;
-class IPathProcessor;
 class CNavArea;
 class CNavLadder;
 class NavOffMeshConnection;
@@ -50,7 +49,6 @@ public:
 		m_movecaps()
 	{
 		m_moveiface = nullptr;
-		m_pathprocessor = nullptr;
 		m_ignoreDanger = false;
 		m_waterIsSafe = true; // true in most games
 		m_teamindex = NAV_TEAM_ANY;
@@ -62,7 +60,6 @@ public:
 		IMovement* movement = bot->GetMovementInterface();
 		m_movecaps.Init(movement);
 		m_moveiface = movement;
-		m_pathprocessor = bot->GetPathProcessorInterface();
 		m_ignoreDanger = false;
 		m_teamindex = bot->GetCurrentTeamIndex();
 	}
@@ -78,7 +75,6 @@ public:
 protected:
 	HumanMovementCaps_t m_movecaps;
 	IMovement* m_moveiface;
-	IPathProcessor* m_pathprocessor;
 	bool m_ignoreDanger;
 	bool m_waterIsSafe;
 	int m_teamindex;

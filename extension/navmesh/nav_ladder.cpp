@@ -69,14 +69,16 @@ void CNavLadder::CompressIDs( CNavMesh* TheNaVmesh )
 
 	if ( TheNavMesh )
 	{
-		for ( int i=0; i<TheNavMesh->GetLadders().Count(); ++i )
+		auto& vec = TheNavMesh->GetLadders();
+
+		for ( int i=0; i< vec.Count(); ++i )
 		{
-			TheNavMesh->GetLadders()[i]->m_id = m_nextID++;
+			vec[i]->m_id = m_nextID++;
 		}
 	}
 }
 
-//--------------------------------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------------------------------------
 void CNavLadder::OnSplit( CNavArea *original, CNavArea *alpha, CNavArea *beta )
 {
 	for (auto& connect : m_connections)
@@ -111,38 +113,7 @@ void CNavLadder::ConnectTo( CNavArea *area )
 	}
 
 	auto& newconnect = m_connections.emplace_back(area);
-	const float center = (m_top.z + m_bottom.z) * 0.5f;
-
-	if (area->GetCenter().z > center)
-	{
-		// connected area is closer to the ladder top, mark it as a 'top' connection
-		newconnect.bottom = false;
-		newconnect.point.x = m_top.x;
-		newconnect.point.y = m_top.y;
-		Vector close;
-		area->GetClosestPointOnArea(m_top, &close);
-		newconnect.point.z = close.z + (navgenparams->step_height / 2.0f);
-
-		if (newconnect.point.z > m_top.z)
-		{
-			newconnect.point.z = m_top.z - 1.0f;
-		}
-	}
-	else
-	{
-		// mark as bottom
-		newconnect.bottom = true;
-		newconnect.point.x = m_bottom.x;
-		newconnect.point.y = m_bottom.y;
-		Vector close;
-		area->GetClosestPointOnArea(m_bottom, &close);
-		newconnect.point.z = close.z + (navgenparams->step_height / 2.0f);
-
-		if (newconnect.point.z < m_bottom.z)
-		{
-			newconnect.point.z = m_bottom.z + 1.0f;
-		}
-	}
+	newconnect.ComputeConnectionPoint(m_top, m_bottom);
 }
 
 
@@ -686,6 +657,43 @@ void LadderToAreaConnection::PostLoad()
 	}
 
 	connect = area;
+}
+
+void LadderToAreaConnection::ComputeConnectionPoint(const Vector& top, const Vector& bottom)
+{
+	CNavArea* area = GetConnectedArea();
+	const float center = (top.z + bottom.z) * 0.5f;
+
+	if (area->GetCenter().z > center)
+	{
+		// connected area is closer to the ladder top, mark it as a 'top' connection
+		this->bottom = false;
+		this->point.x = top.x;
+		this->point.y = top.y;
+		Vector close;
+		area->GetClosestPointOnArea(top, &close);
+		this->point.z = close.z + (navgenparams->step_height / 2.0f);
+
+		if (this->point.z > top.z)
+		{
+			this->point.z = top.z - 1.0f;
+		}
+	}
+	else
+	{
+		// mark as bottom
+		this->bottom = true;
+		this->point.x = bottom.x;
+		this->point.y = bottom.y;
+		Vector close;
+		area->GetClosestPointOnArea(bottom, &close);
+		this->point.z = close.z + (navgenparams->step_height / 2.0f);
+
+		if (this->point.z < bottom.z)
+		{
+			this->point.z = bottom.z + 1.0f;
+		}
+	}
 }
 
 void CNavLadder::MergeLadders(CNavLadder* bottom, CNavLadder* top)

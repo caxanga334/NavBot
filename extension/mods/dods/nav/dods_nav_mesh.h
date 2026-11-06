@@ -2,6 +2,8 @@
 #define __NAVBOT_DODS_NAV_MESH_H_
 
 #include <navmesh/nav_mesh.h>
+#include "dods_nav_area.h"
+#include "dods_nav_waypoint.h"
 
 class CDoDSNavArea;
 class CDoDSWaypoint;

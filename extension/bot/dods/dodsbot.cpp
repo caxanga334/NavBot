@@ -16,8 +16,8 @@ CDoDSBot::CDoDSBot(edict_t* edict) :
 	m_dodmovement = std::make_unique<CDoDSBotMovement>(this);
 	m_dodcombat = std::make_unique<CDoDSBotCombat>(this);
 	m_dodcontrol = std::make_unique<CDoDSBotPlayerController>(this);
-	m_dodpathprocessor = std::make_unique<CDoDSBotPathProcessor>(this);
 	m_droppedAmmo = false;
+	m_areaToBomb = nullptr;
 }
 
 CDoDSBot::~CDoDSBot()
@@ -50,6 +50,7 @@ void CDoDSBot::Spawn()
 	CBaseBot::Spawn();
 
 	m_droppedAmmo = false;
+	m_areaToBomb = nullptr;
 	
 	TryChangingClasses();
 }
@@ -149,7 +150,6 @@ CDoDSBotPathCost::CDoDSBotPathCost(CDoDSBot* bot, RouteType type) :
 	IGroundPathCost(bot)
 {
 	m_me = bot;
-	m_dodpathprocessor = bot->GetPathProcessorInterface();
 	m_routetype = type;
 	m_hasbomb = bot->GetInventoryInterface()->HasBomb();
 }
@@ -171,10 +171,13 @@ float CDoDSBotPathCost::operator()(CNavArea* baseToArea, CNavArea* fromArea, con
 	{
 		if (!toArea->CanMyTeamPlantBomb(m_teamindex))
 		{
-			return -1.0f; // I can't open this path, dead end
+			return DEADEND_COST; // I can't open this path, dead end
 		}
 
-		m_dodpathprocessor->OnAreaBlockedByBomb(baseToArea);
+		// the first bomb closed area most likely always the nearest to the bomb
+		// mark this area so the bot behavior later picks it up and bomb it open
+		m_me->SetAreaToBomb(toArea);
+		return DEADEND_COST;
 
 		if (!m_hasbomb)
 		{

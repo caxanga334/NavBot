@@ -1,16 +1,12 @@
 #ifndef _NAV_WAYPOINT_H_
 #define _NAV_WAYPOINT_H_
 
-#include <cstring>
-#include <vector>
-#include <array>
-#include <variant>
-#include <optional>
-#include <sdkports/sdk_ehandle.h>
 #include "nav.h"
+#include "nav_scripting.h"
 
 class CBaseBot;
 class CRCBot2Waypoint;
+class CCommand;
 
 struct WaypointConnect
 {
@@ -87,15 +83,18 @@ public:
 		{
 			return BASEFLAGS_DEFEND;
 		}
-		else if (std::strcmp(szFlags, "sniper") == 0)
+
+		if (std::strcmp(szFlags, "sniper") == 0)
 		{
 			return BASEFLAGS_SNIPER;
 		}
-		else if (std::strcmp(szFlags, "roam") == 0)
+
+		if (std::strcmp(szFlags, "roam") == 0)
 		{
 			return BASEFLAGS_ROAM;
 		}
-		else if (std::strcmp(szFlags, "crouch") == 0)
+
+		 if (std::strcmp(szFlags, "crouch") == 0)
 		{
 			return BASEFLAGS_CROUCH;
 		}
@@ -115,9 +114,9 @@ public:
 	// Called at intervals
 	virtual void Update();
 	// invoked when a game round restarts
-	virtual void OnRoundRestart() { Reset(); }
+	virtual void OnRoundRestart();
 	// Is this waypoint enabled?
-	virtual bool IsEnabled() const { return true; }
+	virtual bool IsEnabled() const;
 	// Can this team use this waypoint
 	virtual bool IsAvailableToTeam(const int teamNum) const
 	{
@@ -261,6 +260,8 @@ public:
 	// Prints information about this waypoint to the developer console. (Called when the waypoint info command is used on this waypoint)
 	virtual void PrintInfo();
 
+	void Edit_EnabledCondition(const CCommand& args);
+
 protected:
 	friend class CNavMesh;
 
@@ -274,6 +275,7 @@ protected:
 	mutable CHandle<CBaseEntity> m_user; // Entity of the bot using this waypoint
 	mutable CountdownTimer m_expireUserTimer; // timer to expire the user
 	std::vector<WaypointConnect> m_connections; // Waypoint connections
+	navscripting::ToggleCondition m_enable_condition;
 
 	// Called when a bot 'uses' this waypoint
 	virtual void OnUse(CBaseBot* user) const {}

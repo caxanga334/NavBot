@@ -19,7 +19,6 @@ public:
 	{
 		return TryToMaintain(PRIORITY_LOW);
 	}
-	TaskEventResponseResult<CDoDSBot> OnPathStatusChanged(CDoDSBot* bot) override { return TryToMaintain(PRIORITY_LOW); }
 
 	const char* GetName() const override { return "DeployBomb"; }
 private:

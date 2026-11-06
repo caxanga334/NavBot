@@ -79,6 +79,18 @@ void CWaypoint::Update()
 	}
 }
 
+void CWaypoint::OnRoundRestart()
+{
+	Reset();
+
+	m_enable_condition.OnRoundRestart();
+}
+
+bool CWaypoint::IsEnabled() const
+{
+	return m_enable_condition.RunTestCondition();
+}
+
 bool CWaypoint::CanBeUsedByBot(CBaseBot* bot) const
 {
 	if (m_user.Get() == bot->GetEntity())
@@ -119,6 +131,10 @@ void CWaypoint::Save(std::fstream& filestream, uint32_t version)
 			filestream.write(reinterpret_cast<char*>(&id), sizeof(WaypointID));
 		}
 	}
+
+	// V2 data
+
+	m_enable_condition.Save(filestream, version);
 }
 
 NavErrorType CWaypoint::Load(std::fstream& filestream, uint32_t version, uint32_t subVersion)
@@ -156,6 +172,20 @@ NavErrorType CWaypoint::Load(std::fstream& filestream, uint32_t version, uint32_
 			connect.connection = id;
 		}
 	}
+
+	if (version < 2)
+	{
+		if (!filestream.good())
+		{
+			return NAV_CORRUPT_DATA;
+		}
+
+		return NAV_OK;
+	}
+
+	// Load data added in version 2
+	
+	m_enable_condition.Load(filestream, version);
 
 	if (!filestream.good())
 	{
@@ -221,7 +251,9 @@ void CWaypoint::Draw() const
 	constexpr std::size_t size = 512;
 
 	std::unique_ptr<char[]> text = std::make_unique<char[]>(size);
-	ke::SafeSprintf(text.get(), size, "Waypoint #%i Team #%i Radius %3.1f Flags ", m_ID, m_teamNum, m_radius);
+	
+	ke::SafeSprintf(text.get(), size, "Waypoint #%i Enabled %s Team #%i Radius %3.1f Flags ", 
+		m_ID, UtilHelpers::textformat::FormatBool(this->IsEnabled()), m_teamNum, m_radius);
 
 	if (HasFlags(BASEFLAGS_DEFEND))
 	{

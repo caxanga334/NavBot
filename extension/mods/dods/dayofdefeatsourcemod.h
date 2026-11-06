@@ -124,6 +124,8 @@ public:
 	CNavMesh* NavMeshFactory() override;
 	void OnMapStart() override;
 	void OnRoundStart() override;
+	void OnNavMeshLoaded() override;
+	void OnNavMeshDestroyed() override;
 	bool IsTeamBasedGame() const override { return true; }
 	// NULL if the objective resource entity is invalid
 	const CDODObjectiveResource* GetDODObjectiveResource() const;
@@ -180,6 +182,19 @@ public:
 	int GetClassLimit(dayofdefeatsource::DoDClassType cls, dayofdefeatsource::DoDTeam team) const;
 	CDoDSSharedBotMemory* GetSharedBotMemory(int teamindex) override;
 	const CDoDModSettings* GetDoDModSettings() const { return static_cast<const CDoDModSettings*>(GetModSettings()); }
+	/**
+	 * @brief Returns a random obstacle (non objective) bomb to plant.
+	 * @param bot Bot that will be planting the bomb.
+	 * @return Bomb target entity pointer. NULL if none is found.
+	 */
+	CBaseEntity* GetRandomObstacleBombToPlant(const CDoDSBot* bot) const;
+	/**
+	 * @brief Returns the nearest (non objective) bomb to plant.
+	 * @param bot Bot that will be planting the bomb.
+	 * @return Bomb target entity pointer. NULL if none is found.
+	 */
+	CBaseEntity* GetNearestObstacleBombToPlant(const CDoDSBot* bot) const;
+
 protected:
 	CModSettings* CreateModSettings() const override;
 	ISharedBotMemory* CreateSharedMemory() const override;
@@ -235,6 +250,7 @@ private:
 	ClassLimits m_classlimits_allies;
 	ClassLimits m_classlimits_axis;
 	bool m_random_class_allowed;
+	std::vector<CDoDSNavArea*> m_bombAreas; // nav areas blocked by bombs
 
 	void UpdateClassLimits();
 };

@@ -47,16 +47,7 @@ Use `-2` to make the volume neutral.
 ## Volume Toggle Condition
 
 The volume's toggle condition can be updated using `sm_nav_volume_set_toggle_condition`.    
-The command accepts the following arguments:    
-
-* -clear: Clears the toggle condition data.
-* -setvectorme: Sets the vector data to your current position.
-* -setvectordata <pos>: Sets the vector data to the given position. The position must be in quotes. Example: `-setvectordata "128.0 64.0 -256.0"`.
-* -setintdata <data>: Sets the interger data used by some toggle condition types.
-* -setfloatdata <data>: Sets the float data used by some toggle condition types.
-* -setentity <ent index>: Sets the toggle condition target entity by index.
-* -toggleinverted: Toggles the toggle condition inverted status.
-* -settoggletypebyid <index>: Sets the toggle condition type by their index.
+See [Toggle Condition Command Usage](NAVMESH_SCRIPTING.md) for more information.
 
 Use the `sm_nav_scripting_list_conditions` command to get a list of toggle conditions and their IDs.
 

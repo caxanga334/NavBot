@@ -136,6 +136,8 @@ namespace navscripting
 			m_targetEnt.FindLinkedEntity();
 		}
 
+		// Returns true if a toggle condition type was set
+		bool IsToggleConditionSet() const { return m_toggle_type != TCTypes::TYPE_NOT_SET; }
 		void SearchForEntities() { m_targetEnt.FindLinkedEntity(); }
 		void SetTargetEntity(CBaseEntity* entity) { m_targetEnt.LinkToEntity(entity); }
 		void SetIntegerData(int value) { m_iData = value; }
@@ -165,7 +167,7 @@ namespace navscripting
 			m_toggle_type = TCTypes::TYPE_NOT_SET;
 			m_iData = 0;
 			m_flData = 0.0f;
-			m_vecData = vec3_origin;
+			m_vecData.Init(0.0f, 0.0f, 0.0f);
 			m_inverted = false;
 		}
 

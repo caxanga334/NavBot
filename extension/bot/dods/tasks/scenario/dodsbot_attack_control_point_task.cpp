@@ -43,6 +43,12 @@ bool CDoDSBotAttackControlPointTask::IsPossible(CDoDSBot* bot, const CDayOfDefea
 
 		for (auto point : points)
 		{
+			// filter out any deleted points
+			if (point->point.Get() == nullptr)
+			{
+				continue;
+			}
+
 			if (team == dayofdefeatsource::DoDTeam::DODTEAM_ALLIES)
 			{
 				// Someone from my team is trying to cap this point and there isn't enough players to cap it, priorize the first point found
@@ -103,7 +109,8 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 		}
 	}
 
-	const CDODObjectiveResource* objres = CDayOfDefeatSourceMod::GetDODMod()->GetDODObjectiveResource();
+	auto mod = CDayOfDefeatSourceMod::GetDODMod();
+	const CDODObjectiveResource* objres = mod->GetDODObjectiveResource();
 	CBaseEntity* pTrigger = m_controlpoint->capture_trigger.Get();
 
 	if (!pTrigger)
@@ -111,6 +118,26 @@ TaskResult<CDoDSBot> CDoDSBotAttackControlPointTask::OnTaskStart(CDoDSBot* bot, 
 		if (!objres || objres->GetNumBombsRequired(m_controlpoint->index) == 0)
 		{
 			return Done("Can't capture target control point!");
+		}
+	}
+
+	Vector triggerPos = UtilHelpers::getWorldSpaceCenter(m_controlpoint->point.Get());
+	CNavArea* start = bot->GetLastKnownNavArea();
+	CNavArea* end = TheNavMesh->GetNearestNavArea(triggerPos, 512.0f, false, true, bot->GetCurrentTeamIndex());
+	
+	if (start != nullptr && end != nullptr)
+	{
+		CDoDSBotPathCost cost(bot, RouteType::FASTEST_ROUTE);
+		float distance = NavAreaTravelDistance(start, end, cost);
+
+		if (distance == -1.0f)
+		{
+			CBaseEntity* bombTarget = mod->GetNearestObstacleBombToPlant(bot);
+
+			if (bombTarget != nullptr)
+			{
+				return SwitchTo(new CDoDSBotDeployBombTask(bombTarget, false), "Bombing obstacle!");
+			}
 		}
 	}
 

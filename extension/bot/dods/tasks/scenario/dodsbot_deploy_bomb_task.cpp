@@ -159,8 +159,5 @@ TaskResult<CDoDSBot> CDoDSBotDeployBombTask::OnTaskUpdate(CDoDSBot* bot)
 
 void CDoDSBotDeployBombTask::OnTaskEnd(CDoDSBot* bot, AITask<CDoDSBot>* nextTask)
 {
-	if (!m_isObjective)
-	{
-		bot->GetPathProcessorInterface()->ClearBombArea(); // area was bombed
-	}
+	bot->SetAreaToBomb(nullptr);
 }

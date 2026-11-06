@@ -2651,6 +2651,42 @@ NavDirType CNavArea::ComputeDirection( Vector *point ) const
 	return NUM_DIRECTIONS;
 }
 
+Vector CNavArea::ComputeConnectionPointToLadder(const CNavLadder* ladder) const
+{
+	Vector point;
+	const float center = (ladder->m_top.z + ladder->m_bottom.z) * 0.5f;
+
+	if (this->GetCenter().z > center)
+	{
+		point.x = ladder->m_top.x;
+		point.y = ladder->m_top.y;
+		Vector close;
+		this->GetClosestPointOnArea(ladder->m_top, &close);
+		point.z = close.z + (navgenparams->step_height / 2.0f);
+
+		if (point.z > ladder->m_top.z)
+		{
+			point.z = ladder->m_top.z - 1.0f;
+		}
+	}
+	else
+	{
+		// mark as bottom
+		point.x = ladder->m_bottom.x;
+		point.y = ladder->m_bottom.y;
+		Vector close;
+		this->GetClosestPointOnArea(ladder->m_bottom, &close);
+		point.z = close.z + (navgenparams->step_height / 2.0f);
+
+		if (point.z < ladder->m_bottom.z)
+		{
+			point.z = ladder->m_bottom.z + 1.0f;
+		}
+	}
+
+	return point;
+}
+
 const HidingSpot* CNavArea::GetRandomHidingSpot() const
 {
 	if (m_hidingSpots.empty()) { return nullptr; }

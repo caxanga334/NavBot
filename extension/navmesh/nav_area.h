@@ -25,7 +25,6 @@
 #include "nav_ladder.h"
 #include "nav_elevator.h"
 #include <sdkports/sdk_timers.h>
-#include <networkvar.h>
 
 // BOTPORT: Clean up relationship between team index and danger storage in nav areas
 constexpr auto MAX_NAV_TEAMS = 2;
@@ -628,6 +627,7 @@ public:
 	NavDirType ComputeLargestPortal( const CNavArea *to, Vector *center, float *halfWidth ) const;		// compute largest portal to adjacent area, returning direction
 	void ComputeClosestPointInPortal( const CNavArea *to, NavDirType dir, const Vector &fromPos, Vector *closePos ) const; // compute closest point within the "portal" between to adjacent areas
 	NavDirType ComputeDirection( Vector *point ) const;			// return direction from this area to the given point
+	Vector ComputeConnectionPointToLadder(const CNavLadder* ladder) const;
 	/**
 	 * @brief Given a direction, computes the area's edge position.
 	 * @param dir Direction to compute.
@@ -885,7 +885,7 @@ public:
 
 				if (ladder != nullptr)
 				{
-					if (ladder->IsConnected(this))
+					if (ladder->IsConnected(other))
 					{
 						return ladder;
 					}

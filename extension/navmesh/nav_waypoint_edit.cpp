@@ -18,6 +18,11 @@ bool CWaypoint::IsEditing()
 	return CNavMesh::IsEditing() && sm_nav_waypoint_edit.GetBool();
 }
 
+void CWaypoint::Edit_EnabledCondition(const CCommand& args)
+{
+	navscripting::concmd::ParseEditCommand(args, m_enable_condition);
+}
+
 CON_COMMAND_F(sm_nav_waypoint_add, "Adds a new waypoint at your position.", FCVAR_CHEAT)
 {
 	if (!CWaypoint::IsEditing())
@@ -508,6 +513,7 @@ CON_COMMAND_F(sm_nav_waypoint_toggle_flags, "Toggles base waypoint flags", FCVAR
 	{
 		Warning("No waypoint selected!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
 	}
 
 	bool found = false;
@@ -548,7 +554,33 @@ CON_COMMAND_F(sm_nav_waypoint_toggle_flags, "Toggles base waypoint flags", FCVAR
 
 CON_COMMAND_F(sm_nav_waypoint_list_base_flags, "List available base flags on the console", FCVAR_CHEAT)
 {
-	Msg("Base Waypoint flags: \n");
+	META_CONPRINT("Base Waypoint flags: \n");
 
 	CWaypoint::PrintBaseFlagsToConsole();
+}
+
+CON_COMMAND_F(sm_nav_waypoint_set_enabled_condition, "Sets the toggle condition that constrols the waypoint enabled/disabled state.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	if (!CWaypoint::IsEditing())
+		return;
+
+	DECLARE_COMMAND_ARGS;
+
+	if (args.ArgC() < 2)
+	{
+		META_CONPRINT("[SM] Usage: sm_nav_waypoint_set_enabled_condition <options> ... \n");
+		navscripting::concmd::PrintHelp();
+		return;
+	}
+
+	auto& waypoint = TheNavMesh->GetSelectedWaypoint();
+
+	if (!waypoint)
+	{
+		META_CONPRINT("No waypoint selected!\n");
+		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
+		return;
+	}
+
+	waypoint->Edit_EnabledCondition(args);
 }

@@ -148,6 +148,32 @@ void CDayOfDefeatSourceMod::OnRoundStart()
 	extmanager->ForEachBot(func);
 }
 
+void CDayOfDefeatSourceMod::OnNavMeshLoaded()
+{
+	std::vector<CDoDSNavArea*> areas;
+	areas.reserve(16);
+
+	auto find_bomb_areas = [&areas](CNavArea* baseArea) {
+		CDoDSNavArea* area = static_cast<CDoDSNavArea*>(baseArea);
+
+		if (area->HasBombRelatedAttributes())
+		{
+			areas.push_back(area);
+		}
+
+		return true;
+	};
+
+	CNavMesh::ForAllAreas(find_bomb_areas);
+	m_bombAreas.swap(areas);
+}
+
+void CDayOfDefeatSourceMod::OnNavMeshDestroyed()
+{
+	m_bombAreas.clear();
+	m_bombAreas.shrink_to_fit();
+}
+
 const CDODObjectiveResource* CDayOfDefeatSourceMod::GetDODObjectiveResource() const
 {
 	if (m_objectiveentity.Get() != nullptr)
@@ -463,6 +489,65 @@ int CDayOfDefeatSourceMod::GetClassLimit(dayofdefeatsource::DoDClassType cls, da
 CDoDSSharedBotMemory* CDayOfDefeatSourceMod::GetSharedBotMemory(int teamindex)
 {
 	return static_cast<CDoDSSharedBotMemory*>(CBaseMod::GetSharedBotMemory(teamindex));
+}
+
+CBaseEntity* CDayOfDefeatSourceMod::GetRandomObstacleBombToPlant(const CDoDSBot* bot) const
+{
+	std::vector<CBaseEntity*> bombs;
+	bombs.reserve(8);
+
+	for (CDoDSNavArea* area : m_bombAreas)
+	{
+		if (!area->HasBombRelatedAttributes())
+		{
+			continue;
+		}
+
+		if (area->CanPlantBomb() && area->CanMyTeamPlantBomb(static_cast<int>(bot->GetMyDoDTeam())))
+		{
+			// CanPlantBomb nulls check the bomb target entity
+			bombs.push_back(area->GetAssignedBombTarget());
+		}
+	}
+
+	if (bombs.empty())
+	{
+		return nullptr;
+	}
+
+	if (bombs.size() == 1U)
+	{
+		return bombs[0];
+	}
+
+	return librandom::utils::GetRandomElementFromVector(bombs);
+}
+
+CBaseEntity* CDayOfDefeatSourceMod::GetNearestObstacleBombToPlant(const CDoDSBot* bot) const
+{
+	CBaseEntity* bomb = nullptr;
+	float best = std::numeric_limits<float>::max();
+
+	for (CDoDSNavArea* area : m_bombAreas)
+	{
+		if (!area->HasBombRelatedAttributes())
+		{
+			continue;
+		}
+
+		if (area->CanPlantBomb() && area->CanMyTeamPlantBomb(static_cast<int>(bot->GetMyDoDTeam())))
+		{
+			float range = bot->GetRangeToSqr(area->GetCenter());
+
+			if (range < best)
+			{
+				best = range;
+				bomb = area->GetAssignedBombTarget();
+			}
+		}
+	}
+
+	return bomb;
 }
 
 CModSettings* CDayOfDefeatSourceMod::CreateModSettings() const

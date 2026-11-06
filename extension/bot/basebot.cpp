@@ -531,16 +531,6 @@ ISharedBotMemory* CBaseBot::GetSharedMemoryInterface() const
 	return extmanager->GetMod()->GetSharedBotMemory(GetCurrentTeamIndex());
 }
 
-IPathProcessor* CBaseBot::GetPathProcessorInterface() const
-{
-	if (!m_basepathprocessor)
-	{
-		m_basepathprocessor = std::make_unique<IPathProcessor>(const_cast<CBaseBot*>(this));
-	}
-
-	return m_basepathprocessor.get();
-}
-
 void CBaseBot::Spawn()
 {
 	if (m_isfirstspawn == false)
