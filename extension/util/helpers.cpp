@@ -1881,6 +1881,7 @@ float UtilHelpers::parsers::ParseFloatClamped(const char* str, const float min, 
 
 bool UtilHelpers::parsers::ParseVector(const std::string& input, Vector& out)
 {
+#ifdef WIN32
 	std::size_t pos = 0U;
 	std::array<float, 3> arr;
 
@@ -1906,6 +1907,18 @@ bool UtilHelpers::parsers::ParseVector(const std::string& input, Vector& out)
 	out.x = arr[0];
 	out.y = arr[1];
 	out.z = arr[2];
+
+
+#else
+	// NavBot is compiled using Debian 11 for better compatibility with old distros
+	// The GCC version from Debian 11 however doesn't ship the std::from_chars float overload
+	int num_found = sscanf(input.c_str(), "%f %f %f", &out.x, &out.y, &out.z);
+
+	if (num_found != 3)
+	{
+		return false;
+	}
+#endif // WIN32
 	return true;
 }
 
