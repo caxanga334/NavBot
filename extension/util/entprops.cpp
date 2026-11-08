@@ -1337,6 +1337,76 @@ bool CEntPropUtils::GetEntPropVector(CBaseEntity* pEntity, PropType proptype, co
 	return true;
 }
 
+bool CEntPropUtils::GetEntPropAngles(CBaseEntity* entity, PropType proptype, const char* prop, QAngle& result, int element)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CEntPropUtils::GetEntPropAngles", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	SourceMod::sm_sendprop_info_t info;
+	SendProp* pProp = nullptr;
+	int bit_count;
+	int offset;
+	bool is_unsigned = false;
+
+	switch (proptype)
+	{
+	case Prop_Data:
+		typedescription_t* td;
+		SourceMod::sm_datatable_info_t dinfo;
+
+		if (!FindDataMap(entity, dinfo, prop))
+		{
+			return false;
+		}
+
+		td = dinfo.prop;
+
+		if (td->fieldType != FIELD_VECTOR && td->fieldType != FIELD_POSITION_VECTOR)
+		{
+			return false;
+		}
+
+		CHECK_SET_PROP_DATA_OFFSET(false);
+
+		if (td->fieldType == FIELD_CUSTOM && (td->flags & FTYPEDESC_OUTPUT) == FTYPEDESC_OUTPUT)
+		{
+			variant_t* pVariant = (variant_t*)((intptr_t)entity + offset);
+
+			if (pVariant->fieldType != FIELD_VECTOR && pVariant->fieldType != FIELD_POSITION_VECTOR)
+			{
+				return false;
+			}
+		}
+
+		break;
+
+	case Prop_Send:
+
+		if (!FindSendProp(&info, entity, prop))
+		{
+			return false;
+		}
+
+		offset = info.actual_offset;
+		pProp = info.prop;
+		bit_count = pProp->m_nBits;
+
+		PROP_TYPE_SWITCH(DPT_Vector, "vector", false);
+
+		break;
+
+	default:
+		return false;
+		break;
+	}
+
+	QAngle* v = (QAngle*)((uint8_t*)entity + offset);
+	result = *v;
+
+	return true;
+}
+
 /// @brief Sets a vector of floats in an entity, given a named network property.
 /// @param entity Entity/edict index.
 /// @param proptype Property type.
@@ -2626,4 +2696,35 @@ int entityprops::GetEntityHammerID(CBaseEntity* entity)
 
 	int* hammerid = reinterpret_cast<int*>(reinterpret_cast<std::uint8_t*>(entity) + offset);
 	return *hammerid;
+}
+
+const QAngle& entityprops::GetEntityLocalAngles(CBaseEntity* entity)
+{
+	static unsigned int offset = 0U;
+
+	if (offset == 0U)
+	{
+		CBaseEntity* worldspawn = gamehelpers->ReferenceToEntity(0);
+
+		if (!worldspawn)
+		{
+			smutils->LogError(myself, "entityprops::GetEntityLocalAngles -- Failed to get a CBaseEntity ptr to worldspawn!");
+			worldspawn = entity; // use the given entity if it fails
+		}
+
+		// Use worldspawn for the look up
+		SourceMod::sm_datatable_info_t info;
+		if (!gamehelpers->FindDataMapInfo(gamehelpers->GetDataMap(worldspawn), "m_angRotation", &info))
+		{
+			return vec3_angle;
+		}
+
+		offset = info.actual_offset;
+#ifdef EXT_DEBUG
+		smutils->LogMessage(myself, "Computed CBaseEntity::m_angRotation offset: %u", offset);
+#endif // EXT_DEBUG
+	}
+
+	QAngle* angles = reinterpret_cast<QAngle*>(reinterpret_cast<std::uint8_t*>(entity) + offset);
+	return *angles;
 }

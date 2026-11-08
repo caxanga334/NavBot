@@ -105,6 +105,7 @@ public:
 	bool GetEntPropVector(int entity, PropType proptype, const char *prop, Vector &result, int element = 0);
 	bool GetEntPropVector(edict_t* entity, PropType proptype, const char* prop, Vector& result, int element = 0);
 	bool GetEntPropVector(CBaseEntity* entity, PropType proptype, const char* prop, Vector& result, int element = 0);
+	bool GetEntPropAngles(CBaseEntity* entity, PropType proptype, const char* prop, QAngle& result, int element = 0);
 	bool SetEntPropVector(int entity, PropType proptype, const char *prop, Vector value, int element = 0);
 	bool GetEntPropString(int entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
 	bool GetEntPropString(edict_t* entity, PropType proptype, const char* prop, char* result, int maxlen, size_t& len, int element = 0);
@@ -402,6 +403,8 @@ namespace entityprops
 	 * @return Hammer ID. Returns 0 if the current game doesn't support hammer ID.
 	 */
 	int GetEntityHammerID(CBaseEntity* entity);
+
+	const QAngle& GetEntityLocalAngles(CBaseEntity* entity);
 }
 
 #endif

@@ -490,9 +490,10 @@ public:
 	 * Example: Closed doors that can be open with the USE key.
 	 * @param entity Entity blocking the bot's path.
 	 * @param useTarget Entity the bot should press USE. If NULL, the obstacle entity will be used.
+	 * @param parentDepth How deep we are in an entity parent recursion.
 	 * @return true if this entity is useable.
 	 */
-	virtual bool IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget);
+	virtual bool IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget, int parentDepth = 0);
 	/**
 	 * @brief Tell the movement interface to perform a counter-strafe. (Move in the opposite direction of motion).
 	 * @param time How long to keep counter-strafing. Disabled automatically once the bot reaches near zero speed.

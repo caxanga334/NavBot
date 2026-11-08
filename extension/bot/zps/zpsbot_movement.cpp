@@ -10,7 +10,7 @@ CZPSBotMovement::CZPSBotMovement(CZPSBot* bot) :
 {
 }
 
-bool CZPSBotMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
+bool CZPSBotMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget, int parentDepth)
 {
 	CZPSBot* bot = GetBot<CZPSBot>();
 

@@ -2,6 +2,7 @@
 #define __NAVBOT_BOT_SHARED_USE_ENTITY_TASK_H_
 
 #include <mods/basemod.h>
+#include <sdkports/sdk_subs.h>
 
 template <typename BotClass, typename PathCostClass>
 class CBotSharedUseEntityTask : public AITask<BotClass>
@@ -18,6 +19,8 @@ public:
 		m_entity(entity)
 	{
 		m_rangeToEntity = std::numeric_limits<float>::max();
+		m_isMomentaryRotButton = sdk::buttons::IsMomentaryRotButton(entity);
+		m_initialButtonPos = m_isMomentaryRotButton ? sdk::buttons::ComputeMomentaryRotButtonPos(entity) : -1.0f;
 	}
 
 	/**
@@ -78,12 +81,33 @@ public:
 
 			if (!m_timeout.HasStarted())
 			{
-				m_timeout.Start(5.0f);
+				if (m_isMomentaryRotButton)
+				{
+					// these buttons may take a longer time to press
+					m_timeout.Start(30.0f);
+				}
+				else
+				{
+					m_timeout.Start(5.0f);
+				}
 			}
 
 			if (input->IsAimOnTarget() && !modhelpers->IsUseObstructed(bot->GetEntity(), entity, &obstruction, &usePos))
 			{
 				input->PressUseButton();
+
+				if (m_isMomentaryRotButton)
+				{
+					float pos = sdk::buttons::ComputeMomentaryRotButtonPos(entity);
+
+					if ((pos == 0.0f || pos == 1.0f) && pos != m_initialButtonPos)
+					{
+						return AITask<BotClass>::Done("Momentary button reached end position!");
+					}
+
+					return AITask<BotClass>::Continue();
+				}
+
 				return AITask<BotClass>::Done("Use button pressed!");
 			}
 
@@ -193,6 +217,8 @@ private:
 	CPathFailCounter m_counter;
 	CountdownTimer m_timeout;
 	float m_rangeToEntity;
+	bool m_isMomentaryRotButton;
+	float m_initialButtonPos;
 	std::function<bool(BotClass*, CBaseEntity*)> m_validator;
 };
 

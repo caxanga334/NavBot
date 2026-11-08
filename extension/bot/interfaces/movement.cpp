@@ -1,14 +1,13 @@
 #include NAVBOT_PCH_FILE
-#include <cstring>
-#include <extension.h>
 #include <amtl/am-float.h>
-#include <sdkports/debugoverlay_shared.h>
 #include <sdkports/sdk_entityoutput.h>
-#include <bot/interfaces/playercontrol.h>
-#include <bot/basebot.h>
+#include <sdkports/sdk_subs.h>
+#include <sdkports/sdk_doors.h>
 #include <navmesh/nav_mesh.h>
 #include <navmesh/nav_area.h>
 #include <navmesh/nav_ladder.h>
+#include <bot/basebot.h>
+
 #include <manager.h>
 #include <mods/basemod.h>
 #include <entities/baseentity.h>
@@ -1800,7 +1799,7 @@ bool IMovement::BreakObstacle(CBaseEntity* obstacle)
 	return true;
 }
 
-bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
+bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget, int parentDepth)
 {
 #ifdef EXT_VPROF_ENABLED
 	VPROF_BUDGET("IMovement::IsUseableObstacle", "NavBot");
@@ -1810,12 +1809,12 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 
 	if (entprops->HasEntProp(entity, Prop_Data, "m_bDoorGroup"))
 	{
-		constexpr int SF_USEOPENS = 256; // spawn flag to allow +USE on brush doors. See: https://developer.valvesoftware.com/wiki/Func_door
+
 
 		int spawnflags = 0;
-		entprops->GetEntProp(gamehelpers->EntityToBCompatRef(entity), Prop_Data, "m_spawnflags", spawnflags);
+		entprops->GetEntProp(entity, Prop_Data, "m_spawnflags", spawnflags);
 
-		if ((spawnflags & SF_USEOPENS) != 0)
+		if (sdk::IsBitSet(spawnflags, sdk::doors::SF_DOOR_PUSE))
 		{
 			return true;
 		}
@@ -1845,6 +1844,19 @@ bool IMovement::IsUseableObstacle(CBaseEntity* entity, CBaseEntity** useTarget)
 			return true;
 		default:
 			return false;
+		}
+	}
+
+	// Some maps uses prop_dynamic on doors, these doesn't have any open/closed state.
+	// However sometimes the entity is parented to a door
+	if (parentDepth == 0 && std::strncmp(classname, "prop_dynamic", 12) == 0)
+	{
+		CBaseEntity* parent = nullptr;
+		entprops->GetEntPropEnt(entity, Prop_Data, "m_hParent", nullptr, &parent);
+
+		if (parent != nullptr)
+		{
+			return IsUseableObstacle(parent, useTarget, parentDepth + 1);
 		}
 	}
 

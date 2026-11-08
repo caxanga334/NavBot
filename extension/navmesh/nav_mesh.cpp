@@ -390,6 +390,10 @@ bool CNavMesh::IsEntityWalkable(CBaseEntity* pEntity, unsigned int flags)
 
 bool CNavMesh::IsEntitySolidForTransientAreas(CBaseEntity* pEntity) const
 {
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("CNavMesh::IsEntitySolidForTransientAreas", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
 	using namespace std::literals::string_view_literals;
 
 	// Classname patterns of entities that should always be solid for transient areas.
@@ -432,6 +436,18 @@ bool CNavMesh::IsEntitySolidForTransientAreas(CBaseEntity* pEntity) const
 		}
 	}
 
+	if (UtilHelpers::FClassnameIs(pEntity, "func_physbox"))
+	{
+		int takedamage = DAMAGE_YES;
+		entprops->GetEntProp(pEntity, Prop_Data, "m_takedamage", takedamage);
+
+		// physbox entities that can't be damaged blocks areas
+		if (takedamage == DAMAGE_EVENTS_ONLY || takedamage == DAMAGE_NO)
+		{
+			return true;
+		}
+	}
+
 	return false;
 }
 
@@ -467,26 +483,26 @@ void CNavMesh::Reset( void )
 	DestroyNavigationMesh();
 
 	m_generationMode = GENERATE_NONE;
-	m_currentNode = NULL;
+	m_currentNode = nullptr;
 	ClearWalkableSeeds();
 
 	m_isAnalyzed = false;
 	m_isOutOfDate = false;
 	m_isEditing = false;
 	m_navPlace = UNDEFINED_PLACE;
-	m_markedArea = NULL;
-	m_selectedArea = NULL;
+	m_markedArea = nullptr;
+	m_selectedArea = nullptr;
 	m_bQuitWhenFinished = false;
 	m_isInDangerousState = false;
 
 	m_editMode = NORMAL;
 
-	m_lastSelectedArea = NULL;
+	m_lastSelectedArea = nullptr;
 	m_isPlacePainting = false;
 
 	m_climbableSurface = false;
-	m_markedLadder = NULL;
-	m_selectedLadder = NULL;
+	m_markedLadder = nullptr;
+	m_selectedLadder = nullptr;
 
 	m_updateBlockedAreasTimer.Invalidate();
 

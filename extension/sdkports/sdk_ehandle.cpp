@@ -1,5 +1,4 @@
 #include NAVBOT_PCH_FILE
-#include <extension.h>
 #include "sdk_ehandle.h"
 
 #ifdef EXT_VPROF_ENABLED
