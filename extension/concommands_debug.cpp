@@ -2169,7 +2169,7 @@ CON_COMMAND_F(sm_navbot_debug_bot_highlight_reachable_areas, "Highlights areas c
 
 	for (auto area : vec)
 	{
-		area->DrawFilled(255, 255, 0, 127, 30.0);
+		area->DrawFilled(255, 255, 0, 64, 30.0);
 	}
 }
 

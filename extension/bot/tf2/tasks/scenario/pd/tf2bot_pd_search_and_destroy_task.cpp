@@ -115,7 +115,7 @@ bool CTF2BotPDSearchAndDestroyTask::SelectRandomGoal(CTF2Bot* bot)
 		}
 	}
 
-	botsharedutils::RandomDestinationCollector collector(bot);
+	botsharedutils::IsReachableAreas<CNavArea, CTF2Bot> collector(bot, 4096.0f);
 	collector.Execute();
 
 	if (!collector.IsCollectedAreasEmpty())

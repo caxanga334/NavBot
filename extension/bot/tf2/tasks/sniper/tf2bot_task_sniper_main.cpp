@@ -212,7 +212,7 @@ Vector CTF2BotSniperMainTask::GetRushGoal(CTF2Bot* bot) const
 		return UtilHelpers::getEntityOrigin(gamehelpers->EdictOfIndex(librandom::utils::GetRandomElementFromVector(players)));
 	}
 
-	botsharedutils::RandomDestinationCollector collector(bot, 8192.0f);
+	botsharedutils::IsReachableAreas<CNavArea, CTF2Bot> collector(bot, 8192.0f);
 	collector.Execute();
 
 	if (collector.IsCollectedAreasEmpty())

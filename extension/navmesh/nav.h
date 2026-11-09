@@ -146,6 +146,7 @@ enum NavTraverseType
 	GO_ELEVATOR_DOWN,
 
 	GO_OFF_MESH_CONNECTION,
+	GO_INCOMING_ONEWAY, // Used in area collectors, this is an incoming oneway
 
 	NUM_TRAVERSE_TYPES
 };
@@ -287,12 +288,31 @@ inline const char* NavTraverseTypeToString(NavTraverseType type)
 		"GO_ELEVATOR_UP"sv,
 		"GO_ELEVATOR_DOWN"sv,
 		"GO_OFF_MESH_CONNECTION"sv,
+		"GO_INCOMING_ONEWAY"sv,
 		"NUM_TRAVERSE_TYPES"sv,
 	};
 
 	static_assert(names.size() == static_cast<std::size_t>(NavTraverseType::NUM_TRAVERSE_TYPES) + 1U, "Nav Traverse Type name array size and enum count mismatch!");
 
 	return names[static_cast<int>(type)].data();
+}
+
+// Returns true if the given traverse method is a ground connection
+inline bool IsNavTraverseMethodViaGround(NavTraverseType type)
+{
+	switch (type)
+	{
+	case NavTraverseType::GO_NORTH:
+		[[fallthrough]];
+	case NavTraverseType::GO_EAST:
+		[[fallthrough]];
+	case NavTraverseType::GO_SOUTH:
+		[[fallthrough]];
+	case NavTraverseType::GO_WEST:
+		return true;
+	default:
+		return false;
+	}
 }
 
 // Returns true if the given error code should be logged as an error.

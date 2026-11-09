@@ -186,6 +186,46 @@ bool IInventory::HasWeapon(CBaseEntity* weapon) const
 	});
 }
 
+bool IInventory::OwnsWeaponOfType(CBaseEntity* weapon) const
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+	int econindex = modhelpers->GetItemEconomyIndex(weapon);
+	const char* classname = gamehelpers->GetEntityClassname(weapon);
+
+	for (auto& ptr : m_weapons)
+	{
+		const CBotWeapon* weapon = ptr.get();
+
+		if (!weapon->IsValid()) { continue; }
+		if (!weapon->IsOwnedByBot(bot)) { continue; }
+		if (weapon->IsWeaponOfType(classname, econindex))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool IInventory::OwnsWeaponOfType(const char* classname, int econindex) const
+{
+	CBaseBot* bot = GetBot<CBaseBot>();
+
+	for (auto& ptr : m_weapons)
+	{
+		const CBotWeapon* weapon = ptr.get();
+
+		if (!weapon->IsValid()) { continue; }
+		if (!weapon->IsOwnedByBot(bot)) { continue; }
+		if (weapon->IsWeaponOfType(classname, econindex))
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 CBaseEntity* IInventory::GetWeaponEntity(const char* classname) const
 {
 	auto it = std::find_if(std::begin(m_weapons), std::end(m_weapons), [&classname](const std::unique_ptr<CBotWeapon>& weaponptr) {
@@ -748,6 +788,36 @@ const CBotWeapon* IInventory::GetBestLowAmmoWeapon() const
 	}
 
 	return best;
+}
+
+bool IInventory::CanPickupWeapon(CBaseEntity* entity) const
+{
+	if (CBaseEntity* owner = nullptr; entprops->GetEntPropEnt(entity, Prop_Send, "m_hOwner", nullptr, &owner))
+	{
+		if (owner != nullptr)
+		{
+			return false;
+		}
+	}
+
+	if (OwnsWeaponOfType(entity))
+	{
+		return false; // already owns this exact weapon
+	}
+
+	auto info = extmanager->GetMod()->GetWeaponInfoManager()->GetWeaponInfo(entity);
+
+	if (info == nullptr)
+	{
+		return false;
+	}
+
+	if (info->IsWeaponOfType(WeaponInfo::WeaponType::NOT_USEABLE_WEAPON))
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void IInventory::RemoveInvalidWeapons()

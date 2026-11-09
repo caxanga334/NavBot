@@ -18,6 +18,9 @@ public:
 	bool EquipWeapon(const CBotWeapon* weapon) const override;
 	bool EquipWeapon(CBaseEntity* weapon) const override;
 	void DropHeldWeapon() const override;
+	bool ShouldDropWeaponToPick(CBaseEntity* entity) const override;
+	bool CanPickupAnyWeapons() const override;
+	bool CanPickupWeapon(CBaseEntity* entity) const override;
 	// Returns the first weapon with low ammo.
 	const CBotWeapon* GetWeaponWithLowAmmo();
 	const CZPSBotWeapon* GetActiveZPSWeapon() const { return static_cast<const CZPSBotWeapon*>(GetActiveBotWeapon()); }

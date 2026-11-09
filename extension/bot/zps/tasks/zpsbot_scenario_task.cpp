@@ -3,11 +3,11 @@
 #include <mods/zps/zps_mod.h>
 #include <mods/zps/nav/zps_nav_mesh.h>
 #include <bot/tasks_shared/bot_shared_collect_items.h>
+#include <bot/tasks_shared/bot_shared_pickup_weapon_task.h>
 #include "scenario/zpsbot_survival_human_task.h"
 #include "scenario/zpsbot_survival_zombie_task.h"
 #include "scenario/zpsbot_objective_human_task.h"
 #include "scenario/zpsbot_objective_zombie_task.h"
-#include "zpsbot_find_weapon_task.h"
 #include "zpsbot_scenario_task.h"
 
 CZPSBotScenarioTask::CZPSBotScenarioTask()
@@ -120,11 +120,13 @@ TaskResult<CZPSBot> CZPSBotScenarioTask::OnTaskUpdate(CZPSBot* bot)
 			{
 				m_weaponSearchTimer.StartRandom(12.0f, 30.0f);
 
-				CBaseEntity* weapon = nullptr;
+				const float maxdist = extmanager->GetMod()->GetModSettings()->GetCollectItemMaxDistance();
+				botsharedutils::weapons::WeaponPickupSelector<CZPSBot, CNavArea> selector(bot, maxdist,"weapon_*");
+				CBaseEntity* weapon = selector.SelectWeapon();
 
-				if (CZPSBotFindWeaponTask::IsPossible(bot, &weapon))
+				if (weapon != nullptr)
 				{
-					return PauseFor(new CZPSBotFindWeaponTask(weapon), "Searching for weapons.");
+					return PauseFor(new CBotSharedPickupWeaponTask<CZPSBot, CZPSBotPathCost>(weapon, true), "Picking up weapons!");
 				}
 			}
 			else if (m_healthSearchTimer.IsElapsed() && bot->GetHealthState() != CBaseBot::HealthState::HEALTH_OK)
@@ -188,7 +190,7 @@ TaskResult<CZPSBot> CZPSBotScenarioTask::OnTaskResume(CZPSBot* bot, AITask<CZPSB
 	if (m_armorSearchTimer.IsElapsed()) { m_armorSearchTimer.StartRandom(5.0f, 10.0f); }
 
 	// take the opportunity to discard any ammo the bot doesn't use/need
-	bot->DropUnusedAmmo();
+	// bot->DropUnusedAmmo(); // disabled, causes bots to fail to pickup weapons
 	return Continue();
 }
 
@@ -210,4 +212,9 @@ QueryAnswerType CZPSBotScenarioTask::ShouldRetreat(CBaseBot* me)
 	}
 
 	return ANSWER_UNDEFINED;
+}
+
+bool CZPSBotScenarioTask::WantsWeapons(CZPSBot* bot) const
+{
+	return false;
 }

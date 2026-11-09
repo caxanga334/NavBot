@@ -281,6 +281,26 @@ public:
 
 		return weapon;
 	}
+	// Returns the first out of ammo weapon instance.
+	const CBotWeapon* FindFirstOutOfAmmoWeapon() const
+	{
+		const CBaseBot* bot = GetBot<CBaseBot>();
+
+		for (auto& weaponptr : m_weapons)
+		{
+			if (!weaponptr->IsValid() || !weaponptr->IsOwnedByBot(bot))
+			{
+				continue;
+			}
+
+			if (weaponptr->IsOutOfAmmo(bot))
+			{
+				return weaponptr.get();
+			}
+		}
+
+		return nullptr;
+	}
 
 	/**
 	 * @brief Finds a combat grenade to throw at the given target position.
@@ -312,11 +332,26 @@ public:
 	 */
 	bool HasWeapon(const char* classname) const;
 	/**
-	 * @brief Checks if the bot owns this weapon.
+	 * @brief Checks if the bot owns this specific weapon entity.
 	 * @param weapon Weapon entity;
 	 * @return true if the bot owns this weapon.
 	 */
 	bool HasWeapon(CBaseEntity* weapon) const;
+	/**
+	 * @brief Queries if the bot a weapon of this type. This checks the weapon class and econ index instead of the weapon entity.
+	 * NavBot equivalent to the game's CBaseCombatCharacter::Weapon_OwnsThisType function.
+	 * @param weapon Weapon to check.
+	 * @return True if the bot already owns a weapon, false otherwise.
+	 */
+	bool OwnsWeaponOfType(CBaseEntity* weapon) const;
+	/**
+	 * @brief Queries if the bot a weapon of this type. This checks the weapon class and econ index instead of the weapon entity.
+	 * NavBot equivalent to the game's CBaseCombatCharacter::Weapon_OwnsThisType function.
+	 * @param classname Classname to search.
+	 * @param econindex Econ index to search. Pass IModHelpers::NO_ECON_INDEX to only search for classname.
+	 * @return True if the bot already owns a weapon, false otherwise.
+	 */
+	bool OwnsWeaponOfType(const char* classname, int econindex) const;
 	/**
 	 * @brief Checks if a weapon instance is valid.
 	 * Call this to avoid use-after-free crashes when storing weapon pointers.
@@ -450,6 +485,26 @@ public:
 	{
 		return FindBestWeaponAgainstThreat(threat, WeaponInfo::WeaponType::MAX_WEAPON_TYPES) != nullptr;
 	}
+
+	// Returns the weapon drop distance. 
+	virtual float GetWeaponDropDistance() const { return 512.0f; }
+	/**
+	 * @brief Queries if the bot needs to drop a weapon they're carrying in order to pickup the passed weapon.
+	 * @param entity Weapon entity the bot wants to pick up.
+	 * @return true if they should drop, false if not.
+	 */
+	virtual bool ShouldDropWeaponToPick(CBaseEntity* entity) const { return false; /* always false on base, each mod adds their own logic. */ }
+	/**
+	 * @brief Invoked to query if the bot can pickup any weapons at all.
+	 * @return True if the bot can pickup weapons, false if they can't.
+	 */
+	virtual bool CanPickupAnyWeapons() const { return true; }
+	/**
+	 * @brief Invoked to determine if the bot can pickup this weapon instance.
+	 * @param entity Weapon entity instance.
+	 * @return True if the bot can pickup this weapon, false if they can't.
+	 */
+	virtual bool CanPickupWeapon(CBaseEntity* entity) const;
 
 	// holds data used when selecting weapons.
 	struct WeaponSelectData_t

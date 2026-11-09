@@ -390,38 +390,6 @@ void botsharedutils::aiming::SelectDesiredAimSpotForTarget(CBaseBot* bot, CBaseE
 	}
 }
 
-botsharedutils::RandomDestinationCollector::RandomDestinationCollector(CBaseBot* bot, const float travellimit) :
-	INavAreaCollector<CNavArea>(bot->GetLastKnownNavArea(), travellimit)
-{
-	m_bot = bot;
-}
-
-botsharedutils::RandomDestinationCollector::RandomDestinationCollector(CNavArea* start, const float travellimit) :
-	INavAreaCollector<CNavArea>(start, travellimit)
-{
-	m_bot = nullptr;
-}
-
-bool botsharedutils::RandomDestinationCollector::ShouldSearch(CNavArea* area)
-{
-	if (m_bot)
-	{
-		return m_bot->GetMovementInterface()->IsAreaTraversable(area);
-	}
-
-	return !area->IsBlocked(NAV_TEAM_ANY);
-}
-
-bool botsharedutils::RandomDestinationCollector::ShouldCollect(CNavArea* area)
-{
-	if (m_bot)
-	{
-		return m_bot->GetMovementInterface()->IsAreaTraversable(area);
-	}
-
-	return !area->IsBlocked(NAV_TEAM_ANY);
-}
-
 botsharedutils::SpreadDangerToNearbyAreas::SpreadDangerToNearbyAreas(CNavArea* start, int teamid, const float travellimit, const float danger, const float maxdanger) :
 	INavAreaCollector<CNavArea>(start, travellimit)
 {

@@ -123,7 +123,7 @@ private:
 
 	bool GetRandomMoveGoal(BotClass* bot)
 	{
-		botsharedutils::RandomDestinationCollector collector(bot, 2048.0f);
+		botsharedutils::IsReachableAreas<CNavArea, BotClass> collector(bot, 2048.0f);
 		collector.Execute();
 
 		if (collector.IsCollectedAreasEmpty())

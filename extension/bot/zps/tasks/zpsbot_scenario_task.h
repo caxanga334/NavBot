@@ -24,6 +24,8 @@ private:
 	CountdownTimer m_weaponSearchTimer;
 	CountdownTimer m_healthSearchTimer;
 	CountdownTimer m_armorSearchTimer;
+
+	bool WantsWeapons(CZPSBot* bot) const;
 };
 
 #endif // !__NAVBOT_ZPSBOT_SCENARIO_TASK_H_

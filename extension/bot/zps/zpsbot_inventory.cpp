@@ -1,5 +1,8 @@
 #include NAVBOT_PCH_FILE
+#include <mods/zps/zps_mod.h>
 #include "zpsbot.h"
+#include "zpsbot_weapon.h"
+#include "zpsbot_weaponinfo.h"
 #include "zpsbot_inventory.h"
 
 
@@ -62,6 +65,69 @@ bool CZPSBotInventory::EquipWeapon(CBaseEntity* weapon) const
 void CZPSBotInventory::DropHeldWeapon() const
 {
 	GetBot<CZPSBot>()->DelayedFakeClientCommand("dropweapon");
+}
+
+bool CZPSBotInventory::ShouldDropWeaponToPick(CBaseEntity* entity) const
+{
+	CZombiePanicSourceMod* mod = CZombiePanicSourceMod::GetZPSMod();
+	auto info = mod->GetWeaponInfoManager()->GetWeaponInfo(entity);
+
+	if (info)
+	{
+		int invsize = GetInventorySize();
+		int size = static_cast<const ZPSWeaponInfo*>(info)->GetInventorySize();
+		
+		if (invsize + size > MAX_INVENTORY_SIZE)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool CZPSBotInventory::CanPickupAnyWeapons() const
+{
+	if (FindFirstOutOfAmmoWeapon() == nullptr)
+	{
+		// if we don't have any empty weapons and we are at max inventory capacity, don't pickup any weapons
+		if (GetInventorySize() >= MAX_INVENTORY_SIZE)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool CZPSBotInventory::CanPickupWeapon(CBaseEntity* entity) const
+{
+	if (IInventory::CanPickupWeapon(entity))
+	{
+		// ZPS logic. Limit bots to only one weapon per slot
+
+		CZombiePanicSourceMod* mod = CZombiePanicSourceMod::GetZPSMod();
+		auto info = mod->GetWeaponInfoManager()->GetWeaponInfo(entity);
+
+		if (!info) { return false; }
+
+		auto inslot = FindWeaponBySlot(info->GetSlot());
+
+		if (inslot != nullptr)
+		{
+			// allow if this weapon is out of ammo.
+			if (inslot->IsOutOfAmmo(GetBot<CBaseBot>()))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 const CBotWeapon* CZPSBotInventory::GetWeaponWithLowAmmo()

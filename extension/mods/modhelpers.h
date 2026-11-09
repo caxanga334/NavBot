@@ -91,7 +91,7 @@ public:
 	 * @param player Player using the entity.
 	 * @param entity Entity being used.
 	 * @param obstruction Optional. The entity blocking +USE.
-	 * @parma entPos Optional entity position. Defaults to world space center if not specified.
+	 * @param entPos Optional entity position. Defaults to world space center if not specified.
 	 * @return true if an obstructed is found, false otherwise.
 	 */
 	virtual bool IsUseObstructed(CBaseEntity* player, CBaseEntity* entity, CBaseEntity** obstruction = nullptr, const Vector* entPos = nullptr) const;

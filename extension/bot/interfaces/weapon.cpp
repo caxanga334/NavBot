@@ -365,6 +365,21 @@ bool CBotWeapon::CanBeReloaded(const CBaseBot* owner) const
 	return true;
 }
 
+bool CBotWeapon::IsWeaponOfType(const char* classname, int econindex) const
+{
+	if (std::strcmp(classname, m_classname.c_str()) == 0)
+	{
+		if (econindex == IModHelpers::NO_ECON_INDEX)
+		{
+			return true;
+		}
+
+		return econindex == m_econindex;
+	}
+
+	return false;
+}
+
 float CBotWeapon::GetCustomAmmo(const CBaseBot* owner) const
 {
 	const WeaponEntityProperty& prop = GetWeaponInfo()->GetCustomAmmoProperty();

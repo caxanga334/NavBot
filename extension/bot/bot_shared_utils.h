@@ -9,6 +9,7 @@
 #include <bot/interfaces/decisionquery.h>
 #include <bot/interfaces/path/basepath.h>
 #include <mods/modhelpers.h>
+#include <util/helpers.h>
 
 namespace botsharedutils
 {
@@ -138,22 +139,6 @@ namespace botsharedutils
 	};
 
 	/**
-	 * @brief Utility class for selecting random roaming destinations. Filters blocked/unreachable nav areas.
-	 */
-	class RandomDestinationCollector : public INavAreaCollector<CNavArea>
-	{
-	public:
-		RandomDestinationCollector(CBaseBot* bot, const float travellimit = 4096.0f);
-		RandomDestinationCollector(CNavArea* start, const float travellimit = 4096.0f);
-
-		bool ShouldSearch(CNavArea* area) override;
-		bool ShouldCollect(CNavArea* area) override;
-
-	private:
-		CBaseBot* m_bot;
-	};
-
-	/**
 	 * @brief Utility class for collecting reachable areas around the bot.
 	 */
 	template <typename AreaClass, typename BotClass>
@@ -164,6 +149,7 @@ namespace botsharedutils
 		IsReachableAreas(BotClass* bot, AreaClass* startArea, const float limit) :
 			INavAreaCollector<AreaClass>(startArea, limit), m_bot(bot)
 		{
+			InitBot(bot);
 		}
 
 		/**
@@ -177,6 +163,7 @@ namespace botsharedutils
 		IsReachableAreas(BotClass* bot, const float limit, const bool searchLadders = true, const bool searchLinks = true, const bool searchElevators = true) :
 			INavAreaCollector<AreaClass>(static_cast<AreaClass*>(bot->GetLastKnownNavArea()), limit, searchLadders, searchLinks, searchElevators, false), m_bot(bot)
 		{
+			InitBot(bot);
 		}
 
 		bool ShouldSearch(AreaClass* area) override
@@ -184,7 +171,22 @@ namespace botsharedutils
 			// always search the start area
 			if (INavAreaCollector<AreaClass>::IsStartArea(area)) { return true; }
 
-			return m_bot->GetMovementInterface()->IsAreaTraversable(area);
+			if (m_bot->GetMovementInterface()->IsAreaTraversable(area))
+			{
+				auto node = INavAreaCollector<AreaClass>::GetNodeForArea(area);
+
+				if (IsNavTraverseMethodViaGround(node->how))
+				{
+					if (!IsGroundMovementPossible(node->GetParentArea(), area))
+					{
+						return false;
+					}
+				}
+
+				return true;
+			}
+
+			return false;
 		}
 
 		bool ShouldCollect(AreaClass* area) override
@@ -211,9 +213,73 @@ namespace botsharedutils
 		}
 
 		BotClass* GetBot() const { return m_bot; }
+	protected:
+		bool IsTraversable(AreaClass* prevArea, AreaClass* area, const CNavLadder* ladder, const bool isUp) const override
+		{
+			if (ladder->IsBlocked(m_teamIndex))
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		bool IsTraversable(AreaClass* prevArea, AreaClass* area, const NavOffMeshConnection& conn) const override
+		{
+			return m_bot->GetMovementInterface()->IsAbleToUseOffMeshConnection(conn.GetType(), &conn);
+		}
 
 	private:
 		BotClass* m_bot;
+		float m_maxJumpHeight;
+		float m_maxDrop;
+		float m_maxGapJump;
+		int m_teamIndex;
+
+		void InitBot(BotClass* bot)
+		{
+			auto movement = bot->GetMovementInterface();
+
+			if (movement->IsAbleToDoubleJump())
+			{
+				m_maxJumpHeight = movement->GetMaxDoubleJumpHeight();
+			}
+			else
+			{
+				m_maxJumpHeight = movement->GetMaxJumpHeight();
+			}
+
+			m_maxDrop = movement->GetMaxDropHeight();
+			m_maxGapJump = movement->GetMaxGapJumpDistance();
+			m_teamIndex = bot->GetCurrentTeamIndex();
+		}
+
+		bool IsGroundMovementPossible(const AreaClass* fromArea, const AreaClass* area) const
+		{
+			float heightDelta = fromArea->ComputeAdjacentConnectionHeightChange(area);
+
+			if (heightDelta > m_maxJumpHeight)
+			{
+				// too high to climb up
+				return false;
+			}
+
+			if (heightDelta < -m_maxDrop)
+			{
+				// too high to drop down
+				return false;
+			}
+
+			float gaplength = fromArea->ComputeAdjacentConnectionGapDistance(area);
+
+			if (gaplength > m_maxGapJump)
+			{
+				// gap too large for the bot to jump
+				return false;
+			}
+
+			return true;
+		}
 	};
 
 	/**
@@ -327,6 +393,115 @@ namespace botsharedutils::weapons
 	 * @return Weapon's maximum attack range. Returns a large negative value on failure.
 	 */
 	float GetMaxAttackRangeForCurrentlyHeldWeapon(CBaseBot* bot);
+
+	template <typename Bot, typename Nav>
+	class WeaponPickupSelector : public UtilHelpers::IGenericFilter<CBaseEntity*>
+	{
+	public:
+		WeaponPickupSelector(Bot* bot, const float searchRange, const char* pattern) :
+			m_bot(bot), m_reachable(bot, searchRange)
+		{
+			m_patterns.emplace_back(pattern);
+			m_teamIndex = m_bot->GetCurrentTeamIndex();
+			m_candidates.reserve(64);
+		}
+
+		// Call this function to run the search, returns NULL if no weapon is found
+		CBaseEntity* SelectWeapon()
+		{
+			if (!m_bot->GetInventoryInterface()->CanPickupAnyWeapons())
+			{
+				// skip the search
+				return nullptr;
+			}
+
+			m_reachable.Execute();
+
+			for (std::string& pattern : m_patterns)
+			{
+				UtilHelpers::ForEachEntityOfClassname(pattern.c_str(), *this);
+			}
+
+			if (m_candidates.empty())
+			{
+				return nullptr;
+			}
+
+			if (m_candidates.size() == 1)
+			{
+				return m_candidates.front();
+			}
+
+			// Use a random weapon, we don't know if the weapon spawns in the map are static or random
+			// Always rushing to the best weapon may make the bots looks like they have cheats (they kinda do)
+			// Also makes gameplay a bit more randomized
+			return m_candidates.at(CBaseBot::s_botrng.GetRandomInt<std::size_t>(0U, m_candidates.size() - 1U));
+		}
+
+		virtual bool CanPickupWeapon(CBaseEntity* weapon, Nav* area) const
+		{
+			if (area == nullptr)
+			{
+				return false;
+			}
+
+			if (!IsAreaReachable(area))
+			{
+				return false;
+			}
+
+			if (!m_bot->GetInventoryInterface()->CanPickupWeapon(weapon))
+			{
+				return false;
+			}
+
+			if (m_bot->GetBehaviorInterface()->ShouldPickup(m_bot, weapon) == QueryAnswerType::ANSWER_NO)
+			{
+				return false;
+			}
+
+			return true;
+		}
+
+		bool operator()(int index, edict_t* edict, CBaseEntity* entity)
+		{
+			if (this->IsSelected(entity))
+			{
+				m_candidates.emplace_back(entity);
+			}
+
+			return true;
+		}
+
+		bool IsAreaReachable(Nav* area) const { return m_reachable.IsReachable(area); }
+
+		Bot* GetBot() const { return m_bot; }
+
+	private:
+		Bot* m_bot;
+		int m_teamIndex;
+		botsharedutils::IsReachableAreas<Nav, Bot> m_reachable;
+		std::vector<CBaseEntity*> m_candidates; // list of valid weapons for pickup
+		std::vector<std::string> m_patterns;
+
+		bool IsSelected(CBaseEntity* object) override
+		{
+			// avoid having all bots go to the same weapon
+			if (m_bot->GetSharedMemoryInterface()->WasItemRecentlyPickedUp(object))
+			{
+				return false;
+			}
+
+			CNavArea* area = TheNavMesh->GetNearestNavArea(UtilHelpers::getEntityOrigin(object), 256.0f, false, true, m_teamIndex);
+			
+			if (CanPickupWeapon(object, static_cast<Nav*>(area)))
+			{
+				return true;
+			}
+
+			return false;
+		}
+	};
 }
 
 namespace botsharedutils::aiming

@@ -102,6 +102,13 @@ public:
 	 * @return True if the weapon can be reloaded, false otherwise.
 	 */
 	virtual bool CanBeReloaded(const CBaseBot* owner) const;
+	/**
+	 * @brief Is this weapon of the give type?
+	 * @param classname Classname to match.
+	 * @param econindex Economy index.
+	 * @return True if yes, false otherwise.
+	 */
+	bool IsWeaponOfType(const char* classname, int econindex) const;
 protected:
 	const WeaponInfo* m_info;
 

@@ -148,7 +148,7 @@ bool CZPSBotObjectiveFindItemTask::HasSpaceInInventory(CZPSBot* bot) const
 
 	int size = static_cast<const ZPSWeaponInfo*>(info)->GetInventorySize();
 
-	if (bot->GetInventoryInterface()->GetInventorySize() + size >= CZPSBotInventory::MAX_INVENTORY_SIZE)
+	if (bot->GetInventoryInterface()->GetInventorySize() + size > CZPSBotInventory::MAX_INVENTORY_SIZE)
 	{
 		return false;
 	}

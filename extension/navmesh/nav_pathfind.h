@@ -1174,6 +1174,7 @@ public:
 	}
 
 	inline T* GetArea() const { return this->me; }
+	inline T* GetParentArea() const { return this->parent; }
 	// Returns the travel cost to reach this area from the parent area.
 	inline const float GetTravelCostFromParent() const { return this->cost; }
 	// Returns the total travel cost to reach this area from the start.
@@ -1419,9 +1420,26 @@ public:
 	void MarkArea(T* area) { m_markedAreas.insert(area->GetID()); }
 
 protected:
+	/**
+	 * @brief Called to determine if the given area is reachable via ladder.
+	 * @param prevArea Previous area (parent).
+	 * @param area Area
+	 * @param ladder Ladder used to go from prevArea to area
+	 * @param isUp If true, it needs to traverse in the up direction, else down.
+	 * @return True if traversable, false if the ladder is blocked.
+	 */
+	virtual bool IsTraversable(T* prevArea, T* area, const CNavLadder* ladder, const bool isUp) const { return true; }
+	/**
+	 * @brief Called to determine if the given area is reachable via off-mesh connection.
+	 * @param prevArea Previous area (parent).
+	 * @param area Area
+	 * @param conn Off-mesh connection used to go from prevArea to area
+	 * @return True if traversable, false otherwise.
+	 */
+	virtual bool IsTraversable(T* prevArea, T* area, const NavOffMeshConnection& conn) const { return true; }
 
 	// Adds an area to search list, pass the previous area
-	void IncludeInSearch(T* prevArea, T* area);
+	void IncludeInSearch(T* prevArea, T* area, NavTraverseType how);
 
 	bool ShouldEndSearchEarly() const { return m_endSearch; }
 
@@ -1534,7 +1552,7 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 		for (int i = 0; i < count; i++)
 		{
 			T* other = static_cast<T*>(area->GetAdjacentArea(static_cast<NavDirType>(dir), i));
-			IncludeInSearch(area, other);
+			IncludeInSearch(area, other, static_cast<NavTraverseType>(dir));
 		}
 	}
 
@@ -1550,7 +1568,7 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 				for (int i = 0; i < vec->Count(); i++)
 				{
 					T* other = static_cast<T*>(vec->Element(i).area);
-					IncludeInSearch(area, other);
+					IncludeInSearch(area, other, GO_INCOMING_ONEWAY);
 				}
 			}
 		}
@@ -1572,7 +1590,11 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 				if (ladderconn.IsConnectedToLadderTop())
 				{
 					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
-					IncludeInSearch(area, other);
+
+					if (IsTraversable(area, other, ladder, true))
+					{
+						IncludeInSearch(area, other, NavTraverseType::GO_LADDER_UP);
+					}
 				}
 			}
 
@@ -1583,7 +1605,11 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 				for (auto& ladderconn : linkedLadder->GetConnections())
 				{
 					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
-					IncludeInSearch(area, other);
+
+					if (IsTraversable(area, other, ladder, true))
+					{
+						IncludeInSearch(area, other, NavTraverseType::GO_LADDER_UP);
+					}
 				}
 
 				linkedLadder = linkedLadder->GetLinkedTopLadder();
@@ -1602,7 +1628,11 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 				if (ladderconn.IsConnectedToLadderBottom())
 				{
 					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
-					IncludeInSearch(area, other);
+
+					if (IsTraversable(area, other, ladder, false))
+					{
+						IncludeInSearch(area, other, NavTraverseType::GO_LADDER_DOWN);
+					}
 				}
 			}
 
@@ -1613,7 +1643,11 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 				for (auto& ladderconn : linkedLadder->GetConnections())
 				{
 					T* other = static_cast<T*>(ladderconn.GetConnectedArea());
-					IncludeInSearch(area, other);
+
+					if (IsTraversable(area, other, ladder, false))
+					{
+						IncludeInSearch(area, other, NavTraverseType::GO_LADDER_DOWN);
+					}
 				}
 
 				linkedLadder = linkedLadder->GetLinkedBottomLadder();
@@ -1629,7 +1663,11 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 		for (auto& link : links)
 		{
 			T* other = static_cast<T*>(link.m_link.area);
-			IncludeInSearch(area, other);
+
+			if (IsTraversable(area, other, link))
+			{
+				IncludeInSearch(area, other, NavTraverseType::GO_OFF_MESH_CONNECTION);
+			}
 		}
 	}
 
@@ -1651,7 +1689,8 @@ inline void INavAreaCollector<T>::SearchAdjacentAreas(T* area)
 					continue;
 				}
 
-				IncludeInSearch(area, other);
+				NavTraverseType how = other->GetCenter().z > area->GetCenter().z ? NavTraverseType::GO_ELEVATOR_UP : NavTraverseType::GO_ELEVATOR_DOWN;
+				IncludeInSearch(area, other, how);
 			}
 		}
 	}
@@ -1684,7 +1723,7 @@ inline const INavSearchNode<T>* INavAreaCollector<T>::GetNodeForArea(const T* ar
 }
 
 template<typename T>
-inline void INavAreaCollector<T>::IncludeInSearch(T* prevArea, T* area)
+inline void INavAreaCollector<T>::IncludeInSearch(T* prevArea, T* area, NavTraverseType how)
 {
 	if (m_nodes.find(area->GetID()) == m_nodes.end())
 	{
@@ -1697,6 +1736,7 @@ inline void INavAreaCollector<T>::IncludeInSearch(T* prevArea, T* area)
 
 			node->me = area;
 			node->parent = prevArea;
+			node->how = how;
 			float distAlong = prevnode->total;
 			float cost = ComputeCostBetweenAreas(prevArea, area);
 			node->cost = cost; // store the cost to go from parent to me

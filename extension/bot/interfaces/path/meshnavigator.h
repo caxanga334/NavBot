@@ -127,8 +127,6 @@ private:
 	const BotPathSegment* m_goal; // the segment the bot is currently trying to reach
 	CountdownTimer m_waitTimer; // timer for the bot to wait for stuff (lifts, doors, obstacles, ...)
 	CountdownTimer m_avoidTimer; // timer for collision avoidance
-	CountdownTimer m_useableTimer; // timer for checking for useable obstacles on the path
-	CountdownTimer m_obstructedTimer; // timer for checking how long the path has been obstructed
 	CountdownTimer m_obstacleScanTimer; // timer for checking for obstacles
 	CountdownTimer m_dodgeTimer; // timer for dodging path obstacles
 	IntervalTimer m_sameObstacleTimer;
