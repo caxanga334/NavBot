@@ -17,6 +17,9 @@ namespace navmesh
 
 	bool ParseMapLump(std::vector<LumpEntity>& out)
 	{
+		// Outbreak: GetMapEntitiesString no longer returns a raw string
+		// Since it's L4D2 based, I don't expect to find info_ladders there, which is the only entity currently used by the lump parser.
+#if SOURCE_ENGINE != SE_OUTBREAK
 		std::stringstream stream;
 
 		{
@@ -29,7 +32,6 @@ namespace navmesh
 
 			stream << rawstr; // load the entity string into a stream
 		}
-
 		
 		std::string line;
 		std::string key;
@@ -168,10 +170,13 @@ namespace navmesh
 		}
 
 		return true;
+#else
+		return false;
+#endif // SOURCE_ENGINE != SE_OUTBREAK
 	}
 }
 
-#ifdef EXT_DEBUG
+#if defined(EXT_DEBUG) && SOURCE_ENGINE != SE_OUTBREAK
 
 CON_COMMAND(sm_nav_debug_lump_parser, "Debugs the entity lump parser")
 {
@@ -181,4 +186,4 @@ CON_COMMAND(sm_nav_debug_lump_parser, "Debugs the entity lump parser")
 	META_CONPRINTF("Parse lump %s ents %zu \n", result ? "OK" : "FAILED", ents.size());
 }
 
-#endif // EXT_DEBUG
+#endif // EXT_DEBUG && SOURCE_ENGINE != SE_OUTBREAK

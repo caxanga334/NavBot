@@ -103,7 +103,7 @@ static CNavArea *findFirstAreaInDirection(const Vector *start, NavDirType dir, f
 
 	Vector pos = *start;
 
-	int end = (int)((range / navgenparams->generation_step_size) + 0.5f);
+	int end = static_cast<int>(((range / navgenparams->generation_step_size) + 0.5f));
 
 	for (int i = 1; i <= end; i++)
 	{
@@ -2258,8 +2258,12 @@ inline static CNavArea *findJumpDownArea( const Vector *fromPos, NavDirType dir 
 	Vector toPos;
 	CNavArea *downArea = findFirstAreaInDirection( &start, dir, 4.0f * navgenparams->generation_step_size, navgenparams->death_drop, nullptr, &toPos );
 
-	return downArea && testJumpDown( fromPos, &toPos ) ?
-			downArea : nullptr;
+	if (downArea != nullptr && testJumpDown(fromPos, &toPos))
+	{
+		return downArea;
+	}
+
+	return nullptr;
 }
 
 
@@ -2348,6 +2352,8 @@ void CNavMesh::ConnectGeneratedAreas( void )
 {
 	META_CONPRINT( "Connecting navigation areas...\n" );
 
+	auto t1 = std::chrono::high_resolution_clock::now();
+
 	FOR_EACH_VEC( TheNavAreas, it )
 	{
 		CNavArea *area = TheNavAreas[ it ];
@@ -2369,7 +2375,9 @@ void CNavMesh::ConnectGeneratedAreas( void )
 			{
 				CNavArea *downArea = findJumpDownArea( node->GetPosition(), NORTH );
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, NORTH );
+				{
+					area->ConnectTo(downArea, NORTH);
+				}
 			}
 		}
 
@@ -2386,7 +2394,9 @@ void CNavMesh::ConnectGeneratedAreas( void )
 			{
 				CNavArea *downArea = findJumpDownArea( node->GetPosition(), WEST );
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, WEST );
+				{
+					area->ConnectTo(downArea, WEST);
+				}
 			}
 		}
 
@@ -2412,9 +2422,11 @@ void CNavMesh::ConnectGeneratedAreas( void )
 				}
 				else
 				{
-					CNavArea *downArea = findJumpDownArea( node->GetPosition(), SOUTH );
+					CNavArea* downArea = findJumpDownArea(node->GetPosition(), SOUTH);
 					if (downArea && downArea != area)
-						area->ConnectTo( downArea, SOUTH );
+					{
+						area->ConnectTo(downArea, SOUTH);
+					}
 				}
 			}
 		}
@@ -2437,7 +2449,9 @@ void CNavMesh::ConnectGeneratedAreas( void )
 			{
 				CNavArea *downArea = findJumpDownArea( node->GetPosition(), SOUTH );
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, SOUTH );
+				{
+					area->ConnectTo(downArea, SOUTH);
+				}
 			}
 		}
 
@@ -2462,7 +2476,9 @@ void CNavMesh::ConnectGeneratedAreas( void )
 				{
 					CNavArea *downArea = findJumpDownArea( node->GetPosition(), EAST );
 					if (downArea && downArea != area)
-						area->ConnectTo( downArea, EAST );
+					{
+						area->ConnectTo(downArea, EAST);
+					}
 				}
 			}
 		}
@@ -2485,10 +2501,16 @@ void CNavMesh::ConnectGeneratedAreas( void )
 			{
 				CNavArea *downArea = findJumpDownArea( node->GetPosition(), EAST );
 				if (downArea && downArea != area)
-					area->ConnectTo( downArea, EAST );
+				{
+					area->ConnectTo(downArea, EAST);
+				}
 			}
 		}
 	}
+
+	auto t2 = std::chrono::high_resolution_clock::now();
+	const std::chrono::duration<double, std::milli> millis = (t2 - t1);
+	META_CONPRINTF("Nav mesh connect generated areas took %g ms! \n", millis.count());
 
 	StitchGeneratedAreas();
 }

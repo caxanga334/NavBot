@@ -28,7 +28,7 @@ void CFuncBreakableNavBlocker::Update()
 	}
 	case BreakableType::TYPE_BIGHEALTH:
 	{
-		m_blocked = modhelpers->IsEntityDamageable(m_breakable.Get(), extmanager->GetMod()->GetModSettings()->GetBreakableMaxHealth());
+		m_blocked = !(modhelpers->IsEntityDamageable(m_breakable.Get(), extmanager->GetMod()->GetModSettings()->GetBreakableMaxHealth()));
 		return;
 	}
 	default:
@@ -50,15 +50,14 @@ bool CFuncBreakableNavBlocker::IsBlocked(int teamID) const
 
 			return m_blocked;
 		}
-		else
-		{
-			if (m_teamNum == teamID)
-			{
-				return m_blocked;
-			}
 
-			return m_teamOnly;
+		// standard logic
+		if (m_teamNum == teamID)
+		{
+			return m_blocked;
 		}
+
+		return m_teamOnly;
 	}
 
 	return m_blocked;

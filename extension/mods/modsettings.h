@@ -37,7 +37,7 @@ public:
 		class_change_chance = 75;
 		camp_time_min = 15.0f;
 		camp_time_max = 90.0f;
-		breakable_max_health = 3000.0f;
+		breakable_max_health = 3000;
 		squad_invite_max_distance = 1200.0f;
 		def_blast_radius = 600.0f;
 		area_cleared_time = 120.0f;

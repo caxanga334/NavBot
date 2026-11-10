@@ -675,6 +675,15 @@ void CNavArea::ConnectTo( CNavArea *area, NavDirType dir )
 	m_incomingConnect[ dir ].FindAndRemove( con );
 
 	NavDirType dirOpposite = OppositeDirection( dir );
+
+#ifdef EXT_DEBUG
+	if (this->IsConnected(area, dirOpposite))
+	{
+		// Debug only, set a breakpoint here to catch any double connections during nav generation
+		META_CONPRINTF("Area #%u double connection to Area #%u !!! \n", this->GetID(), area->GetID());
+	}
+#endif // EXT_DEBUG
+
 	con.area = this;
 	if ( area->m_connect[ dirOpposite ].Find( con ) == area->m_connect[ dirOpposite ].InvalidIndex() )
 	{
@@ -1402,6 +1411,14 @@ void CNavArea::FinishSplitEdit( CNavArea *newArea, NavDirType ignoreEdge )
 
 		if (dir != NavDirType::NUM_DIRECTIONS)
 		{
+			NavDirType opposingDir = OppositeDirection(dir);
+
+			if (incomingArea->IsConnected(newArea, opposingDir))
+			{
+				// already connected, don't create double connections
+				return;
+			}
+
 			Vector close;
 			newArea->ComputeClosestPointInPortal(incomingArea, OppositeDirection(dir), center, &close);
 			float dist2D = (center.AsVector2D() - close.AsVector2D()).Length();
