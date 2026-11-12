@@ -39,7 +39,7 @@ jobs:
             dbgsym_ext: 'dbg'
             build_sdks: 'tf2,dods,css,bms,sdk2013,orangebox,hl2dm,episode1,l4d,l4d2,csgo'
             os_ambuild_params: ''
-            container_image: ghcr.io/alliedmodders/build-containers/debian11-clang22:latest
+            container_image: ghcr.io/alliedmodders/build-containers/debian13-clang22:latest
 
           - sm: stable
             sm_branch: "1.12-dev"

@@ -2590,8 +2590,6 @@ void entityprops::GetEntityAbsVelocity(CBaseEntity* entity, Vector& result)
 	Vector* vel = (Vector*)((uint8_t*)entity + s_offset);
 
 	result = *vel;
-
-	return;
 }
 
 CStudioHdr* entityprops::GetEntityModelPtr(CBaseEntity* entity, const bool validate)
@@ -2633,8 +2631,10 @@ CStudioHdr* entityprops::GetEntityModelPtr(CBaseEntity* entity, const bool valid
 		}
 	}
 
-	// return reinterpret_cast<CStudioHdr*>(reinterpret_cast<std::intptr_t>(entity) + static_cast<std::intptr_t>(offset));
-	return entprops->GetPointerToEntData<CStudioHdr>(entity, offset);
+	// we get a pointer to the member var, which is also a pointer
+	CStudioHdr** pphdr = entprops->GetPointerToEntData<CStudioHdr*>(entity, offset);
+	// dereference so we get the actual CStudioHdr* pointer
+	return *pphdr;
 }
 
 bool entityprops::IsEffectActiveOnEntity(CBaseEntity* entity, int effects)

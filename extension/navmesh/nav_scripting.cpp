@@ -556,7 +556,7 @@ namespace navscripting::concmd
 		{
 			Vector vec{ 0.0f, 0.0f, 0.0f };
 
-			if (sscanf(szvecarg, "%f %f %f", &vec.x, &vec.y, &vec.z) == 3)
+			if (UtilHelpers::parsers::ParseVector(szvecarg, vec))
 			{
 				tc.SetVectorData(vec);
 				META_CONPRINTF("Vector data updated to <%s> \n", UtilHelpers::textformat::FormatVector(tc.GetVectorData()));

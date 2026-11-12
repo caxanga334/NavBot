@@ -898,6 +898,43 @@ namespace UtilHelpers::parsers
 	float ParseFloatClamped(const char* str, const float min, const float max, const float defaultValue = 0.0f);
 	// Parses a string as a Vector, returns false on error
 	bool ParseVector(const std::string& input, Vector& out);
+
+	/**
+	 * @brief Parses N number of T from a string and writes it to an array.
+	 * @tparam T Type to read from the string.
+	 * @tparam num Number of T to read from the string.
+	 * @param input String input.
+	 * @param out Output array to write the T to.
+	 * @return Returns true on success, false otherwise.
+	 */
+	template <typename T, std::size_t num>
+	bool ParseNumeric(const std::string& input, std::array<T, num>& out)
+	{
+		std::size_t pos = 0U;
+		std::array<T, num> arr;
+
+		for (std::size_t i = 0; i < num; i++)
+		{
+			pos = input.find_first_not_of(" ", pos);
+
+			if (pos == std::string::npos)
+			{
+				return false;
+			}
+
+			auto [ptr, ec] = std::from_chars(input.data() + pos, input.data() + input.size(), arr[i]);
+
+			if (ec == std::errc::invalid_argument || ec == std::errc::result_out_of_range)
+			{
+				return false;
+			}
+
+			pos = ptr - input.data();
+		}
+
+		out.swap(arr);
+		return true;
+	}
 }
 
 namespace UtilHelpers::textformat

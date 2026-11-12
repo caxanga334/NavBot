@@ -504,11 +504,14 @@ CON_COMMAND_F(sm_navbot_tool_bots_go_to, "Bots will move to your current positio
 	if (inputPos && inputPos[0] != '\0')
 	{
 		Vector v;
-		int count = sscanf(inputPos, "%f %f %f", &v.x, &v.y, &v.z);
-
-		if (count == 3)
+		
+		if (UtilHelpers::parsers::ParseVector(inputPos, v))
 		{
 			goal = v;
+		}
+		else
+		{
+			META_CONPRINTF("Error: Bad vector format \"%s\"! \n", inputPos);
 		}
 	}
 
@@ -724,7 +727,8 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 		return;
 	}
 
-	if (!entprops->HasEntProp(pEntity, Prop_Data, "m_OnIgnite"))
+	unsigned int offset = 0;
+	if (!entprops->HasEntProp(pEntity, Prop_Data, "m_OnIgnite", &offset, true))
 	{
 		datamap_t* dmap = gamehelpers->GetDataMap(pEntity);
 		const char* classname = gamehelpers->GetEntityClassname(pEntity);
@@ -745,30 +749,53 @@ CON_COMMAND_F(sm_navbot_tool_dump_model_info, "Dumps information about a specifi
 		return;
 	}
 
-	auto ptr = UtilHelpers::GetEntityModelPtr(UtilHelpers::BaseEntityToEdict(pEntity));
-
-	if (ptr)
+	if (offset == 0)
 	{
-		int numbones = ptr->numbones();
+		return;
+	}
 
-		for (int i = 0; i < numbones; i++)
-		{
-			auto bone = ptr->pBone(i);
+	// Read CBaseAnimating::m_pStudioHdr ( CStudioHdr* )
+	CStudioHdr** phdr = entprops->GetPointerToEntData<CStudioHdr*>(pEntity, offset + static_cast<unsigned int>(GamedataConstants::s_sizeof_COutputEvent));
+	CStudioHdr* hdr = *phdr;
 
-			META_CONPRINTF("Bone %i: %s\n", i, bone->pszName());
-		}
+	int numbones = hdr->numbones();
+
+	for (int i = 0; i < numbones; i++)
+	{
+		auto bone = hdr->pBone(i);
+
+		META_CONPRINTF("Bone %i: %s\n", i, bone->pszName());
+	}
 
 #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
 
-		int numseqs = ptr->GetNumSeq();
+	int numseqs = hdr->GetNumSeq();
 
-		for (int i = 0; i < numseqs; i++)
-		{
-			auto& seq = ptr->pSeqdesc(i);
+	for (int i = 0; i < numseqs; i++)
+	{
+		auto& seq = hdr->pSeqdesc(i);
 
-			META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
-		}
+		META_CONPRINTF("Sequence %i: %s - %s \n", i, seq.pszLabel(), seq.pszActivityName());
+	}
 #endif // #if SOURCE_ENGINE >= SE_HL2DM && SOURCE_ENGINE <= SE_TF2
+
+	int hitboxset = -1;
+	if (entprops->GetEntProp(pEntity, Prop_Send, "m_nHitboxSet", hitboxset))
+	{
+		META_CONPRINTF("Hitbox Set: %i \n", hitboxset);
+
+		auto set = hdr->pHitboxSet(hitboxset);
+
+		if (set != nullptr)
+		{
+			META_CONPRINTF("Num hitboxes: %i \n", set->numhitboxes);
+
+			for (int i = 0; i < set->numhitboxes; i++)
+			{
+				auto hitbox = set->pHitbox(i);
+				META_CONPRINTF("Hitbox #%i : Bone %i Group %i \n", i, hitbox->bone, hitbox->group);
+			}
+		}
 	}
 }
 
@@ -1250,4 +1277,26 @@ CON_COMMAND_F(sm_navbot_tool_compute_travel_distance, "Computes the travel dista
 	float distance = NavAreaTravelDistance(start, end, cost);
 
 	META_CONPRINTF("Computed travel distance between area %u and area %u is %g \n", start->GetID(), end->GetID(), distance);
+}
+
+CON_COMMAND_F(sm_navbot_tool_dump_teams, "Dump information about teams.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	// UtilHelpers::HasDataTable()
+	auto func = [](int index, edict_t* edict, CBaseEntity* entity) {
+		if (entity && edict)
+		{
+			if (UtilHelpers::HasDataTable(edict->GetIServerEntity()->GetNetworkable()->GetServerClass()->m_pTable, "DT_Team"))
+			{
+				int team = -1;
+				entprops->GetEntProp(entity, Prop_Send, "m_iTeamNum", team);
+				std::string name = entprops->GetEntPropString(entity, Prop_Send, "m_szTeamname");
+
+				META_CONPRINTF("Found team %i <%s> : %s \n", team, name.c_str(), UtilHelpers::textformat::FormatEntity(entity));
+			}
+		}
+
+		return true;
+	};
+
+	UtilHelpers::ForEveryEdict(func);
 }

@@ -76,7 +76,9 @@ pch_sources_shared = [
   'future',
   'thread',
   'ranges',
-  'numbers'
+  'numbers',
+  'format',
+  'stop_token'
 ]
 
 for sdk_name in Extension.sdks:

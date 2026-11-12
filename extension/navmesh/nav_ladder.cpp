@@ -327,11 +327,13 @@ void CNavLadder::DrawLadder(bool isSelected, bool isMarked, bool isEdit, bool is
 	Vector topLeft = m_top - right;
 	Vector topRight = m_top + right;
 
-	int bgcolor[4];
-	if ( 4 == sscanf(sm_nav_area_bgcolor.GetString(), "%d %d %d %d", &(bgcolor[0]), &(bgcolor[1]), &(bgcolor[2]), &(bgcolor[3]) ) )
+	std::array<int, 4> bgcolor;
+	if (UtilHelpers::parsers::ParseNumeric(sm_nav_area_bgcolor.GetString(), bgcolor))
 	{
-		for ( int i=0; i<4; ++i )
-			bgcolor[i] = clamp( bgcolor[i], 0, 255 );
+		for (int& c : bgcolor)
+		{
+			c = std::clamp(c, 0, 255);
+		}
 
 		if ( bgcolor[3] > 0 )
 		{

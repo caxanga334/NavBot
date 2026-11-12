@@ -101,9 +101,7 @@ bool CConCommandArgs::ParseArgVector(const char* arg, Vector& out) const
 
 	if (szValue)
 	{
-		int n = sscanf(szValue, "%f %f %f", &out.x, &out.y, &out.z);
-
-		return n == 3;
+		return UtilHelpers::parsers::ParseVector(szValue, out);
 	}
 
 	return false;

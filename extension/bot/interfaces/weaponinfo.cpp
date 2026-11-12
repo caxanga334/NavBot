@@ -404,8 +404,15 @@ bool WeaponAttackFunctionInfo::ParseDistanceMappedAttackDelay(const char* input)
 		return true;
 	}
 
-	if (sscanf(input, "%f %f %f %f", &dmad.range_min, &dmad.range_max, &dmad.delay_min, &dmad.delay_max) == 4)
+	std::array<float, 4> arr;
+
+	if (UtilHelpers::parsers::ParseNumeric(input, arr))
 	{
+		dmad.range_min = arr[0];
+		dmad.range_max = arr[1];
+		dmad.delay_min = arr[2];
+		dmad.delay_max = arr[3];
+
 		if (dmad.range_min >= dmad.range_max)
 		{
 			return false;
@@ -945,9 +952,7 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 	else if (strncmp(key, "headshot_aim_offset", 19) == 0)
 	{
 		Vector offset;
-		int num_found = sscanf(value, "%f %f %f", &offset.x, &offset.y, &offset.z);
-
-		if (num_found == 3)
+		if (UtilHelpers::parsers::ParseVector(value, offset))
 		{
 			m_current->SetHeadShotAimOffset(offset);
 		}

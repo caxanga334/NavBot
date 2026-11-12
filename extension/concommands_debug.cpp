@@ -18,6 +18,7 @@
 #include <sdkports/sdk_convarref_ep1.h>
 #include <util/ehandle_edict.h>
 #include <util/prediction.h>
+#include <util/timers.h>
 #include <sm_argbuffer.h>
 #include <am-platform.h>
 
@@ -157,16 +158,7 @@ CON_COMMAND(sm_navbot_debug_bot_look, "Debug the bot look functions.")
 	if (args.ArgC() > 2)
 	{
 		const char* arg1 = args[1];
-		float x, y, z;
-
-		int count = sscanf(arg1, "%f %f %f", &x, &y, &z);
-
-		if (count == 3)
-		{
-			target.x = x;
-			target.y = y;
-			target.z = z;
-		}
+		UtilHelpers::parsers::ParseVector(arg1, target);
 	}
 	
 	auto functor = [&target](CBaseBot* bot) {
@@ -2192,6 +2184,17 @@ CON_COMMAND_F(sm_navbot_debug_draw_line_to, "Draws a line to the given position 
 	Vector eyePos = host->GetEyeOrigin();
 
 	NDebugOverlay::Line(eyePos, pos, 255, 255, 0, true, 30.0f);
+}
+
+CON_COMMAND_F(sm_navbot_debug_timer_sys, "Debugs the timer system.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+{
+	int data = randomgen->GetRandomInt<int>(1000, 9999);
+
+	CTimerSystem::Get()->CreateTimer([](const std::any& data) {
+		int p = std::any_cast<int>(data);
+		META_CONPRINTF("[%g] Timer callback %i\n", gpGlobals->curtime, p);
+		return true;
+	}, data, 0.1f, CTimerSystem::TimerFlags::TIMERFLAG_REPEAT);
 }
 
 #endif // EXT_DEBUG

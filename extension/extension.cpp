@@ -40,6 +40,7 @@
 #include <util/helpers.h>
 #include <util/librandom.h>
 #include <util/sdkcalls.h>
+#include <util/timers.h>
 #include <mods/basemod.h>
 #include <bot/basebot.h>
 #include <sdkports/sdk_takedamageinfo.h>
@@ -230,6 +231,8 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 	// generate a random seed for the global generators
 	librandom::ReSeedGlobalGenerators();
 
+	CTimerSystem::CreateTimerSystem();
+
 	if (!gameconfs->LoadGameConfigFile("navbot.games", &m_cfg_navbot, error, maxlen))
 	{
 		smutils->LogError(myself, "Failed to open NavBot gamedata file!");
@@ -367,6 +370,7 @@ bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 
 void NavBotExt::SDK_OnUnload()
 {
+	CTimerSystem::DestroyTimerSystem();
 	CDynamicPriorityManager::GetManager().OnShutdown();
 	spmisc::UnregisterNavBotMultiTargetFilter();
 	gameconfs->CloseGameConfigFile(m_cfg_navbot);
@@ -572,6 +576,7 @@ void NavBotExt::OnCoreMapStart(edict_t* pEdictList, int edictCount, int clientMa
 	librandom::ReSeedGlobalGenerators();
 	extmanager->OnMapStart();
 	GamedataConstants::OnMapStart(m_cfg_navbot);
+	CTimerSystem::Get()->OnMapStart();
 }
 
 void NavBotExt::OnCoreMapEnd()
@@ -581,6 +586,7 @@ void NavBotExt::OnCoreMapEnd()
 #endif // EXT_DEBUG
 
 	extmanager->OnMapEnd();
+	CTimerSystem::Get()->OnMapEnd();
 }
 
 bool NavBotExt::RegisterConCommandBase(ConCommandBase* pVar)
@@ -625,6 +631,8 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 		extmanager->Frame();
 	}
 
+	CTimerSystem::Get()->Think();
+
 #ifdef EXT_DEBUG
 	int playermove = cvar_draw_player_move.GetInt();
 
@@ -654,8 +662,6 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 			pred.PredictEntity(host.GetEntity(), 1.0f);
 		}
 	}
-	
-
 
 #endif // EXT_DEBUG
 
