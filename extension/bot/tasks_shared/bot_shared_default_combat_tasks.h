@@ -5,6 +5,7 @@
 #include <bot/interfaces/path/chasenavigator.h>
 #include "bot_shared_retreat_from_threat.h"
 #include "bot_shared_throw_grenade.h"
+#include "bot_shared_find_cover.h"
 
 // Moves to a threat last known position and
 template <typename BT, typename CT>
@@ -111,6 +112,11 @@ public:
 			return AITask<BT>::TryDone(PRIORITY_HIGH, "Enemy on my sights!");
 		}
 
+		return AITask<BT>::TryToMaintain(PRIORITY_MEDIUM);
+	}
+
+	TaskEventResponseResult<BT> OnLostSight(BT* bot, CBaseEntity* subject) override
+	{
 		return AITask<BT>::TryToMaintain(PRIORITY_MEDIUM);
 	}
 
@@ -293,12 +299,27 @@ public:
 			m_nav.Update(bot, threat->GetEntity(), cost);
 		}
 
+		if (cd.can_fire)
+		{
+			const CBotWeapon* weapon = bot->GetInventoryInterface()->GetActiveBotWeapon();
+
+			if (weapon != nullptr && !weapon->IsLoaded() && !weapon->IsOutOfAmmo(bot))
+			{
+				return AITask<BT>::PauseFor(new CBotSharedCoverReloadTask<BT, CT>, "Taking cover to reload!");
+			}
+		}
+
 		return AITask<BT>::Continue();
 	}
 
 	TaskEventResponseResult<BT> OnSight(BT* bot, CBaseEntity* subject) override
 	{
 		// block OnSight events
+		return AITask<BT>::TryToMaintain(PRIORITY_MEDIUM);
+	}
+
+	TaskEventResponseResult<BT> OnLostSight(BT* bot, CBaseEntity* subject) override
+	{
 		return AITask<BT>::TryToMaintain(PRIORITY_MEDIUM);
 	}
 

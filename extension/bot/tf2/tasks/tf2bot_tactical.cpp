@@ -177,7 +177,7 @@ TaskEventResponseResult<CTF2Bot> CTF2BotTacticalTask::OnInjured(CTF2Bot* bot, co
 	{
 		CBaseEntity* attacker = info.GetAttacker();
 
-		if (attacker && !bot->GetSensorInterface()->IsIgnored(attacker))
+		if (attacker != nullptr && !bot->GetSensorInterface()->IsIgnored(attacker))
 		{
 			Vector pos = UtilHelpers::getWorldSpaceCenter(attacker);
 			bot->GetControlInterface()->AimAt(pos, IPlayerController::LOOK_DANGER, 2.0f, "Aiming at damage source!");

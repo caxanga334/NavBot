@@ -6,6 +6,7 @@
 #include <vector>
 #include <optional>
 #include <functional>
+#include <numbers>
 #include <extension.h>
 
 struct edict_t;
@@ -85,6 +86,12 @@ namespace UtilHelpers
 	 * @return Entity local origin vector.
 	 */
 	Vector getEntityLocalOrigin(CBaseEntity* entity);
+	/**
+	 * @brief Reimplementation of CBaseEntity::EyePosition. Note that the actual function is virtual so this may not be accurate for every entity.
+	 * @param entity Entity to get the eye position from.
+	 * @return Entity eye position.
+	 */
+	Vector getEntityEyePosition(CBaseEntity* entity);
 	const QAngle& getEntityAngles(edict_t* entity);
 	const QAngle& getEntityAngles(CBaseEntity* entity);
 	void getEntityBounds(edict_t* entity, Vector& mins, Vector& maxs);
@@ -514,10 +521,19 @@ namespace UtilHelpers
 	 * @brief Gets the nearest entity from the source of the given classname.
 	 * @param source Source position for distance calculations.
 	 * @param classname Entity classname to search.
-	 * @param maxRange Maximum entity search range.
+	 * @param maxRange Maximum entity search range. (Squared distance)
 	 * @return CBaseEntity pointer of the entity or NULL if none is found.
 	 */
-	CBaseEntity* GetNearestEntityOfClassname(const Vector& source, const char* classname, float maxRange = 65535.0f);
+	CBaseEntity* GetNearestEntityOfClassname(const Vector& source, const char* classname, float maxRange = std::numeric_limits<float>::max());
+	/**
+	 * @brief Gets the nearest entity to the source position that has a matching classname and targetname.
+	 * @param source Source position to calculate distance to.
+	 * @param classname Entity classname to search.
+	 * @param targetname Entity targetname to search. Supports '*' for wildcard. IE: door_* will match door_1, door_2, door_foo, etc...
+	 * @param maxRange Optional maximum range between source position and the entity (This used squared distances).
+	 * @return Pointer to an entity. NULL if none is found.
+	 */
+	CBaseEntity* GetNearestNamedEntityOfClassname(const Vector& source, const char* classname, const char* targetname, float maxRange = std::numeric_limits<float>::max());
 	/**
 	 * @brief Searches for an entity with a matching hammer ID.
 	 * @param iHammerID Hammer id to search.
@@ -877,6 +893,13 @@ namespace UtilHelpers::math
 	 * @param VecNearestWorldPt World position of the entity's AABB nearest of vecWorldPt
 	 */
 	void CalcClosestPointOfEntity(CBaseEntity* entity, const Vector& vecWorldPt, Vector& VecNearestWorldPt);
+
+	// Converts degrees to radians.
+	template <typename T>
+	inline constexpr T deg2rad(T deg)
+	{
+		return (deg * std::numbers::pi_v<T>) / T{ 180 };
+	}
 }
 
 namespace UtilHelpers::parsers

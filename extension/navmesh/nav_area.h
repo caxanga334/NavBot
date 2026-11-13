@@ -493,6 +493,16 @@ public:
 	 */
 	bool IsPartiallyVisible(const CNavArea* other, const bool checkPVS = false) const;
 	/**
+	 * @brief Checks if this nav area is partially visible from the given eye position.
+	 * This checks the area center and the four corner positions.
+	 * @param eye Eye position to test visibility from
+	 * @param zOffset Z coordinate offset.
+	 * @param mask Optional trace mask. If zero uses MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE.
+	 * @param checkPVS If true, a PVS check if performed and the expensive raycast is skipped if both areas are not in PVS.
+	 * @return True if this area can be partially seen from the given eye position.
+	 */
+	bool IsPartiallyVisible(const Vector& eye, const float zOffset = 0.0f, unsigned int mask = 0, const bool checkPVS = false) const;
+	/**
 	 * @brief Checks if another nav area is completely visible from this area.
 	 * @param other Other area to test.
 	 * @param checkPVS If true, a PVS check if performed and the expensive raycast is skipped if both areas are not in PVS.
@@ -507,6 +517,16 @@ public:
 	 * @return True if the area is completely visible from the given position.
 	 */
 	bool IsCompletelyVisible(const Vector& eyePos, const bool checkPVS = false, const bool smallOpt = true) const;
+	/**
+	 * @brief Checks if this nav area is in the field of view of the observer.
+	 * This doesn't use raycast so the area may still be obstructed.
+	 * @param eyePos Observer eye position.
+	 * @param eyeDir Observer eye direction.
+	 * @param halfcos Field of View half cos value.
+	 * @param zOffset Optional Z coordinate offset.
+	 * @return True if the area is in the observer's field of view. False otherwise.
+	 */
+	bool IsInFieldOfView(const Vector& eyePos, const Vector& eyeDir, const float halfcos, const float zOffset = 0.0f) const;
 	/**
 	 * @brief Checks if this nav area is collides with the given entity via Raycast.
 	 * @param pEntity Entity to test for collision against.

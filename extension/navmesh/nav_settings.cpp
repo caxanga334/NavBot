@@ -13,49 +13,10 @@ CBaseEntity* CNavMapSettings::EntityLookUpInfo::FindEntity() const
 
 	if (targetname.empty())
 	{
-		CBaseEntity* best = nullptr;
-		float nearest = std::numeric_limits<float>::max();
-		const Vector& start = position;
-		auto functor = [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
-			if (entity)
-			{
-				Vector end = UtilHelpers::getWorldSpaceCenter(entity);
-				float distance = (start - end).Length();
-
-				if (distance < nearest)
-				{
-					best = entity;
-					nearest = distance;
-				}
-			}
-
-			return true;
-		};
-
-		UtilHelpers::ForEachEntityOfClassname(classname.c_str(), functor);
-		return best;
+		return UtilHelpers::GetNearestEntityOfClassname(position, classname.c_str());
 	}
 
-	CBaseEntity* best = nullptr;
-	float nearest = std::numeric_limits<float>::max();
-	const Vector& start = position;
-
-	// maps may have multiple entities with the same targetname, filter by distance
-	auto func = [&best, &start, &nearest](int index, CBaseEntity* entity) {
-		Vector pos = UtilHelpers::getWorldSpaceCenter(entity);
-		float distance = (pos - start).Length();
-
-		if (distance < nearest)
-		{
-			nearest = distance;
-			best = entity;
-		}
-
-		return true;
-	};
-
-	UtilHelpers::ForEachNamedEntityOfClassname(classname.c_str(), targetname.c_str(), func);
-	return best;
+	return UtilHelpers::GetNearestNamedEntityOfClassname(position, classname.c_str(), targetname.c_str());
 }
 
 CNavMapSettings::CNavMapSettings()

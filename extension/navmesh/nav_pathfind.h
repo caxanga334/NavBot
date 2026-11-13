@@ -1388,6 +1388,8 @@ public:
 	T* GetRandomCollectedArea(const F& functor) const;
 	// Gets the NavSearchNode for the given area. NULL if not found.
 	const INavSearchNode<T>* GetNodeForArea(const T* area) const;
+	// Gets the parent area for a given area.
+	T* GetParentArea(const T* area) const { return GetNodeForArea(area)->GetParentArea(); }
 	// Forces the search to end early
 	void EndSearch() { m_endSearch = true; }
 	/**

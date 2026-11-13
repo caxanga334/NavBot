@@ -3741,6 +3741,48 @@ bool CNavArea::IsPartiallyVisible(const CNavArea* other, const bool checkPVS) co
 	return false;
 }
 
+bool CNavArea::IsPartiallyVisible(const Vector& eye, const float zOffset, unsigned int mask, const bool checkPVS) const
+{
+	if (checkPVS)
+	{
+		int cluster = engine->GetClusterForOrigin(GetCenter());
+		engine->GetPVSForCluster(cluster, static_cast<int>(CNavArea::s_pvs.size()), CNavArea::s_pvs.data());
+
+		if (!engine->CheckOriginInPVS(eye, CNavArea::s_pvs.data(), static_cast<int>(CNavArea::s_pvs.size())))
+		{
+			return false; // outside PVS
+		}
+	}
+
+	Vector offset(0.0f, 0.0f, zOffset);
+	unsigned int traceMask = mask != 0 ? mask : (MASK_BLOCKLOS_AND_NPCS | CONTENTS_IGNORE_NODRAW_OPAQUE);
+	Vector start = eye;
+	Vector end = GetCenter() + offset;
+
+	trace::CTraceFilterIgnoreCombatChars filter;
+	trace_t tr;
+	trace::line(start, end, traceMask, &filter, tr);
+
+	if (tr.fraction == 1.0f)
+	{
+		return true;
+	}
+
+	for (int c1 = 0; c1 < static_cast<int>(NavCornerType::NUM_CORNERS); c1++)
+	{
+		end = GetCorner(static_cast<NavCornerType>(c1)) + offset;
+
+		trace::line(start, end, traceMask, &filter, tr);
+
+		if (tr.fraction == 1.0f)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool CNavArea::IsCompletelyVisible(const CNavArea* other, const bool checkPVS) const
 {
 	if (checkPVS)
@@ -3832,6 +3874,26 @@ bool CNavArea::IsCompletelyVisible(const Vector& eyePos, const bool checkPVS, co
 	}
 
 	return true;
+}
+
+bool CNavArea::IsInFieldOfView(const Vector& eyePos, const Vector& eyeDir, const float halfcos, const float zOffset) const
+{
+	Vector offset(0.0f, 0.0f, zOffset);
+
+	if (UtilHelpers::PointWithinViewAngle(eyePos, GetCenter() + offset, eyeDir, halfcos))
+	{
+		return true;
+	}
+
+	for (int c1 = 0; c1 < static_cast<int>(NavCornerType::NUM_CORNERS); c1++)
+	{
+		if (UtilHelpers::PointWithinViewAngle(eyePos, GetCorner(static_cast<NavCornerType>(c1)) + offset, eyeDir, halfcos))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 bool CNavArea::IsCollidingWith(CBaseEntity* pEntity, const float heightOffset, const bool fastCheck) const

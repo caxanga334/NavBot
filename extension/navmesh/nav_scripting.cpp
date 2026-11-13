@@ -128,66 +128,26 @@ void navscripting::EntityLink::FindLinkedEntity()
 
 	if (!m_targetname.empty())
 	{
-		CBaseEntity* best = nullptr;
-		float nearest = std::numeric_limits<float>::max();
-		const Vector& start = m_position;
+		CBaseEntity* entity = UtilHelpers::GetNearestNamedEntityOfClassname(m_position, m_classname.c_str(), m_targetname.c_str());
 
-		// maps may have multiple entities with the same targetname, filter by distance
-		auto func = [&best, &start, &nearest](int index, CBaseEntity* entity) {
-			Vector pos = UtilHelpers::getWorldSpaceCenter(entity);
-			float distance = (pos - start).Length();
-
-			if (distance < nearest)
-			{
-				nearest = distance;
-				best = entity;
-			}
-
-			return true;
-		};
-
-		UtilHelpers::ForEachNamedEntityOfClassname(m_classname.c_str(), m_targetname.c_str(), func);
-
-		if (best)
+		if (entity)
 		{
-			SetActiveEntity(best);
+			SetActiveEntity(entity);
 		}
 		else
 		{
 			smutils->LogError(myself, "Nav Mesh: Could not find named entity! (classname: %s - targetname: %s)", m_classname.c_str(), m_targetname.c_str());
 		}
+
+		return;
 	}
 
-	// either search by targetname failed or the entity lacks one
-	if (!m_hEntity.IsValid())
+	// targetname not set, only search via classname
+	CBaseEntity* entity = UtilHelpers::GetNearestEntityOfClassname(m_position, m_classname.c_str());
+
+	if (entity)
 	{
-		CBaseEntity* best = nullptr;
-		float nearest = std::numeric_limits<float>::max();
-		const Vector& start = m_position;
-		auto functor = [&nearest, &best, &start](int index, edict_t* edict, CBaseEntity* entity) {
-			if (entity)
-			{
-				Vector end = UtilHelpers::getWorldSpaceCenter(entity);
-				float distance = (start - end).Length();
-
-				if (distance < nearest)
-				{
-					best = entity;
-					nearest = distance;
-				}
-			}
-
-			return true;
-		};
-
-		UtilHelpers::ForEachEntityOfClassname(m_classname.c_str(), functor);
-
-		if (!best)
-		{
-			return;
-		}
-
-		SetActiveEntity(best);
+		SetActiveEntity(entity);
 	}
 
 	if (!m_hEntity.IsValid() && !m_classname.empty())

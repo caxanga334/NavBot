@@ -441,6 +441,34 @@ inline NavDirType AngleToDirection( float angle )
 		WEST :  NORTH;
 }
 
+// Converts a normalized direction vector to a nav mesh direction
+inline NavDirType DirectionVectorToNavDir(const Vector& dir)
+{
+	constexpr float TOLERANCE = 0.70f;
+
+	if (dir.x >= TOLERANCE)
+	{
+		return NavDirType::EAST;
+	}
+
+	if (dir.y >= TOLERANCE)
+	{
+		return NavDirType::SOUTH;
+	}
+
+	if (dir.x <= -TOLERANCE)
+	{
+		return NavDirType::WEST;
+	}
+
+	if (dir.y <= -TOLERANCE)
+	{
+		return NavDirType::NORTH;
+	}
+
+	return NavDirType::NUM_DIRECTIONS;
+}
+
 //--------------------------------------------------------------------------------------------------------------
 inline void DirectionToVector2D( NavDirType dir, Vector2D *v )
 {

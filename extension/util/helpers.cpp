@@ -24,7 +24,7 @@
 #undef clamp
 
 #if SOURCE_ENGINE == SE_CSS || SOURCE_ENGINE == SE_DODS || SOURCE_ENGINE == SE_TF2 || SOURCE_ENGINE == SE_HL2DM || \
-SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013 || SOURCE_ENGINE == SE_OUTBREAK
+SOURCE_ENGINE == SE_BMS || SOURCE_ENGINE == SE_SDK2013
 
 // Source SDKs which server tools V2 interface is available
 #define SDKIFACE_SERVERTOOLSV2_AVAILABLE
@@ -308,6 +308,19 @@ Vector UtilHelpers::getEntityLocalOrigin(CBaseEntity* entity)
 	Vector origin{ 0.0f, 0.0f, 0.0f };
 	entprops->GetEntPropVector(entity, Prop_Data, "m_vecOrigin", origin);
 	return origin;
+}
+
+Vector UtilHelpers::getEntityEyePosition(CBaseEntity* entity)
+{
+	const Vector& absOrigin = UtilHelpers::getEntityOrigin(entity);
+	Vector* viewOffset = entprops->GetPointerToEntData<Vector>(entity, Prop_Data, "m_vecViewOffset");
+	
+	if (viewOffset != nullptr)
+	{
+		return absOrigin + *viewOffset;
+	}
+
+	return absOrigin;
 }
 
 const QAngle& UtilHelpers::getEntityAngles(edict_t* entity)
@@ -638,7 +651,7 @@ int UtilHelpers::FindEntityByNetClass(int start, const char* classname)
 			continue;
 		}
 
-		const ServerClass* sClass = network->GetServerClass(); // outbreak SDK makes this return a const
+		const ServerClass* sClass = network->GetServerClass();
 		const char* name = sClass->m_pNetworkName; // GetName isn't const, it just returns m_pNetworkName so this is fine
 
 		if (std::strcmp(name, classname) == 0)
@@ -867,7 +880,7 @@ bool UtilHelpers::PointWithinViewAngle(const Vector& vecSrcPosition, const Vecto
 /// @return Width of the forward view cone as a dot product result
 float UtilHelpers::GetForwardViewCone(float angle)
 {
-	return cosf(DEG2RAD(angle) / 2.0f);
+	return std::cos(UtilHelpers::math::deg2rad(angle) / 2.0f);
 }
 
 /**
@@ -1281,7 +1294,6 @@ CBaseEntity* UtilHelpers::GetNearestEntityOfClassname(const Vector& source, cons
 {
 	CBaseEntity* pBest = nullptr;
 	float distance = std::numeric_limits<float>::max();
-	float current = 0.0f;
 
 	int entity = INVALID_EHANDLE_INDEX;
 	while ((entity = UtilHelpers::FindEntityByClassname(entity, classname)) != INVALID_EHANDLE_INDEX)
@@ -1291,11 +1303,8 @@ CBaseEntity* UtilHelpers::GetNearestEntityOfClassname(const Vector& source, cons
 		if (!IndexToAThings(entity, &pBaseEntity, nullptr))
 			continue;
 
-		entities::HBaseEntity be{ pBaseEntity };
-
-		Vector center = be.WorldSpaceCenter();
-
-		current = source.DistTo(center);
+		Vector center = UtilHelpers::getWorldSpaceCenter(pBaseEntity);
+		float current = source.DistToSqr(center);
 
 		if (current > maxRange)
 			continue;
@@ -1308,6 +1317,56 @@ CBaseEntity* UtilHelpers::GetNearestEntityOfClassname(const Vector& source, cons
 	}
 
 	return pBest;
+}
+
+CBaseEntity* UtilHelpers::GetNearestNamedEntityOfClassname(const Vector& source, const char* classname, const char* targetname, float maxRange)
+{
+	CBaseEntity* best = nullptr;
+	float distance = std::numeric_limits<float>::max();
+	std::size_t lastletterpos = std::strlen(targetname) - 1U;
+	bool isUsingWildcard = targetname[lastletterpos] == '*';
+
+	int index = INVALID_EHANDLE_INDEX;
+	while ((index = UtilHelpers::FindEntityByClassname(index, classname)) != INVALID_EHANDLE_INDEX)
+	{
+		CBaseEntity* entity = gamehelpers->ReferenceToEntity(index);
+		const char* name = entityprops::GetEntityTargetname(entity);
+
+		if (name == nullptr || name[0] == '\0')
+		{
+			continue;
+		}
+
+		if (isUsingWildcard)
+		{
+			if (std::strncmp(name, targetname, lastletterpos) != 0)
+			{
+
+				continue;
+			}
+		}
+		else
+		{
+			if (std::strcmp(name, targetname) != 0)
+			{
+				continue;
+			}
+		}
+
+		Vector center = UtilHelpers::getWorldSpaceCenter(entity);
+		float current = source.DistToSqr(center);
+
+		if (current > maxRange)
+			continue;
+
+		if (current < distance)
+		{
+			distance = current;
+			best = entity;
+		}
+	}
+
+	return best;
 }
 
 CBaseEntity* UtilHelpers::FindEntityByHammerID(int iHammerID)

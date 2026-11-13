@@ -282,6 +282,126 @@ namespace botsharedutils
 		}
 	};
 
+	template <typename AreaClass, typename BotClass>
+	class SearchForCover : public IsReachableAreas<AreaClass, BotClass>
+	{
+	public:
+		// Finds cover from the bot's primary threat
+		SearchForCover(BotClass* bot, const float MinDistance = 512.0f) :
+			IsReachableAreas<AreaClass, BotClass>(bot, 16384.0f)
+		{
+			CommonInit();
+			m_fromPos.Init(0.0f, 0.0f, 0.0f);
+
+			auto threat = bot->GetSensorInterface()->GetPrimaryKnownThreat(ISensor::ONLY_VISIBLE_THREATS);
+
+			if (threat != nullptr)
+			{
+				if (threat->IsPlayer())
+				{
+					m_fromPos = threat->GetPlayerInstance()->GetEyeOrigin();
+				}
+				else
+				{
+					m_fromPos = UtilHelpers::getWorldSpaceCenter(threat->GetEntity());
+				}
+			}
+
+			m_minDistanceFromThreat = MinDistance * MinDistance;
+		}
+
+		// Finds cover from the given position
+		SearchForCover(BotClass* bot, const Vector& pos, const float MinDistance = 512.0f) :
+			IsReachableAreas<AreaClass, BotClass>(bot, 16384.0f)
+		{
+			CommonInit();
+			m_fromPos = pos;
+			m_minDistanceFromThreat = MinDistance * MinDistance;
+		}
+
+		bool ShouldCollect(AreaClass* area) override
+		{
+			if (IsReachableAreas<AreaClass, BotClass>::ShouldCollect(area))
+			{
+				if (IsValidCoverArea(area))
+				{
+					m_coverArea = area;
+					IsReachableAreas<AreaClass, BotClass>::EndSearch();
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		// Call this to search for cover, returns the cover area. NULL if none is found
+		AreaClass* FindCover()
+		{
+			if (m_fromPos.IsZero())
+			{
+				return nullptr;
+			}
+
+			IsReachableAreas<AreaClass, BotClass>::Execute();
+			return m_coverArea;
+		}
+
+	private:
+		Vector m_fromPos; // position we are finding cover from
+		AreaClass* m_coverArea;
+		float m_zOffs1;
+		float m_zOffs2;
+		float m_minDistanceFromThreat;
+
+		void CommonInit()
+		{
+			// ladders and elevators are too slow for cover purposes
+			IsReachableAreas<AreaClass, BotClass>::SetSearchLadders(false);
+			IsReachableAreas<AreaClass, BotClass>::SetSearchElevators(false);
+
+			BotClass* bot = IsReachableAreas<AreaClass, BotClass>::GetBot();
+
+			m_zOffs1 = bot->GetMovementInterface()->GetStandingHullHeight();
+			m_zOffs2 = bot->GetMovementInterface()->GetCrouchedHullHeight();
+			m_coverArea = nullptr;
+		}
+
+		bool IsAreaVisible(AreaClass* area)
+		{
+			if (area->IsPartiallyVisible(m_fromPos, m_zOffs1, MASK_VISIBLE) || area->IsPartiallyVisible(m_fromPos, m_zOffs2, MASK_VISIBLE))
+			{
+				return true;
+			}
+
+			return false;
+		}
+
+		bool IsValidCoverArea(AreaClass* area)
+		{
+			float rangeFromThreat = m_fromPos.DistToSqr(area->GetCenter());
+
+			if (rangeFromThreat < m_minDistanceFromThreat)
+			{
+				return false;
+			}
+
+			float rangeFromBot = IsReachableAreas<AreaClass, BotClass>::GetBot()->GetRangeToSqr(area->GetCenter());
+
+			// goal here is to filter out areas behind the threat, maybe switch to a dot product
+			if (rangeFromThreat < rangeFromBot)
+			{
+				return false;
+			}
+
+			if (IsAreaVisible(area))
+			{
+				return false;
+			}
+
+			return true;
+		}
+	};
+
 	/**
 	 * @brief Utility class for spreading danger around nearby areas.
 	 */
@@ -382,6 +502,35 @@ namespace botsharedutils
 		int m_teamIndex;
 		int m_enemyTeamIndex;
 		float m_timeLimit;
+	};
+
+	class PotentiallyVisibleCollector : public INavAreaCollector<CNavArea>
+	{
+	public:
+		// Constructor, 360 vision.
+		PotentiallyVisibleCollector(const Vector& eyePos, const float maxVisionRange);
+		/**
+		 * @brief Constructor with FOV check.
+		 * @param eyePos Position to test for visibility from.
+		 * @param eyeAngles Eye angles used in FOV checks.
+		 * @param maxVisionRange Maximum vision range from eye position.
+		 * @param fov Field of view in degrees.
+		 */
+		PotentiallyVisibleCollector(const Vector& eyePos, const QAngle& eyeAngles, const float maxVisionRange, const float fov);
+
+		bool ShouldSearch(CNavArea* area) override;
+		bool ShouldCollect(CNavArea* area) override;
+
+	private:
+		Vector m_eyePos;
+		QAngle m_eyeAngles;
+		Vector m_forward;
+		float m_halfcos;
+		float m_maxVisionRange;
+
+		bool UseFOV() const { return m_halfcos > -5.0f; }
+		bool CheckRange() const { return m_maxVisionRange > 0.0f; }
+		bool IsAreaVisible(CNavArea* area) const;
 	};
 }
 
