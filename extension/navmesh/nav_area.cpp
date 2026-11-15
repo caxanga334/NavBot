@@ -1378,6 +1378,7 @@ void CNavArea::FinishSplitEdit( CNavArea *newArea, NavDirType ignoreEdge )
 					break;
 			}
 
+			// TO-DO: Figure out why this doesn't work.
 			for ( int a = 0; a < m_incomingConnect[d].Count(); a++ )
 			{			
 				CNavArea *adj = m_incomingConnect[d][a].area;
@@ -1404,6 +1405,8 @@ void CNavArea::FinishSplitEdit( CNavArea *newArea, NavDirType ignoreEdge )
 		}
 	}
 
+#if 0
+	// removed: causes more bugs than it fixes.
 	auto func = [newArea](CNavArea* incomingArea, NavDirType direction) {
 		Vector center;
 		float dummy;
@@ -1432,6 +1435,7 @@ void CNavArea::FinishSplitEdit( CNavArea *newArea, NavDirType ignoreEdge )
 	};
 
 	ForEachIncomingArea(func);
+#endif // 0
 
 	TheNavAreas.AddToTail( newArea );
 	TheNavMesh->AddNavArea( newArea );
