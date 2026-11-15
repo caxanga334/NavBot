@@ -2186,15 +2186,30 @@ CON_COMMAND_F(sm_navbot_debug_draw_line_to, "Draws a line to the given position 
 	NDebugOverlay::Line(eyePos, pos, 255, 255, 0, true, 30.0f);
 }
 
-CON_COMMAND_F(sm_navbot_debug_timer_sys, "Debugs the timer system.", FCVAR_GAMEDLL | FCVAR_CHEAT)
+CON_COMMAND_F(sm_navbot_debug_potentially_visible, "Highlight potentially visible areas.", FCVAR_GAMEDLL | FCVAR_CHEAT)
 {
-	int data = randomgen->GetRandomInt<int>(1000, 9999);
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
 
-	CTimerSystem::Get()->CreateTimer([](const std::any& data) {
-		int p = std::any_cast<int>(data);
-		META_CONPRINTF("[%g] Timer callback %i\n", gpGlobals->curtime, p);
+	if (!host)
+	{
+		return;
+	}
+
+	botsharedutils::PotentiallyVisibleCollector collector(host->GetEyeOrigin(), host->GetEyeAngles(), 8192.0f, 105.0f);
+	collector.Execute();
+
+	if (collector.IsCollectedAreasEmpty())
+	{
+		META_CONPRINT("No visible areas! \n");
+	}
+
+	auto func = [](CNavArea* area) {
+		area->DrawFilled(255, 0, 255, 127, 30.0f);
 		return true;
-	}, data, 0.1f, CTimerSystem::TimerFlags::TIMERFLAG_REPEAT);
+	};
+
+	collector.ForEachCollectedNavArea(func);
+	META_CONPRINTF("Collected %zu potentially visible areas! \n", collector.GetCollectedAreasCount());
 }
 
 #endif // EXT_DEBUG

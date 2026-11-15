@@ -531,6 +531,7 @@ namespace botsharedutils
 		bool UseFOV() const { return m_halfcos > -5.0f; }
 		bool CheckRange() const { return m_maxVisionRange > 0.0f; }
 		bool IsAreaVisible(CNavArea* area) const;
+		void Init();
 	};
 }
 

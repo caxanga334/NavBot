@@ -59,6 +59,11 @@ public:
 	void UpdateHeard();
 	// Marks this entity as fully visible
 	void UpdateVisibilityStatus(bool visible);
+	/**
+	 * @brief Updates the "they see me" status. Keeps track if the entity is looking at the bot's direction.
+	 * @param status True if this known entity instance can also see the bot, false otherwise.
+	 */
+	void UpdateSeeMeStatus(bool status) { m_theyseeme = status; }
 	// true if the given entity is stored on this handle
 	bool IsEntity(CBaseEntity* entity) const { return m_handle.Get() == entity; }
 
@@ -76,6 +81,8 @@ public:
 
 		return false;
 	}
+	// Returns true this known entity can also see the bot, false otherwise.
+	bool CanTheySeeMe() const { return m_theyseeme; }
 
 	edict_t* GetEdict() const { return m_handle.ToEdict(); }
 	CBaseEntity* GetEntity() const { return m_handle.Get(); }
@@ -98,6 +105,12 @@ public:
 	const bool IsEntityOfClassname(const char* classname) const;
 	// Returns the debug identifier string
 	const char* GetDebugIdentifier() const;
+	/**
+	 * @brief Computes the entity's eye position and angles.
+	 * @param[out] eyePos Eye position.
+	 * @param[out] eyeAng Eye angles.
+	 */
+	void GetEyePositionAndAngles(Vector& eyePos, QAngle& eyeAng) const;
 private:
 	CHandle<CBaseEntity> m_handle; // Handle to the actual entity
 	std::string m_classname; // Entity classname (cached)
@@ -111,6 +124,7 @@ private:
 	float m_timesincelastnoise; // Timestamp of the last time the bot heard this entity
 	bool m_visible; // This entity is visible right now
 	bool m_lkpwasseen; // Last known position was seen by the bot
+	bool m_theyseeme; // This entity is also looking at the bot's direction.
 	CBaseExtPlayer* m_player; // Extension player if a player
 	entities::HBaseEntity m_baseent; // Base entity helper
 	

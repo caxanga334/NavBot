@@ -1981,23 +1981,45 @@ bool IMovement::RequestMovementTypeChange(MovementType type, MovementRequestPrio
 	return true;
 }
 
-void IMovement::AddDeadArea(CNavArea* area, const float duration)
+void IMovement::AddDeadArea(const CNavArea* area, const float duration)
 {
-	unsigned int id = area->GetID();
-	m_deadAreas[id] = duration;
+	if (duration > 0.0f)
+	{
+		float time = gpGlobals->curtime + duration;
+		m_deadAreas.insert_or_assign(area->GetID(), time);
+	}
+	else
+	{
+		m_deadAreas.insert_or_assign(area->GetID(), -1.0f);
+	}
 }
 
-void IMovement::AddCostModArea(CNavArea* area, const float costMult, const float duration)
+void IMovement::AddCostModArea(const CNavArea* area, const float costMult, const float duration)
 {
-	unsigned int id = area->GetID();
-	auto& it = m_costModAreas[id];
-	it.first = costMult;
-	it.second = duration;
+	if (duration > 0.0f)
+	{
+		float time = gpGlobals->curtime + duration;
+		m_costModAreas.insert_or_assign(area->GetID(), std::make_pair(costMult, time));
+	}
+	else
+	{
+		m_costModAreas.insert_or_assign(area->GetID(), std::make_pair(costMult, -1.0f));
+	}
+}
+
+void IMovement::RemoveCostModArea(const CNavArea* area)
+{
+	m_costModAreas.erase(area->GetID());
 }
 
 bool IMovement::IsDeadArea(const CNavArea* area) const
 {
 	return m_deadAreas.find(area->GetID()) != m_deadAreas.end();
+}
+
+void IMovement::RemoveDeadArea(const CNavArea* area)
+{
+	m_deadAreas.erase(area->GetID());
 }
 
 void IMovement::GetCostMod(const CNavArea* area, float& cost) const

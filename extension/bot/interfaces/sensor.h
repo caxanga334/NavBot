@@ -180,11 +180,11 @@ public:
 
 	/**
 	 * @brief Runs a function on every enemy known entity.
-	 * @tparam T A class with void operator() overload with the following parameters: (const CKnownEntity* known)
-	 * @param functor Function to run on every known entity
+	 * @tparam T A class with void operator() overload with the following parameters: bool (const CKnownEntity* known)
+	 * @param functor Function to run on every known entity. If the function returns false, stops the loop and returns false.
 	 */
 	template <typename T>
-	inline void ForEveryKnownEnemy(T& functor) const
+	inline bool ForEveryKnownEnemy(T& functor) const
 	{
 		for (auto& i : m_knownlist)
 		{
@@ -192,9 +192,14 @@ public:
 
 			if (known->IsValid() && !IsIgnored(known->GetEntity()) && IsEnemy(known->GetEntity()))
 			{
-				functor(known);
+				if (functor(known) == false)
+				{
+					return false;
+				}
 			}
 		}
+
+		return true;
 	}
 
 	/**
@@ -264,6 +269,19 @@ public:
 			m_primarythreatoverride->MarkLastKnownPositionAsSeen();
 		}
 	}
+	/**
+	 * @brief Checks if the bot is visible to any known enemy.
+	 * @param staleThreshold Threshold in seconds to consider an enemy as stale and ignore it.
+	 * @return True if the bot is visible to an enemy, false otherwise.
+	 */
+	bool IsVisibleToAnyEnemy(const float staleThreshold) const;
+
+	/**
+	 * @brief Returns the enemy field of view value in degrees used to determine if a bot is in the enemy's field of view.
+	 * @return FOV value in degrees.
+	 */
+	virtual float GetEnemyFieldOfView() const { return 105.0f; }
+
 protected:
 	/**
 	 * @brief Called to update the list of known entities.
@@ -359,6 +377,12 @@ protected:
 		CKnownEntity& known = m_knownlist.emplace_back(entity);
 		return &known;
 	}
+	
+	/**
+	 * @brief Determines if the given known entity can see the bot.
+	 * @param known Known entity to update the "see me" status.
+	 */
+	void UpdateBotVisiblityStatusToKnown(CKnownEntity& known) const;
 
 private:
 	std::vector<CKnownEntity> m_knownlist;

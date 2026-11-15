@@ -564,16 +564,26 @@ public:
 	 * @param area Area to mark as dead end.
 	 * @param duration How long to keep this area marked as dead end. Negative for infinite.
 	 */
-	void AddDeadArea(CNavArea* area, const float duration);
+	void AddDeadArea(const CNavArea* area, const float duration);
 	/**
 	 * @brief Marks an area with a modified path cost.
 	 * @param area Area to mark.
 	 * @param costMult Cost multiplier for this area.
 	 * @param duration How long to keep this area with modified cost. Negative for infinite.
 	 */
-	void AddCostModArea(CNavArea* area, const float costMult, const float duration);
+	void AddCostModArea(const CNavArea* area, const float costMult, const float duration);
+	/**
+	 * @brief Removes a cost modifier from a specific area.
+	 * @param area Area to remove the cost modifier of.
+	 */
+	void RemoveCostModArea(const CNavArea* area);
 	// Returns true if the given area is marked as dead end.
 	bool IsDeadArea(const CNavArea* area) const;
+	/**
+	 * @brief Removes the dead area status from the given nav area.
+	 * @param area Nav area to remove the dead status from.
+	 */
+	void RemoveDeadArea(const CNavArea* area);
 	// Applies a cost multiplier to the given area.
 	void GetCostMod(const CNavArea* area, float& cost) const;
 	/**
@@ -851,6 +861,13 @@ private:
 	{
 		for (auto it = m_deadAreas.begin(); it != m_deadAreas.end();)
 		{
+			// negative duration means infinite
+			if (it->second < 0.0f)
+			{
+				it++;
+				continue;
+			}
+
 			if (it->second <= timestamp)
 			{
 				it = m_deadAreas.erase(it);
@@ -866,6 +883,13 @@ private:
 	{
 		for (auto it = m_costModAreas.begin(); it != m_costModAreas.end();)
 		{
+			// negative duration means infinite
+			if (it->second.second < 0.0f)
+			{
+				it++;
+				continue;
+			}
+
 			if (it->second.second <= timestamp)
 			{
 				it = m_costModAreas.erase(it);

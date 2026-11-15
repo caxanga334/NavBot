@@ -453,16 +453,16 @@ bool botsharedutils::SelectRetreatArea::ShouldCollect(CNavArea* area)
 	bool collect = true;
 
 	auto functor = [this, &area, myDist, &collect](const CKnownEntity* known) {
-
-		if (!collect) { return; } // skip calculations if I'm not collecting it already
-
 		const float dist = (area->GetCenter() - known->GetLastKnownPosition()).Length();
 
 		// if the distance between a threat is smaller than the given limit OR it's closer to the enemy than to me, don't collect it
 		if (dist <= m_mindistance || dist < myDist)
 		{
 			collect = false;
+			return false;
 		}
+
+		return true;
 	};
 
 	m_bot->GetSensorInterface()->ForEveryKnownEnemy(functor);
@@ -872,11 +872,14 @@ botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const V
 	if (maxVisionRange > 0.0f)
 	{
 		m_maxVisionRange = maxVisionRange * maxVisionRange;
+		SetTravelLimit(maxVisionRange * 2.5f); // multiply by 2.5 since vision is euclidean distance
 	}
 	else
 	{
 		m_maxVisionRange = -1.0f;
 	}
+
+	Init(); // sets the start area
 }
 
 botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const Vector& eyePos, const QAngle& eyeAngles, const float maxVisionRange, const float fov) :
@@ -885,42 +888,23 @@ botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const V
 	m_eyeAngles = eyeAngles;
 	m_halfcos = UtilHelpers::GetForwardViewCone(fov);
 	AngleVectors(eyeAngles, &m_forward);
+	// don't need to call Init here
 }
 
 bool botsharedutils::PotentiallyVisibleCollector::ShouldSearch(CNavArea* area)
 {
-	if (IsStartArea(area))
-	{
-		return true;
-	}
-
-	auto func = [this](CNavArea* neighborArea, NavTraverseType how) {
-		// visible areas are marked
-		if (this->IsMarked(neighborArea))
-		{
-			return false;
-		}
-
-		return true;
-	};
-
-	// SearchConnectedAreas will return false if any neighbor is already determined to be visible.
-	// If no neighbor is visible, skip this area. This is so we can stop the search early when we run out of visible areas.
-	return !(area->SearchConnectedAreas(func));
+	return true;
 }
 
 bool botsharedutils::PotentiallyVisibleCollector::ShouldCollect(CNavArea* area)
 {
 	if (IsStartArea(area))
 	{
-		MarkArea(area);
-		return false;
+		return true;
 	}
 
 	if (IsAreaVisible(area))
 	{
-		// remember visible areas
-		MarkArea(area);
 		return true;
 	}
 
@@ -954,4 +938,11 @@ bool botsharedutils::PotentiallyVisibleCollector::IsAreaVisible(CNavArea* area) 
 	}
 
 	return false;
+}
+
+void botsharedutils::PotentiallyVisibleCollector::Init()
+{
+	Vector ground = trace::getground(m_eyePos);
+	CNavArea* start = TheNavMesh->GetNearestNavArea(ground, 256.0f);
+	SetStartArea(start);
 }

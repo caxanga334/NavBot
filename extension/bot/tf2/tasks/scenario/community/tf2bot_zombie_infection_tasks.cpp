@@ -104,6 +104,8 @@ namespace zi
 				{
 					this->m_enemyPos.emplace_back(known->GetPlayerInstance()->GetEyeOrigin());
 				}
+
+				return true;
 			};
 
 			me->GetSensorInterface()->ForEveryKnownEnemy(func);

@@ -175,3 +175,18 @@ const char* CKnownEntity::GetDebugIdentifier() const
 
 	return string.data();
 }
+
+void CKnownEntity::GetEyePositionAndAngles(Vector& eyePos, QAngle& eyeAng) const
+{
+	if (IsPlayer())
+	{
+		eyePos = GetPlayerInstance()->GetEyeOrigin();
+		eyeAng = GetPlayerInstance()->GetEyeAngles();
+	}
+	else
+	{
+		CBaseEntity* ptr = m_handle.Get();
+		eyePos = UtilHelpers::getEntityEyePosition(ptr);
+		eyeAng = UtilHelpers::getEntityAngles(ptr);
+	}
+}

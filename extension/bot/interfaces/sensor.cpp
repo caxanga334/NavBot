@@ -834,6 +834,26 @@ void ISensor::ShareKnownEntityList(ISensor* other)
 	}
 }
 
+bool ISensor::IsVisibleToAnyEnemy(const float staleThreshold) const
+{
+	auto func = [staleThreshold](const CKnownEntity* known) {
+		if (known->GetTimeSinceLastVisible() > staleThreshold)
+		{
+			return true;
+		}
+
+		if (known->CanTheySeeMe())
+		{
+			return false;
+		}
+
+		return true;
+	};
+
+	// will return false if the bot is visible to an enemy.
+	return !ForEveryKnownEnemy(func);
+}
+
 void ISensor::UpdateKnownEntities()
 {
 #ifdef EXT_VPROF_ENABLED
@@ -913,6 +933,7 @@ void ISensor::UpdateVisibleEntities(const std::vector<CBaseEntity*>& potentially
 			// entity is visible right now
 			known.UpdatePosition();
 			known.UpdateVisibilityStatus(true);
+			UpdateBotVisiblityStatusToKnown(known);
 			knownEntities.insert(pEntity); // remember that this entity is already known by the bot
 
 			// reaction time check
@@ -937,6 +958,8 @@ void ISensor::UpdateVisibleEntities(const std::vector<CBaseEntity*>& potentially
 			if (known.IsVisibleNow())
 			{
 				known.UpdateVisibilityStatus(false);
+				// if the bot can't see, assume they also can't see the bot
+				known.UpdateSeeMeStatus(false);
 				me->OnLostSight(pEntity);
 
 				if (me->IsDebugging(BOTDEBUG_SENSOR))
@@ -1070,6 +1093,21 @@ void ISensor::UpdateStatistics()
 			m_statsknownallies++;
 		}
 	}
+}
+
+void ISensor::UpdateBotVisiblityStatusToKnown(CKnownEntity& known) const
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("ISensor::UpdateBotVisiblityStatusToKnown", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	Vector eyePos;
+	QAngle eyeAng;
+	Vector forward;
+	known.GetEyePositionAndAngles(eyePos, eyeAng);
+	AngleVectors(eyeAng, &forward);
+	known.UpdateSeeMeStatus(UtilHelpers::PointWithinViewAngle(eyePos, GetBot<CBaseBot>()->GetEyeOrigin(), forward,
+		UtilHelpers::GetForwardViewCone(GetEnemyFieldOfView())));
 }
 
 void ISensor::CollectVisible::operator()(CBaseEntity* entity)

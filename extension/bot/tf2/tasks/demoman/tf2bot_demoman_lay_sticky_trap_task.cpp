@@ -19,14 +19,17 @@ public:
 		m_detonate = false;
 	}
 
-	void operator()(const CKnownEntity* known)
+	bool operator()(const CKnownEntity* known)
 	{
 		constexpr float BLAST_RADIUS = 200.0f;
 
 		if ((m_trap - known->GetLastKnownPosition()).IsLengthLessThan(BLAST_RADIUS))
 		{
 			m_detonate = true;
+			return false;
 		}
+
+		return true;
 	}
 
 	Vector m_trap;

@@ -1284,6 +1284,8 @@ public:
 	void Reset();
 
 	const std::vector<T*>& GetCollectedAreas() const { return m_collected; }
+	// Swaps the collected area vector with the given vector
+	void SwapCollectedAreas(std::vector<T*>& out) { out.swap(m_collected); }
 	bool IsCollectedAreasEmpty() const { return m_collected.empty(); }
 	size_t GetCollectedAreasCount() const { return m_collected.size(); }
 	// Returns a random collected area. No filtering.
