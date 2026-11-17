@@ -504,6 +504,9 @@ namespace botsharedutils
 		float m_timeLimit;
 	};
 
+	/**
+	 * @brief Collects nav areas potentially visible to an observer. May test for field of view, max vision range and line of sight.
+	 */
 	class PotentiallyVisibleCollector : public INavAreaCollector<CNavArea>
 	{
 	public:
@@ -517,16 +520,32 @@ namespace botsharedutils
 		 * @param fov Field of view in degrees.
 		 */
 		PotentiallyVisibleCollector(const Vector& eyePos, const QAngle& eyeAngles, const float maxVisionRange, const float fov);
+		/**
+		 * @brief Constructor with FOV check.
+		 * @param eyePos Position to test for visibility from.
+		 * @param eyeDir Direction vector the eyes are facing
+		 * @param maxVisionRange Maximum vision range from eye position.
+		 * @param fov Field of view in degrees.
+		 */
+		PotentiallyVisibleCollector(const Vector& eyePos, const Vector& eyeDir, const float maxVisionRange, const float fov);
 
 		bool ShouldSearch(CNavArea* area) override;
 		bool ShouldCollect(CNavArea* area) override;
 
+		/**
+		 * @brief Sets if Line of Sight should be ignored.
+		 * If enabled (true), don't do LOS test and collect areas behing onlys, only testing for distance and field of view.
+		 * @param state State to set.
+		 */
+		void SetIgnoreLOS(bool state) { m_ignoreLOS = state; }
+		bool IsIgnoringLOS() const { return m_ignoreLOS; }
+
 	private:
 		Vector m_eyePos;
-		QAngle m_eyeAngles;
 		Vector m_forward;
 		float m_halfcos;
 		float m_maxVisionRange;
+		bool m_ignoreLOS;
 
 		bool UseFOV() const { return m_halfcos > -5.0f; }
 		bool CheckRange() const { return m_maxVisionRange > 0.0f; }

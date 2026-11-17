@@ -401,3 +401,83 @@ stock int CollectNavBots(int[] arr, const int size, bool aliveOnly = false, cons
 
 	return idx;
 }
+
+/**
+ * @brief Gets the first valid NavBot instance that passes the filters.
+ * 
+ * @param teamIndex		If >= 0, bots must be on this team.
+ * @param filterDead	If true, bots must be alive.
+ * @return				NavBot instance. May be invalid, check with IsNull.
+ */
+stock NavBot GetFirstValidNavBot(int teamIndex = -1, bool filterDead = true)
+{
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (IsClientInGame(client))
+		{
+			if (teamIndex >= 0 && GetClientTeam(client) != teamIndex)
+			{
+				continue;
+			}
+
+			if (filterDead && !IsPlayerAlive(client))
+			{
+				continue;
+			}
+
+			if (NavBotManager.IsNavBot(client))
+			{
+				return view_as<NavBot>(client);
+			}
+		}
+	}
+
+	return NULL_NAVBOT;
+}
+
+/**
+ * @brief Gets a random valid NavBot instance that passes the filters.
+ * 
+ * @param teamIndex		If >= 0, bots must be on this team.
+ * @param filterDead	If true, bots must be alive.
+ * @return				NavBot instance. May be invalid, check with IsNull.
+ */
+stock NavBot GetRandomValidNavBot(int teamIndex = -1, bool filterDead = true)
+{
+	int[] candidates = new int[MaxClients];
+	int idx = 0;
+
+	for (int client = 1; client <= MaxClients; client++)
+	{
+		if (IsClientInGame(client))
+		{
+			if (teamIndex >= 0 && GetClientTeam(client) != teamIndex)
+			{
+				continue;
+			}
+
+			if (filterDead && !IsPlayerAlive(client))
+			{
+				continue;
+			}
+
+			if (NavBotManager.IsNavBot(client))
+			{
+				candidates[idx] = client;
+				idx++;
+			}
+		}
+	}
+
+	if (idx == 0)
+	{
+		return NULL_NAVBOT;
+	}
+
+	if (idx == 1)
+	{
+		return view_as<NavBot>(candidates[0]);
+	}
+
+	return view_as<NavBot>(candidates[GetRandomInt(0, idx - 1)]);
+}

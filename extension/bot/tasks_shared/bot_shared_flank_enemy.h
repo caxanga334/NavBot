@@ -1,6 +1,7 @@
 #ifndef __NAVBOT_BOT_SHARED_FLANK_ENEMY_TASK_H_
 #define __NAVBOT_BOT_SHARED_FLANK_ENEMY_TASK_H_
 
+#include <mods/modhelpers.h>
 #include <bot/interfaces/path/meshnavigator.h>
 #include <bot/bot_shared_utils.h>
 
@@ -58,7 +59,14 @@ public:
 
 		PathCostClass cost(bot);
 		CMeshNavigator nav;
-		return nav.ComputePathToPosition(bot, UtilHelpers::getEntityOrigin(enemy), cost);
+		bool result = nav.ComputePathToPosition(bot, UtilHelpers::getEntityOrigin(enemy), cost);
+
+		for (auto area : areas)
+		{
+			mover->RemoveDeadArea(area);
+		}
+
+		return result;
 	}
 
 	/**
@@ -118,7 +126,11 @@ public:
 
 		if (rangeTo <= m_goalRange)
 		{
-			return AITask<BotClass>::Done("Goal range reached!");
+			// If near and enemy is visible, end the task
+			if (bot->GetSensorInterface()->IsAbleToSee(enemy))
+			{
+				return AITask<BotClass>::Done("Goal range reached!");
+			}
 		}
 
 		if (m_refreshAreas && m_updateAreasTimer.IsElapsed())
@@ -155,17 +167,36 @@ public:
 		return AITask<BotClass>::Continue();
 	}
 
+	bool OnTaskPause(BotClass* bot, AITask<BotClass>* nextTask) override
+	{
+		RemoveCostModAreas(bot);
+		return true;
+	}
+
+	TaskResult<BotClass> OnTaskResume(BotClass* bot, AITask<BotClass>* pastTask) override
+	{
+		CBaseEntity* enemy = GetEnemy(bot);
+
+		if (enemy == nullptr)
+		{
+			return AITask<BotClass>::Done("Enemy is NULL or invalid!");
+		}
+
+		if (m_refreshAreas)
+		{
+			UpdateAreas(bot, enemy);
+		}
+		else
+		{
+			AddCostModAreas(bot);
+		}
+		
+		return AITask<BotClass>::Continue();
+	}
+
 	void OnTaskEnd(BotClass* bot, AITask<BotClass>* nextTask) override
 	{
-		if (!m_costAreas.empty())
-		{
-			auto mover = bot->GetMovementInterface();
-
-			for (auto area : m_costAreas)
-			{
-				mover->RemoveCostModArea(area);
-			}
-		}
+		RemoveCostModAreas(bot);
 	}
 
 	TaskEventResponseResult<BotClass> OnStuck(BotClass* bot) override
@@ -230,6 +261,11 @@ private:
 			return nullptr;
 		}
 
+		if (modhelpers->IsDead(enemy))
+		{
+			return nullptr;
+		}
+
 		if (bot->GetSensorInterface()->IsIgnored(enemy) || !bot->GetSensorInterface()->IsEnemy(enemy))
 		{
 			return nullptr;
@@ -278,6 +314,33 @@ private:
 		}
 
 		m_nav.InvalidateAndRepath();
+	}
+
+	// adds areas without updating the vector
+	void AddCostModAreas(BotClass* bot) const
+	{
+		if (!m_costAreas.empty())
+		{
+			auto mover = bot->GetMovementInterface();
+
+			for (auto area : m_costAreas)
+			{
+				mover->AddCostModArea(area, 20.0f, 999999.0f);
+			}
+		}
+	}
+
+	void RemoveCostModAreas(BotClass* bot) const
+	{
+		if (!m_costAreas.empty())
+		{
+			auto mover = bot->GetMovementInterface();
+
+			for (auto area : m_costAreas)
+			{
+				mover->RemoveCostModArea(area);
+			}
+		}
 	}
 };
 

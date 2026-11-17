@@ -1413,9 +1413,9 @@ void CPath::CheckDropDownsForGapJumps(const CBaseBot* bot, BotPathSegment* from,
 	p1.z = 0.0f;
 	p2.z = 0.0f;
 
-	if ((p1 - p2).IsLengthGreaterThan(bot->GetMovementInterface()->GetHullWidth()))
+	if ((p1 - p2).IsLengthGreaterThan(bot->GetMovementInterface()->GetHullWidth() * 2.5f))
 	{
-		// distance between the two nav areas is greater than the bot's hull width
+		// distance between the two nav areas is greater than the bot's hull width (with some tolerance)
 		p1.z = oldZ1;
 		dropStart->goal = p1;
 		// convert to a gap jump

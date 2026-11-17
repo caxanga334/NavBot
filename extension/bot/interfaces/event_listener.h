@@ -68,6 +68,9 @@ public:
 		PLUGINCMD_ROAM, // Moves to a random destination.
 		PLUGINCMD_FOLLOW_ENTITY, // Follows an entity
 		PLUGINCMD_STOPCMD, // Stops an active scripted plugin command. Does nothing if not running one.
+		PLUGINCMD_FLANK_ENEMY, // Flanks an enemy.
+		PLUGINCMD_FIND_COVER, // Find cover from a given position.
+		PLUGINCMD_FLANK_POSITION, // Flanks a position.
 
 		MAX_PLUGIN_COMMAND_TYPES
 	};
@@ -76,7 +79,8 @@ public:
 	{
 	public:
 		PluginCommandData() :
-			movegoal(0.0f, 0.0f, 0.0f), idata(0), fldata(0.0f)
+			movegoal(0.0f, 0.0f, 0.0f), idata(0), fldata(0.0f), entdata(nullptr),
+			vdata1(0.0f, 0.0f, 0.0f), vdata2(0.0f, 0.0f, 0.0f), fldata2(0.0f)
 		{
 			sb_update_callback = nullptr;
 		}
@@ -85,6 +89,9 @@ public:
 		int idata;
 		float fldata;
 		CHandle<CBaseEntity> entdata;
+		Vector vdata1;
+		Vector vdata2;
+		float fldata2;
 
 		// callbacks for scripted behavior
 		SourcePawn::IPluginFunction* sb_update_callback; // update

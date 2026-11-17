@@ -867,7 +867,7 @@ float botsharedutils::search::GetDefaultMaxItemSearchDistance()
 }
 
 botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const Vector& eyePos, const float maxVisionRange) :
-	m_eyePos(eyePos), m_eyeAngles(0.0f, 0.0f, 0.0f), m_forward(0.0f, 0.0f, 0.0f), m_halfcos(-9999.0f)
+	m_eyePos(eyePos), m_forward(0.0f, 0.0f, 0.0f), m_halfcos(-9999.0f), m_ignoreLOS(false)
 {
 	if (maxVisionRange > 0.0f)
 	{
@@ -885,10 +885,16 @@ botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const V
 botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const Vector& eyePos, const QAngle& eyeAngles, const float maxVisionRange, const float fov) :
 	PotentiallyVisibleCollector(eyePos, maxVisionRange)
 {
-	m_eyeAngles = eyeAngles;
 	m_halfcos = UtilHelpers::GetForwardViewCone(fov);
 	AngleVectors(eyeAngles, &m_forward);
 	// don't need to call Init here
+}
+
+botsharedutils::PotentiallyVisibleCollector::PotentiallyVisibleCollector(const Vector& eyePos, const Vector& eyeDir, const float maxVisionRange, const float fov) :
+	PotentiallyVisibleCollector(eyePos, maxVisionRange)
+{
+	m_halfcos = UtilHelpers::GetForwardViewCone(fov);
+	m_forward = eyeDir;
 }
 
 bool botsharedutils::PotentiallyVisibleCollector::ShouldSearch(CNavArea* area)
@@ -932,9 +938,12 @@ bool botsharedutils::PotentiallyVisibleCollector::IsAreaVisible(CNavArea* area) 
 		}
 	}
 
-	if (area->IsPartiallyVisible(m_eyePos, navgenparams->human_eye_height, MASK_VISIBLE))
+	if (!IsIgnoringLOS())
 	{
-		return true;
+		if (area->IsPartiallyVisible(m_eyePos, navgenparams->human_eye_height, MASK_VISIBLE))
+		{
+			return true;
+		}
 	}
 
 	return false;

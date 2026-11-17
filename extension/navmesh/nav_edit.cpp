@@ -4981,9 +4981,22 @@ void CNavMesh::CommandNavMeasureDistance()
 	META_CONPRINTF("Distances between area #%u and area #%u \n", first->GetID(), second->GetID());
 	META_CONPRINTF("Range (Center to Center): \n  3D: %g\n  2D: %g\n", range_center, range_center_2d);
 	META_CONPRINTF("Range (Closest Point From Center): \n  3D: %g\n  2D: %g\n", range_closest, range_closest_2d);
-	debugoverlay->AddLineOverlay(point1, point2, 0, 200, 0, true, 30.0f);
-	NDebugOverlay::Cross3D(point1, 5.0f, 255, 0, 0, true, 30.0f);
-	NDebugOverlay::Cross3D(point2, 5.0f, 255, 0, 0, true, 30.0f);
+
+	Vector c1, c2;
+	float dummy;
+
+	if (first->ComputeLargestPortal(second, &c1, &dummy) != NavDirType::NUM_DIRECTIONS)
+	{
+		second->GetClosestPointOnArea(c1, &c2);
+
+		float range = (c1 - c2).Length();
+		float range2D = (c1 - c2).Length2D();
+		META_CONPRINTF("Range (Portal): \n  3D: %g\n  2D: %g\n", range, range2D);
+		debugoverlay->AddLineOverlay(c1, c2, 0, 200, 0, true, 30.0f);
+		NDebugOverlay::Cross3D(c1, 5.0f, 255, 0, 0, true, 30.0f);
+		NDebugOverlay::Cross3D(c2, 5.0f, 255, 0, 0, true, 30.0f);
+	}
+
 	PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_BLIP);
 }
 

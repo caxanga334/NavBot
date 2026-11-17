@@ -28,6 +28,9 @@ enum NavBotPluginCommandTypes
 	NAVBOT_PLUGINCMD_ROAM, // Moves to a random destination.
 	NAVBOT_PLUGINCMD_FOLLOW_ENTITY, // Follows an entity
 	NAVBOT_PLUGINCMD_STOPCMD, // Stops an active scripted plugin command. Does nothing if not running one.
+	NAVBOT_PLUGINCMD_FLANK_ENEMY, // Try to flank an enemy by using a path that can't be seen by them.
+	NAVBOT_PLUGINCMD_FIND_COVER, // Finds cover from a given world position.
+	NAVBOT_PLUGINCMD_FLANK_POSITION, // Try to flank a given position.
 
 	MAX_PLUGIN_COMMAND_TYPES
 };
@@ -153,8 +156,23 @@ methodmap NavBot < NavBotBasePlayer
 	 * NAVBOT_PLUGINCMD_PATROL: No additional parameters needed.
 	 * NAVBOT_PLUGINCMD_ROAM: One float, the maximum search distance for a random destination.
 	 * NAVBOT_PLUGINCMD_FOLLOW_ENTITY: 3 Arguments in the following order: entity index to follow, max follow time (seconds, float), minimum distance between the bot and target entity (float)
+	 * NAVBOT_PLUGINCMD_FLANK_ENEMY: 3 Arguments in the following order: entity index of the enemy to flank, goal distance, stealth mode (bool)
+	 * NAVBOT_PLUGINCMD_FIND_COVER: 3 Arguments in the following order:  One world position vector (float pos[3]), time to wait in cover in seconds (float) and the minimum cover distance (float)
+	 * NAVBOT_PLUGINCMD_FLANK_POSITION: 6 Arguments in the following order:
+	 *  - Move to position (float[3])
+	 *  - Observer eye position (float[3])
+	 *  - Observer normalized eye direction (float[3])
+	 *  - Observer maximum view distance (float)
+	 *  - Observer field of view (float)
+	 *  - Stealth mode (bool)
 	 * 
 	 * To check if a plugin command task is active, use the IsRunningPluginCommand behavior query. (See interfaces/behavior.inc)
+	 * 
+	 * Additional notes:
+	 * 
+	 * FLANK_ENEMY: goal distance sets the minimum distance between the bot and the enemy for the task to end. (Enemy must be visible)
+	 * FLANK_ENEMY: When using stealth mode, the bot won't attack enemies. The task ends if the bot is in the line of sight of any known enemy.
+	 * FIND_COVER: Pass a zero or negative wait time to disable the wait.
 	 */
 
 	/**

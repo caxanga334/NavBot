@@ -482,6 +482,73 @@ namespace basebot
 
 			break;
 		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD:
+			break;
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FLANK_ENEMY:
+		{
+			if (startparam + 2U > numparams)
+			{
+				context->ReportError("This command requires three arguments to be passed!");
+				return 0;
+			}
+
+			CBaseEntity* entity = gamehelpers->ReferenceToEntity(pawnutils::ReadIntByRef(context, params, startparam));
+
+			if (!entity)
+			{
+				context->ReportError("NULL entity!");
+				return 0;
+			}
+
+			if (entity == bot->GetEntity())
+			{
+				context->ReportError("Given entity cannot be the bot!");
+				return 0;
+			}
+
+			data.entdata.Set(entity);
+			data.fldata = pawnutils::ReadFloatByRef(context, params, startparam + 1U);
+			data.idata = pawnutils::ReadIntByRef(context, params, startparam + 2U);
+			break;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FIND_COVER:
+		{
+			if (startparam + 2U > numparams)
+			{
+				context->ReportError("This command requires three arguments to be passed!");
+				return 0;
+			}
+
+			data.movegoal = pawnutils::ReadVector(context, params, startparam);
+			data.fldata = pawnutils::ReadFloatByRef(context, params, startparam + 1U);
+			data.fldata2 = pawnutils::ReadFloatByRef(context, params, startparam + 2U);
+
+			if (data.fldata <= 0.0f)
+			{
+				data.fldata = -1.0f;
+			}
+
+			data.fldata2 = std::max(data.fldata2, 0.0f);
+			break;
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FLANK_POSITION:
+		{
+			if (startparam + 5U > numparams)
+			{
+				context->ReportError("This command requires six arguments to be passed!");
+				return 0;
+			}
+
+			data.movegoal = pawnutils::ReadVector(context, params, startparam); // move goal
+			data.vdata1 = pawnutils::ReadVector(context, params, startparam + 1U); // eye pos
+			data.vdata2 = pawnutils::ReadVector(context, params, startparam + 2U); // eye dir
+			data.fldata = pawnutils::ReadFloatByRef(context, params, startparam + 3U); // max view distance
+			data.fldata2 = pawnutils::ReadFloatByRef(context, params, startparam + 4U); // fov
+			data.idata = pawnutils::ReadIntByRef(context, params, startparam + 5U); // stealth mode
+			data.fldata = std::max(data.fldata, -1.0f);
+			data.fldata2 = std::clamp(data.fldata2, 1.0f, 179.0f);
+			break;
+		}
 		default:
 			return 0;
 		}

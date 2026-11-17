@@ -14,17 +14,18 @@ public:
 	 * @brief Determines if cover is available.
 	 * @param bot Bot taking cover.
 	 * @param fromPos Optional position to take cover from. if NULL, finds cover from the primary threat.
+	 * @param minDist Minimum distance between the bot and the cover position.
 	 * @return Cover nav area. NULL if no cover is available.
 	 */
-	static CNavArea* IsPossible(BotClass* bot, const Vector* fromPos)
+	static CNavArea* IsPossible(BotClass* bot, const Vector* fromPos, const float minDist = 512.0f)
 	{
 		if (fromPos != nullptr)
 		{
-			botsharedutils::SearchForCover<CNavArea, CBaseBot> search(bot, *fromPos);
+			botsharedutils::SearchForCover<CNavArea, CBaseBot> search(bot, *fromPos, minDist);
 			return search.FindCover();
 		}
 
-		botsharedutils::SearchForCover<CNavArea, CBaseBot> search(bot);
+		botsharedutils::SearchForCover<CNavArea, CBaseBot> search(bot, minDist);
 		return search.FindCover();
 	}
 

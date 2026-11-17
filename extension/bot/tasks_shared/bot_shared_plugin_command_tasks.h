@@ -8,6 +8,9 @@
 #include "bot_shared_roam.h"
 #include "bot_shared_patrol_uncleared_areas.h"
 #include "bot_shared_escort_entity.h"
+#include "bot_shared_find_cover.h"
+#include "bot_shared_flank_enemy.h"
+#include "bot_shared_flank_position.h"
 
 template <typename BotClass, typename PathCostClass, typename BaseTaskClass>
 class CBotSharedPluginWrapperTask : public BaseTaskClass
@@ -688,6 +691,33 @@ namespace plugincommandtask
 		case IEventListener::PluginCommandTypes::PLUGINCMD_STOPCMD:
 		{
 			return task->TryContinue();
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FLANK_ENEMY:
+		{
+			using FLANKTASK = CBotSharedFlankEnemyTask<BotClass, PathCostClass>;
+			bool stealthMode = data.idata != 0;
+			return task->TryPauseFor(new CBotSharedPluginWrapperTask<BotClass, PathCostClass, FLANKTASK>(data.entdata.Get(), data.fldata, stealthMode),
+				PRIORITY, REASON.data());
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FIND_COVER:
+		{
+			using FINDCOVERTASK = CBotSharedFindCoverAndWaitTask<BotClass, PathCostClass>;
+			
+			if (CNavArea* cover = CBotSharedFindCoverTask<BotClass, PathCostClass>::IsPossible(bot, &data.movegoal, data.fldata2); cover != nullptr)
+			{
+				return task->TryPauseFor(new CBotSharedPluginWrapperTask<BotClass, PathCostClass, FINDCOVERTASK>(cover, data.fldata), 
+					PRIORITY, REASON.data());
+			}
+
+			return task->TryToMaintain(PRIORITY);
+		}
+		case IEventListener::PluginCommandTypes::PLUGINCMD_FLANK_POSITION:
+		{
+			using FLANKTASK = CBotSharedFlankPositionTask<BotClass, PathCostClass>;
+			bool stealthMode = data.idata != 0;
+			return task->TryPauseFor(new CBotSharedPluginWrapperTask<BotClass, PathCostClass, FLANKTASK>(data.movegoal, 
+				data.vdata1, data.vdata2, data.fldata, data.fldata2, data.idata != 0),
+				PRIORITY, REASON.data());
 		}
 		default:
 			return task->TryContinue();
