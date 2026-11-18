@@ -2206,12 +2206,15 @@ inline static bool testJumpDown( const Vector *fromPos, const Vector *toPos )
 	//
 
 	Vector from, to;
-	float up;
+	float up = 0.0f;
 	trace_t result;
 
+	std::size_t maxsteps = static_cast<std::size_t>(std::ceil(navgenparams->climb_up_height + 1.0f));
+
 	// Try to go up and out, up to ClimbUpHeight, to get over obstacles
-	for ( up = 1.0f; up <= navgenparams->climb_up_height; up += 1.0f )
+	for ( std::size_t i = 0; i < maxsteps; i++ )
 	{
+		up += 1.0f; // increment up by 1 for every step
 		from = *fromPos;
 		to.Init( fromPos->x, fromPos->y, fromPos->z + up );
 

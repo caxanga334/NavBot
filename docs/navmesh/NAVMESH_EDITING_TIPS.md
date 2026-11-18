@@ -53,6 +53,19 @@ It's common for the generator to generate a one-way connection near railings. Bo
 To fix this, disconnect the areas first, then create a new area between the floor and ledge. Jump onto the railing, mark the new area with `sm_nav_mark` and them run this command `sm_nav_corner_place_at_feet false` to move the newly created area to the railing's height. Then create a two-way connection from the floor to the new area and a one-way to the ground below to create a drop down.    
 The bot's path generation will now understand that it needs to jump before dropping.
 
+## Auto Disconnect Bad Drop Downs
+
+The `sm_nav_area_fix_bad_dropdowns` command can be used to automatically disconnect bad/obstructed one-way drop down connections.    
+Usage: `sm_nav_area_fix_bad_dropdowns <options> <optional args...>`    
+Valid options:    
+
+- `fix`: Detects and disconnects areas with bad drop downs.
+- `highlight`: Detects and add areas with bad drop downs to the selected set.
+
+Optional args:    
+
+- `-checkdrop`: If present, also tests for obstructions in the drop itself.    
+
 # Transient Attribute
 
 The **TRANSIENT** attribute can be applied to areas with the `sm_nav_transient` command.    

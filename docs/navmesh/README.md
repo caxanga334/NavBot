@@ -26,6 +26,7 @@
 - [Importing From The Game]
 - [Game Specific Nav Mesh Editing]
 - [Nav Mesh Related Convars]
+- [Using Nav Mesh Commands in Dedicated Servers]
 
 <!-- Links -->
 [Nav Mesh File]: NAVMESH_FILE.md
@@ -45,3 +46,4 @@
 [Game Specific Nav Mesh Editing]: gamespecific/README.md
 [Importing From The Game]: IMPORTING.md
 [Nav Mesh Related Convars]: NAVMESH_CONVARS.md
+[Using Nav Mesh Commands in Dedicated Servers]: DEDICATED_SERVERS.md

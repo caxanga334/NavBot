@@ -149,6 +149,17 @@ bool zpslib::PlayerHasNamedItem(CBaseEntity* player, const char* id)
 		{
 			return true;
 		}
+
+		// some maps uses targetnames instead of item ID
+		const char* targetname = entityprops::GetEntityTargetname(entity);
+
+		if (targetname != nullptr && targetname[0] != '\0')
+		{
+			if (ke::StrCaseCmp(targetname, id) == 0)
+			{
+				return true;
+			}
+		}
 	}
 
 	return false;

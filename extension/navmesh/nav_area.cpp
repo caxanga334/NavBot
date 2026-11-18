@@ -31,6 +31,7 @@
 #include "nav_blocker.h"
 #include "nav_pathcost_mod.h"
 #include "nav_avoidance_obstacle.h"
+#include "nav_waypoint.h"
 #include <Color.h>
 #include <sdkports/sdk_collisionutils.h>
 #include <tier1/checksum_crc.h>
@@ -477,26 +478,32 @@ void CNavArea::GetNodes( NavDirType dir, CUtlVector< CNavNode * > *nodes ) const
 //--------------------------------------------------------------------------------------------------------------
 class AreaDestroyNotification
 {
-	CNavArea *m_area;
+	CNavArea* m_area;
 
 public:
-	AreaDestroyNotification( CNavArea *area )
+	AreaDestroyNotification(CNavArea* area)
 	{
 		m_area = area;
 	}
 
-	bool operator()( CNavLadder *ladder )
+	bool operator()(CNavLadder* ladder)
 	{
-		ladder->OnDestroyNotify( m_area );
+		ladder->OnDestroyNotify(m_area);
 		return true;
 	}
 
-	bool operator()( CNavArea *area )
+	bool operator()(CNavArea* area)
 	{
-		if ( area != m_area )
+		if (area != m_area)
 		{
-			area->OnDestroyNotify( m_area );
+			area->OnDestroyNotify(m_area);
 		}
+		return true;
+	}
+
+	bool operator()(CWaypoint* waypoint)
+	{
+		waypoint->OnDestroyNotify(m_area);
 		return true;
 	}
 };
@@ -518,6 +525,7 @@ CNavArea::~CNavArea()
 	AreaDestroyNotification notification( this );
 	TheNavMesh->ForAllAreas( notification );
 	TheNavMesh->ForAllLadders( notification );
+	TheNavMesh->ForAllWaypoints( notification );
 
 	// remove the area from the grid
 	TheNavMesh->RemoveNavArea( this );

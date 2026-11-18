@@ -6,6 +6,7 @@
 #include <bot/tasks_shared/bot_shared_investigate_heard_entity.h>
 #include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
 #include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
+#include <bot/tasks_shared/bot_shared_flank_enemy.h>
 #include "zpsbot_objective_zombie_task.h"
 
 TaskResult<CZPSBot> CZPSBotObjectiveZombieTask::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)
@@ -70,22 +71,30 @@ TaskResult<CZPSBot> CZPSBotObjectiveZombieTask::OnTaskUpdate(CZPSBot* bot)
 		return PauseFor(new CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>(target), "Investigating reported enemy position!");
 	}
 
+	const int skill = bot->GetDifficultyProfile()->GetGameAwareness();
+
 	// Objective maps are generally big and the bot may get "stuck" searching for survivors in an empty area.
 	// Since there is currently no way to read the active objective, give a random chance for the bot to magically go to where a survivor is.
 	// Chance is based on game awareness skill, capped at 60%
-	if (CBaseBot::s_botrng.GetRandomChance(std::min(bot->GetDifficultyProfile()->GetGameAwareness(), 60)))
+	if (CBaseBot::s_botrng.GetRandomChance(std::min(skill, 60)))
 	{
 		// random survivor, including bots.
 		CBaseEntity* survivor = zpslib::GetRandomLivingSurvivor(false);
 
 		if (survivor)
 		{
+			// High skill bots have a random chance to ambush survivors from behind.
+			if (skill >= 80 && CBaseBot::s_botrng.GetRandomChance(std::min(skill, 40)))
+			{
+				return PauseFor(new CBotSharedFlankEnemyTask<CZPSBot, CZPSBotPathCost>(survivor, 512.0f, true), "Flanking enemy survivor.");
+			}
+
 			return PauseFor(new CBotSharedRoamTask<CZPSBot, CZPSBotPathCost>(bot, UtilHelpers::getEntityOrigin(survivor), -1.0f, true, true), "Roaming to a random survivor!");
 		}
 	}
 
 	// Patrol chance based on game awareness skill, capped at 90%
-	if (CBaseBot::s_botrng.GetRandomChance(std::min(bot->GetDifficultyProfile()->GetGameAwareness(), 90)))
+	if (CBaseBot::s_botrng.GetRandomChance(std::min(skill, 90)))
 	{
 		CNavArea* area;
 		if (CBotSharedPatrolUnclearedAreasTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &area))

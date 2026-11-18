@@ -40,6 +40,7 @@ CWaypoint::CWaypoint() :
 	m_teamNum = NAV_TEAM_ANY;
 	m_radius = CWaypoint::WAYPOINT_DEFAULT_RADIUS;
 	m_user.Term();
+	m_area = nullptr;
 }
 
 CWaypoint::~CWaypoint()
@@ -200,6 +201,14 @@ NavErrorType CWaypoint::PostLoad()
 	for (auto& connect : m_connections)
 	{
 		connect.ConvertFromIDtoPointer();
+	}
+
+	FindNavArea();
+
+	if (m_area == nullptr)
+	{
+		smutils->LogError(myself, "Nav Waypoint #%u at <%s> : Could not find a nav area nearby, outside nav mesh?", 
+			m_ID, UtilHelpers::textformat::FormatVector(m_origin));
 	}
 
 	return NAV_OK;
@@ -473,6 +482,11 @@ void CWaypoint::PrintInfo()
 	{
 		Msg("Waypoint has connection to waypoint #%i\n", connect.GetOther()->GetID());
 	}
+}
+
+void CWaypoint::FindNavArea()
+{
+	m_area = TheNavMesh->GetNearestNavArea(m_origin, 1024.0f);
 }
 
 void CWaypoint::BuildAimSpotFunctor::operator()(const QAngle& angle)

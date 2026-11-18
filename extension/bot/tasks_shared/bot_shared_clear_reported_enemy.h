@@ -62,7 +62,7 @@ public:
 			auto node = collector.GetNodeForArea(area);
 
 			// not reachable
-			if (!node)
+			if (node == nullptr)
 			{
 				continue;
 			}

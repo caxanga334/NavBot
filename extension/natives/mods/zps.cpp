@@ -101,9 +101,9 @@ namespace natives::mods::zps
 
 		float radius = pawnutils::ReadFloat(params, 1);
 
-		if (radius < 128.0f)
+		if (radius < 1.0f)
 		{
-			context->ReportError("Radius cannot be smaller than 128.0! (%g)", radius);
+			context->ReportError("Radius cannot be zero or negative!", radius);
 			return 0;
 		}
 

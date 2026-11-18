@@ -4421,7 +4421,7 @@ std::optional<const std::shared_ptr<CWaypoint>> CNavMesh::AddWaypoint(const Vect
 	}
 
 	wpt->SetOrigin(origin);
-
+	wpt->FindNavArea();
 	m_waypoints[wpt->GetID()] = wpt;
 
 	return wpt;

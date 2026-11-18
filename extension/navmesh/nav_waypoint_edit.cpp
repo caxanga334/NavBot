@@ -35,12 +35,12 @@ CON_COMMAND_F(sm_nav_waypoint_add, "Adds a new waypoint at your position.", FCVA
 
 	if (wpt.has_value())
 	{
-		Msg("Add waypoint %i\n", wpt->get()->GetID());
+		META_CONPRINTF("Add waypoint %u\n", wpt->get()->GetID());
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_WAYPOINT_ADD);
 	}
 	else
 	{
-		Warning("Add waypoint failed!\n");
+		META_CONPRINT("Add waypoint failed!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
 	}
 }

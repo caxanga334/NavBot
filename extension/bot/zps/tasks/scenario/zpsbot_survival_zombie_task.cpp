@@ -5,6 +5,7 @@
 #include <bot/tasks_shared/bot_shared_investigate_heard_entity.h>
 #include <bot/tasks_shared/bot_shared_clear_reported_enemy.h>
 #include <bot/tasks_shared/bot_shared_patrol_uncleared_areas.h>
+#include <bot/tasks_shared/bot_shared_flank_enemy.h>
 #include "zpsbot_survival_zombie_task.h"
 
 TaskResult<CZPSBot> CZPSBotSurvivalZombieTask::OnTaskStart(CZPSBot* bot, AITask<CZPSBot>* pastTask)
@@ -60,15 +61,22 @@ TaskResult<CZPSBot> CZPSBotSurvivalZombieTask::OnTaskUpdate(CZPSBot* bot)
         return PauseFor(new CBotSharedDefaultCombatBehaviorTask<CZPSBot, CZPSBotPathCost>, "Attacking visible threat!");
     }
 
+    int skill = bot->GetDifficultyProfile()->GetGameAwareness();
     CBaseEntity* target;
     // Investigate if possible.
     if (CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &target))
     {
+        // High skill bots have 20% chance to flank a known survivor.
+        if (skill >= 80 && CBaseBot::s_botrng.GetRandomChance(std::min(skill, 20)))
+        {
+            return PauseFor(new CBotSharedFlankEnemyTask<CZPSBot, CZPSBotPathCost>(target, 512.0f, true), "Flanking enemy survivor.");
+        }
+
         return PauseFor(new CBotSharedClearReportedEnemyTask<CZPSBot, CZPSBotPathCost>(target), "Investigating reported enemy position!");
     }
 
     // Patrol chance based on game awareness skill, capped at 90%
-    if (CBaseBot::s_botrng.GetRandomChance(std::min(bot->GetDifficultyProfile()->GetGameAwareness(), 90)))
+    if (CBaseBot::s_botrng.GetRandomChance(std::min(skill, 90)))
     {
         CNavArea* area;
         if (CBotSharedPatrolUnclearedAreasTask<CZPSBot, CZPSBotPathCost>::IsPossible(bot, &area))

@@ -1315,17 +1315,6 @@ public:
 		return forAll(func, m_ladders);
 	}
 
-	//-------------------------------------------------------------------------------------
-	/**
-	 * Apply the functor to all navigation ladders.
-	 * If functor returns false, stop processing and return false.
-	 */
-	template < typename Functor >
-	bool ForAllLadders( Functor &func ) const
-	{
-		return forAll(func, m_ladders);
-	}
-
 	template <typename Functor, typename T>
 	static bool forAll(Functor& func, CUtlVector<T>& vec) {
 		for ( int i=0; i<vec.Count(); ++i )
@@ -1354,6 +1343,26 @@ public:
 				return;
 			}
 		}
+	}
+
+	/**
+	 * @brief Runs a function on all waypoints.
+	 * @tparam F Function to invoke. Return false to end the loop early. bool (CWaypoint* waypoint)
+	 * @param fun Function to invoke. 
+	 * @return Returns false if the function returned false. Returns true otherwise.
+	 */
+	template <typename F>
+	bool ForAllWaypoints(F& fun)
+	{
+		for (auto& [ID, ptr] : m_waypoints)
+		{
+			if (fun(ptr.get()) == false)
+			{
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	/**

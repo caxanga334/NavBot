@@ -262,6 +262,22 @@ public:
 
 	void Edit_EnabledCondition(const CCommand& args);
 
+	// Returns the nearest nav area to the waypoint.
+	CNavArea* GetWaypointNavArea() const { return m_area; }
+
+	/**
+	 * @brief Called when a nav area is removed.
+	 * @param area Area being removed.
+	 */
+	virtual void OnDestroyNotify(const CNavArea* area)
+	{
+		if (area == m_area)
+		{
+			m_area = nullptr;
+			FindNavArea();
+		}
+	}
+
 protected:
 	friend class CNavMesh;
 
@@ -276,6 +292,7 @@ protected:
 	mutable CountdownTimer m_expireUserTimer; // timer to expire the user
 	std::vector<WaypointConnect> m_connections; // Waypoint connections
 	navscripting::ToggleCondition m_enable_condition;
+	CNavArea* m_area; // Nearest nav area to the waypoint
 
 	// Called when a bot 'uses' this waypoint
 	virtual void OnUse(CBaseBot* user) const {}
@@ -287,6 +304,8 @@ protected:
 
 	// Additional mod specific waypoint draw text
 	virtual void DrawModText() const {}
+
+	void FindNavArea();
 
 public:
 
