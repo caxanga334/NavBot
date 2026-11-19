@@ -2133,7 +2133,7 @@ void CNavMesh::ImportLoad(CUtlBuffer& filebuffer)
 	META_CONPRINTF("Import: Version %u SubVersion %u \n", version, subVersion);
 
 	filebuffer.GetUnsignedInt(); // discard bsp size
-	filebuffer.GetUnsignedChar(); // discord Analyzed status
+	filebuffer.GetUnsignedChar(); // discard Analyzed status
 
 	// discard place directory
 
