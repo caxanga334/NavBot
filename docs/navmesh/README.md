@@ -27,6 +27,7 @@
 - [Game Specific Nav Mesh Editing]
 - [Nav Mesh Related Convars]
 - [Using Nav Mesh Commands in Dedicated Servers]
+- [Nav Mesh Generation Options]
 
 <!-- Links -->
 [Nav Mesh File]: NAVMESH_FILE.md
@@ -47,3 +48,4 @@
 [Importing From The Game]: IMPORTING.md
 [Nav Mesh Related Convars]: NAVMESH_CONVARS.md
 [Using Nav Mesh Commands in Dedicated Servers]: DEDICATED_SERVERS.md
+[Nav Mesh Generation Options]: NAVMESH_GEN_OPTS.md
