@@ -34,7 +34,7 @@ public:
 	static const char* TaskIDtoString(PrerequisiteTask task);
 
 	static inline unsigned int s_nextID{ 0 };
-	static constexpr auto MAX_EDIT_DRAW_DISTANCE = 1024.0f;
+	static constexpr auto MAX_EDIT_DRAW_DISTANCE = 1500.0f;
 	static constexpr auto UPDATE_INTERVAL = 2.5f;
 
 	virtual void Save(std::fstream& filestream, uint32_t version);

@@ -21,6 +21,7 @@ public:
 		OBJECTIVE_DESTROY_ENTITY, // destroy an entity
 		OBJECTIVE_DISCARD_ITEM, // discard an item_deliver from their inventory.
 		OBJECTIVE_MOVE_TO_ENTITY, // moves to a specific entity
+		OBJECTIVE_DROP_ALL_ITEMS, // drops all item_deliver weapons
 
 		MAX_OBJECTIVE_TYPES
 	};

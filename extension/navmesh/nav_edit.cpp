@@ -1151,19 +1151,18 @@ void CNavMesh::DrawWaypoints()
 
 void CNavMesh::DrawVolumes()
 {
-	edict_t* ent = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
 
-	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
-		return;
+	if (host == nullptr) { return; }
 
-	CBaseExtPlayer host(ent);
-	Vector origin = host.GetAbsOrigin();
+	Vector origin = host->GetAbsOrigin();
+	CNavVolume* selected = m_selectedVolume.get();
 
-	std::for_each(m_volumes.begin(), m_volumes.end(), [&origin](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
+	std::for_each(m_volumes.begin(), m_volumes.end(), [origin, selected](const std::pair<unsigned int, std::shared_ptr<CNavVolume>>& object) {
 
 		float distance = (object.second->GetOrigin() - origin).Length();
 
-		if (distance <= CNavVolume::MAX_DRAW_RANGE)
+		if (distance <= CNavVolume::MAX_DRAW_RANGE || selected == object.second.get())
 		{
 			object.second->Draw();
 		}
@@ -1177,19 +1176,18 @@ void CNavMesh::DrawVolumes()
 
 void CNavMesh::DrawElevators()
 {
-	edict_t* ent = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
 
-	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
-		return;
+	if (host == nullptr) { return; }
 
-	CBaseExtPlayer host(ent);
-	Vector origin = host.GetAbsOrigin();
+	Vector origin = host->GetAbsOrigin();
+	CNavElevator* selected = m_selectedElevator.get();
 
-	std::for_each(m_elevators.begin(), m_elevators.end(), [&origin](const std::pair<unsigned int, std::shared_ptr<CNavElevator>>& object) {
+	std::for_each(m_elevators.begin(), m_elevators.end(), [origin, selected](const std::pair<unsigned int, std::shared_ptr<CNavElevator>>& object) {
 
 		float distance = (object.second->GetElevatorOrigin() - origin).Length();
 
-		if (distance <= CNavElevator::MAX_DRAW_RANGE)
+		if (distance <= CNavElevator::MAX_DRAW_RANGE || selected == object.second.get())
 		{
 			object.second->Draw();
 		}
@@ -1203,18 +1201,18 @@ void CNavMesh::DrawElevators()
 
 void CNavMesh::DrawPrerequisites()
 {
-	edict_t* ent = gamehelpers->EdictOfIndex(1);
+	CBaseExtPlayer* host = extmanager->GetListenServerHost();
 
-	if (ent == nullptr || ent->GetIServerEntity() == nullptr)
-		return;
+	if (host == nullptr) { return; }
 
-	const Vector& origin = ent->GetCollideable()->GetCollisionOrigin();
+	Vector origin = host->GetAbsOrigin();
+	CNavPrerequisite* selected = m_selectedPrerequisite.get();
 
-	std::for_each(m_prerequisites.begin(), m_prerequisites.end(), [&origin](const std::pair<unsigned int, std::shared_ptr<CNavPrerequisite>>& object) {
+	std::for_each(m_prerequisites.begin(), m_prerequisites.end(), [origin, selected](const std::pair<unsigned int, std::shared_ptr<CNavPrerequisite>>& object) {
 
 		float distance = (object.second->GetOrigin() - origin).Length();
 
-		if (distance <= CNavPrerequisite::MAX_EDIT_DRAW_DISTANCE)
+		if (distance <= CNavPrerequisite::MAX_EDIT_DRAW_DISTANCE || selected == object.second.get())
 		{
 			object.second->Draw();
 		}

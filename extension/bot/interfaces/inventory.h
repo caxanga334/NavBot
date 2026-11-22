@@ -82,6 +82,43 @@ public:
 	}
 
 	/**
+	 * @brief Finds the best weapon (highest static priority) that passes the filter.
+	 * @tparam F Filter function bool (const CBaseBot* bot, const CBotWeapon* weapon, const WeaponInfo* info).
+	 * @param filter Filter function. Returns true if the weapon CAN be selected.
+	 * @return Selected weapon or NULL if none is found.
+	 */
+	template <typename F>
+	const CBotWeapon* FindBestWeaponPassesFilter(F filter)
+	{
+		int bestprio = std::numeric_limits<int>::lowest();
+		const CBotWeapon* weapon = nullptr;
+		const CBaseBot* bot = GetBot<CBaseBot>();
+
+		for (auto& weaponptr : m_weapons)
+		{
+			if (!weaponptr->IsValid() || !weaponptr->IsOwnedByBot(bot))
+			{
+				continue;
+			}
+
+			const WeaponInfo* info = weaponptr->GetWeaponInfo();
+
+			if (filter(bot, weapon, info) == false)
+			{
+				continue;
+			}
+
+			if (info->GetPriority() > bestprio)
+			{
+				bestprio = info->GetPriority();
+				weapon = weaponptr.get();
+			}
+		}
+
+		return weapon;
+	}
+
+	/**
 	 * @brief Finds a weapon by their entity classname.
 	 * @param classname Weapon's entity classname to search for;
 	 * @param validateOwnership If true, check that the bot still owns the weapon.
@@ -237,9 +274,11 @@ public:
 	}
 	/**
 	 * @brief Finds a weapon for the bot to drop.
+	 * @param ignore Optional weapon to ignore (don't drop).
+	 * @param allowObjctiveItems If true, allows dropping weapons marked as objective items.
 	 * @return Pointer to a weapon to drop. NULL if none is found.
 	 */
-	const CBotWeapon* FindWeaponToDrop() const
+	const CBotWeapon* FindWeaponToDrop(CBaseEntity* ignore = nullptr, const bool allowObjctiveItems = false) const
 	{
 		int bestprio = std::numeric_limits<int>::max();
 		const CBotWeapon* weapon = nullptr;
@@ -253,9 +292,13 @@ public:
 				continue;
 			}
 
+			if (ignore != nullptr && weaponptr->GetEntity() == ignore) { continue; }
+
 			const WeaponInfo* info = weaponptr->GetWeaponInfo();
 
 			if (!info->CanBeDropped()) { continue; }
+
+			if (!allowObjctiveItems && info->IsObjectiveItem()) { continue; }
 
 			if (weaponptr->IsOutOfAmmo(bot))
 			{

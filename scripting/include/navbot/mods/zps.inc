@@ -13,7 +13,8 @@ enum NavBotZPSObjectiveTypes
 	NAVBOT_ZPS_OBJECTIVE_DROP_ITEM, // drop item_deliver at another entity
 	NAVBOT_ZPS_OBJECTIVE_DESTROY_ENTITY, // destroy an entity
 	NAVBOT_ZPS_OBJECTIVE_DISCARD_ITEM, // discard an item_deliver from their inventory.
-	NAVBOT_ZPS_MOVE_TO_ENTITY, // moves to a specific entity
+	NAVBOT_ZPS_OBJECTIVE_MOVE_TO_ENTITY, // moves to a specific entity
+	NAVBOT_ZPS_OBJECTIVE_DROP_ALL_ITEMS, // make bots drops all item_deliver weapons from their inventory (Use this to clear their inventory of useless items)
 
 	NAVBOT_ZPS_MAX_OBJECTIVE_TYPES
 };

@@ -37,8 +37,8 @@ This is a list of keys available for all mods.
 |attack_range_override|Overrides the maximum range between the bot and the target.|float|
 |spam_time|How long in seconds to continue firing the weapon at the enemy LKP.|float|
 |use_secondary_attack_chance|Chance from 1 to 100 to use the secondary attack when both primary and secondary are available.|integer|
-|setup_custom_ammo_property|Custom ammo Entity Property Setup arguments. See doumentation below.|string|
-|is_deployed_property_setup|Is weapon deployed/scoped Entity Property Setup arguments. See doumentation below.|string|
+|setup_custom_ammo_property|Custom ammo Entity Property Setup arguments. See documentation below.|string|
+|is_deployed_property_setup|Is weapon deployed/scoped Entity Property Setup arguments. See documentation below.|string|
 |needs_to_be_deployed_to_fire|If enabled, bots will deploy/scope-in before firing with this weapon.|boolean|
 |disable_dodge|If enabled, bots won't dodge enemy attacks while using this weapon.|boolean|
 |selection_max_range_override|If positive, overrides the maximum range value used in weapon selection.|float|
@@ -50,6 +50,7 @@ This is a list of keys available for all mods.
 |is_template|This is a template entry for variantof. More information below.|boolean|
 |ammo_source_entity|Classname of the ammo entity for this weapon. This is optional.|string|
 |can_fire_underwater|If true (default), the weapon can be used underwater.|boolean|
+|is_objective_item|If true, this weapon is an objective item. (Used as a map/gamemode objective). Default is false.|boolean|
 |explosive_blast_radius|The explosion radius of weapons that fires explosives.|float|
 
 The following keys applies to attack info sections (`primary_attack_info`, `secondary_attack_info` and `tertiary_attack_info`).
@@ -79,8 +80,8 @@ The following key value pairs should be on a `special_function` section on the w
 
 |Key Name|Description|Type|
 |:---:|:---:|:---:|
-|setup_property|Entity Property Setup arguments. See doumentation below.|string|
-|button_to_press|Which button the bot should press to activate the special functionl. See the Button List below.|string|
+|setup_property|Entity Property Setup arguments. See documentation below.|string|
+|button_to_press|Which button the bot should press to activate the special function. See the Button List below.|string|
 |delay_between_uses|Delay in seconds between uses of the special function. Negative values for no delay.|float|
 |hold_button_time|How long to press the special function button in seconds. Negative values for a single tap.|float|
 |min_range_to_activate|Bots won't use the special function is the distance to the current enemy is less than this value.|float|
@@ -97,7 +98,7 @@ Additional information:
 * If `projectilespeed` is negative, the weapon is considered to be a hitscan weapon.    
 `headshot_range_multiplier` ranges from 0.0 to 1.0 and is used to multiply the attack's `maxrange` value. Example: If a weapon has a `maxrange` of 2048 and a `headshot_range_multiplier` of 0.5, the bots will only aim at the head if the range to the enemy is 1024 or less.    
 * When attacking enemies, bots will only move towards the enemy if they are not visible or if they are outside the range of all weapons owned by the bot.  
-* By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be overriden with `attack_range_override`.  
+* By default, the weapon's maximum range is used as the minimum distance between the bot and the enemy. This distance can be changed with `attack_range_override`.  
 * This can be used to make the bot close the distance between them and the enemy without having to reduce the weapon's maximum range.    
 * Bots identify weapons via their entity classname and economy index if available for the mod.     
 * This means on games like Team Fortress 2, you can have unique settings for weapons that share the same classname but not economy index like the stock Rocket Launcher and The Liberty Launcher.    
@@ -139,7 +140,7 @@ List of currently available weapon types:
 ## variantof
 
 To make the config file neater, you can use `"variantof"    "weapon_entry_name"` to inherit another weapon's properties.    
-This also reduces the amount of sycronization needed when updating properties shared by both weapons.    
+This also reduces the amount of synchronization needed when updating properties shared by both weapons.    
 There are a few rules you must obey when using `variantof`:
 
 * The config entry you want the current to be a variant of must come first (be above it).
@@ -183,7 +184,7 @@ Dynamic priorities are uses the following format: `"type name" "arguments"`.
 
 ## Aim Spots
 
-The `preferred_aim_spot` is an optional property that allows overrinding the default aim position selection for a specific weapon.    
+The `preferred_aim_spot` is an optional property that allows overriding the default aim position selection for a specific weapon.    
 For example, it's used in the TF2 soldier's rocket launcher to make the bots aim at the player's feet.    
 If no preferred aim spot is defined, the bot will aim at the first spot with a clear line of fire in the following order: Head (if allowed), center and origin.    
 To enable headshots, setting `can_headshot` to **true** is still required! `preferred_aim_spot` is not required for headshots.    

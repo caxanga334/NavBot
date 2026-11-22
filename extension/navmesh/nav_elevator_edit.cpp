@@ -10,7 +10,7 @@
 #define NAVELEV_VALIDMARKEDFLOOR															\
 	auto& selected = TheNavMesh->GetSelectedElevator();										\
 																							\
-	if (selected.get() == nullptr)															\
+	if (!selected)															\
 	{																						\
 		Msg("Select an elevator first!\n");													\
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);			\
@@ -126,7 +126,7 @@ CON_COMMAND_F(sm_nav_elevator_delete, "Deletes the selected elevator.", FCVAR_CH
 	auto& selected = TheNavMesh->GetSelectedElevator();
 	TheNavMesh->NotifyDangerousEditCommandWasUsed();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -141,7 +141,7 @@ CON_COMMAND_F(sm_nav_elevator_toggle_type, "Toggles the elevator between automat
 {
 	auto& selected = TheNavMesh->GetSelectedElevator();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -167,7 +167,7 @@ CON_COMMAND_F(sm_nav_elevator_update_position, "Updates the initial position of 
 {
 	auto& selected = TheNavMesh->GetSelectedElevator();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -182,7 +182,7 @@ CON_COMMAND_F(sm_nav_elevator_add_floor, "Selects the nearest elevator to your p
 {
 	auto& selected = TheNavMesh->GetSelectedElevator();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -221,7 +221,7 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_detection_distance, "Sets the minimum di
 
 	auto& selected = TheNavMesh->GetSelectedElevator();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -246,7 +246,7 @@ CON_COMMAND_F(sm_nav_elevator_set_team, "Sets the elevator team number.", FCVAR_
 
 	auto& selected = TheNavMesh->GetSelectedElevator();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -276,7 +276,7 @@ CON_COMMAND_F(sm_nav_elevator_delete_all_floors, "Deletes all elevator floors", 
 {
 	auto& selected = TheNavMesh->GetSelectedElevator();
 
-	if (selected.get() == nullptr)
+	if (!selected)
 	{
 		Msg("Select an elevator first!\n");
 		TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_ERROR);
@@ -306,6 +306,14 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_toggle_state, "Sets the floor toggle sta
 	}
 
 	NAVELEV_VALIDMARKEDFLOOR;
+
+	CBaseEntity* entity = selected->GetElevatorEntity();
+
+	if (entity != nullptr && !entprops->HasEntProp(entity, Prop_Data, "m_toggle_state"))
+	{
+		META_CONPRINTF("WARNING: Elevator entity \"%s\" does not have \"m_toggle_state\" property!\nUse distance based detection instead!\n", 
+			UtilHelpers::textformat::FormatEntity(entity));
+	}
 
 	selected->SetFloorToggleState(area, ts);
 	TheNavMesh->PlayEditSound(CNavMesh::EditSoundType::SOUND_GENERIC_SUCCESS);
@@ -348,6 +356,7 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_call_button, "Sets the entity used for c
 	int ref = atoi(args[1]);
 	CBaseEntity* entity = gamehelpers->ReferenceToEntity(ref);
 	
+	META_CONPRINTF("Elevator #%u floor (area %u) call button set to %s \n", selected->GetID(), area->GetID(), UtilHelpers::textformat::FormatEntity(entity));
 	if (entity == nullptr || ref == 0)
 	{
 		selected->SetFloorCallButton(area, nullptr);
@@ -373,6 +382,7 @@ CON_COMMAND_F(sm_nav_elevator_set_floor_use_button, "Sets the entity used for op
 	int ref = atoi(args[1]);
 	CBaseEntity* entity = gamehelpers->ReferenceToEntity(ref);
 
+	META_CONPRINTF("Elevator #%u floor (area %u) use button set to %s \n", selected->GetID(), area->GetID(), UtilHelpers::textformat::FormatEntity(entity));
 	if (entity == nullptr || ref == 0)
 	{
 		selected->SetFloorUseButton(area, nullptr);

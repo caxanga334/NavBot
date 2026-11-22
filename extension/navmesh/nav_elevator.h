@@ -22,7 +22,7 @@ public:
 	virtual ~CNavElevator();
 
 	static inline unsigned int s_nextID{ 0 };
-	static constexpr auto MAX_DRAW_RANGE = 1024.0f;
+	static constexpr auto MAX_DRAW_RANGE = 1500.0f;
 	static constexpr auto UPDATE_INTERVAL = 0.2f;
 
 	enum ElevatorType : std::int32_t
@@ -106,6 +106,8 @@ public:
 	unsigned int GetID() const { return m_id; }
 	// Gets the elevator save origin 
 	const Vector& GetElevatorOrigin() const { return m_elevator.position; }
+	// Returns the elevator entity. NULL if the entity was removed.
+	CBaseEntity* GetElevatorEntity() const;
 
 	virtual void Update();
 	virtual void OnRoundRestart();

@@ -357,6 +357,7 @@ public:
 		use_secondary_chance = 20;
 		needs_to_be_deployed = false;
 		can_fire_underwater = true;
+		is_objective_item = false;
 		selection_max_range = -1.0f;
 		selection_min_range = -1.0f;
 		min_required_skill = 0;
@@ -400,6 +401,7 @@ public:
 		this->is_deployed_prop = other->is_deployed_prop;
 		this->can_fire_underwater = other->can_fire_underwater;
 		this->needs_to_be_deployed = other->needs_to_be_deployed;
+		this->is_objective_item = other->is_objective_item;
 		this->selection_max_range = other->selection_max_range;
 		this->selection_min_range = other->selection_min_range;
 		this->special_function = other->special_function;
@@ -495,6 +497,7 @@ public:
 	void SetPreferredAimSpot(IDecisionQuery::DesiredAimSpot spot) { preferred_aim_spot = spot; }
 	void SetAmmoSourceEntityClassname(const char* classname) { ammo_source_classname.assign(classname); }
 	void SetCanBeFiredUnderwater(bool state) { can_fire_underwater = state; }
+	void SetIsObjectiveItem(bool state) { is_objective_item = state; }
 	void SetExplosionBlastRadius(const float v) { explosive_blast_radius = v; }
 
 	bool HasEconIndex() const { return econindex >= 0; }
@@ -574,6 +577,8 @@ public:
 	const bool HasAmmoSourceEntityClassname() const { return !ammo_source_classname.empty(); }
 	const std::string& GetAmmoSourceEntityClassname() const { return ammo_source_classname; }
 	const bool CanBeFiredUnderwater() const { return can_fire_underwater; }
+	// Returns true if this weapon is classified as part of an objective.
+	const bool IsObjectiveItem() const { return is_objective_item; }
 	void AddDynamicPriorityCfgEntry(const char* name, const char* args);
 	void EraseDynamicPrioritiesCfgEntry() { parsed_dynamic_prio_configs.clear(); }
 	const std::vector<std::unique_ptr<IDynamicWeaponPriority>>& GetDynamicPriotities() const { return dynamic_priorities; }
@@ -612,6 +617,7 @@ private:
 	WeaponEntityProperty is_deployed_prop; // Property used to determine if the weapon is deployed/scoped.
 	bool needs_to_be_deployed; // if true, the weapon needs to be deployed/scoped to fire it.
 	bool can_fire_underwater; // if true, the weapon can be fired while underwater
+	bool is_objective_item;
 	float selection_max_range;
 	float selection_min_range;
 	int min_required_skill;

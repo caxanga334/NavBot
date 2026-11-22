@@ -1,9 +1,6 @@
 #ifndef __NAVBOT_BOT_SHARED_DROP_WEAPON_TASK_H_
 #define __NAVBOT_BOT_SHARED_DROP_WEAPON_TASK_H_
 
-#include <extension.h>
-#include <bot/basebot.h>
-
 /**
  * @brief Utility task for making the bot drop a specific weapon.
  * 
@@ -20,7 +17,7 @@ public:
 	}
 
 	CBotSharedDropWeaponTask(const CBotWeapon* weapon, const float delay = 1.5f) :
-		m_weapon(weapon->GetEntity()), m_delay(delay)
+		CBotSharedDropWeaponTask(weapon->GetEntity(), delay)
 	{
 	}
 

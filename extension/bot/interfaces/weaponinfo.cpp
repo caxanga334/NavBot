@@ -899,6 +899,11 @@ SMCResult CWeaponInfoManager::ReadSMC_KeyValue(const SMCStates* states, const ch
 		bool v = UtilHelpers::StringToBoolean(value);
 		m_current->SetCanBeFiredUnderwater(v);
 	}
+	else if (std::strcmp(key, "is_objective_item") == 0)
+	{
+		bool v = UtilHelpers::StringToBoolean(value);
+		m_current->SetIsObjectiveItem(v);
+	}
 	else if (std::strcmp(key, "can_headshot") == 0)
 	{
 		bool v = UtilHelpers::StringToBoolean(value);

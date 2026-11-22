@@ -28,6 +28,11 @@ CNavElevator::~CNavElevator()
 	}
 }
 
+CBaseEntity* CNavElevator::GetElevatorEntity() const
+{
+	return m_elevator.handle.Get();
+}
+
 void CNavElevator::Update()
 {
 	CBaseEntity* elevator = m_elevator.handle.Get();

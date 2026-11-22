@@ -192,6 +192,17 @@ TaskResult<CZPSBot> CZPSBotObjectiveHumanTask::GetObjectiveTask(CZPSBot* bot) co
 
 		break;
 	}
+	case CZPSObjectiveManager::ObjectiveTypes::OBJECTIVE_DROP_ALL_ITEMS:
+	{
+		auto weapon = bot->GetInventoryInterface()->FindWeaponByClassname("item_deliver");
+
+		if (weapon)
+		{
+			return PauseFor(new CBotSharedDropWeaponTask<CZPSBot>(weapon, 2.0f), "Discarding item!");
+		}
+
+		break;
+	}
 	default:
 		break;
 	}
