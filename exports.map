@@ -1,0 +1,7 @@
+{
+    global:
+        CreateInterface_MMS;
+        GetSMExtAPI;
+    local:
+        *;
+};
