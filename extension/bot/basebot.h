@@ -54,6 +54,7 @@ public:
 private:
 	void AddHooks();
 
+#if METAMOD_PLAPI_VERSION <= 17
 	void Hook_Spawn();
 	void Hook_Spawn_Post();
 	void Hook_Touch(CBaseEntity* pOther);
@@ -64,10 +65,12 @@ private:
 	void Hook_PlayerRunCommand(CUserCmd* usercmd, IMoveHelper* movehelper);
 	void Hook_Weapon_Equip_Post(CBaseEntity* weapon);
 	bool Hook_CanBeAutobalanced();
+#endif // METAMOD_PLAPI_VERSION <= 17
 	inline static bool s_hookCanBeAutobalanced{ false };
 	inline static bool s_hookBCC{ true }; // should CBaseCombatCharacter functions be hooked?
 
 protected:
+#if METAMOD_PLAPI_VERSION <= 17
 	/**
 	 * @brief Adds a SourceHook's hook ID to the list of hooks for this bot.
 	 * 
@@ -75,6 +78,7 @@ protected:
 	 * @param id Hook ID.
 	 */
 	inline void AddHookID(int id) { m_shhooks.push_back(id); }
+#endif // METAMOD_PLAPI_VERSION <= 17
 
 	/**
 	 * @brief Invoked by the CBaseMultiplayerPlayer::CanBeAutobalanced Hook.
@@ -305,9 +309,6 @@ public:
 protected:
 	bool m_isfirstspawn;
 
-	// Adds a SourceHook Hook into the hook list to be removed when this is destroyed
-	void AddSourceHookID(int hookID) { m_shhooks.push_back(hookID); }
-
 private:
 	float m_lastUpdateTime; // time stamp of the last time CBaseBot::Update was invoked.
 	float m_lastUpdateDelta; // delta time between the current and the last update time stamp
@@ -336,7 +337,9 @@ private:
 	int m_cmdsents; // How many string commands this bot has sent within 1 second
 	int m_debugtextoffset;
 	Vector m_homepos; // Position where the bot spawned
+#if METAMOD_PLAPI_VERSION <= 17
 	std::vector<int> m_shhooks; // IDs of SourceHook's hooks
+#endif // METAMOD_PLAPI_VERSION <= 17
 	IntervalTimer m_burningtimer;
 	IntervalTimer m_lasthurttimer; // timer for tracking the last time the bot took damage while alive
 	IntervalTimer m_lastkilledtimer; // timer for tracing the last time the bot was killed
@@ -345,6 +348,45 @@ private:
 	CountdownTimer m_clearLastPrerequisiteTimer;
 
 	void ExecuteQueuedCommands();
+
+#if METAMOD_PLAPI_VERSION >= 18
+private:
+	// Hooks vtable offsets
+	inline static std::int32_t s_offsetSpawn{ 0 };
+	inline static std::int32_t s_offsetTouch{ 0 };
+	inline static std::int32_t s_offsetOnTakeDamageAlive{ 0 };
+	inline static std::int32_t s_offsetEventKilled{ 0 };
+	inline static std::int32_t s_offsetEventKilledOther{ 0 };
+	inline static std::int32_t s_offsetPhysicsSimulate{ 0 };
+	inline static std::int32_t s_offsetWeaponEquip{ 0 };
+	inline static std::int32_t s_offsetRunPlayerCommand{ 0 };
+	inline static std::int32_t s_offsetCanBeAutoBalanced{ 0 };
+
+	// hooks funcs
+	KHook::Return<void> Hook_Spawn_Pre(CBaseEntity* pEntity);
+	KHook::Return<void> Hook_Spawn_Post(CBaseEntity* pEntity);
+	KHook::Return<void> Hook_Touch_Pre(CBaseEntity* pEntity, CBaseEntity* pTouch);
+	KHook::Return<int> Hook_OnTakeDamage_Alive_Pre(CBaseEntity* pEntity, const CTakeDamageInfo& info);
+	KHook::Return<void> Hook_OnEventKilled_Pre(CBaseEntity* pEntity, const CTakeDamageInfo& info);
+	KHook::Return<void> Hook_OnEventKilledOther_Pre(CBaseEntity* pEntity, CBaseEntity* pVictim, const CTakeDamageInfo& info);
+	KHook::Return<void> Hook_PhysicsSimulate_Pre(CBaseEntity* pEntity);
+	KHook::Return<void> Hook_WeaponEquip_Post(CBaseEntity* pEntity, CBaseEntity* pWeapon);
+	KHook::Return<void> Hook_PlayerRunCommand_Pre(CBaseEntity* pEntity, CUserCmd* usercmd, IMoveHelper* movehelper);
+	KHook::Return<bool> Hook_CanBeAutoTeamBalanced_Pre(CBaseEntity* pEntity);
+
+	// hooks
+	KHook::Virtual<CBaseEntity, void> m_hookSpawn;
+	KHook::Virtual<CBaseEntity, void, CBaseEntity*> m_hookTouch;
+	KHook::Virtual<CBaseEntity, int, const CTakeDamageInfo&> m_hookOnTakeDamageAlive;
+	KHook::Virtual<CBaseEntity, void, const CTakeDamageInfo&> m_hookEventKilled;
+	KHook::Virtual<CBaseEntity, void, CBaseEntity*, const CTakeDamageInfo&> m_hookEventKilledOther;
+	KHook::Virtual<CBaseEntity, void> m_hookPhysicsSimulate;
+	KHook::Virtual<CBaseEntity, void, CBaseEntity*> m_hookWeaponEquip;
+	KHook::Virtual<CBaseEntity, void, CUserCmd*, IMoveHelper*> m_hookPlayerRunCommand;
+	KHook::Virtual<CBaseEntity, bool> m_hookCanBeAutoTeamBalanced;
+
+#endif // METAMOD_PLAPI_VERSION >= 18
+
 };
 
 // Trace filter for line of fire checks

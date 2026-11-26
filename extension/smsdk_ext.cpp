@@ -314,13 +314,20 @@ void SDKExtension::SDK_OnDependenciesDropped()
 #endif
 
 PluginId g_PLID = 0;						/**< Metamod plugin ID */
-ISmmPlugin *g_PLAPI = NULL;					/**< Metamod plugin API */
-SourceHook::ISourceHook *g_SHPtr = NULL;	/**< SourceHook pointer */
-ISmmAPI *g_SMAPI = NULL;					/**< SourceMM API pointer */
+ISmmPlugin *g_PLAPI = nullptr;					/**< Metamod plugin API */
+#if METAMOD_PLAPI_VERSION >= 18
+namespace KHook {
+	IKHook* __exported__khook = nullptr;		/**< KHook pointer */
+}
+#else
+SourceHook::ISourceHook* g_SHPtr = nullptr;	/**< SourceHook pointer */
+#endif // METAMOD_PLAPI_VERSION >= 18
+
+ISmmAPI *g_SMAPI = nullptr;					/**< SourceMM API pointer */
 
 #ifndef META_NO_HL2SDK
-IVEngineServer *engine = NULL;				/**< IVEngineServer pointer */
-IServerGameDLL *gamedll = NULL;				/**< IServerGameDLL pointer */
+IVEngineServer *engine = nullptr;				/**< IVEngineServer pointer */
+IServerGameDLL *gamedll = nullptr;				/**< IServerGameDLL pointer */
 #endif
 
 /** Exposes the extension to Metamod */

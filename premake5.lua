@@ -206,6 +206,7 @@ workspace "navbot"
     -- reset filter    
     filter {}
 
+include("premake/common_funcs.lua")
 include("premake/tf2.lua")
 include("premake/dods.lua")
 include("premake/css.lua")

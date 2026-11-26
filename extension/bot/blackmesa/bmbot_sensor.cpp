@@ -22,7 +22,7 @@ CBlackMesaBotSensor::~CBlackMesaBotSensor()
 
 bool CBlackMesaBotSensor::IsIgnored(CBaseEntity* entity) const
 {
-	if (UtilHelpers::IsPlayer(entity))
+	if (modhelpers->IsPlayer(entity))
 	{
 		return false;
 	}

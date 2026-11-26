@@ -475,8 +475,19 @@ class ExtensionConfig(object):
 
     compiler.cxxincludes += [
       os.path.join(self.mms_root, 'core'),
-      os.path.join(self.mms_root, 'core', 'sourcehook'),
     ]
+
+    if os.path.exists(os.path.join(self.mms_root, 'core', 'sourcehook')):
+      compiler.cxxincludes += [
+        os.path.join(self.mms_root, 'core', 'sourcehook'),
+      ]
+    else:
+      if not os.path.exists(os.path.join(self.mms_root, 'third_party', 'khook', 'include')):
+        raise Exception("Khook include dir missing from Metamod: Source!")
+
+      compiler.cxxincludes += [
+        os.path.join(self.mms_root, 'third_party', 'khook', 'include'),
+      ]
 
     for other_sdk in self.sdk_manifests:
       compiler.defines += ['SE_{}={}'.format(other_sdk['define'], other_sdk['code'])]

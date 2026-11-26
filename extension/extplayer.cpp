@@ -30,7 +30,9 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 	m_pl = gameclients->GetPlayerState(edict);
 	m_lastnavarea = nullptr;
 	m_navupdatetimer = 6;
+#if METAMOD_PLAPI_VERSION <= 17
 	m_prethinkHook = -1;
+#endif // METAMOD_PLAPI_VERSION <= 17
 	m_vecBaseVelocity = entprops->GetPointerToEntData<Vector>(m_pEntity, Prop_Data, "m_vecBaseVelocity");
 	m_vecAbsVelocity = entprops->GetPointerToEntData<Vector>(m_pEntity, Prop_Data, "m_vecAbsVelocity");
 
@@ -62,10 +64,12 @@ CBaseExtPlayer::CBaseExtPlayer(edict_t* edict)
 
 CBaseExtPlayer::~CBaseExtPlayer()
 {
+#if METAMOD_PLAPI_VERSION <= 17
 	if (m_prethinkHook != -1)
 	{
 		SH_REMOVE_HOOK_ID(m_prethinkHook);
 	}
+#endif // METAMOD_PLAPI_VERSION <= 17
 }
 
 bool CBaseExtPlayer::operator==(const CBaseExtPlayer& other) const

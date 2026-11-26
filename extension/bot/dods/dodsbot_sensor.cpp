@@ -2,6 +2,7 @@
 #include <extension.h>
 #include <util/helpers.h>
 #include <mods/dods/dodslib.h>
+#include <mods/modhelpers.h>
 #include "dodsbot.h"
 #include "dodsbot_sensor.h"
 
@@ -17,7 +18,7 @@ CDoDSBotSensor::~CDoDSBotSensor()
 bool CDoDSBotSensor::IsIgnored(CBaseEntity* entity) const
 {
 	// ignore everything but player entities
-	return !(UtilHelpers::IsPlayer(entity));
+	return !(modhelpers->IsPlayer(entity));
 }
 
 bool CDoDSBotSensor::IsFriendly(CBaseEntity* entity) const

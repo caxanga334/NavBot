@@ -45,7 +45,9 @@ CBaseBot::CBaseBot(edict_t* edict) : CBaseExtPlayer(edict),
 	m_cmdtimer.Invalidate();
 	m_cmdsents = 0;
 	m_debugtextoffset = 0;
+#if METAMOD_PLAPI_VERSION <= 17
 	m_shhooks.reserve(32);
+#endif // METAMOD_PLAPI_VERSION <= 17
 	m_impulse = 0;
 	m_lastPrerequisite = nullptr;
 	m_activeNavigator = nullptr;
@@ -58,12 +60,14 @@ CBaseBot::~CBaseBot()
 	m_interfaces.clear();
 	m_listeners.clear();
 
+#if METAMOD_PLAPI_VERSION <= 17
 	for (auto& hook : m_shhooks)
 	{
 		SH_REMOVE_HOOK_ID(hook);
 	}
 
 	m_shhooks.clear();
+#endif // METAMOD_PLAPI_VERSION <= 17
 }
 
 void CBaseBot::PostAdd()

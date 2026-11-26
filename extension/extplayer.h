@@ -204,13 +204,26 @@ private:
 	IPlayerInfo* m_playerinfo;
 	CNavArea* m_lastnavarea;
 	int m_navupdatetimer;
+#if METAMOD_PLAPI_VERSION <= 17
 	int m_prethinkHook;
+#endif // METAMOD_PLAPI_VERSION <= 17
+	
 	Vector* m_vecAbsVelocity;
 	Vector* m_vecBaseVelocity;
 
 	void SetupPlayerHooks();
 	/* CBasePlayer::PreThink hook */
+	
+#if METAMOD_PLAPI_VERSION <= 17
 	void Hook_PreThink();
+#endif // METAMOD_PLAPI_VERSION <= 17
+
+#if METAMOD_PLAPI_VERSION >= 18
+	static inline std::int32_t s_offsetPreThink{ 0 };
+	KHook::Virtual<CBaseEntity, void> m_hookPreThink;
+	KHook::Return<void> Hook_PreThink_Pre(CBaseEntity* pThis);
+#endif // METAMOD_PLAPI_VERSION >= 18
+
 };
 
 

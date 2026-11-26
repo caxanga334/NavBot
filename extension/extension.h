@@ -284,6 +284,22 @@ public:
 	{
 	}
 
+	// API v18: SourceHook replaced with KHook
+#if METAMOD_PLAPI_VERSION >= 18
+	KHook::Return<void> Hook_GameFrame(IServerGameDLL* pThis, bool simulating);
+
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+	// Source 2006
+	KHook::Return<void> Hook_ClientCommand_OldEngine(IServerGameClients* pThis, edict_t* pEntity);
+#else
+	// Source 2007 and newer
+	KHook::Return<void> Hook_ClientCommand(IServerGameClients* pThis, edict_t* pEntity, const CCommand& args);
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
+
+	KHook::Return<void> Hook_IServerGameClients_SetCommandClient(IServerGameClients* pThis, int index);
+#else
+	// SourceHook (Legacy)
+
 	void Hook_GameFrame(bool simulating); // Post hook
 
 #if SOURCE_ENGINE <= SE_DARKMESSIAH
@@ -294,12 +310,9 @@ public:
 	void Hook_ClientCommand(edict_t* pEntity, const CCommand& args);
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-
-#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
-	void Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues);
-#endif // EXT_DEBUG
-
 	void Hook_IServerGameClients_SetCommandClient(int index);
+
+#endif // METAMOD_PLAPI_VERSION >= 18
 
 	bool ShouldCallRunPlayerCommand() const { return !m_hookruncmd; }
 	// True if we should SourceHook CBasePlayer::PlayerRunCommand
@@ -331,6 +344,18 @@ private:
 	SourceMod::IGameConfig* m_cfg_sdktools;
 	SourceMod::IGameConfig* m_cfg_sdkhooks;
 	std::vector<sp_nativeinfo_t> m_natives;
+
+#if METAMOD_PLAPI_VERSION >= 18
+	KHook::Virtual<IServerGameDLL, void, bool> m_hookGameFrame;
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+	KHook::Virtual<IServerGameClients, void, edict_t*> m_hookClientCommand;
+#else
+	KHook::Virtual<IServerGameClients, void, edict_t*, const CCommand&> m_hookClientCommand;
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
+	KHook::Virtual<IServerGameClients, void, int> m_hookSetCommandClient;
+
+	void SetupHooks();
+#endif // METAMOD_PLAPI_VERSION >= 18
 };
 
 extern NavBotExt* extension;

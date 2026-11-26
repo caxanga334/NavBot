@@ -114,36 +114,26 @@ static ConVar navbot_commit("sm_navbot_commit", NAVBOT_BUILD_LONG_HASH, FCVAR_NO
 static ConVar navbot_version("sm_navbot_version", SMEXT_CONF_VERSION, FCVAR_NOTIFY | FCVAR_DONTRECORD | FCVAR_SPONLY, "Extension version convar.");
 #endif // EXT_GENERATED_BUILD
 
-
-
-#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
-static ConVar cvar_dump_kv_cmds("sm_navbot_debug_dump_kv_commands", "0", FCVAR_GAMEDLL | FCVAR_CHEAT, "If enabled, prints keyvalue commands sent by clients into the console.");
-#endif // defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
-
-#ifdef EXT_DEBUG
-static ConVar cvar_draw_player_move("sm_navbot_debug_draw_player_move", "0", FCVAR_GAMEDLL | FCVAR_CHEAT);
-#endif // EXT_DEBUG
-
 static_assert(sizeof(Vector) == 12, "Size of Vector class is not 12 bytes (3 x 4 bytes float)!");
+
+// v17 or lower: Use SourceHook
+#if METAMOD_PLAPI_VERSION < 18
 
 SH_DECL_HOOK1_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool);
 
 #if SOURCE_ENGINE <= SE_DARKMESSIAH
-	// Source 2006
+// Source 2006
 SH_DECL_HOOK1_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*);
 #else
-	// Source 2007 and newer
+// Source 2007 and newer
 SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, edict_t*, const CCommand&);
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-
-#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
-SH_DECL_HOOK2_void(IServerGameClients, ClientCommandKeyValues, SH_NOATTRIB, 0, edict_t*, KeyValues*);
-#endif // defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
-
 SH_DECL_HOOK1_void(IServerGameClients, SetCommandClient, SH_NOATTRIB, 0, int);
 
-// SDKs that requires a runplayercommand hook
+
+#endif // METAMOD_PLAPI_VERSION < 18
+
 
 SMEXT_LINK(&g_NavBotExt);
 
@@ -220,6 +210,7 @@ NavBotExt::NavBotExt()
 	m_cfg_sdktools = nullptr;
 	m_cfg_sdkhooks = nullptr;
 }
+
 
 bool NavBotExt::SDK_OnLoad(char* error, size_t maxlen, bool late)
 {
@@ -518,6 +509,16 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 
 	g_pCVar = icvar; // TO-DO: add #if source engine here
 
+#if METAMOD_PLAPI_VERSION >= 18
+	SetupHooks();
+#endif // METAMOD_PLAPI_VERSION >= 18
+
+#if METAMOD_PLAPI_VERSION >= 18
+	m_hookGameFrame.Add(servergamedll);
+	m_hookClientCommand.Add(gameclients);
+	m_hookSetCommandClient.Add(gameclients);
+#else
+
 	SH_ADD_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), true);
 
 #if SOURCE_ENGINE <= SE_DARKMESSIAH
@@ -528,22 +529,18 @@ bool NavBotExt::SDK_OnMetamodLoad(ISmmAPI* ismm, char* error, size_t maxlen, boo
 	SH_ADD_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-
-#ifdef EXT_DEBUG
-
-#if SOURCE_ENGINE >= SE_EYE
-	SH_ADD_HOOK(IServerGameClients, ClientCommandKeyValues, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommandKeyValues), true);
-#endif // SOURCE_ENGINE >= SE_EYE
-
-#endif // EXT_DEBUG
-
 	SH_ADD_HOOK(IServerGameClients, SetCommandClient, gameclients, SH_MEMBER(this, &NavBotExt::Hook_IServerGameClients_SetCommandClient), false);
+
+#endif // METAMOD_PLAPI_VERSION >= 18
 
 	return true;
 }
 
 bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 {
+
+#if METAMOD_PLAPI_VERSION < 18
+
 	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, servergamedll, SH_MEMBER(this, &NavBotExt::Hook_GameFrame), false);
 
 #if SOURCE_ENGINE <= SE_DARKMESSIAH
@@ -554,15 +551,9 @@ bool NavBotExt::SDK_OnMetamodUnload(char* error, size_t maxlen)
 	SH_REMOVE_HOOK(IServerGameClients, ClientCommand, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommand), true);
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-#ifdef EXT_DEBUG
-
-#if SOURCE_ENGINE >= SE_EYE
-	SH_REMOVE_HOOK(IServerGameClients, ClientCommandKeyValues, gameclients, SH_MEMBER(this, &NavBotExt::Hook_ClientCommandKeyValues), true);
-#endif // SOURCE_ENGINE >= SE_EYE
-
-#endif // EXT_DEBUG
-
 	SH_REMOVE_HOOK(IServerGameClients, SetCommandClient, gameclients, SH_MEMBER(this, &NavBotExt::Hook_IServerGameClients_SetCommandClient), false);
+
+#endif // METAMOD_PLAPI_VERSION < 18
 
 	return true;
 }
@@ -604,6 +595,87 @@ void NavBotExt::OnClientDisconnecting(int client)
 	extmanager->OnClientDisconnect(client);
 }
 
+#if METAMOD_PLAPI_VERSION >= 18
+KHook::Return<void> NavBotExt::Hook_GameFrame(IServerGameDLL* pThis, bool simulating)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("NavBotExt::Hook_GameFrame", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (!simulating)
+	{
+		/* simulating will be false on empty dedicated servers. This allows the nav mesh generation to work. */
+		if (TheNavMesh != nullptr && TheNavMesh->IsGenerating())
+		{
+			TheNavMesh->Update();
+		}
+
+		return { KHook::Action::Ignore };
+	}
+
+	if (TheNavMesh)
+	{
+		TheNavMesh->Update();
+	}
+
+	if (extmanager)
+	{
+		extmanager->Frame();
+	}
+
+	CTimerSystem::Get()->Think();
+
+	return { KHook::Action::Ignore };
+}
+
+#if SOURCE_ENGINE <= SE_DARKMESSIAH
+KHook::Return<void> NavBotExt::Hook_ClientCommand_OldEngine(IServerGameClients* pThis, edict_t* pEntity)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("NavBotExt::Hook_ClientCommand", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (extmanager != nullptr && UtilHelpers::IsValidEdict(pEntity))
+	{
+		auto player = playerhelpers->GetGamePlayer(pEntity);
+
+		if (player != nullptr && player->IsInGame())
+		{
+			extmanager->OnClientCommand_OldEngine(pEntity, player);
+		}
+	}
+
+	return { KHook::Action::Ignore };
+}
+#else
+KHook::Return<void> NavBotExt::Hook_ClientCommand(IServerGameClients* pThis, edict_t* pEntity, const CCommand& args)
+{
+#ifdef EXT_VPROF_ENABLED
+	VPROF_BUDGET("NavBotExt::Hook_ClientCommand", "NavBot");
+#endif // EXT_VPROF_ENABLED
+
+	if (extmanager != nullptr && UtilHelpers::IsValidEdict(pEntity))
+	{
+		auto player = playerhelpers->GetGamePlayer(pEntity);
+
+		if (player != nullptr && player->IsInGame())
+		{
+			extmanager->OnClientCommand(pEntity, player, args);
+		}
+	}
+
+	return { KHook::Action::Ignore };
+}
+#endif // SOURCE_ENGINE <= SE_DARKMESSIAH
+
+KHook::Return<void> NavBotExt::Hook_IServerGameClients_SetCommandClient(IServerGameClients* pThis, int index)
+{
+	m_commandClientIndex = index;
+	return { KHook::Action::Ignore };
+}
+
+#else
+	// v17 or lower
 void NavBotExt::Hook_GameFrame(bool simulating)
 {
 #ifdef EXT_VPROF_ENABLED
@@ -632,38 +704,6 @@ void NavBotExt::Hook_GameFrame(bool simulating)
 	}
 
 	CTimerSystem::Get()->Think();
-
-#ifdef EXT_DEBUG
-	int playermove = cvar_draw_player_move.GetInt();
-
-	if (playermove > 0)
-	{
-		CBaseExtPlayer host{ UtilHelpers::GetListenServerHost() };
-		constexpr float ARROW_LENGTH = 48.0f;
-
-		const Vector origin = host.GetAbsOrigin();
-		const Vector& vel = host.GetAbsVelocity();
-		Vector dirvel = vel;
-		dirvel.NormalizeInPlace();
-		Vector eyefoward;
-		Vector eyeright;
-		host.EyeVectors(&eyefoward, &eyeright, nullptr);
-		const Vector eyePos = host.GetEyeOrigin();
-		NDebugOverlay::HorzArrow(eyePos, eyePos + (eyefoward * ARROW_LENGTH), 6.0f, 255, 0, 0, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
-		NDebugOverlay::HorzArrow(eyePos, eyePos + (eyeright * ARROW_LENGTH), 6.0f, 255, 255, 0, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
-		NDebugOverlay::HorzArrow(eyePos, eyePos - (eyeright * ARROW_LENGTH), 6.0f, 255, 0, 255, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
-		NDebugOverlay::HorzArrow(origin, origin + (dirvel * ARROW_LENGTH), 6.0f, 0, 180, 80, 255, true, NDEBUG_PERSIST_FOR_ONE_TICK);
-
-		if (playermove >= 2)
-		{
-			static pred::CEnginePrediction pred;
-
-			pred.SetTraceMask(MASK_PLAYERSOLID);
-			pred.PredictEntity(host.GetEntity(), 1.0f);
-		}
-	}
-
-#endif // EXT_DEBUG
 
 	RETURN_META(MRES_IGNORED);
 }
@@ -708,26 +748,13 @@ void NavBotExt::Hook_ClientCommand(edict_t* pEntity, const CCommand& args)
 }
 #endif // SOURCE_ENGINE <= SE_DARKMESSIAH
 
-#if defined(EXT_DEBUG) && SOURCE_ENGINE >= SE_EYE
-void NavBotExt::Hook_ClientCommandKeyValues(edict_t* pEntity, KeyValues* pKeyValues)
-{
-	// Newer engines have issues with this function. TO-DO: Create a local copy of it.
-#if SOURCE_ENGINE <= SE_TF2
-	if (cvar_dump_kv_cmds.GetBool())
-	{
-		KeyValuesDumpAsDevMsg(pKeyValues);
-	}
-#endif // SOURCE_ENGINE <= SE_TF2
-
-	RETURN_META(MRES_IGNORED);
-}
-#endif // EXT_DEBUG
-
 void NavBotExt::Hook_IServerGameClients_SetCommandClient(int index)
 {
 	m_commandClientIndex = index;
 	RETURN_META(MRES_IGNORED);
 }
+
+#endif // METAMOD_PLAPI_VERSION >= 18
 
 CBaseEntity* NavBotExt::GetCommandPlayer() const
 {
@@ -754,3 +781,17 @@ bool NavBotExt::IsCommandIssuedByServerAdmin() const
 	// Listen server
 	return idx <= 1;
 }
+
+#if METAMOD_PLAPI_VERSION >= 18
+
+void NavBotExt::SetupHooks()
+{
+	m_hookGameFrame.Configure(&IServerGameDLL::GameFrame);
+	m_hookGameFrame.AddContext(this, nullptr, &NavBotExt::Hook_GameFrame);
+	m_hookClientCommand.Configure(&IServerGameClients::ClientCommand);
+	m_hookClientCommand.AddContext(this, nullptr, &NavBotExt::Hook_ClientCommand);
+	m_hookSetCommandClient.Configure(&IServerGameClients::SetCommandClient);
+	m_hookSetCommandClient.AddContext(this, &NavBotExt::Hook_IServerGameClients_SetCommandClient, nullptr);
+}
+
+#endif // METAMOD_PLAPI_VERSION >= 18
